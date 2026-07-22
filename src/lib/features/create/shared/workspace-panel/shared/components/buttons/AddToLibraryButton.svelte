@@ -11,9 +11,11 @@
   const {
     onclick,
     disabled = false,
+    ariaLabel = "Add to library",
   }: {
     onclick?: () => void;
     disabled?: boolean;
+    ariaLabel?: string;
   } = $props();
 
   // Services
@@ -30,8 +32,8 @@
   class="panel-button add-to-library-button"
   onclick={handleClick}
   {disabled}
-  aria-label="Add to library"
-  title="Add to library"
+  aria-label={ariaLabel}
+  title={ariaLabel}
 >
   <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
 </button>

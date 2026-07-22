@@ -376,6 +376,7 @@
     <div
       class="controls-section"
       class:mobile={!isSideBySideLayout}
+      class:duration-only={hasSelection && !isStartPositionSelected}
     >
       {#if !hasSelection}
         <div class="no-selection">
@@ -546,6 +547,40 @@
     flex-shrink: 0;
   }
 
+  /* At iPhone SE width the subtitle gets its own line instead of competing
+     with four full-size header actions. */
+  @container step-editor (max-width: 360px) {
+    .panel-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 8px;
+      row-gap: 2px;
+    }
+
+    .header-info {
+      display: contents;
+    }
+
+    .panel-header h2 {
+      grid-column: 1;
+      grid-row: 1;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .subtitle {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+  }
+
   /* ============================================================================
      ICON BUTTONS - Consistent button styling
      ============================================================================ */
@@ -663,6 +698,13 @@
     flex-direction: column;
     justify-content: flex-start;
     overflow-y: auto; /* Allow scrolling if absolutely necessary */
+  }
+
+  /* Duration already owns its spacing. Removing the second padded frame gives
+     the pictograph that space without changing the start-position editor. */
+  .controls-section.mobile.duration-only {
+    padding: 0;
+    overflow: visible;
   }
 
   .no-selection {

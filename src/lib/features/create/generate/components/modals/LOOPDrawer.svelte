@@ -47,7 +47,7 @@
 
 <div use:portal>
   <Drawer
-    isOpen={isOpen}
+    {isOpen}
     placement="right"
     respectLayoutMode={true}
     closeOnBackdrop={true}
@@ -69,7 +69,7 @@
           {onRhythmChange}
           {guestMaxLength}
           {onRequestSignup}
-          layout="list"
+          layout="responsive"
         />
       {/if}
     </div>
@@ -135,14 +135,14 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding-bottom: calc(var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   /* No bottom-nav clearance on desktop (only the mobile bottom sheet needs it) */
-  :global(.drawer-content.loop-drawer-sheet[data-placement="right"]) .loop-drawer-content {
+  :global(.drawer-content.loop-drawer-sheet[data-placement="right"])
+    .loop-drawer-content {
     padding-bottom: 12px;
   }
-
 
   /* Override LOOPExpandedOverlay's absolute positioning when inside drawer;
      fill the full drawer height like CustomizeDrawer does. On desktop the
@@ -177,9 +177,9 @@
       inset: auto 0 0 0 !important;
       width: 100% !important;
       max-width: 100% !important;
-      height: auto !important;
-      max-height: 85dvh !important;
-      border-radius: 20px 20px 0 0 !important;
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+      border-radius: 0 !important;
       border-left: none !important;
       /* data-placement is still "right", whose base rule sets
          touch-action: pan-x and blocks vertical scrolling — re-enable pan-y so
@@ -216,30 +216,45 @@
       inset: 0 !important;
     }
 
-    /* Content hugs; rows take natural height and the sheet scrolls if tall */
-    .loop-drawer-content {
-      height: auto !important;
+    /* The full-height phone sheet has one bounded layout. The six LOOP choices
+       and footer stay fixed; only the optional explanation stack may scroll. */
+    :global(.drawer-content.loop-drawer-sheet) > :global(.drawer-inner) {
+      overflow: hidden;
     }
 
-    /* One scroller only (drawer-inner). Content flows naturally: the grid takes
-       natural height and its rows stop stretching so nothing gets clipped. */
+    .loop-drawer-content {
+      height: 100% !important;
+      min-height: 0;
+      overflow: hidden;
+    }
+
     .loop-drawer-content :global(.grid-container) {
       flex: 0 0 auto !important;
       overflow: visible !important;
     }
 
-    .loop-drawer-content :global(.loop-component-grid.list) {
+    .loop-drawer-content :global(.loop-component-grid.responsive) {
       height: auto !important;
       grid-auto-rows: minmax(64px, auto) !important;
     }
 
-    /* Load-bearing for the sticky Apply dock: the overlay's own
-       overflow-y: auto would become the dock's containing scrollport, and
-       on mobile the overlay is content-height (nothing overflows it), so
-       the dock would never float. Making the overlay overflow-visible here
-       lets the dock bind to drawer-inner — the sheet's one real scroller. */
     .loop-drawer-content > :global(.loop-expanded-overlay) {
-      overflow: visible !important;
+      overflow: hidden !important;
+    }
+
+    .loop-drawer-content :global(.combo-details) {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Apply is a real footer in the phone drawer. Keeping it in normal flow
+       prevents the nearest-scrollport rules for sticky positioning from
+       painting it over unfinished option rows. */
+    .loop-drawer-content :global(.apply-dock) {
+      position: static;
+      bottom: auto;
     }
   }
 

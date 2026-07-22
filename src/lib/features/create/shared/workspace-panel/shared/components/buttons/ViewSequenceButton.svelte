@@ -1,17 +1,31 @@
 <!--
   ViewSequenceButton.svelte
 
-  Play/View button that opens the sequence viewer for animation and export.
+  View button that opens the sequence viewer for animation and export.
+  Public demos also reuse its appearance for real inline playback, so those
+  callers opt into the Play glyph explicitly.
   Choreographed entrance: hatches from nothing, overshoots, settles, then breathes.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { WORKSPACE_BUTTON_ICON } from "../../workspace-button-layout";
 
-  let { onclick, isActive = false } = $props<{
+  let {
+    onclick,
+    isActive = false,
+    purpose = "open-viewer",
+  } = $props<{
     onclick?: () => void;
     isActive?: boolean;
+    purpose?: "open-viewer" | "play";
   }>();
+
+  const icon = $derived(
+    purpose === "play" ? "fa-play" : WORKSPACE_BUTTON_ICON.view.icon
+  );
+  const accessibleLabel = $derived(
+    purpose === "play" ? "Play sequence animation" : "Open full viewer"
+  );
 
   // Resolve haptic feedback service
   const hapticService = getHapticFeedback();
@@ -26,11 +40,11 @@
   class="view-sequence-button glass-button"
   class:active={isActive}
   onclick={handleClick}
-  aria-label="View sequence"
+  aria-label={accessibleLabel}
   aria-pressed={isActive}
-  title="View"
+  title={purpose === "play" ? "Play" : "Open full viewer"}
 >
-  <i class="fa-solid {WORKSPACE_BUTTON_ICON.view.icon}" aria-hidden="true"></i>
+  <i class="fa-solid {icon}" aria-hidden="true"></i>
 </button>
 
 <style>
@@ -76,10 +90,11 @@
 
   /* Gentle breathing - scale + glow expand together */
   @keyframes breathe {
-    0%, 100% {
+    0%,
+    100% {
       transform: scale(1);
-      box-shadow:
-        0 4px 12px color-mix(in srgb, var(--semantic-success) 40%, transparent);
+      box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--semantic-success) 40%, transparent);
     }
     50% {
       transform: scale(1.06);

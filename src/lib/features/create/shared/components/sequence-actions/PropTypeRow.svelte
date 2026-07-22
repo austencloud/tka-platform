@@ -174,9 +174,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-radius: 8px;
     border: 1px solid;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
@@ -184,8 +184,8 @@
   }
 
   .prop-icon-sm {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
   }
 
@@ -231,10 +231,10 @@
 
   /* Compact chirality button */
   .chirality-btn.compact {
-    width: 30px;
-    height: 30px;
-    font-size: 0.75rem;
-    border-radius: 6px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    font-size: var(--font-size-compact, 12px);
+    border-radius: 8px;
   }
 
   /* Blue chirality button */

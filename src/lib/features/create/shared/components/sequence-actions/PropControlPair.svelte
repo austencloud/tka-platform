@@ -4,6 +4,7 @@
   Unified layout component for Blue + Red prop controls.
   Provides consistent glass-morphism card styling for both props.
   Handles stacked (mobile) vs side-by-side (desktop) layout.
+  Focused mode overlays both mounted cards and exposes one through a hand picker.
 
   Compact mode: Tighter padding and gaps for mobile screens.
 
@@ -15,29 +16,51 @@
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { TargetHand } from "$lib/shared/create/domain/panel-types";
 
   interface Props {
     /** Stack cards vertically (mobile) vs side-by-side (desktop) */
     stacked?: boolean;
     /** Use compact styling with tighter padding/gaps */
     compact?: boolean;
+    /** Show one mounted card at a time in narrow layouts */
+    visibleHand?: TargetHand;
     /** Content for the blue prop card */
     blueContent?: Snippet;
     /** Content for the red prop card */
     redContent?: Snippet;
   }
 
-  let { stacked = false, compact = false, blueContent, redContent }: Props = $props();
+  let {
+    stacked = false,
+    compact = false,
+    visibleHand = "both",
+    blueContent,
+    redContent,
+  }: Props = $props();
 </script>
 
-<div class="prop-pair" class:stacked class:compact>
-  <div class="prop-card blue">
+<div
+  class="prop-pair"
+  class:stacked
+  class:compact
+  class:focused={visibleHand !== "both"}
+>
+  <div
+    class="prop-card blue"
+    class:inactive={visibleHand === "red"}
+    inert={visibleHand === "red"}
+  >
     <span class="prop-label">Blue</span>
     <div class="card-content">
       {@render blueContent?.()}
     </div>
   </div>
-  <div class="prop-card red">
+  <div
+    class="prop-card red"
+    class:inactive={visibleHand === "blue"}
+    inert={visibleHand === "blue"}
+  >
     <span class="prop-label">Red</span>
     <div class="card-content">
       {@render redContent?.()}
@@ -57,6 +80,22 @@
 
   .prop-pair.stacked {
     flex-direction: column;
+  }
+
+  /* Both cards stay mounted in the same cell. The tallest card reserves the
+     dock height, so switching hands never moves the preview above it. */
+  .prop-pair.focused {
+    display: grid;
+  }
+
+  .prop-pair.focused .prop-card {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .prop-pair.focused .prop-card.inactive {
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* Compact mode: tighter gaps */
@@ -142,7 +181,7 @@
 
   /* Compact mode: smaller label */
   .prop-pair.compact .prop-label {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     letter-spacing: 0.5px;
   }
 

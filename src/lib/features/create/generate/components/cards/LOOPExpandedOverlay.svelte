@@ -13,7 +13,10 @@ Animates forward in z-axis and expands to fill the container space
     buildLoopSpec,
   } from "$lib/shared/create/services/loop-type-utils";
   import { gateRhythm } from "$lib/shared/create/services/loop-rhythm-gating";
-  import { guestLoopGate, type GuestLoopLock } from "$lib/shared/create/services/loop-guest-gate";
+  import {
+    guestLoopGate,
+    type GuestLoopLock,
+  } from "$lib/shared/create/services/loop-guest-gate";
   import { blockSignatures } from "$lib/shared/create/services/loop-block-signatures";
   import { onMount } from "svelte";
   import {
@@ -50,7 +53,7 @@ Animates forward in z-axis and expands to fill the container space
     onChange: (loopType: LOOPType) => void;
     onClose: () => void;
     onLoopDisable?: () => void;
-    layout?: "grid" | "list";
+    layout?: "grid" | "list" | "responsive";
     /** Current rhythm + context for the Rhythm tier. All optional — absent = tier hidden (legacy callers unaffected). */
     rhythm?: RhythmValue;
     sequenceLength?: number;
@@ -145,7 +148,8 @@ Animates forward in z-axis and expands to fill the container space
   );
 
   const hasRhythmKnobs = $derived(
-    rotationSupportsQuarter || localSelectedComponents.has(LOOPComponent.INVERTED)
+    rotationSupportsQuarter ||
+      localSelectedComponents.has(LOOPComponent.INVERTED)
   );
 
   // Guard: if the user set 90° slices then extended the combo, snap the
@@ -159,7 +163,9 @@ Animates forward in z-axis and expands to fill the container space
   // Wire-form spec for the CURRENT selection + rhythm — same helper the
   // generation orchestrator uses. Null when the combo isn't implemented
   // (mirrors `isImplemented`, single source of truth in loop-type-utils).
-  const specWire = $derived(buildLoopSpec(localSelectedComponents, localRhythm));
+  const specWire = $derived(
+    buildLoopSpec(localSelectedComponents, localRhythm)
+  );
 
   // Apply-gating + word-math data. Only computed once the spec is buildable
   // and the caller told us the target length — legacy callers (no
@@ -178,7 +184,7 @@ Animates forward in z-axis and expands to fill the container space
     return guestLoopGate(
       generateLOOPType(localSelectedComponents),
       buildLoopSpec(localSelectedComponents, localRhythm),
-      guestMaxLength,
+      guestMaxLength
     );
   });
 
@@ -193,7 +199,7 @@ Animates forward in z-axis and expands to fill the container space
       const gate = guestLoopGate(
         generateLOOPType(one),
         buildLoopSpec(one, localRhythm),
-        guestMaxLength,
+        guestMaxLength
       );
       if (gate.locked) locked.add(component);
     }
@@ -247,7 +253,7 @@ Animates forward in z-axis and expands to fill the container space
         const gate = guestLoopGate(
           generateLOOPType(new Set([component])),
           buildLoopSpec(new Set([component]), localRhythm),
-          guestMaxLength,
+          guestMaxLength
         );
         if (gate.locked) {
           onRequestSignup?.(gate.reason);
@@ -351,7 +357,12 @@ Animates forward in z-axis and expands to fill the container space
           onclick={handleDisableLoop}
           aria-label="Turn off LOOP"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
           </svg>
@@ -363,7 +374,12 @@ Animates forward in z-axis and expands to fill the container space
         onclick={handleClose}
         aria-label="Close LOOP selection"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -397,118 +413,128 @@ Animates forward in z-axis and expands to fill the container space
 
   <!-- Explanation panel (combo mode only) -->
   {#if isMultiSelectMode}
-    <!-- Rhythm tier: collapsed disclosure for rotation/inversion interval + mode.
-         Hidden entirely when the caller didn't pass `rhythm` (legacy callers). -->
-    {#if hasRhythmTier && hasRhythmKnobs}
-      <div class="rhythm-tier">
-        <button
-          class="rhythm-disclosure"
-          type="button"
-          onclick={toggleRhythmOpen}
-          aria-expanded={isRhythmOpen}
-        >
-          <span>Rhythm</span>
-          <i class="fas fa-chevron-{isRhythmOpen ? 'up' : 'down'}" aria-hidden="true"></i>
-        </button>
+    <div class="combo-details themed-scrollbar">
+      <!-- Rhythm tier: collapsed disclosure for rotation/inversion interval + mode.
+           Hidden entirely when the caller didn't pass `rhythm` (legacy callers). -->
+      {#if hasRhythmTier && hasRhythmKnobs}
+        <div class="rhythm-tier">
+          <button
+            class="rhythm-disclosure"
+            type="button"
+            onclick={toggleRhythmOpen}
+            aria-expanded={isRhythmOpen}
+          >
+            <span>Rhythm</span>
+            <i
+              class="fas fa-chevron-{isRhythmOpen ? 'up' : 'down'}"
+              aria-hidden="true"
+            ></i>
+          </button>
 
-        {#if isRhythmOpen}
-          <div class="rhythm-rows">
-            {#if rotationSupportsQuarter}
-              <div class="rhythm-row">
-                <span class="rhythm-label">Rotation</span>
-                <SegmentedControl
-                  options={[
-                    { value: "2", label: "180°" },
-                    { value: "4", label: "90°" },
-                  ]}
-                  value={String(localRhythm.rotationInterval)}
-                  onchange={(v) =>
-                    updateRhythm({ rotationInterval: v === "4" ? 4 : 2 })}
-                  size="sm"
-                  color="accent"
-                />
-              </div>
-            {/if}
+          {#if isRhythmOpen}
+            <div class="rhythm-rows">
+              {#if rotationSupportsQuarter}
+                <div class="rhythm-row">
+                  <span class="rhythm-label">Rotation</span>
+                  <SegmentedControl
+                    options={[
+                      { value: "2", label: "180°" },
+                      { value: "4", label: "90°" },
+                    ]}
+                    value={String(localRhythm.rotationInterval)}
+                    onchange={(v) =>
+                      updateRhythm({ rotationInterval: v === "4" ? 4 : 2 })}
+                    size="sm"
+                    color="accent"
+                  />
+                </div>
+              {/if}
 
-            {#if localSelectedComponents.has(LOOPComponent.INVERTED)}
-              <div class="rhythm-row">
-                <span class="rhythm-label">Inversion</span>
-                <SegmentedControl
-                  options={[
-                    { value: "2", label: "At the half" },
-                    { value: "4", label: "Every quarter" },
-                  ]}
-                  value={String(localRhythm.inversionInterval)}
-                  onchange={(v) =>
-                    updateRhythm({ inversionInterval: v === "4" ? 4 : 2 })}
-                  size="sm"
-                  color="accent"
-                />
-              </div>
-              <div class="rhythm-row">
-                <SegmentedControl
-                  options={[
-                    { value: "expand", label: "Adds length" },
-                    { value: "overlay", label: "On top" },
-                  ]}
-                  value={localRhythm.inversionMode}
-                  onchange={(v) => updateRhythm({ inversionMode: v })}
-                  size="sm"
-                  color="accent"
-                />
-              </div>
-              <div class="rhythm-caption">
-                <span class="caption-sizer" aria-hidden="true"
-                  >Same hand positions — props flip spin direction for the second half.</span
-                >
-                <span class="caption-live">{inversionCaption}</span>
-              </div>
-            {/if}
+              {#if localSelectedComponents.has(LOOPComponent.INVERTED)}
+                <div class="rhythm-row">
+                  <span class="rhythm-label">Inversion</span>
+                  <SegmentedControl
+                    options={[
+                      { value: "2", label: "At the half" },
+                      { value: "4", label: "Every quarter" },
+                    ]}
+                    value={String(localRhythm.inversionInterval)}
+                    onchange={(v) =>
+                      updateRhythm({ inversionInterval: v === "4" ? 4 : 2 })}
+                    size="sm"
+                    color="accent"
+                  />
+                </div>
+                <div class="rhythm-row">
+                  <SegmentedControl
+                    options={[
+                      { value: "expand", label: "Adds length" },
+                      { value: "overlay", label: "On top" },
+                    ]}
+                    value={localRhythm.inversionMode}
+                    onchange={(v) => updateRhythm({ inversionMode: v })}
+                    size="sm"
+                    color="accent"
+                  />
+                </div>
+                <div class="rhythm-caption">
+                  <span class="caption-sizer" aria-hidden="true"
+                    >Same hand positions — props flip spin direction for the
+                    second half.</span
+                  >
+                  <span class="caption-live">{inversionCaption}</span>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Word-math line: always visible in combo mode once a spec is buildable
+           and the caller told us the target length. -->
+      {#if wordMathText}
+        <div class="word-math">
+          <span class="word-math-sizer" aria-hidden="true"
+            >Too short — a one-step seed has nothing for inversion to flip</span
+          >
+          <span class="word-math-live">{wordMathText}</span>
+        </div>
+      {/if}
+
+      <!-- Block timeline: the novice bridge, shown whenever the spec is buildable. -->
+      {#if specWire}
+        <LoopBlockTimeline model={blockSignatures(specWire)} />
+      {/if}
+
+      <div class="explanation-section">
+        <p class="explanation-text">{explanationText}</p>
+        {#if !isImplemented && selectionCount > 0}
+          <div class="coming-soon-badge">
+            No LOOP type matches this exact combination — add or remove a
+            component
           </div>
+        {:else if guestLock.locked}
+          <div class="signup-badge">{guestLock.reason}</div>
+        {:else if rhythmGate && !rhythmGate.ok}
+          <div class="coming-soon-badge">{rhythmGate.reason}</div>
         {/if}
       </div>
-    {/if}
-
-    <!-- Word-math line: always visible in combo mode once a spec is buildable
-         and the caller told us the target length. -->
-    {#if wordMathText}
-      <div class="word-math">
-        <span class="word-math-sizer" aria-hidden="true"
-          >Too short — a one-step seed has nothing for inversion to flip</span
-        >
-        <span class="word-math-live">{wordMathText}</span>
-      </div>
-    {/if}
-
-    <!-- Block timeline: the novice bridge, shown whenever the spec is buildable. -->
-    {#if specWire}
-      <LoopBlockTimeline model={blockSignatures(specWire)} />
-    {/if}
-
-    <div class="explanation-section">
-      <p class="explanation-text">{explanationText}</p>
-      {#if !isImplemented && selectionCount > 0}
-        <div class="coming-soon-badge">
-          No LOOP type matches this exact combination — add or remove a component
-        </div>
-      {:else if guestLock.locked}
-        <div class="signup-badge">{guestLock.reason}</div>
-      {:else if rhythmGate && !rhythmGate.ok}
-        <div class="coming-soon-badge">{rhythmGate.reason}</div>
-      {/if}
     </div>
 
-    <!-- Apply button: sticky dock so confirm stays on screen even when the
-         combo stack (grid + rhythm + timeline + explanation) overflows a
-         short viewport — the mobile bottom sheet caps at 85dvh and the rest
-         of the content scrolls underneath. -->
+    <!-- Apply remains sticky in the in-card and desktop presentations. The
+         phone drawer turns this into a fixed flex footer while its optional
+         explanation stack owns any overflow. -->
     <div class="apply-dock">
       <button
         class="apply-button"
         class:locked={guestLock.locked}
-        class:disabled={selectionCount === 0 || !isImplemented || (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
+        class:disabled={selectionCount === 0 ||
+          !isImplemented ||
+          (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
         onclick={handleConfirm}
-        disabled={selectionCount === 0 || !isImplemented || (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
+        disabled={selectionCount === 0 ||
+          !isImplemented ||
+          (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
       >
         {buttonText}
       </button>
@@ -627,6 +653,13 @@ Animates forward in z-axis and expands to fill the container space
     overscroll-behavior: contain;
   }
 
+  .combo-details {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 10px;
+  }
+
   .explanation-section {
     flex-shrink: 0;
     display: flex;
@@ -646,7 +679,8 @@ Animates forward in z-axis and expands to fill the container space
 
   .coming-soon-badge {
     background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-warning) 50%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning) 50%, transparent);
     border-radius: 6px;
     padding: 6px 10px;
     color: var(--semantic-warning);
@@ -768,14 +802,20 @@ Animates forward in z-axis and expands to fill the container space
     flex-shrink: 0;
     margin: 0 -12px -12px;
     padding: 8px 12px 12px;
-    background: color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #6366f1) 20%,
+      #1a1a2e
+    );
   }
 
   /* Below the side-by-side breakpoint the bottom nav overlaps the sheet's
      foot (the drawer content reserves clearance for it) — stick above it. */
   @media (max-width: 767px) {
     .apply-dock {
-      bottom: calc(var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px));
+      bottom: calc(
+        var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px)
+      );
     }
   }
 

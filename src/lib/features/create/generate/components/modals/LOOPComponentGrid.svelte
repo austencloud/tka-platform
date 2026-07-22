@@ -1,7 +1,8 @@
 <!--
 LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
 - layout="grid" (default): compact 3x2 grid (icon + label), unchanged behavior.
-- layout="list": single vertical column with descriptions (used by the drawer).
+  - layout="list": single vertical column with descriptions.
+  - layout="responsive": descriptive desktop list, compact phone grid.
 -->
 <script lang="ts">
   import {
@@ -24,23 +25,26 @@ LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
     /** Guest-gated components — still clickable, but route to sign-up. */
     lockedComponents?: Set<LOOPComponent> | null;
     isMultiSelectMode?: boolean;
-    layout?: "grid" | "list";
+    layout?: "grid" | "list" | "responsive";
     onToggleComponent: (component: LOOPComponent) => void;
   }>();
 
   // List layout shows descriptions per row; grid stays compact (icon + label).
-  const showDescriptions = $derived(layout === "list");
+  const showDescriptions = $derived(layout !== "grid");
+  const compactOnMobile = $derived(layout === "responsive");
 </script>
 
 <div
   class="loop-component-grid"
-  class:list={layout === "list"}
+  class:list={layout !== "grid"}
+  class:responsive={layout === "responsive"}
   class:with-descriptions={showDescriptions}
 >
   {#each LOOP_COMPONENTS as componentInfo}
     <LOOPComponentButton
       {componentInfo}
       {isMultiSelectMode}
+      {compactOnMobile}
       isSelected={selectedComponents.has(componentInfo.component)}
       isDisabled={disabledComponents?.has(componentInfo.component) ?? false}
       isLocked={lockedComponents?.has(componentInfo.component) ?? false}
@@ -69,5 +73,16 @@ LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
     grid-template-columns: 1fr;
     grid-auto-rows: minmax(64px, 1fr);
     height: 100%;
+  }
+
+  /* The LOOP drawer keeps the descriptive list on desktop. A phone uses the
+     existing compact 3 x 2 presentation so every choice stays above the
+     footer, including on the 667px-tall iPhone SE viewport. */
+  @media (max-width: 767px) {
+    .loop-component-grid.responsive {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: minmax(64px, auto);
+      height: auto;
+    }
   }
 </style>

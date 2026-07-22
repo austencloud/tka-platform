@@ -13,12 +13,14 @@
 -->
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import MobileHandSelector from "./MobileHandSelector.svelte";
   import PropControlPair from "./PropControlPair.svelte";
   import PropTurnsControl from "./PropTurnsControl.svelte";
   import PropTypeRow from "./PropTypeRow.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { TargetHand } from "$lib/shared/create/domain/panel-types";
   import {
     MotionColor,
     MotionType,
@@ -32,6 +34,15 @@
   } from "../../services/step-operations/turns-aggregation";
 
   type BatchMode = "set" | "adjust";
+
+  const MOBILE_HAND_OPTIONS: {
+    hand: TargetHand;
+    label: string;
+    shortLabel: string;
+  }[] = [
+    { hand: "blue", label: "Blue", shortLabel: "Blue" },
+    { hand: "red", label: "Red", shortLabel: "Red" },
+  ];
 
   interface Props {
     selectionMode: "single" | "multi";
@@ -134,6 +145,7 @@
   // Per-hand batch mode. Defaults to "Set all" — the palette shows the spread.
   let blueMode = $state<BatchMode>("set");
   let redMode = $state<BatchMode>("set");
+  let mobileHand = $state<TargetHand>("blue");
 
   const MODE_OPTIONS: { value: BatchMode; label: string }[] = [
     { value: "set", label: "Set all" },
@@ -162,8 +174,24 @@
 </script>
 
 {#if showPair}
-  <div class="controls-zone">
-    <PropControlPair {stacked} {compact}>
+  <div class="controls-zone" class:stacked>
+    {#if stacked}
+      <div class="mobile-hand-picker">
+        <MobileHandSelector
+          value={mobileHand}
+          onChange={(hand) => (mobileHand = hand)}
+          options={MOBILE_HAND_OPTIONS}
+          ariaLabel="Choose prop controls"
+          fullWidth={true}
+        />
+      </div>
+    {/if}
+
+    <PropControlPair
+      {stacked}
+      {compact}
+      visibleHand={stacked ? mobileHand : "both"}
+    >
       {#snippet blueContent()}
         <Crossfade key={selectionMode} duration={DURATION.fast}>
           {#if selectionMode === "multi"}
@@ -240,8 +268,11 @@
       onPathShapeClear={onPathShapeClear
         ? () => onPathShapeClear(color)
         : undefined}
-    />
-    <PropTypeRow color={colorName} {compact} {onOpenPropSheet} />
+    >
+      {#snippet trailingControl()}
+        <PropTypeRow color={colorName} {compact} {onOpenPropSheet} />
+      {/snippet}
+    </PropTurnsControl>
   </div>
 {/snippet}
 
@@ -302,11 +333,22 @@
 
 <style>
   .controls-zone {
+    box-sizing: border-box;
     padding: 12px;
     padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
     flex-shrink: 0;
+    min-height: 0;
     border-top: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
+  }
+
+  .controls-zone.stacked {
+    padding: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+  }
+
+  .mobile-hand-picker {
+    padding: 8px 0 10px;
   }
 
   /* Inner column so single (stepper + prop row) and batch (segmented + palette)

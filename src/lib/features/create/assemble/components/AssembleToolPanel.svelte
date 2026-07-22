@@ -135,7 +135,9 @@
 
   <div class="main-area">
     <div class="grid-slot">
-      <InteractiveGrid {builderState} onStepCapExceeded={checkBeatCap} />
+      <div class="stage-slot">
+        <InteractiveGrid {builderState} onStepCapExceeded={checkBeatCap} />
+      </div>
       <BuilderControls {builderState} />
     </div>
   </div>
@@ -180,6 +182,8 @@
   }
 
   .header-section {
+    width: min(100%, 1040px);
+    margin-inline: auto;
     flex-shrink: 0;
   }
 
@@ -187,7 +191,7 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
     gap: 0;
     min-width: 0;
@@ -195,14 +199,25 @@
 
   .grid-slot {
     position: relative;
-    flex: 1 1 640px;
+    flex: 0 1 1040px;
     min-width: 0;
     width: 100%;
-    max-width: 760px;
+    max-width: 1040px;
     height: 100%;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     justify-items: center;
+  }
+
+  .stage-slot {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    place-items: start center;
+    container-type: size;
+    container-name: assemble-stage;
   }
 
   .restore-error {
@@ -241,6 +256,10 @@
 
     .grid-slot {
       width: 100%;
+    }
+
+    .stage-slot {
+      place-items: center;
     }
 
     .header-section {

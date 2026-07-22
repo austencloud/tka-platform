@@ -18,8 +18,8 @@ const logger = createComponentLogger("DurationHandler");
 /** Minimum duration (1 beat) - a pictograph is fundamentally square, can only stretch wider */
 export const MIN_DURATION = 1.0;
 
-/** Maximum duration (4 steps = 16 subdivisions) */
-export const MAX_DURATION = 4.0;
+/** Maximum duration supported by duration patterns and proportional timing */
+export const MAX_DURATION = 10.0;
 
 /** Fine step size (0.1 beat) */
 export const DURATION_STEP_FINE = 0.1;

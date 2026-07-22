@@ -5,10 +5,11 @@
   Designed to be used inside PropControlPair which provides the card styling.
   Uses CSS custom properties from parent card for color theming.
 
-  Both modes: Two rows - turns controls above a single "Invert" toggle
-  that shows the current rotation direction and flips on tap.
+  Full mode stacks turns, rotation, path, and prop controls. Compact mode keeps
+  the primary actions together and gives path choices a full-width second row.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -26,6 +27,7 @@
     onRotationChange: (direction: RotationDirection) => void;
     onPathShapeChange?: (shape: PathShapeValue) => void;
     onPathShapeClear?: () => void;
+    trailingControl?: Snippet;
   }
 
   let {
@@ -40,6 +42,7 @@
     onRotationChange,
     onPathShapeChange,
     onPathShapeClear,
+    trailingControl,
   }: Props = $props();
 
   const displayTurns = $derived(turns === "fl" ? "fl" : turns);
@@ -153,6 +156,12 @@
       {/if}
     </div>
   {/if}
+
+  {#if trailingControl}
+    <div class="trailing-control">
+      {@render trailingControl()}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -164,12 +173,17 @@
     width: 100%;
   }
 
-  /* Compact: single horizontal row - invert sits left of turns */
+  /* Compact: primary actions share the first row; path choices get the full
+     second row so labels and touch targets do not collapse. */
   .turns-controls.compact {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "turns rotation trailing"
+      "path path path";
     align-items: center;
     gap: 6px;
-    width: auto;
+    width: 100%;
   }
 
   /* ============================================================================
@@ -183,6 +197,8 @@
   }
 
   .turns-row.compact {
+    grid-area: turns;
+    justify-self: center;
     gap: 6px;
   }
 
@@ -274,7 +290,7 @@
 
   /* Compact: icon-only square button, positioned before turns row */
   .invert-btn.compact {
-    order: -1;
+    grid-area: rotation;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     padding: 0;
@@ -341,6 +357,7 @@
   }
 
   .path-row.compact {
+    grid-area: path;
     padding-top: 4px;
     margin-top: 2px;
     gap: 3px;
@@ -360,9 +377,9 @@
   }
 
   .shape-pill.compact {
-    padding: 3px 6px;
-    font-size: 0.6rem;
-    min-height: 24px;
+    padding: 0 8px;
+    font-size: var(--font-size-compact, 12px);
+    min-height: var(--min-touch-target, 44px);
   }
 
   .shape-pill:hover:not(:disabled) {
@@ -387,7 +404,7 @@
   .shape-pill.reset {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    font-size: 0.6rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .shape-pill:disabled {
@@ -396,9 +413,18 @@
   }
 
   .path-hint {
-    font-size: 0.55rem;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.3);
     font-style: italic;
+  }
+
+  .trailing-control {
+    width: 100%;
+  }
+
+  .turns-controls.compact .trailing-control {
+    grid-area: trailing;
+    width: auto;
   }
 
   @media (prefers-reduced-motion: reduce) {

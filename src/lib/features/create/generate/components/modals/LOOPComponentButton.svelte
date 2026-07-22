@@ -14,6 +14,7 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     isDisabled = false,
     isLocked = false,
     showDescription = false,
+    compactOnMobile = false,
     onClick,
   } = $props<{
     componentInfo: LOOPComponentInfo;
@@ -23,6 +24,8 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     /** Guest-gated: still clickable, but tapping routes to sign-up. */
     isLocked?: boolean;
     showDescription?: boolean;
+    /** Keep list detail on desktop, then use the compact grid treatment on phones. */
+    compactOnMobile?: boolean;
     onClick: () => void;
   }>();
 
@@ -38,6 +41,7 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   class:selected={isSelected}
   class:multi-select={isMultiSelectMode}
   class:with-description={showDescription}
+  class:compact-on-mobile={compactOnMobile}
   class:locked={isLocked}
   onclick={onClick}
   disabled={isDisabled}
@@ -64,7 +68,12 @@ Shows description in Quick Apply mode, compact in Build Combo mode
 
   {#if isSelected}
     <div class="check-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+      >
         <polyline points="6,12 10,16 18,8"></polyline>
       </svg>
     </div>
@@ -83,8 +92,13 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     justify-content: center;
     padding: 12px;
 
-    background: color-mix(in srgb, var(--component-color) 15%, rgba(30, 30, 50, 0.9));
-    border: 2px solid color-mix(in srgb, var(--component-color) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--component-color) 15%,
+      rgba(30, 30, 50, 0.9)
+    );
+    border: 2px solid
+      color-mix(in srgb, var(--component-color) 50%, transparent);
     border-radius: 12px;
     cursor: pointer;
     color: var(--theme-text, white);
@@ -94,7 +108,11 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   }
 
   .loop-component-button:hover {
-    background: color-mix(in srgb, var(--component-color) 25%, rgba(30, 30, 50, 0.95));
+    background: color-mix(
+      in srgb,
+      var(--component-color) 25%,
+      rgba(30, 30, 50, 0.95)
+    );
     border-color: var(--component-color);
     transform: translateY(-1px);
   }
@@ -117,7 +135,11 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   }
 
   .loop-component-button:disabled:hover {
-    background: color-mix(in srgb, var(--component-color) 15%, rgba(30, 30, 50, 0.9));
+    background: color-mix(
+      in srgb,
+      var(--component-color) 15%,
+      rgba(30, 30, 50, 0.9)
+    );
     border-color: color-mix(in srgb, var(--component-color) 50%, transparent);
     transform: none;
   }
@@ -125,10 +147,15 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   /* Strong, unmistakable selected state. Border stays 2px (no layout shift);
      the emphasis comes from an inset ring + outer glow (box-shadow only). */
   .loop-component-button.selected {
-    background: color-mix(in srgb, var(--component-color) 45%, rgba(30, 30, 50, 0.95));
+    background: color-mix(
+      in srgb,
+      var(--component-color) 45%,
+      rgba(30, 30, 50, 0.95)
+    );
     border-color: var(--component-color);
     box-shadow:
-      inset 0 0 0 2px color-mix(in srgb, var(--component-color) 75%, transparent),
+      inset 0 0 0 2px
+        color-mix(in srgb, var(--component-color) 75%, transparent),
       0 0 20px color-mix(in srgb, var(--component-color) 55%, transparent);
   }
 
@@ -232,6 +259,30 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     width: 16px;
     height: 16px;
     color: white;
+  }
+
+  @media (max-width: 767px) {
+    .loop-component-button.compact-on-mobile .button-content {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .loop-component-button.compact-on-mobile .text-content {
+      align-items: center;
+    }
+
+    .loop-component-button.compact-on-mobile .loop-component-icon {
+      width: auto;
+      height: auto;
+      font-size: 1.5rem;
+      background: transparent;
+    }
+
+    .loop-component-button.compact-on-mobile .loop-component-description {
+      display: none;
+    }
   }
 
   /* Reduced motion */

@@ -5,6 +5,10 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
+  import type {
+    MandalaPathShape,
+    MandalaRenderOptions,
+  } from "$lib/shared/mandala/domain/mandala-types";
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
@@ -157,6 +161,15 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     onStartPositionSelected?.();
   }
 
+  function handleMandalaClick(
+    variant: MandalaRenderOptions["show"],
+    pathShape: MandalaPathShape
+  ) {
+    hapticService?.trigger("selection");
+    sequenceState.clearSelection();
+    panelState.openMandalaViewer({ variant, pathShape });
+  }
+
   function handleDurationChange(stepNumber: number, newDuration: number) {
     hapticService?.trigger("selection");
     CreateModuleState.pushUndoSnapshot(
@@ -201,6 +214,7 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
           {isTimelineMode}
           {highlightedSteps}
           onDurationChange={handleDurationChange}
+          onMandalaClick={handleMandalaClick}
           manualColumnCount={loopAlignedColumnCount}
           sequenceWord={currentDisplayWord}
         />

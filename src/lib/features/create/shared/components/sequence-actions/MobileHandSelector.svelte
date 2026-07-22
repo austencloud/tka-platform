@@ -2,34 +2,55 @@
   MobileHandSelector.svelte
 
   M3-inspired segmented button for hand selection on mobile.
-  Three connected pills (L | Both | R) in a compact horizontal group.
+  Defaults to L | Both | R and accepts a narrower option set for focused tools.
   Visual height: 32px. Touch target: 48px via invisible padding.
 -->
 <script lang="ts">
   import type { TargetHand } from "$lib/shared/create/domain/panel-types";
 
-  interface Props {
-    value: TargetHand;
-    onChange: (hand: TargetHand) => void;
+  interface HandOption {
+    hand: TargetHand;
+    label: string;
+    shortLabel: string;
   }
 
-  let { value, onChange }: Props = $props();
-
-  const options: { hand: TargetHand; label: string; shortLabel: string }[] = [
+  const defaultOptions: HandOption[] = [
     { hand: "blue", label: "Left", shortLabel: "L" },
     { hand: "both", label: "Both", shortLabel: "Both" },
     { hand: "red", label: "Right", shortLabel: "R" },
   ];
+
+  interface Props {
+    value: TargetHand;
+    onChange: (hand: TargetHand) => void;
+    options?: HandOption[];
+    ariaLabel?: string;
+    fullWidth?: boolean;
+  }
+
+  let {
+    value,
+    onChange,
+    options = defaultOptions,
+    ariaLabel = "Apply transforms to hand",
+    fullWidth = false,
+  }: Props = $props();
 </script>
 
-<div class="segmented-group" role="group" aria-label="Apply transforms to hand">
+<div
+  class="segmented-group"
+  class:full-width={fullWidth}
+  role="group"
+  aria-label={ariaLabel}
+>
   {#each options as opt}
     <button
+      type="button"
       class="segment {opt.hand}"
       class:active={value === opt.hand}
       onclick={() => onChange(opt.hand)}
       aria-pressed={value === opt.hand}
-      aria-label="Apply to {opt.label} hand"
+      aria-label={opt.label}
     >
       <span class="segment-label">{opt.shortLabel}</span>
     </button>
@@ -44,6 +65,10 @@
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     flex-shrink: 0;
+  }
+
+  .segmented-group.full-width {
+    width: 100%;
   }
 
   .segment {
@@ -61,6 +86,10 @@
     transition: all var(--duration-fast, 100ms) ease;
     /* 48px touch target via padding beyond visual height */
     position: relative;
+  }
+
+  .full-width .segment {
+    flex: 1;
   }
 
   .segment::before {

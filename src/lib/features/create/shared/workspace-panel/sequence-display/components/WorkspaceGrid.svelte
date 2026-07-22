@@ -1,7 +1,6 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
@@ -28,11 +27,14 @@
     ContextMenuEntry,
     ContextMenuState,
   } from "$lib/shared/components/context-menu/context-menu-types";
-  import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
+  import { saveMandalaToCollection } from "$lib/features/mandala/tabs/collection/services/save-mandala-to-collection";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
+  import type {
+    MandalaPathShape,
+    MandalaRenderOptions,
+  } from "$lib/shared/mandala/domain/mandala-types";
   import {
     getRotationEpoch,
     getGridRotationDirection,
@@ -64,6 +66,7 @@
     onStepDelete,
     onStepLongPress,
     onDurationChange,
+    onMandalaClick,
     getStepKey,
     getDurationDisplay,
     bluePropTypeOverride = undefined,
@@ -95,6 +98,10 @@
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
+    onMandalaClick?: (
+      variant: MandalaRenderOptions["show"],
+      pathShape: MandalaPathShape,
+    ) => void;
     getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
     bluePropTypeOverride?: PropType;
@@ -170,7 +177,7 @@
   }
 
   // --- Mandala fill ---
-  type MandalaShow = "blue" | "red" | "both";
+  type MandalaShow = MandalaRenderOptions["show"];
 
   const hasStartPosition = $derived(
     startPosition !== null &&
@@ -259,22 +266,16 @@
       id: "save-to-collection",
       label: "Save to Collection",
       icon: "fa-bookmark",
-      action: () => {
-        const simplifiedWord = simplifyRepeatedWord(sequenceWord);
-        const name = simplifiedWord || `Mandala #${mandalaCollectionState.count + 1}`;
-        mandalaCollectionState.add({
-          name,
+      action: async () => {
+        const name = await saveMandalaToCollection({
           steps: [...steps],
           variant: mandalaMenuVariant,
           bluePropType: effectiveBluePropType,
           redPropType: effectiveRedPropType,
-          // Lineage stamp: link back to the raw source sequence (spec:
-          // 2026-07-12-art-in-library-design.md Unit 3). No sequence id here —
-          // the compose canvas doesn't carry a library id for the in-progress
-          // sequence being edited.
-          ...(simplifiedWord ? { sourceWord: simplifiedWord } : {}),
+          pathShape: mandalaPathShape,
+          sequenceWord,
         });
-        toast.success(`Saved "${name}" to collection`);
+        if (name) toast.success(`Saved "${name}" to collection`);
       },
     },
     { type: "separator" },
@@ -343,6 +344,19 @@
   });
 </script>
 
+{#snippet mandalaArtwork(show: MandalaShow)}
+  <SequenceMandala
+    sequence={{ steps }}
+    mode="card-back"
+    style="stroke"
+    {show}
+    size={mandalaSize}
+    bluePropType={effectiveBluePropType}
+    redPropType={effectiveRedPropType}
+    pathShape={mandalaPathShape}
+  />
+{/snippet}
+
 <div
   class="scroll-wrapper"
   class:has-scrollbar={scrollState.hasVerticalScrollbar}
@@ -352,6 +366,7 @@
     class="grid-surface"
     class:standard={!isTimelineMode}
     class:timeline={isTimelineMode}
+    class:assemble-surface={activeMode === "assemble"}
     class:clearing={isClearing || displayState.isClearingForGeneration}
     style:--cell-size="{cellSize}px"
     style:--grid-rows={gridLayout.rows}
@@ -383,29 +398,34 @@
             />
           </div>
           {#each timelineStartMandalas as cell (cell.index)}
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="timeline-cell"
-              class:mandala-cell={cell.show !== null}
-              class:light-bg={cell.show !== null && isLightBackground}
-              use:registerMandalaCell
-              oncontextmenu={(e) => {
-                if (cell.show !== null) handleMandalaContextMenu(e, cell.show);
-              }}
-            >
-              {#if cell.show !== null}
-                <SequenceMandala
-                  sequence={{ steps }}
-                  mode="card-back"
-                  style="stroke"
-                  show={cell.show}
-                  size={mandalaSize}
-                  bluePropType={effectiveBluePropType}
-                  redPropType={effectiveRedPropType}
-                  pathShape={mandalaPathShape}
-                />
+            {#if cell.show !== null}
+              {#if onMandalaClick}
+                <button
+                  type="button"
+                  class="timeline-cell mandala-cell viewer-enabled"
+                  class:light-bg={isLightBackground}
+                  use:registerMandalaCell
+                  onclick={() => onMandalaClick(cell.show!, mandalaPathShape)}
+                  oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show!)}
+                  aria-label="Open mandala"
+                  title="Open mandala"
+                >
+                  {@render mandalaArtwork(cell.show)}
+                </button>
+              {:else}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="timeline-cell mandala-cell"
+                  class:light-bg={isLightBackground}
+                  use:registerMandalaCell
+                  oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show!)}
+                >
+                  {@render mandalaArtwork(cell.show)}
+                </div>
               {/if}
-            </div>
+            {:else}
+              <div class="timeline-cell"></div>
+            {/if}
           {/each}
         </div>
       {/if}
@@ -532,26 +552,34 @@
       {/each}
 
       {#each standardMandalaCells as cell (cell.row + "-" + cell.column)}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="mandala-cell"
-          class:light-bg={isLightBackground}
-          style:grid-row={cell.row}
-          style:grid-column={cell.column}
-          use:registerMandalaCell
-          oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
-        >
-          <SequenceMandala
-            sequence={{ steps }}
-            mode="card-back"
-            style="stroke"
-            show={cell.show}
-            size={mandalaSize}
-            bluePropType={effectiveBluePropType}
-            redPropType={effectiveRedPropType}
-            pathShape={mandalaPathShape}
-          />
-        </div>
+        {#if onMandalaClick}
+          <button
+            type="button"
+            class="mandala-cell viewer-enabled"
+            class:light-bg={isLightBackground}
+            style:grid-row={cell.row}
+            style:grid-column={cell.column}
+            use:registerMandalaCell
+            onclick={() => onMandalaClick(cell.show, mandalaPathShape)}
+            oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
+            aria-label="Open mandala"
+            title="Open mandala"
+          >
+            {@render mandalaArtwork(cell.show)}
+          </button>
+        {:else}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="mandala-cell"
+            class:light-bg={isLightBackground}
+            style:grid-row={cell.row}
+            style:grid-column={cell.column}
+            use:registerMandalaCell
+            oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
+          >
+            {@render mandalaArtwork(cell.show)}
+          </div>
+        {/if}
       {/each}
     {/if}
   </div>
@@ -650,6 +678,13 @@
     grid-auto-rows: var(--cell-size);
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  /* Assemble grows one continuous record beside the interactive grid. Filling
+     the unused cells keeps shorter final rows from cutting a staircase into
+     the canvas while the sequence is still changing. */
+  .grid-surface.standard.assemble-surface {
+    background: var(--dm-pictograph-bg, #0a0a0f);
   }
 
   /* Timeline mode: Flexbox rows */
@@ -816,13 +851,47 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    box-sizing: border-box;
+    font: inherit;
     cursor: context-menu;
     background: color-mix(
       in srgb,
       var(--dm-pictograph-bg, #0a0a0f) 50%,
       transparent
     );
-    transition: background 350ms ease;
+    transition:
+      background 350ms ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .mandala-cell.viewer-enabled {
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .mandala-cell.viewer-enabled:hover {
+      z-index: 2;
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 55%,
+        transparent
+      );
+      transform: scale(1.03);
+    }
+  }
+
+  .mandala-cell.viewer-enabled:active {
+    transform: scale(0.98);
+  }
+
+  .mandala-cell.viewer-enabled:focus-visible {
+    z-index: 2;
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .grid-surface.standard .mandala-cell {
@@ -835,6 +904,17 @@
       var(--dm-pictograph-bg, #0a0a0f) 75%,
       transparent
     );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mandala-cell {
+      transition: background 350ms ease;
+    }
+
+    .mandala-cell.viewer-enabled:hover,
+    .mandala-cell.viewer-enabled:active {
+      transform: none;
+    }
   }
 
   /* ===== Keyframes ===== */

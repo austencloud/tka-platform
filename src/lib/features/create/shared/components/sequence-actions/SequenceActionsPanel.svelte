@@ -434,6 +434,15 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     subView = null;
   }
 
+  function handleDurationPreview(result: {
+    sequence: any;
+    warnings?: readonly string[];
+  }) {
+    if (panelState.isDurationPreviewMode) {
+      panelState.setPreviewSequence(result.sequence);
+    }
+  }
+
   async function handleExtend() {
     if (!sequence || !extensionFlowCoordinator) return;
     hapticService?.trigger("selection");
@@ -742,9 +751,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
           <TurnPatternView {sequence} onApply={handleTurnPatternApply} />
         {:else if subView === "duration"}
           <DurationPatternView
-            sequence={panelState.isDurationPreviewMode
-              ? panelState.previewSequence
-              : sequence}
+            {sequence}
+            targetHand={panelState.targetHand}
+            onTargetHandChange={(hand) => panelState.setTargetHand(hand)}
+            onPreview={handleDurationPreview}
             onApply={handleDurationApply}
           />
         {:else if subView === "rotation"}

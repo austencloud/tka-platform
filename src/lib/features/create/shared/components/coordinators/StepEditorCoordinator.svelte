@@ -1,8 +1,8 @@
 <!--
   StepEditorCoordinator.svelte
 
-  Manages the Beat Editor panel that opens when clicking a pictograph.
-  Handles single-beat editing: turns, rotation, orientation, delete.
+  Manages the shared drawer opened by workspace pictographs and mandalas.
+  Handles single-beat editing and the selected mandala viewer.
 
   This coordinator is separate from SequenceActionsCoordinator because:
   - Beat Editor opens directly on pictograph click (bypasses Sequence Actions)
@@ -20,6 +20,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
   import BatchStepEditor from "../sequence-actions/BatchStepEditor.svelte";
+  import MandalaViewerPanel from "../sequence-actions/MandalaViewerPanel.svelte";
   import StepControlsZone from "../sequence-actions/StepControlsZone.svelte";
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -155,6 +156,10 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   const selectionMode = $derived<"single" | "multi">(
     isMultiSelect ? "multi" : "single"
   );
+  const mandalaSelection = $derived(panelState.mandalaViewerSelection);
+  const drawerMode = $derived<"editor" | "mandala">(
+    mandalaSelection ? "mandala" : "editor"
+  );
 
   // Re-open the editor panel when a multi-selection becomes active. Covers the
   // HMR/refresh restore path: the persisted multi set comes back but
@@ -200,9 +205,11 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     activeSequenceState.clearSelection();
   }
 
-  // The single shared drawer routes its close to the active editor's handler.
+  // The single shared drawer routes its close to the active panel's handler.
   function handleActiveClose() {
-    if (isMultiSelect) {
+    if (mandalaSelection) {
+      panelState.closeMandalaViewer();
+    } else if (isMultiSelect) {
       handleBatchClose();
     } else {
       handleClose();
@@ -458,11 +465,10 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 </script>
 
 <!--
-  ONE persistent drawer shell hosts both editors. The TOP zone (header + preview
-  vs header + grid) crossfades on a single ↔ multi switch. The BOTTOM zone
-  (blue/red turn controls) is rendered ONCE below the crossfade, so its colored
-  frames persist and MORPH their inner control instead of being rebuilt. The
-  drawer's own close routes to whichever editor is active.
+  ONE persistent drawer shell hosts the mandala viewer and both editor modes.
+  The outer crossfade morphs viewer ↔ editor; the editor's inner crossfade
+  handles single ↔ multi. Blue/red turn controls stay mounted across editor
+  modes, and the drawer close routes to whichever panel is active.
 -->
 <CreatePanelDrawer
   {isOpen}
@@ -472,56 +478,72 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   closeOnBackdrop={false}
   focusTrap={false}
   autoFocus={false}
-  ariaLabel="Step editor panel"
+  ariaLabel={mandalaSelection ? "Mandala viewer panel" : "Step editor panel"}
   onClose={handleActiveClose}
 >
-  <div class="editor-body">
-    <div class="top-zone">
-      <Crossfade key={selectionMode} fill duration={DURATION.fast}>
-        {#if isMultiSelect}
-          <BatchStepEditor
-            steps={batchSteps}
-            stepNumbers={batchStepNumbers}
-            {totalBeats}
-            bluePropTypeOverride={bluePropType}
-            redPropTypeOverride={redPropType}
-            onClose={handleBatchClose}
-            onSelectAll={handleBatchSelectAll}
-          />
-        {:else}
-          <StepEditorPanel
-            {isOpen}
-            {selectedStepNumber}
-            {selectedStepData}
-            {sequence}
-            {removingStepIndices}
-            onClose={handleClose}
-            onOrientationChange={handleOrientationChange}
-            onStepSelect={handleStepSelect}
-            onDelete={handleStepDelete}
-            onStepDataUpdate={handleStepBeatDataUpdate}
-            onPushUndoSnapshot={handlePushUndoSnapshot}
-            onDurationChange={handleDurationChange}
-            onBetaSwapToggle={handleBetaSwapToggle}
-          />
-        {/if}
-      </Crossfade>
-    </div>
+  <div class="drawer-zone">
+    <Crossfade key={drawerMode} fill duration={DURATION.fast}>
+      {#if mandalaSelection && sequence}
+        <MandalaViewerPanel
+          {sequence}
+          variant={mandalaSelection.variant}
+          pathShape={mandalaSelection.pathShape}
+          bluePropType={bluePropType}
+          redPropType={redPropType}
+          isMobile={!isSideBySideLayout}
+          onClose={handleActiveClose}
+        />
+      {:else}
+        <div class="editor-body">
+          <div class="top-zone">
+            <Crossfade key={selectionMode} fill duration={DURATION.fast}>
+              {#if isMultiSelect}
+                <BatchStepEditor
+                  steps={batchSteps}
+                  stepNumbers={batchStepNumbers}
+                  {totalBeats}
+                  bluePropTypeOverride={bluePropType}
+                  redPropTypeOverride={redPropType}
+                  onClose={handleBatchClose}
+                  onSelectAll={handleBatchSelectAll}
+                />
+              {:else}
+                <StepEditorPanel
+                  {isOpen}
+                  {selectedStepNumber}
+                  {selectedStepData}
+                  {sequence}
+                  {removingStepIndices}
+                  onClose={handleClose}
+                  onOrientationChange={handleOrientationChange}
+                  onStepSelect={handleStepSelect}
+                  onDelete={handleStepDelete}
+                  onStepDataUpdate={handleStepBeatDataUpdate}
+                  onPushUndoSnapshot={handlePushUndoSnapshot}
+                  onDurationChange={handleDurationChange}
+                  onBetaSwapToggle={handleBetaSwapToggle}
+                />
+              {/if}
+            </Crossfade>
+          </div>
 
-    <!-- Persistent, morphing blue/red turn controls (single ↔ multi). -->
-    <StepControlsZone
-      {selectionMode}
-      stacked={!isSideBySideLayout}
-      compact={!isSideBySideLayout}
-      stepData={selectedStepNumber === 0 ? null : selectedStepData}
-      onTurnsChange={handleTurnsChange}
-      onRotationChange={handleRotationChange}
-      onOpenPropSheet={handleOpenPropSheet}
-      onPathShapeChange={handlePathShapeChange}
-      onPathShapeClear={handlePathShapeClear}
-      batchSteps={batchSteps}
-      onBatchTurnsChange={handleBatchTurnsChange}
-    />
+          <!-- Persistent, morphing blue/red turn controls (single ↔ multi). -->
+          <StepControlsZone
+            {selectionMode}
+            stacked={!isSideBySideLayout}
+            compact={!isSideBySideLayout}
+            stepData={selectedStepNumber === 0 ? null : selectedStepData}
+            onTurnsChange={handleTurnsChange}
+            onRotationChange={handleRotationChange}
+            onOpenPropSheet={handleOpenPropSheet}
+            onPathShapeChange={handlePathShapeChange}
+            onPathShapeClear={handlePathShapeClear}
+            batchSteps={batchSteps}
+            onBatchTurnsChange={handleBatchTurnsChange}
+          />
+        </div>
+      {/if}
+    </Crossfade>
   </div>
 </CreatePanelDrawer>
 
@@ -535,6 +557,13 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 />
 
 <style>
+  .drawer-zone {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
   /* Drawer body = crossfading top zone (grows) + persistent bottom controls. */
   .editor-body {
     display: flex;

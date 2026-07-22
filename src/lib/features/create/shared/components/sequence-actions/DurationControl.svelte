@@ -178,7 +178,7 @@
   }
 
   .duration-control.compact .duration-label {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     letter-spacing: 0.5px;
   }
 
@@ -193,6 +193,7 @@
   }
 
   .duration-value {
+    min-height: var(--min-touch-target, 44px);
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--theme-text, #ffffff);
@@ -217,6 +218,8 @@
   }
 
   .duration-input {
+    box-sizing: border-box;
+    min-height: var(--min-touch-target, 44px);
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--theme-text, #ffffff);
@@ -318,6 +321,32 @@
   /* ============================================================================
      RESPONSIVE
      ============================================================================ */
+
+  /* The iPhone-width editor has room for one clear toolbar. Keeping the label
+     beside the controls returns an entire row to the pictograph stage. */
+  @container step-editor (min-width: 300px) {
+    .duration-control.compact {
+      flex-direction: row;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px;
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+  }
+
+  @supports not (container-type: size) {
+    @media (min-width: 300px) and (max-width: 1023px) {
+      .duration-control.compact {
+        flex-direction: row;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        margin-bottom: 0;
+        border-bottom: 0;
+      }
+    }
+  }
 
   @media (max-width: 360px) {
     .duration-row {

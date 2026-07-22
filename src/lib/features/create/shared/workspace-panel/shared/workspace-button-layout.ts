@@ -45,10 +45,10 @@ export const WORKSPACE_BUTTON_LAYOUT: WorkspaceButtonLayoutEntry[] = [
 
 /** Buttons in a zone, in reading order. */
 export function workspaceButtonsInZone(
-  zone: WorkspaceButtonZone,
+  zone: WorkspaceButtonZone
 ): WorkspaceButtonLayoutEntry[] {
   return WORKSPACE_BUTTON_LAYOUT.filter((b) => b.zone === zone).sort(
-    (a, b) => a.order - b.order,
+    (a, b) => a.order - b.order
   );
 }
 
@@ -74,7 +74,7 @@ export const WORKSPACE_BUTTON_ICON: Record<
 > = {
   undo: { icon: "undo-svg", iconType: "svg" },
   clear: { icon: "fa-eraser", iconType: "fa" },
-  view: { icon: "fa-play", iconType: "fa" },
+  view: { icon: "fa-expand", iconType: "fa" },
   "sequence-actions": { icon: "fa-tools", iconType: "fa" },
   save: { icon: "fa-bookmark", iconType: "fa" },
   "step-editor": { icon: "fa-hand-pointer", iconType: "fa" },

@@ -1,8 +1,9 @@
 <!--
   HandSelector.svelte
 
-  Global hand-target selector for the SequenceActionsPanel ("Apply To").
-  Selects which hand(s) transforms apply to: Left, Both, or Right.
+  Hand/color selector shared by Sequence Actions and the mandala viewer.
+  Defaults to Left / Both / Right; callers can supply labels for the same
+  blue / purple / red visual states.
 
   Segmented track with a sliding indicator that recolors per hand
   (Left=blue, Both=purple, Right=red), matching the prop colors and the
@@ -15,22 +16,32 @@
   interface Props {
     value: TargetHand;
     onChange: (hand: TargetHand) => void;
+    sectionLabel?: string;
+    labelId?: string;
+    labels?: Record<TargetHand, string>;
   }
 
-  let { value, onChange }: Props = $props();
+  let {
+    value,
+    onChange,
+    sectionLabel = "Apply To",
+    labelId = "apply-to-label",
+    labels = { blue: "Left", both: "Both", red: "Right" },
+  }: Props = $props();
 
-  // blue=Left, both=Both, red=Right — fixed order drives the indicator position.
+  // The fixed color order drives the indicator position; labels can describe
+  // either hands (Left/Both/Right) or the rendered mandala (Blue/Purple/Red).
   const ORDER: TargetHand[] = ["blue", "both", "red"];
   const index = $derived(Math.max(0, ORDER.indexOf(value)));
 </script>
 
 <div class="hand-selector-section">
-  <span class="section-label" id="apply-to-label">Apply To</span>
+  <span class="section-label" id={labelId}>{sectionLabel}</span>
 
   <div
     class="seg-track sel-{value}"
     role="radiogroup"
-    aria-labelledby="apply-to-label"
+    aria-labelledby={labelId}
     style="--index: {index}"
   >
     <span class="indicator" aria-hidden="true"></span>
@@ -42,7 +53,7 @@
       aria-checked={value === "blue"}
       onclick={() => onChange("blue")}
     >
-      <span class="dot blue"></span>Left
+      <span class="dot blue"></span>{labels.blue}
     </button>
 
     <button
@@ -52,7 +63,7 @@
       aria-checked={value === "both"}
       onclick={() => onChange("both")}
     >
-      Both
+      {labels.both}
     </button>
 
     <button
@@ -62,7 +73,7 @@
       aria-checked={value === "red"}
       onclick={() => onChange("red")}
     >
-      <span class="dot red"></span>Right
+      <span class="dot red"></span>{labels.red}
     </button>
   </div>
 </div>
