@@ -35,6 +35,9 @@
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
   import { sceneLoadingPlaybackTransition } from "../domain/scene-loading-playback";
   import { selectBeatPlaneStep } from "../domain/beat-plane-step-selection";
+  import { getQualityTierDetector } from "../effects/quality/get-quality-tier-detector";
+  import { createAdaptiveQualityState } from "../state/adaptive-quality-state.svelte";
+  import { setAdaptiveQualityContext } from "../context/adaptive-quality-context";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -89,6 +92,10 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
+  // Provide adaptive quality (DPR/shadows step down when FPS sags) to the scene
+  // subtree. PerfMonitor drives it; ScenePostProcessing/scenes read it back.
+  const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
+  setAdaptiveQualityContext(adaptiveQuality);
   const playbackAdapter = $derived.by(() =>
     createAvatarPlaybackAdapter(
       () => viewer3DState.performerManager.performers[0] ?? null,
@@ -247,6 +254,8 @@
   {#if avatarState && sequenceData}
     {#if canvasMountReady}
       <Canvas
+        dpr={adaptiveQuality.pixelRatio}
+        shadows={adaptiveQuality.config.enableShadows}
         createRenderer={(canvas) =>
           new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
       >
