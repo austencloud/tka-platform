@@ -294,7 +294,6 @@
   let WarningBannerComp = $state<Component | null>(null);
   let EmailVerificationBannerComp = $state<Component | null>(null);
   let FullscreenPromptComp = $state<Component | null>(null);
-  let InAppBrowserPromptComp = $state<Component | null>(null);
   let ReportUserModalComp = $state<Component | null>(null);
   let ModalUrlRestorerComp = $state<Component | null>(null);
 
@@ -304,11 +303,15 @@
   // Update viewport height on window resize and visualViewport changes
   function updateViewportHeight() {
     if (typeof window !== "undefined") {
-      const height = window.visualViewport?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty(
-        "--viewport-height",
-        `${height}px`
-      );
+      const viewport = window.visualViewport;
+      const height = viewport?.height ?? window.innerHeight;
+      const offsetTop = viewport?.offsetTop ?? 0;
+      const offsetBottom = Math.max(0, window.innerHeight - height - offsetTop);
+      const rootStyle = document.documentElement.style;
+
+      rootStyle.setProperty("--viewport-height", `${height}px`);
+      rootStyle.setProperty("--viewport-offset-top", `${offsetTop}px`);
+      rootStyle.setProperty("--viewport-offset-bottom", `${offsetBottom}px`);
     }
   }
 
@@ -354,27 +357,6 @@
 
     // Landing doesn't need DI container or auth - mark ready immediately
     containerReady = true;
-
-    // The in-app browser banner is not app-shell chrome. /q/* QR scans and
-    // /sequence/* share links are landing-mode routes (config/domains.ts
-    // PUBLIC_PATH_PREFIXES), and those are precisely the links that get pasted
-    // into an Instagram DM. This component only ever loaded in app mode, so the
-    // sequence-viewer banner branch it used to carry could never actually
-    // render. Idle-deferred: it is a warning bar, never on the critical path.
-    const loadIabPrompt = () => {
-      import("$lib/shared/auth/components/InAppBrowserPrompt.svelte")
-        .then(({ default: component }) => {
-          InAppBrowserPromptComp = component;
-        })
-        .catch((error) =>
-          console.warn("In-app browser prompt failed:", error)
-        );
-    };
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(loadIabPrompt, { timeout: 3000 });
-    } else {
-      setTimeout(loadIabPrompt, 0);
-    }
 
     return () => {
       if (window.visualViewport) {
@@ -606,15 +588,13 @@
         import("$lib/features/moderation/components/WarningBanner.svelte"),
         import("$lib/shared/auth/components/EmailVerificationBanner.svelte"),
         import("$lib/shared/components/FullscreenPrompt.svelte"),
-        import("$lib/shared/auth/components/InAppBrowserPrompt.svelte"),
         import("$lib/features/moderation/components/ReportUserModal.svelte"),
         import("$lib/shared/application/components/ModalUrlRestorer.svelte"),
       ])
-        .then(([warning, email, full, inApp, report, modal]) => {
+        .then(([warning, email, full, report, modal]) => {
           WarningBannerComp = warning.default;
           EmailVerificationBannerComp = email.default;
           FullscreenPromptComp = full.default;
-          InAppBrowserPromptComp = inApp.default;
           ReportUserModalComp = report.default;
           ModalUrlRestorerComp = modal.default;
         })
@@ -773,10 +753,6 @@
 
   {#if containerReady && FullscreenPromptComp}
     <FullscreenPromptComp />
-  {/if}
-
-  {#if containerReady && InAppBrowserPromptComp}
-    <InAppBrowserPromptComp />
   {/if}
 
   {#if containerReady && ReportUserModalComp}
