@@ -87,12 +87,20 @@ export class StartPositionDeriver {
 
   getOrDeriveStartPosition(
     sequence: SequenceData
-  ): StartPositionData | StepData | null {
-    if (sequence.startPosition) {
+  ): StartPositionData | null {
+    if (
+      sequence.startPosition &&
+      isVisibleMotion(sequence.startPosition.motions?.[MotionColor.BLUE]) &&
+      isVisibleMotion(sequence.startPosition.motions?.[MotionColor.RED])
+    ) {
       return sequence.startPosition;
     }
 
-    if (sequence.startingPosition) {
+    if (
+      sequence.startingPosition &&
+      isVisibleMotion(sequence.startingPosition.motions?.[MotionColor.BLUE]) &&
+      isVisibleMotion(sequence.startingPosition.motions?.[MotionColor.RED])
+    ) {
       return sequence.startingPosition;
     }
 

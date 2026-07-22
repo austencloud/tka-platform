@@ -57,10 +57,15 @@
   const saveMenuItems = $derived<ContextMenuEntry[]>(
     onSaveTunnel
       ? [
-          { id: "save-tunnel", label: "Save tunnel", icon: "fa-bookmark", action: onSaveTunnel },
+          {
+            id: "save-tunnel",
+            label: "Save tunnel",
+            icon: "fa-bookmark",
+            action: onSaveTunnel,
+          },
           { type: "separator" },
         ]
-      : [],
+      : []
   );
 
   // An art view animates on its own clock (like the mandala) — it must not
@@ -91,7 +96,7 @@
   // WCAG 2.3.3). A slow drift keeps the kaleidoscope legible without the spin.
   let reducedMotion = $state(
     typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
   $effect(() => {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -102,7 +107,9 @@
     return () => mql.removeEventListener("change", handler);
   });
   const REDUCED_MOTION_DAMP = 0.15;
-  const effSpeed = $derived(reducedMotion ? speed * REDUCED_MOTION_DAMP : speed);
+  const effSpeed = $derived(
+    reducedMotion ? speed * REDUCED_MOTION_DAMP : speed
+  );
 
   onMount(() => {
     let raf = 0;
@@ -126,12 +133,14 @@
   // underline / glyph highlight expect a value inside one sequence length).
   const displayStep = $derived((stepCount > 0 ? phase % stepCount : 0) + 1);
   const base = $derived(controller.basePropsAt(samplingStep));
-  const additionalLayers = $derived(controller.additionalLayersAt(samplingStep));
+  const additionalLayers = $derived(
+    controller.additionalLayersAt(samplingStep)
+  );
 
   // Reuse the sidebar's chosen effect, applied uniformly across every layer.
   const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");
   const tipEffectMap = $derived<TipEffectMap | undefined>(
-    activeEffect === "none" ? undefined : { "*": { effect: activeEffect } },
+    activeEffect === "none" ? undefined : { "*": { effect: activeEffect } }
   );
 
   // The Art panel's Trail dials are split across two stores: tracking / length /
@@ -203,5 +212,8 @@
     align-items: center;
     justify-content: center;
   }
-  .stage :global(canvas) { max-width: 100%; max-height: 100%; }
+  .stage :global(canvas) {
+    max-width: 100%;
+    max-height: 100%;
+  }
 </style>

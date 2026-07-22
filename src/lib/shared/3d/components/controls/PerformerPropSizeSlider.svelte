@@ -97,7 +97,9 @@
     border: 2.5px solid rgba(20, 22, 32, 1);
     cursor: pointer;
     box-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
-    transition: box-shadow 180ms, transform 180ms;
+    transition:
+      box-shadow 180ms,
+      transform 180ms;
   }
   .size-slider::-webkit-slider-thumb:hover {
     box-shadow: 0 0 16px rgba(96, 165, 250, 0.55);

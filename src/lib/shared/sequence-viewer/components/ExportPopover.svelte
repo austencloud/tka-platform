@@ -34,32 +34,62 @@
   function setResolution(value: VideoResolution): void {
     const previous = opts.videoResolution;
     opts.setVideoResolution(value);
-    reportViewerControlChange(onSettingChange, "viewer_3d_export", "resolution", previous, value);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_export",
+      "resolution",
+      previous,
+      value
+    );
   }
 
   function setQuality(value: VideoQuality): void {
     const previous = opts.videoQuality;
     opts.setVideoQuality(value);
-    reportViewerControlChange(onSettingChange, "viewer_3d_export", "quality", previous, value);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_export",
+      "quality",
+      previous,
+      value
+    );
   }
 
   function setFps(value: VideoFps): void {
     const previous = opts.videoFps;
     opts.setVideoFps(value);
-    reportViewerControlChange(onSettingChange, "viewer_3d_export", "fps", previous, value);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_export",
+      "fps",
+      previous,
+      value
+    );
   }
 
   function toggleAdvanced(): void {
     const previous = advancedOpen;
     advancedOpen = !advancedOpen;
-    reportViewerControlChange(onSettingChange, "viewer_3d_export", "advanced_open", previous, advancedOpen);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_export",
+      "advanced_open",
+      previous,
+      advancedOpen
+    );
   }
 
   function changeLoopCount(delta: number): void {
     const previous = opts.videoLoopCount;
     const value = previous + delta;
     opts.setVideoLoopCount(value);
-    reportViewerControlChange(onSettingChange, "viewer_3d_export", "loop_count", previous, value);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_export",
+      "loop_count",
+      previous,
+      value
+    );
   }
 </script>
 
@@ -156,25 +186,41 @@
     gap: 14px;
   }
 
-  .row { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .row-label {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-    text-transform: uppercase; color: rgba(255,255,255,0.52);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.52);
   }
 
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
   .chip {
-    flex: 1 1 auto; min-width: 56px;
+    flex: 1 1 auto;
+    min-width: 56px;
     padding: 8px 10px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
-    color: rgba(255,255,255,0.72);
-    font-size: 12px; font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 140ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
-  .chip:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)); color: rgba(255,255,255,0.95); }
+  .chip:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: rgba(255, 255, 255, 0.95);
+  }
   .chip.active {
     background: color-mix(in srgb, #4a9eff 22%, transparent);
     border-color: color-mix(in srgb, #4a9eff 55%, transparent);
@@ -182,41 +228,71 @@
   }
 
   .advanced-toggle {
-    background: none; border: none;
-    padding: 4px 0; margin-top: 2px;
-    color: rgba(255,255,255,0.58);
-    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    margin-top: 2px;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     cursor: pointer;
-    display: flex; align-items: center; gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     align-self: flex-start;
   }
-  .advanced-toggle:hover { color: rgba(255,255,255,0.92); }
-  .advanced-toggle i { font-size: 10px; width: 10px; }
+  .advanced-toggle:hover {
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .advanced-toggle i {
+    font-size: 10px;
+    width: 10px;
+  }
 
-  .advanced { display: flex; flex-direction: column; gap: 14px; }
+  .advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
 
   .stepper {
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 4px;
     align-self: flex-start;
   }
   .step-btn {
-    width: 28px; height: 28px;
-    background: transparent; border: none; border-radius: 8px;
-    color: rgba(255,255,255,0.82);
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.82);
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 11px;
   }
-  .step-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
-  .step-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .step-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .step-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
   .step-value {
-    min-width: 24px; text-align: center;
-    color: rgba(255,255,255,0.95);
-    font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+    min-width: 24px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 </style>

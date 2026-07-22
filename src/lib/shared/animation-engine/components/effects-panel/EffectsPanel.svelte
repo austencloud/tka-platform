@@ -1,10 +1,18 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { isEffectId, type EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import {
+    isEffectId,
+    type EffectId,
+  } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
-  import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
+  import {
+    EFFECT_COLORS,
+    EFFECT_LABELS,
+    EFFECTS,
+    getRegistration,
+  } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
   import { matchPresetId, valuesEqual } from "./presets/match-preset";
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
@@ -50,9 +58,17 @@
   }
 
   const {
-    bpm, onBpmChange, isPlaying, onPlaybackToggle,
-    onStepForward, onStepBackward, onHalfStepForward, onHalfStepBackward,
-    showPlayback = true, showTransport = true, showExportControls = false,
+    bpm,
+    onBpmChange,
+    isPlaying,
+    onPlaybackToggle,
+    onStepForward,
+    onStepBackward,
+    onHalfStepForward,
+    onHalfStepBackward,
+    showPlayback = true,
+    showTransport = true,
+    showExportControls = false,
     layout = "sidebar",
     children,
     onSettingChange,
@@ -75,7 +91,10 @@
   // store-agnostic. Trails' tailLength+trackingMode live in animationSettings.trail
   // (canvas2d-translator reads them there); Fire's colors are a flame-color pair
   // needing hex↔flame conversion + a colorBlend side-effect.
-  type TuneOverrides = Record<string, { get: () => unknown; set: (v: unknown) => void }>;
+  type TuneOverrides = Record<
+    string,
+    { get: () => unknown; set: (v: unknown) => void }
+  >;
   const tuneOverrides = $derived.by<TuneOverrides | undefined>(() => {
     if (activeEffect === "trails") {
       const o: TuneOverrides = {
@@ -123,16 +142,29 @@
   const activePresetId = $derived.by(() => {
     if (activeEffect === "none" || !registration) return null;
     const fx = activeEffect as EffectId;
-    const effectConfig = effectsConfigState.effect(fx) as unknown as Record<string, unknown>;
+    const effectConfig = effectsConfigState.effect(fx) as unknown as Record<
+      string,
+      unknown
+    >;
     // 1. The factory default look → the synthetic Default chip.
-    const factory = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[fx];
+    const factory = (
+      DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>
+    )[fx];
     if (valuesEqual(effectConfig, factory)) return DEFAULT_CHIP_ID;
     // 2. A named preset whose static patch the live config matches.
     const matched = matchPresetId(registration.presetGroup, effectConfig);
     if (matched) return matched;
     // 3. Your captured custom look → the synthetic Custom chip.
-    const custom = effectsConfigState.personalDefault(fx) as unknown as Record<string, unknown> | null;
-    if (custom && effectsConfigState.hasCustom(fx) && valuesEqual(effectConfig, custom)) return CUSTOM_CHIP_ID;
+    const custom = effectsConfigState.personalDefault(fx) as unknown as Record<
+      string,
+      unknown
+    > | null;
+    if (
+      custom &&
+      effectsConfigState.hasCustom(fx) &&
+      valuesEqual(effectConfig, custom)
+    )
+      return CUSTOM_CHIP_ID;
     return null;
   });
 
@@ -141,7 +173,9 @@
     return registration.presetGroup.getSummary(effectsConfigState);
   });
 
-  const primarySpec = $derived<PrimaryParamSpec | undefined>(registration?.primaryParam);
+  const primarySpec = $derived<PrimaryParamSpec | undefined>(
+    registration?.primaryParam
+  );
   const primaryValue = $derived.by(() => {
     if (!primarySpec) return 0;
     return primarySpec.get(effectsConfigState);
@@ -158,9 +192,7 @@
     onSettingChange?.(setting, previousValue, value, coalesce);
   }
 
-  function primitiveSnapshot(
-    effectId: EffectId
-  ): Record<string, SettingValue> {
+  function primitiveSnapshot(effectId: EffectId): Record<string, SettingValue> {
     const current = effectsConfigState.effect(effectId) as unknown as Record<
       string,
       unknown
@@ -219,14 +251,16 @@
     }
 
     const current = primitiveSnapshot(activeEffect);
-    if (
-      customizationSnapshot &&
-      observedCustomizationEffect === activeEffect
-    ) {
+    if (customizationSnapshot && observedCustomizationEffect === activeEffect) {
       for (const [field, value] of Object.entries(current)) {
         const previous = customizationSnapshot[field];
         if (previous !== undefined && previous !== value) {
-          reportSetting(`tuning_${activeEffect}_${field}`, previous, value, true);
+          reportSetting(
+            `tuning_${activeEffect}_${field}`,
+            previous,
+            value,
+            true
+          );
         }
       }
     }
@@ -262,7 +296,7 @@
       ? "customize"
       : detailOpen && activeEffect !== "none" && registration
         ? "detail"
-        : "picker",
+        : "picker"
   );
 
   function handleTileTap(effectId: string): void {
@@ -296,22 +330,26 @@
     const previous = activePresetId ?? "customized";
     // The Default chip resets to the factory default look.
     if (presetId === DEFAULT_CHIP_ID) {
-      if (isEffectId(activeEffect)) effectsConfigState.resetToFactory(activeEffect);
+      if (isEffectId(activeEffect))
+        effectsConfigState.resetToFactory(activeEffect);
       syncCustomizationSnapshot();
       reportSetting(`preset_${effectId}`, previous, presetId);
       return;
     }
     // The Custom chip restores your auto-captured custom look.
     if (presetId === CUSTOM_CHIP_ID) {
-      if (isEffectId(activeEffect)) effectsConfigState.restorePersonalDefault(activeEffect);
+      if (isEffectId(activeEffect))
+        effectsConfigState.restorePersonalDefault(activeEffect);
       syncCustomizationSnapshot();
       reportSetting(`preset_${effectId}`, previous, presetId);
       return;
     }
     const group = registration.presetGroup;
-    const preset = group.presets.find(p => p.id === presetId);
+    const preset = group.presets.find((p) => p.id === presetId);
     if (!preset) return;
-    const patch = preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {});
+    const patch = preset.resolvePatch
+      ? preset.resolvePatch()
+      : (preset.patch ?? {});
     effectsConfigState.applyPreset(group.effectType, preset.id, patch);
     syncCustomizationSnapshot();
     reportSetting(`preset_${effectId}`, previous, presetId);
@@ -330,7 +368,9 @@
   // ── Custom chip (your auto-captured look) ────────────────────────────────
   /** Disabled until the user has captured a custom look (first manual edit). */
   const customDisabled = $derived(
-    activeEffect === "none" || !isEffectId(activeEffect) || !effectsConfigState.hasCustom(activeEffect as EffectId),
+    activeEffect === "none" ||
+      !isEffectId(activeEffect) ||
+      !effectsConfigState.hasCustom(activeEffect as EffectId)
   );
   /** Trail's Custom chip shows the captured custom blue/red dots; other effects use accent. */
   const customColors = $derived.by(() => {
@@ -389,11 +429,17 @@
   <div class="effects-panel">
     {#if showPlayback}
       <div class="sb-section">
-        <TempoControl {bpm} {onBpmChange} showPresets={false} showPractice={false} presetsMode="popover" />
+        <TempoControl
+          {bpm}
+          {onBpmChange}
+          showPresets={false}
+          showPractice={false}
+          presetsMode="popover"
+        />
         {#if showTransport}
           <TransportControls
             {isPlaying}
-            onPlaybackToggle={onPlaybackToggle}
+            {onPlaybackToggle}
             onStepHalfBeatForward={onHalfStepForward}
             onStepHalfBeatBackward={onHalfStepBackward}
             onStepFullBeatForward={onStepForward}
@@ -405,7 +451,11 @@
 
     <div class="sb-section">
       <span class="sb-label">EFFECTS</span>
-      <EffectSelector {activeEffect} onSelect={handleEffectSelect} onPrewarm={handleEffectPrewarm} />
+      <EffectSelector
+        {activeEffect}
+        onSelect={handleEffectSelect}
+        onPrewarm={handleEffectPrewarm}
+      />
     </div>
 
     {#if activeEffect !== "none" && !customizeOpen && registration}
@@ -436,7 +486,11 @@
     {#if children}{@render children()}{/if}
 
     <div class="sb-section sb-footer">
-      <button type="button" class="reset-all-btn" onclick={() => (confirmResetAllOpen = true)}>
+      <button
+        type="button"
+        class="reset-all-btn"
+        onclick={() => (confirmResetAllOpen = true)}
+      >
         Reset all effects to original
       </button>
     </div>
@@ -454,10 +508,17 @@
                a single ~44px row. On a phone tray every reclaimed px goes to the
                canvas above. -->
           <div class="tune-header">
-            <button type="button" class="tune-back" onclick={handleCustomizeClose} aria-label="Back to {EFFECT_LABELS[activeEffect] ?? activeEffect}">
+            <button
+              type="button"
+              class="tune-back"
+              onclick={handleCustomizeClose}
+              aria-label="Back to {EFFECT_LABELS[activeEffect] ?? activeEffect}"
+            >
               <i class="fas fa-arrow-left" aria-hidden="true"></i>
             </button>
-            <span class="tune-name">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+            <span class="tune-name"
+              >{EFFECT_LABELS[activeEffect] ?? activeEffect}</span
+            >
             <div class="tune-anchors">
               <button
                 type="button"
@@ -502,28 +563,57 @@
       {:else if stripView === "detail" && registration && activeEffect !== "none"}
         <div class="drill-view">
           <div class="detail-head">
-            <button type="button" class="back-btn" onclick={() => (detailOpen = false)} aria-label="All effects">
+            <button
+              type="button"
+              class="back-btn"
+              onclick={() => (detailOpen = false)}
+              aria-label="All effects"
+            >
               <i class="fas fa-arrow-left" aria-hidden="true"></i>
             </button>
-            <i class="fas {EFFECTS.find((e) => e.id === activeEffect)?.icon} detail-icon" style:color={EFFECT_COLORS[activeEffect]} aria-hidden="true"></i>
-            <span class="detail-name">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+            <i
+              class="fas {EFFECTS.find((e) => e.id === activeEffect)
+                ?.icon} detail-icon"
+              style:color={EFFECT_COLORS[activeEffect]}
+              aria-hidden="true"
+            ></i>
+            <span class="detail-name"
+              >{EFFECT_LABELS[activeEffect] ?? activeEffect}</span
+            >
           </div>
 
-          <div class="preset-wrap" role="radiogroup" aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets">
+          <div
+            class="preset-wrap"
+            role="radiogroup"
+            aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
+          >
             {#each registration.presetGroup.presets as preset (preset.id)}
               {@const isActive = activePresetId === preset.id}
-              <button type="button" class="preset-chip" class:active={isActive} role="radio" aria-checked={isActive} onclick={() => handlePresetSelect(preset.id)}>
+              <button
+                type="button"
+                class="preset-chip"
+                class:active={isActive}
+                role="radio"
+                aria-checked={isActive}
+                onclick={() => handlePresetSelect(preset.id)}
+              >
                 {#if preset.previewColor === "rainbow"}
                   <span class="swatch rainbow" aria-hidden="true"></span>
                 {:else if preset.previewColor === "custom"}
                   <span class="swatch custom" aria-hidden="true"></span>
                 {:else if preset.previewColor2}
                   <span class="swatch dual" aria-hidden="true">
-                    <span class="half" style:background={preset.previewColor}></span>
-                    <span class="half" style:background={preset.previewColor2}></span>
+                    <span class="half" style:background={preset.previewColor}
+                    ></span>
+                    <span class="half" style:background={preset.previewColor2}
+                    ></span>
                   </span>
                 {:else}
-                  <span class="swatch" style:background={preset.previewColor} aria-hidden="true"></span>
+                  <span
+                    class="swatch"
+                    style:background={preset.previewColor}
+                    aria-hidden="true"
+                  ></span>
                 {/if}
                 {preset.name}
               </button>
@@ -533,10 +623,25 @@
           {#if primarySpec}
             <div class="slider-row">
               <span class="slider-label">{primarySpec.label}</span>
-              <input type="range" class="slider" min={primarySpec.min} max={primarySpec.max} step={primarySpec.step} value={primaryValue} oninput={handleSliderInput} aria-label="{primarySpec.label} for {EFFECT_LABELS[activeEffect] ?? activeEffect}" />
+              <input
+                type="range"
+                class="slider"
+                min={primarySpec.min}
+                max={primarySpec.max}
+                step={primarySpec.step}
+                value={primaryValue}
+                oninput={handleSliderInput}
+                aria-label="{primarySpec.label} for {EFFECT_LABELS[
+                  activeEffect
+                ] ?? activeEffect}"
+              />
               <span class="slider-val">{primarySpec.format(primaryValue)}</span>
             </div>
-            <button type="button" class="more-btn" onclick={handleCustomizeOpen}>
+            <button
+              type="button"
+              class="more-btn"
+              onclick={handleCustomizeOpen}
+            >
               <span>More tuning…</span>
               <i class="fas fa-chevron-right" aria-hidden="true"></i>
             </button>
@@ -556,17 +661,34 @@
               onclick={handleOffTap}
             >
               <i class="fas fa-ban" aria-hidden="true"></i>
-              <span>{activeEffect === "none" ? "Off" : `Turn off ${EFFECT_LABELS[activeEffect] ?? ""}`}</span>
+              <span
+                >{activeEffect === "none"
+                  ? "Off"
+                  : `Turn off ${EFFECT_LABELS[activeEffect] ?? ""}`}</span
+              >
             </button>
           </div>
           <div class="fx-picker" role="radiogroup" aria-label="Select effect">
             {#each EFFECTS as e (e.id)}
               {@const isActive = activeEffect === e.id}
-              <button type="button" class="fx-tile" class:active={isActive} role="radio" aria-checked={isActive} aria-label={isActive ? `Tune ${e.label}` : e.label} style:--fx={e.color} onpointerenter={() => handleEffectPrewarm(e.id)} onpointerdown={() => handleEffectPrewarm(e.id)} onclick={() => handleTileTap(e.id)}>
+              <button
+                type="button"
+                class="fx-tile"
+                class:active={isActive}
+                role="radio"
+                aria-checked={isActive}
+                aria-label={isActive ? `Tune ${e.label}` : e.label}
+                style:--fx={e.color}
+                onpointerenter={() => handleEffectPrewarm(e.id)}
+                onpointerdown={() => handleEffectPrewarm(e.id)}
+                onclick={() => handleTileTap(e.id)}
+              >
                 <i class="fas {e.icon}" aria-hidden="true"></i>
                 <span>{e.label}</span>
                 {#if isActive}
-                  <span class="tune-badge" aria-hidden="true"><i class="fas fa-sliders"></i></span>
+                  <span class="tune-badge" aria-hidden="true"
+                    ><i class="fas fa-sliders"></i></span
+                  >
                 {/if}
               </button>
             {/each}
@@ -579,10 +701,17 @@
   <!-- Desktop popover layout (3D controls): everything on one surface. -->
   <div class="mep">
     {#if customizeOpen && CustomizeComponent}
-      <button type="button" class="back-row" onclick={handleCustomizeClose} aria-label="Back to effect presets">
+      <button
+        type="button"
+        class="back-row"
+        onclick={handleCustomizeClose}
+        aria-label="Back to effect presets"
+      >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         <span class="back-row-title">
-          <span class="back-row-label">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+          <span class="back-row-label"
+            >{EFFECT_LABELS[activeEffect] ?? activeEffect}</span
+          >
           <span class="back-row-sub">More tuning</span>
         </span>
       </button>
@@ -592,7 +721,18 @@
       <div class="fx-strip grid" role="radiogroup" aria-label="Select effect">
         {#each EFFECTS as e (e.id)}
           {@const isActive = activeEffect === e.id}
-          <button type="button" class="fx-tile" class:active={isActive} role="radio" aria-checked={isActive} aria-label={e.label} style:--fx={e.color} onpointerenter={() => handleEffectPrewarm(e.id)} onpointerdown={() => handleEffectPrewarm(e.id)} onclick={() => handleEffectSelect(e.id)}>
+          <button
+            type="button"
+            class="fx-tile"
+            class:active={isActive}
+            role="radio"
+            aria-checked={isActive}
+            aria-label={e.label}
+            style:--fx={e.color}
+            onpointerenter={() => handleEffectPrewarm(e.id)}
+            onpointerdown={() => handleEffectPrewarm(e.id)}
+            onclick={() => handleEffectSelect(e.id)}
+          >
             <i class="fas {e.icon}" aria-hidden="true"></i>
             <span>{e.label}</span>
             {#if isActive}<span class="dot" aria-hidden="true"></span>{/if}
@@ -601,21 +741,38 @@
       </div>
 
       {#if activeEffect !== "none" && registration}
-        <div class="preset-strip" role="radiogroup" aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets">
+        <div
+          class="preset-strip"
+          role="radiogroup"
+          aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
+        >
           {#each registration.presetGroup.presets as preset (preset.id)}
             {@const isActive = activePresetId === preset.id}
-            <button type="button" class="preset-chip" class:active={isActive} role="radio" aria-checked={isActive} onclick={() => handlePresetSelect(preset.id)}>
+            <button
+              type="button"
+              class="preset-chip"
+              class:active={isActive}
+              role="radio"
+              aria-checked={isActive}
+              onclick={() => handlePresetSelect(preset.id)}
+            >
               {#if preset.previewColor === "rainbow"}
                 <span class="swatch rainbow" aria-hidden="true"></span>
               {:else if preset.previewColor === "custom"}
                 <span class="swatch custom" aria-hidden="true"></span>
               {:else if preset.previewColor2}
                 <span class="swatch dual" aria-hidden="true">
-                  <span class="half" style:background={preset.previewColor}></span>
-                  <span class="half" style:background={preset.previewColor2}></span>
+                  <span class="half" style:background={preset.previewColor}
+                  ></span>
+                  <span class="half" style:background={preset.previewColor2}
+                  ></span>
                 </span>
               {:else}
-                <span class="swatch" style:background={preset.previewColor} aria-hidden="true"></span>
+                <span
+                  class="swatch"
+                  style:background={preset.previewColor}
+                  aria-hidden="true"
+                ></span>
               {/if}
               {preset.name}
             </button>
@@ -625,7 +782,18 @@
         {#if primarySpec}
           <div class="slider-row">
             <span class="slider-label">{primarySpec.label}</span>
-            <input type="range" class="slider" min={primarySpec.min} max={primarySpec.max} step={primarySpec.step} value={primaryValue} oninput={handleSliderInput} aria-label="{primarySpec.label} for {EFFECT_LABELS[activeEffect] ?? activeEffect}" />
+            <input
+              type="range"
+              class="slider"
+              min={primarySpec.min}
+              max={primarySpec.max}
+              step={primarySpec.step}
+              value={primaryValue}
+              oninput={handleSliderInput}
+              aria-label="{primarySpec.label} for {EFFECT_LABELS[
+                activeEffect
+              ] ?? activeEffect}"
+            />
             <span class="slider-val">{primarySpec.format(primaryValue)}</span>
           </div>
           <button type="button" class="more-btn" onclick={handleCustomizeOpen}>
@@ -706,8 +874,16 @@
 
   .reset-all-btn:hover {
     color: var(--semantic-warning, #f59e0b);
-    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 45%, transparent);
-    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 8%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-warning, #f59e0b) 45%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f59e0b) 8%,
+      transparent
+    );
   }
 
   .reset-all-btn:focus-visible {
@@ -814,7 +990,11 @@
     color: var(--theme-text, #fff);
   }
   .off-chip.active {
-    background: color-mix(in srgb, var(--fx-accent) 18%, var(--theme-panel-bg, rgba(20, 22, 32, 0.6)));
+    background: color-mix(
+      in srgb,
+      var(--fx-accent) 18%,
+      var(--theme-panel-bg, rgba(20, 22, 32, 0.6))
+    );
     border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
     color: var(--fx-accent-text);
   }
@@ -854,7 +1034,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--fx) 30%, var(--theme-panel-bg, rgba(20, 22, 32, 0.9)));
+    background: color-mix(
+      in srgb,
+      var(--fx) 30%,
+      var(--theme-panel-bg, rgba(20, 22, 32, 0.9))
+    );
     box-shadow: 0 0 6px color-mix(in srgb, var(--fx) 60%, transparent);
   }
   .fx-tile .tune-badge i {
@@ -952,7 +1136,11 @@
     line-height: 1;
   }
   .fx-tile.active {
-    background: color-mix(in srgb, var(--fx) 22%, var(--theme-panel-bg, rgba(20, 22, 32, 0.6)));
+    background: color-mix(
+      in srgb,
+      var(--fx) 22%,
+      var(--theme-panel-bg, rgba(20, 22, 32, 0.6))
+    );
     border-color: color-mix(in srgb, var(--fx) 55%, transparent);
     color: var(--fx);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--fx) 30%, transparent);
@@ -986,7 +1174,11 @@
     transition: all 150ms ease;
   }
   .preset-chip.active {
-    background: color-mix(in srgb, var(--fx-accent) 18%, var(--theme-panel-bg, rgba(20, 22, 32, 0.6)));
+    background: color-mix(
+      in srgb,
+      var(--fx-accent) 18%,
+      var(--theme-panel-bg, rgba(20, 22, 32, 0.6))
+    );
     border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
     color: var(--fx-accent-text);
   }

@@ -63,7 +63,6 @@
       viewer.performerManager.performers.length
     );
   }
-
 </script>
 
 {#if performers.length >= 1}
@@ -142,7 +141,6 @@
     background: rgba(255, 255, 255, 0.06);
   }
 
-
   .spine-chip i {
     font-size: 18px;
   }
@@ -154,10 +152,19 @@
 
   /* All chip */
   .all-chip[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 50%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
+    box-shadow: 0 4px 20px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
   }
 
   /* Performer chip */
@@ -183,7 +190,8 @@
 
   .performer-chip[aria-pressed="true"] {
     border-color: var(--performer-color);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--performer-color) 30%, transparent);
+    box-shadow: 0 4px 20px
+      color-mix(in srgb, var(--performer-color) 30%, transparent);
   }
 
   .performer-chip[aria-pressed="true"] .performer-number {

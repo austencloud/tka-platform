@@ -369,12 +369,7 @@
     const next = tunnelOrder.indexOf(id);
     flyDir = next >= prev ? 1 : -1;
     controller.section = id;
-    reportSetting(
-      "art_navigation",
-      "desktop_tunnel_section",
-      previous,
-      id
-    );
+    reportSetting("art_navigation", "desktop_tunnel_section", previous, id);
   }
 
   // ── Mobile bottom-dock (layout="bottom") ──
@@ -577,11 +572,7 @@
       {:else}
         <!-- SECONDARY: the primitive tuner. Every tunnel is a combination of
              these. Even card grid for the toggles — no ragged wrap. -->
-        <button
-          class="back-btn"
-          type="button"
-          onclick={closeTunnelTuner}
-        >
+        <button class="back-btn" type="button" onclick={closeTunnelTuner}>
           <i class="fas fa-chevron-left" aria-hidden="true"></i> Presets
         </button>
 
@@ -938,13 +929,7 @@
         {isPlaying}
         {onPlaybackToggle}
         onSettingChange={(setting, previousValue, value, coalesce) =>
-          reportSetting(
-            "art_effects",
-            setting,
-            previousValue,
-            value,
-            coalesce
-          )}
+          reportSetting("art_effects", setting, previousValue, value, coalesce)}
       />
     </div>
   {:else if id === "effort"}
@@ -1046,29 +1031,29 @@
     class:exporting
     inert={exporting || undefined}
   >
-  <!-- Pinned header: the current art type (the mode rail switches between
+    <!-- Pinned header: the current art type (the mode rail switches between
        Mandala and Tunnel now — no in-panel toggle). -->
-  <div class="panel-header">
+    <div class="panel-header">
       <span class="section-label"
         >{artType === "tunnel" ? "Tunnel" : "Mandala"}</span
       >
-  </div>
+    </div>
 
-  {#if artType === "tunnel"}
-    <!-- Tunnel: vertical rail + centered, animated section body (mirrors AnimationPanel). -->
-    <div class="sidebar-rail-layout">
-      <IconRailNav
-        pills={tunnelRail}
-        activeId={tunnelSection}
-        onSelect={selectTunnel}
-      />
+    {#if artType === "tunnel"}
+      <!-- Tunnel: vertical rail + centered, animated section body (mirrors AnimationPanel). -->
+      <div class="sidebar-rail-layout">
+        <IconRailNav
+          pills={tunnelRail}
+          activeId={tunnelSection}
+          onSelect={selectTunnel}
+        />
 
-      <div class="sidebar-main">
-        <div class="panel-scroll">
-          <div class="panel-content-center">
-            {#key tunnelSection}
-              <div
-                class="panel-transition"
+        <div class="sidebar-main">
+          <div class="panel-scroll">
+            <div class="panel-content-center">
+              {#key tunnelSection}
+                <div
+                  class="panel-transition"
                   in:fly={{
                     x: reduceMotion ? 0 : flyDir * 28,
                     duration: reduceMotion ? 0 : 240,
@@ -1080,55 +1065,55 @@
                     duration: reduceMotion ? 0 : 130,
                     opacity: 0,
                   }}
-              >
-                <div class="panel-center-inner">
-                  <h2 class="panel-title">{tunnelSectionLabel}</h2>
+                >
+                  <div class="panel-center-inner">
+                    <h2 class="panel-title">{tunnelSectionLabel}</h2>
 
-                  {@render tunnelSectionBody(tunnelSection, false)}
+                    {@render tunnelSectionBody(tunnelSection, false)}
+                  </div>
                 </div>
-              </div>
-            {/key}
+              {/key}
+            </div>
           </div>
+
+          <div class="panel-footer">
+            <button type="button" class="export-btn" onclick={onExport}>
+              <i class="fas fa-film" aria-hidden="true"></i>
+              <span>Export Video</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    {:else}
+      <!-- Mandala: every control stacked (no rail). Each control is one compact
+         row, so a per-section rail would leave the tall panel mostly empty. -->
+      <div class="sidebar-main">
+        <div
+          class="panel-scroll mandala-stack"
+          in:fade={{ duration: reduceMotion ? 0 : 180 }}
+        >
+          {#each mandalaStack as cat (cat.id)}
+            <div class="section-pad mandala-cat">
+              <span class="rt-section-label">{cat.label}</span>
+              <MandalaCategoryControl
+                ctrl={mandalaController}
+                category={cat.id}
+                showExportButton={false}
+                onSettingChange={onArtSettingChange}
+              />
+            </div>
+          {/each}
         </div>
 
         <div class="panel-footer">
           <button type="button" class="export-btn" onclick={onExport}>
             <i class="fas fa-film" aria-hidden="true"></i>
-            <span>Export Video</span>
+            <span>Export MP4</span>
           </button>
         </div>
       </div>
-    </div>
-  {:else}
-    <!-- Mandala: every control stacked (no rail). Each control is one compact
-         row, so a per-section rail would leave the tall panel mostly empty. -->
-    <div class="sidebar-main">
-        <div
-          class="panel-scroll mandala-stack"
-          in:fade={{ duration: reduceMotion ? 0 : 180 }}
-        >
-        {#each mandalaStack as cat (cat.id)}
-          <div class="section-pad mandala-cat">
-            <span class="rt-section-label">{cat.label}</span>
-            <MandalaCategoryControl
-              ctrl={mandalaController}
-              category={cat.id}
-              showExportButton={false}
-                onSettingChange={onArtSettingChange}
-            />
-          </div>
-        {/each}
-      </div>
-
-      <div class="panel-footer">
-          <button type="button" class="export-btn" onclick={onExport}>
-          <i class="fas fa-film" aria-hidden="true"></i>
-          <span>Export MP4</span>
-        </button>
-      </div>
-    </div>
-  {/if}
-</div>
+    {/if}
+  </div>
 {/if}
 
 <style>

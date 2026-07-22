@@ -19,7 +19,7 @@
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const performers = $derived(viewer.performerManager.performers);
   const performerColor = $derived(
-    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff"
   );
 
   let detailCollapsed = $state(true);
@@ -55,7 +55,11 @@
 {#if performers.length >= 1}
   <div class="hub-anchor" style:--panel-color={performerColor}>
     <div class="spine-panel" class:has-detail={!detailCollapsed}>
-      <PerformerSpine onInteract={handleSpineInteract} {hasInteracted} {onSettingChange} />
+      <PerformerSpine
+        onInteract={handleSpineInteract}
+        {hasInteracted}
+        {onSettingChange}
+      />
     </div>
 
     {#if !detailCollapsed}

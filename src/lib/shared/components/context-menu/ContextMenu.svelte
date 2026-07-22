@@ -12,11 +12,7 @@
     ContextMenuItem,
     ContextMenuState,
   } from "./context-menu-types";
-  import {
-    isMenuItem,
-    isSeparator,
-    isHeader,
-  } from "./context-menu-types";
+  import { isMenuItem, isSeparator, isHeader } from "./context-menu-types";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   let {
@@ -41,10 +37,10 @@
               (menuState as { open: true; x: number; y: number }).x,
               (menuState as { open: true; x: number; y: number }).y,
               0,
-              0,
+              0
             ),
         }
-      : null,
+      : null
   );
 
   function handleOpenChange(open: boolean) {
@@ -93,12 +89,18 @@
       onClose("outside");
     };
 
-    document.addEventListener("pointerdown", dismissOnPointerDown, { capture: true });
+    document.addEventListener("pointerdown", dismissOnPointerDown, {
+      capture: true,
+    });
     document.addEventListener("click", blockOutsideClick, { capture: true });
 
     return () => {
-      document.removeEventListener("pointerdown", dismissOnPointerDown, { capture: true });
-      document.removeEventListener("click", blockOutsideClick, { capture: true });
+      document.removeEventListener("pointerdown", dismissOnPointerDown, {
+        capture: true,
+      });
+      document.removeEventListener("click", blockOutsideClick, {
+        capture: true,
+      });
     };
   });
 
@@ -197,13 +199,18 @@
                 {#if entry.rawIcon}
                   <span
                     class="ctx-menu-raw-icon"
-                    style={entry.rawIconColor ? `color: ${entry.rawIconColor}` : ""}
+                    style={entry.rawIconColor
+                      ? `color: ${entry.rawIconColor}`
+                      : ""}
                   >
                     {@html entry.rawIcon}
                   </span>
                 {/if}
                 <span class="ctx-menu-label">{entry.label}</span>
-                <i class="fas fa-chevron-right ctx-menu-chevron" aria-hidden="true"></i>
+                <i
+                  class="fas fa-chevron-right ctx-menu-chevron"
+                  aria-hidden="true"
+                ></i>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.SubContent
@@ -239,7 +246,9 @@
               {#if entry.rawIcon}
                 <span
                   class="ctx-menu-raw-icon"
-                  style={entry.rawIconColor ? `color: ${entry.rawIconColor}` : ""}
+                  style={entry.rawIconColor
+                    ? `color: ${entry.rawIconColor}`
+                    : ""}
                 >
                   {@html entry.rawIcon}
                 </span>
@@ -273,7 +282,8 @@
     overflow-y: auto;
     max-height: calc(100vh - 16px);
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
     transform-origin: top left;
     outline: none;
   }
@@ -386,7 +396,11 @@
   }
 
   :global(.ctx-menu-item.danger[data-highlighted]) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
   }
 
   :global(.ctx-menu-item:focus-visible) {

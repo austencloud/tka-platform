@@ -43,11 +43,17 @@
     performers?: AvatarInstanceState[] | null;
     onSettingChange?: ViewerControlSink;
   }
-  let { performer = null, performers = null, onSettingChange }: Props = $props();
+  let {
+    performer = null,
+    performers = null,
+    onSettingChange,
+  }: Props = $props();
 
   // Non-empty group => broadcast scope (All-Performers). Takes precedence over
   // the single-performer path.
-  const multi = $derived(performers && performers.length > 0 ? performers : null);
+  const multi = $derived(
+    performers && performers.length > 0 ? performers : null
+  );
 
   const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
@@ -58,8 +64,15 @@
   // Only effects with a live 3D renderer are listed in the 3D viewer — the
   // renderer-less effects (zap/echo/water/…) are no-ops here. Motion stays as a
   // scene-level modifier.
-  const effectChips: ReadonlyArray<{ key: EffectKey; label: string; icon: string; color: string }> = [
-    ...EFFECTS.filter((e) => EFFECTS_WITH_3D_RENDERER.has(e.id as EffectId)).map((e) => ({
+  const effectChips: ReadonlyArray<{
+    key: EffectKey;
+    label: string;
+    icon: string;
+    color: string;
+  }> = [
+    ...EFFECTS.filter((e) =>
+      EFFECTS_WITH_3D_RENDERER.has(e.id as EffectId)
+    ).map((e) => ({
       key: e.id as EffectType,
       label: e.label,
       icon: e.icon.replace(/^fa-/, ""),
@@ -73,13 +86,17 @@
   // per performer. Motion stays a scene-level modifier in both modes.
   // The global default a performer inherits when it has no override is the
   // effects-config wildcard.
-  const inheritedEffect = $derived(config.config.tipEffectMap["*"]?.effect ?? "none");
+  const inheritedEffect = $derived(
+    config.config.tipEffectMap["*"]?.effect ?? "none"
+  );
   const performerEffect = $derived.by<EffectKey | null>(() => {
     if (multi) {
       // The group shares an effect only when every performer resolves to the
       // same one; a mixed group reads as "none" (nothing highlighted).
       const first = multi[0]!.rawEffect ?? inheritedEffect;
-      const allSame = multi.every((p) => (p.rawEffect ?? inheritedEffect) === first);
+      const allSame = multi.every(
+        (p) => (p.rawEffect ?? inheritedEffect) === first
+      );
       return allSame ? first : "none";
     }
     return performer ? (performer.rawEffect ?? inheritedEffect) : null;
@@ -97,7 +114,8 @@
 
   function toggle(key: EffectKey) {
     if (key === "motion") {
-      const motionEnabled = scene3DRender.motion.blur || scene3DRender.motion.speedLines;
+      const motionEnabled =
+        scene3DRender.motion.blur || scene3DRender.motion.speedLines;
       scene3DRender.updateMotion({
         blur: !motionEnabled,
         speedLines: !motionEnabled,
@@ -114,8 +132,11 @@
     if (multi) {
       // Group radio: if every performer already has this effect, clicking it
       // turns it off for all; otherwise set every performer to it.
-      const allActive = multi.every((p) => (p.rawEffect ?? inheritedEffect) === key);
-      for (const p of multi) p.setEffect(allActive ? "none" : (key as EffectType));
+      const allActive = multi.every(
+        (p) => (p.rawEffect ?? inheritedEffect) === key
+      );
+      for (const p of multi)
+        p.setEffect(allActive ? "none" : (key as EffectType));
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_effects",
@@ -154,8 +175,11 @@
   }
 
   const globalEnabledCount = $derived(
-    (config.config.tipEffectMap["*"]?.effect && config.config.tipEffectMap["*"].effect !== "none" ? 1 : 0) +
-    (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0),
+    (config.config.tipEffectMap["*"]?.effect &&
+    config.config.tipEffectMap["*"].effect !== "none"
+      ? 1
+      : 0) +
+      (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0)
   );
 
   // --- Curated per-effect tuning ---
@@ -172,10 +196,14 @@
   // The active effect's id (if it's a real effect, not motion) — drives the
   // shared control stack rendered above the chip grid.
   const activeEffectId = $derived(
-    activeEffectKey && isEffectId(activeEffectKey) ? (activeEffectKey as EffectId) : null,
+    activeEffectKey && isEffectId(activeEffectKey)
+      ? (activeEffectKey as EffectId)
+      : null
   );
   let showAdvanced = $state(false);
-  const hasAdvanced = $derived(activeEffectId ? advancedControls(activeEffectId).length > 0 : false);
+  const hasAdvanced = $derived(
+    activeEffectId ? advancedControls(activeEffectId).length > 0 : false
+  );
 
   // --- Footer: Copy Diagnostic / Save Defaults / Reset ---
   let copyStatus = $state<"idle" | "copied" | "failed">("idle");
@@ -204,7 +232,11 @@
   }
 
   const copyLabel = $derived(
-    copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy Diagnostic",
+    copyStatus === "copied"
+      ? "Copied"
+      : copyStatus === "failed"
+        ? "Copy failed"
+        : "Copy Diagnostic"
   );
 
   function startCopyDiagnostic(): void {
@@ -307,7 +339,10 @@
           aria-expanded={showAdvanced}
           onclick={toggleAdvanced}
         >
-          <i class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}" aria-hidden="true"></i>
+          <i
+            class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}"
+            aria-hidden="true"
+          ></i>
           Advanced
         </button>
         {#if showAdvanced}
@@ -345,10 +380,18 @@
     >
       {copyLabel}
     </button>
-    <button class="footer-btn" onclick={saveDefaults} title="Save current tuning as the default Reset returns to">
+    <button
+      class="footer-btn"
+      onclick={saveDefaults}
+      title="Save current tuning as the default Reset returns to"
+    >
       Save Defaults
     </button>
-    <button class="footer-btn" onclick={resetDefaults} title="Reset tuning to the saved default">
+    <button
+      class="footer-btn"
+      onclick={resetDefaults}
+      title="Reset tuning to the saved default"
+    >
       Reset
     </button>
   </div>

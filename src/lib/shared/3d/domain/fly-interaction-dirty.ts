@@ -18,15 +18,17 @@ export function markFlyInteractionDirty(
   return { ...state, [kind]: true };
 }
 
-export function flushFlyInteraction(
-  state: FlyInteractionDirtyState
-): { state: FlyInteractionDirtyState; kind: FlyInteractionKind | null } {
-  const kind = state.keyboard && state.pointer
-    ? "mixed"
-    : state.keyboard
-      ? "keyboard"
-      : state.pointer
-        ? "pointer"
-        : null;
+export function flushFlyInteraction(state: FlyInteractionDirtyState): {
+  state: FlyInteractionDirtyState;
+  kind: FlyInteractionKind | null;
+} {
+  const kind =
+    state.keyboard && state.pointer
+      ? "mixed"
+      : state.keyboard
+        ? "keyboard"
+        : state.pointer
+          ? "pointer"
+          : null;
   return { state: { ...CLEAN_FLY_INTERACTION }, kind };
 }

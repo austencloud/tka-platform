@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { canonicalCellKeyString, CANONICAL_CELL_SIZE } from "./cloud-cell-key";
 import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/preview-cell-renderer";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const data = {
   letter: "A",
@@ -32,6 +33,21 @@ describe("canonicalCellKeyString", () => {
   it("differs by dark mode and by prop type", () => {
     expect(canonicalCellKeyString(data, true, base)).not.toBe(
       canonicalCellKeyString(data, false, base),
+    );
+    expect(
+      canonicalCellKeyString(data, true, {
+        ...base,
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.POI,
+        catDogModeEnabled: true,
+      })
+    ).not.toBe(
+      canonicalCellKeyString(data, true, {
+        ...base,
+        bluePropType: PropType.FAN,
+        redPropType: PropType.POI,
+        catDogModeEnabled: true,
+      })
     );
   });
 

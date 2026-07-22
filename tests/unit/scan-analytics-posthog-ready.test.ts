@@ -14,6 +14,11 @@ vi.mock("$app/environment", () => ({ browser: true }));
 vi.mock("$env/dynamic/public", () => ({
   env: { PUBLIC_POSTHOG_KEY: "test-key" },
 }));
+vi.mock("$env/static/public", () => ({
+  PUBLIC_POSTHOG_HOST: "https://test.posthog.com",
+  PUBLIC_POSTHOG_KEY: "test-key",
+  PUBLIC_POSTHOG_PROJECT_ID: "test-project",
+}));
 vi.mock("$lib/shared/foundation/services/device-id", () => ({
   getDeviceId: () => "device-1",
 }));

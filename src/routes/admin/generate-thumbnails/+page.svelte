@@ -266,17 +266,16 @@
       <h1>Scan-Card Cell Warm</h1>
       <p class="subtitle">
         Render + upload the canonical per-pictograph cells
-        (<code>pictograph-cells/</code>) for every public sequence, so /q
-        scanners download images instead of rasterizing. Uses the exact
-        render-at-publish path (dark, intendedProp). Idempotent — re-runs only
-        upload misses.
+        (<code>pictograph-cells/</code>) for every durable QR shortcode, so /q
+        scanners download images instead of rasterizing. Resolves each card's
+        exact blue/red props and verifies both light and dark assets.
       </p>
     </header>
 
     <div class="controls">
       {#if !cellRunning}
         <button type="button" class="btn primary" onclick={startCells}>
-          Start cell warm (all public sequences)
+          Start cell warm (all QR codes)
         </button>
       {:else}
         <button type="button" class="btn danger" onclick={cancelCells}>Stop</button>

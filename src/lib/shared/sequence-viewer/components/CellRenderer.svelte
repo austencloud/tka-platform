@@ -16,6 +16,7 @@
     label: string;
     imageUrl: string;
     isLoaded: boolean;
+    renderFailed?: boolean;
     gridColumn: number;
     gridRow: number;
     duration: number;
@@ -63,7 +64,11 @@
   const isSwapMode = $derived(transitionMode === "swap");
 </script>
 
-{#if cell.isLoaded}
+{#if cell.renderFailed}
+  <div class="cell-render-error" role="img" aria-label="Pictograph unavailable">
+    <span aria-hidden="true">!</span>
+  </div>
+{:else if cell.isLoaded}
   {#if cell.fadeOutUrl}
     <img class="cell-image cell-fade-old" class:fading={crossfadeActive} class:swap-out={isSwapMode && crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
   {/if}
@@ -129,6 +134,24 @@
     object-fit: cover;
     -webkit-user-drag: none;
     user-select: none;
+  }
+
+  .cell-render-error {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    color: color-mix(in srgb, currentColor 62%, transparent);
+    font: 700 clamp(1rem, 10cqw, 2rem) / 1 Inter, sans-serif;
+  }
+
+  .cell-render-error span {
+    display: grid;
+    width: 1.5em;
+    height: 1.5em;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
   }
 
   /* First paint: fade the freshly loaded pictograph in instead of popping.

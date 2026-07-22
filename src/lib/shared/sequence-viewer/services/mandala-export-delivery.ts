@@ -1,7 +1,4 @@
-export type MandalaExportDeliveryOutcome =
-  | "completed"
-  | "failed"
-  | "canceled";
+export type MandalaExportDeliveryOutcome = "completed" | "failed" | "canceled";
 
 export interface MandalaExportDelivery {
   outcome: MandalaExportDeliveryOutcome;

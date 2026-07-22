@@ -367,11 +367,11 @@
            is tweened by ControlDock's .tray-anim wrapper; this handles the
            content. Chips are cheap, so the {#key} remount is fine. -->
       <Crossfade key={activeTab} duration={DURATION.normal}>
-      <div class="dock-dense">
-        {#if activeTab === "labels"}
-          <div class="field">
-            <span class="field-label">Header</span>
-            <div class="rt-chip-row">
+        <div class="dock-dense">
+          {#if activeTab === "labels"}
+            <div class="field">
+              <span class="field-label">Header</span>
+              <div class="rt-chip-row">
                 <button
                   type="button"
                   class="rt-chip"
@@ -407,11 +407,11 @@
                       imageComposition.setShowLoopGlyph.bind(imageComposition)
                     )}>LOOP</button
                 >
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <span class="field-label">Footer</span>
-            <div class="rt-chip-row">
+            <div class="field">
+              <span class="field-label">Footer</span>
+              <div class="rt-chip-row">
                 <button
                   type="button"
                   class="rt-chip"
@@ -445,12 +445,12 @@
                       imageComposition.setShowBirthday.bind(imageComposition)
                     )}>Date</button
                 >
+              </div>
             </div>
-          </div>
-        {:else if activeTab === "pictograph"}
-          <div class="field">
-            <span class="field-label">Glyphs</span>
-            <div class="rt-chip-row">
+          {:else if activeTab === "pictograph"}
+            <div class="field">
+              <span class="field-label">Glyphs</span>
+              <div class="rt-chip-row">
                 <button
                   type="button"
                   class="rt-chip"
@@ -499,24 +499,24 @@
                       vm.setNonRadialVisibility.bind(vm)
                     )}>Non-radial</button
                 >
+              </div>
             </div>
-          </div>
-          {#if hasInfoCell}
-            <div class="field">
-              <span class="field-label">Info</span>
-              <div class="rt-chip-row">
-                {#if isOneSpot}
-                  <div class="seg-fill">
-                    <SegmentedControl
-                      options={infoCellOptions}
-                      value={infoCellDisplayChoice}
+            {#if hasInfoCell}
+              <div class="field">
+                <span class="field-label">Info</span>
+                <div class="rt-chip-row">
+                  {#if isOneSpot}
+                    <div class="seg-fill">
+                      <SegmentedControl
+                        options={infoCellOptions}
+                        value={infoCellDisplayChoice}
                         onchange={setInfoCellChoice}
-                      color="accent"
-                      size="sm"
-                    />
-                  </div>
-                {:else}
-                  {#if canQRCode}
+                        color="accent"
+                        size="sm"
+                      />
+                    </div>
+                  {:else}
+                    {#if canQRCode}
                       <button
                         type="button"
                         class="rt-chip"
@@ -531,7 +531,7 @@
                           )}
                         ><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button
                       >
-                  {/if}
+                    {/if}
                     <button
                       type="button"
                       class="rt-chip"
@@ -544,17 +544,17 @@
                         )}
                       ><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button
                     >
-                {/if}
+                  {/if}
+                </div>
               </div>
-            </div>
-          {/if}
-          <!-- Start position is its own group: the Show toggle plus (when on) the
+            {/if}
+            <!-- Start position is its own group: the Show toggle plus (when on) the
                single-select layout. Kept apart from the Info-cell chooser so the
                segmented control never sits next to loose chips (label mirrors the
                desktop sidebar: "Start" label + "Show" chip). -->
-          <div class="field">
-            <span class="field-label">Start</span>
-            <div class="rt-chip-row">
+            <div class="field">
+              <span class="field-label">Start</span>
+              <div class="rt-chip-row">
                 <button
                   type="button"
                   class="rt-chip"
@@ -568,7 +568,7 @@
                       )
                     )}>Show</button
                 >
-              {#if showStartPos}
+                {#if showStartPos}
                   <button
                     type="button"
                     class="rt-chip"
@@ -585,14 +585,14 @@
                     onclick={() => setStartPositionLayout("column")}
                     >Left Column</button
                   >
-              {/if}
+                {/if}
+              </div>
             </div>
-          </div>
-        {:else if activeTab === "format"}
-          <div class="field">
-            <span class="field-label">Columns</span>
-            <div class="rt-chip-row">
-              {#each columnOptions as option}
+          {:else if activeTab === "format"}
+            <div class="field">
+              <span class="field-label">Columns</span>
+              <div class="rt-chip-row">
+                {#each columnOptions as option}
                   <button
                     type="button"
                     class="rt-chip"
@@ -600,12 +600,12 @@
                     onclick={() => setColumns(option.value)}
                     >{option.label}</button
                   >
-              {/each}
+                {/each}
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <span class="field-label">Theme</span>
-            <div class="rt-chip-row">
+            <div class="field">
+              <span class="field-label">Theme</span>
+              <div class="rt-chip-row">
                 <button
                   type="button"
                   class="rt-chip"
@@ -620,10 +620,10 @@
                   onclick={() => setTheme(true)}
                   ><i class="fas fa-moon" aria-hidden="true"></i> Dark</button
                 >
+              </div>
             </div>
-          </div>
-        {/if}
-      </div>
+          {/if}
+        </div>
       </Crossfade>
     {/snippet}
   </ControlDock>
@@ -638,23 +638,23 @@
     aria-label="Card export settings"
   >
     <div class="panel-center-inner">
-    {#if onClose}
-      <div class="panel-header">
-        <span class="panel-title">Export Settings</span>
-        <button
-          type="button"
-          class="close-btn"
-          onclick={onClose}
-          aria-label="Close export panel"
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-      </div>
-    {/if}
+      {#if onClose}
+        <div class="panel-header">
+          <span class="panel-title">Export Settings</span>
+          <button
+            type="button"
+            class="close-btn"
+            onclick={onClose}
+            aria-label="Close export panel"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+      {/if}
 
-    <div class="panel-body">
-      <!-- Header section -->
-      <div class="setting-row">
+      <div class="panel-body">
+        <!-- Header section -->
+        <div class="setting-row">
           <button
             type="button"
             class="setting-label section-toggle"
@@ -665,7 +665,7 @@
               ? "Hide all header elements"
               : "Show all header elements"}>Header</button
           >
-        <div class="chip-group">
+          <div class="chip-group">
             <button
               type="button"
               class="chip"
@@ -702,11 +702,11 @@
                 )}
               aria-pressed={showLoopGlyph}>LOOP</button
             >
+          </div>
         </div>
-      </div>
 
-      <!-- Footer section -->
-      <div class="setting-row">
+        <!-- Footer section -->
+        <div class="setting-row">
           <button
             type="button"
             class="setting-label section-toggle"
@@ -717,7 +717,7 @@
               ? "Hide all footer elements"
               : "Show all footer elements"}>Footer</button
           >
-        <div class="chip-group">
+          <div class="chip-group">
             <button
               type="button"
               class="chip"
@@ -754,11 +754,11 @@
                 )}
               aria-pressed={showBirthday}>Date</button
             >
+          </div>
         </div>
-      </div>
 
-      <!-- Pictograph section -->
-      <div class="setting-row">
+        <!-- Pictograph section -->
+        <div class="setting-row">
           <button
             type="button"
             class="setting-label section-toggle"
@@ -769,7 +769,7 @@
               ? "Hide all pictograph elements"
               : "Show all pictograph elements"}>Pictograph</button
           >
-        <div class="chip-group">
+          <div class="chip-group">
             <button
               type="button"
               class="chip"
@@ -796,7 +796,7 @@
               type="button"
               class="chip"
               class:active={tndGlyph}
-            onclick={toggleTnD}
+              onclick={toggleTnD}
               aria-pressed={tndGlyph}>TnD</button
             >
             <button
@@ -823,31 +823,31 @@
                 )}
               aria-pressed={nonRadial}>Non-radial</button
             >
-        </div>
-      </div>
-
-      {#if hasInfoCell}
-      {#if isOneSpot}
-        <!-- One info cell: QR and Mandala compete for it -> single chooser. -->
-        <div class="setting-row">
-          <span class="setting-label">Info Cell</span>
-          <div class="chip-group seg-fill">
-            <SegmentedControl
-              options={infoCellOptions}
-              value={infoCellDisplayChoice}
-                  onchange={setInfoCellChoice}
-              color="accent"
-              size="sm"
-            />
           </div>
         </div>
-      {:else}
-        <!-- QR code (standalone - it's a grid cell, not a banner). Signed-in
+
+        {#if hasInfoCell}
+          {#if isOneSpot}
+            <!-- One info cell: QR and Mandala compete for it -> single chooser. -->
+            <div class="setting-row">
+              <span class="setting-label">Info Cell</span>
+              <div class="chip-group seg-fill">
+                <SegmentedControl
+                  options={infoCellOptions}
+                  value={infoCellDisplayChoice}
+                  onchange={setInfoCellChoice}
+                  color="accent"
+                  size="sm"
+                />
+              </div>
+            </div>
+          {:else}
+            <!-- QR code (standalone - it's a grid cell, not a banner). Signed-in
              only: guests can't mint a scannable QR, so the row is hidden. -->
-        {#if canQRCode}
-        <div class="setting-row">
-          <span class="setting-label">QR</span>
-          <div class="chip-group">
+            {#if canQRCode}
+              <div class="setting-row">
+                <span class="setting-label">QR</span>
+                <div class="chip-group">
                   <button
                     type="button"
                     class="chip"
@@ -860,14 +860,14 @@
                       )}
                     aria-pressed={showQRCode}>QR Code</button
                   >
-          </div>
-        </div>
-        {/if}
+                </div>
+              </div>
+            {/if}
 
-        <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
-        <div class="setting-row">
-          <span class="setting-label">Mandala</span>
-          <div class="chip-group">
+            <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
+            <div class="setting-row">
+              <span class="setting-label">Mandala</span>
+              <div class="chip-group">
                 <button
                   type="button"
                   class="chip"
@@ -880,18 +880,18 @@
                     )}
                   aria-pressed={showMandala}>Mandala</button
                 >
-          </div>
-        </div>
-      {/if}
-      {/if}
+              </div>
+            </div>
+          {/if}
+        {/if}
 
-      <div class="setting-row">
-        <span class="setting-label">Start</span>
-        <div class="chip-group">
+        <div class="setting-row">
+          <span class="setting-label">Start</span>
+          <div class="chip-group">
             <button
               type="button"
               class="chip"
-            class:active={showStartPos}
+              class:active={showStartPos}
               onclick={() =>
                 toggleCompositionSetting(
                   "start_position",
@@ -902,83 +902,83 @@
                 )}
               aria-pressed={showStartPos}>Show</button
             >
-          {#if showStartPos}
+            {#if showStartPos}
               <button
                 type="button"
                 class="chip"
-              class:active={startPosLayout === "row"}
+                class:active={startPosLayout === "row"}
                 onclick={() => setStartPositionLayout("row")}
                 aria-pressed={startPosLayout === "row"}>Top Row</button
               >
               <button
                 type="button"
                 class="chip"
-              class:active={startPosLayout === "column"}
+                class:active={startPosLayout === "column"}
                 onclick={() => setStartPositionLayout("column")}
                 aria-pressed={startPosLayout === "column"}>Left Column</button
               >
-          {/if}
+            {/if}
+          </div>
         </div>
-      </div>
 
-      <div class="setting-row">
-        <span class="setting-label">Columns</span>
-        <div class="chip-group">
-          {#each columnOptions as option}
+        <div class="setting-row">
+          <span class="setting-label">Columns</span>
+          <div class="chip-group">
+            {#each columnOptions as option}
               <button
                 type="button"
                 class="chip"
-              class:active={currentColumnCount === option.value}
-              onclick={() => setColumns(option.value)}
-              aria-pressed={currentColumnCount === option.value}
+                class:active={currentColumnCount === option.value}
+                onclick={() => setColumns(option.value)}
+                aria-pressed={currentColumnCount === option.value}
                 >{option.label}</button
               >
-          {/each}
+            {/each}
+          </div>
         </div>
-      </div>
 
-      <div class="setting-row">
-        <span class="setting-label">Theme</span>
-        <div class="chip-group">
+        <div class="setting-row">
+          <span class="setting-label">Theme</span>
+          <div class="chip-group">
             <button
               type="button"
               class="chip"
-            class:active={!exportOptions.imageDarkMode}
+              class:active={!exportOptions.imageDarkMode}
               onclick={() => setTheme(false)}
-            aria-pressed={!exportOptions.imageDarkMode}
-          >
-            <i class="fas fa-sun" aria-hidden="true"></i> Light
-          </button>
+              aria-pressed={!exportOptions.imageDarkMode}
+            >
+              <i class="fas fa-sun" aria-hidden="true"></i> Light
+            </button>
             <button
               type="button"
               class="chip"
-            class:active={exportOptions.imageDarkMode}
+              class:active={exportOptions.imageDarkMode}
               onclick={() => setTheme(true)}
-            aria-pressed={exportOptions.imageDarkMode}
-          >
-            <i class="fas fa-moon" aria-hidden="true"></i> Dark
-          </button>
+              aria-pressed={exportOptions.imageDarkMode}
+            >
+              <i class="fas fa-moon" aria-hidden="true"></i> Dark
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="panel-footer">
-      <button
-        type="button"
-        class="export-btn"
-        onclick={onExport}
-        disabled={isExporting}
-        aria-label="Download Card"
-      >
-        {#if isExporting}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Exporting...
-        {:else}
-          <i class="fas fa-download" aria-hidden="true"></i>
-          Download Card
-        {/if}
-      </button>
-    </div>
+      <div class="panel-footer">
+        <button
+          type="button"
+          class="export-btn"
+          onclick={onExport}
+          disabled={isExporting}
+          aria-label="Download Card"
+        >
+          {#if isExporting}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            Exporting...
+          {:else}
+            <i class="fas fa-download" aria-hidden="true"></i>
+            Download Card
+          {/if}
+        </button>
+      </div>
     </div>
   </div>
 {/if}

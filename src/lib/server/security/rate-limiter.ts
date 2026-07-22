@@ -30,19 +30,22 @@ interface RateLimitEntry {
 
 // In-memory store (cleared on server restart)
 const rateLimitStore = new Map<string, RateLimitEntry>();
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+let lastCleanupAt = 0;
 
-// Cleanup old entries periodically (every 5 minutes)
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, entry] of rateLimitStore.entries()) {
-      if (entry.resetAt < now) {
-        rateLimitStore.delete(key);
-      }
-    }
-  },
-  5 * 60 * 1000
-);
+/**
+ * Cloudflare only permits timers inside a request context. Clean expired
+ * fallback entries lazily instead of starting a module-level interval that
+ * prevents the Worker route from loading at all.
+ */
+function cleanupExpiredEntries(now: number): void {
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+
+  lastCleanupAt = now;
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (entry.resetAt < now) rateLimitStore.delete(key);
+  }
+}
 
 export interface RateLimitConfig {
   /** Maximum requests allowed in the window */
@@ -77,6 +80,7 @@ export function checkRateLimit(
   config: RateLimitConfig
 ): RateLimitResult {
   const now = Date.now();
+  cleanupExpiredEntries(now);
   const key = identifier;
 
   const entry = rateLimitStore.get(key);

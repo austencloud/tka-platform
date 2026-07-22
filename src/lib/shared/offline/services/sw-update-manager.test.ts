@@ -108,7 +108,7 @@ describe("createSwUpdateManager", () => {
     expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
   });
 
-  it("reloads exactly once on controllerchange", () => {
+  it("does not reload when the first install claims the open page", () => {
     const container = new FakeContainer();
     const registration = new FakeRegistration();
     const reload = vi.fn();
@@ -120,8 +120,55 @@ describe("createSwUpdateManager", () => {
       reload,
     });
 
+    const worker = new FakeWorker();
+    registration.triggerUpdateFound(worker);
+    worker.setState("installed");
+    container.triggerControllerChange();
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("does not reload an already-controlled page before the update is accepted", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const reload = vi.fn();
+
+    createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady: vi.fn(),
+      reload,
+    });
+
+    container.triggerControllerChange();
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("reloads exactly once after an accepted update takes control", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const waiting = new FakeWorker();
+    registration.waiting = waiting;
+    const reload = vi.fn();
+    let applyFn: (() => void) | null = null;
+
+    createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady: (apply) => {
+        applyFn = apply;
+      },
+      reload,
+    });
+
+    applyFn!();
     container.triggerControllerChange();
     container.triggerControllerChange();
+
+    expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
     expect(reload).toHaveBeenCalledTimes(1);
   });
 });

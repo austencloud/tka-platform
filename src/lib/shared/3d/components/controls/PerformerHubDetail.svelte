@@ -42,27 +42,25 @@
   const isAllMode = $derived(selectedIndex === null);
   const allPerformers = $derived(viewer.performerManager.performers);
   const performer = $derived(
-    selectedIndex !== null
-      ? (allPerformers[selectedIndex] ?? null)
-      : null,
+    selectedIndex !== null ? (allPerformers[selectedIndex] ?? null) : null
   );
 
   const performerColor = $derived(
-    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff"
   );
   const canRemove = $derived(allPerformers.length > 1);
 
   const avatarDef = $derived(
     AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ??
-      AVATAR_DEFINITIONS[0],
+      AVATAR_DEFINITIONS[0]
   );
   // Resolved performer name: user-assigned override falls back to the avatar
   // model's name. This is what the editable header field shows.
   const performerName = $derived(
-    performer?.displayName ?? avatarDef?.name ?? "—",
+    performer?.displayName ?? avatarDef?.name ?? "—"
   );
   const avatarInitials = $derived(
-    performerName !== "—" ? performerName.slice(0, 2).toUpperCase() : "?",
+    performerName !== "—" ? performerName.slice(0, 2).toUpperCase() : "?"
   );
 
   const sequence = $derived(performer?.loadedSequence ?? null);
@@ -138,7 +136,13 @@
   }
 
   // ─── Tabs ───
-  type HubTab = "prop" | "planes" | "effort" | "effects" | "avatar" | "sequence";
+  type HubTab =
+    | "prop"
+    | "planes"
+    | "effort"
+    | "effects"
+    | "avatar"
+    | "sequence";
   let activeTab = $state<HubTab>("prop");
 
   const ALL_TABS: { id: HubTab; label: string; icon: string }[] = [
@@ -195,22 +199,22 @@
     const nextTab = TABS[next];
     if (nextTab) {
       selectTab(nextTab.id);
-      const btn = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(`#hub-tab-${nextTab.id}`);
+      const btn = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(
+        `#hub-tab-${nextTab.id}`
+      );
       btn?.focus();
     }
   }
 
   // ─── Prop ───
   const currentProp = $derived(
-    performer?.effectiveProp ?? viewer.defaultSettings.prop,
+    performer?.effectiveProp ?? viewer.defaultSettings.prop
   );
   const propCategories = $derived(getBasePropsByCategory());
   const selectedBase = $derived(getBasePropType(currentProp));
   let expandedFamily = $state<PropType | null>(null);
   const familyVariants = $derived(
-    expandedFamily
-      ? getAllVariations(expandedFamily).filter(isPropActive)
-      : [],
+    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : []
   );
 
   function applyToScope(fn: (p: typeof performer) => void) {
@@ -261,7 +265,7 @@
 
   // ─── Effort ───
   const currentEffort = $derived(
-    performer?.effectiveEffortId ?? viewer.defaultSettings.effortId,
+    performer?.effectiveEffortId ?? viewer.defaultSettings.effortId
   );
 
   function handleEffortSelect(effortId: EffortId) {
@@ -304,269 +308,310 @@
   }
 </script>
 
-  <div
-    class="hub-detail"
-    style:--performer-color={performerColor}
-    style:--pop-accent={performerColor}
-  >
-    <div class="accent-strip" aria-hidden="true"></div>
+<div
+  class="hub-detail"
+  style:--performer-color={performerColor}
+  style:--pop-accent={performerColor}
+>
+  <div class="accent-strip" aria-hidden="true"></div>
 
-    <!-- ─── Header (compact identity) ─── -->
-    <div class="header">
-      {#if isAllMode}
-        <div class="identity">
-          <div class="avatar-circle all-mode" aria-hidden="true">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="identity-meta">
-            <span class="performer-name">All Performers</span>
-            <div class="sub-row">
-              <span class="badge" style:background-color={performerColor}>{allPerformers.length}</span>
-              <span class="all-hint">Changes apply to everyone</span>
-            </div>
+  <!-- ─── Header (compact identity) ─── -->
+  <div class="header">
+    {#if isAllMode}
+      <div class="identity">
+        <div class="avatar-circle all-mode" aria-hidden="true">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="identity-meta">
+          <span class="performer-name">All Performers</span>
+          <div class="sub-row">
+            <span class="badge" style:background-color={performerColor}
+              >{allPerformers.length}</span
+            >
+            <span class="all-hint">Changes apply to everyone</span>
           </div>
         </div>
-      {:else if performer !== null}
-        <div class="identity">
-          <div class="avatar-circle" aria-hidden="true">
-            <span class="avatar-initials">{avatarInitials}</span>
-          </div>
-          <div class="identity-meta">
-            {#if isEditingName}
-              <input
-                bind:this={nameInput}
-                class="name-input"
-                bind:value={nameDraft}
-                onblur={commitName}
-                onkeydown={handleNameKeydown}
-                maxlength="24"
-                placeholder={avatarDef?.name ?? "Name"}
-                aria-label="Performer name"
-              />
-            {:else}
-              <button
-                class="performer-name-btn"
-                onclick={startEditName}
-                title="Click to rename"
-              >
-                <span class="performer-name">{performerName}</span>
-                <i class="fas fa-pen edit-hint" aria-hidden="true"></i>
-              </button>
+      </div>
+    {:else if performer !== null}
+      <div class="identity">
+        <div class="avatar-circle" aria-hidden="true">
+          <span class="avatar-initials">{avatarInitials}</span>
+        </div>
+        <div class="identity-meta">
+          {#if isEditingName}
+            <input
+              bind:this={nameInput}
+              class="name-input"
+              bind:value={nameDraft}
+              onblur={commitName}
+              onkeydown={handleNameKeydown}
+              maxlength="24"
+              placeholder={avatarDef?.name ?? "Name"}
+              aria-label="Performer name"
+            />
+          {:else}
+            <button
+              class="performer-name-btn"
+              onclick={startEditName}
+              title="Click to rename"
+            >
+              <span class="performer-name">{performerName}</span>
+              <i class="fas fa-pen edit-hint" aria-hidden="true"></i>
+            </button>
+          {/if}
+          <div class="sub-row">
+            {#if sequenceWord}
+              <span class="seq-chip">{sequenceWord}</span>
+              <span class="seq-dot" aria-hidden="true">·</span>
             {/if}
-            <div class="sub-row">
-              {#if sequenceWord}
-                <span class="seq-chip">{sequenceWord}</span>
-                <span class="seq-dot" aria-hidden="true">·</span>
-              {/if}
-              {#if sequenceSteps !== null}
-                <span class="seq-beats">{sequenceSteps} steps</span>
-              {:else}
-                <span class="seq-beats muted">No sequence</span>
-              {/if}
-            </div>
+            {#if sequenceSteps !== null}
+              <span class="seq-beats">{sequenceSteps} steps</span>
+            {:else}
+              <span class="seq-beats muted">No sequence</span>
+            {/if}
           </div>
         </div>
-      {/if}
-    </div>
+      </div>
+    {/if}
+  </div>
 
-    <div class="header-divider" aria-hidden="true"></div>
+  <div class="header-divider" aria-hidden="true"></div>
 
-    <!-- ─── Tab panes ─── -->
-    <div class="tab-content">
-      {#if !isAllMode && activeTab === "avatar"}
-        <div id="hub-panel-avatar" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-avatar">
-          <div class="avatar-section">
-            <div class="section-label">Select Avatar</div>
-            <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
-              {#each AVATAR_DEFINITIONS as def (def.id)}
+  <!-- ─── Tab panes ─── -->
+  <div class="tab-content">
+    {#if !isAllMode && activeTab === "avatar"}
+      <div
+        id="hub-panel-avatar"
+        class="tab-pane active"
+        role="tabpanel"
+        aria-labelledby="hub-tab-avatar"
+      >
+        <div class="avatar-section">
+          <div class="section-label">Select Avatar</div>
+          <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
+            {#each AVATAR_DEFINITIONS as def (def.id)}
+              <button
+                class="avatar-card"
+                class:selected={performer?.avatarModelId === def.id}
+                class:has-thumb={loadedThumbs.has(def.id)}
+                role="radio"
+                aria-checked={performer?.avatarModelId === def.id}
+                onclick={() => pickAvatar(def.id as AvatarId)}
+                title={def.description}
+              >
+                <i
+                  class="fas {def.icon ?? 'fa-user'} avatar-fallback-icon"
+                  class:hidden={loadedThumbs.has(def.id)}
+                  aria-hidden="true"
+                ></i>
+                <img
+                  class="avatar-thumb"
+                  class:loaded={loadedThumbs.has(def.id)}
+                  src={avatarThumbUrl(def.id)}
+                  alt=""
+                  loading="lazy"
+                  onload={() => loadedThumbs.add(def.id)}
+                />
+                <span class="avatar-card-name">{def.name}</span>
+              </button>
+            {/each}
+          </div>
+          {#if canRemove}
+            <button class="remove-btn" onclick={removePerformer}>
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+              <span>Remove Performer</span>
+            </button>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    {#if !isAllMode && activeTab === "sequence"}
+      <div
+        id="hub-panel-sequence"
+        class="tab-pane active"
+        role="tabpanel"
+        aria-labelledby="hub-tab-sequence"
+      >
+        <div class="sequence-section">
+          {#if sequence}
+            <div class="seq-display">
+              <div class="seq-word-large">
+                {sequenceWord ?? "Untitled sequence"}
+              </div>
+              {#if sequenceSteps !== null}
+                <div class="seq-beat-count">{sequenceSteps} steps</div>
+              {/if}
+            </div>
+            <button class="seq-action-btn" onclick={clearSequence}>
+              <i class="fas fa-times" aria-hidden="true"></i>
+              <span>Clear Sequence</span>
+            </button>
+          {:else}
+            <div class="seq-empty">
+              <i class="fas fa-film" aria-hidden="true"></i>
+              <span>No sequence loaded</span>
+              <span class="seq-hint"
+                >Load a sequence from the library to animate this performer</span
+              >
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    {#if activeTab === "prop"}
+      <div
+        id="hub-panel-prop"
+        class="tab-pane active"
+        role="tabpanel"
+        aria-labelledby="hub-tab-prop"
+      >
+        <div class="prop-section">
+          <div class="prop-grid">
+            {#each PROP_CATEGORIES as cat}
+              {@const bases = propCategories.get(cat.id) ?? []}
+              {#each bases as base}
+                {@const info = getPropTypeDisplayInfo(base)}
+                {@const isSelected =
+                  expandedFamily !== null
+                    ? expandedFamily === base
+                    : selectedBase === base}
                 <button
-                  class="avatar-card"
-                  class:selected={performer?.avatarModelId === def.id}
-                  class:has-thumb={loadedThumbs.has(def.id)}
-                  role="radio"
-                  aria-checked={performer?.avatarModelId === def.id}
-                  onclick={() => pickAvatar(def.id as AvatarId)}
-                  title={def.description}
+                  class="prop-tile"
+                  class:selected={isSelected}
+                  aria-pressed={isSelected}
+                  aria-label={info.label}
+                  title={info.label}
+                  onclick={() => handleFamilyClick(base)}
                 >
-                  <i
-                    class="fas {def.icon ?? 'fa-user'} avatar-fallback-icon"
-                    class:hidden={loadedThumbs.has(def.id)}
-                    aria-hidden="true"
-                  ></i>
-                  <img
-                    class="avatar-thumb"
-                    class:loaded={loadedThumbs.has(def.id)}
-                    src={avatarThumbUrl(def.id)}
-                    alt=""
-                    loading="lazy"
-                    onload={() => loadedThumbs.add(def.id)}
+                  <PropCompositionPreview
+                    propType={base}
+                    size={28}
+                    darkBackground
                   />
-                  <span class="avatar-card-name">{def.name}</span>
                 </button>
               {/each}
-            </div>
-            {#if canRemove}
-              <button
-                class="remove-btn"
-                onclick={removePerformer}
-              >
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                <span>Remove Performer</span>
-              </button>
-            {/if}
+            {/each}
           </div>
-        </div>
-      {/if}
 
-      {#if !isAllMode && activeTab === "sequence"}
-        <div id="hub-panel-sequence" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-sequence">
-          <div class="sequence-section">
-            {#if sequence}
-              <div class="seq-display">
-                <div class="seq-word-large">{sequenceWord ?? "Untitled sequence"}</div>
-                {#if sequenceSteps !== null}
-                  <div class="seq-beat-count">{sequenceSteps} steps</div>
-                {/if}
-              </div>
-              <button
-                class="seq-action-btn"
-                onclick={clearSequence}
+          {#if expandedFamily && familyVariants.length > 1}
+            <div class="variant-strip">
+              <span class="variant-header"
+                >{getPropTypeDisplayInfo(expandedFamily).label}</span
               >
-                <i class="fas fa-times" aria-hidden="true"></i>
-                <span>Clear Sequence</span>
-              </button>
-            {:else}
-              <div class="seq-empty">
-                <i class="fas fa-film" aria-hidden="true"></i>
-                <span>No sequence loaded</span>
-                <span class="seq-hint">Load a sequence from the library to animate this performer</span>
-              </div>
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === "prop"}
-        <div id="hub-panel-prop" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-prop">
-          <div class="prop-section">
-            <div class="prop-grid">
-              {#each PROP_CATEGORIES as cat}
-                {@const bases = propCategories.get(cat.id) ?? []}
-                {#each bases as base}
-                  {@const info = getPropTypeDisplayInfo(base)}
-                  {@const isSelected =
-                    expandedFamily !== null
-                      ? expandedFamily === base
-                      : selectedBase === base}
+              <div class="variant-row">
+                {#each familyVariants as variant}
+                  {@const vInfo = getPropTypeDisplayInfo(variant)}
                   <button
-                    class="prop-tile"
-                    class:selected={isSelected}
-                    aria-pressed={isSelected}
-                    aria-label={info.label}
-                    title={info.label}
-                    onclick={() => handleFamilyClick(base)}
+                    class="variant-chip"
+                    class:selected={currentProp === variant}
+                    aria-pressed={currentProp === variant}
+                    onclick={() => handleVariantClick(variant)}
                   >
-                    <PropCompositionPreview
-                      propType={base}
-                      size={28}
-                      darkBackground
-                    />
+                    <div class="variant-icon">
+                      <PropCompositionPreview
+                        propType={variant}
+                        size={22}
+                        darkBackground
+                      />
+                    </div>
+                    <span>{vInfo.label}</span>
                   </button>
                 {/each}
-              {/each}
-            </div>
-
-            {#if expandedFamily && familyVariants.length > 1}
-              <div class="variant-strip">
-                <span class="variant-header"
-                  >{getPropTypeDisplayInfo(expandedFamily).label}</span
-                >
-                <div class="variant-row">
-                  {#each familyVariants as variant}
-                    {@const vInfo = getPropTypeDisplayInfo(variant)}
-                    <button
-                      class="variant-chip"
-                      class:selected={currentProp === variant}
-                      aria-pressed={currentProp === variant}
-                      onclick={() => handleVariantClick(variant)}
-                    >
-                      <div class="variant-icon">
-                        <PropCompositionPreview
-                          propType={variant}
-                          size={22}
-                          darkBackground
-                        />
-                      </div>
-                      <span>{vInfo.label}</span>
-                    </button>
-                  {/each}
-                </div>
               </div>
-            {/if}
+            </div>
+          {/if}
 
-            {#if performer}
-              <PerformerPropSizeSlider {performer} {onSettingChange} />
-            {:else if allPerformers[0]}
-              <PerformerPropSizeSlider performer={allPerformers[0]} onSizeChange={handlePropSizeChange} {onSettingChange} />
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === "planes"}
-        <div id="hub-panel-planes" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-planes">
-          <div class="planes-section">
-            <PlanesPopover {onSettingChange} />
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === "effort"}
-        <div id="hub-panel-effort" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-effort">
-          <div class="effort-section">
-            <EffortPalette
-              selectedEffort={currentEffort}
-              onSelect={handleEffortSelect}
-            />
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === "effects"}
-        <div id="hub-panel-effects" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-effects">
-          <div class="effects-section">
-            <EffectsSettingsPanel
-              performer={isAllMode ? null : performer}
-              performers={isAllMode ? allPerformers : null}
+          {#if performer}
+            <PerformerPropSizeSlider {performer} {onSettingChange} />
+          {:else if allPerformers[0]}
+            <PerformerPropSizeSlider
+              performer={allPerformers[0]}
+              onSizeChange={handlePropSizeChange}
               {onSettingChange}
             />
-          </div>
+          {/if}
         </div>
-      {/if}
-    </div>
+      </div>
+    {/if}
 
-    <div class="tab-divider" aria-hidden="true"></div>
+    {#if activeTab === "planes"}
+      <div
+        id="hub-panel-planes"
+        class="tab-pane active"
+        role="tabpanel"
+        aria-labelledby="hub-tab-planes"
+      >
+        <div class="planes-section">
+          <PlanesPopover {onSettingChange} />
+        </div>
+      </div>
+    {/if}
 
-    <!-- ─── Tab bar (bottom-anchored) ─── -->
-    <div class="tab-bar" role="tablist" tabindex={0} style:--active-index={tabIndex} style:--tab-count={TABS.length} onkeydown={handleTabKeydown}>
-      <div class="tab-indicator" aria-hidden="true"></div>
-      {#each TABS as tab}
-        <button
-          id="hub-tab-{tab.id}"
-          class="tab-btn"
-          class:active={activeTab === tab.id}
-          role="tab"
-          aria-selected={activeTab === tab.id}
-          tabindex={activeTab === tab.id ? 0 : -1}
-          aria-controls="hub-panel-{tab.id}"
-          onclick={() => selectTab(tab.id)}
-        >
-          <i class="fas {tab.icon}" aria-hidden="true"></i>
-          <span class="tab-label">{tab.label}</span>
-        </button>
-      {/each}
-    </div>
+    {#if activeTab === "effort"}
+      <div
+        id="hub-panel-effort"
+        class="tab-pane active"
+        role="tabpanel"
+        aria-labelledby="hub-tab-effort"
+      >
+        <div class="effort-section">
+          <EffortPalette
+            selectedEffort={currentEffort}
+            onSelect={handleEffortSelect}
+          />
+        </div>
+      </div>
+    {/if}
+
+    {#if activeTab === "effects"}
+      <div
+        id="hub-panel-effects"
+        class="tab-pane active"
+        role="tabpanel"
+        aria-labelledby="hub-tab-effects"
+      >
+        <div class="effects-section">
+          <EffectsSettingsPanel
+            performer={isAllMode ? null : performer}
+            performers={isAllMode ? allPerformers : null}
+            {onSettingChange}
+          />
+        </div>
+      </div>
+    {/if}
   </div>
+
+  <div class="tab-divider" aria-hidden="true"></div>
+
+  <!-- ─── Tab bar (bottom-anchored) ─── -->
+  <div
+    class="tab-bar"
+    role="tablist"
+    tabindex={0}
+    style:--active-index={tabIndex}
+    style:--tab-count={TABS.length}
+    onkeydown={handleTabKeydown}
+  >
+    <div class="tab-indicator" aria-hidden="true"></div>
+    {#each TABS as tab}
+      <button
+        id="hub-tab-{tab.id}"
+        class="tab-btn"
+        class:active={activeTab === tab.id}
+        role="tab"
+        aria-selected={activeTab === tab.id}
+        tabindex={activeTab === tab.id ? 0 : -1}
+        aria-controls="hub-panel-{tab.id}"
+        onclick={() => selectTab(tab.id)}
+      >
+        <i class="fas {tab.icon}" aria-hidden="true"></i>
+        <span class="tab-label">{tab.label}</span>
+      </button>
+    {/each}
+  </div>
+</div>
 
 <style>
   .hub-detail {
@@ -611,13 +656,19 @@
     justify-content: center;
     flex-shrink: 0;
     background: color-mix(in srgb, var(--performer-color) 14%, transparent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 20%, transparent);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
 
   .avatar-circle.all-mode {
     border-color: var(--theme-accent, #4a9eff);
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 14%, transparent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 14%,
+      transparent
+    );
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
     font-size: 14px;
   }
@@ -950,7 +1001,8 @@
     background: color-mix(in srgb, var(--performer-color) 22%, transparent);
     border-color: color-mix(in srgb, var(--performer-color) 55%, transparent);
     color: var(--performer-color);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 20%, transparent);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
 
   .avatar-card.has-thumb.selected {

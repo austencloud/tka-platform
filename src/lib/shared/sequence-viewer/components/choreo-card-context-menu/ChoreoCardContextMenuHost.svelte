@@ -7,7 +7,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
-  import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
+  import type {
+    ContextMenuState,
+    ContextMenuEntry,
+  } from "$lib/shared/components/context-menu/context-menu-types";
   import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { buildPictographContextMenuItems } from "$lib/shared/pictograph/shared/components/context-menu/pictograph-context-menu-builder";
@@ -49,7 +52,9 @@
 
   // Rebuild menu items (fresh checked states) whenever any visibility changes.
   onMount(() => {
-    const bump = () => { menuVersion++; };
+    const bump = () => {
+      menuVersion++;
+    };
     visibilityManager.registerObserver(bump, ["all"]);
     return () => visibilityManager.unregisterObserver(bump);
   });
@@ -86,11 +91,28 @@
         header: "Card",
         entries: instrumentContextMenuEntries(
           buildCardMenuSection({
-            onSendTo: onSendTo ? () => { closeContextMenu("item"); onSendTo(); } : undefined,
-            onSendToStickerLab: onSendToStickerLab ? () => { closeContextMenu("item"); onSendToStickerLab(); } : undefined,
-            onRerender: onRerender ? () => { closeContextMenu("item"); onRerender(); } : undefined,
+            onSendTo: onSendTo
+              ? () => {
+                  closeContextMenu("item");
+                  onSendTo();
+                }
+              : undefined,
+            onSendToStickerLab: onSendToStickerLab
+              ? () => {
+                  closeContextMenu("item");
+                  onSendToStickerLab();
+                }
+              : undefined,
+            onRerender: onRerender
+              ? () => {
+                  closeContextMenu("item");
+                  onRerender();
+                }
+              : undefined,
             stepCount,
-            onColumnCountChange: () => { menuVersion++; },
+            onColumnCountChange: () => {
+              menuVersion++;
+            },
           }),
           "card",
           onAction

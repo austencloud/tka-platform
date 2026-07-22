@@ -1,4 +1,7 @@
-import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
+import type {
+  ContextMenuEntry,
+  ContextMenuItem,
+} from "$lib/shared/components/context-menu/context-menu-types";
 
 export type ContextMenuAnalyticsValue = string | number | boolean | null;
 export type ContextMenuAnalyticsSink = (
@@ -26,22 +29,30 @@ export function instrumentContextMenuEntries(
 ): ContextMenuEntry[] {
   return entries.map((entry) => {
     if ("type" in entry) return entry;
-    const children = entry.children
-      ? instrumentContextMenuEntries(entry.children, group, onAction)
-      : undefined;
-    const skipAction = ALREADY_INSTRUMENTED_ACTIONS.has(entry.id);
-    return {
-      ...entry,
-      children,
-      action:
-        entry.action && !skipAction
-          ? () => {
-              onAction?.(`${group}_${entry.id}`, {
-                was_checked: entry.checked ?? null,
-              });
-              return entry.action?.();
-            }
-          : entry.action,
-    };
+    return instrumentContextMenuItem(entry, group, onAction);
   });
+}
+
+function instrumentContextMenuItem(
+  entry: ContextMenuItem,
+  group: "pictograph" | "card",
+  onAction?: ContextMenuAnalyticsSink
+): ContextMenuItem {
+  const children = entry.children?.map((child) =>
+    instrumentContextMenuItem(child, group, onAction)
+  );
+  const skipAction = ALREADY_INSTRUMENTED_ACTIONS.has(entry.id);
+  return {
+    ...entry,
+    children,
+    action:
+      entry.action && !skipAction
+        ? () => {
+            onAction?.(`${group}_${entry.id}`, {
+              was_checked: entry.checked ?? null,
+            });
+            return entry.action?.();
+          }
+        : entry.action,
+  };
 }

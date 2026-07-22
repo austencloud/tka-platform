@@ -14,6 +14,7 @@
    */
 
   import { Canvas } from "@threlte/core";
+  import { WebGLRenderer } from "three";
 
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
@@ -32,10 +33,6 @@
   import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
-  import { createRendererForBackend } from "../rendering/create-renderer";
-  import { getQualityTierDetector } from "../effects/quality/get-quality-tier-detector";
-  import { createAdaptiveQualityState } from "../state/adaptive-quality-state.svelte";
-  import { setAdaptiveQualityContext } from "../context/adaptive-quality-context";
   import { sceneLoadingPlaybackTransition } from "../domain/scene-loading-playback";
   import { selectBeatPlaneStep } from "../domain/beat-plane-step-selection";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
@@ -92,8 +89,6 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
-  const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
-  setAdaptiveQualityContext(adaptiveQuality);
   const playbackAdapter = $derived.by(() =>
     createAvatarPlaybackAdapter(
       () => viewer3DState.performerManager.performers[0] ?? null,
@@ -252,10 +247,8 @@
   {#if avatarState && sequenceData}
     {#if canvasMountReady}
       <Canvas
-        dpr={adaptiveQuality.pixelRatio}
-        shadows={adaptiveQuality.config.enableShadows}
         createRenderer={(canvas) =>
-          createRendererForBackend(canvas, "webgl", { antialias: false })}
+          new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
       >
         <PerfMonitor
           visible={viewer3DState.showPerf}

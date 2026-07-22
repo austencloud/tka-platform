@@ -11,7 +11,10 @@
    * Advanced fold to hide anything). The active control is rendered by the same
    * EffectControlStack the 3D viewer uses (`only` = one id).
    */
-  import type { EffectsConfigState, EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import type {
+    EffectsConfigState,
+    EffectId,
+  } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
     EFFECT_CONTROLS,
     type ControlDescriptor,
@@ -25,7 +28,10 @@
     /** Cross-store field get/set overrides (e.g. Trails' animationSettings
      *  fields). Passed straight through to EffectControlStack; also used here so
      *  chip values + conditional visibility read the right source. */
-    overrides?: Record<string, { get: () => unknown; set: (v: unknown) => void }>;
+    overrides?: Record<
+      string,
+      { get: () => unknown; set: (v: unknown) => void }
+    >;
     onSettingChange?: (
       setting: string,
       previousValue: string | number | boolean | null,
@@ -35,7 +41,9 @@
   }
   let { effectId, config, overrides, onSettingChange }: Props = $props();
 
-  const intent = $derived(config.effect(effectId) as unknown as Record<string, unknown>);
+  const intent = $derived(
+    config.effect(effectId) as unknown as Record<string, unknown>
+  );
   /** Read a field from its override store if present, else the effect config. */
   function readField(field: string): unknown {
     return overrides?.[field] ? overrides[field].get() : intent[field];
@@ -43,12 +51,19 @@
   // Merged view so conditional visibility + chip values see cross-store fields.
   const intentView = $derived(
     overrides
-      ? { ...intent, ...Object.fromEntries(Object.entries(overrides).map(([k, o]) => [k, o.get()])) }
-      : intent,
+      ? {
+          ...intent,
+          ...Object.fromEntries(
+            Object.entries(overrides).map(([k, o]) => [k, o.get()])
+          ),
+        }
+      : intent
   );
   // Every manifest control whose conditional visibility is currently satisfied.
   const controls = $derived(
-    EFFECT_CONTROLS[effectId].filter((c) => !c.showWhen || c.showWhen(intentView)),
+    EFFECT_CONTROLS[effectId].filter(
+      (c) => !c.showWhen || c.showWhen(intentView)
+    )
   );
 
   // The tapped knob, or the first knob when nothing is tapped yet / the tapped
@@ -57,7 +72,7 @@
   const selectedId = $derived(
     tappedId && controls.some((c) => c.id === tappedId)
       ? tappedId
-      : (controls[0]?.id ?? null),
+      : (controls[0]?.id ?? null)
   );
   const active = $derived(controls.find((c) => c.id === selectedId) ?? null);
 
@@ -88,8 +103,12 @@
   function chipSwatches(c: ControlDescriptor): string[] {
     if (c.type === "color") return [readField(c.field) as string];
     if (c.type === "colorPair" && c.pairFields)
-      return [readField(c.pairFields[0]) as string, readField(c.pairFields[1]) as string];
-    if (c.type === "paletteSwatches") return ((readField(c.field) as string[]) ?? []).slice(0, 4);
+      return [
+        readField(c.pairFields[0]) as string,
+        readField(c.pairFields[1]) as string,
+      ];
+    if (c.type === "paletteSwatches")
+      return ((readField(c.field) as string[]) ?? []).slice(0, 4);
     return [];
   }
 </script>
@@ -109,7 +128,8 @@
       >
         {#if swatches.length}
           <span class="knob-swatches" aria-hidden="true">
-            {#each swatches as s}<span class="dot" style:background={s}></span>{/each}
+            {#each swatches as s}<span class="dot" style:background={s}
+              ></span>{/each}
           </span>
         {/if}
         <span class="knob-label">{c.label}</span>
@@ -161,7 +181,11 @@
     scroll-snap-type: x proximity;
     /* Fade the right edge so a clipped chip reads as "scroll for more" rather
        than "cut off". Harmless when the rail fits (fades empty track). */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 calc(100% - 22px),
+      transparent
+    );
     mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
   }
   .knobs::-webkit-scrollbar {
@@ -193,7 +217,11 @@
   }
   .knob.active {
     background: color-mix(in srgb, var(--fx-accent, #4a9eff) 18%, transparent);
-    border-color: color-mix(in srgb, var(--fx-accent, #4a9eff) 55%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--fx-accent, #4a9eff) 55%,
+      transparent
+    );
     color: var(--fx-accent-text, #c5ddff);
   }
   .knob:focus-visible {

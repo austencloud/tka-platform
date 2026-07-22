@@ -26,6 +26,7 @@ import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter
 import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
 import { deriveGridMode } from "../../pictograph/grid/services/grid-mode-deriver";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 
 export interface SequenceHydratorDeps {
   loopDetector: ILOOPDetector | null;
@@ -126,6 +127,25 @@ export async function hydrateSequence(
 
   const loopResult = loopDetector ? loopDetector.detectLOOPType(merged) : null;
 
+  const placementHydrated: SequenceData = {
+    ...merged,
+    steps: merged.steps.map(ensureStepPlacement),
+    ...(merged.startPosition && {
+      startPosition: ensureStepPlacement(merged.startPosition),
+    }),
+    ...(merged.startingPosition && {
+      startingPosition: ensureStepPlacement(merged.startingPosition),
+    }),
+  };
+
+  // The compact QR encoder emits a truthy placeholder start when the source
+  // sequence has no explicit one. Presence is not enough: invisible motions
+  // render a bare grid and suppress the valid beat-one fallback. Resolve the
+  // invariant after motion placement hydration, then keep the canonical and
+  // legacy fields identical so every downstream renderer sees visible props.
+  const renderableStart =
+    startPositionDeriver.getOrDeriveStartPosition(placementHydrated);
+
   // gridMode: infer from the first beat whose motions decoded cleanly.
   // Using the start position's motions isn't reliable - at beat 0 the
   // encoded form may be a blank placeholder. Since the both-required flip
@@ -134,7 +154,7 @@ export async function hydrateSequence(
   // blank beat always wins and donates gridMode derived from placeholder
   // locations (Wave 0 straggler fix, presence register site B).
   let gridMode: GridMode | undefined;
-  for (const step of merged.steps) {
+  for (const step of placementHydrated.steps) {
     if (
       isVisibleMotion(step.motions?.blue) &&
       isVisibleMotion(step.motions?.red)
@@ -145,17 +165,9 @@ export async function hydrateSequence(
   }
 
   return {
-    ...merged,
-    // Restore the render-required placement invariant on every motion so the
-    // cloud-miss local-render path draws arrows + props (see
-    // ensureMotionPlacement). Lean shortcode-resolved motions omit it.
-    steps: merged.steps.map(ensureStepPlacement),
-    ...(merged.startPosition && {
-      startPosition: ensureStepPlacement(merged.startPosition),
-    }),
-    ...(merged.startingPosition && {
-      startingPosition: ensureStepPlacement(merged.startingPosition),
-    }),
+    ...placementHydrated,
+    startPosition: renderableStart ?? undefined,
+    startingPosition: renderableStart ?? undefined,
     ...(loopResult && {
       isCircular: loopResult.isCircular,
       loopType: loopResult.loopType ?? undefined,

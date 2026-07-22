@@ -46,9 +46,7 @@ vi.mock("$lib/shared/analytics/services/posthog", () => ({
   captureEvent: runtime.captureEvent,
   captureEventWithPostHog: runtime.captureEventWithPostHog,
   getPostHogInstance: () => (runtime.ready ? runtime.instance : null),
-  onPostHogReady: (
-    listener: (instance: typeof runtime.instance) => void
-  ) => {
+  onPostHogReady: (listener: (instance: typeof runtime.instance) => void) => {
     runtime.readyListener = listener;
     return () => {
       if (runtime.readyListener === listener) runtime.readyListener = null;

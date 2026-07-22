@@ -25,7 +25,7 @@
       onSettingChange,
       "viewer_3d_scene",
       "background",
-      previous,
+      previous ?? null,
       type
     );
   }
@@ -83,10 +83,19 @@
   }
 
   .scene-tile.active {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 50%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, #ffffff);
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
+    box-shadow: 0 2px 12px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
   }
 
   .scene-tile i {

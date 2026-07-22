@@ -81,6 +81,10 @@ export interface PreviewCellRenderOptions {
    *  they go straight to local render with no added network latency. */
   probeCloud?: boolean;
 
+  /** Require a cloud/IndexedDB hit and never rasterize on this device. QR scan
+   *  cards set this because QR creation verifies every canonical asset first. */
+  cloudOnly?: boolean;
+
   /** When true, after a local render upload the WebP to the shared cloud store
    *  under the canonical hash. ONLY render-at-publish sets this (it renders with
    *  the canonical visibility set). The scan card sets probeCloud but NOT this,
@@ -200,6 +204,14 @@ export async function renderCell(
     } catch {
       // Cloud unavailable — fall through to local render.
     }
+  }
+
+  if (options.cloudOnly) {
+    throw new Error(
+      cloudHash
+        ? `Canonical pictograph ${cloudHash} is unavailable`
+        : "Canonical pictograph hash is unavailable"
+    );
   }
 
   const viewMode = options.browseViewMode;

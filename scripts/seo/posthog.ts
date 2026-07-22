@@ -47,6 +47,10 @@ function addCalendarDays(value: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function safeHogQlInteger(expression: string): string {
+  return `toIntOrZero(toString(${expression}))`;
+}
+
 export function buildSeoFunnelQuery(options: PostHogQueryOptions): string {
   const host = quote(options.host);
   const timeZone = quote(options.reportingTimeZone);
@@ -91,10 +95,12 @@ per_session AS (
         AND relevant_events.properties.destination = '/create',
       (
         relevant_events.event = 'sequence_generate'
-        AND relevant_events.properties.sequence_length >= 1
+        AND ${safeHogQlInteger(
+          "relevant_events.properties.sequence_length"
+        )} >= 1
       ) OR (
         relevant_events.event = 'sequence_autosaved'
-        AND relevant_events.properties.beat_count >= 1
+        AND ${safeHogQlInteger("relevant_events.properties.beat_count")} >= 1
       ),
       relevant_events.event IN (
         'sequence_save',

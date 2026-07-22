@@ -1,4 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("$env/static/public", () => ({
+  PUBLIC_POSTHOG_HOST: "https://test.posthog.com",
+  PUBLIC_POSTHOG_KEY: "test-key",
+  PUBLIC_POSTHOG_PROJECT_ID: "test-project",
+}));
 import {
   createScanSessionState,
   finishScanSession,

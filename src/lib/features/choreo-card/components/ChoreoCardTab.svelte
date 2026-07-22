@@ -30,12 +30,14 @@
   import { getScanActivityWatcher } from "../services/getScanActivityWatcher";
   import { setScanActivityContext } from "../context/scan-activity-context";
   import { decodeSequenceFromQR } from "$lib/shared/navigation/services/sequence-encoder";
+  import { createScanCellWarmState } from "../state/scan-cell-warm-state.svelte";
 
   const scanActivity = createScanActivityState({
     data: getScanActivityWatcher(),
     decodeSequence: decodeSequenceFromQR,
   });
   setScanActivityContext({ state: scanActivity });
+  const scanCellWarm = createScanCellWarmState();
 
   // Scan activity stays live while this module is open. Switching to another
   // Choreo Card tab keeps the latest event window and card cache intact.
@@ -114,7 +116,7 @@
 <div class="choreo-card-tab">
   <div class="main-content">
     {#if mode === "scan-activity"}
-      <ScanActivityTab />
+      <ScanActivityTab cellWarmState={scanCellWarm} />
     {:else if mode === "releaser"}
       <main class="content-area">
         <DeckReleaserTab onContextMenu={openCardContextMenu} />

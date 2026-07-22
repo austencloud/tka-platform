@@ -50,7 +50,10 @@
    * Compute camera Z distance so the 3D grid matches the 2D canvas grid size.
    * Reads the actual DOM positions of both the 2D canvas and the 3D pane.
    */
-  function computeAlignedPosition(): { position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } } {
+  function computeAlignedPosition(): {
+    position: { x: number; y: number; z: number };
+    target: { x: number; y: number; z: number };
+  } {
     const target = { x: 0, y: GRID_CENTER_Y, z: GRID_CENTER_Z };
     const fallback = { position: { x: 0, y: 0, z: -2.5 }, target };
 
@@ -63,7 +66,11 @@
 
     for (const c of allCanvases) {
       const r = c.getBoundingClientRect();
-      if (Math.abs(r.width - r.height) < 10 && r.width > 200 && r.width < 1200) {
+      if (
+        Math.abs(r.width - r.height) < 10 &&
+        r.width > 200 &&
+        r.width < 1200
+      ) {
         // Square canvas = likely the 2D AnimatorCanvas
         canvas2D = c;
         paneEl = c.closest(".animation-pane") || c.closest(".media-pane");
@@ -94,7 +101,7 @@
     // Visible width at distance d = 2 * d * tan(hFov/2)
     // hFov = 2 * atan(tan(vFov/2) * aspect)
     const aspect = paneRect.width / paneRect.height;
-    const vFovRad = (FOV_DEG / 2) * Math.PI / 180;
+    const vFovRad = ((FOV_DEG / 2) * Math.PI) / 180;
     const hFovHalf = Math.atan(Math.tan(vFovRad) * aspect);
     const visibleWidthAtD1 = 2 * Math.tan(hFovHalf); // visible width per meter of distance
     const dist = (GRID_RADIUS_3D * 2) / (diamPct * visibleWidthAtD1);
@@ -129,13 +136,20 @@
   const persistedPos = persisted?.position;
   const persistedTarget = persisted?.target;
 
-  function isFinitePoint(p: { x: number; y: number; z: number } | undefined | null): boolean {
-    return !!p && Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
+  function isFinitePoint(
+    p: { x: number; y: number; z: number } | undefined | null
+  ): boolean {
+    return (
+      !!p &&
+      Number.isFinite(p.x) &&
+      Number.isFinite(p.y) &&
+      Number.isFinite(p.z)
+    );
   }
 
   function distSq(
     a: { x: number; y: number; z: number },
-    b: { x: number; y: number; z: number },
+    b: { x: number; y: number; z: number }
   ): number {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
@@ -192,13 +206,18 @@
         `[Viewer3DCamera] 🔴 ORBIT COLLAPSED — distance=${d.toFixed(4)}`,
         `\n  camera: (${_healthPos.x.toFixed(3)}, ${_healthPos.y.toFixed(3)}, ${_healthPos.z.toFixed(3)})`,
         `\n  target: (${_healthTgt.x.toFixed(3)}, ${_healthTgt.y.toFixed(3)}, ${_healthTgt.z.toFixed(3)})`,
-        `\n  persisted:`, JSON.parse(localStorage.getItem("tka-viewer3d-camera") ?? "null"),
-        `\n  Auto-recovering to defaults.`,
+        `\n  persisted:`,
+        JSON.parse(localStorage.getItem("tka-viewer3d-camera") ?? "null"),
+        `\n  Auto-recovering to defaults.`
       );
       controls.setLookAt(
-        defaultPosition.x, defaultPosition.y, defaultPosition.z,
-        defaultTarget.x, defaultTarget.y, defaultTarget.z,
-        true,
+        defaultPosition.x,
+        defaultPosition.y,
+        defaultPosition.z,
+        defaultTarget.x,
+        defaultTarget.y,
+        defaultTarget.z,
+        true
       );
       localStorage.removeItem("tka-viewer3d-camera");
       return true;
@@ -231,7 +250,7 @@
       console.error(
         `[Viewer3DCamera] 🔴 Blocked save of collapsed orbit state — distance=${d.toFixed(4)}`,
         `\n  pos: (${_endPos.x.toFixed(3)}, ${_endPos.y.toFixed(3)}, ${_endPos.z.toFixed(3)})`,
-        `\n  tgt: (${_endTgt.x.toFixed(3)}, ${_endTgt.y.toFixed(3)}, ${_endTgt.z.toFixed(3)})`,
+        `\n  tgt: (${_endTgt.x.toFixed(3)}, ${_endTgt.y.toFixed(3)}, ${_endTgt.z.toFixed(3)})`
       );
       checkOrbitHealth(controls);
       return;
@@ -242,7 +261,11 @@
 
     pendingSnapshot = {
       position: pos,
-      rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
+      rotation: {
+        x: camera.rotation.x,
+        y: camera.rotation.y,
+        z: camera.rotation.z,
+      },
       fov: camera.fov ?? 50,
       target: tgt,
       timestamp: Date.now(),
@@ -259,15 +282,19 @@
     targetPos: { x: number; y: number; z: number },
     targetLookAt: { x: number; y: number; z: number },
     spherical?: { azimuth: number; polar: number },
-    animate: boolean = true,
+    animate: boolean = true
   ) {
     if (!controlsInstance) return;
 
     if (spherical) {
       controlsInstance.setLookAt(
-        targetPos.x, targetPos.y, targetPos.z,
-        targetLookAt.x, targetLookAt.y, targetLookAt.z,
-        animate,
+        targetPos.x,
+        targetPos.y,
+        targetPos.z,
+        targetLookAt.x,
+        targetLookAt.y,
+        targetLookAt.z,
+        animate
       );
       controlsInstance.rotateTo(spherical.azimuth, spherical.polar, false);
     } else {
@@ -278,7 +305,7 @@
         targetLookAt.x,
         targetLookAt.y,
         targetLookAt.z,
-        animate,
+        animate
       );
     }
   }
@@ -297,7 +324,11 @@
         if (cam && distSq(p, t) >= MIN_ORBIT_RADIUS_SQ) {
           viewer3DState.updateCameraSnapshot({
             position: { x: p.x, y: p.y, z: p.z },
-            rotation: { x: cam.rotation.x, y: cam.rotation.y, z: cam.rotation.z },
+            rotation: {
+              x: cam.rotation.x,
+              y: cam.rotation.y,
+              z: cam.rotation.z,
+            },
             fov: cam.fov ?? 50,
             target: { x: t.x, y: t.y, z: t.z },
             timestamp: Date.now(),
@@ -308,7 +339,8 @@
       }
     }
     document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
   });
 
   // Per-frame tick for the camera-choreography driver. Runs every frame;
@@ -344,18 +376,28 @@
       const live = viewer3DState.persistedCamera;
       const pos = live?.position ?? initialPosition;
       const tgt = live?.target ?? initialTarget;
-      const pOk = isFinitePoint(pos) && isFinitePoint(tgt) && distSq(pos, tgt) >= MIN_ORBIT_RADIUS_SQ;
+      const pOk =
+        isFinitePoint(pos) &&
+        isFinitePoint(tgt) &&
+        distSq(pos, tgt) >= MIN_ORBIT_RADIUS_SQ;
       const usePos = pOk ? pos : defaultPosition;
       const useTgt = pOk ? tgt : defaultTarget;
       c.setLookAt(
-        usePos.x, usePos.y, usePos.z,
-        useTgt.x, useTgt.y, useTgt.z,
-        false,
+        usePos.x,
+        usePos.y,
+        usePos.z,
+        useTgt.x,
+        useTgt.y,
+        useTgt.z,
+        false
       );
       if (!pOk) {
         console.warn(
           `[Viewer3DCamera] Persisted camera state was invalid — reset to defaults.`,
-          `\n  raw pos:`, pos, `\n  raw tgt:`, tgt,
+          `\n  raw pos:`,
+          pos,
+          `\n  raw tgt:`,
+          tgt
         );
       }
       checkOrbitHealth(c);

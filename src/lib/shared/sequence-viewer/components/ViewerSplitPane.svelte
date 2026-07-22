@@ -1007,7 +1007,7 @@
     opacity: 1;
     transition:
       opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 0s;
+      visibility 0s linear 0s;
   }
 
   /* Qualified with `.media-pane` so `position:absolute` beats the later
@@ -1022,7 +1022,7 @@
     opacity: 1;
     transition:
       opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 0s;
+      visibility 0s linear 0s;
   }
 
   .media-pane.content-overlay-hidden {
@@ -1031,7 +1031,7 @@
     pointer-events: none;
     transition:
       opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 200ms;
+      visibility 0s linear 200ms;
   }
 
   .media-pane.persistent-3d-hidden,
@@ -1043,7 +1043,7 @@
     opacity: 0;
     transition:
       opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 200ms;
+      visibility 0s linear 200ms;
   }
 
   .persistent-rail {
@@ -1054,7 +1054,7 @@
     opacity: 1;
     transition:
       opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 0s;
+      visibility 0s linear 0s;
   }
 
   .persistent-rail > :global(*) {
@@ -1066,7 +1066,7 @@
     visibility: hidden;
     transition:
       opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 200ms;
+      visibility 0s linear 200ms;
   }
 
   .persistent-rail-hidden > :global(*) {

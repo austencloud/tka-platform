@@ -375,10 +375,10 @@ export class SequenceModalExporter {
       const blob = await this.sequenceRenderer.renderSequenceToBlob(
         deps.sequence,
         {
-        stepSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        ...renderOptions,
+          stepSize: 240,
+          format: "PNG",
+          quality: 1.0,
+          ...renderOptions,
         }
       );
 

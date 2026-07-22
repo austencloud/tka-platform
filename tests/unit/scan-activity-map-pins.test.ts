@@ -978,7 +978,7 @@ describe("scan activity state", () => {
     expect(scanPropConfigForPreview(state.codes[0] ?? null, event)).toEqual({
       bluePropType: PropType.POI,
       redPropType: PropType.FAN,
-      catDogMode: false,
+      catDogMode: true,
     });
     state.disconnect();
   });

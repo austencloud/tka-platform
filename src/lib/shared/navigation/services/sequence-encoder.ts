@@ -744,6 +744,9 @@ export function parsePropsFromURL(
 
   const redPropType = parsePropTypeFromURLValue(searchParams.get("rp"));
   if (redPropType) result.redPropType = redPropType;
+  if (bluePropType && redPropType) {
+    result.catDogMode = bluePropType !== redPropType;
+  }
 
   return result;
 }

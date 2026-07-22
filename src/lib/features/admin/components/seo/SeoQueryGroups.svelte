@@ -12,20 +12,29 @@
 <section class="panel" aria-labelledby="queries-title">
   <div class="panel-heading">
     <div>
-      <span class="panel-kicker">Category ownership</span>
-      <h3 id="queries-title">Query groups</h3>
+      <span class="panel-kicker">What people search</span>
+      <h3 id="queries-title">Search topics</h3>
     </div>
-    <span class="window-label">{snapshot.currentWindow ?? "baseline"}</span>
+    <span class="window-label">
+      {snapshot.currentWindow === "primary"
+        ? "First growth check"
+        : snapshot.currentWindow === "confirmation"
+          ? "Proof check"
+          : "Before picture"}
+    </span>
   </div>
+  <p class="panel-explanation">
+    Search phrases are grouped by what the person was trying to find.
+  </p>
   <div class="table-scroll themed-scrollbar">
     <table>
       <thead>
         <tr>
-          <th scope="col">Group</th>
-          <th scope="col">Impressions</th>
-          <th scope="col">Clicks</th>
-          <th scope="col">CTR</th>
-          <th scope="col">Avg. position</th>
+          <th scope="col">Topic</th>
+          <th scope="col">Seen in Google</th>
+          <th scope="col">Visits</th>
+          <th scope="col">Click rate</th>
+          <th scope="col">Google rank</th>
         </tr>
       </thead>
       <tbody>
@@ -57,7 +66,6 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 16px;
   }
 
   .panel-kicker,
@@ -79,6 +87,12 @@
   h3 {
     margin: 3px 0 0;
     font-size: clamp(1rem, 0.92rem + 0.4vw, 1.25rem);
+  }
+
+  .panel-explanation {
+    margin: 8px 0 12px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.6));
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .table-scroll {

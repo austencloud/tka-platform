@@ -353,9 +353,7 @@ export class EndlessSpinnerOrchestrator {
       if (!startPos) continue;
 
       // Extract start state
-      const position = (startPos as StartPositionData).gridPosition ??
-        (startPos as StepData).startPosition ??
-        null;
+      const position = startPos.gridPosition ?? startPos.startPosition ?? null;
       const blueOri = startPos.motions?.blue?.startOrientation ?? null;
       const redOri = startPos.motions?.red?.startOrientation ?? null;
 
@@ -763,13 +761,11 @@ export class EndlessSpinnerOrchestrator {
       const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
       if (!startPos) continue;
 
-      // Try multiple ways to get the position - the data structure varies.
-      // StartPositionData carries `gridPosition`; StepData (and the first beat)
-      // carry `startPosition`. Narrow against both rather than probing an
-      // untyped record (mirrors the union-narrowing at buildSequenceIndex).
+      // Prefer the canonical start-position field, with the inherited
+      // pictograph position and first beat as legacy fallbacks.
       const sequenceStartPosition: string | null =
-        (startPos as StartPositionData).gridPosition ??
-        (startPos as StepData).startPosition ??
+        startPos.gridPosition ??
+        startPos.startPosition ??
         fullSequence.steps?.[0]?.startPosition ??
         null;
 

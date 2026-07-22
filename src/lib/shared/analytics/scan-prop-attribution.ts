@@ -9,8 +9,10 @@ export function scanPropProperties(
   blueProp: unknown,
   redProp: unknown
 ): ScanPropProperties {
-  const blue = blueProp === null || blueProp === undefined ? null : String(blueProp);
-  const red = redProp === null || redProp === undefined ? null : String(redProp);
+  const blue =
+    blueProp === null || blueProp === undefined ? null : String(blueProp);
+  const red =
+    redProp === null || redProp === undefined ? null : String(redProp);
   return {
     blue_prop: blue,
     red_prop: red,

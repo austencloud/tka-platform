@@ -13,27 +13,27 @@
  */
 
 import posthog from "posthog-js";
-import type { CaptureOptions, BeforeSendFn, CaptureResult } from "posthog-js";
+import type {
+  CaptureOptions,
+  PostHogInterface,
+  BeforeSendFn,
+  CaptureResult,
+} from "posthog-js";
 import { browser } from "$app/environment";
-import {
-  PUBLIC_POSTHOG_HOST,
-  PUBLIC_POSTHOG_KEY,
-  PUBLIC_POSTHOG_PROJECT_ID,
-} from "$env/static/public";
+import * as staticPublicEnv from "$env/static/public";
 import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 
 // Capacitor serves a static bundle and has no server route for SvelteKit's
 // /_app/env.js. Build-time public constants work in the WebView and remain safe
-// when this module appears in a worker import graph.
-const publicEnv = {
-  PUBLIC_POSTHOG_HOST,
-  PUBLIC_POSTHOG_KEY,
-  PUBLIC_POSTHOG_PROJECT_ID,
-};
+// when this module appears in a worker import graph. Reading through the module
+// namespace also lets hosts omit optional PostHog values without failing the
+// build on a missing named export.
+const publicEnv = staticPublicEnv as Record<string, string | undefined>;
 
 let initialized = false;
 let initializationPromise: Promise<void> | null = null;
-type PostHogReadyListener = (instance: typeof posthog) => void;
+export type PostHogReadyClient = PostHogInterface;
+type PostHogReadyListener = (instance: PostHogReadyClient) => void;
 const postHogReadyListeners = new Set<PostHogReadyListener>();
 
 /**
@@ -50,7 +50,7 @@ export function onPostHogReady(listener: PostHogReadyListener): () => void {
   return () => postHogReadyListeners.delete(listener);
 }
 
-function notifyPostHogReady(instance: typeof posthog): void {
+function notifyPostHogReady(instance: PostHogReadyClient): void {
   const listeners = [...postHogReadyListeners];
   postHogReadyListeners.clear();
   for (const listener of listeners) listener(instance);
@@ -279,12 +279,7 @@ async function initializePostHog(): Promise<void> {
     before_send: dropKnownNoise,
 
     // Load feature flags immediately
-    loaded: () => {
-      // Deliberately ignores the callback's own argument and uses the imported
-      // singleton. Same object at runtime, but posthog-js types the parameter
-      // as the narrower PostHogInterface, which is missing ~60 members the
-      // ready-listeners' `typeof posthog` contract expects.
-      //
+    loaded: (posthog) => {
       // Scan attribution must be registered here, before posthog-js schedules
       // the initial $pageview immediately after this callback returns.
       notifyPostHogReady(posthog);
@@ -376,7 +371,7 @@ export function captureEvent(
 
 /** Deliver events queued before `initialized` flips inside the loaded hook. */
 export function captureEventWithPostHog(
-  instance: typeof posthog,
+  instance: PostHogReadyClient,
   eventName: string,
   properties?: Record<string, unknown>,
   options?: CaptureOptions

@@ -46,17 +46,21 @@
   let containerSize: number = $state(400);
   let dockHeight = $state(76);
 
-  const ctrl = providedCtrl ?? new MandalaViewerController({
-    getSequence: () => sequence,
-    getBluePropType: () => bluePropType,
-    getRedPropType: () => redPropType,
-  });
+  const ctrl =
+    providedCtrl ??
+    new MandalaViewerController({
+      getSequence: () => sequence,
+      getBluePropType: () => bluePropType,
+      getRedPropType: () => redPropType,
+    });
 
   const takeoverSize = $derived(Math.max(160, containerSize - 32));
 
   // With the dock suppressed (controls in the sidebar) the stage reclaims the
   // bottom padding the dock would otherwise reserve.
-  const stagePadBottom = $derived(controlsPlacement === "external" ? 0 : dockHeight + 14);
+  const stagePadBottom = $derived(
+    controlsPlacement === "external" ? 0 : dockHeight + 14
+  );
 
   $effect(() => {
     if (!stageEl) return;
@@ -72,7 +76,11 @@
 </script>
 
 <div class="mandala-pane" style:background={ctrl.bgColor}>
-  <div class="mandala-stage" bind:this={stageEl} style:padding-bottom="{stagePadBottom}px">
+  <div
+    class="mandala-stage"
+    bind:this={stageEl}
+    style:padding-bottom="{stagePadBottom}px"
+  >
     <SequenceMandala
       {sequence}
       animate={!ctrl.paused}
@@ -135,6 +143,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mandala-stage { transition: none; }
+    .mandala-stage {
+      transition: none;
+    }
   }
 </style>

@@ -12,7 +12,10 @@
    */
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { PATTERN_DESCRIPTORS as LED_PATTERNS } from "$lib/shared/animation-engine/domain/patterns/registry";
-  import type { EffectsConfigState, EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import type {
+    EffectsConfigState,
+    EffectId,
+  } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
     EFFECT_CONTROLS,
     type ControlDescriptor,
@@ -36,7 +39,10 @@
      *  separate animationSettings.trail store). Keyed by descriptor `field`. The
      *  host builds these — it is the layer that legitimately knows both stores,
      *  so the manifest and this component stay store-agnostic. */
-    overrides?: Record<string, { get: () => unknown; set: (v: unknown) => void }>;
+    overrides?: Record<
+      string,
+      { get: () => unknown; set: (v: unknown) => void }
+    >;
     onSettingChange?: (
       setting: string,
       previousValue: string | number | boolean | null,
@@ -54,19 +60,26 @@
     onSettingChange,
   }: Props = $props();
 
-  const intent = $derived(config.effect(effect) as unknown as Record<string, unknown>);
+  const intent = $derived(
+    config.effect(effect) as unknown as Record<string, unknown>
+  );
   // showWhen conditions read the merged view so cross-store fields gate correctly.
   const intentView = $derived(
     overrides
-      ? { ...intent, ...Object.fromEntries(Object.entries(overrides).map(([k, o]) => [k, o.get()])) }
-      : intent,
+      ? {
+          ...intent,
+          ...Object.fromEntries(
+            Object.entries(overrides).map(([k, o]) => [k, o.get()])
+          ),
+        }
+      : intent
   );
   const controls = $derived(
     EFFECT_CONTROLS[effect].filter(
       (c) =>
         (only ? only.includes(c.id) : tiers.includes(c.tier)) &&
-        (!c.showWhen || c.showWhen(intentView)),
-    ),
+        (!c.showWhen || c.showWhen(intentView))
+    )
   );
 
   function get(field: string): unknown {
@@ -74,7 +87,9 @@
   }
   type SettingValue = string | number | boolean | null;
   function isSettingValue(value: unknown): value is SettingValue {
-    return value === null || ["string", "number", "boolean"].includes(typeof value);
+    return (
+      value === null || ["string", "number", "boolean"].includes(typeof value)
+    );
   }
   function set(field: string, value: unknown, coalesce = false) {
     const previous = get(field);
@@ -83,7 +98,11 @@
     } else {
       config.updateEffect(effect, { [field]: value } as never);
     }
-    if (isSettingValue(previous) && isSettingValue(value) && previous !== value) {
+    if (
+      isSettingValue(previous) &&
+      isSettingValue(value) &&
+      previous !== value
+    ) {
       onSettingChange?.(field, previous, value, coalesce);
     }
   }
@@ -174,14 +193,16 @@
             <input
               type="color"
               value={get(c.pairFields![0]) as string}
-              oninput={(e) => set(c.pairFields![0], e.currentTarget.value, true)}
+              oninput={(e) =>
+                set(c.pairFields![0], e.currentTarget.value, true)}
             />
           </label>
           <label class="ctl-color">
             <input
               type="color"
               value={get(c.pairFields![1]) as string}
-              oninput={(e) => set(c.pairFields![1], e.currentTarget.value, true)}
+              oninput={(e) =>
+                set(c.pairFields![1], e.currentTarget.value, true)}
             />
           </label>
         </div>
@@ -308,8 +329,16 @@
     -webkit-tap-highlight-color: transparent;
   }
   .ctl-pattern.active {
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 55%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 
@@ -395,7 +424,11 @@
     color: var(--theme-text);
   }
   .ctl-chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
     border-color: var(--theme-accent, #4a9eff);
     color: var(--theme-text);
   }

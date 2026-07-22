@@ -39,8 +39,12 @@
       : (selected?.effectiveRedPlane ?? Plane.WALL)
   );
 
-  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.planes ?? false));
-  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("planes") : 0);
+  const isOverridden = $derived(
+    !isAllMode && (selected?.hasOverride.planes ?? false)
+  );
+  const overrideCount = $derived(
+    isAllMode ? viewer.overrideCountForCategory("planes") : 0
+  );
 
   function hasHandOnPlane(plane: Plane): boolean {
     return bluePlane === plane || redPlane === plane;
@@ -54,9 +58,9 @@
 
   const isPlaneStateNonDefault = $derived(
     bluePlane !== Plane.WALL ||
-    redPlane !== Plane.WALL ||
-    hasStepOverrides ||
-    viewer.visiblePlanes.size > 0
+      redPlane !== Plane.WALL ||
+      hasStepOverrides ||
+      viewer.visiblePlanes.size > 0
   );
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
@@ -72,7 +76,11 @@
     );
   }
 
-  function handleHandSlotClick(e: MouseEvent, hand: "blue" | "red", plane: Plane) {
+  function handleHandSlotClick(
+    e: MouseEvent,
+    hand: "blue" | "red",
+    plane: Plane
+  ) {
     e.stopPropagation();
     const currentPlane = hand === "blue" ? bluePlane : redPlane;
     if (currentPlane === plane) return;
@@ -149,7 +157,12 @@
 </script>
 
 {#if isAllMode && overrideCount > 0}
-  <CascadeBadge mode="overrides" {overrideCount} categoryLabel="planes" onReset={resetAllOverrides} />
+  <CascadeBadge
+    mode="overrides"
+    {overrideCount}
+    categoryLabel="planes"
+    onReset={resetAllOverrides}
+  />
 {:else if !isAllMode && isOverridden}
   <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
 {:else if !isAllMode}
@@ -174,7 +187,7 @@
           style="--dot-color: {color};"
           onclick={(e) => handlePlaneToggleClick(e, plane)}
           aria-pressed={visible}
-          aria-label={`${label} plane - ${visible ? 'visible, click to hide' : 'hidden, click to show'}`}
+          aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
         >
           <i
             class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
@@ -224,12 +237,25 @@
       class="reset-btn"
       class:with-overrides={hasStepOverrides}
       onclick={handleResetPlanesClick}
-      aria-label={hasStepOverrides ? 'Reset all planes and clear step overrides' : 'Reset all planes'}
-      title={hasStepOverrides ? 'Reset all planes and clear step overrides' : 'Reset all planes'}
+      aria-label={hasStepOverrides
+        ? "Reset all planes and clear step overrides"
+        : "Reset all planes"}
+      title={hasStepOverrides
+        ? "Reset all planes and clear step overrides"
+        : "Reset all planes"}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 7v6h6"/>
-        <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3 7v6h6" />
+        <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
       </svg>
       Reset
       {#if hasStepOverrides}
@@ -348,8 +374,12 @@
     padding: 0;
   }
 
-  .hand-slot.blue { border-color: rgba(74, 144, 217, 0.4); }
-  .hand-slot.red { border-color: rgba(217, 74, 74, 0.4); }
+  .hand-slot.blue {
+    border-color: rgba(74, 144, 217, 0.4);
+  }
+  .hand-slot.red {
+    border-color: rgba(217, 74, 74, 0.4);
+  }
 
   .hand-slot:hover:not(.filled).blue {
     border-color: rgba(74, 144, 217, 0.7);

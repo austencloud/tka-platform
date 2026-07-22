@@ -98,6 +98,7 @@
             word={simplifyRepeatedWord(sequence.word!)}
             height={Math.floor(wordTitleFontSize * 0.85)}
             darkMode={activeDarkMode}
+            fitToParent
           />
         </div>
       {/if}

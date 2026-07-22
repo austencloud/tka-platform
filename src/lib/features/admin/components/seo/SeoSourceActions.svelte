@@ -25,7 +25,7 @@
       rel="noreferrer"
     >
       <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-      Search Console
+      Google search data
     </a>
     <a
       class="action-button"
@@ -34,7 +34,7 @@
       rel="noreferrer"
     >
       <i class="fas fa-database" aria-hidden="true"></i>
-      BigQuery
+      Stored scorecards
     </a>
     <a
       class="action-button"
@@ -43,7 +43,7 @@
       rel="noreferrer"
     >
       <i class="fas fa-chart-line" aria-hidden="true"></i>
-      PostHog
+      Visitor behavior
     </a>
   </div>
   <div class="refresh-area">
@@ -61,7 +61,7 @@
         class:fa-spin={refreshing}
         aria-hidden="true"
       ></i>
-      {refreshing ? "Refreshing" : "Refresh evidence"}
+      {refreshing ? "Refreshing" : "Refresh numbers"}
     </button>
   </div>
 </footer>

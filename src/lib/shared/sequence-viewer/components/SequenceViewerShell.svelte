@@ -174,7 +174,7 @@
   // at least sidebar-wide + the sidebar all fit, the export falls back to the compact
   // bottom dock with the preview as the hero (same layout phones get).
   const EXPORT_SIDEBAR_WIDTH = 560; // keep in sync with --export-sidebar-width in CSS
-  const HERO_MIN_WIDTH = 600;       // sidebar 560 + 40px so the preview is clearly larger
+  const HERO_MIN_WIDTH = 600; // sidebar 560 + 40px so the preview is clearly larger
 
   // Rail width is user-persisted (ViewerContentRail's RAIL_WIDTH_KEY), so a dragged-
   // wider rail raises the bar correctly instead of silently re-crushing the preview.
@@ -994,9 +994,13 @@
         }
       : undefined}
     onOpenChange={(open, reason) =>
-      captureScanAction(open ? "overflow_open" : "overflow_close", {}, {
-        count: reason !== "item",
-      })}
+      captureScanAction(
+        open ? "overflow_open" : "overflow_close",
+        {},
+        {
+          count: reason !== "item",
+        }
+      )}
   />
 {/snippet}
 
@@ -1006,8 +1010,8 @@
   class:practice-mobile={isMobile && ctx.practiceActive}
 >
   <header class="drawer-header">
-        <div class="drawer-header-left-actions">
-          <!-- Both action sets stay mounted and crossfade so entering
+    <div class="drawer-header-left-actions">
+      <!-- Both action sets stay mounted and crossfade so entering
                practice doesn't flash buttons in/out. inert removes the
                hidden layer from focus + pointer + a11y. -->
       <div
@@ -1015,142 +1019,142 @@
         class:active={ctx.practiceActive}
         inert={!ctx.practiceActive}
       >
-            <button
-              type="button"
-              class="header-action-btn practice-exit"
+        <button
+          type="button"
+          class="header-action-btn practice-exit"
           onclick={handleExitPractice}
-              aria-label="Exit practice mode"
-            >
-              <i class="fas fa-arrow-left" aria-hidden="true"></i>
-              <span>Exit Practice</span>
-            </button>
-          </div>
+          aria-label="Exit practice mode"
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>Exit Practice</span>
+        </button>
+      </div>
 
       <div
         class="left-actions-layer normal"
         class:active={!ctx.practiceActive}
         inert={ctx.practiceActive}
       >
-            {#if compactChrome}
-              <!-- Icon-only when the centered title and the full action row no
+        {#if compactChrome}
+          <!-- Icon-only when the centered title and the full action row no
                    longer have separate lanes. The title menu keeps every action. -->
-              <button
-                type="button"
-                class="header-action-btn practice icon-only"
+          <button
+            type="button"
+            class="header-action-btn practice icon-only"
             onclick={handleEnterPractice}
-                aria-label="Practice"
-              >
-                <i class="fas fa-dumbbell" aria-hidden="true"></i>
-              </button>
-            {:else}
-              <button
-                type="button"
-                class="header-action-btn"
-                class:favorited={ctx.isFavorite}
+            aria-label="Practice"
+          >
+            <i class="fas fa-dumbbell" aria-hidden="true"></i>
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="header-action-btn"
+            class:favorited={ctx.isFavorite}
             onclick={handleFavoriteToggle}
             aria-label={ctx.isFavorite
               ? "Remove from favorites"
               : "Add to favorites"}
-              >
-                <i class="fas fa-heart" aria-hidden="true"></i>
-              </button>
+          >
+            <i class="fas fa-heart" aria-hidden="true"></i>
+          </button>
 
-              {#if !ctx.isSaved}
-                <button
-                  type="button"
-                  class="header-action-btn save"
+          {#if !ctx.isSaved}
+            <button
+              type="button"
+              class="header-action-btn save"
               onclick={handleSave}
-                  aria-label="Save sequence"
-                >
-                  <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-                </button>
-              {/if}
+              aria-label="Save sequence"
+            >
+              <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+            </button>
+          {/if}
 
-              <button
-                type="button"
-                class="header-action-btn remix"
-                onclick={handleRemix}
-                aria-label="Remix"
-              >
-                <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-              </button>
+          <button
+            type="button"
+            class="header-action-btn remix"
+            onclick={handleRemix}
+            aria-label="Remix"
+          >
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          </button>
 
-              <button
-                type="button"
-                class="header-action-btn practice"
+          <button
+            type="button"
+            class="header-action-btn practice"
             onclick={handleEnterPractice}
-                aria-label="Practice"
-              >
-                <i class="fas fa-dumbbell" aria-hidden="true"></i>
-                <span>Practice</span>
-              </button>
+            aria-label="Practice"
+          >
+            <i class="fas fa-dumbbell" aria-hidden="true"></i>
+            <span>Practice</span>
+          </button>
 
-              <span class="header-action-divider"></span>
+          <span class="header-action-divider"></span>
 
           <MotionVisibilityToggle
             onToggleBlue={() => handleMotionToggle("blue")}
             onToggleRed={() => handleMotionToggle("red")}
           />
 
-              {#if authState.isAdmin}
-                <button
-                  type="button"
-                  class="header-action-btn"
-                  onclick={handleCopyForClaude}
-                  aria-label="Copy sequence data for Claude"
-                  title="Copy for Claude"
-                >
+          {#if authState.isAdmin}
+            <button
+              type="button"
+              class="header-action-btn"
+              onclick={handleCopyForClaude}
+              aria-label="Copy sequence data for Claude"
+              title="Copy for Claude"
+            >
               <i
                 class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}"
                 aria-hidden="true"
               ></i>
-                </button>
-              {/if}
-            {/if}
-          </div>
-        </div>
-
-        <div class="drawer-header-title-group">
-          {#if ctx.practiceActive}
-            <div class="drawer-header-title">
-              <span class="drawer-header-title-text">Practice Mode</span>
-            </div>
-          {:else}
-            <!-- The centered title IS the overflow-menu trigger: title +
-                 chevron opens the actions menu below the header. -->
-            {@render overflowMenu(compactChrome)}
+            </button>
           {/if}
-        </div>
+        {/if}
+      </div>
+    </div>
 
-        <div class="drawer-header-right-actions">
-          <!-- Card export settings can't be collapsed on desktop — they're
+    <div class="drawer-header-title-group">
+      {#if ctx.practiceActive}
+        <div class="drawer-header-title">
+          <span class="drawer-header-title-text">Practice Mode</span>
+        </div>
+      {:else}
+        <!-- The centered title IS the overflow-menu trigger: title +
+                 chevron opens the actions menu below the header. -->
+        {@render overflowMenu(compactChrome)}
+      {/if}
+    </div>
+
+    <div class="drawer-header-right-actions">
+      <!-- Card export settings can't be collapsed on desktop — they're
                required to configure the download. Only Download Animation
                keeps the hide/show toggle. -->
-          {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
-            <button
-              type="button"
-              class="header-action-btn"
-              class:active={!exportSidebarCollapsed}
-              onclick={toggleExportSidebar}
+      {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
+        <button
+          type="button"
+          class="header-action-btn"
+          class:active={!exportSidebarCollapsed}
+          onclick={toggleExportSidebar}
           aria-label={exportSidebarCollapsed
             ? "Show export settings"
             : "Hide export settings"}
-              title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
-            >
-              <i class="fas fa-sliders" aria-hidden="true"></i>
-            </button>
-          {/if}
+          title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
+        >
+          <i class="fas fa-sliders" aria-hidden="true"></i>
+        </button>
+      {/if}
 
-          <button
-            type="button"
-            class="drawer-close-button"
+      <button
+        type="button"
+        class="drawer-close-button"
         onclick={handleClose}
-            aria-label="Close viewer"
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-    </header>
+        aria-label="Close viewer"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
 
   <div class="drawer-main">
     <div class="drawer-body-content" bind:clientWidth={bodyWidth}>

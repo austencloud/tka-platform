@@ -58,15 +58,35 @@
   aria-label="Viewer controls"
 >
   {#if renderMode === "3d"}
-    <ViewerPopover id="formation" title="Formation" icon="fa-users" tooltip="Formation" {onSettingChange}>
+    <ViewerPopover
+      id="formation"
+      title="Formation"
+      icon="fa-users"
+      tooltip="Formation"
+      {onSettingChange}
+    >
       <FormationPopover {onSettingChange} />
     </ViewerPopover>
 
-    <ViewerPopover id="camera" title="Camera" icon="fa-video" tooltip="Camera" width={300} {onSettingChange}>
+    <ViewerPopover
+      id="camera"
+      title="Camera"
+      icon="fa-video"
+      tooltip="Camera"
+      width={300}
+      {onSettingChange}
+    >
       <CameraPopover {onSettingChange} />
     </ViewerPopover>
 
-    <ViewerPopover id="export" title="Export" icon="fa-arrow-up-from-bracket" tooltip="Export" width={340} {onSettingChange}>
+    <ViewerPopover
+      id="export"
+      title="Export"
+      icon="fa-arrow-up-from-bracket"
+      tooltip="Export"
+      width={340}
+      {onSettingChange}
+    >
       <ExportPopover {onSettingChange} />
     </ViewerPopover>
 
@@ -80,7 +100,14 @@
       <i class="fas fa-bookmark"></i>
     </button>
 
-    <ViewerPopover id="scene" title="Scene" icon="fa-mountain-sun" tooltip="Scene" width={320} {onSettingChange}>
+    <ViewerPopover
+      id="scene"
+      title="Scene"
+      icon="fa-mountain-sun"
+      tooltip="Scene"
+      width={320}
+      {onSettingChange}
+    >
       <SceneSelectorPopover {onSettingChange} />
     </ViewerPopover>
 
@@ -90,7 +117,14 @@
       <div class="performer-separator" aria-hidden="true">
         <div class="separator-line"></div>
       </div>
-      <ViewerPopover id="dev" title="Dev Tools" icon="fa-terminal" tooltip="Dev Tools" width={280} {onSettingChange}>
+      <ViewerPopover
+        id="dev"
+        title="Dev Tools"
+        icon="fa-terminal"
+        tooltip="Dev Tools"
+        width={280}
+        {onSettingChange}
+      >
         <DevToolsPopover />
       </ViewerPopover>
     {/if}

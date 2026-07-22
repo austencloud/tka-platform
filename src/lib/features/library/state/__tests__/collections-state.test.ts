@@ -40,6 +40,13 @@ vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
 import { collectionsState } from "../collections-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
+// authState above is the vi.mock plain object; the production type marks the tier
+// flags readonly, so cast to a mutable view to reset/flip them between tests.
+const mutableAuth = authState as unknown as {
+	isAuthenticated: boolean;
+	isAnonymous: boolean;
+};
+
 function col(id: string, name: string, opts: Partial<LibraryCollection> = {}): LibraryCollection {
 	return {
 		id,
@@ -64,8 +71,8 @@ beforeEach(() => {
 	mocks.updateCollection.mockResolvedValue(undefined);
 	mocks.deleteCollection.mockResolvedValue(undefined);
 	// Reset the auth tier so a guest-branch test cannot leak into the next one.
-	authState.isAuthenticated = true;
-	authState.isAnonymous = false;
+	mutableAuth.isAuthenticated = true;
+	mutableAuth.isAnonymous = false;
 	collectionsState.collections = [];
 	collectionsState.loading = false;
 });
@@ -154,7 +161,7 @@ describe("collectionsState", () => {
 	// firestore.rules deny a guest write that sets isPublic == true, so setPublic
 	// nudges to signup rather than firing a write that would fail silently.
 	it("setPublic nudges a guest to sign up instead of writing", async () => {
-		authState.isAnonymous = true;
+		mutableAuth.isAnonymous = true;
 		const ok = await collectionsState.setPublic("c1", true);
 		expect(ok).toBe(false);
 		expect(mocks.updateCollection).not.toHaveBeenCalled();
@@ -165,7 +172,7 @@ describe("collectionsState", () => {
 	// Un-publishing stays open to guests — only a full user could have published
 	// in the first place, so the guard fires on the publish direction only.
 	it("setPublic lets a guest un-publish", async () => {
-		authState.isAnonymous = true;
+		mutableAuth.isAnonymous = true;
 		const ok = await collectionsState.setPublic("c1", false);
 		expect(ok).toBe(true);
 		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { isPublic: false });

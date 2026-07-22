@@ -25,6 +25,7 @@ import {
   captureEventWithPostHog,
   getPostHogInstance,
   onPostHogReady,
+  type PostHogReadyClient,
 } from "./services/posthog";
 
 const SCAN_SESSION_PREFIX = "tka:scan-session:";
@@ -550,9 +551,7 @@ export function endScanViewerSession(exitReason: ScanExitReason): void {
   retireCompletedScanVisit();
 }
 
-function flushQueuedScanEvents(
-  instance: NonNullable<ReturnType<typeof getPostHogInstance>>
-): void {
+function flushQueuedScanEvents(instance: PostHogReadyClient): void {
   const events = queuedScanEvents.splice(0);
   for (const event of events) {
     captureEventWithPostHog(
@@ -687,8 +686,7 @@ function installPagehideHandler(): void {
  */
 function registerSuperProperties(
   base = readScanBaseProperties(),
-  instance: NonNullable<ReturnType<typeof getPostHogInstance>> | null =
-    getPostHogInstance()
+  instance: PostHogReadyClient | null = getPostHogInstance()
 ): void {
   if (!base) return;
   if (!instance) return;

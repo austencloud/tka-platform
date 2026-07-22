@@ -8,9 +8,11 @@
     /** Height of each glyph in px. Dash bar scales proportionally. */
     height?: number;
     darkMode?: boolean;
+    /** Scale the complete word as one unit when its parent is narrower. */
+    fitToParent?: boolean;
   }
 
-  let { word, height = 32, darkMode = false }: Props = $props();
+  let { word, height = 32, darkMode = false, fitToParent = false }: Props = $props();
 
   const cache = getGlyphCache();
 
@@ -23,10 +25,28 @@
 
   const segments = $derived(word ? compressWord(word) : []);
   const hasCompression = $derived(segments.some((s: CompressedSegment) => s.repeat > 1));
+  let availableWidth = $state(0);
+  let naturalWidth = $state(0);
+  const fitScale = $derived(
+    fitToParent && availableWidth > 0 && naturalWidth > availableWidth
+      ? availableWidth / naturalWidth
+      : 1
+  );
 </script>
 
 {#if segments.length > 0}
-  <div class="tka-word-glyph" class:dark-mode={darkMode} style="height: {height}px;">
+  <div
+    class="tka-word-glyph"
+    class:dark-mode={darkMode}
+    class:fit-to-parent={fitToParent}
+    style="height: {height}px;"
+    bind:clientWidth={availableWidth}
+  >
+    <div
+      class="glyph-row"
+      style="transform: scale({fitScale});"
+      bind:offsetWidth={naturalWidth}
+    >
     {#each segments as segment, segIdx}
       {#if segIdx > 0 && hasCompression}
         <span
@@ -53,6 +73,7 @@
         {/each}
       </span>
     {/each}
+    </div>
   </div>
 {/if}
 
@@ -70,6 +91,19 @@
 
   .tka-word-glyph.dark-mode {
     color: #ffffff;
+  }
+
+  .tka-word-glyph.fit-to-parent {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+  }
+
+  .glyph-row {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    transform-origin: center center;
   }
 
   .token-row {

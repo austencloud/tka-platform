@@ -103,6 +103,7 @@ export interface ShareURLMetadata {
 export interface URLPropOptions {
   bluePropType?: string;
   redPropType?: string;
+  catDogMode?: boolean;
 }
 export interface SequenceRouteIdParseResult {
   /** Non-null if the ID is a self-contained encoded sequence */

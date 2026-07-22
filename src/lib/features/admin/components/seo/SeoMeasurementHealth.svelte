@@ -4,17 +4,17 @@
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
 </script>
 
-<section class="health-grid" aria-label="Measurement health">
+<section class="health-grid" aria-label="Data feed status">
   <article
     class="health-card"
     class:healthy={snapshot.dataQuality.searchDataComplete}
   >
     <span class="health-dot" aria-hidden="true"></span>
     <div>
-      <strong>Search Console</strong>
+      <strong>Google search data</strong>
       <span>
         {snapshot.dataQuality.collectedSearchDays}/{snapshot.dataQuality
-          .expectedSearchDays} finalized days
+          .expectedSearchDays} days loaded
       </span>
     </div>
   </article>
@@ -24,10 +24,10 @@
   >
     <span class="health-dot" aria-hidden="true"></span>
     <div>
-      <strong>PostHog</strong>
+      <strong>Visitor behavior</strong>
       <span>
         {snapshot.dataQuality.collectedPostHogDays}/{snapshot.dataQuality
-          .expectedPostHogDays} session days
+          .expectedPostHogDays} days loaded
       </span>
     </div>
   </article>
@@ -37,21 +37,21 @@
   >
     <span class="health-dot" aria-hidden="true"></span>
     <div>
-      <strong>URL inspection</strong>
+      <strong>Google indexing check</strong>
       <span>
-        {snapshot.indexability.inspected}/{snapshot.indexability.expected} sampled
-        URLs
+        {snapshot.indexability.inspected}/{snapshot.indexability.expected} sample
+        pages checked
       </span>
     </div>
   </article>
   <article class="health-card" class:healthy={snapshot.cohorts.frozen}>
     <span class="health-dot" aria-hidden="true"></span>
     <div>
-      <strong>Matched controls</strong>
+      <strong>Comparison pages</strong>
       <span>
         {snapshot.cohorts.frozen
-          ? `${snapshot.cohorts.frozenControlCount} locked before launch`
-          : "Freeze before deployment"}
+          ? snapshot.cohorts.frozenControlCount + " locked for a fair test"
+          : "Must be locked before the SEO changes"}
       </span>
     </div>
   </article>

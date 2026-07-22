@@ -41,7 +41,9 @@
 
 <div class="formation-content">
   <FormationSelector
-    value={viewer.activeFormation === "manual" ? "grid-2x2" : viewer.activeFormation}
+    value={viewer.activeFormation === "manual"
+      ? "grid-2x2"
+      : viewer.activeFormation}
     {performerCount}
     {disabledPresets}
     onchange={handleFormationChange}
