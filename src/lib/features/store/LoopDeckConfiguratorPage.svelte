@@ -72,6 +72,8 @@
     type LoopConfig,
   } from "./domain/loop-config";
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
+  import { trackVariantSelected, trackPropSelected } from "./analytics/shop-funnel";
+  import { trackViewOnceLoaded } from "./analytics/shop-funnel-view.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -102,6 +104,13 @@
     )
   );
 
+  // Funnel step 1, once per mount. Waits on the product load so price/preorder
+  // are real: on a warm module cache loadProducts resolves synchronously and
+  // this fires on the first flush; cold, it fires when the fetch settles. A
+  // failed load still trips it (isLoading goes false in the finally), so step 1
+  // never silently goes missing.
+  trackViewOnceLoaded("loop-deck", () => store.isLoading, () => customSku);
+
   // ── the packs vs the dials: packs are RECIPES the dials can't express
   //    (multi-length, multi-level, per-slice turn caps), so the pack selection
   //    is explicit state, not derived from dial equality. Page loads buyable
@@ -110,7 +119,16 @@
   function leaveCustom(id: LoopPackId) {
     pack = id;
     buzz();
+    // Two events on purpose: shop_loop_pack_selected is the usage gate that
+    // decides whether the pack picker survives; shop_variant_selected is funnel
+    // step 2. Different questions — don't collapse one into the other.
     getActivityLogger().logActivity("shop_loop_pack_selected", "shop", { pack: id });
+    trackVariantSelected({
+      listing: "loop-deck",
+      productId: customSku?.id,
+      variantKind: "loop_pack",
+      variantValue: id,
+    });
   }
   function enterCustom() {
     if (pack !== null) {
@@ -669,6 +687,7 @@
                     onchange={(p) => {
                       propType = p;
                       buzz();
+                      trackPropSelected("loop-deck", customSku?.id, p);
                     }}
                   />
                 </BaseCard>
@@ -692,6 +711,7 @@
 
           {#if customSku}
             <BuyButton
+              listing="loop-deck"
               product={customSku}
               {propType}
               {loopConfig}
@@ -700,6 +720,7 @@
             />
             {#if customSku.stripePriceId}
               <BuyButton
+                listing="loop-deck"
                 product={customSku}
                 {propType}
                 {loopConfig}
@@ -711,6 +732,7 @@
             <!-- Custom SKU not seeded/active yet: honest gate via the first
                  flavor SKU's waitlist (it has no Stripe price either). -->
             <BuyButton
+              listing="loop-deck"
               product={flavorSkus[0]}
               {propType}
               {loopConfig}
@@ -719,6 +741,7 @@
             />
             {#if flavorSkus[0].stripePriceId}
               <BuyButton
+                listing="loop-deck"
                 product={flavorSkus[0]}
                 {propType}
                 {loopConfig}

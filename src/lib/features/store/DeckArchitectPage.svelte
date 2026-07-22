@@ -59,6 +59,8 @@
     type LoopConfig,
   } from "./domain/loop-config";
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
+  import { trackVariantSelected, trackPropSelected } from "./analytics/shop-funnel";
+  import { trackViewOnceLoaded } from "./analytics/shop-funnel-view.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -84,6 +86,12 @@
       ) ??
       null
   );
+  // Funnel step 1. Kept alongside shop_loop_architect_opened above, not folded
+  // into it: that one is the usage gate deciding whether the Architect stays,
+  // this one is the funnel's entry step. Gated on the load settling so
+  // price/preorder are real (see the identical guard in the configurator).
+  trackViewOnceLoaded("loop-deck-architect", () => store.isLoading, () => customSku);
+
   const flavorSkus = $derived(
     store.products
       .filter((p) => p.listing === "loop-deck" && p.status === "active")
@@ -144,10 +152,26 @@
       slices.push({ id: ++uid, count: give, flavor: "rotated", level: 1, steps: 8 });
     }
     buzz();
+    trackRecipeShape();
   }
   function removeSlice(i: number) {
     slices.splice(i, 1);
     buzz();
+    trackRecipeShape();
+  }
+
+  // Funnel step 2 for the recipe dial. Fired on add/remove only — the shape of
+  // the recipe is what recipe_slice_count measures, and the per-slice steppers
+  // (count/level/flavor/steps) would emit the same slice count on every tick.
+  // variant_value stays null: a buyer-authored slice list has no bounded value,
+  // and serializing it would be unique per buyer.
+  function trackRecipeShape() {
+    trackVariantSelected({
+      listing: "loop-deck-architect",
+      productId: customSku?.id,
+      variantKind: "recipe",
+      recipeSliceCount: slices.length,
+    });
   }
   function setCount(i: number, v: number) {
     const s = slices[i];
@@ -545,6 +569,7 @@
                 onchange={(p) => {
                   propType = p;
                   buzz();
+                  trackPropSelected("loop-deck-architect", customSku?.id, p);
                 }}
               />
             </div>
@@ -580,6 +605,7 @@
             {#if problem === null}
               {#if customSku}
                 <BuyButton
+                  listing="loop-deck-architect"
                   product={customSku}
                   {propType}
                   {loopConfig}
@@ -588,6 +614,7 @@
                 />
                 {#if customSku.stripePriceId}
                   <BuyButton
+                    listing="loop-deck-architect"
                     product={customSku}
                     {propType}
                     {loopConfig}
@@ -597,6 +624,7 @@
                 {/if}
               {:else if flavorSkus[0]}
                 <BuyButton
+                  listing="loop-deck-architect"
                   product={flavorSkus[0]}
                   {propType}
                   {loopConfig}
@@ -605,6 +633,7 @@
                 />
                 {#if flavorSkus[0].stripePriceId}
                   <BuyButton
+                    listing="loop-deck-architect"
                     product={flavorSkus[0]}
                     {propType}
                     {loopConfig}

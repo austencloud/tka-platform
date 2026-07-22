@@ -15,6 +15,13 @@ interface BaseLine {
   unitPrice: number; // cents, last-known; server re-resolves at checkout
   stripePriceId: string;
   qty: number;
+  /** Snapshot of the product's preorder flag, same as `name`/`unitPrice`
+   *  above. The cart is localStorage-backed and holds no Product objects, so
+   *  without this the cart-drawer checkout event can't say whether it's a
+   *  preorder — which is the segmentation the whole shop funnel is built
+   *  around. Absent on carts persisted before this field existed; reads as
+   *  not-a-preorder, which is the correct default for every non-deck SKU. */
+  preorder?: boolean;
 }
 export interface SkuLine extends BaseLine {
   kind: "sku";

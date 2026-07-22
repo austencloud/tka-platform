@@ -17,6 +17,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import type { Product } from "./domain/models/product";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { trackProductViewed, trackPropSelected } from "./analytics/shop-funnel";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
@@ -46,7 +47,12 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 
   onMount(() => {
     // Already seeded by the route load(); only fetch if we arrived without it.
-    if (!initialProduct) store.loadProduct(productId);
+    const ready = initialProduct ? Promise.resolve() : store.loadProduct(productId);
+    // Funnel step 1, once per mount. Chained off the load rather than fired
+    // immediately so the SKU properties are real on the un-seeded path;
+    // loadProduct swallows its own errors, so this still fires if it fails
+    // (with nulls) and step 1 never silently goes missing.
+    void ready.then(() => trackProductViewed("sku", store.selectedProduct));
   });
 </script>
 
@@ -108,12 +114,19 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           {#if product.type === "physical-deck"}
             <div class="prop-field">
               <span class="prop-field-label">Prop</span>
-              <PropPicker value={propType} onchange={(p) => (propType = p)} />
+              <PropPicker
+                value={propType}
+                onchange={(p) => {
+                  propType = p;
+                  trackPropSelected("sku", product.id, p);
+                }}
+              />
             </div>
           {/if}
           <BuyButton
             {product}
             propType={product.type === "physical-deck" ? propType : undefined}
+            listing="sku"
           />
           {#if product.stripePriceId}
             <BuyButton
@@ -121,6 +134,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
               propType={product.type === "physical-deck" ? propType : undefined}
               mode="add"
               label="Add to cart"
+              listing="sku"
             />
           {/if}
           {#if store.checkoutError}

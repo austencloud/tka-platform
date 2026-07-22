@@ -9,6 +9,7 @@
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import type { ShopCart } from "../state/shop-cart.svelte";
   import { getCartCheckoutCreator } from "../get-cart-checkout-creator";
+  import { trackCheckoutStarted } from "../analytics/shop-funnel";
 
   interface Props {
     cart: ShopCart;
@@ -30,6 +31,17 @@
       const url = await getCartCheckoutCreator().createCartCheckoutSession(
         cart.toCheckoutItems()
       );
+      // Funnel step 4, cart path. This never touches store-state.svelte.ts, so
+      // it needs its own call. product_id stays null — a cart is multi-line by
+      // definition; line_item_count and subtotal describe it instead.
+      // is_preorder is true if ANY line is one: a mixed cart still can't ship
+      // until the preorder does, so the buyer is in the preorder cohort.
+      trackCheckoutStarted({
+        surface: "cart_drawer",
+        lineItemCount: cart.count,
+        subtotalCents: cart.subtotal,
+        isPreorder: cart.lines.some((line) => line.preorder === true),
+      });
       window.location.href = url;
     } catch (e) {
       error = "Checkout isn't available right now. Try again in a moment.";

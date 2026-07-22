@@ -21,6 +21,8 @@
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { trackPropSelected } from "./analytics/shop-funnel";
+  import { trackViewOnceLoaded } from "./analytics/shop-funnel-view.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
@@ -41,6 +43,9 @@
   );
 
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
+
+  // Funnel step 1, once the volume list settles so the resolved SKU is real.
+  trackViewOnceLoaded("tnd-trilogy", () => store.isLoading, () => selected);
 
   // ONE worker seed covering every volume's covers for the picked prop (see
   // cover-front-renderer). Baked covers skip this; it backs live fallbacks.
@@ -159,7 +164,13 @@
 
           <div class="field">
             <span class="field-label" id="prop-label">Prop</span>
-            <PropPicker value={propType} onchange={(p) => (propType = p)} />
+            <PropPicker
+              value={propType}
+              onchange={(p) => {
+                propType = p;
+                trackPropSelected("tnd-trilogy", selected?.id, p);
+              }}
+            />
           </div>
 
           <p class="price">{price}</p>
@@ -167,7 +178,7 @@
             <PreorderPriceNote product={selected} />
           {/if}
 
-          <BuyButton product={selected} {propType} />
+          <BuyButton listing="tnd-trilogy" product={selected} {propType} />
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}

@@ -1,5 +1,17 @@
 <!-- src/lib/features/store/components/OrderConfirmation.svelte -->
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { page } from "$app/state";
+  import { trackPurchaseCompleted } from "../analytics/shop-funnel";
+
+  // Funnel step 5 — the step that did not exist at all before this. The session
+  // id comes off the query string Stripe redirects back with; it is available
+  // client-side here, so success/+page.ts needs no load(). trackPurchaseCompleted
+  // owns the per-session dedupe, so a refresh or a bookmarked /shop/success
+  // can't inflate the conversion rate.
+  onMount(() => {
+    trackPurchaseCompleted(page.url.searchParams.get("session_id"));
+  });
 </script>
 
 <div class="confirmation-page">

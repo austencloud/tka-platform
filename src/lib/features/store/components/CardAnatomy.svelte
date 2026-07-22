@@ -11,7 +11,6 @@
    * cards stay pristine until the reader asks about a part.
    */
   import { onMount } from "svelte";
-  import { loadActiveProducts } from "../services/product-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
   import { computeFrontRegions } from "../services/card-front-regions";
@@ -23,6 +22,7 @@
   import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import SkeletonLoader from "$lib/shared/foundation/ui/SkeletonLoader.svelte";
 
   let {
     highlight = null,
@@ -31,6 +31,7 @@
     sequence = undefined,
     frontUrl = undefined,
     showShuffle = true,
+    onstatuschange,
   }: {
     highlight?: string | null;
     onhighlight?: (id: string | null) => void;
@@ -46,20 +47,32 @@
     frontUrl?: string;
     /** Show the "Shuffle another card" button. Off when driven by `sequence`. */
     showShuffle?: boolean;
+    /** Reports readiness so the surrounding legend can disable spotlight
+     *  controls until there is a real card to point at. */
+    onstatuschange?: (status: "loading" | "ready" | "error") => void;
   } = $props();
 
   const showFront = $derived(face === "both" || face === "front");
   const showBack = $derived(face === "both" || face === "back");
 
-  // The shown card. First paint uses a real baked cover (instant). Shuffle
-  // GENERATES a fresh card at a random count (8/12/16) with a turn pattern, so
-  // the reader sees the real variety — different words, mandalas, LOOP types,
-  // difficulties, and step counts. The anatomy stays accurate because front
-  // regions are computed from the print layout for that step count, and back
-  // regions are measured off the live CardBack DOM.
+  // The shown card. The standalone example arrives from the active product
+  // catalog after its near-viewport idle gate. Shuffle generates a fresh card
+  // at a random count (8/12/16) with a turn pattern, so the reader sees the real
+  // variety: different words, mandalas, LOOP types, difficulties, and step
+  // counts. The anatomy stays accurate because front regions are computed from
+  // the print layout for that step count, and back regions are measured off the
+  // live CardBack DOM.
   type Shown = { sequence: SequenceData; frontUrl: string; stepCount: number };
   let shown = $state<Shown | null>(null);
   let shuffling = $state(false);
+  let previewState = $state<"loading" | "ready" | "error">("loading");
+  let mounted = false;
+  let loadAttempt = 0;
+
+  function setPreviewState(state: "loading" | "ready" | "error"): void {
+    previewState = state;
+    onstatuschange?.(state);
+  }
 
   // External-card mode: reflect the caller-supplied sequence into `shown`
   // (re-seeding when a different card is clicked). Uses the baked front when
@@ -68,33 +81,46 @@
     if (!sequence) return; // page mode — onMount picks the example instead
     const seq = sequence;
     const baked = frontUrl;
+    const attempt = ++loadAttempt;
     let cancelled = false;
+    shown = null;
+    setPreviewState("loading");
     (async () => {
       let front = baked;
       if (!front) {
         try {
-          const { renderCoverFront } = await import("../services/cover-front-renderer");
-          const { PropType } = await import(
-            "$lib/shared/pictograph/prop/domain/enums/prop-type"
-          );
+          const { renderCoverFront } =
+            await import("../services/cover-front-renderer");
+          const { PropType } =
+            await import("$lib/shared/pictograph/prop/domain/enums/prop-type");
           front = await renderCoverFront(
             { sequence: seq },
-            { deckName: "Choreo Cards", propType: PropType.STAFF },
+            { deckName: "Choreo Cards", propType: PropType.STAFF }
           );
         } catch (error) {
-          console.warn("[CardAnatomy] front render failed for supplied card", error);
+          console.warn(
+            "[CardAnatomy] front render failed for supplied card",
+            error
+          );
           front = "";
         }
       }
-      if (cancelled) return;
-      shown = { sequence: seq, frontUrl: front ?? "", stepCount: seq.steps?.length ?? 8 };
+      if (cancelled || attempt !== loadAttempt) return;
+      shown = {
+        sequence: seq,
+        frontUrl: front ?? "",
+        stepCount: seq.steps?.length ?? 8,
+      };
+      setPreviewState("ready");
     })();
     return () => {
       cancelled = true;
     };
   });
 
-  const frontRegions = $derived(shown ? computeFrontRegions(shown.stepCount) : null);
+  const frontRegions = $derived(
+    shown ? computeFrontRegions(shown.stepCount) : null
+  );
 
   // Admin-only right-click → copy the shown card's sequence data (and the rest
   // of the canonical card admin actions). Non-admins get the native menu. Reuses
@@ -111,7 +137,7 @@
             }),
           },
         ])
-      : [],
+      : []
   );
 
   function openCardMenu(e: MouseEvent): void {
@@ -122,14 +148,24 @@
     menuState = { open: true, x: e.clientX, y: e.clientY };
   }
 
-  onMount(async () => {
-    if (sequence) return; // external-card mode seeds `shown` via the $effect above
+  async function loadCatalogExample(): Promise<void> {
+    const attempt = ++loadAttempt;
+    shown = null;
+    setPreviewState("loading");
+
     try {
+      // The product catalog pulls in Firebase. Load it only for the standalone
+      // marketing example; card-detail modals already have their sequence and
+      // should never pay for this dependency tree.
+      const { loadActiveProducts } = await import("../services/product-loader");
       const products = await loadActiveProducts();
+      let example: Shown | null = null;
       for (const p of products) {
-        const baked = (p.coverCards ?? []).find((c) => c.imageUrl && c.sequence);
+        const baked = (p.coverCards ?? []).find(
+          (c) => c.imageUrl && c.sequence
+        );
         if (baked?.imageUrl) {
-          shown = {
+          example = {
             sequence: baked.sequence,
             frontUrl: baked.imageUrl,
             stepCount: baked.sequence.steps?.length ?? 8,
@@ -137,9 +173,32 @@
           break;
         }
       }
+
+      if (!example) {
+        throw new Error("No active product has a baked card preview");
+      }
+      if (!mounted || sequence || attempt !== loadAttempt) return;
+      shown = example;
+      setPreviewState("ready");
     } catch (error) {
-      console.warn("[CardAnatomy] product load failed; keeping text-only anatomy", error);
+      if (!mounted || sequence || attempt !== loadAttempt) return;
+      console.warn("[CardAnatomy] product preview load failed", error);
+      setPreviewState("error");
     }
+  }
+
+  function retryCatalogExample(): void {
+    if (!sequence) void loadCatalogExample();
+  }
+
+  onMount(() => {
+    mounted = true;
+    if (!sequence) void loadCatalogExample();
+
+    return () => {
+      mounted = false;
+      loadAttempt += 1;
+    };
   });
 
   const COUNTS = [8, 12, 16] as const;
@@ -148,22 +207,30 @@
     if (shuffling) return;
     shuffling = true;
     try {
-      const [{ generationOrchestrator }, gen, circ, grid, prop, renderMod] = await Promise.all([
-        import("$lib/shared/create/services/generation-orchestrator"),
-        import("$lib/shared/foundation/domain/models/generation/generate-models"),
-        import("$lib/shared/foundation/domain/models/generation/circular-models"),
-        import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
-        import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
-        import("../services/cover-front-renderer"),
-      ]);
+      const [{ generationOrchestrator }, gen, circ, grid, prop, renderMod] =
+        await Promise.all([
+          import("$lib/shared/create/services/generation-orchestrator"),
+          import("$lib/shared/foundation/domain/models/generation/generate-models"),
+          import("$lib/shared/foundation/domain/models/generation/circular-models"),
+          import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
+          import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
+          import("../services/cover-front-renderer"),
+        ]);
 
-      const loops = [circ.LOOPType.ROTATED, circ.LOOPType.MIRRORED, circ.LOOPType.SWAPPED, circ.LOOPType.FLIPPED];
+      const loops = [
+        circ.LOOPType.ROTATED,
+        circ.LOOPType.MIRRORED,
+        circ.LOOPType.SWAPPED,
+        circ.LOOPType.FLIPPED,
+      ];
       const count = COUNTS[Math.floor(Math.random() * COUNTS.length)]!;
       const loopType = loops[Math.floor(Math.random() * loops.length)]!;
       // Max turn intensity 1, but let ~60% of cards carry a turn pattern.
       const turnIntensity = Math.random() < 0.6 ? 1 : 0;
       const period =
-        count % 4 === 0 && Math.random() < 0.5 ? circ.Period.QUARTERED : circ.Period.HALVED;
+        count % 4 === 0 && Math.random() < 0.5
+          ? circ.Period.QUARTERED
+          : circ.Period.HALVED;
 
       const sequence = await generationOrchestrator.generateSequence({
         mode: gen.GenerationMode.CIRCULAR,
@@ -183,7 +250,11 @@
       );
 
       onhighlight?.(null);
-      shown = { sequence, frontUrl, stepCount: sequence.steps?.length ?? count };
+      shown = {
+        sequence,
+        frontUrl,
+        stepCount: sequence.steps?.length ?? count,
+      };
     } catch (error) {
       console.error("[CardAnatomy] shuffle generation failed", error);
     } finally {
@@ -214,7 +285,10 @@
     const els = backBox.querySelectorAll(sel);
     if (els.length === 0) return null;
     const b = backBox.getBoundingClientRect();
-    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    let left = Infinity,
+      top = Infinity,
+      right = -Infinity,
+      bottom = -Infinity;
     for (const el of els) {
       const r = el.getBoundingClientRect();
       left = Math.min(left, r.left);
@@ -241,12 +315,18 @@
   // Reverse direction: pointing at a card part highlights it (and the page's
   // legend row via onhighlight). Same rects the spotlight uses, so the hit
   // zones and the drawn regions can't disagree.
-  const inRect = (x: number, y: number, r: { x: number; y: number; w: number; h: number }) =>
-    x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  const inRect = (
+    x: number,
+    y: number,
+    r: { x: number; y: number; w: number; h: number }
+  ) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 
   function pointerPct(e: PointerEvent) {
     const b = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    return { x: ((e.clientX - b.left) / b.width) * 100, y: ((e.clientY - b.top) / b.height) * 100 };
+    return {
+      x: ((e.clientX - b.left) / b.width) * 100,
+      y: ((e.clientY - b.top) / b.height) * 100,
+    };
   }
 
   // Hover path (mouse only): move over a region → highlight it, leave → clear.
@@ -275,13 +355,17 @@
   // so it's the honest mobile hit-test. Toggle so tapping the lit part clears it.
   const clickPct = (e: MouseEvent) => {
     const b = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    return { x: ((e.clientX - b.left) / b.width) * 100, y: ((e.clientY - b.top) / b.height) * 100 };
+    return {
+      x: ((e.clientX - b.left) / b.width) * 100,
+      y: ((e.clientY - b.top) / b.height) * 100,
+    };
   };
   function frontTap(e: MouseEvent) {
     if (!frontRegions) return;
     const p = clickPct(e);
     for (const [id, rg] of Object.entries(frontRegions)) {
-      if (inRect(p.x, p.y, rg)) return onhighlight?.(highlight === id ? null : id);
+      if (inRect(p.x, p.y, rg))
+        return onhighlight?.(highlight === id ? null : id);
     }
     onhighlight?.(null);
   }
@@ -289,7 +373,8 @@
     const p = clickPct(e);
     for (const id of Object.keys(BACK_SELECTORS)) {
       const rg = measureBack(id);
-      if (rg && inRect(p.x, p.y, rg)) return onhighlight?.(highlight === id ? null : id);
+      if (rg && inRect(p.x, p.y, rg))
+        return onhighlight?.(highlight === id ? null : id);
     }
     onhighlight?.(null);
   }
@@ -304,64 +389,153 @@
   {/if}
 {/snippet}
 
+{#snippet previewFootprint(announce = true)}
+  <div
+    class="anatomy-stack preview-footprint"
+    role={announce ? "status" : undefined}
+    aria-label={announce ? "Preparing card preview" : undefined}
+  >
+    <div class="anatomy" class:single={face !== "both"}>
+      {#if showFront}
+        <figure class="face">
+          <div class="card-box preview-skeleton">
+            <SkeletonLoader
+              variant="card"
+              width="100%"
+              height="100%"
+              className="card-preview-skeleton"
+            />
+          </div>
+          {#if face === "both"}<figcaption>Front</figcaption>{/if}
+        </figure>
+      {/if}
+      {#if showBack}
+        <figure class="face">
+          <div class="card-box preview-skeleton">
+            <SkeletonLoader
+              variant="card"
+              width="100%"
+              height="100%"
+              className="card-preview-skeleton"
+            />
+          </div>
+          {#if face === "both"}<figcaption>Back</figcaption>{/if}
+        </figure>
+      {/if}
+    </div>
+    {#if showShuffle}
+      <div class="shuffle-bar">
+        <SkeletonLoader
+          variant="rect"
+          width="13rem"
+          height="44px"
+          className="card-shuffle-skeleton"
+        />
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
 {#if shown}
   <div class="anatomy-stack">
     <div class="anatomy" class:busy={shuffling} class:single={face !== "both"}>
-    {#if showFront}
-    <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "front"}>
-      <!-- Hover affordance only; the legend buttons are the keyboard/AT path. -->
-      <div
-        class="card-box"
-        role="presentation"
-        class:dimmable={activeRegion?.face === "front"}
-        onpointermove={frontHit}
-        onpointerleave={(e) => e.pointerType === "mouse" && onhighlight?.(null)}
-        onclick={frontTap}
-        oncontextmenu={openCardMenu}
-      >
-        <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
-        {@render spotlight("front")}
-      </div>
-      {#if face === "both"}<figcaption>Front</figcaption>{/if}
-    </figure>
-    {/if}
+      {#if showFront}
+        <figure
+          class="face"
+          class:backgrounded={activeRegion && activeRegion.face !== "front"}
+        >
+          <!-- Hover affordance only; the legend buttons are the keyboard/AT path. -->
+          <div
+            class="card-box"
+            role="presentation"
+            class:dimmable={activeRegion?.face === "front"}
+            onpointermove={frontHit}
+            onpointerleave={(e) =>
+              e.pointerType === "mouse" && onhighlight?.(null)}
+            onclick={frontTap}
+            oncontextmenu={openCardMenu}
+          >
+            {#if shown.frontUrl}
+              <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
+            {:else}
+              <div
+                class="front-preview-unavailable"
+                role="img"
+                aria-label="Front of this Choreo Card is unavailable"
+              >
+                <i class="fas fa-image" aria-hidden="true"></i>
+                <span>Front preview unavailable</span>
+              </div>
+            {/if}
+            {@render spotlight("front")}
+          </div>
+          {#if face === "both"}<figcaption>Front</figcaption>{/if}
+        </figure>
+      {/if}
 
-    {#if showBack}
-    <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "back"}>
-      <div
-        class="card-box back"
-        role="presentation"
-        bind:this={backBox}
-        class:dimmable={activeRegion?.face === "back"}
-        onpointermove={backHit}
-        onpointerleave={(e) => e.pointerType === "mouse" && onhighlight?.(null)}
-        onclick={backTap}
-        oncontextmenu={openCardMenu}
-      >
-        <CardBack sequence={shown.sequence} />
-        {@render spotlight("back")}
-      </div>
-      {#if face === "both"}<figcaption>Back</figcaption>{/if}
-    </figure>
-    {/if}
+      {#if showBack}
+        <figure
+          class="face"
+          class:backgrounded={activeRegion && activeRegion.face !== "back"}
+        >
+          <div
+            class="card-box back"
+            role="presentation"
+            bind:this={backBox}
+            class:dimmable={activeRegion?.face === "back"}
+            onpointermove={backHit}
+            onpointerleave={(e) =>
+              e.pointerType === "mouse" && onhighlight?.(null)}
+            onclick={backTap}
+            oncontextmenu={openCardMenu}
+          >
+            <CardBack sequence={shown.sequence} />
+            {@render spotlight("back")}
+          </div>
+          {#if face === "both"}<figcaption>Back</figcaption>{/if}
+        </figure>
+      {/if}
     </div>
 
     {#if showShuffle}
-    <div class="shuffle-bar">
-      <button type="button" class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
-        {#if shuffling}
-          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          <span>Dealing a card…</span>
-        {:else}
-          <i class="fas fa-shuffle" aria-hidden="true"></i>
-          <span>Shuffle another card</span>
-        {/if}
-      </button>
-    </div>
+      <div class="shuffle-bar">
+        <button
+          type="button"
+          class="shuffle-btn"
+          onclick={shuffle}
+          disabled={shuffling}
+        >
+          {#if shuffling}
+            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            <span>Dealing a card…</span>
+          {:else}
+            <i class="fas fa-shuffle" aria-hidden="true"></i>
+            <span>Shuffle another card</span>
+          {/if}
+        </button>
+      </div>
     {/if}
   </div>
 
-  <ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
+  <ContextMenu
+    {menuState}
+    items={menuItems}
+    onClose={() => (menuState = { open: false })}
+  />
+{:else if previewState === "error"}
+  <div class="preview-load-failure" role="alert">
+    <div aria-hidden="true">{@render previewFootprint(false)}</div>
+    <div class="preview-load-message">
+      <p>Card preview didn’t load.</p>
+      <button
+        class="preview-retry-btn"
+        type="button"
+        onclick={retryCatalogExample}>Try again</button
+      >
+    </div>
+  </div>
+{:else}
+  {@render previewFootprint()}
 {/if}
 
 <style>
@@ -370,6 +544,58 @@
     flex-direction: column;
     align-items: center;
     gap: 1.5rem;
+  }
+  .preview-footprint {
+    width: 100%;
+  }
+  .preview-load-failure {
+    position: relative;
+    width: 100%;
+  }
+  .preview-load-failure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: oklch(0.12 0.02 275 / 0.58);
+    pointer-events: none;
+  }
+  .preview-load-failure :global(.skeleton) {
+    animation: none !important;
+    opacity: 0.5;
+  }
+  .preview-load-message {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: min(90%, 19rem);
+    text-align: center;
+    transform: translate(-50%, -50%);
+  }
+  .preview-load-message p {
+    margin: 0;
+    color: oklch(0.94 0.015 270);
+    font-weight: 650;
+  }
+  .preview-retry-btn {
+    min-height: 44px;
+    padding: 0.7rem 1.1rem;
+    border: 1px solid oklch(0.72 0.1 340 / 0.55);
+    border-radius: 999px;
+    color: oklch(0.96 0.01 270);
+    background: oklch(0.24 0.045 295 / 0.94);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .preview-retry-btn:focus-visible {
+    outline: 2px solid oklch(0.82 0.12 330);
+    outline-offset: 3px;
   }
 
   .anatomy {
@@ -466,6 +692,12 @@
        cursor — the affordance matches the actual interaction. */
     cursor: help;
   }
+  .card-box.preview-skeleton {
+    cursor: default;
+  }
+  .card-box.preview-skeleton :global(.card-preview-skeleton) {
+    height: 100%;
+  }
   @media (pointer: coarse) {
     .card-box {
       cursor: pointer;
@@ -477,6 +709,23 @@
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+  .front-preview-unavailable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    height: 100%;
+    padding: 1.5rem;
+    color: oklch(0.72 0.02 270);
+    background: oklch(0.2 0.025 275);
+    text-align: center;
+  }
+  .front-preview-unavailable i {
+    font-size: 1.5rem;
+    color: oklch(0.62 0.04 290);
   }
 
   /* CardBack fills its parent and sizes with container query units. */

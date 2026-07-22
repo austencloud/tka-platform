@@ -5,11 +5,22 @@
 -->
 <script lang="ts">
   import type { ShopCart } from "../state/shop-cart.svelte";
+  import { trackCartOpened } from "../analytics/shop-funnel";
   interface Props { cart: ShopCart; onOpen: () => void; }
   let { cart, onOpen }: Props = $props();
+
+  // Not a funnel step — it separates "opened the cart and left" from "never
+  // opened it", which is the difference between a pricing problem and a
+  // discovery problem.
+  function open() {
+    // Open first, measure second. Nothing about telling PostHog the cart was
+    // opened should be able to stop the cart from opening.
+    onOpen();
+    trackCartOpened(cart.count, cart.subtotal);
+  }
 </script>
 
-<button class="cart-button" aria-label="Open cart ({cart.count} items)" onclick={onOpen}>
+<button class="cart-button" aria-label="Open cart ({cart.count} items)" onclick={open}>
   <i class="fas fa-shopping-bag" aria-hidden="true"></i>
   {#if cart.count > 0}
     <span class="badge" aria-hidden="true">{cart.count}</span>

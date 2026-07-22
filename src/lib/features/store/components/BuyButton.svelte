@@ -10,6 +10,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { LoopConfig } from "../domain/loop-config";
   import { getShopCart } from "../state/shop-cart.svelte";
+  import { trackAddToCart, type ShopListing } from "../analytics/shop-funnel";
   import WaitlistForm from "./WaitlistForm.svelte";
 
   interface Props {
@@ -24,6 +25,10 @@
     waitlistText?: string;
     /** "buy" = direct checkout (conversion primary). "add" = push to cart. */
     mode?: "buy" | "add";
+    /** Which entry page this button sits on — the funnel's step-3 breakdown.
+     *  Defaults to the plain SKU detail page, the only host that isn't a
+     *  configurator listing. */
+    listing?: ShopListing;
   }
 
   let {
@@ -33,6 +38,7 @@
     label = "Buy Now",
     waitlistText = "Not on sale yet. Leave an email and you'll hear the moment it is.",
     mode = "buy",
+    listing = "sku",
   }: Props = $props();
   const { state } = getStoreContext();
 
@@ -49,6 +55,7 @@
         stripePriceId: product.stripePriceId,
         qty: 1,
         ...(propType && { propType }),
+        ...(product.preorder && { preorder: true }),
         loopConfig,
         // Distinct configs must not collapse; JSON of the config is a stable key.
         configKey: JSON.stringify(loopConfig) + (propType ?? ""),
@@ -62,8 +69,13 @@
         stripePriceId: product.stripePriceId,
         qty: 1,
         ...(propType && { propType }),
+        ...(product.preorder && { preorder: true }),
       });
     }
+    // Funnel step 3, fired AFTER the mutation it describes. Tracked here rather
+    // than in shop-cart's add(): the cart has no product or page context, this
+    // button holds all three.
+    trackAddToCart({ listing, product, propType, loopConfig });
   }
 </script>
 

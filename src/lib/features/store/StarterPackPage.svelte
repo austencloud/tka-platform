@@ -22,6 +22,8 @@
   import { prewarmCovers } from "./services/cover-front-renderer";
   import { formatUsd } from "./domain/preorder-pricing";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { trackPropSelected } from "./analytics/shop-funnel";
+  import { trackViewOnceLoaded } from "./analytics/shop-funnel-view.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
@@ -64,6 +66,9 @@
   ];
 
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
+
+  // Funnel step 1, once the bundle SKU resolves so price/preorder are real.
+  trackViewOnceLoaded("starter-pack", () => store.isLoading, () => pack);
 
   // ONE worker seed for every fan's covers at the picked prop (live fallback
   // only — baked covers load straight from Storage).
@@ -186,12 +191,18 @@
 
           <div class="field">
             <span class="field-label" id="prop-label">Prop</span>
-            <PropPicker value={propType} onchange={(p) => (propType = p)} />
+            <PropPicker
+              value={propType}
+              onchange={(p) => {
+                propType = p;
+                trackPropSelected("starter-pack", pack?.id, p);
+              }}
+            />
           </div>
 
           <p class="price">{price}</p>
 
-          <BuyButton product={pack} {propType} />
+          <BuyButton listing="starter-pack" product={pack} {propType} />
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}

@@ -1,5 +1,6 @@
 import type { Product } from "../domain/models/product";
 import type { LoopConfig } from "../domain/loop-config";
+import { trackCheckoutStarted } from "../analytics/shop-funnel";
 
 interface ProductLoader {
   loadActiveProducts(): Promise<Product[]>;
@@ -101,6 +102,29 @@ export function createStoreState(
     try {
       // Single-buy rides the same spine as the cart: a one-item draft order.
       const url = await checkoutCreator.createCheckoutSession(productId, propType, loopConfig);
+      // Funnel step 4, fired between the session resolving and the redirect.
+      // Deliberately NOT before the await: "checkout started" means the buyer
+      // reached Stripe, so the checkout→purchase drop reads as real abandonment
+      // instead of being polluted by our own session-creation failures (those
+      // surface as checkoutError + a captured $exception). trackCheckoutStarted
+      // beacons the event so assigning location.href on the next line can't
+      // strand it in PostHog's batch queue.
+      //
+      // The two mobile sticky docks (LoopDeckConfiguratorPage, DeckArchitectPage)
+      // call straight into here, so they are covered without their own call.
+      const product =
+        selectedProduct?.id === productId
+          ? selectedProduct
+          : (products.find((p) => p.id === productId) ?? null);
+      trackCheckoutStarted({
+        surface: "buy_button",
+        productId,
+        lineItemCount: 1,
+        subtotalCents: product?.price ?? null,
+        propType,
+        loopConfig,
+        isPreorder: product?.preorder ?? null,
+      });
       window.location.href = url;
     } catch (e) {
       checkoutError = "Checkout isn't available yet. Try again later.";

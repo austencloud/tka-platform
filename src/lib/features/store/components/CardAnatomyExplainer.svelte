@@ -14,10 +14,15 @@
   modal, whose content box is narrower than the screen.
 -->
 <script lang="ts">
-  import { browser } from "$app/environment";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { activateWhenNear } from "$lib/actions/activate-when-near";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import SkeletonLoader from "$lib/shared/foundation/ui/SkeletonLoader.svelte";
   import type { CoverCard } from "../domain/models/product";
-  import { bakedCoverUrl, DEFAULT_SHOP_PROP } from "../domain/shop-prop-options";
+  import {
+    bakedCoverUrl,
+    DEFAULT_SHOP_PROP,
+  } from "../domain/shop-prop-options";
   import { FRONT_LEGEND, BACK_LEGEND } from "../domain/card-anatomy-legend";
 
   let {
@@ -32,7 +37,7 @@
 
   const sequence = $derived(card?.sequence);
   const frontUrl = $derived(
-    card ? (bakedCoverUrl(card, DEFAULT_SHOP_PROP) ?? card.imageUrl) : undefined,
+    card ? (bakedCoverUrl(card, DEFAULT_SHOP_PROP) ?? card.imageUrl) : undefined
   );
 
   // Which region is lit. Legend rows/chips and the cards drive it both ways.
@@ -49,7 +54,11 @@
   // wide xl modal show both faces).
   let boxW = $state(0);
   const isWide = $derived(
-    boxW > 0 ? boxW >= 980 : typeof window === "undefined" ? true : window.innerWidth >= 980,
+    boxW > 0
+      ? boxW >= 980
+      : typeof window === "undefined"
+        ? true
+        : window.innerWidth >= 980
   );
 
   // Narrow single-face state.
@@ -59,11 +68,125 @@
     highlight = null;
   }
   const legendById = $derived(
-    new Map([...FRONT_LEGEND, ...BACK_LEGEND].map((i) => [i.id, i])),
+    new Map([...FRONT_LEGEND, ...BACK_LEGEND].map((i) => [i.id, i]))
   );
   const detail = $derived(highlight ? legendById.get(highlight) : null);
   const faceLegend = $derived(face === "front" ? FRONT_LEGEND : BACK_LEGEND);
+
+  // Keep the legend copy in SSR, but hold the interactive cards and their
+  // Firebase-backed example data until this section is near the viewport and
+  // the route morph has cleared an idle turn.
+  let cardsActive = $state(false);
+  let cardStatus = $state<"loading" | "ready" | "error">("loading");
+  function setCardStatus(status: "loading" | "ready" | "error"): void {
+    cardStatus = status;
+    if (status !== "ready") highlight = null;
+  }
+  const activateCardsWhenNear = activateWhenNear;
+  const wideCardProps = $derived({
+    highlight,
+    sequence,
+    frontUrl,
+    showShuffle,
+    onhighlight: (id: string | null) => (highlight = id),
+    onstatuschange: setCardStatus,
+  });
+  const narrowCardProps = $derived({ ...wideCardProps, face });
 </script>
+
+{#snippet wideCardPlaceholder()}
+  <div
+    class="card-placeholder-stack"
+    role="status"
+    aria-label="Preparing card preview"
+  >
+    <div class="card-placeholder-set">
+      <figure class="card-placeholder-face">
+        <div class="card-placeholder">
+          <SkeletonLoader
+            variant="card"
+            width="100%"
+            height="100%"
+            className="card-anatomy-skeleton"
+          />
+        </div>
+        <figcaption>Front</figcaption>
+      </figure>
+      <figure class="card-placeholder-face">
+        <div class="card-placeholder">
+          <SkeletonLoader
+            variant="card"
+            width="100%"
+            height="100%"
+            className="card-anatomy-skeleton"
+          />
+        </div>
+        <figcaption>Back</figcaption>
+      </figure>
+    </div>
+    {#if showShuffle}
+      <div class="card-placeholder-shuffle">
+        <SkeletonLoader
+          variant="rect"
+          width="13rem"
+          height="44px"
+          className="card-anatomy-shuffle-skeleton"
+        />
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet narrowCardPlaceholder()}
+  <div
+    class="card-placeholder-stack"
+    role="status"
+    aria-label="Preparing card preview"
+  >
+    <div class="card-placeholder-set single">
+      <figure class="card-placeholder-face">
+        <div class="card-placeholder">
+          <SkeletonLoader
+            variant="card"
+            width="100%"
+            height="100%"
+            className="card-anatomy-skeleton"
+          />
+        </div>
+      </figure>
+    </div>
+    {#if showShuffle}
+      <div class="card-placeholder-shuffle">
+        <SkeletonLoader
+          variant="rect"
+          width="13rem"
+          height="44px"
+          className="card-anatomy-shuffle-skeleton"
+        />
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet wideCardError(_loadError: unknown, retry: () => void)}
+  <div class="card-load-failure" role="alert">
+    <div aria-hidden="true">{@render wideCardPlaceholder()}</div>
+    <div class="card-load-message">
+      <p>Card preview didn’t load.</p>
+      <button type="button" onclick={retry}>Try again</button>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet narrowCardError(_loadError: unknown, retry: () => void)}
+  <div class="card-load-failure" role="alert">
+    <div aria-hidden="true">{@render narrowCardPlaceholder()}</div>
+    <div class="card-load-message">
+      <p>Card preview didn’t load.</p>
+      <button type="button" onclick={retry}>Try again</button>
+    </div>
+  </div>
+{/snippet}
 
 <div class="explainer" bind:clientWidth={boxW}>
   {#if isWide}
@@ -77,8 +200,11 @@
               type="button"
               class="legend-row"
               class:active={highlight === item.id}
-              onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
-              onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
+              disabled={cardStatus !== "ready"}
+              onpointerenter={(e) =>
+                e.pointerType === "mouse" && (highlight = item.id)}
+              onpointerleave={(e) =>
+                e.pointerType === "mouse" && (highlight = null)}
               onclick={() => toggle(item.id)}
             >
               <span class="legend-term">{item.term}</span>
@@ -88,18 +214,24 @@
         </div>
       </div>
 
-      <div class="cards-slot">
-        {#if browser}
-          {#await import("./CardAnatomy.svelte") then { default: CardAnatomy }}
-            <CardAnatomy
-              {highlight}
-              {sequence}
-              {frontUrl}
-              {showShuffle}
-              onhighlight={(id) => (highlight = id)}
-            />
-          {/await}
-        {/if}
+      <div
+        class="cards-slot"
+        use:activateCardsWhenNear={{
+          activate: () => (cardsActive = true),
+          rootMargin: "500px 0px",
+          deferUntilIdle: true,
+        }}
+      >
+        <LazyMount
+          loader={() => import("./CardAnatomy.svelte")}
+          active={cardsActive}
+          props={wideCardProps}
+          placeholder={wideCardPlaceholder}
+          error={wideCardError}
+          onStatusChange={(status) => {
+            if (status !== "loaded") setCardStatus(status);
+          }}
+        />
       </div>
 
       <div class="legend-col back">
@@ -110,8 +242,11 @@
               type="button"
               class="legend-row"
               class:active={highlight === item.id}
-              onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
-              onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
+              disabled={cardStatus !== "ready"}
+              onpointerenter={(e) =>
+                e.pointerType === "mouse" && (highlight = item.id)}
+              onpointerleave={(e) =>
+                e.pointerType === "mouse" && (highlight = null)}
               onclick={() => toggle(item.id)}
             >
               <span class="legend-term">{item.term}</span>
@@ -137,19 +272,24 @@
         />
       </div>
 
-      <div class="cards-slot">
-        {#if browser}
-          {#await import("./CardAnatomy.svelte") then { default: CardAnatomy }}
-            <CardAnatomy
-              {highlight}
-              {face}
-              {sequence}
-              {frontUrl}
-              {showShuffle}
-              onhighlight={(id) => (highlight = id)}
-            />
-          {/await}
-        {/if}
+      <div
+        class="cards-slot"
+        use:activateCardsWhenNear={{
+          activate: () => (cardsActive = true),
+          rootMargin: "500px 0px",
+          deferUntilIdle: true,
+        }}
+      >
+        <LazyMount
+          loader={() => import("./CardAnatomy.svelte")}
+          active={cardsActive}
+          props={narrowCardProps}
+          placeholder={narrowCardPlaceholder}
+          error={narrowCardError}
+          onStatusChange={(status) => {
+            if (status !== "loaded") setCardStatus(status);
+          }}
+        />
       </div>
 
       <div class="detail-slot" aria-live="polite">
@@ -157,7 +297,9 @@
           <span class="detail-term">{detail.term}</span>
           <span class="detail-text">{detail.text}</span>
         {:else}
-          <span class="detail-prompt">Tap a part of the card, or a chip below, to learn what it is.</span>
+          <span class="detail-prompt"
+            >Tap a part of the card, or a chip below, to learn what it is.</span
+          >
         {/if}
       </div>
 
@@ -168,6 +310,7 @@
             class="part-chip"
             class:active={highlight === item.id}
             aria-pressed={highlight === item.id}
+            disabled={cardStatus !== "ready"}
             onclick={() => toggle(item.id)}
           >
             {item.term}
@@ -196,6 +339,100 @@
   }
   .cards-slot {
     order: 0;
+  }
+  .card-placeholder-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+  }
+  .card-placeholder-set {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    width: 100%;
+  }
+  .card-placeholder-face {
+    display: flex;
+    flex: 1 1 240px;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+  }
+  .card-placeholder-set.single .card-placeholder-face {
+    flex: 0 1 340px;
+  }
+  .card-placeholder {
+    width: 100%;
+    max-width: 430px;
+    aspect-ratio: 5 / 7;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  }
+  .card-placeholder :global(.card-anatomy-skeleton) {
+    height: 100%;
+  }
+  .card-placeholder-shuffle {
+    display: flex;
+    justify-content: center;
+  }
+  .card-placeholder-face figcaption {
+    color: oklch(0.65 0.02 270);
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .card-load-failure {
+    position: relative;
+  }
+  .card-load-failure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: oklch(0.12 0.02 275 / 0.58);
+    pointer-events: none;
+  }
+  .card-load-failure :global(.skeleton) {
+    animation: none !important;
+    opacity: 0.5;
+  }
+  .card-load-message {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: min(90%, 19rem);
+    text-align: center;
+    transform: translate(-50%, -50%);
+  }
+  .card-load-message p {
+    margin: 0;
+    color: oklch(0.94 0.015 270);
+    font-weight: 650;
+  }
+  .card-load-message button {
+    min-height: 44px;
+    padding: 0.7rem 1.1rem;
+    border: 1px solid oklch(0.72 0.1 340 / 0.55);
+    border-radius: 999px;
+    color: oklch(0.96 0.01 270);
+    background: oklch(0.24 0.045 295 / 0.94);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .card-load-message button:focus-visible {
+    outline: 2px solid oklch(0.82 0.12 330);
+    outline-offset: 3px;
   }
   /* Left labels read toward the card they describe. */
   .legend-col.front {
@@ -272,10 +509,17 @@
       border-color 140ms ease,
       box-shadow 180ms ease;
   }
-  .part-chip.active {
+  .part-chip.active:not(:disabled) {
     border-color: color-mix(in oklch, var(--accent, #ec4899) 55%, transparent);
     background: oklch(0.32 0.04 270 / 0.6);
-    box-shadow: 0 0 20px color-mix(in oklch, var(--accent, #ec4899) 20%, transparent);
+    box-shadow: 0 0 20px
+      color-mix(in oklch, var(--accent, #ec4899) 20%, transparent);
+  }
+  .part-chip:disabled,
+  .legend-row:disabled {
+    cursor: default;
+    opacity: 0.45;
+    box-shadow: none;
   }
   .part-chip:focus-visible {
     outline: 2px solid oklch(0.7 0.1 275 / 0.7);
@@ -320,13 +564,13 @@
       opacity 180ms ease,
       box-shadow 180ms ease;
   }
-  .legend-row:hover,
-  .legend-row:focus-visible,
-  .legend-row.active {
+  .legend-row:hover:not(:disabled),
+  .legend-row:focus-visible:not(:disabled),
+  .legend-row.active:not(:disabled) {
     background: oklch(0.3 0.03 270 / 0.22);
   }
   /* Focused pair lights up; every other row steps back. */
-  .legend-row.active {
+  .legend-row.active:not(:disabled) {
     background: oklch(0.33 0.04 270 / 0.45);
     box-shadow:
       0 0 0 1px color-mix(in oklch, var(--accent, #ec4899) 40%, transparent),
