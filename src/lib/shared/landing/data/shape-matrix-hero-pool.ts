@@ -55,9 +55,10 @@ const BASE_WORDS_URL = "/data/hero/tnd-base-words.json";
 /** Max cells to try before giving up (returns null → caller uses a generated draw). */
 const MAX_DRAWS = 16;
 
-/** Turn ceiling for hero draws — busy high-turn flowers read as noise at this
- *  size, so the pool caps per-hand turns here. */
-const MAX_TURNS = 1;
+/** Turn ceiling for hero draws — caps per-hand turns so a draw stays readable at
+ *  hero size. 1.5 keeps Level 3 (the 1.5-turn ratios) in play; higher ratios read
+ *  as noise. */
+const MAX_TURNS = 1.5;
 const ALLOWED_TURNS = TURN_VALUES.filter((t) => t <= MAX_TURNS);
 
 /** A matrix realization is a 4-beat rotated flower that closes back to its start
