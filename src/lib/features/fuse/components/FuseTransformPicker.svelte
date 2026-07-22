@@ -1,13 +1,13 @@
 <!--
   FuseTransformPicker — symmetry-mode controls.
 
-  Two single-select SegmentedControls: which side drives (Blue/Red) and how the
-  follower derives from it (five of the six LOOP components — Swapped omitted —
-  with Rotated at 90°/180°, plus three curated pairs). Both are owned + persisted
-  by fuse-state; this picker only drives them.
+  A color-coded SegmentedControl chooses the driver. The shared wrapping
+  OptionChipRow handles the larger transform family without crushing nine labels
+  into one equal-width row. Both values are owned + persisted by fuse-state.
   Shown by FuseLayout only while the tab is in symmetry mode.
 -->
 <script lang="ts">
+  import OptionChipRow from "$lib/shared/animation-engine/components/effects-panel/OptionChipRow.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import {
@@ -16,12 +16,27 @@
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
+  let { embedded = false }: { embedded?: boolean } = $props();
   const { state: fuseState } = getFuseContext();
+
+  const TRANSFORM_ICONS: Record<FuseTransformId, string> = {
+    mirror: "fa-left-right",
+    flip: "fa-up-down",
+    rotate90: "fa-rotate-right",
+    rotate180: "fa-arrows-rotate",
+    invert: "fa-circle-half-stroke",
+    rewind: "fa-backward",
+    "rotate-mirror": "fa-shuffle",
+    "mirror-invert": "fa-code-compare",
+    "rotate-invert": "fa-repeat",
+  };
 
   // Inert while a length load or a fuse is in flight, so a change can't race the
   // derive it would trigger.
   const disabled = $derived(
-    fuseState.isLoadingLength || fuseState.pendingSide !== null || fuseState.isFusing,
+    fuseState.isLoadingLength ||
+      fuseState.pendingSide !== null ||
+      fuseState.isFusing
   );
 
   const driverOptions = $derived(
@@ -30,19 +45,29 @@
         { value: "blue", label: "Blue" },
         { value: "red", label: "Red" },
       ] as { value: FuseSide; label: string }[]
-    ).map((option) => ({ ...option, disabled })),
+    ).map((option) => ({ ...option, disabled }))
   );
 
   const transformOptions = $derived(
     FUSE_TRANSFORMS.map((transform) => ({
       value: transform.id,
       label: transform.label,
-      disabled,
-    })),
+      icon: TRANSFORM_ICONS[transform.id],
+    }))
   );
 
-  const followerLabel = $derived(fuseState.driverSide === "blue" ? "Red" : "Blue");
-  const driverLabel = $derived(fuseState.driverSide === "blue" ? "Blue" : "Red");
+  const followerLabel = $derived(
+    fuseState.driverSide === "blue" ? "Red" : "Blue"
+  );
+  const driverLabel = $derived(
+    fuseState.driverSide === "blue" ? "Blue" : "Red"
+  );
+  const driverColor = $derived<"blue" | "red">(fuseState.driverSide);
+  const followerColor = $derived(
+    fuseState.driverSide === "blue"
+      ? "var(--prop-red, #f44336)"
+      : "var(--prop-blue, #2196f3)"
+  );
 
   function handleDriver(value: FuseSide): void {
     fuseState.setDriver(value);
@@ -53,7 +78,7 @@
   }
 </script>
 
-<div class="transform-picker">
+<div class="transform-picker" class:embedded>
   <div class="field" role="group" aria-label="Driver hand">
     <span class="field-label">Driver</span>
     <div class="field-control driver-control">
@@ -61,33 +86,34 @@
         options={driverOptions}
         value={fuseState.driverSide}
         onchange={handleDriver}
-        color="accent"
-        size="sm"
+        color={driverColor}
+        size="md"
       />
     </div>
   </div>
 
-  <div class="field field-grow" role="group" aria-label="Follower transform">
-    <span class="field-label">{followerLabel} follows {driverLabel}</span>
-    <div class="field-control">
-      <SegmentedControl
-        options={transformOptions}
-        value={fuseState.transformId}
-        onchange={handleTransform}
-        color="accent"
-        size="sm"
-      />
-    </div>
+  <div class="transform-options">
+    <OptionChipRow
+      label={`${followerLabel} follows ${driverLabel}`}
+      ariaLabel="Follower transformation"
+      options={transformOptions}
+      value={fuseState.transformId}
+      onChange={handleTransform}
+      color={followerColor}
+      {disabled}
+      layout="stacked"
+    />
   </div>
 </div>
 
 <style>
   .transform-picker {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(11rem, 0.72fr) minmax(22rem, 3fr);
     align-items: flex-end;
+    flex: 4 1 46rem;
     gap: var(--settings-spacing-md, 12px);
-    width: 100%;
+    width: auto;
     min-width: 0;
     padding: var(--settings-spacing-sm, 10px) var(--settings-spacing-md, 14px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
@@ -95,15 +121,21 @@
     background: var(--theme-panel-bg, rgba(12, 14, 22, 0.94));
   }
 
+  .transform-picker.embedded {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--settings-spacing-md, 14px);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
   .field {
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
-  }
-
-  .field-grow {
-    flex: 1 1 22rem;
   }
 
   .field-label {
@@ -119,11 +151,26 @@
   }
 
   .driver-control {
-    width: 12rem;
-    max-width: 100%;
+    width: 100%;
   }
 
   .field-control :global(.segmented-control) {
     width: 100%;
+  }
+
+  .transform-options {
+    min-width: 0;
+  }
+
+  .transform-options :global(.chip) {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+  }
+
+  @container fuse (max-width: 960px) {
+    .transform-picker:not(.embedded) {
+      grid-template-columns: minmax(0, 1fr);
+      width: 100%;
+    }
   }
 </style>

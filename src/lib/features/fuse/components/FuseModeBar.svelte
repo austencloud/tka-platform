@@ -24,7 +24,7 @@
   const disabled = $derived(fuseState.isLoadingLength || fuseState.isFusing);
 
   const options = $derived(
-    modeOptions.map((option) => ({ ...option, disabled })),
+    modeOptions.map((option) => ({ ...option, disabled }))
   );
 
   function handleSelect(value: FuseMode): void {
@@ -38,16 +38,15 @@
     value={fuseState.mode}
     onchange={handleSelect}
     color="accent"
-    size="sm"
+    size="md"
   />
 </div>
 
 <style>
   .fuse-mode-bar {
     display: flex;
-    /* Sized for the two labels inline; min-width:0 lets it shrink on compact. */
-    width: 18rem;
-    max-width: 100%;
+    flex: 1 1 18rem;
+    width: 100%;
     min-width: 0;
   }
 

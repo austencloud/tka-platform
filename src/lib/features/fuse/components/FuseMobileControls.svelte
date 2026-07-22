@@ -3,11 +3,23 @@
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
 
-  let { onFuse }: { onFuse: () => Promise<void> } = $props();
+  let { onOpenViewer }: { onOpenViewer: () => Promise<void> } = $props();
   const { state: fuseState } = getFuseContext();
 
   const sourceControlsDisabled = $derived(
-    fuseState.isLoadingLength || fuseState.pendingSide !== null || fuseState.isFusing
+    fuseState.isLoadingLength ||
+      fuseState.pendingSide !== null ||
+      fuseState.isFusing
+  );
+  const blueDisabled = $derived(
+    sourceControlsDisabled ||
+      !fuseState.blue.sequence ||
+      (fuseState.mode === "symmetry" && fuseState.driverSide !== "blue")
+  );
+  const redDisabled = $derived(
+    sourceControlsDisabled ||
+      !fuseState.red.sequence ||
+      (fuseState.mode === "symmetry" && fuseState.driverSide !== "red")
   );
 </script>
 
@@ -17,12 +29,13 @@
     fuseState.pendingSide !== null ||
     fuseState.isFusing}
 >
-  <div class="shuffle-controls" role="group" aria-label="Choose another path">
+  <div class="action-row" role="group" aria-label="Fuse actions">
     <div class="shuffle-control blue-shuffle">
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={sourceControlsDisabled || !fuseState.blue.sequence}
+        disabled={blueDisabled}
+        ariaLabel="Shuffle Blue path"
         onclick={() => void fuseState.shuffle("blue")}
       >
         <i
@@ -31,14 +44,29 @@
             : 'fa-shuffle'}"
           aria-hidden="true"
         ></i>
-        Shuffle Blue
+        <span class="shuffle-verb">Shuffle</span> Blue
       </PanelButton>
     </div>
+
+    <div class="viewer-control">
+      <ActionButton
+        label="Open combined sequence viewer"
+        busyLabel="Opening combined sequence"
+        icon={fuseState.isFusing ? "fa-spinner fa-spin" : "fa-expand"}
+        color="fuse"
+        ariaDisabled={!fuseState.canFuse}
+        ariaDescribedBy="fuse-action-status"
+        busy={fuseState.isFusing}
+        onclick={() => void onOpenViewer()}
+      />
+    </div>
+
     <div class="shuffle-control red-shuffle">
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={sourceControlsDisabled || !fuseState.red.sequence}
+        disabled={redDisabled}
+        ariaLabel="Shuffle Red path"
         onclick={() => void fuseState.shuffle("red")}
       >
         <i
@@ -47,7 +75,7 @@
             : 'fa-shuffle'}"
           aria-hidden="true"
         ></i>
-        Shuffle Red
+        <span class="shuffle-verb">Shuffle</span> Red
       </PanelButton>
     </div>
   </div>
@@ -77,18 +105,6 @@
       {fuseState.statusMessage}
     </p>
   {/if}
-
-  <ActionButton
-    label="Fuse"
-    busyLabel="Fusing..."
-    icon="fa-fire-flame-curved"
-    color="fuse"
-    fullWidth={true}
-    ariaDisabled={!fuseState.canFuse}
-    ariaDescribedBy="fuse-action-status"
-    busy={fuseState.isFusing}
-    onclick={() => void onFuse()}
-  />
 </div>
 
 <style>
@@ -98,21 +114,59 @@
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  .shuffle-controls {
+  .action-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  .shuffle-control {
+  .shuffle-control,
+  .viewer-control {
     min-width: 0;
+  }
+
+  .viewer-control {
+    display: grid;
+    place-items: center;
   }
 
   .shuffle-control :global(.panel-btn) {
     padding-inline: 8px;
-    border-radius: var(--settings-radius-md, 12px);
+    border-radius: var(--settings-radius-md, 14px);
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .viewer-control :global(.action-button) {
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 18px;
+    box-shadow:
+      0 6px 18px
+        color-mix(in srgb, var(--semantic-warning, #f97316) 36%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .viewer-control :global(.action-button i) {
+    font-size: 18px;
+  }
+
+  .viewer-control :global(.action-button span) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   .blue-shuffle :global(.panel-btn) {
@@ -212,6 +266,29 @@
     .shuffle-control :global(.panel-btn),
     .compact-error {
       border: 1px solid ButtonText;
+    }
+  }
+
+  @container fuse (max-width: 360px) {
+    .shuffle-verb {
+      display: none;
+    }
+
+    .action-row {
+      gap: 6px;
+    }
+
+    .shuffle-control :global(.panel-btn),
+    .viewer-control :global(.action-button) {
+      gap: 5px;
+      padding-inline: 5px;
+    }
+
+    .viewer-control :global(.action-button) {
+      width: 54px;
+      height: 54px;
+      min-height: 54px;
+      padding: 0;
     }
   }
 </style>

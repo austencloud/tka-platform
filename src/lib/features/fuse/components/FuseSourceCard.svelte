@@ -6,6 +6,7 @@
   import FuseVtgPathPicker from "./FuseVtgPathPicker.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import {
     createSequenceData,
     type SequenceData,
@@ -20,21 +21,20 @@
 
   let {
     side,
-    showInlineNotation,
     full = false,
+    compactHero = false,
     stepCols = 4,
-    onViewNotation,
   }: {
     side: FuseSide;
-    showInlineNotation: boolean;
     // Big desktop only: render the complete choreo card — start position plus
     // the solo-colored mandala — instead of the lean steps-only view. Gated by
     // FuseLayout on cell size so the extra cells never shrink the pictographs.
     full?: boolean;
+    /** Full-bleed current-step preview used by the phone workspace. */
+    compactHero?: boolean;
     // Step column count FuseLayout picked to maximize pictograph size for the
     // current seam width and length. Only used in full (desktop) mode.
     stepCols?: number;
-    onViewNotation: (side: FuseSide) => void;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -55,9 +55,10 @@
   let stageW = $state(0);
   let stageH = $state(0);
   const startLayout = $derived<"row" | "column" | null>(full ? "column" : null);
-  const viewDisabled = $derived(source.isLoading || fuseState.isFusing);
   const sourceControlsDisabled = $derived(
-    fuseState.isLoadingLength || fuseState.pendingSide !== null || fuseState.isFusing
+    fuseState.isLoadingLength ||
+      fuseState.pendingSide !== null ||
+      fuseState.isFusing
   );
 
   // Symmetry mode: the driver keeps its source + controls; the follower renders
@@ -73,7 +74,9 @@
     FUSE_TRANSFORMS.find((transform) => transform.id === fuseState.transformId)
       ?.label ?? "Mirror"
   );
-  const driverLabel = $derived(fuseState.driverSide === "blue" ? "Blue" : "Red");
+  const driverLabel = $derived(
+    fuseState.driverSide === "blue" ? "Blue" : "Red"
+  );
 
   // The playing beat, mapped to a 0-based step index, so the card cell for the
   // step currently on the animation canvas lights up in lockstep. The shared
@@ -82,7 +85,9 @@
   const stepCount = $derived(displaySequence?.steps.length ?? 0);
   const highlightIndex = $derived(
     stepCount > 0
-      ? Math.floor(((fuseState.currentStep % stepCount) + stepCount) % stepCount)
+      ? Math.floor(
+          ((fuseState.currentStep % stepCount) + stepCount) % stepCount
+        )
       : null
   );
 
@@ -107,7 +112,19 @@
     return best;
   }
   const stepColumns = $derived<number | null>(
-    full ? stepCols : bestStageCols(stageW, stageH, stepCount),
+    full ? stepCols : bestStageCols(stageW, stageH, stepCount)
+  );
+
+  // Phone cards keep one canonical pictograph renderer mounted and feed it the
+  // playing step. This avoids ChoreoCard's heavy-content crossfade, preserves a
+  // stable grid, and lets PropSvg/ArrowSvg animate their in-place changes.
+  const compactStep = $derived(
+    highlightIndex === null
+      ? null
+      : (displaySequence?.steps[highlightIndex] ?? null)
+  );
+  const compactStepLabel = $derived(
+    highlightIndex === null ? "" : `${highlightIndex + 1} / ${stepCount}`
   );
 
   // Measure the notation stage so the non-full column choice tracks the real
@@ -156,9 +173,7 @@
       id: sequence.id,
       word: sequence.word,
       name: sequence.name,
-      ...(side === "blue"
-        ? { blueSoloProp: solo }
-        : { redSoloProp: solo }),
+      ...(side === "blue" ? { blueSoloProp: solo } : { redSoloProp: solo }),
     });
     await fuseState.setSource(side, wrapped, {
       kind: "library",
@@ -197,76 +212,123 @@
       action: openVtgPicker,
     },
   ]);
+  const compactSourceMenuItems = $derived([
+    ...(source.canGoBack
+      ? [
+          {
+            label: "Previous path",
+            icon: "fas fa-arrow-rotate-left",
+            action: () => fuseState.previous(side),
+          },
+        ]
+      : []),
+    ...sourceMenuItems,
+  ]);
 </script>
 
 <section
   class="source-card {side}-source"
   class:loading={source.isLoading}
+  class:compact-hero={compactHero}
   aria-label="{label} path"
   aria-busy={source.isLoading}
 >
-  {#if showInlineNotation}
-    <div class="notation-stage" bind:this={stageEl}>
-      {#if displaySequence}
-        <div class="notation-scroll themed-scrollbar">
-          <ChoreoCard
-            sequence={displaySequence}
-            browseViewMode={viewMode}
-            columnCount={stepColumns}
-            startPositionLayoutOverride={startLayout}
-            includeStartPosition={full}
-            showMandala={full}
-            showWord={false}
-            showStepNumbers={true}
-            showDifficultyLevel={false}
-            showCreatorName={false}
-            showNotes={false}
-            showBirthday={false}
-            showLoopGlyph={false}
-            showHighlight={true}
-            highlightedStepIndex={highlightIndex}
-            darkMode={true}
-            bluePropType={settings.bluePropType}
-            redPropType={settings.redPropType}
-            hideSoloHeader={true}
-            fitWidth={true}
-          />
-        </div>
-      {:else if source.isLoading || isSymmetryFollower}
-        <div class="notation-skeleton" aria-hidden="true"></div>
-      {:else}
-        <p class="notation-empty">No notation to show.</p>
-      {/if}
+  <div class="notation-stage" bind:this={stageEl}>
+    {#if compactHero && compactStep}
+      <div
+        class="compact-live-pictograph"
+        class:playing={fuseState.clockRunning}
+        style:--fuse-beat-duration={`${60_000 / fuseState.bpm}ms`}
+      >
+        <PictographContainer
+          pictographData={compactStep}
+          disableTransitions={true}
+          showGrid={true}
+          showTKA={false}
+          showReversals={false}
+          showNonRadialPoints={false}
+          showTnD={false}
+          showElemental={false}
+          showPositions={false}
+          showHandPoints={true}
+          visibleHand={side}
+          darkMode={true}
+          bluePropTypeOverride={settings.bluePropType}
+          redPropTypeOverride={settings.redPropType}
+          stepNumberOverride={false}
+        />
+      </div>
+    {:else if displaySequence}
+      <div class="notation-scroll themed-scrollbar">
+        <ChoreoCard
+          sequence={displaySequence}
+          browseViewMode={viewMode}
+          columnCount={stepColumns}
+          startPositionLayoutOverride={startLayout}
+          includeStartPosition={full}
+          showMandala={full}
+          showWord={false}
+          showStepNumbers={true}
+          showDifficultyLevel={false}
+          showCreatorName={false}
+          showNotes={false}
+          showBirthday={false}
+          showLoopGlyph={false}
+          showHighlight={true}
+          highlightedStepIndex={highlightIndex}
+          darkMode={true}
+          bluePropType={settings.bluePropType}
+          redPropType={settings.redPropType}
+          hideSoloHeader={true}
+          fitWidth={true}
+        />
+      </div>
+    {:else if source.isLoading || isSymmetryFollower}
+      <div class="notation-skeleton" aria-hidden="true"></div>
+    {:else}
+      <p class="notation-empty">No notation to show.</p>
+    {/if}
 
-      {#if source.isLoading && displaySequence && !isSymmetryFollower}
-        <div class="notation-loading" aria-hidden="true">
-          <i class="fas fa-shuffle fa-spin"></i>
-        </div>
-      {/if}
-    </div>
-  {:else}
-    <div class="notation-reserve" aria-hidden="true"></div>
-    {#if source.sequence}
-      <div class="notation-button">
-        <PanelButton
-          variant="secondary"
-          fullWidth={true}
-          disabled={viewDisabled}
-          onclick={() => onViewNotation(side)}
-        >
-          <i class="fas fa-table-cells" aria-hidden="true"></i>
-          View notation
-        </PanelButton>
+    {#if compactHero && displaySequence}
+      <span class="compact-step-position" aria-hidden="true">
+        {compactStepLabel}
+      </span>
+    {/if}
+
+    {#if source.isLoading && displaySequence && !isSymmetryFollower}
+      <div class="notation-loading" aria-hidden="true">
+        <i class="fas fa-shuffle fa-spin"></i>
+      </div>
+    {/if}
+  </div>
+
+  {#if compactHero}
+    {#if isSymmetryFollower}
+      <span
+        class="compact-derived-indicator"
+        title="{followerTransformLabel} of {driverLabel}"
+        aria-label="{followerTransformLabel} of {driverLabel}"
+      >
+        <i class="fas fa-link" aria-hidden="true"></i>
+      </span>
+    {:else}
+      <div class="compact-source-menu">
+        <OverflowMenu
+          items={compactSourceMenuItems}
+          disabled={sourceControlsDisabled}
+          ariaLabel="{label} path options"
+          placement="bottom"
+        />
       </div>
     {/if}
   {/if}
 
-  {#if isSymmetryFollower}
+  {#if isSymmetryFollower && !compactHero}
     <div class="follower-note" role="status">
       <i class="fas fa-link" aria-hidden="true"></i>
       <span>{followerTransformLabel} of {driverLabel}</span>
     </div>
-  {:else}
+  {:else if !compactHero}
     <div class="source-actions">
       <PanelButton
         variant="secondary"
@@ -289,7 +351,10 @@
         </PanelButton>
       </div>
       <div class="source-menu">
-        <OverflowMenu items={sourceMenuItems} disabled={sourceControlsDisabled} />
+        <OverflowMenu
+          items={sourceMenuItems}
+          disabled={sourceControlsDisabled}
+        />
       </div>
     </div>
   {/if}
@@ -301,7 +366,7 @@
   {/if}
 </section>
 
-{#if showInlineNotation && nextSequence && !isSymmetryFollower}
+{#if nextSequence && !isSymmetryFollower}
   {#key nextSequence}
     <div class="prewarm" aria-hidden="true">
       <ChoreoCard
@@ -401,6 +466,7 @@
 
   .notation-stage {
     position: relative;
+    isolation: isolate;
     flex: 1 1 180px;
     min-height: 150px;
     overflow: hidden;
@@ -410,9 +476,79 @@
   }
 
   .notation-scroll {
+    position: relative;
+    z-index: 0;
     width: 100%;
     height: 100%;
     overflow: auto;
+  }
+
+  .compact-live-pictograph {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* The notation itself never disappears between beats. A restrained light
+     pass makes the live arrow read as active while its canonical renderer
+     updates position and rotation in place. */
+  .compact-live-pictograph.playing :global(.arrow-svg) {
+    animation: live-arrow-energy var(--fuse-beat-duration, 1000ms) ease-in-out
+      infinite;
+  }
+
+  @keyframes live-arrow-energy {
+    0%,
+    100% {
+      filter: brightness(1) drop-shadow(0 0 0 transparent);
+    }
+    48% {
+      filter: brightness(1.28)
+        drop-shadow(
+          0 0 7px color-mix(in srgb, var(--source-color) 62%, transparent)
+        );
+    }
+  }
+
+  .compact-step-position {
+    position: absolute;
+    z-index: 2;
+    bottom: 7px;
+    left: 7px;
+    min-width: 7ch;
+    padding: 4px 6px;
+    border-radius: 999px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    background: rgba(0, 0, 0, 0.76);
+    font-size: var(--font-size-min, 14px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .compact-source-menu,
+  .compact-derived-indicator {
+    position: absolute;
+    z-index: 4;
+    top: 14px;
+    right: 14px;
+  }
+
+  .compact-derived-indicator {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid
+      color-mix(in srgb, var(--source-color) 62%, var(--theme-stroke));
+    border-radius: 50%;
+    color: color-mix(in srgb, var(--source-color) 70%, white);
+    background: color-mix(
+      in srgb,
+      var(--source-color) 17%,
+      rgba(0, 0, 0, 0.76)
+    );
+    font-size: var(--font-size-min, 14px);
   }
 
   .notation-skeleton {
@@ -424,6 +560,7 @@
      loads, with a colored spinner over it so the tap registers immediately. */
   .notation-loading {
     position: absolute;
+    z-index: 3;
     top: 8px;
     right: 8px;
     display: grid;
@@ -435,14 +572,6 @@
     background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
     backdrop-filter: blur(2px);
     font-size: 14px;
-  }
-
-  .notation-button {
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .notation-reserve {
-    display: none;
   }
 
   .source-actions {
@@ -565,20 +694,69 @@
     .source-actions {
       margin-top: 0;
     }
-  }
 
-  @container fuse (min-width: 600px) {
-    .notation-button {
-      display: none;
+    .source-card.compact-hero {
+      height: 100%;
+      min-height: 0;
+      gap: 0;
+      padding: 7px;
+      overflow: visible;
+      border-color: color-mix(
+        in srgb,
+        var(--source-color) 52%,
+        var(--theme-stroke, transparent)
+      );
+      border-radius: var(--settings-radius-md, 14px);
+      box-shadow: inset 0 3px 0
+        color-mix(in srgb, var(--source-color) 72%, transparent);
+      background:
+        linear-gradient(
+          145deg,
+          color-mix(in srgb, var(--source-color) 13%, transparent),
+          transparent 50%
+        ),
+        var(--theme-card-bg, rgba(255, 255, 255, 0.045));
     }
 
-    .notation-reserve {
-      display: block;
-      flex: 1 1 180px;
-      min-height: 150px;
-      border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-      border-radius: var(--settings-radius-md, 14px);
-      background: color-mix(in srgb, var(--theme-text, white) 4%, transparent);
+    .compact-hero .notation-stage {
+      flex: 1 1 0;
+      min-height: 0;
+      border-color: color-mix(
+        in srgb,
+        var(--source-color) 24%,
+        var(--theme-stroke, transparent)
+      );
+      border-radius: calc(var(--settings-radius-md, 14px) - 3px);
+    }
+
+    .compact-hero .notation-scroll {
+      overflow: hidden;
+    }
+
+    .compact-hero .notation-loading {
+      top: 50%;
+      right: auto;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .compact-hero :global(.overflow-trigger) {
+      width: var(--min-touch-target, 44px);
+      height: var(--min-touch-target, 44px);
+      border-color: color-mix(
+        in srgb,
+        var(--source-color) 38%,
+        var(--theme-stroke, transparent)
+      );
+      background: color-mix(
+        in srgb,
+        var(--source-color) 12%,
+        var(--theme-card-bg, #161821)
+      );
+    }
+
+    .compact-hero :global(.overflow-dropdown) {
+      min-width: 160px;
     }
   }
 
@@ -591,8 +769,7 @@
       min-height: 0;
     }
 
-    .notation-stage,
-    .notation-reserve {
+    .notation-stage {
       min-height: 64px;
     }
   }
@@ -605,8 +782,7 @@
 
   /* Locked desktop columns get their taller notation floor back. */
   @container fuse (min-width: 1100px) and (min-height: 780px) {
-    .notation-stage,
-    .notation-reserve {
+    .notation-stage {
       min-height: 120px;
     }
   }
@@ -614,7 +790,8 @@
   @media (prefers-reduced-motion: reduce) {
     .notation-skeleton,
     .change-flash,
-    .notation-loading .fa-spin {
+    .notation-loading .fa-spin,
+    .compact-live-pictograph.playing :global(.arrow-svg) {
       animation: none;
     }
   }

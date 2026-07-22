@@ -1,20 +1,17 @@
 <script lang="ts">
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getFuseContext } from "../context/fuse-context";
-  import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
-  import FuseDetailDrawer from "./FuseDetailDrawer.svelte";
   import FuseModeBar from "./FuseModeBar.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
+  import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
   import FuseTransformPicker from "./FuseTransformPicker.svelte";
   import FuseWorkspaceHeader from "./FuseWorkspaceHeader.svelte";
 
   const { state: fuseState } = getFuseContext();
-  let detailOpen = $state(false);
-  let detailKind = $state<"help" | "notation">("notation");
-  let detailSide = $state<FuseSide>("blue");
   let containerElement = $state<HTMLDivElement | null>(null);
   let compact = $state(true);
+  let settingsOpen = $state(false);
   // On the locked desktop layout the source cards sit in a tall column with
   // room to spare, so each pictograph stays large even with a start position
   // and a mandala added. Gate the full choreo card on that size (matching the
@@ -70,7 +67,9 @@
   }
 
   // requested length shows before the load settles so the seam is right away.
-  const stepCount = $derived(fuseState.appliedLength ?? fuseState.requestedLength);
+  const stepCount = $derived(
+    fuseState.appliedLength ?? fuseState.requestedLength
+  );
 
   // Pictograph cell size for one card at a given path-column width and step
   // column count. Grid = sc step columns + 1 start column; rows = ceil(steps/sc)
@@ -119,7 +118,8 @@
   // whose clamped width yields the largest cell. A wide container thus lands on
   // more columns, a tall one on fewer — the size the user reaches by dragging.
   function optimalSplit(): number {
-    if (contentH <= 0 || cardBoxH <= 0) return clampSplit(containerWidth * 0.42);
+    if (contentH <= 0 || cardBoxH <= 0)
+      return clampSplit(containerWidth * 0.42);
     let bestSeam = clampSplit(containerWidth * 0.42);
     let bestCell = -1;
     for (const sc of STEP_COL_CANDIDATES) {
@@ -207,13 +207,7 @@
     return () => observer.disconnect();
   });
 
-  function openNotation(side: FuseSide): void {
-    detailKind = "notation";
-    detailSide = side;
-    detailOpen = true;
-  }
-
-  async function handleFuse(): Promise<void> {
+  async function handleOpenViewer(): Promise<void> {
     const sequence = await fuseState.buildFusedSequence();
     if (!sequence) return;
 
@@ -239,29 +233,22 @@
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
   >
-    <FuseWorkspaceHeader {compact} />
-    <div class="fuse-mode-row">
-      <FuseModeBar />
-      {#if fuseState.mode === "symmetry"}
-        <FuseTransformPicker />
-      {/if}
-    </div>
+    <FuseWorkspaceHeader
+      {compact}
+      onOpenOptions={() => (settingsOpen = true)}
+    />
+    {#if !compact}
+      <div class="fuse-mode-row">
+        <FuseModeBar />
+        {#if fuseState.mode === "symmetry"}
+          <FuseTransformPicker />
+        {/if}
+      </div>
+    {/if}
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
-        <FuseSourceCard
-          side="blue"
-          showInlineNotation={true}
-          full={true}
-          {stepCols}
-          onViewNotation={openNotation}
-        />
-        <FuseSourceCard
-          side="red"
-          showInlineNotation={true}
-          full={true}
-          {stepCols}
-          onViewNotation={openNotation}
-        />
+        <FuseSourceCard side="blue" full={true} {stepCols} />
+        <FuseSourceCard side="red" full={true} {stepCols} />
         <div
           class="split-handle"
           role="slider"
@@ -278,28 +265,29 @@
           ondblclick={onSplitReset}
         ></div>
       </div>
-    {:else if !compact}
-      <FuseSourceCard
-        side="blue"
-        showInlineNotation={true}
-        full={false}
-        onViewNotation={openNotation}
-      />
-      <FuseSourceCard
-        side="red"
-        showInlineNotation={true}
-        full={false}
-        onViewNotation={openNotation}
-      />
+    {:else if compact}
+      <div class="fuse-mobile-sources" aria-label="Source paths">
+        <FuseSourceCard side="blue" compactHero={true} />
+        <div class="fusion-bridge" aria-hidden="true">
+          <span class="fusion-beam beam-blue"></span>
+          <span class="fusion-core">
+            <i class="fas fa-link"></i>
+          </span>
+          <span class="fusion-beam beam-red"></span>
+          <span class="fusion-spark spark-one"></span>
+          <span class="fusion-spark spark-two"></span>
+          <span class="fusion-spark spark-three"></span>
+        </div>
+        <FuseSourceCard side="red" compactHero={true} />
+      </div>
+    {:else}
+      <FuseSourceCard side="blue" full={false} />
+      <FuseSourceCard side="red" full={false} />
     {/if}
-    <FusePreviewStage onFuse={handleFuse} {compact} />
+    <FusePreviewStage onOpenViewer={handleOpenViewer} {compact} />
   </div>
 
-  <FuseDetailDrawer
-    bind:isOpen={detailOpen}
-    kind={detailKind}
-    side={detailSide}
-  />
+  <FuseSettingsDrawer bind:isOpen={settingsOpen} />
 </div>
 
 <style>
@@ -346,14 +334,148 @@
   }
 
   .fuse-workspace.compact-workspace {
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto clamp(132px, 23cqh, 210px) minmax(0, 1fr);
     grid-template-areas:
       "header"
-      "mode"
+      "sources"
       "preview";
     gap: var(--settings-spacing-sm, 8px);
     padding: var(--settings-spacing-sm, 8px);
     overflow: hidden;
+  }
+
+  .fuse-mobile-sources {
+    grid-area: sources;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--settings-spacing-sm, 8px);
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* A small, non-interactive bridge makes the relationship explicit: the two
+     live paths feed the combined canvas below. It sits in the gutter and never
+     steals taps from either card. */
+  .fusion-bridge {
+    position: absolute;
+    z-index: 6;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    width: 54px;
+    height: 34px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .fusion-beam {
+    position: absolute;
+    top: 50%;
+    width: 17px;
+    height: 2px;
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .beam-blue {
+    left: 0;
+    color: var(--prop-blue, #2196f3);
+    background: linear-gradient(90deg, transparent, currentColor);
+  }
+
+  .beam-red {
+    right: 0;
+    color: var(--prop-red, #f44336);
+    background: linear-gradient(90deg, currentColor, transparent);
+  }
+
+  .fusion-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    transform: translate(-50%, -50%);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning, #f97316) 76%, white);
+    border-radius: 50%;
+    color: #fff4df;
+    background:
+      radial-gradient(
+        circle at 35% 30%,
+        rgba(255, 255, 255, 0.34),
+        transparent 34%
+      ),
+      color-mix(in srgb, var(--semantic-warning, #f97316) 72%, #17131d);
+    box-shadow:
+      0 0 0 3px rgba(0, 0, 0, 0.56),
+      0 0 16px
+        color-mix(in srgb, var(--semantic-warning, #f97316) 58%, transparent);
+    font-size: 12px;
+    animation: fusion-core-pulse 1800ms ease-in-out infinite;
+  }
+
+  .fusion-spark {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #ffe3a3;
+    box-shadow: 0 0 6px #fb923c;
+    animation: fusion-spark 1500ms ease-in-out infinite;
+  }
+
+  .spark-one {
+    top: 0;
+    left: 29px;
+  }
+
+  .spark-two {
+    right: 5px;
+    bottom: 2px;
+    animation-delay: -500ms;
+  }
+
+  .spark-three {
+    bottom: 0;
+    left: 6px;
+    animation-delay: -1000ms;
+  }
+
+  @keyframes fusion-core-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 3px rgba(0, 0, 0, 0.56),
+        0 0 11px
+          color-mix(in srgb, var(--semantic-warning, #f97316) 42%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 3px rgba(0, 0, 0, 0.56),
+        0 0 20px
+          color-mix(in srgb, var(--semantic-warning, #f97316) 72%, transparent);
+    }
+  }
+
+  @keyframes fusion-spark {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.7);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.45);
+    }
+  }
+
+  .fuse-mobile-sources :global(.source-card) {
+    grid-area: auto;
   }
 
   @container fuse (min-width: 600px) {
@@ -502,8 +624,11 @@
       scroll-behavior: auto;
     }
     .split-handle::before,
-    .split-handle::after {
+    .split-handle::after,
+    .fusion-core,
+    .fusion-spark {
       transition: none;
+      animation: none;
     }
   }
 </style>

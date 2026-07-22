@@ -10,10 +10,10 @@
   import FuseMobileControls from "./FuseMobileControls.svelte";
 
   let {
-    onFuse,
+    onOpenViewer,
     compact = false,
   }: {
-    onFuse: () => Promise<void>;
+    onOpenViewer: () => Promise<void>;
     compact?: boolean;
   } = $props();
   const { state: fuseState } = getFuseContext();
@@ -90,7 +90,7 @@
   </div>
 
   {#if compact}
-    <FuseMobileControls {onFuse} />
+    <FuseMobileControls {onOpenViewer} />
   {:else}
     <p
       id="fuse-action-status"
@@ -143,15 +143,15 @@
 
       <div class="fuse-slot">
         <ActionButton
-          label="Fuse and open"
-          busyLabel="Building fused sequence..."
-          icon="fa-fire-flame-curved"
+          label="Open combined sequence viewer"
+          busyLabel="Opening combined sequence..."
+          icon={fuseState.isFusing ? "fa-spinner fa-spin" : "fa-expand"}
           color="fuse"
           fullWidth={true}
           ariaDisabled={!fuseState.canFuse}
           ariaDescribedBy="fuse-action-status"
           busy={fuseState.isFusing}
-          onclick={() => void onFuse()}
+          onclick={() => void onOpenViewer()}
         />
       </div>
     </div>

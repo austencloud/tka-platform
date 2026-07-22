@@ -1,35 +1,29 @@
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
-  import { FUSE_LENGTHS, type FuseLength } from "../state/fuse-state.svelte";
+  import { FUSE_TRANSFORMS } from "../state/fuse-state.svelte";
+  import FuseLengthPicker from "./FuseLengthPicker.svelte";
 
   let {
     compact = false,
+    onOpenOptions = () => {},
   }: {
     compact?: boolean;
+    onOpenOptions?: () => void;
   } = $props();
   const { state: fuseState } = getFuseContext();
 
-  function isFuseLength(value: number): value is FuseLength {
-    return (FUSE_LENGTHS as readonly number[]).includes(value);
-  }
-
-  // SegmentedControl works over string values, so stringify the numeric
-  // FUSE_LENGTHS and parse back on select. Every option carries the same
-  // disabled flag while a length is loading or a fuse is in flight —
-  // SegmentedControl has no whole-control disabled, so it's per-option.
-  const lengthOptions = $derived(
-    FUSE_LENGTHS.map((length) => ({
-      value: String(length),
-      label: String(length),
-      disabled: fuseState.isLoadingLength || fuseState.isFusing,
-    })),
+  const compactModeLabel = $derived.by(() => {
+    if (fuseState.mode === "shuffle") return "Shuffle";
+    const transformLabel =
+      FUSE_TRANSFORMS.find(
+        (transform) => transform.id === fuseState.transformId
+      )?.label ?? "Mirror";
+    return `Symmetry · ${transformLabel}`;
+  });
+  const optionsDisabled = $derived(
+    fuseState.isLoadingLength || fuseState.isFusing
   );
-
-  function handleLengthSelect(value: string): void {
-    const num = Number(value);
-    if (isFuseLength(num)) void fuseState.setLength(num);
-  }
 </script>
 
 <header class="fuse-header" class:compact>
@@ -38,21 +32,31 @@
       <h2>Fuse two paths</h2>
       <p>Shuffle Blue or Red, then Fuse.</p>
     </div>
+
+    <div class="compact-summary" aria-label="Current Fuse options">
+      <span class="summary-length">{fuseState.requestedLength} steps</span>
+      <span class="summary-separator" aria-hidden="true">·</span>
+      <span class="summary-mode">{compactModeLabel}</span>
+    </div>
+
+    <div class="options-trigger">
+      <PanelButton
+        variant="secondary"
+        disabled={optionsDisabled}
+        onclick={onOpenOptions}
+      >
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        Options
+      </PanelButton>
+    </div>
   {:else}
     <h2>Fuse two paths</h2>
-  {/if}
-
-  <div class="header-controls">
-    <div class="length-field" role="group" aria-label="Length in steps">
-      <SegmentedControl
-        options={lengthOptions}
-        value={String(fuseState.requestedLength)}
-        onchange={handleLengthSelect}
-        color="accent"
-        size="sm"
-      />
+    <div class="header-controls">
+      <div class="length-field">
+        <FuseLengthPicker />
+      </div>
     </div>
-  </div>
+  {/if}
 </header>
 
 <style>
@@ -101,6 +105,58 @@
     flex-shrink: 0;
   }
 
+  .compact-summary {
+    display: flex;
+    align-items: baseline;
+    flex: 1 1 auto;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .summary-length {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary-separator {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .summary-mode {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-weight: 600;
+    text-overflow: ellipsis;
+  }
+
+  .options-trigger {
+    flex: 0 0 auto;
+  }
+
+  .options-trigger :global(.panel-btn) {
+    min-width: 112px;
+    padding-inline: 14px;
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 45%,
+      var(--theme-stroke, transparent)
+    );
+    border-radius: var(--settings-radius-md, 12px);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 12%,
+      var(--theme-card-bg, #161821)
+    );
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
   .length-field {
     display: flex;
     /* Enough room for all 7 segments inline on desktop; min-width:0 lets it
@@ -117,24 +173,18 @@
   @container fuse (max-width: 599px) {
     .fuse-header.compact {
       min-height: var(--min-touch-target, 48px);
-      padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-    }
-
-    .compact .header-controls {
-      width: 100%;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: var(--settings-spacing-sm, 8px);
-    }
-
-    /* Only the length segments remain in the compact header (playback is a
-       canvas tap now; no transport or help button), so give them the full row. */
-    .compact .length-field {
-      width: 100%;
-      flex-basis: 100%;
+      padding: 0 0 0 var(--settings-spacing-sm, 8px);
+      border-color: color-mix(
+        in srgb,
+        var(--semantic-warning, #f97316) 22%,
+        var(--theme-stroke, transparent)
+      );
+      border-radius: var(--settings-radius-md, 14px);
+      background: color-mix(
+        in srgb,
+        var(--theme-panel-bg, #0c0e16) 88%,
+        transparent
+      );
     }
   }
 </style>
