@@ -378,9 +378,20 @@ describe("game registry capabilities", () => {
     }
   });
 
-  it("the eight original games are still quiz-scored", () => {
+  it("every non-performance game is quiz-scored with a quiz type", () => {
+    // Guards the invariant, not a head count: `trace-paths` is the only
+    // performance game, and every other game — however many quiz games exist —
+    // is quiz-scored and carries a quizType. A hardcoded length here broke on
+    // every legitimately-added quiz game (word-bridges was the 9th); this
+    // instead catches the real regression — an original game silently flipping
+    // to performance scoring, or losing its quizType.
+    const performanceGames = GAME_REGISTRY.filter(
+      (g) => g.capabilities.scoring === "performance"
+    );
+    expect(performanceGames.map((g) => g.id)).toEqual(["trace-paths"]);
+
     const quizGames = GAME_REGISTRY.filter((g) => g.id !== "trace-paths");
-    expect(quizGames).toHaveLength(8);
+    expect(quizGames.length).toBeGreaterThanOrEqual(8);
     for (const game of quizGames) {
       expect(game.capabilities.scoring, `${game.id} changed scoring mode`).toBe("quiz");
       expect(game.quizType, `${game.id} lost its quizType`).toBeDefined();
