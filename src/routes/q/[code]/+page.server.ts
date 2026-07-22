@@ -28,6 +28,8 @@ const META_FIELD_PATHS = [
   "thumbnailUrl",
   "deckId",
   "deckName",
+  "bluePropType",
+  "redPropType",
 ] as const;
 
 interface ShortCodeMeta {
@@ -36,6 +38,8 @@ interface ShortCodeMeta {
   thumbnailUrl: string | null;
   deckId: string | null;
   deckName: string | null;
+  bluePropType: string | null;
+  redPropType: string | null;
 }
 
 const EMPTY_META: ShortCodeMeta = {
@@ -44,6 +48,8 @@ const EMPTY_META: ShortCodeMeta = {
   thumbnailUrl: null,
   deckId: null,
   deckName: null,
+  bluePropType: null,
+  redPropType: null,
 };
 
 type FirestoreFields = Record<string, unknown>;
@@ -91,6 +97,8 @@ async function fetchShortCodeMeta(code: string): Promise<ShortCodeMeta> {
     thumbnailUrl: readString(fields, "thumbnailUrl"),
     deckId: readString(fields, "deckId"),
     deckName: readString(fields, "deckName"),
+    bluePropType: readString(fields, "bluePropType"),
+    redPropType: readString(fields, "redPropType"),
   };
 }
 

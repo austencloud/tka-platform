@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
   import {
     scanNotificationTargetState,
     takeScanNotificationTarget,
@@ -14,7 +14,7 @@
   import ScanCardPeek from "./ScanCardPeek.svelte";
 
   const { state: scanState } = getScanActivityContext();
-  const apiKey = $derived(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
+  const apiKey = $derived(PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
   const hasApiKey = $derived(
     Boolean(apiKey) && apiKey !== "your-google-maps-api-key"
   );
