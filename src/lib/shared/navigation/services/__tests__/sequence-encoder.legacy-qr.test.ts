@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { decodeSequenceFromQR } from "../sequence-encoder";
 
 describe("legacy QR payload compatibility", () => {
@@ -38,4 +38,24 @@ describe("legacy QR payload compatibility", () => {
       expect(sequence.steps[0]?.motions.blue.turns).toBe(firstTurns);
     }
   );
+
+  it("normalizes the numeric float encoding from production shortcode 9XAK", async () => {
+    const sequence = await decodeSequenceFromQR(
+      "s~q1:A 9396V$GYO1%4AOAOC.V4DR6N0:UU.OQIU23K0WDW.J0MJLU/JEMNG1NE.4TKF7UJ.7797LIPD02SC6IS7GKBM::2SB82BKA+H4Q2FF9HG4/NM0+44*P940ERE/ISIIGY13BTKJ9A4ZU%*J$S755V$%2E/B8.BVMM+4AWYT2Z8Z84%FBY8L.Q8/.T70"
+    );
+
+    expect(sequence.steps).toHaveLength(16);
+    expect(sequence.startPosition?.motions.blue?.propType).toBe(PropType.STAFF);
+    expect(sequence.startPosition?.motions.red?.propType).toBe(PropType.STAFF);
+
+    const numericFloat = sequence.steps[0]?.motions.red;
+    expect(numericFloat?.motionType).toBe(MotionType.FLOAT);
+    expect(numericFloat?.turns).toBe("fl");
+    expect(numericFloat?.rotationDirection).toBe(
+      RotationDirection.NO_ROTATION
+    );
+    expect(numericFloat?.prefloatRotationDirection).toBe(
+      RotationDirection.CLOCKWISE
+    );
+  });
 });

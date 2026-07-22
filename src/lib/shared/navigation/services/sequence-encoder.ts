@@ -131,7 +131,12 @@ const INLINE_PREFIX = "s~";
 // ============================================================================
 
 
-function encodeMotion(motion: MotionData | undefined): string {
+type FloatWireFormat = "token" | "numeric";
+
+function encodeMotion(
+  motion: MotionData | undefined,
+  floatWireFormat: FloatWireFormat = "token"
+): string {
   // An invisible motion is the both-required step layer's encoding of "this
   // hand is not really there" (placeholder / stripped hand). Encode it as an
   // empty segment — byte-identical to the pre-migration absent-hand output,
@@ -144,8 +149,13 @@ function encodeMotion(motion: MotionData | undefined): string {
 
   // A float does not spin: its own rotation is noRotation. The prefloat rotation
   // (cw/ccw) is appended as a separate char so the type can be derived on decode.
+  const prefloatRotation =
+    ROTATION_ENCODE[motion.prefloatRotationDirection as RotationDirection] ??
+    ROTATION_ENCODE[RotationDirection.CLOCKWISE];
   const rotation = isFloat
-    ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
+    ? floatWireFormat === "numeric"
+      ? prefloatRotation
+      : ROTATION_ENCODE[RotationDirection.NO_ROTATION]
     : ROTATION_ENCODE[
         motion.rotationDirection === ("no_rotation" as RotationDirection)
           ? RotationDirection.NO_ROTATION
@@ -155,7 +165,11 @@ function encodeMotion(motion: MotionData | undefined): string {
         ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
         : undefined);
 
-  const turns = isFloat ? "f" : String(motion.turns);
+  const turns = isFloat
+    ? floatWireFormat === "numeric"
+      ? "-0.5"
+      : "f"
+    : String(motion.turns);
 
   if (!startLoc || !endLoc || !rotation) {
     console.error("❌ Encoder: motion missing required fields", {
@@ -167,20 +181,20 @@ function encodeMotion(motion: MotionData | undefined): string {
     return "";
   }
 
-  if (!isFloat) {
+  if (!isFloat || floatWireFormat === "numeric") {
     return `${startLoc}${endLoc}${rotation}${turns}`;
   }
 
   // Float: append prefloat rotation (always cw/ccw — floats are always shifts).
-  const prefloatRot =
-    ROTATION_ENCODE[motion.prefloatRotationDirection as RotationDirection] ??
-    ROTATION_ENCODE[RotationDirection.CLOCKWISE];
-  return `${startLoc}${endLoc}${rotation}${turns}${prefloatRot}`;
+  return `${startLoc}${endLoc}${rotation}${turns}${prefloatRotation}`;
 }
 
-function encodeBeat(beat: StepData | StartPositionData): string {
+function encodeBeat(
+  beat: StepData | StartPositionData,
+  floatWireFormat: FloatWireFormat = "token"
+): string {
   const motions = beat.motions ?? { blue: undefined, red: undefined };
-  const encodedMotions = `${encodeMotion(motions.blue)}:${encodeMotion(motions.red)}`;
+  const encodedMotions = `${encodeMotion(motions.blue, floatWireFormat)}:${encodeMotion(motions.red, floatWireFormat)}`;
 
   // Keep the legacy byte representation for ordinary one-beat steps. Custom
   // durations get an explicit third segment so old links and their hashes stay
@@ -227,20 +241,35 @@ function decodeMotion(
   const endLocCode = encoded.slice(pos, pos + 2); pos += 2;
   const rotationCode = encoded[pos++];
 
-  let turnsCode = "";
-  while (pos < encoded.length && /[0-9.f]/.test(encoded[pos]!)) {
-    turnsCode += encoded[pos++];
+  const turnsCode = encoded.slice(pos);
+  const isTokenFloat = turnsCode === "f" || /^f[cu]$/.test(turnsCode);
+  const isNumericFloat = turnsCode === "-0.5";
+  const isFloat = isTokenFloat || isNumericFloat;
+  const isNumericTurns = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(turnsCode);
+
+  if (!isFloat && !isNumericTurns) {
+    throw new Error(`Invalid motion encoding: ${encoded}`);
   }
-  const isFloat = turnsCode === "f";
-  const prefloatRotCode = isFloat ? encoded[pos++] : undefined;
+
+  const prefloatRotCode = isTokenFloat ? turnsCode[1] : rotationCode;
 
   const startLocation = LOCATION_DECODE[startLocCode];
   const endLocation = LOCATION_DECODE[endLocCode];
-  const rotationDirection = ROTATION_DECODE[rotationCode!];
-  const turns = isFloat ? ("fl" as const) : parseFloat(turnsCode);
+  const encodedRotationDirection = ROTATION_DECODE[rotationCode!];
+  const rotationDirection = isFloat
+    ? RotationDirection.NO_ROTATION
+    : encodedRotationDirection;
+  const turns = isFloat ? ("fl" as const) : Number(turnsCode);
   const startOrientation = chainStartOrientation;
 
-  if (!startLocation || !endLocation || !rotationDirection || !startOrientation) {
+  if (
+    !startLocation ||
+    !endLocation ||
+    !encodedRotationDirection ||
+    !rotationDirection ||
+    !startOrientation ||
+    (turns !== "fl" && !Number.isFinite(turns))
+  ) {
     throw new Error(`Invalid motion encoding: ${encoded}`);
   }
 
@@ -400,7 +429,10 @@ function findMotionMismatch(a: SequenceData, b: SequenceData): string | null {
 // PUBLIC API
 // ============================================================================
 
-export function encodeSequence(sequence: SequenceData): string {
+function encodeSequenceWithFloatFormat(
+  sequence: SequenceData,
+  floatWireFormat: FloatWireFormat
+): string {
   let startPositionStep: StepData | StartPositionData;
   let actualSteps: readonly StepData[];
 
@@ -432,9 +464,15 @@ export function encodeSequence(sequence: SequenceData): string {
     PROP_TYPE_ENCODE[PropType.STAFF];
 
   const header = `${blueSeed}${redSeed}${bluePropCode}${redPropCode}`;
-  const encodedStartPosition = encodeBeat(startPositionStep);
-  const encodedSteps = actualSteps.map((step) => encodeBeat(step));
+  const encodedStartPosition = encodeBeat(startPositionStep, floatWireFormat);
+  const encodedSteps = actualSteps.map((step) =>
+    encodeBeat(step, floatWireFormat)
+  );
   return `${header}|${encodedStartPosition}|${encodedSteps.join("|")}`;
+}
+
+export function encodeSequence(sequence: SequenceData): string {
+  return encodeSequenceWithFloatFormat(sequence, "token");
 }
 
 export function decodeSequence(encoded: string): SequenceData {
@@ -675,12 +713,18 @@ export async function decodeSequenceFromQR(encoded: string): Promise<SequenceDat
     const compressedSeed = recipeParts.slice(3).join(":");
     const seedFlat = decompressFromQR(compressedSeed);
     const legacyFormat = detectLegacySequenceFormat(seedFlat);
+    // A short-lived encoder build wrote floats as numeric -0.5 values. The
+    // decoder normalizes those motions to today's `fl` token, but historical
+    // recipe hashes still cover the original numeric wire representation.
+    const usesNumericFloatWireFormat = seedFlat.includes("-0.5");
     const decoder = new CompositionalDecoder(
       {
         encode: (s) =>
           legacyFormat
             ? encodeLegacySequence(s, legacyFormat)
-            : encodeSequence(s),
+            : usesNumericFloatWireFormat
+              ? encodeSequenceWithFloatFormat(s, "numeric")
+              : encodeSequence(s),
       },
       { decode: (s) => decodeSequence(s) },
       { decompressString: (s) => decompressFromQR(s) }
