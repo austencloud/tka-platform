@@ -11,6 +11,13 @@
   import { shareTarget, saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
+  type OverflowOpenReason =
+    | "trigger"
+    | "item"
+    | "backdrop"
+    | "escape"
+    | "tab";
+
   interface Props {
     isPublished?: boolean;
     onCopyLink?: () => void;
@@ -70,6 +77,7 @@
       onToggleBlue: () => void;
       onToggleRed: () => void;
     };
+    onOpenChange?: (open: boolean, reason: OverflowOpenReason) => void;
   }
 
   let {
@@ -103,6 +111,7 @@
     guideActionLabel = "See it in the Guide",
     sequenceId,
     motionVisibility,
+    onOpenChange,
   }: Props = $props();
 
   let isOpen = $state(false);
@@ -112,6 +121,7 @@
   function toggle() {
     if (!hasMenu) return;
     isOpen = !isOpen;
+    onOpenChange?.(isOpen, "trigger");
     if (isOpen) {
       requestAnimationFrame(() => {
         const firstItem = menuEl?.querySelector<HTMLButtonElement>('[role="menuitem"]');
@@ -120,8 +130,10 @@
     }
   }
 
-  function close() {
+  function close(reason: Exclude<OverflowOpenReason, "trigger">) {
+    if (!isOpen) return;
     isOpen = false;
+    onOpenChange?.(false, reason);
     triggerEl?.focus();
   }
 
@@ -133,7 +145,7 @@
 
     if (e.key === "Escape") {
       e.preventDefault();
-      close();
+      close("escape");
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
@@ -144,13 +156,13 @@
       items[prev]?.focus();
     } else if (e.key === "Tab") {
       e.preventDefault();
-      close();
+      close("tab");
     }
   }
 
   function handleItemClick(action: (() => void) | undefined) {
     action?.();
-    close();
+    close("item");
   }
 
   let menuItems = $derived.by(() => {
@@ -298,7 +310,11 @@
 
     {#if isOpen && hasMenu}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="overflow-backdrop" onclick={close} onkeydown={() => {}}></div>
+      <div
+        class="overflow-backdrop"
+        onclick={() => close("backdrop")}
+        onkeydown={() => {}}
+      ></div>
 
       <div bind:this={menuEl} class="overflow-popover" role="menu" aria-label="More actions">
         {#if motionVisibility}

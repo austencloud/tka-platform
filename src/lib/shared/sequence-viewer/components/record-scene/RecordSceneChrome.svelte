@@ -1,14 +1,25 @@
 <script lang="ts">
   import type { CameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "../../domain/viewer-control-analytics";
 
   interface Props {
     isExporting: boolean;
     canvasReady: boolean;
     onExport: () => void;
     choreography: CameraChoreographyState;
+    onSettingChange?: ViewerControlSink;
   }
 
-  let { isExporting, canvasReady, onExport, choreography }: Props = $props();
+  let {
+    isExporting,
+    canvasReady,
+    onExport,
+    choreography,
+    onSettingChange,
+  }: Props = $props();
 
   const currentMode = $derived(
     choreography?.activePresetId === "auto-orbit" ? "auto-orbit" as const : "free" as const
@@ -21,13 +32,37 @@
   let gearBtnEl: HTMLButtonElement | null = $state(null);
 
   function handleModeSelect(mode: "free" | "auto-orbit") {
+    const previous = currentMode;
     choreography?.setPresetId(mode);
+    reportViewerControlChange(
+      onSettingChange,
+      "record_scene",
+      "camera_mode",
+      previous,
+      mode
+    );
+    reportViewerControlChange(
+      onSettingChange,
+      "record_scene",
+      "camera_settings_open",
+      true,
+      false,
+      { count: false }
+    );
     showSettings = false;
   }
 
   function toggleSettings(e: MouseEvent) {
     e.stopPropagation();
+    const previous = showSettings;
     showSettings = !showSettings;
+    reportViewerControlChange(
+      onSettingChange,
+      "record_scene",
+      "camera_settings_open",
+      previous,
+      showSettings
+    );
   }
 
   function handleOutsideClick(event: MouseEvent) {
@@ -35,6 +70,14 @@
     const target = event.target as HTMLElement;
     if (settingsEl && gearBtnEl && !settingsEl.contains(target) && !gearBtnEl.contains(target)) {
       showSettings = false;
+      reportViewerControlChange(
+        onSettingChange,
+        "record_scene",
+        "camera_settings_open",
+        true,
+        false,
+        { count: false }
+      );
     }
   }
 

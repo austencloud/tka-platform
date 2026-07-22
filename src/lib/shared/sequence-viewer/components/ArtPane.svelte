@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { fade } from "svelte/transition";
   import MandalaPane from "./MandalaPane.svelte";
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
@@ -12,7 +12,11 @@
   import { exportVideoFilename } from "../services/export-video-filename";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
-  import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
+  import {
+    MandalaViewerController,
+    type MandalaExportPhase,
+  } from "../state/mandala-viewer-controller.svelte";
+  import type { MandalaExportDelivery } from "../services/mandala-export-delivery";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
@@ -23,21 +27,40 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { captureTunnelSnapshot, type SnapshotDeps } from "../tunnel/tunnel-snapshot";
+  import {
+    captureTunnelSnapshot,
+    type SnapshotDeps,
+  } from "../tunnel/tunnel-snapshot";
   import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { TUNNEL_AUTO_EXPORT_INTENT_KEY } from "$lib/features/tunnel-collection/services/open-tunnel-in-viewer";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import {
+    exportDeliveryStage,
+    mandalaStageForPhase,
+    tunnelStagesForState,
+    type ArtExportAnalyticsValue,
+    type ArtExportEventSink,
+    type ArtExportStage,
+    type ArtExportType,
+  } from "../domain/art-export-analytics";
+  import {
+    toggleTunnelPlayback,
+    type TunnelPlaybackSource,
+  } from "../domain/tunnel-playback";
+  import { ExportAttemptGuard } from "../domain/export-attempt-guard";
+  import type { ViewerActionSink } from "../domain/viewer-control-analytics";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
   // viewer's mode rail picks one — this pane renders the chosen view, fixed.
-  type ArtType = "mandala" | "tunnel";
+  type ArtType = ArtExportType;
 
   const {
     sequence,
     playback,
     artType,
+    active = true,
     layout = "sidebar",
     bluePropType,
     redPropType,
@@ -48,12 +71,17 @@
     onPlaybackToggle = () => {},
     onPropChange,
     onArtExport,
+    onArtExportEvent,
+    onArtSettingChange,
+    onArtAction,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
     /** Which art view this pane renders. The mode rail switches between Mandala
      *  and Tunnel now, so the pane no longer hosts an in-panel toggle. */
     artType: ArtType;
+    /** False while a persistent art pane is parked behind another viewer mode. */
+    active?: boolean;
     /** "bottom" (mobile) swaps the right sidebar for a ControlDock floating over
      *  the art; "sidebar" (default, desktop) keeps the right rail. */
     layout?: "sidebar" | "bottom";
@@ -81,6 +109,16 @@
       controller: TunnelViewController;
       mandalaController: MandalaViewerController;
     }) => void;
+    onArtExportEvent?: ArtExportEventSink;
+    onArtSettingChange?: (
+      group: string,
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean,
+      source?: string
+    ) => void;
+    onArtAction?: ViewerActionSink;
   } = $props();
 
   // The tunnel controller is owned HERE and shared with both the rendering view
@@ -116,12 +154,157 @@
   // Playback display state read from the live panel state, so the rail's
   // Playback pane mirrors the 2D transport.
   const stepSize = $derived<StepPlaybackStepSize>(
-    playback.animationState.stepPlaybackStepSize ?? 1,
+    playback.animationState.stepPlaybackStepSize ?? 1
   );
 
-  function handleExport() {
-    onArtExport?.({ artType, controller, mandalaController });
+  let tunnelAttemptActive = false;
+  let tunnelDeliveryNeedsRetry = false;
+  let previousTunnelExporting = false;
+  let reportedTunnelError: string | null = null;
+  let previousMandalaPhase: MandalaExportPhase = "idle";
+  let previousMandalaDelivery: MandalaExportDelivery | null = null;
+  const tunnelExportAttempt = new ExportAttemptGuard();
+  const mandalaExportAttempt = new ExportAttemptGuard();
+  let exportAttemptBusy = $state(false);
+  let tunnelPlaying = $state(true);
+  let tunnelSaveBusy = false;
+
+  function handleTunnelPlaybackToggle(source: TunnelPlaybackSource): void {
+    tunnelPlaying = toggleTunnelPlayback(
+      tunnelPlaying,
+      source,
+      (previousValue, value, eventSource) =>
+        onArtSettingChange?.(
+          "art_tunnel",
+          "playing",
+          previousValue,
+          value,
+          false,
+          `tunnel_${eventSource}`
+        )
+    );
   }
+
+  function artExportConfig(): Record<string, ArtExportAnalyticsValue> {
+    const common = {
+      bpm,
+      blue_prop: bluePropType ?? null,
+      red_prop: redPropType ?? null,
+    };
+    if (artType === "tunnel") {
+      return {
+        ...common,
+        fold: controller.fold,
+        mirror: controller.mirror,
+        flip: controller.flip,
+        invert: controller.invert,
+        echo: controller.echo,
+        stagger_steps: controller.staggerSteps,
+        speed_override_count: Object.keys(controller.speedOverrides).length,
+        spectrum: controller.spectrum,
+        grid_visible: controller.gridVisible,
+        performer_count: controller.performerCount,
+        preset: controller.activePresetId ?? "custom",
+      };
+    }
+    return {
+      ...common,
+      path_shape: mandalaController.pathShape,
+      rotation_degrees: mandalaController.rotation,
+      speed: mandalaController.speed,
+      depth: mandalaController.depth,
+      color_mode: mandalaController.colorMode,
+      color_preset: mandalaController.preset,
+      line_weight: mandalaController.lineWeight,
+      repetitions: mandalaController.exportReps,
+      resolution: mandalaController.exportResolution,
+      fps: mandalaController.exportFps,
+    };
+  }
+
+  function emitArtExport(
+    stage: ArtExportStage,
+    properties: Record<string, ArtExportAnalyticsValue> = {}
+  ): void {
+    onArtExportEvent?.(artType, stage, {
+      ...artExportConfig(),
+      ...properties,
+    });
+  }
+
+  function handleExport(stage: "requested" | "retry" = "requested") {
+    const attempt =
+      artType === "tunnel" ? tunnelExportAttempt : mandalaExportAttempt;
+    if (attempt.begin() === null) return;
+    exportAttemptBusy = true;
+    if (artType === "tunnel") {
+      tunnelAttemptActive = true;
+      tunnelDeliveryNeedsRetry = false;
+      reportedTunnelError = null;
+    }
+    emitArtExport(stage);
+    if (!onArtExport) {
+      finishArtExportAttempt("failed", { reason: "not_ready" });
+      return;
+    }
+    onArtExport({ artType, controller, mandalaController });
+  }
+
+  function finishArtExportAttempt(
+    stage: "completed" | "failed" | "canceled",
+    properties: Record<string, ArtExportAnalyticsValue> = {}
+  ): boolean {
+    const attempt =
+      artType === "tunnel" ? tunnelExportAttempt : mandalaExportAttempt;
+    const token = attempt.token;
+    if (token === null || !attempt.finish(token)) return false;
+    emitArtExport(stage, properties);
+    exportAttemptBusy = false;
+    if (artType === "tunnel") tunnelAttemptActive = false;
+    return true;
+  }
+
+  function cancelMandalaExport(): void {
+    finishArtExportAttempt("canceled", { user_initiated: true });
+    mandalaController.cancelExport();
+  }
+
+  function retryMandalaExport(): void {
+    handleExport("retry");
+  }
+
+  $effect(() => {
+    const phase = mandalaController.exportPhase;
+    const delivery = mandalaController.exportDelivery;
+    const stage = mandalaStageForPhase(previousMandalaPhase, phase);
+    const deliveryOwnsStage =
+      delivery && (stage === "completed" || stage === "failed");
+    if (artType === "mandala" && stage && !deliveryOwnsStage) {
+      if (stage === "started" && mandalaExportAttempt.active) {
+        emitArtExport(stage);
+      } else if (stage === "failed") {
+        finishArtExportAttempt("failed", { reason: "export_error" });
+      } else if (stage === "completed") {
+        finishArtExportAttempt("completed");
+      }
+    }
+    if (
+      artType === "mandala" &&
+      delivery &&
+      delivery !== previousMandalaDelivery
+    ) {
+      finishArtExportAttempt(delivery.outcome, {
+        delivery_method: delivery.method,
+        ...(delivery.outcome === "failed"
+          ? { reason: "delivery_error" }
+          : delivery.outcome === "canceled"
+            ? { reason: "share_dismissed", user_initiated: false }
+            : {}),
+      });
+    }
+    previousMandalaPhase = phase;
+    previousMandalaDelivery = delivery;
+  });
 
   // Auto-export intent (collection page "Export video" button): consume the
   // session flag once, then fire the normal export path as soon as the live
@@ -161,7 +344,9 @@
   // Art pane has no Download-panel chrome of its own. Cancel maps to the
   // exporter's cancel.
   const exportState = $derived(sequenceModalExporter.state);
-  const effectiveSeq = $derived(playback.animationState.sequenceData ?? sequence);
+  const effectiveSeq = $derived(
+    playback.animationState.sequenceData ?? sequence
+  );
 
   // Map the shared exporter state onto ExportTakeover's phase via the shared
   // mapper — same premium blue→red ring as the mandala + animation exports.
@@ -170,10 +355,29 @@
     toExportTakeoverPhase(exportState.progress, exportState.isExporting, {
       active: artType === "tunnel",
       error: exportState.error,
-    }),
+    })
   );
   // Stamp the look so variant exports of one sequence don't collide.
   const tunnelSuffix = $derived(`-tunnel-${controller.activeLook.id}`);
+
+  $effect(() => {
+    const exporting = exportState.isExporting;
+    const error = exportState.error;
+    if (artType === "tunnel" && tunnelAttemptActive) {
+      const observation = tunnelStagesForState({
+        previousExporting: previousTunnelExporting,
+        exporting,
+        error,
+        reportedError: reportedTunnelError,
+      });
+      for (const stage of observation.stages) {
+        if (stage === "started") emitArtExport(stage);
+        else finishArtExportAttempt("failed", { reason: "export_error" });
+      }
+      reportedTunnelError = observation.reportedError;
+    }
+    previousTunnelExporting = exporting;
+  });
 
   // Preview-first save: share sheet on mobile, download on desktop (the platform
   // gate lives in shareOrDownloadBlob). The blob is recovered from the preview's
@@ -181,19 +385,122 @@
   async function saveTunnelVideo() {
     const url = exportState.previewBlobUrl;
     if (!url) return;
-    const blob = await (await fetch(url)).blob();
-    await shareOrDownloadBlob(blob, exportVideoFilename(effectiveSeq, tunnelSuffix), {
-      title: "TKA Tunnel",
-    });
+    if (!tunnelExportAttempt.active) {
+      if (tunnelExportAttempt.begin() === null) return;
+      tunnelAttemptActive = true;
+      exportAttemptBusy = true;
+      emitArtExport("retry", { reason: "delivery_retry" });
+      tunnelDeliveryNeedsRetry = false;
+    }
+    const attemptToken = tunnelExportAttempt.token;
+    if (attemptToken === null) return;
+    try {
+      const blob = await (await fetch(url)).blob();
+      const result = await shareOrDownloadBlob(
+        blob,
+        exportVideoFilename(effectiveSeq, tunnelSuffix),
+        {
+          title: "TKA Tunnel",
+        }
+      );
+      if (!tunnelExportAttempt.isActive(attemptToken)) return;
+      const deliveryStage = exportDeliveryStage(result);
+      if (deliveryStage === "canceled") {
+        finishArtExportAttempt("canceled", {
+          reason: "share_dismissed",
+          delivery_method: result.method,
+          user_initiated: false,
+        });
+        tunnelDeliveryNeedsRetry = true;
+        return;
+      }
+      if (deliveryStage === "failed") {
+        finishArtExportAttempt("failed", {
+          reason: "delivery_error",
+          delivery_method: result.method,
+        });
+        tunnelDeliveryNeedsRetry = true;
+        toast.error("Couldn't save the tunnel video");
+        return;
+      }
+      finishArtExportAttempt(deliveryStage, { delivery_method: result.method });
+      tunnelDeliveryNeedsRetry = false;
+    } catch {
+      if (tunnelExportAttempt.isActive(attemptToken)) {
+        finishArtExportAttempt("failed", { reason: "delivery_error" });
+        tunnelDeliveryNeedsRetry = true;
+        toast.error("Couldn't save the tunnel video");
+      }
+    }
   }
+
+  function dismissTunnelPreview(): void {
+    if (tunnelExportAttempt.active) {
+      finishArtExportAttempt("canceled", {
+        reason: "preview_dismissed",
+        user_initiated: true,
+      });
+    }
+    tunnelDeliveryNeedsRetry = false;
+    sequenceModalExporter.dismissPreview();
+  }
+
+  function cancelTunnelExport(): void {
+    finishArtExportAttempt("canceled", { user_initiated: true });
+    tunnelDeliveryNeedsRetry = false;
+    sequenceModalExporter.cancel();
+    sequenceModalExporter.clearError();
+  }
+
+  function retryTunnelExport(): void {
+    sequenceModalExporter.clearError();
+    handleExport("retry");
+  }
+
+  function abandonArtExport(reason: "mode_switch" | "component_destroy"): void {
+    const attempt =
+      artType === "tunnel" ? tunnelExportAttempt : mandalaExportAttempt;
+    if (attempt.abandon() === null) return;
+    emitArtExport("canceled", { reason, user_initiated: false });
+    exportAttemptBusy = false;
+    if (artType === "tunnel") {
+      tunnelAttemptActive = false;
+      tunnelDeliveryNeedsRetry = false;
+      sequenceModalExporter.cancel();
+      sequenceModalExporter.dismissPreview();
+    } else {
+      mandalaController.cancelExport();
+    }
+  }
+
+  let wasActive = active;
+  $effect(() => {
+    if (wasActive && !active) abandonArtExport("mode_switch");
+    wasActive = active;
+  });
+
+  onDestroy(() => abandonArtExport("component_destroy"));
 
   // Capture the live tunnel (config + effects + poster) into the collection. The
   // whole flow lives here — ArtPane owns the controller and the effects context,
   // so both the settings-panel button and the canvas right-click route through
   // this one handler.
-  async function handleSaveTunnel() {
+  async function handleSaveTunnel(
+    source: "settings_panel" | "canvas_context_menu"
+  ) {
+    if (tunnelSaveBusy) return;
+    tunnelSaveBusy = true;
+    onArtAction?.("tunnel_save", { stage: "requested", source });
     const seq = effectiveSeq;
-    if (!seq || !effectsForSave) return;
+    if (!seq || !effectsForSave) {
+      onArtAction?.(
+        "tunnel_save",
+        { stage: "failed", source, reason: "not_ready" },
+        { count: false }
+      );
+      tunnelSaveBusy = false;
+      return;
+    }
     // Capture-only deps: real handles for everything captureTunnelSnapshot READS;
     // the apply-only members (settings.updateSettings, playback.*) are never
     // called on this path, so they are no-op stubs.
@@ -207,7 +514,10 @@
         updateSettings: () => {},
       },
       animationSettings,
-      playback: { handleBpmChange: () => {}, handlePlaybackModeChange: () => {} },
+      playback: {
+        handleBpmChange: () => {},
+        handlePlaybackModeChange: () => {},
+      },
       animationPanel: { playbackMode },
       getBpm: () => bpm,
     };
@@ -226,14 +536,28 @@
         source: "viewer",
         // Lineage stamp: link back to the raw source sequence (spec:
         // 2026-07-12-art-in-library-design.md Unit 3).
-        ...(simplifiedWord ? { sourceWord: simplifiedWord, sourceSequenceId: seq.id } : {}),
+        ...(simplifiedWord
+          ? { sourceWord: simplifiedWord, sourceSequenceId: seq.id }
+          : {}),
       });
       toast.success("Tunnel saved to your collection");
+      onArtAction?.(
+        "tunnel_save",
+        { stage: "completed", source },
+        { count: false }
+      );
     } catch (error) {
       // add() unshifts locally before the Firestore write, so the entry shows in
       // this session either way — be honest that it didn't sync.
       console.warn("[ArtPane] Tunnel save failed to sync:", error);
       toast.error("Couldn't sync the tunnel to your account");
+      onArtAction?.(
+        "tunnel_save",
+        { stage: "failed", source, reason: "sync_error" },
+        { count: false }
+      );
+    } finally {
+      tunnelSaveBusy = false;
     }
   }
 </script>
@@ -249,9 +573,21 @@
         {sequence}
         {bluePropType}
         {redPropType}
+        onExportCancel={cancelMandalaExport}
+        onExportRetry={retryMandalaExport}
       />
     {:else}
-      <TunnelArtView {sequence} {playback} {controller} {bpm} {bluePropType} {redPropType} onSaveTunnel={handleSaveTunnel} />
+      <TunnelArtView
+        {sequence}
+        {playback}
+        {controller}
+        {bpm}
+        {bluePropType}
+        {redPropType}
+        onSaveTunnel={() => void handleSaveTunnel("canvas_context_menu")}
+        playing={tunnelPlaying}
+        onPlayingChange={() => handleTunnelPlaybackToggle("canvas")}
+      />
     {/if}
 
     {#if artType === "tunnel" && exportState.previewBlobUrl && !exportState.isExporting}
@@ -263,7 +599,7 @@
           blobUrl={exportState.previewBlobUrl}
           saveLabel="Save"
           onRedownload={() => void saveTunnelVideo()}
-          onDismiss={() => sequenceModalExporter.dismissPreview()}
+          onDismiss={dismissTunnelPreview}
         />
       </div>
     {:else if takeover.phase !== "idle"}
@@ -274,14 +610,8 @@
         progress={exportState.progress?.progress ?? 0}
         phaseLabel={takeover.labelKey ? t(takeover.labelKey) : ""}
         error={exportState.error}
-        onCancel={() => {
-          sequenceModalExporter.cancel();
-          sequenceModalExporter.clearError();
-        }}
-        onRetry={() => {
-          sequenceModalExporter.clearError();
-          handleExport();
-        }}
+        onCancel={cancelTunnelExport}
+        onRetry={retryTunnelExport}
       />
     {/if}
   </div>
@@ -294,19 +624,22 @@
     {artType}
     {layout}
     onExport={handleExport}
-    onSaveTunnel={handleSaveTunnel}
+    onSaveTunnel={() => void handleSaveTunnel("settings_panel")}
     {bpm}
     {playbackMode}
     {stepSize}
-    isPlaying={playback.isPlaying}
+    isPlaying={artType === "tunnel" ? tunnelPlaying : playback.isPlaying}
     {onBpmChange}
     {onPlaybackModeChange}
     onStepSizeChange={() => {}}
-    {onPlaybackToggle}
+    onPlaybackToggle={artType === "tunnel"
+      ? () => handleTunnelPlaybackToggle("sidebar")
+      : onPlaybackToggle}
     bluePropType={bluePropType ?? null}
     redPropType={redPropType ?? null}
     {onPropChange}
-    exporting={artType === "tunnel" && exportState.isExporting}
+    {onArtSettingChange}
+    exporting={exportAttemptBusy}
   />
 </div>
 

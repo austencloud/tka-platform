@@ -18,9 +18,15 @@
   import { columnOptionsFor } from "./bento/columns-stepper";
   import ControlDock, { type ControlDockTab } from "./ControlDock.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import { getInfoCellCount, type InfoCellChoice } from "../services/info-cell-display";
+  import {
+    getInfoCellCount,
+    type InfoCellChoice,
+  } from "../services/info-cell-display";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { shareTarget, saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
+  import {
+    shareTarget,
+    saveActionLabel,
+  } from "$lib/shared/mobile/share-action.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -31,6 +37,13 @@
     stepCount: number;
     onExport: () => void;
     onClose?: () => void;
+    onSettingChange?: (
+      group: string,
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean
+    ) => void;
   }
 
   let {
@@ -40,25 +53,85 @@
     stepCount,
     onExport,
     onClose,
+    onSettingChange,
   }: Props = $props();
+
+  type AnalyticsValue = string | number | boolean | null;
+  function reportSetting(
+    setting: string,
+    previousValue: AnalyticsValue,
+    value: AnalyticsValue
+  ): void {
+    if (previousValue === value) return;
+    onSettingChange?.("card_export", setting, previousValue, value);
+  }
+
+  function toggleCompositionSetting(
+    setting: string,
+    current: boolean,
+    setter: (value: boolean) => void
+  ): void {
+    const next = !current;
+    setter(next);
+    reportSetting(setting, current, next);
+  }
+
+  function togglePictographSetting(
+    setting: string,
+    current: boolean,
+    setter: (value: boolean) => void
+  ): void {
+    const next = !current;
+    setter(next);
+    reportSetting(setting, current, next);
+  }
 
   // Include chips read/write the global visibility settings so the Visibility tab,
   // the side-by-side preview, and the download view all stay in sync.
   const imageComposition = getImageCompositionManager();
   let compositionVersion = $state(0);
-  function onCompositionChanged(): void { compositionVersion++; }
+  function onCompositionChanged(): void {
+    compositionVersion++;
+  }
   imageComposition.registerObserver(onCompositionChanged);
   onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
 
-  const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
-  const showDifficulty = $derived.by(() => { void compositionVersion; return imageComposition.addDifficultyLevel; });
-  const showCreatorName = $derived.by(() => { void compositionVersion; return imageComposition.showCreatorName; });
-  const showNotes = $derived.by(() => { void compositionVersion; return imageComposition.showNotes; });
-  const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
-  const showMandala = $derived.by(() => { void compositionVersion; return imageComposition.showMandala; });
-  const showLoopGlyph = $derived.by(() => { void compositionVersion; return imageComposition.showLoopGlyph; });
-  const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
-  const showStartPos = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
+  const showWord = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.addWord;
+  });
+  const showDifficulty = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.addDifficultyLevel;
+  });
+  const showCreatorName = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showCreatorName;
+  });
+  const showNotes = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showNotes;
+  });
+  const showQRCode = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showQRCode;
+  });
+  const showMandala = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showMandala;
+  });
+  const showLoopGlyph = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showLoopGlyph;
+  });
+  const showBirthday = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showBirthday;
+  });
+  const showStartPos = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.includeStartPosition;
+  });
   const startPosLayout = $derived.by(() => {
     void compositionVersion;
     return imageComposition.getStartPositionLayoutForStepCount(stepCount);
@@ -119,15 +192,32 @@
   // stays in sync with the Visibility tab, context menus, and voice control.
   const vm = getVisibilityStateManager();
   let vmVersion = $state(0);
-  function onVmChanged(): void { vmVersion++; }
+  function onVmChanged(): void {
+    vmVersion++;
+  }
   vm.registerObserver(onVmChanged, ["all"]);
   onDestroy(() => vm.unregisterObserver(onVmChanged));
 
-  const showGrid = $derived.by(() => { void vmVersion; return vm.getGridVisibility(); });
-  const tkaGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("tkaGlyph"); });
-  const tndGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("tndGlyph"); });
-  const positionsGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("positionsGlyph"); });
-  const nonRadial = $derived.by(() => { void vmVersion; return vm.getNonRadialVisibility(); });
+  const showGrid = $derived.by(() => {
+    void vmVersion;
+    return vm.getGridVisibility();
+  });
+  const tkaGlyph = $derived.by(() => {
+    void vmVersion;
+    return vm.getRawGlyphVisibility("tkaGlyph");
+  });
+  const tndGlyph = $derived.by(() => {
+    void vmVersion;
+    return vm.getRawGlyphVisibility("tndGlyph");
+  });
+  const positionsGlyph = $derived.by(() => {
+    void vmVersion;
+    return vm.getRawGlyphVisibility("positionsGlyph");
+  });
+  const nonRadial = $derived.by(() => {
+    void vmVersion;
+    return vm.getNonRadialVisibility();
+  });
 
   // Master toggles: clicking a section label flips all its children.
   // If any child is on, master is "on" and a click turns everything off;
@@ -143,6 +233,7 @@
     imageComposition.setAddWord(target);
     imageComposition.setAddDifficultyLevel(target);
     imageComposition.setShowLoopGlyph(target);
+    reportSetting("header_all", headerAnyOn, target);
   }
 
   function toggleFooter(): void {
@@ -150,6 +241,7 @@
     imageComposition.setShowCreatorName(target);
     imageComposition.setShowNotes(target);
     imageComposition.setShowBirthday(target);
+    reportSetting("footer_all", footerAnyOn, target);
   }
 
   function togglePictograph(): void {
@@ -160,6 +252,7 @@
     vm.setGlyphVisibility("elementalGlyph", target);
     vm.setGlyphVisibility("positionsGlyph", target);
     vm.setNonRadialVisibility(target);
+    reportSetting("pictograph_all", pictographAnyOn, target);
   }
 
   // TnD and elemental glyphs move together.
@@ -167,6 +260,7 @@
     const next = !tndGlyph;
     vm.setGlyphVisibility("tndGlyph", next);
     vm.setGlyphVisibility("elementalGlyph", next);
+    reportSetting("tnd_glyph", tndGlyph, next);
   }
 
   // Columns options share one source with the mobile stepper (columnOptionsFor):
@@ -187,15 +281,39 @@
 
   // The composition manager is the one owner for columns. It persists a choice
   // per sequence length; a missing choice remains Auto.
-  function setColumns(value: number | null): void {
+  function setColumns(value: number | null, track = true): void {
+    const previous = currentColumnCount;
     imageComposition.setColumnCountForStepCount(stepCount, value);
+    if (track) reportSetting("columns", previous, value);
+  }
+
+  function setInfoCellChoice(value: InfoCellChoice): void {
+    const previous = infoCellDisplayChoice;
+    imageComposition.setInfoCellChoiceForStepCount(stepCount, value);
+    reportSetting("info_cell", previous, value);
+  }
+
+  function setStartPositionLayout(value: "row" | "column"): void {
+    const previous = startPosLayout;
+    imageComposition.setStartPositionLayoutForStepCount(stepCount, value);
+    reportSetting("start_position_layout", previous, value);
+  }
+
+  function setTheme(darkMode: boolean): void {
+    const previous = exportOptions.imageDarkMode;
+    exportOptions.setImageDarkMode(darkMode);
+    reportSetting(
+      "theme",
+      previous ? "dark" : "light",
+      darkMode ? "dark" : "light"
+    );
   }
 
   // If the current selection exceeds the step count (e.g. user switched
   // to a shorter sequence), reset to Auto.
   $effect(() => {
     if (currentColumnCount !== null && currentColumnCount > stepCount) {
-      setColumns(null);
+      setColumns(null, false);
     }
   });
 
@@ -209,6 +327,16 @@
     { id: "format", label: "Format", icon: "fa-sliders" },
   ];
   let activeTab = $state<string | null>(null);
+
+  function selectDisplayTab(id: string): void {
+    const previous = activeTab;
+    activeTab = previous === id ? null : id;
+    reportSetting(
+      "mobile_section",
+      previous ?? "closed",
+      activeTab ?? "closed"
+    );
+  }
 
   // Mobile shares (native sheet), desktop downloads. Icon + label mirror the
   // actual delivery gate (shareTarget = shareOrDownloadBlob's own gate) so the
@@ -229,8 +357,8 @@
        ============================================================ -->
   <ControlDock
     tabs={DISPLAY_TABS}
-    activeTab={activeTab}
-    onTabSelect={(id) => (activeTab = activeTab === id ? null : id)}
+    {activeTab}
+    onTabSelect={selectDisplayTab}
     trailingAction={dockTrailing}
   >
     {#snippet tray()}
@@ -244,28 +372,133 @@
           <div class="field">
             <span class="field-label">Header</span>
             <div class="rt-chip-row">
-              <button type="button" class="rt-chip" aria-pressed={showWord} onclick={() => imageComposition.setAddWord(!showWord)}>Word</button>
-              <button type="button" class="rt-chip" aria-pressed={showDifficulty} onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}>Level</button>
-              <button type="button" class="rt-chip" aria-pressed={showLoopGlyph} onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}>LOOP</button>
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showWord}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "word",
+                      showWord,
+                      imageComposition.setAddWord.bind(imageComposition)
+                    )}>Word</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showDifficulty}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "difficulty",
+                      showDifficulty,
+                      imageComposition.setAddDifficultyLevel.bind(
+                        imageComposition
+                      )
+                    )}>Level</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showLoopGlyph}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "loop_glyph",
+                      showLoopGlyph,
+                      imageComposition.setShowLoopGlyph.bind(imageComposition)
+                    )}>LOOP</button
+                >
             </div>
           </div>
           <div class="field">
             <span class="field-label">Footer</span>
             <div class="rt-chip-row">
-              <button type="button" class="rt-chip" aria-pressed={showCreatorName} onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}>Name</button>
-              <button type="button" class="rt-chip" aria-pressed={showNotes} onclick={() => imageComposition.setShowNotes(!showNotes)}>Notes</button>
-              <button type="button" class="rt-chip" aria-pressed={showBirthday} onclick={() => imageComposition.setShowBirthday(!showBirthday)}>Date</button>
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showCreatorName}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "creator_name",
+                      showCreatorName,
+                      imageComposition.setShowCreatorName.bind(imageComposition)
+                    )}>Name</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showNotes}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "notes",
+                      showNotes,
+                      imageComposition.setShowNotes.bind(imageComposition)
+                    )}>Notes</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showBirthday}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "birthday",
+                      showBirthday,
+                      imageComposition.setShowBirthday.bind(imageComposition)
+                    )}>Date</button
+                >
             </div>
           </div>
         {:else if activeTab === "pictograph"}
           <div class="field">
             <span class="field-label">Glyphs</span>
             <div class="rt-chip-row">
-              <button type="button" class="rt-chip" aria-pressed={showGrid} onclick={() => vm.setGridVisibility(!showGrid)}>Grid</button>
-              <button type="button" class="rt-chip" aria-pressed={tkaGlyph} onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}>TKA</button>
-              <button type="button" class="rt-chip" aria-pressed={tndGlyph} onclick={toggleTnD}>TnD</button>
-              <button type="button" class="rt-chip" aria-pressed={positionsGlyph} onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}>Positions</button>
-              <button type="button" class="rt-chip" aria-pressed={nonRadial} onclick={() => vm.setNonRadialVisibility(!nonRadial)}>Non-radial</button>
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showGrid}
+                  onclick={() =>
+                    togglePictographSetting(
+                      "grid",
+                      showGrid,
+                      vm.setGridVisibility.bind(vm)
+                    )}>Grid</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={tkaGlyph}
+                  onclick={() =>
+                    togglePictographSetting("tka_glyph", tkaGlyph, (value) =>
+                      vm.setGlyphVisibility("tkaGlyph", value)
+                    )}>TKA</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={tndGlyph}
+                  onclick={toggleTnD}>TnD</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={positionsGlyph}
+                  onclick={() =>
+                    togglePictographSetting(
+                      "positions_glyph",
+                      positionsGlyph,
+                      (value) => vm.setGlyphVisibility("positionsGlyph", value)
+                    )}>Positions</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={nonRadial}
+                  onclick={() =>
+                    togglePictographSetting(
+                      "non_radial",
+                      nonRadial,
+                      vm.setNonRadialVisibility.bind(vm)
+                    )}>Non-radial</button
+                >
             </div>
           </div>
           {#if hasInfoCell}
@@ -277,16 +510,40 @@
                     <SegmentedControl
                       options={infoCellOptions}
                       value={infoCellDisplayChoice}
-                      onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
+                        onchange={setInfoCellChoice}
                       color="accent"
                       size="sm"
                     />
                   </div>
                 {:else}
                   {#if canQRCode}
-                    <button type="button" class="rt-chip" aria-pressed={showQRCode} onclick={() => imageComposition.setShowQRCode(!showQRCode)}><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button>
+                      <button
+                        type="button"
+                        class="rt-chip"
+                        aria-pressed={showQRCode}
+                        onclick={() =>
+                          toggleCompositionSetting(
+                            "qr_code",
+                            showQRCode,
+                            imageComposition.setShowQRCode.bind(
+                              imageComposition
+                            )
+                          )}
+                        ><i class="fas fa-qrcode" aria-hidden="true"></i> QR</button
+                      >
                   {/if}
-                  <button type="button" class="rt-chip" aria-pressed={showMandala} onclick={() => imageComposition.setShowMandala(!showMandala)}><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button>
+                    <button
+                      type="button"
+                      class="rt-chip"
+                      aria-pressed={showMandala}
+                      onclick={() =>
+                        toggleCompositionSetting(
+                          "mandala",
+                          showMandala,
+                          imageComposition.setShowMandala.bind(imageComposition)
+                        )}
+                      ><i class="fas fa-asterisk" aria-hidden="true"></i> Mandala</button
+                    >
                 {/if}
               </div>
             </div>
@@ -298,10 +555,36 @@
           <div class="field">
             <span class="field-label">Start</span>
             <div class="rt-chip-row">
-              <button type="button" class="rt-chip" aria-pressed={showStartPos} onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}>Show</button>
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={showStartPos}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "start_position",
+                      showStartPos,
+                      imageComposition.setIncludeStartPosition.bind(
+                        imageComposition
+                      )
+                    )}>Show</button
+                >
               {#if showStartPos}
-                <button type="button" class="rt-chip" transition:fade={{ duration: 150 }} aria-pressed={startPosLayout === "row"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}>Top Row</button>
-                <button type="button" class="rt-chip" transition:fade={{ duration: 150 }} aria-pressed={startPosLayout === "column"} onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}>Left Column</button>
+                  <button
+                    type="button"
+                    class="rt-chip"
+                    transition:fade={{ duration: 150 }}
+                    aria-pressed={startPosLayout === "row"}
+                    onclick={() => setStartPositionLayout("row")}
+                    >Top Row</button
+                  >
+                  <button
+                    type="button"
+                    class="rt-chip"
+                    transition:fade={{ duration: 150 }}
+                    aria-pressed={startPosLayout === "column"}
+                    onclick={() => setStartPositionLayout("column")}
+                    >Left Column</button
+                  >
               {/if}
             </div>
           </div>
@@ -310,15 +593,33 @@
             <span class="field-label">Columns</span>
             <div class="rt-chip-row">
               {#each columnOptions as option}
-                <button type="button" class="rt-chip" aria-pressed={currentColumnCount === option.value} onclick={() => setColumns(option.value)}>{option.label}</button>
+                  <button
+                    type="button"
+                    class="rt-chip"
+                    aria-pressed={currentColumnCount === option.value}
+                    onclick={() => setColumns(option.value)}
+                    >{option.label}</button
+                  >
               {/each}
             </div>
           </div>
           <div class="field">
             <span class="field-label">Theme</span>
             <div class="rt-chip-row">
-              <button type="button" class="rt-chip" aria-pressed={!exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(false)}><i class="fas fa-sun" aria-hidden="true"></i> Light</button>
-              <button type="button" class="rt-chip" aria-pressed={exportOptions.imageDarkMode} onclick={() => exportOptions.setImageDarkMode(true)}><i class="fas fa-moon" aria-hidden="true"></i> Dark</button>
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={!exportOptions.imageDarkMode}
+                  onclick={() => setTheme(false)}
+                  ><i class="fas fa-sun" aria-hidden="true"></i> Light</button
+                >
+                <button
+                  type="button"
+                  class="rt-chip"
+                  aria-pressed={exportOptions.imageDarkMode}
+                  onclick={() => setTheme(true)}
+                  ><i class="fas fa-moon" aria-hidden="true"></i> Dark</button
+                >
             </div>
           </div>
         {/if}
@@ -354,75 +655,174 @@
     <div class="panel-body">
       <!-- Header section -->
       <div class="setting-row">
-        <button type="button" class="setting-label section-toggle" class:on={headerAnyOn}
-          onclick={toggleHeader} aria-pressed={headerAnyOn}
-          aria-label={headerAnyOn ? "Hide all header elements" : "Show all header elements"}
-        >Header</button>
+          <button
+            type="button"
+            class="setting-label section-toggle"
+            class:on={headerAnyOn}
+            onclick={toggleHeader}
+            aria-pressed={headerAnyOn}
+            aria-label={headerAnyOn
+              ? "Hide all header elements"
+              : "Show all header elements"}>Header</button
+          >
         <div class="chip-group">
-          <button type="button" class="chip" class:active={showWord}
-            onclick={() => imageComposition.setAddWord(!showWord)}
-            aria-pressed={showWord}
-          >Word</button>
-          <button type="button" class="chip" class:active={showDifficulty}
-            onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
-            aria-pressed={showDifficulty}
-          >Level</button>
-          <button type="button" class="chip" class:active={showLoopGlyph}
-            onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}
-            aria-pressed={showLoopGlyph}
-          >LOOP</button>
+            <button
+              type="button"
+              class="chip"
+              class:active={showWord}
+              onclick={() =>
+                toggleCompositionSetting(
+                  "word",
+                  showWord,
+                  imageComposition.setAddWord.bind(imageComposition)
+                )}
+              aria-pressed={showWord}>Word</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={showDifficulty}
+              onclick={() =>
+                toggleCompositionSetting(
+                  "difficulty",
+                  showDifficulty,
+                  imageComposition.setAddDifficultyLevel.bind(imageComposition)
+                )}
+              aria-pressed={showDifficulty}>Level</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={showLoopGlyph}
+              onclick={() =>
+                toggleCompositionSetting(
+                  "loop_glyph",
+                  showLoopGlyph,
+                  imageComposition.setShowLoopGlyph.bind(imageComposition)
+                )}
+              aria-pressed={showLoopGlyph}>LOOP</button
+            >
         </div>
       </div>
 
       <!-- Footer section -->
       <div class="setting-row">
-        <button type="button" class="setting-label section-toggle" class:on={footerAnyOn}
-          onclick={toggleFooter} aria-pressed={footerAnyOn}
-          aria-label={footerAnyOn ? "Hide all footer elements" : "Show all footer elements"}
-        >Footer</button>
+          <button
+            type="button"
+            class="setting-label section-toggle"
+            class:on={footerAnyOn}
+            onclick={toggleFooter}
+            aria-pressed={footerAnyOn}
+            aria-label={footerAnyOn
+              ? "Hide all footer elements"
+              : "Show all footer elements"}>Footer</button
+          >
         <div class="chip-group">
-          <button type="button" class="chip" class:active={showCreatorName}
-            onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
-            aria-pressed={showCreatorName}
-          >Name</button>
-          <button type="button" class="chip" class:active={showNotes}
-            onclick={() => imageComposition.setShowNotes(!showNotes)}
-            aria-pressed={showNotes}
-          >Notes</button>
-          <button type="button" class="chip" class:active={showBirthday}
-            onclick={() => imageComposition.setShowBirthday(!showBirthday)}
-            aria-pressed={showBirthday}
-          >Date</button>
+            <button
+              type="button"
+              class="chip"
+              class:active={showCreatorName}
+              onclick={() =>
+                toggleCompositionSetting(
+                  "creator_name",
+                  showCreatorName,
+                  imageComposition.setShowCreatorName.bind(imageComposition)
+                )}
+              aria-pressed={showCreatorName}>Name</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={showNotes}
+              onclick={() =>
+                toggleCompositionSetting(
+                  "notes",
+                  showNotes,
+                  imageComposition.setShowNotes.bind(imageComposition)
+                )}
+              aria-pressed={showNotes}>Notes</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={showBirthday}
+              onclick={() =>
+                toggleCompositionSetting(
+                  "birthday",
+                  showBirthday,
+                  imageComposition.setShowBirthday.bind(imageComposition)
+                )}
+              aria-pressed={showBirthday}>Date</button
+            >
         </div>
       </div>
 
       <!-- Pictograph section -->
       <div class="setting-row">
-        <button type="button" class="setting-label section-toggle" class:on={pictographAnyOn}
-          onclick={togglePictograph} aria-pressed={pictographAnyOn}
-          aria-label={pictographAnyOn ? "Hide all pictograph elements" : "Show all pictograph elements"}
-        >Pictograph</button>
+          <button
+            type="button"
+            class="setting-label section-toggle"
+            class:on={pictographAnyOn}
+            onclick={togglePictograph}
+            aria-pressed={pictographAnyOn}
+            aria-label={pictographAnyOn
+              ? "Hide all pictograph elements"
+              : "Show all pictograph elements"}>Pictograph</button
+          >
         <div class="chip-group">
-          <button type="button" class="chip" class:active={showGrid}
-            onclick={() => vm.setGridVisibility(!showGrid)}
-            aria-pressed={showGrid}
-          >Grid</button>
-          <button type="button" class="chip" class:active={tkaGlyph}
-            onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
-            aria-pressed={tkaGlyph}
-          >TKA</button>
-          <button type="button" class="chip" class:active={tndGlyph}
+            <button
+              type="button"
+              class="chip"
+              class:active={showGrid}
+              onclick={() =>
+                togglePictographSetting(
+                  "grid",
+                  showGrid,
+                  vm.setGridVisibility.bind(vm)
+                )}
+              aria-pressed={showGrid}>Grid</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={tkaGlyph}
+              onclick={() =>
+                togglePictographSetting("tka_glyph", tkaGlyph, (value) =>
+                  vm.setGlyphVisibility("tkaGlyph", value)
+                )}
+              aria-pressed={tkaGlyph}>TKA</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={tndGlyph}
             onclick={toggleTnD}
-            aria-pressed={tndGlyph}
-          >TnD</button>
-          <button type="button" class="chip" class:active={positionsGlyph}
-            onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
-            aria-pressed={positionsGlyph}
-          >Positions</button>
-          <button type="button" class="chip" class:active={nonRadial}
-            onclick={() => vm.setNonRadialVisibility(!nonRadial)}
-            aria-pressed={nonRadial}
-          >Non-radial</button>
+              aria-pressed={tndGlyph}>TnD</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={positionsGlyph}
+              onclick={() =>
+                togglePictographSetting(
+                  "positions_glyph",
+                  positionsGlyph,
+                  (value) => vm.setGlyphVisibility("positionsGlyph", value)
+                )}
+              aria-pressed={positionsGlyph}>Positions</button
+            >
+            <button
+              type="button"
+              class="chip"
+              class:active={nonRadial}
+              onclick={() =>
+                togglePictographSetting(
+                  "non_radial",
+                  nonRadial,
+                  vm.setNonRadialVisibility.bind(vm)
+                )}
+              aria-pressed={nonRadial}>Non-radial</button
+            >
         </div>
       </div>
 
@@ -435,7 +835,7 @@
             <SegmentedControl
               options={infoCellOptions}
               value={infoCellDisplayChoice}
-              onchange={(v) => imageComposition.setInfoCellChoiceForStepCount(stepCount, v)}
+                  onchange={setInfoCellChoice}
               color="accent"
               size="sm"
             />
@@ -448,10 +848,18 @@
         <div class="setting-row">
           <span class="setting-label">QR</span>
           <div class="chip-group">
-            <button type="button" class="chip" class:active={showQRCode}
-              onclick={() => imageComposition.setShowQRCode(!showQRCode)}
-              aria-pressed={showQRCode}
-            >QR Code</button>
+                  <button
+                    type="button"
+                    class="chip"
+                    class:active={showQRCode}
+                    onclick={() =>
+                      toggleCompositionSetting(
+                        "qr_code",
+                        showQRCode,
+                        imageComposition.setShowQRCode.bind(imageComposition)
+                      )}
+                    aria-pressed={showQRCode}>QR Code</button
+                  >
           </div>
         </div>
         {/if}
@@ -460,10 +868,18 @@
         <div class="setting-row">
           <span class="setting-label">Mandala</span>
           <div class="chip-group">
-            <button type="button" class="chip" class:active={showMandala}
-              onclick={() => imageComposition.setShowMandala(!showMandala)}
-              aria-pressed={showMandala}
-            >Mandala</button>
+                <button
+                  type="button"
+                  class="chip"
+                  class:active={showMandala}
+                  onclick={() =>
+                    toggleCompositionSetting(
+                      "mandala",
+                      showMandala,
+                      imageComposition.setShowMandala.bind(imageComposition)
+                    )}
+                  aria-pressed={showMandala}>Mandala</button
+                >
           </div>
         </div>
       {/if}
@@ -472,22 +888,35 @@
       <div class="setting-row">
         <span class="setting-label">Start</span>
         <div class="chip-group">
-          <button type="button" class="chip"
+            <button
+              type="button"
+              class="chip"
             class:active={showStartPos}
-            onclick={() => imageComposition.setIncludeStartPosition(!showStartPos)}
-            aria-pressed={showStartPos}
-          >Show</button>
+              onclick={() =>
+                toggleCompositionSetting(
+                  "start_position",
+                  showStartPos,
+                  imageComposition.setIncludeStartPosition.bind(
+                    imageComposition
+                  )
+                )}
+              aria-pressed={showStartPos}>Show</button
+            >
           {#if showStartPos}
-            <button type="button" class="chip"
+              <button
+                type="button"
+                class="chip"
               class:active={startPosLayout === "row"}
-              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}
-              aria-pressed={startPosLayout === "row"}
-            >Top Row</button>
-            <button type="button" class="chip"
+                onclick={() => setStartPositionLayout("row")}
+                aria-pressed={startPosLayout === "row"}>Top Row</button
+              >
+              <button
+                type="button"
+                class="chip"
               class:active={startPosLayout === "column"}
-              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}
-              aria-pressed={startPosLayout === "column"}
-            >Left Column</button>
+                onclick={() => setStartPositionLayout("column")}
+                aria-pressed={startPosLayout === "column"}>Left Column</button
+              >
           {/if}
         </div>
       </div>
@@ -496,11 +925,14 @@
         <span class="setting-label">Columns</span>
         <div class="chip-group">
           {#each columnOptions as option}
-            <button type="button" class="chip"
+              <button
+                type="button"
+                class="chip"
               class:active={currentColumnCount === option.value}
               onclick={() => setColumns(option.value)}
               aria-pressed={currentColumnCount === option.value}
-            >{option.label}</button>
+                >{option.label}</button
+              >
           {/each}
         </div>
       </div>
@@ -508,16 +940,20 @@
       <div class="setting-row">
         <span class="setting-label">Theme</span>
         <div class="chip-group">
-          <button type="button" class="chip"
+            <button
+              type="button"
+              class="chip"
             class:active={!exportOptions.imageDarkMode}
-            onclick={() => exportOptions.setImageDarkMode(false)}
+              onclick={() => setTheme(false)}
             aria-pressed={!exportOptions.imageDarkMode}
           >
             <i class="fas fa-sun" aria-hidden="true"></i> Light
           </button>
-          <button type="button" class="chip"
+            <button
+              type="button"
+              class="chip"
             class:active={exportOptions.imageDarkMode}
-            onclick={() => exportOptions.setImageDarkMode(true)}
+              onclick={() => setTheme(true)}
             aria-pressed={exportOptions.imageDarkMode}
           >
             <i class="fas fa-moon" aria-hidden="true"></i> Dark
@@ -670,11 +1106,22 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     z-index: -1;
-    transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease;
   }
   .dock-dense :global(.rt-chip[aria-pressed="true"])::before {
-    background: color-mix(in srgb, var(--rail-accent, #4a9eff) 22%, rgba(20, 22, 32, 0.6));
-    border-color: color-mix(in srgb, var(--rail-accent, #4a9eff) 55%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--rail-accent, #4a9eff) 22%,
+      rgba(20, 22, 32, 0.6)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--rail-accent, #4a9eff) 55%,
+      transparent
+    );
   }
   @media (hover: hover) {
     .dock-dense :global(.rt-chip:hover:not([aria-pressed="true"]))::before {
@@ -812,7 +1259,8 @@
   }
 
   button.setting-label.section-toggle:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    outline: 2px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -863,14 +1311,24 @@
   }
 
   .chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 35%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 60%,
+      transparent
+    );
     color: white;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
   .chip:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    outline: 2px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
     outline-offset: 2px;
   }
 
@@ -903,7 +1361,8 @@
 
   .export-btn:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .export-btn:active:not(:disabled) {
@@ -921,12 +1380,14 @@
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip, .export-btn {
+    .chip,
+    .export-btn {
       transition: none !important;
       animation: none !important;
     }
 
-    .chip:active, .export-btn:active {
+    .chip:active,
+    .export-btn:active {
       transform: none !important;
     }
   }

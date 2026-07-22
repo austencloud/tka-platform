@@ -56,7 +56,13 @@
 
   type ArtType = "mandala" | "tunnel";
   // Tunnel rail sections (own id union — not the Download panel's PillId).
-  type TunnelRailId = "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
+  type TunnelRailId =
+    | "tunnel"
+    | "props"
+    | "speed"
+    | "effects"
+    | "effort"
+    | "playback";
   // Mandala rail sections — same ids + order as the bottom dock's category bar.
   type MandalaRailId = MandalaCategory;
 
@@ -80,6 +86,7 @@
     bluePropType = null,
     redPropType = null,
     onPropChange,
+    onArtSettingChange,
     exporting = false,
   }: {
     sequence: SequenceData;
@@ -107,11 +114,43 @@
      *  Download panel's Props section). Routes through the viewer's shared
      *  handlePropTypeChange so settings + URL params stay in sync. */
     onPropChange?: (propType: PropType) => void;
+    onArtSettingChange?: (
+      group: string,
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean,
+      source?: string
+    ) => void;
     /** Freeze the rail while a tunnel export runs — changing look/spectrum
      *  mid-export would desync the live config from the offscreen engine's
      *  pre-loaded layer textures. Cancel lives on the canvas overlay, not here. */
     exporting?: boolean;
   } = $props();
+
+  type AnalyticsValue = string | number | boolean | null;
+  function reportSetting(
+    group: string,
+    setting: string,
+    previousValue: AnalyticsValue,
+    value: AnalyticsValue,
+    coalesce = false
+  ): void {
+    if (previousValue === value) return;
+    onArtSettingChange?.(group, setting, previousValue, value, coalesce);
+  }
+
+  function changeSetting(
+    group: string,
+    setting: string,
+    previousValue: AnalyticsValue,
+    value: AnalyticsValue,
+    mutate: () => void,
+    coalesce = false
+  ): void {
+    mutate();
+    reportSetting(group, setting, previousValue, value, coalesce);
+  }
 
   // ── Tunnel rail ──
   // Props tab only appears when a change handler is wired (the interactive viewer
@@ -121,7 +160,9 @@
     { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[]
   >([
     { id: "tunnel", icon: "fa-shapes", label: "Look" },
-    ...(onPropChange ? [{ id: "props" as const, icon: "fa-paintbrush", label: "Props" }] : []),
+    ...(onPropChange
+      ? [{ id: "props" as const, icon: "fa-paintbrush", label: "Props" }]
+      : []),
     { id: "speed", icon: "fa-gauge-high", label: "Speed" },
     { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
     // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
@@ -132,13 +173,13 @@
   // The active prop for the Props grid's highlight. Tunnel uses a single prop for
   // both hands (like the 2D Download panel), so blue is the source of truth.
   const selectedPropType = $derived<PropType>(
-    (bluePropType as PropType | null) ?? PropType.STAFF,
+    (bluePropType as PropType | null) ?? PropType.STAFF
   );
   // Active section lives on the controller so it persists with the rest of the
   // tunnel view state (load/save in TunnelViewController).
   const tunnelSection = $derived<TunnelRailId>(controller.section);
   const tunnelSectionLabel = $derived(
-    tunnelRail.find((p) => p.id === tunnelSection)?.label ?? "",
+    tunnelRail.find((p) => p.id === tunnelSection)?.label ?? ""
   );
 
   // Tunnel: presets are the primary surface; the primitive tuner is a secondary
@@ -151,31 +192,108 @@
   // The saved user preset matching the live config (lights its card), and whether
   // the live config is a genuinely custom look (no built-in AND no saved match).
   const activeUserId = $derived(
-    tunnelUserPresets.presets.find((p) => configsEqual(p.config, controller.config))?.id ?? null,
+    tunnelUserPresets.presets.find((p) =>
+      configsEqual(p.config, controller.config)
+    )?.id ?? null
   );
-  const isCustom = $derived(controller.activePresetId === null && activeUserId === null);
+  const isCustom = $derived(
+    controller.activePresetId === null && activeUserId === null
+  );
 
   function saveCurrentPreset(): void {
+    const previousCount = tunnelUserPresets.presets.length;
     tunnelUserPresets.add(presetName, controller.config);
+    reportSetting(
+      "art_tunnel",
+      "saved_preset_count",
+      previousCount,
+      previousCount + 1
+    );
     presetName = "";
     savingPreset = false;
+  }
+
+  function openTunnelTuner(source: "custom_card" | "customize_button"): void {
+    if (tuneOpen) return;
+    tuneOpen = true;
+    onArtSettingChange?.(
+      "art_navigation",
+      "tunnel_drill",
+      "presets",
+      "customize",
+      false,
+      source
+    );
+  }
+
+  function closeTunnelTuner(): void {
+    if (!tuneOpen) return;
+    tuneOpen = false;
+    onArtSettingChange?.(
+      "art_navigation",
+      "tunnel_drill",
+      "customize",
+      "presets",
+      false,
+      "back_button"
+    );
+  }
+
+  function startSavingPreset(): void {
+    if (savingPreset) return;
+    savingPreset = true;
+    presetName = "";
+    reportSetting("art_tunnel", "save_preset_open", false, true);
+  }
+
+  function cancelSavingPreset(): void {
+    if (!savingPreset) return;
+    savingPreset = false;
+    reportSetting("art_tunnel", "save_preset_open", true, false);
   }
 
   // Copies (fold) shown as a ×multiplier, not a count — so the segmented value
   // never collides with the "performers" total (×1 selected + Mirror ×2 = 2
   // performers, not "1 performer"). One base performer, everything multiplies it.
-  const foldSegOptions = FOLD_OPTIONS.map((a) => ({ value: String(a), label: `×${a}` }));
+  const foldSegOptions = FOLD_OPTIONS.map((a) => ({
+    value: String(a),
+    label: `×${a}`,
+  }));
 
   // Two families (per chip-primitives: independent booleans → N × FilterChipBase).
   // Twins GROW the cast: Mirror/Flip each add a reflected copy of every performer
   // (×2). Motion modulators change how copies move but add NONE (the count holds).
   const twinChips = $derived([
-    { key: "mirror", label: "Mirror ×2", icon: "fas fa-arrows-left-right", active: controller.mirror, set: (v: boolean) => controller.setMirror(v) },
-    { key: "flip", label: "Flip ×2", icon: "fas fa-arrows-up-down", active: controller.flip, set: (v: boolean) => controller.setFlip(v) },
+    {
+      key: "mirror",
+      label: "Mirror ×2",
+      icon: "fas fa-arrows-left-right",
+      active: controller.mirror,
+      set: (v: boolean) => controller.setMirror(v),
+    },
+    {
+      key: "flip",
+      label: "Flip ×2",
+      icon: "fas fa-arrows-up-down",
+      active: controller.flip,
+      set: (v: boolean) => controller.setFlip(v),
+    },
   ]);
   const motionChips = $derived([
-    { key: "invert", label: "Invert", icon: "fas fa-arrows-spin", active: controller.invert, set: (v: boolean) => controller.setInvert(v) },
-    { key: "echo", label: "Echo", icon: "fas fa-backward", active: controller.echo, set: (v: boolean) => controller.setEcho(v) },
+    {
+      key: "invert",
+      label: "Invert",
+      icon: "fas fa-arrows-spin",
+      active: controller.invert,
+      set: (v: boolean) => controller.setInvert(v),
+    },
+    {
+      key: "echo",
+      label: "Echo",
+      icon: "fas fa-backward",
+      active: controller.echo,
+      set: (v: boolean) => controller.setEcho(v),
+    },
   ]);
 
   // Speed section (own rail destination): per-performer playback rate. "Speed"
@@ -185,12 +303,18 @@
   // that performer in the tunnel.
   const speedLabel = (r: number): string =>
     r === 0.25 ? "¼×" : r === 0.5 ? "½×" : `${r}×`;
-  const speedLadderOptions = SPEED_LADDER.map((r) => ({ value: String(r), label: speedLabel(r) }));
+  const speedLadderOptions = SPEED_LADDER.map((r) => ({
+    value: String(r),
+    label: speedLabel(r),
+  }));
   const SPEED_FILL_META: Record<SpeedFill, { label: string; icon: string }> = {
     alternating: { label: "Alternating", icon: "fas fa-shuffle" },
     accelerando: { label: "Accelerando", icon: "fas fa-forward" },
   };
-  const speedFillButtons = SPEED_FILLS.map((kind) => ({ kind, ...SPEED_FILL_META[kind] }));
+  const speedFillButtons = SPEED_FILLS.map((kind) => ({
+    kind,
+    ...SPEED_FILL_META[kind],
+  }));
 
   // Faint build-up under the big result: one base performer × each active
   // count-multiplier. Only factors >×1 show, so it reads "1 × 2 copies × 2 mirror".
@@ -199,7 +323,7 @@
       controller.fold > 1 ? { x: controller.fold, label: "copies" } : null,
       controller.mirror ? { x: 2, label: "mirror" } : null,
       controller.flip ? { x: 2, label: "flip" } : null,
-    ].filter((f): f is { x: number; label: string } => f !== null),
+    ].filter((f): f is { x: number; label: string } => f !== null)
   );
 
   // Rainbow vs Uniform copy coloring (controller.spectrum), shown in Effects.
@@ -223,7 +347,7 @@
   // per-section rail would leave the tall panel mostly empty). The rail is kept
   // for the tunnel, whose sections carry real content.
   const mandalaStack: { id: MandalaRailId; label: string }[] = mandalaRail.map(
-    ({ id, label }) => ({ id, label }),
+    ({ id, label }) => ({ id, label })
   );
 
   // Reduced-motion gate for the section transitions.
@@ -240,10 +364,17 @@
   const tunnelOrder = $derived(tunnelRail.map((p) => p.id));
   let flyDir = $state(1);
   function selectTunnel(id: TunnelRailId): void {
+    const previous = tunnelSection;
     const prev = tunnelOrder.indexOf(tunnelSection);
     const next = tunnelOrder.indexOf(id);
     flyDir = next >= prev ? 1 : -1;
     controller.section = id;
+    reportSetting(
+      "art_navigation",
+      "desktop_tunnel_section",
+      previous,
+      id
+    );
   }
 
   // ── Mobile bottom-dock (layout="bottom") ──
@@ -257,12 +388,26 @@
   function selectTunnelDock(id: string): void {
     if (exporting) return;
     const tid = id as TunnelRailId;
-    openTunnelTab = openTunnelTab === tid ? null : tid;
+    const previous = openTunnelTab;
+    openTunnelTab = previous === tid ? null : tid;
     if (openTunnelTab) controller.section = tid;
+    reportSetting(
+      "art_navigation",
+      "mobile_tunnel_section",
+      previous ?? "closed",
+      openTunnelTab ?? "closed"
+    );
   }
   function selectMandalaDock(id: string): void {
     const cid = id as MandalaRailId;
-    openMandalaCat = openMandalaCat === cid ? null : cid;
+    const previous = openMandalaCat;
+    openMandalaCat = previous === cid ? null : cid;
+    reportSetting(
+      "art_navigation",
+      "mobile_mandala_section",
+      previous ?? "closed",
+      openMandalaCat ?? "closed"
+    );
   }
 
   const tunnelDockTabs = $derived<ControlDockTab[]>(
@@ -271,7 +416,7 @@
       label: p.label,
       icon: p.icon,
       accentColor: p.accentColor,
-    })),
+    }))
   );
   // Colors gets the live accent-pair dots (matching the native mandala dock);
   // "download" is excluded — it's the trailing Export action, not a tray tab.
@@ -281,8 +426,8 @@
       .map((c) =>
         c.id === "colors"
           ? { id: c.id, label: c.label, dots: mandalaController.accentPair }
-          : { id: c.id, label: c.label, icon: c.icon },
-      ),
+          : { id: c.id, label: c.label, icon: c.icon }
+      )
   );
   const tunnelDockExport = $derived<ControlDockAction>({
     icon: "fa-film",
@@ -294,7 +439,7 @@
   const mandalaDockExport: ControlDockAction = {
     icon: "fa-download",
     label: "Export MP4",
-    onClick: () => mandalaController.startExport(),
+    onClick: onExport,
   };
 </script>
 
@@ -307,7 +452,8 @@
         <!-- PRIMARY: curated tunnel presets. A preset is a named point in the
              primitive config space; the tuner (Customize) is the secondary
              surface. Even 2-col card grid — no ragged wrap on mobile. -->
-        {#if !dense}<span class="rt-section-label">Choose a tunnel preset</span>{/if}
+        {#if !dense}<span class="rt-section-label">Choose a tunnel preset</span
+          >{/if}
         <div class="preset-grid" role="radiogroup" aria-label="Tunnel preset">
           {#each TUNNEL_PRESETS as p (p.id)}
             <button
@@ -316,7 +462,15 @@
               type="button"
               role="radio"
               aria-checked={controller.activePresetId === p.id}
-              onclick={() => controller.applyPreset(p.id)}
+              onclick={() =>
+                changeSetting(
+                  "art_tunnel",
+                  "preset",
+                  controller.activePresetId ??
+                    (activeUserId ? "saved" : "custom"),
+                  p.id,
+                  () => controller.applyPreset(p.id)
+                )}
             >
               <PerformerRing config={p.config} size={30} animate={false} />
               <span>{p.name}</span>
@@ -331,7 +485,18 @@
                 type="button"
                 role="radio"
                 aria-checked={activeUserId === up.id}
-                onclick={() => controller.applyConfig(up.config)}
+                onclick={() =>
+                  changeSetting(
+                    "art_tunnel",
+                    "preset_source",
+                    controller.activePresetId
+                      ? "built_in"
+                      : activeUserId
+                        ? "saved"
+                        : "custom",
+                    "saved",
+                    () => controller.applyConfig(up.config)
+                  )}
               >
                 <PerformerRing config={up.config} size={30} animate={false} />
                 <span>{up.name}</span>
@@ -341,7 +506,16 @@
                 type="button"
                 aria-label={`Delete preset ${up.name}`}
                 title="Delete preset"
-                onclick={() => tunnelUserPresets.remove(up.id)}
+                onclick={() => {
+                  const previousCount = tunnelUserPresets.presets.length;
+                  tunnelUserPresets.remove(up.id);
+                  reportSetting(
+                    "art_tunnel",
+                    "saved_preset_count",
+                    previousCount,
+                    Math.max(0, previousCount - 1)
+                  );
+                }}
               >
                 <i class="fas fa-xmark" aria-hidden="true"></i>
               </button>
@@ -354,7 +528,7 @@
             type="button"
             role="radio"
             aria-checked={isCustom}
-            onclick={() => (tuneOpen = true)}
+            onclick={() => openTunnelTuner("custom_card")}
           >
             <i class="fas fa-sliders" aria-hidden="true"></i>
             <span>Custom</span>
@@ -370,25 +544,44 @@
             aria-pressed={controller.gridVisible}
             aria-label="Toggle grid"
             title="Grid"
-            onclick={() => (controller.gridVisible = !controller.gridVisible)}
+            onclick={() =>
+              changeSetting(
+                "art_tunnel",
+                "grid_visible",
+                controller.gridVisible,
+                !controller.gridVisible,
+                () => (controller.gridVisible = !controller.gridVisible)
+              )}
           >
             <i class="fas fa-border-all" aria-hidden="true"></i>
           </button>
           <span class="prim-count">{controller.propCount} props</span>
         </div>
 
-        <button class="customize-btn" type="button" onclick={() => (tuneOpen = true)}>
+        <button
+          class="customize-btn"
+          type="button"
+          onclick={() => openTunnelTuner("customize_button")}
+        >
           <i class="fas fa-sliders" aria-hidden="true"></i> Customize
         </button>
         {#if onSaveTunnel}
-          <button class="customize-btn" type="button" onclick={() => onSaveTunnel?.()}>
+          <button
+            class="customize-btn"
+            type="button"
+            onclick={() => onSaveTunnel?.()}
+          >
             <i class="fas fa-bookmark" aria-hidden="true"></i> Save tunnel
           </button>
         {/if}
       {:else}
         <!-- SECONDARY: the primitive tuner. Every tunnel is a combination of
              these. Even card grid for the toggles — no ragged wrap. -->
-        <button class="back-btn" type="button" onclick={() => (tuneOpen = false)}>
+        <button
+          class="back-btn"
+          type="button"
+          onclick={closeTunnelTuner}
+        >
           <i class="fas fa-chevron-left" aria-hidden="true"></i> Presets
         </button>
 
@@ -424,7 +617,14 @@
             <SegmentedControl
               options={foldSegOptions}
               value={String(controller.fold)}
-              onchange={(v) => controller.setFold(Number(v))}
+              onchange={(v) =>
+                changeSetting(
+                  "art_tunnel",
+                  "copies",
+                  controller.fold,
+                  Number(v),
+                  () => controller.setFold(Number(v))
+                )}
               color="accent"
               size="sm"
             />
@@ -436,7 +636,14 @@
             aria-pressed={controller.gridVisible}
             aria-label="Toggle grid"
             title="Grid"
-            onclick={() => (controller.gridVisible = !controller.gridVisible)}
+            onclick={() =>
+              changeSetting(
+                "art_tunnel",
+                "grid_visible",
+                controller.gridVisible,
+                !controller.gridVisible,
+                () => (controller.gridVisible = !controller.gridVisible)
+              )}
           >
             <i class="fas fa-border-all" aria-hidden="true"></i>
           </button>
@@ -444,7 +651,9 @@
 
         <!-- Add twins — each doubles the cast (a reflected copy of every performer). -->
         <div class="prim-group">
-          <span class="group-lbl">Add twins <span class="group-hint">— each doubles</span></span>
+          <span class="group-lbl"
+            >Add twins <span class="group-hint">— each doubles</span></span
+          >
           <div class="prim-chip-grid">
             {#each twinChips as chip (chip.key)}
               <FilterChipBase
@@ -454,7 +663,14 @@
                 label={chip.label}
                 icon={chip.icon}
                 active={chip.active}
-                onclick={() => chip.set(!chip.active)}
+                onclick={() =>
+                  changeSetting(
+                    "art_tunnel",
+                    chip.key,
+                    chip.active,
+                    !chip.active,
+                    () => chip.set(!chip.active)
+                  )}
               />
             {/each}
           </div>
@@ -463,7 +679,9 @@
         <!-- Motion — changes how copies move; the count never changes. Stagger
              (canon offset) lives here: arm k shows the sequence k×N steps ahead. -->
         <div class="prim-group">
-          <span class="group-lbl">Motion <span class="group-hint">— same count</span></span>
+          <span class="group-lbl"
+            >Motion <span class="group-hint">— same count</span></span
+          >
           <div class="prim-chip-grid">
             {#each motionChips as chip (chip.key)}
               <FilterChipBase
@@ -473,7 +691,14 @@
                 label={chip.label}
                 icon={chip.icon}
                 active={chip.active}
-                onclick={() => chip.set(!chip.active)}
+                onclick={() =>
+                  changeSetting(
+                    "art_tunnel",
+                    chip.key,
+                    chip.active,
+                    !chip.active,
+                    () => chip.set(!chip.active)
+                  )}
               />
             {/each}
           </div>
@@ -485,7 +710,14 @@
                 class="step-btn"
                 aria-label="Less stagger"
                 disabled={controller.staggerSteps <= 0}
-                onclick={() => controller.setStagger(controller.staggerSteps - 1)}
+                onclick={() =>
+                  changeSetting(
+                    "art_tunnel",
+                    "stagger_steps",
+                    controller.staggerSteps,
+                    controller.staggerSteps - 1,
+                    () => controller.setStagger(controller.staggerSteps - 1)
+                  )}
               >
                 <i class="fas fa-minus" aria-hidden="true"></i>
               </button>
@@ -495,7 +727,14 @@
                 class="step-btn"
                 aria-label="More stagger"
                 disabled={controller.staggerSteps >= controller.staggerMax}
-                onclick={() => controller.setStagger(controller.staggerSteps + 1)}
+                onclick={() =>
+                  changeSetting(
+                    "art_tunnel",
+                    "stagger_steps",
+                    controller.staggerSteps,
+                    controller.staggerSteps + 1,
+                    () => controller.setStagger(controller.staggerSteps + 1)
+                  )}
               >
                 <i class="fas fa-plus" aria-hidden="true"></i>
               </button>
@@ -516,12 +755,16 @@
                 placeholder="Name this tunnel"
                 aria-label="Preset name"
               />
-              <button class="save-confirm" type="button" onclick={saveCurrentPreset}>Save</button>
+              <button
+                class="save-confirm"
+                type="button"
+                onclick={saveCurrentPreset}>Save</button
+              >
               <button
                 class="save-cancel"
                 type="button"
                 aria-label="Cancel save"
-                onclick={() => (savingPreset = false)}
+                onclick={cancelSavingPreset}
               >
                 <i class="fas fa-xmark" aria-hidden="true"></i>
               </button>
@@ -530,10 +773,7 @@
             <button
               class="save-preset-btn"
               type="button"
-              onclick={() => {
-                savingPreset = true;
-                presetName = "";
-              }}
+              onclick={startSavingPreset}
             >
               <i class="fas fa-star" aria-hidden="true"></i> Save as preset
             </button>
@@ -542,7 +782,10 @@
       {/if}
 
       {#if controller.heavyLoad}
-        <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
+        <p class="warn">
+          Dense stack ({controller.propCount} props): a heavy effect may drop frames
+          on weaker devices.
+        </p>
       {/if}
     </div>
   {:else if id === "props"}
@@ -571,7 +814,14 @@
               size="sm"
               label={f.label}
               icon={f.icon}
-              onclick={() => controller.applySpeedFill(f.kind)}
+              onclick={() =>
+                changeSetting(
+                  "art_tunnel",
+                  "speed_fill",
+                  controller.hasSpeedOverrides ? "custom" : "uniform",
+                  f.kind,
+                  () => controller.applySpeedFill(f.kind)
+                )}
             />
           {/each}
           <FilterChipBase
@@ -580,7 +830,14 @@
             label="Reset"
             icon="fas fa-rotate-left"
             disabled={!controller.hasSpeedOverrides}
-            onclick={() => controller.resetSpeed()}
+            onclick={() =>
+              changeSetting(
+                "art_tunnel",
+                "speed_fill",
+                "custom",
+                "uniform",
+                () => controller.resetSpeed()
+              )}
           />
         </div>
 
@@ -589,14 +846,24 @@
              is the fixed 1× reference. -->
         <div class="perf-list" role="listbox" aria-label="Performers">
           {#each controller.speedPerformers as perf (perf.arm)}
-            <div class="perf-row" class:selected={controller.selectedArm === perf.arm}>
+            <div
+              class="perf-row"
+              class:selected={controller.selectedArm === perf.arm}
+            >
               <button
                 type="button"
                 class="perf-pick"
                 role="option"
                 aria-selected={controller.selectedArm === perf.arm}
                 aria-label={`Spotlight ${perf.label}`}
-                onclick={() => controller.selectPerformer(perf.arm)}
+                onclick={() =>
+                  changeSetting(
+                    "art_tunnel",
+                    "spotlight_performer",
+                    controller.selectedArm,
+                    controller.selectedArm === perf.arm ? null : perf.arm,
+                    () => controller.selectPerformer(perf.arm)
+                  )}
               >
                 <span class="perf-swatch">
                   <span style="background:{perf.blueHex}"></span>
@@ -608,7 +875,14 @@
                 <SegmentedControl
                   options={speedLadderOptions}
                   value={String(perf.rate)}
-                  onchange={(v) => controller.setPerformerSpeed(perf.arm, Number(v))}
+                  onchange={(v) =>
+                    changeSetting(
+                      "art_tunnel",
+                      "performer_speed",
+                      perf.rate,
+                      Number(v),
+                      () => controller.setPerformerSpeed(perf.arm, Number(v))
+                    )}
                   color="accent"
                   size="sm"
                 />
@@ -618,11 +892,14 @@
         </div>
         {#if !dense && controller.selectedArm !== null}
           <p class="section-hint">
-            Spotlighting {controller.speedPerformers[controller.selectedArm]?.label ?? "a performer"} — tap again to clear.
+            Spotlighting {controller.speedPerformers[controller.selectedArm]
+              ?.label ?? "a performer"} — tap again to clear.
           </p>
         {/if}
       {:else if !dense}
-        <p class="section-hint">Add copies (Copies ×N, Mirror, Flip) to set speed per performer.</p>
+        <p class="section-hint">
+          Add copies (Copies ×N, Mirror, Flip) to set speed per performer.
+        </p>
       {/if}
     </div>
   {:else if id === "effects"}
@@ -634,7 +911,14 @@
         <SegmentedControl
           options={colorOptions}
           value={controller.spectrum ? "rainbow" : "uniform"}
-          onchange={(v) => (controller.spectrum = v === "rainbow")}
+          onchange={(v) =>
+            changeSetting(
+              "art_tunnel",
+              "colors",
+              controller.spectrum ? "rainbow" : "uniform",
+              v,
+              () => (controller.spectrum = v === "rainbow")
+            )}
           color="accent"
           size="sm"
         />
@@ -653,12 +937,27 @@
         {onBpmChange}
         {isPlaying}
         {onPlaybackToggle}
+        onSettingChange={(setting, previousValue, value, coalesce) =>
+          reportSetting(
+            "art_effects",
+            setting,
+            previousValue,
+            value,
+            coalesce
+          )}
       />
     </div>
   {:else if id === "effort"}
     <div class="section-pad">
-      {#if !dense}<p class="section-hint">How each beat speeds up and slows down.</p>{/if}
-      <EffortPanel columns={dense ? 4 : 2} showSubtitles={!dense} />
+      {#if !dense}<p class="section-hint">
+          How each beat speeds up and slows down.
+        </p>{/if}
+      <EffortPanel
+        columns={dense ? 4 : 2}
+        showSubtitles={!dense}
+        onSettingChange={(previousValue, value) =>
+          reportSetting("art_effort", "preset", previousValue, value)}
+      />
     </div>
   {:else}
     <div class="section-pad playback-rows">
@@ -686,7 +985,10 @@
       <!-- Motion paths are playback behavior (they change how the props
            travel), so the tunnel gets them here too — same placement as the
            2D animation dock. The panel brings its own header row. -->
-      <PathShapePanel />
+      <PathShapePanel
+        onSettingChange={(previousValue, value) =>
+          reportSetting("art_path", "shape", previousValue, value)}
+      />
     </div>
   {/if}
 {/snippet}
@@ -703,11 +1005,16 @@
       activeTab={openTunnelTab}
       onTabSelect={selectTunnelDock}
       trailingAction={tunnelDockExport}
-      trayMaxHeight={openTunnelTab === "effects" ? "min(54vh, 360px)" : "min(33vh, 250px)"}
+      trayMaxHeight={openTunnelTab === "effects"
+        ? "min(54vh, 360px)"
+        : "min(33vh, 250px)"}
     >
       {#snippet tray()}
         <div class="dock-dense">
-          {#if openTunnelTab}{@render tunnelSectionBody(openTunnelTab, true)}{/if}
+          {#if openTunnelTab}{@render tunnelSectionBody(
+              openTunnelTab,
+              true
+            )}{/if}
         </div>
       {/snippet}
     </ControlDock>
@@ -726,6 +1033,7 @@
               ctrl={mandalaController}
               category={openMandalaCat}
               showExportButton={false}
+              onSettingChange={onArtSettingChange}
             />
           {/if}
         </div>
@@ -733,11 +1041,17 @@
     </ControlDock>
   {/if}
 {:else}
-<div class="art-settings-panel" class:exporting inert={exporting || undefined}>
+  <div
+    class="art-settings-panel"
+    class:exporting
+    inert={exporting || undefined}
+  >
   <!-- Pinned header: the current art type (the mode rail switches between
        Mandala and Tunnel now — no in-panel toggle). -->
   <div class="panel-header">
-    <span class="section-label">{artType === "tunnel" ? "Tunnel" : "Mandala"}</span>
+      <span class="section-label"
+        >{artType === "tunnel" ? "Tunnel" : "Mandala"}</span
+      >
   </div>
 
   {#if artType === "tunnel"}
@@ -755,8 +1069,17 @@
             {#key tunnelSection}
               <div
                 class="panel-transition"
-                in:fly={{ x: reduceMotion ? 0 : flyDir * 28, duration: reduceMotion ? 0 : 240, delay: reduceMotion ? 0 : 60, opacity: 0 }}
-                out:fly={{ x: reduceMotion ? 0 : flyDir * -20, duration: reduceMotion ? 0 : 130, opacity: 0 }}
+                  in:fly={{
+                    x: reduceMotion ? 0 : flyDir * 28,
+                    duration: reduceMotion ? 0 : 240,
+                    delay: reduceMotion ? 0 : 60,
+                    opacity: 0,
+                  }}
+                  out:fly={{
+                    x: reduceMotion ? 0 : flyDir * -20,
+                    duration: reduceMotion ? 0 : 130,
+                    opacity: 0,
+                  }}
               >
                 <div class="panel-center-inner">
                   <h2 class="panel-title">{tunnelSectionLabel}</h2>
@@ -780,7 +1103,10 @@
     <!-- Mandala: every control stacked (no rail). Each control is one compact
          row, so a per-section rail would leave the tall panel mostly empty. -->
     <div class="sidebar-main">
-      <div class="panel-scroll mandala-stack" in:fade={{ duration: reduceMotion ? 0 : 180 }}>
+        <div
+          class="panel-scroll mandala-stack"
+          in:fade={{ duration: reduceMotion ? 0 : 180 }}
+        >
         {#each mandalaStack as cat (cat.id)}
           <div class="section-pad mandala-cat">
             <span class="rt-section-label">{cat.label}</span>
@@ -788,13 +1114,14 @@
               ctrl={mandalaController}
               category={cat.id}
               showExportButton={false}
+                onSettingChange={onArtSettingChange}
             />
           </div>
         {/each}
       </div>
 
       <div class="panel-footer">
-        <button type="button" class="export-btn" onclick={() => mandalaController.startExport()}>
+          <button type="button" class="export-btn" onclick={onExport}>
           <i class="fas fa-film" aria-hidden="true"></i>
           <span>Export MP4</span>
         </button>
@@ -876,8 +1203,12 @@
     display: flex;
     flex-direction: column;
   }
-  .panel-scroll::-webkit-scrollbar { width: 5px; }
-  .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  .panel-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .panel-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
   .panel-scroll::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.12);
     border-radius: 3px;
@@ -908,8 +1239,12 @@
   }
 
   /* Mandala: stacked categories, each separated by a hairline. */
-  .mandala-stack { padding-bottom: 8px; }
-  .mandala-cat { gap: 10px; }
+  .mandala-stack {
+    padding-bottom: 8px;
+  }
+  .mandala-cat {
+    gap: 10px;
+  }
   .mandala-cat + .mandala-cat {
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     margin-top: 4px;
@@ -942,7 +1277,11 @@
     padding: 0 8px;
   }
 
-  .rt-section { display: flex; flex-direction: column; gap: 8px; }
+  .rt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .rt-section-label {
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
@@ -964,7 +1303,10 @@
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
-  .seg-wrap { flex: 1; min-width: 0; }
+  .seg-wrap {
+    flex: 1;
+    min-width: 0;
+  }
 
   /* Speed section: one-tap fills + a per-performer list (swatch identity + rate).
      Clicking a row spotlights that performer in the tunnel. */
@@ -994,8 +1336,16 @@
     border: 1px solid transparent;
   }
   .perf-row.selected {
-    background: color-mix(in srgb, var(--theme-accent, #c79bff) 14%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #c79bff) 45%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #c79bff) 14%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #c79bff) 45%,
+      transparent
+    );
   }
   .perf-pick {
     display: flex;
@@ -1051,9 +1401,16 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
     cursor: pointer;
-    transition: border-color 0.12s ease, background 0.12s ease;
+    transition:
+      border-color 0.12s ease,
+      background 0.12s ease;
   }
-  .preset-card i { font-size: 14px; width: 1.1em; text-align: center; flex-shrink: 0; }
+  .preset-card i {
+    font-size: 14px;
+    width: 1.1em;
+    text-align: center;
+    flex-shrink: 0;
+  }
   .preset-card > span {
     font-size: var(--font-size-compact, 12px);
     white-space: nowrap;
@@ -1070,7 +1427,9 @@
     outline-offset: 2px;
   }
   /* Preset-card mini performer-ring keeps its intrinsic size in the flex row. */
-  .preset-card :global(svg) { flex-shrink: 0; }
+  .preset-card :global(svg) {
+    flex-shrink: 0;
+  }
 
   /* Tuner hero: countable performer ring + big result + a faint build-up line
      (one base performer × each active count-multiplier). */
@@ -1097,26 +1456,46 @@
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
     font-variant-numeric: tabular-nums;
   }
-  .tuner-result .tr-n { font-weight: 700; color: var(--theme-text, #fff); }
-  .tuner-result .tr-mid { opacity: 0.4; margin: 0 5px; }
+  .tuner-result .tr-n {
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+  }
+  .tuner-result .tr-mid {
+    opacity: 0.4;
+    margin: 0 5px;
+  }
   .tuner-build {
     margin: 0;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-variant-numeric: tabular-nums;
   }
-  .tuner-build .tb-seed { color: var(--theme-accent, #c79bff); font-weight: 700; }
-  .tuner-build .tb-x { opacity: 0.5; margin: 0 1px; }
+  .tuner-build .tb-seed {
+    color: var(--theme-accent, #c79bff);
+    font-weight: 700;
+  }
+  .tuner-build .tb-x {
+    opacity: 0.5;
+    margin: 0 1px;
+  }
 
   /* A labeled group of related controls (Add twins / Motion). */
-  .prim-group { display: flex; flex-direction: column; gap: 8px; }
+  .prim-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .group-lbl {
     font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
-  .group-hint { text-transform: none; letter-spacing: 0; opacity: 0.75; }
+  .group-hint {
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.75;
+  }
 
   .customize-btn {
     display: flex;
@@ -1133,13 +1512,18 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition:
+      background 0.12s ease,
+      border-color 0.12s ease;
   }
   .customize-btn:hover {
     background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
   }
-  .customize-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+  .customize-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
 
   .back-btn {
     display: inline-flex;
@@ -1154,7 +1538,9 @@
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
   }
-  .back-btn:hover { color: var(--theme-text, #fff); }
+  .back-btn:hover {
+    color: var(--theme-text, #fff);
+  }
   .back-btn:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
@@ -1166,12 +1552,22 @@
     grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
     gap: 6px;
   }
-  .prim-chip-grid :global(.filter-chip) { width: 100%; justify-content: center; }
+  .prim-chip-grid :global(.filter-chip) {
+    width: 100%;
+    justify-content: center;
+  }
 
   /* Saved user preset: the select card + a full-height delete column on the
      right (44px tall touch target). */
-  .preset-card-wrap { position: relative; display: flex; }
-  .preset-card-wrap .preset-card { flex: 1; min-width: 0; padding-right: 34px; }
+  .preset-card-wrap {
+    position: relative;
+    display: flex;
+  }
+  .preset-card-wrap .preset-card {
+    flex: 1;
+    min-width: 0;
+    padding-right: 34px;
+  }
   .preset-del {
     position: absolute;
     top: 0;
@@ -1186,15 +1582,26 @@
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     cursor: pointer;
-    transition: background 0.12s ease, color 0.12s ease;
+    transition:
+      background 0.12s ease,
+      color 0.12s ease;
   }
   .preset-del:hover,
   .preset-del:focus-visible {
-    background: color-mix(in srgb, var(--semantic-danger, #ef4444) 18%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-danger, #ef4444) 18%,
+      transparent
+    );
     color: var(--semantic-danger, #ef4444);
   }
-  .preset-del:focus-visible { outline: 2px solid var(--semantic-danger, #ef4444); outline-offset: -2px; }
-  .preset-del i { font-size: 11px; }
+  .preset-del:focus-visible {
+    outline: 2px solid var(--semantic-danger, #ef4444);
+    outline-offset: -2px;
+  }
+  .preset-del i {
+    font-size: 11px;
+  }
 
   /* Save-as-preset: a dashed CTA that becomes a name row. */
   .save-preset-btn {
@@ -1205,22 +1612,32 @@
     width: 100%;
     min-height: var(--min-touch-target, 44px);
     padding: 8px 14px;
-    border: 1.5px dashed color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    border: 1.5px dashed
+      color-mix(in srgb, var(--theme-accent) 45%, transparent);
     border-radius: 10px;
     background: transparent;
     color: var(--theme-accent);
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition:
+      background 0.12s ease,
+      border-color 0.12s ease;
   }
   .save-preset-btn:hover {
     background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent) 65%, transparent);
   }
-  .save-preset-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+  .save-preset-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
 
-  .save-row { display: flex; align-items: center; gap: 6px; }
+  .save-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .save-input {
     flex: 1;
     min-width: 0;
@@ -1232,8 +1649,13 @@
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 0.875rem);
   }
-  .save-input::placeholder { color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
-  .save-input:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
+  .save-input::placeholder {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+  .save-input:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 1px;
+  }
   .save-confirm {
     flex: 0 0 auto;
     min-height: var(--min-touch-target, 44px);
@@ -1260,7 +1682,10 @@
     cursor: pointer;
   }
   .save-confirm:focus-visible,
-  .save-cancel:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+  .save-cancel:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
 
   /* Compact icon toggle for the grid — a small square, keeping the 44px floor. */
   .grid-toggle {
@@ -1275,7 +1700,9 @@
     border-radius: 9px;
     color: inherit;
     cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
+    transition:
+      background 0.12s,
+      border-color 0.12s;
   }
   .grid-toggle.active {
     background: var(--theme-accent, #8b5cf6);
@@ -1285,7 +1712,11 @@
 
   /* Stagger stepper: − value + . Tabular value so the row never reflows as the
      number changes (no-layout-shift). */
-  .stepper { display: inline-flex; align-items: center; gap: 4px; }
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
   .step-btn {
     display: inline-flex;
     align-items: center;
@@ -1297,9 +1728,14 @@
     border-radius: 9px;
     color: inherit;
     cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
+    transition:
+      background 0.12s,
+      border-color 0.12s;
   }
-  .step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .step-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
   .step-val {
     min-width: 2ch;
     text-align: center;
@@ -1314,7 +1750,11 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .warn { margin: 0; font-size: 0.72rem; color: var(--semantic-warning, #fbbf24); }
+  .warn {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--semantic-warning, #fbbf24);
+  }
 
   /* Pinned export footer. */
   .panel-footer {
@@ -1361,23 +1801,51 @@
   /* Mobile dock tray: tighten the shared section bodies. Buttons/inputs keep
      their var(--min-touch-target) floor — only gaps and outer paddings collapse
      so the tray stays compact floating over the art. */
-  .dock-dense .section-pad { gap: 8px; padding: 2px 2px 6px; }
+  .dock-dense .section-pad {
+    gap: 8px;
+    padding: 2px 2px 6px;
+  }
   /* Tunnel controls in the dock tray: tighter gaps; cards + chips + steppers
      keep their 44px touch floor. */
   .dock-dense .preset-grid,
-  .dock-dense .prim-chip-grid { gap: 4px; }
-  .dock-dense .prim-row { min-height: 40px; gap: 6px; }
+  .dock-dense .prim-chip-grid {
+    gap: 4px;
+  }
+  .dock-dense .prim-row {
+    min-height: 40px;
+    gap: 6px;
+  }
   /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
      compression (:global): 6-column picker puts all 16 effects (3 rows at the
      44px touch floor) inside the capped tray with no scrolling. */
-  .dock-dense :global(.mep) { gap: 6px; }
-  .dock-dense :global(.drill-view) { gap: 6px; }
-  .dock-dense :global(.fx-picker) { grid-template-columns: repeat(6, 1fr); gap: 4px; }
-  .dock-dense :global(.fx-tile) { height: 44px; }
-  .dock-dense :global(.fx-picker .fx-tile) { gap: 1px; padding: 0 2px; }
-  .dock-dense :global(.fx-picker .fx-tile i) { font-size: 12px; }
-  .dock-dense :global(.fx-picker .fx-tile > span) { font-size: 9px; letter-spacing: 0.01em; }
-  .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
+  .dock-dense :global(.mep) {
+    gap: 6px;
+  }
+  .dock-dense :global(.drill-view) {
+    gap: 6px;
+  }
+  .dock-dense :global(.fx-picker) {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  .dock-dense :global(.fx-tile) {
+    height: 44px;
+  }
+  .dock-dense :global(.fx-picker .fx-tile) {
+    gap: 1px;
+    padding: 0 2px;
+  }
+  .dock-dense :global(.fx-picker .fx-tile i) {
+    font-size: 12px;
+  }
+  .dock-dense :global(.fx-picker .fx-tile > span) {
+    font-size: 9px;
+    letter-spacing: 0.01em;
+  }
+  .dock-dense :global(.slider-row) {
+    padding: 6px 10px;
+    gap: 8px;
+  }
   /* Playback: label-left rows + side-by-side mode buttons (mirrors
      AnimationPanel). Dock only — the sidebar keeps the vertical stack. */
   .dock-dense .playback-rows {

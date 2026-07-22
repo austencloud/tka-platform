@@ -13,6 +13,10 @@
   import { buildPictographContextMenuItems } from "$lib/shared/pictograph/shared/components/context-menu/pictograph-context-menu-builder";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+  import {
+    contextMenuCloseCounts,
+    instrumentContextMenuEntries,
+  } from "../../services/context-menu-analytics";
 
   interface Props {
     onRerender?: () => void;
@@ -21,9 +25,22 @@
     onSendTo?: () => void;
     onSendToStickerLab?: () => void;
     stepCount?: number;
+    onAction?: (
+      action: string,
+      properties?: Record<string, string | number | boolean | null>,
+      options?: { count?: boolean }
+    ) => void;
   }
 
-  const { onRerender, isExportMode = false, exportOptions, onSendTo, onSendToStickerLab, stepCount = 0 }: Props = $props();
+  const {
+    onRerender,
+    isExportMode = false,
+    exportOptions,
+    onSendTo,
+    onSendToStickerLab,
+    stepCount = 0,
+    onAction,
+  }: Props = $props();
 
   const visibilityManager = getVisibilityStateManager();
 
@@ -37,8 +54,16 @@
     return () => visibilityManager.unregisterObserver(bump);
   });
 
-  function closeContextMenu(): void {
+  function closeContextMenu(
+    reason: "item" | "outside" | "dismiss" = "dismiss"
+  ): void {
+    if (!menuState.open) return;
     menuState = { open: false };
+    onAction?.(
+      "context_menu_close",
+      { reason },
+      { count: contextMenuCloseCounts(reason) }
+    );
   }
 
   const menuItems: ContextMenuEntry[] = $derived.by(() => {
@@ -46,22 +71,30 @@
     return composeMenu([
       {
         header: "Pictograph",
-        entries: buildPictographContextMenuItems({
-          visibilityManager,
-          // Card step numbers read ImageComposition.addStepNumbers, not this
-          // manager — the toggle would lie here.
-          includeStepNumbers: false,
-        }),
+        entries: instrumentContextMenuEntries(
+          buildPictographContextMenuItems({
+            visibilityManager,
+            // Card step numbers read ImageComposition.addStepNumbers, not this
+            // manager — the toggle would lie here.
+            includeStepNumbers: false,
+          }),
+          "pictograph",
+          onAction
+        ),
       },
       {
         header: "Card",
-        entries: buildCardMenuSection({
-          onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
-          onSendToStickerLab: onSendToStickerLab ? () => { closeContextMenu(); onSendToStickerLab(); } : undefined,
-          onRerender: onRerender ? () => { closeContextMenu(); onRerender(); } : undefined,
-          stepCount,
-          onColumnCountChange: () => { menuVersion++; },
-        }),
+        entries: instrumentContextMenuEntries(
+          buildCardMenuSection({
+            onSendTo: onSendTo ? () => { closeContextMenu("item"); onSendTo(); } : undefined,
+            onSendToStickerLab: onSendToStickerLab ? () => { closeContextMenu("item"); onSendToStickerLab(); } : undefined,
+            onRerender: onRerender ? () => { closeContextMenu("item"); onRerender(); } : undefined,
+            stepCount,
+            onColumnCountChange: () => { menuVersion++; },
+          }),
+          "card",
+          onAction
+        ),
       },
     ]);
   });
@@ -69,6 +102,10 @@
   export function openContextMenu(x: number, y: number): void {
     menuVersion++;
     menuState = { open: true, x, y };
+    onAction?.("context_menu_open", {
+      x_bucket: Math.max(0, Math.floor(x / 100)),
+      y_bucket: Math.max(0, Math.floor(y / 100)),
+    });
   }
 </script>
 

@@ -44,7 +44,11 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   import ViewerHeader from "$lib/shared/sequence-viewer/components/ViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
 
-  import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
+  import {
+    getIabBannerVisible,
+    getIabBannerHeight,
+    IAB_BANNER_HEIGHT,
+  } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
@@ -109,8 +113,11 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   let loadError = $state<string | null>(null);
   let handoffData = $state<SequenceRouteHandoff | null>(null);
 
-  // IAB banner padding
+  // IAB banner padding. The measured height is what the banner actually
+  // occupies — its second copy line wraps to two or three lines on a phone, so
+  // the 56px constant undershoots. It stays as the pre-measurement fallback.
   const iabBannerShowing = $derived(getIabBannerVisible());
+  const iabBannerHeight = $derived(getIabBannerHeight());
 
   // Mobile detection
   let isMobile = $state(false);
@@ -539,7 +546,9 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
         class="sequence-route-page"
         bind:this={pageContainer}
         data-fullscreen={ctx.isFullscreen}
-        style:padding-bottom={iabBannerShowing ? `${IAB_BANNER_HEIGHT}px` : undefined}
+        style:padding-bottom={iabBannerShowing
+          ? `${iabBannerHeight || IAB_BANNER_HEIGHT}px`
+          : undefined}
         ontouchstart={(e) => handleTouchStart(e, ctx)}
         ontouchmove={(e) => handleTouchMove(e, ctx)}
         ontouchend={() => handleTouchEnd(ctx)}

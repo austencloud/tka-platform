@@ -10,6 +10,11 @@
   import DevToolsPopover from "$lib/shared/3d/components/controls/DevToolsPopover.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerActionSink,
+    type ViewerControlSink,
+  } from "../domain/viewer-control-analytics";
 
   const viewer = getViewer3DContext();
 
@@ -17,10 +22,24 @@
     renderMode: "2d" | "3d";
     /** Playback tempo, threaded from the split pane so scene saves capture it. */
     bpm?: number;
+    onSettingChange?: ViewerControlSink;
+    onAction?: ViewerActionSink;
   }
-  let { renderMode, bpm }: Props = $props();
+  let { renderMode, bpm, onSettingChange, onAction }: Props = $props();
 
   let saveSceneOpen = $state(false);
+
+  function openSaveScene(): void {
+    const previous = saveSceneOpen;
+    saveSceneOpen = true;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_rail",
+      "save_scene_open",
+      previous,
+      true
+    );
+  }
 
   onMount(() => {
     const cleanupKeyboard = createViewer3DKeyboardHandler({
@@ -39,16 +58,16 @@
   aria-label="Viewer controls"
 >
   {#if renderMode === "3d"}
-    <ViewerPopover id="formation" title="Formation" icon="fa-users" tooltip="Formation">
-      <FormationPopover />
+    <ViewerPopover id="formation" title="Formation" icon="fa-users" tooltip="Formation" {onSettingChange}>
+      <FormationPopover {onSettingChange} />
     </ViewerPopover>
 
-    <ViewerPopover id="camera" title="Camera" icon="fa-video" tooltip="Camera" width={300}>
-      <CameraPopover />
+    <ViewerPopover id="camera" title="Camera" icon="fa-video" tooltip="Camera" width={300} {onSettingChange}>
+      <CameraPopover {onSettingChange} />
     </ViewerPopover>
 
-    <ViewerPopover id="export" title="Export" icon="fa-arrow-up-from-bracket" tooltip="Export" width={340}>
-      <ExportPopover />
+    <ViewerPopover id="export" title="Export" icon="fa-arrow-up-from-bracket" tooltip="Export" width={340} {onSettingChange}>
+      <ExportPopover {onSettingChange} />
     </ViewerPopover>
 
     <button
@@ -56,13 +75,13 @@
       class="rail-chip"
       aria-label="Save scene"
       data-tooltip="Save scene"
-      onclick={() => (saveSceneOpen = true)}
+      onclick={openSaveScene}
     >
       <i class="fas fa-bookmark"></i>
     </button>
 
-    <ViewerPopover id="scene" title="Scene" icon="fa-mountain-sun" tooltip="Scene" width={320}>
-      <SceneSelectorPopover />
+    <ViewerPopover id="scene" title="Scene" icon="fa-mountain-sun" tooltip="Scene" width={320} {onSettingChange}>
+      <SceneSelectorPopover {onSettingChange} />
     </ViewerPopover>
 
     <!-- Prop/Planes/Effort/Effects controls moved to PerformerHub -->
@@ -71,7 +90,7 @@
       <div class="performer-separator" aria-hidden="true">
         <div class="separator-line"></div>
       </div>
-      <ViewerPopover id="dev" title="Dev Tools" icon="fa-terminal" tooltip="Dev Tools" width={280}>
+      <ViewerPopover id="dev" title="Dev Tools" icon="fa-terminal" tooltip="Dev Tools" width={280} {onSettingChange}>
         <DevToolsPopover />
       </ViewerPopover>
     {/if}
@@ -79,7 +98,12 @@
 </div>
 
 {#if renderMode === "3d"}
-  <SaveSceneModal bind:open={saveSceneOpen} {bpm} />
+  <SaveSceneModal
+    bind:open={saveSceneOpen}
+    {bpm}
+    {onSettingChange}
+    {onAction}
+  />
 {/if}
 
 <style>

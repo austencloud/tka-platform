@@ -15,6 +15,22 @@
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   const visibility = getViewerVisibilityContext();
+  interface Props {
+    onToggleBlue?: () => void;
+    onToggleRed?: () => void;
+  }
+  let { onToggleBlue, onToggleRed }: Props = $props();
+
+  function toggleBlue(): void {
+    if (onToggleBlue) onToggleBlue();
+    else visibility.toggleBlue();
+  }
+
+  function toggleRed(): void {
+    if (onToggleRed) onToggleRed();
+    else visibility.toggleRed();
+  }
+
   let open = $state(false);
   let isNarrow = $state(false);
 
@@ -98,8 +114,8 @@
         <MotionColorChips
           showBlue={visibility.blueMotion}
           showRed={visibility.redMotion}
-          onToggleBlue={() => visibility.toggleBlue()}
-          onToggleRed={() => visibility.toggleRed()}
+          onToggleBlue={toggleBlue}
+          onToggleRed={toggleRed}
         />
       </div>
     {/if}
@@ -107,14 +123,16 @@
     <MotionColorChips
       showBlue={visibility.blueMotion}
       showRed={visibility.redMotion}
-      onToggleBlue={() => visibility.toggleBlue()}
-      onToggleRed={() => visibility.toggleRed()}
+      onToggleBlue={toggleBlue}
+      onToggleRed={toggleRed}
     />
   {/if}
 </div>
 
 <style>
-  .motion-vis-root { position: relative; }
+  .motion-vis-root {
+    position: relative;
+  }
 
   .motion-vis-btn {
     width: var(--min-touch-target, 44px);
@@ -123,20 +141,30 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: transparent;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 3px;
     padding: 0 6px;
   }
-  .motion-vis-btn:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06)); }
+  .motion-vis-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
 
   .prop-silhouette {
     width: 4px;
     height: 18px;
     border-radius: 2px;
-    transition: background 160ms ease, opacity 160ms ease;
+    transition:
+      background 160ms ease,
+      opacity 160ms ease;
   }
-  .prop-silhouette.blue { background: var(--prop-blue, #2196f3); }
-  .prop-silhouette.red  { background: var(--prop-red, #f44336); }
+  .prop-silhouette.blue {
+    background: var(--prop-blue, #2196f3);
+  }
+  .prop-silhouette.red {
+    background: var(--prop-red, #f44336);
+  }
   .prop-silhouette.muted {
     background: rgba(255, 255, 255, 0.25);
     opacity: 0.55;
@@ -161,7 +189,7 @@
     padding: 8px;
     background: rgba(20, 22, 32, 0.95);
     backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.10));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     z-index: 20;

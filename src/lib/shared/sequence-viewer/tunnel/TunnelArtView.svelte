@@ -9,6 +9,10 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
+  import {
+    toggleTunnelPlayback,
+    type TunnelPlaybackSource,
+  } from "../domain/tunnel-playback";
 
   let {
     sequence,
@@ -18,6 +22,7 @@
     bluePropType,
     redPropType,
     onSaveTunnel,
+    onPlayingChange,
     playing = $bindable(true),
   }: {
     sequence: SequenceData;
@@ -32,12 +37,20 @@
     /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
      *  save entry in the canvas right-click menu. */
     onSaveTunnel?: () => void;
+    /** Controlled hosts own the clock; standalone hosts keep the bindable fallback. */
+    onPlayingChange?: (playing: boolean, source: TunnelPlaybackSource) => void;
     /** Pause the self-clock (the playhead holds its frame). Bindable so a tap
      *  on the canvas toggles it (matching the regular animation canvas) while
      *  hosts with their own pause control (e.g. the collection's detail
      *  preview) stay in sync — WCAG 2.2.2. */
     playing?: boolean;
   } = $props();
+
+  function handlePlaybackToggle(): void {
+    const next = toggleTunnelPlayback(playing, "canvas");
+    if (onPlayingChange) onPlayingChange(next, "canvas");
+    else playing = next;
+  }
 
   // Prepend a "Save tunnel" entry (+ separator) to the canvas context menu when
   // a save handler is wired. AnimatorCanvas prepends these to its own menu.
@@ -149,7 +162,7 @@
         tapToToggle={true}
         hoverHint="badge"
         cornerToggle={true}
-        onPlaybackToggle={() => (playing = !playing)}
+        onPlaybackToggle={handlePlaybackToggle}
         {gridMode}
         {trailSettings}
         {tipEffectMap}
