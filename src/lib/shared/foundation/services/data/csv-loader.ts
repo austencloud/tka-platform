@@ -232,13 +232,48 @@ export class CsvLoader {
     return window.csvData !== undefined && window.csvData !== null;
   }
 
+  /**
+   * Fetch that survives a flaky connection.
+   *
+   * Diamond and Box are load-bearing — without them the construct tab has no
+   * pictograph data and is a dead screen. A first-time visitor has no IndexedDB
+   * cache to fall back to, so a single dropped request used to end the session:
+   * one mobile visitor hit `TypeError: Load failed` (Safari's fetch-failed
+   * message) four seconds into their first page load and never saw the grid.
+   */
+  private static async fetchWithRetry(
+    url: string,
+    attempts = 3
+  ): Promise<Response> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      if (attempt > 0) {
+        // 200ms, then 400ms. Long enough to outlast a handoff between cell and
+        // wifi, short enough that a genuinely offline visitor still fails fast.
+        await new Promise((resolve) => setTimeout(resolve, 200 * 2 ** (attempt - 1)));
+      }
+      try {
+        const response = await fetch(url);
+        // A 5xx is worth another try; a 404 means the file is not there and
+        // retrying just delays the real error.
+        if (response.ok || response.status < 500) return response;
+        lastError = new Error(`HTTP ${response.status} for ${url}`);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Failed to fetch ${url}`);
+  }
+
   private async loadFromStaticFiles(): Promise<CsvDataSet> {
     const [diamondResponse, boxResponse, skewedResponse, trigridResponse] =
       await Promise.all([
-        fetch(CsvLoader.CSV_FILES.DIAMOND),
-        fetch(CsvLoader.CSV_FILES.BOX),
-        fetch(CsvLoader.CSV_FILES.SKEWED).catch(() => null),
-        fetch(CsvLoader.CSV_FILES.TRIGRID).catch(() => null),
+        CsvLoader.fetchWithRetry(CsvLoader.CSV_FILES.DIAMOND),
+        CsvLoader.fetchWithRetry(CsvLoader.CSV_FILES.BOX),
+        CsvLoader.fetchWithRetry(CsvLoader.CSV_FILES.SKEWED).catch(() => null),
+        CsvLoader.fetchWithRetry(CsvLoader.CSV_FILES.TRIGRID).catch(() => null),
       ]);
 
     this.validateResponses(diamondResponse, boxResponse);

@@ -929,9 +929,23 @@ export default defineConfig(({ mode }) => ({
   // BUILD (Production optimization)
   // ============================================================================
   build: {
-    // Source maps disabled in production for security (exposes original source)
-    // Enable locally with: VITE_SOURCEMAP=true npm run build
-    sourcemap: false,
+    // Sourcemaps are generated only when BOTH are true: `build` asked for them
+    // (VITE_SOURCEMAP=true — `build:fast` never sets it), AND this build can
+    // actually upload them. That second condition matters because `npm run
+    // build` is shared: web-ci.yml's validate job, the three native pipelines
+    // (android/ios/capgo), and anyone's local machine all run it, and none of
+    // them have PostHog credentials. Generating ~1000 .map files for a build
+    // that can only throw them away is pure cost, so those builds skip the
+    // pass entirely.
+    //
+    // The security posture ("never ship original source") holds by belt and
+    // braces: this gate means an uncredentialed build produces no maps at all,
+    // and scripts/upload-sourcemaps.js unconditionally sweeps every *.map from
+    // the output on its way out — including the .css.map files PostHog's own
+    // JS-only cleanup would leave behind. Maps only ever reach PostHog.
+    sourcemap:
+      process.env.VITE_SOURCEMAP === "true" &&
+      Boolean(process.env.POSTHOG_PERSONAL_API_KEY),
     target: "esnext",
     minify: "esbuild",
     // 2026: Fast default minification

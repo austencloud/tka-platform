@@ -12,13 +12,14 @@
 
   const ctx = getProfileSettingsContext();
 
-  let { onDeleteAccount, hapticService, userIdentifier, providerIds, isAdmin } = $props<{
-    onDeleteAccount: (reauth: DeleteReauth, reason?: string) => Promise<void>;
-    hapticService: HapticFeedback | null;
-    userIdentifier: string;
-    providerIds: string[];
-    isAdmin: boolean;
-  }>();
+  let { onDeleteAccount, hapticService, userIdentifier, providerIds, isAdmin } =
+    $props<{
+      onDeleteAccount: (reauth: DeleteReauth, reason?: string) => Promise<void>;
+      hapticService: HapticFeedback | null;
+      userIdentifier: string;
+      providerIds: string[];
+      isAdmin: boolean;
+    }>();
 
   let isExpanded = $state(false);
   let confirmationText = $state("");
@@ -28,11 +29,12 @@
   let isDeleting = $state(false);
 
   // Which reauth methods this account actually has. OAuth accounts (Google /
-  // Facebook / magic-link upgrades) have no password, so they reauthenticate
+  // Facebook / Instagram / magic-link upgrades) have no password, so they reauthenticate
   // via a popup instead of a password field.
   let hasGoogle = $derived(providerIds.includes("google.com"));
   let hasFacebook = $derived(providerIds.includes("facebook.com"));
-  let hasOAuth = $derived(hasGoogle || hasFacebook);
+  let hasInstagram = $derived(providerIds.includes("instagram.com"));
+  let hasOAuth = $derived(hasGoogle || hasFacebook || hasInstagram);
 
   // The GitHub-style barrier: type your username/email. OAuth reauth needs only
   // this match (the popup proves identity); password reauth also needs a password.
@@ -84,7 +86,6 @@
     deleteReason = "";
     deleteError = "";
   }
-
 </script>
 
 <div class="danger-section">
@@ -108,127 +109,140 @@
       {#if isAdmin}
         <p class="warning-text">
           <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-          Admin accounts can't be deleted in-app. Manage account removal through
-          the Firebase console.
+          Admin accounts can't be deleted in-app. Manage account removal through the
+          Firebase console.
         </p>
       {:else}
-      <p class="warning-text">
-        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        Deleting your account is permanent and cannot be undone. All your progress
-        and data will be lost.
-      </p>
+        <p class="warning-text">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          Deleting your account is permanent and cannot be undone. All your progress
+          and data will be lost.
+        </p>
 
-      {#if !ctx.ui.showDeleteConfirmation}
-        <button class="button button--danger" onclick={handleShowConfirmation}>
-          <i class="fas fa-trash-alt" aria-hidden="true"></i>
-          Delete My Account
-        </button>
-      {:else}
-        <div class="confirmation-box">
-          <p class="confirmation-text">
-            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-            Are you absolutely sure? This action is irreversible.
-          </p>
-
-          <div class="confirmation-input-section">
-            <label for="delete-confirmation" class="confirmation-label">
-              To confirm, type <strong>{userIdentifier}</strong> below:
-            </label>
-            <input
-              id="delete-confirmation"
-              type="text"
-              class="confirmation-input"
-              class:valid={isConfirmationValid}
-              placeholder={userIdentifier}
-              bind:value={confirmationText}
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </div>
-
-          <div class="confirmation-input-section">
-            <label for="delete-reason" class="confirmation-label">
-              Why are you leaving? (optional)
-            </label>
-            <textarea
-              id="delete-reason"
-              class="confirmation-input reason-input"
-              placeholder="Your feedback helps us improve"
-              bind:value={deleteReason}
-              maxlength="500"
-              rows="2"
-              disabled={isDeleting}
-            ></textarea>
-          </div>
-
-          {#if hasOAuth}
-            <p class="confirmation-label reauth-hint">
-              Confirm with your linked account to permanently delete.
+        {#if !ctx.ui.showDeleteConfirmation}
+          <button
+            class="button button--danger"
+            onclick={handleShowConfirmation}
+          >
+            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            Delete My Account
+          </button>
+        {:else}
+          <div class="confirmation-box">
+            <p class="confirmation-text">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              Are you absolutely sure? This action is irreversible.
             </p>
-          {:else}
+
             <div class="confirmation-input-section">
-              <label for="delete-password" class="confirmation-label">
-                Enter your <strong>password</strong> to confirm:
+              <label for="delete-confirmation" class="confirmation-label">
+                To confirm, type <strong>{userIdentifier}</strong> below:
               </label>
               <input
-                id="delete-password"
-                type="password"
+                id="delete-confirmation"
+                type="text"
                 class="confirmation-input"
-                class:valid={deletePassword.length > 0}
-                placeholder="Your current password"
-                bind:value={deletePassword}
-                autocomplete="current-password"
-                disabled={isDeleting}
+                class:valid={isConfirmationValid}
+                placeholder={userIdentifier}
+                bind:value={confirmationText}
+                autocomplete="off"
+                spellcheck="false"
               />
             </div>
-          {/if}
 
-          {#if deleteError}
-            <p class="error-message" role="alert">
-              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-              {deleteError}
-            </p>
-          {/if}
+            <div class="confirmation-input-section">
+              <label for="delete-reason" class="confirmation-label">
+                Why are you leaving? (optional)
+              </label>
+              <textarea
+                id="delete-reason"
+                class="confirmation-input reason-input"
+                placeholder="Your feedback helps us improve"
+                bind:value={deleteReason}
+                maxlength="500"
+                rows="2"
+                disabled={isDeleting}
+              ></textarea>
+            </div>
 
-          <div class="button-row">
-            <button class="button button--secondary" onclick={handleCancel}>
-              Cancel
-            </button>
             {#if hasOAuth}
-              {#if hasGoogle}
-                <button
-                  class="button button--danger-confirm"
-                  onclick={() => runDelete({ method: "google" })}
-                  disabled={!usernameMatches || isDeleting}
-                >
-                  <i class="fab fa-google" aria-hidden="true"></i>
-                  {isDeleting ? "Deleting..." : "Confirm with Google"}
-                </button>
-              {/if}
-              {#if hasFacebook}
-                <button
-                  class="button button--danger-confirm"
-                  onclick={() => runDelete({ method: "facebook" })}
-                  disabled={!usernameMatches || isDeleting}
-                >
-                  <i class="fab fa-facebook-f" aria-hidden="true"></i>
-                  {isDeleting ? "Deleting..." : "Confirm with Facebook"}
-                </button>
-              {/if}
+              <p class="confirmation-label reauth-hint">
+                Confirm with your linked account to permanently delete.
+              </p>
             {:else}
-              <button
-                class="button button--danger-confirm"
-                onclick={() =>
-                  runDelete({ method: "password", password: deletePassword })}
-                disabled={!isConfirmationValid || isDeleting}
-              >
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                {isDeleting ? "Deleting..." : "Yes, Delete Forever"}
-              </button>
+              <div class="confirmation-input-section">
+                <label for="delete-password" class="confirmation-label">
+                  Enter your <strong>password</strong> to confirm:
+                </label>
+                <input
+                  id="delete-password"
+                  type="password"
+                  class="confirmation-input"
+                  class:valid={deletePassword.length > 0}
+                  placeholder="Your current password"
+                  bind:value={deletePassword}
+                  autocomplete="current-password"
+                  disabled={isDeleting}
+                />
+              </div>
             {/if}
+
+            {#if deleteError}
+              <p class="error-message" role="alert">
+                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                {deleteError}
+              </p>
+            {/if}
+
+            <div class="button-row">
+              <button class="button button--secondary" onclick={handleCancel}>
+                Cancel
+              </button>
+              {#if hasOAuth}
+                {#if hasGoogle}
+                  <button
+                    class="button button--danger-confirm"
+                    onclick={() => runDelete({ method: "google" })}
+                    disabled={!usernameMatches || isDeleting}
+                  >
+                    <i class="fab fa-google" aria-hidden="true"></i>
+                    {isDeleting ? "Deleting..." : "Confirm with Google"}
+                  </button>
+                {/if}
+                {#if hasFacebook}
+                  <button
+                    class="button button--danger-confirm"
+                    onclick={() => runDelete({ method: "facebook" })}
+                    disabled={!usernameMatches || isDeleting}
+                  >
+                    <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                    {isDeleting ? "Deleting..." : "Confirm with Facebook"}
+                  </button>
+                {/if}
+                {#if hasInstagram}
+                  <button
+                    class="button button--danger-confirm"
+                    onclick={() => runDelete({ method: "instagram" })}
+                    disabled={!usernameMatches || isDeleting}
+                  >
+                    <i class="fab fa-instagram" aria-hidden="true"></i>
+                    {isDeleting ? "Deleting..." : "Confirm with Instagram"}
+                  </button>
+                {/if}
+              {:else}
+                <button
+                  class="button button--danger-confirm"
+                  onclick={() =>
+                    runDelete({ method: "password", password: deletePassword })}
+                  disabled={!isConfirmationValid || isDeleting}
+                >
+                  <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                  {isDeleting ? "Deleting..." : "Yes, Delete Forever"}
+                </button>
+              {/if}
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
       {/if}
     </div>
   {/if}
@@ -250,8 +264,13 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 5%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 5%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     border-radius: 10px;
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
     font-size: var(--font-size-sm);
@@ -261,8 +280,16 @@
   }
 
   .disclosure-button:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 95%, transparent);
   }
 
@@ -280,8 +307,13 @@
   .danger-content {
     margin-top: 16px;
     padding: 20px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 4%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 4%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border-radius: 12px;
   }
 
@@ -346,7 +378,11 @@
     color: var(--semantic-error);
     font-family:
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     padding: 2px 6px;
     border-radius: 4px;
     font-size: var(--font-size-compact);
@@ -361,7 +397,8 @@
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     letter-spacing: 0.5px;
     background: rgba(0, 0, 0, 0.3);
-    border: 2px solid color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    border: 2px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
     border-radius: 8px;
     color: var(--theme-text);
     outline: none;
@@ -381,13 +418,26 @@
   }
 
   .confirmation-input:focus {
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 50%,
+      transparent
+    );
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .confirmation-input.valid {
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 8%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 60%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 8%,
+      transparent
+    );
   }
 
   /* Buttons */
@@ -423,25 +473,51 @@
   }
 
   .button--danger {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
   }
 
   .button--danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 40%,
+      transparent
+    );
   }
 
   .button--danger-confirm {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
     color: var(--semantic-error);
-    border: 2px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    border: 2px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   .button--danger-confirm:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 60%,
+      transparent
+    );
   }
 
   .button:active:not(:disabled) {
@@ -491,7 +567,8 @@
 
   .button--danger:focus-visible,
   .button--danger-confirm:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
+    outline: 3px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 90%, transparent);
     outline-offset: 2px;
   }
 
@@ -523,7 +600,11 @@
     margin: 0 0 12px 0;
     padding: 10px 14px;
     border-radius: 8px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 12%,
+      transparent
+    );
     color: var(--semantic-error);
     font-size: var(--font-size-compact);
   }

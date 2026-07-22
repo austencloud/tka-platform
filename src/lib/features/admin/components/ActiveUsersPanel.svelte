@@ -3,16 +3,16 @@
   import { onMount, onDestroy } from "svelte";
   import { getUserActivityTracker } from "$lib/features/admin/get-user-activity-tracker";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  
+
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
   import UserPresenceCard from "./active-users/UserPresenceCard.svelte";
   import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import { env } from "$env/dynamic/public";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
   import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
   import { buildUserPins } from "$lib/features/admin/services/user-pins";
-import type { UserActivityTracker } from "../services/user-activity-tracker";
+  import type { UserActivityTracker } from "../services/user-activity-tracker";
 
   // Services
   let userActivityService: UserActivityTracker | null = null;
@@ -55,7 +55,7 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
   );
 
   const userPins = $derived(buildUserPins(users));
-  const mapsApiKey = $derived(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
+  const mapsApiKey = $derived(PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
   const mapsKeyMissing = $derived(
     !mapsApiKey || mapsApiKey === "your-google-maps-api-key"
   );
@@ -116,7 +116,11 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
       <h2>{t("admin_active_users")}</h2>
       <p class="subtitle">{t("admin_presence_monitoring")}</p>
     </div>
-    <div class="stats-row" role="group" aria-label={t("admin_filter_by_status")}>
+    <div
+      class="stats-row"
+      role="group"
+      aria-label={t("admin_filter_by_status")}
+    >
       <button
         class="stat-button"
         class:selected={statusFilter === "active"}
@@ -133,9 +137,13 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
         onclick={() =>
           setFilter(statusFilter === "inactive" ? "all" : "inactive")}
         aria-pressed={statusFilter === "inactive"}
-        aria-label={t("admin_filter_inactive", { count: inactiveCount.toString() })}
+        aria-label={t("admin_filter_inactive", {
+          count: inactiveCount.toString(),
+        })}
       >
-        <span class="stat-value inactive" aria-hidden="true">{inactiveCount}</span>
+        <span class="stat-value inactive" aria-hidden="true"
+          >{inactiveCount}</span
+        >
         <span class="stat-label">{t("admin_inactive")}</span>
       </button>
     </div>
@@ -145,7 +153,10 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
   {#if statusFilter !== "all"}
     <div class="filter-bar">
       <span class="filter-label">
-        {t("admin_showing_users", { status: statusFilter, count: filteredUsers.length.toString() })}
+        {t("admin_showing_users", {
+          status: statusFilter,
+          count: filteredUsers.length.toString(),
+        })}
       </span>
       <button class="clear-filter" onclick={() => setFilter("all")}>
         <i class="fas fa-times" aria-hidden="true"></i>
@@ -183,10 +194,7 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
       <div class="users-grid-container themed-scrollbar">
         <PanelGrid minCardWidth="200px" gap="16px">
           {#each filteredUsers as user}
-            <UserPresenceCard
-              {user}
-              onSelect={() => selectUser(user.userId)}
-            />
+            <UserPresenceCard {user} onSelect={() => selectUser(user.userId)} />
           {/each}
         </PanelGrid>
       </div>
@@ -195,17 +203,16 @@ import type { UserActivityTracker } from "../services/user-activity-tracker";
 
   <!-- Anonymous Activity: only guests active right now (no stale sessions) -->
   {#if !isLoading && liveAnonUsers.length > 0}
-    <section
-      class="anon-activity"
-      aria-label={t("admin_anonymous_activity")}
-    >
+    <section class="anon-activity" aria-label={t("admin_anonymous_activity")}>
       <header class="anon-header">
         <div class="anon-title-group">
           <h3 class="anon-title">{t("admin_anonymous_activity")}</h3>
           <p class="anon-hint">{t("admin_anonymous_activity_hint")}</p>
         </div>
         <span class="anon-count">
-          {t("admin_anonymous_online", { count: liveAnonUsers.length.toString() })}
+          {t("admin_anonymous_online", {
+            count: liveAnonUsers.length.toString(),
+          })}
         </span>
       </header>
       <div class="anon-grid-container themed-scrollbar">

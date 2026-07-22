@@ -11,10 +11,16 @@ describe("LazyMount recovery", () => {
     await expect
       .element(page.getByRole("alert"))
       .toHaveTextContent("Test component did not load.");
+    await expect
+      .element(page.getByRole("status", { name: "Lazy mount status" }))
+      .toHaveTextContent("error");
 
     await page.getByRole("button", { name: "Try again" }).click();
 
     await expect.element(page.getByText("Loaded after retry")).toBeVisible();
+    await expect
+      .element(page.getByRole("status", { name: "Lazy mount status" }))
+      .toHaveTextContent("loaded");
     expect(errorLog).toHaveBeenCalledOnce();
     errorLog.mockRestore();
   });

@@ -2,22 +2,39 @@
   ConnectedAccounts Component
 
   Displays linked OAuth providers and allows users to:
-  - View currently linked accounts (Google, Facebook, Email/Password)
+  - View currently linked accounts (Google, Facebook, Instagram, Email/Password)
   - Link new providers to their account
   - Unlink providers (if more than one is linked)
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { linkGoogleAccount, linkFacebookAccount, unlinkProvider } from "$lib/shared/auth/services/authenticator";
+  import {
+    linkFacebookAccount,
+    linkGoogleAccount,
+    linkInstagramAccount,
+    unlinkInstagramAccount,
+    unlinkProvider,
+  } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/auth-state.svelte";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
   import { PROVIDERS, type ProviderId } from "./connected-accounts.providers";
-  import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
+  import {
+    FACEBOOK_LOGIN_ENABLED,
+    INSTAGRAM_LOGIN_ENABLED,
+  } from "$lib/shared/auth/services/auth-providers.config";
   import { browser } from "$app/environment";
   import { isNative } from "$lib/shared/platform/services/platform-detector";
   import ConfirmDialog from "../../../foundation/ui/ConfirmDialog.svelte";
+  import {
+    getInstagramAuthErrorMessage,
+    hasInstagramAccount,
+  } from "$lib/shared/auth/services/instagram-auth";
+
+  let { onInstagramChange } = $props<{
+    onInstagramChange?: (linked: boolean) => void;
+  }>();
 
   // Services
   let hapticService = $state<HapticFeedback | null>(null);
@@ -26,6 +43,7 @@
   let linkingProvider = $state<ProviderId | null>(null);
   let unlinkingProvider = $state<ProviderId | null>(null);
   let errorMessage = $state<string | null>(null);
+  let instagramLinked = $state(false);
 
   // Email linking drawer state
   let showEmailLinkingDrawer = $state(false);
@@ -34,14 +52,24 @@
   let showUnlinkConfirm = $state(false);
   let providerToUnlink = $state<ProviderId | null>(null);
 
+  async function refreshInstagramLink(forceRefresh = false): Promise<void> {
+    const user = authState.user;
+    instagramLinked = user
+      ? await hasInstagramAccount(user, forceRefresh).catch(() => false)
+      : false;
+    onInstagramChange?.(instagramLinked);
+  }
+
   onMount(() => {
     hapticService = getHapticFeedback();
+    void refreshInstagramLink();
   });
 
   // Derived state
-  const linkedProviders = $derived(
-    authState.user?.providerData?.map((p) => p.providerId) ?? []
-  );
+  const linkedProviders = $derived([
+    ...(authState.user?.providerData?.map((p) => p.providerId) ?? []),
+    ...(instagramLinked ? ["instagram.com"] : []),
+  ]);
 
   const availableProviders = $derived(
     (Object.keys(PROVIDERS) as ProviderId[]).filter(
@@ -50,7 +78,10 @@
         // Facebook linking is hidden until the login flow is verified end to
         // end — and always in the native shell, where linkWithPopup dead-ends
         // in the WebView (not yet wired through the native plugin).
-        (id !== "facebook.com" || (FACEBOOK_LOGIN_ENABLED && !(browser && isNative())))
+        (id !== "facebook.com" ||
+          (FACEBOOK_LOGIN_ENABLED && !(browser && isNative()))) &&
+        (id !== "instagram.com" ||
+          (INSTAGRAM_LOGIN_ENABLED && !(browser && isNative())))
     )
   );
 
@@ -78,16 +109,28 @@
         await linkGoogleAccount();
       } else if (providerId === "facebook.com") {
         await linkFacebookAccount();
+      } else if (providerId === "instagram.com") {
+        await linkInstagramAccount();
       }
       // Note: Email/password linking requires a separate flow with password input
 
       // Popup completed successfully - refresh auth state to pick up new provider
       await authState.refreshUser();
+      if (providerId === "instagram.com") await refreshInstagramLink(true);
       hapticService?.trigger("success");
       linkingProvider = null;
     } catch (error: unknown) {
       console.error(`Failed to link ${providerId}:`, error);
       const message = error instanceof Error ? error.message : "Unknown error";
+
+      if (providerId === "instagram.com") {
+        errorMessage =
+          getInstagramAuthErrorMessage(error) ??
+          "Instagram connection was cancelled.";
+        hapticService?.trigger("error");
+        linkingProvider = null;
+        return;
+      }
 
       // Handle specific Firebase errors
       if (message.includes("already linked")) {
@@ -123,13 +166,21 @@
     errorMessage = null;
 
     try {
-      await unlinkProvider(providerId);
+      if (providerId === "instagram.com") {
+        await unlinkInstagramAccount();
+        await refreshInstagramLink(true);
+      } else {
+        await unlinkProvider(providerId);
+        await authState.refreshUser();
+      }
       hapticService?.trigger("success");
     } catch (error: unknown) {
       console.error(`Failed to unlink ${providerId}:`, error);
       const message = error instanceof Error ? error.message : "Unknown error";
 
-      if (message.includes("only authentication method")) {
+      if (providerId === "instagram.com") {
+        errorMessage = getInstagramAuthErrorMessage(error);
+      } else if (message.includes("only authentication method")) {
         errorMessage = "Cannot disconnect your only sign-in method.";
       } else {
         errorMessage = `Failed to disconnect ${providerName}. Please try again.`;
@@ -280,7 +331,11 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 12%,
+      transparent
+    );
     border-radius: 8px;
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, white);
     font-size: var(--font-size-compact);
@@ -402,7 +457,11 @@
   }
 
   .action-btn.unlink:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     color: var(--semantic-error);
   }
 

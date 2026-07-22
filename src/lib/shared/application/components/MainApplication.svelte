@@ -698,7 +698,13 @@ import type { SheetType } from "../../navigation/services/types";
   .tka-app {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    /* The in-app-browser banner is fixed to the viewport bottom at --z-sticky,
+       the same tier as BottomNavigation, and it mounts later in the DOM — so
+       without this it paints straight over the tab bar, and `overflow: hidden`
+       below means there is no scrolling out from under it. +layout.svelte
+       publishes the measured height on :root (0px whenever no banner shows,
+       which is every session but a detected webview). */
+    height: calc(100dvh - var(--iab-banner-height, 0px));
     width: 100%;
     position: relative;
     z-index: 2; /* Above body::after transition layer (z-index: 1) */
@@ -765,12 +771,11 @@ import type { SheetType } from "../../navigation/services/types";
     }
   }
 
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .tka-app {
-      height: 100dvh;
-    }
-  }
+  /* No mobile height override here on purpose. There used to be a
+     `@media (max-width: 768px) { .tka-app { height: 100dvh } }` that only
+     restated the base value — harmless until the base grew the banner
+     reservation above, at which point the duplicate silently shadowed it on
+     exactly the viewports the banner exists for. One height, one place. */
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {

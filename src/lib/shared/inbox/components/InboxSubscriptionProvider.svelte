@@ -12,8 +12,7 @@
   without requiring the user to visit the Inbox module first.
 -->
 <script lang="ts">
-
-import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
+  import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { onMount } from "svelte";
   import { inboxState } from "../state/inbox-state.svelte";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
@@ -127,7 +126,7 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
         const fcmTokenManager = getFCMTokenManager();
         const supported = await fcmTokenManager.isSupported();
         if (!supported) return;
-        const permission = fcmTokenManager.getPermissionState();
+        const permission = await fcmTokenManager.getPermissionState();
         if (permission !== "default") return;
         const dismissed = localStorage.getItem("tka-push-prompt-dismissed");
         if (dismissed && Date.now() < parseInt(dismissed, 10)) return;
@@ -143,7 +142,7 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
       const fcmTokenManager = getFCMTokenManager();
       const supported = await fcmTokenManager.isSupported();
       if (!supported) return;
-      const permission = fcmTokenManager.getPermissionState();
+      const permission = await fcmTokenManager.getPermissionState();
       if (permission === "granted") {
         await fcmTokenManager.registerToken(currentUserId);
       }

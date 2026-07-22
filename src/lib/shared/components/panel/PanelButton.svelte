@@ -20,6 +20,8 @@
     type?: "button" | "submit" | "reset";
     /** Full width */
     fullWidth?: boolean;
+    /** Accessible name when the visible label is shortened responsively. */
+    ariaLabel?: string;
   }
 
   let {
@@ -29,6 +31,7 @@
     disabled = false,
     type = "button",
     fullWidth = false,
+    ariaLabel,
   }: Props = $props();
 </script>
 
@@ -38,6 +41,7 @@
   {onclick}
   {disabled}
   {type}
+  aria-label={ariaLabel}
 >
   {@render children()}
 </button>

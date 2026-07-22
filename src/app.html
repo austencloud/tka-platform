@@ -2,8 +2,14 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
-    <meta name="google-site-verification" content="Ca99zW5S1oiH2TnmppHuCpswOYHizHUEN4Jd6rJLXEs" />
-    <meta name="facebook-domain-verification" content="lgmdspwfd9fl9f2ys15aa3htni6fcd" />
+    <meta
+      name="google-site-verification"
+      content="Ca99zW5S1oiH2TnmppHuCpswOYHizHUEN4Jd6rJLXEs"
+    />
+    <meta
+      name="facebook-domain-verification"
+      content="lgmdspwfd9fl9f2ys15aa3htni6fcd"
+    />
     <meta name="author" content="Austen Cloud" />
     <link rel="icon" href="%sveltekit.assets%/pwa/favicon.png" />
 
@@ -14,28 +20,48 @@
          crypto.getRandomValues has been universally supported for years. -->
     <script>
       (function () {
-        if (typeof crypto === 'undefined') return;
-        if (typeof crypto.randomUUID === 'function') return;
-        if (typeof crypto.getRandomValues !== 'function') return;
+        if (typeof crypto === "undefined") return;
+        if (typeof crypto.randomUUID === "function") return;
+        if (typeof crypto.getRandomValues !== "function") return;
         var hex = [];
-        for (var i = 0; i < 256; i++) hex.push((i + 0x100).toString(16).slice(1));
+        for (var i = 0; i < 256; i++)
+          hex.push((i + 0x100).toString(16).slice(1));
         var polyfill = function () {
           var b = crypto.getRandomValues(new Uint8Array(16));
           b[6] = (b[6] & 0x0f) | 0x40;
           b[8] = (b[8] & 0x3f) | 0x80;
           return (
-            hex[b[0]] + hex[b[1]] + hex[b[2]] + hex[b[3]] + '-' +
-            hex[b[4]] + hex[b[5]] + '-' +
-            hex[b[6]] + hex[b[7]] + '-' +
-            hex[b[8]] + hex[b[9]] + '-' +
-            hex[b[10]] + hex[b[11]] + hex[b[12]] + hex[b[13]] + hex[b[14]] + hex[b[15]]
+            hex[b[0]] +
+            hex[b[1]] +
+            hex[b[2]] +
+            hex[b[3]] +
+            "-" +
+            hex[b[4]] +
+            hex[b[5]] +
+            "-" +
+            hex[b[6]] +
+            hex[b[7]] +
+            "-" +
+            hex[b[8]] +
+            hex[b[9]] +
+            "-" +
+            hex[b[10]] +
+            hex[b[11]] +
+            hex[b[12]] +
+            hex[b[13]] +
+            hex[b[14]] +
+            hex[b[15]]
           );
         };
         try {
           crypto.randomUUID = polyfill;
         } catch (e) {
           try {
-            Object.defineProperty(crypto, 'randomUUID', { value: polyfill, configurable: true, writable: true });
+            Object.defineProperty(crypto, "randomUUID", {
+              value: polyfill,
+              configurable: true,
+              writable: true,
+            });
           } catch (e2) {
             // Can't patch the Crypto object - callers will still fail.
           }
@@ -48,9 +74,39 @@
          intercept the navigation request that loads the page in the first place,
          creating a deadlock where the page never loads and the SW never unregisters. -->
     <script>
-      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 'serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
+      if (
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1") &&
+        "serviceWorker" in navigator
+      ) {
+        Promise.all([
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(
+              regs.map(function (r) {
+                return r.unregister();
+              })
+            );
+          }),
+          "caches" in window
+            ? caches.keys().then(function (keys) {
+                return Promise.all(
+                  keys.map(function (key) {
+                    return caches.delete(key);
+                  })
+                );
+              })
+            : Promise.resolve(),
+        ]).then(function () {
+          // Capacitor serves packaged assets from https://localhost. A worker
+          // left by an older build can keep this page on obsolete chunk hashes
+          // even after a new APK is installed. Reload once after detaching it.
+          if (
+            navigator.serviceWorker.controller &&
+            !sessionStorage.getItem("tka-local-sw-cleared")
+          ) {
+            sessionStorage.setItem("tka-local-sw-cleared", "1");
+            window.location.reload();
+          }
         });
       }
     </script>
@@ -58,7 +114,7 @@
     <!-- 🚀 Preconnect to external origins for faster requests (app mode only) -->
     <!-- Landing visitors don't need Firebase/Google APIs - skip these to save ~500ms -->
     <script>
-      (function() {
+      (function () {
         var p = window.location.pathname;
         // KEEP IN SYNC with PUBLIC_PATH_PREFIXES + LANDING_PATHS in
         // src/config/domains.ts (detectSiteMode). Any public/marketing route the
@@ -66,37 +122,61 @@
         // the #app-loading boot bar is never dismissed (landing mode never calls
         // __tkaLoadProgress(100)) and the page sits behind it until the 15s
         // safety-net timeout.
-        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/q/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003') || p.startsWith('/privacy') || p.startsWith('/terms') || p.startsWith('/about') || p.startsWith('/roots') || p.startsWith('/delete-account') || p.startsWith('/store') || p.startsWith('/shop') || p.startsWith('/support') || p.startsWith('/notation') || p.startsWith('/composer') || p.startsWith('/glossary') || p.startsWith('/learn/staff-spinning-choreography');
+        var isLanding =
+          p === "/" ||
+          p === "/landing" ||
+          p.startsWith("/embed") ||
+          p.startsWith("/q/") ||
+          p.startsWith("/sequence/") ||
+          p.startsWith("/profile/") ||
+          p.startsWith("/demo") ||
+          p.startsWith("/guide") ||
+          p.startsWith("/1989") ||
+          p.startsWith("/1995") ||
+          p.startsWith("/1998") ||
+          p.startsWith("/2003") ||
+          p.startsWith("/privacy") ||
+          p.startsWith("/terms") ||
+          p.startsWith("/about") ||
+          p.startsWith("/roots") ||
+          p.startsWith("/delete-account") ||
+          p.startsWith("/store") ||
+          p.startsWith("/shop") ||
+          p.startsWith("/support") ||
+          p.startsWith("/notation") ||
+          p.startsWith("/composer") ||
+          p.startsWith("/glossary") ||
+          p.startsWith("/learn/staff-spinning-choreography");
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;
         } else {
           // App mode: inject preconnect hints dynamically
           var origins = [
-            'https://firebaseapp.com',
-            'https://firestore.googleapis.com',
-            'https://www.googleapis.com',
-            'https://accounts.google.com',
-            'https://apis.google.com',
-            'https://firebasestorage.googleapis.com',
-            'https://storage.googleapis.com'
+            "https://firebaseapp.com",
+            "https://firestore.googleapis.com",
+            "https://www.googleapis.com",
+            "https://accounts.google.com",
+            "https://apis.google.com",
+            "https://firebasestorage.googleapis.com",
+            "https://storage.googleapis.com",
           ];
           var dnsPrefetch = [
-            'https://www.google-analytics.com',
-            'https://www.googletagmanager.com',
-            'https://firebaseinstallations.googleapis.com'
+            "https://www.google-analytics.com",
+            "https://www.googletagmanager.com",
+            "https://firebaseinstallations.googleapis.com",
           ];
           var head = document.head;
-          origins.forEach(function(url) {
-            var link = document.createElement('link');
-            link.rel = 'preconnect';
+          origins.forEach(function (url) {
+            var link = document.createElement("link");
+            link.rel = "preconnect";
             link.href = url;
-            link.crossOrigin = '';
+            link.crossOrigin = "";
             head.appendChild(link);
           });
-          dnsPrefetch.forEach(function(url) {
-            var link = document.createElement('link');
-            link.rel = 'dns-prefetch';
+          dnsPrefetch.forEach(function (url) {
+            var link = document.createElement("link");
+            link.rel = "dns-prefetch";
             link.href = url;
             head.appendChild(link);
           });
@@ -110,25 +190,28 @@
           // "moderate" eagerness = only when user shows intent (hover, focus).
           // Avoids burning bandwidth on pages the user never visits.
           // ============================================================
-          if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')) {
-            var rules = document.createElement('script');
-            rules.type = 'speculationrules';
+          if (
+            HTMLScriptElement.supports &&
+            HTMLScriptElement.supports("speculationrules")
+          ) {
+            var rules = document.createElement("script");
+            rules.type = "speculationrules";
             rules.textContent = JSON.stringify({
               prerender: [
                 {
-                  source: 'document',
+                  source: "document",
                   where: {
                     and: [
-                      { href_matches: '/*' },
-                      { not: { href_matches: '/sequence/*' } },
-                      { not: { href_matches: '/q/*' } },
-                      { not: { href_matches: '/embed*' } },
-                      { not: { selector_matches: '[rel~="external"]' } }
-                    ]
+                      { href_matches: "/*" },
+                      { not: { href_matches: "/sequence/*" } },
+                      { not: { href_matches: "/q/*" } },
+                      { not: { href_matches: "/embed*" } },
+                      { not: { selector_matches: '[rel~="external"]' } },
+                    ],
                   },
-                  eagerness: 'moderate'
-                }
-              ]
+                  eagerness: "moderate",
+                },
+              ],
             });
             head.appendChild(rules);
           }
@@ -374,6 +457,8 @@
             /^\s*$/, // Just whitespace
             /^undefined$/,
             /^null$/,
+            /^\[morph\]/, // Local transition profiler: never measure its own POST
+            /^\[FrameStats\]/, // High-rate animation profiler stays browser-local
           ];
 
           return !skipPatterns.some((pattern) => pattern.test(message));
@@ -501,9 +586,12 @@
             var r = parseInt(color.substring(0, 2), 16) / 255;
             var g = parseInt(color.substring(2, 4), 16) / 255;
             var b = parseInt(color.substring(4, 6), 16) / 255;
-            var rL = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
-            var gL = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
-            var bL = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+            var rL =
+              r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+            var gL =
+              g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+            var bL =
+              b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
             return 0.2126 * rL + 0.7152 * gL + 0.0722 * bL;
           }
 
@@ -519,7 +607,7 @@
               for (var i = 0; i < middleColors.length; i++) {
                 middle += calculateLuminance(middleColors[i]);
               }
-              middle *= (0.3 / middleColors.length);
+              middle *= 0.3 / middleColors.length;
             }
             return first + middle + last;
           }
@@ -547,7 +635,8 @@
             var r = parseInt(c.substring(0, 2), 16) / 255;
             var g = parseInt(c.substring(2, 4), 16) / 255;
             var b = parseInt(c.substring(4, 6), 16) / 255;
-            var max = Math.max(r, g, b), min = Math.min(r, g, b);
+            var max = Math.max(r, g, b),
+              min = Math.min(r, g, b);
             var l = (max + min) / 2;
             if (max === min) return { h: 0, s: 0, l: l };
             var d = max - min;
@@ -568,8 +657,9 @@
               return p;
             }
             var r, g, b;
-            if (s === 0) { r = g = b = l; }
-            else {
+            if (s === 0) {
+              r = g = b = l;
+            } else {
               var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
               var p = 2 * l - q;
               r = hue2rgb(p, q, h + 1 / 3);
@@ -577,12 +667,15 @@
               b = hue2rgb(p, q, h - 1 / 3);
             }
             function toHex(v) {
-              return ("0" + Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16)).slice(-2);
+              return (
+                "0" + Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16)
+              ).slice(-2);
             }
             return "#" + toHex(r) + toHex(g) + toHex(b);
           }
           function ensureAccentContrast(accent, mode, target) {
-            if (!/^#[0-9a-fA-F]{6}$/.test(accent)) accent = mode === "light" ? "#2563eb" : "#38bdf8";
+            if (!/^#[0-9a-fA-F]{6}$/.test(accent))
+              accent = mode === "light" ? "#2563eb" : "#38bdf8";
             if (!target) target = mode === "light" ? 7 : 4.5;
             var surface = mode === "light" ? "#c8c8c2" : "#16161f";
             if (contrastRatio(accent, surface) >= target) return accent;
@@ -595,9 +688,11 @@
               var candidate = hslToHex(hsl.h, hsl.s, mid);
               if (contrastRatio(candidate, surface) >= target) {
                 best = candidate;
-                if (mode === "light") lo = mid; else hi = mid;
+                if (mode === "light") lo = mid;
+                else hi = mid;
               } else {
-                if (mode === "light") hi = mid; else lo = mid;
+                if (mode === "light") hi = mid;
+                else lo = mid;
               }
             }
             return best;
@@ -610,7 +705,8 @@
 
           // Apply ALL theme CSS variables
           function applyTheme(bgType, settings) {
-            var themeColors = BACKGROUND_THEME_COLORS[bgType] || BACKGROUND_THEME_COLORS.cosmic;
+            var themeColors =
+              BACKGROUND_THEME_COLORS[bgType] || BACKGROUND_THEME_COLORS.cosmic;
             var luminance = calculateGradientLuminance(themeColors);
             var mode = luminance > 0.4 ? "light" : "dark";
             var accent = ensureAccentContrast(extractAccent(themeColors), mode);
@@ -621,7 +717,16 @@
             root.dataset.themeLuminance = mode === "light" ? "bright" : "dim";
 
             // Generate matte theme values
-            var panelBg, panelElevatedBg, cardBg, cardHoverBg, stroke, strokeStrong, text, textDim, shadow, panelShadow;
+            var panelBg,
+              panelElevatedBg,
+              cardBg,
+              cardHoverBg,
+              stroke,
+              strokeStrong,
+              text,
+              textDim,
+              shadow,
+              panelShadow;
 
             if (mode === "light") {
               panelBg = "#d0d0ca";
@@ -636,9 +741,13 @@
               panelShadow = "0 12px 28px rgba(15, 23, 42, 0.18)";
             } else {
               panelBg = mobile ? "rgba(0, 0, 0, 0.88)" : "rgba(0, 0, 0, 0.75)";
-              panelElevatedBg = mobile ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)";
+              panelElevatedBg = mobile
+                ? "rgba(0, 0, 0, 0.7)"
+                : "rgba(0, 0, 0, 0.5)";
               cardBg = mobile ? "rgba(0, 0, 0, 0.88)" : "rgba(0, 0, 0, 0.75)";
-              cardHoverBg = mobile ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.55)";
+              cardHoverBg = mobile
+                ? "rgba(0, 0, 0, 0.7)"
+                : "rgba(0, 0, 0, 0.55)";
               stroke = "rgba(255, 255, 255, 0.08)";
               strokeStrong = "rgba(255, 255, 255, 0.14)";
               text = "#ffffff";
@@ -649,12 +758,18 @@
 
             // Apply --theme-* variables
             root.style.setProperty("--theme-panel-bg", panelBg);
-            root.style.setProperty("--theme-panel-elevated-bg", panelElevatedBg);
+            root.style.setProperty(
+              "--theme-panel-elevated-bg",
+              panelElevatedBg
+            );
             root.style.setProperty("--theme-card-bg", cardBg);
             root.style.setProperty("--theme-card-hover-bg", cardHoverBg);
             root.style.setProperty("--theme-accent", accent);
             root.style.setProperty("--theme-accent-strong", accent);
-            root.style.setProperty("--theme-accent-text", ensureAccentContrast(accent, mode, 7));
+            root.style.setProperty(
+              "--theme-accent-text",
+              ensureAccentContrast(accent, mode, 7)
+            );
             root.style.setProperty("--theme-stroke", stroke);
             root.style.setProperty("--theme-stroke-strong", strokeStrong);
             root.style.setProperty("--theme-text", text);
@@ -663,9 +778,22 @@
             root.style.setProperty("--theme-panel-shadow", panelShadow);
 
             // Scrollbar variables
-            root.style.setProperty("--scrollbar-thumb", mode === "light" ? "rgba(15, 23, 42, 0.25)" : "rgba(255, 255, 255, 0.2)");
-            root.style.setProperty("--scrollbar-thumb-hover", mode === "light" ? "rgba(15, 23, 42, 0.4)" : "rgba(255, 255, 255, 0.35)");
-            root.style.setProperty("--scrollbar-track", mode === "light" ? "rgba(15, 23, 42, 0.05)" : "transparent");
+            root.style.setProperty(
+              "--scrollbar-thumb",
+              mode === "light"
+                ? "rgba(15, 23, 42, 0.25)"
+                : "rgba(255, 255, 255, 0.2)"
+            );
+            root.style.setProperty(
+              "--scrollbar-thumb-hover",
+              mode === "light"
+                ? "rgba(15, 23, 42, 0.4)"
+                : "rgba(255, 255, 255, 0.35)"
+            );
+            root.style.setProperty(
+              "--scrollbar-track",
+              mode === "light" ? "rgba(15, 23, 42, 0.05)" : "transparent"
+            );
 
             // Semantic colors (constant)
             root.style.setProperty("--semantic-error", "#ef4444");
@@ -676,14 +804,22 @@
 
           // Background gradients mapping - MUST match BackgroundGradients.ts
           var backgroundGradients = {
-            rainbow: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
-            winter: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-            cosmic: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
-            ocean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
-            ember: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
-            blossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
-            forest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
-            autumn: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
+            rainbow:
+              "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
+            winter:
+              "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            cosmic:
+              "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
+            ocean:
+              "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
+            ember:
+              "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
+            blossom:
+              "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
+            forest:
+              "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
+            autumn:
+              "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
           };
 
           // Background animation mapping
@@ -704,7 +840,11 @@
             var settings = JSON.parse(stored);
             backgroundType = settings.backgroundType || "cosmic";
             // Migration: treat old default (solidColor + black) as cosmic
-            if (backgroundType === "solidColor" && (!settings.backgroundColor || settings.backgroundColor === "#000000")) {
+            if (
+              backgroundType === "solidColor" &&
+              (!settings.backgroundColor ||
+                settings.backgroundColor === "#000000")
+            ) {
               backgroundType = "cosmic";
             }
             // Migration: map old multi-word theme names to new single-word names
@@ -719,7 +859,7 @@
               pureBlack: "void",
               solidColor: "void",
               linearGradient: "cosmic",
-              pride: "rainbow"
+              pride: "rainbow",
             };
             if (legacyThemeMap[backgroundType]) {
               backgroundType = legacyThemeMap[backgroundType];
@@ -730,7 +870,8 @@
           applyTheme(backgroundType, stored ? JSON.parse(stored) : {});
 
           // Apply gradient CSS variable
-          var selectedGradient = backgroundGradients[backgroundType] || backgroundGradients.cosmic;
+          var selectedGradient =
+            backgroundGradients[backgroundType] || backgroundGradients.cosmic;
           root.style.setProperty("--gradient-cosmic", selectedGradient);
 
           // Apply animation class to body when ready
@@ -739,8 +880,14 @@
             var body = document.body;
             if (body) {
               body.classList.remove(
-                "rainbow-flow", "winter", "star-twinkle", "ocean-flow",
-                "ember", "blossom", "forest", "autumn"
+                "rainbow-flow",
+                "winter",
+                "star-twinkle",
+                "ocean-flow",
+                "ember",
+                "blossom",
+                "forest",
+                "autumn"
               );
               if (selectedAnimation) {
                 body.classList.add(selectedAnimation);
@@ -753,7 +900,10 @@
           if (document.body) {
             applyBackgroundAnimation();
           } else {
-            document.addEventListener("DOMContentLoaded", applyBackgroundAnimation);
+            document.addEventListener(
+              "DOMContentLoaded",
+              applyBackgroundAnimation
+            );
           }
         } catch (error) {
           console.warn("Failed to preload background:", error);
@@ -767,27 +917,57 @@
     <!-- Font Awesome CSS -->
     <!-- crossorigin="anonymous" is REQUIRED for PostHog session replay to capture styles -->
     <!-- Preload critical font: icons render immediately instead of after CSS parse -->
-    <link rel="preload" href="/fonts/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
-    <link rel="stylesheet" href="/fonts/css/fontawesome.min.css" crossorigin="anonymous" />
-    <link rel="stylesheet" href="/fonts/css/solid.min.css" crossorigin="anonymous" />
-    <link rel="stylesheet" href="/fonts/css/fa-supplement.css" crossorigin="anonymous" />
+    <link
+      rel="preload"
+      href="/fonts/webfonts/fa-solid-900.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="/fonts/css/fontawesome.min.css"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="/fonts/css/solid.min.css"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="/fonts/css/fa-supplement.css"
+      crossorigin="anonymous"
+    />
 
     <!-- Playfair Display: serif voice for in-app hint headings (matches landing) -->
     <!-- Self-hosted (offline-safe) — replaces the Google Fonts CDN, which the SW
          can't cache cross-origin so headings fell back to system serif offline. -->
-    <link rel="preload" href="/fonts/playfair/playfair-display-500-latin.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link
+      rel="preload"
+      href="/fonts/playfair/playfair-display-500-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" href="/fonts/css/playfair.css" />
 
     <!-- Fraunces 700 italic: the brand wordmark voice. Loaded app-wide so the
          desktop-nav "TKA" wordmark matches the landing SiteHeader wordmark. -->
-    <link rel="preload" href="/fonts/fraunces/fraunces-700-italic-latin.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link
+      rel="preload"
+      href="/fonts/fraunces/fraunces-700-italic-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" href="/fonts/css/fraunces.css" />
 
     <!-- Google Identity Services (app mode only - landing doesn't need auth) -->
     <script>
       if (!window.__tkaIsLanding) {
-        var gsiScript = document.createElement('script');
-        gsiScript.src = 'https://accounts.google.com/gsi/client';
+        var gsiScript = document.createElement("script");
+        gsiScript.src = "https://accounts.google.com/gsi/client";
         gsiScript.async = true;
         gsiScript.defer = true;
         document.head.appendChild(gsiScript);
@@ -802,7 +982,8 @@
       /* Prevent white flash on PWA launch - app.css loads with JS bundle,
          so body has default white background until JS executes.
          These inline rules ensure dark background from first paint. */
-      html, body {
+      html,
+      body {
         margin: 0;
         padding: 0;
         background-color: #0a0a0a;
@@ -835,8 +1016,15 @@
       }
 
       @keyframes logo-breathe {
-        0%, 100% { opacity: 0.85; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.03); }
+        0%,
+        100% {
+          opacity: 0.85;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.03);
+        }
       }
 
       .loading-bar-track {
@@ -858,13 +1046,21 @@
       }
 
       @keyframes bar-pulse {
-        0%, 100% { box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
-        50% { box-shadow: 0 0 14px rgba(56, 189, 248, 0.7); }
+        0%,
+        100% {
+          box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+        }
       }
 
       #app-loading p {
         margin: 0;
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
         font-size: 13px;
         color: rgba(255, 255, 255, 0.5);
         letter-spacing: 0.02em;
@@ -899,8 +1095,20 @@
     data-sveltekit-preload-data="hover"
     class="bg-background text-foreground"
   >
-    <div id="app-loading" aria-label="Loading Flow Arts Composer" role="progressbar" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">
-      <img src="%sveltekit.assets%/pwa/icons/icon-192x192.png" alt="" width="96" height="96" />
+    <div
+      id="app-loading"
+      aria-label="Loading Flow Arts Composer"
+      role="progressbar"
+      aria-valuenow="5"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <img
+        src="%sveltekit.assets%/pwa/icons/icon-192x192.png"
+        alt=""
+        width="96"
+        height="96"
+      />
       <div class="loading-bar-track">
         <div class="loading-bar-fill" id="loading-bar-fill"></div>
       </div>
@@ -909,14 +1117,14 @@
     <script>
       // Landing visitors: hide loading bar immediately and skip all loading bar logic
       if (window.__tkaIsLanding) {
-        document.getElementById('app-loading').style.display = 'none';
+        document.getElementById("app-loading").style.display = "none";
         // Define a no-op so layout/page code doesn't error
-        window.__tkaLoadProgress = function() {};
+        window.__tkaLoadProgress = function () {};
       }
       // Retro routes: have their own boot sequences - skip modern loading screen
       if (/^\/(1989|1995|1998|2003)(\/|$)/.test(window.location.pathname)) {
-        document.getElementById('app-loading').style.display = 'none';
-        window.__tkaLoadProgress = function() {};
+        document.getElementById("app-loading").style.display = "none";
+        window.__tkaLoadProgress = function () {};
       }
     </script>
     <script>
@@ -928,7 +1136,7 @@
         "Let's spin.",
         "Props loaded. You're up.",
         "Ready to flow.",
-        "All systems go."
+        "All systems go.",
       ];
 
       // --- Phase A: Resource-tracking loading bar (5% → 70%) ---
@@ -944,17 +1152,20 @@
       // Crossfade: fade out → swap text → fade in (200ms each via CSS transition)
       var __tkaFadeTimer = null;
       function __tkaCrossfade(el, msg) {
-        if (__tkaFadeTimer) { clearTimeout(__tkaFadeTimer); __tkaFadeTimer = null; }
-        el.style.opacity = '0';
-        __tkaFadeTimer = setTimeout(function() {
+        if (__tkaFadeTimer) {
+          clearTimeout(__tkaFadeTimer);
+          __tkaFadeTimer = null;
+        }
+        el.style.opacity = "0";
+        __tkaFadeTimer = setTimeout(function () {
           __tkaFadeTimer = null;
           el.textContent = msg;
-          el.style.opacity = '1';
+          el.style.opacity = "1";
         }, 200);
       }
 
       // Show first flavor message immediately (no fade - nothing to fade from)
-      var _initText = document.getElementById('loading-text');
+      var _initText = document.getElementById("loading-text");
       if (_initText && __tkaFlavorMessages.length > 0) {
         _initText.textContent = __tkaFlavorMessages[__tkaFlavorIndex];
         __tkaFlavorIndex++;
@@ -963,12 +1174,12 @@
       // Self-calibrating expected bytes: use saved value or conservative seed
       var __tkaExpectedBytes = 3000000; // 3MB seed for first visit
       try {
-        var savedBytes = localStorage.getItem('tka-load-bytes');
+        var savedBytes = localStorage.getItem("tka-load-bytes");
         if (savedBytes) {
           var parsed = parseInt(savedBytes, 10);
           if (parsed > 0) __tkaExpectedBytes = parsed;
         }
-      } catch(e) {}
+      } catch (e) {}
 
       var __tkaLoadedBytes = 0;
       var __tkaResourceCount = 0;
@@ -981,16 +1192,20 @@
         if (percent <= __tkaPhaseAPercent) return;
         __tkaPhaseAPercent = Math.min(percent, __tkaCap);
 
-        var bar = document.getElementById('loading-bar-fill');
-        var screen = document.getElementById('app-loading');
-        if (bar) bar.style.width = __tkaPhaseAPercent + '%';
-        if (screen) screen.setAttribute('aria-valuenow', String(Math.round(__tkaPhaseAPercent)));
+        var bar = document.getElementById("loading-bar-fill");
+        var screen = document.getElementById("app-loading");
+        if (bar) bar.style.width = __tkaPhaseAPercent + "%";
+        if (screen)
+          screen.setAttribute(
+            "aria-valuenow",
+            String(Math.round(__tkaPhaseAPercent))
+          );
 
         // Rotate flavor message at 10% threshold crossings
         var milestone = Math.floor(__tkaPhaseAPercent / 10);
         if (milestone > __tkaLastMilestone) {
           __tkaLastMilestone = milestone;
-          var text = document.getElementById('loading-text');
+          var text = document.getElementById("loading-text");
           if (text) {
             var msgIndex = __tkaFlavorIndex % __tkaFlavorMessages.length;
             __tkaCrossfade(text, __tkaFlavorMessages[msgIndex]);
@@ -1003,7 +1218,7 @@
         for (var i = 0; i < entries.length; i++) {
           var entry = entries[i];
           // Only count /_app/ resources (SvelteKit chunks)
-          if (entry.name && entry.name.indexOf('/_app/') !== -1) {
+          if (entry.name && entry.name.indexOf("/_app/") !== -1) {
             // encodedBodySize = compressed body size (same-origin, works even from cache)
             var size = entry.encodedBodySize || entry.transferSize || 0;
             if (size > 0) {
@@ -1026,31 +1241,33 @@
       }
 
       // Set up PerformanceObserver for resource tracking
-      var __tkaObserverSupported = typeof PerformanceObserver !== 'undefined';
+      var __tkaObserverSupported = typeof PerformanceObserver !== "undefined";
       if (__tkaObserverSupported) {
         try {
-          __tkaObserver = new PerformanceObserver(function(list) {
+          __tkaObserver = new PerformanceObserver(function (list) {
             __tkaProcessResources(list.getEntries());
           });
-          __tkaObserver.observe({ type: 'resource', buffered: true });
-        } catch(e) {
+          __tkaObserver.observe({ type: "resource", buffered: true });
+        } catch (e) {
           __tkaObserverSupported = false;
         }
       }
 
       // Fallback: if no resources detected after 2s (old browser), use decelerating trickle
-      __tkaTrickleFallback = setTimeout(function() {
+      __tkaTrickleFallback = setTimeout(function () {
         __tkaTrickleFallback = null;
         // Only activate if no real resources arrived
         if (__tkaResourceCount > 0) return;
 
         // Disconnect observer if it exists but isn't producing results
         if (__tkaObserver) {
-          try { __tkaObserver.disconnect(); } catch(e) {}
+          try {
+            __tkaObserver.disconnect();
+          } catch (e) {}
           __tkaObserver = null;
         }
 
-        var trickleInterval = setInterval(function() {
+        var trickleInterval = setInterval(function () {
           var increment = Math.max(0.5, (__tkaCap - __tkaPhaseAPercent) * 0.08);
           __tkaUpdateBar(__tkaPhaseAPercent + increment);
 
@@ -1069,7 +1286,7 @@
       var __tkaLastTextTime = 0;
       var __tkaMinTextGap = 500; // minimum ms between text changes
 
-      window.__tkaLoadProgress = function(percent, message) {
+      window.__tkaLoadProgress = function (percent, message) {
         // Monotonic: ignore out-of-order or duplicate calls
         if (percent <= __tkaCurrentPercent || __tkaFinished) return;
         __tkaCurrentPercent = percent;
@@ -1079,14 +1296,16 @@
 
         // First checkpoint call: disconnect observer, save calibration
         if (__tkaObserver) {
-          try { __tkaObserver.disconnect(); } catch(e) {}
+          try {
+            __tkaObserver.disconnect();
+          } catch (e) {}
           __tkaObserver = null;
 
           // Save observed bytes for next visit's calibration
           if (__tkaLoadedBytes > 0) {
             try {
-              localStorage.setItem('tka-load-bytes', String(__tkaLoadedBytes));
-            } catch(e) {}
+              localStorage.setItem("tka-load-bytes", String(__tkaLoadedBytes));
+            } catch (e) {}
           }
         }
 
@@ -1096,26 +1315,31 @@
           __tkaTrickleFallback = null;
         }
 
-        var bar = document.getElementById('loading-bar-fill');
-        var text = document.getElementById('loading-text');
-        var screen = document.getElementById('app-loading');
+        var bar = document.getElementById("loading-bar-fill");
+        var text = document.getElementById("loading-text");
+        var screen = document.getElementById("app-loading");
 
         // Bar ALWAYS updates - CSS transition makes it smooth
-        if (bar) bar.style.width = percent + '%';
-        if (screen) screen.setAttribute('aria-valuenow', String(percent));
+        if (bar) bar.style.width = percent + "%";
+        if (screen) screen.setAttribute("aria-valuenow", String(percent));
 
         var now = Date.now();
 
         if (percent >= 100) {
           __tkaFinished = true;
-          var readyMsg = __tkaReadyMessages[Math.floor(Math.random() * __tkaReadyMessages.length)];
+          var readyMsg =
+            __tkaReadyMessages[
+              Math.floor(Math.random() * __tkaReadyMessages.length)
+            ];
           if (text) __tkaCrossfade(text, readyMsg);
           clearTimeout(window.__tkaLoadTimeout);
           // Hold ready message: 200ms fade-out + 200ms fade-in + 1s visible
-          setTimeout(function() {
+          setTimeout(function () {
             if (screen) {
-              screen.classList.add('loaded');
-              screen.addEventListener('transitionend', function() { screen.remove(); });
+              screen.classList.add("loaded");
+              screen.addEventListener("transitionend", function () {
+                screen.remove();
+              });
             }
           }, 1400);
         } else if (now - __tkaLastTextTime >= __tkaMinTextGap) {
@@ -1125,17 +1349,30 @@
       };
 
       // Safety net: if progress never reaches 100%, force-dismiss after 15s
-      window.__tkaLoadTimeout = setTimeout(function() {
-        var screen = document.getElementById('app-loading');
-        if (screen && !screen.classList.contains('loaded')) {
-          screen.classList.add('loaded');
-          screen.addEventListener('transitionend', function() { screen.remove(); });
+      window.__tkaLoadTimeout = setTimeout(function () {
+        var screen = document.getElementById("app-loading");
+        if (screen && !screen.classList.contains("loaded")) {
+          screen.classList.add("loaded");
+          screen.addEventListener("transitionend", function () {
+            screen.remove();
+          });
         }
       }, 15000);
     </script>
     <div style="display: contents">%sveltekit.body%</div>
     <noscript>
-      <footer style="position:fixed;bottom:0;width:100%;text-align:center;padding:12px;color:rgba(255,255,255,0.5);font-family:system-ui,sans-serif;font-size:13px;">
+      <footer
+        style="
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          text-align: center;
+          padding: 12px;
+          color: rgba(255, 255, 255, 0.5);
+          font-family: system-ui, sans-serif;
+          font-size: 13px;
+        "
+      >
         &copy; 2026 Austen Cloud
       </footer>
     </noscript>

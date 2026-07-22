@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import { compressForQR, decompressFromQR } from "$lib/shared/navigation/services/sequence-codec";
 import { encodeSequence, decodeSequence, encodeSequenceForQR, decodeSequenceFromQR, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
 import { CompositionalDecoder } from "$lib/shared/qr/services/compositional-decoder";
+import { CompositionalEncoder } from "$lib/shared/qr/services/compositional-encoder";
 import {
   RECIPE_PREFIX,
   LOOP_TYPE_TAGS,
   TAG_TO_LOOP_TYPE,
 } from "$lib/shared/qr/services/types";
 import { computeRecipeHash } from "$lib/shared/qr/services/compositional-utils";
+import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+import { strictRotatedLOOPExecutor } from "$lib/features/create/generate/circular/services/strict-rotated-loop-executor";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   createSequenceData,
   type SequenceData,
@@ -20,7 +24,10 @@ import {
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridLocation,
+  GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
@@ -214,6 +221,77 @@ describe("CompositionalEncoding", () => {
       expect(decoded.steps[0].motions.blue!.endLocation).toBe(
         GridLocation.EAST
       );
+    });
+  });
+
+  describe("compositional duration encoding", () => {
+    it("preserves a custom seed duration through the r1 recipe path", async () => {
+      const startPosition = {
+        ...makeStartPosition(
+          {
+            motionType: MotionType.STATIC,
+            startLocation: GridLocation.SOUTH,
+            endLocation: GridLocation.SOUTH,
+            turns: 0,
+          },
+          {
+            motionType: MotionType.STATIC,
+            startLocation: GridLocation.NORTH,
+            endLocation: GridLocation.NORTH,
+            turns: 0,
+          }
+        ),
+        startPosition: GridPosition.ALPHA1,
+        endPosition: GridPosition.ALPHA1,
+      };
+      const seed = {
+        ...makeStep(
+          1,
+          {
+            motionType: MotionType.PRO,
+            rotationDirection: RotationDirection.CLOCKWISE,
+            startLocation: GridLocation.SOUTH,
+            endLocation: GridLocation.WEST,
+            turns: 0,
+          },
+          {
+            motionType: MotionType.PRO,
+            rotationDirection: RotationDirection.CLOCKWISE,
+            startLocation: GridLocation.NORTH,
+            endLocation: GridLocation.EAST,
+            turns: 0,
+          }
+        ),
+        startPosition: GridPosition.ALPHA1,
+        endPosition: GridPosition.ALPHA3,
+        duration: 5,
+      };
+      const completed = strictRotatedLOOPExecutor.executeLOOP(
+        [startPosition, seed],
+        Period.QUARTERED
+      );
+      const sequence = buildTestSequence(completed);
+
+      registerLoopDetector({
+        detectLOOPType: () => ({
+          isCircular: true,
+          loopType: "rotated",
+          period: Period.QUARTERED,
+          confidence: "strict",
+        }),
+      } as Parameters<typeof registerLoopDetector>[0]);
+
+      const flatEncoded = encodeSequence(sequence);
+      const encoder = new CompositionalEncoder(
+        { encode: encodeSequence },
+        { decode: decodeSequence },
+        { compressString: compressForQR }
+      );
+      const recipe = await encoder.tryEncode(flatEncoded, sequence);
+
+      expect(recipe?.startsWith("r1:")).toBe(true);
+      const decoded = await decodeSequenceFromQR(`s~${recipe}`);
+      expect(decoded.steps.map((step) => step.duration)).toEqual([5, 5, 5, 5]);
     });
   });
 

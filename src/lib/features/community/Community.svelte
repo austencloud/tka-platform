@@ -13,7 +13,7 @@
   import LocationSharingConsentSheet from "./components/LocationSharingConsentSheet.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { UserLocationWithProfile } from "./domain/models/user-location";
-  import { env } from "$env/dynamic/public";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
 
   let locations: UserLocationWithProfile[] = $state([]);
   let userLocation: { lat: number; lng: number } | null = $state(null);
@@ -46,7 +46,7 @@
     } catch (error) {
       console.error("Failed to load locations:", error);
       loadError = true;
-      toast.error(t('community_error_load_map'));
+      toast.error(t("community_error_load_map"));
     } finally {
       isLoading = false;
     }
@@ -71,14 +71,14 @@
   async function handleAcceptSharing() {
     const userId = auth.currentUser?.uid;
     if (!userId) {
-      toast.error(t('community_error_sign_in'));
+      toast.error(t("community_error_sign_in"));
       return;
     }
 
     try {
       await orchestrator.requestLocationSharing(userId);
 
-      toast.success(t('community_success_city_added'));
+      toast.success(t("community_success_city_added"));
       hasSharedLocation = true;
 
       // Reload locations to show the new marker
@@ -91,7 +91,7 @@
       console.error("Location sharing error:", error);
       // Surface the specific failure reason rather than a generic sentinel.
       const message = error instanceof Error ? error.message : "";
-      toast.error(message || t('community_error_add_city'));
+      toast.error(message || t("community_error_add_city"));
     }
   }
 
@@ -105,12 +105,12 @@
 
     try {
       await orchestrator.removeLocation(userId);
-      toast.success(t('community_success_city_removed'));
+      toast.success(t("community_success_city_removed"));
       hasSharedLocation = false;
       await loadLocations();
     } catch (error) {
       console.error("Failed to remove city:", error);
-      toast.error(t('community_error_remove_city'));
+      toast.error(t("community_error_remove_city"));
     }
   }
 
@@ -120,7 +120,7 @@
 
     try {
       await orchestrator.updateLocation(userId);
-      toast.success(t('community_success_city_updated'));
+      toast.success(t("community_success_city_updated"));
       await loadLocations();
 
       // Get user's location for map centering
@@ -128,7 +128,7 @@
       userLocation = { lat: position.lat, lng: position.lng };
     } catch (error) {
       console.error("Failed to update city:", error);
-      toast.error(t('community_error_update_city'));
+      toast.error(t("community_error_update_city"));
     }
   }
 </script>
@@ -138,10 +138,10 @@
     <div class="header-content">
       <h1>
         <i class="fas fa-globe" aria-hidden="true"></i>
-        {t('community_title')}
+        {t("community_title")}
       </h1>
       <p class="subtitle">
-        {t('community_practitioners_count', { count: locations.length })}
+        {t("community_practitioners_count", { count: locations.length })}
       </p>
     </div>
 
@@ -150,16 +150,19 @@
         {#if hasSharedLocation}
           <button class="control-btn update-btn" onclick={handleUpdateLocation}>
             <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            {t('community_update_city')}
+            {t("community_update_city")}
           </button>
           <button class="control-btn remove-btn" onclick={handleRemoveLocation}>
             <i class="fas fa-trash" aria-hidden="true"></i>
-            {t('community_remove')}
+            {t("community_remove")}
           </button>
         {:else}
-          <button class="control-btn share-btn" onclick={() => (showConsentSheet = true)}>
+          <button
+            class="control-btn share-btn"
+            onclick={() => (showConsentSheet = true)}
+          >
             <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-            {t('community_share_city')}
+            {t("community_share_city")}
           </button>
         {/if}
       </div>
@@ -167,12 +170,13 @@
   </div>
 
   <div class="map-section">
-    {#if !env.PUBLIC_GOOGLE_MAPS_API_KEY || env.PUBLIC_GOOGLE_MAPS_API_KEY === "your-google-maps-api-key"}
+    {#if !PUBLIC_GOOGLE_MAPS_API_KEY || PUBLIC_GOOGLE_MAPS_API_KEY === "your-google-maps-api-key"}
       <div class="api-key-warning">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        <h2>{t('community_api_key_required')}</h2>
+        <h2>{t("community_api_key_required")}</h2>
         <p>
-          Add <code>env.PUBLIC_GOOGLE_MAPS_API_KEY</code> to your <code>.env</code> file to enable the community map.
+          Add <code>env.PUBLIC_GOOGLE_MAPS_API_KEY</code> to your
+          <code>.env</code> file to enable the community map.
         </p>
         <p class="subtext">
           Get your API key from the
@@ -188,23 +192,23 @@
     {:else if isLoading}
       <div class="loading-state">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <p>{t('community_loading_map')}</p>
+        <p>{t("community_loading_map")}</p>
       </div>
     {:else if loadError}
       <div class="error-state" role="alert">
         <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-        <h2>{t('community_error_map_title')}</h2>
-        <p>{t('community_error_map_body')}</p>
+        <h2>{t("community_error_map_title")}</h2>
+        <p>{t("community_error_map_body")}</p>
         <button class="control-btn share-btn" onclick={loadLocations}>
           <i class="fas fa-rotate-right" aria-hidden="true"></i>
-          {t('community_error_retry')}
+          {t("community_error_retry")}
         </button>
       </div>
     {:else}
       <GlobalUserMap
         {locations}
         {userLocation}
-        apiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
+        apiKey={PUBLIC_GOOGLE_MAPS_API_KEY}
       />
     {/if}
   </div>
@@ -308,7 +312,11 @@
   }
 
   .remove-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
   }
 
   .map-section {

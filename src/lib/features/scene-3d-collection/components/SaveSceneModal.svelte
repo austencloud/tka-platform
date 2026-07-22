@@ -17,13 +17,22 @@
   import { SCENE_3D_GROUPS } from "../domain/scene-3d-collection-types";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { Scene3DGroupId, StepData } from "../domain/scene-3d-collection-types";
+  import {
+    reportViewerControlChange,
+    type ViewerActionSink,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   let {
     open = $bindable(false),
     bpm,
+    onSettingChange,
+    onAction,
   }: {
     open?: boolean;
     bpm?: number;
+    onSettingChange?: ViewerControlSink;
+    onAction?: ViewerActionSink;
   } = $props();
 
   const viewer3DState = tryGetViewer3DContext();
@@ -171,12 +180,21 @@
   );
 
   function toggle(id: Scene3DGroupId) {
-    enabled[id] = !enabled[id];
+    const previous = enabled[id];
+    enabled[id] = !previous;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_save_scene",
+      `include_${id}`,
+      previous,
+      !previous
+    );
   }
 
   async function handleSave() {
     if (saving || !viewer3DState) return;
     saving = true;
+    onAction?.("save_scene", { stage: "requested" });
     try {
       const snapshot = captureScene3DSnapshot(viewer3DState, {
         ...(bpm !== undefined && enabled.performance ? { bpm } : {}),
@@ -198,10 +216,12 @@
         ...(steps && steps.length > 0 ? { steps } : {}),
         ...(sourceWord ? { sourceWord, ...(seq?.id ? { sourceSequenceId: seq.id } : {}) } : {}),
       });
+      onAction?.("save_scene", { stage: "completed" }, { count: false });
       toast.success("Scene saved to your collection");
       open = false;
     } catch (error) {
       console.warn("[Scene3DCollection] Save failed:", error);
+      onAction?.("save_scene", { stage: "failed" }, { count: false });
       toast.error("Couldn't save the scene — try again");
     } finally {
       saving = false;

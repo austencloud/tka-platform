@@ -15,9 +15,16 @@
   interface Props {
     items: MenuItem[];
     disabled?: boolean;
+    ariaLabel?: string;
+    placement?: "top" | "bottom";
   }
 
-  const { items, disabled = false }: Props = $props();
+  const {
+    items,
+    disabled = false,
+    ariaLabel = "More actions",
+    placement = "top",
+  }: Props = $props();
 
   let open = $state(false);
   let menuEl: HTMLElement | null = $state(null);
@@ -47,20 +54,30 @@
   $effect(() => {
     if (open) {
       document.addEventListener("pointerdown", handleOutsidePointerDown, true);
-      return () => document.removeEventListener("pointerdown", handleOutsidePointerDown, true);
+      return () =>
+        document.removeEventListener(
+          "pointerdown",
+          handleOutsidePointerDown,
+          true
+        );
     }
     return undefined;
   });
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="overflow-menu" bind:this={menuEl} onkeydown={handleKeydown}>
+<div
+  class="overflow-menu"
+  class:opens-bottom={placement === "bottom"}
+  bind:this={menuEl}
+  onkeydown={handleKeydown}
+>
   <button
     type="button"
     class="overflow-trigger"
     {disabled}
     onclick={toggle}
-    aria-label="More actions"
+    aria-label={ariaLabel}
     aria-expanded={open}
     aria-haspopup="menu"
   >
@@ -135,6 +152,11 @@
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     z-index: 50;
+  }
+
+  .opens-bottom .overflow-dropdown {
+    top: calc(100% + 6px);
+    bottom: auto;
   }
 
   .overflow-item {

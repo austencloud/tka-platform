@@ -2,6 +2,7 @@
   import LazyMount from "./LazyMount.svelte";
 
   let attempts = 0;
+  let status = $state("idle");
 
   function loader() {
     attempts += 1;
@@ -12,7 +13,13 @@
   }
 </script>
 
-<LazyMount {loader} active={true}>
+<output aria-label="Lazy mount status">{status}</output>
+
+<LazyMount
+  {loader}
+  active={true}
+  onStatusChange={(next) => (status = next)}
+>
   {#snippet placeholder()}
     <p>Loading test component</p>
   {/snippet}

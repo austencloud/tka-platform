@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { env } from "$env/dynamic/public";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
   import { MarkerClusterer } from "@googlemaps/markerclusterer";
   import { getFestivalContext } from "../../context/festival-context";
   import FestivalMapPopup from "./FestivalMapPopup.svelte";
@@ -34,7 +34,7 @@
 
     async function loadMap(): Promise<void> {
       try {
-        await mapsLoader.load(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
+        await mapsLoader.load(PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
         if (!mounted) return;
         initializeMap();
       } catch (caught) {

@@ -149,23 +149,22 @@ export function prefetchOnIntent(targetModuleId: string): void {
 export function preloadCriticalModules(currentModuleId?: string): void {
   if (typeof window === "undefined") return;
 
-  // Only prefetch from Create - other modules should only load what they need
-  // This prevents loading 150+ Create module files when user goes to Settings
-  if (currentModuleId && currentModuleId !== "create") {
-    return;
-  }
-
-  // Wait for initial render to complete
-  const schedulePrefetch = window.requestIdleCallback ?? setTimeout;
-
-  schedulePrefetch(
-    () => {
-      // Most users start on Dashboard and go to Create or Browse
-      prefetchModule("create");
-      prefetchModule("browse");
-    },
-    { timeout: 3000 }
-  );
+  // Boot-time speculative preload is a net LOSS in dev and a no-op in prod:
+  //   - Dev: every ES module is its own HTTP request. `modulepreload` on a
+  //     module entry makes the browser walk that entry's whole recursive
+  //     static-import graph, so this pulled all of Create (150+ files, per the
+  //     note above) AND Browse into the very first page load, competing with
+  //     the modules the user actually asked for on a single-threaded dev
+  //     server. Measured 2026-07-21: ~2661 requests / 1.3 min to first paint.
+  //   - Prod: prefetchModule() bails on !IS_DEV because MODULE_PATHS holds
+  //     "/src/..." source paths that don't survive compilation.
+  // So this only ever ran where it hurts. `+layout.svelte`'s
+  // startActiveModulePreload() already reached the same conclusion and guards
+  // with `if (!import.meta.env.PROD) return` — this is the twin that was
+  // missed. ModuleRenderer lazy-loads on demand either way; hover-intent
+  // prefetch (prefetchOnIntent) still gives fast module switching in dev
+  // without taxing boot.
+  void currentModuleId;
 }
 
 /**

@@ -28,9 +28,13 @@ import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generat
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import {
+import type {
+  MandalaPathShape,
+  MandalaRenderOptions,
+} from "$lib/shared/mandala/domain/mandala-types";
+import type {
   GridMode,
-  type GridPosition,
+  GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
@@ -54,6 +58,11 @@ export type { TargetHand } from "$lib/shared/create/domain/panel-types";
 
 // Import for local use
 import type { TargetHand } from "$lib/shared/create/domain/panel-types";
+
+export interface MandalaViewerSelection {
+  variant: MandalaRenderOptions["show"];
+  pathShape: MandalaPathShape;
+}
 
 // ============================================================================
 // PERSISTENCE HELPERS
@@ -214,9 +223,12 @@ export interface PanelCoordinationState {
 
   // Beat Editor Panel State (non-modal - allows click-through to pictographs)
   get isStepEditorPanelOpen(): boolean;
+  get mandalaViewerSelection(): MandalaViewerSelection | null;
 
   openStepEditorPanel(): void;
   closeStepEditorPanel(): void;
+  openMandalaViewer(selection: MandalaViewerSelection): void;
+  closeMandalaViewer(): void;
 
   // Tool Panel Dimensions (for sizing other panels)
   get toolPanelHeight(): number;
@@ -347,6 +359,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   // Persisted so a dev HMR / page refresh restores the open editor instead of
   // closing it out from under the user.
   let isStepEditorPanelOpen = $state(stepEditorPanelPersistence.load());
+  let mandalaViewerSelection = $state<MandalaViewerSelection | null>(null);
 
   // Auto-save panel open states
   $effect.root(() => {
@@ -441,6 +454,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isFilterPanelOpen = false;
     isSequenceActionsPanelOpen = false;
     isStepEditorPanelOpen = false;
+    mandalaViewerSelection = null;
 
     isLOOPPanelOpen = false;
     loopSelectedComponents = null;
@@ -683,13 +697,32 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return isStepEditorPanelOpen;
     },
 
+    get mandalaViewerSelection() {
+      return mandalaViewerSelection;
+    },
+
     openStepEditorPanel() {
       // Beat Editor is non-modal - it does NOT close other panels
       // This allows the user to click on pictographs while the panel is open
+      mandalaViewerSelection = null;
       isStepEditorPanelOpen = true;
     },
 
     closeStepEditorPanel() {
+      isStepEditorPanelOpen = false;
+      mandalaViewerSelection = null;
+    },
+
+    openMandalaViewer(selection: MandalaViewerSelection) {
+      // The mandala uses the same non-modal drawer as the beat editor. Keeping
+      // the drawer mounted lets a later pictograph click swap the editor back
+      // in without closing and reopening the panel.
+      mandalaViewerSelection = selection;
+      isStepEditorPanelOpen = true;
+    },
+
+    closeMandalaViewer() {
+      mandalaViewerSelection = null;
       isStepEditorPanelOpen = false;
     },
 

@@ -26,10 +26,11 @@
   }: {
     menuState: ContextMenuState;
     items: ContextMenuEntry[];
-    onClose: () => void;
+    onClose: (reason?: "item" | "outside" | "dismiss") => void;
   } = $props();
 
   let loadingItemId: string | null = $state(null);
+  let pendingCloseReason: "item" | "outside" | "dismiss" = "dismiss";
 
   // Virtual anchor for floating-ui; Measurable = { getBoundingClientRect }
   const anchor = $derived(
@@ -47,7 +48,11 @@
   );
 
   function handleOpenChange(open: boolean) {
-    if (!open && menuState.open) onClose();
+    if (!open && menuState.open) {
+      const reason = pendingCloseReason;
+      pendingCloseReason = "dismiss";
+      onClose(reason);
+    }
   }
 
   // Dismiss on outside pointerdown (capture phase). onClose() triggers
@@ -84,7 +89,8 @@
       }, 800);
 
       getHapticFeedback().impact("light");
-      onClose();
+      pendingCloseReason = "outside";
+      onClose("outside");
     };
 
     document.addEventListener("pointerdown", dismissOnPointerDown, { capture: true });
@@ -104,6 +110,7 @@
     if (!item.action) return;
     // keepOpen means don't auto-close on select
     if (item.keepOpen) event.preventDefault();
+    else pendingCloseReason = "item";
 
     getHapticFeedback().impact("medium");
     loadingItemId = item.id;

@@ -13,6 +13,13 @@ export const PROVIDERS = {
     bgColor: "rgba(24, 119, 242, 0.15)",
     borderColor: "rgba(24, 119, 242, 0.3)",
   },
+  "instagram.com": {
+    name: "Instagram",
+    icon: "fab fa-instagram",
+    color: "#e4405f",
+    bgColor: "rgba(228, 64, 95, 0.15)",
+    borderColor: "rgba(228, 64, 95, 0.3)",
+  },
   password: {
     name: "Email",
     icon: "fas fa-envelope",

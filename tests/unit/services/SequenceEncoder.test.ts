@@ -1,5 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { encodeSequence, decodeSequence, encodeSequenceWithCompression, decodeSequenceWithCompression, parseSequenceRouteId, generateSequenceRoutePath } from "$lib/shared/navigation/services/sequence-encoder";
+import { describe, expect, it, vi } from "vitest";
+import {
+  encodeSequence,
+  decodeSequence,
+  encodeSequenceForQR,
+  decodeSequenceFromQR,
+  encodeSequenceWithCompression,
+  decodeSequenceWithCompression,
+  parseSequenceRouteId,
+  generateSequenceRoutePath,
+} from "$lib/shared/navigation/services/sequence-encoder";
 import {
   createSequenceData,
   type SequenceData,
@@ -70,6 +79,76 @@ function buildTestSequence(steps: StepData[]): SequenceData {
 describe("SequenceEncoder", () => {
 
   describe("encode/decode round-trip", () => {
+    it("preserves custom durations without changing legacy one-beat encoding", () => {
+      const steps = [
+        makeStep(1, {}, {}),
+        makeStep(2, {}, {}),
+        makeStep(3, {}, {}),
+      ];
+      steps[0]!.duration = 5;
+      steps[1]!.duration = 1;
+      steps[2]!.duration = 1.25;
+      const sequence = buildTestSequence(steps);
+
+      const encoded = encodeSequence(sequence);
+      const decoded = decodeSequence(encoded);
+
+      expect(decoded.steps.map((step) => step.duration)).toEqual([5, 1, 1.25]);
+      expect(encoded).toContain(":d5");
+      expect(encoded).toContain(":d1.25");
+
+      const compressed = encodeSequenceWithCompression(sequence);
+      expect(
+        decodeSequenceWithCompression(compressed.encoded).steps.map(
+          (step) => step.duration
+        )
+      ).toEqual([5, 1, 1.25]);
+
+      const legacyEncoding = encodeSequence(
+        buildTestSequence(steps.map((step) => ({ ...step, duration: 1 })))
+      );
+      expect(legacyEncoding).not.toContain(":d");
+      expect(decodeSequence(legacyEncoding).steps.map((step) => step.duration)).toEqual([
+        1,
+        1,
+        1,
+      ]);
+    });
+
+    it("preserves custom durations through QR encoding", async () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const steps = [
+        makeStep(1, {}, {}),
+        makeStep(2, {}, {}),
+        makeStep(3, {}, {}),
+        makeStep(4, {}, {}),
+      ];
+      [5, 1, 5, 1].forEach((duration, index) => {
+        steps[index]!.duration = duration;
+      });
+      const sequence = buildTestSequence(steps);
+
+      const encoded = await encodeSequenceForQR(sequence);
+      const decoded = await decodeSequenceFromQR(encoded);
+
+      expect(encoded).toMatch(/^s~(?:q1:|raw:)/);
+      expect(decoded.steps.map((step) => step.duration)).toEqual([5, 1, 5, 1]);
+      expect(warn).toHaveBeenCalledWith(
+        "[QR] Compositional encoding error:",
+        expect.any(Error)
+      );
+      warn.mockRestore();
+    });
+
+    it("rejects corrupt encoded durations instead of discarding timing", () => {
+      const sequence = buildTestSequence([makeStep(1, {}, {})]);
+      const encoded = `${encodeSequence(sequence)}:d0`;
+
+      expect(() => decodeSequence(encoded)).toThrow(
+        "Invalid duration encoding at beat 1"
+      );
+    });
+
     it("preserves all motion fields through uncompressed round-trip", () => {
       // Derive-only codec: per-step orientations are NOT stored. Only the
       // start-position seed (per hand) is encoded in the header; every step's

@@ -82,6 +82,12 @@ export {
   getLettersByType,
 } from "./constants/letter-registry.js";
 export {
+  BRIDGE_FREE_EXAMPLES,
+  BRIDGE_FREE_LONG,
+  BRIDGE_FREE_SHORT,
+  randomBridgeFreeExample,
+} from "./data/bridge-free-words.js";
+export {
   TERM_ALIASES,
   resolveTermAlias,
 } from "./constants/alias-map.js";

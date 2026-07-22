@@ -11,7 +11,10 @@
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import type { AccountManager, DeleteReauth } from '$lib/shared/auth/services/account-manager'
+  import type {
+    AccountManager,
+    DeleteReauth,
+  } from "$lib/shared/auth/services/account-manager";
   import { onMount } from "svelte";
   import {
     createProfileSettingsState,
@@ -34,6 +37,7 @@
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
   import { refreshUser } from "../../../auth/state/auth-state.svelte";
+  import { hasInstagramAccount } from "$lib/shared/auth/services/instagram-auth";
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
   import type { User } from "firebase/auth";
@@ -97,6 +101,13 @@
 
   // Google photo URL persisted in Firestore (survives avatar switches)
   let savedGooglePhotoUrl = $state<string | null>(null);
+  let instagramLinked = $state(false);
+
+  const connectedProviderIds = $derived([
+    ...(authState.user?.providerData.map((provider) => provider.providerId) ??
+      []),
+    ...(instagramLinked ? ["instagram.com"] : []),
+  ]);
 
   // Photo picker state - survives refresh/HMR via sessionStorage
   const PHOTO_PICKER_KEY = "tka_photo_picker_open";
@@ -131,6 +142,7 @@
     // Load pronouns from Firestore
     const user = authState.user;
     if (user) {
+      instagramLinked = await hasInstagramAccount(user).catch(() => false);
       try {
         const firestore = await getFirestoreInstance();
         const userDocRef = doc(firestore, "users", user.uid);
@@ -235,7 +247,9 @@
       console.error("Failed to save profile color:", err);
       // Revert the optimistic update — the new color never persisted
       profileColor = previousColor;
-      toast.error("Couldn't save profile color. Reverted to your previous color.");
+      toast.error(
+        "Couldn't save profile color. Reverted to your previous color."
+      );
     }
   }
 
@@ -244,9 +258,8 @@
    */
   async function uploadProfilePhoto(user: User, file: File): Promise<string> {
     const { getStorageInstance } = await import("$lib/shared/auth/firebase");
-    const { ref, uploadBytes, getDownloadURL } = await import(
-      "firebase/storage"
-    );
+    const { ref, uploadBytes, getDownloadURL } =
+      await import("firebase/storage");
     const storage = await getStorageInstance();
 
     // Generate unique filename with timestamp
@@ -415,7 +428,9 @@
           {#snippet children()}
             <AccountSettingsSection
               user={authState.user!}
-              hasPasswordProvider={profileState.hasPasswordProvider(authState.user)}
+              hasPasswordProvider={profileState.hasPasswordProvider(
+                authState.user
+              )}
               onChangePassword={handleChangePassword}
               {hapticService}
               onPronounsChanged={(p) => (userPronouns = p)}
@@ -436,7 +451,9 @@
           subtitle="Manage linked providers"
         >
           {#snippet children()}
-            <ConnectedAccounts />
+            <ConnectedAccounts
+              onInstagramChange={(linked) => (instagramLinked = linked)}
+            />
           {/snippet}
         </GlassCard>
       </div>
@@ -457,9 +474,7 @@
             userIdentifier={authState.user?.displayName ||
               authState.user?.email ||
               ""}
-            providerIds={authState.user?.providerData.map(
-              (p) => p.providerId
-            ) ?? []}
+            providerIds={connectedProviderIds}
           />
         {/snippet}
       </GlassCard>
@@ -599,7 +614,11 @@
   }
 
   :global(.danger-card .card-icon) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
     color: var(--semantic-error);
   }
 

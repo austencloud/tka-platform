@@ -48,9 +48,35 @@ If you need iterative error triage, prefer `npm run check:watch` (warm, in-memor
 
 Start `npm run check:watch` in a background terminal at session start. Stream errors as you save. Reserve full `check`/`build` for the commit gate. This is the 2026 AI-assisted loop: warm incremental checker + HMR for runtime, heavy gates only at boundaries.
 
-## Known optimization (not yet applied)
+## Where the time actually goes (verified 2026-07-21)
 
-`build:packages` (9 tsc projects) is non-incremental — the package `tsconfig.json` files lack `composite: true`. Making them composite + switching to `tsc --build` would skip unchanged packages on rebuild. TypeScript native preview (`tsgo`, ~10x faster) is also worth piloting for `type-check`. Flag these to Austen if build time is the bottleneck.
+**`build:packages` is already incremental — do not "optimize" it again.** An
+earlier version of this section claimed the 9 tsc projects lacked
+`composite: true` and needed `tsc --build`. Both landed since; the section went
+stale and kept sending agents after work already done. Current state:
+
+- `build:packages = tsc --build packages/tsconfig.build.json`
+- All 9 packages referenced by `packages/tsconfig.build.json` declare
+  `"composite": true`, and each carries a live `tsconfig.tsbuildinfo`.
+- The other packages (`camera-3d`, `feedback-types`, `mcp-game-controller`,
+  `mcp-tika-talk`, `render-composition`) are not in the build graph. Adding
+  `composite` to them buys nothing.
+
+**The remaining cost is `check`, and it is not a `tsc` problem.** `npm run check`
+is `svelte-check` over `.svelte` files with an 8 GB heap. `tsgo` (TypeScript
+native preview) does not parse Svelte, so it cannot replace `svelte-check` —
+piloting it would only touch the `type-check` script, which is not the
+bottleneck. Do not propose it as a fix for check time.
+
+What genuinely moves check time, in order:
+
+1. **Not running it.** `check:watch` + HMR per the table above.
+2. **Machine contention.** A cold check competes with every other vite server
+   and check on the box. See `resource-budget.md` — the 2026-07-17 incident was
+   7 concurrent dev servers plus two checks, not a compiler problem.
+
+Before proposing a build-perf change, re-verify the claim against the repo —
+this section was wrong for long enough to mislead multiple sessions.
 
 ## Related
 

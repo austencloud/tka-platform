@@ -175,7 +175,38 @@ function encodeMotion(motion: MotionData | undefined): string {
 
 function encodeBeat(beat: StepData | StartPositionData): string {
   const motions = beat.motions ?? { blue: undefined, red: undefined };
-  return `${encodeMotion(motions.blue)}:${encodeMotion(motions.red)}`;
+  const encodedMotions = `${encodeMotion(motions.blue)}:${encodeMotion(motions.red)}`;
+
+  // Keep the legacy byte representation for ordinary one-beat steps. Custom
+  // durations get an explicit third segment so old links and their hashes stay
+  // stable while newly timed sequences round-trip without a source document.
+  if (!("duration" in beat)) return encodedMotions;
+
+  const duration = beat.duration ?? 1;
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error(`Invalid step duration: ${String(duration)}`);
+  }
+
+  return duration === 1 ? encodedMotions : `${encodedMotions}:d${duration}`;
+}
+
+function decodeDuration(encoded: string | undefined, stepNumber: number): number {
+  if (!encoded) return 1;
+
+  if (!encoded.startsWith("d")) {
+    throw new Error(
+      `Invalid duration encoding at beat ${stepNumber}: ${encoded}`
+    );
+  }
+
+  const duration = Number(encoded.slice(1));
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error(
+      `Invalid duration encoding at beat ${stepNumber}: ${encoded}`
+    );
+  }
+
+  return duration;
 }
 
 function decodeMotion(
@@ -429,7 +460,9 @@ export function decodeSequence(encoded: string): SequenceData {
     if (blue) { blueOri = blue.endOrientation; blueLoc = blue.endLocation; }
     if (red) { redOri = red.endOrientation; redLoc = red.endLocation; }
     return {
-      stepNumber, duration: 1, blueReversal: false, redReversal: false,
+      stepNumber,
+      duration: decodeDuration(segs[2], stepNumber),
+      blueReversal: false, redReversal: false,
       isBlank: !(segs[0] ?? "") && !(segs[1] ?? ""),
       motions: {
         blue: blue ?? createPlaceholderMotion(MotionColor.BLUE, { location: blueLoc, orientation: blueOri }),

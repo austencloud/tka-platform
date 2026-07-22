@@ -63,6 +63,7 @@ export class ClaudeCodeCopier {
     // Key/legend
     lines.push("");
     lines.push("## Format Key");
+    lines.push("step = number [letter] [position>position] d=beats [rev:BR]");
     lines.push("motion = type rot loc>loc t=turns ori>ori [prefloat:type,rot] [hand:path] [skew:steps,dir]");
     lines.push("loc = n/e/s/w/ne/se/sw/nw/c (grid locations)");
     lines.push("ori = in/out/cw/ccw/clockIn/clockOut/counterIn/counterOut");
@@ -90,8 +91,9 @@ export class ClaudeCodeCopier {
         if (step.blueReversal) revParts.push("B");
         if (step.redReversal) revParts.push("R");
         const rev = revParts.length ? ` rev:${revParts.join("")}` : "";
+        const duration = step.duration ?? 1;
 
-        lines.push(`${beatNum}${letter}${pos}${rev}`);
+        lines.push(`${beatNum}${letter}${pos} d=${duration}${rev}`);
         lines.push(`  blue: ${blue}`);
         lines.push(`  red:  ${red}`);
       }

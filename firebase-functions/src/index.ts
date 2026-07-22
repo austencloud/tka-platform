@@ -67,9 +67,20 @@ export { createMerchCheckout } from "./merch/createMerchCheckout";
 export { createCartCheckout } from "./merch/createCartCheckout";
 export { handleMerchWebhook } from "./merch/handleMerchWebhook";
 export { createDonationCheckout } from "./donation/createDonationCheckout";
-export { purgeOneCountSequences, adminDeleteSequence } from "./adminPurgeOneCount";
+export {
+  purgeOneCountSequences,
+  adminDeleteSequence,
+} from "./adminPurgeOneCount";
 export { onAuthUserDeleted } from "./accountDeletions/onAuthUserDeleted";
 export { purgeExpiredTombstones } from "./accountDeletions/purgeExpiredTombstones";
+export {
+  startInstagramAuth,
+  instagramAuthCallback,
+  completeInstagramAuth,
+  unlinkInstagramAuth,
+  instagramDeauthorizeCallback,
+} from "./auth/instagramAuth";
+export { instagramDataDeletionCallback } from "./auth/instagramDataDeletion";
 
 const db = admin.firestore();
 

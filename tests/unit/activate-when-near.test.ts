@@ -62,4 +62,26 @@ describe("activateWhenNear", () => {
 
     expect(activate).not.toHaveBeenCalled();
   });
+
+  it("can defer a near activation until a browser idle turn", () => {
+    vi.stubGlobal("IntersectionObserver", ObserverStub);
+    let idleCallback: (() => void) | undefined;
+    vi.stubGlobal(
+      "requestIdleCallback",
+      vi.fn((callback: () => void) => {
+        idleCallback = callback;
+        return 1;
+      })
+    );
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+    const node = document.createElement("div");
+    const activate = vi.fn();
+
+    activateWhenNear(node, { activate, deferUntilIdle: true });
+    ObserverStub.instances[0]?.intersect(node);
+
+    expect(activate).not.toHaveBeenCalled();
+    idleCallback?.();
+    expect(activate).toHaveBeenCalledOnce();
+  });
 });

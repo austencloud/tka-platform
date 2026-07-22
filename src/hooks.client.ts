@@ -3,12 +3,15 @@
  */
 import type { HandleClientError } from "@sveltejs/kit";
 import { browser, dev } from "$app/environment";
+import { Capacitor } from "@capacitor/core";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { createSwUpdateManager } from "$lib/shared/offline/services/sw-update-manager";
-if (typeof window !== 'undefined' && 'Capacitor' in window) {
-  import('@capgo/capacitor-updater').then(({ CapacitorUpdater }) => {
-    CapacitorUpdater.notifyAppReady();
-  }).catch(() => {});
+if (typeof window !== "undefined" && "Capacitor" in window) {
+  import("@capgo/capacitor-updater")
+    .then(({ CapacitorUpdater }) => {
+      CapacitorUpdater.notifyAppReady();
+    })
+    .catch(() => {});
 }
 
 // Suppress Three.js "Multiple instances" warning caused by Vite optimizer
@@ -16,7 +19,11 @@ if (typeof window !== 'undefined' && 'Capacitor' in window) {
 if (browser) {
   const _origWarn = console.warn;
   console.warn = (...args: unknown[]) => {
-    if (typeof args[0] === "string" && args[0].includes("Multiple instances of Three.js being imported")) return;
+    if (
+      typeof args[0] === "string" &&
+      args[0].includes("Multiple instances of Three.js being imported")
+    )
+      return;
     _origWarn.apply(console, args);
   };
 }
@@ -26,7 +33,11 @@ if (browser) {
   import("$lib/shared/render/utils/cache-benchmark")
     .then((module) => {
       // Explicitly expose on window
-      (window as unknown as { runCacheBenchmark: typeof module.runCacheBenchmark }).runCacheBenchmark = module.runCacheBenchmark;
+      (
+        window as unknown as {
+          runCacheBenchmark: typeof module.runCacheBenchmark;
+        }
+      ).runCacheBenchmark = module.runCacheBenchmark;
     })
     .catch(() => {
       // Cache benchmark not available - expected in some builds
@@ -60,9 +71,9 @@ if (browser && dev && "serviceWorker" in navigator) {
                 reg.active ??
                 reg.waiting ??
                 reg.installing
-              )?.scriptURL.includes("firebase-messaging-sw"),
+              )?.scriptURL.includes("firebase-messaging-sw")
           )
-          .map((reg) => reg.unregister()),
+          .map((reg) => reg.unregister())
       );
 
       if ("caches" in window) {
@@ -72,7 +83,7 @@ if (browser && dev && "serviceWorker" in navigator) {
 
       const controller = navigator.serviceWorker.controller;
       const controllerIsFcmOnly = controller?.scriptURL.includes(
-        "firebase-messaging-sw",
+        "firebase-messaging-sw"
       );
       if (controller && !controllerIsFcmOnly) {
         // A stale SW is still controlling this page. A plain reload is not
@@ -133,7 +144,11 @@ if (browser && dev) {
     if (!isHmrClientFailure(reason)) return;
     if (sessionStorage.getItem(HMR_RELOAD_KEY)) return; // already reloaded recently
     if (pendingReload !== null) return; // a reload is already queued
-    console.warn("[hmr-guard] HMR apply failed — reloading in " + SETTLE_MS + "ms unless it self-heals");
+    console.warn(
+      "[hmr-guard] HMR apply failed — reloading in " +
+        SETTLE_MS +
+        "ms unless it self-heals"
+    );
     pendingReload = setTimeout(() => {
       sessionStorage.setItem(HMR_RELOAD_KEY, "1");
       location.reload();
@@ -153,9 +168,11 @@ if (browser && dev) {
   }
 
   window.addEventListener("unhandledrejection", (event) =>
-    recoverFromHmrFailure(event.reason),
+    recoverFromHmrFailure(event.reason)
   );
-  window.addEventListener("error", (event) => recoverFromHmrFailure(event.error));
+  window.addEventListener("error", (event) =>
+    recoverFromHmrFailure(event.error)
+  );
 
   // Re-arm after the page has stayed alive: a later edit may legitimately need
   // another recovery reload. If a reload immediately re-errors during boot, the
@@ -227,7 +244,7 @@ if (browser && !dev) {
           },
           // PostHog capture_exceptions already auto-captures unhandled
           // rejections — mirroring here would double-count the $exception.
-          { skipPostHog: true },
+          { skipPostHog: true }
         );
       })
       .catch(() => {});
@@ -264,7 +281,12 @@ export const handleError: HandleClientError = ({ error, message, status }) => {
 // (The old "tka-sync-queue" Background Sync registration was deleted — the SW
 // has no sync listener, so it was a no-op. Firestore's own persistence queue
 // handles offline writes while a tab is open.)
-if (browser && !dev && "serviceWorker" in navigator) {
+if (
+  browser &&
+  !dev &&
+  !Capacitor.isNativePlatform() &&
+  "serviceWorker" in navigator
+) {
   navigator.serviceWorker
     .register("/sw.js", { scope: "/" })
     .then((registration) => {

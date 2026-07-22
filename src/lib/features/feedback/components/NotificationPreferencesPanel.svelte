@@ -4,9 +4,8 @@
   Allows users to control which notification types they want to receive.
 -->
 <script lang="ts">
-
-import * as notificationPreferencesManager from "$lib/features/feedback/services/notification-preferences-manager";
-import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
+  import * as notificationPreferencesManager from "$lib/features/feedback/services/notification-preferences-manager";
+  import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type {
@@ -27,7 +26,6 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-
 
   // State
   let preferences = $state<NotificationPreferences>(
@@ -165,7 +163,7 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
         );
       } else {
         // Turning ON: check/request permission, then register token
-        let permission = fcmTokenManager.getPermissionState();
+        let permission = await fcmTokenManager.getPermissionState();
 
         if (permission !== "granted") {
           permission = await fcmTokenManager.requestPermission();
@@ -382,7 +380,9 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
             ></i>
           </div>
           <div class="push-toggle-text">
-            <span class="push-toggle-label">{t("feedback_push_notifications")}</span>
+            <span class="push-toggle-label"
+              >{t("feedback_push_notifications")}</span
+            >
             <span class="push-toggle-description">
               {preferences.pushEnabled
                 ? t("feedback_push_enabled_desc")
@@ -390,7 +390,9 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
             </span>
           </div>
           <span class="push-toggle-status" aria-hidden="true">
-            {preferences.pushEnabled ? t("feedback_push_on") : t("feedback_push_off")}
+            {preferences.pushEnabled
+              ? t("feedback_push_on")
+              : t("feedback_push_off")}
           </span>
         </div>
       </button>

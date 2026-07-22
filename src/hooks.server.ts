@@ -4,6 +4,10 @@ import {
   isFirebaseAuthHandlerPath,
   proxyFirebaseAuthHandler,
 } from "$lib/server/auth/firebase-auth-handler-proxy";
+import {
+  isInstagramAuthProxyPath,
+  proxyInstagramAuthRequest,
+} from "$lib/server/auth/instagram-auth-proxy";
 
 /**
  * Check if a request is for a font file that needs CORS headers.
@@ -36,6 +40,13 @@ export const handle: Handle = async ({ event, resolve }) => {
   // adapter-cloudflare's _worker.js — this is the live path.
   if (isFirebaseAuthHandlerPath(event.url.pathname)) {
     return proxyFirebaseAuthHandler(event.request);
+  }
+
+  // Meta must redirect to an exact public URL, while the app secret and token
+  // exchange stay in Firebase. Serve the branded URL through the same worker
+  // layer as the existing Firebase auth handler proxy.
+  if (isInstagramAuthProxyPath(event.url.pathname)) {
+    return proxyInstagramAuthRequest(event.request);
   }
 
   // Handle console forwarding endpoint
@@ -94,7 +105,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Content Security Policy
   // unsafe-eval required: Three.js TSL uses new Function() for ScriptableNode shader compilation
-  const scriptSrc = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com https://cdn.jsdelivr.net https://maps.googleapis.com https://static.cloudflareinsights.com";
+  const scriptSrc =
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com https://cdn.jsdelivr.net https://maps.googleapis.com https://static.cloudflareinsights.com";
   response.headers.set(
     "Content-Security-Policy",
     [
@@ -111,33 +123,46 @@ export const handle: Handle = async ({ event, resolve }) => {
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-    ].join("; "),
+    ].join("; ")
   );
 
   // Permissions Policy - block unused browser APIs. Camera stays first-party:
   // train pose detection, practice AR mirror, and video-record all use it.
   response.headers.set(
     "Permissions-Policy",
-    "camera=(self), microphone=(self), geolocation=(), payment=()",
+    "camera=(self), microphone=(self), geolocation=(), payment=()"
   );
 
   return response;
 };
 
-export const handleError: HandleServerError = async ({ error, event, status, message }) => {
+export const handleError: HandleServerError = async ({
+  error,
+  event,
+  status,
+  message,
+}) => {
   const err = error instanceof Error ? error : new Error(String(error));
 
-  console.error(JSON.stringify({
-    level: "error",
-    type: "server_error",
-    status,
-    message: err.message,
-    stack: err.stack,
-    url: (() => { try { return event.url.pathname + event.url.search; } catch { return event.url.pathname; } })(),
-    method: event.request.method,
-    userAgent: event.request.headers.get("user-agent") ?? "unknown",
-    timestamp: new Date().toISOString(),
-  }));
+  console.error(
+    JSON.stringify({
+      level: "error",
+      type: "server_error",
+      status,
+      message: err.message,
+      stack: err.stack,
+      url: (() => {
+        try {
+          return event.url.pathname + event.url.search;
+        } catch {
+          return event.url.pathname;
+        }
+      })(),
+      method: event.request.method,
+      userAgent: event.request.headers.get("user-agent") ?? "unknown",
+      timestamp: new Date().toISOString(),
+    })
+  );
 
   return {
     message: dev ? err.message : message,
