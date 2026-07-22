@@ -17,9 +17,18 @@
 
   interface Props {
     mode?: "signin" | "signup";
+    /**
+     * Force the opening tab, overriding this device's last-used method. The
+     * in-app-browser path passes "magic" because the magic link is the only
+     * method that actually completes inside a webview — landing a webview
+     * visitor on the password tab points them at a form most of them don't
+     * have credentials for. Omitted everywhere else, so the last-used
+     * default below is unchanged for normal browsers.
+     */
+    initialTab?: "magic" | "password";
   }
 
-  let { mode = $bindable("signin") }: Props = $props();
+  let { mode = $bindable("signin"), initialTab }: Props = $props();
 
   const lastMethod = getLastAuthMethod();
 
@@ -27,7 +36,7 @@
   // device last signed in with a password, in which case landing on the magic
   // tab just makes the user hunt for the form they actually want.
   let activeTab = $state<"magic" | "password">(
-    lastMethod === "password" ? "password" : "magic"
+    initialTab ?? (lastMethod === "password" ? "password" : "magic")
   );
 </script>
 

@@ -10,6 +10,7 @@ import { nuclearCacheClear } from "../utils/nuclear-cache-clear";
 import {
   reauthenticateWithGoogle,
   reauthenticateWithFacebook,
+  reauthenticateWithInstagram,
 } from "./authenticator";
 import { authState } from "../state/auth-state.svelte";
 import type { HapticFeedback } from "../../application/services/haptic-feedback";
@@ -22,7 +23,8 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 export type DeleteReauth =
   | { method: "password"; password: string }
   | { method: "google" }
-  | { method: "facebook" };
+  | { method: "facebook" }
+  | { method: "instagram" };
 
 /**
  * Manages user account operations using Firebase client SDK directly.
@@ -97,13 +99,16 @@ export class AccountManager {
     }
 
     // Re-authenticate to satisfy Firebase's recent-login requirement, using the
-    // method the user actually has. OAuth accounts (Google/Facebook, magic-link
+    // method the user actually has. OAuth accounts (Google/Facebook/Instagram,
+    // magic-link
     // upgrades) have no password — a popup reauth is the only path for them.
     try {
       if (reauth.method === "google") {
         await reauthenticateWithGoogle();
       } else if (reauth.method === "facebook") {
         await reauthenticateWithFacebook();
+      } else if (reauth.method === "instagram") {
+        await reauthenticateWithInstagram();
       } else {
         if (!user.email) {
           throw new Error("No authenticated user found");
@@ -124,7 +129,8 @@ export class AccountManager {
           : "";
       if (
         code === "auth/popup-closed-by-user" ||
-        code === "auth/cancelled-popup-request"
+        code === "auth/cancelled-popup-request" ||
+        code === "instagram/cancelled"
       ) {
         throw new Error("Reauthentication cancelled");
       }
@@ -138,6 +144,17 @@ export class AccountManager {
       if (e instanceof Error && !code) {
         throw e;
       }
+      if (e instanceof Error && code.startsWith("instagram/")) {
+        throw e;
+      }
+      throw new Error("Authentication failed");
+    }
+
+    // Instagram reauthentication signs in with a fresh Firebase custom token,
+    // which can replace the User object. The uid must remain identical, and all
+    // destructive work below uses the new current object.
+    const reauthenticatedUser = auth.currentUser;
+    if (!reauthenticatedUser || reauthenticatedUser.uid !== user.uid) {
       throw new Error("Authentication failed");
     }
 
@@ -165,7 +182,7 @@ export class AccountManager {
     // and all subcollections) — this is belt and suspenders.
     try {
       const firestore = await getFirestoreInstance();
-      const userDocRef = doc(firestore, "users", user.uid);
+      const userDocRef = doc(firestore, "users", reauthenticatedUser.uid);
       await deleteDoc(userDocRef);
     } catch {
       // Non-fatal - the auth account is the important deletion
@@ -173,7 +190,7 @@ export class AccountManager {
     }
 
     // Delete the Firebase Auth account
-    await deleteUser(user);
+    await deleteUser(reauthenticatedUser);
 
     // The "last used" sign-in hint points at an account that no longer exists.
     const { clearLastAuthMethod } = await import("./last-auth-method.svelte");

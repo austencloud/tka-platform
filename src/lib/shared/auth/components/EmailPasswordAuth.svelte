@@ -19,6 +19,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { upgradeAnonymousWithEmail } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
+  import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
 
   let { mode = $bindable("signin" as "signin" | "signup") } = $props();
 
@@ -97,10 +98,18 @@
         await setPersistence(auth, browserLocalPersistence);
       }
 
+      // recordAuthSubmission has to land the instant the credential resolves,
+      // never after. Firebase's onAuthStateChanged fires within milliseconds
+      // and that's what emits user_signed_up — anything registered later
+      // (notably after the 1200ms success pause below) misses the event it was
+      // meant to enrich, and then lingers on unrelated events for the rest of
+      // the session. So it goes immediately after each credential call, ahead
+      // of profile updates and verification mail.
       if (mode === "signup") {
         if (auth.currentUser?.isAnonymous) {
           const upgrade = await upgradeAnonymousWithEmail(email, password);
           if (upgrade.status === "linked") {
+            recordAuthSubmission("password", mode);
             if (name.trim() && auth.currentUser) {
               await updateProfile(auth.currentUser, { displayName: name.trim() });
             }
@@ -108,10 +117,14 @@
               await sendEmailVerification(auth.currentUser);
             }
           } else if (upgrade.status === "collision-signed-in") {
+            // The email already had an account and they're now signed into it:
+            // a sign-in outcome, not a new account.
+            recordAuthSubmission("password", "signin");
             promptAnonymousImport(upgrade.importable ?? []);
           }
         } else {
           const result = await createUserWithEmailAndPassword(auth, email, password);
+          recordAuthSubmission("password", mode);
           if (name.trim()) {
             await updateProfile(result.user, { displayName: name.trim() });
           }
@@ -122,6 +135,7 @@
         await new Promise((resolve) => setTimeout(resolve, 1200));
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        recordAuthSubmission("password", mode);
         resetAttempts();
       }
 

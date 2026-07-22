@@ -22,6 +22,14 @@
   import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import LastUsedBadge from "./LastUsedBadge.svelte";
+  import { trackAuthModalAbandoned } from "$lib/shared/analytics/auth-events";
+  import {
+    recordAuthSubmission,
+    clearAuthSubmissionBridge,
+  } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { page } from "$app/state";
+  import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
 
   function handleGoogleOneTapError(error: Error) {
     console.error("[AuthModal] Google One Tap sign-in failed", error);
@@ -57,7 +65,9 @@
   // aren't where the user needs to go — badge the email toggle instead, and let
   // EmailAuthTabs open on the right tab (magic link vs password).
   const lastMethod = $derived(getLastAuthMethod());
-  const lastUsedEmail = $derived(lastMethod === "magic-link" || lastMethod === "password");
+  const lastUsedEmail = $derived(
+    lastMethod === "magic-link" || lastMethod === "password"
+  );
 
   // Sync internal mode whenever the modal opens with a specific initial mode.
   $effect(() => {
@@ -66,6 +76,36 @@
       showEmailAuth = false;
       facebookError = null;
     }
+  });
+
+  // Inside a third-party in-app webview the usual ordering is upside down: One
+  // Tap is FedCM-based and never completes, both social popups are blocked by
+  // the providers themselves, and the magic link — needing no popup, no
+  // redirect, and no sessionStorage — is the one method that works. So it gets
+  // the primary slot instead of sitting behind a "Continue with email" toggle.
+  // Nothing here runs in a normal browser: this whole branch is dead code
+  // unless the detector fires or ?forceIAB is set for testing.
+  const inAppBrowser = $derived(
+    getInAppBrowserDetector().isInAppBrowserOrForced(page.url.searchParams)
+  );
+
+  // Fire-once-per-open guard. A plain let, not $state: an effect that both
+  // reads and writes the same reactive value re-runs itself.
+  let promotedFired = false;
+
+  // Separate from the mode-sync effect above on purpose — inAppBrowser reads
+  // page.url, and folding it in would make that effect re-run on navigation
+  // and reset authMode mid-session for every browser, not just webviews.
+  $effect(() => {
+    if (!open) {
+      promotedFired = false;
+      return;
+    }
+    if (!inAppBrowser || promotedFired) return;
+    promotedFired = true;
+    captureEvent("inapp_auth_magic_link_promoted", {
+      route: page.url.pathname,
+    });
   });
 
   // What a free account unlocks over a throwaway guest session. Concrete and
@@ -77,7 +117,10 @@
     { icon: "fa-download", label: "Export your animations & cards" },
     { icon: "fa-bookmark", label: "Save your work, safely" },
     { icon: "fa-cloud-arrow-up", label: "Sync across devices" },
-    { icon: "fa-wand-magic-sparkles", label: "Longer sequences, up to 64 steps" },
+    {
+      icon: "fa-wand-magic-sparkles",
+      label: "Longer sequences, up to 64 steps",
+    },
   ];
 
   // SocialAuthCompact handles Google internally but delegates Facebook to the
@@ -87,6 +130,7 @@
     facebookError = null;
     try {
       await signInWithFacebook();
+      recordAuthSubmission("facebook");
     } catch (error: unknown) {
       console.error("❌ [AuthModal] Facebook auth failed:", error);
       const errorCode = (error as { code?: string })?.code;
@@ -96,14 +140,35 @@
         facebookError = "Sign-in cancelled. Please try again.";
       } else if (errorCode === "auth/cancelled-popup-request") {
         facebookError = null; // Silent - user just clicked away
-      } else if (errorCode === "auth/account-exists-with-different-credential") {
+      } else if (
+        errorCode === "auth/account-exists-with-different-credential"
+      ) {
         facebookError =
           "This email is already registered. Sign in with your original method (Google or email) and we'll connect Facebook automatically.";
       } else {
         facebookError =
-          error instanceof Error ? error.message : "Facebook sign-in failed. Please try again.";
+          error instanceof Error
+            ? error.message
+            : "Facebook sign-in failed. Please try again.";
       }
     }
+  }
+
+  // A completed sign-in never reaches either handler below: SiteHeader closes
+  // this modal on success by flipping its `open` prop from the outside, which
+  // BaseModal's own close guard treats as already-closed and never re-fires
+  // `onclose`. So every call here is a genuine user-initiated dismissal, never
+  // a completed sign-in mistaken for one.
+  function handleCloseButtonClick() {
+    trackAuthModalAbandoned("close_button");
+    clearAuthSubmissionBridge();
+    onClose();
+  }
+
+  function handleModalDismiss() {
+    trackAuthModalAbandoned("backdrop_or_escape");
+    clearAuthSubmissionBridge();
+    onClose();
   }
 </script>
 
@@ -115,17 +180,26 @@
   class="auth-modal"
   closeOnBackdrop
   closeOnEscape
-  onclose={onClose}
+  onclose={handleModalDismiss}
 >
   <div class="auth-modal-content">
-    <button class="close-btn" onclick={onClose} aria-label="Close">
+    <button
+      class="close-btn"
+      onclick={handleCloseButtonClick}
+      aria-label="Close"
+    >
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
     <!-- Header -->
     <div class="auth-hero">
       <div class="auth-logo-badge">
-        <img src="/branding/logo.jpg" alt="Flow Arts Composer" width="56" height="56" />
+        <img
+          src="/branding/logo.jpg"
+          alt="Flow Arts Composer"
+          width="56"
+          height="56"
+        />
       </div>
       <div class="auth-heading">
         {#if authMode === "signup"}
@@ -152,36 +226,61 @@
       </ul>
     {/if}
 
-    <!-- Google One Tap (renders its own prompt UI) -->
-    <GoogleOneTap autoPrompt={open} onError={handleGoogleOneTapError} />
-
-    <!-- Social auth buttons -->
-    <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
-
-    {#if facebookError}
-      <p class="fb-error" role="alert">{facebookError}</p>
-    {/if}
-
-    <!-- Email auth toggle -->
-    {#if !showEmailAuth}
-      <button
-        class="email-toggle"
-        onclick={() => (showEmailAuth = true)}
-        aria-label={lastUsedEmail
-          ? "Continue with email, last used on this device"
-          : "Continue with email"}
-      >
-        {#if lastUsedEmail}
-          <LastUsedBadge />
-        {/if}
-        <i class="fas fa-envelope" aria-hidden="true"></i>
-        <span>Continue with email</span>
-      </button>
-    {:else}
-      <div class="divider"><span>or use email</span></div>
+    {#if inAppBrowser}
+      <!-- Webview order: the method that works goes first and stays open. One
+           Tap is skipped entirely rather than rendered and left to fail. -->
+      <h3 class="section-heading">Sign in by email</h3>
       <div class="email-auth-wrapper">
-        <EmailAuthTabs bind:mode={authMode} />
+        <EmailAuthTabs bind:mode={authMode} initialTab="magic" />
       </div>
+
+      <div class="divider"><span>Other options</span></div>
+      <p class="provider-warning">
+        Social sign-in is blocked inside this browser.
+      </p>
+      <!-- Left tappable on purpose. People try these regardless, and a live
+           button that explains itself beats a dead one that doesn't. -->
+      <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
+
+      {#if facebookError}
+        <p class="fb-error" role="alert">{facebookError}</p>
+      {/if}
+    {:else}
+      <!-- Google One Tap (renders its own prompt UI) -->
+      <GoogleOneTap
+        autoPrompt={open}
+        onSuccess={() => recordAuthSubmission("google_one_tap")}
+        onError={handleGoogleOneTapError}
+      />
+
+      <!-- Social auth buttons -->
+      <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
+
+      {#if facebookError}
+        <p class="fb-error" role="alert">{facebookError}</p>
+      {/if}
+
+      <!-- Email auth toggle -->
+      {#if !showEmailAuth}
+        <button
+          class="email-toggle"
+          onclick={() => (showEmailAuth = true)}
+          aria-label={lastUsedEmail
+            ? "Continue with email, last used on this device"
+            : "Continue with email"}
+        >
+          {#if lastUsedEmail}
+            <LastUsedBadge />
+          {/if}
+          <i class="fas fa-envelope" aria-hidden="true"></i>
+          <span>Continue with email</span>
+        </button>
+      {:else}
+        <div class="divider"><span>or use email</span></div>
+        <div class="email-auth-wrapper">
+          <EmailAuthTabs bind:mode={authMode} />
+        </div>
+      {/if}
     {/if}
 
     <!-- Mode toggle — a real button, not a hyperlink -->
@@ -268,7 +367,8 @@
     border-radius: 50%;
     background: #fff;
     border: 2px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
-    box-shadow: 0 0 40px color-mix(in srgb, var(--theme-accent) 28%, transparent);
+    box-shadow: 0 0 40px
+      color-mix(in srgb, var(--theme-accent) 28%, transparent);
     overflow: hidden;
   }
 
@@ -330,6 +430,24 @@
     background: color-mix(in srgb, var(--theme-accent) 16%, transparent);
     color: var(--theme-accent);
     font-size: 13px;
+  }
+
+  /* Webview-only: heading over the promoted email path, and the sentence that
+     explains why the social buttons below it are still there. */
+  .section-heading {
+    margin: 0;
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 600;
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    text-align: center;
+  }
+
+  .provider-warning {
+    margin: -0.5rem 0 0;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-align: center;
+    line-height: 1.4;
   }
 
   /* Email toggle button */

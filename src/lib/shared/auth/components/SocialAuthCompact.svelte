@@ -1,7 +1,7 @@
 <!--
   SocialAuthCompact.svelte - Compact Social Authentication Buttons
 
-  Side-by-side Google and Facebook auth buttons for sign-in/sign-up flows.
+  Google, Facebook, and Instagram auth buttons for sign-in/sign-up flows.
 
   Auth Flow Priority:
   1. Google One Tap (FedCM-native, no redirects) - via GoogleOneTap.svelte
@@ -19,14 +19,28 @@
   } from "firebase/auth";
   import { browser } from "$app/environment";
   import { getAuthInstance } from "../firebase";
-  import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
+  import {
+    signInWithGoogle,
+    signInWithInstagram,
+  } from "$lib/shared/auth/services/authenticator";
   import { isNative } from "$lib/shared/platform/services/platform-detector";
   import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
-  import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
-  import { mapAuthError, getAuthErrorCode } from "$lib/shared/auth/services/auth-error-messages";
+  import {
+    FACEBOOK_LOGIN_ENABLED,
+    INSTAGRAM_LOGIN_ENABLED,
+  } from "$lib/shared/auth/services/auth-providers.config";
+  import {
+    mapAuthError,
+    getAuthErrorCode,
+  } from "$lib/shared/auth/services/auth-error-messages";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import LastUsedBadge from "./LastUsedBadge.svelte";
+  import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { page } from "$app/state";
+  import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { getInstagramAuthErrorMessage } from "$lib/shared/auth/services/instagram-auth";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
@@ -34,12 +48,49 @@
   }>();
 
   let googleError = $state<string | null>(null);
-  let isLoading = $state(false);
+  let facebookError = $state<string | null>(null);
+  let instagramError = $state<string | null>(null);
+  let loadingProvider = $state<"google" | "instagram" | null>(null);
+  const isLoading = $derived(loadingProvider !== null);
 
   // Facebook still runs signInWithPopup, which dead-ends in the native
   // WebView (Google/Meta block WebView sign-in). Hide it there until it's
   // wired through the native plugin. browser-guard: Capacitor is client-only.
   const showFacebook = FACEBOOK_LOGIN_ENABLED && !(browser && isNative());
+  const showInstagram = INSTAGRAM_LOGIN_ENABLED && !(browser && isNative());
+
+  // A third-party in-app webview (Instagram, Messenger, TikTok) is NOT the
+  // native shell above: the detector returns false under Capacitor precisely so
+  // this branch can't touch the native plugin path. Here social providers are
+  // dead ends — Google answers embedded webviews with a server-side 403
+  // disallowed_useragent, and Meta's policy is no looser. Detected here rather
+  // than passed down as a prop because AuthSheet and AuthPrompt render this
+  // component too, and the providers fail the same way from all three hosts.
+  const detector = getInAppBrowserDetector();
+  const inAppBrowser = $derived(
+    detector.isInAppBrowserOrForced(page.url.searchParams)
+  );
+
+  // Android escapes to Chrome, iOS to Safari. Everything else gets no browser
+  // name at all: the pattern list matches apps that also ship desktop clients
+  // with an embedded browser (WeChat, Telegram, Discord, Slack, Line), whose UA
+  // carries neither an Android nor an iPhone token. Telling a WeChat-on-Windows
+  // visitor to open the page in Safari names a browser their OS does not have.
+  // Plain const, not $derived: getPlatform() reads navigator, which cannot
+  // change for the life of the page.
+  const escapeTarget = (() => {
+    const platform = detector.getPlatform();
+    if (platform === "android") return "Chrome";
+    if (platform === "ios") return "Safari";
+    return "your browser";
+  })();
+  // Names the Magic Link tab rather than pointing a direction: AuthModal's
+  // webview layout puts email above these buttons, but AuthSheet and
+  // AuthPrompt both render this component first, so "above" would be wrong
+  // from two of the three hosts.
+  function blockedProviderMessage(provider: string): string {
+    return `${provider} blocks sign-in inside this browser. Use the Magic Link option, or open this page in ${escapeTarget}.`;
+  }
 
   // Which button this device signed in with last. Removes the "wait, was it
   // Google or email?" guess that otherwise ends in the wrong provider and an
@@ -48,7 +99,18 @@
 
   async function handleGoogleClick() {
     if (isLoading) return;
-    isLoading = true;
+
+    // Stop before any Firebase call. Attempting the popup first doesn't
+    // degrade gracefully — Google renders its own 403 disallowed_useragent
+    // page inside this same webview, which is a worse dead end than one
+    // sentence in our own UI that names the way out.
+    if (inAppBrowser) {
+      googleError = blockedProviderMessage("Google");
+      captureEvent("inapp_auth_social_intercepted", { provider: "google" });
+      return;
+    }
+
+    loadingProvider = "google";
     googleError = null;
 
     // Cancel any pending One Tap prompt to prevent race conditions
@@ -84,6 +146,7 @@
       } else {
         await signInWithGoogle();
       }
+      recordAuthSubmission("google");
     } catch (error: unknown) {
       const errorCode = getAuthErrorCode(error);
 
@@ -99,12 +162,45 @@
 
       googleError = mapAuthError(error);
     } finally {
-      isLoading = false;
+      loadingProvider = null;
     }
   }
 
   function handleFacebookClick() {
+    if (isLoading) return;
+    // Meta's webview policy was never independently confirmed to be looser
+    // than Google's, and the cost of being wrong is asymmetric: a defensive
+    // sentence costs a tap, an unhandled dead end costs the visitor.
+    if (inAppBrowser) {
+      facebookError = blockedProviderMessage("Facebook");
+      captureEvent("inapp_auth_social_intercepted", { provider: "facebook" });
+      return;
+    }
     onFacebookAuth?.();
+  }
+
+  async function handleInstagramClick() {
+    if (isLoading) return;
+    if (inAppBrowser) {
+      instagramError = blockedProviderMessage("Instagram");
+      captureEvent("inapp_auth_social_intercepted", { provider: "instagram" });
+      return;
+    }
+
+    loadingProvider = "instagram";
+    instagramError = null;
+    try {
+      await signInWithInstagram();
+      recordAuthSubmission("instagram");
+    } catch (error: unknown) {
+      console.error("[SocialAuthCompact] Instagram sign-in failed", {
+        code: (error as { code?: string })?.code,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      instagramError = getInstagramAuthErrorMessage(error);
+    } finally {
+      loadingProvider = null;
+    }
   }
 </script>
 
@@ -112,7 +208,11 @@
   <p class="social-compact-label">
     {mode === "signin" ? "Sign in with" : "Sign up with"}
   </p>
-  <div class="social-compact-buttons">
+  <div
+    class="social-compact-buttons"
+    class:one-provider={!showFacebook && !showInstagram}
+    class:three-providers={showFacebook && showInstagram}
+  >
     <button
       class="social-compact-button social-compact-button--google"
       onclick={handleGoogleClick}
@@ -124,7 +224,7 @@
       {#if lastMethod === "google"}
         <LastUsedBadge />
       {/if}
-      {#if isLoading}
+      {#if loadingProvider === "google"}
         <ProgressRing percent={-1} size={24} strokeWidth={2} />
         Signing in...
       {:else}
@@ -136,6 +236,7 @@
       <button
         class="social-compact-button social-compact-button--facebook"
         onclick={handleFacebookClick}
+        disabled={isLoading}
         aria-label={`${mode === "signin" ? "Sign in with Facebook" : "Sign up with Facebook"}${
           lastMethod === "facebook" ? ", last used on this device" : ""
         }`}
@@ -147,9 +248,42 @@
         Facebook
       </button>
     {/if}
+    {#if showInstagram}
+      <button
+        class="social-compact-button social-compact-button--instagram"
+        onclick={handleInstagramClick}
+        disabled={isLoading}
+        aria-describedby="instagram-account-requirement"
+        aria-label={`${mode === "signin" ? "Sign in with Instagram" : "Sign up with Instagram"}, creator or business account required${
+          lastMethod === "instagram" ? ", last used on this device" : ""
+        }`}
+      >
+        {#if lastMethod === "instagram"}
+          <LastUsedBadge />
+        {/if}
+        {#if loadingProvider === "instagram"}
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
+          Opening...
+        {:else}
+          <i class="fab fa-instagram" aria-hidden="true"></i>
+          Instagram
+        {/if}
+      </button>
+    {/if}
   </div>
+  {#if showInstagram}
+    <p id="instagram-account-requirement" class="provider-note">
+      Instagram requires a creator or business account.
+    </p>
+  {/if}
   {#if googleError}
     <p class="error-message" role="alert">{googleError}</p>
+  {/if}
+  {#if facebookError}
+    <p class="error-message" role="alert">{facebookError}</p>
+  {/if}
+  {#if instagramError}
+    <p class="error-message" role="alert">{instagramError}</p>
   {/if}
 </div>
 
@@ -170,7 +304,8 @@
   }
 
   .social-compact-buttons {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(6px, 1vw, 10px);
     width: 100%;
     max-width: 400px;
@@ -181,8 +316,15 @@
     padding-top: 0.75rem;
   }
 
+  .social-compact-buttons.one-provider {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .social-compact-buttons.three-providers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .social-compact-button {
-    flex: 1;
     /* Anchor for the absolutely-positioned LastUsedBadge. */
     position: relative;
     display: flex;
@@ -229,10 +371,27 @@
     transform: translateY(-1px);
   }
 
+  .social-compact-button--instagram {
+    background: #e4405f;
+    color: #ffffff;
+  }
+
+  .social-compact-button--instagram:hover:not(:disabled) {
+    background: #cf3654;
+    transform: translateY(-1px);
+  }
+
+  .provider-note {
+    margin: -4px 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.35;
+    text-align: center;
+  }
+
   .error-message {
     margin: 0;
     font-size: var(--font-size-compact);
     color: var(--semantic-error, var(--semantic-error));
   }
-
 </style>

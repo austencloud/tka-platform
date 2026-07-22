@@ -13,15 +13,62 @@
    */
 
   import { httpsCallable } from "firebase/functions";
+  import { page } from "$app/state";
   import { getFunctionsInstance } from "../firebase";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { db } from "$lib/shared/persistence/database/tka-database";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
 
   let email = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
+
+  // Inside an in-app webview this form is not just one option among several —
+  // it is the only sign-in method that completes there, because it needs no
+  // popup, no redirect, and no sessionStorage. The hint changes to say where
+  // the link will actually land, which is a different browser than this one.
+  // ?forceIAB is the test hook the whole in-app-browser path is verified with.
+  const detector = getInAppBrowserDetector();
+  const inAppBrowser = $derived(detector.isInAppBrowserOrForced(page.url.searchParams));
+
+  // Android's escape hatch is Chrome, iOS's is Safari, and the desktop clients
+  // in the pattern list (WeChat, Telegram, Discord, Slack) are neither — naming
+  // a browser their OS does not have is worse than naming none.
+  // Plain const, not $derived: getPlatform() reads navigator, which cannot
+  // change for the life of the page.
+  const escapeTarget = (() => {
+    const platform = detector.getPlatform();
+    if (platform === "android") return "Chrome";
+    if (platform === "ios") return "Safari";
+    return "your browser";
+  })();
+
+  const hint = $derived(
+    inAppBrowser
+      ? `We email you a link. Open it in ${escapeTarget} and you are signed in there.`
+      : "No password needed - we'll email you a sign-in link."
+  );
+
+  // The link is usually opened in a different browser than the one that
+  // requested it, and localStorage does not cross that boundary — so an
+  // anonymous guest who built work here finishes sign-in as a brand-new
+  // account with their drafts stranded on the webview's uid. Nobody knows yet
+  // how often that actually costs someone work, so measure the exposure
+  // before building a uid-carry mechanism for a gap that may be theoretical.
+  async function hasPendingGuestDrafts(): Promise<boolean> {
+    if (!authState.isAnonymous) return false;
+    try {
+      return (await db.sequences.count()) > 0;
+    } catch {
+      return false;
+    }
+  }
 
   async function sendEmailLink() {
     loading = true;
@@ -47,6 +94,19 @@
         // Save the email locally so we can complete sign-in on the same device
         window.localStorage.setItem("emailForSignIn", email);
         success = `Magic link sent! Check your email at ${email}`;
+        recordAuthSubmission("magic_link");
+        if (inAppBrowser) {
+          // Detached on purpose. This awaits an IndexedDB count, and in-app
+          // webviews are exactly where IndexedDB stalls — awaiting it here
+          // holds `loading` true (the finally runs after it), so the button
+          // would sit spinning "Sending..." underneath a banner already saying
+          // the mail was sent. Telemetry never gates UI state.
+          void hasPendingGuestDrafts().then((pending) =>
+            captureEvent("inapp_auth_magic_link_requested", {
+              guest_drafts_pending: pending,
+            })
+          );
+        }
       } else {
         throw new Error(result.data.error || "Failed to send magic link");
       }
@@ -84,7 +144,7 @@
   }}
   class="email-link-form"
 >
-  <p class="magic-link-hint">No password needed - we'll email you a sign-in link.</p>
+  <p class="magic-link-hint">{hint}</p>
 
   <div class="form-group">
     <label for="email-link">{t("form_email")}</label>

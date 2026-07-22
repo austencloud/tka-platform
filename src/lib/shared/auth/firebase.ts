@@ -31,6 +31,7 @@ import type { FirebaseStorage } from "firebase/storage";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { resolveAuthDomain } from "./auth-domain";
 import { getFirebaseHMRManager, type FirebaseHMRManager } from "./firebase-hmr-manager";
+import { getInAppBrowserDetector } from "./get-in-app-browser-detector";
 import type { Functions } from 'firebase/functions';
 import type { Unsubscribe } from 'firebase/firestore';
 
@@ -370,6 +371,18 @@ async function initializeFirestore(): Promise<Firestore> {
     firestoreInstance = getFirestore(app);
     usingMemoryCache = true;
     debug.info("Firestore memory-only (no IndexedDB in this runtime)");
+    hmrManager.setFirestore(firestoreInstance);
+    return firestoreInstance;
+  }
+
+  // In-app webviews partition IndexedDB unpredictably, and these sessions are
+  // short by nature: the visitor is on their way to a real browser. Skip the
+  // 5s persistent-cache race rather than spend it, and skip the multi-tab lease
+  // election that produces console noise nobody can act on.
+  if (getInAppBrowserDetector().isInAppBrowser()) {
+    firestoreInstance = getFirestore(app);
+    usingMemoryCache = true;
+    debug.info("Firestore memory-only (in-app browser)");
     hmrManager.setFirestore(firestoreInstance);
     return firestoreInstance;
   }

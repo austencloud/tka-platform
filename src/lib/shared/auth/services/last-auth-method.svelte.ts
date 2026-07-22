@@ -17,7 +17,12 @@
 
 import { browser } from "$app/environment";
 
-export type LastAuthMethod = "google" | "facebook" | "magic-link" | "password";
+export type LastAuthMethod =
+  | "google"
+  | "facebook"
+  | "instagram"
+  | "magic-link"
+  | "password";
 
 const STORAGE_KEY = "tka:last-auth-method";
 
@@ -31,6 +36,7 @@ const MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
 const VALID_METHODS: readonly LastAuthMethod[] = [
   "google",
   "facebook",
+  "instagram",
   "magic-link",
   "password",
 ];
@@ -41,7 +47,9 @@ interface StoredRecord {
 }
 
 function isValidMethod(value: unknown): value is LastAuthMethod {
-  return typeof value === "string" && VALID_METHODS.includes(value as LastAuthMethod);
+  return (
+    typeof value === "string" && VALID_METHODS.includes(value as LastAuthMethod)
+  );
 }
 
 /**
@@ -58,7 +66,8 @@ function read(): LastAuthMethod | null {
 
     const parsed = JSON.parse(raw) as Partial<StoredRecord>;
     if (!isValidMethod(parsed?.method)) return null;
-    if (typeof parsed.at !== "number" || !Number.isFinite(parsed.at)) return null;
+    if (typeof parsed.at !== "number" || !Number.isFinite(parsed.at))
+      return null;
     if (Date.now() - parsed.at > MAX_AGE_MS) return null;
 
     return parsed.method;

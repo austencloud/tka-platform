@@ -98,6 +98,15 @@ export async function completeEmailLinkSignIn(
   }
 
   try {
+    // Re-register method=magic_link on THIS tab before the credential is
+    // exchanged. The tab that requested the link registered it in
+    // sessionStorage, which doesn't follow the user into whatever tab their
+    // mail client opened — so without this, every magic-link signup would lose
+    // the method enrichment on user_signed_up. Must run before the exchange:
+    // onAuthStateChanged fires within milliseconds of it resolving.
+    const { restorePendingAuthMethod } = await import("./auth-analytics-bridge");
+    restorePendingAuthMethod();
+
     // If an anonymous session survived the email round-trip, LINK the email
     // credential onto the anon user in place (preserving its uid + data)
     // instead of minting a fresh account.

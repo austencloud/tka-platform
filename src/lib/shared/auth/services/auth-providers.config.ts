@@ -10,3 +10,10 @@
  * stay intact either way.
  */
 export const FACEBOOK_LOGIN_ENABLED = true;
+
+/**
+ * Instagram uses Meta's professional-account OAuth plus Firebase custom auth.
+ * Keep entry points hidden until the Meta app, Firebase secrets, production
+ * functions, and Cloudflare callback have passed the live checklist.
+ */
+export const INSTAGRAM_LOGIN_ENABLED = false;

@@ -52,7 +52,9 @@ function isCollision(error: unknown): error is AuthError {
 }
 
 /** Read the anon user's saved sequences before we risk losing the session. */
-async function captureAnonDrafts(anonUid: string): Promise<LibrarySequence[]> {
+export async function captureAnonymousDrafts(
+  anonUid: string
+): Promise<LibrarySequence[]> {
   try {
     return await getLibraryRepository().getUserSequences(anonUid);
   } catch {
@@ -90,9 +92,8 @@ export async function notifyUpgradeSignup(): Promise<void> {
     // update branch writes isAnonymous:false; it also creates the doc if dev
     // skipped it while the session was anonymous (PROD-only guest-doc guard).
     try {
-      const { getUserDocumentManager } = await import(
-        "$lib/shared/auth/get-user-document-manager"
-      );
+      const { getUserDocumentManager } =
+        await import("$lib/shared/auth/get-user-document-manager");
       await getUserDocumentManager().createOrUpdateUserDocument(user);
     } catch (error) {
       console.warn(
@@ -124,14 +125,15 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   const auth = await getAuthInstance();
   const anon = auth.currentUser;
   if (!anon?.isAnonymous) throw new Error("No anonymous session to upgrade");
-  const drafts = await captureAnonDrafts(anon.uid);
+  const drafts = await captureAnonymousDrafts(anon.uid);
 
   // Native: linkWithPopup dead-ends in the WebView (Google blocks WebView
   // sign-in), so get the credential from the native SDK and link it directly.
   // Unlike the popup path we hold the credential ourselves, so a collision
   // signs into the existing account with that same credential — no
   // credentialFromError needed.
-  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  const { isNative } =
+    await import("$lib/shared/platform/services/platform-detector");
   if (isNative()) {
     const { nativeGoogleCredential } = await import("./native-google-auth");
     const credential = await nativeGoogleCredential();
@@ -143,7 +145,9 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
     } catch (error) {
       if (isCollision(error)) {
         await signInWithCredential(auth, credential);
-        captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+        captureEvent("guest_upgraded_to_account", {
+          status: "collision-signed-in",
+        });
         recordLastAuthMethod("google");
         return { status: "collision-signed-in", importable: drafts };
       }
@@ -164,7 +168,9 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
       const cred = GoogleAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
-      captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+      captureEvent("guest_upgraded_to_account", {
+        status: "collision-signed-in",
+      });
       recordLastAuthMethod("google");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -176,7 +182,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
   const auth = await getAuthInstance();
   const anon = auth.currentUser;
   if (!anon?.isAnonymous) throw new Error("No anonymous session to upgrade");
-  const drafts = await captureAnonDrafts(anon.uid);
+  const drafts = await captureAnonymousDrafts(anon.uid);
   const provider = new FacebookAuthProvider();
   provider.addScope("email");
   provider.addScope("public_profile");
@@ -190,7 +196,9 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
       const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
-      captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+      captureEvent("guest_upgraded_to_account", {
+        status: "collision-signed-in",
+      });
       recordLastAuthMethod("facebook");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -200,11 +208,13 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
     // it auto-links once the user signs into that existing account. Rethrow so
     // the UI guides them there.
     if (
-      (error as AuthError)?.code === "auth/account-exists-with-different-credential"
+      (error as AuthError)?.code ===
+      "auth/account-exists-with-different-credential"
     ) {
       const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
       const email = (error as AuthError).customData?.email ?? null;
-      if (cred) stashPendingLink(cred, typeof email === "string" ? email : null);
+      if (cred)
+        stashPendingLink(cred, typeof email === "string" ? email : null);
     }
     throw error;
   }
@@ -217,7 +227,7 @@ export async function upgradeAnonymousWithEmail(
   const auth = await getAuthInstance();
   const anon = auth.currentUser;
   if (!anon?.isAnonymous) throw new Error("No anonymous session to upgrade");
-  const drafts = await captureAnonDrafts(anon.uid);
+  const drafts = await captureAnonymousDrafts(anon.uid);
   const credential = EmailAuthProvider.credential(email.trim(), password);
   try {
     await linkWithCredential(anon, credential);
@@ -227,7 +237,9 @@ export async function upgradeAnonymousWithEmail(
   } catch (error) {
     if (isCollision(error)) {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+      captureEvent("guest_upgraded_to_account", {
+        status: "collision-signed-in",
+      });
       recordLastAuthMethod("password");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -266,7 +278,7 @@ export async function upgradeMagicLinkCollision(
   link: string
 ): Promise<LibrarySequence[]> {
   const auth = await getAuthInstance();
-  const drafts = await captureAnonDrafts(anonUid);
+  const drafts = await captureAnonymousDrafts(anonUid);
   await signInWithEmailLink(auth, email, link);
   captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
   recordLastAuthMethod("magic-link");

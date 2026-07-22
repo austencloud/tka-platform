@@ -28,10 +28,19 @@ import {
   type AuthError,
 } from "firebase/auth";
 import { auth, getAuthInstance } from "../firebase";
-import { upgradeAnonymousWithFacebook } from "./anonymous-upgrade";
+import {
+  captureAnonymousDrafts,
+  notifyUpgradeSignup,
+  upgradeAnonymousWithFacebook,
+} from "./anonymous-upgrade";
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 import { clearPendingLink, stashPendingLink } from "./pending-credential-link";
 import { recordLastAuthMethod } from "./last-auth-method.svelte";
+import { captureEvent } from "$lib/shared/analytics/services/posthog";
+import {
+  authenticateWithInstagram,
+  disconnectInstagramAccount,
+} from "./instagram-auth";
 
 /**
  * On an "account exists with a different credential" collision, capture the
@@ -40,7 +49,10 @@ import { recordLastAuthMethod } from "./last-auth-method.svelte";
  * to the caller, which then rethrows so the UI can guide the user.
  */
 function stashFacebookCollision(error: unknown): void {
-  if ((error as AuthError)?.code !== "auth/account-exists-with-different-credential") {
+  if (
+    (error as AuthError)?.code !==
+    "auth/account-exists-with-different-credential"
+  ) {
     return;
   }
   const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
@@ -59,14 +71,15 @@ export function notePopupCoop(): void {
   console.info(
     "%c[auth]%c Opening Google/Facebook popup — a “Cross-Origin-Opener-Policy … window.close” warning may follow. It's benign (Google's popup header) and sign-in still works.",
     "color:#7dd3fc;font-weight:bold",
-    "color:inherit",
+    "color:inherit"
   );
 }
 
 export async function signInWithGoogle(): Promise<void> {
   const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
   if (isDesktop()) {
-    const { signInWithDesktopOAuth } = await import("$lib/shared/desktop/tauri-auth-bridge");
+    const { signInWithDesktopOAuth } =
+      await import("$lib/shared/desktop/tauri-auth-bridge");
     await signInWithDesktopOAuth();
     recordLastAuthMethod("google");
     return;
@@ -78,7 +91,8 @@ export async function signInWithGoogle(): Promise<void> {
   // Use the native Google SDK to obtain an ID token, then sign the JS SDK in
   // with the credential. skipNativeAuth (capacitor.config) keeps the JS Firebase
   // SDK authoritative, matching every other auth path in the app.
-  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  const { isNative } =
+    await import("$lib/shared/platform/services/platform-detector");
   if (isNative()) {
     const { nativeGoogleCredential } = await import("./native-google-auth");
     await signInWithCredential(auth, await nativeGoogleCredential());
@@ -98,7 +112,9 @@ export async function signInWithGoogle(): Promise<void> {
   recordLastAuthMethod("google");
 }
 
-export async function signInWithGoogleCredential(idToken: string): Promise<void> {
+export async function signInWithGoogleCredential(
+  idToken: string
+): Promise<void> {
   const credential = GoogleAuthProvider.credential(idToken);
   await signInWithCredential(auth, credential);
   recordLastAuthMethod("google");
@@ -129,6 +145,32 @@ export async function signInWithFacebook(): Promise<void> {
   }
 }
 
+/**
+ * Instagram is not a native Firebase provider. The server verifies Meta's
+ * authorization code, resolves the stable Instagram ID, and returns a custom
+ * Firebase token. Anonymous drafts follow the same preserve-or-import contract
+ * as Google and Facebook upgrades.
+ */
+export async function signInWithInstagram(): Promise<void> {
+  const authInstance = await getAuthInstance();
+  const anonymousUser = authInstance.currentUser;
+  if (!anonymousUser?.isAnonymous) {
+    throw new Error("No anonymous session is ready for Instagram sign-in");
+  }
+
+  const drafts = await captureAnonymousDrafts(anonymousUser.uid);
+  const result = await authenticateWithInstagram("signin");
+  if (result.collision) {
+    captureEvent("guest_upgraded_to_account", {
+      status: "collision-signed-in",
+    });
+    promptAnonymousImport(drafts);
+  } else {
+    void notifyUpgradeSignup();
+  }
+  recordLastAuthMethod("instagram");
+}
+
 async function setAuthPersistence(): Promise<void> {
   try {
     await setPersistence(auth, indexedDBLocalPersistence);
@@ -137,7 +179,10 @@ async function setAuthPersistence(): Promise<void> {
   }
 }
 
-export async function signInWithEmail(email: string, password: string): Promise<void> {
+export async function signInWithEmail(
+  email: string,
+  password: string
+): Promise<void> {
   await setAuthPersistence();
   await signInWithEmailAndPassword(auth, email, password);
   recordLastAuthMethod("password");
@@ -146,10 +191,14 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export async function signUpWithEmail(
   email: string,
   password: string,
-  name?: string,
+  name?: string
 ): Promise<void> {
   await setAuthPersistence();
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
 
   if (name?.trim()) {
     await updateProfile(userCredential.user, { displayName: name.trim() });
@@ -157,9 +206,8 @@ export async function signUpWithEmail(
 
   // This account was created WITH a password, so it must never see the
   // required set-password gate (which targets passwordless magic-link accounts).
-  const { passwordOnboardingState } = await import(
-    "$lib/shared/onboarding/state/password-onboarding-state.svelte"
-  );
+  const { passwordOnboardingState } =
+    await import("$lib/shared/onboarding/state/password-onboarding-state.svelte");
   passwordOnboardingState.markHasPassword();
   recordLastAuthMethod("password");
 
@@ -178,11 +226,14 @@ export async function linkGoogleAccount(): Promise<void> {
   const currentUser = authInstance.currentUser;
   if (!currentUser) throw new Error("No user is currently signed in");
 
-  const isAlreadyLinked = currentUser.providerData.some((p) => p.providerId === "google.com");
+  const isAlreadyLinked = currentUser.providerData.some(
+    (p) => p.providerId === "google.com"
+  );
   if (isAlreadyLinked) throw new Error("Google account is already linked");
 
   // Native: popups dead-end in the WebView — link with a native-SDK credential.
-  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  const { isNative } =
+    await import("$lib/shared/platform/services/platform-detector");
   if (isNative()) {
     const { nativeGoogleCredential } = await import("./native-google-auth");
     await linkWithCredential(currentUser, await nativeGoogleCredential());
@@ -202,7 +253,9 @@ export async function linkFacebookAccount(): Promise<void> {
   const currentUser = authInstance.currentUser;
   if (!currentUser) throw new Error("No user is currently signed in");
 
-  const isAlreadyLinked = currentUser.providerData.some((p) => p.providerId === "facebook.com");
+  const isAlreadyLinked = currentUser.providerData.some(
+    (p) => p.providerId === "facebook.com"
+  );
   if (isAlreadyLinked) throw new Error("Facebook account is already linked");
 
   const provider = new FacebookAuthProvider();
@@ -210,6 +263,15 @@ export async function linkFacebookAccount(): Promise<void> {
   provider.addScope("public_profile");
   notePopupCoop();
   await linkWithPopup(currentUser, provider);
+}
+
+export async function linkInstagramAccount(): Promise<void> {
+  const authInstance = await getAuthInstance();
+  const currentUser = authInstance.currentUser;
+  if (!currentUser || currentUser.isAnonymous) {
+    throw new Error("No full account is currently signed in");
+  }
+  await authenticateWithInstagram("link");
 }
 
 /**
@@ -223,10 +285,14 @@ export async function reauthenticateWithGoogle(): Promise<void> {
   if (!currentUser) throw new Error("No user is currently signed in");
 
   // Native: popups dead-end in the WebView — reauth with a native-SDK credential.
-  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  const { isNative } =
+    await import("$lib/shared/platform/services/platform-detector");
   if (isNative()) {
     const { nativeGoogleCredential } = await import("./native-google-auth");
-    await reauthenticateWithCredential(currentUser, await nativeGoogleCredential());
+    await reauthenticateWithCredential(
+      currentUser,
+      await nativeGoogleCredential()
+    );
     return;
   }
 
@@ -253,6 +319,15 @@ export async function reauthenticateWithFacebook(): Promise<void> {
   await reauthenticateWithPopup(currentUser, provider);
 }
 
+export async function reauthenticateWithInstagram(): Promise<void> {
+  const authInstance = await getAuthInstance();
+  const currentUser = authInstance.currentUser;
+  if (!currentUser || currentUser.isAnonymous) {
+    throw new Error("No full account is currently signed in");
+  }
+  await authenticateWithInstagram("reauth");
+}
+
 export function getLinkedProviders(): string[] {
   const currentUser = auth.currentUser;
   if (!currentUser) return [];
@@ -267,13 +342,21 @@ export async function unlinkProvider(providerId: string): Promise<void> {
   await unlink(currentUser, providerId);
 }
 
-export async function linkEmailPassword(email: string, password: string): Promise<void> {
+export async function unlinkInstagramAccount(): Promise<void> {
+  await disconnectInstagramAccount();
+}
+
+export async function linkEmailPassword(
+  email: string,
+  password: string
+): Promise<void> {
   const currentUser = auth.currentUser;
   if (!currentUser) throw new Error("No user is currently signed in");
 
   if (!email?.trim()) throw new Error("Email is required");
   if (!password) throw new Error("Password is required");
-  if (password.length < 8) throw new Error("Password must be at least 8 characters");
+  if (password.length < 8)
+    throw new Error("Password must be at least 8 characters");
 
   const credential = EmailAuthProvider.credential(email.trim(), password);
   await linkWithCredential(currentUser, credential);
