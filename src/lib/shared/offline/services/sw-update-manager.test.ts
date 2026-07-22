@@ -171,4 +171,116 @@ describe("createSwUpdateManager", () => {
     expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
     expect(reload).toHaveBeenCalledTimes(1);
   });
+
+  it("notifies only once when the browser reports the same update repeatedly", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const onUpdateReady = vi.fn();
+
+    createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady,
+      reload: vi.fn(),
+    });
+
+    const first = new FakeWorker();
+    registration.triggerUpdateFound(first);
+    first.setState("installed");
+    const second = new FakeWorker();
+    registration.triggerUpdateFound(second);
+    second.setState("installed");
+
+    expect(onUpdateReady).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not arm a reload when apply runs without a waiting worker", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const reload = vi.fn();
+    let applyFn: (() => void) | null = null;
+
+    const waiting = new FakeWorker();
+    registration.waiting = waiting;
+    createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady: (apply) => {
+        applyFn = apply;
+      },
+      reload,
+    });
+
+    registration.waiting = null;
+    applyFn!();
+    container.triggerControllerChange();
+
+    expect(waiting.postMessage).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("checks for an update when a long-lived tab becomes visible", async () => {
+    const container = new FakeContainer();
+    const registration = new FakeRegistration();
+    const original = Object.getOwnPropertyDescriptor(
+      document,
+      "visibilityState"
+    );
+
+    const dispose = createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady: vi.fn(),
+      reload: vi.fn(),
+    });
+
+    try {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: "hidden",
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      expect(registration.update).not.toHaveBeenCalled();
+
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: "visible",
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      await Promise.resolve();
+      expect(registration.update).toHaveBeenCalledTimes(1);
+    } finally {
+      dispose();
+      if (original)
+        Object.defineProperty(document, "visibilityState", original);
+    }
+  });
+
+  it("removes every lifecycle listener when disposed", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const onUpdateReady = vi.fn();
+    const reload = vi.fn();
+
+    const dispose = createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady,
+      reload,
+    });
+    dispose();
+
+    const worker = new FakeWorker();
+    registration.triggerUpdateFound(worker);
+    worker.setState("installed");
+    container.triggerControllerChange();
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(onUpdateReady).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    expect(registration.update).not.toHaveBeenCalled();
+  });
 });
