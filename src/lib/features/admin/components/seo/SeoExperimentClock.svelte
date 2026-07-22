@@ -2,110 +2,154 @@
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
   import { formatDate } from "./seo-dashboard-format";
 
-  const DECISION_LABELS: Record<
-    SeoDashboardSnapshot["decision"]["status"],
-    string
-  > = {
-    baseline: "Building the baseline",
-    awaiting_indexing: "Waiting for confirmed indexing",
-    collecting: "Evidence still collecting",
-    incomplete_evidence: "Evidence has gaps",
-    below_target: "Below the registered target",
-    primary_target_met: "Primary target met",
-    confirmed_target_met: "Win confirmed",
-  };
+  type RoadmapState = "done" | "current" | "later";
+
+  interface RoadmapStep {
+    number: number;
+    title: string;
+    detail: string;
+    state: RoadmapState;
+  }
 
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
+
+  function formatWindow(
+    window: { start: string; end: string } | null,
+    fallback: string
+  ): string {
+    if (!window) return fallback;
+    return formatDate(window.start) + " to " + formatDate(window.end);
+  }
+
+  const roadmap = $derived.by((): RoadmapStep[] => {
+    const startingPointDone = snapshot.windows.baseline.complete;
+    const launchDateDone = snapshot.experimentDates.deploymentDate !== null;
+    const googleFoundPages = snapshot.experimentDates.indexedDate !== null;
+    const firstComparisonDone =
+      snapshot.phase === "primary_complete" || snapshot.phase === "confirmed";
+    const firstComparisonCurrent = snapshot.phase === "primary_collecting";
+    const repeatDone = snapshot.phase === "confirmed";
+    const repeatCurrent = snapshot.phase === "primary_complete";
+
+    return [
+      {
+        number: 1,
+        title: "Save the starting numbers",
+        detail: startingPointDone
+          ? `${formatWindow(snapshot.windows.baseline, "Starting window")} saved`
+          : "The before period is still being collected",
+        state: startingPointDone ? "done" : "current",
+      },
+      {
+        number: 2,
+        title: "Record when the changes go live",
+        detail: launchDateDone
+          ? `Recorded on ${formatDate(snapshot.experimentDates.deploymentDate)}`
+          : "Needed before growth can be measured",
+        state: launchDateDone
+          ? "done"
+          : startingPointDone
+            ? "current"
+            : "later",
+      },
+      {
+        number: 3,
+        title: "Check that Google found the pages",
+        detail: googleFoundPages
+          ? `Confirmed on ${formatDate(snapshot.experimentDates.indexedDate)}`
+          : launchDateDone
+            ? "A measurement run checks the sample pages"
+            : "Starts after the launch date is recorded",
+        state: googleFoundPages ? "done" : launchDateDone ? "current" : "later",
+      },
+      {
+        number: 4,
+        title: "Compare before and after",
+        detail: formatWindow(
+          snapshot.windows.primary,
+          "Starts after Google finds the pages"
+        ),
+        state: firstComparisonDone
+          ? "done"
+          : firstComparisonCurrent
+            ? "current"
+            : "later",
+      },
+      {
+        number: 5,
+        title: "Repeat the check",
+        detail: formatWindow(
+          snapshot.windows.confirmation,
+          "Fresh dates test whether the result holds"
+        ),
+        state: repeatDone ? "done" : repeatCurrent ? "current" : "later",
+      },
+    ];
+  });
+
+  const currentStep = $derived(
+    roadmap.find((step) => step.state === "current") ?? roadmap.at(-1)
+  );
+  const planTitle = $derived(
+    roadmap.every((step) => step.state === "done")
+      ? "All five steps are complete"
+      : `You are on step ${currentStep?.number ?? 1} of 5`
+  );
+
+  function stateLabel(state: RoadmapState): string {
+    if (state === "done") return "Done";
+    if (state === "current") return "Now";
+    return "Later";
+  }
 </script>
 
 <section class="panel" aria-labelledby="experiment-title">
   <div class="panel-heading">
     <div>
-      <span class="panel-kicker">Experiment clock</span>
-      <h3 id="experiment-title">{DECISION_LABELS[snapshot.decision.status]}</h3>
+      <span class="panel-kicker">The plan</span>
+      <h3 id="experiment-title">{planTitle}</h3>
     </div>
     <span class="decision-status">
-      {snapshot.decision.status.replaceAll("_", " ")}
+      {roadmap.filter((step) => step.state === "done").length}/5 done
     </span>
   </div>
 
-  <div class="timeline" aria-label="SEO experiment windows">
-    <div class="timeline-step active">
-      <span class="step-index">01</span>
-      <div>
-        <strong>Baseline</strong>
-        <span>
-          {formatDate(snapshot.windows.baseline.start)} to {formatDate(
-            snapshot.windows.baseline.end
-          )}
-        </span>
-      </div>
-      <span class="step-state">
-        {snapshot.windows.baseline.complete
-          ? "Complete"
-          : `${snapshot.windows.baseline.days} days`}
-      </span>
-    </div>
-    <div class="timeline-step" class:active={snapshot.windows.primary !== null}>
-      <span class="step-index">02</span>
-      <div>
-        <strong>Primary</strong>
-        <span>
-          {snapshot.windows.primary
-            ? `${formatDate(snapshot.windows.primary.start)} to ${formatDate(snapshot.windows.primary.end)}`
-            : "Opens after indexing"}
-        </span>
-      </div>
-      <span class="step-state">
-        {snapshot.windows.primary
-          ? `${snapshot.windows.primary.days} days`
-          : "Pending"}
-      </span>
-    </div>
-    <div
-      class="timeline-step"
-      class:active={snapshot.windows.confirmation !== null}
-    >
-      <span class="step-index">03</span>
-      <div>
-        <strong>Confirmation</strong>
-        <span>
-          {snapshot.windows.confirmation
-            ? `${formatDate(snapshot.windows.confirmation.start)} to ${formatDate(snapshot.windows.confirmation.end)}`
-            : "Second independent window"}
-        </span>
-      </div>
-      <span class="step-state">
-        {snapshot.windows.confirmation
-          ? `${snapshot.windows.confirmation.days} days`
-          : "Pending"}
-      </span>
-    </div>
-  </div>
+  <p class="plain-explanation">
+    Each step clears the way for the next. The highlighted row is the only one
+    that matters right now.
+  </p>
 
-  <div class="experiment-dates">
-    <div>
-      <span>Deploy</span>
-      <strong>{formatDate(snapshot.experimentDates.deploymentDate)}</strong>
-    </div>
-    <div>
-      <span>Indexed</span>
-      <strong>{formatDate(snapshot.experimentDates.indexedDate)}</strong>
-    </div>
-    <div>
-      <span>Controls</span>
-      <strong>
-        {snapshot.cohorts.frozen
-          ? `${snapshot.cohorts.frozenControlCount} frozen`
-          : "Not frozen"}
-      </strong>
-    </div>
-  </div>
+  <ol class="roadmap" aria-label="Five steps to measure SEO growth">
+    {#each roadmap as step (step.number)}
+      <li
+        class="roadmap-step step-{step.state}"
+        aria-current={step.state === "current" ? "step" : undefined}
+      >
+        <span class="step-marker" aria-hidden="true">
+          {#if step.state === "done"}
+            <i class="fas fa-check"></i>
+          {:else}
+            {step.number}
+          {/if}
+        </span>
+        <div class="step-copy">
+          <strong>{step.title}</strong>
+          <span>{step.detail}</span>
+        </div>
+        <span class="step-state">{stateLabel(step.state)}</span>
+      </li>
+    {/each}
+  </ol>
 </section>
 
 <style>
   .panel {
-    padding: clamp(14px, 1.6vw, 22px);
+    container-type: inline-size;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    padding: clamp(14px, 1.2vw, 20px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
     background: var(--theme-card-bg, rgba(15, 23, 42, 0.74));
@@ -116,7 +160,6 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 16px;
   }
 
   .panel-kicker {
@@ -129,16 +172,15 @@
 
   h3 {
     margin: 3px 0 0;
-    font-size: clamp(1rem, 0.92rem + 0.4vw, 1.25rem);
+    font-size: clamp(1rem, 0.92rem + 0.35vw, 1.25rem);
   }
 
   .decision-status {
     display: inline-flex;
-    min-width: 12rem;
-    min-height: 32px;
+    min-height: 30px;
     align-items: center;
     justify-content: center;
-    padding: 6px 12px;
+    padding: 5px 11px;
     border: 1px solid
       color-mix(in srgb, var(--semantic-seo-accent) 42%, transparent);
     border-radius: 999px;
@@ -150,108 +192,132 @@
     color: var(--semantic-seo-accent);
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
     white-space: nowrap;
-  }
-
-  .timeline {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .timeline-step {
-    display: grid;
-    grid-template-columns: 36px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    min-height: 62px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.48));
-  }
-
-  .timeline-step:last-child {
-    border-bottom: 0;
-  }
-
-  .timeline-step.active {
-    color: var(--theme-text, #f8fafc);
-  }
-
-  .step-index {
-    color: var(--semantic-seo-accent);
-    font-weight: 800;
     font-variant-numeric: tabular-nums;
   }
 
-  .timeline-step > div {
+  .plain-explanation {
+    max-width: 62rem;
+    margin: 10px 0 12px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.64));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.4;
+  }
+
+  .roadmap {
+    display: grid;
+    min-height: 0;
+    flex: 1;
+    grid-template-rows: repeat(5, minmax(54px, 1fr));
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .roadmap-step {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 30px minmax(0, 1fr) 4.5rem;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.46));
+  }
+
+  .step-current {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-seo-accent) 42%,
+      transparent
+    );
+    color: var(--theme-text, #f8fafc);
+    background: color-mix(in srgb, var(--semantic-seo-accent) 9%, transparent);
+  }
+
+  .step-done {
+    color: var(--theme-text, #f8fafc);
+  }
+
+  .step-marker {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--semantic-seo-accent) 15%, transparent);
+    color: var(--semantic-seo-accent);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
+  }
+
+  .step-done .step-marker {
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 16%,
+      transparent
+    );
+    color: var(--semantic-success, #22c55e);
+  }
+
+  .step-copy {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 3px;
   }
 
-  .timeline-step > div span,
-  .step-state {
-    font-size: var(--font-size-compact, 0.75rem);
-  }
-
-  .step-state {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .experiment-dates {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  .experiment-dates > div {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--theme-text, #fff) 4%, transparent);
-  }
-
-  .experiment-dates span {
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.55));
-    font-size: var(--font-size-compact, 0.75rem);
-    text-transform: uppercase;
-  }
-
-  .experiment-dates strong {
-    overflow: hidden;
+  .step-copy > strong {
     font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .step-copy > span {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.52));
+    font-size: var(--font-size-compact, 0.75rem);
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
   }
 
-  @media (max-width: 520px) {
+  .step-state {
+    min-width: 4.5rem;
+    padding: 5px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 5%, transparent);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .step-current .step-state {
+    background: color-mix(in srgb, var(--semantic-seo-accent) 16%, transparent);
+    color: var(--semantic-seo-accent);
+  }
+
+  .step-done .step-state {
+    color: var(--semantic-success, #22c55e);
+  }
+
+  @container (max-width: 560px) {
     .panel-heading {
-      align-items: stretch;
       flex-direction: column;
     }
 
-    .decision-status {
-      width: 100%;
+    .roadmap {
+      grid-template-rows: none;
     }
 
-    .timeline-step {
+    .roadmap-step {
       grid-template-columns: 30px minmax(0, 1fr);
     }
 
     .step-state {
       grid-column: 2;
-    }
-
-    .experiment-dates {
-      grid-template-columns: 1fr;
+      justify-self: start;
     }
   }
 </style>

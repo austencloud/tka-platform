@@ -19,11 +19,11 @@
 
   const POSTHOG_URL = "https://us.posthog.com/project/299320/dashboard";
   const PHASE_LABELS: Record<SeoDashboardSnapshot["phase"], string> = {
-    baseline: "Baseline",
-    awaiting_indexing: "Waiting for crawl",
-    primary_collecting: "Primary window",
-    primary_complete: "Primary readout",
-    confirmed: "Confirmed",
+    baseline: "Setting the starting point",
+    awaiting_indexing: "Waiting for Google to find the pages",
+    primary_collecting: "Comparing before and after",
+    primary_complete: "Checking the result again",
+    confirmed: "Measurement complete",
   };
 
   let loading = $state(true);
@@ -40,7 +40,7 @@
     const response = await fetch("/api/admin/analytics", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: "Bearer " + token,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type }),
@@ -52,7 +52,8 @@
     } | null;
     if (!response.ok) {
       throw new Error(
-        body?.message ?? `SEO evidence request failed (${response.status}).`
+        body?.message ??
+          "SEO evidence request failed (" + response.status + ")."
       );
     }
     if (!body?.success) throw new Error(body?.message ?? "SEO query failed.");
@@ -115,49 +116,90 @@
     <div class="state-block empty-state">
       <i class="fas fa-satellite-dish" aria-hidden="true"></i>
       <h2>No scorecard snapshot yet</h2>
-      <p>The next SEO Measurement run will publish the first readout.</p>
+      <p>The next SEO measurement run will publish the starting point.</p>
       <a
         class="command-button"
         href={POSTHOG_URL}
         target="_blank"
         rel="noreferrer"
       >
-        Open PostHog
+        Open visitor behavior data
       </a>
     </div>
   {:else}
-    <header class="command-header">
-      <div class="title-block">
-        <div class="eyebrow">SEO command center</div>
-        <h2>Flow Arts Software</h2>
-        <p>Search evidence, from crawl to conversion.</p>
-      </div>
-      <div class="header-status">
-        <span class="phase-badge">
-          <span class="status-dot" aria-hidden="true"></span>
-          {PHASE_LABELS[snapshot.phase]}
-        </span>
-        <span class="data-date"
-          >Data through {formatDate(snapshot.dataThrough)}</span
-        >
-      </div>
-    </header>
+    <div class="dashboard-layout">
+      <header class="command-header">
+        <div class="title-block">
+          <div class="eyebrow">Flow arts software SEO</div>
+          <h2>Is Flow Arts Composer getting easier to find?</h2>
+          <p>The answer first. Technical details stay tucked away.</p>
+        </div>
+        <div class="header-status">
+          <span class="phase-badge">
+            <span class="status-dot" aria-hidden="true"></span>
+            {PHASE_LABELS[snapshot.phase]}
+          </span>
+          <span class="data-date">
+            Numbers through {formatDate(snapshot.dataThrough)}
+          </span>
+        </div>
+      </header>
 
-    <SeoSignalGrid {snapshot} />
+      <div class="signal-slot">
+        <SeoSignalGrid {snapshot} />
+      </div>
 
-    <div class="command-grid">
-      <SeoExperimentClock {snapshot} />
-      <SeoEvidenceGates {snapshot} />
+      <div class="overview-grid">
+        <div class="clock-slot">
+          <SeoExperimentClock {snapshot} />
+        </div>
+        <SeoHistoryChart {history} />
+        <SeoEvidenceGates {snapshot} />
+      </div>
+
+      <details class="measurement-details">
+        <summary>
+          <span class="summary-icon" aria-hidden="true">
+            <i class="fas fa-sliders"></i>
+          </span>
+          <span class="summary-copy">
+            <strong>Show the technical details</strong>
+            <small>
+              Exact search terms, pass or fail rules, and source links
+            </small>
+          </span>
+          <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"></i>
+        </summary>
+        <div class="details-content">
+          <div class="details-main">
+            <SeoQueryGroups {snapshot} />
+            <SeoEvidenceGates {snapshot} view="exact" />
+          </div>
+          <div class="details-side">
+            <section class="data-health" aria-labelledby="data-health-title">
+              <div class="detail-heading">
+                <span>Data check</span>
+                <h3 id="data-health-title">Did every source report?</h3>
+              </div>
+              <p>
+                Green means that source supplied everything expected for this
+                measurement window.
+              </p>
+              <SeoMeasurementHealth {snapshot} />
+            </section>
+            <SeoSourceActions
+              {refreshedAt}
+              {refreshing}
+              onRefresh={loadEvidence}
+            />
+          </div>
+        </div>
+      </details>
+
+      {#if loadError}
+        <p class="inline-error" role="alert">{loadError}</p>
+      {/if}
     </div>
-
-    <SeoQueryGroups {snapshot} />
-    <SeoHistoryChart {history} />
-    <SeoMeasurementHealth {snapshot} />
-    <SeoSourceActions {refreshedAt} {refreshing} onRefresh={loadEvidence} />
-
-    {#if loadError}
-      <p class="inline-error" role="alert">{loadError}</p>
-    {/if}
   {/if}
 </div>
 
@@ -166,11 +208,14 @@
     --semantic-seo-accent: #2dd4bf;
     --semantic-seo-accent-deep: #0f766e;
     --semantic-seo-violet: #a78bfa;
+    --settings-seo-summary-height: clamp(230px, 27cqh, 280px);
+    --settings-seo-overview-min-height: 390px;
+    container-name: seo-center;
+    container-type: size;
     display: flex;
     height: 100%;
     flex-direction: column;
-    gap: clamp(12px, 1.5vw, 20px);
-    padding: clamp(12px, 2vw, 24px);
+    padding: clamp(12px, 1.2vw, 22px);
     overflow-y: auto;
     color: var(--theme-text, #f8fafc);
     background:
@@ -184,6 +229,18 @@
         color-mix(in srgb, var(--semantic-seo-violet) 10%, transparent),
         transparent 26rem
       );
+  }
+
+  .dashboard-layout {
+    display: grid;
+    height: 100%;
+    min-height: 760px;
+    grid-template-rows:
+      auto
+      var(--settings-seo-summary-height)
+      minmax(var(--settings-seo-overview-min-height), 1fr)
+      auto;
+    gap: clamp(10px, 0.8vw, 14px);
   }
 
   .state-block {
@@ -237,13 +294,13 @@
 
   .title-block h2 {
     margin: 2px 0 0;
-    font-size: clamp(1.75rem, 1.3rem + 1.8vw, 3rem);
+    font-size: clamp(1.65rem, 1.3rem + 1.2vw, 2.6rem);
     line-height: 1;
     letter-spacing: -0.04em;
   }
 
   .title-block p {
-    margin: 8px 0 0;
+    margin: 6px 0 0;
     color: var(--theme-text-dim, rgba(248, 250, 252, 0.65));
     font-size: var(--font-size-min, 0.875rem);
   }
@@ -252,15 +309,16 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 8px;
+    gap: 7px;
   }
 
   .phase-badge {
     display: inline-flex;
-    min-height: 32px;
+    min-width: 18rem;
+    min-height: 30px;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
+    padding: 5px 11px;
     border: 1px solid
       color-mix(in srgb, var(--semantic-seo-accent) 42%, transparent);
     border-radius: 999px;
@@ -271,8 +329,6 @@
     );
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
   }
 
   .status-dot {
@@ -290,11 +346,144 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .command-grid {
+  .overview-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    min-height: 0;
+    grid-template-columns:
+      minmax(540px, 1.2fr)
+      minmax(340px, 0.9fr)
+      minmax(340px, 0.9fr);
     align-items: stretch;
+    gap: 10px;
+  }
+
+  .clock-slot {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .signal-slot {
+    min-height: 0;
+  }
+
+  .measurement-details {
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(15, 23, 42, 0.72));
+  }
+
+  .measurement-details > summary {
+    display: flex;
+    min-height: 60px;
+    align-items: center;
     gap: 12px;
+    padding: 9px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    list-style: none;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .measurement-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .measurement-details > summary:hover {
+    background: color-mix(in srgb, var(--semantic-seo-accent) 6%, transparent);
+  }
+
+  .measurement-details > summary:focus-visible {
+    outline: 2px solid var(--semantic-seo-accent);
+    outline-offset: 2px;
+  }
+
+  .summary-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--semantic-seo-accent) 13%, transparent);
+    color: var(--semantic-seo-accent);
+  }
+
+  .summary-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .summary-copy strong {
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .summary-copy small {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.56));
+    font-size: var(--font-size-compact, 0.75rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .summary-chevron {
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.56));
+    transition: transform var(--duration-fast, 150ms) ease;
+  }
+
+  .measurement-details[open] .summary-chevron {
+    transform: rotate(180deg);
+  }
+
+  .details-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(380px, 0.75fr);
+    gap: 10px;
+    padding: 0 10px 10px;
+  }
+
+  .details-side {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .details-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .data-health {
+    padding: clamp(14px, 1.2vw, 20px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(15, 23, 42, 0.74));
+  }
+
+  .detail-heading > span {
+    color: var(--semantic-seo-accent);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .detail-heading h3 {
+    margin: 3px 0 0;
+    font-size: clamp(1rem, 0.92rem + 0.35vw, 1.25rem);
+  }
+
+  .data-health > p {
+    margin: 8px 0 12px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.6));
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .command-button {
@@ -320,11 +509,23 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
-  @media (max-width: 520px) {
-    .seo-command-center {
-      padding: 12px;
+  @container seo-center (max-width: 1500px) {
+    .dashboard-layout {
+      height: auto;
+      min-height: 100%;
+      grid-template-rows: auto;
     }
 
+    .overview-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .clock-slot {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container seo-center (max-width: 860px) {
     .command-header {
       align-items: stretch;
       flex-direction: column;
@@ -334,8 +535,34 @@
       align-items: flex-start;
     }
 
-    .command-grid {
+    .phase-badge {
+      min-width: 0;
+    }
+
+    .overview-grid,
+    .details-content {
       grid-template-columns: 1fr;
+    }
+
+    .clock-slot {
+      grid-column: auto;
+    }
+  }
+
+  @container seo-center (max-width: 520px) {
+    .seo-command-center {
+      padding: 12px;
+    }
+
+    .summary-copy small {
+      white-space: normal;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .measurement-details > summary,
+    .summary-chevron {
+      transition: none;
     }
   }
 </style>
