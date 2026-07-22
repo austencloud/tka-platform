@@ -255,7 +255,7 @@
             <div
               class="element-badge"
               class:visible={!!element}
-              style="--el-accent: {shownElement.accentColor}"
+              style="--el-scale: {shownElement.iconScale}"
               role="img"
               aria-label={element ? `${shownElement.element} element` : undefined}
               aria-hidden={element ? undefined : "true"}
@@ -426,9 +426,12 @@
     font-size: 1.25rem;
   }
 
-  /* TnD element badge — bottom-right of the canvas, sized in cqi so it scales
-     with the stage (the stage-shell is a container). Absolute + always-reserved,
-     so no-layout-shift; only opacity/scale animate. */
+  /* TnD element icon — bottom-right of the canvas, sized in cqi so it scales
+     with the stage (the stage-shell is a container). No circle/backing: the bare
+     glyph sits on the canvas. A fixed square box gives every element the same
+     footprint and placement; per-icon --el-scale normalizes perceived size (the
+     source PNGs differ in aspect + density). Absolute + always-reserved, so
+     no-layout-shift; only opacity/entrance-scale animate. */
   .element-badge {
     position: absolute;
     right: clamp(8px, 3cqi, 16px);
@@ -436,17 +439,8 @@
     z-index: 3;
     display: grid;
     place-items: center;
-    width: clamp(28px, 11cqi, 48px);
-    height: clamp(28px, 11cqi, 48px);
-    padding: clamp(3px, 1.4cqi, 6px);
-    border-radius: 50%;
-    background: oklch(0.14 0.02 270 / 0.55);
-    border: 1.5px solid var(--el-accent, oklch(0.6 0.04 270));
-    box-shadow:
-      0 0 0 1px oklch(0 0 0 / 0.25),
-      0 2px 8px oklch(0 0 0 / 0.35);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    width: clamp(30px, 12cqi, 52px);
+    height: clamp(30px, 12cqi, 52px);
     opacity: 0;
     transform: scale(0.9);
     transition:
@@ -462,7 +456,14 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 1px 2px oklch(0 0 0 / 0.4));
+    /* Per-icon size normalization; centered so placement stays identical. */
+    transform: scale(var(--el-scale, 1));
+    transform-origin: center;
+    /* No backing circle — a dark drop-shadow keeps light glyphs (cloud, sun)
+       legible over the animation. */
+    filter:
+      drop-shadow(0 1px 3px oklch(0 0 0 / 0.6))
+      drop-shadow(0 0 2px oklch(0 0 0 / 0.5));
   }
   @media (prefers-reduced-motion: reduce) {
     .element-badge {

@@ -7,6 +7,11 @@ export interface TnDElement {
   readonly iconPath: string;
   /** CIELAB-tuned opacity (0–1) for card interior tint; compensates for each color's perceptual distance from white */
   readonly cardTintOpacity: number;
+  /** Per-icon visual-size multiplier for badge display. The source PNGs differ
+   *  in aspect and internal density — the tall dense leaf reads much bigger than
+   *  the sparse sun rays or the wide cloud when fit into one square box. These
+   *  scales normalize perceived glyph size (tuned against the real assets). */
+  readonly iconScale: number;
 }
 
 export const TND_ELEMENTS: readonly TnDElement[] = [
@@ -18,6 +23,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#1a3a5e",
     iconPath: "/images/elements/water-v2.png",
     cardTintOpacity: 0.25,
+    iconScale: 0.9,
   },
   {
     familyId: "tog-same",
@@ -27,6 +33,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a4a29",
     iconPath: "/images/elements/earth-v2.png",
     cardTintOpacity: 0.15,
+    iconScale: 0.78,
   },
   {
     familyId: "quarter-same",
@@ -36,6 +43,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#7a6a00",
     iconPath: "/images/elements/sun-v4.png",
     cardTintOpacity: 0.09,
+    iconScale: 1.06,
   },
   {
     familyId: "split-opp",
@@ -45,6 +53,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#6b1a0a",
     iconPath: "/images/elements/fire-v2.png",
     cardTintOpacity: 0.09,
+    iconScale: 0.88,
   },
   {
     familyId: "tog-opp",
@@ -54,6 +63,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#3a6a8b",
     iconPath: "/images/elements/air-v2.png",
     cardTintOpacity: 0.16,
+    iconScale: 1.12,
   },
   {
     familyId: "quarter-opp",
@@ -63,6 +73,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a1540",
     iconPath: "/images/elements/moon-v2.png",
     cardTintOpacity: 0.09,
+    iconScale: 0.84,
   },
 ] as const;
 

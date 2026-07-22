@@ -55,6 +55,16 @@ const BASE_WORDS_URL = "/data/hero/tnd-base-words.json";
 /** Max cells to try before giving up (returns null → caller uses a generated draw). */
 const MAX_DRAWS = 16;
 
+/** Turn ceiling for hero draws — busy high-turn flowers read as noise at this
+ *  size, so the pool caps per-hand turns here. */
+const MAX_TURNS = 1.5;
+const ALLOWED_TURNS = TURN_VALUES.filter((t) => t <= MAX_TURNS);
+
+/** A matrix realization is a 4-beat rotated flower that closes back to its start
+ *  pose; tiling it this many times gives a ~16-beat play that holds the hero
+ *  stage as long as the generated 16-count draws instead of flashing by. */
+const REPEAT = 4;
+
 /** Derived TnD mode → element family id (pure; the tainted copies in
  *  deck-composer/browse-filter can't be imported on a firebase-free page). */
 const TND_MODE_TO_FAMILY: Readonly<Record<TnDMode, string>> = {
@@ -95,12 +105,12 @@ async function loadPool(): Promise<PoolData> {
       const axis = buildFlowerAxis();
       const diamond = applyFilter(
         axis,
-        { style: "all", turns: new Set(TURN_VALUES), ori: "all", grid: "diamond" },
+        { style: "all", turns: new Set(ALLOWED_TURNS), ori: "all", grid: "diamond" },
         true,
       );
       const box = applyFilter(
         axis,
-        { style: "all", turns: new Set(TURN_VALUES), ori: "all", grid: "box" },
+        { style: "all", turns: new Set(ALLOWED_TURNS), ori: "all", grid: "box" },
         true,
       );
       const cells: Cell[] = [];
@@ -146,6 +156,28 @@ function rotateToStartKey(seq: SequenceData, targetKey: string): SequenceData | 
     if (startLocKey(rotated.startPosition) === targetKey) return rotated;
   }
   return null;
+}
+
+/**
+ * Tile a closed loop `times` times into one longer sequence. A realization
+ * closes back to its start pose (turnLoopClosed), so copy k+1's first step
+ * begins exactly where copy k's last step ended — the tiled play chains
+ * seamlessly. Step numbers renumber and ids get a per-copy suffix so nothing
+ * downstream keys two steps to the same id.
+ */
+function tileClosedLoop(seq: SequenceData, times: number): SequenceData {
+  const steps: (typeof seq.steps)[number][] = [];
+  for (let k = 0; k < times; k++) {
+    for (const s of seq.steps) {
+      steps.push({ ...s, id: `${s.id}-r${k}`, stepNumber: steps.length + 1 });
+    }
+  }
+  return {
+    ...seq,
+    steps,
+    sequenceLength: steps.length,
+    word: (seq.word ?? "").repeat(times),
+  };
 }
 
 /** Re-derive the TnD element from the final played geometry (first visible step). */
@@ -224,8 +256,10 @@ export async function drawMatrixRealization(opts?: {
     const element = elementOf(sequence);
     if (!element) continue;
 
-    // Plain-ify (strip any reactive proxies) before handing to the player.
-    return { sequence: JSON.parse(JSON.stringify(sequence)) as SequenceData, element };
+    // Repeat the 4-beat flower so it holds the stage like a 16-count draw, then
+    // plain-ify (strip any reactive proxies) before handing to the player.
+    const tiled = tileClosedLoop(sequence, REPEAT);
+    return { sequence: JSON.parse(JSON.stringify(tiled)) as SequenceData, element };
   }
 
   return null;

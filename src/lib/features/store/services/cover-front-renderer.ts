@@ -163,7 +163,8 @@ function releaseLane(): void {
 function frameElement(card: CoverCard): TnDElement | undefined {
   if (!card.accentColor) return undefined;
   // The front path consumes accentColor / darkComplement / cardTintOpacity /
-  // iconPath; the identity fields just satisfy the type.
+  // iconPath; the identity fields (and iconScale, a badge-only concern) just
+  // satisfy the type.
   return {
     familyId: "cover",
     name: card.footerCenter ?? "cover",
@@ -172,6 +173,7 @@ function frameElement(card: CoverCard): TnDElement | undefined {
     darkComplement: card.darkComplement ?? "#444444",
     iconPath: card.iconPath ?? "",
     cardTintOpacity: card.tintOpacity ?? 0.1,
+    iconScale: 1,
   };
 }
 
