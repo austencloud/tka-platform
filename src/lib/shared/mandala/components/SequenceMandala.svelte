@@ -31,7 +31,7 @@
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
 	import { calculate as calculateMandalaGeometry, calculateMorphed as calculateMandalaMorphed } from "../services/mandala-geometry-calculator";
-	import type { MandalaPathOptions } from "../services/types";
+	import { getMandalaPathOptions } from "../services/mandala-path-options";
 	import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 
 	export type { MandalaPathShape, UndulationEasing } from "../domain/mandala-types";
@@ -217,14 +217,6 @@
 		};
 	});
 
-	function optionsFor(shape: MandalaPathShape): MandalaPathOptions | undefined {
-		const base: MandalaPathOptions = {};
-		if (shape === "hybrid") base.motionAware = true;
-		else if (shape !== "arc") base.pathShape = shape;
-		if (effectiveTipEnds === 1) base.tipEnds = 1;
-		return Object.keys(base).length > 0 ? base : undefined;
-	}
-
 	// Drive a morph whenever pathShape changes. Reads pathShape (tracked); lastShape
 	// is non-reactive so reassigning it doesn't retrigger. activeMorph is set inside
 	// the rAF (outside tracking), so updating progress never re-runs this effect.
@@ -311,7 +303,7 @@
 		tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX)
 	);
 
-	const pathOptions = $derived(optionsFor(pathShape));
+	const pathOptions = $derived(getMandalaPathOptions(pathShape, effectiveTipEnds));
 
 	const paths = $derived.by((): MandalaPaths | null => {
 		if (!calcReady || !sequence?.steps) return null;
@@ -322,7 +314,7 @@
 				sequence.steps,
 				bluePropType,
 				redPropType,
-				optionsFor(morph.from),
+				getMandalaPathOptions(morph.from, effectiveTipEnds),
 				pathOptions,
 				morph.t,
 				tip

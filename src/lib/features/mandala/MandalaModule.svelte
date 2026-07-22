@@ -3,7 +3,10 @@
 -->
 <script lang="ts">
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
-  import type { UndulationEasing } from "$lib/shared/mandala/domain/mandala-types";
+  import type {
+    MandalaPathShape,
+    UndulationEasing,
+  } from "$lib/shared/mandala/domain/mandala-types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
@@ -39,6 +42,7 @@
     variant: "blue" | "red" | "both";
     bluePropType: string;
     redPropType: string;
+    pathShape?: MandalaPathShape;
     createdAt: number;
     group: "curated" | "collection";
     /** Lineage stamp — see docs/superpowers/specs/2026-07-12-art-in-library-design.md
@@ -69,6 +73,7 @@
       variant: m.variant,
       bluePropType: m.bluePropType,
       redPropType: m.redPropType,
+      pathShape: m.pathShape,
       createdAt: m.createdAt,
       group: "collection",
       sourceWord: m.sourceWord,
@@ -253,7 +258,13 @@
         selectedMandala.steps,
         selectedMandala.bluePropType,
         selectedMandala.redPropType,
-        { size: PNG_EXPORT_SIZE, background: "transparent", strokeWidth: 2.5 },
+        {
+          size: PNG_EXPORT_SIZE,
+          background: "transparent",
+          strokeWidth: 2.5,
+          show: selectedMandala.variant,
+          pathShape: selectedMandala.pathShape ?? "arc",
+        },
       );
       const safeName = selectedMandala.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       // Device-gated: native share sheet on mobile (send via text/social/cloud),
@@ -286,6 +297,8 @@
         steps: selectedMandala.steps,
         bluePropType: selectedMandala.bluePropType,
         redPropType: selectedMandala.redPropType,
+        variant: selectedMandala.variant,
+        pathShape: selectedMandala.pathShape,
       },
       {
         onPhase: (p) => { videoPhase = p; },
@@ -324,6 +337,7 @@
       variant: item.variant,
       bluePropType: item.bluePropType,
       redPropType: item.redPropType,
+      pathShape: item.pathShape,
       createdAt: item.createdAt,
       sourceWord: item.sourceWord,
       sourceSequenceId: item.sourceSequenceId,
@@ -371,7 +385,7 @@
         <SequenceMandala
           sequence={{ steps: selectedMandala.steps }}
           size={meditateSize}
-          show="both"
+          show={selectedMandala.variant}
           animate={true}
           animateMin={ANIMATE_MIN}
           animateMax={ANIMATE_MAX}
@@ -380,6 +394,7 @@
           animateRotation={mandalaRotation}
           bluePropType={selectedMandala.bluePropType}
           redPropType={selectedMandala.redPropType}
+          pathShape={selectedMandala.pathShape ?? "arc"}
         />
       </div>
       <div class="controls-rail">
@@ -400,7 +415,7 @@
       <SequenceMandala
         sequence={{ steps: selectedMandala.steps }}
         size={meditateSize}
-        show="both"
+        show={selectedMandala.variant}
         animate={true}
         animateMin={ANIMATE_MIN}
         animateMax={ANIMATE_MAX}
@@ -410,6 +425,7 @@
         tipDx={mandalaTipDx}
         bluePropType={selectedMandala.bluePropType}
         redPropType={selectedMandala.redPropType}
+        pathShape={selectedMandala.pathShape ?? "arc"}
       />
       <MeditationOverlay
         status={meditationSession.status}
@@ -445,7 +461,7 @@
         <div class="empty-state">
           <i class="fas fa-dharmachakra empty-icon" aria-hidden="true"></i>
           <p class="empty-title">No mandalas yet</p>
-          <p class="empty-hint">Right-click a mandala in the workspace to save one</p>
+          <p class="empty-hint">Open a workspace mandala, then save it here</p>
         </div>
       {:else}
         <header class="gallery-head">
@@ -471,6 +487,7 @@
                   show={item.variant}
                   bluePropType={item.bluePropType}
                   redPropType={item.redPropType}
+                  pathShape={item.pathShape ?? "arc"}
                 />
               </div>
               <div class="card-label">
@@ -510,6 +527,7 @@
             animateRotation={mandalaRotation}
             bluePropType={selectedMandala.bluePropType}
             redPropType={selectedMandala.redPropType}
+            pathShape={selectedMandala.pathShape ?? "arc"}
           />
         </div>
 

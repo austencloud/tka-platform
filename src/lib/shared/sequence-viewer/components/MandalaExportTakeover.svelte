@@ -11,8 +11,18 @@
     bluePropType?: string;
     redPropType?: string;
     size: number;
+    onCancel?: () => void;
+    onRetry?: () => void;
   }
-  let { ctrl, sequence, bluePropType, redPropType, size }: Props = $props();
+  let {
+    ctrl,
+    sequence,
+    bluePropType,
+    redPropType,
+    size,
+    onCancel,
+    onRetry,
+  }: Props = $props();
 
   const phaseLabel = $derived.by(() => {
     const key = exportPhaseLabelKey(ctrl.exportPhase);
@@ -25,8 +35,8 @@
   progress={ctrl.exportProgress}
   {phaseLabel}
   error={ctrl.exportError}
-  onCancel={() => ctrl.cancelExport()}
-  onRetry={() => ctrl.startExport()}
+  onCancel={() => (onCancel ? onCancel() : ctrl.cancelExport())}
+  onRetry={() => (onRetry ? onRetry() : ctrl.startExport())}
   opaque
 >
   {#snippet centerpiece()}

@@ -24,6 +24,10 @@ import {
   mandalaBitrateFor,
   type MandalaVideoExportHandle,
 } from "$lib/shared/mandala/services/mandala-video-exporter";
+import {
+  resolveMandalaExportDelivery,
+  type MandalaExportDelivery,
+} from "../services/mandala-export-delivery";
 
 export type MandalaExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
 export type MandalaExportResolution = 720 | 1080 | 2160;
@@ -123,6 +127,8 @@ export class MandalaViewerController {
   exportPhase = $state<MandalaExportPhase>("idle");
   exportProgress = $state(0);
   exportError = $state<string | null>(null);
+  /** Result of the file handoff, not merely the worker encode. */
+  exportDelivery = $state<MandalaExportDelivery | null>(null);
   /** Last export diagnostic (render/encode/mux split, HW status) — logged live. */
   lastExportDiag = $state<MandalaExportDiag | null>(null);
 
@@ -326,6 +332,7 @@ export class MandalaViewerController {
     if (!sequence?.steps) return;
 
     this.exportError = null;
+    this.exportDelivery = null;
     this.exportProgress = 0;
     this.exportPhase = "capturing";
     this.exporting = true;
@@ -389,7 +396,7 @@ export class MandalaViewerController {
     this.#exportHandle = handle;
 
     handle.done
-      .then((blob) => {
+      .then(async (blob) => {
         if (this.#exportHandle !== handle) return; // superseded/cancelled
         recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
         const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
@@ -397,10 +404,39 @@ export class MandalaViewerController {
         // shareOrDownloadBlob gates on the DEVICE (detectPlatform), not on
         // navigator.share existence — desktop Chrome/Edge implement the Web
         // Share API, so feature detection alone pops the Windows share sheet.
-        void shareOrDownloadBlob(blob, filename, { title: "TKA Mandala" });
-        this.exportPhase = "complete";
+        let result;
+        try {
+          result = await shareOrDownloadBlob(blob, filename, {
+            title: "TKA Mandala",
+          });
+        } catch {
+          if (this.#exportHandle !== handle) return;
+          this.exportDelivery = { outcome: "failed", method: null };
+          this.exportError = "Couldn't save the mandala video.";
+          this.exportPhase = "error";
+          this.exporting = false;
+          this.#exportHandle = null;
+          return;
+        }
+        if (this.#exportHandle !== handle) return;
+
+        const delivery = resolveMandalaExportDelivery(result);
+        this.exportDelivery = delivery;
         this.exporting = false;
         this.#exportHandle = null;
+
+        if (delivery.outcome === "canceled") {
+          this.exportProgress = 0;
+          this.exportPhase = "idle";
+          return;
+        }
+        if (delivery.outcome === "failed") {
+          this.exportError = "Couldn't save the mandala video.";
+          this.exportPhase = "error";
+          return;
+        }
+
+        this.exportPhase = "complete";
         window.setTimeout(() => {
           if (this.exportPhase === "complete") this.exportPhase = "idle";
         }, 1400);
@@ -428,5 +464,6 @@ export class MandalaViewerController {
     this.exportProgress = 0;
     this.exportPhase = "idle";
     this.exportError = null;
+    this.exportDelivery = null;
   }
 }

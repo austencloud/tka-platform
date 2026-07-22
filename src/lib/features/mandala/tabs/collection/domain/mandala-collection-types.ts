@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { StepDataSchema } from "$lib/shared/foundation/domain/schemas";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 
 export interface CollectedMandala {
 	id: string;
@@ -9,6 +10,7 @@ export interface CollectedMandala {
 	variant: "blue" | "red" | "both";
 	bluePropType: string;
 	redPropType: string;
+	pathShape?: MandalaPathShape;
 	createdAt: number;
 	source?: "studio" | "sequence" | "default";
 	/** Lineage stamp — the source sequence's simplified word (never a raw
@@ -25,6 +27,7 @@ export const CollectedMandalaSchema = z.object({
 	variant: z.enum(["blue", "red", "both"]),
 	bluePropType: z.string(),
 	redPropType: z.string(),
+	pathShape: z.enum(["arc", "linear", "concave", "hybrid"]).optional(),
 	createdAt: z.any(),
 	updatedAt: z.any().optional(),
 	source: z.enum(["studio", "sequence", "default"]).optional(),

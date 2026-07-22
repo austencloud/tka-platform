@@ -9,7 +9,7 @@
 
 import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
 import { renderMandalaSVG, renderMandalaToCanvas } from "./mandala-renderer";
-import type { MandalaPathOptions } from "./types";
+import { getMandalaPathOptions } from "./mandala-path-options";
 import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
 import type {
@@ -82,6 +82,7 @@ export interface MandalaFrameSpec {
   steps: readonly any[];
   bluePropType?: string;
   redPropType?: string;
+  show?: "blue" | "red" | "both";
   pathShape: MandalaPathShape;
   lineWeight: number;
   bgColor: string;
@@ -138,17 +139,6 @@ export interface MandalaFrameOutput {
   cacheKey: number | null;
 }
 
-function pathOptionsFor(
-  shape: MandalaPathShape,
-  tipEnds?: 1 | 2,
-): MandalaPathOptions | undefined {
-  const base: MandalaPathOptions = {};
-  if (shape === "hybrid") base.motionAware = true;
-  else if (shape !== "arc") base.pathShape = shape;
-  if (tipEnds === 1) base.tipEnds = 1;
-  return Object.keys(base).length > 0 ? base : undefined;
-}
-
 type FrameGradient = { blue: [string, string]; red: [string, string]; purple: [string, string] };
 
 export interface MandalaFrameRender {
@@ -185,7 +175,10 @@ function computeFrameGeometry(
     spec.steps as any,
     spec.bluePropType,
     spec.redPropType,
-    pathOptionsFor(spec.pathShape, pairTipEnds(spec.bluePropType, spec.redPropType)),
+    getMandalaPathOptions(
+      spec.pathShape,
+      pairTipEnds(spec.bluePropType, spec.redPropType),
+    ),
     { dx: tipDx, dy: 0 },
   );
   return { paths, tipDx };
@@ -295,7 +288,7 @@ export function renderMandalaFrameToCanvas(
   renderMandalaToCanvas(ctx as unknown as CanvasRenderingContext2D, paths, {
     size,
     style: "stroke",
-    show: "both",
+    show: spec.show ?? "both",
     palette,
     strokeWidth: spec.lineWeight,
     tipDx,
@@ -323,7 +316,7 @@ export function renderMandalaFrameSVG(
   const rawSvg = renderMandalaSVG(paths, {
     size: spec.resolution,
     style: "stroke",
-    show: "both",
+    show: spec.show ?? "both",
     palette,
     strokeWidth: spec.lineWeight,
     tipDx,

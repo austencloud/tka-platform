@@ -44,17 +44,20 @@
     {#if CHOSEN_MANDALAS.length}
       <div class="tile-grid">
         {#each CHOSEN_MANDALAS as m, i (m.id)}
-          <button
-            type="button"
+          <div
             class="stage"
             class:live={liveIndex === i}
             bind:clientWidth={sizes[i]}
-            onclick={() => (liveIndex = liveIndex === i ? null : i)}
-            aria-pressed={liveIndex === i}
-            aria-label={liveIndex === i
-              ? "Pause this mandala"
-              : "Play this mandala"}
           >
+            <button
+              type="button"
+              class="stage-activation"
+              onclick={() => (liveIndex = liveIndex === i ? null : i)}
+              aria-pressed={liveIndex === i}
+              aria-label={liveIndex === i
+                ? "Pause this mandala"
+                : "Play this mandala"}
+            ></button>
             <LazyMount
               loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
               active={browser && sizes[i] > 0}
@@ -74,12 +77,19 @@
                 animateMin: 40,
                 animateMax: 240,
               }}
-            />
+            >
+              {#snippet error(_error, retry)}
+                <div class="mandala-load-error" role="alert">
+                  <span>This mandala did not load.</span>
+                  <button type="button" onclick={retry}>Try again</button>
+                </div>
+              {/snippet}
+            </LazyMount>
             <!-- Corner affordance: the tile IS a button — say so. -->
             <span class="stage-toggle" aria-hidden="true">
               <i class={liveIndex === i ? "fas fa-pause" : "fas fa-play"}></i>
             </span>
-          </button>
+          </div>
         {/each}
       </div>
     {:else}
@@ -143,10 +153,19 @@
     box-shadow: 0 12px 30px oklch(0.1 0.02 270 / 0.35);
     transition: border-color 0.18s ease;
   }
+  .stage-activation {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+  }
   .stage:hover {
     border-color: oklch(0.6 0.06 275 / 0.45);
   }
-  .stage:focus-visible {
+  .stage:has(.stage-activation:focus-visible) {
     outline: 2px solid oklch(0.78 0.13 275);
     outline-offset: 2px;
   }
@@ -160,6 +179,7 @@
     position: absolute;
     right: 8px;
     bottom: 8px;
+    z-index: 2;
     width: 44px;
     height: 44px;
     display: grid;
@@ -172,7 +192,32 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     opacity: 0.55;
+    pointer-events: none;
     transition: opacity 0.18s ease;
+  }
+  .mandala-load-error {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    color: oklch(0.9 0.02 270);
+    text-align: center;
+    background: oklch(0.13 0.018 270 / 0.94);
+  }
+  .mandala-load-error button {
+    min-height: 44px;
+    padding-inline: 0.9rem;
+    color: inherit;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.08 275 / 0.55);
+    border-radius: 9px;
+    background: oklch(0.28 0.05 275 / 0.85);
   }
   .stage:hover .stage-toggle,
   .stage.live .stage-toggle {

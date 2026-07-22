@@ -4,11 +4,13 @@
   import MandalaExportTakeover from "./MandalaExportTakeover.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
+  import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 
   interface Props {
     sequence: SequenceData;
     bluePropType?: string;
     redPropType?: string;
+    show?: MandalaRenderOptions["show"];
     /**
      * The mandala controller. Owned by ArtPane so the same instance backs both
      * the in-pane dock/takeover and the Art panel's Export button. Falls back to
@@ -23,14 +25,21 @@
      * fills its stage either way.
      */
     controlsPlacement?: "dock" | "external";
+    showDownload?: boolean;
+    onExportCancel?: () => void;
+    onExportRetry?: () => void;
   }
 
   let {
     sequence,
     bluePropType,
     redPropType,
+    show = "both",
     ctrl: providedCtrl,
     controlsPlacement = "dock",
+    showDownload = true,
+    onExportCancel,
+    onExportRetry,
   }: Props = $props();
 
   let stageEl: HTMLDivElement | undefined = $state();
@@ -78,7 +87,7 @@
       {redPropType}
       mode="card-back"
       style="stroke"
-      show="both"
+      {show}
       palette={ctrl.palette}
       strokeWidth={ctrl.lineWeight}
       gradient={ctrl.gradientColors}
@@ -86,9 +95,21 @@
   </div>
 
   {#if controlsPlacement === "dock"}
-    <MandalaControlDock {ctrl} onHeightChange={(px) => (dockHeight = px)} />
+    <MandalaControlDock
+      {ctrl}
+      {showDownload}
+      onHeightChange={(px) => (dockHeight = px)}
+    />
   {/if}
-  <MandalaExportTakeover {ctrl} {sequence} {bluePropType} {redPropType} size={takeoverSize} />
+  <MandalaExportTakeover
+    {ctrl}
+    {sequence}
+    {bluePropType}
+    {redPropType}
+    size={takeoverSize}
+    onCancel={onExportCancel}
+    onRetry={onExportRetry}
+  />
 </div>
 
 <style>

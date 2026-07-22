@@ -20,6 +20,14 @@ describe("CollectedMandalaSchema", () => {
     expect(CollectedMandalaSchema.safeParse(valid).success).toBe(true);
   });
 
+  it("preserves the saved path shape while accepting older entries without it", () => {
+    expect(
+      CollectedMandalaSchema.safeParse({ ...valid, pathShape: "concave" })
+        .success
+    ).toBe(true);
+    expect(CollectedMandalaSchema.safeParse(valid).success).toBe(true);
+  });
+
   it("requires an id", () => {
     const { id: _drop, ...rest } = valid;
     expect(CollectedMandalaSchema.safeParse(rest).success).toBe(false);

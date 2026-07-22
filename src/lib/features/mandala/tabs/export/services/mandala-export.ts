@@ -10,17 +10,26 @@ import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/servi
 import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
 import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import type { StepLike } from "$lib/shared/mandala/services/types";
+import type {
+	MandalaPathShape,
+	MandalaRenderOptions,
+} from "$lib/shared/mandala/domain/mandala-types";
+import { getMandalaPathOptions } from "$lib/shared/mandala/services/mandala-path-options";
 
 export interface ExportOptions {
 	size: number;
 	background: "transparent" | "black" | "white";
 	strokeWidth: number;
+	show: MandalaRenderOptions["show"];
+	pathShape: MandalaPathShape;
 }
 
 const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 	size: 1080,
 	background: "transparent",
 	strokeWidth: 2.5,
+	show: "both",
+	pathShape: "arc",
 };
 
 export async function exportMandalaPNG(
@@ -35,7 +44,7 @@ export async function exportMandalaPNG(
 		steps,
 		bluePropType,
 		redPropType,
-		tipEnds === 1 ? { tipEnds: 1 } : undefined,
+		getMandalaPathOptions(opts.pathShape, tipEnds),
 	);
 
 	const canvas = document.createElement("canvas");
@@ -57,7 +66,7 @@ export async function exportMandalaPNG(
 	renderMandalaToCanvas(ctx, paths, {
 		size: opts.size,
 		style: "stroke",
-		show: "both",
+		show: opts.show,
 		strokeWidth: opts.strokeWidth,
 		offsetX: 0,
 		offsetY: 0,

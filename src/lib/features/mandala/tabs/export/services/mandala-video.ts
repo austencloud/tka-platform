@@ -8,7 +8,10 @@
 
 import type { MandalaFrameSpec } from "$lib/shared/mandala/services/mandala-frame-renderer";
 import type { StepLike } from "$lib/shared/mandala/services/types";
-import { BLUE_STROKE, RED_STROKE } from "$lib/shared/mandala/domain/mandala-constants";
+import {
+  BLUE_STROKE,
+  RED_STROKE,
+} from "$lib/shared/mandala/domain/mandala-constants";
 import {
   exportMandalaVideo,
   mandalaBitrateFor,
@@ -16,6 +19,10 @@ import {
   type MandalaVideoExportCallbacks,
 } from "$lib/shared/mandala/services/mandala-video-exporter";
 import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
+import type {
+  MandalaPathShape,
+  MandalaRenderOptions,
+} from "$lib/shared/mandala/domain/mandala-types";
 
 // Fixed seamless-loop defaults for the Playground (v1: no options UI).
 //   period 5s × reps 4 = 20s, 4 breathing cycles;
@@ -39,9 +46,13 @@ export interface MandalaVideoSource {
   steps: StepLike[];
   bluePropType?: string;
   redPropType?: string;
+  variant?: MandalaRenderOptions["show"];
+  pathShape?: MandalaPathShape;
 }
 
-export function buildMandalaVideoSpec(source: MandalaVideoSource): MandalaFrameSpec {
+export function buildMandalaVideoSpec(
+  source: MandalaVideoSource
+): MandalaFrameSpec {
   // steps may be Svelte reactive proxies / domain class instances. JSON
   // round-trip yields the plain, structured-cloneable data the worker needs.
   const plainSteps = JSON.parse(JSON.stringify(source.steps));
@@ -49,7 +60,8 @@ export function buildMandalaVideoSpec(source: MandalaVideoSource): MandalaFrameS
     steps: plainSteps,
     bluePropType: source.bluePropType,
     redPropType: source.redPropType,
-    pathShape: VIDEO_DEFAULTS.pathShape,
+    show: source.variant ?? "both",
+    pathShape: source.pathShape ?? VIDEO_DEFAULTS.pathShape,
     lineWeight: VIDEO_DEFAULTS.lineWeight,
     bgColor: VIDEO_DEFAULTS.bgColor,
     resolution: VIDEO_DEFAULTS.resolution,
@@ -72,14 +84,18 @@ export function buildMandalaVideoSpec(source: MandalaVideoSource): MandalaFrameS
  */
 export function runMandalaVideoExport(
   source: MandalaVideoSource,
-  callbacks?: MandalaVideoExportCallbacks,
+  callbacks?: MandalaVideoExportCallbacks
 ): MandalaVideoExportHandle {
   const spec = buildMandalaVideoSpec(source);
   const bitrate = mandalaBitrateFor(spec.resolution);
   const handle = exportMandalaVideo(spec, bitrate, callbacks);
   const safeName = source.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   void handle.done
-    .then((blob) => shareOrDownloadBlob(blob, `mandala-${safeName}.mp4`, { title: "TKA Mandala" }))
+    .then((blob) =>
+      shareOrDownloadBlob(blob, `mandala-${safeName}.mp4`, {
+        title: "TKA Mandala",
+      })
+    )
     .catch(() => {
       // Errors surface through callbacks / the caller's own handle.done handler.
     });

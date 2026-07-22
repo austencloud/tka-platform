@@ -8,8 +8,9 @@
     ctrl: MandalaViewerController;
     /** Reports the dock's measured height so the consumer can reserve stage room. */
     onHeightChange?: (px: number) => void;
+    showDownload?: boolean;
   }
-  let { ctrl, onHeightChange }: Props = $props();
+  let { ctrl, onHeightChange, showDownload = true }: Props = $props();
 
   // Reduced-motion gate for JS (Svelte) transitions.
   let reduceMotion = $state(false);
@@ -84,7 +85,7 @@
     </div>
   {/if}
 
-  {#if downloadOpen}
+  {#if showDownload && downloadOpen}
     <div class="tray" transition:slide={{ duration: dur(260), easing: cubicOut }}>
       <MandalaCategoryControl
         {ctrl}
@@ -111,16 +112,18 @@
       {/each}
     </div>
 
-    <button
-      class="dock-btn download"
-      class:active={downloadOpen}
-      style:--btn-i={CATS.length}
-      onclick={toggleDownload}
-      aria-pressed={downloadOpen}
-      aria-label="Download options"
-    >
-      <i class="fas fa-download" aria-hidden="true"></i>
-    </button>
+    {#if showDownload}
+      <button
+        class="dock-btn download"
+        class:active={downloadOpen}
+        style:--btn-i={CATS.length}
+        onclick={toggleDownload}
+        aria-pressed={downloadOpen}
+        aria-label="Download options"
+      >
+        <i class="fas fa-download" aria-hidden="true"></i>
+      </button>
+    {/if}
   </div>
 </div>
 
