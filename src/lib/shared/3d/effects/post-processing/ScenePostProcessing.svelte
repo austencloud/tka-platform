@@ -2,7 +2,13 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2, Vector3, AgXToneMapping, NoToneMapping } from "three";
+  import {
+    HalfFloatType,
+    Vector2,
+    Vector3,
+    AgXToneMapping,
+    NoToneMapping,
+  } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -18,6 +24,8 @@
   import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
   import { oceanDebugToggles } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-debug-toggles.svelte";
   import { getQualityTierDetector } from "../quality/get-quality-tier-detector";
+  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
+  import { QualityTier } from "../types";
 
   interface Props {
     children: Snippet;
@@ -39,9 +47,12 @@
   const renderer: import("three").WebGLRenderer = _ctx.renderer;
   const camera: { current: import("three").Camera } = _ctx.camera;
   const scene: import("three").Scene = _ctx.scene;
-  const autoRender: { current: boolean; set: (v: boolean) => void } = _ctx.autoRender;
+  const autoRender: { current: boolean; set: (v: boolean) => void } =
+    _ctx.autoRender;
   const renderStage = _ctx.renderStage;
   const viewer3DState = getViewer3DContext();
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
+  const qualityTierDetector = getQualityTierDetector();
 
   const isOcean = $derived.by(() => {
     try {
@@ -55,9 +66,18 @@
   // the consolidated 3D trail (HDR-emissive ribbon) blooms in ANY scene, not
   // just ocean. On LOW the trail's in-shader halo alone carries the glow and no
   // composer runs. Trails default-on in the viewer, so tier is the right gate.
-  const tierBloom = $derived(getQualityTierDetector().currentConfig.enableBloom);
+  const tierConfig = $derived(
+    adaptiveQuality?.config ?? qualityTierDetector.currentConfig
+  );
+  const tierBloom = $derived(tierConfig.enableBloom);
+  const allowOceanComposer = $derived(
+    isOcean &&
+      (adaptiveQuality
+        ? adaptiveQuality.level >= 2
+        : qualityTierDetector.currentTier !== QualityTier.LOW)
+  );
   const shouldCompose = $derived(
-    (isOcean || tierBloom) && !viewer3DState.isExporting,
+    (allowOceanComposer || tierBloom) && !viewer3DState.isExporting
   );
 
   let composer: EffectComposer | null = null;
@@ -88,7 +108,7 @@
     composer.addPass(new RenderPass(scn, cam));
 
     if (isOcean) {
-      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.enabled = tierConfig.enableShadows;
       renderer.toneMapping = AgXToneMapping;
       renderer.toneMappingExposure = 1.0;
     }
@@ -117,7 +137,8 @@
     // Ocean keeps its authored bloom toggle; non-ocean scenes bloom only when
     // the quality tier allows it (HIGH/MEDIUM) so the HDR trail glows. Dev
     // `bloom` toggle A/Bs the ocean glow (it can read as a washout veil).
-    const wantBloom = isOcean ? enableBloom && oceanDebugToggles.bloom : tierBloom;
+    const wantBloom =
+      tierBloom && (isOcean ? enableBloom && oceanDebugToggles.bloom : true);
     if (wantBloom) {
       colorEffects.push(
         new BloomEffect({
@@ -126,9 +147,12 @@
           luminanceSmoothing: 0.3,
           mipmapBlur: true,
           radius: 0.5,
-          levels: bloomLevels,
-          resolutionScale: bloomResolutionScale,
-        }),
+          levels: Math.min(bloomLevels, tierConfig.bloomLevels),
+          resolutionScale: Math.min(
+            bloomResolutionScale,
+            tierConfig.bloomResolutionScale
+          ),
+        })
       );
     }
 
@@ -139,7 +163,7 @@
         new VignetteEffect({
           darkness: 0.3,
           offset: 0.35,
-        }),
+        })
       );
     }
 
@@ -147,11 +171,11 @@
       composer.addPass(new EffectPass(cam, ...colorEffects));
     }
 
-    if (isOcean && oceanDebugToggles.underwaterDistortion) {
+    if (isOcean && tierBloom && oceanDebugToggles.underwaterDistortion) {
       composer.addPass(new EffectPass(cam, new UnderwaterDistortionEffect()));
     }
 
-    if (isOcean && enableChromaticAberration) {
+    if (isOcean && tierBloom && enableChromaticAberration) {
       composer.addPass(
         new EffectPass(
           cam,
@@ -159,8 +183,8 @@
             offset: new Vector2(0.0006, 0.0006),
             radialModulation: true,
             modulationOffset: 0.2,
-          }),
-        ),
+          })
+        )
       );
     }
 
@@ -248,7 +272,7 @@
 
       composer.render(delta);
     },
-    { stage: renderStage, autoInvalidate: false },
+    { stage: renderStage, autoInvalidate: false }
   );
 
   onDestroy(() => {

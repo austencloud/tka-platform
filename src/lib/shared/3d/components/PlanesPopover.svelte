@@ -2,6 +2,15 @@
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import CascadeBadge from "./controls/CascadeBadge.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -52,7 +61,15 @@
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
     e.stopPropagation();
+    const previous = isVisible(plane);
     viewer.togglePlane(plane);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      `${String(plane).toLowerCase()}_visible`,
+      previous,
+      !previous
+    );
   }
 
   function handleHandSlotClick(e: MouseEvent, hand: "blue" | "red", plane: Plane) {
@@ -65,6 +82,13 @@
     } else {
       viewer.setHandPlaneScoped(hand, plane);
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      `${hand}_plane`,
+      currentPlane,
+      plane
+    );
   }
 
   function handleResetPlanesClick(e: MouseEvent) {
@@ -79,13 +103,55 @@
         p.clearBeatPlaneOverrides();
       }
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      isAllMode ? "reset_all" : "reset_performer",
+      false,
+      true
+    );
+  }
+
+  function resetAllOverrides(): void {
+    viewer.resetAllPerformersPlanes();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      "reset_all_overrides",
+      false,
+      true
+    );
+  }
+
+  function resetSelectedPlanes(): void {
+    selected?.resetPlanes();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      "reset_performer_override",
+      false,
+      true
+    );
+  }
+
+  function toggleGridLabels(e: MouseEvent): void {
+    e.stopPropagation();
+    const previous = viewer.showGridLabels;
+    viewer.toggleGridLabels();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      "location_labels",
+      previous,
+      !previous
+    );
   }
 </script>
 
 {#if isAllMode && overrideCount > 0}
-  <CascadeBadge mode="overrides" {overrideCount} categoryLabel="planes" onReset={() => viewer.resetAllPerformersPlanes()} />
+  <CascadeBadge mode="overrides" {overrideCount} categoryLabel="planes" onReset={resetAllOverrides} />
 {:else if !isAllMode && isOverridden}
-  <CascadeBadge mode="custom" onReset={() => selected?.resetPlanes()} />
+  <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
 {:else if !isAllMode}
   <CascadeBadge mode="default" />
 {/if}
@@ -142,7 +208,7 @@
   <button
     class="label-toggle"
     class:active={viewer.showGridLabels}
-    onclick={(e) => { e.stopPropagation(); viewer.toggleGridLabels(); }}
+    onclick={toggleGridLabels}
     aria-pressed={viewer.showGridLabels}
     aria-label="Toggle grid location labels"
   >

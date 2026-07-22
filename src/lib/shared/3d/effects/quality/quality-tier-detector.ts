@@ -5,6 +5,7 @@ export interface GPUCapabilities {
   floatTextures: boolean;
   hardwareConcurrency: number;
   isWebGPU: boolean;
+  isMobile?: boolean;
 }
 
 const STORAGE_KEY = "tka-3d-quality-tier-override";
@@ -25,8 +26,17 @@ export class QualityTierDetector {
     return TIER_CONFIGS[this.currentTier];
   }
 
+  get hasOverride(): boolean {
+    return this.overrideTier !== null;
+  }
+
   detectFromCapabilities(capabilities: GPUCapabilities): QualityTier {
-    if (capabilities.isWebGPU) {
+    if (capabilities.isMobile) {
+      // Phones combine dense displays with a much smaller sustained thermal
+      // envelope than desktops. Start conservatively; live frame sampling can
+      // raise quality after the scene proves it has headroom.
+      this.detectedTier = QualityTier.LOW;
+    } else if (capabilities.isWebGPU) {
       this.detectedTier = QualityTier.HIGH;
     } else if (
       capabilities.floatTextures &&
@@ -59,9 +69,12 @@ export class QualityTierDetector {
       floatTextures: caps?.floatFragmentTextures ?? false,
       hardwareConcurrency:
         typeof navigator !== "undefined"
-          ? navigator.hardwareConcurrency ?? 4
+          ? (navigator.hardwareConcurrency ?? 4)
           : 4,
       isWebGPU: caps?.isWebGPU ?? false,
+      isMobile:
+        typeof navigator !== "undefined" &&
+        /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent),
     });
   }
 

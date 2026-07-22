@@ -3,7 +3,13 @@
   import { useGltf } from "@threlte/extras";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
-  import { Color, FogExp2, type WebGLRenderer } from "three";
+  import {
+    Color,
+    FogExp2,
+    type Camera,
+    type Scene,
+    type WebGLRenderer,
+  } from "three";
   import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import FallingParticles from "../primitives/FallingParticles.svelte";
@@ -18,6 +24,7 @@
     detectBlossomQuality,
   } from "./cherry-blossom/blossom-runtime";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
 
   interface Props {
     config?: BlossomSceneConfig;
@@ -38,7 +45,12 @@
   const fireflies = $derived(activeConfig.fireflies);
   const moonLight = $derived(activeConfig.moonLight);
   const groundY = $derived(userProportionsState.groundY);
-  const { scene, renderer, camera } = useThrelte();
+  const { scene, renderer, camera } = useThrelte() as unknown as {
+    scene: Scene;
+    renderer: WebGLRenderer;
+    camera: { current: Camera };
+  };
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
   const sceneFeatures = getSceneFeatureContext();
 
   const environmentGlb = useGltf("/models/blossom/blossom_environment.glb", {
@@ -98,15 +110,17 @@
 
   const reducedMotion = $derived(prefersReducedMotion());
 
-  const qualityTier = $derived.by(() =>
-    detectBlossomQuality({
-      userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
-      hardwareConcurrency:
-        typeof navigator === "undefined"
-          ? 8
-          : (navigator.hardwareConcurrency ?? 4),
-      gpuRenderer: getGpuRendererName(renderer.current ?? null),
-    })
+  const qualityTier = $derived.by(
+    () =>
+      adaptiveQuality?.tier ??
+      detectBlossomQuality({
+        userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
+        hardwareConcurrency:
+          typeof navigator === "undefined"
+            ? 8
+            : (navigator.hardwareConcurrency ?? 4),
+        gpuRenderer: getGpuRendererName(renderer),
+      })
   );
 
   const runtime = $derived(
@@ -156,8 +170,7 @@
   );
 
   $effect(() => {
-    const currentScene = scene.current;
-    if (!currentScene) return;
+    const currentScene = scene;
 
     const ownedFog = new FogExp2(
       new Color(activeConfig.fog.color),
@@ -173,8 +186,8 @@
   // Match Ocean's mobile DPR cap. Blossom is now light on draw calls, but a
   // retina phone can still spend most of its frame budget filling pixels.
   $effect(() => {
-    const currentRenderer = renderer.current;
-    if (!currentRenderer || typeof window === "undefined") return;
+    if (adaptiveQuality || typeof window === "undefined") return;
+    const currentRenderer = renderer;
 
     const previousPixelRatio = currentRenderer.getPixelRatio();
     const nextPixelRatio = Math.min(
@@ -194,9 +207,9 @@
   $effect(() => {
     const glb = $environmentGlb;
     const loadError = $environmentError;
-    const currentRenderer = renderer.current;
+    const currentRenderer = renderer;
     const currentCamera = camera.current;
-    const currentScene = scene.current;
+    const currentScene = scene;
 
     if (loadError) {
       reportEnvironmentFailure(loadError, "GLB load failed");

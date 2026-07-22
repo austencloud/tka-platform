@@ -1,13 +1,29 @@
 <script lang="ts">
   import { useThrelte, useTask } from "@threlte/core";
+  import { onMount } from "svelte";
+  import type { WebGLRenderer } from "three";
+  import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
 
   interface Props {
     visible?: boolean;
+    adaptive?: boolean;
   }
 
-  let { visible = false }: Props = $props();
+  let { visible = false, adaptive = false }: Props = $props();
 
-  const { renderer } = useThrelte();
+  // The installed Threlte 8 runtime exposes the renderer directly. The local
+  // global.d.ts still describes the pre-v8 `.current` shape, so keep this cast
+  // beside the boundary until that broader migration is done.
+  const { renderer } = useThrelte() as unknown as {
+    renderer: WebGLRenderer;
+  };
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
+
+  onMount(() => {
+    if (adaptiveQuality && !adaptiveQuality.initialized) {
+      adaptiveQuality.initialize(renderer);
+    }
+  });
 
   let fps = $state(0);
   let drawCalls = $state(0);
@@ -19,7 +35,14 @@
   let frameCount = 0;
   let lastTime = performance.now();
 
-  useTask(() => {
+  useTask((delta) => {
+    adaptiveQuality?.observeFrame(
+      delta,
+      adaptive &&
+        (typeof document === "undefined" ||
+          document.visibilityState === "visible")
+    );
+
     if (!visible) return;
 
     frameCount++;
@@ -31,9 +54,7 @@
       frameCount = 0;
       lastTime = now;
 
-      const r = renderer.current;
-      if (!r) return;
-      const info = r.info;
+      const info = renderer.info;
       drawCalls = info.render.calls;
       triangles = info.render.triangles;
       geometries = info.memory.geometries;
@@ -47,11 +68,17 @@
   <div class="perf-monitor">
     <div class="perf-row">
       <span class="perf-label">FPS</span>
-      <span class="perf-value" class:perf-warn={fps < 30} class:perf-good={fps >= 55}>{fps}</span>
+      <span
+        class="perf-value"
+        class:perf-warn={fps < 30}
+        class:perf-good={fps >= 55}>{fps}</span
+      >
     </div>
     <div class="perf-row">
       <span class="perf-label">Draw</span>
-      <span class="perf-value" class:perf-warn={drawCalls > 200}>{drawCalls}</span>
+      <span class="perf-value" class:perf-warn={drawCalls > 200}
+        >{drawCalls}</span
+      >
     </div>
     <div class="perf-row">
       <span class="perf-label">Tris</span>
@@ -59,7 +86,9 @@
     </div>
     <div class="perf-row">
       <span class="perf-label">Geo</span>
-      <span class="perf-value" class:perf-warn={geometries > 100}>{geometries}</span>
+      <span class="perf-value" class:perf-warn={geometries > 100}
+        >{geometries}</span
+      >
     </div>
     <div class="perf-row">
       <span class="perf-label">Tex</span>

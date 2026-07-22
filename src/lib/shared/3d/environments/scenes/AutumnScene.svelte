@@ -17,7 +17,7 @@
 
   import { T, useThrelte } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
-  import { FogExp2, Color } from "three";
+  import { FogExp2, Color, type Scene, type WebGLRenderer } from "three";
   import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
@@ -29,6 +29,7 @@
   import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
   import type { PulseTarget } from "./autumn/runtime/interaction/AutumnInteraction.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
 
   // ── Props (match what Environment3D passes) ───────────────────────────
 
@@ -48,12 +49,16 @@
 
   // ── Quality detection ─────────────────────────────────────────────────
 
-  const { scene, renderer } = useThrelte();
+  const { scene, renderer } = useThrelte() as unknown as {
+    scene: Scene;
+    renderer: WebGLRenderer;
+  };
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
 
   const tier = $derived(
     autumnQualityOverride.tier !== "auto"
       ? autumnQualityOverride.tier
-      : detectAutumnQuality(renderer.current ?? null),
+      : (adaptiveQuality?.tier ?? detectAutumnQuality(renderer))
   );
   const quality = $derived(getAutumnQualityConfig(tier));
 
@@ -142,7 +147,11 @@
       if (!m.isMesh || !m.material) return;
       const mats = Array.isArray(m.material) ? m.material : [m.material];
       for (const mat of mats) {
-        const sm = mat as { emissive?: Color; emissiveIntensity?: number; needsUpdate?: boolean };
+        const sm = mat as {
+          emissive?: Color;
+          emissiveIntensity?: number;
+          needsUpdate?: boolean;
+        };
         if (sm.emissive) {
           sm.emissive.set("#00c8b4");
           sm.emissiveIntensity = 0.45;
@@ -155,8 +164,7 @@
   // ── Fog + background (dusk violet) ─────────────────────────────────────
 
   $effect(() => {
-    const s = scene.current;
-    if (!s) return;
+    const s = scene;
     const fogColor = new Color("#2a1838");
     s.fog = new FogExp2(fogColor.getHex(), 0.02);
     s.background = fogColor;
@@ -178,11 +186,21 @@
 {/if}
 
 {#if $heroTreeA}
-  <T is={$heroTreeA.scene} position.x={-9} position.y={groundY} position.z={-4} />
+  <T
+    is={$heroTreeA.scene}
+    position.x={-9}
+    position.y={groundY}
+    position.z={-4}
+  />
 {/if}
 
 {#if $heroTreeB}
-  <T is={$heroTreeB.scene} position.x={10} position.y={groundY} position.z={-6} />
+  <T
+    is={$heroTreeB.scene}
+    position.x={10}
+    position.y={groundY}
+    position.z={-6}
+  />
 {/if}
 
 {#key tier}

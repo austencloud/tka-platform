@@ -24,6 +24,13 @@
   import { cameraPreferences } from "./camera-preferences.svelte";
   import { SCALE } from "@austencloud/scene-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  import {
+    CLEAN_FLY_INTERACTION,
+    flushFlyInteraction,
+    markFlyInteractionDirty,
+    type FlyInteractionDirtyState,
+    type FlyInteractionKind,
+  } from "../domain/fly-interaction-dirty";
 
   interface Props {
     /** Destination ID for preference persistence (e.g., "stage", "gallery") */
@@ -58,6 +65,7 @@
     allowedModes?: CameraMode[];
     /** When true, disable the V-key mode toggle (parent controls mode externally via Q cycle) */
     disableModeToggle?: boolean;
+    onInteractionEnd?: (kind: FlyInteractionKind) => void;
   }
 
   const props: Props = $props();
@@ -96,6 +104,23 @@
 
   // Movement keys
   const keys = new Set<string>();
+  const MOVEMENT_KEYS = new Set([
+    "KeyW", "KeyA", "KeyS", "KeyD", "KeyC", "Space",
+    "ShiftLeft", "ShiftRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+  ]);
+  let flyInteractionState: FlyInteractionDirtyState = {
+    ...CLEAN_FLY_INTERACTION,
+  };
+
+  function markFlyInteraction(kind: "keyboard" | "pointer"): void {
+    flyInteractionState = markFlyInteractionDirty(flyInteractionState, kind);
+  }
+
+  function flushCompletedInteraction(): void {
+    const result = flushFlyInteraction(flyInteractionState);
+    flyInteractionState = result.state;
+    if (result.kind) props.onInteractionEnd?.(result.kind);
+  }
 
   // Input capabilities for detecting touch vs mouse
   const inputCaps = getInputCapabilities();
@@ -247,9 +272,11 @@
 
     // Only track movement keys in game modes
     if (isGameMode(mode)) {
+      const isMovementKey = MOVEMENT_KEYS.has(e.code);
+      if (isMovementKey && !e.repeat) markFlyInteraction("keyboard");
       keys.add(e.code);
 
-      if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyC", "Space", "ShiftLeft", "ShiftRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      if (isMovementKey) {
         e.preventDefault();
       }
     }
@@ -267,6 +294,9 @@
 
     // Game modes: pointer lock mouse look OR drag-to-look fallback
     if (isPointerLocked) {
+      if (e.movementX !== 0 || e.movementY !== 0) {
+        markFlyInteraction("pointer");
+      }
       yaw -= e.movementX * SETTINGS.lookSensitivity;
       pitch += e.movementY * SETTINGS.lookSensitivity;
 
@@ -276,6 +306,7 @@
       // Drag-to-look fallback (touch simulation, mobile, etc.)
       const deltaX = e.clientX - lastPointerPos.x;
       const deltaY = e.clientY - lastPointerPos.y;
+      if (deltaX !== 0 || deltaY !== 0) markFlyInteraction("pointer");
       lastPointerPos = { x: e.clientX, y: e.clientY };
 
       yaw -= deltaX * SETTINGS.lookSensitivity;
@@ -314,7 +345,9 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
+    const wasDragging = isDragging;
     isDragging = false;
+    if (wasDragging) flushCompletedInteraction();
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -331,6 +364,7 @@
 
       const deltaX = e.clientX - lastPointerPos.x;
       const deltaY = e.clientY - lastPointerPos.y;
+      if (deltaX !== 0 || deltaY !== 0) markFlyInteraction("pointer");
       lastPointerPos = { x: e.clientX, y: e.clientY };
 
       yaw -= deltaX * SETTINGS.lookSensitivity;
@@ -351,8 +385,9 @@
     // If we lost pointer lock, return to orbit — unless orbit is excluded
     // from allowedModes (e.g., Scene Lab walk mode). In that case stay in
     // the current game mode; the "click to look around" hint reappears.
-    if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
-      if (!allowedModes || allowedModes.includes(CameraMode.ORBIT)) {
+    if (wasLocked && !isPointerLocked) {
+      flushCompletedInteraction();
+      if (mode !== CameraMode.ORBIT && (!allowedModes || allowedModes.includes(CameraMode.ORBIT))) {
         returnToOrbit();
       }
     }
@@ -380,6 +415,7 @@
   }
 
   function handleBlur() {
+    flushCompletedInteraction();
     keys.clear();
   }
 
@@ -397,6 +433,7 @@
 
   function detachFromCanvas() {
     if (!attached) return;
+    flushCompletedInteraction();
     attached = false;
     const canvas = cachedCanvas;
     window.removeEventListener("keydown", handleKeyDown);

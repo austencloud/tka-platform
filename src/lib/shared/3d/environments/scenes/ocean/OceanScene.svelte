@@ -1,7 +1,15 @@
 <script lang="ts">
   import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
-  import { FogExp2, Color, PMREMGenerator, Mesh, MeshStandardMaterial } from "three";
+  import {
+    FogExp2,
+    Color,
+    PMREMGenerator,
+    Mesh,
+    MeshStandardMaterial,
+    type Scene,
+    type WebGLRenderer,
+  } from "three";
   import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
@@ -17,6 +25,7 @@
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
+  import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
 
   // ── Props ─────────────────────────────────────────────────────────────
 
@@ -36,14 +45,23 @@
 
   // ── Quality detection ─────────────────────────────────────────────────
 
-  const { scene, renderer } = useThrelte();
+  const { scene, renderer } = useThrelte() as unknown as {
+    scene: Scene;
+    renderer: WebGLRenderer;
+  };
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
 
   const qualityTier = $derived(
     oceanQualityOverride.tier !== "auto"
       ? oceanQualityOverride.tier
-      : detectOceanQuality(renderer.current ?? null),
+      : adaptiveQuality
+        ? adaptiveQuality.tier === "high"
+          ? "ultra"
+          : adaptiveQuality.tier
+        : detectOceanQuality(renderer)
   );
   const quality = $derived(getOceanQualityConfig(qualityTier));
+  const floraRequired = $derived(quality.enableAuthoredFlora);
 
   // ── Scene feature readiness ────────────────────────────────────────────
 
@@ -67,6 +85,20 @@
   let floraFraction = $state(0);
   let floraLoaded = $state(false);
 
+  $effect(() => {
+    if (floraRequired) {
+      floraFraction = 0;
+      floraLoaded = false;
+      return;
+    }
+
+    // LOW keeps the seabed, stage, lighting, and underwater colour, but skips
+    // the 54M-vertex reef. The loading curtain should not wait for an asset this
+    // tier deliberately does not request.
+    floraFraction = 1;
+    floraLoaded = true;
+  });
+
   function handleFloraProgress(fraction: number) {
     floraFraction = fraction;
   }
@@ -80,7 +112,7 @@
     const seabed = $environmentGlb ? 1 : 0;
     const combined = seabed * SEABED_WEIGHT + floraFraction * FLORA_WEIGHT;
     sceneFeatures?.reportProgress("environment", combined);
-    if ($environmentGlb && floraLoaded) {
+    if ($environmentGlb && (!floraRequired || floraLoaded)) {
       sceneFeatures?.reportReady("environment");
     }
   });
@@ -88,15 +120,16 @@
   // ── Fog ───────────────────────────────────────────────────────────────
 
   $effect(() => {
-    const s = scene.current;
-    if (!s) return;
+    const s = scene;
     // Deep blue-teal so distance dissolves into water, not a dead-black void
     // (was #0d0d10). Pairs with the absorption depth-grade in ScenePostProcessing.
     const fogColor = new Color("#0a2438");
     // Keep the backdrop colour always; the dev `fog` toggle only removes the
     // distance haze veil so a reviewer can see how much of the washout it owns.
     s.background = fogColor;
-    s.fog = oceanDebugToggles.fog ? new FogExp2(fogColor.getHex(), 0.012) : null;
+    s.fog = oceanDebugToggles.fog
+      ? new FogExp2(fogColor.getHex(), 0.012)
+      : null;
     return () => {
       if (s) {
         s.fog = null;
@@ -111,12 +144,11 @@
   // cheap PMREM env (low-energy RoomEnvironment) to activate it — soft fresnel /
   // spec breakup gives the coral a wet look instead of a flat diffuse read.
   $effect(() => {
-    const r = renderer.current;
-    const s = scene.current;
-    if (!r || !s) return;
+    const r = renderer;
+    const s = scene;
     // Dev `ibl` toggle — drop the env entirely to A/B how much the reflective
     // wash owns the washed-out read.
-    if (!oceanDebugToggles.ibl) {
+    if (!quality.enableImageBasedLighting || !oceanDebugToggles.ibl) {
       s.environment = null;
       return;
     }
@@ -135,7 +167,7 @@
   // caustic dapple as the flora/structures (FloraInstances patches those).
   $effect(() => {
     const g = $environmentGlb;
-    if (!g) return;
+    if (!g || !quality.enableCaustics) return;
     g.scene.traverse((o) => {
       const m = o as Mesh;
       if (!m.isMesh) return;
@@ -157,9 +189,10 @@
   });
   $effect(() => {
     // Live-tunable via the dev Caustics slider; the toggle still hard-zeroes it.
-    causticUniforms.uCausticStrength.value = oceanDebugToggles.caustics
-      ? oceanDebugToggles.causticStrength
-      : 0;
+    causticUniforms.uCausticStrength.value =
+      quality.enableCaustics && oceanDebugToggles.caustics
+        ? oceanDebugToggles.causticStrength
+        : 0;
   });
 
   // ── Device-pixel-ratio cap ─────────────────────────────────────────────
@@ -169,8 +202,8 @@
   // resolution. Cap it here and restore the prior ratio on teardown so other
   // scenes are unaffected. Re-runs when the tier (and thus maxPixelRatio) changes.
   $effect(() => {
-    const r = renderer.current;
-    if (!r) return;
+    if (adaptiveQuality) return;
+    const r = renderer;
     const prev = r.getPixelRatio();
     r.setPixelRatio(Math.min(window.devicePixelRatio, quality.maxPixelRatio));
     return () => {
@@ -183,6 +216,18 @@
   <T is={$environmentGlb.scene} />
 {/if}
 
-<FloraInstances {quality} onProgress={handleFloraProgress} onReady={handleFloraReady} />
+{#if floraRequired}
+  <FloraInstances
+    {quality}
+    onProgress={handleFloraProgress}
+    onReady={handleFloraReady}
+  />
+{/if}
 
-<OceanRuntimeSystems {quality} {performerCount} {stageWidth} {stageDepth} {stageZOffset} />
+<OceanRuntimeSystems
+  {quality}
+  {performerCount}
+  {stageWidth}
+  {stageDepth}
+  {stageZOffset}
+/>

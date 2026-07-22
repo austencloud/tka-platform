@@ -18,15 +18,21 @@
   import UnifiedCameraController from "../camera/UnifiedCameraController.svelte";
   import { CameraMode } from "../camera/types";
   import type { AvatarState, PhysicsProvider } from "../camera/types";
+  import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     /** Camera player avatar for fly/walk modes (WASD writes here, not the performer). */
     cameraPlayerAvatar?: AvatarState | null;
     /** Physics provider for fly mode (noclip). Null for orbit/walk. */
     cameraPlayerPhysics?: PhysicsProvider | null;
+    onSettingChange?: ViewerControlSink;
   }
 
-  let { cameraPlayerAvatar = null, cameraPlayerPhysics = null }: Props = $props();
+  let {
+    cameraPlayerAvatar = null,
+    cameraPlayerPhysics = null,
+    onSettingChange,
+  }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
   const navMode = $derived(viewer3DState.navMode);
@@ -246,6 +252,7 @@
     saveTimer = setTimeout(() => {
       flushCameraSave();
     }, 500);
+    onSettingChange?.("3d_camera", "orbit_gesture", null, "completed");
   }
 
   function snapTo(
@@ -380,5 +387,7 @@
     sprintMultiplier={2.5}
     gravity={0}
     jumpForce={0}
+    onInteractionEnd={(kind) =>
+      onSettingChange?.("3d_camera", "fly_gesture", null, kind)}
   />
 {/if}

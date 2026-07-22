@@ -109,6 +109,8 @@ export interface QualityTierConfig {
   maxDynamicLights: number;
   enableShadows: boolean;
   enableBloom: boolean;
+  bloomResolutionScale: number;
+  bloomLevels: number;
   enableGroundInteraction: boolean;
 }
 
@@ -119,6 +121,8 @@ export const TIER_CONFIGS: Record<QualityTier, QualityTierConfig> = {
     maxDynamicLights: 4,
     enableShadows: true,
     enableBloom: true,
+    bloomResolutionScale: 1,
+    bloomLevels: 8,
     enableGroundInteraction: true,
   },
   [QualityTier.MEDIUM]: {
@@ -127,6 +131,8 @@ export const TIER_CONFIGS: Record<QualityTier, QualityTierConfig> = {
     maxDynamicLights: 2,
     enableShadows: false,
     enableBloom: true,
+    bloomResolutionScale: 0.5,
+    bloomLevels: 5,
     enableGroundInteraction: false,
   },
   [QualityTier.LOW]: {
@@ -135,6 +141,8 @@ export const TIER_CONFIGS: Record<QualityTier, QualityTierConfig> = {
     maxDynamicLights: 0,
     enableShadows: false,
     enableBloom: false,
+    bloomResolutionScale: 0.5,
+    bloomLevels: 0,
     enableGroundInteraction: false,
   },
 };

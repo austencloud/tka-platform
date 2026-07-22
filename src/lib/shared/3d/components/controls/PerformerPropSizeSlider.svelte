@@ -1,23 +1,37 @@
 <script lang="ts">
   import { inchesToCm } from "@austencloud/scene-3d";
   import type { AvatarInstanceState } from "../../state/avatar-instance-state.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     performer: AvatarInstanceState;
     onSizeChange?: (cm: number) => void;
+    onSettingChange?: ViewerControlSink;
   }
-  let { performer, onSizeChange }: Props = $props();
+  let { performer, onSizeChange, onSettingChange }: Props = $props();
 
   const currentCm = $derived(performer.settings.staffLengthCm ?? 81);
   const displayInches = $derived(Math.round(currentCm / 2.54));
 
   function handleInput(e: Event) {
     const cm = Number((e.currentTarget as HTMLInputElement).value);
+    const previous = currentCm;
     if (onSizeChange) {
       onSizeChange(cm);
     } else {
       performer.setStaffLengthCm(cm);
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "prop_size_cm",
+      previous,
+      cm,
+      { coalesce: true }
+    );
   }
 </script>
 

@@ -27,6 +27,15 @@
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -61,7 +70,15 @@
   const sequenceSteps = $derived(sequence?.steps?.length ?? null);
 
   function pickAvatar(id: AvatarId) {
+    const previous = performer?.avatarModelId ?? null;
     performer?.setAvatarModel(id);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "avatar",
+      previous,
+      id
+    );
   }
 
   // ─── Inline name editing (input-swap pattern, mirrors TrackHeader) ───
@@ -80,14 +97,35 @@
     if (!performer) return;
     nameDraft = performerName === "—" ? "" : performerName;
     isEditingName = true;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "name_editor_open",
+      false,
+      true
+    );
   }
   function commitName() {
     if (!isEditingName) return;
     performer?.setDisplayName(nameDraft);
     isEditingName = false;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "display_name_changed",
+      false,
+      true
+    );
   }
   function cancelEditName() {
     isEditingName = false;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "name_editor_open",
+      true,
+      false
+    );
   }
   function handleNameKeydown(e: KeyboardEvent) {
     if (e.key === "Enter") {
@@ -124,9 +162,30 @@
 
   $effect(() => {
     if (isAllMode && (activeTab === "avatar" || activeTab === "sequence")) {
+      const previous = activeTab;
       activeTab = "prop";
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_performer",
+        "tab",
+        previous,
+        "prop",
+        { count: false }
+      );
     }
   });
+
+  function selectTab(tab: HubTab): void {
+    const previous = activeTab;
+    activeTab = tab;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "tab",
+      previous,
+      tab
+    );
+  }
 
   function handleTabKeydown(e: KeyboardEvent) {
     const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -135,7 +194,7 @@
     const next = (tabIndex + dir + TABS.length) % TABS.length;
     const nextTab = TABS[next];
     if (nextTab) {
-      activeTab = nextTab.id;
+      selectTab(nextTab.id);
       const btn = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(`#hub-tab-${nextTab.id}`);
       btn?.focus();
     }
@@ -165,15 +224,39 @@
   function handleFamilyClick(base: PropType) {
     const activeVariants = getAllVariations(base).filter(isPropActive);
     if (activeVariants.length <= 1) {
+      const previous = currentProp;
       applyToScope((p) => p?.setProp(base));
       expandedFamily = null;
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_performer",
+        "prop_type",
+        previous,
+        base
+      );
     } else {
+      const previous = expandedFamily;
       expandedFamily = base;
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_performer",
+        "prop_family",
+        previous,
+        base
+      );
     }
   }
 
   function handleVariantClick(variant: PropType) {
+    const previous = currentProp;
     applyToScope((p) => p?.setProp(variant));
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "prop_type",
+      previous,
+      variant
+    );
   }
 
   // ─── Effort ───
@@ -182,11 +265,42 @@
   );
 
   function handleEffortSelect(effortId: EffortId) {
+    const previous = currentEffort;
     applyToScope((p) => p?.setEffort(effortId));
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "effort",
+      previous,
+      effortId
+    );
   }
 
   function handlePropSizeChange(cm: number) {
     applyToScope((p) => p?.setStaffLengthCm(cm));
+  }
+
+  function removePerformer(): void {
+    const previous = allPerformers.length;
+    viewer.removePerformerFromUI();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "performer_count",
+      previous,
+      viewer.performerManager.performers.length
+    );
+  }
+
+  function clearSequence(): void {
+    performer?.clearSequence();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "sequence_loaded",
+      true,
+      false
+    );
   }
 </script>
 
@@ -294,7 +408,7 @@
             {#if canRemove}
               <button
                 class="remove-btn"
-                onclick={() => viewer.removePerformerFromUI()}
+                onclick={removePerformer}
               >
                 <i class="fas fa-trash-alt" aria-hidden="true"></i>
                 <span>Remove Performer</span>
@@ -316,7 +430,7 @@
               </div>
               <button
                 class="seq-action-btn"
-                onclick={() => performer?.clearSequence()}
+                onclick={clearSequence}
               >
                 <i class="fas fa-times" aria-hidden="true"></i>
                 <span>Clear Sequence</span>
@@ -391,9 +505,9 @@
             {/if}
 
             {#if performer}
-              <PerformerPropSizeSlider {performer} />
+              <PerformerPropSizeSlider {performer} {onSettingChange} />
             {:else if allPerformers[0]}
-              <PerformerPropSizeSlider performer={allPerformers[0]} onSizeChange={handlePropSizeChange} />
+              <PerformerPropSizeSlider performer={allPerformers[0]} onSizeChange={handlePropSizeChange} {onSettingChange} />
             {/if}
           </div>
         </div>
@@ -402,7 +516,7 @@
       {#if activeTab === "planes"}
         <div id="hub-panel-planes" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-planes">
           <div class="planes-section">
-            <PlanesPopover />
+            <PlanesPopover {onSettingChange} />
           </div>
         </div>
       {/if}
@@ -424,6 +538,7 @@
             <EffectsSettingsPanel
               performer={isAllMode ? null : performer}
               performers={isAllMode ? allPerformers : null}
+              {onSettingChange}
             />
           </div>
         </div>
@@ -444,7 +559,7 @@
           aria-selected={activeTab === tab.id}
           tabindex={activeTab === tab.id ? 0 : -1}
           aria-controls="hub-panel-{tab.id}"
-          onclick={() => (activeTab = tab.id)}
+          onclick={() => selectTab(tab.id)}
         >
           <i class="fas {tab.icon}" aria-hidden="true"></i>
           <span class="tab-label">{tab.label}</span>

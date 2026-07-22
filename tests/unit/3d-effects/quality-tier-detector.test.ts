@@ -36,6 +36,18 @@ describe("QualityTierDetector", () => {
     expect(tier).toBe(QualityTier.LOW);
   });
 
+  it("starts mobile hardware at LOW so runtime sampling can raise it safely", () => {
+    const detector = new QualityTierDetector();
+    const tier = detector.detectFromCapabilities({
+      maxTextureUnits: 32,
+      floatTextures: true,
+      hardwareConcurrency: 12,
+      isWebGPU: false,
+      isMobile: true,
+    });
+    expect(tier).toBe(QualityTier.LOW);
+  });
+
   it("allows manual override", () => {
     const detector = new QualityTierDetector();
     detector.setOverride(QualityTier.LOW);

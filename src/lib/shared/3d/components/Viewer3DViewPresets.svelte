@@ -14,8 +14,23 @@
   import { PlaneMode } from "@austencloud/scene-3d";
   import { GRID_OFFSETS } from "@austencloud/scene-3d";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
-  const { compact = false, flat = false, grid = false }: { compact?: boolean; flat?: boolean; grid?: boolean } = $props();
+  interface Props {
+    compact?: boolean;
+    flat?: boolean;
+    grid?: boolean;
+    onSettingChange?: ViewerControlSink;
+  }
+  const {
+    compact = false,
+    flat = false,
+    grid = false,
+    onSettingChange,
+  }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
@@ -100,8 +115,16 @@
       ? { azimuth: Math.PI, polar: 0 }
       : undefined;
 
+    const previous = viewer3DState.activeCameraPreset;
     viewer3DState.setActiveCameraPreset(presetId);
     viewer3DState.snapCameraTo(pos, getLookTarget(presetId), spherical);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_camera",
+      "preset",
+      previous,
+      presetId
+    );
   }
 </script>
 

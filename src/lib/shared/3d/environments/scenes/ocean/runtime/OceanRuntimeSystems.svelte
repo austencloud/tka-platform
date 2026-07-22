@@ -54,7 +54,11 @@
      teal from the surface above, darker from the floor below) so the seabed and
      flora get FORM instead of a flat wash — what a single AmbientLight could not
      do. Low intensity keeps the moody dark world; torches still carry warm key. -->
-<T.HemisphereLight intensity={oceanDebugToggles.hemiLight ? 0.45 : 0} color="#3a6b7a" groundColor="#0a1a14" />
+<T.HemisphereLight
+  intensity={oceanDebugToggles.hemiLight ? 0.45 : 0}
+  color="#3a6b7a"
+  groundColor="#0a1a14"
+/>
 <!-- Sun kept dim and near-neutral solely to drive the god-ray beam direction;
      Blender has no sun, so this must not wash the dark world. -->
 <T.DirectionalLight
@@ -70,23 +74,41 @@
      No castShadow: point-light cube shadows are redundant with the sun's
      directional shadow, and disposing their CubeRenderTarget on scene teardown
      crashes three's deallocateRenderTarget (undefined __webglFramebuffer). -->
-<T.PointLight position={[3, 1.708, 2.25]} intensity={40} color="#ff7722" distance={18} decay={2} />
-<T.PointLight position={[-3, 1.708, 2.25]} intensity={40} color="#ff7722" distance={18} decay={2} />
+<T.PointLight
+  position={[3, 1.708, 2.25]}
+  intensity={40}
+  color="#ff7722"
+  distance={18}
+  decay={2}
+/>
+<T.PointLight
+  position={[-3, 1.708, 2.25]}
+  intensity={40}
+  color="#ff7722"
+  distance={18}
+  decay={2}
+/>
 
 <!-- Performer stage (Blender-authored Stage_* objects → stage.glb).
      Gated on the "stage" scene feature; grounds its deck under the performer. -->
 <OceanStage />
 
-<!-- Water surface (above everything) -->
-<WaterSurface />
+{#if quality.enableWaterSurface}
+  <!-- Water surface (above everything) -->
+  <WaterSurface />
+{/if}
 
-<!-- Atmosphere: god rays, caustics, particles -->
-<AtmosphereSystem {quality} />
+{#if quality.enableAtmosphere}
+  <!-- Atmosphere: god rays, caustics, particles -->
+  <AtmosphereSystem {quality} />
+{/if}
 
-<!-- Fauna: fish boids + jellyfish swarm -->
-<FaunaSystem {quality} {cursorRay} />
+{#if quality.enableFauna}
+  <!-- Fauna: fish boids + jellyfish swarm -->
+  <FaunaSystem {quality} {cursorRay} />
 
-<!-- Interaction: mouse raycast → fish scatter + audio. Emits the cursor's
-     world-space ray; the boid shaders flee fish by perpendicular distance to
-     that ray, so scatter is depth-correct at any camera angle. -->
-<OceanInteraction bind:cursorRay />
+  <!-- Interaction: mouse raycast → fish scatter + audio. Emits the cursor's
+       world-space ray; the boid shaders flee fish by perpendicular distance to
+       that ray, so scatter is depth-correct at any camera angle. -->
+  <OceanInteraction bind:cursorRay />
+{/if}

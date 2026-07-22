@@ -4,6 +4,10 @@
   import { scale, fly, fade } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     id: PopoverId;
@@ -16,6 +20,7 @@
     hasOverride?: boolean;
     children: Snippet;
     footer?: Snippet;
+    onSettingChange?: ViewerControlSink;
   }
 
   let {
@@ -29,6 +34,7 @@
     hasOverride = false,
     children,
     footer,
+    onSettingChange,
   }: Props = $props();
 
   const viewer = getViewer3DContext();
@@ -40,11 +46,20 @@
   });
 
   function handleOpenChange(next: boolean) {
+    const previous = viewer.activePopover === id;
     if (next) {
       viewer.openPopover(id);
     } else {
       viewer.closePopover();
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_rail",
+      `${id}_open`,
+      previous,
+      next,
+      { count: next }
+    );
   }
 </script>
 

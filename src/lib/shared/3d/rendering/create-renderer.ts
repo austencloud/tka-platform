@@ -8,6 +8,10 @@
 import { WebGLRenderer } from "three";
 export type RenderingBackend = "webgl" | "webgpu-auto";
 
+export interface RendererProfile {
+  antialias?: boolean;
+}
+
 /** Check if WebGPU is available in this browser */
 async function checkWebGPUSupport(): Promise<boolean> {
   if (typeof navigator === "undefined" || !navigator.gpu) {
@@ -46,26 +50,30 @@ export async function isWebGPUSupported(): Promise<boolean> {
  */
 export function createRendererForBackend(
   canvas: HTMLCanvasElement,
-  backend: RenderingBackend
+  backend: RenderingBackend,
+  profile: RendererProfile = {}
 ): WebGLRenderer {
   // For WebGL mode or if we need a sync fallback, use WebGL
   if (backend === "webgl") {
-    return createWebGLRenderer(canvas);
+    return createWebGLRenderer(canvas, profile);
   }
 
   // For webgpu-auto, we need to check support and potentially use WebGPU
   // But since Threlte's createRenderer must be sync, we start with WebGL
   // and upgrade to WebGPU if available (handled by initializeWebGPURenderer)
-  return createWebGLRenderer(canvas);
+  return createWebGLRenderer(canvas, profile);
 }
 
 /**
  * Create a standard WebGL renderer
  */
-function createWebGLRenderer(canvas: HTMLCanvasElement): WebGLRenderer {
+function createWebGLRenderer(
+  canvas: HTMLCanvasElement,
+  profile: RendererProfile
+): WebGLRenderer {
   return new WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: profile.antialias ?? true,
     alpha: false,
     powerPreference: "high-performance",
   });

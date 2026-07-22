@@ -8,6 +8,15 @@
    */
 
   import { getSceneFeatureContext } from "../context/scene-feature-context";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const sceneFeatures = getSceneFeatureContext();
 
@@ -27,6 +36,17 @@
     if (!sceneFeatures.isEnabled(key)) return false;
     return !sceneFeatures.isReady(key);
   }
+
+  function toggleFeature(key: string, enabled: boolean): void {
+    sceneFeatures.toggle(key);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_scene",
+      `feature_${key}`,
+      enabled,
+      !enabled
+    );
+  }
 </script>
 
 <div class="tiles">
@@ -40,7 +60,7 @@
       style:--tile-color={ACCENTS[feature.key] ?? "#888"}
       aria-pressed={enabled}
       aria-label={feature.label + " scene feature"}
-      onclick={() => sceneFeatures.toggle(feature.key)}
+      onclick={() => toggleFeature(feature.key, enabled)}
     >
       <div
         class="thumb"

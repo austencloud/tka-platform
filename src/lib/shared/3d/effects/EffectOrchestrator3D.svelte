@@ -1,6 +1,7 @@
 <script lang="ts">
 
 import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quality-tier-detector";
+import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
   /**
    * Central coordinator that reads TipEffectMap assignments and routes each
    * prop tip to the correct 3D renderer. Sits between the animation system
@@ -113,15 +114,19 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
 
   const { scene, camera } = useThrelte();
   const qualityTierDetector = getQualityTierDetector();
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
+  const qualityTier = $derived(
+    adaptiveQuality?.tier ?? qualityTierDetector.currentTier
+  );
   const tipBridge = new TipPositionBridge3D();
 
   // Brighter HDR core on capable tiers so the scene bloom pass makes trails
   // glow (presence). LOW keeps the additive Gaussian halo alone - no bloom
   // there, so over-driving emissive would just clip to white.
   const trailTierBoost = $derived(
-    qualityTierDetector.currentTier === "high"
+    qualityTier === "high"
       ? 1.6
-      : qualityTierDetector.currentTier === "medium"
+      : qualityTier === "medium"
         ? 1.3
         : 1.0,
   );
@@ -149,6 +154,37 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
   // POV strip renderers - used when a StripPattern is active
   let bluePovRenderer: PovStripRenderer3D | null = null;
   let redPovRenderer: PovStripRenderer3D | null = null;
+  let rendererQualityTier = qualityTier;
+
+  function syncRendererQuality(parent: Object3D): void {
+    const nextTier = qualityTier;
+    if (nextTier === rendererQualityTier) return;
+
+    blueLedRenderer?.setQualityTier(nextTier);
+    redLedRenderer?.setQualityTier(nextTier);
+
+    if (bluePovRenderer) {
+      bluePovRenderer.setQualityTier(nextTier);
+      bluePovRenderer.initialize(parent);
+    }
+    if (redPovRenderer) {
+      redPovRenderer.setQualityTier(nextTier);
+      redPovRenderer.initialize(parent);
+    }
+
+    if (charcoalRenderer) {
+      charcoalRenderer.dispose();
+      charcoalRenderer = new CharcoalRenderer3D(nextTier);
+      charcoalRenderer.initialize(parent);
+    }
+    if (fireRenderer) {
+      fireRenderer.dispose();
+      fireRenderer = new FireRenderer3D(nextTier);
+      fireRenderer.initialize(parent);
+    }
+
+    rendererQualityTier = nextTier;
+  }
 
   // Reusable vectors for staff axis computation
   const _staffAxis = new Vector3();
@@ -186,7 +222,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
   // Reactive so it responds to runtime tier changes (e.g. user override or
   // auto-downgrade after frame budget miss).
   const tierConfig: QualityTierConfig = $derived(
-    TIER_CONFIGS[qualityTierDetector.currentTier],
+    TIER_CONFIGS[qualityTier],
   );
 
   // Scene-scoped light pool. Deferred until effectsParentRef or scene.current
@@ -295,7 +331,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
     // calls the same helper so both backends track the slider identically.
     const ledBrightness = ledBrightnessToFloat(resolvedLed.brightness);
     const ledSupersampleCount =
-      LED_SUPERSAMPLE_BY_TIER[qualityTierDetector.currentTier] ?? 4;
+      LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
 
     /**
      * Push N interpolated LED samples between the previous-frame tip position
@@ -550,6 +586,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
     }
 
     if (imperativeParent) {
+      syncRendererQuality(imperativeParent);
       const now = performance.now() / 1000;
       const hasPovPattern = activeStripPattern != null;
 
@@ -558,11 +595,11 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
 
         // Initialize POV renderers lazily
         if (!bluePovRenderer) {
-          bluePovRenderer = new PovStripRenderer3D(qualityTierDetector.currentTier);
+          bluePovRenderer = new PovStripRenderer3D(qualityTier);
           bluePovRenderer.initialize(imperativeParent);
         }
         if (!redPovRenderer) {
-          redPovRenderer = new PovStripRenderer3D(qualityTierDetector.currentTier);
+          redPovRenderer = new PovStripRenderer3D(qualityTier);
           redPovRenderer.initialize(imperativeParent);
         }
         bluePovRenderer.setPersistenceDuration(povPersistenceDuration);
@@ -615,11 +652,11 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
       } else {
         // Legacy 2-point LED mode (unchanged)
         if (!blueLedRenderer) {
-          blueLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+          blueLedRenderer = new LedRenderer3D(qualityTier);
           blueLedRenderer.initialize(imperativeParent);
         }
         if (!redLedRenderer) {
-          redLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+          redLedRenderer = new LedRenderer3D(qualityTier);
           redLedRenderer.initialize(imperativeParent);
         }
 
@@ -642,7 +679,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
 
       // Charcoal renderer (single pool for all tips)
       if (!charcoalRenderer) {
-        charcoalRenderer = new CharcoalRenderer3D(qualityTierDetector.currentTier);
+        charcoalRenderer = new CharcoalRenderer3D(qualityTier);
         charcoalRenderer.initialize(imperativeParent);
       }
 
@@ -655,7 +692,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
 
       // Fire renderer
       if (!fireRenderer) {
-        fireRenderer = new FireRenderer3D(qualityTierDetector.currentTier);
+        fireRenderer = new FireRenderer3D(qualityTier);
         fireRenderer.initialize(imperativeParent);
       }
 
@@ -730,7 +767,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
-    qualityTier={qualityTierDetector.currentTier}
+    qualityTier={qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
     {lightManager}
   />
@@ -747,7 +784,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quali
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
-    qualityTier={qualityTierDetector.currentTier}
+    qualityTier={qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
     {lightManager}
   />

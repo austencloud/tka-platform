@@ -3,6 +3,15 @@
   import FormationSelector from "./FormationSelector.svelte";
   import { PRESET_VALID_COUNTS } from "@austencloud/scene-3d";
   import type { FormationPreset } from "@austencloud/scene-3d";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const performerCount = $derived(viewer.performerManager.performers.length);
@@ -18,7 +27,15 @@
   });
 
   function handleFormationChange(preset: FormationPreset) {
+    const previous = viewer.activeFormation;
     viewer.applyFormationFromUI(preset);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_formation",
+      "preset",
+      previous,
+      preset
+    );
   }
 </script>
 

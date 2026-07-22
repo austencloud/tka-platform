@@ -2,33 +2,66 @@
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { STAGE } from "@austencloud/scene-3d";
   import { getPerformerColor } from "../../constants/performer-colors";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     onInteract?: () => void;
     hasInteracted?: boolean;
+    onSettingChange?: ViewerControlSink;
   }
-  let { onInteract, hasInteracted = false }: Props = $props();
+  let { onInteract, hasInteracted = false, onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const performers = $derived(viewer.performerManager.performers);
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const canAdd = $derived(performers.length < STAGE.MAX_VIEWER_PERFORMERS);
 
+  function scopeValue(index: number | null): string {
+    return index === null ? "all" : `performer_${index + 1}`;
+  }
+
   function selectAll(): void {
+    const previous = scopeValue(selectedIndex);
     viewer.selectPerformerScope(null);
     viewer.closePopover();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "scope",
+      previous,
+      "all"
+    );
     onInteract?.();
   }
 
   function selectPerformer(i: number): void {
+    const previous = scopeValue(selectedIndex);
     const newIndex = selectedIndex === i ? null : i;
     viewer.selectPerformerScope(newIndex);
     if (newIndex === null) viewer.closePopover();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "scope",
+      previous,
+      scopeValue(newIndex)
+    );
     onInteract?.();
   }
 
   function addPerformer(): void {
+    const previous = performers.length;
     viewer.spawnPerformerFromUI();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "performer_count",
+      previous,
+      viewer.performerManager.performers.length
+    );
   }
 
 </script>

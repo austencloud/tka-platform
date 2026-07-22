@@ -14,7 +14,6 @@
    */
 
   import { Canvas } from "@threlte/core";
-  import { WebGLRenderer } from "three";
 
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
@@ -30,8 +29,16 @@
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import SceneAudioPlayer from "./SceneAudioPlayer.svelte";
+  import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
+  import { createRendererForBackend } from "../rendering/create-renderer";
+  import { getQualityTierDetector } from "../effects/quality/get-quality-tier-detector";
+  import { createAdaptiveQualityState } from "../state/adaptive-quality-state.svelte";
+  import { setAdaptiveQualityContext } from "../context/adaptive-quality-context";
+  import { sceneLoadingPlaybackTransition } from "../domain/scene-loading-playback";
+  import { selectBeatPlaneStep } from "../domain/beat-plane-step-selection";
+  import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
@@ -50,12 +57,17 @@
     onRendererReady?: (renderer: unknown) => void;
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
     onPlaybackToggle?: () => void;
+    onSystemPlaybackChange?: (
+      playing: boolean,
+      source: "system_3d_loading"
+    ) => void;
     onProgressBarSeek?: (targetStep: number) => void;
     playbackMode?: PlaybackMode;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     /** Fires when the scene load gate opens/closes (first-load latched). The
         parent withholds the 3D rail chrome until the stage is ready. */
     onSceneReadyChange?: (ready: boolean) => void;
+    onSettingChange?: ViewerControlSink;
   }
 
   let {
@@ -71,37 +83,45 @@
     onExitFullScreen,
     onCameraStateChange,
     onPlaybackToggle,
+    onSystemPlaybackChange,
     onProgressBarSeek,
     playbackMode,
     onPlaybackModeChange,
     onSceneReadyChange,
+    onSettingChange,
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
-  const playbackAdapter = $derived.by(() => createAvatarPlaybackAdapter(
-    () => viewer3DState.performerManager.performers[0] ?? null,
-    onPlaybackToggle && onProgressBarSeek
-      ? {
-          onPlaybackToggle,
-          onProgressBarSeek,
-          getIsPlaying: () => isPlaying,
-        }
-      : undefined,
-    onPlaybackModeChange
-      ? {
-          getBpm: () => bpm,
-          onBpmChange,
-          getPlaybackMode: () => playbackMode ?? "continuous",
-          onPlaybackModeChange,
-        }
-      : undefined,
-  ));
+  const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
+  setAdaptiveQualityContext(adaptiveQuality);
+  const playbackAdapter = $derived.by(() =>
+    createAvatarPlaybackAdapter(
+      () => viewer3DState.performerManager.performers[0] ?? null,
+      onPlaybackToggle && onProgressBarSeek
+        ? {
+            onPlaybackToggle,
+            onProgressBarSeek,
+            getIsPlaying: () => isPlaying,
+          }
+        : undefined,
+      onPlaybackModeChange
+        ? {
+            getBpm: () => bpm,
+            onBpmChange,
+            getPlaybackMode: () => playbackMode ?? "continuous",
+            onPlaybackModeChange,
+          }
+        : undefined
+    )
+  );
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
   // still waits on this to avoid mounting WebGL before any performer exists.
-  const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
+  const avatarState = $derived(
+    viewer3DState.performerManager.performers[0] ?? null
+  );
 
   // Defer Canvas mount by one frame so the loading curtain paints before
   // WebGL context creation blocks the main thread.
@@ -152,9 +172,7 @@
 
     const timer = setTimeout(() => {
       if (sceneFeatureState.allEnabledReady) return;
-      const pending = features.filter(
-        (f) => !sceneFeatureState.isReady(f.key)
-      );
+      const pending = features.filter((f) => !sceneFeatureState.isReady(f.key));
       console.warn(
         `[Viewer3DCanvas] 15s timeout - force-readying stuck features: [${pending.map((f) => f.key)}]`
       );
@@ -170,12 +188,17 @@
   // First-load latch: true once every enabled async scene feature has reported
   // ready. Never flips back if the user toggles a feature on later (matches the
   // curtain's own latch), so the rail/playback gate only fires on first load.
+  let rendererReady = $state(false);
   let sceneReady = $state(false);
   $effect(() => {
-    if (!sceneReady && sceneFeatureState.allEnabledReady) {
+    if (!sceneReady && sceneFeatureState.allEnabledReady && rendererReady) {
       sceneReady = true;
     }
   });
+
+  function handleRendererReadyChange(ready: boolean): void {
+    rendererReady = ready;
+  }
 
   // Tell the parent so it can withhold the 3D rail chrome until the stage is set.
   $effect(() => {
@@ -190,20 +213,38 @@
   // timeout above guarantees this always releases. The transport is covered by
   // the curtain during the hold, so the user can't fight it.
   let heldForSceneLoad = false;
-  $effect(() => {
-    if (sceneReady) {
-      if (heldForSceneLoad) {
-        heldForSceneLoad = false;
-        onPlaybackToggle?.();
-      }
-      return;
-    }
-    if (isPlaying && !heldForSceneLoad) {
-      heldForSceneLoad = true;
+  function synchronizeSceneLoadingPlayback(playing: boolean): void {
+    if (onSystemPlaybackChange) {
+      onSystemPlaybackChange(playing, "system_3d_loading");
+    } else if (isPlaying !== playing) {
+      // Backward-compatible fallback for hosts that only implement the legacy
+      // toggle callback. Scan hosts provide the explicit non-counting sink.
       onPlaybackToggle?.();
+    }
+  }
+
+  $effect(() => {
+    const transition = sceneLoadingPlaybackTransition({
+      sceneReady,
+      isPlaying,
+      held: heldForSceneLoad,
+    });
+    heldForSceneLoad = transition.held;
+    if (transition.syncTo !== null) {
+      synchronizeSceneLoadingPlayback(transition.syncTo);
     }
   });
 
+  function handleBeatPlaneStepClick(targetStep: number): void {
+    const performer = avatarState;
+    if (!performer) return;
+    selectBeatPlaneStep({
+      currentStep: performer.currentStepIndex,
+      targetStep,
+      goToStep: (step) => performer.goToStep(step),
+      onSettingChange,
+    });
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -211,14 +252,22 @@
   {#if avatarState && sequenceData}
     {#if canvasMountReady}
       <Canvas
-        createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+        dpr={adaptiveQuality.pixelRatio}
+        shadows={adaptiveQuality.config.enableShadows}
+        createRenderer={(canvas) =>
+          createRendererForBackend(canvas, "webgl", { antialias: false })}
       >
-        <PerfMonitor visible={viewer3DState.showPerf} />
+        <PerfMonitor
+          visible={viewer3DState.showPerf}
+          adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
+        />
         <Viewer3DCanvasRef />
+        <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
         <ScenePostProcessing>
           <Viewer3DCamera
             cameraPlayerAvatar={cameraPlayer.avatarState}
             cameraPlayerPhysics={cameraPlayer.physicsProvider}
+            {onSettingChange}
           />
           <Viewer3DScene
             {sequenceData}
@@ -243,7 +292,7 @@
             totalSteps={avatarState.totalSteps}
             currentStepIndex={avatarState.currentStepIndex}
             beatPlaneOverrides={avatarState.beatPlaneOverrides}
-            onStepClick={(i) => avatarState.goToStep(i)}
+            onStepClick={handleBeatPlaneStepClick}
           />
         </div>
       {/if}
