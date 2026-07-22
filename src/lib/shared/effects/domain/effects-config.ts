@@ -37,8 +37,10 @@ export type EffectType =
   | "pulse";
 
 export interface TrailsIntent {
-  /** Which staff end(s) the trail tracks. */
-  trackingMode: "left_end" | "right_end" | "both_ends";
+  /** Which staff end(s) the trail tracks. "hand" emits from the prop center
+   *  (the hand path) instead of the tips. Trails-only — other tip effects have
+   *  no hand source. */
+  trackingMode: "left_end" | "right_end" | "both_ends" | "hand";
   /** Abstract thickness, 1-12. Each backend interprets in native units. */
   thickness: number;
   /** 0.3-1.0. Drives opacity in 2D, emissive + alpha in 3D. */

@@ -31,6 +31,7 @@ import { calculateTrailSourceEndpoint } from "$lib/shared/animation-engine/servi
 import {
   resolveTrailPointConfig,
   type TrailPointSource,
+  type TrailPointConfig,
 } from "../domain/types/trail-point-types";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { resolveEffect } from "../domain/types/tip-effect-types";
@@ -398,9 +399,13 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const modeTracksLeft =
       (trailSettings.trackingMode === TrackingMode.LEFT_END ||
        trailSettings.trackingMode === TrackingMode.BOTH_ENDS);
+    // HAND tracks the single prop-center source, carried on the right slot of
+    // the resolved config. Routing it through modeTracksRight makes both single-
+    // and two-ended props emit exactly one hand trail (left stays off).
     const modeTracksRight =
       trailSettings.trackingMode === TrackingMode.RIGHT_END ||
-      trailSettings.trackingMode === TrackingMode.BOTH_ENDS;
+      trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
+      trailSettings.trackingMode === TrackingMode.HAND;
     const blueTrackLeft = blueHasTwoEnds && modeTracksLeft;
     const blueTrackRight = !blueHasTwoEnds || modeTracksRight;
     const redTrackLeft = redHasTwoEnds && modeTracksLeft;
@@ -410,8 +415,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // the tip effect map. When no map is provided, all tips are eligible.
     const tipMap = params.tipEffectMap;
     const hasMap = tipMap && Object.keys(tipMap).length > 0;
-    const blueTrailConfig = resolveTrailPointConfig(bluePropType);
-    const redTrailConfig = resolveTrailPointConfig(redPropType);
+    const blueTrailConfig = resolveTrailPointConfig(bluePropType, trailSettings.trackingMode);
+    const redTrailConfig = resolveTrailPointConfig(redPropType, trailSettings.trackingMode);
     const blueLeftTrails = blueTrailConfig.left.type !== "none" &&
       (!hasMap || resolveEffect(0, effectTipIndex(blueTrailConfig.left, 0), tipMap!, {}) === "trails");
     const blueRightTrails = blueTrailConfig.right.type !== "none" &&
@@ -454,10 +459,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const blueCaptureLive = hasBlue || blueFade.alpha > 0;
     const redCaptureLive = hasRed || redFade.alpha > 0;
     if (blueProp && blueCaptureLive && !bluePropSwapSuppressed) {
-      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, currentTime);
+      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, blueTrailConfig, currentTime);
     }
     if (redProp && redCaptureLive && !redPropSwapSuppressed) {
-      this.capturePropTips(redProp, canvasSize, redPropType, 1, redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, currentTime);
+      this.capturePropTips(redProp, canvasSize, redPropType, 1, redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, redTrailConfig, currentTime);
     }
 
     // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
@@ -471,13 +476,13 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         if (layer.blueProp && layer.hasBlue && blueCaptureLive && !bluePropSwapSuppressed) {
           this.capturePropTipsInto(
             layer.blueProp, canvasSize, bluePropType, 0, blueRings.left, blueRings.right,
-            blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, currentTime,
+            blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, blueTrailConfig, currentTime,
           );
         }
         if (layer.redProp && layer.hasRed && redCaptureLive && !redPropSwapSuppressed) {
           this.capturePropTipsInto(
             layer.redProp, canvasSize, redPropType, 1, redRings.left, redRings.right,
-            redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, currentTime,
+            redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, redTrailConfig, currentTime,
           );
         }
       }
@@ -742,17 +747,20 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     propIndex: 0 | 1,
     trackLeft: boolean,
     trackRight: boolean,
+    trailConfig: TrailPointConfig,
     currentTime: number
   ): void {
     const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
     const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
     this.capturePropTipsInto(
-      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight, currentTime,
+      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight, trailConfig, currentTime,
     );
   }
 
   /** Capture a prop's tip positions into the supplied left/right rings. Shared
-   *  by the base pair (its own rings) and each overlaid tunnel layer. */
+   *  by the base pair (its own rings) and each overlaid tunnel layer. The caller
+   *  passes the already tracking-mode-resolved trailConfig so HAND mode (prop-
+   *  center source) and the per-prop tip config resolve exactly once per frame. */
   private capturePropTipsInto(
     prop: PropState,
     canvasSize: number,
@@ -762,13 +770,13 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     rightRing: TrailPoint[],
     trackLeft: boolean,
     trackRight: boolean,
+    trailConfig: TrailPointConfig,
     currentTime: number
   ): void {
     const endpointConfig = {
       canvasSize,
       propDimensions: TRAIL_ENDPOINT_DIMENSIONS,
     };
-    const trailConfig = resolveTrailPointConfig(propType);
 
     if (trackLeft) {
       const endpoint = calculateTrailSourceEndpoint(

@@ -58,6 +58,14 @@ const TRACK_OPTS = [
   { value: "right_end", label: "Right" },
 ];
 
+// Trails-only: emit from the hand path (prop center) instead of the tips. The
+// other tip effects source from a different pipeline (fire-tip-tracker) and do
+// not support Hand, so this option is scoped to the trails Track control.
+const TRAILS_TRACK_OPTS = [
+  ...TRACK_OPTS,
+  { value: "hand", label: "Hand" },
+];
+
 const isCustomPalette = (i: Record<string, unknown>) => i.palette === "custom";
 
 /** Build a palette descriptor + its conditional custom-tint, the shared shape
@@ -99,7 +107,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     // effectsConfig.trails — host passes a cross-store override for this field.
     slider("trails", "tailLength", "Tail", { min: 10, max: 400, step: 5, pct: false, tier: "primary" }),
     // trackingMode also cross-store (animationSettings.trail); host overrides it.
-    { id: "trails-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
+    { id: "trails-track", label: "Track", type: "segmented", field: "trackingMode", options: TRAILS_TRACK_OPTS, tier: "tracking" },
   ],
   fire: [
     slider("fire", "colorBlend", "Color", { tier: "primary" }),

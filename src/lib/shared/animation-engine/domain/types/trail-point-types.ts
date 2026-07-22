@@ -14,6 +14,18 @@ import {
   type TipPoint,
 } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
+import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+
+/**
+ * The prop center in prop-local coordinates. A custom source at (0,0) resolves
+ * to the prop center, which is the hand path — the point the sprite is drawn
+ * around. Shared by the HAND tracking mode so trails follow the grip instead of
+ * a tip.
+ */
+const HAND_TRAIL_CONFIG: TrailPointConfig = {
+  left: { type: "none" },
+  right: { type: "custom", dx: 0, dy: 0 },
+};
 
 /**
  * Where a single trail endpoint gets its position from.
@@ -122,11 +134,19 @@ export function getDefaultTrailPointConfig(
 }
 
 /**
- * Resolve the effective trail assignment from one authority: an explicit lab
- * override when present, otherwise the canonical prop-aware default.
+ * Resolve the effective trail assignment from one authority: HAND tracking mode
+ * (a single prop-center source, prop-agnostic) wins outright; otherwise an
+ * explicit lab override when present, otherwise the canonical prop-aware
+ * default.
+ *
+ * `trackingMode` is optional so the legacy tip-based callers (path cache,
+ * endpoint helpers) keep their tip behavior unchanged — only the live trail
+ * overlays pass it, and only HAND changes the result.
  */
 export function resolveTrailPointConfig(
-  propType: string | null | undefined
+  propType: string | null | undefined,
+  trackingMode?: TrackingMode
 ): TrailPointConfig {
+  if (trackingMode === TrackingMode.HAND) return HAND_TRAIL_CONFIG;
   return getTrailPointConfig(propType) ?? getDefaultTrailPointConfig(propType);
 }

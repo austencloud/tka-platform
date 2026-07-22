@@ -663,8 +663,16 @@ export class TrailCapturer {
     propType: string | null | undefined
   ): TrackedTrailSource[] {
     const { trailSettings } = this.config;
-    const trailConfig = resolveTrailPointConfig(propType);
+    const trailConfig = resolveTrailPointConfig(propType, trailSettings.trackingMode);
     const candidates: Array<{ source: TrailPointSource; logicalEnd: 0 | 1 }> = [];
+
+    // HAND carries a single prop-center source on the right slot (left is
+    // "none"), so it joins RIGHT_END/BOTH_ENDS on the right. Single-ended props
+    // always emit their one right source regardless of mode.
+    const tracksRight =
+      trailSettings.trackingMode === TrackingMode.RIGHT_END ||
+      trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
+      trailSettings.trackingMode === TrackingMode.HAND;
 
     if (propTipEnds(propType ?? undefined) === 1) {
       candidates.push({ source: trailConfig.right, logicalEnd: 1 });
@@ -675,10 +683,7 @@ export class TrailCapturer {
       ) {
         candidates.push({ source: trailConfig.left, logicalEnd: 0 });
       }
-      if (
-        trailSettings.trackingMode === TrackingMode.RIGHT_END ||
-        trailSettings.trackingMode === TrackingMode.BOTH_ENDS
-      ) {
+      if (tracksRight) {
         candidates.push({ source: trailConfig.right, logicalEnd: 1 });
       }
     }

@@ -46,6 +46,7 @@ export enum TrackingMode {
   LEFT_END = "left_end", // Track only left end
   RIGHT_END = "right_end", // Track only right end (tip)
   BOTH_ENDS = "both_ends", // Track both ends
+  HAND = "hand", // Track the hand path (prop center) instead of the tips
 }
 
 /**

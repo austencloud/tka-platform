@@ -78,6 +78,28 @@ describe("canonical trail point resolution", () => {
       right: { type: "tip", index: 4 },
     });
   });
+
+  it("resolves HAND mode to a single prop-center source for any prop", () => {
+    const handConfig = {
+      left: { type: "none" },
+      right: { type: "custom", dx: 0, dy: 0 },
+    };
+    expect(resolveTrailPointConfig("staff", TrackingMode.HAND)).toEqual(handConfig);
+    expect(resolveTrailPointConfig("fan", TrackingMode.HAND)).toEqual(handConfig);
+    expect(resolveTrailPointConfig("club", TrackingMode.HAND)).toEqual(handConfig);
+  });
+
+  it("lets HAND override even an explicit lab tip assignment", () => {
+    setTrailPointOverrideProvider(() => ({
+      left: { type: "tip", index: 4 },
+      right: { type: "tip", index: 4 },
+    }));
+
+    expect(resolveTrailPointConfig("fan", TrackingMode.HAND)).toEqual({
+      left: { type: "none" },
+      right: { type: "custom", dx: 0, dy: 0 },
+    });
+  });
 });
 
 describe("trail source world-space calculation", () => {
@@ -146,6 +168,21 @@ describe("trail source world-space calculation", () => {
       )
     ).toBeNull();
   });
+
+  it("places the HAND source at the prop center regardless of rotation", () => {
+    // custom {0,0} = prop center = hand path. A centered prop sits at the
+    // canvas center (475,475 at canvasSize 950), independent of rotation.
+    const handSource = resolveTrailPointConfig("staff", TrackingMode.HAND).right;
+    const endpoint = calculateTrailSourceEndpoint(
+      centeredQuarterTurn,
+      endpointConfig,
+      handSource,
+      "staff"
+    );
+    expect(endpoint?.x).toBeCloseTo(475, 8);
+    expect(endpoint?.y).toBeCloseTo(475, 8);
+    expect(endpoint?.tipIndex).toBeNull();
+  });
 });
 
 describe("legacy trail capture endpoint parity", () => {
@@ -185,6 +222,43 @@ describe("legacy trail capture endpoint parity", () => {
 
     expect(points).toHaveLength(1);
     expect(points[0]?.tipIndex).toBe(2);
+    expect(points[0]?.x).toBeCloseTo(expected!.x, 8);
+    expect(points[0]?.y).toBeCloseTo(expected!.y, 8);
+  });
+
+  it("captures a single hand-path point for a two-ended prop in HAND mode", () => {
+    const capturer = new TrailCapturer();
+    capturer.initialize({
+      canvasSize: 500,
+      bluePropDimensions: { width: 252.8, height: 77.8 },
+      redPropDimensions: { width: 252.8, height: 77.8 },
+      bluePropType: "staff",
+      trailSettings: {
+        ...DEFAULT_TRAIL_SETTINGS,
+        trackingMode: TrackingMode.HAND,
+      },
+    });
+
+    const initialProp: PropState = {
+      x: 0,
+      y: 0,
+      centerPathAngle: 0,
+      staffRotationAngle: 0,
+    };
+    const movedProp: PropState = { ...initialProp, x: 0.1 };
+    capturer.captureFrame({ blueProp: initialProp, redProp: null }, 0, 1000);
+    capturer.captureFrame({ blueProp: movedProp, redProp: null }, 0.1, 1600);
+
+    const points = capturer.getAllTrailPoints().blue;
+    // staff is two-ended, but HAND collapses to one prop-center source.
+    const expected = calculateTrailSourceEndpoint(
+      movedProp,
+      { canvasSize: 500, propDimensions: { width: 252.8, height: 77.8 } },
+      resolveTrailPointConfig("staff", TrackingMode.HAND).right,
+      "staff"
+    );
+
+    expect(points).toHaveLength(1);
     expect(points[0]?.x).toBeCloseTo(expected!.x, 8);
     expect(points[0]?.y).toBeCloseTo(expected!.y, 8);
   });

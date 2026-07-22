@@ -144,6 +144,13 @@ function buildTrailTrackingChildren(): ContextMenuItem[] {
       checked: current === TrackingMode.BOTH_ENDS,
       action: () => animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS),
     },
+    {
+      id: "trail-hand",
+      label: "Hand",
+      icon: "fa-hand-back-fist",
+      checked: current === TrackingMode.HAND,
+      action: () => animationSettings.setTrackingMode(TrackingMode.HAND),
+    },
   ];
 }
 

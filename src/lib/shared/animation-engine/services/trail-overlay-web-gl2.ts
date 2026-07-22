@@ -28,6 +28,7 @@ import { calculateTrailSourceEndpoint } from "$lib/shared/animation-engine/servi
 import {
   resolveTrailPointConfig,
   type TrailPointSource,
+  type TrailPointConfig,
 } from "../domain/types/trail-point-types";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
@@ -421,9 +422,13 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const modeTracksLeft =
       (trailSettings.trackingMode === TrackingMode.LEFT_END ||
         trailSettings.trackingMode === TrackingMode.BOTH_ENDS);
+    // HAND tracks the single prop-center source, which lives on the right slot
+    // of the resolved config. It routes through modeTracksRight so both single-
+    // and two-ended props emit exactly one hand trail (left stays off).
     const modeTracksRight =
       trailSettings.trackingMode === TrackingMode.RIGHT_END ||
-      trailSettings.trackingMode === TrackingMode.BOTH_ENDS;
+      trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
+      trailSettings.trackingMode === TrackingMode.HAND;
     const blueTrackLeft = blueHasTwoEnds && modeTracksLeft;
     const blueTrackRight = !blueHasTwoEnds || modeTracksRight;
     const redTrackLeft = redHasTwoEnds && modeTracksLeft;
@@ -432,8 +437,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // Per-tip effect gating
     const tipMap = params.tipEffectMap;
     const hasMap = tipMap && Object.keys(tipMap).length > 0;
-    const blueTrailConfig = resolveTrailPointConfig(bluePropType);
-    const redTrailConfig = resolveTrailPointConfig(redPropType);
+    const blueTrailConfig = resolveTrailPointConfig(bluePropType, trailSettings.trackingMode);
+    const redTrailConfig = resolveTrailPointConfig(redPropType, trailSettings.trackingMode);
     const blueLeftTrails = blueTrailConfig.left.type !== "none" &&
       (!hasMap || resolveEffect(0, effectTipIndex(blueTrailConfig.left, 0), tipMap!, {}) === "trails");
     const blueRightTrails = blueTrailConfig.right.type !== "none" &&
@@ -488,12 +493,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // the tail recedes/shrinks toward the frozen point exactly like a real
     // stationary prop, instead of jumping to the new (mismatched) geometry.
     if (blueProp && blueCaptureLive && !bluePropSwapSuppressed) {
-      const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails);
+      const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, blueTrailConfig);
       blueLeftMoved = r.leftMoved;
       blueRightMoved = r.rightMoved;
     }
     if (redProp && redCaptureLive && !redPropSwapSuppressed) {
-      const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, redTrackLeft && redLeftTrails, redTrackRight && redRightTrails);
+      const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, redTrailConfig);
       redLeftMoved = r.leftMoved;
       redRightMoved = r.rightMoved;
     }
@@ -513,14 +518,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         if (layer.blueProp && layer.hasBlue && blueCaptureLive && !bluePropSwapSuppressed) {
           const m = this.capturePropTipsInto(
             layer.blueProp, canvasSize, bluePropType, 0, rings.blueLeft, rings.blueRight,
-            blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails,
+            blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, blueTrailConfig,
           );
           bL = m.leftMoved; bR = m.rightMoved;
         }
         if (layer.redProp && layer.hasRed && redCaptureLive && !redPropSwapSuppressed) {
           const m = this.capturePropTipsInto(
             layer.redProp, canvasSize, redPropType, 1, rings.redLeft, rings.redRight,
-            redTrackLeft && redLeftTrails, redTrackRight && redRightTrails,
+            redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, redTrailConfig,
           );
           rL = m.leftMoved; rR = m.rightMoved;
         }
@@ -845,17 +850,20 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     propIndex: 0 | 1,
     trackLeft: boolean,
     trackRight: boolean,
+    trailConfig: TrailPointConfig,
   ): { leftMoved: boolean; rightMoved: boolean } {
     const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
     const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
     return this.capturePropTipsInto(
-      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight,
+      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight, trailConfig,
     );
   }
 
   /** Capture a prop's tip positions into the supplied left/right rings. Shared
    *  by the base pair (its own rings) and each overlaid tunnel layer. Returns
-   *  which ends appended a fresh point this frame. */
+   *  which ends appended a fresh point this frame. The caller passes the already
+   *  tracking-mode-resolved trailConfig so HAND mode (prop-center source) and the
+   *  per-prop tip config resolve exactly once per frame in render(). */
   private capturePropTipsInto(
     prop: PropState,
     canvasSize: number,
@@ -865,6 +873,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     rightRing: TrailPoint[],
     trackLeft: boolean,
     trackRight: boolean,
+    trailConfig: TrailPointConfig,
   ): { leftMoved: boolean; rightMoved: boolean } {
     let leftMoved = false;
     let rightMoved = false;
@@ -872,7 +881,6 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       canvasSize,
       propDimensions: TRAIL_ENDPOINT_DIMENSIONS,
     };
-    const trailConfig = resolveTrailPointConfig(propType);
 
     if (trackLeft) {
       const endpoint = calculateTrailSourceEndpoint(
