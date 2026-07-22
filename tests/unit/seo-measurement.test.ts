@@ -676,7 +676,7 @@ describe("SEO experiment decision", () => {
         evaluationMode: "visibility_emergence" as const,
         deploymentDate: "2026-06-01",
         indexedDate: "2026-06-03",
-        instrumentationStartDate: "2026-06-03",
+        instrumentationStartDate: "2026-06-04",
         baselineDays: 2,
         primaryDays: 2,
         confirmationDays: 2,
@@ -761,6 +761,9 @@ describe("SEO experiment decision", () => {
     expect(scorecard.search.baseline.impressions).toBe(0);
     expect(scorecard.search.primary?.controlAdjusted.impressionLift).toBeNull();
     expect(scorecard.aiOverview.baseline.auditDate).toBeNull();
+    expect(scorecard.acquisition.primaryConversionMeasurable).toBe(true);
+    expect(scorecard.acquisition.primaryDataComplete).toBe(true);
+    expect(scorecard.acquisition.primary?.organicComposerSessions).toBe(4);
     expect(scorecard.decision.status).toBe("primary_target_met");
     expect(
       scorecard.decision.criteria.map((criterion) => criterion.id)

@@ -189,6 +189,23 @@ function effectiveWindow(
   };
 }
 
+function instrumentedWindow(
+  window: DateWindow | null,
+  instrumentationStart: string | null
+): DateWindow | null {
+  if (!window || !instrumentationStart || instrumentationStart > window.end) {
+    return null;
+  }
+  const start =
+    instrumentationStart > window.start ? instrumentationStart : window.start;
+  return {
+    start,
+    end: window.end,
+    days: daysBetween(start, window.end) + 1,
+    complete: window.complete,
+  };
+}
+
 function datesInWindow(window: DateWindow): string[] {
   return Array.from({ length: window.days }, (_, index) =>
     addDays(window.start, index)
@@ -781,23 +798,23 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
     input.funnelRows,
     windows.baseline
   );
-  const primaryFunnel = primaryWindow
-    ? aggregateFunnelMetrics(input.funnelRows, primaryWindow)
-    : null;
-  const confirmationFunnel = confirmationWindow
-    ? aggregateFunnelMetrics(input.funnelRows, confirmationWindow)
-    : null;
   const instrumentationStart = input.config.experiment.instrumentationStartDate;
-  const primaryConversionMeasurable = Boolean(
-    instrumentationStart &&
-    primaryWindow &&
-    instrumentationStart <= primaryWindow.start
+  const primaryFunnelWindow = instrumentedWindow(
+    primaryWindow,
+    instrumentationStart
   );
-  const confirmationConversionMeasurable = Boolean(
-    instrumentationStart &&
-    confirmationWindow &&
-    instrumentationStart <= confirmationWindow.start
+  const confirmationFunnelWindow = instrumentedWindow(
+    confirmationWindow,
+    instrumentationStart
   );
+  const primaryFunnel = primaryFunnelWindow
+    ? aggregateFunnelMetrics(input.funnelRows, primaryFunnelWindow)
+    : null;
+  const confirmationFunnel = confirmationFunnelWindow
+    ? aggregateFunnelMetrics(input.funnelRows, confirmationFunnelWindow)
+    : null;
+  const primaryConversionMeasurable = primaryFunnelWindow !== null;
+  const confirmationConversionMeasurable = confirmationFunnelWindow !== null;
   const conversionComparableToBaseline = Boolean(
     instrumentationStart && instrumentationStart <= windows.baseline.start
   );
@@ -806,13 +823,15 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
   );
   const primaryPostHogDataComplete = Boolean(
     primaryConversionMeasurable &&
-    primaryWindow &&
-    datesInWindow(primaryWindow).every((date) => postHogCollectionMap.has(date))
+    primaryFunnelWindow &&
+    datesInWindow(primaryFunnelWindow).every((date) =>
+      postHogCollectionMap.has(date)
+    )
   );
   const confirmationPostHogDataComplete = Boolean(
     confirmationConversionMeasurable &&
-    confirmationWindow &&
-    datesInWindow(confirmationWindow).every((date) =>
+    confirmationFunnelWindow &&
+    datesInWindow(confirmationFunnelWindow).every((date) =>
       postHogCollectionMap.has(date)
     )
   );

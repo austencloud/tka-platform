@@ -92,6 +92,11 @@ clicks. It never adds a pseudocount or invents a percentage from the zero
 baseline. Frozen reference-page trends remain visible as context and do not
 decide the result.
 
+Search visibility begins with Google's first qualifying post-deployment crawl.
+Visitor-behavior rates begin on the later of that crawl date and the registered
+instrumentation date. This keeps an honestly observed search day without
+pretending that sessions before analytics existed were measured.
+
 The scorecard retains a `relative_lift` mode for future experiments with a
 non-zero baseline. In that mode, control-adjusted count lift is a ratio of
 ratios:

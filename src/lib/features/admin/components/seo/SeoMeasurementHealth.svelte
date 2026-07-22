@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
+  import { formatDate } from "./seo-dashboard-format";
 
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
 </script>
@@ -26,8 +27,14 @@
     <div>
       <strong>Visitor behavior</strong>
       <span>
-        {snapshot.dataQuality.collectedPostHogDays}/{snapshot.dataQuality
-          .expectedPostHogDays} days loaded
+        {snapshot.dataQuality.expectedPostHogDays === 0 &&
+        snapshot.experimentDates.instrumentationStartDate
+          ? "Tracking starts " +
+            formatDate(snapshot.experimentDates.instrumentationStartDate)
+          : snapshot.dataQuality.collectedPostHogDays +
+            "/" +
+            snapshot.dataQuality.expectedPostHogDays +
+            " days loaded"}
       </span>
     </div>
   </article>
