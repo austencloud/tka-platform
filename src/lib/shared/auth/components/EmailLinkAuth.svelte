@@ -28,6 +28,14 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
+  let deliveryDetails = $state<{
+    subject: string;
+    senderEmail: string;
+  } | null>(null);
+  let emailInput: HTMLInputElement;
+
+  const DEFAULT_SUBJECT = "Your Flow Arts Composer sign-in link";
+  const DEFAULT_SENDER = "noreply@tkaflowarts.com";
 
   // Inside an in-app webview this form is not just one option among several —
   // it is the only sign-in method that completes there, because it needs no
@@ -35,7 +43,9 @@
   // the link will actually land, which is a different browser than this one.
   // ?forceIAB is the test hook the whole in-app-browser path is verified with.
   const detector = getInAppBrowserDetector();
-  const inAppBrowser = $derived(detector.isInAppBrowserOrForced(page.url.searchParams));
+  const inAppBrowser = $derived(
+    detector.isInAppBrowserOrForced(page.url.searchParams)
+  );
 
   // Android's escape hatch is Chrome, iOS's is Safari, and the desktop clients
   // in the pattern list (WeChat, Telegram, Discord, Slack) are neither — naming
@@ -71,16 +81,33 @@
   }
 
   async function sendEmailLink() {
+    const requestId = crypto.randomUUID();
+    const startedAt = performance.now();
     loading = true;
     error = null;
     success = null;
+    deliveryDetails = null;
+
+    captureEvent("magic_link_request_started", {
+      request_id: requestId,
+      auth_host: window.location.hostname,
+      route: page.url.pathname,
+      in_app_browser: inAppBrowser,
+    });
 
     try {
       // Get Functions instance and call Cloud Function
       const functions = await getFunctionsInstance();
       const sendMagicLink = httpsCallable<
-        { email: string; continueUrl: string },
-        { success: boolean; message?: string; error?: string }
+        { email: string; continueUrl: string; requestId: string },
+        {
+          success: boolean;
+          message?: string;
+          error?: string;
+          requestId?: string;
+          subject?: string;
+          senderEmail?: string;
+        }
       >(functions, "sendMagicLink");
 
       // Land the user inside the app after they click the magic link, not on
@@ -88,12 +115,24 @@
       const result = await sendMagicLink({
         email,
         continueUrl: window.location.origin + "/create",
+        requestId,
       });
 
       if (result.data.success) {
+        const acceptedRequestId = result.data.requestId || requestId;
         // Save the email locally so we can complete sign-in on the same device
         window.localStorage.setItem("emailForSignIn", email);
-        success = `Magic link sent! Check your email at ${email}`;
+        success = `Email sent to ${email}.`;
+        deliveryDetails = {
+          subject: result.data.subject || DEFAULT_SUBJECT,
+          senderEmail: result.data.senderEmail || DEFAULT_SENDER,
+        };
+        captureEvent("magic_link_provider_accepted", {
+          request_id: acceptedRequestId,
+          auth_host: window.location.hostname,
+          route: page.url.pathname,
+          duration_ms: Math.round(performance.now() - startedAt),
+        });
         recordAuthSubmission("magic_link");
         if (inAppBrowser) {
           // Detached on purpose. This awaits an IndexedDB count, and in-app
@@ -110,23 +149,44 @@
       } else {
         throw new Error(result.data.error || "Failed to send magic link");
       }
-    } catch (err: any) {
-      console.error(`❌ [email-link] Error sending email:`, err);
+    } catch (err: unknown) {
+      const details = err as { code?: string; message?: string };
 
       // Handle Cloud Function errors
-      const errorCode = err.code || "";
-      const errorMessage = err.message || "";
+      const errorCode = details.code || "";
+      const errorMessage = details.message || "";
+      let failureCode = "unknown";
 
-      if (errorCode.includes("invalid-argument") || errorMessage.includes("Invalid email")) {
+      if (
+        errorCode.includes("invalid-argument") ||
+        errorMessage.includes("Invalid email")
+      ) {
+        failureCode = "invalid_email";
         error = "Invalid email address.";
         toast.error("Invalid email address.");
       } else if (errorCode.includes("failed-precondition")) {
-        error = "Email service temporarily unavailable. Please try again later.";
+        failureCode = "service_not_configured";
+        error =
+          "Email service temporarily unavailable. Please try again later.";
         toast.error("Email service unavailable. Please try again.");
+      } else if (errorCode.includes("unavailable")) {
+        failureCode = "provider_unavailable";
+        error = "Email service did not respond. Please try again.";
+        toast.error("Email service did not respond. Please try again.");
       } else {
+        failureCode = errorCode ? "request_failed" : "network_failed";
         error = "Failed to send email. Please try again.";
         toast.error("Failed to send magic link. Please try again.");
       }
+
+      console.error("[email-link] Send failed", { code: failureCode });
+      captureEvent("magic_link_request_failed", {
+        request_id: requestId,
+        auth_host: window.location.hostname,
+        route: page.url.pathname,
+        failure_code: failureCode,
+        duration_ms: Math.round(performance.now() - startedAt),
+      });
     } finally {
       loading = false;
     }
@@ -134,6 +194,14 @@
 
   function handleSubmit() {
     sendEmailLink();
+  }
+
+  function useDifferentEmail() {
+    email = "";
+    error = null;
+    success = null;
+    deliveryDetails = null;
+    requestAnimationFrame(() => emailInput.focus());
   }
 </script>
 
@@ -151,6 +219,7 @@
     <input
       id="email-link"
       type="email"
+      bind:this={emailInput}
       bind:value={email}
       placeholder={t("form_placeholder_email")}
       required
@@ -163,7 +232,7 @@
   {/if}
 
   {#if success}
-    <div class="success-message">
+    <div class="success-message" role="status" aria-live="polite">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
@@ -178,7 +247,14 @@
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
         <polyline points="22 4 12 14.01 9 11.01"></polyline>
       </svg>
-      <span>{success}</span>
+      <span class="success-copy">
+        <strong>{success}</strong>
+        <span>
+          Look for “{deliveryDetails?.subject || DEFAULT_SUBJECT}” from
+          {deliveryDetails?.senderEmail || DEFAULT_SENDER}. If it is not in your
+          inbox, check Junk or Other.
+        </span>
+      </span>
     </div>
   {/if}
 
@@ -203,9 +279,19 @@
         ></path>
         <polyline points="22,6 12,13 2,6"></polyline>
       </svg>
-      {t("auth_send_magic_link")}
+      {success ? "Send another link" : t("auth_send_magic_link")}
     {/if}
   </button>
+
+  {#if success}
+    <button
+      type="button"
+      class="different-email-button"
+      onclick={useDifferentEmail}
+    >
+      Use a different email
+    </button>
+  {/if}
 </form>
 
 <style>
@@ -350,12 +436,11 @@
 
   .success-message {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: 0.625rem;
     color: var(--semantic-success, var(--semantic-success));
     font-size: 0.875rem;
-    text-align: center;
+    text-align: left;
     padding: 0.75rem;
     background: color-mix(
       in srgb,
@@ -374,5 +459,35 @@
 
   .success-message svg {
     flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .success-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    line-height: 1.45;
+  }
+
+  .success-copy strong {
+    color: var(--theme-text, white);
+    font-weight: 600;
+  }
+
+  .different-email-button {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .different-email-button:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
   }
 </style>
