@@ -6,6 +6,7 @@ export enum QuizType {
   LETTER_TO_PICTOGRAPH = "letter_to_pictograph",
   VALID_NEXT_PICTOGRAPH = "valid_next_pictograph",
   SEQUENCE_TO_WORD = "sequence_to_word",
+  WORD_BRIDGES = "word_bridges",
   // Mandala family (Play arcade): answers are whole sequences (choreo cards)
   // or mandalas, never letters — gap detection has no letter signal here and
   // deliberately returns null for these types.

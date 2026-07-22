@@ -11,27 +11,37 @@ QuizPictographButton - Answer button containing a pictograph
     disabled,
     onclick,
     showTKA = false,
+    showPositions = false,
+    caption = null,
+    ariaLabel = null,
   }: {
     pictograph: PictographData;
     state: "default" | "correct" | "incorrect" | "dimmed";
     disabled: boolean;
     onclick: () => void;
     showTKA?: boolean;
+    showPositions?: boolean;
+    caption?: string | null;
+    ariaLabel?: string | null;
   } = $props();
 </script>
 
 <button
+  type="button"
   class="answer-btn"
   class:correct={state === "correct"}
   class:incorrect={state === "incorrect"}
   class:dimmed={state === "dimmed"}
   {onclick}
   {disabled}
-  aria-label="Answer: pictograph option"
+  aria-label={ariaLabel ?? "Answer: pictograph option"}
 >
   <div class="pictograph-wrapper">
-    <PictographContainer pictographData={pictograph} {showTKA} />
+    <PictographContainer pictographData={pictograph} {showTKA} {showPositions} />
   </div>
+  {#if caption}
+    <span class="answer-caption">{caption}</span>
+  {/if}
   {#if state === "correct"}
     <span class="result-icon correct-icon">✓</span>
   {:else if state === "incorrect"}
@@ -66,6 +76,11 @@ QuizPictographButton - Answer button containing a pictograph
     transform: translateY(-1px) scale(0.98);
   }
 
+  .answer-btn:focus-visible {
+    outline: 2px solid var(--game-accent, var(--theme-accent));
+    outline-offset: 3px;
+  }
+
   .pictograph-wrapper {
     width: 100%;
     height: 100%;
@@ -74,6 +89,21 @@ QuizPictographButton - Answer button containing a pictograph
     justify-content: center;
     /* No background - pictograph fills directly */
     background: transparent;
+  }
+
+  .answer-caption {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 1;
+    padding: 0.2rem 0.35rem 0.3rem;
+    background: linear-gradient(transparent, rgba(5, 8, 14, 0.92) 45%);
+    color: white;
+    font-family: "JetBrains Mono", "Fira Code", "SF Mono", monospace;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
   }
 
   .answer-btn.correct {

@@ -4,24 +4,32 @@
     state,
     disabled,
     onclick,
+    subtitle = null,
+    ariaLabel = null,
   }: {
     word: string;
     state: "default" | "correct" | "incorrect" | "dimmed";
     disabled: boolean;
     onclick: () => void;
+    subtitle?: string | null;
+    ariaLabel?: string | null;
   } = $props();
 </script>
 
 <button
+  type="button"
   class="word-btn"
   class:correct={state === "correct"}
   class:incorrect={state === "incorrect"}
   class:dimmed={state === "dimmed"}
   {onclick}
   {disabled}
-  aria-label="Answer: {word}"
+  aria-label={ariaLabel ?? `Answer: ${word}`}
 >
   <span class="word-text">{word}</span>
+  {#if subtitle}
+    <span class="word-subtitle">{subtitle}</span>
+  {/if}
   {#if state === "correct"}
     <span class="result-icon correct-icon">✓</span>
   {:else if state === "incorrect"}
@@ -33,9 +41,12 @@
   .word-btn {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.2rem;
     width: 100%;
+    min-height: var(--min-touch-target, 44px);
     padding: 0.875rem 1.25rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
@@ -55,6 +66,11 @@
     transform: translateY(-1px) scale(0.98);
   }
 
+  .word-btn:focus-visible {
+    outline: 2px solid var(--game-accent, var(--theme-accent));
+    outline-offset: 3px;
+  }
+
   .word-text {
     font-size: 1.5rem;
     font-weight: 800;
@@ -62,6 +78,13 @@
     font-family: "JetBrains Mono", "Fira Code", "SF Mono", monospace;
     letter-spacing: 0.15em;
     text-shadow: 0 2px 8px color-mix(in srgb, var(--theme-panel-bg) 60%, transparent);
+  }
+
+  .word-subtitle {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    letter-spacing: 0;
   }
 
   .word-btn.correct {

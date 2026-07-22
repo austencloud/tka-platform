@@ -4,6 +4,8 @@ import { getCachedCatalogs, loadCatalogs, loadCatalogSequencesPage } from "$lib/
 import { QuizAnswerFormat, QuizQuestionFormat, QuizType } from "../domain/enums/quiz-enums";
 import type { QuizAnswerOption, QuizQuestionData } from "../domain/models/quiz-models";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+import { shapeKey } from "$lib/shared/mandala/services/mandala-fingerprint";
 
 let sequencePool: SequenceData[] = [];
 let isInitialized = false;
@@ -13,6 +15,7 @@ const LOAD_TIMEOUT_MS = 15_000;
 const SEQS_PER_CATALOG = 8;
 
 const sequenceCatalogMap = new Map<string, string>();
+let mandalaShapeKeyCache = new WeakMap<SequenceData, string>();
 
 export function getCatalogIdForSequence(sequenceId: string): string | undefined {
   return sequenceCatalogMap.get(sequenceId);
@@ -160,9 +163,10 @@ export interface SequenceMatchOptions {
 }
 
 /**
- * One target sequence + N-1 distinct-word distractor sequences, all from the
- * same catalog pool. `questionContent` and every option's `content` are
- * SequenceData; `correctAnswer` is the target's sequence id.
+ * One target sequence + N-1 distractor sequences with distinct words and
+ * distinct rendered mandalas, all from the same catalog pool.
+ * `questionContent` and every option's `content` are SequenceData;
+ * `correctAnswer` is the target's sequence id.
  */
 export async function generateSequenceMatchQuestion(
   questionId: string,
@@ -195,13 +199,23 @@ export async function generateSequenceMatchQuestion(
     candidates[Math.floor(Math.random() * candidates.length)]!;
   const correctWord = simplifyRepeatedWord(correctSequence.word);
 
-  // Distractors: one sequence per distinct simplified word, target excluded.
-  const seen = new Set<string>([correctWord]);
+  // A different sequence id is not enough to make a fair answer. Multiple
+  // words can trace the same mandala, so exclude the target's shape and keep
+  // only one option from every other rendered-shape class.
+  const seenWords = new Set<string>([correctWord]);
+  const seenMandalaShapes = new Set<string>([
+    getMandalaShapeKey(correctSequence),
+  ]);
   const distractorPool: SequenceData[] = [];
   for (const seq of pool) {
     const word = simplifyRepeatedWord(seq.word);
-    if (seen.has(word)) continue;
-    seen.add(word);
+    if (seenWords.has(word)) continue;
+
+    const mandalaShape = getMandalaShapeKey(seq);
+    if (seenMandalaShapes.has(mandalaShape)) continue;
+
+    seenWords.add(word);
+    seenMandalaShapes.add(mandalaShape);
     distractorPool.push(seq);
   }
 
@@ -241,7 +255,19 @@ export function resetState(): void {
   recentWords.length = 0;
   sequencePool = [];
   sequenceCatalogMap.clear();
+  mandalaShapeKeyCache = new WeakMap<SequenceData, string>();
   isInitialized = false;
+}
+
+function getMandalaShapeKey(sequence: SequenceData): string {
+  const cached = mandalaShapeKeyCache.get(sequence);
+  if (cached !== undefined) return cached;
+
+  // These defaults match SequenceMandala in the arcade: arc paths and the
+  // canonical two-ended prop when no prop override is supplied.
+  const key = shapeKey(calculateMandalaGeometry(sequence.steps));
+  mandalaShapeKeyCache.set(sequence, key);
+  return key;
 }
 
 function pickRandomSequence(wordLength?: number): SequenceData {
