@@ -9,9 +9,9 @@
    * never shrinks below its own text, so long labels ("Prop-Matched") wrap as
    * whole chips instead of overflowing the button box.
    *
-   * Not SegmentedControl: that primitive is equal-width + `white-space: nowrap`
-   * + `overflow: hidden`, which clips variable-length labels in this narrow
-   * sidebar. These chips wrap instead.
+   * Not SegmentedControl: that primitive keeps every segment equal-width, which
+   * becomes unreadable for a large set of variable-length labels. These chips
+   * keep their words intact and wrap instead.
    */
   interface Option {
     value: T;
@@ -30,12 +30,31 @@
     options: readonly Option[];
     value: T;
     onChange: (value: T) => void;
+    /** Selected border/fill color. Defaults to the current theme accent. */
+    color?: string;
+    /** Prevent selection while the owning workflow is busy. */
+    disabled?: boolean;
+    /** Stack the label above the chips when the option set needs more room. */
+    layout?: "inline" | "stacked";
   }
 
-  const { label, ariaLabel, options, value, onChange }: Props = $props();
+  const {
+    label,
+    ariaLabel,
+    options,
+    value,
+    onChange,
+    color = "var(--theme-accent, #8b5cf6)",
+    disabled = false,
+    layout = "inline",
+  }: Props = $props();
 </script>
 
-<div class="option-row">
+<div
+  class="option-row"
+  class:stacked={layout === "stacked"}
+  style:--option-accent={color}
+>
   <span class="option-label">{label}</span>
   <div class="chip-group" role="radiogroup" aria-label={ariaLabel ?? label}>
     {#each options as option (option.value)}
@@ -46,10 +65,15 @@
         type="button"
         role="radio"
         aria-checked={value === option.value}
+        {disabled}
         onclick={() => onChange(option.value)}
       >
         {#if option.swatch != null}
-          <span class="swatch" style="background: {option.swatch}" aria-hidden="true"></span>
+          <span
+            class="swatch"
+            style="background: {option.swatch}"
+            aria-hidden="true"
+          ></span>
         {:else if option.icon}
           <i class="fas {option.icon}" aria-hidden="true"></i>
         {/if}
@@ -85,6 +109,17 @@
     flex-wrap: wrap;
   }
 
+  .option-row.stacked {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stacked .option-label {
+    min-width: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+  }
+
   .chip {
     flex: 1 1 auto;
     min-width: max-content;
@@ -105,20 +140,25 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .chip:hover {
+  .chip:hover:not(:disabled) {
     background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
 
   .chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
+    background: color-mix(in srgb, var(--option-accent) 17%, transparent);
+    border-color: var(--option-accent);
     color: var(--theme-text, white);
   }
 
+  .chip:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
   .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline: 2px solid var(--option-accent);
     outline-offset: 2px;
   }
 

@@ -26,8 +26,14 @@
      *  fields). Passed straight through to EffectControlStack; also used here so
      *  chip values + conditional visibility read the right source. */
     overrides?: Record<string, { get: () => unknown; set: (v: unknown) => void }>;
+    onSettingChange?: (
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean
+    ) => void;
   }
-  let { effectId, config, overrides }: Props = $props();
+  let { effectId, config, overrides, onSettingChange }: Props = $props();
 
   const intent = $derived(config.effect(effectId) as unknown as Record<string, unknown>);
   /** Read a field from its override store if present, else the effect config. */
@@ -114,7 +120,14 @@
 
   {#if active}
     <div class="active-control">
-      <EffectControlStack effect={effectId} {config} {overrides} only={[active.id]} hideLabel />
+      <EffectControlStack
+        effect={effectId}
+        {config}
+        {overrides}
+        only={[active.id]}
+        hideLabel
+        {onSettingChange}
+      />
     </div>
   {/if}
 </div>

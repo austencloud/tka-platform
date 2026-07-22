@@ -41,6 +41,12 @@
     showExportControls?: boolean;
     layout?: "sidebar" | "strip" | "grid";
     children?: Snippet;
+    onSettingChange?: (
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean
+    ) => void;
   }
 
   const {
@@ -49,6 +55,7 @@
     showPlayback = true, showTransport = true, showExportControls = false,
     layout = "sidebar",
     children,
+    onSettingChange,
   }: Props = $props();
 
   const effectsConfigState = getEffectsConfigContext()!;
@@ -140,14 +147,106 @@
     return primarySpec.get(effectsConfigState);
   });
 
+  type SettingValue = string | number | boolean | null;
+  function reportSetting(
+    setting: string,
+    previousValue: SettingValue,
+    value: SettingValue,
+    coalesce = false
+  ): void {
+    if (previousValue === value) return;
+    onSettingChange?.(setting, previousValue, value, coalesce);
+  }
+
+  function primitiveSnapshot(
+    effectId: EffectId
+  ): Record<string, SettingValue> {
+    const current = effectsConfigState.effect(effectId) as unknown as Record<
+      string,
+      unknown
+    >;
+    const snapshot: Record<string, SettingValue> = {};
+
+    function collect(path: string, value: unknown): void {
+      if (
+        value === null ||
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+      ) {
+        snapshot[path] = value;
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => collect(`${path}_${index + 1}`, item));
+        return;
+      }
+      if (value && typeof value === "object") {
+        for (const [field, item] of Object.entries(value)) {
+          collect(`${path}_${field}`, item);
+        }
+      }
+    }
+
+    for (const [field, value] of Object.entries(current)) {
+      collect(field, value);
+    }
+    return snapshot;
+  }
+
+  // Desktop customize components mutate the shared effects state directly. A
+  // primitive-field diff keeps those controls observable without exporting a
+  // config blob. Mobile tuning reports at the shared control primitive below.
+  let observedCustomizationEffect: EffectId | null = null;
+  let customizationSnapshot: Record<string, SettingValue> | null = null;
+  function syncCustomizationSnapshot(): void {
+    if (activeEffect === "none" || !isEffectId(activeEffect)) return;
+    observedCustomizationEffect = activeEffect;
+    customizationSnapshot = primitiveSnapshot(activeEffect);
+  }
+  $effect(() => {
+    void effectsConfigState.version;
+    if (
+      !onSettingChange ||
+      layout === "strip" ||
+      !customizeOpen ||
+      activeEffect === "none" ||
+      !isEffectId(activeEffect)
+    ) {
+      observedCustomizationEffect = null;
+      customizationSnapshot = null;
+      return;
+    }
+
+    const current = primitiveSnapshot(activeEffect);
+    if (
+      customizationSnapshot &&
+      observedCustomizationEffect === activeEffect
+    ) {
+      for (const [field, value] of Object.entries(current)) {
+        const previous = customizationSnapshot[field];
+        if (previous !== undefined && previous !== value) {
+          reportSetting(`tuning_${activeEffect}_${field}`, previous, value, true);
+        }
+      }
+    }
+    observedCustomizationEffect = activeEffect;
+    customizationSnapshot = current;
+  });
+
   function handleEffectSelect(effectId: string): void {
+    const previous = activeEffect;
     customizeOpen = false;
     CustomizeComponent = null;
     if (effectId === activeEffect) {
       effectsConfigState.setActiveEffect("none");
+      reportSetting("active_effect", previous, "none");
       return;
     }
-    if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
+    if (isEffectId(effectId)) {
+      effectsConfigState.setActiveEffect(effectId);
+      reportSetting("active_effect", previous, effectId);
+    }
   }
 
   // ── Mobile drill-down (layout="strip") ────────────────────────────────────
@@ -171,12 +270,18 @@
       detailOpen = true;
       return;
     }
-    if (isEffectId(effectId)) effectsConfigState.setActiveEffect(effectId);
+    if (isEffectId(effectId)) {
+      const previous = activeEffect;
+      effectsConfigState.setActiveEffect(effectId);
+      reportSetting("active_effect", previous, effectId);
+    }
   }
 
   function handleOffTap(): void {
+    const previous = activeEffect;
     detailOpen = false;
     effectsConfigState.setActiveEffect("none");
+    reportSetting("active_effect", previous, "none");
   }
 
   // Hover/press intent: warm the effect's webgl renderer before the click so the
@@ -187,14 +292,20 @@
 
   function handlePresetSelect(presetId: string): void {
     if (!registration) return;
+    const effectId = activeEffect;
+    const previous = activePresetId ?? "customized";
     // The Default chip resets to the factory default look.
     if (presetId === DEFAULT_CHIP_ID) {
       if (isEffectId(activeEffect)) effectsConfigState.resetToFactory(activeEffect);
+      syncCustomizationSnapshot();
+      reportSetting(`preset_${effectId}`, previous, presetId);
       return;
     }
     // The Custom chip restores your auto-captured custom look.
     if (presetId === CUSTOM_CHIP_ID) {
       if (isEffectId(activeEffect)) effectsConfigState.restorePersonalDefault(activeEffect);
+      syncCustomizationSnapshot();
+      reportSetting(`preset_${effectId}`, previous, presetId);
       return;
     }
     const group = registration.presetGroup;
@@ -202,6 +313,8 @@
     if (!preset) return;
     const patch = preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {});
     effectsConfigState.applyPreset(group.effectType, preset.id, patch);
+    syncCustomizationSnapshot();
+    reportSetting(`preset_${effectId}`, previous, presetId);
   }
 
   // ── Global factory reset (escape hatch in the panel footer) ──────────────
@@ -211,6 +324,7 @@
 
   function handleResetAll(): void {
     effectsConfigState.resetAllToFactory();
+    reportSetting("reset_all", "configured", "factory_defaults");
   }
 
   // ── Custom chip (your auto-captured look) ────────────────────────────────
@@ -239,8 +353,10 @@
 
   function handleSliderInput(ev: Event): void {
     if (!primarySpec) return;
+    const previous = primaryValue;
     const v = parseFloat((ev.currentTarget as HTMLInputElement).value);
     primarySpec.set(effectsConfigState, v);
+    reportSetting(`primary_${activeEffect}`, previous, v, true);
   }
 </script>
 
@@ -369,7 +485,18 @@
                `tuneOverrides`. CustomizeComponent still loads as the readiness
                signal for this view but is no longer rendered. -->
           {#if activeEffect !== "none"}
-            <EffectTuneStrip effectId={activeEffect} config={effectsConfigState} overrides={tuneOverrides} />
+            <EffectTuneStrip
+              effectId={activeEffect}
+              config={effectsConfigState}
+              overrides={tuneOverrides}
+              onSettingChange={(setting, previousValue, value, coalesce) =>
+                reportSetting(
+                  `tuning_${activeEffect}_${setting}`,
+                  previousValue,
+                  value,
+                  coalesce
+                )}
+            />
           {/if}
         </div>
       {:else if stripView === "detail" && registration && activeEffect !== "none"}

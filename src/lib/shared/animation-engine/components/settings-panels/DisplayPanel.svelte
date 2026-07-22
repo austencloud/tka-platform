@@ -3,6 +3,8 @@
 	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 	import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
 	import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
+	import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+	import { reportViewerControlChange } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
 	let {
 		/** Show per-color prop (Left/Right) chips. Only surfaces without a header
@@ -10,8 +12,10 @@
 		 *  viewer-visibility context is present, the two prop chips replace the
 		 *  master "Props" toggle. */
 		showMotionVisibility = false,
+		onSettingChange,
 	}: {
 		showMotionVisibility?: boolean;
+		onSettingChange?: ViewerControlSink;
 	} = $props();
 
 	const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
@@ -99,6 +103,18 @@
 		...(showPropChips ? propChips : [masterPropsChip]),
 		...displayChips,
 	]);
+
+	function toggleChip(chip: Chip): void {
+		const previous = chip.active();
+		chip.toggle();
+		reportViewerControlChange(
+			onSettingChange,
+			"display",
+			chip.id,
+			previous,
+			!previous
+		);
+	}
 </script>
 
 <div class="vis-grid">
@@ -108,7 +124,7 @@
 			type="button"
 			aria-pressed={chip.active()}
 			style={chip.accent ? `--rail-accent: ${chip.accent};` : undefined}
-			onclick={chip.toggle}
+			onclick={() => toggleChip(chip)}
 		>
 			{#if chip.icon}<i class={chip.icon} aria-hidden="true"></i>{/if}
 			<span>{chip.label}</span>

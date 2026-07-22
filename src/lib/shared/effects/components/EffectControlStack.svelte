@@ -37,8 +37,22 @@
      *  host builds these — it is the layer that legitimately knows both stores,
      *  so the manifest and this component stay store-agnostic. */
     overrides?: Record<string, { get: () => unknown; set: (v: unknown) => void }>;
+    onSettingChange?: (
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean
+    ) => void;
   }
-  let { effect, config, tiers = ["primary", "tracking"], only, hideLabel = false, overrides }: Props = $props();
+  let {
+    effect,
+    config,
+    tiers = ["primary", "tracking"],
+    only,
+    hideLabel = false,
+    overrides,
+    onSettingChange,
+  }: Props = $props();
 
   const intent = $derived(config.effect(effect) as unknown as Record<string, unknown>);
   // showWhen conditions read the merged view so cross-store fields gate correctly.
@@ -58,12 +72,20 @@
   function get(field: string): unknown {
     return overrides?.[field] ? overrides[field].get() : intent[field];
   }
-  function set(field: string, value: unknown) {
+  type SettingValue = string | number | boolean | null;
+  function isSettingValue(value: unknown): value is SettingValue {
+    return value === null || ["string", "number", "boolean"].includes(typeof value);
+  }
+  function set(field: string, value: unknown, coalesce = false) {
+    const previous = get(field);
     if (overrides?.[field]) {
       overrides[field].set(value);
-      return;
+    } else {
+      config.updateEffect(effect, { [field]: value } as never);
     }
-    config.updateEffect(effect, { [field]: value } as never);
+    if (isSettingValue(previous) && isSettingValue(value) && previous !== value) {
+      onSettingChange?.(field, previous, value, coalesce);
+    }
   }
   function fmt(c: ControlDescriptor, v: number): string {
     if (c.pct) return `${Math.round(v * 100)}%`;
@@ -82,7 +104,7 @@
           max={c.max}
           step={c.step}
           value={get(c.field) as number}
-          oninput={(e) => set(c.field, parseFloat(e.currentTarget.value))}
+          oninput={(e) => set(c.field, parseFloat(e.currentTarget.value), true)}
           class="ctl-slider"
         />
         <span class="ctl-value">{fmt(c, get(c.field) as number)}</span>
@@ -140,7 +162,7 @@
           <input
             type="color"
             value={get(c.field) as string}
-            oninput={(e) => set(c.field, e.currentTarget.value)}
+            oninput={(e) => set(c.field, e.currentTarget.value, true)}
           />
         </label>
       </div>
@@ -152,14 +174,14 @@
             <input
               type="color"
               value={get(c.pairFields![0]) as string}
-              oninput={(e) => set(c.pairFields![0], e.currentTarget.value)}
+              oninput={(e) => set(c.pairFields![0], e.currentTarget.value, true)}
             />
           </label>
           <label class="ctl-color">
             <input
               type="color"
               value={get(c.pairFields![1]) as string}
-              oninput={(e) => set(c.pairFields![1], e.currentTarget.value)}
+              oninput={(e) => set(c.pairFields![1], e.currentTarget.value, true)}
             />
           </label>
         </div>
@@ -175,9 +197,18 @@
                 value={((get(c.field) as string[]) ?? [])[i] ?? "#ffffff"}
                 oninput={(e) => {
                   const arr = [...((get(c.field) as string[]) ?? [])];
+                  const previous = arr[i] ?? "#ffffff";
                   while (arr.length <= i) arr.push("#ffffff");
                   arr[i] = e.currentTarget.value;
                   set(c.field, arr);
+                  if (previous !== e.currentTarget.value) {
+                    onSettingChange?.(
+                      `${c.field}_${i + 1}`,
+                      previous,
+                      e.currentTarget.value,
+                      true
+                    );
+                  }
                 }}
               />
             </label>

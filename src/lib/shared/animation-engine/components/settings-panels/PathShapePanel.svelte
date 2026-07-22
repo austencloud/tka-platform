@@ -3,6 +3,12 @@
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
 
+  let {
+    onSettingChange,
+  }: {
+    onSettingChange?: (previousValue: string, value: string) => void;
+  } = $props();
+
   const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
 
   let pathShape = $state(vm.getPathShape());
@@ -73,12 +79,14 @@
   const selected = $derived(options.find(isActive) ?? options[0]!);
 
   function select(o: PathOption): void {
+    const previous = motionAware ? "byMotion" : pathShape;
     if (o.id === "byMotion") {
       vm.setMotionAwarePaths(true);
     } else {
       vm.setMotionAwarePaths(false);
       vm.setPathShape(o.id);
     }
+    onSettingChange?.(previous, o.id);
   }
 </script>
 

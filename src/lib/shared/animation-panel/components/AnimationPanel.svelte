@@ -48,6 +48,11 @@
     computePropsSummary,
   } from "../pill-nav/pill-summaries";
   import { onDestroy } from "svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+    type ViewerControlValue,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -82,6 +87,8 @@
      *  (the landing spinner). Viewer/export already own Left/Right in their
      *  header, so they leave it false to avoid a duplicate. */
     showMotionVisibility?: boolean;
+    /** Optional semantic sink. Existing hosts keep the same behavior when absent. */
+    onSettingChange?: ViewerControlSink;
   }
 
   let {
@@ -105,6 +112,7 @@
     secondaryActions = [],
     showInlineExportProgress = true,
     showMotionVisibility = false,
+    onSettingChange,
   }: Props = $props();
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
@@ -122,6 +130,7 @@
   let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
+    const previous = activePill;
     if (layout === "bottom") {
       activePill = activePill === id ? null : id;
     } else {
@@ -132,6 +141,72 @@
       }
       activePill = id;
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "animation_panel",
+      "section",
+      previous,
+      activePill
+    );
+  }
+
+  function reportSetting(
+    group: string,
+    setting: string,
+    previousValue: ViewerControlValue,
+    value: ViewerControlValue,
+    coalesce = false
+  ): void {
+    reportViewerControlChange(
+      onSettingChange,
+      group,
+      setting,
+      previousValue,
+      value,
+      { coalesce }
+    );
+  }
+
+  function setExportFps(value: 30 | 60 | 120): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoFps;
+    exportOptions.setVideoFps(value);
+    reportSetting("video_export", "fps", previous, value);
+  }
+
+  function setExportResolution(value: 720 | 1080 | 2160 | 4320): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoResolution;
+    exportOptions.setVideoResolution(value);
+    reportSetting("video_export", "resolution", previous, value);
+  }
+
+  function setExportQuality(value: "standard" | "cinema"): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoQuality;
+    exportOptions.setVideoQuality(value);
+    reportSetting("video_export", "quality", previous, value);
+  }
+
+  function setStartHold(value: boolean): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoIncludeStartPosition;
+    exportOptions.setVideoIncludeStartPosition(value);
+    reportSetting("video_export", "include_start_position", previous, value);
+  }
+
+  function setEndHold(value: boolean): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoIncludeEndHold;
+    exportOptions.setVideoIncludeEndHold(value);
+    reportSetting("video_export", "include_end_hold", previous, value);
+  }
+
+  function setLoopCount(value: number): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoLoopCount;
+    exportOptions.setVideoLoopCount(value);
+    reportSetting("video_export", "loop_count", previous, value);
   }
 
   let pillNavEl = $state<HTMLElement | null>(null);
@@ -360,13 +435,20 @@
       {isPlaying}
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
       showPlayback={!!(onPlaybackToggle && onBpmChange)}
+      onSettingChange={(setting, previous, value, coalesce) =>
+        reportSetting("effects", setting, previous, value, coalesce)}
     />
   {:else if activePill === "effort"}
     <div class="section-pad">
       {#if layout === "sidebar"}
         <p class="section-hint">How each beat speeds up and slows down.</p>
       {/if}
-      <EffortPanel columns={layout === "sidebar" ? 2 : 4} showSubtitles={layout === "sidebar"} />
+      <EffortPanel
+        columns={layout === "sidebar" ? 2 : 4}
+        showSubtitles={layout === "sidebar"}
+        onSettingChange={(previous, value) =>
+          reportSetting("effort", "preset", previous, value)}
+      />
     </div>
   {:else if activePill === "playback"}
     <div class="section-pad playback-rows">
@@ -397,13 +479,16 @@
            the props TRAVEL (prop-interpolator physics), a playback behavior —
            only the "Paths" chip in Display is visibility. PathShapePanel brings
            its own header row (label + live caption). -->
-      <PathShapePanel />
+      <PathShapePanel
+        onSettingChange={(previous, value) =>
+          reportSetting("playback", "path_shape", previous, value)}
+      />
     </div>
   {:else if activePill === "display"}
     <div class="section-pad display-rows">
       <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
         <span class="rt-section-label" id="display-visibility-label">Visibility</span>
-        <DisplayPanel {showMotionVisibility} />
+        <DisplayPanel {showMotionVisibility} {onSettingChange} />
       </div>
     </div>
   {:else if activePill === "export" && exportOptions}
@@ -413,15 +498,15 @@
         <div class="rt-chip-row">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoFps === 30}
-            onclick={() => exportOptions.setVideoFps(30)}
+            onclick={() => setExportFps(30)}
           >30 fps</button>
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoFps === 60}
-            onclick={() => exportOptions.setVideoFps(60)}
+            onclick={() => setExportFps(60)}
           >60 fps</button>
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoFps === 120}
-            onclick={() => exportOptions.setVideoFps(120)}
+            onclick={() => setExportFps(120)}
           >120 fps</button>
         </div>
       </div>
@@ -431,19 +516,19 @@
         <div class="rt-chip-row res-row">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 720}
-            onclick={() => exportOptions.setVideoResolution(720)}
+            onclick={() => setExportResolution(720)}
           >{renderMode === '3d' ? '720×720' : '720p'}</button>
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 1080}
-            onclick={() => exportOptions.setVideoResolution(1080)}
+            onclick={() => setExportResolution(1080)}
           >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 2160}
-            onclick={() => exportOptions.setVideoResolution(2160)}
+            onclick={() => setExportResolution(2160)}
           >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 4320}
-            onclick={() => exportOptions.setVideoResolution(4320)}
+            onclick={() => setExportResolution(4320)}
           >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
         </div>
       </div>
@@ -454,11 +539,11 @@
           <div class="rt-chip-row">
             <button type="button" class="rt-chip"
               aria-pressed={exportOptions.videoQuality === 'standard'}
-              onclick={() => exportOptions.setVideoQuality('standard')}
+              onclick={() => setExportQuality('standard')}
             >Standard</button>
             <button type="button" class="rt-chip"
               aria-pressed={exportOptions.videoQuality === 'cinema'}
-              onclick={() => exportOptions.setVideoQuality('cinema')}
+              onclick={() => setExportQuality('cinema')}
             ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
           </div>
         </div>
@@ -469,13 +554,13 @@
         <div class="rt-chip-row">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoIncludeStartPosition}
-            onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+            onclick={() => setStartHold(!exportOptions.videoIncludeStartPosition)}
           >
             <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
           </button>
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoIncludeEndHold}
-            onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+            onclick={() => setEndHold(!exportOptions.videoIncludeEndHold)}
           >
             <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
           </button>
@@ -486,13 +571,13 @@
         <span class="field-label">Loops</span>
         <div class="rt-stepper">
           <button type="button" class="rt-step-btn"
-            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+            onclick={() => setLoopCount(exportOptions.videoLoopCount - 1)}
             disabled={exportOptions.videoLoopCount <= 1}
             aria-label="Decrease loop count"
           ><i class="fas fa-minus" aria-hidden="true"></i></button>
           <span class="rt-val">{exportOptions.videoLoopCount}×</span>
           <button type="button" class="rt-step-btn"
-            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+            onclick={() => setLoopCount(exportOptions.videoLoopCount + 1)}
             disabled={exportOptions.videoLoopCount >= 10}
             aria-label="Increase loop count"
           ><i class="fas fa-plus" aria-hidden="true"></i></button>
