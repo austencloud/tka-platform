@@ -53,6 +53,10 @@ dialog.base-modal {
   position: fixed;
   margin: auto;
   inset: 0;
+  /* Keep fixed dialogs inside the visual viewport while a software keyboard
+     is open. Browsers that resize the layout viewport publish zero offsets. */
+  inset-block-start: var(--viewport-offset-top, 0px);
+  inset-block-end: var(--viewport-offset-bottom, 0px);
 
   /* Appearance */
   background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
@@ -112,32 +116,77 @@ dialog.base-modal[data-closing="true"] {
 dialog.base-modal[data-size="sm"] {
   width: var(--modal-width-sm);
   max-height: min(85vh, 500px);
+  max-height: min(
+    85dvh,
+    500px,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
 }
 
 dialog.base-modal[data-size="md"] {
   width: var(--modal-width-md);
   max-height: min(85vh, 650px);
+  max-height: min(
+    85dvh,
+    650px,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
 }
 
 dialog.base-modal[data-size="lg"] {
   width: var(--modal-width-lg);
   max-height: min(85vh, 800px);
+  max-height: min(
+    85dvh,
+    800px,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
 }
 
 dialog.base-modal[data-size="xl"] {
   width: var(--modal-width-xl);
   max-height: 90vh;
+  max-height: min(
+    90dvh,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
 }
 
 dialog.base-modal[data-size="full"] {
   width: var(--modal-width-full);
   max-height: 90vh;
+  max-height: min(
+    90dvh,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
 }
 
 /* Fit - content-driven height, ideal for help modals */
 dialog.base-modal[data-size="fit"] {
   width: var(--modal-width-fit);
   max-height: 90vh;
+  max-height: min(
+    90dvh,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
   height: fit-content;
 }
 
@@ -145,6 +194,14 @@ dialog.base-modal[data-size="fit"] {
 dialog.base-modal[data-size="module-grid"] {
   width: min(95vw, 1200px);
   height: min(90vh, 700px);
+  height: min(
+    90dvh,
+    700px,
+    calc(
+      var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
 }
 
 /* ===== Position Variants ===== */
@@ -221,15 +278,28 @@ dialog.base-modal[data-closing="true"]::backdrop {
 
 /* Staggered content animations - only when modal has entered */
 dialog.base-modal[data-entered="true"] [data-animate] {
-  animation: modalContentFadeUp var(--modal-duration-content) var(--modal-ease-content) backwards;
+  animation: modalContentFadeUp var(--modal-duration-content)
+    var(--modal-ease-content) backwards;
 }
 
-dialog.base-modal[data-entered="true"] [data-animate="1"] { animation-delay: calc(var(--modal-stagger-base) * 1); }
-dialog.base-modal[data-entered="true"] [data-animate="2"] { animation-delay: calc(var(--modal-stagger-base) * 2); }
-dialog.base-modal[data-entered="true"] [data-animate="3"] { animation-delay: calc(var(--modal-stagger-base) * 3); }
-dialog.base-modal[data-entered="true"] [data-animate="4"] { animation-delay: calc(var(--modal-stagger-base) * 4); }
-dialog.base-modal[data-entered="true"] [data-animate="5"] { animation-delay: calc(var(--modal-stagger-base) * 5); }
-dialog.base-modal[data-entered="true"] [data-animate="6"] { animation-delay: calc(var(--modal-stagger-base) * 6); }
+dialog.base-modal[data-entered="true"] [data-animate="1"] {
+  animation-delay: calc(var(--modal-stagger-base) * 1);
+}
+dialog.base-modal[data-entered="true"] [data-animate="2"] {
+  animation-delay: calc(var(--modal-stagger-base) * 2);
+}
+dialog.base-modal[data-entered="true"] [data-animate="3"] {
+  animation-delay: calc(var(--modal-stagger-base) * 3);
+}
+dialog.base-modal[data-entered="true"] [data-animate="4"] {
+  animation-delay: calc(var(--modal-stagger-base) * 4);
+}
+dialog.base-modal[data-entered="true"] [data-animate="5"] {
+  animation-delay: calc(var(--modal-stagger-base) * 5);
+}
+dialog.base-modal[data-entered="true"] [data-animate="6"] {
+  animation-delay: calc(var(--modal-stagger-base) * 6);
+}
 
 @keyframes modalContentFadeUp {
   from {
@@ -271,8 +341,12 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
     /* Full-screen on mobile */
     width: 100%;
     max-width: none;
-    max-height: 100%;
-    height: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
+    max-height: var(--viewport-height, 100dvh);
+    height: 100vh;
+    height: 100dvh;
+    height: var(--viewport-height, 100dvh);
     border-radius: 0;
     margin: 0;
   }
@@ -281,10 +355,20 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
   dialog.base-modal[data-size="md"],
   dialog.base-modal[data-size="fit"] {
     /* Smaller modals stay as cards on mobile */
-    width: calc(100% - 32px);
+    width: calc(
+      100% - 32px - env(safe-area-inset-left, 0px) -
+        env(safe-area-inset-right, 0px)
+    );
     max-width: var(--modal-width-md);
     height: auto;
     max-height: 85vh;
+    max-height: min(
+      90dvh,
+      calc(
+        var(--viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
     border-radius: var(--modal-border-radius-mobile);
     margin: auto;
   }

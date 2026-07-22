@@ -19,10 +19,7 @@
     isTopModal,
     generateModalId,
   } from "./modal-stack";
-  import {
-    FocusRestore,
-    focusFirstOrContainer,
-  } from "./helpers/focus-restore";
+  import { FocusRestore, focusFirstOrContainer } from "./helpers/focus-restore";
   import "./modal-tokens.css";
 
   // ===== Types =====
@@ -247,7 +244,11 @@
   >
     <!-- Click barrier to prevent backdrop clicks from triggering on content -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="modal-content-wrapper" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+    <div
+      class="modal-content-wrapper"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={() => {}}
+    >
       {#if header}
         <div class="modal-header-slot" data-animate="1">
           {@render header()}
@@ -287,7 +288,10 @@
   /* Fit-size modals: content-driven height */
   :global(dialog[data-size="fit"]) .modal-content-wrapper {
     height: fit-content;
-    flex: 0 0 auto;
+    /* The dialog itself has a viewport cap. Inherit that cap here so the body
+       below can become the scroll owner when content grows past the screen. */
+    max-height: inherit;
+    flex: 0 1 auto;
   }
 
   /* Header slot */
@@ -300,6 +304,7 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
   }
 
   .modal-body {
@@ -334,7 +339,9 @@
 
   /* Fit-size modals: body sizes to content */
   :global(dialog[data-size="fit"]) .modal-body {
-    flex: 0 0 auto;
+    /* Stay content-sized while there is room, then shrink and scroll instead
+       of overflowing through the dialog's clipped viewport boundary. */
+    flex: 0 1 auto;
   }
 
   /* Footer slot */

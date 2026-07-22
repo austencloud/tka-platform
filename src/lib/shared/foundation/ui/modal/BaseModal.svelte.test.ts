@@ -1,0 +1,115 @@
+import { page } from "vitest/browser";
+import { render } from "vitest-browser-svelte";
+import { afterEach, describe, expect, it } from "vitest";
+import { expectNoA11yViolations } from "$test-helpers/component-a11y";
+import BaseModalTestHarness from "./BaseModalTestHarness.svelte";
+
+const FOLD_VIEWPORTS = [
+  { label: "Fold cover portrait", width: 344, height: 884 },
+  { label: "Fold cover landscape", width: 884, height: 344 },
+  { label: "Fold unfolded portrait", width: 619, height: 720 },
+  { label: "Fold unfolded landscape", width: 720, height: 619 },
+  { label: "iPhone SE", width: 375, height: 667 },
+  { label: "iPad", width: 768, height: 1024 },
+] as const;
+
+function nextLayout(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
+describe("BaseModal fit sizing", () => {
+  afterEach(async () => {
+    document.documentElement.style.removeProperty("--viewport-height");
+    document.documentElement.style.removeProperty("--viewport-offset-top");
+    document.documentElement.style.removeProperty("--viewport-offset-bottom");
+    await page.viewport(414, 896);
+  });
+
+  it("keeps tall content reachable across Fold-sized viewports", async () => {
+    await page.viewport(FOLD_VIEWPORTS[0].width, FOLD_VIEWPORTS[0].height);
+    render(BaseModalTestHarness);
+
+    await expect
+      .element(page.getByRole("dialog", { name: "Scrollable modal" }))
+      .toBeVisible();
+
+    for (const viewport of FOLD_VIEWPORTS) {
+      await page.viewport(viewport.width, viewport.height);
+      await nextLayout();
+
+      const dialog =
+        document.querySelector<HTMLDialogElement>("dialog.base-modal");
+      const scrollBody = dialog?.querySelector<HTMLElement>(".modal-body");
+      const endButton = page
+        .getByRole("button", { name: "End of modal" })
+        .element();
+
+      expect(dialog, `${viewport.label}: dialog exists`).not.toBeNull();
+      expect(
+        scrollBody,
+        `${viewport.label}: scroll body exists`
+      ).not.toBeNull();
+
+      const dialogRect = dialog!.getBoundingClientRect();
+      expect(
+        dialogRect.top,
+        `${viewport.label}: dialog top`
+      ).toBeGreaterThanOrEqual(-0.5);
+      expect(
+        dialogRect.bottom,
+        `${viewport.label}: dialog bottom`
+      ).toBeLessThanOrEqual(window.innerHeight + 0.5);
+      expect(
+        scrollBody!.scrollHeight,
+        `${viewport.label}: body has overflow to scroll`
+      ).toBeGreaterThan(scrollBody!.clientHeight);
+
+      scrollBody!.scrollTop = scrollBody!.scrollHeight;
+      await nextLayout();
+
+      const bodyRect = scrollBody!.getBoundingClientRect();
+      const buttonRect = endButton.getBoundingClientRect();
+      expect(
+        buttonRect.top,
+        `${viewport.label}: final action top`
+      ).toBeGreaterThanOrEqual(bodyRect.top - 0.5);
+      expect(
+        buttonRect.bottom,
+        `${viewport.label}: final action bottom`
+      ).toBeLessThanOrEqual(bodyRect.bottom + 0.5);
+    }
+
+    // Chrome Android normally shrinks only visualViewport for the keyboard.
+    // Keep the layout viewport tall and publish the smaller visible rectangle.
+    await page.viewport(619, 720);
+    document.documentElement.style.setProperty("--viewport-height", "420px");
+    document.documentElement.style.setProperty("--viewport-offset-top", "0px");
+    document.documentElement.style.setProperty(
+      "--viewport-offset-bottom",
+      "300px"
+    );
+    await nextLayout();
+
+    const keyboardDialog =
+      document.querySelector<HTMLDialogElement>("dialog.base-modal");
+    const keyboardBody =
+      keyboardDialog?.querySelector<HTMLElement>(".modal-body");
+    const keyboardDialogRect = keyboardDialog!.getBoundingClientRect();
+    expect(
+      keyboardDialogRect.top,
+      "keyboard: dialog top"
+    ).toBeGreaterThanOrEqual(-0.5);
+    expect(
+      keyboardDialogRect.bottom,
+      "keyboard: dialog bottom"
+    ).toBeLessThanOrEqual(420.5);
+    expect(
+      keyboardBody!.scrollHeight,
+      "keyboard: body remains scrollable"
+    ).toBeGreaterThan(keyboardBody!.clientHeight);
+
+    await expectNoA11yViolations();
+  });
+});

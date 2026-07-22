@@ -182,15 +182,19 @@
   closeOnEscape
   onclose={handleModalDismiss}
 >
-  <div class="auth-modal-content">
-    <button
-      class="close-btn"
-      onclick={handleCloseButtonClick}
-      aria-label="Close"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
+  {#snippet header()}
+    <div class="auth-modal-header">
+      <button
+        class="close-btn"
+        onclick={handleCloseButtonClick}
+        aria-label="Close"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  {/snippet}
 
+  <div class="auth-modal-content">
     <!-- Header -->
     <div class="auth-hero">
       <div class="auth-logo-badge">
@@ -318,6 +322,14 @@
     position: relative;
   }
 
+  /* BaseModal keeps its header outside the scroll body. A zero-height anchor
+     pins the close control without stealing space from the auth form. */
+  .auth-modal-header {
+    position: relative;
+    z-index: 1;
+    height: 0;
+  }
+
   .fb-error {
     margin: -0.5rem 0 0;
     font-size: var(--font-size-compact);
@@ -328,14 +340,18 @@
   /* Close button */
   .close-btn {
     position: absolute;
-    top: 0.875rem;
-    right: 0.875rem;
+    top: 0.375rem;
+    right: 0.375rem;
+    display: grid;
+    place-items: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     background: none;
     border: none;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     font-size: 1rem;
-    padding: 0.375rem;
+    padding: 0;
     border-radius: var(--radius-sm, 6px);
     line-height: 1;
     transition:
