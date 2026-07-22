@@ -29,7 +29,10 @@ beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: "the-kinetic-alphabet",
     firestore: {
-      rules: readFileSync(resolve(__dirname, "../../../firestore.rules"), "utf8"),
+      rules: readFileSync(
+        resolve(__dirname, "../../../firestore.rules"),
+        "utf8"
+      ),
       host: "127.0.0.1",
       port: 8080,
     },
@@ -60,13 +63,19 @@ describe("anonymous guests: own data", () => {
   it("can write their own sequence", async () => {
     const db = anonCtx().firestore();
     await assertSucceeds(
-      setDoc(doc(db, `users/${ANON_UID}/sequences/s1`), { userId: ANON_UID, steps: [] })
+      setDoc(doc(db, `users/${ANON_UID}/sequences/s1`), {
+        userId: ANON_UID,
+        steps: [],
+      })
     );
   });
   it("can write their own learning progress", async () => {
     const db = anonCtx().firestore();
     await assertSucceeds(
-      setDoc(doc(db, `users/${ANON_UID}/learningProgress/p1`), { userId: ANON_UID, value: 1 })
+      setDoc(doc(db, `users/${ANON_UID}/learningProgress/p1`), {
+        userId: ANON_UID,
+        value: 1,
+      })
     );
   });
 });
@@ -93,14 +102,16 @@ describe("anonymous guests: community write paths are denied", () => {
   it("cannot create a userLocation (community map)", async () => {
     const db = anonCtx().firestore();
     await assertFails(
-      setDoc(doc(db, `userLocations/${ANON_UID}`), { userId: ANON_UID, lat: 0, lng: 0 })
+      setDoc(doc(db, `userLocations/${ANON_UID}`), {
+        userId: ANON_UID,
+        lat: 0,
+        lng: 0,
+      })
     );
   });
   it("cannot create a shortcode", async () => {
     const db = anonCtx().firestore();
-    await assertFails(
-      setDoc(doc(db, `shortcodes/abc123`), { encoded: "abc" })
-    );
+    await assertFails(setDoc(doc(db, `shortcodes/abc123`), { encoded: "abc" }));
   });
   it("cannot create a userReport", async () => {
     const db = anonCtx().firestore();
@@ -113,9 +124,7 @@ describe("anonymous guests: community write paths are denied", () => {
   });
   it("cannot create a video", async () => {
     const db = anonCtx().firestore();
-    await assertFails(
-      setDoc(doc(db, `videos/v1`), { creatorId: ANON_UID })
-    );
+    await assertFails(setDoc(doc(db, `videos/v1`), { creatorId: ANON_UID }));
   });
   it("cannot publish a publicHandPath", async () => {
     const db = anonCtx().firestore();
@@ -131,9 +140,7 @@ describe("anonymous guests: community write paths are denied", () => {
   });
   it("cannot create a festivalSubmission", async () => {
     const db = anonCtx().firestore();
-    await assertFails(
-      setDoc(doc(db, `festivalSubmissions/fs1`), {})
-    );
+    await assertFails(setDoc(doc(db, `festivalSubmissions/fs1`), {}));
   });
   it("cannot cast a hallOfShame vote", async () => {
     const db = anonCtx().firestore();
@@ -188,9 +195,7 @@ describe("full users: community write paths succeed", () => {
   });
   it("can create a video", async () => {
     const db = fullCtx().firestore();
-    await assertSucceeds(
-      setDoc(doc(db, `videos/v1`), { creatorId: FULL_UID })
-    );
+    await assertSucceeds(setDoc(doc(db, `videos/v1`), { creatorId: FULL_UID }));
   });
   it("can publish a publicHandPath", async () => {
     const db = fullCtx().firestore();
@@ -206,9 +211,7 @@ describe("full users: community write paths succeed", () => {
   });
   it("can create a festivalSubmission", async () => {
     const db = fullCtx().firestore();
-    await assertSucceeds(
-      setDoc(doc(db, `festivalSubmissions/fs1`), {})
-    );
+    await assertSucceeds(setDoc(doc(db, `festivalSubmissions/fs1`), {}));
   });
 });
 
@@ -266,7 +269,9 @@ describe("collections: private is server-private, public is world-readable", () 
     await seed();
     const db = testEnv.unauthenticatedContext().firestore();
     await assertSucceeds(
-      getDocs(query(collectionGroup(db, "collections"), where("isPublic", "==", true)))
+      getDocs(
+        query(collectionGroup(db, "collections"), where("isPublic", "==", true))
+      )
     );
   });
 
@@ -416,6 +421,21 @@ describe("journeyPoints: public read + create, no update/delete", () => {
     timestamp: new Date(),
   };
 
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(
+          context.firestore(),
+          "shortcodes",
+          SHORTCODE,
+          "journeyPoints",
+          "point1"
+        ),
+        pointData
+      );
+    });
+  });
+
   it("unauthenticated user can read journeyPoints collection", async () => {
     const db = testEnv.unauthenticatedContext().firestore();
     await assertSucceeds(
@@ -426,7 +446,10 @@ describe("journeyPoints: public read + create, no update/delete", () => {
   it("unauthenticated user can create a journeyPoint", async () => {
     const db = testEnv.unauthenticatedContext().firestore();
     await assertSucceeds(
-      addDoc(collection(db, "shortcodes", SHORTCODE, "journeyPoints"), pointData)
+      addDoc(
+        collection(db, "shortcodes", SHORTCODE, "journeyPoints"),
+        pointData
+      )
     );
   });
 
@@ -445,6 +468,56 @@ describe("journeyPoints: public read + create, no update/delete", () => {
     const db = testEnv.unauthenticatedContext().firestore();
     await assertFails(
       deleteDoc(doc(db, "shortcodes", SHORTCODE, "journeyPoints", "point1"))
+    );
+  });
+});
+
+describe("Instagram custom-auth handshake", () => {
+  const STATE = "state-doc";
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "instagramOAuthStates", STATE), {
+        requesterUid: ANON_UID,
+        status: "pending",
+      });
+      await setDoc(doc(db, "instagramAuthLinks", "instagram_123"), {
+        uid: ANON_UID,
+        instagramUserId: "123",
+      });
+      await setDoc(
+        doc(db, "instagramDataDeletionRequests", "confirmation-code"),
+        { status: "complete" }
+      );
+    });
+  });
+
+  it("lets the initiating session watch its exact state document", async () => {
+    await assertSucceeds(
+      getDoc(doc(anonCtx().firestore(), "instagramOAuthStates", STATE))
+    );
+  });
+
+  it("keeps OAuth state private from other and signed-out clients", async () => {
+    const other = testEnv.authenticatedContext("other-user").firestore();
+    const signedOut = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(other, "instagramOAuthStates", STATE)));
+    await assertFails(getDoc(doc(signedOut, "instagramOAuthStates", STATE)));
+  });
+
+  it("denies all client writes and identity-link reads", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(
+        doc(db, "instagramOAuthStates", STATE),
+        { requesterUid: ANON_UID, status: "complete" },
+        { merge: true }
+      )
+    );
+    await assertFails(getDoc(doc(db, "instagramAuthLinks", "instagram_123")));
+    await assertFails(
+      getDoc(doc(db, "instagramDataDeletionRequests", "confirmation-code"))
     );
   });
 });

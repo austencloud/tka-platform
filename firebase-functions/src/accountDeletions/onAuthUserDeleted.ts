@@ -42,7 +42,10 @@ async function writeTombstone(user: UserRecord): Promise<void> {
         uid: user.uid,
         email: user.email ?? null,
         displayName: user.displayName ?? null,
-        providerIds: user.providerData.map((p) => p.providerId),
+        providerIds: [
+          ...user.providerData.map((p) => p.providerId),
+          ...(user.customClaims?.instagram === true ? ["instagram.com"] : []),
+        ],
         accountCreatedAt: user.metadata.creationTime
           ? admin.firestore.Timestamp.fromDate(
               new Date(user.metadata.creationTime)
@@ -66,7 +69,23 @@ async function removePresence(uid: string): Promise<void> {
   await admin.database().ref(`presence/${uid}`).remove();
 }
 
-async function pingAdmins(user: UserRecord, reason: string | null): Promise<void> {
+async function removeInstagramAuthLinks(uid: string): Promise<void> {
+  const db = admin.firestore();
+  const links = await db
+    .collection("instagramAuthLinks")
+    .where("uid", "==", uid)
+    .get();
+  if (links.empty) return;
+
+  const batch = db.batch();
+  for (const link of links.docs) batch.delete(link.ref);
+  await batch.commit();
+}
+
+async function pingAdmins(
+  user: UserRecord,
+  reason: string | null
+): Promise<void> {
   const name = displayNameOf(user);
   const message = reason
     ? `${name} deleted their account — reason: "${reason}"`
@@ -88,7 +107,9 @@ export const onAuthUserDeleted = functionsV1.auth
     // (no email/name to remember) and would ping admins once per swept
     // account. Cascade cleanup below still runs — a guest can leave a
     // users/{uid} subtree and a presence node behind.
-    const isAnonymous = !user.providerData || user.providerData.length === 0;
+    const isAnonymous =
+      (!user.providerData || user.providerData.length === 0) &&
+      user.customClaims?.instagram !== true;
 
     let reason: string | null = null;
     if (!isAnonymous) {
@@ -109,10 +130,13 @@ export const onAuthUserDeleted = functionsV1.auth
       try {
         await writeTombstone(user);
       } catch (err) {
-        functionsV1.logger.error("onAuthUserDeleted: failed to write tombstone", {
-          uid: user.uid,
-          err,
-        });
+        functionsV1.logger.error(
+          "onAuthUserDeleted: failed to write tombstone",
+          {
+            uid: user.uid,
+            err,
+          }
+        );
       }
     }
 
@@ -132,6 +156,15 @@ export const onAuthUserDeleted = functionsV1.auth
         uid: user.uid,
         err,
       });
+    }
+
+    try {
+      await removeInstagramAuthLinks(user.uid);
+    } catch (err) {
+      functionsV1.logger.error(
+        "onAuthUserDeleted: failed to remove Instagram auth links",
+        { uid: user.uid, err }
+      );
     }
 
     if (!isAnonymous) {

@@ -1421,6 +1421,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Instagram custom-auth handshake. The random state document contains no
+    // provider token; its owner may watch only that exact document for callback
+    // completion. All writes and identity lookups stay Admin-SDK-only.
+    match /instagramOAuthStates/{state} {
+      allow read: if request.auth != null
+        && request.auth.uid == resource.data.requesterUid;
+      allow write: if false;
+    }
+
+    match /instagramAuthLinks/{linkId} {
+      allow read, write: if false;
+    }
+
+    match /instagramDataDeletionRequests/{confirmationCode} {
+      allow read, write: if false;
+    }
+
     // ============================================================================
     // ERROR TELEMETRY (Passive Error Reporting)
     // ============================================================================

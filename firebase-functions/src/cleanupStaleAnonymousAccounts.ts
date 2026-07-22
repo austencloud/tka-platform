@@ -8,8 +8,13 @@ const STALE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
  * An anonymous account is stale when it has NO linked provider credential and
  * its last sign-in (or creation) was more than 30 days before `nowMs`.
  */
-export function isStaleAnonymousAccount(user: UserRecord, nowMs: number): boolean {
-  const isAnonymous = !user.providerData || user.providerData.length === 0;
+export function isStaleAnonymousAccount(
+  user: UserRecord,
+  nowMs: number
+): boolean {
+  const isAnonymous =
+    (!user.providerData || user.providerData.length === 0) &&
+    user.customClaims?.instagram !== true;
   if (!isAnonymous) return false;
   const lastActive = Date.parse(
     user.metadata.lastSignInTime || user.metadata.creationTime
