@@ -7,10 +7,11 @@ export interface TnDElement {
   readonly iconPath: string;
   /** CIELAB-tuned opacity (0–1) for card interior tint; compensates for each color's perceptual distance from white */
   readonly cardTintOpacity: number;
-  /** Per-icon visual-size multiplier for badge display. The source PNGs differ
-   *  in aspect and internal density — the tall dense leaf reads much bigger than
-   *  the sparse sun rays or the wide cloud when fit into one square box. These
-   *  scales normalize perceived glyph size (tuned against the real assets). */
+  /** Per-icon visual-size multiplier for display. Now 1 for every element: the
+   *  normalization is baked into the assets themselves (`/images/elements/norm/*`
+   *  — each glyph trimmed, perceptually sized, and centered in a uniform square
+   *  with padding), so no consumer needs a per-icon fudge factor. Kept as a hook
+   *  for any future asset that can't be pre-normalized. */
   readonly iconScale: number;
 }
 
@@ -21,9 +22,9 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     element: "water",
     accentColor: "#3568a0",
     darkComplement: "#1a3a5e",
-    iconPath: "/images/elements/water-v2.png",
+    iconPath: "/images/elements/norm/water.png",
     cardTintOpacity: 0.25,
-    iconScale: 0.85,
+    iconScale: 1,
   },
   {
     familyId: "tog-same",
@@ -31,9 +32,9 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     element: "earth",
     accentColor: "#75A874",
     darkComplement: "#2a4a29",
-    iconPath: "/images/elements/earth-v2.png",
+    iconPath: "/images/elements/norm/earth.png",
     cardTintOpacity: 0.15,
-    iconScale: 0.9,
+    iconScale: 1,
   },
   {
     familyId: "quarter-same",
@@ -41,9 +42,9 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     element: "sun",
     accentColor: "#ffde17",
     darkComplement: "#7a6a00",
-    iconPath: "/images/elements/sun-v4.png",
+    iconPath: "/images/elements/norm/sun.png",
     cardTintOpacity: 0.09,
-    iconScale: 1.08,
+    iconScale: 1,
   },
   {
     familyId: "split-opp",
@@ -51,9 +52,9 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     element: "fire",
     accentColor: "#f2673a",
     darkComplement: "#6b1a0a",
-    iconPath: "/images/elements/fire-v2.png",
+    iconPath: "/images/elements/norm/fire.png",
     cardTintOpacity: 0.09,
-    iconScale: 0.88,
+    iconScale: 1,
   },
   {
     familyId: "tog-opp",
@@ -61,9 +62,9 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     element: "air",
     accentColor: "#bce4f7",
     darkComplement: "#3a6a8b",
-    iconPath: "/images/elements/air-v2.png",
+    iconPath: "/images/elements/norm/air.png",
     cardTintOpacity: 0.16,
-    iconScale: 0.98,
+    iconScale: 1,
   },
   {
     familyId: "quarter-opp",
@@ -71,9 +72,9 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     element: "moon",
     accentColor: "#6a4199",
     darkComplement: "#2a1540",
-    iconPath: "/images/elements/moon-v2.png",
+    iconPath: "/images/elements/norm/moon.png",
     cardTintOpacity: 0.09,
-    iconScale: 0.95,
+    iconScale: 1,
   },
 ] as const;
 
@@ -115,8 +116,16 @@ export function getTnDElement(familyId: string): TnDElement | null {
   return TND_ELEMENTS.find((t) => t.familyId === familyId) ?? null;
 }
 
+// Maps every superseded icon path to its current (normalized) equivalent so
+// lookups against data that stored an older path still resolve.
 const ICON_LEGACY: Readonly<Record<string, string>> = {
-  "/images/elements/sun-v2.png": "/images/elements/sun-v4.png",
+  "/images/elements/sun-v2.png": "/images/elements/norm/sun.png",
+  "/images/elements/sun-v4.png": "/images/elements/norm/sun.png",
+  "/images/elements/water-v2.png": "/images/elements/norm/water.png",
+  "/images/elements/earth-v2.png": "/images/elements/norm/earth.png",
+  "/images/elements/fire-v2.png": "/images/elements/norm/fire.png",
+  "/images/elements/air-v2.png": "/images/elements/norm/air.png",
+  "/images/elements/moon-v2.png": "/images/elements/norm/moon.png",
 };
 
 export function getTnDElementByIconPath(iconPath: string): TnDElement | null {
