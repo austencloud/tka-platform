@@ -16,7 +16,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 
   let { currentSettings, onSettingUpdate } = $props<{
     currentSettings: AppSettings;
@@ -64,11 +64,15 @@
     appEntryState.replay();
   }
 
-  function handleReplayGenerateTour() {
+  async function handleReplayGenerateTour() {
     hapticService?.trigger("selection");
     // The tour modal is mounted in GeneratePanel, so land on Create > Generate
     // before starting it; otherwise restart() flips isActive with nothing rendered.
-    navigationState.setCurrentModule("create", "generate");
+    // Must route through handleModuleChange (not navigationState.setCurrentModule):
+    // setCurrentModule only moves the nav highlight, leaving ui-state's activeModule
+    // — the actually-rendered module — on "settings", so GeneratePanel never mounts.
+    // Await it so the module has switched before the tour restarts.
+    await handleModuleChange("create", "generate");
     generateTourState.restart();
   }
 
