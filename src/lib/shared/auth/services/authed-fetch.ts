@@ -1,7 +1,7 @@
 import { auth } from "../firebase";
 
 /**
- * Fetch wrapper for authenticated admin endpoints.
+ * Fetch wrapper for authenticated first-party endpoints.
  *
  * Attaches the current user's Firebase ID token as a Bearer header. If the
  * server rejects with 401 (stale/expired cached token — the common cause of

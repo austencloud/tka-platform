@@ -1,4 +1,7 @@
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
+import { isWeb } from "$lib/shared/platform/services/platform-detector";
+import { dev } from "$app/environment";
 import { getUploadUrl, startMultipart, getPartUrl, completeMultipart, listParts, deleteByPrefix } from "./r2-presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
@@ -9,6 +12,16 @@ const PART_SIZE = 10 * 1024 * 1024;
 const MAX_CONCURRENT_PARTS = 3;
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 1000;
+const THUMBNAIL_UPLOAD_TIMEOUT_MS = 30_000;
+// A hung PUT (connection opens but no bytes move — flaky mobile, a stalled
+// proxy/Private Relay, a captive portal) never fires onload OR onerror, so
+// without this it blocks the awaiting save/upload forever. XHR's own
+// `timeout`/`ontimeout` is a TOTAL-duration limit that would also kill a slow
+// but healthy large multipart part on a weak connection, so instead we watch
+// upload *progress*: if no bytes move for this long, abort and let the retry
+// loop treat it as a transient network error.
+const UPLOAD_STALL_TIMEOUT_MS = 30_000;
+const UPLOAD_STALL_CHECK_MS = 5_000;
 const STORAGE_KEY = "tka-multipart-uploads";
 const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
@@ -78,53 +91,107 @@ function xhrPutOnce(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
+    // Single-settle guard: the stall watchdog aborts the xhr, which then also
+    // fires onerror — without this, both would try to reject the same promise.
+    let settled = false;
+    let lastProgressAt = Date.now();
+    let stallTimer: ReturnType<typeof setInterval> | null = null;
+    let abortHandler: (() => void) | null = null;
+    const stop = () => {
+      if (stallTimer !== null) {
+        clearInterval(stallTimer);
+        stallTimer = null;
+      }
+      if (abortHandler && options?.signal) {
+        options.signal.removeEventListener("abort", abortHandler);
+        abortHandler = null;
+      }
+    };
+    const done = <T>(fn: (v: T) => void, v: T) => {
+      if (settled) return;
+      settled = true;
+      stop();
+      fn(v);
+    };
+
     if (options?.signal) {
       if (options.signal.aborted) {
         reject(new DOMException("Upload aborted", "AbortError"));
         return;
       }
-      options.signal.addEventListener("abort", () => {
+      abortHandler = () => {
+        done(reject, new DOMException("Upload aborted", "AbortError"));
         xhr.abort();
-        reject(new DOMException("Upload aborted", "AbortError"));
-      });
+      };
+      options.signal.addEventListener("abort", abortHandler, { once: true });
     }
 
     xhr.open("PUT", url, true);
     xhr.setRequestHeader("Content-Type", contentType);
 
     xhr.upload.onprogress = (event) => {
+      lastProgressAt = Date.now();
       if (event.lengthComputable && options?.onProgress) {
         options.onProgress(event.loaded, event.total);
       }
+    };
+    xhr.upload.onload = () => {
+      lastProgressAt = Date.now();
     };
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         const etag = xhr.getResponseHeader("ETag") || "";
-        resolve({ etag });
+        done(resolve, { etag });
       } else {
-        reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
+        done(
+          reject,
+          new Error(
+            `Upload failed with status ${xhr.status}: ${xhr.statusText}`
+          )
+        );
       }
     };
 
     xhr.onerror = () => {
       let host = "unknown";
-      try { host = new URL(url).host; } catch { /* ignore */ }
+      try {
+        host = new URL(url).host;
+      } catch {
+        /* ignore */
+      }
+      // Do NOT assert CORS here: onerror fires for ANY network-level failure
+      // (offline, blocked by a privacy/ad extension, DNS, dropped connection),
+      // and asserting a misconfigured bucket sent real debugging down a dead end
+      // when the CORS policy was in fact correct. State the observable and stop.
       const err: Error & { isNetworkError?: boolean } = new Error(
-        `Network error during upload to ${host}. ` +
-        `This usually means CORS is not configured on the R2 bucket to allow PUT from ${location.origin}. ` +
-        `Check the bucket's CORS settings in the Cloudflare dashboard.`
+        `Network error uploading to ${host} from ${location.origin} ` +
+          `(offline, blocked by an extension/proxy, or CORS).`
       );
       err.isNetworkError = true;
-      reject(err);
-    };
-    xhr.ontimeout = () => {
-      const err: Error & { isNetworkError?: boolean } = new Error("Upload timed out");
-      err.isNetworkError = true;
-      reject(err);
+      done(reject, err);
     };
 
-    xhr.send(body);
+    stallTimer = setInterval(() => {
+      if (Date.now() - lastProgressAt > UPLOAD_STALL_TIMEOUT_MS) {
+        const err: Error & { isNetworkError?: boolean } = new Error(
+          `Upload stalled: no progress for ${Math.round(UPLOAD_STALL_TIMEOUT_MS / 1000)}s`
+        );
+        err.isNetworkError = true;
+        done(reject, err);
+        try {
+          xhr.abort();
+        } catch {
+          /* ignore */
+        }
+      }
+    }, UPLOAD_STALL_CHECK_MS);
+
+    try {
+      xhr.send(body);
+    } catch (error) {
+      done(reject, error instanceof Error ? error : new Error(String(error)));
+    }
   });
 }
 
@@ -159,6 +226,142 @@ async function xhrPut(
   }
 
   throw new Error("Upload failed after retries");
+}
+
+function createThumbnailAttemptSignal(parent?: AbortSignal): {
+  signal: AbortSignal;
+  dispose: () => void;
+} {
+  const controller = new AbortController();
+  const forwardParentAbort = () => {
+    controller.abort(parent?.reason);
+  };
+
+  if (parent?.aborted) {
+    forwardParentAbort();
+  } else {
+    parent?.addEventListener("abort", forwardParentAbort, { once: true });
+  }
+
+  const timeout = setTimeout(() => {
+    controller.abort(
+      new DOMException("Thumbnail upload timed out", "TimeoutError")
+    );
+  }, THUMBNAIL_UPLOAD_TIMEOUT_MS);
+
+  return {
+    signal: controller.signal,
+    dispose: () => {
+      clearTimeout(timeout);
+      parent?.removeEventListener("abort", forwardParentAbort);
+    },
+  };
+}
+
+function normalizeError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    const normalized = new Error(error.message);
+    if ("name" in error && typeof error.name === "string") {
+      normalized.name = error.name;
+    }
+    return normalized;
+  }
+  return new Error(String(error));
+}
+
+function abortError(signal?: AbortSignal): Error {
+  return signal?.reason !== undefined
+    ? normalizeError(signal.reason)
+    : new DOMException("Upload aborted", "AbortError");
+}
+
+function isVideoUploadResult(value: unknown): value is VideoUploadResult {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<VideoUploadResult>;
+  return typeof candidate.url === "string" && typeof candidate.key === "string";
+}
+
+async function uploadSequenceThumbnailFirstParty(
+  sequenceId: string,
+  thumbnailBlob: Blob,
+  contentType: string,
+  options?: UploadOptions
+): Promise<VideoUploadResult> {
+  const query = new URLSearchParams({ sequenceId });
+  const endpoint = `/api/thumbnail?${query.toString()}`;
+  let lastError: Error | null = null;
+
+  options?.onProgress?.(0);
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (options?.signal?.aborted) {
+      throw abortError(options.signal);
+    }
+
+    if (attempt > 0) {
+      const delay = RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    const attemptSignal = createThumbnailAttemptSignal(options?.signal);
+    try {
+      const response = await authedFetch(endpoint, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": contentType,
+        },
+        body: thumbnailBlob,
+        signal: attemptSignal.signal,
+      });
+
+      if (response.ok) {
+        const result: unknown = await response.json();
+        if (!isVideoUploadResult(result)) {
+          throw new Error("Thumbnail upload returned an invalid response");
+        }
+        options?.onProgress?.(100);
+        return result;
+      }
+
+      const detail = (await response.text()).trim().slice(0, 300);
+      const error = new Error(
+        `Thumbnail upload failed with status ${response.status}` +
+          (detail ? `: ${detail}` : "")
+      );
+      const isLastAttempt = attempt === MAX_RETRIES - 1;
+      if (response.status < 500 || isLastAttempt) {
+        throw error;
+      }
+      lastError = error;
+    } catch (error) {
+      if (options?.signal?.aborted) {
+        throw abortError(options.signal);
+      }
+
+      const normalized = normalizeError(error);
+      const timedOut =
+        attemptSignal.signal.aborted &&
+        normalizeError(attemptSignal.signal.reason).name === "TimeoutError";
+      const retryable = timedOut || normalized.name === "TypeError";
+      const isLastAttempt = attempt === MAX_RETRIES - 1;
+
+      if (!retryable || isLastAttempt) {
+        throw normalized;
+      }
+      lastError = normalized;
+    } finally {
+      attemptSignal.dispose();
+    }
+  }
+
+  throw lastError ?? new Error("Thumbnail upload failed after retries");
 }
 
 export class R2VideoUploader {
@@ -470,6 +673,19 @@ export class R2VideoUploader {
         webp: "image/webp",
       };
       const contentType = contentTypeMap[format] ?? "image/png";
+
+      // Vite's emulated R2 is local, so its production public URL would point
+      // at an object that exists only on this machine. Native shells have no
+      // Pages Worker at their app origin. Both keep the existing presigned path;
+      // deployed web clients stay same-origin through the Worker.
+      if (!dev && isWeb()) {
+        return await uploadSequenceThumbnailFirstParty(
+          sequenceId,
+          thumbnailBlob,
+          contentType,
+          options
+        );
+      }
 
       return await this.uploadSingle(
         fileName, contentType, thumbnailBlob, userId, "thumbnails", sequenceId, options

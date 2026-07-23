@@ -5,10 +5,15 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 
 [vars]
 PUBLIC_ENVIRONMENT = "production"
+R2_PUBLIC_URL = "https://pub-f5505ed75927471cb198c54336317370.r2.dev"
 
 [[r2_buckets]]
 binding = "QR_VIDEOS"
 bucket_name = "qr-videos"
+
+[[r2_buckets]]
+binding = "TKA_ASSETS"
+bucket_name = "tka-assets"
 
 # Native rate limiting (GA 2025-09, memcached-backed, shared across isolates).
 # Fixes security-hardening F6 (in-memory limiter reset per Worker isolate).

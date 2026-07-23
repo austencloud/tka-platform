@@ -36,6 +36,8 @@ declare global {
     interface Platform {
       env: {
         QR_VIDEOS: R2Bucket;
+        TKA_ASSETS: R2Bucket;
+        R2_PUBLIC_URL: string;
         // Native Cloudflare ratelimit bindings (see wrangler.toml [[ratelimits]]).
         // Optional: absent under `vite dev`, where withRateLimit falls back to
         // the in-memory window. Shape matches CfRateLimiter in rate-limiter.ts.
