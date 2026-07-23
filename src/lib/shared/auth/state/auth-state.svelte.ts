@@ -667,6 +667,16 @@ export async function signOut(): Promise<void> {
       // Not loaded - that's ok
     }
 
+    // Reset the post-save activation prompt (SP3) so a queued/visible prompt
+    // from the outgoing session doesn't bleed into whoever signs in next.
+    try {
+      const { postSaveActivation } =
+        await import("../../onboarding/state/post-save-activation-state.svelte");
+      postSaveActivation.reset();
+    } catch {
+      // Not loaded - that's ok
+    }
+
     // Mark user as offline in presence system before signing out
     try {
       const presenceService = getPresenceTracker();
