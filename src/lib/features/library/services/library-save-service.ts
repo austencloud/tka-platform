@@ -39,6 +39,7 @@ import type { R2VideoUploader } from "../../../shared/share/services/r2-video-up
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 import { markSequenceSyncStatus } from "./library-sync-retry";
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
+import { recordSavedSequenceId } from "$lib/shared/library/services/saved-sequence-ledger";
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
@@ -240,6 +241,12 @@ export class LibrarySaveService {
     }
 
     const sequenceId = sequenceToSave.id;
+
+    // Record this id under the current uid so a later guest→account upgrade
+    // captures EXACTLY this session's own drafts (saved-sequence-ledger),
+    // instead of sweeping every row out of the flat, never-cleared Dexie store
+    // (which could import a prior user's library on a shared device).
+    recordSavedSequenceId(authState.effectiveUserId, sequenceId);
 
     // Now that the local write has landed (persisted === true past the throw
     // above), it's honest to tell a public-visibility save it was kept private.

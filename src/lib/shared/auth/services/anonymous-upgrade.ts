@@ -25,6 +25,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import * as dexiePersistence from "$lib/shared/persistence/services/dexie-persistence-service";
+import { getSavedSequenceIds } from "$lib/shared/library/services/saved-sequence-ledger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export type UpgradeStatus = "linked" | "collision-signed-in";
@@ -62,34 +63,29 @@ function isCollision(error: unknown): error is AuthError {
 /**
  * Read the anon user's saved sequences before we risk losing the session.
  *
- * Every caller here passes the uid of a session that is CURRENTLY anonymous
- * (`anon.uid` / a guest's `anonUid`), so the drafts worth capturing live in
- * local Dexie, not Firestore: SP1 made Dexie authoritative for guest saves,
- * so a fresh guest save may never have reached
- * `library-repository.getUserSequences` (Firestore) at all. Dexie is a flat,
- * single-device store — it is NOT keyed by uid — so `getAllSequences()`
- * returns every row on this device regardless of which guest uid wrote it.
+ * The drafts worth capturing live in local Dexie, not Firestore: SP1 made
+ * Dexie authoritative for guest saves, so a fresh guest save may never have
+ * reached `library-repository.getUserSequences` (Firestore) at all. Firestore
+ * is intentionally NOT consulted — a genuinely anonymous session cannot own a
+ * Firestore library doc (rules gate writes to full accounts), so it would only
+ * return [] and cost a round trip.
  *
- * Shared-device edge case: if a prior guest on this device also left rows
- * in Dexie (e.g. they abandoned the upgrade flow, or this is a shared/public
- * machine), those rows get swept up and offered for import too. This is
- * intentionally permissive rather than silently dropping data — worst case
- * the user is offered to import a stray local draft that isn't theirs, which
- * they can decline (`cancelAnonymousImport`). importDrafts()'s
- * ALREADY_EXISTS swallow (content-hash dedup in saveSequence) also makes
- * capturing the same rows twice across repeated upgrade attempts a no-op on
- * the second pass, so over-capturing here is safe by construction.
- *
- * Firestore is intentionally NOT consulted here: a genuinely anonymous
- * session cannot own a Firestore library doc (library rules gate writes to
- * full accounts), so a Firestore read would only ever return an empty array
- * for these callers and cost a network round trip for nothing.
+ * Dexie is a flat, single-device store NOT keyed by uid, and it is never
+ * cleared on sign-out — so `getAllSequences()` alone would return a PRIOR
+ * user's rows too, and on a collision-signin into a different account those
+ * could be imported into a stranger's library. To scope correctly, we filter
+ * to the ids THIS uid recorded when it saved (saved-sequence-ledger), so only
+ * the current guest's own drafts are captured. An empty ledger → capture
+ * nothing (safe): no leak of another user's data.
  */
 export async function captureAnonymousDrafts(
-  _anonUid: string
+  anonUid: string
 ): Promise<AnonymousDraft[]> {
   try {
-    return await dexiePersistence.getAllSequences();
+    const mine = new Set(getSavedSequenceIds(anonUid));
+    if (mine.size === 0) return [];
+    const all = await dexiePersistence.getAllSequences();
+    return all.filter((s) => !!s.id && mine.has(s.id));
   } catch {
     return [];
   }
