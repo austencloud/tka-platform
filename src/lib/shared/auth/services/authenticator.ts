@@ -32,6 +32,7 @@ import {
   captureAnonymousDrafts,
   notifyUpgradeSignup,
   upgradeAnonymousWithFacebook,
+  upgradeAnonymousWithGoogleCredential,
 } from "./anonymous-upgrade";
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 import { clearPendingLink, stashPendingLink } from "./pending-credential-link";
@@ -112,10 +113,28 @@ export async function signInWithGoogle(): Promise<void> {
   recordLastAuthMethod("google");
 }
 
+/**
+ * Called from One Tap / FedCM (GoogleOneTap.svelte). If a guest is already
+ * signed in anonymously, this must link the credential onto that session
+ * (preserving their uid + saved sequences) rather than a plain sign-in, which
+ * would abandon the anonymous account. Mirrors the popup upgrade path's
+ * collision handling in anonymous-upgrade.ts.
+ */
 export async function signInWithGoogleCredential(
   idToken: string
 ): Promise<void> {
   const credential = GoogleAuthProvider.credential(idToken);
+
+  const authInstance = await getAuthInstance();
+  const anon = authInstance.currentUser;
+  if (anon?.isAnonymous) {
+    const result = await upgradeAnonymousWithGoogleCredential(anon, credential);
+    if (result.status === "collision-signed-in") {
+      promptAnonymousImport(result.importable ?? []);
+    }
+    return;
+  }
+
   await signInWithCredential(auth, credential);
   recordLastAuthMethod("google");
 }
