@@ -49,6 +49,30 @@ describe("calculateGridLayout workspace column selection", () => {
     expect(layout.columns).toBe(8);
     expect(layout.rows).toBe(5);
   });
+
+  it("keeps Assemble pictographs readable in a narrow, shallow workspace", () => {
+    const defaultLayout = calculateGridLayout(5, 295, 120, null);
+    const assembleLayout = calculateGridLayout(5, 295, 120, null, {
+      narrowMaxColumns: 2,
+      preferWidthSizingOnNarrow: true,
+    });
+
+    expect(assembleLayout.columns).toBe(2);
+    expect(assembleLayout.rows).toBe(3);
+    expect(assembleLayout.cellSize).toBeGreaterThanOrEqual(88);
+    expect(assembleLayout.cellSize).toBeGreaterThan(defaultLayout.cellSize);
+  });
+
+  it("caps LOOP alignment when Assemble needs larger mobile cells", () => {
+    const layout = calculateGridLayout(8, 320, 180, null, {
+      manualColumnCount: 4,
+      narrowMaxColumns: 2,
+      preferWidthSizingOnNarrow: true,
+    });
+
+    expect(layout.columns).toBe(2);
+    expect(layout.rows).toBe(4);
+  });
 });
 
 describe("WorkspaceGrid mandala placement", () => {

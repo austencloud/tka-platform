@@ -29,10 +29,18 @@ export interface GridSizingConfig {
   columnBreakpoint?: number;
   isSideBySideLayout?: boolean;
   manualColumnCount?: number | null;
+  /** Cap step columns when the grid is narrower than columnBreakpoint. */
+  narrowMaxColumns?: number | null;
+  /** Let a narrow grid scroll vertically instead of shrinking cells to its height. */
+  preferWidthSizingOnNarrow?: boolean;
 }
 
-const DEFAULT_SIZING: Omit<Required<GridSizingConfig>, "manualColumnCount"> & {
+const DEFAULT_SIZING: Omit<
+  Required<GridSizingConfig>,
+  "manualColumnCount" | "narrowMaxColumns"
+> & {
   manualColumnCount: number | null;
+  narrowMaxColumns: number | null;
 } = {
   minCellSize: 40, // Reduced from 50px to allow fitting more rows on small screens
   maxCellSize: 200,
@@ -42,6 +50,8 @@ const DEFAULT_SIZING: Omit<Required<GridSizingConfig>, "manualColumnCount"> & {
   columnBreakpoint: 650,
   isSideBySideLayout: false,
   manualColumnCount: null,
+  narrowMaxColumns: null,
+  preferWidthSizingOnNarrow: false,
 };
 
 /**
@@ -64,8 +74,17 @@ export function calculateGridLayout(
   // sizing and a higher cell cap so pictographs are clearly visible. On mobile the
   // workspace container is short, so height-based sizing makes cells tiny. Width-based
   // sizing lets them fill the available space while the scroll container handles overflow.
-  const isNarrowContainer = containerWidth > 0 && containerWidth < 650;
+  const isNarrowContainer =
+    containerWidth > 0 && containerWidth < sizing.columnBreakpoint;
   const isMobileFewSteps = isNarrowContainer && stepCount <= 2;
+  const useWidthSizing =
+    isMobileFewSteps || (isNarrowContainer && sizing.preferWidthSizingOnNarrow);
+  const narrowMaxColumns =
+    isNarrowContainer &&
+    sizing.narrowMaxColumns !== null &&
+    sizing.narrowMaxColumns > 0
+      ? Math.max(1, Math.floor(sizing.narrowMaxColumns))
+      : null;
   if (isMobileFewSteps) {
     sizing.maxCellSize = Math.max(sizing.maxCellSize, 400);
   }
@@ -80,7 +99,7 @@ export function calculateGridLayout(
       const availableWidth = containerWidth * sizing.widthPaddingRatio;
       const availableHeight = containerHeight * sizing.heightPaddingRatio;
 
-      if (isMobileFewSteps) {
+      if (useWidthSizing) {
         // Mobile: size by width only (65% of container), ignore height constraint.
         // The scroll container handles overflow if the cell is taller than the workspace.
         cellSize = Math.max(
@@ -129,9 +148,10 @@ export function calculateGridLayout(
         scrollContainerPadding;
       const maxCellWidth = availableWidth / totalColumns;
 
-      if (isMobileFewSteps) {
-        // A short mobile workspace may scroll, but its one or two pictographs
-        // should still use the available width instead of shrinking to its height.
+      if (useWidthSizing) {
+        // A short mobile workspace may scroll. When readability owns the
+        // sizing decision, use available width instead of crushing cells to
+        // fit the workspace's shallow height.
         cellSize = Math.max(
           sizing.minCellSize,
           Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
@@ -159,20 +179,24 @@ export function calculateGridLayout(
   }
 
   if (sizing.manualColumnCount !== null && sizing.manualColumnCount > 0) {
-    // Explicit LOOP alignment stays authoritative. Narrow containers cap it at
-    // four step columns so the grid cannot spill past the workspace edge.
-    const mobileCap = isNarrowContainer ? 4 : 8;
+    // Preserve explicit LOOP alignment unless the caller supplied a tighter
+    // readability cap for a narrow workspace.
+    const mobileCap = isNarrowContainer ? (narrowMaxColumns ?? 4) : 8;
     return calculateCandidate(Math.min(sizing.manualColumnCount, mobileCap));
   }
 
-  const wideMaxColumns = getMaxColumnsForBeatCount(
-    stepCount,
-    sizing.isSideBySideLayout,
-    containerWidth
+  const wideMaxColumns = Math.min(
+    getMaxColumnsForBeatCount(
+      stepCount,
+      sizing.isSideBySideLayout,
+      containerWidth
+    ),
+    narrowMaxColumns ?? Number.POSITIVE_INFINITY
   );
   const standardMaxColumns = Math.min(
     getStepFrameLayout(stepCount, false).columns,
-    4
+    4,
+    narrowMaxColumns ?? Number.POSITIVE_INFINITY
   );
   const standardLayout = calculateCandidate(standardMaxColumns);
 

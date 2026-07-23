@@ -53,7 +53,9 @@
   } = $props();
 
   // Derive computed values from context
-  const showViewSequenceButton = $derived(CreateModuleState.canShowActionButtons());
+  const showViewSequenceButton = $derived(
+    CreateModuleState.canShowActionButtons()
+  );
   const showSequenceActions = $derived(
     CreateModuleState.canShowSequenceActionsButton()
   );
@@ -103,72 +105,80 @@
 </script>
 
 {#if visible}
-  <div class="button-panel" transition:fade={{ duration: 200 }}>
-    <!-- LEFT ZONE: order/membership from the shared layout -->
-    <div class="left-zone">
-      {#each leftButtons as btn (btn.id)}
-        {#if btn.id === "undo"}
-          <div transition:presenceTransition>
-            <UndoButton {CreateModuleState} />
-          </div>
-          {#if isAssembleTab}
+  <div class="button-panel-container">
+    <div class="button-panel" transition:fade={{ duration: 200 }}>
+      <!-- LEFT ZONE: order/membership from the shared layout -->
+      <div class="left-zone">
+        {#each leftButtons as btn (btn.id)}
+          {#if btn.id === "undo"}
             <div transition:presenceTransition>
-              <UndoButton {CreateModuleState} direction="redo" />
+              <UndoButton {CreateModuleState} />
             </div>
-          {/if}
-        {:else if btn.id === "clear" && canClearSequence && onClearSequence}
-          <div transition:presenceTransition>
-            <ClearSequencePanelButton onclick={onClearSequence} />
-          </div>
-        {/if}
-      {/each}
-    </div>
-
-    <!-- CENTER ZONE: Main action button (Export Panel) -->
-    <div class="center-zone-wrapper">
-      {#key centerZoneButtonCount()}
-        <div
-          class="center-zone"
-          out:fade={{ duration: 150 }}
-          in:fade={{ duration: 150, delay: 150 }}
-        >
-          {#each centerButtons as btn (btn.id)}
-            {#if btn.id === "view" && showViewSequenceButton && onViewSequence}
-              <div>
-                <ViewSequenceButton onclick={onViewSequence} isActive={isExportPanelOpen} />
+            {#if isAssembleTab}
+              <div transition:presenceTransition>
+                <UndoButton {CreateModuleState} direction="redo" />
               </div>
             {/if}
-          {/each}
-        </div>
-      {/key}
-    </div>
+          {:else if btn.id === "clear" && canClearSequence && onClearSequence}
+            <div transition:presenceTransition>
+              <ClearSequencePanelButton onclick={onClearSequence} />
+            </div>
+          {/if}
+        {/each}
+      </div>
 
-    <!-- RIGHT ZONE: order/membership from the shared layout -->
-    <div class="right-zone">
-      {#each rightButtons as btn (btn.id)}
-        {#if btn.id === "sequence-actions" && showSequenceActions && onSequenceActionsClick}
-          <div transition:presenceTransition>
-            <SequenceActionsButton onclick={onSequenceActionsClick} />
+      <!-- CENTER ZONE: Main action button (Export Panel) -->
+      <div class="center-zone-wrapper">
+        {#key centerZoneButtonCount()}
+          <div
+            class="center-zone"
+            out:fade={{ duration: 150 }}
+            in:fade={{ duration: 150, delay: 150 }}
+          >
+            {#each centerButtons as btn (btn.id)}
+              {#if btn.id === "view" && showViewSequenceButton && onViewSequence}
+                <div>
+                  <ViewSequenceButton
+                    onclick={onViewSequence}
+                    isActive={isExportPanelOpen}
+                  />
+                </div>
+              {/if}
+            {/each}
           </div>
-        {:else if btn.id === "save" && canSaveToLibrary && onSaveToLibrary}
-          <div transition:presenceTransition>
-            <SaveToLibraryButton
-              sequence={currentSequence}
-              onclick={onSaveToLibrary}
-            />
-          </div>
-        {/if}
-      {/each}
+        {/key}
+      </div>
+
+      <!-- RIGHT ZONE: order/membership from the shared layout -->
+      <div class="right-zone">
+        {#each rightButtons as btn (btn.id)}
+          {#if btn.id === "sequence-actions" && showSequenceActions && onSequenceActionsClick}
+            <div transition:presenceTransition>
+              <SequenceActionsButton onclick={onSequenceActionsClick} />
+            </div>
+          {:else if btn.id === "save" && canSaveToLibrary && onSaveToLibrary}
+            <div transition:presenceTransition>
+              <SaveToLibraryButton
+                sequence={currentSequence}
+                onclick={onSaveToLibrary}
+              />
+            </div>
+          {/if}
+        {/each}
+      </div>
     </div>
   </div>
 {/if}
 
 <style>
-  .button-panel {
-    /* Enable container queries for responsive spacing */
+  .button-panel-container {
     container-type: inline-size;
     container-name: button-panel;
+    width: 100%;
+    pointer-events: none;
+  }
 
+  .button-panel {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -190,7 +200,7 @@
     align-items: center;
     gap: 12px; /* Slightly reduced for better mobile fit */
     flex-shrink: 0; /* Don't shrink */
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   /* CENTER ZONE WRAPPER: Maintains layout space during transitions */
@@ -213,7 +223,7 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   /* RIGHT ZONE: Tools + Save at right edge */
@@ -222,7 +232,7 @@
     align-items: center;
     gap: 12px; /* Slightly reduced for better mobile fit */
     flex-shrink: 0; /* Don't shrink */
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   /* Ensure transition wrappers don't interfere with layout */
@@ -230,6 +240,7 @@
   .center-zone > div,
   .right-zone > div {
     display: inline-block;
+    pointer-events: auto;
   }
 
   /* Remove mobile tap highlight (blue selection box) */
@@ -333,5 +344,81 @@
     }
   }
 
+  /* Assemble can show six actions at once. On a phone, give each semantic
+     zone the exact fraction of the rail it owns (3 / 1 / 2 buttons) and keep
+     the center action in flow. The reserved tracks prevent controls from
+     jumping when Clear, View, Tools, or Save arrive. */
+  @container button-panel (max-width: 480px) {
+    .button-panel {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 3fr)
+        minmax(0, 1fr)
+        minmax(0, 2fr);
+      align-items: center;
+      column-gap: 4px;
+      padding: 6px;
+    }
 
+    .left-zone,
+    .right-zone {
+      width: 100%;
+      min-width: 0;
+      gap: 0;
+    }
+
+    .left-zone {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .right-zone {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .center-zone-wrapper {
+      min-width: 0;
+      min-height: var(--min-touch-target, 44px);
+      flex-grow: 0;
+    }
+
+    .center-zone {
+      position: static;
+      width: 100%;
+      min-width: 0;
+      gap: 0;
+      transform: none;
+    }
+
+    .left-zone > div,
+    .center-zone > div,
+    .right-zone > div {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+    }
+  }
+
+  @container button-panel (max-width: 307px) {
+    .button-panel {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+      grid-template-areas:
+        "left left"
+        "center right";
+      row-gap: 4px;
+    }
+
+    .left-zone {
+      grid-area: left;
+    }
+
+    .center-zone-wrapper {
+      grid-area: center;
+    }
+
+    .right-zone {
+      grid-area: right;
+    }
+  }
 </style>

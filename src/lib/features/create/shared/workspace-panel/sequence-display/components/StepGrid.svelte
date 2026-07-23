@@ -3,7 +3,7 @@
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -121,6 +121,13 @@
 
   // Computed grid layout - must use $derived.by for reactive recalculation
   const gridLayout = $derived.by(() => {
+    const isNarrowAssemble =
+      activeMode === "assemble" && containerWidth > 0 && containerWidth < 650;
+    const narrowMaxColumns = isNarrowAssemble
+      ? containerWidth <= 360
+        ? 2
+        : 3
+      : null;
     const layout = calculateGridLayout(
       steps.length,
       Math.max(0, containerWidth - 2 * POP_RESERVE),
@@ -130,6 +137,8 @@
         isSideBySideLayout,
         heightSizingRowThreshold,
         manualColumnCount,
+        narrowMaxColumns,
+        preferWidthSizingOnNarrow: isNarrowAssemble,
       }
     );
     return layout;
@@ -138,9 +147,7 @@
   // Timeline mode: beats per row matches the grid layout's column count so
   // swing/duration sequences show the same number of beats per row as uniform
   // sequences. Manual column count (from LOOP alignment) overrides.
-  const timelineBeatsPerRow = $derived(
-    manualColumnCount ?? gridLayout.columns
-  );
+  const timelineBeatsPerRow = $derived(manualColumnCount ?? gridLayout.columns);
   const timelineRows = $derived.by(() => {
     if (!isTimelineMode) return [];
     return calculateTimelineRowsByBeatCount(steps, timelineBeatsPerRow);
@@ -461,10 +468,7 @@
   }
 </script>
 
-<div
-  class="step-grid-container"
-  bind:this={containerRef}
->
+<div class="step-grid-container" bind:this={containerRef}>
   {#if steps.length === 0 && (!startPosition || startPosition.isBlank)}
     <div class="empty-grid-message">
       <span class="empty-icon">📋</span>
