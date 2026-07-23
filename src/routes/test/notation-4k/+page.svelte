@@ -1,6 +1,6 @@
 <script lang="ts">
   import MarketingChrome from "$lib/shared/landing/components/MarketingChrome.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import NotationLayoutStudy from "./_components/NotationLayoutStudy.svelte";

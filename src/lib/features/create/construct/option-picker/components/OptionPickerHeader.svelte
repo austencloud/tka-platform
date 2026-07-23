@@ -18,7 +18,7 @@
   the 0 buttons. Both were chrome that restated a control already on screen.
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { growFade, popIn, flyFade } from "$lib/shared/transitions/motion";

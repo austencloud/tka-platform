@@ -32,7 +32,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { createSelfLoadedRigBinding } from "$lib/features/stage/locomotion/motion-matching/self-loaded-rig-binding";
   import { MmLocomotionController } from "$lib/features/stage/locomotion/motion-matching/mm-locomotion-controller";
   import type { RigBinding } from "$lib/features/stage/locomotion/motion-matching/rig-binding";

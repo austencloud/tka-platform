@@ -8,7 +8,7 @@
   import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
   import AdminSearchBox from "$lib/shared/admin/components/AdminSearchBox.svelte";
   import AdminActionButton from "$lib/shared/admin/components/AdminActionButton.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import RecentScansList from "./RecentScansList.svelte";
   import ScanCardPeek from "./ScanCardPeek.svelte";

@@ -52,7 +52,7 @@
     SHOP_PROP_OPTIONS,
     DEFAULT_SHOP_PROP,
   } from "$lib/features/store/domain/shop-prop-options";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import {

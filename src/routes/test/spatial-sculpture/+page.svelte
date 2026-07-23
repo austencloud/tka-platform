@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import SpatialInspector from "./SpatialInspector.svelte";

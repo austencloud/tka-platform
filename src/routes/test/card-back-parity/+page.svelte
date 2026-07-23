@@ -13,7 +13,7 @@
   import { getCardAssetBundle } from "$lib/shared/render/services/get-card-asset-bundle";
   import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
   import { onMount } from "svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import CardParityViewer from "$lib/shared/parity/CardParityViewer.svelte";
   import { diff, normalizeToCanvas, AA_TOLERANCE } from "$lib/shared/parity/image-diff";
   import type { ParityRun, ParityRow, ParityVerdict } from "$lib/shared/parity/parity-types";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import {

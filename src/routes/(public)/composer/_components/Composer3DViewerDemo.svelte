@@ -32,7 +32,7 @@
   } from "$lib/shared/foundation/domain/models/sequence-data";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   /** The per-visit demo sequence, provided by the page (no baked canon). */
   let { sequence: sourceSequence }: { sequence: SequenceData } = $props();

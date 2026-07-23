@@ -43,7 +43,7 @@
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
   import { LEVEL1_READER_CONFIG, type GuideReaderConfig } from "../_data/guide-reader-config";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     guideFramePrefs,
     setGuideFrame,

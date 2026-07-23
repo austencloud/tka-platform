@@ -9,7 +9,7 @@
   //                   real production TKA 1/2/3 + Book decks, zero Firestore round-trip.
   // On the live /composer the grid/chips bind to a BrowseEngine; here the chips
   // are a visual tease (local state) so the section evaluates signed-out.
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import CollectionCard from "$lib/features/browse/collections/components/CollectionCard.svelte";
   import {

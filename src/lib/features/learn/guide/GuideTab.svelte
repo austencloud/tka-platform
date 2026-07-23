@@ -13,7 +13,7 @@
   import GuideReader from "../../../../routes/(public)/guide/level-1/_components/GuideReader.svelte";
   import { LEVEL1_READER_CONFIG } from "../../../../routes/(public)/guide/level-1/_data/guide-reader-config";
   import { LEVEL2_READER_CONFIG } from "../../../../routes/(public)/guide/level-2/_data/guide-reader-config";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   type Level = "1" | "2";
   const STORE_KEY = "guide-active-level";

@@ -12,7 +12,7 @@
   which is out of scope for this feature's directory.)
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SpinnerMode } from "../domain/models/spinner-models";
 
   let {

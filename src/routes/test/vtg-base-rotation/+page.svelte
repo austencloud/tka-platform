@@ -17,7 +17,7 @@
   import { TND_TURNS_RATIO_MAP } from "$lib/features/choreo-card/domain/tnd-element";
   import { bakeMandalaClips, type BakeJob } from "$lib/features/lab/vtg-lab/services/bake-mandala-clips";
   import { EFFORTS, type EffortId } from "$lib/shared/effort/domain/effort-types";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import SeamlessLoopVideo from "$lib/features/lab/vtg-lab/components/SeamlessLoopVideo.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 

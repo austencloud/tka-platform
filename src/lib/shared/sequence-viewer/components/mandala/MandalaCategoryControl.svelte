@@ -20,7 +20,7 @@
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
   import { PRESET_COLORS } from "$lib/shared/mandala/domain/mandala-palette";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   /** "download" holds the export config (loops / fidelity / fps + estimate). */
   export type MandalaCategory =

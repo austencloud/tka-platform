@@ -12,7 +12,7 @@
   PracticeConfigPopover for the full ramp form (so the bar height never grows).
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PracticeConfigPopover from "./PracticeConfigPopover.svelte";
   import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
 

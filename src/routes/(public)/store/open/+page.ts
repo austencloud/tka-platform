@@ -2,6 +2,11 @@ import { redirect } from "@sveltejs/kit";
 import { safeInternalPath } from "$lib/shared/auth/services/escape-target";
 import type { PageLoad } from "./$types";
 
+// The destination arrives in the request query, which does not exist during
+// prerendering. Keep this bridge in the server manifest so every request gets
+// its own validated redirect.
+export const prerender = false;
+
 /**
  * App deep-link bridge.
  *

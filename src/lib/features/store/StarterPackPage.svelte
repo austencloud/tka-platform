@@ -17,7 +17,7 @@
   import SleeveArt from "./components/SleeveArt.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PropPicker from "./components/PropPicker.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import { formatUsd } from "./domain/preorder-pricing";

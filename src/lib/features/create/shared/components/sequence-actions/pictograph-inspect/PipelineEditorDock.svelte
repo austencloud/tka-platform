@@ -16,7 +16,7 @@
   import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { SelectedArrowContext } from "../../../services/arrow-adjustment-orchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";

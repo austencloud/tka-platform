@@ -23,7 +23,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { MediaSpotlight, type MediaItem as SpotlightMediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
   import { TagCreatorModal, TagPickerPanel } from "@austencloud/media-tagging-ui";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import GalleryGrid from "./GalleryGrid.svelte";
   import CaptureProgress from "./CaptureProgress.svelte";
   import UploadProgressCard from "./UploadProgress.svelte";

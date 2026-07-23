@@ -81,20 +81,17 @@ const config = {
     prerender: {
       crawl: true,
       handleHttpError: ({ path, message, status }) => {
-        // PWA splash screens and icons may not exist yet
-        if (path.startsWith("/pwa/")) return;
-        // Generated/synced asset dirs (notation reference images, thumbnail
-        // caches) are populated from cloud during release and are absent from a
-        // clean CI checkout, so a missing one must not fail the whole build.
+        // These generated or synced asset directories can be absent from a
+        // clean CI checkout. Ignore only missing assets; a broken page or any
+        // server error must still stop the build.
         if (
-          path.startsWith("/notation/") ||
-          path.startsWith("/thumbnails/") ||
-          path.startsWith("/Explore_thumbnails/")
+          status === 404 &&
+          (path.startsWith("/pwa/") ||
+            path.startsWith("/notation/letters/") ||
+            path.startsWith("/thumbnails/") ||
+            path.startsWith("/Explore_thumbnails/"))
         )
           return;
-        // SPA routes hit during crawl return 500 because they need client-side JS —
-        // the adapter-static fallback handles them at runtime
-        if (status === 500) return;
         throw new Error(message);
       },
       handleMissingId: ({ path, id }) => {

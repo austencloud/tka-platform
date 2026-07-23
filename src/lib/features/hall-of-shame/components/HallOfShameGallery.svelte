@@ -23,7 +23,7 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
   import ShameSequenceCard from "./ShameSequenceCard.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // State

@@ -15,11 +15,11 @@
   can be hardcoded back into DEFAULTS below.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
+  import { onMount } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "$lib/shared/shape-matrix/components/MandalaHeroLayer.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { buildYutaCapSequence } from "./yuta-cap-sequence";
   import { setPerHand } from "$lib/shared/animation-engine/services/tip-effect-resolver";
   import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
@@ -163,10 +163,12 @@
     backgroundAlpha: 0,
   });
 
-  // ?tune reveals the rig. Prerendered HTML has no params, so visitors (and
-  // the SSR pass) never see the panel; it appears after hydration for the URL
-  // that asks for it.
-  const tunable = $derived(page.url.searchParams.has("tune"));
+  // ?tune reveals the rig after hydration. Reading a request query while this
+  // public page is prerendering would prevent the page from being emitted.
+  let tunable = $state(false);
+  onMount(() => {
+    tunable = new URLSearchParams(window.location.search).has("tune");
+  });
 
   const EFFORT_OPTIONS = (
     ["linear", "glide", "dab", "press", "punch", "elastic", "bounce", "anticipation"] as EffortId[]

@@ -16,7 +16,7 @@
 	import { scoreNotation, type ScorecardReport, type BeatScore } from '../validation/scorecard';
 	import type { GridLocation } from '../domain/models';
 	import { MotionType, RotationDirection, Orientation } from '../domain/tka-enums';
-	import SegmentedControl from '$lib/shared/3d/components/controls/SegmentedControl.svelte';
+	import SegmentedControl from '$lib/shared/ui/components/SegmentedControl.svelte';
 	import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
 
 	interface Props {

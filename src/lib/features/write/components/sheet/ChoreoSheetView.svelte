@@ -31,7 +31,7 @@
     SheetPacking,
   } from "../../domain/types/choreo-sheet";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
   import ActPlayer from "./ActPlayer.svelte";

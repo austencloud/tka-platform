@@ -4,7 +4,7 @@
   chips stamp + auto-highlight by derivation.
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import RhythmGlyph from "./RhythmGlyph.svelte";
   import PatternStepStrip from "./PatternStepStrip.svelte";

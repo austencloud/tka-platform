@@ -14,7 +14,7 @@
   import { onMount } from "svelte";
   import LookCell from "../tunnel-looks/LookCell.svelte";
   import PerformerRing from "$lib/shared/sequence-viewer/tunnel/PerformerRing.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import {
     DEFAULT_CONFIG,

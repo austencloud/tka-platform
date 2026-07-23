@@ -20,7 +20,7 @@
 		matrixFiltersForSize,
 		type MatrixSize,
 	} from "$lib/shared/shape-matrix/domain/matrix-size-preset";
-	import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+	import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 	import { createPoiLegalVerdicts } from "$lib/features/levels/poi-lab/services/poi-legal-verdicts.svelte";
 
 	let data = $state<ShapeMatrixData | null>(null);

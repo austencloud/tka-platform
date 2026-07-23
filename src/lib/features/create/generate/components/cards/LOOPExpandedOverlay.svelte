@@ -28,7 +28,7 @@ Animates forward in z-axis and expands to fill the container space
   import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
   import { LOOPType } from "../../circular/domain/models/circular-models";
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LoopBlockTimeline from "$lib/shared/components/LoopBlockTimeline.svelte";
 
   type RhythmValue = {

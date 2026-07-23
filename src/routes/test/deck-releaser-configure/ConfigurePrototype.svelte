@@ -13,7 +13,7 @@
   import TnDTurnMatrix from "$lib/features/choreo-card/components/TnDTurnMatrix.svelte";
   import TnDFamilyCards from "$lib/features/choreo-card/components/deck-releaser/TnDFamilyCards.svelte";
   import TransformPanel from "$lib/features/choreo-card/components/deck-releaser/TransformPanel.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LoopComposeBoard from "$lib/features/choreo-card/components/deck-releaser/LoopComposeBoard.svelte";
   import type { TnDFamilyOption, TnDTurnPatternOption } from "$lib/features/choreo-card/services/deck-composer";
   import type { ResolvedReversalPattern } from "$lib/features/choreo-card/domain/reversal-transform";

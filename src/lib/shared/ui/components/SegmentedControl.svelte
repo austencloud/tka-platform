@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends string">
   /**
-   * SegmentedControl - iOS-style segmented button group
+   * Generic segmented button group shared across app and public surfaces.
    * Uses --theme-* and --prop-* CSS variables for consistent theming.
    *
    * The option LIST may change at runtime (the construct picker swaps the turn

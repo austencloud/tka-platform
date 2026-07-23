@@ -16,7 +16,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PoiValidationResult } from "../domain/poi-models";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
   // State

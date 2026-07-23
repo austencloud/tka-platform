@@ -9,7 +9,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import { getPromoOrchestrator } from "$lib/features/promo-generator/get-promo-orchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { PromoOrchestrator } from "../services/promo-orchestrator";
   import type {

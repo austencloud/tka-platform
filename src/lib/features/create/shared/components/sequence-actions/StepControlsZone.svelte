@@ -17,7 +17,7 @@
   import PropControlPair from "./PropControlPair.svelte";
   import PropTurnsControl from "./PropTurnsControl.svelte";
   import PropTypeRow from "./PropTypeRow.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { TargetHand } from "$lib/shared/create/domain/panel-types";

@@ -54,7 +54,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     StartPositionPreset,
   } from "../../shared/domain/start-position-presets";
   import StyleExpandPanel from "../StyleExpandPanel.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
   import PositionSection from "$lib/shared/components/position-picker/PositionSection.svelte";
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";

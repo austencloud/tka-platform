@@ -12,7 +12,7 @@
   LOOP type doesn't support a period-4 orbit. -->
 <script lang="ts">
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { LOOP_COMPONENTS } from "$lib/shared/browse/domain/constants/loop-constants";
   import { supportsQuarteredSlice, type LoopSlice } from "../domain/legality";

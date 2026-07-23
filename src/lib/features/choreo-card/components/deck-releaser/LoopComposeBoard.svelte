@@ -16,7 +16,7 @@
    *
    * Design: docs/superpowers/specs/active/2026-05-30-loop-composer-deoverwhelm-design.md
    */
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import AxisCardGroup from "./AxisCardGroup.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";

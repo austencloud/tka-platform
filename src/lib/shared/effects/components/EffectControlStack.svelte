@@ -10,7 +10,7 @@
    * no shared input-component library). Toggles use the button + indicator
    * pattern (no checkboxes).
    */
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { PATTERN_DESCRIPTORS as LED_PATTERNS } from "$lib/shared/animation-engine/domain/patterns/registry";
   import type {
     EffectsConfigState,

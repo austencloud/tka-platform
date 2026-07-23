@@ -17,7 +17,7 @@
   import "$lib/shared/animation-panel/bento/rail-tile.css";
   import { columnOptionsFor } from "./bento/columns-stepper";
   import ControlDock, { type ControlDockTab } from "./ControlDock.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     getInfoCellCount,
     type InfoCellChoice,

@@ -49,7 +49,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
   import TraceStage from "$lib/features/learn/play/games/trace-paths/components/TraceStage.svelte";

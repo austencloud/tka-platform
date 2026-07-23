@@ -6,7 +6,7 @@
    */
 
   import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   type FilterValue = UserRole | "all";
 

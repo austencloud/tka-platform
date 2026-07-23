@@ -28,7 +28,7 @@
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
   import GeneratedArchivePanel from "./GeneratedArchivePanel.svelte";
   import { archiveDeck, listArchivedDecks, getArchivedDeck, deleteArchivedDeck, type ArchivedDeckMeta } from "../../services/deck-archive-store";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PrintPanel from "../print-preview/PrintPanel.svelte";
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";

@@ -9,7 +9,7 @@
   Both act on the same axis (prop spin); this is the single destination for it.
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import ReversalPatternView from "./ReversalPatternView.svelte";
   import RotationDirectionView from "./RotationDirectionView.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";

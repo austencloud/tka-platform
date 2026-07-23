@@ -10,7 +10,7 @@
   color policy instead of rebuilding it here.
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte.ts";
 
   interface Props {

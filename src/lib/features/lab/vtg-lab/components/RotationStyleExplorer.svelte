@@ -1,7 +1,7 @@
 <script lang="ts">
   import TurnMatrixGrid from "$lib/features/choreo-card/components/TurnMatrixGrid.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import VariationPicker from "./VariationPicker.svelte";
   import {
     resolveRotationStyleMatrices,
