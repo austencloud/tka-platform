@@ -128,7 +128,7 @@
     overflow: hidden;
     border: 0;
     background: transparent;
-    cursor: zoom-in;
+    cursor: pointer;
   }
 
   .image-button img {
