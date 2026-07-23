@@ -5,6 +5,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
+  import type { ControlDockAction } from "./ControlDock.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -26,6 +27,8 @@
      */
     controlsPlacement?: "dock" | "external";
     showDownload?: boolean;
+    /** Optional compact action at the end of the bottom dock. */
+    dockAction?: ControlDockAction;
     onExportCancel?: () => void;
     onExportRetry?: () => void;
   }
@@ -34,10 +37,11 @@
     sequence,
     bluePropType,
     redPropType,
-    show = "both",
+    show,
     ctrl: providedCtrl,
     controlsPlacement = "dock",
     showDownload = true,
+    dockAction,
     onExportCancel,
     onExportRetry,
   }: Props = $props();
@@ -55,6 +59,7 @@
     });
 
   const takeoverSize = $derived(Math.max(160, containerSize - 32));
+  const renderedHands = $derived(show ?? ctrl.show);
 
   // With the dock suppressed (controls in the sidebar) the stage reclaims the
   // bottom padding the dock would otherwise reserve.
@@ -95,7 +100,7 @@
       {redPropType}
       mode="card-back"
       style="stroke"
-      {show}
+      show={renderedHands}
       palette={ctrl.palette}
       strokeWidth={ctrl.lineWeight}
       gradient={ctrl.gradientColors}
@@ -106,6 +111,7 @@
     <MandalaControlDock
       {ctrl}
       {showDownload}
+      trailingAction={dockAction}
       onHeightChange={(px) => (dockHeight = px)}
     />
   {/if}

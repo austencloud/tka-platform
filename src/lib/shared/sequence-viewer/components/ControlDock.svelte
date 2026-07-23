@@ -35,6 +35,8 @@
     busy?: boolean;
     /** Accent-filled emphasis (primary CTA, e.g. scan-landing "Remix"). */
     accent?: boolean;
+    /** Marks a trailing action whose own tray is currently open. */
+    active?: boolean;
   }
 
   export interface ControlDockLink {
@@ -118,8 +120,9 @@
   const dur = (ms: number) => (reduceMotion ? 0 : ms);
 
   // A secondary slot entry is a link if it carries an href, else an action.
-  const isLink = (a: ControlDockLink | ControlDockAction): a is ControlDockLink =>
-    "href" in a;
+  const isLink = (
+    a: ControlDockLink | ControlDockAction
+  ): a is ControlDockLink => "href" in a;
 
   // ── Tray open/close plumbing ──
   const trayOpen = $derived(!!(activeTab && tray));
@@ -281,7 +284,9 @@
     <div
       class="tray"
       class:tray-dragging={trayDragging}
-      style:transform={trayDragOffset > 0 ? `translateY(${trayDragOffset}px)` : ""}
+      style:transform={trayDragOffset > 0
+        ? `translateY(${trayDragOffset}px)`
+        : ""}
       bind:this={trayEl}
       transition:slide={{ duration: dur(260), easing: cubicOut }}
     >
@@ -311,7 +316,11 @@
           </div>
         </div>
         {#if trayScrollable}
-          <div class="scroll-rail" aria-hidden="true" transition:fade={{ duration: dur(150) }}>
+          <div
+            class="scroll-rail"
+            aria-hidden="true"
+            transition:fade={{ duration: dur(150) }}
+          >
             <div
               class="scroll-thumb"
               style:height={`${thumbPct}%`}
@@ -335,7 +344,9 @@
           onclick={() => onTabSelect(t.id)}
           aria-pressed={activeTab === t.id}
           aria-expanded={activeTab === t.id && trayOpen}
-          aria-label={activeTab === t.id && trayOpen ? `Close ${t.label}` : t.label}
+          aria-label={activeTab === t.id && trayOpen
+            ? `Close ${t.label}`
+            : t.label}
         >
           {#if activeTab === t.id && trayOpen}
             <!-- Open: this tab has become the tray's folder tab — its glyph is a
@@ -348,7 +359,10 @@
               <span class="dot" style:background={t.dots[1]}></span>
             </span>
           {:else if t.accentColor && !t.icon}
-            <span class="cat-dots"><span class="dot solo" style:background={t.accentColor}></span></span>
+            <span class="cat-dots"
+              ><span class="dot solo" style:background={t.accentColor}
+              ></span></span
+            >
           {:else}
             <i class="fas {t.icon}" aria-hidden="true"></i>
           {/if}
@@ -358,48 +372,57 @@
     </div>
 
     {#if secondaryActions.length > 0 || trailingAction}
-    <div class="dock-actions">
-    {#each secondaryActions as action, i (action.label)}
-      {#if isLink(action)}
-        <a class="dock-btn trailing-link" class:accent={action.accent} style:--btn-i={tabs.length + i} href={action.href} aria-label={action.label}>
-          {#if action.icon}<i class="fas {action.icon}" aria-hidden="true"></i>{/if}
-          <span class="trailing-label">{action.label}</span>
-        </a>
-      {:else}
-        <button
-          class="dock-btn trailing-link"
-          class:accent={action.accent}
-          style:--btn-i={tabs.length + i}
-          onclick={action.onClick}
-          disabled={action.disabled}
-          aria-label={action.label}
-        >
-          {#if action.busy}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          {:else if action.icon}
-            <i class="fas {action.icon}" aria-hidden="true"></i>
+      <div class="dock-actions">
+        {#each secondaryActions as action, i (action.label)}
+          {#if isLink(action)}
+            <a
+              class="dock-btn trailing-link"
+              class:accent={action.accent}
+              style:--btn-i={tabs.length + i}
+              href={action.href}
+              aria-label={action.label}
+            >
+              {#if action.icon}<i class="fas {action.icon}" aria-hidden="true"
+                ></i>{/if}
+              <span class="trailing-label">{action.label}</span>
+            </a>
+          {:else}
+            <button
+              class="dock-btn trailing-link"
+              class:accent={action.accent}
+              style:--btn-i={tabs.length + i}
+              onclick={action.onClick}
+              disabled={action.disabled}
+              aria-label={action.label}
+            >
+              {#if action.busy}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              {:else if action.icon}
+                <i class="fas {action.icon}" aria-hidden="true"></i>
+              {/if}
+              <span class="trailing-label">{action.label}</span>
+            </button>
           {/if}
-          <span class="trailing-label">{action.label}</span>
-        </button>
-      {/if}
-    {/each}
+        {/each}
 
-    {#if trailingAction}
-      <button
-        class="dock-btn download"
-        style:--btn-i={tabs.length + secondaryActions.length}
-        onclick={trailingAction.onClick}
-        disabled={trailingAction.disabled}
-        aria-label={trailingAction.label}
-      >
-        {#if trailingAction.busy}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {:else}
-          <i class="fas {trailingAction.icon}" aria-hidden="true"></i>
+        {#if trailingAction}
+          <button
+            class="dock-btn download"
+            class:active={trailingAction.active}
+            style:--btn-i={tabs.length + secondaryActions.length}
+            onclick={trailingAction.onClick}
+            disabled={trailingAction.disabled}
+            aria-label={trailingAction.label}
+            aria-pressed={trailingAction.active ?? false}
+          >
+            {#if trailingAction.busy}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas {trailingAction.icon}" aria-hidden="true"></i>
+            {/if}
+          </button>
         {/if}
-      </button>
-    {/if}
-    </div>
+      </div>
     {/if}
   </div>
 </div>
@@ -409,8 +432,14 @@
      dock (download / mandala / choreo / scan / transforms) gets a little
      entrance flourish layered over the root slide-up. */
   @keyframes dockBtnIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.96); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   .dock {
@@ -418,7 +447,11 @@
     flex-direction: column;
     /* One glass fill shared by the tray and the merged "open" folder tab, so
        the open tab reads as a continuous surface with the panel above it. */
-    --tray-fill: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 92%, transparent);
+    --tray-fill: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 92%,
+      transparent
+    );
     /* Clip the tray while a swipe drags it down past the tab bar. */
     overflow: hidden;
   }
@@ -441,7 +474,9 @@
     overflow: hidden;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
   }
-  .dock.wide .cat-bar { border-top: none; }
+  .dock.wide .cat-bar {
+    border-top: none;
+  }
 
   .tray {
     display: flex;
@@ -508,7 +543,8 @@
      motion (set inline via dur()). */
   .tray-anim {
     overflow: hidden;
-    transition: height var(--tray-anim-dur, 260ms) cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: height var(--tray-anim-dur, 260ms)
+      cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   /* Full-width dismiss row pinned at the tray top: grab bar + down chevron.
@@ -553,7 +589,12 @@
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
-  .cat-scroll { display: flex; flex: 1; min-width: 0; gap: 4px; }
+  .cat-scroll {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+  }
 
   /* Secondary CTAs + download live in one group so the bar can stack them
      onto their own row on narrow screens. */
@@ -566,10 +607,18 @@
 
   /* Narrow + secondary CTAs: two rows — tabs on top at full width, the
      CTA group below sharing the row. No more smushed tab chips. */
-  .cat-bar.stacked { flex-wrap: wrap; }
-  .stacked .cat-scroll { flex: 1 1 100%; }
-  .stacked .dock-actions { flex: 1 1 100%; }
-  .stacked .dock-actions .dock-btn.trailing-link { flex: 1 1 0; }
+  .cat-bar.stacked {
+    flex-wrap: wrap;
+  }
+  .stacked .cat-scroll {
+    flex: 1 1 100%;
+  }
+  .stacked .dock-actions {
+    flex: 1 1 100%;
+  }
+  .stacked .dock-actions .dock-btn.trailing-link {
+    flex: 1 1 0;
+  }
 
   .dock-btn {
     display: flex;
@@ -582,21 +631,43 @@
     min-height: 46px;
     border-radius: 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%,
+      transparent
+    );
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     text-decoration: none;
     -webkit-tap-highlight-color: transparent;
-    transition: background 220ms ease, border-color 220ms ease, color 220ms ease,
-      transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease;
+    transition:
+      background 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease,
+      transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 220ms ease;
     animation: dockBtnIn 360ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
     animation-delay: calc(var(--btn-i, 0) * 45ms + 90ms);
   }
-  .dock-btn:active { transform: scale(0.92); }
-  .dock-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-  .dock-btn i { font-size: 16px; transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-  .dock-btn.cat { flex: 1 1 0; min-width: 0; padding: 6px 2px; }
-  .dock-btn.cat.active i { transform: translateY(-1px) scale(1.08); }
+  .dock-btn:active {
+    transform: scale(0.92);
+  }
+  .dock-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .dock-btn i {
+    font-size: 16px;
+    transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .dock-btn.cat {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 2px;
+  }
+  .dock-btn.cat.active i {
+    transform: translateY(-1px) scale(1.08);
+  }
 
   .cat-label {
     font-size: 10px;
@@ -608,20 +679,36 @@
     text-overflow: ellipsis;
   }
   /* Too narrow for legible labels -> icon-only, no cramming. */
-  .compact .cat-label { display: none; }
+  .compact .cat-label {
+    display: none;
+  }
 
-  .cat-dots { display: flex; gap: 2px; }
+  .cat-dots {
+    display: flex;
+    gap: 2px;
+  }
   .dot {
     width: 14px;
     height: 14px;
     border-radius: 50%;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
-  .dot.solo { width: 16px; height: 16px; }
+  .dot.solo {
+    width: 16px;
+    height: 16px;
+  }
 
   .dock-btn.cat.active {
-    background: color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-    border-color: color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--cat-accent, var(--theme-accent, #6366f1)) 35%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--cat-accent, var(--theme-accent, #6366f1)) 60%,
+      transparent
+    );
     color: white;
     transform: translateY(-1px);
   }
@@ -646,7 +733,12 @@
     border-top-right-radius: 0;
     color: var(--theme-text, #fff);
     transform: none;
-    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 70%, transparent);
+    box-shadow: inset 0 -2px 0
+      color-mix(
+        in srgb,
+        var(--cat-accent, var(--theme-accent, #6366f1)) 70%,
+        transparent
+      );
   }
   /* Bridge across the cat-bar's top padding (6px) + border (1px) so the tab's
      fill runs continuously up into the tray bottom above it. */
@@ -663,9 +755,29 @@
   .dock-btn.download {
     flex: 0 0 auto;
     width: 46px;
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 50%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 25%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
     color: white;
+  }
+  .dock-btn.download.active {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 45%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 75%,
+      transparent
+    );
   }
 
   .dock-btn.trailing-link {
@@ -680,25 +792,50 @@
     font-weight: 600;
     white-space: nowrap;
   }
-  .compact .dock-btn.trailing-link { padding: 0; width: 46px; }
-  .compact .trailing-label { display: none; }
+  .compact .dock-btn.trailing-link {
+    padding: 0;
+    width: 46px;
+  }
+  .compact .trailing-label {
+    display: none;
+  }
 
   /* Accent emphasis: the dock's primary CTA (mirrors .download's fill). */
   .dock-btn.trailing-link.accent {
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 50%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 25%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
     color: white;
   }
 
   @media (hover: hover) {
     .dock-btn.cat:hover {
-      background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%, white 8%);
-      border-color: color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 35%, var(--theme-stroke, rgba(255, 255, 255, 0.12)));
+      background: color-mix(
+        in srgb,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+        white 8%
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--cat-accent, var(--theme-accent, #6366f1)) 35%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.12))
+      );
       color: var(--theme-text, #fff);
       transform: translateY(-2px);
     }
     .dock-btn.cat.active:hover {
-      background: color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 45%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+      background: color-mix(
+        in srgb,
+        var(--cat-accent, var(--theme-accent, #6366f1)) 45%,
+        var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+      );
       transform: translateY(-2px);
     }
     /* An open folder tab stays merged on hover — no accent pop, no lift. */
@@ -706,26 +843,54 @@
       background: var(--tray-fill);
       transform: none;
     }
-    .dock-btn.cat:hover i { transform: translateY(-1px) scale(1.08); }
+    .dock-btn.cat:hover i {
+      transform: translateY(-1px) scale(1.08);
+    }
     .dock-btn.download:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--theme-accent, #6366f1) 42%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-      border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 75%, transparent);
+      background: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 42%,
+        var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 75%,
+        transparent
+      );
       transform: translateY(-2px);
-      box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+      box-shadow: 0 6px 18px
+        color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
     }
     .dock-btn.trailing-link:hover {
-      background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%, white 8%);
+      background: color-mix(
+        in srgb,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+        white 8%
+      );
       transform: translateY(-2px);
     }
     .dock-btn.trailing-link.accent:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--theme-accent, #6366f1) 42%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-      border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 75%, transparent);
-      box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+      background: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 42%,
+        var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 75%,
+        transparent
+      );
+      box-shadow: 0 6px 18px
+        color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .dock-btn:active { transform: none; }
-    .dock-btn { animation: none; }
+    .dock-btn:active {
+      transform: none;
+    }
+    .dock-btn {
+      animation: none;
+    }
   }
 </style>

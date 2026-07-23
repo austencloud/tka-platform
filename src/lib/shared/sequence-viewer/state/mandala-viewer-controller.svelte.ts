@@ -4,6 +4,7 @@ import type {
   MandalaPalette,
   MandalaColorMode,
   MandalaPresetId,
+  MandalaRenderOptions,
 } from "$lib/shared/mandala/domain/mandala-types";
 import {
   PRESET_COLORS,
@@ -54,7 +55,7 @@ const EXPORT_STORAGE_KEY = "tka_mandala_export";
 // from the export config so the viewer reopens in the look the user last set.
 const VIEW_STORAGE_KEY = "tka_mandala_view_state";
 
-interface MandalaViewState {
+export interface MandalaViewState {
   pathShape: MandalaPathShape;
   rotation: number;
   speed: number;
@@ -64,6 +65,13 @@ interface MandalaViewState {
   customBlue: string;
   customRed: string;
   lineWeight: number;
+}
+
+export interface MandalaControllerOptions {
+  /** Values that must win over the saved viewer look for this controller. */
+  viewOverrides?: Partial<MandalaViewState>;
+  /** Keep this controller's changes out of the shared viewer preference. */
+  persistViewState?: boolean;
 }
 function clampReps(n: number): number {
   return Math.max(1, Math.min(10, Math.round(n)));
@@ -116,6 +124,7 @@ function loadViewState(): Partial<MandalaViewState> {
  */
 export class MandalaViewerController {
   paused = $state(false);
+  show = $state<MandalaRenderOptions["show"]>("both");
   pathShape = $state<MandalaPathShape>("arc");
   rotation = $state(90);
   speed = $state(1);
@@ -170,7 +179,10 @@ export class MandalaViewerController {
     Math.max(1, Math.ceil(this.period * this.exportFps)) * this.exportReps
   );
 
-  constructor(sources: MandalaControllerSources) {
+  constructor(
+    sources: MandalaControllerSources,
+    options: MandalaControllerOptions = {}
+  ) {
     this.#sources = sources;
 
     const cfg = loadExportConfig();
@@ -180,7 +192,7 @@ export class MandalaViewerController {
 
     // Restore the persisted look (each field guarded so a partial/old payload
     // falls back to the field default).
-    const view = loadViewState();
+    const view = { ...loadViewState(), ...options.viewOverrides };
     if (view.pathShape !== undefined) this.pathShape = view.pathShape;
     if (typeof view.rotation === "number") this.rotation = view.rotation;
     if (typeof view.speed === "number") this.speed = view.speed;
@@ -193,6 +205,7 @@ export class MandalaViewerController {
 
     // Persist the look on change (separate key from export config).
     $effect(() => {
+      if (options.persistViewState === false) return;
       const snapshot: MandalaViewState = {
         pathShape: this.pathShape,
         rotation: this.rotation,
@@ -374,6 +387,7 @@ export class MandalaViewerController {
       steps: plainSteps,
       bluePropType: this.#sources.getBluePropType(),
       redPropType: this.#sources.getRedPropType(),
+      show: this.show,
       pathShape: this.pathShape,
       lineWeight: this.lineWeight,
       bgColor: this.bgColor,

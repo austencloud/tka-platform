@@ -5,20 +5,15 @@
     MandalaPathShape,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
+  import {
+    BLUE_STROKE,
+    RED_STROKE,
+  } from "$lib/shared/mandala/domain/mandala-constants";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import MandalaPane from "$lib/shared/sequence-viewer/components/MandalaPane.svelte";
+  import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { MandalaViewerController } from "$lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import AddToLibraryButton from "../../workspace-panel/shared/components/buttons/AddToLibraryButton.svelte";
-  import HandSelector from "./HandSelector.svelte";
-
-  type MotionMode = "static" | "animated";
-
-  const MOTION_OPTIONS: { value: MotionMode; label: string }[] = [
-    { value: "static", label: "Static" },
-    { value: "animated", label: "Animated" },
-  ];
 
   interface Props {
     sequence: SequenceData;
@@ -41,26 +36,31 @@
   }: Props = $props();
 
   let saving = $state(false);
-  let displayedVariant = $state<MandalaRenderOptions["show"]>(variant);
 
-  const ctrl = new MandalaViewerController({
-    getSequence: () => sequence,
-    getBluePropType: () => bluePropType,
-    getRedPropType: () => redPropType,
-  });
-
-  $effect(() => {
-    displayedVariant = variant;
-    ctrl.pathShape = pathShape;
-  });
-
-  const motionMode = $derived<MotionMode>(
-    ctrl.paused ? "static" : "animated",
+  const ctrl = new MandalaViewerController(
+    {
+      getSequence: () => sequence,
+      getBluePropType: () => bluePropType,
+      getRedPropType: () => redPropType,
+    },
+    {
+      // This focused viewer always opens in the standard stroke colors.
+      // Palette controls can change them without replacing the full viewer's
+      // saved look.
+      viewOverrides: {
+        colorMode: "solid",
+        preset: "custom",
+        customBlue: BLUE_STROKE,
+        customRed: RED_STROKE,
+      },
+      persistViewState: false,
+    }
   );
 
-  function handleMotionModeChange(mode: MotionMode): void {
-    ctrl.paused = mode === "static";
-  }
+  $effect(() => {
+    ctrl.show = variant;
+    ctrl.pathShape = pathShape;
+  });
 
   async function handleSave(): Promise<void> {
     if (saving) return;
@@ -68,7 +68,7 @@
     try {
       const name = await saveMandalaToCollection({
         steps: sequence.steps ?? [],
-        variant: displayedVariant,
+        variant: ctrl.show,
         bluePropType,
         redPropType,
         pathShape: ctrl.pathShape,
@@ -79,54 +79,27 @@
       saving = false;
     }
   }
+
+  const saveAction = $derived<ControlDockAction>({
+    icon: "fa-folder-plus",
+    label: saving ? "Saving mandala" : "Save mandala to collection",
+    onClick: () => void handleSave(),
+    disabled: saving,
+    busy: saving,
+    accent: true,
+  });
 </script>
 
-{#snippet headerActions()}
-  <AddToLibraryButton
-    onclick={() => void handleSave()}
-    disabled={saving}
-    ariaLabel={saving ? "Saving mandala" : "Save mandala to collection"}
-  />
-{/snippet}
-
 <div class="mandala-viewer-panel">
-  <PanelHeader
-    title="Mandala"
-    {isMobile}
-    {onClose}
-    actionButtons={headerActions}
-  />
-  <div class="viewer-options">
-    <div
-      class="motion-selector"
-      role="group"
-      aria-labelledby="mandala-motion-label"
-    >
-      <span class="section-label" id="mandala-motion-label">Motion</span>
-      <SegmentedControl
-        options={MOTION_OPTIONS}
-        value={motionMode}
-        onchange={handleMotionModeChange}
-        color="accent"
-        size="sm"
-      />
-    </div>
-    <HandSelector
-      value={displayedVariant}
-      onChange={(value) => (displayedVariant = value)}
-      sectionLabel="Show"
-      labelId="mandala-show-label"
-      labels={{ blue: "Blue", both: "Purple", red: "Red" }}
-    />
-  </div>
+  <PanelHeader title="Mandala" {isMobile} {onClose} />
   <div class="mandala-stage">
     <MandalaPane
       {sequence}
-      show={displayedVariant}
       {bluePropType}
       {redPropType}
       {ctrl}
       showDownload={false}
+      dockAction={saveAction}
     />
   </div>
 </div>
@@ -139,7 +112,6 @@
     height: 100%;
     min-height: 0;
     background: var(--theme-panel-bg);
-    container-type: inline-size;
   }
 
   .mandala-stage {
@@ -147,42 +119,5 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
-  }
-
-  .viewer-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .viewer-options :global(.hand-selector-section) {
-    border-bottom: 0;
-  }
-
-  .motion-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px 16px;
-    border-right: 1px solid var(--theme-stroke);
-  }
-
-  .section-label {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  @container (max-width: 520px) {
-    .viewer-options {
-      grid-template-columns: 1fr;
-    }
-
-    .motion-selector {
-      border-right: 0;
-      border-bottom: 1px solid var(--theme-stroke);
-    }
   }
 </style>

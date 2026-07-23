@@ -18,12 +18,26 @@ const coordinator = source(
 const mandalaPanel = source(
   "src/lib/features/create/shared/components/sequence-actions/MandalaViewerPanel.svelte"
 );
+const mandalaControls = source(
+  "src/lib/shared/sequence-viewer/components/mandala/MandalaCategoryControl.svelte"
+);
+const mandalaDock = source(
+  "src/lib/shared/sequence-viewer/components/MandalaControlDock.svelte"
+);
+const mandalaPane = source(
+  "src/lib/shared/sequence-viewer/components/MandalaPane.svelte"
+);
+const mandalaController = source(
+  "src/lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte.ts"
+);
 
 describe("Create workspace mandala viewer contract", () => {
   it("makes both workspace mandala layouts accessible click targets", () => {
     expect(workspaceGrid.match(/aria-label="Open mandala"/g)).toHaveLength(2);
     expect(workspaceGrid.match(/{#if onMandalaClick}/g)).toHaveLength(2);
-    expect(workspaceGrid.match(/onclick=\{\(\) => onMandalaClick\(/g)).toHaveLength(2);
+    expect(
+      workspaceGrid.match(/onclick=\{\(\) => onMandalaClick\(/g)
+    ).toHaveLength(2);
   });
 
   it("routes the click through panel state and reuses the editor drawer", () => {
@@ -35,19 +49,45 @@ describe("Create workspace mandala viewer contract", () => {
 
   it("uses the shared animated pane and collection save path", () => {
     expect(mandalaPanel).toContain("<MandalaPane");
-    expect(mandalaPanel).toContain("show={displayedVariant}");
     expect(mandalaPanel).toContain("showDownload={false}");
+    expect(mandalaPanel).toContain("dockAction={saveAction}");
     expect(mandalaPanel).toContain("saveMandalaToCollection");
   });
 
-  it("offers explicit motion and mandala-color selectors", () => {
-    expect(mandalaPanel).toContain("<SegmentedControl");
-    expect(mandalaPanel).toContain('{ value: "static", label: "Static" }');
-    expect(mandalaPanel).toContain('{ value: "animated", label: "Animated" }');
-    expect(mandalaPanel).toContain("<HandSelector");
-    expect(mandalaPanel).toContain(
-      'labels={{ blue: "Blue", both: "Purple", red: "Red" }}',
+  it("keeps motion and hand visibility inside the existing bottom controls", () => {
+    expect(mandalaPanel).not.toContain('class="viewer-options"');
+    expect(mandalaControls).toContain('{ value: "static", label: "Static" }');
+    expect(mandalaControls).toContain(
+      '{ value: "animated", label: "Animated" }'
     );
-    expect(mandalaPanel).toContain("variant: displayedVariant");
+    expect(mandalaControls).toContain(
+      '{ value: "blue", label: "Blue", tone: "blue" }'
+    );
+    expect(mandalaControls).toContain(
+      '{ value: "both", label: "Both", tone: "accent" }'
+    );
+    expect(mandalaControls).toContain(
+      '{ value: "red", label: "Red", tone: "red" }'
+    );
+    expect(mandalaControls).not.toContain('label: "Purple"');
+    expect(mandalaPanel).toContain("ctrl.show = variant");
+    expect(mandalaPanel).toContain("variant: ctrl.show");
+    expect(mandalaPane).toContain("show={renderedHands}");
+    expect(mandalaController).toContain("show: this.show");
+  });
+
+  it("puts Add to collection in the shared bottom dock", () => {
+    expect(mandalaPanel).toContain('icon: "fa-folder-plus"');
+    expect(mandalaPanel).not.toContain("AddToLibraryButton");
+    expect(mandalaPanel).not.toContain("actionButtons=");
+    expect(mandalaDock).toContain("<ControlDock");
+    expect(mandalaDock).toContain("trailingAction={dockAction}");
+  });
+
+  it("opens with canonical blue and red instead of saved custom colors", () => {
+    expect(mandalaPanel).toContain("customBlue: BLUE_STROKE");
+    expect(mandalaPanel).toContain("customRed: RED_STROKE");
+    expect(mandalaPanel).toContain('colorMode: "solid"');
+    expect(mandalaPanel).toContain("persistViewState: false");
   });
 });

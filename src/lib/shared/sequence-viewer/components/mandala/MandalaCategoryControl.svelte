@@ -17,8 +17,10 @@
   import type {
     MandalaPathShape,
     MandalaPresetId,
+    MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
   import { PRESET_COLORS } from "$lib/shared/mandala/domain/mandala-palette";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   /** "download" holds the export config (loops / fidelity / fps + estimate). */
   export type MandalaCategory =
@@ -103,6 +105,21 @@
     { value: 2.5, label: "Normal" },
     { value: 4, label: "Thick" },
   ];
+  type MotionMode = "static" | "animated";
+  const MOTION_OPTIONS: { value: MotionMode; label: string }[] = [
+    { value: "static", label: "Static" },
+    { value: "animated", label: "Animated" },
+  ];
+  const SHOW_OPTIONS: {
+    value: MandalaRenderOptions["show"];
+    label: string;
+    tone: "blue" | "red" | "accent";
+  }[] = [
+    { value: "blue", label: "Blue", tone: "blue" },
+    { value: "both", label: "Both", tone: "accent" },
+    { value: "red", label: "Red", tone: "red" },
+  ];
+  const motionMode = $derived<MotionMode>(ctrl.paused ? "static" : "animated");
   // Derived from PRESET_COLORS (the single source of truth) so a preset added
   // there is automatically selectable here — no second list to drift out of
   // sync (this list previously hardcoded a stale 4-of-6 subset).
@@ -138,33 +155,60 @@
     if (onExport) onExport();
     else ctrl.startExport();
   }
+
+  function handleMotionChange(value: MotionMode): void {
+    changeSetting(
+      "motion",
+      motionMode,
+      value,
+      () => (ctrl.paused = value === "static")
+    );
+  }
+
+  function handleShowChange(value: MandalaRenderOptions["show"]): void {
+    changeSetting("show", ctrl.show, value, () => (ctrl.show = value));
+  }
 </script>
 
 {#if category === "speed"}
   <div
-    class="tray-slider"
+    class="tray-stack"
     transition:slide|local={{ duration: dur(220), easing: cubicOut }}
   >
-    <input
-      type="range"
-      min="0.25"
-      max="3"
-      step="0.05"
-      value={ctrl.speed}
-      oninput={(e) => {
-        const value = Number((e.target as HTMLInputElement).value);
-        changeSetting(
-          "speed",
-          ctrl.speed,
-          value,
-          () => (ctrl.speed = value),
-          true
-        );
-      }}
-      class="slider"
-      aria-label="Undulation speed"
-    />
-    <span class="slider-value">{ctrl.speed.toFixed(2)}x</span>
+    <div class="control-field">
+      <span class="control-label">Motion</span>
+      <SegmentedControl
+        options={MOTION_OPTIONS}
+        value={motionMode}
+        onchange={handleMotionChange}
+        color="accent"
+        size="sm"
+      />
+    </div>
+    {#if !ctrl.paused}
+      <div class="tray-slider">
+        <input
+          type="range"
+          min="0.25"
+          max="3"
+          step="0.05"
+          value={ctrl.speed}
+          oninput={(e) => {
+            const value = Number((e.target as HTMLInputElement).value);
+            changeSetting(
+              "speed",
+              ctrl.speed,
+              value,
+              () => (ctrl.speed = value),
+              true
+            );
+          }}
+          class="slider"
+          aria-label="Undulation speed"
+        />
+        <span class="slider-value">{ctrl.speed.toFixed(2)}x</span>
+      </div>
+    {/if}
   </div>
 {:else if category === "shape"}
   <div
@@ -217,6 +261,16 @@
     class="tray-colors"
     transition:slide|local={{ duration: dur(220), easing: cubicOut }}
   >
+    <div class="control-field">
+      <span class="control-label">Show</span>
+      <SegmentedControl
+        options={SHOW_OPTIONS}
+        value={ctrl.show}
+        onchange={handleShowChange}
+        color="accent"
+        size="sm"
+      />
+    </div>
     <div class="colors-head">
       <div class="mode-toggle">
         <button
@@ -510,6 +564,19 @@
   .tray-chips {
     display: flex;
     gap: 6px;
+  }
+  .tray-stack,
+  .control-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .control-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .tray-slider {
     display: flex;
