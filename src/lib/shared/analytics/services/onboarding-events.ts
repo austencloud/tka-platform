@@ -53,3 +53,31 @@ export function logOnboardingFirstRunCompleted(
 ): void {
   captureEvent("onboarding_first_run_completed", props);
 }
+
+/** The guest first-save keep-your-work prompt (AuthNudge) was shown, after markPresented(). */
+export function logOnboardingGuestFirstSavePromptShown(
+  props: OnboardingEventProps = {}
+): void {
+  captureEvent("onboarding_guest_first_save_prompt_shown", props);
+}
+
+/** The user chose "Create account" from the guest first-save prompt. */
+export function logOnboardingGuestFirstSavePromptAccepted(
+  props: OnboardingEventProps = {}
+): void {
+  captureEvent("onboarding_guest_first_save_prompt_accepted", props);
+}
+
+/** The user dismissed the guest first-save prompt without acting. */
+export function logOnboardingGuestFirstSavePromptDeclined(
+  props: OnboardingEventProps = {}
+): void {
+  captureEvent("onboarding_guest_first_save_prompt_declined", props);
+}
+
+/** The user chose "Log in" (existing account) from the guest first-save prompt. */
+export function logOnboardingGuestFirstSavePromptLogin(
+  props: OnboardingEventProps = {}
+): void {
+  captureEvent("onboarding_guest_first_save_prompt_login", props);
+}
