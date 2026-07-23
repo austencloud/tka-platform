@@ -41,10 +41,13 @@
 			rightLabel = "End 2";
 		}
 
+		// Prop-end options track the prop's tips; Hand tracks the hand path
+		// (prop center) instead. Mirrors the canvas right-click Trail Tracking menu.
 		return [
 			{ id: TrackingMode.LEFT_END, label: leftLabel, icon: "fa-minus" },
 			{ id: TrackingMode.RIGHT_END, label: rightLabel, icon: "fa-minus" },
 			{ id: TrackingMode.BOTH_ENDS, label: "Both", icon: "fa-grip-lines" },
+			{ id: TrackingMode.HAND, label: "Hand", icon: "fa-hand-back-fist" },
 		];
 	});
 
@@ -174,7 +177,7 @@
 					value={blueColor}
 					oninput={(e) => effectsConfig?.updateEffect("trails", { blueColor: (e.target as HTMLInputElement).value })}
 				/>
-				<span class="color-hand">Blue</span>
+				<span class="color-hand blue">Blue</span>
 			</label>
 			<label class="color-picker">
 				<input
@@ -182,7 +185,7 @@
 					value={redColor}
 					oninput={(e) => effectsConfig?.updateEffect("trails", { redColor: (e.target as HTMLInputElement).value })}
 				/>
-				<span class="color-hand">Red</span>
+				<span class="color-hand red">Red</span>
 			</label>
 		</div>
 	</div>
@@ -346,7 +349,14 @@
 
 	.color-hand {
 		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.color-hand.blue {
+		color: var(--prop-blue, #3b82f6);
+	}
+
+	.color-hand.red {
+		color: var(--prop-red, #ef4444);
 	}
 
 	.reset-btn {

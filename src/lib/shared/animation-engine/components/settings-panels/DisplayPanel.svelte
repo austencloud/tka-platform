@@ -69,17 +69,19 @@
     label: string;
     icon?: string;
     accent?: string;
+    tone?: "blue" | "red";
     active: () => boolean;
     toggle: () => void;
   }
 
-  // Left/Right are label-only; the blue/red active fill is the affordance
-  // (same read as the viewer-header MotionColorChips).
+  // Left/Right carry their prop identity before and after selection, matching
+  // MotionColorChips instead of relying on the active fill alone.
   const propChips: Chip[] = [
     {
       id: "left",
       label: "Left",
       accent: "var(--prop-blue, #2196f3)",
+      tone: "blue",
       active: () => viewerVis!.blueMotion,
       toggle: () => viewerVis!.toggleBlue(),
     },
@@ -87,6 +89,7 @@
       id: "right",
       label: "Right",
       accent: "var(--prop-red, #f44336)",
+      tone: "red",
       active: () => viewerVis!.redMotion,
       toggle: () => viewerVis!.toggleRed(),
     },
@@ -171,6 +174,7 @@
       class="rt-chip"
       type="button"
       aria-pressed={chip.active()}
+      data-tone={chip.tone}
       style={chip.accent ? `--rail-accent: ${chip.accent};` : undefined}
       onclick={() => toggleChip(chip)}
     >
@@ -188,5 +192,18 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
     gap: 6px;
+  }
+
+  .vis-grid .rt-chip[data-tone]:not([aria-pressed="true"]) {
+    border-color: color-mix(
+      in srgb,
+      var(--rail-accent) 28%,
+      transparent
+    );
+    color: color-mix(
+      in srgb,
+      var(--rail-accent) 72%,
+      var(--theme-text, #fff)
+    );
   }
 </style>

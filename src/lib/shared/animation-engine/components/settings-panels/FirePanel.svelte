@@ -113,7 +113,7 @@
 					value={leftFireColor}
 					oninput={(e) => setFireColor("left", (e.target as HTMLInputElement).value)}
 				/>
-				<span class="color-hand">Left</span>
+				<span class="color-hand blue">Left</span>
 			</label>
 			<label class="color-picker">
 				<input
@@ -121,7 +121,7 @@
 					value={rightFireColor}
 					oninput={(e) => setFireColor("right", (e.target as HTMLInputElement).value)}
 				/>
-				<span class="color-hand">Right</span>
+				<span class="color-hand red">Right</span>
 			</label>
 		</div>
 	</div>
@@ -223,7 +223,14 @@
 
 	.color-hand {
 		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.color-hand.blue {
+		color: var(--prop-blue, #3b82f6);
+	}
+
+	.color-hand.red {
+		color: var(--prop-red, #ef4444);
 	}
 
 	.reset-btn {

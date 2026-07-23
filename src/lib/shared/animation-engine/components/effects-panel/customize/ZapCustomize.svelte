@@ -75,7 +75,7 @@
               value={state.zap.leftColor}
               oninput={(e) => state.updateEffect("zap", { leftColor: (e.currentTarget as HTMLInputElement).value })}
             />
-            <span class="color-hand">Blue</span>
+            <span class="color-hand blue">Blue</span>
           </label>
           <label class="color-picker">
             <input
@@ -83,7 +83,7 @@
               value={state.zap.rightColor}
               oninput={(e) => state.updateEffect("zap", { rightColor: (e.currentTarget as HTMLInputElement).value })}
             />
-            <span class="color-hand">Red</span>
+            <span class="color-hand red">Red</span>
           </label>
         </div>
       </div>
@@ -303,7 +303,14 @@
 
   .color-hand {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .color-hand.blue {
+    color: var(--prop-blue, #3b82f6);
+  }
+
+  .color-hand.red {
+    color: var(--prop-red, #ef4444);
   }
 
   .empty {
