@@ -8,6 +8,7 @@ import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/ha
 import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/hall-of-shame-submitter";
 import type { LibrarySaveService } from "$lib/features/library/services/library-save-service";
 import type { SaveProgress } from "$lib/shared/library/domain/library-contract-types";
+import { LibraryError } from "$lib/shared/library/domain/library-error";
 import type { CreateModuleContext } from "../context/create-module-context";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -324,6 +325,17 @@ export function createSavePanelState(deps: SavePanelDeps) {
     } catch (error) {
       logger.error("Failed to save sequence:", error);
       saveStep = 0;
+      const message =
+        error instanceof LibraryError && error.code === "ALREADY_EXISTS"
+          ? "This exact sequence is already in your library."
+          : error instanceof LibraryError && error.code === "GUEST_CAP"
+            ? "Guest save limit reached - create a free account to save more."
+            : error instanceof LibraryError && error.code === "PERSIST_FAILED"
+              ? "Couldn't save this sequence - local storage write failed. Try again."
+              : error instanceof Error
+                ? `Couldn't save this sequence: ${error.message}`
+                : "Couldn't save this sequence. Please try again.";
+      showToast({ message, type: "error", duration: 6000 });
     } finally {
       isSaving = false;
       saveStep = 0;

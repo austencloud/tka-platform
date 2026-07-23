@@ -38,6 +38,7 @@ import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 import { markSequenceSyncStatus } from "./library-sync-retry";
+import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
@@ -132,9 +133,9 @@ export class LibrarySaveService {
       authState.isAuthenticated,
       authState.isAnonymous
     );
+    const alreadySavedLocally = await db.sequences.get(resolvedSequence.id);
     if (!isFullAccount) {
-      const alreadySaved = await db.sequences.get(resolvedSequence.id);
-      if (!alreadySaved) {
+      if (!alreadySavedLocally) {
         const guestCount = await db.sequences.count();
         if (guestCount >= GUEST_SAVE_CAP) {
           // Centralized copy (auth-nudge-trigger.ts) instead of a local
@@ -147,6 +148,32 @@ export class LibrarySaveService {
             resolvedSequence.id
           );
         }
+      }
+    }
+
+    // Synchronous duplicate pre-check (cheap read, hasMatchingContent) run
+    // before the expensive thumbnail render / Dexie write, so the caller's
+    // awaited saveSequence() rejects with ALREADY_EXISTS directly instead of
+    // relying on the fire-and-forget syncToFirestore() below, which the
+    // scan/import path never awaits. Only for brand-new saves. Fails open on
+    // any error (offline, unauthenticated guest, hash failure) - duplicate
+    // detection is a UX nicety, never a reason to block a valid save. The
+    // repository's own write-time check remains the authoritative backstop
+    // against a race between two concurrent saves of the same content.
+    if (!alreadySavedLocally) {
+      try {
+        const preCheckHash = await computeHash(resolvedSequence);
+        const isDuplicate = await this.libraryRepository.hasMatchingContent(preCheckHash);
+        if (isDuplicate) {
+          throw new LibraryError(
+            "This exact sequence is already in your library",
+            "ALREADY_EXISTS",
+            resolvedSequence.id
+          );
+        }
+      } catch (error) {
+        if (error instanceof LibraryError) throw error;
+        console.warn("[LibrarySaveService] Duplicate pre-check failed (proceeding without it):", error);
       }
     }
 
@@ -175,10 +202,12 @@ export class LibrarySaveService {
       syncStatus: "pending",
       pendingSyncMetadata: { visibility, notes: notes ?? "" },
     };
+    let persisted = false;
     try {
       // JSON round-trip strips Firestore Timestamps and other non-cloneable objects
       const cloneable = JSON.parse(JSON.stringify(sequenceToSave));
       await db.sequences.put(cloneable);
+      persisted = true;
     } catch (dexieError) {
       // Dexie is the guaranteed-persistence layer ("safe in local storage
       // before we ever touch Firestore"). If it fails, that guarantee is void —
@@ -194,9 +223,14 @@ export class LibrarySaveService {
           dexieError instanceof Error ? dexieError.message : String(dexieError),
         error:
           dexieError instanceof Error ? dexieError : new Error(String(dexieError)),
-        severity: "warning",
+        severity: "error",
         context: { module: "library", action: "save-to-library" },
       });
+      throw new LibraryError(
+        "Couldn't save this sequence - local storage write failed.",
+        "PERSIST_FAILED",
+        sequenceToSave.id
+      );
     }
 
     const sequenceId = sequenceToSave.id;
@@ -248,7 +282,7 @@ export class LibrarySaveService {
     // Brief pause to show success state
     await new Promise((resolve) => setTimeout(resolve, SUCCESS_STATE_LINGER_MS));
 
-    return { sequenceId, thumbnailUrl };
+    return { sequenceId, thumbnailUrl, persisted, isGuest: !isFullAccount };
   }
 
   /**

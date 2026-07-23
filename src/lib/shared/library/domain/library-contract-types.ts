@@ -74,4 +74,8 @@ export interface SaveResult {
   sequenceId: string;
   /** URL of the uploaded thumbnail (if successful) */
   thumbnailUrl?: string;
+  /** True when the sequence was written to the durable local (Dexie) store. */
+  persisted: boolean;
+  /** True when the save was made by a guest (anonymous / unauthenticated) user. */
+  isGuest: boolean;
 }

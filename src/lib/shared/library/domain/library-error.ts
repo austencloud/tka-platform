@@ -16,7 +16,8 @@ export class LibraryError extends Error {
       | "NETWORK"
       | "QUOTA_EXCEEDED"
       | "ALREADY_EXISTS"
-      | "GUEST_CAP",
+      | "GUEST_CAP"
+      | "PERSIST_FAILED",
     public sequenceId?: string
   ) {
     super(message);
