@@ -237,6 +237,12 @@ Record:
 - Link or mention context and any declared sponsorship.
 - Referral sessions and product activation.
 
+When a reference is published and verified, add it to the `reputation.sources`
+list in `config/seo-measurement.json`. Mark whether it describes Composer or the
+broader TKA project, whether it links to TKA, and the date the live source was
+last checked. Several pages on one website still count as one independent site.
+Owned pages and automatic domain-information listings do not count.
+
 ### Product outcome
 
 The off-page campaign earns its keep when referred and organic visitors open

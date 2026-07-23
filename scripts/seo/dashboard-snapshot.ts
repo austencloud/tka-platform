@@ -27,6 +27,7 @@ export function buildSeoDashboardSnapshot(
   return {
     version: 1,
     experimentId: scorecard.experimentId,
+    protocol: scorecard.protocol,
     generatedAt: scorecard.generatedAt,
     generatedDate: scorecard.generatedDate,
     dataThrough: scorecard.dataThrough,
@@ -73,6 +74,8 @@ export function buildSeoDashboardSnapshot(
     topQueries: scorecard.search.primaryTopQueries,
     indexability: scorecard.indexability,
     aiOverview: scorecard.aiOverview,
+    reputation: scorecard.reputation,
+    milestones: scorecard.milestones,
     decision: {
       status: scorecard.decision.status,
       criteria: scorecard.decision.criteria,
@@ -102,6 +105,8 @@ export function buildSeoSnapshotEvent(
       snapshot_json: JSON.stringify(snapshot),
       snapshot_version: snapshot.version,
       experiment_id: snapshot.experimentId,
+      protocol_version: snapshot.protocol.configVersion,
+      protocol_amended_date: snapshot.protocol.amendedDate,
       generated_date: snapshot.generatedDate,
       data_through: snapshot.dataThrough,
       phase: snapshot.phase,
@@ -113,6 +118,9 @@ export function buildSeoSnapshotEvent(
       organic_activation_rate: acquisition.activationRate,
       ai_citation_rate: aiAudit.citationRate,
       indexed_rate: snapshot.indexability.indexedRate,
+      known_independent_sites: snapshot.reputation.independentSites,
+      composer_specific_sites: snapshot.reputation.composerSpecificSites,
+      linked_independent_sites: snapshot.reputation.linkedSites,
     },
   };
 }

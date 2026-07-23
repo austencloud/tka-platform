@@ -67,9 +67,48 @@ export interface AiOverviewAuditSnapshot {
   };
 }
 
+export interface ReputationSnapshot {
+  reviewCadenceDays: number;
+  lastReviewedDate: string | null;
+  reviewDueDate: string | null;
+  reviewOverdue: boolean;
+  independentSites: number;
+  composerSpecificSites: number;
+  linkedSites: number;
+  targets: {
+    independentSites: number;
+    composerSpecificSites: number;
+    linkedSites: number;
+  };
+  sources: Array<{
+    id: string;
+    publisher: string;
+    sourceUrl: string;
+    sourceType:
+      | "editorial"
+      | "event"
+      | "grant"
+      | "partner"
+      | "review"
+      | "directory";
+    mentionScope: "tka" | "composer";
+    status: "active" | "lost";
+    publishedDate: string | null;
+    verifiedDate: string;
+    linksToTka: boolean;
+    targetUrl: string | null;
+    context: string;
+  }>;
+}
+
 export interface SeoScorecard {
   version: 1;
   experimentId: string;
+  protocol: {
+    configVersion: SeoMeasurementConfig["version"];
+    amendedDate: string;
+    amendmentReason: string;
+  };
   generatedAt: string;
   generatedDate: string;
   dataThrough: string;
@@ -144,6 +183,8 @@ export interface SeoScorecard {
     current: AiOverviewAuditSnapshot;
     citationRateChange: number | null;
   };
+  reputation: ReputationSnapshot;
+  milestones: EvidenceCriterion[];
   decision: {
     status:
       | "baseline"
@@ -525,8 +566,6 @@ function buildDecision(options: {
   searchDataComplete: boolean;
   primary: MetricComparison | null;
   confirmation: MetricComparison | null;
-  headTermPrimary: SearchMetrics | null;
-  headTermConfirmation: SearchMetrics | null;
   primaryFunnel: FunnelMetrics | null;
   confirmationFunnel: FunnelMetrics | null;
   primaryConversionMeasurable: boolean;
@@ -535,11 +574,6 @@ function buildDecision(options: {
   confirmationPostHogDataComplete: boolean;
   indexingDataComplete: boolean;
   indexedRate: number | null;
-  aiCitationRate: number | null;
-  aiAuditComplete: boolean;
-  aiBaselineComplete: boolean;
-  headTermAiAudited: boolean;
-  headTermAiCitationRank: number | null;
 }): SeoScorecard["decision"] {
   if (options.phase === "baseline") {
     return { status: "baseline", evaluationWindow: null, criteria: [] };
@@ -554,9 +588,6 @@ function buildDecision(options: {
 
   const useConfirmation = options.phase === "confirmed";
   const comparison = useConfirmation ? options.confirmation : options.primary;
-  const headTerm = useConfirmation
-    ? options.headTermConfirmation
-    : options.headTermPrimary;
   const funnel = useConfirmation
     ? options.confirmationFunnel
     : options.primaryFunnel;
@@ -631,15 +662,6 @@ function buildDecision(options: {
   const criteria: EvidenceCriterion[] = [
     ...searchCriteria,
     criterion({
-      id: "head_term_position",
-      label: 'Average position for "flow arts software"',
-      actual: headTerm?.position ?? null,
-      target: options.config.successCriteria.maximumHeadTermPosition,
-      unit: "position",
-      ready,
-      pass: (actual, target) => actual <= target,
-    }),
-    criterion({
       id: "indexed_sample_rate",
       label: "Indexed treatment sample",
       actual: options.indexedRate,
@@ -657,25 +679,6 @@ function buildDecision(options: {
       ready: ready && conversionMeasurable && postHogDataComplete,
       pass: (actual, target) => actual >= target,
     }),
-    criterion({
-      id: "head_term_ai_citation_rank",
-      label: 'TKA citation rank for "flow arts software" AI Overview',
-      actual: options.headTermAiCitationRank,
-      target: options.config.successCriteria.maximumHeadTermAiCitationRank,
-      unit: "position",
-      ready: ready && options.headTermAiAudited,
-      nullStatus: "fail",
-      pass: (actual, target) => actual <= target,
-    }),
-    criterion({
-      id: "ai_overview_citation_rate",
-      label: "TKA citation rate when an AI Overview appears",
-      actual: options.aiCitationRate,
-      target: options.config.successCriteria.minimumAiCitationRate,
-      unit: "ratio",
-      ready: ready && options.aiAuditComplete,
-      pass: (actual, target) => actual >= target,
-    }),
   ];
 
   if (!ready) {
@@ -685,12 +688,7 @@ function buildDecision(options: {
       criteria,
     };
   }
-  if (
-    !options.cohortFrozen ||
-    !options.searchDataComplete ||
-    (options.config.experiment.evaluationMode === "relative_lift" &&
-      !options.aiBaselineComplete)
-  ) {
+  if (!options.cohortFrozen || !options.searchDataComplete) {
     return {
       status: "incomplete_evidence",
       evaluationWindow: useConfirmation ? "confirmation" : "primary",
@@ -721,6 +719,132 @@ function buildDecision(options: {
     evaluationWindow: useConfirmation ? "confirmation" : "primary",
     criteria,
   };
+}
+
+function sourceHost(sourceUrl: string): string {
+  return new URL(sourceUrl).hostname
+    .toLocaleLowerCase("en-US")
+    .replace(/^www\./, "");
+}
+
+export function buildReputationSnapshot(
+  config: SeoMeasurementConfig,
+  generatedDate: string
+): ReputationSnapshot {
+  const activeSources = config.reputation.sources.filter(
+    (source) => source.status === "active"
+  );
+  const independentSites = new Set(
+    activeSources.map((source) => sourceHost(source.sourceUrl))
+  );
+  const composerSpecificSites = new Set(
+    activeSources
+      .filter((source) => source.mentionScope === "composer")
+      .map((source) => sourceHost(source.sourceUrl))
+  );
+  const linkedSites = new Set(
+    activeSources
+      .filter((source) => source.linksToTka)
+      .map((source) => sourceHost(source.sourceUrl))
+  );
+  const lastReviewedDate = config.reputation.lastReviewedDate;
+  const reviewDueDate = addDays(
+    lastReviewedDate,
+    config.reputation.reviewCadenceDays
+  );
+
+  return {
+    reviewCadenceDays: config.reputation.reviewCadenceDays,
+    lastReviewedDate,
+    reviewDueDate,
+    reviewOverdue: generatedDate > reviewDueDate,
+    independentSites: independentSites.size,
+    composerSpecificSites: composerSpecificSites.size,
+    linkedSites: linkedSites.size,
+    targets: {
+      independentSites: config.milestoneCriteria.minimumIndependentSites,
+      composerSpecificSites:
+        config.milestoneCriteria.minimumComposerSpecificSites,
+      linkedSites: config.milestoneCriteria.minimumLinkedSites,
+    },
+    sources: config.reputation.sources.map((source) => ({ ...source })),
+  };
+}
+
+function buildMilestones(options: {
+  config: SeoMeasurementConfig;
+  phase: SeoScorecard["phase"];
+  headTermPrimary: SearchMetrics | null;
+  headTermConfirmation: SearchMetrics | null;
+  aiOverview: SeoScorecard["aiOverview"];
+  reputation: ReputationSnapshot;
+}): EvidenceCriterion[] {
+  const headTerm =
+    options.phase === "confirmed"
+      ? options.headTermConfirmation
+      : options.headTermPrimary;
+
+  return [
+    criterion({
+      id: "head_term_position",
+      label: 'Average position for "flow arts software"',
+      actual: headTerm?.position ?? null,
+      target: options.config.milestoneCriteria.maximumHeadTermPosition,
+      unit: "position",
+      ready: headTerm !== null,
+      nullStatus: "fail",
+      pass: (actual, target) => actual <= target,
+    }),
+    criterion({
+      id: "ai_overview_citation_rate",
+      label: "TKA citation rate when an AI Overview appears",
+      actual: options.aiOverview.current.citationRate,
+      target: options.config.milestoneCriteria.minimumAiCitationRate,
+      unit: "ratio",
+      ready: options.aiOverview.current.queryCoverage === 1,
+      pass: (actual, target) => actual >= target,
+    }),
+    criterion({
+      id: "head_term_ai_citation_rank",
+      label: 'TKA citation rank for "flow arts software" AI Overview',
+      actual:
+        options.aiOverview.current.headTerm.aiOverviewPresent &&
+        options.aiOverview.current.headTerm.citedTka
+          ? options.aiOverview.current.headTerm.citationRank
+          : null,
+      target: options.config.milestoneCriteria.maximumHeadTermAiCitationRank,
+      unit: "position",
+      ready: options.aiOverview.current.headTerm.audited,
+      pass: (actual, target) => actual <= target,
+    }),
+    criterion({
+      id: "independent_sites",
+      label: "Known independent sites mentioning TKA or Composer",
+      actual: options.reputation.independentSites,
+      target: options.reputation.targets.independentSites,
+      unit: "count",
+      ready: true,
+      pass: (actual, target) => actual >= target,
+    }),
+    criterion({
+      id: "composer_specific_sites",
+      label: "Known independent sites describing Composer",
+      actual: options.reputation.composerSpecificSites,
+      target: options.reputation.targets.composerSpecificSites,
+      unit: "count",
+      ready: true,
+      pass: (actual, target) => actual >= target,
+    }),
+    criterion({
+      id: "linked_sites",
+      label: "Known independent sites linking to TKA",
+      actual: options.reputation.linkedSites,
+      target: options.reputation.targets.linkedSites,
+      unit: "count",
+      ready: true,
+      pass: (actual, target) => actual >= target,
+    }),
+  ];
 }
 
 export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
@@ -888,6 +1012,15 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
     .sort();
   const postHogDataComplete =
     expectedPostHogDates.size > 0 && missingPostHogDates.length === 0;
+  const reputation = buildReputationSnapshot(input.config, input.generatedDate);
+  const milestones = buildMilestones({
+    config: input.config,
+    phase: windows.phase,
+    headTermPrimary: headTerm.primary,
+    headTermConfirmation: headTerm.confirmation,
+    aiOverview,
+    reputation,
+  });
 
   const decision = buildDecision({
     config: input.config,
@@ -896,8 +1029,6 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
     searchDataComplete,
     primary,
     confirmation,
-    headTermPrimary: headTerm.primary,
-    headTermConfirmation: headTerm.confirmation,
     primaryFunnel,
     confirmationFunnel,
     primaryConversionMeasurable,
@@ -907,20 +1038,16 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
     indexingDataComplete:
       indexability.sampleComplete && indexability.freshForEvaluation,
     indexedRate: indexability.indexedRate,
-    aiCitationRate: aiOverview.current.citationRate,
-    aiAuditComplete: aiOverview.current.queryCoverage === 1,
-    aiBaselineComplete: aiOverview.baseline.queryCoverage === 1,
-    headTermAiAudited: aiOverview.current.headTerm.audited,
-    headTermAiCitationRank:
-      aiOverview.current.headTerm.aiOverviewPresent &&
-      aiOverview.current.headTerm.citedTka
-        ? aiOverview.current.headTerm.citationRank
-        : null,
   });
 
   return {
     version: 1,
     experimentId: input.config.experimentId,
+    protocol: {
+      configVersion: input.config.version,
+      amendedDate: input.config.protocolAmendment.date,
+      amendmentReason: input.config.protocolAmendment.reason,
+    },
     generatedAt: input.generatedAt,
     generatedDate: input.generatedDate,
     dataThrough: input.dataThrough,
@@ -984,6 +1111,8 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
     },
     indexability,
     aiOverview,
+    reputation,
+    milestones,
     decision,
   };
 }
@@ -1028,7 +1157,7 @@ export function renderScorecardMarkdown(scorecard: SeoScorecard): string {
       : scorecard.search.primary;
   const criteria =
     scorecard.decision.criteria.length === 0
-      ? "No decision criteria are due yet."
+      ? "No required decision checks are due yet."
       : [
           "| Test | Status | Actual | Target |",
           "| --- | --- | ---: | ---: |",
@@ -1038,6 +1167,21 @@ export function renderScorecardMarkdown(scorecard: SeoScorecard): string {
             return `| ${item.label} | ${item.status} | ${formatter(item.actual)} | ${formatter(item.target)} |`;
           }),
         ].join("\n");
+  const milestones = [
+    "| Milestone | Status | Actual | Target |",
+    "| --- | --- | ---: | ---: |",
+    ...scorecard.milestones.map((item) => {
+      const formatter = item.unit === "ratio" ? formatRatio : formatNumber;
+      return `| ${item.label} | ${item.status} | ${formatter(item.actual)} | ${formatter(item.target)} |`;
+    }),
+  ].join("\n");
+  const reputationSources = scorecard.reputation.sources
+    .filter((source) => source.status === "active")
+    .map(
+      (source) =>
+        `- [${source.publisher}](${source.sourceUrl}): ${source.context}`
+    )
+    .join("\n");
 
   return `# Flow Arts Software SEO scorecard
 
@@ -1049,6 +1193,8 @@ Experiment phase: ${scorecard.phase}
 
 Evaluation mode: ${scorecard.evaluationMode}
 
+Protocol version: ${scorecard.protocol.configVersion} (amended ${scorecard.protocol.amendedDate})
+
 Decision: ${scorecard.decision.status}
 
 Deployment date: ${scorecard.experimentDates.deploymentDate ?? "not registered"}
@@ -1059,9 +1205,23 @@ Indexed date: ${scorecard.experimentDates.indexedDate ?? "not detected"} (${scor
 
 ${comparisonRows(activeComparison, scorecard.evaluationMode)}
 
-## Evidence gates
+## Required decision checks
 
 ${criteria}
+
+## Campaign milestones
+
+${milestones}
+
+## Independent reputation
+
+- Known independent sites: ${scorecard.reputation.independentSites}/${scorecard.reputation.targets.independentSites}
+- Composer-specific sites: ${scorecard.reputation.composerSpecificSites}/${scorecard.reputation.targets.composerSpecificSites}
+- Independent sites linking to TKA: ${scorecard.reputation.linkedSites}/${scorecard.reputation.targets.linkedSites}
+- Last reviewed: ${scorecard.reputation.lastReviewedDate ?? "not reviewed"}
+- Next review due: ${scorecard.reputation.reviewDueDate ?? "now"}
+
+${reputationSources || "No active independent sources are logged."}
 
 ## Data quality
 
@@ -1081,7 +1241,7 @@ ${criteria}
 - Inspection is fresh for the evaluation window: ${scorecard.indexability.freshForEvaluation ? "yes" : "no"}
 - Indexed inspection sample: ${scorecard.indexability.indexed}/${scorecard.indexability.expected}
 - Canonical matches: ${scorecard.indexability.canonicalMatches}/${scorecard.indexability.expected}
-- Pre-launch AI audit: ${scorecard.aiOverview.baseline.auditDate ?? "not collected"} (${scorecard.aiOverview.baseline.auditedQueries}/${scorecard.aiOverview.baseline.expectedQueries} queries; ${scorecard.evaluationMode === "visibility_emergence" ? "not required for this launch" : "required"})
+- Pre-launch AI audit: ${scorecard.aiOverview.baseline.auditDate ?? "not collected"} (${scorecard.aiOverview.baseline.auditedQueries}/${scorecard.aiOverview.baseline.expectedQueries} queries; comparison context only)
 - Current-window AI audit: ${scorecard.aiOverview.current.auditDate ?? "not collected"} (${scorecard.aiOverview.current.auditedQueries}/${scorecard.aiOverview.current.expectedQueries} queries)
 - TKA citation rate when an AI Overview appeared: ${formatRatio(scorecard.aiOverview.current.citationRate)}
 - Citation-rate change from baseline: ${formatRatio(scorecard.aiOverview.citationRateChange)}

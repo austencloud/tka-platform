@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SeoDashboardSnapshot } from "../../src/lib/features/admin/domain/models/seo-dashboard-model";
 import {
   formatPercent,
+  getKnownCategorySearchMetrics,
   getSeoAutomationStory,
   getSeoGrowthStory,
   getSeoHistoryStory,
@@ -238,5 +239,42 @@ describe("getSeoOutcomeStatus", () => {
     );
 
     expect(status).toBe("fail");
+  });
+});
+
+describe("getKnownCategorySearchMetrics", () => {
+  it("combines software and notation groups without counting brand queries", () => {
+    const metrics = getKnownCategorySearchMetrics({
+      search: {
+        current: { impressions: 99, clicks: 9, ctr: 9 / 99, position: 8 },
+      },
+      queryGroups: [
+        {
+          id: "software_category",
+          label: "Software",
+          baseline: { impressions: 0, clicks: 0, ctr: null, position: null },
+          current: { impressions: 10, clicks: 2, ctr: 0.2, position: 4 },
+        },
+        {
+          id: "notation_category",
+          label: "Notation",
+          baseline: { impressions: 0, clicks: 0, ctr: null, position: null },
+          current: { impressions: 30, clicks: 2, ctr: 2 / 30, position: 8 },
+        },
+        {
+          id: "brand",
+          label: "Brand",
+          baseline: { impressions: 0, clicks: 0, ctr: null, position: null },
+          current: { impressions: 50, clicks: 5, ctr: 0.1, position: 1 },
+        },
+      ],
+    } as Pick<SeoDashboardSnapshot, "queryGroups" | "search">);
+
+    expect(metrics).toEqual({
+      clicks: 4,
+      impressions: 40,
+      ctr: 0.1,
+      position: 7,
+    });
   });
 });

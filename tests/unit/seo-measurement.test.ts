@@ -20,12 +20,18 @@ import {
   buildWebVitalsQuery,
 } from "../../scripts/seo/posthog";
 import { getPostHogDashboardSpec } from "../../scripts/seo/provision-posthog-dashboard";
-import { buildSeoScorecard } from "../../scripts/seo/scorecard";
+import {
+  buildReputationSnapshot,
+  buildSeoScorecard,
+} from "../../scripts/seo/scorecard";
 import {
   buildSeoDashboardSnapshot,
   buildSeoSnapshotEvent,
 } from "../../scripts/seo/dashboard-snapshot";
-import { parseSeoHistoryRows } from "../../src/lib/features/admin/domain/models/seo-dashboard-model";
+import {
+  parseSeoHistoryRows,
+  seoDashboardSnapshotSchema,
+} from "../../src/lib/features/admin/domain/models/seo-dashboard-model";
 import {
   buildBulkSearchQuery,
   getWarehouseTableFieldNames,
@@ -439,7 +445,7 @@ describe("SEO cohorts and data-source contracts", () => {
 });
 
 describe("SEO experiment decision", () => {
-  it("declares a primary win only after every preregistered gate passes", () => {
+  it("declares a primary win only after every required gate passes", () => {
     const experimentConfig = {
       ...config,
       experiment: {
@@ -591,6 +597,17 @@ describe("SEO experiment decision", () => {
     expect(
       scorecard.decision.criteria.every((item) => item.status === "pass")
     ).toBe(true);
+    expect(scorecard.milestones).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "head_term_position", status: "pass" }),
+        expect.objectContaining({
+          id: "head_term_ai_citation_rank",
+          status: "pass",
+        }),
+        expect.objectContaining({ id: "independent_sites", actual: 2 }),
+        expect.objectContaining({ id: "composer_specific_sites", actual: 0 }),
+      ])
+    );
     expect(scorecard.aiOverview.current.headTerm.citationRank).toBe(1);
     expect(scorecard.aiOverview.baseline.auditDate).toBe("2026-05-31");
     expect(scorecard.indexability).toMatchObject({
@@ -605,9 +622,12 @@ describe("SEO experiment decision", () => {
       currentWindow: "primary",
       phase: "primary_complete",
       decision: { status: "primary_target_met" },
+      protocol: { configVersion: 2, amendedDate: "2026-07-22" },
       headTerm: { current: { position: 2 } },
       cohorts: { frozen: true, frozenControlCount: 1 },
+      reputation: { independentSites: 2, composerSpecificSites: 0 },
     });
+    expect(dashboard.milestones).toEqual(scorecard.milestones);
     expect(dashboard.search.controlAdjusted?.impressionLift).toBe(1);
     const event = buildSeoSnapshotEvent(dashboard, "test-project-token");
     expect(event).toMatchObject({
@@ -618,7 +638,9 @@ describe("SEO experiment decision", () => {
         generated_date: "2026-06-07",
         deployment_date: "2026-06-01",
         evaluation_mode: "relative_lift",
+        protocol_version: 2,
         head_term_position: 2,
+        known_independent_sites: 2,
       },
     });
     expect(
@@ -636,7 +658,51 @@ describe("SEO experiment decision", () => {
           : observation
       ),
     });
-    expect(scorecardWithSecondCitation.decision.status).toBe("below_target");
+    expect(scorecardWithSecondCitation.decision.status).toBe(
+      "primary_target_met"
+    );
+    expect(
+      scorecardWithSecondCitation.milestones.find(
+        (milestone) => milestone.id === "head_term_ai_citation_rank"
+      )?.status
+    ).toBe("fail");
+
+    const scorecardWithoutHeadTermOverview = buildSeoScorecard({
+      ...scorecardInput,
+      aiObservations: scorecardInput.aiObservations.map((observation) =>
+        observation.query === "flow arts software" &&
+        observation.observedDate === "2026-06-04"
+          ? {
+              ...observation,
+              aiOverviewPresent: false,
+              citedTka: false,
+              citedUrl: null,
+              rankInCitations: null,
+            }
+          : observation
+      ),
+    });
+    expect(scorecardWithoutHeadTermOverview.decision.status).toBe(
+      "primary_target_met"
+    );
+    expect(
+      scorecardWithoutHeadTermOverview.milestones.find(
+        (milestone) => milestone.id === "head_term_ai_citation_rank"
+      )?.status
+    ).toBe("unavailable");
+
+    const legacyDashboard = structuredClone(dashboard) as Record<
+      string,
+      unknown
+    >;
+    delete legacyDashboard.protocol;
+    delete legacyDashboard.reputation;
+    delete legacyDashboard.milestones;
+    expect(seoDashboardSnapshotSchema.parse(legacyDashboard)).toMatchObject({
+      protocol: { configVersion: 1, amendedDate: null },
+      reputation: { independentSites: 0, reviewOverdue: true },
+      milestones: [],
+    });
 
     const scorecardWithLiveCohort = buildSeoScorecard({
       ...scorecardInput,
@@ -770,16 +836,52 @@ describe("SEO experiment decision", () => {
     ).toEqual([
       "treatment_impressions",
       "treatment_clicks",
-      "head_term_position",
       "indexed_sample_rate",
       "organic_activation_rate",
-      "head_term_ai_citation_rank",
-      "ai_overview_citation_rate",
     ]);
     expect(
       scorecard.decision.criteria.every(
         (criterion) => criterion.status === "pass"
       )
     ).toBe(true);
+    expect(scorecard.milestones.map((milestone) => milestone.id)).toEqual([
+      "head_term_position",
+      "ai_overview_citation_rate",
+      "head_term_ai_citation_rank",
+      "independent_sites",
+      "composer_specific_sites",
+      "linked_sites",
+    ]);
+  });
+
+  it("counts reputation by independent website instead of raw pages", () => {
+    const reputation = buildReputationSnapshot(
+      {
+        ...config,
+        reputation: {
+          ...config.reputation,
+          sources: [
+            ...config.reputation.sources,
+            {
+              ...config.reputation.sources[0]!,
+              id: "fund-the-flow-arts-second-page",
+              sourceUrl: "https://fundtheflowarts.org/another-tka-page/",
+              mentionScope: "composer" as const,
+              linksToTka: true,
+              targetUrl: "https://tkaflowarts.com/composer",
+            },
+          ],
+        },
+      },
+      "2026-07-22"
+    );
+
+    expect(reputation).toMatchObject({
+      independentSites: 2,
+      composerSpecificSites: 1,
+      linkedSites: 1,
+      reviewDueDate: "2026-08-21",
+      reviewOverdue: false,
+    });
   });
 });

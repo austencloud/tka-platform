@@ -45,6 +45,52 @@ const auditSnapshotSchema = z.object({
   }),
 });
 
+const evidenceCriterionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  status: z.enum(["pass", "fail", "pending", "unavailable"]),
+  actual: nullableNumber,
+  target: z.number().finite(),
+  unit: z.enum(["count", "ratio", "position"]),
+});
+
+const reputationSnapshotSchema = z.object({
+  reviewCadenceDays: z.number().int().positive(),
+  lastReviewedDate: z.string().nullable(),
+  reviewDueDate: z.string().nullable(),
+  reviewOverdue: z.boolean(),
+  independentSites: z.number().int().nonnegative(),
+  composerSpecificSites: z.number().int().nonnegative(),
+  linkedSites: z.number().int().nonnegative(),
+  targets: z.object({
+    independentSites: z.number().int().positive(),
+    composerSpecificSites: z.number().int().positive(),
+    linkedSites: z.number().int().positive(),
+  }),
+  sources: z.array(
+    z.object({
+      id: z.string().min(1),
+      publisher: z.string().min(1),
+      sourceUrl: z.string().url(),
+      sourceType: z.enum([
+        "editorial",
+        "event",
+        "grant",
+        "partner",
+        "review",
+        "directory",
+      ]),
+      mentionScope: z.enum(["tka", "composer"]),
+      status: z.enum(["active", "lost"]),
+      publishedDate: z.string().nullable(),
+      verifiedDate: z.string().min(1),
+      linksToTka: z.boolean(),
+      targetUrl: z.string().url().nullable(),
+      context: z.string().min(1),
+    })
+  ),
+});
+
 export const seoPhaseSchema = z.enum([
   "baseline",
   "awaiting_indexing",
@@ -66,6 +112,17 @@ export const seoDecisionStatusSchema = z.enum([
 export const seoDashboardSnapshotSchema = z.object({
   version: z.literal(1),
   experimentId: z.string().min(1),
+  protocol: z
+    .object({
+      configVersion: z.number().int().positive(),
+      amendedDate: z.string().nullable(),
+      amendmentReason: z.string().nullable(),
+    })
+    .default({
+      configVersion: 1,
+      amendedDate: null,
+      amendmentReason: null,
+    }),
   generatedAt: z.string().min(1),
   generatedDate: z.string().min(1),
   dataThrough: z.string().min(1),
@@ -150,18 +207,25 @@ export const seoDashboardSnapshotSchema = z.object({
     current: auditSnapshotSchema,
     citationRateChange: nullableNumber,
   }),
+  reputation: reputationSnapshotSchema.default({
+    reviewCadenceDays: 30,
+    lastReviewedDate: null,
+    reviewDueDate: null,
+    reviewOverdue: true,
+    independentSites: 0,
+    composerSpecificSites: 0,
+    linkedSites: 0,
+    targets: {
+      independentSites: 5,
+      composerSpecificSites: 2,
+      linkedSites: 3,
+    },
+    sources: [],
+  }),
+  milestones: z.array(evidenceCriterionSchema).default([]),
   decision: z.object({
     status: seoDecisionStatusSchema,
-    criteria: z.array(
-      z.object({
-        id: z.string().min(1),
-        label: z.string().min(1),
-        status: z.enum(["pass", "fail", "pending", "unavailable"]),
-        actual: nullableNumber,
-        target: z.number().finite(),
-        unit: z.enum(["count", "ratio", "position"]),
-      })
-    ),
+    criteria: z.array(evidenceCriterionSchema),
   }),
 });
 

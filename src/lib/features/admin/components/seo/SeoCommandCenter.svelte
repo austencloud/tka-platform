@@ -133,13 +133,15 @@
         <div class="title-block">
           <div class="eyebrow">SEO</div>
           <h2>Is Google finding Flow Arts Composer?</h2>
-          <p>One answer. Nothing to manage unless this page says so.</p>
+          <p>
+            Search checks itself. Independent mentions get a monthly review.
+          </p>
         </div>
         <div class="header-status">
           <span class:late={!automation?.healthy} class="phase-badge">
             <span class="status-dot" aria-hidden="true"></span>
             {automation?.healthy
-              ? "Checks itself every morning"
+              ? "Search checks every morning"
               : "The daily check is late"}
           </span>
           <span class="data-date">
@@ -165,7 +167,9 @@
           </span>
           <span class="summary-copy">
             <strong>Open the nerd stuff</strong>
-            <small>Dates, goals, rankings, AI checks, and data sources</small>
+            <small
+              >Dates, broad search, flagship phrase, AI, and reputation</small
+            >
           </span>
           <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"></i>
         </summary>

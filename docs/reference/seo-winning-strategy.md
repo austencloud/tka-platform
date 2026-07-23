@@ -247,6 +247,13 @@ date, referral visits, and downstream activation. Count independent reviews and
 relevant referring domains, but keep the source quality visible. A raw link count
 can hide a weak campaign.
 
+Published sources that currently count live in `config/seo-measurement.json`.
+The first recorded baseline is 2 independent sites mentioning The Kinetic
+Alphabet, 0 Composer-specific sites, and 0 sites linking to TKA. The first
+milestone is 5 independent sites, including 2 that describe Composer and 3 that
+link to a useful TKA source page. These are campaign progress markers, not a
+claim of market leadership.
+
 ## Review cadence
 
 Run a monthly review while the campaign is active:

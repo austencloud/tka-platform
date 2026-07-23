@@ -38,6 +38,49 @@ export function formatLift(value: number | null | undefined): string {
   return `${sign}${(value * 100).toFixed(1)}% vs control`;
 }
 
+const CATEGORY_QUERY_GROUP_IDS = new Set([
+  "software_category",
+  "notation_category",
+]);
+
+export interface SeoCategorySearchMetrics {
+  clicks: number;
+  impressions: number;
+  ctr: number | null;
+  position: number | null;
+}
+
+/**
+ * Named category queries are a useful lower-bound diagnostic. The broader
+ * treatment-page total remains the primary signal because Search Console does
+ * not expose every query.
+ */
+export function getKnownCategorySearchMetrics(
+  snapshot: Pick<SeoDashboardSnapshot, "queryGroups" | "search">
+): SeoCategorySearchMetrics {
+  const useCurrentWindow = snapshot.search.current !== null;
+  const metrics = snapshot.queryGroups
+    .filter((group) => CATEGORY_QUERY_GROUP_IDS.has(group.id))
+    .map((group) => (useCurrentWindow ? group.current : group.baseline))
+    .filter((group): group is NonNullable<typeof group> => group !== null);
+  const clicks = metrics.reduce((total, group) => total + group.clicks, 0);
+  const impressions = metrics.reduce(
+    (total, group) => total + group.impressions,
+    0
+  );
+  const weightedPosition = metrics.reduce(
+    (total, group) => total + (group.position ?? 0) * group.impressions,
+    0
+  );
+
+  return {
+    clicks,
+    impressions,
+    ctr: impressions > 0 ? clicks / impressions : null,
+    position: impressions > 0 ? weightedPosition / impressions : null,
+  };
+}
+
 export type SeoGrowthTone = "waiting" | "positive" | "negative" | "neutral";
 
 export interface SeoGrowthStory {

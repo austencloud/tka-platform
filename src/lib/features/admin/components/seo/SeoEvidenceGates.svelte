@@ -2,6 +2,7 @@
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
   import {
     formatCriterion,
+    formatDate,
     formatInteger,
     formatPercent,
     getSeoOutcomeStatus,
@@ -18,29 +19,23 @@
     organic_activation_rate: "Enough search visitors started creating",
     head_term_ai_citation_rank: "TKA ranked high enough in the AI answer",
     ai_overview_citation_rate: "Enough AI answers mentioned TKA",
+    independent_sites: "Independent sites mention TKA or Composer",
+    composer_specific_sites: "Independent sites describe Composer",
+    linked_sites: "Independent sites link to TKA",
   };
 
   type EvidenceView = "summary" | "exact";
 
   const OUTCOME_GROUPS = [
     {
-      label: "“flow arts software” moves toward the top",
-      note: "A lower position number is better. #1 is the top result.",
-      criterionIds: ["head_term_position"],
-    },
-    {
       label: "Search visitors start creating",
       note: "Traffic only counts when people use the Composer.",
       criterionIds: ["organic_activation_rate"],
     },
     {
-      label: "Google and AI can use TKA as a source",
-      note: "Pages are searchable and AI answers cite TKA.",
-      criterionIds: [
-        "indexed_sample_rate",
-        "head_term_ai_citation_rank",
-        "ai_overview_citation_rate",
-      ],
+      label: "Google can use the pages",
+      note: "The tracked pages must be indexed and searchable.",
+      criterionIds: ["indexed_sample_rate"],
     },
   ] as const;
 
@@ -53,6 +48,13 @@
     snapshot.decision.criteria.filter(
       (criterion) => criterion.status === "pass"
     ).length
+  );
+  const milestonePassCount = $derived(
+    snapshot.milestones.filter((milestone) => milestone.status === "pass")
+      .length
+  );
+  const activeSources = $derived(
+    snapshot.reputation.sources.filter((source) => source.status === "active")
   );
 
   const visibilityOutcome = $derived(
@@ -92,6 +94,24 @@
     return "Waiting";
   }
 
+  function milestoneLabel(
+    status: SeoDashboardSnapshot["milestones"][number]["status"]
+  ): string {
+    if (status === "pass") return "Reached";
+    if (status === "fail") return "Building";
+    return "Waiting";
+  }
+
+  function milestoneValue(
+    milestone: SeoDashboardSnapshot["milestones"][number]
+  ): string {
+    if (milestone.actual !== null) return formatCriterion(milestone);
+    if (milestone.id === "head_term_position") return "Not found";
+    if (milestone.id === "head_term_ai_citation_rank") return "No AI answer";
+    if (milestone.id === "ai_overview_citation_rate") return "No AI answers";
+    return "Waiting";
+  }
+
   function targetText(
     criterion: SeoDashboardSnapshot["decision"]["criteria"][number]
   ): string {
@@ -115,12 +135,12 @@
       <span class="gate-count">
         {snapshot.decision.criteria.length === 0
           ? "Checked later"
-          : `${passedOutcomeCount}/4 goals`}
+          : `${passedOutcomeCount}/${outcomes.length} required`}
       </span>
     </div>
     <p class="panel-explanation">
       {snapshot.evaluationMode === "visibility_emergence"
-        ? "The pre-launch count was zero. These fixed outcomes decide whether visibility truly appeared."
+        ? "The pre-launch count was zero. These checks decide whether Google discovery produced real use."
         : "One good-looking number is not enough. These outcomes have to agree."}
     </p>
 
@@ -154,12 +174,13 @@
       </div>
       {#if snapshot.decision.criteria.length > 0}
         <span class="gate-count">
-          {passCount}/{snapshot.decision.criteria.length} passed
+          {passCount}/{snapshot.decision.criteria.length} required
         </span>
       {/if}
     </div>
     <p class="panel-explanation">
-      These are the individual thresholds behind the plain-language goals.
+      These checks decide the experiment. Phrase rank, AI citations, and
+      independent reputation are tracked separately below.
     </p>
 
     {#if snapshot.decision.criteria.length === 0}
@@ -185,6 +206,89 @@
               <span>{targetText(criterion)}</span>
             </div>
             <span class="criterion-value">{formatCriterion(criterion)}</span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+
+    {#if snapshot.milestones.length > 0}
+      <div class="subsection-heading">
+        <div>
+          <span class="panel-kicker">Campaign milestones</span>
+          <h4>Important, but not kill switches</h4>
+        </div>
+        <span class="gate-count">
+          {milestonePassCount}/{snapshot.milestones.length} reached
+        </span>
+      </div>
+      <p class="subsection-explanation">
+        A missed milestone shows what to build next. It does not erase broader
+        Google growth.
+      </p>
+      <ul class="criteria-list milestone-list">
+        {#each snapshot.milestones as milestone (milestone.id)}
+          <li
+            class="criterion criterion-milestone criterion-{milestone.status}"
+          >
+            <span class="criterion-mark" aria-hidden="true">
+              <i
+                class="fas {milestone.status === 'pass'
+                  ? 'fa-check'
+                  : milestone.status === 'fail'
+                    ? 'fa-arrow-trend-up'
+                    : 'fa-ellipsis'}"
+              ></i>
+            </span>
+            <div class="criterion-copy">
+              <strong>{PLAIN_LABELS[milestone.id] ?? milestone.label}</strong>
+              <span>{targetText(milestone)}</span>
+            </div>
+            <span class="criterion-value">
+              {milestoneValue(milestone)} · {milestoneLabel(milestone.status)}
+            </span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+
+    <div class="subsection-heading reputation-heading">
+      <div>
+        <span class="panel-kicker">Reputation ledger</span>
+        <h4>Which independent sites count?</h4>
+      </div>
+      <span
+        class:overdue={snapshot.reputation.reviewOverdue}
+        class="gate-count"
+      >
+        {snapshot.reputation.reviewOverdue ? "Review due" : "Current"}
+      </span>
+    </div>
+    <p class="subsection-explanation">
+      {#if snapshot.reputation.lastReviewedDate}
+        Last checked {formatDate(snapshot.reputation.lastReviewedDate)}.
+      {:else}
+        No reputation review has been logged yet.
+      {/if}
+      Each website counts once. TKA pages and automatic domain listings do not count.
+    </p>
+    {#if activeSources.length === 0}
+      <div class="exact-empty">No active independent sources are logged.</div>
+    {:else}
+      <ul class="source-list">
+        {#each activeSources as source (source.id)}
+          <li>
+            <p>
+              <a href={source.sourceUrl} target="_blank" rel="noreferrer">
+                {source.publisher}
+              </a>
+              <span> · {source.context}</span>
+            </p>
+            <small>
+              {source.mentionScope === "composer"
+                ? "Composer-specific"
+                : "TKA mention"}
+              · {source.linksToTka ? "Links to TKA" : "No TKA link"}
+            </small>
           </li>
         {/each}
       </ul>
@@ -246,7 +350,7 @@
     display: grid;
     min-height: 0;
     flex: 1;
-    grid-template-rows: repeat(4, minmax(62px, 1fr));
+    grid-template-rows: repeat(3, minmax(62px, 1fr));
     gap: 7px;
     margin: 0;
     padding: 0;
@@ -351,6 +455,78 @@
     padding: 0;
     overflow-y: auto;
     list-style: none;
+  }
+
+  .subsection-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .subsection-heading h4 {
+    margin: 3px 0 0;
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .subsection-explanation {
+    margin: 8px 0 10px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.4;
+  }
+
+  .milestone-list {
+    overflow: visible;
+  }
+
+  .criterion-milestone.criterion-fail .criterion-mark {
+    color: var(--semantic-seo-violet);
+  }
+
+  .criterion-milestone .criterion-value {
+    min-width: 15ch;
+  }
+
+  .reputation-heading .gate-count.overdue {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .source-list {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .source-list li {
+    padding: 10px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 4%, transparent);
+  }
+
+  .source-list p {
+    margin: 0;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.68));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.4;
+  }
+
+  .source-list a {
+    color: var(--semantic-seo-accent);
+    font-weight: 700;
+    text-underline-offset: 0.18em;
+  }
+
+  .source-list small {
+    display: block;
+    margin-top: 4px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.52));
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .criterion {

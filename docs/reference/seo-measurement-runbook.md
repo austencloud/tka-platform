@@ -8,8 +8,9 @@ The scorecard does not treat a traffic spike as proof. This launch uses a
 registered visibility-emergence design because the treatment pages recorded no
 Search Console impressions before deployment. A 28-day primary window must
 clear fixed search and product-use targets, then a second 28-day window repeats
-the same test. Search performance, indexing, Composer behavior, and AI Overview
-citations stay separate until the final decision.
+the same test. The exact phrase, AI citations, and independent reputation stay
+visible as campaign milestones without turning one unavailable surface into a
+failure for the whole experiment.
 
 This is an observational before-and-after study, not a randomized trial. The
 pre-launch series contains no treatment variance, so it cannot support a
@@ -21,15 +22,17 @@ detail, and each AI Overview audit is a point-in-time observation.
 
 ## What gets measured
 
-| Evidence                   | Primary measure                                                                                     | Source                              |
-| -------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| Category ownership         | Impressions, clicks, CTR, and average position for `flow arts software` and registered query groups | Search Console                      |
-| Page visibility            | Treatment-page search metrics with frozen sitewide reference pages                                  | Search Console                      |
-| Indexing                   | Indexed verdict and Google-selected canonical for a stable URL sample                               | URL Inspection API                  |
-| Product use                | Organic Composer launch, activation, and completion by session                                      | PostHog                             |
-| Field performance          | Daily p75 LCP, INP, and CLS                                                                         | PostHog native `$web_vitals`        |
-| AI Overview presence       | Fixed-query appearance and TKA citation rate                                                        | Manual query audit                  |
-| Supplemental AI visibility | Impressions by page, country, date, and device when the report is available                         | Manual Search Console report export |
+| Evidence                   | Primary measure                                                                  | Source                              |
+| -------------------------- | -------------------------------------------------------------------------------- | ----------------------------------- |
+| Qualified discovery        | All treatment-page impressions and clicks across Google searches                 | Search Console                      |
+| Named category queries     | Software and notation query groups as a lower-bound diagnostic                   | Search Console                      |
+| Page visibility            | Treatment-page search metrics with frozen sitewide reference pages               | Search Console                      |
+| Indexing                   | Indexed verdict and Google-selected canonical for a stable URL sample            | URL Inspection API                  |
+| Product use                | Organic Composer launch, activation, and completion by session                   | PostHog                             |
+| Field performance          | Daily p75 LCP, INP, and CLS                                                      | PostHog native `$web_vitals`        |
+| AI Overview presence       | Fixed-query appearance and TKA citation rate                                     | Manual query audit                  |
+| Independent reputation     | Distinct independent sites, Composer-specific coverage, and sites linking to TKA | Maintained reputation ledger        |
+| Supplemental AI visibility | Impressions by page, country, date, and device when the report is available      | Manual Search Console report export |
 
 Google is rolling out a dedicated Generative AI performance report that covers
 AI Overviews and AI Mode. It does not provide query-level citation positions, so
@@ -41,6 +44,14 @@ report reference](https://support.google.com/webmasters/answer/16984139).
 ## Experiment contract
 
 The registered settings live in `config/seo-measurement.json`.
+
+Protocol version 2 was recorded on 2026-07-22 while the primary window was
+still collecting. Version 1 incorrectly made the exact phrase and an exact-term
+AI Overview hard gates for the entire experiment. Version 2 keeps those targets
+visible as milestones and makes the core verdict answer the stated question:
+did qualified Google discovery appear and lead to product use? The amendment is
+stored in the config so later reports do not present the change as if it had
+always been registered.
 
 - Baseline: 28 complete days ending the day before production deployment.
 - Evaluation mode: `visibility_emergence`. The pre-launch treatment count was
@@ -64,21 +75,33 @@ The registered settings live in `config/seo-measurement.json`.
 - AI audit context: signed out, English (United States), desktop, with the
   Google Search region set to United States.
 
-The preregistered decision gates are:
+The required experiment gates are:
 
 - at least 100 treatment impressions in the evaluation window;
 - at least 5 treatment clicks in the evaluation window;
-- average position 3 or better for `flow arts software`;
-- TKA listed as citation rank 1 for the `flow arts software` AI Overview;
 - at least 90% of the inspected treatment sample indexed;
-- at least 15% of Google organic Composer sessions activated;
-- TKA cited in at least 50% of AI Overviews found in the audit grid.
+- at least 15% of Google organic Composer sessions activated.
+
+The campaign also tracks these first milestones:
+
+- average position 3 or better for `flow arts software`;
+- TKA cited in at least 50% of AI Overviews found across the fixed audit grid;
+- TKA listed first when an AI Overview appears for `flow arts software`;
+- 5 distinct independent sites mentioning TKA or Composer;
+- 2 independent sites describing Composer itself;
+- 3 independent sites linking to a TKA source page.
+
+Milestones do not decide the experiment verdict. Google often does not show an
+AI Overview, so the absence of that surface is recorded as unavailable rather
+than as a campaign failure. A missed phrase or reputation milestone remains a
+clear next target without erasing broader discovery and product use.
 
 A primary result becomes confirmed only when the second 28-day window clears the
-same gates. Missing dates, truncated API days, unfrozen cohorts, a missing
-current-window AI audit, and instrumentation gaps block a win declaration. A
-partial or stale URL Inspection sample and missing PostHog dates also block
-their respective gates.
+same gates. Missing dates, truncated API days, unfrozen cohorts, and
+instrumentation gaps block a win declaration. A partial or stale URL Inspection
+sample and missing PostHog dates also block their respective gates. A missing AI
+audit leaves the AI milestones waiting but does not block the Google discovery
+verdict.
 
 ## Metric definitions
 
@@ -91,6 +114,11 @@ The active visibility-emergence contract reports absolute impressions and
 clicks. It never adds a pseudocount or invents a percentage from the zero
 baseline. Frozen reference-page trends remain visible as context and do not
 decide the result.
+
+Named query groups are diagnostic lower bounds. Search Console omits some rare
+or anonymized query detail, so they cannot represent every category search.
+Treatment-page totals capture the broader visibility signal and remain the
+decision input.
 
 Search visibility begins with Google's first qualifying post-deployment crawl.
 Visitor-behavior rates begin on the later of that crawl date and the registered
@@ -273,6 +301,13 @@ repairs missing finalized Search Console dates from the registered baseline
 onward. It also repairs missing PostHog dates from the instrumentation date and
 refreshes the last three PostHog days to include late completion events.
 
+The public-source reputation ledger lives in `config/seo-measurement.json`.
+Each active website counts once even when it publishes several pages. Owned TKA
+pages and automatic domain-information listings do not count. The scorecard
+checks the ledger's review date every day and calls for a manual review after 30
+days. Search Console has no API for independent editorial mentions or links, so
+publication context and link status must be verified before a source is added.
+
 ## Launch procedure
 
 1. Bootstrap the private tables with `pnpm run seo:bootstrap`.
@@ -340,7 +375,9 @@ production date is known but a qualifying post-deployment crawl is not.
 `collecting` means one of the 28-day windows is still open.
 
 `incomplete_evidence` is not a loss. It means a required source, date, frozen
-cohort, or audit is missing and no available gate has already failed. `below_target`
-means at least one registered gate definitively failed, even if another gate is
-still pending. `primary_target_met` is the first win. Only
-`confirmed_target_met` closes the experiment.
+cohort, or measurement is missing and no available required check has already
+failed. `below_target` means at least one required check definitively failed,
+even if another check is still pending. Phrase rank, AI citations, and
+reputation appear under campaign milestones and do not change this status.
+`primary_target_met` is the first win. Only `confirmed_target_met` closes the
+experiment.

@@ -3,9 +3,9 @@
   import {
     formatDate,
     formatInteger,
-    formatPosition,
     getSeoAutomationStory,
     getSeoGrowthStory,
+    getKnownCategorySearchMetrics,
   } from "./seo-dashboard-format";
 
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
@@ -13,16 +13,9 @@
   const activeSearch = $derived(
     snapshot.search.current ?? snapshot.search.baseline
   );
-  const activeHeadTerm = $derived(
-    snapshot.headTerm.current ?? snapshot.headTerm.baseline
-  );
+  const categorySearch = $derived(getKnownCategorySearchMetrics(snapshot));
   const growth = $derived(getSeoGrowthStory(snapshot));
   const automation = $derived(getSeoAutomationStory(snapshot));
-  const rankValue = $derived(
-    activeHeadTerm.position === null
-      ? "Not found"
-      : `#${formatPosition(activeHeadTerm.position)}`
-  );
 
   const ownerAction = $derived.by(() => {
     if (!automation.healthy) {
@@ -38,6 +31,15 @@
       return {
         value: "Start it",
         note: "Record the day the SEO changes went live.",
+      };
+    }
+    if (
+      snapshot.reputation.lastReviewedDate &&
+      snapshot.reputation.reviewOverdue
+    ) {
+      return {
+        value: "Review mentions",
+        note: "The independent-site list is due for its monthly check.",
       };
     }
     return { value: "Nothing", note: growth.nextStep };
@@ -96,12 +98,20 @@
 
     <div class="proof-row" aria-label="Why this is the answer">
       <div class="proof-item">
-        <span>Google showed us</span>
-        <strong>{formatInteger(activeSearch.impressions)} times</strong>
+        <span>Tracked pages in Google</span>
+        <strong>{formatInteger(activeSearch.impressions)} appearances</strong>
       </div>
       <div class="proof-item">
-        <span>“flow arts software”</span>
-        <strong>{rankValue}</strong>
+        <span>Known category searches</span>
+        <strong>{formatInteger(categorySearch.impressions)} appearances</strong>
+      </div>
+      <div class="proof-item">
+        <span>Independent sites</span>
+        <strong>
+          {snapshot.reputation.lastReviewedDate
+            ? `${formatInteger(snapshot.reputation.independentSites)} known`
+            : "Not loaded"}
+        </strong>
       </div>
     </div>
   </article>
@@ -265,7 +275,7 @@
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 
-const calendarDate = z
+const calendarDateValue = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine((value) => {
@@ -11,13 +11,18 @@ const calendarDate = z
       !Number.isNaN(parsed.getTime()) &&
       parsed.toISOString().slice(0, 10) === value
     );
-  }, "must be a valid calendar date")
-  .nullable();
+  }, "must be a valid calendar date");
+
+const calendarDate = calendarDateValue.nullable();
 
 const configSchema = z
   .object({
-    version: z.literal(1),
+    version: z.literal(2),
     experimentId: z.string().min(1),
+    protocolAmendment: z.object({
+      date: calendarDateValue,
+      reason: z.string().min(1),
+    }),
     site: z.object({
       origin: z.string().url(),
       host: z.string().min(1),
@@ -59,16 +64,47 @@ const configSchema = z
       minimumTreatmentClicksForDecision: z.number().int().positive(),
       minimumControlAdjustedImpressionLift: z.number().min(-1),
       minimumControlAdjustedClickLift: z.number().min(-1),
-      maximumHeadTermPosition: z.number().positive(),
-      maximumHeadTermAiCitationRank: z.number().int().positive(),
       minimumIndexedSampleRate: z.number().min(0).max(1),
       minimumOrganicActivationRate: z.number().min(0).max(1),
+    }),
+    milestoneCriteria: z.object({
+      maximumHeadTermPosition: z.number().positive(),
       minimumAiCitationRate: z.number().min(0).max(1),
+      maximumHeadTermAiCitationRank: z.number().int().positive(),
+      minimumIndependentSites: z.number().int().positive(),
+      minimumComposerSpecificSites: z.number().int().positive(),
+      minimumLinkedSites: z.number().int().positive(),
     }),
     aiOverviewAudit: z.object({
       locale: z.string().min(1),
       device: z.string().min(1),
       market: z.string().min(1),
+    }),
+    reputation: z.object({
+      reviewCadenceDays: z.number().int().positive(),
+      lastReviewedDate: calendarDateValue,
+      sources: z.array(
+        z.object({
+          id: z.string().regex(/^[a-z][a-z0-9-]*$/),
+          publisher: z.string().min(1),
+          sourceUrl: z.string().url(),
+          sourceType: z.enum([
+            "editorial",
+            "event",
+            "grant",
+            "partner",
+            "review",
+            "directory",
+          ]),
+          mentionScope: z.enum(["tka", "composer"]),
+          status: z.enum(["active", "lost"]),
+          publishedDate: calendarDate,
+          verifiedDate: calendarDateValue,
+          linksToTka: z.boolean(),
+          targetUrl: z.string().url().nullable(),
+          context: z.string().min(1),
+        })
+      ),
     }),
     queryGroups: z.array(
       z.object({
@@ -133,6 +169,60 @@ const configSchema = z
         path: ["aiOverviewQueries"],
         message: "AI Overview audit queries must be unique",
       });
+    }
+    const sourceIds = value.reputation.sources.map((source) => source.id);
+    if (new Set(sourceIds).size !== sourceIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["reputation", "sources"],
+        message: "reputation source IDs must be unique",
+      });
+    }
+    for (const [index, source] of value.reputation.sources.entries()) {
+      const sourceHost = new URL(source.sourceUrl).hostname.replace(
+        /^www\./,
+        ""
+      );
+      const siteHost = value.site.host.replace(/^www\./, "");
+      if (sourceHost === siteHost) {
+        context.addIssue({
+          code: "custom",
+          path: ["reputation", "sources", index, "sourceUrl"],
+          message:
+            "reputation sources must be independent of the measured site",
+        });
+      }
+      if (source.publishedDate && source.publishedDate > source.verifiedDate) {
+        context.addIssue({
+          code: "custom",
+          path: ["reputation", "sources", index, "publishedDate"],
+          message: "publishedDate cannot follow verifiedDate",
+        });
+      }
+      if (source.verifiedDate > value.reputation.lastReviewedDate) {
+        context.addIssue({
+          code: "custom",
+          path: ["reputation", "sources", index, "verifiedDate"],
+          message: "verifiedDate cannot follow the ledger review date",
+        });
+      }
+      if (source.linksToTka !== Boolean(source.targetUrl)) {
+        context.addIssue({
+          code: "custom",
+          path: ["reputation", "sources", index, "targetUrl"],
+          message: "targetUrl is required exactly when linksToTka is true",
+        });
+      }
+      if (
+        source.targetUrl &&
+        new URL(source.targetUrl).hostname.replace(/^www\./, "") !== siteHost
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["reputation", "sources", index, "targetUrl"],
+          message: "targetUrl must point to the measured site",
+        });
+      }
     }
   });
 

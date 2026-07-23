@@ -1,6 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
   "experimentId": "flow-arts-software-2026",
+  "protocolAmendment": {
+    "date": "2026-07-22",
+    "reason": "Separate broad Google discovery and product-use decisions from flagship phrase, AI citation, and independent reputation milestones."
+  },
   "site": {
     "origin": "https://tkaflowarts.com",
     "host": "tkaflowarts.com",
@@ -42,16 +46,53 @@
     "minimumTreatmentClicksForDecision": 5,
     "minimumControlAdjustedImpressionLift": 0.25,
     "minimumControlAdjustedClickLift": 0.25,
-    "maximumHeadTermPosition": 3,
-    "maximumHeadTermAiCitationRank": 1,
     "minimumIndexedSampleRate": 0.9,
-    "minimumOrganicActivationRate": 0.15,
-    "minimumAiCitationRate": 0.5
+    "minimumOrganicActivationRate": 0.15
+  },
+  "milestoneCriteria": {
+    "maximumHeadTermPosition": 3,
+    "minimumAiCitationRate": 0.5,
+    "maximumHeadTermAiCitationRank": 1,
+    "minimumIndependentSites": 5,
+    "minimumComposerSpecificSites": 2,
+    "minimumLinkedSites": 3
   },
   "aiOverviewAudit": {
     "locale": "en-US",
     "device": "desktop",
     "market": "United States"
+  },
+  "reputation": {
+    "reviewCadenceDays": 30,
+    "lastReviewedDate": "2026-07-22",
+    "sources": [
+      {
+        "id": "fund-the-flow-arts-seed-fund-2025",
+        "publisher": "Fund the Flow Arts",
+        "sourceUrl": "https://fundtheflowarts.org/announcing-2024-25-seed-fund-grant-recipients/",
+        "sourceType": "grant",
+        "mentionScope": "tka",
+        "status": "active",
+        "publishedDate": "2025-03-15",
+        "verifiedDate": "2026-07-22",
+        "linksToTka": false,
+        "targetUrl": null,
+        "context": "Names Austen Cloud and The Kinetic Alphabet among the 2024-25 Seed Fund recipients."
+      },
+      {
+        "id": "flow-fest-chicago-instructor-bio-2025",
+        "publisher": "Flow Fests",
+        "sourceUrl": "https://flowfests.com/wp-content/uploads/2025/07/Flow-Fest-Chicago-Workshops-Bios.pdf",
+        "sourceType": "event",
+        "mentionScope": "tka",
+        "status": "active",
+        "publishedDate": null,
+        "verifiedDate": "2026-07-22",
+        "linksToTka": false,
+        "targetUrl": null,
+        "context": "Describes The Kinetic Alphabet as a notation and choreography transcription system in Austen Cloud's instructor bio."
+      }
+    ]
   },
   "queryGroups": [
     {
