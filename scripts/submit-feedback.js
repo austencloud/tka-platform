@@ -10,7 +10,7 @@
  *   --module <module>                Captured module (default: system)
  *   --tab <tab>                      Captured tab (default: general)
  *   --subtasks <json>                JSON array of subtasks
- *   --user <austen|email>            User profile (default: austen)
+ *   --user <austen|claude|email|uid> User profile (default: austen)
  *
  * Examples:
  *   node scripts/submit-feedback.js "Fix login bug" "Users can't login with email"
@@ -35,6 +35,7 @@ const USER_PROFILES = {
 };
 
 import { initializeApp, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { readFile } from "fs/promises";
 
@@ -69,7 +70,7 @@ function parseArgs() {
       "  --subtasks <json>                         JSON array of subtasks"
     );
     console.error(
-      "  --user <austen|claude|email>              User profile (default: austen)"
+      "  --user <austen|claude|email|uid>          User profile (default: austen)"
     );
     console.error("");
     console.error("Examples:");
@@ -117,7 +118,7 @@ function parseArgs() {
       }
       i++;
     } else if (args[i] === "--user" && args[i + 1]) {
-      options.user = args[i + 1].toLowerCase();
+      options.user = args[i + 1];
       i++;
     }
   }
@@ -143,6 +144,47 @@ function parseArgs() {
   return { title, description, ...options };
 }
 
+async function resolveUserProfile(db, userIdentifier) {
+  const knownProfile = USER_PROFILES[userIdentifier.toLowerCase()];
+  if (knownProfile) {
+    return {
+      ...knownProfile,
+      userPhotoURL: null,
+    };
+  }
+
+  const auth = getAuth();
+  const userRecord = userIdentifier.includes("@")
+    ? await auth.getUserByEmail(userIdentifier)
+    : await auth.getUser(userIdentifier);
+  const profileSnapshot = await db
+    .collection("users")
+    .doc(userRecord.uid)
+    .get();
+  const storedProfile = profileSnapshot.exists
+    ? profileSnapshot.data()
+    : {};
+
+  return {
+    userId: userRecord.uid,
+    userEmail:
+      storedProfile?.email ??
+      userRecord.email ??
+      (userIdentifier.includes("@") ? userIdentifier : ""),
+    userDisplayName:
+      storedProfile?.displayName ??
+      storedProfile?.name ??
+      userRecord.displayName ??
+      userRecord.email?.split("@")[0] ??
+      userRecord.uid,
+    userPhotoURL:
+      storedProfile?.photoURL ??
+      storedProfile?.photoUrl ??
+      userRecord.photoURL ??
+      null,
+  };
+}
+
 async function submitFeedback(params) {
   try {
     // Load service account
@@ -158,22 +200,7 @@ async function submitFeedback(params) {
     const db = getFirestore();
 
     // Resolve user profile
-    let userProfile;
-    if (USER_PROFILES[params.user]) {
-      userProfile = USER_PROFILES[params.user];
-    } else if (params.user.includes("@")) {
-      // Assume it's an email address
-      userProfile = {
-        userId: params.user.split("@")[0],
-        userEmail: params.user,
-        userDisplayName: params.user.split("@")[0],
-      };
-    } else {
-      console.error(
-        `❌ Unknown user "${params.user}". Use: austen, claude, or an email address.`
-      );
-      process.exit(1);
-    }
+    const userProfile = await resolveUserProfile(db, params.user);
 
     // Create feedback item
     const feedbackData = {
@@ -181,7 +208,7 @@ async function submitFeedback(params) {
       userId: userProfile.userId,
       userEmail: userProfile.userEmail,
       userDisplayName: userProfile.userDisplayName,
-      userPhotoURL: null,
+      userPhotoURL: userProfile.userPhotoURL,
 
       // Feedback content
       type: params.type,

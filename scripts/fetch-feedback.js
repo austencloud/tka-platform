@@ -2332,6 +2332,8 @@ CLAIM TAKEOVER (when you need someone else's claim)
 ITEM MANAGEMENT
 ──────────────────────────────────────────────────────────────────────────────
   <id>                   View specific feedback details
+  notify-submitted <id> ["message"]
+                         Send the submitter a feedback card and confirmation DM
   <id> <status> "notes"  Update status (new, in-progress, in-review, completed, archived)
   <id> <status> "admin notes" --user-notes "user message"
                          Update status with both admin and user-facing notes
@@ -3605,6 +3607,40 @@ async function main() {
       return;
     }
     await searchFeedback(args.slice(1).join(" "));
+  } else if (args[0] === "notify-submitted") {
+    if (!args[1]) {
+      console.log(
+        '\n  Usage: node scripts/fetch-feedback.js notify-submitted <id> ["message"]\n'
+      );
+      return;
+    }
+
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+
+    const feedbackSnapshot = await db.collection("feedback").doc(fullId).get();
+    const feedback = feedbackSnapshot.data();
+    if (!feedback || feedback.status !== "new") {
+      console.log(
+        '\n  ⚠️  Submission confirmations can only be sent for feedback with status "new".\n'
+      );
+      return;
+    }
+
+    const message =
+      args.slice(2).join(" ") ||
+      "Your feedback has been submitted. Thanks for taking the time to share it.";
+    const messageId = await sendDirectMessageToUser(
+      feedback.userId,
+      fullId,
+      feedback.title,
+      feedback.status,
+      message
+    );
+
+    if (messageId) {
+      console.log(`  Message ID: ${messageId}`);
+    }
   } else if (args[0] === "claim") {
     // Claim specific: claim <id> (supports partial IDs)
     if (!args[1]) {
