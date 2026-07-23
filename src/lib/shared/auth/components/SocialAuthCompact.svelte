@@ -52,9 +52,9 @@
     onFacebookAuth?: () => void;
   }>();
 
-  let googleError = $state<string | null>(null);
-  let facebookError = $state<string | null>(null);
-  let instagramError = $state<string | null>(null);
+  // One error line, not three: switching providers replaces the message instead
+  // of stacking a paragraph per provider.
+  let providerError = $state<string | null>(null);
   let loadingProvider = $state<"google" | "instagram" | null>(null);
   const isLoading = $derived(loadingProvider !== null);
 
@@ -137,14 +137,14 @@
     // page inside this same webview, which is a worse dead end than one
     // sentence in our own UI that names the way out.
     if (inAppBrowser) {
-      googleError = blockedProviderMessage("Google");
+      providerError = blockedProviderMessage("Google");
       captureEvent("inapp_auth_social_intercepted", { provider: "google" });
       revealEscapeNote();
       return;
     }
 
     loadingProvider = "google";
-    googleError = null;
+    providerError = null;
 
     // Cancel any pending One Tap prompt to prevent race conditions
     window.google?.accounts?.id?.cancel();
@@ -202,14 +202,14 @@
         errorCode === "auth/operation-not-supported-in-this-environment" ||
         /disallowed_useragent/i.test(message)
       ) {
-        googleError = blockedProviderMessage("Google");
+        providerError = blockedProviderMessage("Google");
         captureWhenReady("inapp_browser_oauth_rejected", {
           provider: "google",
           route: analyticsRoute(),
         });
         revealEscapeNote();
       } else {
-        googleError = mapAuthError(error);
+        providerError = mapAuthError(error);
       }
     } finally {
       loadingProvider = null;
@@ -222,7 +222,7 @@
     // than Google's, and the cost of being wrong is asymmetric: a defensive
     // sentence costs a tap, an unhandled dead end costs the visitor.
     if (inAppBrowser) {
-      facebookError = blockedProviderMessage("Facebook");
+      providerError = blockedProviderMessage("Facebook");
       captureEvent("inapp_auth_social_intercepted", { provider: "facebook" });
       revealEscapeNote();
       return;
@@ -233,14 +233,14 @@
   async function handleInstagramClick() {
     if (isLoading) return;
     if (inAppBrowser) {
-      instagramError = blockedProviderMessage("Instagram");
+      providerError = blockedProviderMessage("Instagram");
       captureEvent("inapp_auth_social_intercepted", { provider: "instagram" });
       revealEscapeNote();
       return;
     }
 
     loadingProvider = "instagram";
-    instagramError = null;
+    providerError = null;
     try {
       await signInWithInstagram();
       recordAuthSubmission("instagram");
@@ -249,7 +249,7 @@
         code: (error as { code?: string })?.code,
         message: error instanceof Error ? error.message : String(error),
       });
-      instagramError = getInstagramAuthErrorMessage(error);
+      providerError = getInstagramAuthErrorMessage(error);
     } finally {
       loadingProvider = null;
     }
@@ -328,14 +328,8 @@
       Instagram requires a creator or business account.
     </p>
   {/if}
-  {#if googleError}
-    <p class="error-message" role="alert">{googleError}</p>
-  {/if}
-  {#if facebookError}
-    <p class="error-message" role="alert">{facebookError}</p>
-  {/if}
-  {#if instagramError}
-    <p class="error-message" role="alert">{instagramError}</p>
+  {#if providerError}
+    <p class="error-message" role="alert">{providerError}</p>
   {/if}
   {#if showEscapeNote}
     <div class="escape-note">

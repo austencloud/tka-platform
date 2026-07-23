@@ -42,11 +42,21 @@
   const currentUrl =
     typeof window !== "undefined" ? window.location.href : "";
 
-  // A guide-only target shows its guide immediately; a scheme/intent target
-  // shows it only after the hand-off is confirmed to have failed.
+  // Nothing is removed mid-flow — that collapse-then-re-expand was the double
+  // layout shift. The primary button stays put (relabeled "Opening…" while
+  // waiting); the guide is present for instruction targets and expands BELOW the
+  // buttons on a scheme/intent attempt, so the controls above it never move; and
+  // copy is always available.
+  const showPrimary = $derived(target.url !== null);
+  const primaryDisabled = $derived(escapeState === "waiting");
+  const primaryLabel = $derived(
+    escapeState === "waiting" ? "Opening…" : target.label
+  );
+  // Instruction targets show the guide immediately; scheme/intent targets show
+  // it only once the hand-off is confirmed failed (stayed). Either way copy is
+  // always present, and the primary button stays put, so nothing collapses.
   const showGuide = $derived(target.url === null || escapeState === "stayed");
-  const showPrimary = $derived(target.url !== null && escapeState !== "waiting");
-  const showCopy = $derived(escapeState !== "waiting");
+  const showCopy = true;
 
   // --- Hand-off signal watch ------------------------------------------------
   //
@@ -184,14 +194,10 @@
 
 <div class="escape-controls">
   {#if showPrimary}
-    <button class="primary-button" onclick={handleEscape}>
+    <button class="primary-button" onclick={handleEscape} disabled={primaryDisabled}>
       <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-      {target.label}
+      {primaryLabel}
     </button>
-  {/if}
-
-  {#if escapeState === "waiting"}
-    <p class="status">Opening…</p>
   {/if}
 
   {#if showGuide}
@@ -265,6 +271,11 @@
   .primary-button:active,
   .copy-button:active {
     transform: scale(0.98);
+  }
+
+  .primary-button:disabled {
+    opacity: 0.7;
+    cursor: default;
   }
 
   .primary-button {
