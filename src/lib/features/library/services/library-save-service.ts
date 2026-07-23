@@ -33,7 +33,7 @@ import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { GUEST_SAVE_CAP } from "$lib/shared/auth/domain/guest-access-config";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
-import { openAuthDialog } from "$lib/shared/auth/state/auth-ui-state.svelte";
+import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
@@ -144,7 +144,10 @@ export class LibrarySaveService {
           // Centralized copy (auth-nudge-trigger.ts) instead of a local
           // duplicate - one source for the "guest hit the save cap" wording.
           toast.info(AUTH_NUDGE_TEXTS.save, 6000);
-          openAuthDialog();
+          // The real signup modal is driven by authDrawerState (AuthModal reads
+          // authDrawerState.open); the old openAuthDialog() from auth-ui-state
+          // had zero consumers, so the nudge toast fired but no modal opened.
+          authDrawerState.show("signup", "save");
           throw new LibraryError(
             `Guest save limit reached (${GUEST_SAVE_CAP}).`,
             "GUEST_CAP",
