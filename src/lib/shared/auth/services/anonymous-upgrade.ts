@@ -24,17 +24,25 @@ import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-m
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
-// LibrarySequence extends SequenceData, so it's accepted directly by
-// saveSequence(sequence: SequenceData). Imported from its canonical home —
-// library-repository.ts re-imports it but does not re-export it.
-import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import * as dexiePersistence from "$lib/shared/persistence/services/dexie-persistence-service";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export type UpgradeStatus = "linked" | "collision-signed-in";
+
+/**
+ * Drafts captured from the anon session before a link/collision. These are
+ * raw Dexie rows (SequenceData), not full LibrarySequence — the anon guest
+ * never had a Firestore library doc for a Dexie-only save (SP1 made Dexie
+ * authoritative for guests). importDrafts()/saveSequence() accept SequenceData
+ * directly and mint the LibrarySequence fields (ownerId, source, visibility,
+ * ...) on write, so no upcast is needed here.
+ */
+export type AnonymousDraft = SequenceData;
 
 export interface UpgradeResult {
   status: UpgradeStatus;
   /** Drafts captured from the anon session, present only on collision. */
-  importable?: LibrarySequence[];
+  importable?: AnonymousDraft[];
 }
 
 const CREDENTIAL_COLLISION = new Set([
@@ -51,12 +59,37 @@ function isCollision(error: unknown): error is AuthError {
   );
 }
 
-/** Read the anon user's saved sequences before we risk losing the session. */
+/**
+ * Read the anon user's saved sequences before we risk losing the session.
+ *
+ * Every caller here passes the uid of a session that is CURRENTLY anonymous
+ * (`anon.uid` / a guest's `anonUid`), so the drafts worth capturing live in
+ * local Dexie, not Firestore: SP1 made Dexie authoritative for guest saves,
+ * so a fresh guest save may never have reached
+ * `library-repository.getUserSequences` (Firestore) at all. Dexie is a flat,
+ * single-device store — it is NOT keyed by uid — so `getAllSequences()`
+ * returns every row on this device regardless of which guest uid wrote it.
+ *
+ * Shared-device edge case: if a prior guest on this device also left rows
+ * in Dexie (e.g. they abandoned the upgrade flow, or this is a shared/public
+ * machine), those rows get swept up and offered for import too. This is
+ * intentionally permissive rather than silently dropping data — worst case
+ * the user is offered to import a stray local draft that isn't theirs, which
+ * they can decline (`cancelAnonymousImport`). importDrafts()'s
+ * ALREADY_EXISTS swallow (content-hash dedup in saveSequence) also makes
+ * capturing the same rows twice across repeated upgrade attempts a no-op on
+ * the second pass, so over-capturing here is safe by construction.
+ *
+ * Firestore is intentionally NOT consulted here: a genuinely anonymous
+ * session cannot own a Firestore library doc (library rules gate writes to
+ * full accounts), so a Firestore read would only ever return an empty array
+ * for these callers and cost a network round trip for nothing.
+ */
 export async function captureAnonymousDrafts(
-  anonUid: string
-): Promise<LibrarySequence[]> {
+  _anonUid: string
+): Promise<AnonymousDraft[]> {
   try {
-    return await getLibraryRepository().getUserSequences(anonUid);
+    return await dexiePersistence.getAllSequences();
   } catch {
     return [];
   }
@@ -121,6 +154,37 @@ export async function notifyUpgradeSignup(): Promise<void> {
   }
 }
 
+/**
+ * Link an already-obtained Google credential (ID token) onto the current
+ * anonymous session, or sign into the existing account on collision. Shared
+ * by the native Google SDK path and the web One Tap / FedCM path — both hold
+ * the credential themselves, so a collision signs in with that same
+ * credential directly (no credentialFromError needed, unlike the popup path).
+ */
+export async function upgradeAnonymousWithGoogleCredential(
+  anon: NonNullable<Awaited<ReturnType<typeof getAuthInstance>>["currentUser"]>,
+  credential: ReturnType<typeof GoogleAuthProvider.credential>
+): Promise<UpgradeResult> {
+  const auth = await getAuthInstance();
+  const drafts = await captureAnonymousDrafts(anon.uid);
+  try {
+    await linkWithCredential(anon, credential);
+    void notifyUpgradeSignup();
+    recordLastAuthMethod("google");
+    return { status: "linked" };
+  } catch (error) {
+    if (isCollision(error)) {
+      await signInWithCredential(auth, credential);
+      captureEvent("guest_upgraded_to_account", {
+        status: "collision-signed-in",
+      });
+      recordLastAuthMethod("google");
+      return { status: "collision-signed-in", importable: drafts };
+    }
+    throw error;
+  }
+}
+
 export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   const auth = await getAuthInstance();
   const anon = auth.currentUser;
@@ -129,30 +193,12 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
 
   // Native: linkWithPopup dead-ends in the WebView (Google blocks WebView
   // sign-in), so get the credential from the native SDK and link it directly.
-  // Unlike the popup path we hold the credential ourselves, so a collision
-  // signs into the existing account with that same credential — no
-  // credentialFromError needed.
   const { isNative } =
     await import("$lib/shared/platform/services/platform-detector");
   if (isNative()) {
     const { nativeGoogleCredential } = await import("./native-google-auth");
     const credential = await nativeGoogleCredential();
-    try {
-      await linkWithCredential(anon, credential);
-      void notifyUpgradeSignup();
-      recordLastAuthMethod("google");
-      return { status: "linked" };
-    } catch (error) {
-      if (isCollision(error)) {
-        await signInWithCredential(auth, credential);
-        captureEvent("guest_upgraded_to_account", {
-          status: "collision-signed-in",
-        });
-        recordLastAuthMethod("google");
-        return { status: "collision-signed-in", importable: drafts };
-      }
-      throw error;
-    }
+    return upgradeAnonymousWithGoogleCredential(anon, credential);
   }
 
   const provider = new GoogleAuthProvider();
@@ -252,7 +298,7 @@ export async function upgradeAnonymousWithEmail(
  * Swallows ALREADY_EXISTS (duplicate-content guard); rethrows anything else.
  * Returns the count actually imported.
  */
-export async function importDrafts(drafts: LibrarySequence[]): Promise<number> {
+export async function importDrafts(drafts: AnonymousDraft[]): Promise<number> {
   const repo = getLibraryRepository();
   let imported = 0;
   for (const draft of drafts) {
@@ -276,7 +322,7 @@ export async function upgradeMagicLinkCollision(
   anonUid: string,
   email: string,
   link: string
-): Promise<LibrarySequence[]> {
+): Promise<AnonymousDraft[]> {
   const auth = await getAuthInstance();
   const drafts = await captureAnonymousDrafts(anonUid);
   await signInWithEmailLink(auth, email, link);

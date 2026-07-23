@@ -1,10 +1,10 @@
-import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import type { AnonymousDraft } from "$lib/shared/auth/services/anonymous-upgrade";
 import { importDrafts } from "$lib/shared/auth/services/anonymous-upgrade";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
 interface ImportPromptState {
   isOpen: boolean;
-  drafts: LibrarySequence[];
+  drafts: AnonymousDraft[];
 }
 
 const state = $state<ImportPromptState>({ isOpen: false, drafts: [] });
@@ -22,7 +22,7 @@ export const anonymousImportPrompt = {
 };
 
 /** Open the import offer if there is anything worth importing. */
-export function promptAnonymousImport(drafts: LibrarySequence[]): void {
+export function promptAnonymousImport(drafts: AnonymousDraft[]): void {
   if (!drafts.length) return;
   state.drafts = drafts;
   state.isOpen = true;
