@@ -21,6 +21,17 @@
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
+  // First-session starter (SP3b): the empty-Construct one-tap offer.
+  import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
+  import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
+  import {
+    startFirstSequence,
+    buildStarterGenerate,
+    type StartFirstSequenceResult,
+  } from "$lib/shared/onboarding/services/start-first-sequence";
+  import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 
@@ -99,6 +110,7 @@
   });
 
   const isGeneratorTab = $derived(navigationState.activeTab === "generate");
+  const isConstructTab = $derived(navigationState.activeTab === "construct");
   const isAssembleTab = $derived(navigationState.activeTab === "assemble");
 
   // Assemble tab: collapse tool panel when sequence is complete
@@ -153,6 +165,63 @@
     return () => resizeObserver.disconnect();
   });
 
+  // First-session starter (SP3b) --------------------------------------------
+  // Resolve eligibility when the user sits on an empty Construct so the offer
+  // can appear (or stay hidden) without a flash. resolve() is idempotent,
+  // flag-gated, and short-circuits once settled - safe to re-run from an effect.
+  $effect(() => {
+    if (!hasWorkspaceContent && isConstructTab) {
+      void firstSequenceStarterState.resolve();
+    }
+  });
+
+  /**
+   * Drive the one-tap starter: generate → load into the real workspace → keep
+   * via the durable save path → hand a persisted guest keep to Part B. The
+   * headless command owns the sequencing; this closure only supplies the real
+   * seams (workspace, save service, guest hand-off) and reacts to the result.
+   */
+  async function runStarter(): Promise<StartFirstSequenceResult> {
+    const result = await startFirstSequence({
+      generate: buildStarterGenerate(),
+      loadIntoWorkspace: (seq) =>
+        CreateModuleState.getActiveTabSequenceState().setCurrentSequence(seq),
+      save: async (seq) => {
+        // Name is the simplified (smallest-form) word per simplified-word-display.
+        const name = simplifyRepeatedWord(seq.word ?? "");
+        const r = await getLibrarySaveService().saveSequence(seq, {
+          name,
+          visibility: "private",
+          tags: [],
+          notes: "",
+        });
+        return {
+          persisted: r.persisted,
+          isGuest: r.isGuest,
+          sequenceId: r.sequenceId,
+        };
+      },
+      onKept: (id) => postSaveActivation.onGuestSaveSucceeded(id),
+    });
+
+    if (result.status === "generated-kept") {
+      // Consumes the session rearm and persists dismissal so the card doesn't
+      // re-offer after a successful keep.
+      firstSequenceStarterState.markDismissed();
+    } else if (result.status === "persist-failed") {
+      // The sequence is already in the workspace; this card has usually
+      // unmounted, so surface the save failure via a toast rather than inline.
+      toast.error(
+        "Generated it, but the save didn't land. It's in your workspace — tap Save to keep it."
+      );
+    }
+
+    return result;
+  }
+
+  function dismissStarter() {
+    firstSequenceStarterState.markDismissed();
+  }
 </script>
 
 <div
@@ -223,6 +292,12 @@
   <div class="tool-panel-container" bind:this={toolPanelElement}>
     {#if !hasWorkspaceContent && isGeneratorTab}
       <GenerateEmptyState />
+    {:else if !hasWorkspaceContent && isConstructTab && firstSequenceStarterState.isEligible}
+      <GenerateEmptyState
+        showStarterOffer
+        onStarterGenerate={runStarter}
+        onStarterDismiss={dismissStarter}
+      />
     {/if}
     <CreationToolPanelSlot
       bind:toolPanelRef

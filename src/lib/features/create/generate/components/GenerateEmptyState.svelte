@@ -1,8 +1,13 @@
 <!--
   GenerateEmptyState.svelte
 
-  Fills the collapsed-workspace region on the Generate tab when there is no
-  sequence yet. Two states:
+  Fills the collapsed-workspace region on the Generate (and empty-Construct)
+  tab when there is no sequence yet.
+
+  When the host sets `showStarterOffer` (empty Construct + the first-session
+  starter is eligible, SP3b), this renders the one-tap "make your first
+  sequence" offer built on PanelButton. Otherwise it falls back to the Generate
+  tab's original two states:
 
   1. First visit (tour not offered, not completed) → a gentle, inline opt-in
      offer to walk through the generator options. NOT a modal — it lives in the
@@ -25,8 +30,35 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import type { StartFirstSequenceResult } from "$lib/shared/onboarding/services/start-first-sequence";
+  import {
+    logOnboardingFirstSequenceStarterShown,
+    logOnboardingFirstSequenceStarterGenerated,
+    logOnboardingFirstSequenceStarterKept,
+    logOnboardingFirstSequenceStarterDismissed,
+  } from "$lib/shared/analytics/services/onboarding-events";
+
+  interface Props {
+    /** Render the first-session starter offer (empty Construct) instead of the
+     *  generator tour offer / hint. The host only sets this once the starter is
+     *  eligible, so the card never flashes before eligibility resolves. */
+    showStarterOffer?: boolean;
+    /** Runs the generate → load → keep command and returns the typed result. */
+    onStarterGenerate?: () => Promise<StartFirstSequenceResult>;
+    /** Dismiss the starter ("I'll build my own"). */
+    onStarterDismiss?: () => void;
+  }
+
+  let {
+    showStarterOffer = false,
+    onStarterGenerate,
+    onStarterDismiss,
+  }: Props = $props();
 
   let hapticService = $state<ReturnType<typeof getHapticFeedback> | null>(null);
+  let starterBusy = $state(false);
+  let starterError = $state<string | null>(null);
 
   // Show the first-run offer only once the account sync has resolved, and only
   // if the offer hasn't already been taken or dismissed on any device.
@@ -40,6 +72,9 @@
     } catch {
       /* optional */
     }
+    if (showStarterOffer) {
+      logOnboardingFirstSequenceStarterShown();
+    }
   });
 
   function acceptTour() {
@@ -52,6 +87,38 @@
     hapticService?.trigger("selection");
     generateTourState.markOffered();
   }
+
+  async function handleStarterGenerate() {
+    if (starterBusy) return;
+    hapticService?.trigger("selection");
+    starterError = null;
+    starterBusy = true;
+    logOnboardingFirstSequenceStarterGenerated();
+    try {
+      const result = await onStarterGenerate?.();
+      if (result?.status === "generated-kept") {
+        logOnboardingFirstSequenceStarterKept();
+        // The workspace now has the sequence, so this card unmounts - nothing
+        // more to render here.
+        return;
+      }
+      if (result?.status === "generate-failed") {
+        starterError = "Couldn't generate a sequence. Tap to try again.";
+      }
+      // persist-failed: the sequence is already loaded in the workspace and the
+      // host surfaces the save error via a toast (this card has usually
+      // unmounted by then, as the workspace filled).
+    } finally {
+      starterBusy = false;
+    }
+  }
+
+  function handleStarterDismiss() {
+    if (starterBusy) return;
+    hapticService?.trigger("selection");
+    logOnboardingFirstSequenceStarterDismissed();
+    onStarterDismiss?.();
+  }
 </script>
 
 <!--
@@ -60,6 +127,37 @@
   deliberate gentle stagger; reduced-motion is handled inside the primitive.
 -->
 <div class="empty-state">
+  {#if showStarterOffer}
+    <!-- First-session starter (SP3b): one tap generates a sequence, loads it
+         into the workspace, and saves it. Built on PanelButton, not the
+         hand-rolled .offer-btn used by the legacy tour offer below. -->
+    <div class="tour-offer starter-offer">
+      <p class="offer-title">Make your first sequence</p>
+      <p class="offer-sub">
+        One tap builds a sequence, drops it in the workspace, and saves it to
+        your library.
+      </p>
+      <div class="offer-actions">
+        <PanelButton
+          variant="primary"
+          onclick={handleStarterGenerate}
+          disabled={starterBusy}
+        >
+          {starterBusy ? "Generating…" : "Generate one for me"}
+        </PanelButton>
+        <PanelButton
+          variant="secondary"
+          onclick={handleStarterDismiss}
+          disabled={starterBusy}
+        >
+          I'll build my own
+        </PanelButton>
+      </div>
+      {#if starterError}
+        <p class="offer-error" role="alert">{starterError}</p>
+      {/if}
+    </div>
+  {:else}
   <Crossfade key={showOffer} duration={DURATION.emphasis} delay={120}>
     {#if showOffer}
       <div class="tour-offer">
@@ -80,6 +178,7 @@
       </p>
     {/if}
   </Crossfade>
+  {/if}
 </div>
 
 <style>
@@ -136,6 +235,20 @@
     font-size: var(--font-size-sm, 14px);
     line-height: 1.35;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Starter offer keeps the tour-offer layout but gives the copy a touch more
+     room, since its sub is a full sentence. */
+  .starter-offer {
+    max-width: 34rem;
+  }
+
+  .offer-error {
+    margin: 4px 0 0;
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.35;
+    color: var(--semantic-error, #f87171);
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
   }
 
