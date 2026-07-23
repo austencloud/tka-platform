@@ -11,7 +11,8 @@ export type AuthNudgeTrigger =
   | "loop-locked-guest"
   | "viewer-signin-publish"
   | "viewer-signin-download"
-  | "viewer-signin-account";
+  | "viewer-signin-account"
+  | "guest-first-save";
 
 // One phrasing for the account ask across every entry: "Create a free
 // account to <do the specific thing>." The button that pairs with this copy
@@ -45,4 +46,8 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   "viewer-signin-download": "Create a free account to download this sequence.",
   "viewer-signin-account":
     "Create a free account to save your scans and build your library.",
+  // SP3 first-session activation (Part B): fires once, after a guest's first
+  // save persists - see docs/superpowers/specs/active/2026-07-22-first-session-activation-design.md.
+  "guest-first-save":
+    "Create a free account to keep your sequences and find them on any device.",
 };
