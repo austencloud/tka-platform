@@ -25,6 +25,7 @@ import {
   isAppLaunched,
   playStoreUrl,
   appStoreUrl,
+  stripEscapeTestParams,
 } from "../config/app-availability";
 
 interface BrowserPattern {
@@ -214,7 +215,12 @@ export class InAppBrowserDetector {
       platform: this.getEffectivePlatform(searchParams),
       iosMajorVersion: this.getIosMajorVersion(),
       appLaunched: isAppLaunched(searchParams),
-      currentUrl: typeof window !== "undefined" ? window.location.href : "",
+      // Strip test params so the fired escape URL can't carry ?forceIAB into a
+      // real browser and re-trigger forced detection there.
+      currentUrl:
+        typeof window !== "undefined"
+          ? stripEscapeTestParams(window.location.href)
+          : "",
       playStoreUrl: playStoreUrl(),
       appStoreUrl: appStoreUrl(),
     });

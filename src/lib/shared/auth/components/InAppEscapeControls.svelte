@@ -13,6 +13,7 @@
   import { onDestroy } from "svelte";
   import type { EscapeTarget } from "../services/escape-target";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { stripEscapeTestParams } from "../config/app-availability";
 
   /** Immutable attempt context, so every escape event carries the same segmenting
    *  properties (platform / ios_major / app_launched) instead of just `method`. */
@@ -39,8 +40,12 @@
   let copied = $state(false);
   let copyFailed = $state(false);
 
+  // The link to copy — test params stripped so a shared link never carries
+  // ?forceIAB / ?appLaunched to another browser.
   const currentUrl =
-    typeof window !== "undefined" ? window.location.href : "";
+    typeof window !== "undefined"
+      ? stripEscapeTestParams(window.location.href)
+      : "";
 
   // Nothing is removed mid-flow — that collapse-then-re-expand was the double
   // layout shift. The primary button stays put (relabeled "Opening…" while
