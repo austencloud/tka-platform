@@ -17,6 +17,7 @@
   import { formatTime } from "../../utils/format";
   import FeedbackMessageCard from "./FeedbackMessageCard.svelte";
   import SequenceMessageCard from "./SequenceMessageCard.svelte";
+  import ImageMessageCard from "./ImageMessageCard.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
   import MessageReactions from "./MessageReactions.svelte";
   import EditHistorySheet from "./EditHistorySheet.svelte";
@@ -24,6 +25,7 @@
   import { messagingService } from "$lib/shared/messaging/services/messenger";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import { toast } from "../../../toast/state/toast-state.svelte";
+  import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
 
   interface Props {
     message: Message;
@@ -56,6 +58,15 @@
   );
   const sequenceAttachment = $derived(
     message.attachments?.find((a) => a.type === "sequence")
+  );
+  const imageAttachment = $derived(
+    message.attachments?.find((a) => a.type === "image")
+  );
+  const hasAttachment = $derived(
+    Boolean(feedbackAttachment || sequenceAttachment || imageAttachment)
+  );
+  const accessibleMessage = $derived(
+    getMessagePreviewText(message.content, message.attachments)
   );
   const readTimestamp = $derived.by(() => {
     if (!otherParticipantId || !message.readAt) return null;
@@ -91,7 +102,14 @@
     <ReplyPreview reply={message.replyTo} compact />
   {/if}
 
-  {#if sequenceAttachment}
+  {#if message.isDeleted}
+    <p class="content">{message.content}</p>
+  {:else if imageAttachment}
+    <ImageMessageCard attachment={imageAttachment} caption={message.content} />
+    {#if message.content}
+      <p class="content attachment-content">{message.content}</p>
+    {/if}
+  {:else if sequenceAttachment}
     <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
     {#if message.content && !message.content.startsWith("Check out this sequence")}
       <p class="content attachment-content">{message.content}</p>
@@ -162,11 +180,11 @@
         class="message-bubble"
         class:deleted={message.isDeleted}
         class:is-new={isNew}
-        class:has-attachment={feedbackAttachment || sequenceAttachment}
+        class:has-attachment={hasAttachment}
         class:has-reactions={hasReactions}
         class:has-sender={true}
         role="article"
-        aria-label="{message.senderName} said: {message.content}"
+        aria-label="{message.senderName}: {accessibleMessage}"
       >
         <span class="sender-name">{senderInfo.displayName}</span>
         <div class="bubble">
@@ -182,10 +200,10 @@
       class:own={isOwn}
       class:deleted={message.isDeleted}
       class:is-new={isNew}
-      class:has-attachment={feedbackAttachment || sequenceAttachment}
+      class:has-attachment={hasAttachment}
       class:has-reactions={hasReactions}
       role="article"
-      aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
+      aria-label="{isOwn ? 'You' : message.senderName}: {accessibleMessage}"
     >
       <div class="bubble">
         {@render bubbleContent()}

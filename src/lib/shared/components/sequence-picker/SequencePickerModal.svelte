@@ -7,6 +7,7 @@
   import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { onDestroy } from "svelte";
+  import type { SequenceSource } from "$lib/shared/browse/engine/types";
 
   interface Props {
     open: boolean;
@@ -15,6 +16,7 @@
     requiredBeatCount?: number | null;
     title?: string;
     showSourceToggle?: boolean;
+    initialSource?: SequenceSource;
   }
 
   let {
@@ -24,6 +26,7 @@
     requiredBeatCount = null,
     title = "Select Sequence",
     showSourceToggle = true,
+    initialSource = "community",
   }: Props = $props();
 
   // Engine created once at init. createBrowseEngine registers an internal
@@ -32,11 +35,19 @@
   // Constraints capture the initial prop values, which are fixed per modal open.
   const engine = createBrowseEngine({
     persistKey: null,
-    constraints: requiredBeatCount != null
-      ? [{ type: BrowseFilterType.LENGTH, value: requiredBeatCount, label: `${requiredBeatCount} steps` }]
-      : undefined,
+    constraints:
+      requiredBeatCount != null
+        ? [
+            {
+              type: BrowseFilterType.LENGTH,
+              value: requiredBeatCount,
+              label: `${requiredBeatCount} steps`,
+            },
+          ]
+        : undefined,
     allowSourceToggle: showSourceToggle,
     sources: ["community", "my-library"],
+    initialSource,
   });
 
   let initialized = $state(false);
@@ -65,7 +76,12 @@
   }
 </script>
 
-<BaseModal bind:open onclose={() => onClose()} size="xl" labelledBy="sequence-picker-title">
+<BaseModal
+  bind:open
+  onclose={() => onClose()}
+  size="xl"
+  labelledBy="sequence-picker-title"
+>
   {#snippet header()}
     <div class="picker-header">
       <h2 id="sequence-picker-title">{title}</h2>
@@ -80,7 +96,7 @@
       {engine}
       layout="compact"
       onSelect={handleSelect}
-      showSourceToggle={showSourceToggle}
+      {showSourceToggle}
       eager
     />
 
@@ -118,7 +134,9 @@
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
-    transition: color 0.15s ease, background 0.15s ease;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
   }
 
   .close-btn:hover {
@@ -144,6 +162,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .close-btn { transition: none; }
+    .close-btn {
+      transition: none;
+    }
   }
 </style>

@@ -2,12 +2,15 @@
   import { slide } from "svelte/transition";
   import VoiceInputButton from "./VoiceInputButton.svelte";
   import VoiceWaveform from "./VoiceWaveform.svelte";
-  import ImageUpload from "./ImageUpload.svelte";
+  import ImageUpload from "$lib/shared/components/image-upload/ImageUpload.svelte";
   import type { AudioAnalyzer } from "../../services/audio-analyzer";
-  import type { VoiceRecordingResult, DraftSaveStatus } from "$lib/shared/feedback/domain/feedback-contract-types";
+  import type {
+    VoiceRecordingResult,
+    DraftSaveStatus,
+  } from "$lib/shared/feedback/domain/feedback-contract-types";
   import type { StagedImageState } from "$lib/shared/feedback/domain/models/feedback-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-import type { VoiceRecorder } from "../../services/voice-recorder";
+  import type { VoiceRecorder } from "../../services/voice-recorder";
 
   let {
     value,
@@ -69,8 +72,7 @@ import type { VoiceRecorder } from "../../services/voice-recorder";
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let textareaElement = $state<HTMLTextAreaElement | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Svelte 5 component ref
-  let stableUploadRef: any = $state(undefined);
+  let stableUploadRef: { openFilePicker(): void } | undefined = $state();
   let isFocused = $state(false);
 
   function handleFocus() {
@@ -221,13 +223,16 @@ import type { VoiceRecorder } from "../../services/voice-recorder";
          so we hide the component's own button when no images exist. -->
     <ImageUpload
       bind:this={stableUploadRef}
-      images={images}
+      {images}
       {disabled}
       {stagedImages}
       {onImagesAdded}
       {onImageRemoved}
       hidePreviews={isInputMode}
       hideAttachButton={true}
+      uploadLabel={t("feedback_upload_images")}
+      attachLabel={t("feedback_attach_image")}
+      uploadTitle={t("feedback_upload_image_title")}
     />
   </div>
 </div>

@@ -33,8 +33,17 @@
 
   // Extract sequence metadata
   const sequenceId = $derived(attachment.metadata?.sequenceId);
+  const sequenceRoute = $derived(
+    attachment.url?.startsWith("/sequence/")
+      ? attachment.url
+      : sequenceId
+        ? `/sequence/${encodeURIComponent(sequenceId)}`
+        : null
+  );
   const sequenceWord = $derived(
-    attachment.metadata?.sequenceWord || attachment.metadata?.title || "Sequence"
+    attachment.metadata?.sequenceWord ||
+      attachment.metadata?.title ||
+      "Sequence"
   );
   const sequenceName = $derived(attachment.metadata?.sequenceName);
   // sequenceCloudWord is the raw sequence.word used as the cloud storage filename.
@@ -68,7 +77,8 @@
     add(sequenceName);
 
     // Also try whatever was stored at send time (could be a different format)
-    const stored = attachment.metadata?.sequenceThumbnail || attachment.thumbnailUrl;
+    const stored =
+      attachment.metadata?.sequenceThumbnail || attachment.thumbnailUrl;
     if (stored && !seen.has(stored)) {
       candidates.push(stored);
     }
@@ -88,7 +98,7 @@
   });
 
   async function handleClick() {
-    if (isDeleted || !sequenceId) return;
+    if (isDeleted || !sequenceRoute) return;
 
     hapticService?.trigger("selection");
 
@@ -96,7 +106,7 @@
     inboxState.close();
 
     // Navigate directly to the sequence viewer route
-    await goto(`/sequence/${sequenceId}`);
+    await goto(sequenceRoute);
   }
 </script>
 
@@ -132,12 +142,18 @@
             class="thumbnail"
             loading="lazy"
             onerror={(e) => {
-              console.warn(`[SequenceMessageCard] thumbnail failed (${candidateIndex + 1}/${thumbnailCandidates.length}):`, thumbnailUrl);
+              console.warn(
+                `[SequenceMessageCard] thumbnail failed (${candidateIndex + 1}/${thumbnailCandidates.length}):`,
+                thumbnailUrl
+              );
               // Try the next candidate URL before giving up
               if (candidateIndex < thumbnailCandidates.length - 1) {
                 candidateIndex++;
               } else {
-                console.warn(`[SequenceMessageCard] all candidates exhausted for "${sequenceWord}". metadata:`, attachment.metadata);
+                console.warn(
+                  `[SequenceMessageCard] all candidates exhausted for "${sequenceWord}". metadata:`,
+                  attachment.metadata
+                );
                 const parent = (e.currentTarget as HTMLElement).parentElement;
                 if (parent) parent.style.display = "none";
               }
@@ -149,7 +165,11 @@
       <div class="card-info">
         <h4 class="sequence-title">
           {#if attachment.metadata?.sequenceWord}
-            <TKAWordGlyph word={attachment.metadata.sequenceWord} height={16} darkMode />
+            <TKAWordGlyph
+              word={attachment.metadata.sequenceWord}
+              height={16}
+              darkMode
+            />
           {:else}
             {sequenceWord}
           {/if}

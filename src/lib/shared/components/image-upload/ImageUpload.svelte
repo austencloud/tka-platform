@@ -1,8 +1,11 @@
-<!-- ImageUpload - Attach and preview images for feedback -->
+<!-- ImageUpload - Shared image selection, paste, drop, and preview control -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { StagedImageState } from "$lib/shared/feedback/domain/models/feedback-models";
+
+  export interface ImageUploadState {
+    status: "uploading" | "uploaded" | "failed";
+    fraction: number;
+  }
 
   const {
     images = [],
@@ -11,8 +14,14 @@
     hidePreviews = false,
     hideAttachButton = false,
     stagedImages = new Map(),
+    accept = "image/*",
+    allowedMimeTypes,
+    uploadLabel = "Choose images",
+    attachLabel = "Attach image",
+    uploadTitle = "Choose an image",
     onImagesAdded,
     onImageRemoved,
+    onFilesRejected,
   } = $props<{
     images?: File[];
     maxImages?: number;
@@ -20,9 +29,15 @@
     hidePreviews?: boolean;
     /** Hide the standalone attach button (parent provides its own trigger) */
     hideAttachButton?: boolean;
-    stagedImages?: Map<File, StagedImageState>;
+    stagedImages?: Map<File, ImageUploadState>;
+    accept?: string;
+    allowedMimeTypes?: readonly string[];
+    uploadLabel?: string;
+    attachLabel?: string;
+    uploadTitle?: string;
     onImagesAdded?: (files: File[]) => void;
     onImageRemoved?: (index: number) => void;
+    onFilesRejected?: (files: File[]) => void;
   }>();
 
   let fileInput: HTMLInputElement | undefined = $state(undefined);
@@ -87,7 +102,13 @@
   }
 
   function addFiles(newFiles: File[]) {
-    const imageFiles = newFiles.filter((file) => file.type.startsWith("image/"));
+    const imageFiles = newFiles.filter((file) =>
+      allowedMimeTypes
+        ? allowedMimeTypes.includes(file.type)
+        : file.type.startsWith("image/")
+    );
+    const rejectedFiles = newFiles.filter((file) => !imageFiles.includes(file));
+    if (rejectedFiles.length > 0) onFilesRejected?.(rejectedFiles);
     const remainingSlots = maxImages - images.length;
     const filesToAdd = imageFiles.slice(0, remainingSlots);
     if (filesToAdd.length === 0) return;
@@ -128,10 +149,10 @@
     type="file"
     bind:this={fileInput}
     onchange={handleFileSelect}
-    accept="image/*"
-    multiple
+    {accept}
+    multiple={maxImages > 1}
     {disabled}
-    aria-label={t("feedback_upload_images")}
+    aria-label={uploadLabel}
     class="sr-only"
   />
 
@@ -198,7 +219,7 @@
           ondragover={handleDragOver}
           ondragleave={handleDragLeave}
           {disabled}
-          aria-label={t("feedback_attach_image")}
+          aria-label={attachLabel}
         >
           <i class="fas fa-plus" aria-hidden="true"></i>
         </button>
@@ -216,10 +237,11 @@
       ondragover={handleDragOver}
       ondragleave={handleDragLeave}
       {disabled}
-      title={t("feedback_upload_image_title")}
+      title={uploadTitle}
+      aria-label={attachLabel}
     >
       <i class="fas fa-paperclip" aria-hidden="true"></i>
-      <span>{t("feedback_attach_image")}</span>
+      <span>{attachLabel}</span>
     </button>
   {/if}
 </div>
@@ -422,7 +444,9 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 150ms ease, background 150ms ease;
+    transition:
+      opacity 150ms ease,
+      background 150ms ease;
     z-index: 2;
   }
 

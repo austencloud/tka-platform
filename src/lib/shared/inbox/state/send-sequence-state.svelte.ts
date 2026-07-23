@@ -9,6 +9,7 @@
  */
 
 import type { SequenceSharePayload } from "../domain/models/sequence-share-payload";
+export { buildSequenceSharePayload } from "../domain/build-sequence-share-payload";
 
 const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
 
@@ -20,7 +21,7 @@ const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
 export function buildThumbnailUrl(
   sequenceName: string,
   propType: string,
-  lightMode: boolean,
+  lightMode: boolean
 ): string {
   const modeSuffix = lightMode ? "_light" : "_dark";
   const storagePath = `thumbnails/gallery/${propType}/${sequenceName}${modeSuffix}.webp`;
@@ -40,33 +41,4 @@ export function closeSendSequenceSheet(): void {
 
 export function getSendSequencePayload(): SequenceSharePayload | null {
   return payload;
-}
-
-/**
- * Builds a SequenceSharePayload from the various sequence data shapes
- * found across the codebase (SequenceData, browse results, etc.).
- *
- * Accepts a loose shape so callers don't need to import SequenceData.
- */
-export function buildSequenceSharePayload(seq: {
-  id: string;
-  displayName?: string;
-  intendedWord?: string;
-  word?: string;
-  name?: string;
-  thumbnails?: readonly string[];
-  thumbnailUrl?: string;
-  ownerDisplayName?: string;
-  author?: string;
-  steps?: readonly unknown[];
-}): SequenceSharePayload {
-  return {
-    sequenceId: seq.id,
-    sequenceWord: seq.displayName || seq.intendedWord || seq.word || "",
-    sequenceCloudWord: seq.word || undefined,
-    sequenceName: seq.name || undefined,
-    sequenceThumbnail: seq.thumbnails?.[0] || seq.thumbnailUrl || undefined,
-    sequenceAuthor: seq.ownerDisplayName || seq.author || undefined,
-    sequenceStepCount: seq.steps?.length || undefined,
-  };
 }

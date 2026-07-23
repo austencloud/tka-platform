@@ -17,8 +17,10 @@ import {
   getDocs,
   query,
   setDoc,
+  updateDoc,
   where,
 } from "firebase/firestore";
+import { getBytes, listAll, ref, uploadBytes } from "firebase/storage";
 
 let testEnv: RulesTestEnvironment;
 
@@ -36,6 +38,11 @@ beforeAll(async () => {
       host: "127.0.0.1",
       port: 8080,
     },
+    storage: {
+      rules: readFileSync(resolve(__dirname, "../../../storage.rules"), "utf8"),
+      host: "127.0.0.1",
+      port: 9199,
+    },
   });
 });
 
@@ -45,6 +52,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await testEnv.clearFirestore();
+  await testEnv.clearStorage();
 });
 
 // A guest = anonymous provider; a full user = a real provider (e.g. password).
@@ -518,6 +526,164 @@ describe("Instagram custom-auth handshake", () => {
     await assertFails(getDoc(doc(db, "instagramAuthLinks", "instagram_123")));
     await assertFails(
       getDoc(doc(db, "instagramDataDeletionRequests", "confirmation-code"))
+    );
+  });
+});
+
+describe("messaging attachments", () => {
+  const SENDER = "message-sender";
+  const RECIPIENT = "message-recipient";
+  const OUTSIDER = "message-outsider";
+  const CONVERSATION = "conversation-1";
+
+  function messageCtx(uid: string) {
+    return testEnv.authenticatedContext(uid, {
+      firebase: { sign_in_provider: "password" },
+    });
+  }
+
+  async function seedConversation() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `conversations/${CONVERSATION}`), {
+        type: "direct",
+        participants: [SENDER, RECIPIENT],
+        participantInfo: {
+          [SENDER]: { userId: SENDER, displayName: "Sender" },
+          [RECIPIENT]: { userId: RECIPIENT, displayName: "Recipient" },
+        },
+        unreadCount: { [SENDER]: 0, [RECIPIENT]: 0 },
+      });
+    });
+  }
+
+  it("keeps direct-message membership immutable", async () => {
+    await seedConversation();
+    const conversationRef = doc(
+      messageCtx(SENDER).firestore(),
+      `conversations/${CONVERSATION}`
+    );
+
+    await assertFails(
+      updateDoc(conversationRef, { participants: [SENDER, OUTSIDER] })
+    );
+    await assertSucceeds(
+      updateDoc(conversationRef, { [`unreadCount.${SENDER}`]: 0 })
+    );
+  });
+
+  it("allows client sequence messages but reserves image messages for the callable", async () => {
+    await seedConversation();
+    const messages = collection(
+      messageCtx(SENDER).firestore(),
+      `conversations/${CONVERSATION}/messages`
+    );
+    const base = {
+      senderId: SENDER,
+      senderName: "Sender",
+      content: "",
+      readBy: [SENDER],
+    };
+
+    await assertSucceeds(
+      addDoc(messages, {
+        ...base,
+        attachments: [{ type: "sequence", url: "/sequence/raw%3Atest" }],
+      })
+    );
+    await assertFails(
+      addDoc(messages, {
+        ...base,
+        attachments: [
+          { type: "image", storagePath: "message-images/fake/fake/fake.webp" },
+        ],
+      })
+    );
+  });
+
+  it("lets only participants create valid staging images", async () => {
+    await seedConversation();
+    const path = `message-image-staging/${SENDER}/${CONVERSATION}/message-1/attachment-1`;
+    const senderRef = ref(messageCtx(SENDER).storage(), path);
+    const outsiderRef = ref(messageCtx(OUTSIDER).storage(), path);
+    const anonymousRef = ref(
+      testEnv
+        .authenticatedContext(SENDER, {
+          firebase: { sign_in_provider: "anonymous" },
+        })
+        .storage(),
+      `message-image-staging/${SENDER}/${CONVERSATION}/message-1/anonymous`
+    );
+
+    await assertSucceeds(
+      uploadBytes(senderRef, new Uint8Array([1, 2, 3]), {
+        contentType: "image/png",
+      })
+    );
+    await assertFails(
+      uploadBytes(outsiderRef, new Uint8Array([1, 2, 3]), {
+        contentType: "image/png",
+      })
+    );
+    await assertFails(
+      uploadBytes(anonymousRef, new Uint8Array([1, 2, 3]), {
+        contentType: "image/png",
+      })
+    );
+  });
+
+  it("rejects unsupported, oversized, and overwrite attempts in staging", async () => {
+    await seedConversation();
+    const storage = messageCtx(SENDER).storage();
+    const validRef = ref(
+      storage,
+      `message-image-staging/${SENDER}/${CONVERSATION}/message-1/valid`
+    );
+    const wrongTypeRef = ref(
+      storage,
+      `message-image-staging/${SENDER}/${CONVERSATION}/message-1/wrong-type`
+    );
+    const oversizedRef = ref(
+      storage,
+      `message-image-staging/${SENDER}/${CONVERSATION}/message-1/oversized`
+    );
+
+    await assertFails(
+      uploadBytes(wrongTypeRef, new Uint8Array([1]), {
+        contentType: "image/gif",
+      })
+    );
+    await assertFails(
+      uploadBytes(oversizedRef, new Uint8Array(10 * 1024 * 1024 + 1), {
+        contentType: "image/jpeg",
+      })
+    );
+    await assertSucceeds(
+      uploadBytes(validRef, new Uint8Array([1]), { contentType: "image/webp" })
+    );
+    await assertFails(
+      uploadBytes(validRef, new Uint8Array([2]), { contentType: "image/webp" })
+    );
+  });
+
+  it("allows exact final-image reads for participants without allowing listing", async () => {
+    await seedConversation();
+    const path = `message-images/${CONVERSATION}/message-1/attachment-1.webp`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await uploadBytes(
+        ref(context.storage(), path),
+        new Uint8Array([4, 5, 6]),
+        {
+          contentType: "image/webp",
+        }
+      );
+    });
+
+    await assertSucceeds(getBytes(ref(messageCtx(RECIPIENT).storage(), path)));
+    await assertFails(getBytes(ref(messageCtx(OUTSIDER).storage(), path)));
+    await assertFails(
+      listAll(
+        ref(messageCtx(RECIPIENT).storage(), `message-images/${CONVERSATION}`)
+      )
     );
   });
 });

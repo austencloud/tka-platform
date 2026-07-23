@@ -29,27 +29,36 @@ export const onNewMessage = onDocumentCreated(
     const senderId: string = messageData.senderId;
     const senderName: string = messageData.senderName || "Someone";
     const content: string = messageData.content || "";
+    const attachmentType: string | undefined =
+      messageData.attachments?.[0]?.type;
 
-    // Truncate message content for push body
-    const bodyPreview =
-      content.length > 100 ? content.substring(0, 97) + "..." : content;
+    const attachmentPreview =
+      attachmentType === "image"
+        ? "Sent an image"
+        : attachmentType === "sequence"
+          ? "Shared a sequence"
+          : attachmentType
+            ? "Sent an attachment"
+            : "New message";
+    const bodyPreview = content
+      ? content.length > 100
+        ? content.substring(0, 97) + "..."
+        : content
+      : attachmentPreview;
 
     // Get the conversation to find participants and type
     const conversationRef = db.collection("conversations").doc(conversationId);
     const conversationDoc = await conversationRef.get();
 
     if (!conversationDoc.exists) {
-      console.warn(
-        `onNewMessage: Conversation ${conversationId} not found`
-      );
+      console.warn(`onNewMessage: Conversation ${conversationId} not found`);
       return;
     }
 
     const conversationData = conversationDoc.data()!;
     const participants: string[] = conversationData.participants || [];
     const conversationType: string = conversationData.type || "direct";
-    const groupName: string | undefined =
-      conversationData.groupMetadata?.name;
+    const groupName: string | undefined = conversationData.groupMetadata?.name;
 
     // Build recipient list (everyone except sender)
     const recipients = participants.filter((uid) => uid !== senderId);

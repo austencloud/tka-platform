@@ -13,6 +13,16 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
+  import MessageAttachmentPicker from "./MessageAttachmentPicker.svelte";
+  import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
+  import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
+  import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
+  import type {
+    MessageImageSendHandle,
+    MessageImageSendProgress,
+  } from "$lib/shared/messaging/services/contracts/IMessageImageSender";
 
   interface Props {
     conversationId: string;
@@ -24,6 +34,9 @@
   let isSending = $state(false);
   let inputElement: HTMLTextAreaElement | undefined = $state();
   let sendSuccess = $state(false);
+  let pendingAttachment = $state<PendingMessageAttachment | null>(null);
+  let attachmentProgress = $state<MessageImageSendProgress | null>(null);
+  let imageSendHandle: MessageImageSendHandle | null = null;
 
   // Typing indicator debounce
   let typingTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -44,8 +57,11 @@
     return () => {
       if (typingTimeout) clearTimeout(typingTimeout);
       if (successTimeout) clearTimeout(successTimeout);
+      imageSendHandle?.cancel();
       if (mountedConversationId) {
-        messagingService.setTyping(mountedConversationId, false).catch(() => {});
+        messagingService
+          .setTyping(mountedConversationId, false)
+          .catch(() => {});
       }
     };
   });
@@ -53,6 +69,8 @@
   // When entering edit mode, populate with the message content
   $effect(() => {
     if (inboxState.editingMessage) {
+      pendingAttachment = null;
+      attachmentProgress = null;
       messageText = inboxState.editingMessage.content;
       // Focus input when entering edit mode
       const focusTimer = setTimeout(() => inputElement?.focus(), 50);
@@ -94,6 +112,11 @@
         inboxState.clearReplyTo();
         return;
       }
+      if (pendingAttachment) {
+        pendingAttachment = null;
+        attachmentProgress = null;
+        return;
+      }
     }
 
     // Send/save on Enter (without Shift)
@@ -109,7 +132,7 @@
 
   async function sendMessage() {
     const text = messageText.trim();
-    if (!text || isSending) return;
+    if ((!text && !pendingAttachment) || isSending) return;
 
     hapticService?.trigger("selection");
 
@@ -122,25 +145,46 @@
       ? {
           messageId: inboxState.replyToMessage.id,
           senderName: inboxState.replyToMessage.senderName,
-          content: inboxState.replyToMessage.content.slice(0, 100),
+          content: getMessagePreviewText(
+            inboxState.replyToMessage.content,
+            inboxState.replyToMessage.attachments
+          ),
         }
       : undefined;
-
-    // Optimistic UI: clear input immediately
-    const previousText = messageText;
-    messageText = "";
-    inboxState.clearReplyTo();
-    if (inputElement) {
-      inputElement.style.height = "auto";
-    }
+    const attachment = pendingAttachment;
 
     isSending = true;
     try {
-      await messagingService.sendMessage({
-        conversationId,
-        content: text,
-        replyTo,
-      });
+      if (attachment?.type === "image") {
+        imageSendHandle = getMessageImageSender().send({
+          conversationId,
+          messageId: attachment.messageId,
+          attachmentId: attachment.attachmentId,
+          file: attachment.file,
+          content: text,
+          replyTo,
+          onProgress: (progress) => {
+            attachmentProgress = progress;
+          },
+        });
+        await imageSendHandle.promise;
+      } else {
+        await messagingService.sendMessage({
+          conversationId,
+          content: text,
+          attachments:
+            attachment?.type === "sequence"
+              ? [buildSequenceMessageAttachment(attachment.sequence)]
+              : undefined,
+          replyTo,
+        });
+      }
+
+      messageText = "";
+      pendingAttachment = null;
+      attachmentProgress = null;
+      inboxState.clearReplyTo();
+      if (inputElement) inputElement.style.height = "auto";
 
       // Show brief success indicator with haptic feedback
       hapticService?.trigger("success");
@@ -152,14 +196,34 @@
     } catch (error) {
       console.error("Failed to send message:", error);
 
-      // Restore text on error
-      messageText = previousText;
-
       // Show error toast
       toast.error("Failed to send message. Please try again.");
     } finally {
+      imageSendHandle = null;
+      attachmentProgress = null;
       isSending = false;
     }
+  }
+
+  function selectImage(file: File) {
+    pendingAttachment = {
+      type: "image",
+      file,
+      messageId: crypto.randomUUID(),
+      attachmentId: crypto.randomUUID(),
+    };
+    attachmentProgress = null;
+  }
+
+  function selectSequence(sequence: SequenceData) {
+    pendingAttachment = { type: "sequence", sequence };
+    attachmentProgress = null;
+  }
+
+  function removeAttachment() {
+    if (isSending) return;
+    pendingAttachment = null;
+    attachmentProgress = null;
   }
 
   async function saveEdit() {
@@ -179,7 +243,11 @@
 
     isSending = true;
     try {
-      await messagingService.editMessage(conversationId, editingMessage.id, text);
+      await messagingService.editMessage(
+        conversationId,
+        editingMessage.id,
+        text
+      );
 
       hapticService?.trigger("success");
       inboxState.clearEditingMessage();
@@ -207,7 +275,9 @@
   }
 
   // Derive button state
-  const canSend = $derived(messageText.trim().length > 0 && !isSending);
+  const canSend = $derived(
+    (messageText.trim().length > 0 || pendingAttachment !== null) && !isSending
+  );
   const isEditing = $derived(inboxState.isEditing);
   const isReplying = $derived(inboxState.isReplying);
 </script>
@@ -220,7 +290,10 @@
         reply={{
           messageId: inboxState.replyToMessage.id,
           senderName: inboxState.replyToMessage.senderName,
-          content: inboxState.replyToMessage.content.slice(0, 100),
+          content: getMessagePreviewText(
+            inboxState.replyToMessage.content,
+            inboxState.replyToMessage.attachments
+          ),
         }}
         onDismiss={() => inboxState.clearReplyTo()}
       />
@@ -243,7 +316,17 @@
     </div>
   {/if}
 
-  <div class="input-row">
+  <div class="compose-grid" class:editing={isEditing}>
+    {#if !isEditing}
+      <MessageAttachmentPicker
+        attachment={pendingAttachment}
+        disabled={isSending}
+        progress={attachmentProgress}
+        onImageSelected={selectImage}
+        onSequenceSelected={selectSequence}
+        onRemove={removeAttachment}
+      />
+    {/if}
     <textarea
       bind:this={inputElement}
       bind:value={messageText}
@@ -293,7 +376,11 @@
 
   .message-composer.editing {
     border-top-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 5%, var(--theme-panel-bg));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 5%,
+      var(--theme-panel-bg)
+    );
   }
 
   .reply-strip {
@@ -303,7 +390,8 @@
   .edit-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 0;
     padding: 8px 0;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-accent, #6366f1);
@@ -334,14 +422,20 @@
     color: var(--theme-text, #ffffff);
   }
 
-  .input-row {
-    display: flex;
+  .compose-grid {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: flex-end;
     gap: 8px;
   }
 
+  .compose-grid.editing {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   textarea {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 2;
     min-height: var(--min-touch-target);
     max-height: 120px;
     padding: 14px 16px;
@@ -359,6 +453,11 @@
       box-shadow 0.2s ease;
   }
 
+  .compose-grid.editing textarea {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
   textarea::placeholder {
     color: var(--theme-text-dim);
   }
@@ -374,6 +473,8 @@
   }
 
   .send-button {
+    grid-column: 3;
+    grid-row: 2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -389,6 +490,11 @@
       background 0.2s ease,
       transform 0.15s ease,
       box-shadow 0.2s ease;
+  }
+
+  .compose-grid.editing .send-button {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .send-button:hover:not(:disabled) {

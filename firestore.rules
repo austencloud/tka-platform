@@ -643,9 +643,11 @@ service cloud.firestore {
       allow update: if isFullUser()
         && request.auth.uid in resource.data.participants
         && (
-          // Direct conversations: participant list must stay size 2
+          // Direct conversations: membership and document shape stay fixed
           ((!('type' in resource.data) || resource.data.type == 'direct')
-            && request.resource.data.participants.size() == 2)
+            && request.resource.data.participants == resource.data.participants
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['unreadCount', 'lastMessage', 'updatedAt', 'typing', 'participantInfo', 'archived']))
           ||
           // Group conversations: standard updates or admin membership changes
           (resource.data.type == 'group' && (
@@ -663,19 +665,40 @@ service cloud.firestore {
 
       // Messages subcollection - only participants can read/write
       match /messages/{messageId} {
+        function hasValidClientAttachment() {
+          return !('attachments' in request.resource.data)
+            || request.resource.data.attachments == null
+            || (request.resource.data.attachments is list
+              && request.resource.data.attachments.size() <= 1
+              && request.resource.data.attachments.size() > 0
+              && request.resource.data.attachments[0].type in ['sequence', 'link', 'feedback']);
+        }
+
+        function hasValidMessageBody() {
+          return request.resource.data.content is string
+            && request.resource.data.content.size() <= 2000
+            && (request.resource.data.content.size() > 0
+              || (request.resource.data.attachments is list
+                && request.resource.data.attachments.size() > 0));
+        }
+
         // Only participants of parent conversation can read messages
         allow read: if isConversationParticipant(conversationId);
 
         // Creating messages - must be sender and a participant
         allow create: if isFullUser()
           && isConversationParticipant(conversationId)
-          && request.resource.data.senderId == request.auth.uid;
+          && request.resource.data.senderId == request.auth.uid
+          && hasValidClientAttachment()
+          && hasValidMessageBody();
 
         // Updating messages:
-        // - Sender can update any field (edit content, delete, etc.)
+        // - Sender can edit or soft-delete message text without replacing attachments
         // - Any participant can update reactions, read status
         allow update: if isConversationParticipant(conversationId)
-          && (resource.data.senderId == request.auth.uid
+          && ((resource.data.senderId == request.auth.uid
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['content', 'editedAt', 'editHistory', 'isDeleted']))
               || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'readAt']));
 
         // No hard deleting messages (soft delete via isDeleted flag)

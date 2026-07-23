@@ -2,6 +2,17 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isFullUser() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function isConversationParticipant(conversationId) {
+      return request.auth != null
+        && request.auth.uid in firestore.get(
+          /databases/(default)/documents/conversations/$(conversationId)
+        ).data.participants;
+    }
 
     // ============================================================================
     // HELPER FUNCTIONS
@@ -187,6 +198,29 @@ service firebase.storage {
         && (request.resource == null || request.resource.contentType == 'image/png')
         // Limit file size to 10MB
         && (request.resource == null || request.resource.size < 10 * 1024 * 1024);
+    }
+
+    // Short-lived, sender-owned source images. The callable function validates
+    // and rewrites these before creating a message.
+    match /message-image-staging/{userId}/{conversationId}/{messageId}/{attachmentId} {
+      allow create: if isFullUser()
+        && request.auth.uid == userId
+        && isConversationParticipant(conversationId)
+        && resource == null
+        && request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if request.auth != null
+        && request.auth.uid == userId
+        && isConversationParticipant(conversationId);
+      allow get, list, update: if false;
+    }
+
+    // Final message images stay private. Clients can read exact objects only;
+    // all writes come from the Admin SDK after server-side image validation.
+    match /message-images/{conversationId}/{messageId}/{fileName} {
+      allow get: if isConversationParticipant(conversationId);
+      allow list, create, update, delete: if false;
     }
 
     // Default: deny all other access

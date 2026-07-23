@@ -61,6 +61,8 @@ export {
 
 export { cleanupStaleAnonymousAccounts } from "./cleanupStaleAnonymousAccounts";
 export { cleanupStagedUploads } from "./cleanupStagedUploads";
+export { finalizeMessageImage } from "./messaging/finalizeMessageImage";
+export { deleteMessageImages } from "./messaging/deleteMessageImages";
 export { promoteFeedbackImages } from "./promoteFeedbackImages";
 export { backupHealthCheck } from "./backupHealthCheck";
 export { createMerchCheckout } from "./merch/createMerchCheckout";

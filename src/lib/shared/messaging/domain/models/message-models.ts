@@ -22,11 +22,20 @@ export interface FeedbackAttachmentMetadata {
  * An attachment on a message (images, sequence links, feedback, etc.)
  */
 export interface MessageAttachment {
+  /** Stable attachment ID for storage-backed attachments. */
+  id?: string;
   type: MessageAttachmentType;
-  url: string;
+  /** Internal app route for navigable attachments. */
+  url?: string;
   thumbnailUrl?: string;
   /** Display name for the attachment (e.g., filename, sequence word) */
   name?: string;
+  /** Private Firebase Storage object path. Never a public download URL. */
+  storagePath?: string;
+  contentType?: string;
+  byteSize?: number;
+  width?: number;
+  height?: number;
   metadata?: {
     title?: string;
     description?: string;

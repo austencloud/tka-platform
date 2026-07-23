@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     include: ["tests/integration/firestore-rules/**/*.{test,spec}.ts"],
     pool: "forks",
-    poolOptions: { forks: { singleFork: true } },
+    forks: { singleFork: true },
     testTimeout: 20000,
     hookTimeout: 20000,
   },

@@ -11,7 +11,6 @@ import {
   limit,
   getDocs,
   doc,
-  addDoc,
   updateDoc,
   onSnapshot,
   Timestamp,
@@ -19,9 +18,13 @@ import {
   startAfter,
   getDoc,
   writeBatch,
+  increment,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { authState, getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+import {
+  authState,
+  getEffectiveUserId,
+} from "$lib/shared/auth/state/auth-state.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
@@ -34,6 +37,7 @@ import type {
   MessageReaction,
   MessageEdit,
 } from "../domain/models/message-models";
+import { getMessagePreviewText } from "../domain/message-preview";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MESSAGES_SUBCOLLECTION = "messages";
@@ -109,6 +113,7 @@ export class Messenger {
   async sendMessage(input: CreateMessageInput): Promise<Message> {
     try {
       const { conversationId, content, attachments, replyTo } = input;
+      const normalizedContent = content.trim();
 
       // Rate limiting - prevent spam
       const now = Date.now();
@@ -118,8 +123,19 @@ export class Messenger {
       this.lastMessageTime = now;
 
       // Content validation
-      if (content.length > MAX_MESSAGE_LENGTH) {
-        throw new Error(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      if (normalizedContent.length > MAX_MESSAGE_LENGTH) {
+        throw new Error(
+          `Message too long (max ${MAX_MESSAGE_LENGTH} characters)`
+        );
+      }
+      if (attachments && attachments.length > 1) {
+        throw new Error("Messages support one attachment at a time");
+      }
+      if (!normalizedContent && !attachments?.length) {
+        throw new Error("Message cannot be empty");
+      }
+      if (attachments?.some((attachment) => attachment.type === "image")) {
+        throw new Error("Image messages must use the private image sender");
       }
 
       const firestore = await getFirestoreInstance();
@@ -156,7 +172,7 @@ export class Messenger {
         senderId: effectiveUser.uid,
         senderName: effectiveUser.displayName,
         senderAvatar: effectiveUser.photoURL,
-        content,
+        content: normalizedContent,
         createdAt: serverTimestamp(),
         readBy: [effectiveUser.uid], // Sender has read their own message
         attachments: attachments || null,
@@ -166,12 +182,12 @@ export class Messenger {
         editHistory: null,
       };
 
-      const docRef = await addDoc(messagesRef, messageData);
+      const messageRef = doc(messagesRef);
 
       // Update conversation with last message and increment unread count for ALL other participants
       const otherUserIds = participants.filter((p) => p !== effectiveUser.uid);
       const lastMessage: MessagePreview = {
-        content: content.substring(0, 100),
+        content: getMessagePreviewText(normalizedContent, attachments),
         senderId: effectiveUser.uid,
         senderName: effectiveUser.displayName,
         createdAt: new Date(),
@@ -180,15 +196,12 @@ export class Messenger {
 
       const batch = writeBatch(firestore);
 
-      // Build update object with incremented unread counts for all other participants
-      const currentUnreadCounts =
-        (conversationData["unreadCount"] as Record<string, number>) || {};
-      const unreadUpdates: Record<string, number> = {};
+      const unreadUpdates: Record<string, ReturnType<typeof increment>> = {};
       for (const userId of otherUserIds) {
-        unreadUpdates[`unreadCount.${userId}`] =
-          (currentUnreadCounts[userId] || 0) + 1;
+        unreadUpdates[`unreadCount.${userId}`] = increment(1);
       }
 
+      batch.set(messageRef, messageData);
       batch.update(conversationRef, {
         lastMessage,
         updatedAt: serverTimestamp(),
@@ -200,12 +213,12 @@ export class Messenger {
       // Note: No in-app notification created - messages tab shows unread badge instead
 
       return {
-        id: docRef.id,
+        id: messageRef.id,
         conversationId,
         senderId: effectiveUser.uid,
         senderName: effectiveUser.displayName,
         senderAvatar: effectiveUser.photoURL || undefined,
-        content,
+        content: normalizedContent,
         createdAt: new Date(),
         readBy: [effectiveUser.uid],
         attachments,
@@ -616,7 +629,8 @@ export class Messenger {
 
       // Find existing reaction with this emoji
       const reactionIndex = reactions.findIndex((r) => r.emoji === emoji);
-      const existingReaction = reactionIndex >= 0 ? reactions[reactionIndex] : null;
+      const existingReaction =
+        reactionIndex >= 0 ? reactions[reactionIndex] : null;
 
       if (existingReaction) {
         // Check if user already reacted
@@ -740,7 +754,9 @@ export class Messenger {
             }
 
             const data = snapshot.data();
-            const typing = data["typing"] as Record<string, Timestamp> | undefined;
+            const typing = data["typing"] as
+              | Record<string, Timestamp>
+              | undefined;
             const participantInfo = data["participantInfo"] as Record<
               string,
               { displayName: string }
