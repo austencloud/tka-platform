@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SeoDashboardSnapshot } from "../../src/lib/features/admin/domain/models/seo-dashboard-model";
 import {
   formatPercent,
+  getSeoAutomationStory,
   getSeoGrowthStory,
   getSeoHistoryStory,
   getSeoOutcomeStatus,
@@ -54,9 +55,9 @@ describe("getSeoGrowthStory", () => {
   it("makes the baseline and its required action explicit", () => {
     const story = getSeoGrowthStory(snapshotFor("baseline"));
 
-    expect(story.value).toBe("Too early to tell");
-    expect(story.headline).toBe("The SEO changes are not marked live yet.");
-    expect(story.nextStep).toContain("launch date");
+    expect(story.value).toBe("Not started");
+    expect(story.headline).toBe("The SEO clock has not started.");
+    expect(story.nextStep).toContain("changes went live");
     expect(story.tone).toBe("waiting");
   });
 
@@ -67,8 +68,8 @@ describe("getSeoGrowthStory", () => {
       })
     );
 
-    expect(story.value).toBe("Too early to tell");
-    expect(story.explanation).toContain("before-and-after comparison starts");
+    expect(story.value).toBe("Not yet");
+    expect(story.explanation).toContain("every morning");
   });
 
   it("turns control-adjusted visibility lift into the main verdict", () => {
@@ -109,8 +110,10 @@ describe("getSeoGrowthStory", () => {
     );
 
     expect(story.value).toBe("14 appearances");
-    expect(story.headline).toBe("Google visibility has started.");
-    expect(story.explanation).toContain("no percentage is guessed");
+    expect(story.headline).toBe(
+      "Google has started showing the tracked pages."
+    );
+    expect(story.explanation).toContain("14 more appearances");
     expect(story.tone).toBe("positive");
   });
 
@@ -122,9 +125,42 @@ describe("getSeoGrowthStory", () => {
       })
     );
 
-    expect(story.value).toBe("Clock started");
+    expect(story.value).toBe("Waiting");
     expect(story.explanation).toContain("three days");
     expect(story.tone).toBe("waiting");
+  });
+});
+
+describe("getSeoAutomationStory", () => {
+  it("stays quiet when the daily snapshot is fresh", () => {
+    const story = getSeoAutomationStory(
+      { generatedAt: "2026-07-22T12:00:00.000Z" },
+      new Date("2026-07-23T12:00:00.000Z")
+    );
+
+    expect(story.healthy).toBe(true);
+    expect(story.value).toBe("On");
+    expect(story.headline).toBe("Nothing to do.");
+  });
+
+  it("warns after two daily snapshots are missed", () => {
+    const story = getSeoAutomationStory(
+      { generatedAt: "2026-07-20T11:59:59.000Z" },
+      new Date("2026-07-22T12:00:00.000Z")
+    );
+
+    expect(story.healthy).toBe(false);
+    expect(story.value).toBe("Late");
+    expect(story.explanation).toContain("last two days");
+  });
+
+  it("treats a broken timestamp as a failed daily check", () => {
+    const story = getSeoAutomationStory(
+      { generatedAt: "not-a-date" },
+      new Date("2026-07-22T12:00:00.000Z")
+    );
+
+    expect(story.healthy).toBe(false);
   });
 });
 

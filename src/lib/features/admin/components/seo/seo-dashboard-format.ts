@@ -48,6 +48,48 @@ export interface SeoGrowthStory {
   tone: SeoGrowthTone;
 }
 
+export interface SeoAutomationStory {
+  healthy: boolean;
+  value: "On" | "Late";
+  headline: string;
+  explanation: string;
+}
+
+const MAX_SNAPSHOT_AGE_MS = 48 * 60 * 60 * 1000;
+const MAX_FUTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+/**
+ * A daily collector should never make the owner wonder whether this screen is
+ * still alive. Two missed days turn the quiet success state into a warning.
+ */
+export function getSeoAutomationStory(
+  snapshot: Pick<SeoDashboardSnapshot, "generatedAt">,
+  now = new Date()
+): SeoAutomationStory {
+  const generatedAt = Date.parse(snapshot.generatedAt);
+  const age = now.getTime() - generatedAt;
+  const healthy =
+    Number.isFinite(generatedAt) &&
+    age >= -MAX_FUTURE_CLOCK_SKEW_MS &&
+    age <= MAX_SNAPSHOT_AGE_MS;
+
+  if (healthy) {
+    return {
+      healthy: true,
+      value: "On",
+      headline: "Nothing to do.",
+      explanation: "A fresh reading is saved every morning.",
+    };
+  }
+
+  return {
+    healthy: false,
+    value: "Late",
+    headline: "The daily check needs attention.",
+    explanation: "No fresh reading has been saved in the last two days.",
+  };
+}
+
 function formatGrowth(value: number): string {
   const sign = value > 0 ? "+" : "";
   return `${sign}${(value * 100).toFixed(1)}%`;
@@ -62,25 +104,22 @@ export function getSeoGrowthStory(
 ): SeoGrowthStory {
   if (snapshot.phase === "baseline") {
     return {
-      value: "Too early to tell",
-      headline: "The SEO changes are not marked live yet.",
-      explanation:
-        "Today's numbers are the starting point. Growth begins after the launch date is recorded and Google finds the updated pages.",
+      value: "Not started",
+      headline: "The SEO clock has not started.",
+      explanation: "Today's numbers are the before picture.",
       nextStep: snapshot.experimentDates.deploymentDate
-        ? "Let a measurement run confirm that Google found the pages."
-        : "Record the SEO launch date.",
+        ? "The daily check will tell you when Google finds the pages."
+        : "Record the day the SEO changes went live.",
       tone: "waiting",
     };
   }
 
   if (snapshot.phase === "awaiting_indexing") {
     return {
-      value: "Too early to tell",
-      headline:
-        "The changes are live. Google has not found all the sample pages yet.",
-      explanation:
-        "The next measurement run checks the sample pages. The before-and-after comparison starts when they can appear in Google search.",
-      nextStep: "Let a measurement run check the updated pages.",
+      value: "Not yet",
+      headline: "Google is still finding the updated pages.",
+      explanation: "This page checks them every morning.",
+      nextStep: "The first growth check starts automatically.",
       tone: "waiting",
     };
   }
@@ -89,11 +128,10 @@ export function getSeoGrowthStory(
     const impressions = snapshot.search.current?.impressions;
     if (impressions === null || impressions === undefined) {
       return {
-        value: "Clock started",
-        headline: "Google found the updated Composer page.",
-        explanation:
-          "Search Console waits three days before finalizing a reading. The first post-index number will appear after that delay.",
-        nextStep: "Wait for the first finalized Google reading.",
+        value: "Waiting",
+        headline: "Google found the page. Its first number is not ready.",
+        explanation: "Google's search numbers arrive about three days late.",
+        nextStep: "The daily check will pick it up.",
         tone: "waiting",
       };
     }
@@ -102,28 +140,32 @@ export function getSeoGrowthStory(
       snapshot.decision.status === "primary_target_met" ||
       snapshot.decision.status === "confirmed_target_met";
     const targetMissed = snapshot.decision.status === "below_target";
+    const hasVisibility = impressions > 0;
     return {
-      value: `${formatInteger(impressions)} appearances`,
+      value: hasVisibility
+        ? `${formatInteger(impressions)} appearances`
+        : "Not yet",
       headline: targetMet
         ? "The visibility target was met."
         : targetMissed
           ? "The measurement window missed its target."
-          : impressions > 0
-            ? "Google visibility has started."
-            : "Waiting for the first Google appearance.",
-      explanation:
-        "The pre-launch count was zero. This launch uses fixed search and product-use targets, so no percentage is guessed.",
+          : hasVisibility
+            ? "Google has started showing the tracked pages."
+            : "Google has not shown the tracked pages yet.",
+      explanation: hasVisibility
+        ? `That is ${formatInteger(impressions)} more appearances than before launch.`
+        : "The check is running. Google's search numbers arrive about three days late.",
       nextStep:
         snapshot.phase === "confirmed"
-          ? "The full two-window check is complete."
+          ? "Done. The result is saved."
           : snapshot.phase === "primary_complete"
-            ? "Repeat the same targets with fresh dates."
-            : "Keep collecting until the first 28-day window closes.",
+            ? "The proof check runs next."
+            : "This page checks again every morning.",
       tone: targetMet
         ? "positive"
         : targetMissed
           ? "negative"
-          : impressions > 0
+          : hasVisibility
             ? "positive"
             : "waiting",
     };

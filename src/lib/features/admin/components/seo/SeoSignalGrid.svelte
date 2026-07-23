@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
   import {
+    formatDate,
     formatInteger,
-    formatPercent,
     formatPosition,
+    getSeoAutomationStory,
     getSeoGrowthStory,
   } from "./seo-dashboard-format";
 
@@ -15,160 +16,159 @@
   const activeHeadTerm = $derived(
     snapshot.headTerm.current ?? snapshot.headTerm.baseline
   );
-  const activeAcquisition = $derived(
-    snapshot.acquisition.current ?? snapshot.acquisition.baseline
-  );
-  const activeAudit = $derived(
-    snapshot.aiOverview.current.auditDate
-      ? snapshot.aiOverview.current
-      : snapshot.aiOverview.baseline
-  );
   const growth = $derived(getSeoGrowthStory(snapshot));
+  const automation = $derived(getSeoAutomationStory(snapshot));
   const rankValue = $derived(
     activeHeadTerm.position === null
-      ? "Not found yet"
+      ? "Not found"
       : `#${formatPosition(activeHeadTerm.position)}`
   );
-  const visitorValue = $derived(
-    activeAcquisition.organicComposerSessions === 0
-      ? "No visitors yet"
-      : formatPercent(activeAcquisition.activationRate)
-  );
-  const aiValue = $derived(
-    activeAudit.auditedQueries === 0
-      ? "Not checked"
-      : `${activeAudit.citedTka} of ${activeAudit.auditedQueries}`
-  );
-  const nextLabel = $derived(
-    snapshot.phase === "confirmed" ? "Result" : "Next move"
-  );
-  const metricsContext = $derived(
-    snapshot.phase === "baseline"
-      ? "These are the starting numbers. They are not a growth result."
-      : "The latest readings from search, site visits, and saved AI checks."
-  );
+
+  const ownerAction = $derived.by(() => {
+    if (!automation.healthy) {
+      return {
+        value: "Check it",
+        note: "Open the nerd stuff and check the daily workflow.",
+      };
+    }
+    if (
+      snapshot.phase === "baseline" &&
+      !snapshot.experimentDates.deploymentDate
+    ) {
+      return {
+        value: "Start it",
+        note: "Record the day the SEO changes went live.",
+      };
+    }
+    return { value: "Nothing", note: growth.nextStep };
+  });
+
+  const nextAnswer = $derived.by(() => {
+    if (snapshot.phase === "confirmed") {
+      return { value: "Done", note: "The final result is saved." };
+    }
+    if (snapshot.phase === "baseline") {
+      return {
+        value: "Not started",
+        note: "Starts when the SEO changes go live.",
+      };
+    }
+    if (snapshot.phase === "awaiting_indexing") {
+      return {
+        value: "Waiting",
+        note: "Starts when Google finds the pages.",
+      };
+    }
+
+    const window =
+      snapshot.currentWindow === "confirmation"
+        ? snapshot.windows.confirmation
+        : snapshot.windows.primary;
+    if (!window) {
+      return { value: "Next check", note: "The date will appear here." };
+    }
+    return {
+      value: formatDate(window.end),
+      note:
+        snapshot.currentWindow === "confirmation"
+          ? "The proof check ends."
+          : "The first 28-day check ends.",
+    };
+  });
 </script>
 
-<section class="signal-grid" aria-label="SEO growth summary">
-  <article class="answer-card growth-{growth.tone}">
-    <div class="card-heading">
+<section class="one-glance" aria-label="SEO answer">
+  <article class="verdict-card growth-{growth.tone}">
+    <div class="verdict-heading">
       <span class="heading-icon" aria-hidden="true">
         <i class="fas fa-compass"></i>
       </span>
-      <span>The answer</span>
+      <span>Is it working?</span>
     </div>
 
-    <div class="answer-main">
-      <strong class="answer-value">{growth.value}</strong>
-      <div class="answer-copy">
-        <b>{growth.headline}</b>
-        <span>{growth.explanation}</span>
+    <div class="verdict-main">
+      <strong class="verdict-value">{growth.value}</strong>
+      <div class="verdict-copy">
+        <h3>{growth.headline}</h3>
+        <p>{growth.explanation}</p>
       </div>
     </div>
 
-    <div class="next-move">
-      <span class="next-icon" aria-hidden="true">
+    <div class="proof-row" aria-label="Why this is the answer">
+      <div class="proof-item">
+        <span>Google showed us</span>
+        <strong>{formatInteger(activeSearch.impressions)} times</strong>
+      </div>
+      <div class="proof-item">
+        <span>“flow arts software”</span>
+        <strong>{rankValue}</strong>
+      </div>
+    </div>
+  </article>
+
+  <div class="plain-answers">
+    <article class="plain-card action-card">
+      <span class="plain-icon" aria-hidden="true">
+        <i class="fas fa-hand"></i>
+      </span>
+      <div class="plain-copy">
+        <span class="plain-question">What do I do?</span>
+        <strong>{ownerAction.value}</strong>
+        <p>{ownerAction.note}</p>
+      </div>
+    </article>
+
+    <article class="plain-card">
+      <span class="plain-icon" aria-hidden="true">
+        <i class="fas fa-calendar-day"></i>
+      </span>
+      <div class="plain-copy">
+        <span class="plain-question">When do I know more?</span>
+        <strong>{nextAnswer.value}</strong>
+        <p>{nextAnswer.note}</p>
+      </div>
+    </article>
+
+    <article class:late={!automation.healthy} class="plain-card">
+      <span class="plain-icon" aria-hidden="true">
         <i
-          class="fas {snapshot.phase === 'confirmed'
-            ? 'fa-check'
-            : 'fa-arrow-right'}"
+          class="fas {automation.healthy
+            ? 'fa-circle-check'
+            : 'fa-triangle-exclamation'}"
         ></i>
       </span>
-      <div>
-        <span>{nextLabel}</span>
-        <strong>{growth.nextStep}</strong>
+      <div class="plain-copy">
+        <span class="plain-question">Is this page staying current?</span>
+        <strong>{automation.value}</strong>
+        <p>Last checked {formatDate(snapshot.generatedDate)}.</p>
       </div>
-    </div>
-  </article>
-
-  <article class="metrics-panel">
-    <div class="metrics-heading">
-      <div>
-        <span class="panel-kicker">Latest numbers</span>
-        <h3>What is happening right now</h3>
-      </div>
-      <p>{metricsContext}</p>
-    </div>
-
-    <div class="metric-strip">
-      <div class="metric-cell rank-metric">
-        <span class="metric-icon" aria-hidden="true">
-          <i class="fas fa-crosshairs"></i>
-        </span>
-        <span class="metric-label">Rank for “flow arts software”</span>
-        <strong class="metric-value">{rankValue}</strong>
-        <span class="metric-note">#1 is the top result.</span>
-      </div>
-
-      <div class="metric-cell">
-        <span class="metric-icon" aria-hidden="true">
-          <i class="fas fa-eye"></i>
-        </span>
-        <span class="metric-label">Google appearances</span>
-        <strong class="metric-value">
-          {formatInteger(activeSearch.impressions)}
-        </strong>
-        <span class="metric-note">Times a tracked page was shown.</span>
-      </div>
-
-      <div class="metric-cell">
-        <span class="metric-icon" aria-hidden="true">
-          <i class="fas fa-link"></i>
-        </span>
-        <span class="metric-label">Pages found by Google</span>
-        <strong class="metric-value">
-          {snapshot.indexability.indexed} of {snapshot.indexability.expected}
-        </strong>
-        <span class="metric-note">Sample pages that can appear in search.</span>
-      </div>
-
-      <div class="metric-cell">
-        <span class="metric-icon" aria-hidden="true">
-          <i class="fas fa-wand-magic-sparkles"></i>
-        </span>
-        <span class="metric-label">Search visitors who created</span>
-        <strong class="metric-value">{visitorValue}</strong>
-        <span class="metric-note">
-          {formatInteger(activeAcquisition.activatedSessions)} people so far.
-        </span>
-      </div>
-
-      <div class="metric-cell ai-metric">
-        <span class="metric-icon" aria-hidden="true">
-          <i class="fas fa-robot"></i>
-        </span>
-        <span class="metric-label">AI answers mentioning TKA</span>
-        <strong class="metric-value">{aiValue}</strong>
-        <span class="metric-note">Saved AI searches that mentioned TKA.</span>
-      </div>
-    </div>
-  </article>
+    </article>
+  </div>
 </section>
 
 <style>
-  .signal-grid {
+  .one-glance {
     display: grid;
     height: 100%;
-    grid-template-columns: minmax(470px, 0.95fr) minmax(0, 1.55fr);
-    gap: 10px;
+    min-height: 420px;
+    grid-template-columns: minmax(520px, 1.35fr) minmax(340px, 0.65fr);
+    gap: clamp(10px, 0.8vw, 14px);
   }
 
-  .answer-card,
-  .metrics-panel {
+  .verdict-card,
+  .plain-card {
     position: relative;
-    height: 100%;
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 14px;
-    background: var(--theme-card-bg, rgba(15, 23, 42, 0.78));
+    border-radius: 16px;
+    background: var(--theme-card-bg, rgba(15, 23, 42, 0.8));
   }
 
-  .answer-card {
+  .verdict-card {
     display: flex;
-    min-height: 230px;
+    min-height: 420px;
     flex-direction: column;
-    gap: 12px;
-    padding: clamp(16px, 1.4vw, 22px);
+    padding: clamp(22px, 2vw, 38px);
     border-color: color-mix(
       in srgb,
       var(--semantic-seo-accent) 44%,
@@ -178,18 +178,18 @@
       linear-gradient(
         135deg,
         color-mix(in srgb, var(--semantic-seo-accent) 12%, transparent),
-        transparent 58%
+        transparent 62%
       ),
-      var(--theme-card-bg, rgba(15, 23, 42, 0.82));
+      var(--theme-card-bg, rgba(15, 23, 42, 0.84));
   }
 
-  .answer-card::after {
+  .verdict-card::after {
     position: absolute;
-    inset: auto -28px -48px auto;
-    width: 110px;
-    height: 110px;
+    inset: auto -70px -100px auto;
+    width: 240px;
+    height: 240px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--semantic-seo-accent) 8%, transparent);
+    background: color-mix(in srgb, var(--semantic-seo-accent) 7%, transparent);
     content: "";
   }
 
@@ -209,269 +209,211 @@
     );
   }
 
-  .card-heading {
+  .verdict-heading {
     display: flex;
     align-items: center;
-    gap: 9px;
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.7));
+    gap: 10px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.72));
     font-size: var(--font-size-min, 0.875rem);
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .heading-icon,
-  .metric-icon {
+  .plain-icon {
     display: grid;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     flex: 0 0 auto;
     place-items: center;
-    border-radius: 9px;
-    background: color-mix(in srgb, var(--semantic-seo-accent) 13%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--semantic-seo-accent) 14%, transparent);
     color: var(--semantic-seo-accent);
   }
 
-  .answer-main {
-    display: grid;
+  .verdict-main {
+    display: flex;
     min-height: 0;
     flex: 1;
-    grid-template-columns: minmax(230px, auto) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(18px, 1.4vw, 30px);
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(16px, 1.6vw, 28px);
+    padding: clamp(24px, 3cqh, 44px) 0;
   }
 
-  .answer-value {
-    display: flex;
-    min-height: 2em;
-    align-items: center;
-    font-size: clamp(2.25rem, 1.5rem + 1.7vw, 3.75rem);
-    line-height: 0.95;
-    letter-spacing: -0.04em;
-    white-space: nowrap;
+  .verdict-value {
+    font-size: clamp(3.5rem, 2.2rem + 3.2vw, 7rem);
+    line-height: 0.88;
+    letter-spacing: -0.055em;
     font-variant-numeric: tabular-nums;
   }
 
-  .answer-copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 7px;
+  .verdict-copy h3 {
+    margin: 0;
+    font-size: clamp(1.25rem, 1rem + 0.7vw, 2rem);
+    line-height: 1.15;
   }
 
-  .answer-copy b {
-    font-size: clamp(0.95rem, 0.86rem + 0.25vw, 1.15rem);
-  }
-
-  .answer-copy span {
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.62));
+  .verdict-copy p {
+    max-width: 52rem;
+    margin: 8px 0 0;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.66));
     font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
-  .next-move {
+  .proof-row {
+    position: relative;
+    z-index: 1;
     display: grid;
-    min-height: 58px;
-    grid-template-columns: 34px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-seo-accent) 24%, transparent);
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--semantic-seo-accent) 7%, transparent);
-  }
-
-  .next-icon {
-    display: grid;
-    width: 30px;
-    height: 30px;
-    place-items: center;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--semantic-seo-accent) 16%, transparent);
-    color: var(--semantic-seo-accent);
-  }
-
-  .next-move > div {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .next-move span {
-    color: var(--semantic-seo-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-  }
-
-  .next-move strong {
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .metrics-panel {
-    display: flex;
-    min-height: 230px;
-    flex-direction: column;
-    padding: clamp(16px, 1.4vw, 22px);
-  }
-
-  .metrics-heading {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18px;
-  }
-
-  .panel-kicker {
-    color: var(--semantic-seo-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-  }
-
-  .metrics-heading h3 {
-    margin: 3px 0 0;
-    font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.3rem);
-  }
-
-  .metrics-heading p {
-    max-width: 27rem;
-    margin: 2px 0 0;
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.4;
-    text-align: right;
-  }
-
-  .metric-strip {
-    display: grid;
-    height: 100%;
-    min-height: 0;
-    flex: 1;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    margin-top: 13px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
-    border-radius: 11px;
-    background: color-mix(in srgb, var(--theme-text, #fff) 2%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
   }
 
-  .metric-cell {
+  .proof-item {
     display: flex;
     min-width: 0;
     flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-    padding: clamp(11px, 0.8vw, 16px);
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    gap: 5px;
+    padding: 14px 16px;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .metric-cell:first-child {
+  .proof-item:first-child {
     border-left: 0;
   }
 
-  .metric-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-  }
-
-  .ai-metric .metric-icon {
-    background: color-mix(in srgb, var(--semantic-seo-violet) 14%, transparent);
-    color: var(--semantic-seo-violet);
-  }
-
-  .metric-label {
-    min-height: 2.35em;
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.7));
+  .proof-item span {
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.58));
     font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    line-height: 1.18;
   }
 
-  .metric-value {
+  .proof-item strong {
+    overflow: hidden;
+    font-size: var(--font-size-min, 0.875rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .plain-answers {
+    display: grid;
+    min-height: 0;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 0.8vw, 14px);
+  }
+
+  .plain-card {
+    display: grid;
+    min-height: 124px;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: 15px;
+    padding: clamp(16px, 1.3vw, 24px);
+  }
+
+  .action-card {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-seo-accent) 34%,
+      transparent
+    );
+    background:
+      linear-gradient(
+        110deg,
+        color-mix(in srgb, var(--semantic-seo-accent) 8%, transparent),
+        transparent 60%
+      ),
+      var(--theme-card-bg, rgba(15, 23, 42, 0.8));
+  }
+
+  .plain-card.late {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 55%,
+      transparent
+    );
+  }
+
+  .plain-card.late .plain-icon {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 14%,
+      transparent
+    );
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .plain-copy {
     display: flex;
-    min-height: 1.9em;
-    align-items: flex-end;
-    font-size: clamp(1.4rem, 1rem + 0.75vw, 2.1rem);
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .plain-question {
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.65));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .plain-copy strong {
+    font-size: clamp(1.6rem, 1.15rem + 1vw, 2.6rem);
     line-height: 1;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.035em;
     font-variant-numeric: tabular-nums;
   }
 
-  .metric-note {
-    min-height: 2.6em;
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.52));
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.3;
+  .plain-copy p {
+    margin: 2px 0 0;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.58));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.35;
   }
 
-  @container seo-center (max-width: 1500px) {
-    .signal-grid {
-      grid-template-columns: 1fr;
+  @container seo-center (max-width: 1050px) {
+    .one-glance {
       height: auto;
-    }
-
-    .answer-card,
-    .metrics-panel {
-      height: auto;
-    }
-  }
-
-  @container seo-center (max-width: 860px) {
-    .answer-main {
       grid-template-columns: 1fr;
     }
 
-    .metrics-heading {
-      flex-direction: column;
-      gap: 6px;
+    .plain-answers {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: none;
     }
 
-    .metrics-heading p {
-      text-align: left;
+    .plain-card {
+      min-height: 150px;
+      grid-template-columns: 1fr;
+      align-content: start;
+    }
+  }
+
+  @container seo-center (max-width: 680px) {
+    .verdict-card,
+    .one-glance {
+      min-height: 0;
     }
 
-    .metric-strip {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .plain-answers,
+    .proof-row {
+      grid-template-columns: 1fr;
     }
 
-    .metric-cell {
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    }
-
-    .metric-cell:nth-child(odd) {
+    .proof-item {
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
       border-left: 0;
     }
 
-    .metric-cell:nth-child(-n + 2) {
+    .proof-item:first-child {
       border-top: 0;
     }
 
-    .metric-cell:last-child {
-      grid-column: 1 / -1;
-    }
-  }
-
-  @container seo-center (max-width: 520px) {
-    .metric-strip {
-      grid-template-columns: 1fr;
-    }
-
-    .metric-cell,
-    .metric-cell:nth-child(-n + 2) {
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-      border-left: 0;
-    }
-
-    .metric-cell:first-child {
-      border-top: 0;
-    }
-
-    .metric-cell:last-child {
-      grid-column: auto;
+    .verdict-value {
+      white-space: normal;
     }
   }
 </style>

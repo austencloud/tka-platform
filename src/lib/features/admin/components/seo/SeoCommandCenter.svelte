@@ -15,26 +15,9 @@
   import SeoQueryGroups from "./SeoQueryGroups.svelte";
   import SeoSignalGrid from "./SeoSignalGrid.svelte";
   import SeoSourceActions from "./SeoSourceActions.svelte";
-  import { formatDate } from "./seo-dashboard-format";
+  import { formatDate, getSeoAutomationStory } from "./seo-dashboard-format";
 
   const POSTHOG_URL = "https://us.posthog.com/project/299320/dashboard";
-  const PHASE_LABELS: Record<SeoDashboardSnapshot["phase"], string> = {
-    baseline: "Setting the starting point",
-    awaiting_indexing: "Waiting for Google to find the pages",
-    primary_collecting: "Comparing before and after",
-    primary_complete: "Checking the result again",
-    confirmed: "Measurement complete",
-  };
-
-  function phaseLabel(value: SeoDashboardSnapshot): string {
-    if (
-      value.evaluationMode === "visibility_emergence" &&
-      value.phase === "primary_collecting"
-    ) {
-      return "Measuring new search visibility";
-    }
-    return PHASE_LABELS[value.phase];
-  }
 
   let loading = $state(true);
   let refreshing = $state(false);
@@ -42,6 +25,9 @@
   let snapshot = $state<SeoDashboardSnapshot | null>(null);
   let history = $state<SeoHistoryPoint[]>([]);
   let refreshedAt = $state<Date | null>(null);
+  const automation = $derived(
+    snapshot ? getSeoAutomationStory(snapshot) : null
+  );
 
   async function analyticsQuery(type: string): Promise<unknown[][]> {
     const user = auth.currentUser;
@@ -145,14 +131,16 @@
     <div class="dashboard-layout">
       <header class="command-header">
         <div class="title-block">
-          <div class="eyebrow">Flow arts software SEO</div>
-          <h2>Is Flow Arts Composer getting easier to find?</h2>
-          <p>The answer first. Technical details stay tucked away.</p>
+          <div class="eyebrow">SEO</div>
+          <h2>Is Google finding Flow Arts Composer?</h2>
+          <p>One answer. Nothing to manage unless this page says so.</p>
         </div>
         <div class="header-status">
-          <span class="phase-badge">
+          <span class:late={!automation?.healthy} class="phase-badge">
             <span class="status-dot" aria-hidden="true"></span>
-            {phaseLabel(snapshot)}
+            {automation?.healthy
+              ? "Checks itself every morning"
+              : "The daily check is late"}
           </span>
           <span class="data-date">
             Numbers through {formatDate(snapshot.dataThrough)}
@@ -164,13 +152,11 @@
         <SeoSignalGrid {snapshot} />
       </div>
 
-      <div class="overview-grid">
-        <div class="clock-slot">
-          <SeoExperimentClock {snapshot} />
+      {#if history.length >= 2}
+        <div class="trend-slot">
+          <SeoHistoryChart {history} />
         </div>
-        <SeoHistoryChart {history} />
-        <SeoEvidenceGates {snapshot} />
-      </div>
+      {/if}
 
       <details class="measurement-details">
         <summary>
@@ -178,13 +164,18 @@
             <i class="fas fa-sliders"></i>
           </span>
           <span class="summary-copy">
-            <strong>Show the technical details</strong>
-            <small>
-              Exact search terms, pass or fail rules, and source links
-            </small>
+            <strong>Open the nerd stuff</strong>
+            <small>Dates, goals, rankings, AI checks, and data sources</small>
           </span>
           <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"></i>
         </summary>
+        <div class="details-overview">
+          <SeoExperimentClock {snapshot} />
+          {#if history.length < 2}
+            <SeoHistoryChart {history} />
+          {/if}
+          <SeoEvidenceGates {snapshot} />
+        </div>
         <div class="details-content">
           <div class="details-main">
             <SeoQueryGroups {snapshot} />
@@ -223,8 +214,6 @@
     --semantic-seo-accent: #2dd4bf;
     --semantic-seo-accent-deep: #0f766e;
     --semantic-seo-violet: #a78bfa;
-    --settings-seo-summary-height: clamp(230px, 27cqh, 280px);
-    --settings-seo-overview-min-height: 390px;
     container-name: seo-center;
     container-type: size;
     display: flex;
@@ -249,12 +238,8 @@
   .dashboard-layout {
     display: grid;
     height: 100%;
-    min-height: 760px;
-    grid-template-rows:
-      auto
-      var(--settings-seo-summary-height)
-      minmax(var(--settings-seo-overview-min-height), 1fr)
-      auto;
+    min-height: 680px;
+    grid-template-rows: auto minmax(420px, 1fr) auto auto;
     gap: clamp(10px, 0.8vw, 14px);
   }
 
@@ -346,6 +331,25 @@
     font-weight: 800;
   }
 
+  .phase-badge.late {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 48%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      var(--theme-card-bg, #111827)
+    );
+  }
+
+  .phase-badge.late .status-dot {
+    background: var(--semantic-error, #ef4444);
+    box-shadow: 0 0 10px
+      color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
+  }
+
   .status-dot {
     width: 8px;
     height: 8px;
@@ -361,24 +365,12 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .overview-grid {
-    display: grid;
-    min-height: 0;
-    grid-template-columns:
-      minmax(540px, 1.2fr)
-      minmax(340px, 0.9fr)
-      minmax(340px, 0.9fr);
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .clock-slot {
-    min-height: 0;
-    min-width: 0;
-  }
-
   .signal-slot {
-    min-height: 0;
+    min-height: 420px;
+  }
+
+  .trend-slot {
+    min-height: 280px;
   }
 
   .measurement-details {
@@ -452,6 +444,13 @@
 
   .measurement-details[open] .summary-chevron {
     transform: rotate(180deg);
+  }
+
+  .details-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 10px;
+    padding: 0 10px 10px;
   }
 
   .details-content {
@@ -530,14 +529,6 @@
       min-height: 100%;
       grid-template-rows: auto;
     }
-
-    .overview-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .clock-slot {
-      grid-column: 1 / -1;
-    }
   }
 
   @container seo-center (max-width: 860px) {
@@ -554,13 +545,9 @@
       min-width: 0;
     }
 
-    .overview-grid,
+    .details-overview,
     .details-content {
       grid-template-columns: 1fr;
-    }
-
-    .clock-slot {
-      grid-column: auto;
     }
   }
 

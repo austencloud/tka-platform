@@ -4,6 +4,8 @@
   const BIGQUERY_URL =
     "https://console.cloud.google.com/bigquery?project=the-kinetic-alphabet";
   const POSTHOG_URL = "https://us.posthog.com/project/299320/dashboard";
+  const DAILY_CHECK_URL =
+    "https://github.com/austencloud/tka-platform/actions/workflows/seo-measurement.yml";
 
   let {
     refreshedAt,
@@ -18,6 +20,15 @@
 
 <footer class="command-footer">
   <div class="source-actions">
+    <a
+      class="action-button"
+      href={DAILY_CHECK_URL}
+      target="_blank"
+      rel="noreferrer"
+    >
+      <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+      Daily checker
+    </a>
     <a
       class="action-button"
       href={SEARCH_CONSOLE_URL}
