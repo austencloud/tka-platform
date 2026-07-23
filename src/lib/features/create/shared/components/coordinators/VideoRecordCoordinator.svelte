@@ -19,6 +19,8 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
     type SaveMetadata,
   } from "../SaveToLibraryDialog.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
+  import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
+  import type { SaveToLibraryOptions } from "$lib/shared/library/domain/library-contract-types";
   import type { RecordingResult } from "$lib/shared/video-record/services/types";
   import type { R2VideoUploader } from "$lib/shared/share/services/r2-video-uploader";
   import { saveRecording } from "$lib/shared/video-record/services/recording-persister";
@@ -86,10 +88,6 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
       logger.error("No current sequence found");
       return;
     }
-    if (!ctx.libraryRepository) {
-      logger.error("libraryRepository not available");
-      return;
-    }
     if (!ctx.sessionManager) {
       logger.error("sessionManager not available");
       return;
@@ -101,17 +99,21 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
         sequenceName: metadata.name,
       });
 
-      // Save sequence to library
-      const saved = await ctx.libraryRepository!.saveSequenceWithMetadata(
+      // Save sequence to library via the durable-save entry point — this is the
+      // ONLY path that writes Dexie (guests read library from Dexie only).
+      // ctx.libraryRepository.saveSequenceWithMetadata() is Firestore-only and
+      // silently drops guest saves. See SP1 — Durable-Save Unification.
+      const saveOptions: SaveToLibraryOptions = {
+        name: metadata.name,
+        visibility: metadata.visibility ?? "private",
+        tags: metadata.tags ?? [],
+        notes: metadata.notes ?? "",
+      };
+      const saved = await getLibrarySaveService().saveSequence(
         currentSequence,
-        {
-          name: metadata.name,
-          visibility: metadata.visibility ?? "private",
-          tags: metadata.tags ?? [],
-          notes: metadata.notes ?? "",
-        }
+        saveOptions
       );
-      const sequenceId = saved.id;
+      const sequenceId = saved.sequenceId;
 
       logger.success("Sequence saved to library with ID:", sequenceId);
 
