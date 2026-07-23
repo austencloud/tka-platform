@@ -11,51 +11,60 @@
   explicit "Finish signing in" click before the code-consuming API
   (completeEmailLinkSignIn) is called at all.
 
-  Also replaces the old wrong-device fallback (`window.prompt`) with an
-  in-page email field, shown when this device has no saved email for the
-  pending link.
+  The link carries short-lived opaque state, so another device can finish the
+  same flow without asking for the email address again.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import {
     isEmailLinkPending,
-    getSavedEmailForSignIn,
+    getPendingEmailLinkRecipient,
     completeEmailLinkSignIn,
   } from "../services/email-link-completion";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let pending = $state(false);
-  let savedEmail = $state<string | null>(null);
-  let emailInput = $state("");
+  let recipientEmail = $state<string | null>(null);
+  let resolvingRecipient = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);
 
   onMount(() => {
     if (isEmailLinkPending()) {
       pending = true;
-      savedEmail = getSavedEmailForSignIn();
+      resolvingRecipient = true;
+      void getPendingEmailLinkRecipient()
+        .then((email) => {
+          recipientEmail = email;
+          if (!email) error = "Request a new sign-in link to continue.";
+        })
+        .catch((err: unknown) => {
+          const code = (err as { code?: string })?.code;
+          error =
+            code === "functions/failed-precondition"
+              ? "This link is invalid or has expired. Request a new one."
+              : "Couldn't verify this sign-in link. Check your connection and try again.";
+        })
+        .finally(() => {
+          resolvingRecipient = false;
+        });
     }
   });
 
-  const needsEmail = $derived(pending && !savedEmail);
-  const canSubmit = $derived(
-    !loading && (savedEmail !== null || /^\S+@\S+\.\S+$/.test(emailInput.trim()))
-  );
+  const canSubmit = $derived(!loading && !resolvingRecipient);
 
   async function handleConfirm() {
     if (!canSubmit) return;
     loading = true;
     error = null;
     try {
-      const result = await completeEmailLinkSignIn(
-        savedEmail ? undefined : emailInput.trim()
-      );
+      const result = await completeEmailLinkSignIn();
       if (result.completed) {
         pending = false;
         toast.success("Signed in! Welcome.");
       } else if (result.errorCode === "auth/missing-email") {
-        error = "Enter the email address you used to request the link.";
+        error = "Request a new sign-in link to continue.";
       } else if (
         result.errorCode === "auth/invalid-action-code" ||
         result.errorCode === "auth/expired-action-code"
@@ -94,24 +103,19 @@
   <div class="email-link-confirm-content">
     <h2>Finish signing in</h2>
 
-    {#if needsEmail}
-      <p class="email-link-confirm-copy">
-        This link was opened on a different device. Enter the email you used to request it.
+    {#if resolvingRecipient}
+      <p class="email-link-confirm-copy" role="status" aria-live="polite">
+        Checking your sign-in link…
       </p>
-      <div class="email-link-confirm-field">
-        <label for="email-link-confirm-input">Email</label>
-        <input
-          id="email-link-confirm-input"
-          type="email"
-          bind:value={emailInput}
-          placeholder="you@example.com"
-          disabled={loading}
-          onkeydown={(e) => e.key === "Enter" && handleConfirm()}
-        />
-      </div>
+    {:else if recipientEmail}
+      <p class="email-link-confirm-copy" role="status" aria-live="polite">
+        Continue as <strong>{recipientEmail}</strong>. Links expire after 30
+        minutes.
+      </p>
     {:else}
-      <p class="email-link-confirm-copy">
-        Confirm the sign-in link sent to <strong>{savedEmail}</strong>.
+      <p class="email-link-confirm-copy" role="status" aria-live="polite">
+        Continue with the account this link was sent to. Links expire after 30
+        minutes.
       </p>
     {/if}
 
@@ -164,33 +168,6 @@
 
   .email-link-confirm-copy strong {
     color: var(--theme-text, #fff);
-  }
-
-  .email-link-confirm-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  .email-link-confirm-field label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-
-  .email-link-confirm-field input {
-    padding: 0.625rem 0.75rem;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: var(--radius-md, 8px);
-    font-size: 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #fff);
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .email-link-confirm-field input:focus {
-    outline: none;
-    border-color: var(--theme-accent-strong, #7c6af7);
   }
 
   .email-link-confirm-error {

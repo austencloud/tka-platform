@@ -1,7 +1,6 @@
 <!--
-  AccountSetupWizard - Post-signup overlay that hosts the unified setup card
-  (name and/or password on one modal). Replaces the separate FirstRunWizard +
-  SetPasswordWizard so a new magic-link account isn't walked through two stops.
+  AccountSetupWizard - Post-signup overlay for accounts that still need a
+  display name. Magic-link accounts skip this overlay and enter Create.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -9,12 +8,11 @@
   import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 
   interface Props {
-    needsPassword: boolean;
     forcePreview?: boolean;
     onComplete: () => void;
   }
 
-  const { needsPassword, forcePreview = false, onComplete }: Props = $props();
+  const { forcePreview = false, onComplete }: Props = $props();
 
   let animateIn = $state(false);
   let wizardEl = $state<HTMLDivElement | null>(null);
@@ -51,7 +49,7 @@
   tabindex="-1"
 >
   <div class="step-container">
-    <AccountSetupStep {needsPassword} {forcePreview} {onComplete} />
+    <AccountSetupStep {forcePreview} {onComplete} />
   </div>
 </div>
 

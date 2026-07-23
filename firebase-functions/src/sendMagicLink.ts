@@ -10,6 +10,12 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 import { randomUUID } from "crypto";
+import {
+  createMagicLinkSignInState,
+  resolveMagicLinkSignInState,
+  type MagicLinkSignInState,
+  type ResolvedMagicLinkSignInState,
+} from "./auth/magicLinkStateStore";
 
 // Brevo transactional email API endpoint
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
@@ -18,6 +24,7 @@ const DEFAULT_CONTINUE_URL = "https://tkaflowarts.com/app";
 const DEFAULT_SENDER_EMAIL = "noreply@tkaflowarts.com";
 const DEFAULT_SENDER_NAME = "Flow Arts Composer";
 const PROVIDER_TIMEOUT_MS = 10_000;
+const MAGIC_LINK_STATE_PARAM = "magicLinkState";
 const REQUEST_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -46,6 +53,15 @@ export interface SendMagicLinkRequest {
   requestId?: string;
 }
 
+export interface ResolveMagicLinkEmailRequest {
+  action: "resolve-email";
+  state: string;
+}
+
+type MagicLinkCallableRequest =
+  | SendMagicLinkRequest
+  | ResolveMagicLinkEmailRequest;
+
 export interface SendMagicLinkResponse {
   success: boolean;
   message?: string;
@@ -55,8 +71,28 @@ export interface SendMagicLinkResponse {
   senderEmail: string;
 }
 
+export interface ResolveMagicLinkEmailResponse {
+  success: true;
+  email: string;
+}
+
+type MagicLinkCallableResponse =
+  | SendMagicLinkResponse
+  | ResolveMagicLinkEmailResponse;
+
+function isResolveMagicLinkEmailRequest(
+  data: unknown
+): data is ResolveMagicLinkEmailRequest {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    (data as { action?: unknown }).action === "resolve-email"
+  );
+}
+
 type MagicLinkStage =
   | "configuration"
+  | "state_creation"
   | "link_generation"
   | "provider_request"
   | "provider_response";
@@ -74,6 +110,7 @@ export interface MagicLinkRuntime {
   authStatus: "authenticated" | "anonymous";
   now(): number;
   createRequestId(): string;
+  createSignInState(email: string): Promise<MagicLinkSignInState>;
   generateLink(
     email: string,
     settings: { url: string; handleCodeInApp: boolean }
@@ -83,6 +120,12 @@ export interface MagicLinkRuntime {
     init: RequestInit
   ): Promise<Pick<Response, "ok" | "status" | "json">>;
   logger: MagicLinkLogger;
+}
+
+export interface ResolveMagicLinkEmailRuntime {
+  resolveSignInState(
+    state: string
+  ): Promise<ResolvedMagicLinkSignInState | null>;
 }
 
 function resolveRequestId(
@@ -102,6 +145,12 @@ function resolveAuthHost(continueUrl?: string): string {
   }
 }
 
+function addMagicLinkState(continueUrl: string, state: string): string {
+  const url = new URL(continueUrl);
+  url.searchParams.set(MAGIC_LINK_STATE_PARAM, state);
+  return url.toString();
+}
+
 function safeErrorCode(error: unknown): string {
   if (error instanceof functions.https.HttpsError) {
     return `https/${error.code}`;
@@ -117,6 +166,26 @@ function safeErrorCode(error: unknown): string {
   }
 
   return "unknown";
+}
+
+export async function handleResolveMagicLinkEmail(
+  data: ResolveMagicLinkEmailRequest,
+  runtime: ResolveMagicLinkEmailRuntime
+): Promise<ResolveMagicLinkEmailResponse> {
+  const state = typeof data?.state === "string" ? data.state : "";
+  const resolved = state ? await runtime.resolveSignInState(state) : null;
+
+  if (!resolved) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "This sign-in link is invalid or expired"
+    );
+  }
+
+  return {
+    success: true,
+    email: resolved.email,
+  };
 }
 
 /**
@@ -165,16 +234,23 @@ export async function handleSendMagicLink(
       );
     }
 
+    stage = "state_creation";
+    const { state } = await runtime.createSignInState(email);
+
     stage = "link_generation";
+    const continueUrl = addMagicLinkState(
+      data.continueUrl || DEFAULT_CONTINUE_URL,
+      state
+    );
     const magicLink = await runtime.generateLink(email, {
-      url: data.continueUrl || DEFAULT_CONTINUE_URL,
+      url: continueUrl,
       handleCodeInApp: true,
     });
 
     const htmlContent = emailTemplate.replace(/\{\{MAGIC_LINK\}\}/g, magicLink);
     const textContent = `Sign in to Flow Arts Composer
 
-Open this link to sign in. It expires in 1 hour:
+Open this link to sign in. It expires in 30 minutes:
 ${magicLink}
 
 Didn't request this? Ignore it.
@@ -273,13 +349,20 @@ https://tkaflowarts.com`;
 }
 
 /**
- * Callable Cloud Function to send a branded magic link email
+ * Callable endpoint for issuing a link and resolving its short-lived state.
+ * The deployed name stays `sendMagicLink` so existing clients keep working.
  */
 export const sendMagicLink = functions.https.onCall(
   async (
-    data: SendMagicLinkRequest,
+    data: MagicLinkCallableRequest,
     context
-  ): Promise<SendMagicLinkResponse> => {
+  ): Promise<MagicLinkCallableResponse> => {
+    if (isResolveMagicLinkEmailRequest(data)) {
+      return handleResolveMagicLinkEmail(data, {
+        resolveSignInState: resolveMagicLinkSignInState,
+      });
+    }
+
     return handleSendMagicLink(data, {
       brevoApiKey: process.env.BREVO_API_KEY,
       senderEmail: process.env.BREVO_SENDER_EMAIL || DEFAULT_SENDER_EMAIL,
@@ -288,6 +371,7 @@ export const sendMagicLink = functions.https.onCall(
       authStatus: context.auth ? "authenticated" : "anonymous",
       now: Date.now,
       createRequestId: randomUUID,
+      createSignInState: createMagicLinkSignInState,
       generateLink: (email, settings) =>
         admin.auth().generateSignInWithEmailLink(email, settings),
       fetch: (input, init) => fetch(input, init),

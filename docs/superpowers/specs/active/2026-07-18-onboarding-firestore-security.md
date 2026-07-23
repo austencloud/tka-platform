@@ -17,11 +17,11 @@ world-readable community feed.
 
 ## Findings covered
 
-| id | sev | file:line | defect |
-|---|---|---|---|
-| anon-collection-publish | **P1** | `firestore.rules:531` | `users/{userId}/collections` isPublic write uses `isAuthenticated()`-based `isOwner()` while every sibling public surface requires `isFullUser()`. Anon guests can publish public collections. |
-| legacy-root-rules-open | P2 | `firestore.rules:560` | Legacy root `/sequences` and `/collections` blocks allow any authenticated (incl. anon) write; `/sequences` is world-readable with no `isPublic` gate. No app call sites, but rules are enforced against the raw SDK. |
-| email-link-auto-complete | P3 | `src/lib/shared/auth/state/auth-state.svelte.ts:347` | Email-link sign-in auto-completes on page load with no confirm step, so a corporate link-prescanner consumes the single-use `oobCode` before the human clicks; the wrong-device fallback uses `window.prompt`. |
+| id                       | sev    | file:line                                            | defect                                                                                                                                                                                                                |
+| ------------------------ | ------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| anon-collection-publish  | **P1** | `firestore.rules:531`                                | `users/{userId}/collections` isPublic write uses `isAuthenticated()`-based `isOwner()` while every sibling public surface requires `isFullUser()`. Anon guests can publish public collections.                        |
+| legacy-root-rules-open   | P2     | `firestore.rules:560`                                | Legacy root `/sequences` and `/collections` blocks allow any authenticated (incl. anon) write; `/sequences` is world-readable with no `isPublic` gate. No app call sites, but rules are enforced against the raw SDK. |
+| email-link-auto-complete | P3     | `src/lib/shared/auth/state/auth-state.svelte.ts:347` | Email-link sign-in auto-completes on page load with no confirm step, so a corporate link-prescanner consumes the single-use `oobCode` before the human clicks; the wrong-device fallback uses `window.prompt`.        |
 
 ## Requirements
 
@@ -29,7 +29,7 @@ world-readable community feed.
 2. Add the matching **client-side** gate so a guest attempting to publish gets an AuthNudge, not a silent rules rejection (cross-ref Spec 6 nudge copy). Touch `CollectionCard` / `collections-state`.
 3. Legacy root `/sequences` and `/collections`: delete the blocks if truly unused, or tighten writes to `isFullUser()` and add an `isPublic` read gate to `/sequences`.
 4. No regression to the shipped `isFullUser()` surfaces (publicSequences, publicHandPaths, publicSoloProps, conversations, videos, feedback, following/followers — all already correct; do not loosen them).
-5. **Email-link sign-in requires an explicit confirm.** Add a "Finish signing in" interstitial so the `oobCode` is not consumed by a link-prescanner on load, and replace the wrong-device `window.prompt` with an in-page email field. (P3 — smallest item; can ship independently.)
+5. **Email-link sign-in requires one explicit confirm and no setup wall.** Keep the "Finish signing in" interstitial so a link-prescanner cannot consume the `oobCode` on load. Cross-device completion must resolve the original email from 30-minute opaque server state instead of asking the user to type it again; the email itself must not appear in the URL. After confirmation, enter Create without requiring a password or profile name. (Updated 2026-07-22 by explicit product direction.)
 
 ## Recommended approach
 
@@ -50,7 +50,7 @@ world-readable community feed.
 - [x] Legacy root `/sequences` `/collections` either removed or `isFullUser()`-gated; `/sequences` no longer world-readable without an `isPublic` gate. — `/collections` deleted (zero readers/writers found); `/sequences` tightened to `isFullUser()` writes + `isPublic`/owner/admin read gate (kept, not deleted — one live reader: the admin preview debug tool). See executor report for full grep evidence.
 - [x] No shipped `isFullUser()` surface was loosened (diff review). — diff touches only the 3 rule blocks named in Findings; `publicSequences`/`publicHandPaths`/`publicSoloProps`/conversations/videos/feedback/following/followers untouched.
 - [x] `firebase deploy --only firestore:rules` completed (owner-authorized) — deployed 2026-07-19 by orchestrator after emulator verification; "released rules firestore.rules to cloud.firestore", compile clean (3 pre-existing warnings unchanged).
-- [x] Email-link sign-in shows a "Finish signing in" confirm before consuming the code; wrong-device fallback uses an in-page field, not `window.prompt`. — `email-link-completion.ts` split into read-only detection (`isEmailLinkPending`, `getSavedEmailForSignIn`) and the code-consuming `completeEmailLinkSignIn(explicitEmail?)`, which now only runs from `EmailLinkConfirmModal.svelte`'s "Finish signing in" button click (mounted globally in `AppShellLoader.svelte`). The auto-complete-on-boot call in `auth-state.svelte.ts` and the auto-complete-on-mount fallback in `EmailLinkAuth.svelte` were both removed — those were the two unattended consumption paths. `window.prompt` deleted entirely; wrong-device path is an in-page `<input type="email">` in the modal. `grep -rn "window.prompt" src` returns zero hits (only doc-comment references). `tests/unit/auth/email-link-completion.test.ts` (10 tests) proves `signInWithEmailLink`/`linkWithCredential` are never called without a saved-or-explicit email, and that `window.prompt` is never invoked.
+- [x] Email-link sign-in shows a "Finish signing in" confirm before consuming the code. `email-link-completion.ts` keeps detection and account preview read-only, resolves the original email from 30-minute opaque state when another browser has no saved address, and records first-run setup as skipped. `EmailLinkConfirmModal.svelte` shows the resolved account and has no email input. `window.prompt` remains absent. The password-onboarding gate was removed. Focused client and function tests cover cross-device resolution, stale local storage, expiration, setup bypass, and the no-consume-before-confirm boundary.
 
 ## Verification
 

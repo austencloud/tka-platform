@@ -30,8 +30,8 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
-  import { passwordOnboardingState } from "../../onboarding/state/password-onboarding-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
+  import { getLastAuthMethod } from "../../auth/services/last-auth-method.svelte";
   import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
   import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
@@ -115,6 +115,10 @@ import type { SheetType } from "../../navigation/services/types";
   const isFullAccount = $derived(authState.isFullAccount);
   const isGuest = $derived(!isFullAccount);
   const authLoading = $derived(authState.loading);
+  const shouldShowAccountSetup = $derived(
+    firstRunState.shouldShow ||
+      (!firstRunState.isDone() && getLastAuthMethod() !== "magic-link")
+  );
 
   // Track whether MainInterface has been shown at least once.
   // Once shown, never tear it down for auth loading - the loading spinner
@@ -424,7 +428,9 @@ import type { SheetType } from "../../navigation/services/types";
 
   // Note: First-run wizard is shown based on simple state checks in the template:
   // - !isFullAccount → guest mode (MainInterface with guest restrictions)
-  // - isFullAccount && !firstRunState.isDone() → FirstRunWizard
+  // - magic-link accounts go straight to Create; the link already collected
+  //   everything needed to establish the account
+  // - other unnamed accounts can still receive the display-name prompt
   // No need for triggerIfFirstTime() calls since we check isDone() directly
 
   // Create a serialized key for background settings to detect actual changes
@@ -517,32 +523,29 @@ import type { SheetType } from "../../navigation/services/types";
          the app with "Loading preferences..." - that looks like a full page
          reload right after sign-in. Only block the UI for genuine first-run
          users whose local state isn't set up yet. -->
-    {#if isFullAccount && (!firstRunState.isDone() || firstRunState.shouldShow || passwordOnboardingState.required) && (firstRunState.syncInProgress || !firstRunState.cloudSynced || passwordOnboardingState.syncInProgress || !passwordOnboardingState.cloudSynced)}
+    {#if isFullAccount && shouldShowAccountSetup && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}
       <!-- Hold for cloud sync so we never flash a setup card for an account that
-           already finished onboarding / set a password on another device. -->
+           already finished onboarding on another device. -->
       <div class="fullscreen-overlay">
         <div class="auth-loading">
           <div class="auth-loading-spinner"></div>
           <p>Loading preferences...</p>
         </div>
       </div>
-    {:else if isFullAccount && (!firstRunState.isDone() || firstRunState.shouldShow || passwordOnboardingState.required)}
-      <!-- Unified post-signup setup: name and/or required password on ONE card.
-           AccountSetupStep shows only what's needed and auto-completes if neither
-           applies (e.g. a Google signup that already has a name + a login). -->
+    {:else if isFullAccount && shouldShowAccountSetup}
+      <!-- Display-name setup remains available to other sign-up methods and
+           the admin preview. Magic-link accounts bypass this branch. -->
       <div class="fullscreen-overlay">
         {#await import("../../onboarding/components/first-run/AccountSetupWizard.svelte") then mod}
           {#if (!firstRunState.isDone() || firstRunState.shouldShow) && appEntryState.isEntryAnimating()}
             <div class="wizard-exit-wrapper">
               <mod.default
-                needsPassword={passwordOnboardingState.required}
                 forcePreview={firstRunState.previewMode}
                 onComplete={() => firstRunState.markCompleted()}
               />
             </div>
           {:else}
             <mod.default
-              needsPassword={passwordOnboardingState.required}
               forcePreview={firstRunState.previewMode}
               onComplete={() => {
                 const wasFirstRun =

@@ -17,16 +17,20 @@
  * Handles the anonymous-upgrade path (link the email credential onto the
  * surviving anon user, preserving uid + data) and the email-already-in-use
  * collision path (sign into the existing account, offer to import anon drafts).
+ * New links also carry a 30-minute opaque state so another device can resolve
+ * the original email without putting it in the URL or asking for it again.
  */
 
 import {
   isSignInWithEmailLink,
+  parseActionCodeURL,
   signInWithEmailLink,
   browserLocalPersistence,
   indexedDBLocalPersistence,
   setPersistence,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { httpsCallable } from "firebase/functions";
+import { auth, getFunctionsInstance } from "../firebase";
 
 export interface EmailLinkCompletionResult {
   /** A magic link was present and sign-in completed. */
@@ -37,6 +41,70 @@ export interface EmailLinkCompletionResult {
 }
 
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
+const MAGIC_LINK_STATE_PARAM = "magicLinkState";
+
+interface ResolveMagicLinkEmailResponse {
+  success: true;
+  email: string;
+}
+
+function getMagicLinkState(link: string): string | null {
+  const continueUrl = parseActionCodeURL(link)?.continueUrl;
+
+  try {
+    return new URL(continueUrl || link).searchParams.get(
+      MAGIC_LINK_STATE_PARAM
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function resolveEmailForLink(
+  link: string,
+  savedEmail: string | null
+): Promise<string | null> {
+  const state = getMagicLinkState(link);
+  if (!state) return savedEmail;
+
+  const functions = await getFunctionsInstance();
+  const resolveEmail = httpsCallable<
+    { action: "resolve-email"; state: string },
+    ResolveMagicLinkEmailResponse
+  >(functions, "sendMagicLink");
+  const result = await resolveEmail({ action: "resolve-email", state });
+
+  if (
+    result.data?.success !== true ||
+    typeof result.data.email !== "string" ||
+    !result.data.email
+  ) {
+    const invalidResponse = new Error(
+      "The sign-in link did not resolve to an email address."
+    ) as Error & { code: string };
+    invalidResponse.code = "auth/invalid-action-code";
+    throw invalidResponse;
+  }
+
+  return result.data.email;
+}
+
+/**
+ * Resolve the account named by the current link without consuming its
+ * single-use Firebase code. The confirm modal uses this to show exactly which
+ * account will be opened before the user commits to sign-in.
+ */
+export async function getPendingEmailLinkRecipient(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+
+  const link = window.location.href;
+  if (!isSignInWithEmailLink(auth, link)) return null;
+
+  return resolveEmailForLink(
+    link,
+    window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY)
+  );
+}
 
 /**
  * Whether the current URL carries an unconsumed Firebase email-sign-in link.
@@ -64,13 +132,10 @@ export function getSavedEmailForSignIn(): string | null {
  * (EmailLinkConfirmModal), never automatically.
  *
  * Returns `{ completed: false }` with no error when there's nothing to do.
- * `explicitEmail` is used when the device has no saved email (the link was
- * opened on a different device) — the confirm modal collects it via an
- * in-page field rather than `window.prompt`.
+ * New links resolve their original email from short-lived opaque state, so the
+ * same completion path works across devices without another email field.
  */
-export async function completeEmailLinkSignIn(
-  explicitEmail?: string
-): Promise<EmailLinkCompletionResult> {
+export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResult> {
   if (typeof window === "undefined") return { completed: false };
 
   const link = window.location.href;
@@ -78,42 +143,42 @@ export async function completeEmailLinkSignIn(
     return { completed: false };
   }
 
-  // Persistence must be configured before sign-in so the session survives reload.
   try {
-    await setPersistence(auth, indexedDBLocalPersistence);
-  } catch {
-    await setPersistence(auth, browserLocalPersistence);
-  }
+    // New links bind the email to a server-held opaque state for 30 minutes.
+    // This replaces the wrong-device email field without exposing an address
+    // in browser history, referrer headers, analytics, or the link itself.
+    const savedEmail = await getPendingEmailLinkRecipient();
+    if (!savedEmail) {
+      return {
+        completed: false,
+        errorCode: "auth/missing-email",
+        errorMessage: "Request a new sign-in link to continue.",
+      };
+    }
 
-  // Email is saved on the device that requested the link. If it's missing the
-  // link was opened on a different device — the caller must supply one from
-  // an in-page field (collected via the confirm modal), not window.prompt.
-  const savedEmail = window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY) ?? explicitEmail ?? null;
-  if (!savedEmail) {
-    return {
-      completed: false,
-      errorCode: "auth/missing-email",
-      errorMessage: "Email address is required to complete sign-in.",
-    };
-  }
+    // Persistence must be configured before sign-in so the session survives reload.
+    try {
+      await setPersistence(auth, indexedDBLocalPersistence);
+    } catch {
+      await setPersistence(auth, browserLocalPersistence);
+    }
 
-  try {
     // Re-register method=magic_link on THIS tab before the credential is
     // exchanged. The tab that requested the link registered it in
     // sessionStorage, which doesn't follow the user into whatever tab their
     // mail client opened — so without this, every magic-link signup would lose
     // the method enrichment on user_signed_up. Must run before the exchange:
     // onAuthStateChanged fires within milliseconds of it resolving.
-    const { restorePendingAuthMethod } = await import("./auth-analytics-bridge");
+    const { restorePendingAuthMethod } =
+      await import("./auth-analytics-bridge");
     restorePendingAuthMethod();
 
     // If an anonymous session survived the email round-trip, LINK the email
     // credential onto the anon user in place (preserving its uid + data)
     // instead of minting a fresh account.
     if (auth.currentUser?.isAnonymous) {
-      const { EmailAuthProvider, linkWithCredential } = await import(
-        "firebase/auth"
-      );
+      const { EmailAuthProvider, linkWithCredential } =
+        await import("firebase/auth");
       const anonUid = auth.currentUser.uid;
       const credential = EmailAuthProvider.credentialWithLink(savedEmail, link);
       try {
@@ -121,9 +186,8 @@ export async function completeEmailLinkSignIn(
         // Guest just upgraded to a full account — fire the admin signup
         // notification (createOrUpdateUserDocument skips it for anon users,
         // and the linked uid's doc already exists so it won't re-fire there).
-        const { notifyUpgradeSignup } = await import(
-          "$lib/shared/auth/services/anonymous-upgrade"
-        );
+        const { notifyUpgradeSignup } =
+          await import("$lib/shared/auth/services/anonymous-upgrade");
         void notifyUpgradeSignup();
       } catch (linkErr) {
         const code = (linkErr as { code?: string })?.code;
@@ -133,12 +197,10 @@ export async function completeEmailLinkSignIn(
         ) {
           // Email already belongs to a permanent account: sign into it and
           // offer to import the anon's drafts.
-          const { upgradeMagicLinkCollision } = await import(
-            "$lib/shared/auth/services/anonymous-upgrade"
-          );
-          const { promptAnonymousImport } = await import(
-            "$lib/shared/auth/state/anonymous-import-prompt.svelte"
-          );
+          const { upgradeMagicLinkCollision } =
+            await import("$lib/shared/auth/services/anonymous-upgrade");
+          const { promptAnonymousImport } =
+            await import("$lib/shared/auth/state/anonymous-import-prompt.svelte");
           const drafts = await upgradeMagicLinkCollision(
             anonUid,
             savedEmail,
@@ -160,20 +222,18 @@ export async function completeEmailLinkSignIn(
     const { recordLastAuthMethod } = await import("./last-auth-method.svelte");
     recordLastAuthMethod("magic-link");
 
-    // Magic-link accounts have no password. If this account is email-only (no
-    // OAuth provider to fall back on), flag it to require setting one. The boot
-    // cloud-sync clears this if the account already has a password (e.g. an
-    // existing account reached via the collision path), so it never traps a
-    // password-haver. OAuth accounts are exempt.
-    const user = auth.currentUser;
-    const hasOAuth = !!user?.providerData.some(
-      (p) => p.providerId === "google.com" || p.providerId === "facebook.com"
-    );
-    if (user && !hasOAuth) {
-      const { passwordOnboardingState } = await import(
-        "$lib/shared/onboarding/state/password-onboarding-state.svelte"
-      );
-      passwordOnboardingState.markRequired();
+    // A magic link already proved ownership of the email address. Do not put a
+    // password or profile form between that proof and the workspace. Persist
+    // the skip so the same account is not interrupted on another device.
+    const signedInUserId = auth.currentUser?.uid;
+    if (signedInUserId) {
+      try {
+        const { firstRunState } =
+          await import("$lib/shared/onboarding/state/first-run-state.svelte");
+        firstRunState.markSkipped(signedInUserId);
+      } catch (error) {
+        console.warn("[email-link] Could not persist setup skip:", error);
+      }
     }
 
     // Strip the consumed Firebase link params from the URL so a reload doesn't
@@ -181,9 +241,14 @@ export async function completeEmailLinkSignIn(
     // the address bar reads clean. Stays on the same route.
     try {
       const url = new URL(link);
-      ["apiKey", "oobCode", "mode", "lang", "continueUrl"].forEach((p) =>
-        url.searchParams.delete(p)
-      );
+      [
+        "apiKey",
+        "oobCode",
+        "mode",
+        "lang",
+        "continueUrl",
+        MAGIC_LINK_STATE_PARAM,
+      ].forEach((p) => url.searchParams.delete(p));
       window.history.replaceState(
         window.history.state,
         "",
@@ -196,6 +261,25 @@ export async function completeEmailLinkSignIn(
     return { completed: true };
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string };
+    if (
+      e?.code === "functions/failed-precondition" ||
+      e?.code === "functions/not-found" ||
+      e?.code === "functions/invalid-argument"
+    ) {
+      return {
+        completed: false,
+        errorCode: "auth/expired-action-code",
+        errorMessage: "This sign-in link is invalid or expired.",
+      };
+    }
+    if (e?.code?.startsWith("functions/")) {
+      return {
+        completed: false,
+        errorCode: "auth/link-resolution-failed",
+        errorMessage:
+          "Couldn't verify this sign-in link. Check your connection and try again.",
+      };
+    }
     return {
       completed: false,
       errorCode: e?.code,

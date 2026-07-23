@@ -1,8 +1,13 @@
 # Required Password for Passwordless (Magic-Link) Accounts — Design
 
 **Date:** 2026-06-30
-**Status:** Active
+**Status:** Superseded 2026-07-22
 **Author:** Claude (brainstormed with Austen)
+
+> Product direction changed after reviewing the complete pre-value sign-in
+> path. Magic-link accounts now remain passwordless and enter Create directly.
+> They continue signing in with magic links. The implementation described below
+> was removed, including its local/Firestore state and full-screen gate.
 
 ## Problem
 
@@ -106,15 +111,15 @@ clear message and offer a fresh magic link rather than trapping them.
 
 ## Files
 
-| File | Change |
-|---|---|
-| `src/lib/shared/onboarding/state/password-onboarding-state.svelte.ts` | **new** — flag + cloud sync |
-| `src/lib/shared/onboarding/components/first-run/steps/SetPasswordStep.svelte` | **new** — password + confirm, `updatePassword` |
-| `src/lib/shared/onboarding/components/first-run/SetPasswordWizard.svelte` | **new** — overlay wrapper |
-| `src/lib/shared/auth/services/email-link-completion.ts` | mark required for email-only no-password sign-ins |
-| `src/lib/shared/auth/services/authenticator.ts` | `signUpWithEmail` marks `hasPassword` |
-| `src/lib/shared/application/components/MainApplication.svelte` | independent password gate |
-| `src/lib/shared/auth/state/auth-state.svelte.ts` | reset password-onboarding cloud sync on signout |
+| File                                                                          | Change                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------- |
+| `src/lib/shared/onboarding/state/password-onboarding-state.svelte.ts`         | **new** — flag + cloud sync                       |
+| `src/lib/shared/onboarding/components/first-run/steps/SetPasswordStep.svelte` | **new** — password + confirm, `updatePassword`    |
+| `src/lib/shared/onboarding/components/first-run/SetPasswordWizard.svelte`     | **new** — overlay wrapper                         |
+| `src/lib/shared/auth/services/email-link-completion.ts`                       | mark required for email-only no-password sign-ins |
+| `src/lib/shared/auth/services/authenticator.ts`                               | `signUpWithEmail` marks `hasPassword`             |
+| `src/lib/shared/application/components/MainApplication.svelte`                | independent password gate                         |
+| `src/lib/shared/auth/state/auth-state.svelte.ts`                              | reset password-onboarding cloud sync on signout   |
 
 ## Error Handling
 

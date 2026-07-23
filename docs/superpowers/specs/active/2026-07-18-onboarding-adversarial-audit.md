@@ -34,18 +34,18 @@ first; the rest is polish.
 
 ## Best-Practice Scorecard
 
-| Dimension | Grade | Why |
-|---|---|---|
-| entry-state-machine | C | Two persistence keys can disagree and re-pop the tutorial for onboarded members; cross-device sync is write-only. |
-| guest-continuity | B- | Materially improved (identity + confirmation fixed), but Spell-tab truncation is still silent and sync failures stay console-only. |
-| accessibility | D | Five overlays never trap focus or make the app inert; two lack any dialog role; no step-change announcements. |
-| persistence-robustness | C- | State fragmented across three docs; the only cloud-synced tab API has zero callers; completion writes are unguarded. |
-| activation-funnel-ux | B- | Short time-to-value and opt-in guided build, but app-entry never reads back from cloud. |
-| analytics-instrumentation | F | Onboarding funnel emits zero events; signup event gated on scan attribution; `save` is a debounced autosave. |
-| copy-messaging | C | Tutorial copy is clean, but the nudge layer has four phrasings, dead copy strings, and an unexplained export gate. |
-| dead-code-drift | C+ | `LandingPage.svelte` orphaned yet still edited; module-onboarding storage layer outlived its deleted component. |
-| layout-stability | B+ | Disciplined where it counts; only latent P3 reflow risks and one hand-rolled crossfade. |
-| auth-security | C | Public surfaces correctly gated except anon collection publish; three account-scoped flag leaks. |
+| Dimension                 | Grade | Why                                                                                                                                |
+| ------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| entry-state-machine       | C     | Two persistence keys can disagree and re-pop the tutorial for onboarded members; cross-device sync is write-only.                  |
+| guest-continuity          | B-    | Materially improved (identity + confirmation fixed), but Spell-tab truncation is still silent and sync failures stay console-only. |
+| accessibility             | D     | Five overlays never trap focus or make the app inert; two lack any dialog role; no step-change announcements.                      |
+| persistence-robustness    | C-    | State fragmented across three docs; the only cloud-synced tab API has zero callers; completion writes are unguarded.               |
+| activation-funnel-ux      | B-    | Short time-to-value and opt-in guided build, but app-entry never reads back from cloud.                                            |
+| analytics-instrumentation | F     | Onboarding funnel emits zero events; signup event gated on scan attribution; `save` is a debounced autosave.                       |
+| copy-messaging            | C     | Tutorial copy is clean, but the nudge layer has four phrasings, dead copy strings, and an unexplained export gate.                 |
+| dead-code-drift           | C+    | `LandingPage.svelte` orphaned yet still edited; module-onboarding storage layer outlived its deleted component.                    |
+| layout-stability          | B+    | Disciplined where it counts; only latent P3 reflow risks and one hand-rolled crossfade.                                            |
+| auth-security             | C     | Public surfaces correctly gated except anon collection publish; three account-scoped flag leaks.                                   |
 
 ## P0 - fix now
 
@@ -61,7 +61,7 @@ first; the rest is polish.
 
 - **app-entry-state never resets stale flags for a new user; account deletion skips app cleanup** - `syncFromCloud()` can only set `hasCompleted` true, never reset, so a stale `true` from a prior account sends a brand-new account straight to phase "complete"; `deleteAccount()` calls raw Firebase `signOut` bypassing the app's cleanup wrapper (`src/lib/shared/onboarding/state/app-entry-state.svelte.ts:222`; `src/lib/shared/auth/services/account-manager.ts:179`). Fix: add the reset-on-missing-doc branch first-run-state already has, and route deletion through `authState.signOut()`.
 
-- **password-onboarding-state leaves stale hasPassword=true for a new account** - the missing-doc branch intentionally does not touch `state.hasPassword`, so a passwordless magic-link account on a reused device inherits `true` and never gets flagged `required`, bypassing the non-skippable SetPasswordWizard (`src/lib/shared/onboarding/state/password-onboarding-state.svelte.ts:142`). Fix: reset `hasPassword` to false on missing doc, treating the cloud as authoritative per-account.
+- **Superseded 2026-07-22: password-onboarding-state left stale state for a new account.** The password requirement and its state module were removed when magic-link accounts became fully passwordless.
 
 - **Anonymous guests can publish public collections** - the `users/{userId}/collections` isPublic write path uses isAuthenticated()-based isOwner() while every sibling public surface requires isFullUser() (`firestore.rules:531`). Guest content reaches the world-readable community feed. Fix: require isFullUser() when the write sets or the resource has `isPublic == true`, and add the client-side check in CollectionCard/collections-state.
 
@@ -130,11 +130,13 @@ first; the rest is polish.
 ## What the prior audits got right / what regressed
 
 Genuinely fixed since 2026-06-18:
+
 - **Cross-tab guest-identity gap closed** - `ensureGuestIdentity()` now runs unconditionally at the save boundary (`src/lib/features/library/services/library-save-service.ts:80`), backstopping Generate/Spell/import, not just Construct.
 - **Post-signup confirmation added** - `notifyUpgradeSignup()` fires `toast.success("Account created. Your sequences are saved.")` on the ~90% no-collision path (`src/lib/shared/auth/services/anonymous-upgrade.ts:104`), with a distinct import toast on the collision path.
 - **Landing sign-in link** - REFUTED as a live defect. The entry exists in `src/routes/+layout.svelte` (root chrome); the month-old finding grepped only the landing components. Verify low-visibility if worried, but the link is present.
 
 Still true / partially fixed:
+
 - **Spell-tab truncation regressed relative to its sibling** - the beat-cap toast landed in `onGenerateClicked` but never in `onSpellGenerate`, so the same file now has one silent and one loud path.
 - **AuthNudge copy fragmentation** - flagged 2026-06-18, confirmed unfixed (`auth-nudge-trigger.ts:12`).
 - **LandingPage orphaned** - flagged as a delete candidate 2026-06-18, still orphaned and since edited by a rename sweep.

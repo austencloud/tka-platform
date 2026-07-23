@@ -4,10 +4,9 @@
  * Manages first-time user onboarding (separate from module onboarding).
  * This is the FIRST experience users see after sign-up - before the module intro.
  *
- * Scope today: a single optional display-name card (FirstRunWizard →
- * DisplayNameStep), shown only when the account has no provider/sign-up name
- * (magic-link, password-without-name, or guest→email upgrades). Accounts that
- * already have a name (Google/Facebook/named email signup) auto-complete with
+ * Scope today: a single display-name card for sign-up methods that still use
+ * first-run setup. Magic-link completion skips it so the user reaches Create
+ * immediately. Accounts that already have a provider name auto-complete with
  * zero UI. Favorite prop and theme/pictograph mode moved to Settings.
  *
  * IMPORTANT: This state syncs with Firebase so returning users on new
@@ -146,19 +145,27 @@ function createFirstRunState() {
     },
 
     /**
-     * Mark first-run as skipped
+     * Mark first-run as skipped. Auth completion can pass the newly signed-in
+     * uid so the cloud write cannot race the reactive auth wrapper.
      */
-    markSkipped() {
+    markSkipped(userId?: string) {
       if (!isBrowser) return;
 
+      // A shared browser may still carry the previous account's completed
+      // flag. The magic-link decision belongs to the newly signed-in uid, so
+      // write one unambiguous state instead of persisting both outcomes.
+      state.hasCompleted = false;
       state.wasSkipped = true;
+      state.completedAt = null;
       state.shouldShow = false;
       state.previewMode = false;
 
+      removeLocalStorageItem(FIRST_RUN_COMPLETED_KEY);
+      removeLocalStorageItem(FIRST_RUN_COMPLETED_AT_KEY);
       safeLocalStorageSetItem(FIRST_RUN_SKIPPED_KEY, "true");
 
       // Sync to cloud (non-blocking)
-      this.syncToCloud();
+      this.syncToCloud(userId);
     },
 
     /**
@@ -296,8 +303,18 @@ function createFirstRunState() {
      * Sync first-run status TO Firebase.
      * Called automatically when marking complete/skipped.
      */
-    async syncToCloud(): Promise<void> {
+    async syncToCloud(userIdOverride?: string): Promise<void> {
       if (!isBrowser) return;
+
+      // Freeze the decision before the first await. Auth boot can finish a
+      // missing-document read while this write is loading Firestore; reading
+      // the live runes afterward could otherwise turn a just-recorded skip
+      // back into `false` in the cloud payload.
+      const snapshot = {
+        completed: state.hasCompleted,
+        skipped: state.wasSkipped,
+        completedAt: state.completedAt?.toISOString() ?? null,
+      };
 
       try {
         const { getFirestoreInstance } =
@@ -307,7 +324,7 @@ function createFirstRunState() {
         const { authState } =
           await import("$lib/shared/auth/state/auth-state.svelte");
 
-        const userId = authState.effectiveUserId;
+        const userId = userIdOverride || authState.effectiveUserId;
         if (!userId) return;
 
         const firestore = await getFirestoreInstance();
@@ -316,9 +333,7 @@ function createFirstRunState() {
         await setDoc(
           docRef,
           {
-            completed: state.hasCompleted,
-            skipped: state.wasSkipped,
-            completedAt: state.completedAt?.toISOString() ?? null,
+            ...snapshot,
             updatedAt: serverTimestamp(),
           },
           { merge: true }

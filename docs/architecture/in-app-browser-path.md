@@ -25,15 +25,15 @@ A repo-wide grep for `signInWithRedirect` returns exactly one hit: that comment.
 
 What actually works inside a webview, with no popup, no redirect, and no `sessionStorage` dependency:
 
-| Capability | Where | Works in webview |
-|---|---|---|
-| Guest identity | `guest-identity.ts:21` `signInAnonymously` | Yes |
-| Construct, Assemble, Generate | `guest-access-config.ts:16-19` | Yes |
-| Browse gallery + library | `guest-access-config.ts:16-19` | Yes |
-| Local save, up to 3 | `guest-access-config.ts:10` | Yes |
-| Magic-link send | `EmailLinkAuth.svelte:34-51`, callable + `localStorage` | Yes |
-| Magic-link completion | `email-link-completion.ts:71-98` | Yes, including cross-browser |
-| Google / Facebook popup | `authenticator.ts:97,121` | **No** |
+| Capability                    | Where                                                   | Works in webview             |
+| ----------------------------- | ------------------------------------------------------- | ---------------------------- |
+| Guest identity                | `guest-identity.ts:21` `signInAnonymously`              | Yes                          |
+| Construct, Assemble, Generate | `guest-access-config.ts:16-19`                          | Yes                          |
+| Browse gallery + library      | `guest-access-config.ts:16-19`                          | Yes                          |
+| Local save, up to 3           | `guest-access-config.ts:10`                             | Yes                          |
+| Magic-link send               | `EmailLinkAuth.svelte:34-51`, callable + `localStorage` | Yes                          |
+| Magic-link completion         | `email-link-completion.ts:71-98`                        | Yes, including cross-browser |
+| Google / Facebook popup       | `authenticator.ts:97,121`                               | **No**                       |
 
 The Detroit visitor proved the top half of that table in production. Once he reached Safari he generated 4 sequences and changed 9 settings, all of it guest-tier work that would have succeeded in the webview if a full-screen `alertdialog` had not been sitting on top of it telling him sign-in was impossible.
 
@@ -89,16 +89,15 @@ The line `{browserName}'s built-in browser doesn't support sign-in` is deleted o
 
 ### Magic link completes cross-browser. Confirmed.
 
-`completeEmailLinkSignIn` resolves the email as:
+`localStorage` is per-browser, so a link requested in Instagram's webview and opened in Safari finds nothing saved. New links no longer ask for the address again. `sendMagicLink` stores the original email behind a server-generated 256-bit opaque state, puts only that state in the continue URL, and rejects resolution after 30 minutes. `EmailLinkConfirmModal` resolves the state without consuming Firebase's single-use `oobCode`, shows the account that will be opened, and consumes the code only after the user clicks `Finish signing in`.
 
-```ts
-// email-link-completion.ts:91
-const savedEmail = window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY) ?? explicitEmail ?? null;
-```
-
-`localStorage` is per-browser, so a link requested in Instagram's webview and opened in Safari finds nothing saved. That is not a failure path. `EmailLinkConfirmModal` detects the absence and renders an in-page email field, and completion proceeds on the typed address. Firebase validates email plus `oobCode` server-side and is not device-bound.
+The email never appears in the URL. This deliberately gives the link bearer-credential semantics across devices, replacing Firebase's typed-email session-fixation check. Showing the resolved account before the confirm click and limiting state resolution to 30 minutes reduce accidental misuse; they do not make a deliberately forwarded link harmless.
 
 Magic link is therefore both the sign-in method and the escape hatch in one action: request it in the webview, open the email, land in Safari, finish there.
+
+Completion records first-run setup as skipped. The user enters Create without
+being asked for a password or profile name. Display-name editing remains
+available in profile settings, and the account can keep using magic links.
 
 ### Ordering and labelling in a detected webview
 
@@ -145,14 +144,14 @@ Do not add copy promising the work transfers. It does not.
 
 Every candidate technique is dead or fragile for the exact webviews in this incident:
 
-| Technique | Status |
-|---|---|
-| `x-safari-https://` | Reported broken specifically inside Instagram's in-app browser ([inapp-debugger#16](https://github.com/shalanah/inapp-debugger/issues/16)); inconsistent across iOS point releases |
-| `googlechrome://` | Only works if Chrome for iOS is installed, which a web page cannot feature-detect. Escapes to Chrome, not Safari |
-| `shortcuts://x-callback-url` | Unintended use of the Shortcuts app, already reported broken on iOS 18.1 beta by its own author, flashes the Shortcuts UI mid-flow |
-| Universal Links | Fire on OS-level link handling, not on a same-webview navigation Instagram's `WKWebView` already owns |
-| Smart App Banners | Safari-only, never render in a third-party webview |
-| App Clips | Require a native target and Safari; not applicable |
+| Technique                    | Status                                                                                                                                                                             |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x-safari-https://`          | Reported broken specifically inside Instagram's in-app browser ([inapp-debugger#16](https://github.com/shalanah/inapp-debugger/issues/16)); inconsistent across iOS point releases |
+| `googlechrome://`            | Only works if Chrome for iOS is installed, which a web page cannot feature-detect. Escapes to Chrome, not Safari                                                                   |
+| `shortcuts://x-callback-url` | Unintended use of the Shortcuts app, already reported broken on iOS 18.1 beta by its own author, flashes the Shortcuts UI mid-flow                                                 |
+| Universal Links              | Fire on OS-level link handling, not on a same-webview navigation Instagram's `WKWebView` already owns                                                                              |
+| Smart App Banners            | Safari-only, never render in a third-party webview                                                                                                                                 |
+| App Clips                    | Require a native target and Safari; not applicable                                                                                                                                 |
 
 Firing one anyway produces a native "Cannot open this page because it is invalid" dialog. That reads as an app error and is worse than the current honest dead end.
 
@@ -315,7 +314,9 @@ const dropKnownNoise: BeforeSendFn = (event: CaptureResult | null) => {
   if (!Array.isArray(list)) return event;
 
   const isNoise = list.some(
-    (e) => typeof e?.value === "string" && EXCEPTION_NOISE.some((p) => p.test(e.value))
+    (e) =>
+      typeof e?.value === "string" &&
+      EXCEPTION_NOISE.some((p) => p.test(e.value))
   );
   return isNoise ? null : event;
 };
@@ -365,17 +366,17 @@ Convention confirmed by grep: `snake_case`, domain-prefixed, past-tense or noun-
 
 **All events below go through `captureEvent(name, props)` imported from `src/lib/shared/analytics/services/posthog.ts`, which takes an arbitrary string name** (`posthog.ts:282-289`). Do not register them in `activity-event.ts`. That file is owned by a concurrent workflow and must not be edited here.
 
-| Event | Owner | Fires when | Properties |
-|---|---|---|---|
-| `inapp_browser_detected` | WS-GATE | Prompt component mounts and detection is true | `browser`, `platform` (`ios`/`android`/`other`), `route`, `can_open_external` |
-| `inapp_browser_banner_shown` | WS-GATE | Banner renders (detected, not dismissed, not installed PWA) | `browser`, `route` |
-| `inapp_browser_escape_attempted` | WS-GATE | Escape action tapped | `method` (`android_intent`/`ios_instructions`) |
-| `inapp_browser_escape_result` | WS-GATE | 1500ms timer or visibility change resolves | `method`, `outcome` (`left`/`stayed`) |
-| `inapp_browser_link_copied` | WS-GATE | Copy button resolves | `path` (`clipboard_api`/`selection`/`manual`), `success` |
-| `inapp_browser_banner_dismissed` | WS-GATE | Dismiss tapped | `route` |
-| `inapp_auth_magic_link_promoted` | WS-AUTH | Auth modal opens in a detected webview | `route` |
-| `inapp_auth_social_intercepted` | WS-AUTH | Google or Facebook tapped in a detected webview | `provider` |
-| `inapp_auth_magic_link_requested` | WS-AUTH | Magic-link send succeeds in a detected webview | `guest_drafts_pending` |
+| Event                             | Owner   | Fires when                                                  | Properties                                                                    |
+| --------------------------------- | ------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `inapp_browser_detected`          | WS-GATE | Prompt component mounts and detection is true               | `browser`, `platform` (`ios`/`android`/`other`), `route`, `can_open_external` |
+| `inapp_browser_banner_shown`      | WS-GATE | Banner renders (detected, not dismissed, not installed PWA) | `browser`, `route`                                                            |
+| `inapp_browser_escape_attempted`  | WS-GATE | Escape action tapped                                        | `method` (`android_intent`/`ios_instructions`)                                |
+| `inapp_browser_escape_result`     | WS-GATE | 1500ms timer or visibility change resolves                  | `method`, `outcome` (`left`/`stayed`)                                         |
+| `inapp_browser_link_copied`       | WS-GATE | Copy button resolves                                        | `path` (`clipboard_api`/`selection`/`manual`), `success`                      |
+| `inapp_browser_banner_dismissed`  | WS-GATE | Dismiss tapped                                              | `route`                                                                       |
+| `inapp_auth_magic_link_promoted`  | WS-AUTH | Auth modal opens in a detected webview                      | `route`                                                                       |
+| `inapp_auth_social_intercepted`   | WS-AUTH | Google or Facebook tapped in a detected webview             | `provider`                                                                    |
+| `inapp_auth_magic_link_requested` | WS-AUTH | Magic-link send succeeds in a detected webview              | `guest_drafts_pending`                                                        |
 
 Existing `auth_modal_submitted` with `method: "magic_link"` keeps firing unchanged from `recordAuthSubmission`. Diffing its volume against `guest_upgraded_to_account` and `user_signed_up` gives the send-to-complete drop-off that no one has measured yet.
 
@@ -396,6 +397,7 @@ Every workstream imports `getInAppBrowserDetector` from `src/lib/shared/auth/get
 ### WS-GATE: the trigger
 
 **Owns:**
+
 - `src/lib/shared/auth/services/in-app-browser-detector.ts`
 - `src/lib/shared/auth/get-in-app-browser-detector.ts` (new)
 - `src/lib/shared/auth/components/InAppBrowserPrompt.svelte`
@@ -403,6 +405,7 @@ Every workstream imports `getInAppBrowserDetector` from `src/lib/shared/auth/get
 - `src/routes/+layout.svelte`
 
 **Does:**
+
 1. Opera allow-list before the iOS fallback heuristic. Preserve the Capacitor carve-out untouched.
 2. `intent://` gets `S.browser_fallback_url`, loses `package=com.android.chrome`.
 3. New singleton getter file.
@@ -419,12 +422,14 @@ Every workstream imports `getInAppBrowserDetector` from `src/lib/shared/auth/get
 ### WS-AUTH: sign-in inside the webview
 
 **Owns:**
+
 - `src/lib/shared/auth/components/AuthModal.svelte`
 - `src/lib/shared/auth/components/EmailAuthTabs.svelte`
 - `src/lib/shared/auth/components/EmailLinkAuth.svelte`
 - `src/lib/shared/auth/components/SocialAuthCompact.svelte`
 
 **Does:**
+
 1. `AuthModal`: when in a webview, skip `GoogleOneTap`, render `EmailAuthTabs` expanded above `SocialAuthCompact`, drop the `Continue with email` toggle, add the section headings and the `Other options` divider.
 2. `EmailAuthTabs`: new `initialTab` prop so the caller can force `"magic"` regardless of `lastMethod`.
 3. `EmailLinkAuth`: webview-specific hint copy; compute `guest_drafts_pending`; fire `inapp_auth_magic_link_requested`.
@@ -438,10 +443,12 @@ Every workstream imports `getInAppBrowserDetector` from `src/lib/shared/auth/get
 ### WS-NOISE: signal quality
 
 **Owns:**
+
 - `src/lib/shared/analytics/services/posthog.ts`
 - `src/lib/shared/auth/firebase.ts`
 
 **Does:**
+
 1. `before_send: dropKnownNoise` per section 5, registered unconditionally, every non-drop branch returning `event` explicitly.
 2. Unit test asserting the filter drops the three synthetic noise shapes and passes everything else through as the same object.
 3. The in-app-browser memory-cache branch in `initializeFirestore`.

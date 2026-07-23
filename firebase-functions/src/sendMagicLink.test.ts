@@ -1,8 +1,15 @@
 import * as functions from "firebase-functions";
-import { handleSendMagicLink, type MagicLinkRuntime } from "./sendMagicLink";
+import {
+  handleResolveMagicLinkEmail,
+  handleSendMagicLink,
+  type MagicLinkRuntime,
+  type ResolveMagicLinkEmailRuntime,
+} from "./sendMagicLink";
 
 const REQUEST_ID = "144599f0-7a73-4f38-8f3d-a654dc6c47c6";
 const RECIPIENT = "person@example.com";
+const MAGIC_LINK_STATE = "a".repeat(43);
+const MAGIC_LINK_EXPIRES_AT = 1_800_000;
 const MAGIC_LINK =
   "https://the-kinetic-alphabet.firebaseapp.com/__/auth/action?oobCode=secret";
 
@@ -37,6 +44,10 @@ function createRuntime(overrides: RuntimeOverrides = {}) {
       return now;
     },
     createRequestId: () => REQUEST_ID,
+    createSignInState: jest.fn().mockResolvedValue({
+      state: MAGIC_LINK_STATE,
+      expiresAtMs: MAGIC_LINK_EXPIRES_AT,
+    }),
     generateLink: jest.fn().mockResolvedValue(MAGIC_LINK),
     fetch: jest
       .fn()
@@ -84,6 +95,7 @@ describe("handleSendMagicLink", () => {
     );
 
     expect(runtime.generateLink).not.toHaveBeenCalled();
+    expect(runtime.createSignInState).not.toHaveBeenCalled();
     expect(runtime.fetch).not.toHaveBeenCalled();
     expect(JSON.stringify(error.mock.calls)).not.toContain(RECIPIENT);
   });
@@ -147,7 +159,7 @@ describe("handleSendMagicLink", () => {
     });
 
     expect(runtime.generateLink).toHaveBeenCalledWith(RECIPIENT, {
-      url: "https://tkaflowarts.com/create",
+      url: `https://tkaflowarts.com/create?magicLinkState=${MAGIC_LINK_STATE}`,
       handleCodeInApp: true,
     });
     expect(fetch).toHaveBeenCalledWith(
@@ -163,6 +175,8 @@ describe("handleSendMagicLink", () => {
         headers: { "X-Mailin-custom": `request_id:${REQUEST_ID}` },
       })
     );
+    expect(String(request.body)).toContain("expires in 30 minutes");
+    expect(String(request.body)).not.toContain("expires in 1 hour");
     expect(info).toHaveBeenCalledWith(
       "Magic link provider accepted",
       expect.objectContaining({
@@ -202,5 +216,47 @@ describe("handleSendMagicLink", () => {
     expect(serializedLogs).not.toContain(RECIPIENT);
     expect(serializedLogs).not.toContain(MAGIC_LINK);
     expect(serializedLogs).toContain(REQUEST_ID);
+  });
+});
+
+describe("handleResolveMagicLinkEmail", () => {
+  function createResolveRuntime(
+    result: Awaited<
+      ReturnType<ResolveMagicLinkEmailRuntime["resolveSignInState"]>
+    >
+  ): ResolveMagicLinkEmailRuntime {
+    return {
+      resolveSignInState: jest.fn().mockResolvedValue(result),
+    };
+  }
+
+  it("returns the email bound to a valid opaque state", async () => {
+    const runtime = createResolveRuntime({
+      email: RECIPIENT,
+      expiresAtMs: MAGIC_LINK_EXPIRES_AT,
+    });
+
+    await expect(
+      handleResolveMagicLinkEmail(
+        { action: "resolve-email", state: MAGIC_LINK_STATE },
+        runtime
+      )
+    ).resolves.toEqual({
+      success: true,
+      email: RECIPIENT,
+    });
+    expect(runtime.resolveSignInState).toHaveBeenCalledWith(MAGIC_LINK_STATE);
+  });
+
+  it("rejects missing, malformed, or expired state without returning an email", async () => {
+    const runtime = createResolveRuntime(null);
+
+    await expectHttpsError(
+      handleResolveMagicLinkEmail(
+        { action: "resolve-email", state: "expired" },
+        runtime
+      ),
+      "failed-precondition"
+    );
   });
 });
