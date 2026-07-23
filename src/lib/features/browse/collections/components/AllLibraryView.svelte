@@ -33,6 +33,13 @@ the gallery's, and the source is pinned to my-library with no toggle.
 	import { t } from "$lib/shared/i18n/i18n.svelte";
 	import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 	import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
+	import {
+		featureFlagService,
+		featureFlagState,
+	} from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+
+	const FIRST_SESSION_ACTIVATION_FLAG =
+		"capability:onboarding:first-session-activation" as const;
 
 	// The desktop split view keeps the collection rail visible, so it passes no
 	// onBack — BrowsePanel then omits the back pill entirely.
@@ -83,6 +90,26 @@ the gallery's, and the source is pinned to my-library with no toggle.
 	}
 
 	const availableNavigationSections = $derived(engine.sections.map((s) => s.title));
+
+	const emptyAction = $derived.by(() => {
+		// Admin and remote flag updates increment this version. Reading it here
+		// keeps the Library CTA in lockstep with the rollout switch.
+		void featureFlagState.flagsVersion;
+		if (!featureFlagService.canAccess(FIRST_SESSION_ACTIVATION_FLAG)) {
+			return undefined;
+		}
+
+		return {
+			label: "Make your first sequence",
+			onClick: () => {
+				// This CTA only renders for a genuinely empty library, so the
+				// starter can trust the empty result even if an older account
+				// probe is still cached.
+				firstSequenceStarterState.rearmForSession();
+				navigationState.setCurrentModule("create", "construct");
+			},
+		};
+	});
 </script>
 
 <div class="all-library">
@@ -95,15 +122,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
 		hideToolbarSearch
 		onOpenFilters={() => (isFilterSheetOpen = true)}
 		onSaveSmart={() => (smartSaveOpen = true)}
-		emptyAction={{
-			label: "Make your first sequence",
-			onClick: () => {
-				// Re-arm the starter for this visit BEFORE navigating so it's
-				// armed by the time Create/GenerateEmptyState mounts.
-				firstSequenceStarterState.rearmForSession();
-				navigationState.setCurrentModule("create", "construct");
-			},
-		}}
+		{emptyAction}
 	/>
 </div>
 

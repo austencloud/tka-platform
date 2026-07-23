@@ -47,6 +47,24 @@ describe("startFirstSequence", () => {
     expect(save).not.toHaveBeenCalled();
   });
 
+  it("returns generate-failed when the generated sequence cannot load into the workspace", async () => {
+    const save = vi.fn();
+    const onKept = vi.fn();
+
+    const result = await startFirstSequence({
+      generate: async () => makeSequence(),
+      loadIntoWorkspace: () => {
+        throw new Error("workspace rejected sequence");
+      },
+      save,
+      onKept,
+    });
+
+    expect(result).toEqual({ status: "generate-failed" });
+    expect(save).not.toHaveBeenCalled();
+    expect(onKept).not.toHaveBeenCalled();
+  });
+
   it("loads into workspace before attempting save, and returns persist-failed on save() throw", async () => {
     const calls: string[] = [];
     const sequence = makeSequence();
@@ -107,4 +125,26 @@ describe("startFirstSequence", () => {
     expect(result).toEqual({ status: "generated-kept", sequenceId: "seq-2" });
     expect(onKept).not.toHaveBeenCalled();
   });
+
+  it("keeps the persisted result when the optional guest activation hand-off fails", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await startFirstSequence({
+      generate: async () => makeSequence(),
+      loadIntoWorkspace: vi.fn(),
+      save: async () => ({
+        persisted: true,
+        isGuest: true,
+        sequenceId: "seq-3",
+      }),
+      onKept: async () => {
+        throw new Error("activation unavailable");
+      },
+    });
+
+    expect(result).toEqual({ status: "generated-kept", sequenceId: "seq-3" });
+    expect(warning).toHaveBeenCalledOnce();
+    warning.mockRestore();
+  });
+
 });

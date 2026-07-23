@@ -212,7 +212,7 @@
       // The sequence is already in the workspace; this card has usually
       // unmounted, so surface the save failure via a toast rather than inline.
       toast.error(
-        "Generated it, but the save didn't land. It's in your workspace — tap Save to keep it."
+        "Generated it, but the save didn't land. It's in your workspace. Tap Save to keep it."
       );
     }
 

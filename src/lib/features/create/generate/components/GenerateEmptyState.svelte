@@ -46,7 +46,7 @@
     showStarterOffer?: boolean;
     /** Runs the generate → load → keep command and returns the typed result. */
     onStarterGenerate?: () => Promise<StartFirstSequenceResult>;
-    /** Dismiss the starter ("I'll build my own"). */
+    /** Dismiss the starter ("Build from scratch"). */
     onStarterDismiss?: () => void;
   }
 
@@ -129,13 +129,13 @@
 <div class="empty-state">
   {#if showStarterOffer}
     <!-- First-session starter (SP3b): one tap generates a sequence, loads it
-         into the workspace, and saves it. Built on PanelButton, not the
-         hand-rolled .offer-btn used by the legacy tour offer below. -->
+         into the workspace, and saves it. Both starter and tour actions reuse
+         PanelButton. -->
     <div class="tour-offer starter-offer">
       <p class="offer-title">Make your first sequence</p>
       <p class="offer-sub">
-        One tap builds a sequence, drops it in the workspace, and saves it to
-        your library.
+        Get a ready-to-edit sequence in the workspace, already saved to your
+        library.
       </p>
       <div class="offer-actions">
         <PanelButton
@@ -143,14 +143,21 @@
           onclick={handleStarterGenerate}
           disabled={starterBusy}
         >
-          {starterBusy ? "Generating…" : "Generate one for me"}
+          <span class="starter-action-label">
+            <span class="starter-action-sizer" aria-hidden="true">
+              Generate a sequence
+            </span>
+            <span class="starter-action-live">
+              {starterBusy ? "Generating…" : "Generate a sequence"}
+            </span>
+          </span>
         </PanelButton>
         <PanelButton
           variant="secondary"
           onclick={handleStarterDismiss}
           disabled={starterBusy}
         >
-          I'll build my own
+          Build from scratch
         </PanelButton>
       </div>
       {#if starterError}
@@ -164,12 +171,12 @@
         <p class="offer-title">First time generating?</p>
         <p class="offer-sub">A quick tour shows what each option does.</p>
         <div class="offer-actions">
-          <button type="button" class="offer-btn primary" onclick={acceptTour}>
-            Show me
-          </button>
-          <button type="button" class="offer-btn secondary" onclick={declineTour}>
-            I'll explore
-          </button>
+          <PanelButton variant="primary" onclick={acceptTour}>
+            Show tour
+          </PanelButton>
+          <PanelButton variant="secondary" onclick={declineTour}>
+            Explore options
+          </PanelButton>
         </div>
       </div>
     {:else}
@@ -260,66 +267,19 @@
     justify-content: center;
   }
 
-  .offer-btn {
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 18px;
-    border-radius: 12px;
-    font-size: var(--font-size-base, 15px);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      transform 0.12s ease,
-      background 0.15s ease,
-      border-color 0.15s ease;
+  /* The live label and its longest variant share one grid cell. The primary
+     button stays the same width while "Generate a sequence" becomes
+     "Generating…", so the secondary action never moves. */
+  .starter-action-label {
+    display: inline-grid;
   }
 
-  .offer-btn:active {
-    transform: scale(0.96);
+  .starter-action-sizer,
+  .starter-action-live {
+    grid-area: 1 / 1;
   }
 
-  .offer-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #f59e0b);
-    outline-offset: 2px;
-  }
-
-  /* Primary — gold, matches the Generate tab's accent. */
-  .offer-btn.primary {
-    color: #1a1206;
-    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 60%, transparent);
-    background: linear-gradient(
-      135deg,
-      var(--semantic-warning, #f59e0b) 0%,
-      color-mix(in srgb, var(--semantic-warning, #f59e0b) 85%, #d97706) 100%
-    );
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--semantic-warning, #f59e0b) 35%, transparent);
-  }
-
-  .offer-btn.primary:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--semantic-warning, #f59e0b) 92%, #fff) 0%,
-      var(--semantic-warning, #f59e0b) 100%
-    );
-  }
-
-  /* Secondary — quiet, for the self-directed user who wants to poke around. */
-  .offer-btn.secondary {
-    color: var(--theme-text, #fff);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-  }
-
-  .offer-btn.secondary:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.28));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .offer-btn {
-      transition: none;
-    }
-    .offer-btn:active {
-      transform: none;
-    }
+  .starter-action-sizer {
+    visibility: hidden;
   }
 </style>

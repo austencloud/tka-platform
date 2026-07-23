@@ -11,7 +11,7 @@ export const ONBOARDING_CAPABILITY_CONFIGS: FeatureFlagConfig[] = [
 	{
 		id: "capability:onboarding:first-session-activation",
 		name: "First-Session Activation",
-		description: "Keep-on-first-save nudge coordinator (SP3 Part B)",
+		description: "First-sequence starter and keep-on-first-save account nudge",
 		minimumRole: "user",
 		enabled: false,
 		category: "capability",

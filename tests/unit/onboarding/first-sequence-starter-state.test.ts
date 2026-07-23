@@ -60,6 +60,16 @@ import {
 
 const DISMISSED_KEY = "tka-first-sequence-starter-dismissed";
 
+function createDeferred<T>() {
+	let resolve!: (value: T | PromiseLike<T>) => void;
+	let reject!: (reason?: unknown) => void;
+	const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+		resolve = resolvePromise;
+		reject = rejectPromise;
+	});
+	return { promise, resolve, reject };
+}
+
 describe("firstSequenceStarterState", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -67,6 +77,8 @@ describe("firstSequenceStarterState", () => {
 		mocks.authState.isFullAccount = false;
 		mocks.authState.effectiveUserId = "guest-1";
 		mocks.flagOn = true;
+		mocks.getDoc.mockResolvedValue({ exists: () => false });
+		mocks.setDoc.mockResolvedValue(undefined);
 		firstSequenceStarterState.reset();
 	});
 
@@ -127,6 +139,66 @@ describe("firstSequenceStarterState", () => {
 
 		expect(firstSequenceStarterState.cloudSynced).toBe(true);
 		expect(mocks.getDoc).not.toHaveBeenCalled();
+	});
+
+	it("abandons a queued cloud write when the account session resets", async () => {
+		const staleWrite = firstSequenceStarterState.syncToCloud();
+		firstSequenceStarterState.resetCloudSync();
+
+		await staleWrite;
+
+		expect(mocks.setDoc).not.toHaveBeenCalled();
+	});
+
+	it("joins concurrent cloud sync callers into one Firestore read", async () => {
+		const cloudRead = createDeferred<{
+			exists: () => boolean;
+		}>();
+		mocks.getDoc.mockReturnValueOnce(cloudRead.promise);
+
+		const bootSync = firstSequenceStarterState.syncFromCloud();
+		const resolveSync = firstSequenceStarterState.syncFromCloud();
+
+		await vi.waitFor(() => {
+			expect(mocks.getDoc).toHaveBeenCalledTimes(1);
+		});
+
+		cloudRead.resolve({ exists: () => false });
+		await Promise.all([bootSync, resolveSync]);
+
+		expect(mocks.getDoc).toHaveBeenCalledTimes(1);
+		expect(firstSequenceStarterState.cloudSynced).toBe(true);
+	});
+
+	it("ignores an old account's cloud read after an account reset", async () => {
+		const accountARead = createDeferred<{
+			exists: () => boolean;
+			data: () => { dismissed: boolean };
+		}>();
+		mocks.getDoc
+			.mockReturnValueOnce(accountARead.promise)
+			.mockResolvedValueOnce({ exists: () => false });
+
+		mocks.authState.effectiveUserId = "account-a";
+		const staleSync = firstSequenceStarterState.syncFromCloud();
+		await vi.waitFor(() => {
+			expect(mocks.getDoc).toHaveBeenCalledTimes(1);
+		});
+
+		firstSequenceStarterState.resetCloudSync();
+		mocks.authState.effectiveUserId = "account-b";
+		await firstSequenceStarterState.syncFromCloud();
+
+		accountARead.resolve({
+			exists: () => true,
+			data: () => ({ dismissed: true }),
+		});
+		await staleSync;
+
+		expect(firstSequenceStarterState.dismissed).toBe(false);
+		expect(firstSequenceStarterState.cloudSynced).toBe(true);
+		expect(localStorage.getItem(DISMISSED_KEY)).toBeNull();
+		expect(mocks.getDoc).toHaveBeenCalledTimes(2);
 	});
 
 	describe("resolveHasSavedAnything", () => {
@@ -221,6 +293,41 @@ describe("firstSequenceStarterState", () => {
 			expect(mocks.dexieCount).toHaveBeenCalledTimes(1);
 		});
 
+		it("ignores stale eligibility work without detaching a newer account's resolve", async () => {
+			mocks.authState.effectiveUserId = null;
+			const accountAProbe = createDeferred<number>();
+			const accountBProbe = createDeferred<number>();
+			mocks.dexieCount
+				.mockReturnValueOnce(accountAProbe.promise)
+				.mockReturnValueOnce(accountBProbe.promise);
+
+			const staleResolve = firstSequenceStarterState.resolve();
+			await vi.waitFor(() => {
+				expect(mocks.dexieCount).toHaveBeenCalledTimes(1);
+			});
+
+			firstSequenceStarterState.resetCloudSync();
+			const currentResolve = firstSequenceStarterState.resolve();
+			await vi.waitFor(() => {
+				expect(mocks.dexieCount).toHaveBeenCalledTimes(2);
+			});
+
+			accountAProbe.resolve(0);
+			await staleResolve;
+
+			// The old task's cleanup cannot erase the newer task. A third
+			// caller still joins account B's pending probe.
+			const joinedCurrentResolve = firstSequenceStarterState.resolve();
+			expect(joinedCurrentResolve).toBe(currentResolve);
+			expect(mocks.dexieCount).toHaveBeenCalledTimes(2);
+
+			accountBProbe.resolve(3);
+			await Promise.all([currentResolve, joinedCurrentResolve]);
+
+			expect(firstSequenceStarterState.eligibility).toBe("ineligible");
+			expect(firstSequenceStarterState.isEligible).toBe(false);
+		});
+
 		it("a dismissal hides an eligible starter, and a session rearm forces it back", async () => {
 			mocks.authState.effectiveUserId = null;
 			mocks.dexieCount.mockResolvedValue(0);
@@ -234,6 +341,31 @@ describe("firstSequenceStarterState", () => {
 
 			firstSequenceStarterState.rearmForSession();
 			expect(firstSequenceStarterState.isEligible).toBe(true);
+		});
+
+		it("clears a session rearm when the account session resets", () => {
+			firstSequenceStarterState.rearmForSession();
+			expect(firstSequenceStarterState.sessionRearm).toBe(true);
+
+			firstSequenceStarterState.resetCloudSync();
+
+			expect(firstSequenceStarterState.sessionRearm).toBe(false);
+			expect(firstSequenceStarterState.eligibility).toBe("unknown");
+		});
+
+		it("rearms after the user deletes their last sequence from the confirmed-empty Library view", async () => {
+			mocks.authState.effectiveUserId = null;
+			mocks.dexieCount.mockResolvedValueOnce(1);
+
+			await firstSequenceStarterState.resolve();
+			expect(firstSequenceStarterState.eligibility).toBe("ineligible");
+
+			firstSequenceStarterState.rearmForSession();
+
+			expect(firstSequenceStarterState.eligibility).toBe("eligible");
+			expect(firstSequenceStarterState.sessionRearm).toBe(true);
+			expect(firstSequenceStarterState.isEligible).toBe(true);
+			expect(mocks.dexieCount).toHaveBeenCalledTimes(1);
 		});
 	});
 });

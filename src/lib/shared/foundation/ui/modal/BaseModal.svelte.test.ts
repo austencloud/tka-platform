@@ -35,6 +35,11 @@ describe("BaseModal fit sizing", () => {
       .element(page.getByRole("dialog", { name: "Scrollable modal" }))
       .toBeVisible();
 
+    const openedState = document.querySelector<HTMLOutputElement>(
+      '[data-testid="base-modal-opened-state"]'
+    );
+    expect(openedState?.textContent?.trim()).toBe("1:true");
+
     for (const viewport of FOLD_VIEWPORTS) {
       await page.viewport(viewport.width, viewport.height);
       await nextLayout();
@@ -111,5 +116,21 @@ describe("BaseModal fit sizing", () => {
     ).toBeGreaterThan(keyboardBody!.clientHeight);
 
     await expectNoA11yViolations();
+  });
+
+  it("does not report opened when the modal closes before its delayed show", async () => {
+    render(BaseModalTestHarness, { cancelBeforeOpen: true });
+
+    await nextLayout();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const openedState = document.querySelector<HTMLOutputElement>(
+      '[data-testid="base-modal-opened-state"]'
+    );
+    const dialog =
+      document.querySelector<HTMLDialogElement>("dialog.base-modal");
+
+    expect(openedState?.textContent?.trim()).toBe("0:false");
+    expect(dialog?.open ?? false).toBe(false);
   });
 });

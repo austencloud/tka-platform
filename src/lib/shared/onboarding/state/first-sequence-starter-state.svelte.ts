@@ -92,15 +92,34 @@ function createFirstSequenceStarterState() {
     eligibility: "unknown",
   });
 
-  // Shared in-flight resolve() promise. Two callers race to resolve
-  // eligibility — the effect that drives it in StandardWorkspaceLayout and the
-  // awaited call in the CreateModule tutorial arbitration. A second caller
-  // JOINS this promise rather than early-returning, so `await resolve()` always
-  // sees the SETTLED eligibility (otherwise the arbitration could read a still-
-  // `unknown` state and fire the legacy tutorial alongside the starter).
-  let resolvePromise: Promise<void> | null = null;
+  interface EpochTask {
+    epoch: number;
+    promise: Promise<void>;
+  }
 
-  function resolveCloudSync() {
+  // Every reset starts a new account/session generation. Async work captures
+  // the generation it belongs to and must prove it is still current before it
+  // can update reactive state or account-scoped storage.
+  let epoch = 0;
+
+  // The workspace mount and tutorial arbitration can race the auth boot sync.
+  // Each kind of work is shared within one epoch, while a reset immediately
+  // detaches the old task so the new account can begin its own reads.
+  let resolveTask: EpochTask | null = null;
+  let cloudSyncTask: EpochTask | null = null;
+
+  function isCurrentEpoch(taskEpoch: number): boolean {
+    return epoch === taskEpoch;
+  }
+
+  function invalidateAsyncWork() {
+    epoch += 1;
+    resolveTask = null;
+    cloudSyncTask = null;
+  }
+
+  function resolveCloudSync(taskEpoch = epoch) {
+    if (!isCurrentEpoch(taskEpoch)) return;
     state.cloudSynced = true;
     state.syncInProgress = false;
   }
@@ -138,8 +157,8 @@ function createFirstSequenceStarterState() {
      */
     get isEligible() {
       if (!postHogFeatureFlagService.canAccess(STARTER_FLAG)) return false;
-      if (state.eligibility !== "eligible") return false;
       if (state.sessionRearm) return true;
+      if (state.eligibility !== "eligible") return false;
       return !state.dismissed;
     },
 
@@ -159,27 +178,44 @@ function createFirstSequenceStarterState() {
       if (state.eligibility !== "unknown") return Promise.resolve();
       // A resolve is already in flight - join it so awaiters see the settled
       // eligibility, not a half-resolved `unknown`.
-      if (resolvePromise) return resolvePromise;
+      const resolveEpoch = epoch;
+      if (resolveTask?.epoch === resolveEpoch) return resolveTask.promise;
 
-      resolvePromise = (async () => {
+      const task = (async () => {
         try {
           // Respect a dismissal made on another device before we ever show.
           await this.syncFromCloud();
+          if (!isCurrentEpoch(resolveEpoch)) return;
+
           const hasSaved = await resolveHasSavedAnything();
+          if (!isCurrentEpoch(resolveEpoch)) return;
+
           state.eligibility = hasSaved ? "ineligible" : "eligible";
         } catch (error) {
+          if (!isCurrentEpoch(resolveEpoch)) return;
+
           // Stay `unknown` (never "empty") - the card stays hidden and a later
           // resolve() can retry.
           console.warn(
             "[firstSequenceStarterState] Failed to resolve eligibility:",
             error
           );
-        } finally {
-          resolvePromise = null;
         }
       })();
 
-      return resolvePromise;
+      const joinedTask: Promise<void> = task.finally(() => {
+        // An old account's completion must not clear a newer account's
+        // in-flight resolve after reset.
+        if (
+          resolveTask?.epoch === resolveEpoch &&
+          resolveTask.promise === joinedTask
+        ) {
+          resolveTask = null;
+        }
+      });
+      resolveTask = { epoch: resolveEpoch, promise: joinedTask };
+
+      return joinedTask;
     },
 
     /**
@@ -188,6 +224,10 @@ function createFirstSequenceStarterState() {
      */
     rearmForSession() {
       state.sessionRearm = true;
+      // The Library CTA only exists in BrowsePanel's genuine-empty state.
+      // Trust that newer evidence over a cached "had sequences" result from
+      // before the user deleted their last sequence.
+      state.eligibility = "eligible";
     },
 
     /** Consume the session rearm without touching persisted dismissal (used
@@ -215,12 +255,12 @@ function createFirstSequenceStarterState() {
     reset() {
       if (!isBrowser) return;
 
+      invalidateAsyncWork();
       state.dismissed = false;
       state.cloudSynced = false;
       state.syncInProgress = false;
       state.sessionRearm = false;
       state.eligibility = "unknown";
-      resolvePromise = null;
 
       removeLocalStorageItem(DISMISSED_KEY);
     },
@@ -231,10 +271,11 @@ function createFirstSequenceStarterState() {
      * already-settled state).
      */
     resetCloudSync() {
+      invalidateAsyncWork();
       state.cloudSynced = false;
       state.syncInProgress = false;
+      state.sessionRearm = false;
       state.eligibility = "unknown";
-      resolvePromise = null;
     },
 
     /** Mark cloud sync complete without a read (sync path failed externally). */
@@ -250,65 +291,112 @@ function createFirstSequenceStarterState() {
     async syncFromCloud(): Promise<void> {
       if (!isBrowser || state.cloudSynced) return;
 
+      const syncEpoch = epoch;
+      if (cloudSyncTask?.epoch === syncEpoch) {
+        return cloudSyncTask.promise;
+      }
+
       state.syncInProgress = true;
 
-      try {
-        const { authState } = await import(
-          "$lib/shared/auth/state/auth-state.svelte"
-        );
+      const task = (async () => {
+        try {
+          const { authState } =
+            await import("$lib/shared/auth/state/auth-state.svelte");
+          if (!isCurrentEpoch(syncEpoch)) return;
 
-        const userId = authState.effectiveUserId;
-        if (!userId) {
-          // No-uid visitor: nothing to sync, ever. Resolve locally now
-          // rather than leaving cloudSynced stuck false.
-          resolveCloudSync();
-          return;
+          const userId = authState.effectiveUserId;
+          if (!userId) {
+            // No-uid visitor: nothing to sync, ever. Resolve locally now
+            // rather than leaving cloudSynced stuck false.
+            resolveCloudSync(syncEpoch);
+            return;
+          }
+
+          const { getFirestoreInstance } =
+            await import("$lib/shared/auth/firebase");
+          const { doc, getDoc } = await import("firebase/firestore");
+          if (
+            !isCurrentEpoch(syncEpoch) ||
+            authState.effectiveUserId !== userId
+          ) {
+            return;
+          }
+
+          const firestore = await getFirestoreInstance();
+          if (
+            !isCurrentEpoch(syncEpoch) ||
+            authState.effectiveUserId !== userId
+          ) {
+            return;
+          }
+
+          const docRef = doc(
+            firestore,
+            `users/${userId}/onboarding/firstSequenceStarter`
+          );
+          const docSnap = await getDoc(docRef);
+          if (
+            !isCurrentEpoch(syncEpoch) ||
+            authState.effectiveUserId !== userId
+          ) {
+            return;
+          }
+
+          if (docSnap.exists() && docSnap.data().dismissed === true) {
+            state.dismissed = true;
+            safeLocalStorageSetItem(DISMISSED_KEY, "true");
+          } else {
+            // Missing doc, or a doc without dismissed=true - reset local state
+            // so a shared/reused browser doesn't inherit a prior account's
+            // dismissal. Cloud is authoritative per account, both directions.
+            state.dismissed = false;
+            removeLocalStorageItem(DISMISSED_KEY);
+          }
+
+          resolveCloudSync(syncEpoch);
+        } catch (error) {
+          if (!isCurrentEpoch(syncEpoch)) return;
+
+          console.warn(
+            "[firstSequenceStarterState] Failed to sync from cloud:",
+            error
+          );
+          resolveCloudSync(syncEpoch);
+        } finally {
+          if (isCurrentEpoch(syncEpoch)) {
+            state.syncInProgress = false;
+          }
         }
+      })();
 
-        const { getFirestoreInstance } = await import(
-          "$lib/shared/auth/firebase"
-        );
-        const { doc, getDoc } = await import("firebase/firestore");
-
-        const firestore = await getFirestoreInstance();
-        const docRef = doc(
-          firestore,
-          `users/${userId}/onboarding/firstSequenceStarter`
-        );
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists() && docSnap.data().dismissed === true) {
-          state.dismissed = true;
-          safeLocalStorageSetItem(DISMISSED_KEY, "true");
-        } else {
-          // Missing doc, or a doc without dismissed=true - reset local state
-          // so a shared/reused browser doesn't inherit a prior account's
-          // dismissal. Cloud is authoritative per account, both directions.
-          state.dismissed = false;
-          removeLocalStorageItem(DISMISSED_KEY);
+      const joinedTask: Promise<void> = task.finally(() => {
+        if (
+          cloudSyncTask?.epoch === syncEpoch &&
+          cloudSyncTask.promise === joinedTask
+        ) {
+          cloudSyncTask = null;
         }
+      });
+      cloudSyncTask = { epoch: syncEpoch, promise: joinedTask };
 
-        resolveCloudSync();
-      } catch (error) {
-        console.warn(
-          "[firstSequenceStarterState] Failed to sync from cloud:",
-          error
-        );
-        resolveCloudSync();
-      }
+      return joinedTask;
     },
 
     /** Sync dismissal TO Firebase. Called automatically by markDismissed(). */
     async syncToCloud(): Promise<void> {
       if (!isBrowser) return;
 
+      const writeEpoch = epoch;
+
       try {
         const { authState } = await import(
           "$lib/shared/auth/state/auth-state.svelte"
         );
+        if (!isCurrentEpoch(writeEpoch)) return;
 
         const userId = authState.effectiveUserId;
         if (!userId) return;
+        const dismissed = state.dismissed;
 
         const { getFirestoreInstance } = await import(
           "$lib/shared/auth/firebase"
@@ -316,8 +404,21 @@ function createFirstSequenceStarterState() {
         const { doc, setDoc, serverTimestamp } = await import(
           "firebase/firestore"
         );
+        if (
+          !isCurrentEpoch(writeEpoch) ||
+          authState.effectiveUserId !== userId
+        ) {
+          return;
+        }
 
         const firestore = await getFirestoreInstance();
+        if (
+          !isCurrentEpoch(writeEpoch) ||
+          authState.effectiveUserId !== userId
+        ) {
+          return;
+        }
+
         const docRef = doc(
           firestore,
           `users/${userId}/onboarding/firstSequenceStarter`
@@ -326,12 +427,14 @@ function createFirstSequenceStarterState() {
         await setDoc(
           docRef,
           {
-            dismissed: state.dismissed,
+            dismissed,
             updatedAt: serverTimestamp(),
           },
           { merge: true }
         );
       } catch (error) {
+        if (!isCurrentEpoch(writeEpoch)) return;
+
         console.warn(
           "[firstSequenceStarterState] Failed to sync to cloud:",
           error

@@ -33,6 +33,8 @@
     // Control
     open: boolean;
     onclose?: (reason: CloseReason) => void;
+    /** Fires after the native dialog enters the top layer successfully. */
+    onopened?: () => void;
 
     // Behavior
     closeOnBackdrop?: boolean;
@@ -58,6 +60,7 @@
   let {
     open = $bindable(false),
     onclose,
+    onopened,
     closeOnBackdrop = true,
     closeOnEscape = true,
     restoreFocus = true,
@@ -174,8 +177,9 @@
       // Wait for DOM, then show modal
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (dialogElement && !dialogElement.open) {
+          if (open && dialogElement && !dialogElement.open) {
             dialogElement.showModal();
+            onopened?.();
 
             // Mark as entered for content animations
             requestAnimationFrame(() => {

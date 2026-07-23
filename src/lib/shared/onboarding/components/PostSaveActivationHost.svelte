@@ -20,18 +20,8 @@
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import { postSaveActivation } from "../state/post-save-activation-state.svelte";
 
+  const DIALOG_TITLE_ID = "post-save-activation-title";
   const visible = $derived(postSaveActivation.visible);
-
-  // Fires once the nudge has actually mounted into the DOM for this visible
-  // state — not before. Guards against consuming the guest's one-shot guard
-  // for a prompt that was queued but never actually shown (e.g. the host
-  // itself unmounts before paint). The coordinator latches markPresented, so
-  // a reactive re-run here can't double-emit.
-  $effect(() => {
-    if (visible) {
-      postSaveActivation.markPresented();
-    }
-  });
 
   // Route both actions through the coordinator so the conversion funnel is
   // logged correctly: accept() → _accepted + signup drawer, login() → _login +
@@ -46,10 +36,13 @@
   open={visible}
   size="fit"
   class="chromeless"
+  labelledBy={DIALOG_TITLE_ID}
+  onopened={() => postSaveActivation.markPresented()}
   onclose={() => postSaveActivation.dismissPrompt()}
 >
   <AuthNudge
     trigger="guest-first-save"
+    textId={DIALOG_TITLE_ID}
     onCreateAccount={() => postSaveActivation.accept()}
     onLogin={() => postSaveActivation.login()}
     onDismiss={() => postSaveActivation.dismissPrompt()}

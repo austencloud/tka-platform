@@ -14,12 +14,12 @@
  *      consume the once-only guard and does NOT emit the "_shown" analytics
  *      event yet - at this point nothing has been shown to the user.
  *
- *   2. markPresented() — called by the host once AuthNudge has actually
- *      mounted on screen. THIS is what consumes the guard (guestFirstSaveGuard.
- *      markSeen) and fires the "_shown" event, exactly once. Splitting queue
- *      from presented means a save that triggers a prompt which never
- *      actually renders (host unmounts, navigation races it away) doesn't
- *      burn the user's one-shot guard - they'll be eligible again next save.
+ *   2. markPresented() — called by the host after the native dialog opens.
+ *      THIS is what consumes the guard (guestFirstSaveGuard.markSeen) and
+ *      fires the "_shown" event, exactly once. Splitting queue from presented
+ *      means a save that triggers a prompt which never reaches the top layer
+ *      doesn't burn the user's one-shot guard - they'll be eligible again on
+ *      the next save.
  *
  * Gate gets its answers from single sources of truth: authState for
  * guest/full-account status, the PostHog capability flag for the rollout
@@ -48,11 +48,9 @@ function logPrompt(
 
 let _pending = $state(false);
 let _sequenceId = $state<string | null>(null);
-// Latch so markPresented() fires exactly once per queued prompt. The host calls
-// it from a reactive $effect whose tracked deps include authState.effectiveUserId
-// (read below), so a silent uid-swap / token refresh while the nudge is open
-// re-runs the effect — without this latch that would double-emit _shown and
-// re-mark the guard on the new uid.
+// Latch so markPresented() fires exactly once per queued prompt. BaseModal can
+// reopen during a render race, so the coordinator still owns idempotency rather
+// than relying on a single callback from the view.
 let _presented = $state(false);
 
 export const postSaveActivation = {
@@ -93,10 +91,9 @@ export const postSaveActivation = {
   },
 
   /**
-   * Phase 2 — call once the host has actually mounted AuthNudge for this
-   * queued prompt. Consumes the guard and fires the shown event. Idempotent:
-   * only the first call per queued prompt does anything (the _presented latch),
-   * so a reactive re-run of the host effect can't double-emit.
+   * Phase 2 — call once the host's native dialog is open for this queued
+   * prompt. Consumes the guard and fires the shown event. Idempotent: only the
+   * first call per queued prompt does anything.
    */
   markPresented() {
     if (!_pending || _presented) return;

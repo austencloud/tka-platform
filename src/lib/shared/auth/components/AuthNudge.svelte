@@ -6,12 +6,21 @@
     trigger: AuthNudgeTrigger;
     /** Overrides the trigger's default copy (e.g. a per-config lock reason). */
     text?: string;
+    /** Stable id for a modal wrapper's aria-labelledby relationship. */
+    textId?: string;
     onCreateAccount: () => void;
     onLogin: () => void;
     onDismiss: () => void;
   }
 
-  let { trigger, text: textOverride, onCreateAccount, onLogin, onDismiss }: Props = $props();
+  let {
+    trigger,
+    text: textOverride,
+    textId,
+    onCreateAccount,
+    onLogin,
+    onDismiss,
+  }: Props = $props();
 
   const text = $derived(textOverride ?? AUTH_NUDGE_TEXTS[trigger]);
   const buttonText = "Create account";
@@ -22,7 +31,7 @@
     <i class="fa-solid fa-wand-magic-sparkles"></i>
   </span>
 
-  <p class="auth-nudge-text">{text}</p>
+  <p id={textId} class="auth-nudge-text">{text}</p>
 
   <div class="auth-nudge-actions">
     <button type="button" class="auth-nudge-primary" onclick={onCreateAccount}>
@@ -178,6 +187,11 @@
 
   /* Quiet tertiary dismiss. */
   .auth-nudge-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: var(--min-touch-target, 44px);
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
     border: none;

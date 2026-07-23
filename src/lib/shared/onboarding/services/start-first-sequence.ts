@@ -40,16 +40,18 @@ export interface StartFirstSequenceDeps {
   generate: () => Promise<SequenceData>;
   /** Loads the generated sequence into the real, visible workspace. Called
    *  BEFORE save so the user has something on screen even if persistence
-   *  fails afterward. */
+   *  fails afterward. A thrown load maps to "generate-failed" because no
+   *  usable generated result reached the workspace. */
   loadIntoWorkspace: (sequence: SequenceData) => void;
   /** Persists the sequence to the library. Thrown errors and a
    *  `persisted: false` result both map to "persist-failed". */
   save: (
     sequence: SequenceData
   ) => Promise<{ persisted: boolean; isGuest: boolean; sequenceId: string }>;
-  /** Guest first-save hand-off (SP3 Part B). Called only when the save
-   *  succeeded AND the saving user was a guest. */
-  onKept: (sequenceId: string) => void;
+  /** Best-effort guest first-save hand-off (SP3 Part B). Called only when the
+   *  save succeeded AND the saving user was a guest. A failure here never
+   *  downgrades a sequence that is already durably persisted. */
+  onKept: (sequenceId: string) => void | Promise<void>;
 }
 
 /**
@@ -73,7 +75,11 @@ export async function startFirstSequence(
 
   // Load first: the user gets a working sequence in the real workspace even
   // if the save step below fails.
-  deps.loadIntoWorkspace(sequence);
+  try {
+    deps.loadIntoWorkspace(sequence);
+  } catch {
+    return { status: "generate-failed" };
+  }
 
   let result: { persisted: boolean; isGuest: boolean; sequenceId: string };
   try {
@@ -87,7 +93,16 @@ export async function startFirstSequence(
   }
 
   if (result.isGuest) {
-    deps.onKept(result.sequenceId);
+    try {
+      await deps.onKept(result.sequenceId);
+    } catch (error) {
+      // The save is already durable. Activation telemetry/prompting is an
+      // optional follow-up and cannot rewrite that outcome for the user.
+      console.warn(
+        "[startFirstSequence] Post-save activation hand-off failed:",
+        error
+      );
+    }
   }
 
   return { status: "generated-kept", sequenceId: result.sequenceId };
