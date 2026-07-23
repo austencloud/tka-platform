@@ -74,7 +74,7 @@ export const WORKSPACE_BUTTON_ICON: Record<
 > = {
   undo: { icon: "undo-svg", iconType: "svg" },
   clear: { icon: "fa-eraser", iconType: "fa" },
-  view: { icon: "fa-expand", iconType: "fa" },
+  view: { icon: "fa-play", iconType: "fa" },
   "sequence-actions": { icon: "fa-tools", iconType: "fa" },
   save: { icon: "fa-bookmark", iconType: "fa" },
   "step-editor": { icon: "fa-hand-pointer", iconType: "fa" },

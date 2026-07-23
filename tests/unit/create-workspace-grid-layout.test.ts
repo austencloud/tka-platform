@@ -2,11 +2,19 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { calculateGridLayout } from "../../src/lib/shared/create/utils/grid-calculations";
+import { WORKSPACE_BUTTON_ICON } from "../../src/lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
 
 const workspaceGridSource = readFileSync(
   resolve(
     process.cwd(),
     "src/lib/features/create/shared/workspace-panel/sequence-display/components/WorkspaceGrid.svelte"
+  ),
+  "utf8"
+);
+const buttonPanelSource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/features/create/shared/workspace-panel/shared/components/ButtonPanel.svelte"
   ),
   "utf8"
 );
@@ -82,5 +90,20 @@ describe("WorkspaceGrid mandala placement", () => {
     );
     expect(workspaceGridSource).not.toContain("applyVariantCycling");
     expect(workspaceGridSource).toContain("{#if cell.show !== null}");
+  });
+});
+
+describe("Create workspace action rail contract", () => {
+  it("uses the Play glyph for the sequence viewer", () => {
+    expect(WORKSPACE_BUTTON_ICON.view.icon).toBe("fa-play");
+  });
+
+  it("keeps the viewer control centered at every phone breakpoint", () => {
+    expect(buttonPanelSource).toMatch(
+      /grid-template-columns:\s*minmax\(0, 3fr\)\s*minmax\(0, 1fr\)\s*minmax\(0, 3fr\)/
+    );
+    expect(buttonPanelSource).toMatch(
+      /grid-template-areas:\s*"left left left"\s*"\. center right"/
+    );
   });
 });

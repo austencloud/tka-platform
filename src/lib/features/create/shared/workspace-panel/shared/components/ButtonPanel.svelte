@@ -344,17 +344,16 @@
     }
   }
 
-  /* Assemble can show six actions at once. On a phone, give each semantic
-     zone the exact fraction of the rail it owns (3 / 1 / 2 buttons) and keep
-     the center action in flow. The reserved tracks prevent controls from
-     jumping when Clear, View, Tools, or Save arrive. */
+  /* Assemble can show six actions at once. On a phone, reserve three slots on
+     both sides of the viewer control. The matching side tracks keep that
+     control at the row's true midpoint while actions appear and disappear. */
   @container button-panel (max-width: 480px) {
     .button-panel {
       display: grid;
       grid-template-columns:
         minmax(0, 3fr)
         minmax(0, 1fr)
-        minmax(0, 2fr);
+        minmax(0, 3fr);
       align-items: center;
       column-gap: 4px;
       padding: 6px;
@@ -402,10 +401,10 @@
 
   @container button-panel (max-width: 307px) {
     .button-panel {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       grid-template-areas:
-        "left left"
-        "center right";
+        "left left left"
+        ". center right";
       row-gap: 4px;
     }
 

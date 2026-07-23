@@ -2,8 +2,8 @@
   ViewSequenceButton.svelte
 
   View button that opens the sequence viewer for animation and export.
-  Public demos also reuse its appearance for real inline playback, so those
-  callers opt into the Play glyph explicitly.
+  Public demos also reuse its appearance for real inline playback, so the
+  purpose prop keeps the accessible copy accurate for both actions.
   Choreographed entrance: hatches from nothing, overshoots, settles, then breathes.
 -->
 <script lang="ts">
@@ -24,7 +24,7 @@
     purpose === "play" ? "fa-play" : WORKSPACE_BUTTON_ICON.view.icon
   );
   const accessibleLabel = $derived(
-    purpose === "play" ? "Play sequence animation" : "Open full viewer"
+    purpose === "play" ? "Play sequence animation" : "Open sequence viewer"
   );
 
   // Resolve haptic feedback service
@@ -42,7 +42,7 @@
   onclick={handleClick}
   aria-label={accessibleLabel}
   aria-pressed={isActive}
-  title={purpose === "play" ? "Play" : "Open full viewer"}
+  title={purpose === "play" ? "Play" : "Open sequence viewer"}
 >
   <i class="fa-solid {icon}" aria-hidden="true"></i>
 </button>
