@@ -34,6 +34,7 @@ the geo dashboard).
 	import { getAppCanonicalURL } from "../../../../../config/domains";
 	import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+	import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 	import {
 		addSequenceToCollection,
 		removeSequenceFromCollection,
@@ -192,12 +193,18 @@ the geo dashboard).
 				// save a private copy to My Library, file that. Silent — the
 				// user asked to keep the card, and now they do.
 				try {
-					const saved = await getLibraryRepository().saveSequence(
+					// Durable save (Dexie + Firestore) so a guest's imported printed
+					// card actually lands in their Dexie-only library. The core
+					// service surfaces ALREADY_EXISTS synchronously (a hasMatchingContent
+					// pre-check that runs BEFORE the Dexie write), so the duplicate-card
+					// dedupe in the catch below still fires and no duplicate row is
+					// written. See SP1 — Durable-Save Unification.
+					const saved = await getLibrarySaveService().saveSequence(
 						resolution.sequence,
-						{ visibility: "private" },
+						{ name: word, visibility: "private", tags: [], notes: "" },
 					);
-					targetId = saved.id;
-					createdLibraryId = saved.id;
+					targetId = saved.sequenceId;
+					createdLibraryId = saved.sequenceId;
 				} catch (err) {
 					if (err instanceof LibraryError && err.code === "ALREADY_EXISTS") {
 						// Identical content already lives in the library under another
