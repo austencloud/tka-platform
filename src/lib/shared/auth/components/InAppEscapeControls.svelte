@@ -34,16 +34,27 @@
   const showPrimary = $derived(target.url !== null && escapeState !== "waiting");
   const showCopy = $derived(escapeState !== "waiting");
 
-  // --- Hand-off failure watch -----------------------------------------------
+  // --- Hand-off signal watch ------------------------------------------------
+  //
+  // This records a hand-off SIGNAL, not a success rate. Document visibility is
+  // not the same as the browser opening: Home pressed mid-attempt looks like a
+  // hand-off, and a slow hand-off looks like a stay. So we log the raw signal
+  // plus elapsed time and let analysis infer success — and we keep listening
+  // after the timeout in case the hand-off simply lands late.
 
   let escapeTimer: ReturnType<typeof setTimeout> | null = null;
   let watching = false;
+  let attemptStartedAt = 0;
+
+  function nowMs(): number {
+    return typeof performance !== "undefined" ? performance.now() : 0;
+  }
 
   function onVisibilityChange() {
-    if (document.visibilityState === "hidden") resolveEscape("left");
+    if (document.visibilityState === "hidden") recordSignal("hidden");
   }
   function onPageHide() {
-    resolveEscape("left");
+    recordSignal("pagehide");
   }
 
   function clearEscapeWatch() {
@@ -58,15 +69,35 @@
     }
   }
 
-  function resolveEscape(outcome: "left" | "stayed") {
-    if (escapeState !== "waiting") return;
+  function recordSignal(signal: "hidden" | "pagehide" | "timeout") {
+    const elapsed = Math.round(nowMs() - attemptStartedAt);
+
+    if (signal === "timeout") {
+      if (escapeState !== "waiting") return;
+      // Reveal the fallback but keep listening — a hand-off can still land late.
+      escapeState = "stayed";
+      captureEvent("inapp_browser_escape_signal", {
+        method: target.method,
+        signal: "timeout",
+        phase: "timeout",
+        elapsed_ms: elapsed,
+        route,
+      });
+      return;
+    }
+
+    // A visibility/pagehide signal. If it lands after the timeout already
+    // flipped us to "stayed", it still proves the escape eventually worked —
+    // record it as a late hand-off. sendBeacon so a teardown during pagehide
+    // (the success branch, most likely to be lost to normal batching) survives.
+    const phase = escapeState === "waiting" ? "handoff" : "late";
+    if (escapeState === "waiting") escapeState = "idle";
     clearEscapeWatch();
-    escapeState = outcome === "left" ? "idle" : "stayed";
-    captureEvent("inapp_browser_escape_result", {
-      method: target.method,
-      outcome,
-      route,
-    });
+    captureEvent(
+      "inapp_browser_escape_signal",
+      { method: target.method, signal, phase, elapsed_ms: elapsed, route },
+      { transport: "sendBeacon" }
+    );
   }
 
   function handleEscape() {
@@ -84,15 +115,13 @@
 
     if (target.url === null) return; // guide-only methods have nothing to fire
 
-    // Nothing here can tell whether the webview honored the scheme, so watch for
-    // the page going away. If it doesn't within 1.5s the guide + copy appear
-    // instead of leaving the visitor staring at a button that did nothing.
+    attemptStartedAt = nowMs();
     escapeState = "waiting";
     clearEscapeWatch();
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pagehide", onPageHide);
     watching = true;
-    escapeTimer = setTimeout(() => resolveEscape("stayed"), 1500);
+    escapeTimer = setTimeout(() => recordSignal("timeout"), 1500);
 
     window.location.href = target.url;
   }
