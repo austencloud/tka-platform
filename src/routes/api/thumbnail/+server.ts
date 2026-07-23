@@ -55,7 +55,9 @@ function matchesImageType(contentType: string, bytes: Uint8Array): boolean {
 
 type BodyReadResult =
   | { status: "ok"; bytes: Uint8Array }
-  | { status: "empty" | "too_large" | "unreadable" };
+  | { status: "empty" }
+  | { status: "too_large" }
+  | { status: "unreadable" };
 
 async function readBodyWithinLimit(
   body: ReadableStream<Uint8Array>,
