@@ -59,7 +59,7 @@ private `audience` and `surface` fields, then strips them before publishing.
 [
   {
     "category": "improved",
-    "text": "After signing in, Fuse combines two saved sequences in a rebuilt workspace.",
+    "text": "Fuse rebuilt: mix and reshape sequences after signing in.",
     "audience": "account",
     "surface": { "module": "create", "tab": "fuse" }
   }

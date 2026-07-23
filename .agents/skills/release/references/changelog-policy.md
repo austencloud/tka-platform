@@ -60,7 +60,8 @@ wording.
 6. Do not re-announce an existing capability as new.
 7. Skip infrastructure and other work users cannot notice.
 8. Make every item a specific, standalone sentence.
-9. Aim for 8 to 18 words, but keep a necessary access qualifier or explanation.
+9. Lead with the change. Highlights must land before word ten. Keep other
+   entries under 16 words when possible.
 10. Remove promotional filler and feature-list slogans.
 
 ### Examples
@@ -70,7 +71,7 @@ wording.
 | `Fixed service worker registration` | Exclude                                                                       |
 | `Fixed legacy auth callbacks`       | `Fixed occasional sign-in errors.`                                            |
 | `Toggle cards don't register taps`  | `Toggle buttons respond better to taps.`                                      |
-| `Fuse tab redesign`                 | `After signing in, Fuse combines two saved sequences in a rebuilt workspace.` |
+| `Fuse tab redesign`                 | `Fuse rebuilt: mix and reshape sequences after signing in.`                    |
 | `Durable LibrarySaveService`        | `Sequences imported from printed cards now stay in your Library.`             |
 
 Always exclude Lab and Learn work, CLI tooling, invisible sign-in
