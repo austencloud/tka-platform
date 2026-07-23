@@ -31,6 +31,8 @@ the gallery's, and the source is pinned to my-library with no toggle.
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 	import { t } from "$lib/shared/i18n/i18n.svelte";
+	import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+	import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
 
 	// The desktop split view keeps the collection rail visible, so it passes no
 	// onBack — BrowsePanel then omits the back pill entirely.
@@ -93,6 +95,15 @@ the gallery's, and the source is pinned to my-library with no toggle.
 		hideToolbarSearch
 		onOpenFilters={() => (isFilterSheetOpen = true)}
 		onSaveSmart={() => (smartSaveOpen = true)}
+		emptyAction={{
+			label: "Make your first sequence",
+			onClick: () => {
+				// Re-arm the starter for this visit BEFORE navigating so it's
+				// armed by the time Create/GenerateEmptyState mounts.
+				firstSequenceStarterState.rearmForSession();
+				navigationState.setCurrentModule("create", "construct");
+			},
+		}}
 	/>
 </div>
 

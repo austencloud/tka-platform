@@ -13,6 +13,7 @@
   import BrowseSidebar from "./BrowseSidebar.svelte";
   import BrowseGrid from "./BrowseGrid.svelte";
   import type { SectionedGridApi } from "./SectionedVirtualGrid.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
@@ -42,6 +43,10 @@
     warming?: boolean;
     /** Passthrough to the filter bar's "Save as Smart Collection" action. */
     onSaveSmart?: () => void;
+    /** CTA shown ONLY in a genuine empty-library state (no active filters).
+     * Never shown for a filter-zero empty state — that state's fix is
+     * "Clear all filters", not a new-content action. */
+    emptyAction?: { label: string; onClick: () => void };
   }
 
   let {
@@ -61,6 +66,7 @@
     onOpenFilters,
     warming = false,
     onSaveSmart,
+    emptyAction,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? (layout !== "minimal"));
@@ -264,6 +270,12 @@
             <i class="fas fa-times" aria-hidden="true"></i>
             Clear all filters
           </button>
+        {:else if emptyAction}
+          <!-- Genuine empty library (no filters): host-supplied CTA rendered as
+               a real button, never a bare link (clickables-look-like-buttons). -->
+          <PanelButton variant="primary" onclick={emptyAction.onClick}>
+            {emptyAction.label}
+          </PanelButton>
         {/if}
       </div>
     {:else}
