@@ -33,8 +33,8 @@
  *   node scripts/release.js --show-last        - Show what was in the last release
  *   node scripts/release.js --last             - Show what was in the last release (same as --show-last)
  *   node scripts/release.js --version 0.2.0    - Manual version
- *   node scripts/release.js --confirm          - Execute release (requires prior preview)
- *   node scripts/release.js --changelog file.json - Use custom changelog entries (user-friendly)
+ *   node scripts/release.js --confirm          - Execute release (requires audited --changelog)
+ *   node scripts/release.js --changelog file.json - Use audience-audited user-facing entries
  *   node scripts/release.js --highlights 1,3,4   - Select highlight indices (comma-separated, or "none")
  *   node scripts/release.js --from-main        - Release directly from main (skip branch workflow)
  *   node scripts/release.js --auto-gate        - Drop commits behind a dark flag (unreleased modules) from the changelog; without it the gate is advisory-only
@@ -49,8 +49,12 @@ import * as readline from "readline";
 import config from "../config/feedback.config.js";
 import {
   loadProductionModules,
+  loadGuestModuleAccess,
+  loadModuleTabs,
   collectCommits,
   gateCommits,
+  auditChangelogEntries,
+  toPublicChangelog,
 } from "./lib/release-module-gate.mjs";
 
 // Load service account key
@@ -362,6 +366,50 @@ function displayJargonWarnings(issues) {
 }
 
 /**
+ * Enforce the private audience/surface metadata required on a final custom
+ * changelog, then strip it before the notes are displayed or published.
+ */
+function prepareCustomChangelog(entries) {
+  let audit;
+  try {
+    audit = auditChangelogEntries(entries, {
+      productionModules: loadProductionModules(),
+      guestModuleAccess: loadGuestModuleAccess(),
+      moduleTabs: loadModuleTabs(),
+    });
+  } catch (error) {
+    console.error(`❌ Changelog visibility audit failed: ${error.message}`);
+    return null;
+  }
+
+  if (audit.errors.length > 0) {
+    console.log("\n" + "═".repeat(70));
+    console.log("❌ CHANGELOG VISIBILITY AUDIT FAILED");
+    console.log("═".repeat(70) + "\n");
+    for (const issue of audit.errors) {
+      console.log(`  - ${issue.message}`);
+    }
+    console.log("");
+    console.log(
+      '  Every final entry needs audience "guest" or "account" and a'
+    );
+    console.log('  surface of "global" or { "module": "...", "tab": "..." }.');
+    console.log(
+      "  Account-only entries must say that the user needs an account or"
+    );
+    console.log("  must be signed in.");
+    console.log("\n" + "═".repeat(70) + "\n");
+    return null;
+  }
+
+  console.log(
+    `✓ Changelog visibility audit: ${audit.guestCount} guest-visible, ` +
+      `${audit.accountCount} sign-in required\n`
+  );
+  return toPublicChangelog(entries);
+}
+
+/**
  * Get most recent git tag
  */
 function getLatestTag() {
@@ -438,50 +486,113 @@ function generateChangelogFromGitHistory() {
  */
 function applyModuleGate(changelog, range, autoGate) {
   let flagged;
+  let accountOnly;
+  let needsAudienceReview;
   try {
     const productionModules = loadProductionModules();
+    const guestModuleAccess = loadGuestModuleAccess();
     const commits = collectCommits(range);
-    ({ flagged } = gateCommits(commits, { productionModules }));
+    ({ flagged, accountOnly, needsAudienceReview } = gateCommits(commits, {
+      productionModules,
+      guestModuleAccess,
+    }));
   } catch (error) {
     console.log(`   ⚠️  Module gate skipped (non-fatal): ${error.message}\n`);
-    return { changelog, flagged: [] };
+    return {
+      changelog,
+      flagged: [],
+      accountOnly: [],
+      needsAudienceReview: [],
+    };
   }
 
   if (flagged.length === 0) {
     console.log("✓ Module gate: no commits behind a dark flag\n");
-    return { changelog, flagged };
-  }
-
-  // Group flagged commits by their reason for a readable report.
-  const byReason = new Map();
-  for (const c of flagged) {
-    const key = c.darkReason || "not released";
-    if (!byReason.has(key)) byReason.set(key, []);
-    byReason.get(key).push(c);
-  }
-
-  console.log("\n" + "═".repeat(70));
-  console.log("🚧 BEHIND A DARK FLAG — these commits belong to unreleased work:");
-  console.log("═".repeat(70) + "\n");
-  for (const [reason, commits] of byReason) {
-    console.log(`  ${reason}:`);
-    commits.forEach((c) => console.log(`     - ${c.subject}`));
-    console.log("");
-  }
-  console.log("─".repeat(70));
-  if (autoGate) {
-    console.log("  --auto-gate: dropping these from the changelog.\n");
   } else {
-    console.log("  Advisory only. Exclude these when you write the final");
-    console.log("  changelog, or re-run with --auto-gate to drop them.\n");
+    // Group flagged commits by their reason for a readable report.
+    const byReason = new Map();
+    for (const c of flagged) {
+      const key = c.darkReason || "not released";
+      if (!byReason.has(key)) byReason.set(key, []);
+      byReason.get(key).push(c);
+    }
+
+    console.log("\n" + "═".repeat(70));
+    console.log("🚧 BEHIND A DARK FLAG — exclude these from release notes:");
+    console.log("═".repeat(70) + "\n");
+    for (const [reason, commits] of byReason) {
+      console.log(`  ${reason}:`);
+      commits.forEach((c) => console.log(`     - ${c.subject}`));
+      console.log("");
+    }
+    console.log("─".repeat(70));
+    if (autoGate) {
+      console.log("  --auto-gate: dropping these from the changelog.\n");
+    } else {
+      console.log("  Advisory only. Exclude these when writing the final");
+      console.log("  changelog, or re-run with --auto-gate to drop them.\n");
+    }
+    console.log("═".repeat(70) + "\n");
   }
-  console.log("═".repeat(70) + "\n");
 
-  if (!autoGate) return { changelog, flagged };
+  if (accountOnly.length > 0) {
+    console.log("\n" + "═".repeat(70));
+    console.log("🔐 SIGN-IN REQUIRED — qualify these notes or exclude them:");
+    console.log("═".repeat(70) + "\n");
+    accountOnly.forEach((commit) => {
+      const surface = commit.tab
+        ? `${commit.module}/${commit.tab}`
+        : commit.module;
+      console.log(`  [${surface}] ${commit.subject}`);
+    });
+    console.log("");
+    console.log(
+      '  Final wording must explicitly say "after signing in" or "account".'
+    );
+    console.log("═".repeat(70) + "\n");
+  }
 
-  const flaggedSubjects = new Set(flagged.map((c) => c.subject));
-  const gated = changelog.filter((e) => !flaggedSubjects.has(e.commit));
-  return { changelog: gated, flagged };
+  const reviewable = needsAudienceReview.filter(
+    (commit) =>
+      commit.audience === "mixed" &&
+      /^(?:feat|fix|perf|a11y|tune)(?:\(|:)/i.test(commit.subject)
+  );
+  if (reviewable.length > 0) {
+    console.log("\n" + "═".repeat(70));
+    console.log(
+      "🔎 GUEST VISIBILITY UNRESOLVED — trace the exact entry point:"
+    );
+    console.log("═".repeat(70) + "\n");
+    reviewable.forEach((commit) => console.log(`  - ${commit.subject}`));
+    console.log("");
+    console.log(
+      "  Include only after proving the affected tab or control is reachable."
+    );
+    console.log("═".repeat(70) + "\n");
+  }
+
+  const unresolvedCount = needsAudienceReview.filter(
+    (commit) =>
+      commit.audience === "unknown" &&
+      /^(?:feat|fix|perf|a11y|tune)(?:\(|:)/i.test(commit.subject)
+  ).length;
+  if (unresolvedCount > 0) {
+    console.log(
+      `ℹ️  ${unresolvedCount} user-facing commit candidates do not map to a ` +
+        "single module or tab."
+    );
+    console.log(
+      "   The release evidence table must trace their real entry points.\n"
+    );
+  }
+
+  let gated = changelog;
+  if (autoGate) {
+    const flaggedSubjects = new Set(flagged.map((c) => c.subject));
+    gated = changelog.filter((entry) => !flaggedSubjects.has(entry.commit));
+  }
+
+  return { changelog: gated, flagged, accountOnly, needsAudienceReview };
 }
 
 /**
@@ -1122,7 +1233,9 @@ async function main() {
   // Check if a custom changelog file was provided (user-friendly entries from Claude)
   if (changelogFile && existsSync(changelogFile)) {
     try {
-      changelog = JSON.parse(readFileSync(changelogFile, "utf8"));
+      const customEntries = JSON.parse(readFileSync(changelogFile, "utf8"));
+      changelog = prepareCustomChangelog(customEntries);
+      if (!changelog) process.exit(1);
       useCustomChangelog = true;
       console.log(`✓ Using custom changelog from ${changelogFile}`);
       console.log(`  (${changelog.length} user-friendly entries)\n`);
@@ -1146,12 +1259,6 @@ async function main() {
 
     useGitHistory = true;
     console.log(`✓ Found ${changelog.length} commits since last release\n`);
-
-    // Gate out commits that belong to not-yet-released modules / dark
-    // sub-features so they don't leak into the user changelog.
-    const latestTag = getLatestTag();
-    const range = latestTag ? `v${latestTag}..HEAD` : "HEAD";
-    ({ changelog } = applyModuleGate(changelog, range, autoGate));
   } else {
     const { userFacing, developerNotes } =
       generateChangelogFromFeedback(feedbackItems);
@@ -1181,6 +1288,27 @@ async function main() {
     changelog = userFacing;
   }
 
+  // Always audit the release's commit range. Custom and feedback changelogs
+  // still need the same dark-module and guest/account visibility evidence as
+  // raw git-history notes.
+  const latestTag = getLatestTag();
+  const range = latestTag ? `v${latestTag}..HEAD` : "HEAD";
+  ({ changelog } = applyModuleGate(
+    changelog,
+    range,
+    autoGate && useGitHistory
+  ));
+
+  if (args.includes("--confirm") && !useCustomChangelog) {
+    console.error(
+      "❌ A release requires an audited custom changelog via --changelog <file.json>."
+    );
+    console.error(
+      "   Each entry must declare its guest/account audience and user-facing surface.\n"
+    );
+    process.exit(1);
+  }
+
   // 2. Determine version
   const currentVersion = getCurrentVersion();
   const suggestedVersion =
@@ -1207,16 +1335,17 @@ async function main() {
   // 3. Display changelog
   displayChangelog(changelog);
 
-  // 4. Check for jargon in changelog entries (skip for custom changelogs - already vetted)
-  if (!useCustomChangelog) {
-    const jargonIssues = detectJargon(changelog);
-    const jargonOk = displayJargonWarnings(jargonIssues);
+  // 4. Check every changelog for jargon. A custom file is no longer assumed to
+  // be vetted merely because an agent wrote it.
+  const jargonIssues = detectJargon(changelog);
+  const jargonOk = displayJargonWarnings(jargonIssues);
 
-    if (!jargonOk && !args.includes("--skip-jargon-check")) {
-      console.log("💡 Fix the jargon issues above, or add --skip-jargon-check to proceed anyway.\n");
-      if (!dryRun && !quickPreview) {
-        process.exit(1);
-      }
+  if (!jargonOk && !args.includes("--skip-jargon-check")) {
+    console.log(
+      "💡 Fix the jargon issues above, or add --skip-jargon-check to proceed anyway.\n"
+    );
+    if (!dryRun && !quickPreview) {
+      process.exit(1);
     }
   }
 

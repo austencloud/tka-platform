@@ -22,6 +22,62 @@ import { execSync } from "child_process";
 export const PRODUCTION_MODULES_PATH =
   "src/lib/shared/environment/environment-features.ts";
 
+/** Default location of the guest module/tab access source of truth. */
+export const GUEST_MODULE_ACCESS_PATH =
+  "src/lib/shared/auth/domain/guest-access-config.ts";
+
+/** Default location of the navigation tab registry. */
+export const TAB_DEFINITIONS_PATH =
+  "src/lib/shared/navigation/config/tab-definitions.ts";
+
+/**
+ * Commit scopes that identify a specific user-facing tab.
+ *
+ * This is deliberately smaller than the complete tab registry. It only maps
+ * scopes that appear in commit history and whose guest visibility would be
+ * ambiguous if we stopped at the parent module.
+ */
+export const SCOPE_TO_SURFACE = {
+  assemble: { module: "create", tab: "assemble" },
+  construct: { module: "create", tab: "construct" },
+  generate: { module: "create", tab: "generate" },
+  fuse: { module: "create", tab: "fuse" },
+  gallery: { module: "browse", tab: "gallery" },
+  library: { module: "browse", tab: "library" },
+};
+
+/**
+ * File prefixes that identify a specific user-facing tab when the commit scope
+ * does not. Paths shared by multiple tabs intentionally stay unresolved.
+ */
+export const PATH_TO_SURFACE = [
+  {
+    prefix: "src/lib/features/create/assemble/",
+    module: "create",
+    tab: "assemble",
+  },
+  {
+    prefix: "src/lib/features/create/construct/",
+    module: "create",
+    tab: "construct",
+  },
+  {
+    prefix: "src/lib/features/create/generate/",
+    module: "create",
+    tab: "generate",
+  },
+  {
+    prefix: "src/lib/features/fuse/",
+    module: "create",
+    tab: "fuse",
+  },
+  {
+    prefix: "src/lib/features/browse/gallery-home/",
+    module: "browse",
+    tab: "gallery",
+  },
+];
+
 /**
  * Commit scopes that don't equal their ModuleId. Only mismatches belong here —
  * a scope that already IS a PRODUCTION_MODULES key (mandala, train, museum,
@@ -40,6 +96,12 @@ export const SCOPE_TO_MODULE = {
   "math-foundations": "learn",
   concepts: "learn",
   store: "shop",
+  assemble: "create",
+  construct: "create",
+  generate: "create",
+  fuse: "create",
+  gallery: "browse",
+  library: "browse",
 };
 
 /**
@@ -50,6 +112,7 @@ export const SCOPE_TO_MODULE = {
 export const DIR_TO_MODULE = {
   store: "shop",
   "choreo-card": "choreo_card",
+  fuse: "create",
 };
 
 /**
@@ -85,7 +148,7 @@ export function parseProductionModules(source) {
   const start = source.indexOf("PRODUCTION_MODULES");
   if (start === -1) {
     throw new Error(
-      "PRODUCTION_MODULES not found in environment-features source",
+      "PRODUCTION_MODULES not found in environment-features source"
     );
   }
   const open = source.indexOf("{", start);
@@ -107,6 +170,81 @@ export function parseProductionModules(source) {
     throw new Error("Parsed zero entries from PRODUCTION_MODULES");
   }
   return map;
+}
+
+/**
+ * Extract GUEST_MODULE_ACCESS into a plain { moduleId: tabId[] } map.
+ *
+ * @param {string} source - contents of guest-access-config.ts
+ * @returns {Record<string, string[]>}
+ */
+export function parseGuestModuleAccess(source) {
+  const start = source.indexOf("GUEST_MODULE_ACCESS");
+  if (start === -1) {
+    throw new Error(
+      "GUEST_MODULE_ACCESS not found in guest-access-config source"
+    );
+  }
+  const open = source.indexOf("{", start);
+  const close = source.indexOf("};", open);
+  if (open === -1 || close === -1) {
+    throw new Error("Could not bound the GUEST_MODULE_ACCESS object literal");
+  }
+  const body = source.slice(open + 1, close);
+  const map = {};
+  const entry =
+    /(?:^|\n)\s*["']?([A-Za-z0-9_-]+)["']?\s*:\s*\[([\s\S]*?)\]\s*,?/g;
+  let match;
+  while ((match = entry.exec(body)) !== null) {
+    const tabs = [];
+    const tabPattern = /["']([^"']+)["']/g;
+    let tabMatch;
+    while ((tabMatch = tabPattern.exec(match[2])) !== null) {
+      tabs.push(tabMatch[1]);
+    }
+    map[match[1]] = tabs;
+  }
+  if (Object.keys(map).length === 0) {
+    throw new Error("Parsed zero entries from GUEST_MODULE_ACCESS");
+  }
+  return map;
+}
+
+/**
+ * Extract the registered tab ids for modules that have mixed guest/account
+ * access. Reading the navigation registry catches misspelled or stale tab ids
+ * in a release manifest instead of treating them as account-only by default.
+ *
+ * @param {string} source - contents of tab-definitions.ts
+ * @param {string[]} [moduleIds]
+ * @returns {Record<string, string[]>}
+ */
+export function parseModuleTabs(source, moduleIds = ["create", "browse"]) {
+  const result = {};
+  for (const moduleId of moduleIds) {
+    const constant = `${moduleId.toUpperCase().replaceAll("-", "_")}_TABS`;
+    const marker = new RegExp(`export\\s+const\\s+${constant}\\b`).exec(source);
+    if (!marker) {
+      throw new Error(`${constant} not found in tab-definitions source`);
+    }
+    const open = source.indexOf("[", marker.index);
+    const close = source.indexOf("];", open);
+    if (open === -1 || close === -1) {
+      throw new Error(`Could not bound the ${constant} array literal`);
+    }
+    const body = source.slice(open + 1, close);
+    const tabs = [];
+    const idPattern = /\bid\s*:\s*["']([^"']+)["']/g;
+    let match;
+    while ((match = idPattern.exec(body)) !== null) {
+      tabs.push(match[1]);
+    }
+    if (tabs.length === 0) {
+      throw new Error(`Parsed zero tab ids from ${constant}`);
+    }
+    result[moduleId] = tabs;
+  }
+  return result;
 }
 
 /**
@@ -162,16 +300,78 @@ export function resolveModule({ scope, files = [] }, productionModules) {
 }
 
 /**
+ * Resolve a commit to a specific user-facing tab when the evidence is
+ * unambiguous. Scope wins; file paths are the fallback.
+ *
+ * @param {{ scope: string | null, files?: string[] }} commit
+ * @returns {{ module: string, tab: string } | null}
+ */
+export function resolveSurface({ scope, files = [] }) {
+  if (scope && SCOPE_TO_SURFACE[scope]) {
+    return { ...SCOPE_TO_SURFACE[scope] };
+  }
+
+  const matches = [];
+  for (const file of files) {
+    const rule = PATH_TO_SURFACE.find((candidate) =>
+      file.startsWith(candidate.prefix)
+    );
+    if (!rule) continue;
+    const key = `${rule.module}/${rule.tab}`;
+    if (!matches.some((match) => match.key === key)) {
+      matches.push({ key, module: rule.module, tab: rule.tab });
+    }
+  }
+  return matches.length === 1
+    ? { module: matches[0].module, tab: matches[0].tab }
+    : null;
+}
+
+/**
+ * Resolve who can actually reach a released surface.
+ *
+ * guest: available before sign-in
+ * account: requires a signed-in account
+ * mixed: the module contains both guest and account-only tabs
+ * unreleased: production module is disabled
+ * unknown: no module could be resolved
+ *
+ * @param {{ module: string | null, tab?: string | null }} surface
+ * @param {Record<string, boolean>} productionModules
+ * @param {Record<string, string[]>} guestModuleAccess
+ * @returns {"guest" | "account" | "mixed" | "unreleased" | "unknown"}
+ */
+export function resolveAudience(
+  { module, tab = null },
+  productionModules,
+  guestModuleAccess
+) {
+  if (module == null || !(module in productionModules)) return "unknown";
+  if (productionModules[module] !== true) return "unreleased";
+
+  const guestTabs = guestModuleAccess[module];
+  if (!guestTabs) return "account";
+  if (tab == null) return "mixed";
+  return guestTabs.includes(tab) ? "guest" : "account";
+}
+
+/**
  * Does a commit hit the dark-sub-feature denylist? Returns the matching entry
  * (for its reason/label) or null.
  *
  * @param {{ subject: string, files?: string[] }} commit
  * @param {Array} denylist
  */
-export function matchDenylist({ subject, files = [] }, denylist = DARK_DENYLIST) {
+export function matchDenylist(
+  { subject, files = [] },
+  denylist = DARK_DENYLIST
+) {
   for (const rule of denylist) {
     if (rule.subject && rule.subject.test(subject)) return rule;
-    if (rule.paths && files.some((f) => rule.paths.some((p) => f.startsWith(p)))) {
+    if (
+      rule.paths &&
+      files.some((f) => rule.paths.some((p) => f.startsWith(p)))
+    ) {
       return rule;
     }
   }
@@ -188,31 +388,48 @@ export function matchDenylist({ subject, files = [] }, denylist = DARK_DENYLIST)
  * @param {{ hash?: string, subject: string, files?: string[] }} commit
  * @param {{ productionModules: Record<string, boolean>, denylist?: Array }} ctx
  */
-export function classifyCommit(commit, { productionModules, denylist = DARK_DENYLIST }) {
+export function classifyCommit(
+  commit,
+  { productionModules, guestModuleAccess = null, denylist = DARK_DENYLIST }
+) {
   const { scope } = parseConventional(commit.subject);
   const files = commit.files ?? [];
+  const surface = resolveSurface({ scope, files });
 
   const dark = matchDenylist({ subject: commit.subject, files }, denylist);
   if (dark) {
+    const module =
+      surface?.module ?? resolveModule({ scope, files }, productionModules);
     return {
       hash: commit.hash,
       subject: commit.subject,
       scope,
-      module: resolveModule({ scope, files }, productionModules),
+      module,
+      tab: surface?.tab ?? null,
       released: false,
       darkReason: dark.label,
+      audience: guestModuleAccess ? "unreleased" : null,
     };
   }
 
-  const module = resolveModule({ scope, files }, productionModules);
+  const module =
+    surface?.module ?? resolveModule({ scope, files }, productionModules);
   const released = module == null ? null : productionModules[module] === true;
   return {
     hash: commit.hash,
     subject: commit.subject,
     scope,
     module,
+    tab: surface?.tab ?? null,
     released,
     darkReason: released === false ? `module "${module}" not released` : null,
+    audience: guestModuleAccess
+      ? resolveAudience(
+          { module, tab: surface?.tab ?? null },
+          productionModules,
+          guestModuleAccess
+        )
+      : null,
   };
 }
 
@@ -230,7 +447,161 @@ export function gateCommits(commits, ctx) {
   return {
     flagged: classified.filter((c) => c.released === false),
     shown: classified.filter((c) => c.released !== false),
+    guestVisible: classified.filter((c) => c.audience === "guest"),
+    accountOnly: classified.filter((c) => c.audience === "account"),
+    needsAudienceReview: classified.filter(
+      (c) => c.audience === "mixed" || c.audience === "unknown"
+    ),
   };
+}
+
+const ACCOUNT_QUALIFIER =
+  /\b(?:account|signed[- ]in|after (?:you )?sign(?:ing)? in|once (?:you )?sign in)\b/i;
+const CHANGELOG_CATEGORIES = new Set(["fixed", "added", "improved"]);
+const CHANGELOG_AUDIENCES = new Set(["guest", "account"]);
+
+/**
+ * Validate the private metadata attached to final changelog entries. The
+ * metadata is stripped before release notes are published; it exists to force
+ * an explicit guest/account decision while the notes are being written.
+ *
+ * @param {Array} entries
+ * @param {{
+ *   productionModules: Record<string, boolean>,
+ *   guestModuleAccess: Record<string, string[]>,
+ *   moduleTabs: Record<string, string[]>
+ * }} ctx
+ * @returns {{ errors: Array<{ index: number, message: string }>, guestCount: number, accountCount: number }}
+ */
+export function auditChangelogEntries(
+  entries,
+  { productionModules, guestModuleAccess, moduleTabs }
+) {
+  const errors = [];
+  let guestCount = 0;
+  let accountCount = 0;
+
+  entries.forEach((entry, index) => {
+    const label = `Entry ${index + 1}`;
+    if (!CHANGELOG_CATEGORIES.has(entry?.category)) {
+      errors.push({
+        index,
+        message: `${label} needs category fixed, added, or improved`,
+      });
+    }
+    if (typeof entry?.text !== "string" || entry.text.trim() === "") {
+      errors.push({
+        index,
+        message: `${label} needs non-empty user-facing text`,
+      });
+    }
+    if (!CHANGELOG_AUDIENCES.has(entry?.audience)) {
+      errors.push({
+        index,
+        message: `${label} needs audience "guest" or "account"`,
+      });
+    } else if (entry.audience === "guest") {
+      guestCount += 1;
+    } else {
+      accountCount += 1;
+    }
+
+    if (entry?.surface == null) {
+      errors.push({
+        index,
+        message: `${label} needs a surface ("global" or { module, tab })`,
+      });
+      return;
+    }
+
+    let expectedAudience = null;
+    if (entry.surface !== "global") {
+      if (
+        typeof entry.surface !== "object" ||
+        typeof entry.surface.module !== "string"
+      ) {
+        errors.push({
+          index,
+          message: `${label} has an invalid surface`,
+        });
+        return;
+      }
+
+      const module = entry.surface.module;
+      const tab =
+        typeof entry.surface.tab === "string" ? entry.surface.tab : null;
+      if (!(module in productionModules)) {
+        errors.push({
+          index,
+          message: `${label} names unknown module "${module}"`,
+        });
+        return;
+      }
+      if (productionModules[module] !== true) {
+        errors.push({
+          index,
+          message: `${label} names unreleased module "${module}"`,
+        });
+        return;
+      }
+
+      if (module in guestModuleAccess) {
+        if (tab == null) {
+          errors.push({
+            index,
+            message: `${label} must name a tab because "${module}" mixes guest and account-only tabs`,
+          });
+          return;
+        }
+        const knownTabs = moduleTabs[module] ?? [];
+        if (!knownTabs.includes(tab)) {
+          errors.push({
+            index,
+            message: `${label} names unknown ${module} tab "${tab}"`,
+          });
+          return;
+        }
+      }
+
+      expectedAudience = resolveAudience(
+        { module, tab },
+        productionModules,
+        guestModuleAccess
+      );
+      if (
+        (expectedAudience === "guest" || expectedAudience === "account") &&
+        entry.audience !== expectedAudience
+      ) {
+        errors.push({
+          index,
+          message: `${label} says audience "${entry.audience}", but ${module}${tab ? `/${tab}` : ""} is "${expectedAudience}"`,
+        });
+      }
+    }
+
+    if (
+      entry?.audience === "account" &&
+      typeof entry?.text === "string" &&
+      !ACCOUNT_QUALIFIER.test(entry.text)
+    ) {
+      errors.push({
+        index,
+        message: `${label} is account-only but its text does not say "account" or "signed in"`,
+      });
+    }
+  });
+
+  return { errors, guestCount, accountCount };
+}
+
+/**
+ * Remove release-audit metadata before notes are shown or published.
+ *
+ * @param {Array} entries
+ * @returns {Array<{ category: string, text: string }>}
+ */
+export function toPublicChangelog(entries) {
+  return entries.map(({ category, text }) => ({ category, text }));
 }
 
 // ── Thin I/O wrappers (not unit-tested; exercised by release.js) ────────────
@@ -245,6 +616,24 @@ export function loadProductionModules(path = PRODUCTION_MODULES_PATH) {
 }
 
 /**
+ * Load + parse GUEST_MODULE_ACCESS from disk.
+ * @param {string} [path]
+ * @returns {Record<string, string[]>}
+ */
+export function loadGuestModuleAccess(path = GUEST_MODULE_ACCESS_PATH) {
+  return parseGuestModuleAccess(readFileSync(path, "utf8"));
+}
+
+/**
+ * Load the registered tab ids for guest-accessible modules.
+ * @param {string} [path]
+ * @returns {Record<string, string[]>}
+ */
+export function loadModuleTabs(path = TAB_DEFINITIONS_PATH) {
+  return parseModuleTabs(readFileSync(path, "utf8"));
+}
+
+/**
  * Collect commits in a git range with the files each one touched.
  * @param {string} range - e.g. "v0.28.1..HEAD" or "HEAD"
  * @returns {Array<{ hash: string, subject: string, files: string[] }>}
@@ -253,7 +642,7 @@ export function collectCommits(range) {
   // NUL-delimited records: hash \x1f subject, then one file path per line.
   const raw = execSync(
     `git log ${range} --no-merges --name-only --pretty=format:"%x1e%H%x1f%s"`,
-    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }
   );
   const commits = [];
   for (const record of raw.split("\x1e")) {

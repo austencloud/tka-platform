@@ -1,78 +1,105 @@
-# ADR: Release Module Gate
+# ADR: Release Visibility Gate
 
 **Date:** 2026-07-12
+**Updated:** 2026-07-23
 **Status:** Accepted
 **Related:** `scripts/lib/release-module-gate.mjs`, `scripts/release.js`,
-`tests/unit/release-module-gate.test.ts`, memory `project_release_module_gating`
+`tests/unit/release-module-gate.test.ts`
 
 ## Context
 
-Every release, commits belonging to modules that are not yet live (Learn/Play,
-the Guide, Mandala, Train) leaked into the user-facing changelog and had to be
-hand-caught by eye ("don't ship that, Learn isn't live yet"). Austen floated
-per-module release notes; that was judged heavier than the problem and mostly
-churn no user reads.
+Commits belonging to modules that were not live repeatedly leaked into
+user-facing changelogs and had to be caught by eye. The release script already
+had a source of truth for production modules, but git-history mode only parsed
+commit subjects. It could not reliably distinguish dark work from live work.
 
-The lean win: the release script already had a source of truth for what's
-live — `PRODUCTION_MODULES` in `src/lib/shared/environment/environment-features.ts`
-— but `release.js` git-history mode only ever parsed commit *subjects*, never
-which module a commit belonged to. So it couldn't tell a dark-module commit from
-a live one.
+The first module gate left a second leak. A module can be live while one of its
+tabs requires sign-in. Create is available to guests, but Fuse is not. Custom
+and feedback-based changelogs also bypassed the gate entirely. That allowed
+account-only, tester-only, previously announced, and currently broken behavior
+to be presented as generally available.
 
 ## Decision
 
-A pure module, `scripts/lib/release-module-gate.mjs`, classifies each commit's
-release visibility and `release.js` reports/optionally-drops the dark ones in
+The pure module `scripts/lib/release-module-gate.mjs` classifies each commit's
+production visibility and guest/account audience. `release.js` runs the commit
+audit for every changelog source and optionally drops dark commits in
 git-history mode.
 
-**Resolution order (per commit):**
+Final releases require a custom changelog manifest. Each private manifest entry
+declares:
 
-1. **Dark denylist** (`DARK_DENYLIST`) — hand-maintained list for sub-features
-   that are dark even though their module is live. `PRODUCTION_MODULES` can't
-   express sub-feature gates. Seeded with the shop LOOP deck listing (matched by
-   subject `/LOOP (deck|listing|configurator|…)/i` + path
-   `src/lib/features/store/LoopDeck*`). Add a block when a new dark sub-feature
-   appears; delete it the day it ships.
-2. **Commit scope** (authoritative intent) — `feat(play):` → alias table →
-   `learn`. `SCOPE_TO_MODULE` holds only mismatches (the learn family:
-   play/guide/quiz/codex/…; `store` → `shop`). A scope that is itself a
-   `ModuleId` resolves directly.
-3. **File fallback** — only when scope names no module. Resolves to the SINGLE
-   feature dir the commit owns, or `null` when cross-cutting: touches
-   `src/lib/shared/` (infra that serves live surfaces) or spans more than one
-   feature module. This is deliberate — an earlier version that gated on a lone
-   feature dir wrongly flagged the live Share/Download export sweep (scope
-   `export`, files in `mandala`/`video` + shared) as dark.
+- `audience`: `guest` or `account`
+- `surface`: `global` or a canonical `{ module, tab }`
 
-**Gating outcome** (`released`): `false` = behind a dark flag (module gated, or
-denylist hit) → flagged; `true` = module live → shown; `null` = unresolved /
-shared / cross-cutting → shown. Only what we are confident is dark is withheld.
+The release script validates module state against `PRODUCTION_MODULES`, guest
+tab access against `GUEST_MODULE_ACCESS`, and tab ids against the navigation
+registry. Account-only copy must plainly say that it requires sign-in or an
+account. Disabled modules, unknown tabs, missing metadata, and audience
+mismatches block the release. Audit metadata is stripped before notes are
+displayed, stored, tagged, or published.
 
-**Integration:** in `release.js` git-history mode, after
-`generateChangelogFromGitHistory()`. Default is **advisory** — prints a
-"🚧 Behind a dark flag" report grouped by reason (visible in `--dry-run`, which
-is where the changelog is drafted). The **`--auto-gate`** flag drops flagged
-entries from the changelog before display. Feedback-mode releases are not gated
-(no commit→module data).
+### Commit resolution order
+
+1. **Dark denylist** (`DARK_DENYLIST`): hand-maintained rules for sub-features
+   that are dark even though their parent module is live. It is seeded with the
+   shop LOOP deck listing.
+2. **Commit scope**: a conventional commit scope resolves directly to a module
+   or through `SCOPE_TO_MODULE`. Tab-specific scopes such as `fuse` also resolve
+   through `SCOPE_TO_SURFACE`.
+3. **File fallback**: when scope names no module, a commit resolves to the one
+   feature module it owns. Shared and cross-cutting commits remain unresolved
+   so the gate does not incorrectly drop live infrastructure.
+4. **Tab surface**: tab-specific scopes and unambiguous feature paths resolve to
+   `{ module, tab }`. A live tab omitted from the guest allowlist is
+   account-only. A live parent module with no resolved tab is mixed and needs
+   manual entry-point review.
+
+### Outcomes
+
+`released` has three outcomes:
+
+- `false`: behind a dark flag, so exclude it
+- `true`: parent module is live
+- `null`: unresolved or cross-cutting, so investigate instead of auto-dropping
+
+`audience` adds five outcomes:
+
+- `guest`: reachable before sign-in
+- `account`: requires a signed-in account
+- `mixed`: parent module contains both guest and account-only tabs
+- `unreleased`: disabled in production
+- `unknown`: no safe module or tab resolution
+
+### Integration
+
+`release.js` audits the full git range whether the displayed changelog came from
+commits, feedback, or a custom file. Commit output is advisory: dark work must
+be excluded, account-only work must be qualified, and mixed work must be traced
+to its exact tab. `--auto-gate` only drops dark raw commit entries. It never
+rewrites or silently removes custom copy.
+
+Execution with `--confirm` is blocked unless `--changelog` supplies a manifest
+that passes the guest/account audit. The release skill supplies the human half:
+trace every entry point, exclude known-broken behavior, and search prior GitHub
+release bodies before calling a capability new or announcing it again.
 
 ## Consequences
 
-- **Caught, on real data:** across `v0.28.0..HEAD`, 65 genuine leaks flagged
-  (38 learn = play/guide, 21 shop LOOP, 4 mandala, 1 train, 1 admin) with the
-  live Share/Download export sweep correctly shown.
-- Single source of truth: flip a module live in `environment-features.ts` and
-  the gate follows — no second list to maintain.
-- The alias and denylist tables are hand-maintained by design: small, greppable,
-  one line per addition. This is the accepted cost of not building sub-feature
-  flag introspection (no central registry to read).
-- Scope discipline is load-bearing. The gate leans on the project's strong
-  conventional-commit scopes; a mis-scoped commit resolves via files or falls to
-  `null` (shown) — a miss degrades to today's manual catch, never a wrong drop
-  of a live change (unless `--auto-gate` is used on a genuinely mis-resolved
-  commit, which the advisory default exists to prevent).
+- Production visibility still follows `environment-features.ts`.
+- Guest access follows the same config used by runtime navigation. Fuse is
+  reported as live but sign-in required, while Construct is guest-visible.
+- Custom and feedback workflows no longer bypass commit visibility evidence.
+- A final changelog cannot omit the guest/account decision.
+- Account-only notes that read as universally available fail validation.
+- The alias and denylist tables remain small and hand-maintained for scopes and
+  capability flags that have no central guest registry.
+- A mis-scoped commit degrades to manual review instead of being auto-dropped.
 
-## Not done (YAGNI)
+## Not done
 
-- Sub-feature flag introspection — the manual denylist covers that class.
-- Gating feedback-mode releases.
 - Per-module release notes.
+- Automatic proof for global controls and capability flags. The release skill
+  requires a real entry-point trace, and unresolved items are excluded.
+- Automatic semantic comparison with prior release prose. Agents search
+  published GitHub release bodies before using "new," "first," or equivalent.

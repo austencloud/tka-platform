@@ -462,8 +462,13 @@ node scripts/fetch-feedback.js <id> <status> "resolution notes"
 
 ```bash
 node scripts/release.js -p              # Preview next release
-node scripts/release.js --version X.Y.Z --confirm  # Execute release
+node scripts/release.js --version X.Y.Z --confirm \
+  --changelog .release-changelog.json --from-main  # Execute release
 ```
+
+Before execution, follow `.claude/skills/release/SKILL.md`: check prior release
+notes, trace every candidate to its real guest/account surface, and write the
+audited changelog manifest. Releases without that manifest are blocked.
 
 **A release is NOT complete until the GitHub Release is created:**
 

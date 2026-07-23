@@ -73,6 +73,7 @@
     ".agents/skills/release-deck/agents/openai.yaml",
     ".agents/skills/release/SKILL.md",
     ".agents/skills/release/agents/openai.yaml",
+    ".agents/skills/release/references/changelog-policy.md",
     ".agents/skills/screenshots/SKILL.md",
     ".agents/skills/screenshots/agents/openai.yaml",
     ".agents/skills/service-naming/SKILL.md",

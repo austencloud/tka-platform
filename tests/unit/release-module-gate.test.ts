@@ -2,11 +2,17 @@ import { describe, it, expect } from "vitest";
 // @ts-expect-error — plain .mjs script module, no type declarations
 import {
   parseProductionModules,
+  parseGuestModuleAccess,
+  parseModuleTabs,
   parseConventional,
   resolveModule,
+  resolveSurface,
+  resolveAudience,
   matchDenylist,
   classifyCommit,
   gateCommits,
+  auditChangelogEntries,
+  toPublicChangelog,
   DARK_DENYLIST,
 } from "../../scripts/lib/release-module-gate.mjs";
 
@@ -21,6 +27,27 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   shop: true, // link-out
   "hand-paths": false, // graduated from Lab
 };
+`;
+
+const GUEST_ACCESS_SOURCE = `
+const GUEST_MODULE_ACCESS: Record<string, string[]> = {
+  create: ["assemble", "construct", "generate"],
+  browse: ["gallery", "library"],
+};
+`;
+
+const TAB_DEFINITIONS_SOURCE = `
+export const CREATE_TABS: Section[] = [
+  { id: "assemble", label: "Assemble" },
+  { id: "construct", label: "Construct" },
+  { id: "generate", label: "Generate" },
+  { id: "fuse", label: "Fuse" },
+];
+export const BROWSE_TABS: Section[] = [
+  { id: "gallery", label: "Gallery" },
+  { id: "library", label: "Library" },
+  { id: "collections", label: "Collections" },
+];
 `;
 
 describe("parseProductionModules", () => {
@@ -38,6 +65,32 @@ describe("parseProductionModules", () => {
 
   it("throws when the map is absent", () => {
     expect(() => parseProductionModules("no map here")).toThrow();
+  });
+});
+
+describe("parseGuestModuleAccess", () => {
+  it("extracts the guest-visible tabs for each module", () => {
+    expect(parseGuestModuleAccess(GUEST_ACCESS_SOURCE)).toEqual({
+      create: ["assemble", "construct", "generate"],
+      browse: ["gallery", "library"],
+    });
+  });
+
+  it("throws when the access map is absent", () => {
+    expect(() => parseGuestModuleAccess("no access map here")).toThrow();
+  });
+});
+
+describe("parseModuleTabs", () => {
+  it("extracts registered Create and Browse tab ids", () => {
+    expect(parseModuleTabs(TAB_DEFINITIONS_SOURCE)).toEqual({
+      create: ["assemble", "construct", "generate", "fuse"],
+      browse: ["gallery", "library", "collections"],
+    });
+  });
+
+  it("throws when a required tab registry is absent", () => {
+    expect(() => parseModuleTabs("export const CREATE_TABS = [];")).toThrow();
   });
 });
 
@@ -75,25 +128,34 @@ describe("resolveModule", () => {
     expect(
       resolveModule(
         { scope: "misc", files: ["src/lib/features/mandala/foo.ts"] },
-        PM,
-      ),
+        PM
+      )
     ).toBe("mandala");
   });
   it("aliases the store dir to the shop module", () => {
     expect(
       resolveModule(
         { scope: null, files: ["src/lib/features/store/BuyButton.svelte"] },
-        PM,
-      ),
+        PM
+      )
     ).toBe("shop");
   });
   it("returns null for shared/infra with no resolvable module", () => {
     expect(
-      resolveModule(
-        { scope: "auth", files: ["src/lib/shared/auth/x.ts"] },
-        PM,
-      ),
+      resolveModule({ scope: "auth", files: ["src/lib/shared/auth/x.ts"] }, PM)
     ).toBeNull();
+  });
+
+  it("maps the Fuse scope and feature directory back to Create", () => {
+    expect(
+      resolveModule(
+        {
+          scope: "fuse",
+          files: ["src/lib/features/fuse/FuseTab.svelte"],
+        },
+        PM
+      )
+    ).toBe("create");
   });
 
   it("does NOT gate a cross-cutting commit that also edits shared/ (the export-sweep false positive)", () => {
@@ -109,8 +171,8 @@ describe("resolveModule", () => {
             "src/lib/shared/video-export/save.ts",
           ],
         },
-        PM,
-      ),
+        PM
+      )
     ).toBeNull();
   });
 
@@ -124,8 +186,8 @@ describe("resolveModule", () => {
             "src/lib/features/browse/b.ts",
           ],
         },
-        PM,
-      ),
+        PM
+      )
     ).toBeNull();
   });
 
@@ -137,9 +199,66 @@ describe("resolveModule", () => {
           scope: "mandala",
           files: ["src/lib/shared/foundation/x.ts"],
         },
-        PM,
-      ),
+        PM
+      )
     ).toBe("mandala");
+  });
+});
+
+describe("resolveSurface", () => {
+  it("resolves a tab-specific scope before looking at files", () => {
+    expect(
+      resolveSurface({
+        scope: "fuse",
+        files: ["src/lib/features/create/construct/OptionPicker.svelte"],
+      })
+    ).toEqual({ module: "create", tab: "fuse" });
+  });
+
+  it("resolves an unambiguous feature path", () => {
+    expect(
+      resolveSurface({
+        scope: "ui",
+        files: ["src/lib/features/create/construct/OptionPicker.svelte"],
+      })
+    ).toEqual({ module: "create", tab: "construct" });
+  });
+
+  it("returns null when paths span more than one tab", () => {
+    expect(
+      resolveSurface({
+        scope: "ui",
+        files: [
+          "src/lib/features/create/construct/OptionPicker.svelte",
+          "src/lib/features/fuse/FuseTab.svelte",
+        ],
+      })
+    ).toBeNull();
+  });
+});
+
+describe("resolveAudience", () => {
+  const guestAccess = parseGuestModuleAccess(GUEST_ACCESS_SOURCE);
+
+  it("distinguishes guest-visible Construct from account-only Fuse", () => {
+    expect(
+      resolveAudience({ module: "create", tab: "construct" }, PM, guestAccess)
+    ).toBe("guest");
+    expect(
+      resolveAudience({ module: "create", tab: "fuse" }, PM, guestAccess)
+    ).toBe("account");
+  });
+
+  it("marks a mixed-access module for manual tab review", () => {
+    expect(resolveAudience({ module: "create" }, PM, guestAccess)).toBe(
+      "mixed"
+    );
+  });
+
+  it("keeps disabled modules unreleased", () => {
+    expect(resolveAudience({ module: "mandala" }, PM, guestAccess)).toBe(
+      "unreleased"
+    );
   });
 });
 
@@ -160,13 +279,14 @@ describe("matchDenylist", () => {
   });
   it("does not flag ordinary shop storefront work", () => {
     expect(
-      matchDenylist({ subject: "fix(shop): preorder card rail", files: [] }),
+      matchDenylist({ subject: "fix(shop): preorder card rail", files: [] })
     ).toBeNull();
   });
 });
 
 describe("classifyCommit", () => {
-  const ctx = { productionModules: PM };
+  const guestModuleAccess = parseGuestModuleAccess(GUEST_ACCESS_SOURCE);
+  const ctx = { productionModules: PM, guestModuleAccess };
 
   it("gates a not-yet-released module (play -> learn)", () => {
     const c = classifyCommit({ subject: "feat(play): arcade hub" }, ctx);
@@ -177,12 +297,27 @@ describe("classifyCommit", () => {
   it("shows a live module", () => {
     const c = classifyCommit({ subject: "fix(browse): thumbnail" }, ctx);
     expect(c.released).toBe(true);
+    expect(c.audience).toBe("mixed");
+  });
+
+  it("marks Fuse as released but sign-in required", () => {
+    const c = classifyCommit(
+      {
+        subject: "feat(fuse): rebuild the workspace",
+        files: ["src/lib/features/fuse/FuseTab.svelte"],
+      },
+      ctx
+    );
+    expect(c.released).toBe(true);
+    expect(c.module).toBe("create");
+    expect(c.tab).toBe("fuse");
+    expect(c.audience).toBe("account");
   });
 
   it("gates the dark shop LOOP sub-feature even though shop is live", () => {
     const c = classifyCommit(
       { subject: "feat(shop): LOOP board recipes" },
-      ctx,
+      ctx
     );
     expect(c.released).toBe(false);
     expect(c.darkReason).toMatch(/LOOP/);
@@ -196,21 +331,169 @@ describe("classifyCommit", () => {
 });
 
 describe("gateCommits", () => {
-  it("splits flagged (dark) from shown (live + unknown)", () => {
+  it("splits dark, guest-visible, account-only, and unresolved visibility", () => {
     const commits = [
       { subject: "feat(play): arcade" }, // dark: learn
-      { subject: "fix(browse): x" }, // live
+      { subject: "fix(gallery): x" }, // guest-visible
+      { subject: "feat(fuse): rebuild" }, // account-only
       { subject: "feat(shop): LOOP deck" }, // dark: denylist
       { subject: "chore(auth): y" }, // unknown -> shown
     ];
-    const { flagged, shown } = gateCommits(commits, { productionModules: PM });
+    const { flagged, shown, guestVisible, accountOnly, needsAudienceReview } =
+      gateCommits(commits, {
+        productionModules: PM,
+        guestModuleAccess: parseGuestModuleAccess(GUEST_ACCESS_SOURCE),
+      });
     expect(flagged.map((c) => c.subject)).toEqual([
       "feat(play): arcade",
       "feat(shop): LOOP deck",
     ]);
     expect(shown.map((c) => c.subject)).toEqual([
-      "fix(browse): x",
+      "fix(gallery): x",
+      "feat(fuse): rebuild",
       "chore(auth): y",
+    ]);
+    expect(guestVisible.map((c) => c.subject)).toEqual(["fix(gallery): x"]);
+    expect(accountOnly.map((c) => c.subject)).toEqual(["feat(fuse): rebuild"]);
+    expect(needsAudienceReview.map((c) => c.subject)).toEqual([
+      "chore(auth): y",
+    ]);
+  });
+});
+
+describe("auditChangelogEntries", () => {
+  const ctx = {
+    productionModules: PM,
+    guestModuleAccess: parseGuestModuleAccess(GUEST_ACCESS_SOURCE),
+    moduleTabs: parseModuleTabs(TAB_DEFINITIONS_SOURCE),
+  };
+
+  it("accepts guest-visible copy tied to a guest tab", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "improved",
+          text: "Sequence-building controls stay available on narrow screens.",
+          audience: "guest",
+          surface: { module: "create", tab: "construct" },
+        },
+      ],
+      ctx
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.guestCount).toBe(1);
+  });
+
+  it("accepts account-only copy that says the sign-in requirement", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "improved",
+          text: "After signing in, combine two saved sequences in Fuse.",
+          audience: "account",
+          surface: { module: "create", tab: "fuse" },
+        },
+      ],
+      ctx
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.accountCount).toBe(1);
+  });
+
+  it("rejects Fuse copy labeled as guest-visible", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "improved",
+          text: "Combine two saved sequences in Fuse.",
+          audience: "guest",
+          surface: { module: "create", tab: "fuse" },
+        },
+      ],
+      ctx
+    );
+    expect(result.errors.map((issue) => issue.message)).toContain(
+      'Entry 1 says audience "guest", but create/fuse is "account"'
+    );
+  });
+
+  it("rejects account-only copy that hides the restriction", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "added",
+          text: "Messages can include a sequence or image.",
+          audience: "account",
+          surface: "global",
+        },
+      ],
+      ctx
+    );
+    expect(result.errors.map((issue) => issue.message)).toContain(
+      'Entry 1 is account-only but its text does not say "account" or "signed in"'
+    );
+  });
+
+  it("rejects disabled modules and unknown tabs", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "added",
+          text: "Create mandalas.",
+          audience: "guest",
+          surface: { module: "mandala" },
+        },
+        {
+          category: "fixed",
+          text: "The Fuze workspace opens.",
+          audience: "account",
+          surface: { module: "create", tab: "fuze" },
+        },
+      ],
+      ctx
+    );
+    expect(result.errors.map((issue) => issue.message)).toContain(
+      'Entry 1 names unreleased module "mandala"'
+    );
+    expect(result.errors.map((issue) => issue.message)).toContain(
+      'Entry 2 names unknown create tab "fuze"'
+    );
+  });
+
+  it("requires a tab for modules with mixed guest access", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "improved",
+          text: "Create has a new layout.",
+          audience: "guest",
+          surface: { module: "create" },
+        },
+      ],
+      ctx
+    );
+    expect(result.errors.map((issue) => issue.message)).toContain(
+      'Entry 1 must name a tab because "create" mixes guest and account-only tabs'
+    );
+  });
+});
+
+describe("toPublicChangelog", () => {
+  it("strips private audience and surface metadata", () => {
+    expect(
+      toPublicChangelog([
+        {
+          category: "fixed",
+          text: "Saved sequences open from your Library.",
+          audience: "guest",
+          surface: { module: "browse", tab: "library" },
+        },
+      ])
+    ).toEqual([
+      {
+        category: "fixed",
+        text: "Saved sequences open from your Library.",
+      },
     ]);
   });
 });

@@ -31,8 +31,13 @@ try {
   console.log("\n✅ Feedback workflow preview complete!\n");
   console.log("💡 Next steps:\n");
   console.log("   1. Review the changelog preview above");
-  console.log("   2. If it looks good, run: node scripts/release.js --confirm");
-  console.log('   3. Or in AI chat: "confirm the release"\n');
+  console.log(
+    "   2. Trace each note to its real guest or account-only surface"
+  );
+  console.log("   3. Write the audited .release-changelog.json");
+  console.log(
+    "   4. Release with --confirm --changelog .release-changelog.json\n"
+  );
 } catch (error) {
   console.error("❌ Error running feedback workflow:", error.message);
   console.log("\n💡 Troubleshooting:\n");
