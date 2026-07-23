@@ -6,8 +6,14 @@ Uses organizer and sizer services for section grouping and sizing.
 -->
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
-  import type { OrganizedSection, SortMethod } from "../domain/option-picker-types";
-  import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/types";
+  import type {
+    OrganizedSection,
+    SortMethod,
+  } from "../domain/option-picker-types";
+  import type {
+    DeviceAwareSizingParams,
+    DeviceAwareSizingResult,
+  } from "../services/types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
   import OptionSection from "./OptionSection.svelte";
@@ -18,6 +24,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
   import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
   import OptionPickerHeader from "./OptionPickerHeader.svelte";
+  import OptionPickerControlsPopover from "./OptionPickerControlsPopover.svelte";
   import type { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type {
     TurnLevel,
@@ -27,8 +34,15 @@ Uses organizer and sizer services for section grouping and sizing.
 
   interface Props {
     options: PreparedPictographData[];
-    organizerService: ((pictographs: PictographData[], sortMethod: SortMethod) => OrganizedSection[]) | null;
-    sizerService: ((params: DeviceAwareSizingParams) => DeviceAwareSizingResult) | null;
+    organizerService:
+      | ((
+          pictographs: PictographData[],
+          sortMethod: SortMethod
+        ) => OrganizedSection[])
+      | null;
+    sizerService:
+      | ((params: DeviceAwareSizingParams) => DeviceAwareSizingResult)
+      | null;
     onSelect: (option: PreparedPictographData) => void;
     // Filter props
     isContinuousOnly?: boolean;
@@ -36,6 +50,8 @@ Uses organizer and sizer services for section grouping and sizing.
     isSideBySideLayout?: () => boolean;
     /** Hide the All/Continuous filter UI (simplified tutorial grid) */
     hideFilters?: boolean;
+    /** False when an embedded surface pins turns through overrides. */
+    turnControlsEditable?: boolean;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
     // Continuation reordering
@@ -64,6 +80,7 @@ Uses organizer and sizer services for section grouping and sizing.
     onToggleContinuous,
     isSideBySideLayout = () => false,
     hideFilters = false,
+    turnControlsEditable = true,
     currentSequence = [],
     onSlotClicked,
     lastClickedSlot = null,
@@ -89,8 +106,16 @@ Uses organizer and sizer services for section grouping and sizing.
   // HorizontalSwipeContainer the sectioned (All) layout uses, so the continuous
   // grid sizes its tiles via the identical measured-viewport path → exact size
   // parity with the All-mode Type-1 grid (no fudge-factor divergence).
-  let compactBounds = $state<{ left: number; right: number; width: number } | null>(null);
-  function handleCompactBounds(bounds: { left: number; right: number; width: number }) {
+  let compactBounds = $state<{
+    left: number;
+    right: number;
+    width: number;
+  } | null>(null);
+  function handleCompactBounds(bounds: {
+    left: number;
+    right: number;
+    width: number;
+  }) {
     compactBounds = bounds;
   }
 
@@ -98,8 +123,6 @@ Uses organizer and sizer services for section grouping and sizing.
   // Wide layout (>= 750px): 8-column grouped vertical layout
   // Narrow layout (< 750px): Horizontal swipe layout between type sections
   const WIDE_LAYOUT_THRESHOLD = 750;
-  const CORNER_FILTER_MAX_WIDTH = 500;
-  const CORNER_FILTER_MAX_HEIGHT = 340;
   const shouldUseWideLayout = $derived(containerWidth >= WIDE_LAYOUT_THRESHOLD);
 
   // Column count: 8 for wide, 4 for narrow/swipe
@@ -124,11 +147,7 @@ Uses organizer and sizer services for section grouping and sizing.
   // Apply continuation reordering when in continuous mode
   const continuationState = $derived(() => {
     const sections = organizedSections();
-    if (
-      !isContinuousOnly ||
-      !lastClickedSlot ||
-      currentSequence.length < 2
-    ) {
+    if (!isContinuousOnly || !lastClickedSlot || currentSequence.length < 2) {
       return { sections, continuationMap: new Map<string, number>() };
     }
 
@@ -235,20 +254,17 @@ Uses organizer and sizer services for section grouping and sizing.
       !isMobileStackedLayout()
   );
 
-  const showStandaloneFilter = $derived(() => {
-    return shouldShowFilterToggle() && !hideFilters && !useUnifiedHeader;
+  const shouldShowFilterControl = $derived(() => {
+    return shouldShowFilterToggle() && !hideFilters;
   });
 
-  // Narrow cover screens and short picker areas need the pictographs more than
-  // they need a dedicated filter row. Both swipe variants reserve a 48px arrow
-  // gutter, so the compact icon can sit there without covering an option.
-  const shouldDockFilterInCorner = $derived(() => {
-    const hasArrowGutter = shouldUseSwipeLayout() || shouldUseCompact4x4();
-    const isSpaceConstrained =
-      containerWidth <= CORNER_FILTER_MAX_WIDTH ||
-      containerHeight <= CORNER_FILTER_MAX_HEIGHT;
-
-    return showStandaloneFilter() && hasArrowGutter && isSpaceConstrained;
+  // Every narrow layout gets the same controls as the wide header. The filter
+  // can be unavailable on the first beat, but Level and turns still need a way
+  // in. Embedded surfaces with pinned turns keep only the filter control.
+  const showCompactControls = $derived(() => {
+    return (
+      !useUnifiedHeader && (shouldShowFilterControl() || turnControlsEditable)
+    );
   });
 
   // For swipe layout: combine Types 4-6 into a single grouped panel
@@ -305,20 +321,14 @@ Uses organizer and sizer services for section grouping and sizing.
   // ==================== MOBILE LAYOUT CONFIGS ====================
   // Both configs use consistent values to prevent size "burst" when toggling
 
-  // Heights to subtract when calculating available space for content
-  // Filter header: ~32px on mobile (button height + margins)
-  // Swipe dots: ~73px (margin-top 1.8rem + dot height ~44px)
-  const FILTER_HEADER_HEIGHT = 32;
+  // Height to subtract when calculating available space for content.
+  // The compact settings button floats in the swipe gutter, so the cards keep
+  // the full picker height. Swipe dots still own a row below sectioned layouts.
   const SWIPE_DOTS_HEIGHT = 73;
 
   // Calculate effective height for swipe layout accounting for UI chrome
   const effectiveSwipeHeight = $derived(() => {
     let height = containerHeight;
-    // A centered filter owns a row. The corner version lives in the arrow
-    // gutter, so reserving another 32px would keep the pictographs needlessly low.
-    if (showStandaloneFilter() && !shouldDockFilterInCorner()) {
-      height -= FILTER_HEADER_HEIGHT;
-    }
     // Subtract swipe dots height (always present in swipe layout)
     if (shouldUseSwipeLayout()) {
       height -= SWIPE_DOTS_HEIGHT;
@@ -374,16 +384,21 @@ Uses organizer and sizer services for section grouping and sizing.
   });
 </script>
 
-<div class="option-picker-content" data-testid="option-picker" bind:this={containerElement}>
+<div
+  class="option-picker-content"
+  data-testid="option-picker"
+  bind:this={containerElement}
+>
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
     <div class="animated-content">
       <!-- Unified header: pinned to the top of the picker (outside the scrolling
            grid) so its position is consistent. Desktop wide layout only. -->
-      {#if useUnifiedHeader}
+      {#if useUnifiedHeader && (shouldShowFilterControl() || turnControlsEditable)}
         <div class="picker-header-slot">
           <OptionPickerHeader
-            showFilter={shouldShowFilterToggle() && !hideFilters}
+            showFilter={shouldShowFilterControl()}
+            showTurnControls={turnControlsEditable}
             {isContinuousOnly}
             {onToggleContinuous}
             {blueTurns}
@@ -394,40 +409,33 @@ Uses organizer and sizer services for section grouping and sizing.
             {redRotation}
             onBlueChange={onBlueTurnsChange}
             onRedChange={onRedTurnsChange}
-            onBlueRotationChange={onBlueRotationChange}
-            onRedRotationChange={onRedRotationChange}
+            {onBlueRotationChange}
+            {onRedRotationChange}
           />
         </div>
       {/if}
 
-      <!-- Standalone filter pill: mobile/compact layouts only. -->
-      {#if showStandaloneFilter()}
-        <div
-          class="filter-header"
-          class:mobile={shouldUseSwipeLayout()}
-          class:corner={shouldDockFilterInCorner()}
-        >
-          <button
-            class="filter-toggle"
-            class:mobile={shouldUseSwipeLayout()}
-            class:corner={shouldDockFilterInCorner()}
-            class:continuous={isContinuousOnly}
-            onclick={() => onToggleContinuous?.(!isContinuousOnly)}
-            aria-label={isContinuousOnly
-              ? "Showing continuous only - click for all"
-              : "Showing all - click for continuous only"}
-            aria-pressed={isContinuousOnly}
-          >
-            <i
-              class="fas"
-              aria-hidden="true"
-              class:fa-link={isContinuousOnly}
-              class:fa-th={!isContinuousOnly}
-            ></i>
-            <span class="filter-label"
-              >{isContinuousOnly ? "Continuous" : "All"}</span
-            >
-          </button>
+      <!-- Narrow layouts keep settings in the upper-left swipe gutter. The
+           floating button gives every vertical pixel back to the pictographs,
+           while its tray still opens upward over the workspace. -->
+      {#if showCompactControls()}
+        <div class="controls-corner">
+          <OptionPickerControlsPopover
+            showFilter={shouldShowFilterControl()}
+            showTurnControls={turnControlsEditable}
+            {isContinuousOnly}
+            {onToggleContinuous}
+            {blueTurns}
+            {redTurns}
+            {level}
+            {onLevelChange}
+            {blueRotation}
+            {redRotation}
+            onBlueChange={onBlueTurnsChange}
+            onRedChange={onRedTurnsChange}
+            {onBlueRotationChange}
+            {onRedRotationChange}
+          />
         </div>
       {/if}
 
@@ -450,7 +458,8 @@ Uses organizer and sizer services for section grouping and sizing.
             <div class="compact-panel">
               <OptionViewerSection
                 pictographs={options}
-                onPictographSelected={(p) => onSelect(p as PreparedPictographData)}
+                onPictographSelected={(p) =>
+                  onSelect(p as PreparedPictographData)}
                 layoutConfig={mobileLayoutConfig()}
                 showHeader={false}
                 contentAreaBounds={compactBounds}
@@ -486,7 +495,6 @@ Uses organizer and sizer services for section grouping and sizing.
               showHeader={continuationState().sections.length > 1}
               {onSelect}
               {currentSequence}
-
               {onSlotClicked}
               continuationIndex={getContinuationIndex(section.title)}
             />
@@ -501,7 +509,6 @@ Uses organizer and sizer services for section grouping and sizing.
               gap={desktopSizing().gap}
               {onSelect}
               {currentSequence}
-
               {onSlotClicked}
             />
           {/if}
@@ -546,11 +553,9 @@ Uses organizer and sizer services for section grouping and sizing.
     /* Shared option-card elevation recipe - consumed by OptionCard and
        OptionViewerSection so the shadow stacks live in one place. */
     --option-card-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06);
+      0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
     --option-card-shadow-hover:
-      0 2px 4px rgba(0, 0, 0, 0.12),
-      0 4px 8px rgba(0, 0, 0, 0.08),
+      0 2px 4px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08),
       0 8px 16px rgba(0, 0, 0, 0.06);
   }
 
@@ -562,6 +567,7 @@ Uses organizer and sizer services for section grouping and sizing.
   }
 
   .animated-content {
+    position: relative;
     width: 100%;
     height: 100%;
     display: flex;
@@ -578,107 +584,16 @@ Uses organizer and sizer services for section grouping and sizing.
     z-index: 5;
   }
 
-  /* Filter header - inline, minimal */
-  .filter-header {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .filter-header.corner {
+  /* The swipe layout already protects this corner for navigation. Floating the
+     settings trigger there keeps it reachable without shrinking the card grid. */
+  .controls-corner {
     position: absolute;
     top: 2px;
     left: 2px;
-    width: auto;
-    z-index: 5;
-  }
-
-  .filter-toggle {
+    z-index: 7;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
-    padding: 6px 14px;
-    background: var(--theme-card-bg, rgba(0, 0, 0, 0.75));
-    backdrop-filter: blur(8px) brightness(0.5);
-    -webkit-backdrop-filter: blur(8px) brightness(0.5);
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: 16px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.85));
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    margin: 4px 0;
-    transition: all var(--duration-normal) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .filter-toggle:focus-visible {
-    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
-    outline-offset: 2px;
-  }
-
-  .filter-toggle:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .filter-toggle:active {
-    transform: scale(0.97);
-  }
-
-  /* Continuous state - highlighted */
-  .filter-toggle.continuous {
-    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 40%, transparent);
-    color: color-mix(in srgb, var(--theme-accent, #3b82f6) 60%, white);
-  }
-
-  .filter-toggle.continuous:hover {
-    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 50%, transparent);
-  }
-
-  .filter-toggle i {
-    font-size: var(--font-size-compact);
-  }
-
-  /* Mobile: Keep 48px touch target */
-  .filter-toggle.mobile {
-    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
-    padding: 4px 10px;
-    font-size: var(--font-size-compact);
-    margin: 2px 0;
-    border-radius: 12px;
-  }
-
-  .filter-toggle.corner {
-    min-width: var(--min-touch-target, 44px);
-    padding: 0;
-    gap: 0;
-  }
-
-  .filter-toggle.corner .filter-label {
-    display: none;
-  }
-
-  /* Accessibility: Respect user's motion preferences */
-  @media (prefers-reduced-motion: reduce) {
-    .filter-toggle {
-      transition: none;
-    }
-
-    .filter-toggle:active {
-      transform: none;
-    }
-  }
-
-  .filter-toggle.mobile i {
-    font-size: var(--font-size-compact);
   }
 
   .sections-container {
@@ -710,5 +625,4 @@ Uses organizer and sizer services for section grouping and sizing.
     justify-content: center;
     min-height: 0;
   }
-
 </style>

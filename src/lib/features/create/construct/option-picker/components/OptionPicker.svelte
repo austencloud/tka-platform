@@ -143,6 +143,9 @@ Delegates all rendering to child components.
   // An override pins the hand's turns; otherwise the sticky internal state runs.
   const effectiveBlueTurns = $derived(blueTurnsOverride ?? blueTurns);
   const effectiveRedTurns = $derived(redTurnsOverride ?? redTurns);
+  const turnControlsEditable = $derived(
+    blueTurnsOverride === undefined && redTurnsOverride === undefined
+  );
 
   // Persist every change so the picker reopens with the same sticky turns.
   // Overridden surfaces never write — their pinned turns aren't the user's.
@@ -464,6 +467,7 @@ Delegates all rendering to child components.
     onToggleContinuous={handleToggleContinuous}
     {isSideBySideLayout}
     {hideFilters}
+    {turnControlsEditable}
     {currentSequence}
     onSlotClicked={handleSlotClicked}
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}

@@ -70,6 +70,7 @@
       class="lvl"
       class:selected={value === n}
       aria-pressed={value === n}
+      aria-label="Level {n}: {meta.name}"
       title="Level {n} — {meta.name}. {meta.blurb}"
       style="--lvl-bg: {styleFor(n).cssBg}; --lvl-ink: {styleFor(n)
         .text}; --lvl-accent: {accentFor(n)};"

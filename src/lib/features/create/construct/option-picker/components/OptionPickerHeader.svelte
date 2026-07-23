@@ -1,8 +1,9 @@
 <!--
   OptionPickerHeader.svelte
 
-  Unified header for the construct option picker (desktop wide layout). Two
-  controls, nothing else:
+  Shared controls for the construct option picker. The wide layout renders this
+  as its pinned header; narrow layouts render the compact variant inside the
+  option-controls popover. Both surfaces expose the same settings:
     • the All / Continuous filter (left),
     • the working Level (centered, wearing the canonical level colours),
   over a turns row that appears when the level HAS turns.
@@ -32,6 +33,10 @@
   } from "$lib/shared/create/services/level-turn-values";
 
   interface Props {
+    layout?: "wide" | "compact";
+    /** Embedded demos can pin turns from outside the picker. In that case the
+     *  filter remains useful, but showing local turn controls would be a lie. */
+    showTurnControls?: boolean;
     // Filter
     showFilter: boolean;
     isContinuousOnly: boolean;
@@ -51,6 +56,8 @@
   }
 
   const {
+    layout = "wide",
+    showTurnControls = true,
     showFilter,
     isContinuousOnly,
     onToggleContinuous,
@@ -75,10 +82,21 @@
   // Icon-only: Level is the headline control on this band and the filter was
   // spending 240px of it on two words. SegmentedControl renders the icon alone
   // and keeps the label as the aria-label + hover title, so nothing is lost.
-  const filterOptions = [
-    { value: "all", label: "All", icon: "fas fa-asterisk" },
-    { value: "continuous", label: "Continuous", icon: "fas fa-infinity" },
-  ];
+  const filterOptions = $derived(
+    layout === "compact"
+      ? [
+          { value: "all", label: "All" },
+          { value: "continuous", label: "Continuous" },
+        ]
+      : [
+          { value: "all", label: "All", icon: "fas fa-asterisk" },
+          {
+            value: "continuous",
+            label: "Continuous",
+            icon: "fas fa-infinity",
+          },
+        ]
+  );
   const filterValue = $derived(isContinuousOnly ? "continuous" : "all");
 
   // One button per legal turn value at this level: L2 → 0 1 2 3,
@@ -96,21 +114,30 @@
       : RotationDirection.CLOCKWISE;
   }
   function dirIcon(d: RotationDirection): string {
-    return d === RotationDirection.CLOCKWISE ? "fa-rotate-right" : "fa-rotate-left";
+    return d === RotationDirection.CLOCKWISE
+      ? "fa-rotate-right"
+      : "fa-rotate-left";
   }
   function dirLabel(d: RotationDirection): string {
     return d === RotationDirection.CLOCKWISE ? "CW" : "CCW";
   }
 </script>
 
-<div class="oph">
+<div class="oph" class:compact={layout === "compact"}>
   <!-- Row 1: filter left, Level dead center. The right cell is an empty
        counterweight — equal-fr sides are what keep Level centered on the band
        rather than centered on "whatever is left over". -->
-  <div class="oph-bar">
+  <div
+    class="oph-bar"
+    class:filter-only={!showTurnControls}
+    class:turns-only={!showFilter && showTurnControls}
+  >
     <div class="oph-side start">
       {#if showFilter}
-        <div class="filter-seg">
+        <div class="filter-seg" role="group" aria-label="Option filter">
+          {#if layout === "compact"}
+            <span class="control-label">Options</span>
+          {/if}
           <SegmentedControl
             options={filterOptions}
             value={filterValue}
@@ -122,22 +149,32 @@
       {/if}
     </div>
 
-    <!-- Level decides which turn buttons exist below, so it gets the center and
-         the level colour system rather than neutral filter chrome. -->
-    <LevelSelector
-      value={level}
-      onchange={(n) => onLevelChange(n as TurnLevel)}
-      ariaLabel="Working difficulty level"
-    />
+    {#if showTurnControls}
+      <!-- Level decides which turn buttons exist below, so it gets the center
+           and the level colour system rather than neutral filter chrome. -->
+      <div class="level-control">
+        {#if layout === "compact"}
+          <span class="control-label">Level</span>
+        {/if}
+        <LevelSelector
+          value={level}
+          compact={layout === "compact"}
+          onchange={(n) => onLevelChange(n as TurnLevel)}
+          ariaLabel="Working difficulty level"
+        />
+      </div>
 
-    <div class="oph-side end"></div>
+      <div class="oph-side end"></div>
+    {/if}
   </div>
 
   <!-- Row 2: blue (left half) / red (right half), present whenever the level has
        turns. The buttons fill each half; the CW/CCW spin button is pinned to the
-       half's outer (colored) edge — absolutely positioned into a permanently
-       reserved gutter, so its appearance never resizes the button row. -->
-  {#if turnsAvailable}
+       half's outer (colored) edge — absolutely positioned into a gutter that is
+       reserved only while that hand has turns (the .has-spin state). The gutter
+       padding animates, so the button and its room appear/collapse together
+       rather than snapping. -->
+  {#if showTurnControls && turnsAvailable}
     <!-- growFade (not svelte's slide) so the row's own height drives the reflow
          AND reduced motion collapses it — svelte's JS transitions ignore the
          media query the CSS layer respects. -->
@@ -145,8 +182,38 @@
       class="oph-turns-row"
       transition:growFade={{ axis: "y", duration: DURATION.emphasis }}
     >
-      <div class="hand-half blue" in:flyFade={{ y: 6 }}>
-        <span class="hand-tag">Blue</span>
+      <div
+        class="hand-half blue"
+        class:has-spin={hasBlueTurns}
+        role="group"
+        aria-label="Blue turns"
+        in:flyFade={{ y: 6 }}
+      >
+        <div class="hand-meta">
+          <!-- No Blue/Red word: the half is already blue/red (tint, border,
+               selected turn indicator) and the group is aria-labeled "Blue/Red
+               turns" for screen readers. Colour carries the identity. -->
+          <!-- Spin direction is a real choice in BOTH modes: it's baked into
+               each dash/static tile, and in Continuous it decides which
+               dash/static options survive the direction-reversal filter. So the
+               toggle shows whenever this hand has turns, not only in All mode. -->
+          <span class="spin-slot">
+            {#if hasBlueTurns}
+              <button
+                class="spin-inline edge"
+                transition:popIn
+                title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+                aria-label="Toggle blue dash/static spin (currently {dirLabel(
+                  blueRotation
+                )})"
+                onclick={() => onBlueRotationChange(opposite(blueRotation))}
+              >
+                <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(blueRotation)}</span>
+              </button>
+            {/if}
+          </span>
+        </div>
         <div class="turn-seg">
           <SegmentedControl
             options={turnOptions}
@@ -156,23 +223,34 @@
             onchange={(v) => onBlueChange(keyToTurnValue(v))}
           />
         </div>
-        {#if !isContinuousOnly && hasBlueTurns}
-          <button
-            class="spin-inline edge"
-            transition:popIn
-            title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-            aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
-            onclick={() => onBlueRotationChange(opposite(blueRotation))}
-          >
-            <i class="fas {dirIcon(blueRotation)}" aria-hidden="true"></i>
-            <span class="dir">{dirLabel(blueRotation)}</span>
-          </button>
-        {/if}
       </div>
       <!-- Red trails blue by one micro-beat: the two halves read as one gesture
            rather than a single slab dropping in. -->
-      <div class="hand-half red" in:flyFade={{ y: 6, delay: STAGGER.micro }}>
-        <span class="hand-tag">Red</span>
+      <div
+        class="hand-half red"
+        class:has-spin={hasRedTurns}
+        role="group"
+        aria-label="Red turns"
+        in:flyFade={{ y: 6, delay: STAGGER.micro }}
+      >
+        <div class="hand-meta">
+          <span class="spin-slot">
+            {#if hasRedTurns}
+              <button
+                class="spin-inline edge"
+                transition:popIn
+                title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
+                aria-label="Toggle red dash/static spin (currently {dirLabel(
+                  redRotation
+                )})"
+                onclick={() => onRedRotationChange(opposite(redRotation))}
+              >
+                <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
+                <span class="dir">{dirLabel(redRotation)}</span>
+              </button>
+            {/if}
+          </span>
+        </div>
         <div class="turn-seg">
           <SegmentedControl
             options={turnOptions}
@@ -182,18 +260,6 @@
             onchange={(v) => onRedChange(keyToTurnValue(v))}
           />
         </div>
-        {#if !isContinuousOnly && hasRedTurns}
-          <button
-            class="spin-inline edge"
-            transition:popIn
-            title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
-            aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
-            onclick={() => onRedRotationChange(opposite(redRotation))}
-          >
-            <i class="fas {dirIcon(redRotation)}" aria-hidden="true"></i>
-            <span class="dir">{dirLabel(redRotation)}</span>
-          </button>
-        {/if}
       </div>
     </div>
   {/if}
@@ -239,6 +305,21 @@
     justify-content: flex-end;
   }
 
+  .oph-bar.filter-only {
+    grid-template-columns: 1fr;
+  }
+
+  .level-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .control-label {
+    display: none;
+  }
+
   /* Icon-sized. Two 44px targets plus the control's own padding — the ~130px
      this gives back goes to the level buttons and the turn rows. */
   .filter-seg {
@@ -261,20 +342,24 @@
     align-items: center;
     gap: 10px;
     /* The turn buttons fill the half; the spin button is pinned out of flow on
-       the colored edge. Its gutter is reserved PERMANENTLY (not only while it
-       shows), so the buttons never resize when spin appears or disappears. */
-    --spin-gutter: 78px;
+       the colored edge. Its gutter is reserved only while this hand has turns
+       (.has-spin) — the padding animates so the turn buttons slide as the gutter
+       and its CW/CCW button appear or collapse together, never a snap. The
+       gutter is a touch wider than the button so it clears the panel edge (outer
+       inset below) AND the stepper (inner gap) instead of hugging either. */
+    --spin-gutter: 88px;
     padding: 8px 12px;
     min-width: 260px;
     border-radius: 12px;
     border: 1px solid;
+    transition: padding var(--duration-normal, 200ms) ease;
   }
 
-  .hand-half.blue {
+  .hand-half.blue.has-spin {
     padding-left: var(--spin-gutter);
   }
 
-  .hand-half.red {
+  .hand-half.red.has-spin {
     padding-right: var(--spin-gutter);
   }
 
@@ -285,7 +370,15 @@
     min-width: 0;
   }
 
+  /* The meta wrapper is structural on compact screens. On desktop its children
+     participate directly in the hand row, preserving the established layout. */
+  .hand-meta,
+  .spin-slot {
+    display: contents;
+  }
+
   .hand-half.blue {
+    --hand-color: var(--prop-blue, #3b82f6);
     --prop-color-rgb: 59, 130, 246;
     background: linear-gradient(
       180deg,
@@ -296,6 +389,7 @@
   }
 
   .hand-half.red {
+    --hand-color: var(--prop-red, #ef4444);
     --prop-color-rgb: 239, 68, 68;
     background: linear-gradient(
       180deg,
@@ -303,21 +397,6 @@
       rgba(239, 68, 68, 0.06) 100%
     );
     border-color: rgba(239, 68, 68, 0.4);
-  }
-
-  .hand-tag {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .hand-half.blue .hand-tag {
-    color: #9ec1ff;
-  }
-
-  .hand-half.red .hand-tag {
-    color: #ffaba6;
   }
 
   .spin-inline:focus-visible {
@@ -361,11 +440,11 @@
   }
 
   .hand-half.blue .spin-inline.edge {
-    left: 10px;
+    left: 14px;
   }
 
   .hand-half.red .spin-inline.edge {
-    right: 10px;
+    right: 14px;
   }
 
   .spin-inline.edge:active {
@@ -379,7 +458,165 @@
     text-align: left;
   }
 
+  /* Popover layout: Options and Level share the first row; each hand gets one
+     horizontal row beneath it. This keeps the complete Level 3 palette above
+     the picker on short phones without shrinking any touch target. */
+  .oph.compact {
+    padding: 8px;
+    background: transparent;
+    border-bottom: none;
+  }
+
+  .oph.compact .oph-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .oph.compact .oph-bar.filter-only,
+  .oph.compact .oph-bar.turns-only {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oph.compact .oph-bar.turns-only .oph-side.start,
+  .oph.compact .oph-side.end {
+    display: none;
+  }
+
+  .oph.compact .oph-side.start,
+  .oph.compact .filter-seg,
+  .oph.compact .level-control {
+    width: 100%;
+  }
+
+  .oph.compact .filter-seg,
+  .oph.compact .level-control {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  /* The compact tray sits over animated backgrounds. A deeper accent keeps
+     the selected filter label readable at enhanced contrast without changing
+     the shared control everywhere else it appears. */
+  .oph.compact .filter-seg :global(.segmented-control.accent .indicator) {
+    background: color-mix(in srgb, var(--theme-accent, #8b6cff) 48%, black);
+  }
+
+  .oph.compact .control-label {
+    display: block;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .oph.compact :global(.level-selector) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .oph.compact :global(.level-selector .lvl) {
+    width: 100%;
+    height: var(--min-touch-target, 44px);
+    padding: 0;
+  }
+
+  .oph.compact .oph-turns-row {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .oph.compact .hand-half {
+    flex: 0 0 auto;
+    display: grid;
+    /* [spin 44px][turn palette]. The Blue/Red word column is gone — colour
+       carries hand identity — so the palette gets that 30px back. */
+    grid-template-columns: var(--min-touch-target, 44px) minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    padding: 6px;
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--hand-color) 9%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--hand-color) 26%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.12))
+    );
+    box-shadow: inset 3px 0 0
+      color-mix(in srgb, var(--hand-color) 62%, transparent);
+  }
+
+  .oph.compact .hand-half.blue,
+  .oph.compact .hand-half.red {
+    padding: 6px;
+    background: color-mix(
+      in srgb,
+      var(--hand-color) 9%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--hand-color) 26%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.12))
+    );
+  }
+
+  /* hand-meta falls back to the base display:contents, so its only remaining
+     child — the spin slot — is the hand-half grid's first (44px) column. */
+
+  .oph.compact .spin-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+  }
+
+  .oph.compact .turn-seg {
+    width: 100%;
+  }
+
+  .oph.compact .turn-seg :global(.segment) {
+    padding-inline: 0.2rem;
+  }
+
+  .oph.compact .spin-inline.edge {
+    position: static;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    padding: 0;
+    transform: none;
+  }
+
+  .oph.compact .spin-inline .dir {
+    /* The rotation icon communicates the state visually; the button's full
+       aria-label keeps CW / CCW explicit without stealing Level 3 width. */
+    display: none;
+  }
+
+  .oph.compact .spin-inline.edge:active {
+    transform: scale(0.96);
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .hand-half {
+      transition: none;
+    }
     .spin-inline {
       transition: none;
     }
@@ -389,6 +626,10 @@
     /* Keep the edge button's positioning transform under reduced motion. */
     .spin-inline.edge:active {
       transform: translateY(-50%);
+    }
+
+    .oph.compact .spin-inline.edge:active {
+      transform: none;
     }
   }
 </style>
