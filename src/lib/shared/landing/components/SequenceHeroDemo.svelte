@@ -436,10 +436,12 @@
     position: absolute;
     /* Mirror the bottom-left TKA glyph so the two corners read as a pair. That
        glyph is a <g translate(50,800)> in GlyphOverlay's 950-unit viewBox — a
-       ~50/950 (5.26%) margin from the left and bottom edges. Pure cqi (no clamp)
-       so the badge tracks the glyph as the stage scales. */
-    right: 5.26cqi;
-    bottom: 5.26cqi;
+       ~50/950 (5.26%) margin from the left and bottom edges. 6cqi tracks that as
+       the stage scales, with a 14px floor so the tall icons (water/leaf, which
+       fill the box to its bottom edge) never reach the stage's clipped bottom on
+       a small viewport. */
+    right: max(14px, 6cqi);
+    bottom: max(14px, 6cqi);
     z-index: 3;
     display: grid;
     place-items: center;
