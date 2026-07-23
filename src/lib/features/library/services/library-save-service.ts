@@ -96,11 +96,14 @@ export class LibrarySaveService {
     // requested visibility and tell them, rather than failing the save. The
     // repository + syncer enforce the same invariant as a backstop.
     let visibility = options.visibility;
-    if (visibility === "public" && !meetsCommunityMinimum(sequence)) {
+    // Decide the downgrade now (it shapes the Dexie/Firestore write metadata
+    // below), but DON'T announce "Saved to your library." until the local write
+    // actually lands — otherwise a subsequent Dexie failure that rejects this
+    // save would have already flashed a false success. Toast fires post-persist.
+    const communityDowngraded =
+      visibility === "public" && !meetsCommunityMinimum(sequence);
+    if (communityDowngraded) {
       visibility = "private";
-      toast.info(
-        `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery. Saved to your library.`
-      );
     }
 
     const emitProgress = (
@@ -234,6 +237,14 @@ export class LibrarySaveService {
     }
 
     const sequenceId = sequenceToSave.id;
+
+    // Now that the local write has landed (persisted === true past the throw
+    // above), it's honest to tell a public-visibility save it was kept private.
+    if (communityDowngraded) {
+      toast.info(
+        `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery. Saved to your library.`
+      );
+    }
 
     // Step 3: Create any new tags
     emitProgress(3);

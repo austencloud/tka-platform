@@ -385,6 +385,15 @@ the geo dashboard).
 			await removeSequenceFromCollection(collectionId, scan.sequenceId);
 			if (scan.createdLibraryId) {
 				await getLibraryRepository().deleteSequence(scan.createdLibraryId);
+				// SP1 routes the printed-card import through the durable
+				// LibrarySaveService, which writes a Dexie row. The repository
+				// delete above only removes the Firestore doc, so the local row
+				// must be removed too — guests read their library from Dexie, and
+				// an orphaned row would make the "removed" card reappear on reload.
+				const { deleteSequence: deleteLocalSequence } = await import(
+					"$lib/shared/persistence/services/dexie-persistence-service"
+				);
+				await deleteLocalSequence(scan.createdLibraryId);
 			}
 			// Let the same card scan again — the undo was deliberate, but so is
 			// holding the card back up.
