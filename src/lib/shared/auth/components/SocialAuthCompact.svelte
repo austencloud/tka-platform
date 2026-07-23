@@ -39,7 +39,10 @@
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
   import { page } from "$app/state";
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import {
+    captureEvent,
+    captureWhenReady,
+  } from "$lib/shared/analytics/services/posthog";
   import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
   import { getInstagramAuthErrorMessage } from "$lib/shared/auth/services/instagram-auth";
   import InAppEscapeControls from "./InAppEscapeControls.svelte";
@@ -102,10 +105,20 @@
   const escapeAction = $derived(
     detector.getEscapeTarget(page.url.searchParams)
   );
+  // Immutable attempt context passed into the escape controls so every escape
+  // event segments by platform/version/launch state, not just method.
+  const escapeContext = $derived({
+    platform: detector.getEffectivePlatform(page.url.searchParams),
+    ios_major: detector.getIosMajorVersion(),
+    app_launched: escapeAction.isAppTarget,
+  });
 
   function revealEscapeNote() {
+    if (showEscapeNote) return; // a second provider tap must not re-fire intent
     showEscapeNote = true;
-    captureEvent("inapp_browser_signin_intent", {
+    // captureWhenReady, not captureEvent: a tap the instant the page loads would
+    // otherwise be dropped before PostHog finishes initializing.
+    captureWhenReady("inapp_browser_signin_intent", {
       method: escapeAction.method,
       route: analyticsRoute(),
     });
@@ -190,7 +203,7 @@
         /disallowed_useragent/i.test(message)
       ) {
         googleError = blockedProviderMessage("Google");
-        captureEvent("inapp_browser_oauth_rejected", {
+        captureWhenReady("inapp_browser_oauth_rejected", {
           provider: "google",
           route: analyticsRoute(),
         });
@@ -327,7 +340,11 @@
   {#if showEscapeNote}
     <div class="escape-note">
       <p class="escape-note-lead">Or open this page in your browser:</p>
-      <InAppEscapeControls target={escapeAction} route={analyticsRoute()} />
+      <InAppEscapeControls
+        target={escapeAction}
+        route={analyticsRoute()}
+        context={escapeContext}
+      />
     </div>
   {/if}
 </div>

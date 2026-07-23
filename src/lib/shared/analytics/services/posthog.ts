@@ -369,6 +369,24 @@ export function captureEvent(
   captureEventWithPostHog(posthog, eventName, properties, options);
 }
 
+/**
+ * Like captureEvent, but survives being called before PostHog finishes init.
+ *
+ * captureEvent drops silently when `!initialized` — fine for high-volume events,
+ * but auth-intent signals (a provider tap the instant the page loads) are rare
+ * and load-bearing, so those wait for the ready hook instead of vanishing.
+ * Fires immediately if already initialized.
+ */
+export function captureWhenReady(
+  eventName: string,
+  properties?: Record<string, unknown>
+): void {
+  if (!browser || import.meta.env.DEV) return;
+  onPostHogReady((instance) =>
+    captureEventWithPostHog(instance, eventName, properties)
+  );
+}
+
 /** Deliver events queued before `initialized` flips inside the loaded hook. */
 export function captureEventWithPostHog(
   instance: PostHogReadyClient,

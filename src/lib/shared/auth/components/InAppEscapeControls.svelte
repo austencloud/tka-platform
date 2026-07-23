@@ -14,7 +14,21 @@
   import type { EscapeTarget } from "../services/escape-target";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
 
-  let { target, route }: { target: EscapeTarget; route: string } = $props();
+  /** Immutable attempt context, so every escape event carries the same segmenting
+   *  properties (platform / ios_major / app_launched) instead of just `method`. */
+  interface EscapeContext {
+    platform: string;
+    ios_major: number | null;
+    app_launched: boolean;
+  }
+
+  let {
+    target,
+    route,
+    context,
+  }: { target: EscapeTarget; route: string; context: EscapeContext } = $props();
+
+  const eventBase = $derived({ ...context, method: target.method, route });
 
   /**
    * "waiting" is the 1500ms window after firing; "stayed" means it closed with
@@ -77,11 +91,10 @@
       // Reveal the fallback but keep listening — a hand-off can still land late.
       escapeState = "stayed";
       captureEvent("inapp_browser_escape_signal", {
-        method: target.method,
+        ...eventBase,
         signal: "timeout",
         phase: "timeout",
         elapsed_ms: elapsed,
-        route,
       });
       return;
     }
@@ -95,22 +108,16 @@
     clearEscapeWatch();
     captureEvent(
       "inapp_browser_escape_signal",
-      { method: target.method, signal, phase, elapsed_ms: elapsed, route },
+      { ...eventBase, signal, phase, elapsed_ms: elapsed },
       { transport: "sendBeacon" }
     );
   }
 
   function handleEscape() {
     copyFailed = false;
-    captureEvent("inapp_browser_escape_attempted", {
-      method: target.method,
-      route,
-    });
+    captureEvent("inapp_browser_escape_attempted", eventBase);
     if (target.isAppTarget) {
-      captureEvent("inapp_get_app_clicked", {
-        method: target.method,
-        route,
-      });
+      captureEvent("inapp_get_app_clicked", eventBase);
     }
 
     if (target.url === null) return; // guide-only methods have nothing to fire
