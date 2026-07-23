@@ -174,13 +174,27 @@
      ============================================================ */
   @media (max-width: 767px) {
     :global(.drawer-content.loop-drawer-sheet) {
+      --sheet-transition:
+        transform var(--duration-dramatic, 350ms)
+          var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+        opacity var(--duration-dramatic, 350ms)
+          var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+        border-radius var(--duration-dramatic, 350ms)
+          var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+
       inset: auto 0 0 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      height: 100dvh !important;
+      /* The app reserves a desktop scrollbar gutter on <html>. Viewport width
+         keeps this edge-to-edge sheet from inheriting that gap in device mode. */
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: auto;
+      min-height: 0 !important;
       max-height: 100dvh !important;
-      border-radius: 0 !important;
+      border-radius: var(--sheet-radius-large, 20px)
+        var(--sheet-radius-large, 20px) 0 0 !important;
       border-left: none !important;
+      overflow: clip;
+      will-change: transform, height;
       /* data-placement is still "right", whose base rule sets
          touch-action: pan-x and blocks vertical scrolling — re-enable pan-y so
          the list can actually scroll. */
@@ -216,16 +230,17 @@
       inset: 0 !important;
     }
 
-    /* The full-height phone sheet has one bounded layout. The six LOOP choices
-       and footer stay fixed; only the optional explanation stack may scroll. */
+    /* Single mode is a true content-height sheet: its six choices are the
+       entire task, so the surface ends with the grid instead of manufacturing
+       an empty viewport below it. */
     :global(.drawer-content.loop-drawer-sheet) > :global(.drawer-inner) {
-      overflow: hidden;
+      overflow-y: auto;
     }
 
     .loop-drawer-content {
-      height: 100% !important;
+      height: auto !important;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .loop-drawer-content :global(.grid-container) {
@@ -239,6 +254,40 @@
     }
 
     .loop-drawer-content > :global(.loop-expanded-overlay) {
+      flex: 0 0 auto;
+      overflow: visible !important;
+    }
+
+    /* Combo mode has secondary controls plus a persistent Apply action. It is
+       the only phone state that needs a bounded, full-viewport composition. */
+    :global(
+      .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
+    ) {
+      height: 100dvh;
+      border-radius: 0 !important;
+    }
+
+    :global(
+        .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
+      )
+      > :global(.drawer-inner) {
+      overflow: hidden;
+    }
+
+    :global(
+        .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
+      )
+      .loop-drawer-content {
+      height: 100% !important;
+      overflow: hidden;
+    }
+
+    :global(
+        .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
+      )
+      .loop-drawer-content
+      > :global(.loop-expanded-overlay) {
+      flex: 1 1 auto;
       overflow: hidden !important;
     }
 
@@ -260,6 +309,11 @@
 
   /* Accessibility: Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
+    :global(.drawer-content.loop-drawer-sheet) {
+      --sheet-transition: none;
+      will-change: auto;
+    }
+
     .loop-drawer-content {
       transition: none;
     }

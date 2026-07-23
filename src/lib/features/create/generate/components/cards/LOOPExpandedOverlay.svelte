@@ -6,7 +6,10 @@ Animates forward in z-axis and expands to fill the container space
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
+  import { onMount, tick } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     generateLOOPType,
     canExtendCombo,
@@ -18,7 +21,6 @@ Animates forward in z-axis and expands to fill the container space
     type GuestLoopLock,
   } from "$lib/shared/create/services/loop-guest-gate";
   import { blockSignatures } from "$lib/shared/create/services/loop-block-signatures";
-  import { onMount } from "svelte";
   import {
     LOOP_COMPONENTS,
     LOOPComponent,
@@ -66,6 +68,8 @@ Animates forward in z-axis and expands to fill the container space
   }>();
 
   let hapticService: HapticFeedback | null = null;
+  let overlayElement: HTMLDivElement;
+  let drawerHeightAnimation: Animation | null = null;
   // A reopened multi-component combo lands on the Combo screen it was applied
   // from, not back on Single (the overlay remounts per open — props are nulled
   // on close — so mount-time init is the reopen path).
@@ -98,6 +102,11 @@ Animates forward in z-axis and expands to fill the container space
 
   onMount(() => {
     hapticService = getHapticFeedback();
+
+    return () => {
+      drawerHeightAnimation?.cancel();
+      drawerHeightAnimation = null;
+    };
   });
 
   // Generate explanation text based on selected components
@@ -275,9 +284,52 @@ Animates forward in z-axis and expands to fill the container space
     localSelectedComponents = newSet;
   }
 
-  function handleModeChange(isMulti: boolean) {
+  async function handleModeChange(isMulti: boolean) {
+    if (isMulti === isMultiSelectMode) return;
+
     hapticService?.trigger("selection");
+
+    const drawer = overlayElement?.closest<HTMLElement>(".loop-drawer-sheet");
+    const animationDuration = motionDuration(DURATION.dramatic);
+    const shouldAnimateDrawer =
+      drawer !== null &&
+      window.matchMedia("(max-width: 767px)").matches &&
+      animationDuration > 0;
+
+    // Single ends at its content while Combo fills the phone. Numeric
+    // endpoints keep that intrinsic-height morph smooth in iPhone WebKit too.
+    const startHeight = shouldAnimateDrawer
+      ? drawer.getBoundingClientRect().height
+      : 0;
+
+    drawerHeightAnimation?.cancel();
+    drawerHeightAnimation = null;
     isMultiSelectMode = isMulti;
+
+    if (!shouldAnimateDrawer) return;
+
+    await tick();
+    if (!drawer.isConnected) return;
+
+    const endHeight = drawer.getBoundingClientRect().height;
+    if (Math.abs(startHeight - endHeight) < 1) return;
+
+    const easing =
+      getComputedStyle(drawer).getPropertyValue("--ease-out").trim() ||
+      "cubic-bezier(0.16, 1, 0.3, 1)";
+    const animation = drawer.animate(
+      [{ height: `${startHeight}px` }, { height: `${endHeight}px` }],
+      { duration: animationDuration, easing }
+    );
+
+    drawerHeightAnimation = animation;
+    void animation.finished
+      .catch(() => undefined)
+      .finally(() => {
+        if (drawerHeightAnimation === animation) {
+          drawerHeightAnimation = null;
+        }
+      });
   }
 
   function updateRhythm(updates: Partial<RhythmValue>) {
@@ -344,7 +396,9 @@ Animates forward in z-axis and expands to fill the container space
 </script>
 
 <div
+  bind:this={overlayElement}
   class="loop-expanded-overlay"
+  class:combo-mode={isMultiSelectMode}
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
   <!-- Header with title, disable toggle, and close button -->
@@ -413,7 +467,14 @@ Animates forward in z-axis and expands to fill the container space
 
   <!-- Explanation panel (combo mode only) -->
   {#if isMultiSelectMode}
-    <div class="combo-details themed-scrollbar">
+    <div
+      class="combo-details themed-scrollbar"
+      in:flyFade={{
+        y: 8,
+        delay: motionDuration(DURATION.instant),
+        duration: DURATION.normal,
+      }}
+    >
       <!-- Rhythm tier: collapsed disclosure for rotation/inversion interval + mode.
            Hidden entirely when the caller didn't pass `rhythm` (legacy callers). -->
       {#if hasRhythmTier && hasRhythmKnobs}
@@ -524,7 +585,14 @@ Animates forward in z-axis and expands to fill the container space
     <!-- Apply remains sticky in the in-card and desktop presentations. The
          phone drawer turns this into a fixed flex footer while its optional
          explanation stack owns any overflow. -->
-    <div class="apply-dock">
+    <div
+      class="apply-dock"
+      in:flyFade={{
+        y: 8,
+        delay: motionDuration(DURATION.fast),
+        duration: DURATION.normal,
+      }}
+    >
       <button
         class="apply-button"
         class:locked={guestLock.locked}
