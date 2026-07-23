@@ -1,14 +1,16 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { generateSequenceRoutePath } from "$lib/shared/navigation/services/sequence-encoder";
+import { decodeSequenceWithCompression } from "$lib/shared/navigation/services/sequence-encoder";
 import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
 import { buildSequenceSharePayload } from "./build-sequence-share-payload";
 
 export function buildSequenceMessageAttachment(
-  sequence: SequenceData
+  sequence: SequenceData,
+  shortCode: string
 ): MessageAttachment {
   const payload = buildSequenceSharePayload(sequence);
   const metadata: NonNullable<MessageAttachment["metadata"]> = {
     sequenceId: payload.sequenceId,
+    sequenceShortCode: shortCode,
     sequenceWord: payload.sequenceWord,
   };
 
@@ -26,7 +28,7 @@ export function buildSequenceMessageAttachment(
 
   const attachment: MessageAttachment = {
     type: "sequence",
-    url: generateSequenceRoutePath(sequence),
+    url: `/q/${encodeURIComponent(shortCode)}`,
     name: payload.sequenceWord,
     metadata,
   };
@@ -36,4 +38,24 @@ export function buildSequenceMessageAttachment(
   }
 
   return attachment;
+}
+
+export function decodeLegacySequenceAttachment(
+  attachment: MessageAttachment
+): SequenceData | null {
+  const prefix = "/sequence/";
+  if (!attachment.url?.startsWith(prefix)) return null;
+
+  const encodedRouteId = attachment.url
+    .slice(prefix.length)
+    .split(/[?#]/, 1)[0];
+  if (!encodedRouteId) return null;
+
+  const encoded = decodeURIComponent(encodedRouteId);
+  const isSerialized =
+    encoded.startsWith("d1:") ||
+    encoded.startsWith("raw:") ||
+    encoded.includes("|");
+
+  return isSerialized ? decodeSequenceWithCompression(encoded) : null;
 }

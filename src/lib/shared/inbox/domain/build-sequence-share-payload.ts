@@ -1,18 +1,13 @@
-import type { SequenceSharePayload } from "./models/sequence-share-payload";
+import type {
+  SequenceSharePayload,
+  SequenceShareSource,
+} from "./models/sequence-share-payload";
 
-export function buildSequenceSharePayload(seq: {
-  id: string;
-  displayName?: string;
-  intendedWord?: string;
-  word?: string;
-  name?: string;
-  thumbnails?: readonly string[];
-  thumbnailUrl?: string;
-  ownerDisplayName?: string;
-  author?: string;
-  steps?: readonly unknown[];
-}): SequenceSharePayload {
+export function buildSequenceSharePayload(
+  seq: SequenceShareSource
+): SequenceSharePayload {
   return {
+    sequence: seq,
     sequenceId: seq.id,
     sequenceWord: seq.displayName || seq.intendedWord || seq.word || "",
     sequenceCloudWord: seq.word || undefined,

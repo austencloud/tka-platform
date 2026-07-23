@@ -15,6 +15,9 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { decodeLegacySequenceAttachment } from "../../domain/message-attachment-builders";
 
   interface Props {
     attachment: MessageAttachment;
@@ -33,11 +36,12 @@
 
   // Extract sequence metadata
   const sequenceId = $derived(attachment.metadata?.sequenceId);
-  const sequenceRoute = $derived(
-    attachment.url?.startsWith("/sequence/")
+  const sequenceShortCode = $derived(attachment.metadata?.sequenceShortCode);
+  const shortCodeRoute = $derived(
+    attachment.url?.startsWith("/q/")
       ? attachment.url
-      : sequenceId
-        ? `/sequence/${encodeURIComponent(sequenceId)}`
+      : sequenceShortCode
+        ? `/q/${encodeURIComponent(sequenceShortCode)}`
         : null
   );
   const sequenceWord = $derived(
@@ -97,16 +101,54 @@
     hapticService = getHapticFeedback();
   });
 
+  async function resolveSequenceRoute(): Promise<string | null> {
+    if (shortCodeRoute) return shortCodeRoute;
+
+    const legacySequence = decodeLegacySequenceAttachment(attachment);
+    if (legacySequence) {
+      const { code } = await getShortCodeManager().createShortCode(
+        legacySequence,
+        { embedSequenceData: true }
+      );
+      return `/q/${encodeURIComponent(code)}`;
+    }
+
+    return sequenceId ? `/sequence/${encodeURIComponent(sequenceId)}` : null;
+  }
+
   async function handleClick() {
-    if (isDeleted || !sequenceRoute) return;
+    if (isDeleted || isChecking) return;
 
     hapticService?.trigger("selection");
+    isChecking = true;
 
-    // Close the inbox drawer first
-    inboxState.close();
+    try {
+      const sequenceRoute = await resolveSequenceRoute();
+      if (!sequenceRoute) {
+        isDeleted = true;
+        return;
+      }
 
-    // Navigate directly to the sequence viewer route
-    await goto(sequenceRoute);
+      inboxState.close();
+      await goto(sequenceRoute);
+    } catch (caught) {
+      const failure =
+        caught instanceof Error ? caught : new Error(String(caught));
+      console.error("[SequenceMessageCard] Failed to open sequence:", failure);
+      getErrorHandler().showUserError({
+        message: "This sequence could not be opened.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: {
+          module: "inbox",
+          tab: "messages",
+          action: "openSequenceAttachment",
+        },
+      });
+    } finally {
+      isChecking = false;
+    }
   }
 </script>
 

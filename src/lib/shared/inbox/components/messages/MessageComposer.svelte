@@ -19,6 +19,7 @@
   import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
   import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
   import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import type {
     MessageImageSendHandle,
     MessageImageSendProgress,
@@ -169,13 +170,23 @@
         });
         await imageSendHandle.promise;
       } else {
+        const sequenceAttachment =
+          attachment?.type === "sequence"
+            ? buildSequenceMessageAttachment(
+                attachment.sequence,
+                (
+                  await getShortCodeManager().createShortCode(
+                    attachment.sequence,
+                    { embedSequenceData: true }
+                  )
+                ).code
+              )
+            : undefined;
+
         await messagingService.sendMessage({
           conversationId,
           content: text,
-          attachments:
-            attachment?.type === "sequence"
-              ? [buildSequenceMessageAttachment(attachment.sequence)]
-              : undefined,
+          attachments: sequenceAttachment ? [sequenceAttachment] : undefined,
           replyTo,
         });
       }

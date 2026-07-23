@@ -16,8 +16,9 @@
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
+  import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 
   interface Props {
     payload: SequenceSharePayload;
@@ -152,30 +153,18 @@
     error = null;
 
     try {
-      // 1. Get or create conversation with the recipient
+      // 1. Mint the same durable short code used by QR cards and shared viewers.
+      const { code } = await getShortCodeManager().createShortCode(
+        payload.sequence,
+        { embedSequenceData: true }
+      );
+      const attachment = buildSequenceMessageAttachment(payload.sequence, code);
+
+      // 2. Get or create conversation with the recipient
       const result = await conversationService.getOrCreateConversation(
         selectedUser.id
       );
       const conversationId = result.conversation.id;
-
-      // 2. Build the sequence attachment (strip undefined values - Firestore rejects them)
-      const metadata: Record<string, string | number> = {
-        sequenceId: payload.sequenceId,
-        sequenceWord: payload.sequenceWord,
-      };
-      if (payload.sequenceCloudWord) metadata.sequenceCloudWord = payload.sequenceCloudWord;
-      if (payload.sequenceName) metadata.sequenceName = payload.sequenceName;
-      if (payload.sequenceThumbnail) metadata.sequenceThumbnail = payload.sequenceThumbnail;
-      if (payload.sequenceAuthor) metadata.sequenceAuthor = payload.sequenceAuthor;
-      if (payload.sequenceStepCount) metadata.sequenceStepCount = payload.sequenceStepCount;
-
-      const attachment: MessageAttachment = {
-        type: "sequence",
-        url: `/sequence/${payload.sequenceId}`,
-        thumbnailUrl: payload.sequenceThumbnail || "",
-        name: payload.sequenceWord,
-        metadata,
-      };
 
       // 3. Send the message
       const content =
@@ -504,7 +493,11 @@
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 20%,
+      transparent
+    );
     color: var(--theme-accent, #6366f1);
     border-radius: 10px;
     font-size: var(--font-size-compact, 12px);
@@ -613,7 +606,6 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-
   /* ── Suggestions row ──────────────────────────────────────────────── */
 
   .suggestions-loading {
@@ -685,7 +677,11 @@
 
   .suggestion-chip:hover {
     border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 8%,
+      transparent
+    );
   }
 
   .suggestion-chip:active {

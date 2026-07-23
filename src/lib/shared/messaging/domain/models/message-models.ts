@@ -43,6 +43,7 @@ export interface MessageAttachment {
     height?: number;
     // Sequence-specific fields
     sequenceId?: string;
+    sequenceShortCode?: string;
     sequenceWord?: string;
     /** The raw sequence.word used as the cloud thumbnail storage key */
     sequenceCloudWord?: string;
