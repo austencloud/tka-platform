@@ -39,6 +39,11 @@ const IN_APP_BROWSER_PATTERNS: BrowserPattern[] = [
   { pattern: /Messenger/i, name: "Messenger" },
   { pattern: /Instagram/i, name: "Instagram" },
 
+  // Google's own iOS app embeds a webview that Google's OAuth policy blocks the
+  // same way; without this it reads as a normal browser and a provider tap dies
+  // at disallowed_useragent with no escape offered.
+  { pattern: /GSA\//i, name: "Google App" },
+
   // Other social apps
   { pattern: /Twitter/i, name: "Twitter" },
   { pattern: /Line\//i, name: "Line" },
@@ -97,6 +102,17 @@ export class InAppBrowserDetector {
   /** Real detection, plus the test hook. The only form call sites should use. */
   isInAppBrowserOrForced(searchParams?: URLSearchParams): boolean {
     return this.isInAppBrowser() || this.getForcedValue(searchParams) !== null;
+  }
+
+  /**
+   * The platform to resolve escapes against, honoring ?forceIAB=ios|android so
+   * the test matrix actually exercises those paths on a desktop. A forced value
+   * that isn't a platform (true/false) falls back to real detection.
+   */
+  getEffectivePlatform(searchParams?: URLSearchParams): InAppBrowserPlatform {
+    const forced = this.getForcedValue(searchParams);
+    if (forced === "ios" || forced === "android") return forced;
+    return this.getPlatform();
   }
 
   getOpenInBrowserUrl(): string {
@@ -195,7 +211,7 @@ export class InAppBrowserDetector {
    */
   getEscapeTarget(searchParams?: URLSearchParams): EscapeTarget {
     return resolveEscapeTarget({
-      platform: this.getPlatform(),
+      platform: this.getEffectivePlatform(searchParams),
       iosMajorVersion: this.getIosMajorVersion(),
       appLaunched: isAppLaunched(searchParams),
       currentUrl: typeof window !== "undefined" ? window.location.href : "",
@@ -211,6 +227,12 @@ export class InAppBrowserDetector {
 
   private isIOS(): boolean {
     if (typeof navigator === "undefined") return false;
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+    // iPadOS 13+ desktop mode sends a Mac UA; touch points disambiguate it from
+    // a real Mac, which reports maxTouchPoints 0. Such an iPad has no iOS
+    // version in its UA, so getIosMajorVersion stays null and the resolver hands
+    // back the safe iOS guide rather than firing a scheme it can't vouch for.
+    const nav = navigator as Navigator & { maxTouchPoints?: number };
+    return /Macintosh/i.test(navigator.userAgent) && (nav.maxTouchPoints ?? 0) > 1;
   }
 }
