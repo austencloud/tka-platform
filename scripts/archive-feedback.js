@@ -135,6 +135,14 @@ async function archiveFeedback() {
 
   console.log(`📦 Archiving completed feedback for v${version}...\n`);
 
+  const versionRef = db.collection("versions").doc(version);
+  const existingVersion = await versionRef.get();
+  if (existingVersion.exists) {
+    throw new Error(
+      `Version v${version} already exists. Refusing to overwrite its release notes.`
+    );
+  }
+
   // Get completed feedback
   const snapshot = await db
     .collection("feedback")
@@ -211,7 +219,6 @@ async function archiveFeedback() {
   });
 
   // Create version document
-  const versionRef = db.collection("versions").doc(version);
   batch.set(versionRef, {
     version,
     feedbackCount: items.length,

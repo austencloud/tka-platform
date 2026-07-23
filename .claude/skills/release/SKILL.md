@@ -80,12 +80,15 @@ Releases without an audited custom changelog are blocked.
 git push origin main
 git push origin vX.Y.Z
 gh release create vX.Y.Z --title "vX.Y.Z" --notes-file .release-notes.md
-node scripts/archive-feedback.js X.Y.Z
 git push origin main
 ```
 
 A release is complete only after the GitHub release exists and the archived
 feedback/version record is verified.
+
+`release.js` archives its selected feedback and creates the version record.
+Never run `archive-feedback.js` afterward; it is only for standalone legacy
+releases and refuses to overwrite an existing version.
 
 ## Version Rule
 
