@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { resolveEscapeTarget } from "$lib/shared/auth/services/escape-target";
+import {
+  resolveEscapeTarget,
+  safeInternalPath,
+} from "$lib/shared/auth/services/escape-target";
 
 const base = { currentUrl: "https://tkaflowarts.com/create/construct" };
 
@@ -183,5 +186,32 @@ describe("resolveEscapeTarget — boundaries", () => {
     });
     expect(t.isAppTarget).toBe(true);
     expect(t.appStoreUrl).toBe("https://apps.apple.com/app/id123");
+  });
+});
+
+describe("safeInternalPath (bridge open-redirect guard)", () => {
+  it("passes a normal internal path with query and hash", () => {
+    expect(safeInternalPath("/create/construct?x=1#t")).toBe(
+      "/create/construct?x=1#t"
+    );
+  });
+  it("passes the bare root", () => {
+    expect(safeInternalPath("/")).toBe("/");
+  });
+  it("rejects protocol-relative //evil.com", () => {
+    expect(safeInternalPath("//evil.com")).toBe("/");
+  });
+  it("rejects backslash-relative path", () => {
+    expect(safeInternalPath("/\\evil.com")).toBe("/");
+  });
+  it("rejects an absolute external url", () => {
+    expect(safeInternalPath("https://evil.com")).toBe("/");
+  });
+  it("rejects a relative path with no leading slash", () => {
+    expect(safeInternalPath("create/construct")).toBe("/");
+  });
+  it("falls back to root on null/empty", () => {
+    expect(safeInternalPath(null)).toBe("/");
+    expect(safeInternalPath("")).toBe("/");
   });
 });

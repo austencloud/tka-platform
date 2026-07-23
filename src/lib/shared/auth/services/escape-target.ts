@@ -26,6 +26,19 @@ function isCoveredAppRoute(pathname: string): boolean {
   return COVERED_APP_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+/**
+ * Sanitize the `to` destination the /store/open bridge restores. Same-origin
+ * absolute paths only: a leading single slash followed by a non-slash,
+ * non-backslash char, so an attacker can't smuggle `//evil.com` or `/\evil.com`
+ * (both protocol-relative to a browser) through the bridge as an open redirect.
+ * Anything else falls back to the home route.
+ */
+export function safeInternalPath(to: string | null | undefined): string {
+  if (!to) return "/";
+  if (to === "/") return "/";
+  return /^\/(?![/\\])/.test(to) ? to : "/";
+}
+
 export type EscapeMethod =
   | "android_intent"
   | "ios_scheme"
