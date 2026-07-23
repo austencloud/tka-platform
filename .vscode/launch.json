@@ -33,6 +33,30 @@
       }
     },
     {
+      "name": "🟢 Start Last Local Build",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File '${workspaceFolder}/scripts/start-stable-preview.ps1'",
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "hidden": false,
+        "group": "TKA",
+        "order": 3
+      }
+    },
+    {
+      "name": "🌐 Open Stable Production",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "powershell.exe -NoProfile -Command \"Start-Process 'https://tkaflowarts.com'\"",
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "hidden": false,
+        "group": "TKA",
+        "order": 4
+      }
+    },
+    {
       "name": "🔧 Build TKA",
       "type": "node",
       "request": "launch",
@@ -44,7 +68,7 @@
       "presentation": {
         "hidden": false,
         "group": "TKA",
-        "order": 3
+        "order": 5
       }
     },
     {
@@ -59,7 +83,7 @@
       "presentation": {
         "hidden": false,
         "group": "TKA",
-        "order": 4
+        "order": 6
       }
     }
   ]

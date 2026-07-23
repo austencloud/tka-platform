@@ -91,6 +91,7 @@ node_modules/
 # Without the leading slash, git would ignore ALL directories named "build" at any depth.
 /build                          # Ignore ONLY root-level build directory (SvelteKit output)
 /build/**
+/.stable-preview*
 # App-level build directories (landing, etc.)
 apps/*/build/**
 # Netlify (no longer used)
