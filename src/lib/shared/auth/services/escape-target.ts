@@ -29,6 +29,8 @@ export interface EscapeTarget {
   url: string | null;
   /** Routing to the native app vs the browser. */
   isAppTarget: boolean;
+  /** iOS post-launch: the App Store link shown as a secondary "Get the app". */
+  appStoreUrl?: string;
 }
 
 export interface EscapeInput {
@@ -41,9 +43,39 @@ export interface EscapeInput {
   appStoreUrl?: string;
 }
 
-function androidIntent(input: EscapeInput): EscapeTarget {
-  const u = new URL(input.currentUrl);
-  const tail = `${u.host}${u.pathname}${u.search}${u.hash}`;
+/**
+ * Absolute https only. Anything else is not escapable: an http:// scheme swap
+ * would navigate inside the webview, and a malformed URL would throw. Both must
+ * degrade to a guide, never a fired URL.
+ */
+function parseHttpsUrl(raw: string): URL | null {
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:" ? u : null;
+  } catch {
+    return null;
+  }
+}
+
+const IOS_INSTRUCTIONS: EscapeTarget = {
+  method: "ios_instructions",
+  label: "Open in Safari",
+  url: null,
+  isAppTarget: false,
+};
+const OTHER_INSTRUCTIONS: EscapeTarget = {
+  method: "generic_instructions",
+  label: "Open in your browser",
+  url: null,
+  isAppTarget: false,
+};
+
+function androidIntent(u: URL, input: EscapeInput): EscapeTarget {
+  // host+path+search only. The page hash is dropped here: the first '#' would
+  // terminate the intent URI and swallow the '#Intent' block, so a URL like
+  // /glossary#term would produce an unparseable intent. The full URL, hash
+  // included, is preserved in browser_fallback_url.
+  const tail = `${u.host}${u.pathname}${u.search}`;
 
   if (input.appLaunched) {
     // package= pins the app; browser_fallback_url catches the not-installed case
@@ -60,19 +92,29 @@ function androidIntent(input: EscapeInput): EscapeTarget {
     };
   }
 
-  // Pre-launch: no package, so it resolves against any installed browser.
+  // Pre-launch: no package, so it resolves against any installed browser — the
+  // copy says "browser", not "Chrome", because Firefox/Samsung/etc. are valid.
   return {
     method: "android_intent",
-    label: "Open in Chrome",
-    url: `intent://${tail}#Intent;scheme=https;S.browser_fallback_url=${encodeURIComponent(input.currentUrl)};end`,
+    label: "Open in browser",
+    url: `intent://${tail}#Intent;scheme=https;S.browser_fallback_url=${encodeURIComponent(u.href)};end`,
     isAppTarget: false,
   };
 }
 
 export function resolveEscapeTarget(input: EscapeInput): EscapeTarget {
-  if (input.platform === "android") return androidIntent(input);
+  const u = parseHttpsUrl(input.currentUrl);
+  // Nothing safe to fire without an https URL — hand back the platform's guide.
+  if (!u) return input.platform === "other" ? OTHER_INSTRUCTIONS : IOS_INSTRUCTIONS;
+
+  if (input.platform === "android") return androidIntent(u, input);
 
   if (input.platform === "ios") {
+    // iOS can't be force-opened to the app from a webview any more than to
+    // Safari, so post-launch the primary action stays the Safari scheme and the
+    // App Store link rides along as a secondary "Get the app".
+    const appStoreUrl = input.appLaunched ? input.appStoreUrl : undefined;
+
     // Fire the scheme only where it is reliable. On older or unknown iOS an
     // unsupported scheme raises a native "invalid page" dialog that reads as an
     // app crash, so those get the guide instead of a fired URL.
@@ -84,22 +126,13 @@ export function resolveEscapeTarget(input: EscapeInput): EscapeTarget {
         method: "ios_scheme",
         label: "Open in Safari",
         // x-safari-https:// takes the URL with its https scheme swapped in.
-        url: input.currentUrl.replace(/^https:\/\//, "x-safari-https://"),
-        isAppTarget: false,
+        url: u.href.replace(/^https:\/\//, "x-safari-https://"),
+        isAppTarget: input.appLaunched,
+        appStoreUrl,
       };
     }
-    return {
-      method: "ios_instructions",
-      label: "Open in Safari",
-      url: null,
-      isAppTarget: false,
-    };
+    return { ...IOS_INSTRUCTIONS, isAppTarget: input.appLaunched, appStoreUrl };
   }
 
-  return {
-    method: "generic_instructions",
-    label: "Open in your browser",
-    url: null,
-    isAppTarget: false,
-  };
+  return OTHER_INSTRUCTIONS;
 }

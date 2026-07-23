@@ -16,7 +16,7 @@ describe("resolveEscapeTarget", () => {
     expect(t.url).toContain("intent://");
     expect(t.url).toContain("scheme=https");
     expect(t.url).not.toContain("package=");
-    expect(t.label).toBe("Open in Chrome");
+    expect(t.label).toBe("Open in browser");
   });
 
   it("android post-launch → app intent with package + play-store fallback", () => {
@@ -76,5 +76,86 @@ describe("resolveEscapeTarget", () => {
     });
     expect(t.method).toBe("generic_instructions");
     expect(t.url).toBeNull();
+  });
+});
+
+describe("resolveEscapeTarget — boundaries", () => {
+  const hashUrl = "https://tkaflowarts.com/glossary?x=1#term";
+
+  it("android intent data URI never contains the page hash (it breaks #Intent)", () => {
+    const t = resolveEscapeTarget({
+      platform: "android",
+      iosMajorVersion: null,
+      appLaunched: false,
+      currentUrl: hashUrl,
+    });
+    const dataPart = t.url!.split("#Intent")[0]; // everything before the intent block
+    expect(dataPart).not.toContain("#term");
+    expect(t.url).toContain("#Intent;");
+    // full url (hash included) survives in the fallback
+    expect(decodeURIComponent(t.url!)).toContain("#term");
+  });
+
+  it("ios scheme preserves query and hash", () => {
+    const t = resolveEscapeTarget({
+      platform: "ios",
+      iosMajorVersion: 18,
+      appLaunched: false,
+      currentUrl: hashUrl,
+    });
+    expect(t.url).toBe("x-safari-https://tkaflowarts.com/glossary?x=1#term");
+  });
+
+  it("non-HTTPS url → instruction-only target, never a fired url", () => {
+    for (const platform of ["ios", "android"] as const) {
+      const t = resolveEscapeTarget({
+        platform,
+        iosMajorVersion: 18,
+        appLaunched: false,
+        currentUrl: "http://tkaflowarts.com/create",
+      });
+      expect(t.url).toBeNull();
+      expect(t.method).toMatch(/instructions$/);
+    }
+  });
+
+  it("malformed url → instruction-only target, does not throw", () => {
+    expect(() =>
+      resolveEscapeTarget({
+        platform: "android",
+        iosMajorVersion: null,
+        appLaunched: false,
+        currentUrl: "not a url",
+      })
+    ).not.toThrow();
+    const t = resolveEscapeTarget({
+      platform: "android",
+      iosMajorVersion: null,
+      appLaunched: false,
+      currentUrl: "not a url",
+    });
+    expect(t.url).toBeNull();
+  });
+
+  it("pre-launch android label says browser, not Chrome", () => {
+    const t = resolveEscapeTarget({
+      platform: "android",
+      iosMajorVersion: null,
+      appLaunched: false,
+      currentUrl: "https://tkaflowarts.com/x",
+    });
+    expect(t.label).toBe("Open in browser");
+  });
+
+  it("ios appLaunched=true surfaces an App Store action", () => {
+    const t = resolveEscapeTarget({
+      platform: "ios",
+      iosMajorVersion: 18,
+      appLaunched: true,
+      currentUrl: "https://tkaflowarts.com/create",
+      appStoreUrl: "https://apps.apple.com/app/id123",
+    });
+    expect(t.isAppTarget).toBe(true);
+    expect(t.appStoreUrl).toBe("https://apps.apple.com/app/id123");
   });
 });
