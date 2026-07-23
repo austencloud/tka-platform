@@ -1,5 +1,14 @@
 # First-Session Activation Implementation Plan
 
+> **⚠️ SUPERSEDED (2026-07-22).** A second review (5.6) + three grounding
+> investigations found the two leaks sit on broken infrastructure (Firestore-only
+> `LibraryRepository.saveSequence`; anon-upgrade stranding routes). Full scope was
+> approved and decomposed into three sequenced sub-projects (SP1 durable-save, SP2
+> auth-preservation, SP3 activation) in
+> `docs/superpowers/specs/active/2026-07-22-first-session-activation-design.md`.
+> Each sub-project gets its own plan. Do NOT execute this file — it is retained for
+> the verified code seams in its task bodies only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Convert first-session users — one tap generates and keeps a real sequence (Leak A), and the first successful guest save raises one instrumented, actionable "create a free account" prompt through any save path (Leak B).

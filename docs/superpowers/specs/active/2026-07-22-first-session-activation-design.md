@@ -1,369 +1,341 @@
 # First-Session Activation — Design
 
 **Date:** 2026-07-22
-**Status:** Revision 2 — reconciled against code review (2026-07-22). Awaiting
-re-review before implementation plan.
-**Author:** Claude (Opus 4.8), with Austen
+**Status:** Revision 3 — full-scope (Austen, 2026-07-22), decomposed into three
+sequenced sub-projects. Awaiting re-review before per-sub-project plans.
+**Author:** Claude (Opus 4.8), with Austen; reviewed by GPT-5.6 (Codex) ×2
+
+## Why this revision
+
+Rev 1 was a plan-ready design; Rev 2 reconciled a first review. A second review
+(5.6, on the Rev-2 plan) plus three grounding investigations found that the two
+funnel leaks sit on **broken infrastructure**, not just missing UI:
+
+- **Guest saves through four "keep" paths never reach the guest's library.**
+  `LibraryRepository.saveSequence` is Firestore-only and fire-and-forget
+  (`src/lib/shared/library/services/library-repository.ts:492-501` — no Dexie
+  write anywhere in the class). Guests read their library from Dexie, not
+  Firestore (`create-browse-engine.svelte.ts:467-474`). So saves via the viewer
+  (`library-action-handler.svelte.ts:126`), printed-card import
+  (`ScanCardSheet.svelte:195`), video-record (`VideoRecordCoordinator.svelte:105`),
+  and retro shell (`notation-adapter.ts:154`) are invisible in "My Library."
+  Only `LibrarySaveService.saveSequence` awaits the Dexie write
+  (`library-save-service.ts:181`).
+- **Conversion can strand the just-saved sequence.** In-place anonymous linking
+  exists and captures drafts on collision
+  (`anonymous-upgrade.ts` `captureAnonymousDrafts`/`promptAnonymousImport`), but
+  (a) it reads drafts from **Firestore** (`library-repository.ts:854-859`), so a
+  fresh Dexie-only save is missed, and (b) several modal routes bypass linking
+  entirely: Google One Tap (`authenticator.ts:115`, no `isAnonymous` check),
+  email/password **sign-in mode** (`EmailPasswordAuth.svelte:136-140`, the
+  most-reached route, zero mitigation), cross-browser magic link
+  (`email-link-completion.ts:152-154`), and the retro login dialog.
+- **The existing guest nudge can't even open its modal.** The save-cap trigger
+  calls `openAuthDialog()` (`library-save-service.ts:143`) from
+  `auth-ui-state.svelte.ts`, which has **zero consumers** — `AuthModal` is driven
+  by `authDrawerState.open`. The toast fires; the modal may not open.
+
+Because 1 and 2 are pre-existing bugs affecting **all** guests (not just
+first-session), and 3 depends on both being solid, this ships as three
+sub-projects in dependency order. Full scope, sequenced — not descoped.
+
+## Sub-project graph
+
+```
+SP1 Durable-save unification ──┐
+                               ├──▶ SP3 First-session activation
+SP2 Anonymous-account preserve ┘
+```
+
+Build order: **SP1 → SP2 → SP3.** Each gets its own plan
+(`docs/superpowers/plans/…`) and ships independently. SP1 and SP2 are correctness
+fixes valuable on their own; SP3 is the activation feature that relies on them.
+The prior single plan
+(`docs/superpowers/plans/2026-07-22-first-session-activation.md`) is **superseded**
+by this decomposition.
+
+---
+
+# SP1 — Durable-Save Unification
 
 ## Problem
 
-Live user data (Firestore `users` + device/onboarding docs, 2026-07-22) shows two
-measurable leaks in the first session:
+Four user-initiated "keep" paths call `LibraryRepository.saveSequence` directly
+and never write Dexie, so guest saves through them don't appear in the guest's
+library. `LibrarySaveService.saveSequence` is the only durable path.
 
-**Leak A — new signups create nothing.** Every recent real signup lands and
-bounces with zero content:
-- Cheyenne Arana (@CheechChi) — Google signup 2026-07-22 10:31, iPhone Safari,
-  single ~38s session, 0 sequences, no return.
-- Theresa Jones / Major Motion (@Major_Motion) — Google signup via Facebook
-  in-app browser on a Galaxy S25, first session ~44s, returned ~14h later, still
-  0 sequences.
-- John Cloud (@theprizman, tester) — logged in 2026-07-22 17:34 from Asheville
-  NC on desktop Chrome; tester since Dec 2025, 0 sequences ever.
+## Verified seams
 
-**Leak B — engaged guests are asked to convert only with a passive toast.**
-Anonymous @lsbqc7e4 ran a 2h15m session on 2026-07-22, saved one sequence. There
-IS a post-save nudge (`maybeNudgeGuestToSignUp`, `library-save-service.ts:258`),
-but it is a fire-and-forget `toast.info` with **no signup control, no
-instrumentation, once-per-device**, and it lives only inside `LibrarySaveService`
-— so the two save paths that bypass that service (viewer save, printed-card
-import) never fire it at all. A guest reads "create a free account" with nothing
-to tap. Their work is on a 30-day-inactivity deletion clock
-(`cleanupStaleAnonymousAccounts.ts`).
-
-Both leaks are "the mechanism half-exists but doesn't convert," not missing
-infrastructure. This spec upgrades existing seams.
-
-## Review reconciliation (what Revision 1 got wrong)
-
-Revision 1 was reviewed and sent back. The load-bearing corrections, each
-verified against code this pass:
-
-1. **Generation seam.** Rev 1 said the starter would call
-   `GenerateButtonCard`'s `onGenerateClicked`. That callback is a **local closure
-   built inside the lazy-mounted `GeneratePanel`** (`GeneratePanel.svelte:68-76`),
-   only mounted when the Generate tab is active
-   (`CreationToolPanelSlot.svelte:156-165`), targeting the **isolated generator-tab
-   `SequenceState`** (`create-module-state.svelte.ts:100-123`, "prevents cross-tab
-   data pollution"), and it **returns `void`, swallowing failures** into
-   `generationError` (`generate-actions.svelte.ts:73-99`). The correct seam is the
-   service beneath the button: `getGenerationOrchestrator().generateSequence(options)`
-   (`get-generation-orchestrator.ts:11`), which **returns the `SequenceData`**
-   (`generate-actions.svelte.ts:405`) and is already used headlessly by landing
-   (`infinite-sequence-generator.ts`, `endless-spinner-orchestrator.ts`).
-2. **"Saved in one tap" was not real.** Save is generate → tap the save icon
-   (`SaveToLibraryButton.svelte`) → confirm in `SaveToLibraryPanel.svelte`. Part A
-   now runs a single **generate-then-persist command** so "keep" is truthful, with
-   named failure behavior.
-3. **Leak B already has an implementation** (`maybeNudgeGuestToSignUp`,
-   `library-save-service.ts:258-275`). Part B **replaces that toast**, it does not
-   add a parallel nudge (never-hand-roll).
-4. **`guestCount === 0` is device-wide, not guest-scoped** — it misses existing
-   guests (including the motivating guest, who already has 1 save). The trigger is
-   re-scoped to the guest UID and to a **confirmed local persist**.
-5. **The eligibility gate cannot key on a global Dexie count.** The browse engine
-   is explicit: guests read Dexie, **full accounts must NOT read Dexie**
-   (not uid-scoped, `create-browse-engine.svelte.ts:467-474`). The gate uses
-   account-aware resolved library state, with an explicit "unknown until resolved"
-   state so nothing flashes.
-6. **The empty-Create tutorial already fires** (`offerCreateTutorial()`,
-   `CreateModule.svelte:433-435`). The starter must arbitrate with it.
-7. **A service cannot render `AuthNudge`** (`AuthNudge.svelte` is presentational:
-   `onCreateAccount`/`onLogin`/`onDismiss` props, three actions). The prompt is
-   hosted by a **root-owned coordinator** that mounts after the save surface closes
-   (`save-panel-state.svelte.ts:259`), off a returned save outcome.
-8. **`BrowsePanel`'s empty state is shared** by pickers and sheets and only
-   distinguishes filter-zero from empty by icon (`BrowsePanel.svelte:258-268`).
-   The "make your first sequence" CTA goes in the library-view host, not the shared
-   empty state.
-9. **Preservation is only guaranteed on the anon-link path.** One Tap, cross-browser
-   email link, and credential-collision routes bypass `anonymous-upgrade`. Part B's
-   CTA routes through `upgradeAnonymousWith*`; the non-link routes get an explicit
-   fallback (below), not a silent "preserved" promise.
-
-## Goals
-
-1. A first-timer reaches a **generated, kept** sequence in one tap (one command:
-   generate into the real workspace, then persist).
-2. The moment a guest saves their first sequence — through **any** save path — they
-   get one soft, dismissable, instrumented prompt with a real signup control.
-
-## Non-goals (YAGNI)
-
-- No new tour or coachmark system.
-- No auto-seeded/pre-filled starter sequence (the one tap generates a real one).
-- No time-based or action-count conversion triggers.
-- No changes to `CreateTutorialWizard` internals; it stays the build-it-yourself
-  route, reachable from Settings replay.
-- No premium/tier changes. No change to the default Create tab (Construct).
-- No mutation of the `AuthNudge` primitive (its Log-in action stays; we instrument
-  it, we don't remove it).
-
-## What already exists (reuse / upgrade, do not rebuild)
-
-| Capability | Seam | Notes |
+| Path | Site | Layer today |
 |---|---|---|
-| Headless generation | `create/generate/shared/get-generation-orchestrator.ts:11` → `GenerationOrchestrator.generateSequence(options)` | Returns the `SequenceData` (`generate-actions.svelte.ts:405`). Already used headlessly by landing. **This is Part A's generate seam.** |
-| Options builder | `uiConfigToGenerationOptions(config, prop, startEndOptions)` (used in `GenerateButtonCard`/`generate-actions`) | Build a smooth default config; no UI needed. |
-| Save orchestration + guest cap | `features/library/services/library-save-service.ts` | `GUEST_SAVE_CAP=3`; guest branch at `:135-151`; **existing post-save nudge at `:258-275` (the thing Part B replaces)**; Dexie failure already surfaces a user error at `:182-200` (does not silently swallow, but also does not rethrow). |
-| First-run empty-Create seam + tutorial offer | `create/shared/components/CreateModule.svelte:433-435` | `offerCreateTutorial()` on empty workspace — the call the starter must arbitrate with. |
-| Generator empty-state pattern | `create/generate/components/GenerateEmptyState.svelte` | Layout precedent for the starter card. Generalize, do not fork behavior. |
-| Nudge primitive | `auth/components/AuthNudge.svelte` | Presentational; `onCreateAccount`/`onLogin`/`onDismiss`. Rendered by a host, never by a service. |
-| Nudge copy registry | `auth/domain/auth-nudge-trigger.ts` (`AUTH_NUDGE_TEXTS`, 11 keys, one-phrasing rule) | Add one key following the "Create a free account to <do X>" phrasing. |
-| Open auth with a reason | `authDrawerState.show(mode, reason)`; `openAuthDialog()` | `AuthModal` swaps subtitle to `AUTH_NUDGE_TEXTS[reason]`. |
-| In-place anon upgrade (preserves uid + sequences) | `auth/services/anonymous-upgrade.ts` — `upgradeAnonymousWith{Google,Facebook,Email}`, `notifyUpgradeSignup()` → `guest_upgraded_to_account` | **Only** this path preserves without import; One Tap / cross-browser link / collision do not (Finding 9). |
-| Account-aware library read | `authState.isFullAccount`; browse engine's guest=Dexie / full=Firestore split (`create-browse-engine.svelte.ts:467-474`) | The gate's "has the user saved anything" must follow this split. |
+| Create Save panel | `save-panel-state.svelte.ts:259` | `LibrarySaveService` ✓ durable |
+| Viewer save | `library-action-handler.svelte.ts:126` | `LibraryRepository` — no Dexie |
+| Printed-card import | `ScanCardSheet.svelte:195` | `LibraryRepository` — no Dexie |
+| Video-record save | `VideoRecordCoordinator.svelte:105` | `LibraryRepository` — no Dexie |
+| Retro save | `notation-adapter.ts:154` | `LibraryRepository` — no Dexie |
+| Sync retry / draft import | `library-sync-retry.ts:70`, `anonymous-upgrade.ts:260` | `LibraryRepository` — **stays** (operate on already-Dexie rows) |
+
+- Durable write: `library-save-service.ts:181` `await db.sequences.put(cloneable)`.
+- Firestore sync is detached: `library-save-service.ts:208-212` fires
+  `syncToFirestore` un-awaited; `library-repository.ts:492-501` is fire-and-forget.
+- Dexie `db.sequences` is a **flat, non-uid-scoped** table
+  (`database_constants.ts:62-63`) — hence guest-only reads and the shared-device
+  caveat in `create-browse-engine.svelte.ts:467-474`.
+- Making a Dexie-write failure **fail the save** has a narrow blast radius: two
+  callers of `LibrarySaveService.saveSequence` (`library-state.svelte.ts:485`,
+  `save-panel-state.svelte.ts:259`). The save-panel catch is currently near-silent
+  (`logger.error`, no toast) — a throw needs an error toast added there.
+- The scan path depends on a **synchronous** `ALREADY_EXISTS` rejection
+  (`ScanCardSheet.svelte:201-211`), which today comes from
+  `LibraryRepository.saveSequenceWithMetadata`. `LibrarySaveService` currently
+  swallows that inside the fire-and-forget `syncToFirestore`
+  (`library-save-service.ts:317-327`) — it must surface it to the caller.
 
 ## Design
 
-### Part A — One-tap first sequence (generate-then-keep)
+1. **`SaveOutcome`.** Extend `SaveResult`
+   (`library-contract-types.ts:72-77`) with `persisted: boolean` and
+   `isGuest: boolean` — both already computed inside `saveSequence`
+   (`library-save-service.ts:131-134`, `:181`). No new lookups.
+2. **Fail on non-persistence.** In `saveSequence`, if the awaited Dexie write
+   throws (`:178-200`), reject with a `LibraryError("PERSIST_FAILED")` instead of
+   warn-and-continue, so no caller shows "Saved!" for a sequence that isn't in the
+   guest's library. Add a user-facing error toast at the save-panel catch
+   (`save-panel-state.svelte.ts:253-330`).
+3. **One canonical keep.** Route the four bypass paths through
+   `LibrarySaveService.saveSequence`, each assembling `SaveToLibraryOptions` from
+   its own context (viewer builds `creatorIntent`/`intendedProp` onto the
+   `SequenceData` as today; scan supplies `visibility:"private"`; video-record and
+   retro their names). Surface `ALREADY_EXISTS` synchronously from the service so
+   the scan path's dedupe keeps working.
+4. The service instance is obtained via the existing
+   `getLibrarySaveService()` (`$lib/features/library/get-library-save-service`,
+   used at `SaveToLibraryPanel.svelte:25`) — **do not** construct a second one and
+   **do not** invent `CreateModuleState.getLibrarySaveService()` (it doesn't exist).
 
-**Surface.** A first-run-only starter card in the empty Create workspace. Create
-lands on Construct (`DEFAULT_CREATE_TAB`), which shows only the start-position
-picker. The starter renders in the empty-workspace slot for first-timers only, and
-**replaces** the Construct picker until resolved (dismiss reveals the picker).
+## Files (SP1)
 
-**The generate-then-keep command (new, headless).** A single
-`startFirstSequence()` action, dynamically imported, that:
-1. Builds a smooth default config → `uiConfigToGenerationOptions(...)`.
-2. `const seq = await getGenerationOrchestrator().generateSequence(options)` —
-   the real service, returns the sequence.
-3. Writes `seq` into the **current tab's real `SequenceState`** (the active tab's
-   state from `create-module-state`, not `createTutorialState`).
-4. Persists via `LibrarySaveService.saveSequence(seq, { visibility: "private",
-   name: <simplified word> })` so "keep" is real. Name uses
-   `simplifyRepeatedWord` (`simplified-word-display` rule).
+- `library-contract-types.ts` — `SaveResult` gains `persisted`, `isGuest`.
+- `library-save-service.ts` — set the flags; reject on Dexie failure; surface
+  `ALREADY_EXISTS` synchronously.
+- `save-panel-state.svelte.ts` — error toast on save failure.
+- `library-action-handler.svelte.ts`, `ScanCardSheet.svelte`,
+  `VideoRecordCoordinator.svelte`, `notation-adapter.ts` — route through
+  `LibrarySaveService`.
 
-**Failure behavior (named).**
-- Generation throws or returns empty → starter **stays visible**, no persist, no
-  `_generated`/`_kept` event, inline "Couldn't generate — try again."
-- Persist fails (Dexie) → the existing `saveSequence` error surfaces
-  (`library-save-service.ts:182-200`); the starter reports "generated but not
-  kept," and the Leak-B prompt does **not** fire (no confirmed persist).
-- Only after a confirmed persist does the command emit `_kept` and hand off to the
-  Part B coordinator.
+## Tests (SP1)
 
-**Buttons.**
-- Primary **"Generate my first sequence"** → `startFirstSequence()`.
-- Secondary **"I'll build my own"** → dismiss (flag set) → Construct start-picker.
-  `CreateTutorialWizard` stays reachable via Settings replay.
+- A guest save via each of the four migrated paths produces a Dexie row (reads
+  back through the guest library read).
+- Dexie-write rejection ⇒ `saveSequence` rejects; no success toast; caller shows
+  an error.
+- Scan path still rejects synchronously with `ALREADY_EXISTS`.
+- `SaveResult.persisted`/`isGuest` correct for guest vs full account.
 
-**Gate — `firstSequenceStarter.eligible` (async-resolved, three-state).**
-`unknown` until the account-aware library read resolves; then `true` only when:
-1. Create workspace is empty (`isWorkspaceEmpty()`), and
-2. resolved library count is 0 — **guest → Dexie presence; full account →
-   Firestore library** (never the global Dexie count), and
-3. the starter has not been dismissed (flag below).
-While `unknown`, render nothing (no flash). Re-resolve on account switch and on
-signed-out→anonymous promotion (mirror the cloud-gate reset in
-`auth-state.svelte.ts` signout path).
+---
 
-**Tutorial arbitration.** While `FIRST_SESSION_ACTIVATION_ENABLED` is on **and**
-the starter is eligible, `CreateModule` suppresses the automatic
-`offerCreateTutorial()` call (`:433-435`). Flag off → legacy behavior unchanged.
-Settings replay of the wizard is never suppressed.
+# SP2 — Anonymous-Account Preservation
 
-**Dismissal flag.** New `firstSequenceStarterState`, mirroring
-`first-run-state.svelte.ts`: localStorage-first, cloud-authoritative under
-`users/{uid}/onboarding/firstSequenceStarter`, **reset-to-default on a missing
-doc** (a shared browser never inherits a prior account's dismissal), synced at
-boot in `auth-boot-orchestrator.ts`. Set on either button.
+## Problem
 
-**Library dead-end fix.** The "make your first sequence" CTA is added in the
-**library-view host** (`AllLibraryView`), or by passing `BrowsePanel` an explicit
-`emptyAction` prop — **not** in the shared `BrowsePanel` empty state (which also
-means "filters returned zero" for pickers/sheets). It shows only for a truly-empty
-`my-library` source, routes to Create, and re-arms the starter for this session
-(a **volatile** override, not a cloud-dismissal clear). Design-system button, no
-bare link (`clickables-look-like-buttons`).
+Converting a guest to a full account can abandon the anonymous uid (and the
+just-saved sequence) on several modal routes, and the draft-capture that would
+rescue it reads Firestore, missing fresh Dexie-only saves.
 
-### Part B — Proactive "keep your work" on first save (replaces the toast)
+## Verified route matrix (from the signup modal)
 
-**Post-save coordinator (new, root-owned).** A single
-`postSaveActivation.onSaveOutcome(outcome)` entry point owned at the app root
-(alongside the other root activation UI). `saveSequence` (and the two bypass save
-paths) return/emit a `SaveOutcome { persisted: boolean; isGuest: boolean;
-sequenceId }`. The coordinator, **after the save surface closes**
-(`save-panel-state.svelte.ts:259`), decides whether to mount the prompt. This
-removes `maybeNudgeGuestToSignUp` from `LibrarySaveService` (the service no longer
-renders/toasts a nudge).
+| Route | Site | Anon-safe today | Fix class |
+|---|---|---|---|
+| Google button | `SocialAuthCompact.svelte:161-168` | ✓ links + import | — |
+| Facebook / Instagram | `authenticator.ts:123-172` | ✓ links + import | — |
+| Email/password **signup** | `EmailPasswordAuth.svelte:108-124` | ✓ links + import | — |
+| **Google One Tap** | `authenticator.ts:115` (`GoogleOneTap.svelte:105`) | ✗ strands | LINK-FIX |
+| **Email/password sign-in** | `EmailPasswordAuth.svelte:136-140` | ✗ strands (most-reached) | IMPORT-FIX |
+| **Cross-browser magic link** | `email-link-completion.ts:152-154` | ✗ strands | IMPORT-FIX (server) |
+| **Retro login** | `RetroLoginDialog.svelte:55-92` | ✗ strands | GUARD-FIX |
 
-**Trigger (re-scoped).** Fire when: `persisted === true` **and** the user is still
-a guest **and** this guest UID has not yet been shown the actionable prompt
-(versioned guard key, below). This reaches **existing** leaked guests (1+ saves
-already) — the old `guestCount === 0` test would have skipped them.
+Plus two infra facts:
+- `captureAnonymousDrafts` reads **Firestore**
+  (`library-repository.ts:854-859`), so a fresh save must be captured from **Dexie**
+  for guests (or SP1's durable write must have completed and synced) — the capture
+  source is the load-bearing fix, not just the routes.
+- `library-save-service.ts:143` calls the dead `openAuthDialog()`; replace with
+  `authDrawerState.show("signup", "save")` so the save-cap nudge actually opens the
+  modal that contains these fixes.
 
-**Coverage.** Because the coordinator is fed by a `SaveOutcome`, the two paths that
-bypass `LibrarySaveService` participate: viewer save
-(`library-action-handler.svelte.ts:91`) and printed-card import
-(`ScanCardSheet.svelte:190`) both emit the same outcome. If the requirement is
-"every guest save," this is the shared post-save seam that delivers it.
+## Design (SP2)
 
-**Prompt (uses the real primitive).** The coordinator mounts `AuthNudge`
-(via `BaseModal`, the existing overlay pattern) with:
-- `onCreateAccount` → `authDrawerState.show("signup", "guest-first-save")` →
-  `AuthModal` guest branch → `upgradeAnonymousWith*` (uid + sequences preserved).
-- `onLogin` → existing login flow, **instrumented separately** (do not drop it).
-- `onDismiss` → record decline, set the guard.
+1. **One Tap link-fix.** `signInWithGoogleCredential` (`authenticator.ts:115`):
+   if `currentUser.isAnonymous`, link the credential (extract the native-branch
+   link/collision shape from `anonymous-upgrade.ts:135-156`), then
+   `promptAnonymousImport` on collision.
+2. **Sign-in-mode capture.** `EmailPasswordAuth.svelte:136-140`: capture anon
+   drafts before `signInWithEmailAndPassword`, `promptAnonymousImport` after.
+3. **Capture from Dexie for guests.** `captureAnonymousDrafts` (or a new
+   guest-aware wrapper) reads local Dexie sequences (which SP1 guarantees exist)
+   rather than Firestore-only, so a just-saved sequence is always importable.
+4. **Dead-modal fix.** `library-save-service.ts:143` →
+   `authDrawerState.show("signup", "save")`.
+5. **Retro guard.** `RetroLoginDialog.svelte` gains the `isAnonymous` branch
+   `AccountPopover.svelte:110-134` already uses.
+6. **Magic-link carry (largest).** Thread `anonUid` through `sendMagicLink`
+   (`EmailLinkAuth.svelte:115-119` → `firebase-functions/src/sendMagicLink.ts`),
+   persist server-side, resolve + Admin-SDK import on completion
+   (`email-link-completion.ts:152-154`). The codebase deliberately deferred this
+   (`EmailLinkAuth.svelte:71-73`) pending exposure data — keep it last; it may be
+   split to a follow-up if telemetry shows the cross-browser case is rare.
 
-**Preservation caveat (Finding 9).** The happy path (link) preserves in place. For
-the non-link routes reachable from the modal (One Tap, cross-browser email link,
-credential collision), the just-saved sequence is protected by the standard cloud
-sync on save; the spec does **not** claim in-place uid preservation for those, and
-the implementation plan will confirm the collision path imports the local
-sequence rather than stranding it.
+## Tests (SP2)
 
-**Copy.** New `AuthNudgeTrigger` key `guest-first-save`, following the one-phrasing
-rule (no "still here tomorrow" overstatement — cleanup is 30-day-inactivity and the
-Dexie copy may remain):
+- One Tap / sign-in-mode / retro: an anonymous guest with a local save keeps the
+  uid or imports the sequence; assert the saved id survives.
+- `captureAnonymousDrafts` returns a Dexie-only (un-synced) sequence for a guest.
+- Save-cap nudge opens the real `authDrawerState` modal.
+- Magic-link: same-browser links; cross-browser imports (or is explicitly
+  deferred with telemetry).
 
-> "Create a free account to keep your sequences and find them on any device."
+---
 
-**Once-only guard.** New `guestFirstSavePromptState` — a **versioned** localStorage
-key scoped to the guest UID (not the old toast's `tka-guest-save-nudge-seen`;
-reusing it would exclude guests who only ever saw the weak toast). Moot after
-conversion.
+# SP3 — First-Session Activation
 
-### Data flow
+Depends on SP1 (durable keep) and SP2 (safe conversion). The original two-leak
+feature, with every Rev-2 review fix folded in.
 
-```
-First-timer lands on Create (Construct, empty), gate resolves eligible
-  → FirstSequenceStarter (replaces picker)
-     ├─ "Generate my first sequence"
-     │     → startFirstSequence(): generateSequence() → real SequenceState → saveSequence()
-     │         persisted=true, isGuest → SaveOutcome → postSaveActivation
-     │             → (after save surface closes) AuthNudge("guest-first-save")
-     │                 → "Create account" → authDrawerState.show("signup", "guest-first-save")
-     │                     → upgradeAnonymousWith* → uid + sequences preserved
-     └─ "I'll build my own" → dismiss (flag) → Construct start-picker
+## Part A — one-tap generate-and-keep
 
-Any later guest save (create panel / viewer / card import) → SaveOutcome
-  → postSaveActivation → prompt once per guest UID
-```
+- **Command** (`start-first-sequence.ts`, headless, TDD-tested as before):
+  generate → load into the real tab `SequenceState.setCurrentSequence(seq)` →
+  keep via `getLibrarySaveService().saveSequence(...)` → hand off to the coordinator
+  only on a **persisted** guest keep. Named `generate-failed`/`persist-failed`.
+- **Prop:** `PropType.STAFF` — the domain default (`tka-domain.md`, and every
+  default-prop site: `viewer-3d-state.svelte.ts:80`, `performer-settings-types.ts:50`,
+  `start-position-utils.ts:196`). The Rev-1 `PropType.FAN` was wrong.
+- **Generation config:** a fixed, product-approved starter preset (not
+  `createGenerationConfigState()`, which loads the device-global saved config and
+  can inherit another account's settings, `generate-config.svelte.ts:203`). Lazy
+  import the orchestrator on button click, not at module load.
+- **Surface:** extend `GenerateEmptyState.svelte` (a >60% match — same collapsed
+  slot, Crossfade, offer-card pattern) to also render the first-run starter, and
+  **generalize its tab gating to cover empty Construct** (today it's generator-only,
+  `StandardWorkspaceLayout.svelte:224`). Migrate its hand-rolled `.offer-btn` to
+  `PanelButton` (`panel/PanelButton.svelte` — primary/secondary/disabled/44px;
+  add a `busy` state or put a spinner in `children`). No new hand-rolled buttons.
+- **Eligibility (three-state, account-aware, no flash):** `unknown` until resolved;
+  `true` only for empty Construct + resolved-zero-library + not-dismissed. Guest →
+  Dexie count; full account → Firestore `limit(1)`; **never the global Dexie count
+  for a full account**. Gate to Construct explicitly.
+- **No-uid local resolution:** a signed-out visitor never triggers the boot sync
+  (`initializeChildServices` is `if(user)`-gated, `auth-state.svelte.ts:556`), so
+  the starter state must resolve locally when `effectiveUserId` is null (mirror
+  `appEntryState`'s no-uid `resolveCloudSync()`, `app-entry-state.svelte.ts:331-335`
+  — not `firstRunState`'s no-resolve branch).
+- **Tutorial arbitration + flag:** while the activation flag is on and the starter
+  is eligible, suppress `offerCreateTutorial()` (`CreateModule.svelte:433`); with
+  the flag off, legacy behavior and the library CTA are inert.
+- **Library dead-end CTA:** host-supplied `emptyAction` prop on `BrowsePanel`
+  (non-filter empty only), passed from `AllLibraryView`, navigating
+  `setCurrentModule("create", "construct")` and volatile-re-arming the starter.
 
-## Files
+## Part B — proactive keep-on-first-save
 
-**New (each single-purpose; grep confirmed no existing equivalent):**
-- `onboarding/components/first-run/FirstSequenceStarter.svelte` — the CTA card.
-- `onboarding/state/first-sequence-starter-state.svelte.ts` — dismissal flag
-  (local + cloud + missing-doc reset) and the three-state async eligibility.
-- `onboarding/services/start-first-sequence.ts` — the headless generate-then-keep
-  command.
-- `onboarding/state/post-save-activation-state.svelte.ts` — root-owned coordinator
-  + versioned per-guest guard.
+- **Coordinator** (`postSaveActivation`, module singleton — consistent with
+  `authDrawerState`/`firstRunState` precedent, **not** refactored to factory/context):
+  fed a `SaveOutcome` by SP1's canonical save. Gates to still-guest + once-per-guest-UID.
+- **Two-phase guard (fixes premature consumption):** the coordinator **queues** an
+  eligible prompt; the root host (`PostSaveActivationHost` in `MainApplication`)
+  calls `markPresented()` **after** the `AuthNudge` actually mounts; only then is
+  the guard consumed and `_shown` emitted. A blocked/failed mount never burns the
+  guest's one chance. The localStorage guard has an **in-memory per-uid fallback**
+  so a throwing store doesn't make it prompt every save.
+- **Fire after the surface closes:** the create path fires the coordinator after
+  `handleClose()` (`save-panel-state.svelte.ts`); viewer/scan/video/retro paths
+  fire at root (no panel).
+- **Convert:** `authDrawerState.show("signup", "guest-first-save")` → the SP2-hardened
+  modal → uid + sequence preserved. New `AUTH_NUDGE_TEXTS["guest-first-save"]`:
+  "Create a free account to keep your sequences and find them on any device."
+  (contains the canonical phrase; passes the 11→12 trigger-map test).
 
-**Changed:**
-- `features/library/services/library-save-service.ts` — return a `SaveOutcome`;
-  **remove** `maybeNudgeGuestToSignUp` (moved to the coordinator).
-- `sequence-viewer/state/library-action-handler.svelte.ts` and
-  `browse/collections/components/ScanCardSheet.svelte` — emit `SaveOutcome` to the
-  coordinator (so their guest saves prompt too).
-- `create/shared/components/CreateModule.svelte` — mount `FirstSequenceStarter`
-  under the gate; suppress `offerCreateTutorial()` while eligible + flag on.
-- `<app root>` (MainApplication) — mount the post-save activation prompt host.
-- `library/.../AllLibraryView` (or `BrowsePanel` `emptyAction` prop) — the
-  library-empty CTA.
-- `auth/domain/auth-nudge-trigger.ts` — add `guest-first-save` key + copy.
-- `auth/services/auth-boot-orchestrator.ts` — read/reset the starter doc at boot.
-- `analytics/services/onboarding-events.ts` — new events (below).
-- `onboarding/domain/onboarding-flags.ts` — `FIRST_SESSION_ACTIVATION_ENABLED`.
+## Invalidation & flag (SP3 cross-cutting)
 
-## Analytics
+- **Signout/account-switch reset:** add `firstSequenceStarterState.resetCloudSync()`
+  and a `postSaveActivation` reset to the signout cascade
+  (`auth-state.svelte.ts:640-668`, alongside the existing
+  `appEntryState.resetCloudSync()`), so account B never inherits account A in-session.
+- **Rollout flag:** a **PostHog capability flag**
+  `capability:onboarding:first-session-activation`, defaulted **off**
+  (registered in the `FeatureId` domain + `DEFAULT_FEATURE_FLAGS`, read via
+  `canAccess(...)` + `flagsVersion` in a `$derived`,
+  `post-hog-feature-flag-service.svelte.ts`), not a compile-time constant — so it
+  ships dark and rolls back without a deploy.
+- **Session re-arm is consumed** by both `markDismissed()` and a successful keep,
+  so "I'll build my own" after the library CTA actually dismisses.
+- **Files & dir:** new onboarding components live under
+  `src/lib/shared/onboarding/components/` (the existing dir); `src/lib/features/onboarding`
+  does not exist. Every new file carries a one-line reuse justification per
+  `never-hand-roll.md`.
 
-Follow the existing `onboarding_*` namespace. Emit `shown` only after visible mount,
-`kept`/`generated` only after confirmed success.
-- `onboarding_first_sequence_starter_shown` / `_generated` / `_kept` / `_dismissed`.
-- `onboarding_guest_first_save_prompt_shown` / `_accepted` / `_declined` /
-  `_login` (login action instrumented separately).
-- Principal funnel (PostHog): `user_signed_up → sequence_save` in the same session,
-  with starter steps between; and the guest funnel
-  `guest_first_save_prompt_shown → guest_upgraded_to_account`. Report the overall
-  funnel too, so starter abandonment/displacement is visible. Choose
-  first-occurrence settings deliberately.
+## Tests (SP3)
 
-## Success metrics (post-ship, from PostHog)
+Per the Rev-2 list plus the review's additions: no-uid signed-out boot resolves
+locally; A→B account switch resets and rejects stale in-flight reads; Firestore
+eligibility failure stays `unknown` (never "empty"); prompt guard consumed only
+after mount; storage failure falls back to once-per-session; flag off emits
+nothing, writes no guards, hides the CTA, preserves the legacy tutorial; re-arm
+consumed by either action; starter gated to Construct; eligibility + tutorial
+arbitration share one pure predicate.
 
-- **Leak A:** share of new real signups with ≥1 `sequence_save` in the first
-  session rises from the near-zero baseline.
-- **Leak B:** `guest_first_save_prompt_shown → guest_upgraded_to_account` is
-  measurable and non-trivial — and now reaches existing 1-save guests.
-- Guardrail: starter `_dismissed` rate; no drop in overall Create engagement.
+---
 
-## Rollout / flags
+## Operational corrections (all sub-projects)
 
-- `FIRST_SESSION_ACTIVATION_ENABLED` (compile-time) gates both behaviors for a
-  clean deploy-time on/off, mirroring `CREATE_TUTORIAL_ENABLED`. **A constant is a
-  deploy switch, not a dark rollout** — if percentage targeting or instant rollback
-  is wanted, back it with the existing PostHog kill-switch path
-  (`post-hog-feature-flag-service.svelte.ts:235`). The plan will pick one; default
-  is the constant for v1.
-- No `firestore.rules` change (new doc under the permitted `users/{uid}/onboarding/*`).
+- **One check per turn, machine-wide.** Use `check:watch`/`check:fast` while
+  iterating and **one** `npm run check` at the end (`fast-iteration-loop.md`,
+  `resource-budget.md`) — not a full `svelte-check` per task.
+- **PowerShell-first commands.** No bash `/tmp`, `grep` pipelines, or line
+  continuations in plan steps; use the scratchpad dir and PowerShell/Bash-tool
+  syntax explicitly.
+- **Manual verification** uses an **isolated test profile/origin**, never clears
+  site data on Austen's `:5173` primary profile, and requires explicit browser
+  permission. Prove uid/data preservation by recording the uid before/after and
+  querying the saved sequence by id — not a screenshot.
 
-## Testing
+## Success metrics (PostHog)
 
-Unit (vitest, `--config tests/config/vitest.config.ts`):
-- Gate is `unknown` until the library read resolves; never flashes; `true` only for
-  empty workspace + resolved-zero-library + not-dismissed; account-aware
-  (guest→Dexie, full→Firestore), not global Dexie count.
-- Account A dismissal → signout → account B with a missing doc ⇒ starter eligible
-  for B (missing-doc reset), dismissal not inherited.
-- Session re-arm (library CTA) is volatile and does not overwrite the persistent
-  cloud dismissal.
-- `startFirstSequence`: generation failure leaves the starter visible, emits no
-  `_generated`/`_kept`; success writes to the real `SequenceState` (not
-  `createTutorialState`) and persists before emitting `_kept`.
-- Dexie persist rejection ⇒ `SaveOutcome.persisted === false` ⇒ prompt neither
-  shows nor consumes the guard.
-- First-save prompt fires exactly once per guest UID; reaches an existing guest who
-  already has one save; never for full accounts; never on the 2nd prompt.
-- Two concurrent new saves ⇒ one prompt; respects the guest cap.
-- Viewer save and card-import save paths emit `SaveOutcome` and participate in the
-  same policy.
-- Prompt shows only after visible mount **and** after the save surface closes.
-- Feature flag off ⇒ legacy `offerCreateTutorial()` preserved, no guards consumed.
-- Contract: `guest-first-save` in `AUTH_NUDGE_TEXTS`; `AuthModal` renders its copy
-  for that reason (extends the existing 11-key trigger-map test).
+- SP1: guest saves via all paths appear in the guest library (funnel: save →
+  library-view non-empty).
+- SP3 Leak A: new-signup first-session `sequence_save` rate rises from ~0.
+- SP3 Leak B: `onboarding_guest_first_save_prompt_shown → guest_upgraded_to_account`
+  measurable and non-trivial, reaching existing 1-save guests.
+- SP2 guardrail: post-conversion sequence-retention (saved id present after
+  upgrade) at ~100% across routes.
 
-Manual (evidence per `verification-protocol`): **fresh anonymous guest** →
-generate → kept → prompt appears once after the save surface closes; "Not now"
-dismisses and a 2nd save does not re-prompt; convert preserves the saved sequence.
-A **fresh full account** never sees the first-save prompt. Library-empty CTA is
-absent from filtered-zero states, pickers, and sheets.
+## Requirements ledgers
 
-## Open questions
+**SP1:** [ ] `SaveResult.persisted`+`isGuest` · [ ] Dexie-failure rejects + panel
+error toast · [ ] four paths routed through `LibrarySaveService` · [ ]
+`ALREADY_EXISTS` surfaced synchronously · [ ] tests (4 paths persist, failure
+rejects, dedupe) · [ ] one full check green.
 
-None blocking. Default Create tab stays Construct (confirmed). Flag mechanism
-(constant vs PostHog-backed) decided in the plan; default constant.
+**SP2:** [ ] One Tap link-fix · [ ] sign-in-mode capture+import · [ ] capture from
+Dexie for guests · [ ] dead-modal `openAuthDialog`→`authDrawerState.show` · [ ]
+retro guard · [ ] magic-link carry (or deferred w/ telemetry) · [ ] tests (id
+survives per route).
 
-## Requirements ledger
-
-- [ ] `start-first-sequence.ts` headless command: `generateSequence` → real
-  `SequenceState` → persist, with named generation/persist failure behavior
-- [ ] `FirstSequenceStarter.svelte` renders under the three-state gate; replaces the
-  Construct picker until resolved; no flash while `unknown`
-- [ ] Account-aware eligibility (guest→Dexie, full→Firestore), account-switch
-  re-resolve, signed-out→anon re-resolve
-- [ ] Tutorial arbitration: suppress `offerCreateTutorial()` while eligible + flag on
-- [ ] `first-sequence-starter-state` dismissal flag (local + cloud + missing-doc
-  reset + boot sync)
-- [ ] Library-empty CTA in the library-view host (not shared `BrowsePanel` empty
-  state); volatile session re-arm
-- [ ] `SaveOutcome` returned by `saveSequence`; emitted by viewer + card-import paths
-- [ ] `post-save-activation-state` root coordinator; mounts `AuthNudge` after save
-  surface closes; versioned per-guest-UID guard
-- [ ] Remove `maybeNudgeGuestToSignUp` toast from `LibrarySaveService`
-- [ ] `guest-first-save` nudge key + one-phrasing copy
-- [ ] "Create account" → `upgradeAnonymousWith*`; Log-in kept + instrumented;
-  non-link routes flagged (no silent in-place-preserve claim)
-- [ ] Analytics events (`onboarding_*` namespace) + PostHog funnels
-- [ ] `FIRST_SESSION_ACTIVATION_ENABLED` flag
-- [ ] Unit + manual tests per the list above
-- [ ] `npm run check` clean; manual verification evidence captured
+**SP3:** [ ] headless generate-then-keep (STAFF, fixed preset, lazy import) · [ ]
+extend `GenerateEmptyState` + `PanelButton`, Construct gating · [ ] three-state
+account-aware eligibility + no-uid local resolution · [ ] tutorial arbitration ·
+[ ] starter dismissal state (local+cloud+missing-doc reset+boot sync) · [ ]
+library `emptyAction` CTA · [ ] `guest-first-save` key+copy (12-trigger test) · [ ]
+coordinator + two-phase `markPresented` guard + in-memory fallback · [ ] fire from
+all paths post-close/root · [ ] signout/switch invalidation · [ ] PostHog
+capability flag (off) · [ ] session re-arm consumed both ways · [ ] tests per list
+· [ ] one full check green.
 
 ## Related
 
-- `project_onboarding_remediation` (the 2026-07-19 hardening this builds on)
-- `project_guest_access_tier` (three-tier model, play-first nudge philosophy)
+- `project_onboarding_remediation`, `project_guest_access_tier`
 - `.claude/rules/never-hand-roll.md`, `primitive-discovery.md`,
   `no-layout-shift.md`, `clickables-look-like-buttons.md`, `no-checkboxes.md`,
-  `simplified-word-display.md`
+  `simplified-word-display.md`, `fast-iteration-loop.md`, `resource-budget.md`
+- Superseded plan: `docs/superpowers/plans/2026-07-22-first-session-activation.md`
 - `docs/superpowers/specs/active/2026-07-18-onboarding-remediation-index.md`
