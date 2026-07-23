@@ -1,7 +1,6 @@
 <script lang="ts">
 
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
 import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
@@ -17,7 +16,6 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
-  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { decodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/get-public-sequence-hash-matcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
@@ -382,39 +380,6 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
 
       const shortCodeManager = getShortCodeManager();
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
-
-      // Fire-and-forget scan telemetry - only for genuine scans (not
-      // refreshes or back/forward navigations or repeat session visits).
-      const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
-      if (
-        resolvedSequence &&
-        !isInlineEncoded(id) &&
-        typeof window !== "undefined" &&
-        isGenuineScan(id)
-      ) {
-        const scanUrl = new URL(window.location.href);
-        const scanPropConfig = resolveScanPropConfig(
-          resolvedSequence,
-          parsePropsFromURL(scanUrl.searchParams)
-        );
-        shortCodeManager.incrementScanCount(id).catch(() => {});
-        shortCodeManager
-          .logScanEvent(id, {
-            printId: scanUrl.searchParams.get("pid") || null,
-            country: null,
-            city: null,
-            userAgent: navigator.userAgent,
-            screenWidth: window.screen.width,
-            screenHeight: window.screen.height,
-            referrer: document.referrer || null,
-            userId: null,
-            deviceId: getDeviceId(),
-            bluePropType: scanPropConfig.bluePropType,
-            redPropType: scanPropConfig.redPropType,
-            catDogMode: scanPropConfig.catDogMode,
-          })
-          .catch(() => {});
-      }
 
       if (!resolvedSequence) {
         resolvedSequence = await loadByIdentifier(id);

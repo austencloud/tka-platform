@@ -47,7 +47,7 @@
     type ScanAnalyticsValue,
   } from "$lib/shared/analytics/scan-analytics";
   import { markScan } from "$lib/shared/analytics/scan-perf";
-  import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
+  import { isFirstScanRouteVisit } from "$lib/shared/qr/utils/scan-detection";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import {
     authState,
@@ -817,9 +817,10 @@
       setProgress(35);
       trickleTo(85);
 
-      // Compute the genuine-scan flag ONCE — isGenuineScan side-effects
-      // sessionStorage, so a 2nd call returns false.
-      const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
+      // `/q` is the scan-attribution boundary. This gate only deduplicates the
+      // route visit; browser APIs cannot prove whether a camera opened it.
+      const shouldRecordScan =
+        !isInlineEncoded(shortCode) && isFirstScanRouteVisit(shortCode);
       const scanPrintId = page.url.searchParams.get("pid") || null;
 
       // Load the shortcode and viewer chunks concurrently. Scan-card cells are
@@ -899,14 +900,14 @@
       // now only the backstop for records that predate the stamped fields or
       // resolved from the skinny R2 snapshot.
       //
-      // Resolved OUTSIDE the `genuine` gate: a reload (the failed-resolve
-      // retry) is not a genuine scan, but every remix/download/control event on
-      // that load still needs the deck it came from.
+      // Resolve this outside the first-visit gate. A failed-load retry should
+      // not write another scan, but its remix/download/control events still
+      // need the deck they came from.
       const deckId = record?.deckId ?? data?.meta?.deckId ?? null;
       const deckName = record?.deckName ?? data?.meta?.deckName ?? null;
       updateScanAttribution({ deckId, deckName });
 
-      if (genuine) {
+      if (shouldRecordScan) {
         const geo = data?.geo;
 
         captureScanEvent("card_scanned", {

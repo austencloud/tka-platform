@@ -10,10 +10,11 @@
  *
  * If this test fails, fix the host — do not loosen the assertions.
  */
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { isFirstScanRouteVisit } from "$lib/shared/qr/utils/scan-detection";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -65,6 +66,12 @@ function importSpecifierLines(source: string): string[] {
 
 const shellSource = read(SHELL_PATH);
 const scanSource = read("src/routes/q/[code]/QScanPage.svelte");
+const drawerSource = read(
+  "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte",
+);
+const sequenceRouteSource = read(
+  "src/routes/sequence/[id]/SequenceViewerPage.svelte",
+);
 const cardHeaderSource = read(
   "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
 );
@@ -130,4 +137,37 @@ describe("SequenceViewerShell host contract", () => {
       expect(source).toMatch(/<\s*768\b/);
     },
   );
+
+  it("records card scans only from the dedicated /q host", () => {
+    expect(scanSource).toContain("isFirstScanRouteVisit");
+    expect(scanSource).toContain("incrementScanCount");
+    expect(scanSource).toContain("logScanEvent");
+
+    for (const directLinkSource of [drawerSource, sequenceRouteSource]) {
+      expect(directLinkSource).not.toContain("isFirstScanRouteVisit");
+      expect(directLinkSource).not.toContain("incrementScanCount");
+      expect(directLinkSource).not.toContain("logScanEvent");
+    }
+  });
+});
+
+describe("scan attribution boundary", () => {
+  afterEach(() => {
+    window.history.replaceState({}, "", "/");
+    sessionStorage.clear();
+  });
+
+  it("does not treat a typed in-app viewer URL as a card scan", () => {
+    window.history.replaceState({}, "", "/create/construct?v=O263");
+
+    expect(isFirstScanRouteVisit("O263")).toBe(false);
+    expect(sessionStorage.getItem("tka:scanned:O263")).toBeNull();
+  });
+
+  it("allows the dedicated scan route once per tab", () => {
+    window.history.replaceState({}, "", "/q/O263");
+
+    expect(isFirstScanRouteVisit("O263")).toBe(true);
+    expect(isFirstScanRouteVisit("O263")).toBe(false);
+  });
 });

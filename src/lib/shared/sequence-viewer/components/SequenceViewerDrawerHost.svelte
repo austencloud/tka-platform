@@ -6,10 +6,9 @@
   (header, rail, split pane, export panels, practice workstation) lives in
   SequenceViewerShell — shared verbatim with the /q scan route so the two
   surfaces are identical by construction. Host-only concerns here: the Drawer
-  shell, overlay open/close/dismiss routing, and URL bootstrap + scan logging.
+  shell, overlay open/close/dismiss routing, and URL bootstrap.
 -->
 <script lang="ts">
-  import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -21,11 +20,6 @@
     openSequenceOverlay,
   } from "../state/sequence-viewer-overlay-state.svelte";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import {
-    isInlineEncoded,
-    parsePropsFromURL,
-  } from "$lib/shared/navigation/services/sequence-encoder";
-  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
@@ -82,36 +76,6 @@
       if (!resolved) {
         stripInvalidV(code);
         return;
-      }
-
-      const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
-      if (
-        !isInlineEncoded(code) &&
-        typeof window !== "undefined" &&
-        isGenuineScan(code)
-      ) {
-        const scanUrl = new URL(window.location.href);
-        const scanPropConfig = resolveScanPropConfig(
-          resolved,
-          parsePropsFromURL(scanUrl.searchParams)
-        );
-        manager.incrementScanCount(code).catch(() => {});
-        manager
-          .logScanEvent(code, {
-            printId: scanUrl.searchParams.get("pid") || null,
-            country: null,
-            city: null,
-            userAgent: navigator.userAgent,
-            screenWidth: window.screen.width,
-            screenHeight: window.screen.height,
-            referrer: document.referrer || null,
-            userId: null,
-            deviceId: getDeviceId(),
-            bluePropType: scanPropConfig.bluePropType,
-            redPropType: scanPropConfig.redPropType,
-            catDogMode: scanPropConfig.catDogMode,
-          })
-          .catch(() => {});
       }
 
       if (overlay.isOpen) return;
