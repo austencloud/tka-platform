@@ -49,11 +49,11 @@ $StatusLineItems = @(
     'git-branch'
 )
 
-# Put the persisted /rename value first so Alt+Tab exposes the session name.
-# Project name keeps the repository visible beside it.
+# The custom TKA build renders the persisted /rename value here and otherwise
+# uses "Starting Session". It deliberately emits no project, agent, activity,
+# or status suffix and never changes the title automatically.
 $TerminalTitleItems = @(
-    'thread-title',
-    'project-name'
+    'thread-title'
 )
 
 function Set-TuiArraySetting([string]$Content, [string]$Name, [string[]]$Items) {

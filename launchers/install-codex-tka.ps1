@@ -7,7 +7,8 @@
 [CmdletBinding()]
 param(
     [switch]$Force,
-    [switch]$SourceBuild
+    [switch]$SourceBuild,
+    [switch]$SkipTests
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,6 +38,54 @@ function Invoke-Native([scriptblock]$Command, [string]$Description) {
     }
 }
 
+function Install-CodexExecutable([string]$SourcePath, [string]$DestinationPath) {
+    $destinationRoot = Split-Path $DestinationPath
+    $destinationName = Split-Path $DestinationPath -Leaf
+    $destinationBase = [IO.Path]::GetFileNameWithoutExtension($destinationName)
+    $destinationExtension = [IO.Path]::GetExtension($destinationName)
+    $stagedPath = Join-Path $destinationRoot "$destinationBase.next$destinationExtension"
+
+    Copy-Item -LiteralPath $SourcePath -Destination $stagedPath -Force
+    $sourceHash = (Get-FileHash -LiteralPath $SourcePath -Algorithm SHA256).Hash
+    $stagedHash = (Get-FileHash -LiteralPath $stagedPath -Algorithm SHA256).Hash
+    if ($sourceHash -ne $stagedHash) {
+        throw "Staged executable checksum mismatch: expected $sourceHash, got $stagedHash"
+    }
+
+    $backupPath = $null
+    if (Test-Path -LiteralPath $DestinationPath) {
+        try {
+            Copy-Item -LiteralPath $stagedPath -Destination $DestinationPath -Force -ErrorAction Stop
+            Remove-Item -LiteralPath $stagedPath -Force
+        } catch [System.IO.IOException] {
+            $currentHash = (Get-FileHash -LiteralPath $DestinationPath -Algorithm SHA256).Hash
+            $backupName = "$destinationBase.previous-$($currentHash.Substring(0, 12))-$PID$destinationExtension"
+            $backupPath = Join-Path $destinationRoot $backupName
+            if (Test-Path -LiteralPath $backupPath) {
+                throw "Refusing to replace existing backup: $backupPath"
+            }
+
+            Rename-Item -LiteralPath $DestinationPath -NewName $backupName
+            try {
+                Rename-Item -LiteralPath $stagedPath -NewName $destinationName
+            } catch {
+                Rename-Item -LiteralPath $backupPath -NewName $destinationName -ErrorAction SilentlyContinue
+                throw
+            }
+        }
+    } else {
+        Rename-Item -LiteralPath $stagedPath -NewName $destinationName
+    }
+
+    $installedHash = (Get-FileHash -LiteralPath $DestinationPath -Algorithm SHA256).Hash
+    if ($sourceHash -ne $installedHash) {
+        throw "Installed executable checksum mismatch: expected $sourceHash, got $installedHash"
+    }
+    if ($backupPath) {
+        Write-Host "Kept the in-use executable at $backupPath; running sessions can finish normally."
+    }
+}
+
 if (-not (Test-Path -LiteralPath $PatchPath)) {
     throw "Missing renderer patch: $PatchPath"
 }
@@ -44,7 +93,12 @@ if (-not (Test-Path -LiteralPath $PatchPath)) {
 $patchHash = (Get-FileHash -LiteralPath $PatchPath -Algorithm SHA256).Hash
 if (-not $Force -and (Test-Path -LiteralPath $InstalledExe) -and (Test-Path -LiteralPath $MetadataPath)) {
     $metadata = Get-Content -Raw -LiteralPath $MetadataPath | ConvertFrom-Json
-    if ($metadata.upstreamCommit -eq $UpstreamCommit -and $metadata.patchSha256 -eq $patchHash) {
+    $installedHash = (Get-FileHash -LiteralPath $InstalledExe -Algorithm SHA256).Hash
+    if (
+        $metadata.upstreamCommit -eq $UpstreamCommit -and
+        $metadata.patchSha256 -eq $patchHash -and
+        $metadata.executableSha256 -eq $installedHash
+    ) {
         Write-Host "Codex TKA $CodexVersion is current: $InstalledExe"
         return
     }
@@ -70,10 +124,17 @@ if (-not $SourceBuild) {
         $downloadedExe = Join-Path $downloadRoot 'codex-tka.exe'
         $downloadedMetadata = Join-Path $downloadRoot 'codex-tka.json'
         if (-not (Test-Path -LiteralPath $downloadedExe)) { throw 'Release archive contains no codex-tka.exe.' }
-        Copy-Item -LiteralPath $downloadedExe -Destination $InstalledExe -Force
-        if (Test-Path -LiteralPath $downloadedMetadata) {
-            Copy-Item -LiteralPath $downloadedMetadata -Destination $MetadataPath -Force
+        if (-not (Test-Path -LiteralPath $downloadedMetadata)) { throw 'Release archive contains no codex-tka.json.' }
+        $releaseMetadata = Get-Content -Raw -LiteralPath $downloadedMetadata | ConvertFrom-Json
+        if ($releaseMetadata.upstreamCommit -ne $UpstreamCommit -or $releaseMetadata.patchSha256 -ne $patchHash) {
+            throw 'Release asset was built from a different upstream commit or patch.'
         }
+        $downloadedExecutableHash = (Get-FileHash -LiteralPath $downloadedExe -Algorithm SHA256).Hash
+        if ($releaseMetadata.executableSha256 -ne $downloadedExecutableHash) {
+            throw 'Release executable does not match its metadata checksum.'
+        }
+        Install-CodexExecutable $downloadedExe $InstalledExe
+        Copy-Item -LiteralPath $downloadedMetadata -Destination $MetadataPath -Force
         Invoke-Native { & $InstalledExe --version } 'Downloaded Codex TKA smoke test'
         Write-Host "Installed GitHub release: $InstalledExe"
         return
@@ -128,8 +189,17 @@ $cargoRoot = Join-Path $SourceRoot 'codex-rs'
 Push-Location $cargoRoot
 try {
     # Entering codex-rs makes rustup honor the release's rust-toolchain.toml.
-    Write-Host 'Testing the patched status renderer...'
-    Invoke-Native { cargo test -p codex-tui status_line_style } 'Status renderer tests'
+    if (-not $SkipTests) {
+        Write-Host 'Testing the patched status renderer...'
+        Invoke-Native { cargo test -p codex-tui status_line_style } 'Status renderer tests'
+
+        Write-Host 'Testing manual terminal titles...'
+        Invoke-Native { cargo test -p codex-tui terminal_title } 'Terminal title tests'
+
+        Write-Host 'Testing generated and explicit renames...'
+        Invoke-Native { cargo test -p codex-tui thread_name_generation } 'Generated rename tests'
+        Invoke-Native { cargo test -p codex-tui rename } 'Rename interaction tests'
+    }
 
     Write-Host 'Building codex-tka.exe...'
     Invoke-Native { cargo build --release -p codex-cli --bin codex } 'Codex TKA release build'
@@ -139,7 +209,7 @@ try {
 
 $builtExe = Join-Path $TargetRoot 'release\codex.exe'
 if (-not (Test-Path -LiteralPath $builtExe)) { throw "Build completed without producing $builtExe" }
-Copy-Item -LiteralPath $builtExe -Destination $InstalledExe -Force
+Install-CodexExecutable $builtExe $InstalledExe
 
 $metadata = [ordered]@{
     codexVersion = $CodexVersion

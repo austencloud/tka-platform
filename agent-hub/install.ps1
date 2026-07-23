@@ -79,6 +79,15 @@ Write-Host "  projects in  $ProjectsRoot"
 Write-Host "  install to   $InstallDir"
 Write-Host ""
 
+# Keep bare /rename consistent before Agent Hub launches Claude through any
+# project-specific start script. The installer is guarded and idempotent.
+$claudeRenameInstaller = Join-Path $RepoRoot 'launchers\install-claude-tka.ps1'
+if (Test-Path -LiteralPath $claudeRenameInstaller -PathType Leaf) {
+    Write-Step "Configuring Claude's two/three-word bare /rename"
+    & $claudeRenameInstaller -Quiet
+    Write-Ok "Claude bare /rename configured"
+}
+
 # ---------------------------------------------------------------- 1. compiler
 Write-Step "Locating the .NET Framework compiler"
 $fw  = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'

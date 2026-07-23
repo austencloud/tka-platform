@@ -72,6 +72,13 @@ function Resolve-ClaudeExe {
 $claudeExe = Resolve-ClaudeExe
 Write-Host "Using claude.exe: $claudeExe"
 
+# Claude's built-in bare /rename already asks the model for a title. Tighten
+# that prompt to the same two/three-word contract used by the Codex build.
+$renameInstaller = Join-Path $PSScriptRoot 'install-claude-tka.ps1'
+if (Test-Path -LiteralPath $renameInstaller -PathType Leaf) {
+    & $renameInstaller -ClaudeExe $claudeExe
+}
+
 # claude.exe carries the branded Claude icon at index 0; Windows pulls the
 # correctly-sized variant (16/32px) from its icon group for the menu.
 $iconRef = "$claudeExe,0"

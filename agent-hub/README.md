@@ -7,6 +7,12 @@ Every Agent Hub launch opens its own Windows Terminal window. Claude and Codex
 draw from one 16-color palette, so no two live Agent Hub sessions share a tab
 color. Closing a session releases its color automatically.
 
+The terminal title starts as `Starting Session`. Bare `/rename` lets Claude or
+Codex choose an accurate two- or three-word name from the conversation. Use
+`/rename Exact Name` when you want to choose it yourself. The same name appears
+in history and Alt+Tab, with no agent or project suffix, and it never changes
+again unless you run `/rename` again.
+
 Pin one shortcut per repo. Click it, a card appears at your cursor with the
 project's icon and two buttons. Pick one and the agent's terminal opens in that
 directory, already carrying the bypass flags.
@@ -42,13 +48,14 @@ project's existing `launchers\start-*.bat`.
 
 ### What it does
 
-1. Compiles four small executables with the .NET Framework compiler that ships
+1. Verifies Claude's guarded two/three-word bare `/rename` prompt patch.
+2. Compiles four small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
-2. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
-3. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
-4. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
+3. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
+4. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
+5. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
    lacks them, so a bare repo still launches.
-5. Registers the host to start at logon and starts it now.
+6. Registers the host to start at logon and starts it now.
 
 ### Options
 

@@ -52,6 +52,6 @@ jobs:
           $tag = 'codex-tka-v0.144.6'
           gh release view $tag 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --title 'Codex TKA 0.144.6' --notes 'Pinned OpenAI Codex build with TKA colored usage meters.'
+            gh release create $tag --title 'Codex TKA 0.144.6' --notes 'Pinned OpenAI Codex build with colored usage meters, concise generated names for bare /rename, and exact manual terminal titles.'
           }
           gh release upload $tag codex-tka-windows-x64.zip codex-tka-windows-x64.zip.sha256 --clobber

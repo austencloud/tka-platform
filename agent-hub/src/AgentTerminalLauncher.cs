@@ -19,6 +19,7 @@ class AgentTerminalLauncher
     const string LeasePrefix = "Local\\AgentHub.TerminalColor.v1.";
     const string ReadyPrefix = "Local\\AgentHub.TerminalColorReady.v1.";
     const int ReadyTimeoutMs = 10000;
+    const string InitialTitle = "Starting Session";
 
     // Generated with:
     // glasbey.create_palette(16, grid_space="JCh", lightness_bounds=(42, 75),
@@ -84,7 +85,7 @@ class AgentTerminalLauncher
                 try
                 {
                     string wt = ResolveWindowsTerminal();
-                    string title = DisplayName(agent) + " | " + ProjectName(project);
+                    string title = InitialTitle;
                     var inner = new List<string> {
                         sessionExe,
                         "-HoldColor", lease.Index.ToString(),
@@ -134,7 +135,7 @@ class AgentTerminalLauncher
 
             Environment.SetEnvironmentVariable("TKA_AGENT_TERMINAL", "1");
             Environment.SetEnvironmentVariable("TKA_AGENT_TAB_COLOR", Palette[colorIndex]);
-            try { Console.Title = DisplayName(agent) + " | " + ProjectName(project); } catch { }
+            try { Console.Title = InitialTitle; } catch { }
             return RunAgent(agent, project, args);
         }
     }
@@ -318,18 +319,6 @@ class AgentTerminalLauncher
         return normalized;
     }
 
-    static string DisplayName(string agent)
-    {
-        return agent == "codex" ? "Codex" : "Claude";
-    }
-
-    static string ProjectName(string project)
-    {
-        string trimmed = project.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        string name = Path.GetFileName(trimmed);
-        return string.IsNullOrEmpty(name) ? project : name;
-    }
-
     static string JoinArguments(IEnumerable<string> args)
     {
         var quoted = new List<string>();
@@ -447,7 +436,7 @@ class AgentTerminalLauncher
                 throw new Exception("Argument quoting lost a spaced value.");
             string terminalArgs = JoinArguments(BuildTerminalArguments(
                 "C:\\project with spaces",
-                "Codex | project",
+                InitialTitle,
                 Palette[0],
                 new string[] { "session.exe", "-Agent", "codex" }
             ));

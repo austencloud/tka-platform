@@ -1,5 +1,535 @@
+diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
+index cffd90edb8..581fdea0cf 100644
+--- a/codex-rs/tui/src/app.rs
++++ b/codex-rs/tui/src/app.rs
+@@ -177,6 +177,7 @@ use ratatui::widgets::Paragraph;
+ use ratatui::widgets::Wrap;
+ use std::collections::BTreeMap;
+ use std::collections::HashMap;
++use std::collections::HashSet;
+ use std::collections::VecDeque;
+ use std::io::Write;
+ use std::path::Path;
+@@ -219,6 +220,7 @@ mod side;
+ mod startup_prompts;
+ mod thread_events;
+ mod thread_goal_actions;
++mod thread_name_generation;
+ mod thread_routing;
+ mod thread_session_state;
+ mod thread_settings;
+@@ -234,6 +236,7 @@ use self::side::SideParentStatusChange;
+ use self::side::SideThreadState;
+ use self::startup_prompts::*;
+ use self::thread_events::*;
++use self::thread_name_generation::PendingThreadNameGeneration;
+ 
+ const EXTERNAL_EDITOR_HINT: &str = "Save and close external editor to continue.";
+ const THREAD_EVENT_CHANNEL_CAPACITY: usize = 32768;
+@@ -569,6 +572,8 @@ pub(crate) struct App {
+     thread_event_listener_tasks: HashMap<ThreadId, JoinHandle<()>>,
+     agent_navigation: AgentNavigationState,
+     side_threads: HashMap<ThreadId, SideThreadState>,
++    pending_thread_name_generations: HashMap<ThreadId, PendingThreadNameGeneration>,
++    ignored_thread_name_generation_threads: HashSet<ThreadId>,
+     active_thread_id: Option<ThreadId>,
+     active_thread_rx: Option<mpsc::Receiver<ThreadBufferedEvent>>,
+     primary_thread_id: Option<ThreadId>,
+@@ -1058,6 +1063,8 @@ See the Codex keymap documentation for supported actions and examples."
+             thread_event_listener_tasks: HashMap::new(),
+             agent_navigation: AgentNavigationState::default(),
+             side_threads: HashMap::new(),
++            pending_thread_name_generations: HashMap::new(),
++            ignored_thread_name_generation_threads: HashSet::new(),
+             active_thread_id: None,
+             active_thread_rx: None,
+             primary_thread_id: None,
+diff --git a/codex-rs/tui/src/app/app_server_events.rs b/codex-rs/tui/src/app/app_server_events.rs
+index 06ed4320d8..a63e3f73e2 100644
+--- a/codex-rs/tui/src/app/app_server_events.rs
++++ b/codex-rs/tui/src/app/app_server_events.rs
+@@ -142,6 +142,9 @@ impl App {
+ 
+         match server_notification_thread_target(&notification) {
+             ServerNotificationThreadTarget::Thread(thread_id) => {
++                if self.handle_thread_name_generation_notification(thread_id, &notification) {
++                    return;
++                }
+                 let result = if self.primary_thread_id == Some(thread_id)
+                     || self.primary_thread_id.is_none()
+                 {
+diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
+index a5d408d4ca..19d7ec25c0 100644
+--- a/codex-rs/tui/src/app/event_dispatch.rs
++++ b/codex-rs/tui/src/app/event_dispatch.rs
+@@ -1953,6 +1953,18 @@ impl App {
+                     .handle_start_side(tui, app_server, parent_thread_id, user_message)
+                     .await;
+             }
++            AppEvent::GenerateThreadName { parent_thread_id } => {
++                return self
++                    .handle_generate_thread_name(app_server, parent_thread_id)
++                    .await;
++            }
++            AppEvent::FinishThreadNameGeneration {
++                generator_thread_id,
++                succeeded,
++            } => {
++                self.finish_thread_name_generation(app_server, generator_thread_id, succeeded)
++                    .await;
++            }
+             AppEvent::OpenSkillsList => {
+                 self.chat_widget.open_skills_list();
+             }
+diff --git a/codex-rs/tui/src/app/test_support.rs b/codex-rs/tui/src/app/test_support.rs
+index e0eafaa23b..8c69b609e1 100644
+--- a/codex-rs/tui/src/app/test_support.rs
++++ b/codex-rs/tui/src/app/test_support.rs
+@@ -56,6 +56,8 @@ pub(super) async fn make_test_app() -> App {
+         thread_event_listener_tasks: HashMap::new(),
+         agent_navigation: AgentNavigationState::default(),
+         side_threads: HashMap::new(),
++        pending_thread_name_generations: HashMap::new(),
++        ignored_thread_name_generation_threads: HashSet::new(),
+         active_thread_id: None,
+         active_thread_rx: None,
+         primary_thread_id: None,
+diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
+index 04c2e8505b..2eb3640f00 100644
+--- a/codex-rs/tui/src/app/tests.rs
++++ b/codex-rs/tui/src/app/tests.rs
+@@ -4095,6 +4095,8 @@ async fn make_test_app() -> App {
+         thread_event_listener_tasks: HashMap::new(),
+         agent_navigation: AgentNavigationState::default(),
+         side_threads: HashMap::new(),
++        pending_thread_name_generations: HashMap::new(),
++        ignored_thread_name_generation_threads: HashSet::new(),
+         active_thread_id: None,
+         active_thread_rx: None,
+         primary_thread_id: None,
+@@ -4160,6 +4162,8 @@ async fn make_test_app_with_channels() -> (
+             thread_event_listener_tasks: HashMap::new(),
+             agent_navigation: AgentNavigationState::default(),
+             side_threads: HashMap::new(),
++            pending_thread_name_generations: HashMap::new(),
++            ignored_thread_name_generation_threads: HashSet::new(),
+             active_thread_id: None,
+             active_thread_rx: None,
+             primary_thread_id: None,
+diff --git a/codex-rs/tui/src/app/thread_name_generation.rs b/codex-rs/tui/src/app/thread_name_generation.rs
+new file mode 100644
+index 0000000000..b22b71439e
+--- /dev/null
++++ b/codex-rs/tui/src/app/thread_name_generation.rs
+@@ -0,0 +1,275 @@
++//! Invisible, model-generated names for bare `/rename` commands.
++
++use super::App;
++use super::AppRunControl;
++use crate::app_command::AppCommand;
++use crate::app_event::AppEvent;
++use crate::app_server_session::AppServerSession;
++use crate::legacy_core::config::Config;
++use codex_app_server_protocol::AskForApproval;
++use codex_app_server_protocol::ServerNotification;
++use codex_app_server_protocol::ThreadItem;
++use codex_app_server_protocol::TurnStatus;
++use codex_app_server_protocol::UserInput;
++use codex_protocol::ThreadId;
++use color_eyre::eyre::Result;
++use serde_json::Value;
++use serde_json::json;
++
++const THREAD_NAME_DEVELOPER_INSTRUCTIONS: &str = "You name an existing coding conversation. Do not call tools, change files, or continue the work. Return only the required JSON object.";
++const THREAD_NAME_PROMPT: &str = "Choose an accurate two- or three-word Title Case name for the main topic of this conversation. Name the major workstream, feature, or outcome. Never name a transient action such as running tests, reading files, or checking status.";
++
++#[derive(Debug)]
++pub(super) struct PendingThreadNameGeneration {
++    parent_thread_id: ThreadId,
++    response: Option<String>,
++    completion_queued: bool,
++}
++
++impl PendingThreadNameGeneration {
++    fn new(parent_thread_id: ThreadId) -> Self {
++        Self {
++            parent_thread_id,
++            response: None,
++            completion_queued: false,
++        }
++    }
++}
++
++impl App {
++    fn thread_name_fork_config(&self) -> Config {
++        let mut config = self.chat_widget.config_ref().clone();
++        let parent_model = self.chat_widget.current_model();
++        if !parent_model.trim().is_empty() {
++            config.model = Some(parent_model.to_string());
++        }
++        config.model_reasoning_effort = self.chat_widget.current_reasoning_effort();
++        config.service_tier = self.chat_widget.configured_service_tier();
++        config.ephemeral = true;
++        config.developer_instructions = Some(THREAD_NAME_DEVELOPER_INSTRUCTIONS.to_string());
++        config
++    }
++
++    fn thread_name_turn(&self) -> AppCommand {
++        let config = self.chat_widget.config_ref();
++        AppCommand::user_turn(
++            vec![UserInput::Text {
++                text: THREAD_NAME_PROMPT.to_string(),
++                text_elements: Vec::new(),
++            }],
++            config.cwd.to_path_buf(),
++            AskForApproval::from(config.permissions.approval_policy.value()),
++            config.permissions.active_permission_profile(),
++            self.chat_widget.current_model().to_string(),
++            self.chat_widget.current_reasoning_effort(),
++            /*summary*/ None,
++            self.chat_widget.service_tier_update_for_core(),
++            Some(thread_name_output_schema()),
++            /*collaboration_mode*/ None,
++            /*personality*/ None,
++        )
++    }
++
++    pub(super) async fn handle_generate_thread_name(
++        &mut self,
++        app_server: &mut AppServerSession,
++        parent_thread_id: ThreadId,
++    ) -> Result<AppRunControl> {
++        if self
++            .pending_thread_name_generations
++            .values()
++            .any(|pending| pending.parent_thread_id == parent_thread_id)
++        {
++            self.chat_widget
++                .add_error_message("A session name is already being chosen.".to_string());
++            return Ok(AppRunControl::Continue);
++        }
++
++        let fork_config = self.thread_name_fork_config();
++        let turn = self.thread_name_turn();
++        let forked = match app_server.fork_thread(fork_config, parent_thread_id).await {
++            Ok(forked) => forked,
++            Err(err) => {
++                let detail = if err.chain().any(|cause| {
++                    let message = cause.to_string();
++                    message.contains("no rollout found for thread id")
++                        || message.contains("includeTurns is unavailable before first user message")
++                }) {
++                    "there is no conversation context yet".to_string()
++                } else {
++                    err.to_string()
++                };
++                self.fail_thread_name_generation(detail);
++                return Ok(AppRunControl::Continue);
++            }
++        };
++
++        let generator_thread_id = forked.session.thread_id;
++        self.pending_thread_name_generations.insert(
++            generator_thread_id,
++            PendingThreadNameGeneration::new(parent_thread_id),
++        );
++
++        if let Err(err) = self
++            .submit_thread_op(app_server, generator_thread_id, turn)
++            .await
++        {
++            self.pending_thread_name_generations
++                .remove(&generator_thread_id);
++            self.ignored_thread_name_generation_threads
++                .insert(generator_thread_id);
++            if let Err(delete_err) = app_server.thread_delete(generator_thread_id).await {
++                tracing::warn!(
++                    thread_id = %generator_thread_id,
++                    "failed to delete name-generator thread after start failure: {delete_err}"
++                );
++            }
++            self.fail_thread_name_generation(err.to_string());
++        }
++
++        Ok(AppRunControl::Continue)
++    }
++
++    pub(super) fn handle_thread_name_generation_notification(
++        &mut self,
++        thread_id: ThreadId,
++        notification: &ServerNotification,
++    ) -> bool {
++        if self
++            .ignored_thread_name_generation_threads
++            .contains(&thread_id)
++        {
++            if matches!(notification, ServerNotification::ThreadDeleted(_)) {
++                self.ignored_thread_name_generation_threads
++                    .remove(&thread_id);
++            }
++            return true;
++        }
++
++        let Some(pending) = self.pending_thread_name_generations.get_mut(&thread_id) else {
++            return false;
++        };
++
++        match notification {
++            ServerNotification::ItemCompleted(notification) => {
++                if let ThreadItem::AgentMessage { text, .. } = &notification.item {
++                    pending.response = Some(text.clone());
++                }
++            }
++            ServerNotification::TurnCompleted(notification) if !pending.completion_queued => {
++                pending.completion_queued = true;
++                self.app_event_tx
++                    .send(AppEvent::FinishThreadNameGeneration {
++                        generator_thread_id: thread_id,
++                        succeeded: notification.turn.status == TurnStatus::Completed,
++                    });
++            }
++            _ => {}
++        }
++        true
++    }
++
++    pub(super) async fn finish_thread_name_generation(
++        &mut self,
++        app_server: &mut AppServerSession,
++        generator_thread_id: ThreadId,
++        succeeded: bool,
++    ) {
++        let Some(pending) = self
++            .pending_thread_name_generations
++            .remove(&generator_thread_id)
++        else {
++            return;
++        };
++        self.ignored_thread_name_generation_threads
++            .insert(generator_thread_id);
++
++        let generated_name = if succeeded {
++            pending
++                .response
++                .as_deref()
++                .ok_or_else(|| "the naming turn returned no response".to_string())
++                .and_then(parse_generated_thread_name)
++        } else {
++            Err("the naming turn failed".to_string())
++        };
++
++        let rename_result = match generated_name {
++            Ok(name) => {
++                self.chat_widget
++                    .set_queue_autosend_suppressed(/*suppressed*/ false);
++                app_server
++                    .thread_set_name(pending.parent_thread_id, name)
++                    .await
++                    .map_err(|err| err.to_string())
++            }
++            Err(err) => Err(err),
++        };
++
++        if let Err(err) = app_server.thread_delete(generator_thread_id).await {
++            tracing::warn!(
++                thread_id = %generator_thread_id,
++                "failed to delete completed name-generator thread: {err}"
++            );
++        }
++
++        if let Err(err) = rename_result {
++            self.fail_thread_name_generation(err);
++        }
++    }
++
++    fn fail_thread_name_generation(&mut self, detail: String) {
++        self.chat_widget
++            .set_queue_autosend_suppressed(/*suppressed*/ false);
++        self.chat_widget
++            .add_error_message(format!("Could not choose a session name: {detail}."));
++        self.chat_widget.maybe_send_next_queued_input();
++    }
++}
++
++fn thread_name_output_schema() -> Value {
++    json!({
++        "type": "object",
++        "additionalProperties": false,
++        "properties": {
++            "name": {
++                "type": "string",
++                "description": "An accurate two- or three-word Title Case conversation name"
++            }
++        },
++        "required": ["name"]
++    })
++}
++
++fn parse_generated_thread_name(response: &str) -> std::result::Result<String, String> {
++    let value: Value = serde_json::from_str(response.trim())
++        .map_err(|_| "the naming turn returned invalid JSON".to_string())?;
++    let raw_name = value
++        .get("name")
++        .and_then(Value::as_str)
++        .ok_or_else(|| "the naming turn returned no name".to_string())?;
++    normalize_generated_thread_name(raw_name)
++}
++
++fn normalize_generated_thread_name(raw_name: &str) -> std::result::Result<String, String> {
++    let normalized_separators = raw_name.replace(['-', '_'], " ");
++    let words = normalized_separators
++        .split_whitespace()
++        .map(|word| {
++            word.trim_matches(|character: char| {
++                matches!(character, '`' | '"' | '\'' | '.' | ',' | ':' | ';')
++            })
++        })
++        .filter(|word| !word.is_empty())
++        .collect::<Vec<_>>();
++
++    if !(2..=3).contains(&words.len()) {
++        return Err("the generated name was not two or three words".to_string());
++    }
++
++    Ok(words.join(" "))
++}
++
++#[cfg(test)]
++#[path = "thread_name_generation_tests.rs"]
++mod tests;
+diff --git a/codex-rs/tui/src/app/thread_name_generation_tests.rs b/codex-rs/tui/src/app/thread_name_generation_tests.rs
+new file mode 100644
+index 0000000000..82965f2e63
+--- /dev/null
++++ b/codex-rs/tui/src/app/thread_name_generation_tests.rs
+@@ -0,0 +1,103 @@
++use super::PendingThreadNameGeneration;
++use super::normalize_generated_thread_name;
++use super::parse_generated_thread_name;
++use codex_app_server_protocol::ItemCompletedNotification;
++use codex_app_server_protocol::ServerNotification;
++use codex_app_server_protocol::ThreadDeletedNotification;
++use codex_app_server_protocol::ThreadItem;
++use codex_app_server_protocol::Turn;
++use codex_app_server_protocol::TurnCompletedNotification;
++use codex_app_server_protocol::TurnItemsView;
++use codex_app_server_protocol::TurnStatus;
++use codex_protocol::ThreadId;
++use pretty_assertions::assert_eq;
++
++#[test]
++fn generated_thread_name_accepts_two_or_three_words() {
++    assert_eq!(
++        normalize_generated_thread_name("Terminal Naming").as_deref(),
++        Ok("Terminal Naming")
++    );
++    assert_eq!(
++        normalize_generated_thread_name("Codex Rename Flow").as_deref(),
++        Ok("Codex Rename Flow")
++    );
++}
++
++#[test]
++fn generated_thread_name_normalizes_common_model_separators() {
++    assert_eq!(
++        normalize_generated_thread_name("terminal-name-sync").as_deref(),
++        Ok("terminal name sync")
++    );
++    assert_eq!(
++        parse_generated_thread_name(r#"{"name":"Claude Rename"}"#).as_deref(),
++        Ok("Claude Rename")
++    );
++}
++
++#[test]
++fn generated_thread_name_rejects_the_wrong_word_count() {
++    assert!(normalize_generated_thread_name("Rename").is_err());
++    assert!(normalize_generated_thread_name("One Two Three Four").is_err());
++    assert!(normalize_generated_thread_name("   ").is_err());
++}
++
++#[tokio::test]
++async fn naming_thread_notifications_stay_hidden_and_capture_the_final_name() {
++    let mut app = crate::app::test_support::make_test_app().await;
++    let parent_thread_id = ThreadId::new();
++    let generator_thread_id = ThreadId::new();
++    app.pending_thread_name_generations.insert(
++        generator_thread_id,
++        PendingThreadNameGeneration::new(parent_thread_id),
++    );
++
++    let item_completed = ServerNotification::ItemCompleted(ItemCompletedNotification {
++        thread_id: generator_thread_id.to_string(),
++        turn_id: "rename-turn".to_string(),
++        completed_at_ms: 1,
++        item: ThreadItem::AgentMessage {
++            id: "rename-message".to_string(),
++            text: r#"{"name":"Terminal Naming"}"#.to_string(),
++            phase: None,
++            memory_citation: None,
++        },
++    });
++    assert!(app.handle_thread_name_generation_notification(generator_thread_id, &item_completed));
++    assert_eq!(
++        app.pending_thread_name_generations
++            .get(&generator_thread_id)
++            .and_then(|pending| pending.response.as_deref()),
++        Some(r#"{"name":"Terminal Naming"}"#)
++    );
++
++    let turn_completed = ServerNotification::TurnCompleted(TurnCompletedNotification {
++        thread_id: generator_thread_id.to_string(),
++        turn: Turn {
++            id: "rename-turn".to_string(),
++            items: Vec::new(),
++            items_view: TurnItemsView::Full,
++            status: TurnStatus::Completed,
++            error: None,
++            started_at: Some(0),
++            completed_at: Some(1),
++            duration_ms: Some(1),
++        },
++    });
++    assert!(app.handle_thread_name_generation_notification(generator_thread_id, &turn_completed));
++    assert!(app.pending_thread_name_generations[&generator_thread_id].completion_queued);
++
++    app.pending_thread_name_generations
++        .remove(&generator_thread_id);
++    app.ignored_thread_name_generation_threads
++        .insert(generator_thread_id);
++    let deleted = ServerNotification::ThreadDeleted(ThreadDeletedNotification {
++        thread_id: generator_thread_id.to_string(),
++    });
++    assert!(app.handle_thread_name_generation_notification(generator_thread_id, &deleted));
++    assert!(
++        !app.ignored_thread_name_generation_threads
++            .contains(&generator_thread_id)
++    );
++}
+diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
+index 553a58d8d4..350e5d2654 100644
+--- a/codex-rs/tui/src/app_event.rs
++++ b/codex-rs/tui/src/app_event.rs
+@@ -158,6 +158,17 @@ pub(crate) enum AppEvent {
+         user_message: Option<UserMessage>,
+     },
+ 
++    /// Generate a concise name from the current thread's conversation context.
++    GenerateThreadName {
++        parent_thread_id: ThreadId,
++    },
++
++    /// Finish an invisible naming turn and apply its result to the parent thread.
++    FinishThreadNameGeneration {
++        generator_thread_id: ThreadId,
++        succeeded: bool,
++    },
++
+     /// Submit an op to the specified thread, regardless of current focus.
+     SubmitThreadOp {
+         thread_id: ThreadId,
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-index 4198943a4..725ff42c6 100644
+index 4198943a4f..d355b628d8 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
 @@ -10,6 +10,9 @@ use super::status_line_setup::StatusLineItem;
@@ -44,7 +574,7 @@ index 4198943a4..725ff42c6 100644
 +    let digits = text[..percent_sign]
 +        .chars()
 +        .rev()
-+        .take_while(|character| character.is_ascii_digit())
++        .take_while(char::is_ascii_digit)
 +        .collect::<String>()
 +        .chars()
 +        .rev()
@@ -56,7 +586,7 @@ index 4198943a4..725ff42c6 100644
 +    let filled = ((usize::from(percent) * USAGE_METER_CELLS + 50) / 100).min(USAGE_METER_CELLS);
 +    let color = match percent {
 +        USAGE_DANGER_PERCENT..=u8::MAX => Color::Red,
-+        USAGE_WARNING_PERCENT..USAGE_DANGER_PERCENT => Color::Rgb(255, 165, 0),
++        USAGE_WARNING_PERCENT..USAGE_DANGER_PERCENT => Color::Yellow,
 +        _ => Color::Green,
 +    };
 +    let active = Style::default().fg(color);
@@ -116,8 +646,322 @@ index 4198943a4..725ff42c6 100644
 +            "ctx [████░░░░░░] 39% · 5h [███████░░░] 70% · 7d [█████████░] 86%"
 +        );
 +        assert_eq!(line.spans[0].style.fg, Some(Color::Green));
-+        assert_eq!(line.spans[5].style.fg, Some(Color::Rgb(255, 165, 0)));
++        assert_eq!(line.spans[5].style.fg, Some(Color::Yellow));
 +        assert_eq!(line.spans[10].style.fg, Some(Color::Red));
      }
  
      #[test]
+diff --git a/codex-rs/tui/src/bottom_pane/title_setup.rs b/codex-rs/tui/src/bottom_pane/title_setup.rs
+index 1a3993c1cd..7c2147622f 100644
+--- a/codex-rs/tui/src/bottom_pane/title_setup.rs
++++ b/codex-rs/tui/src/bottom_pane/title_setup.rs
+@@ -100,7 +100,7 @@ impl TerminalTitleItem {
+             TerminalTitleItem::Status => {
+                 "Compact session run-state text (Ready, Working, Thinking)"
+             }
+-            TerminalTitleItem::Thread => "Current thread title, or thread identifier when unnamed",
++            TerminalTitleItem::Thread => "Manual /rename value, or Starting Session when unnamed",
+             TerminalTitleItem::GitBranch => "Current Git branch (omitted when unavailable)",
+             TerminalTitleItem::ContextRemaining => {
+                 "Percentage of context window remaining (omitted when unknown)"
+diff --git a/codex-rs/tui/src/chatwidget/interaction.rs b/codex-rs/tui/src/chatwidget/interaction.rs
+index ba0aeb0a91..cc57f52003 100644
+--- a/codex-rs/tui/src/chatwidget/interaction.rs
++++ b/codex-rs/tui/src/chatwidget/interaction.rs
+@@ -298,36 +298,6 @@ impl ChatWidget {
+         self.transcript.last_agent_markdown.as_deref()
+     }
+ 
+-    pub(super) fn show_rename_prompt(&mut self) {
+-        if !self.ensure_thread_rename_allowed() {
+-            return;
+-        }
+-        let tx = self.app_event_tx.clone();
+-        let existing_name = self.thread_name.as_deref().filter(|name| !name.is_empty());
+-        let title = if existing_name.is_some() {
+-            "Rename thread"
+-        } else {
+-            "Name thread"
+-        };
+-        let view = CustomPromptView::new(
+-            title.to_string(),
+-            "Type a name and press Enter".to_string(),
+-            /*initial_text*/ existing_name.unwrap_or_default().to_string(),
+-            /*context_label*/ None,
+-            Box::new(move |name: String| {
+-                let Some(name) = normalize_thread_name(&name) else {
+-                    tx.send(AppEvent::InsertHistoryCell(Box::new(
+-                        history_cell::new_error_event("Thread name cannot be empty.".to_string()),
+-                    )));
+-                    return;
+-                };
+-                tx.set_thread_name(name);
+-            }),
+-        );
+-
+-        self.bottom_pane.show_view(Box::new(view));
+-    }
+-
+     pub(super) fn ensure_thread_rename_allowed(&mut self) -> bool {
+         match self.thread_rename_block_message.clone() {
+             Some(message) => {
+diff --git a/codex-rs/tui/src/chatwidget/slash_dispatch.rs b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
+index df9c65f8ce..7f83c3dc72 100644
+--- a/codex-rs/tui/src/chatwidget/slash_dispatch.rs
++++ b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
+@@ -264,9 +264,20 @@ impl ChatWidget {
+                 self.open_review_popup();
+             }
+             SlashCommand::Rename => {
++                if !self.ensure_thread_rename_allowed() {
++                    return;
++                }
++                let Some(parent_thread_id) = self.thread_id else {
++                    self.add_error_message(
++                        "Session is still starting; try /rename again in a moment.".to_string(),
++                    );
++                    return;
++                };
+                 self.session_telemetry
+                     .counter("codex.thread.rename", /*inc*/ 1, &[]);
+-                self.show_rename_prompt();
++                self.set_queue_autosend_suppressed(/*suppressed*/ true);
++                self.app_event_tx
++                    .send(AppEvent::GenerateThreadName { parent_thread_id });
+             }
+             SlashCommand::Model => {
+                 self.open_model_popup();
+@@ -1036,7 +1047,10 @@ impl ChatWidget {
+     }
+ 
+     fn queued_command_drain_result(&self, cmd: SlashCommand) -> QueueDrain {
+-        if self.is_user_turn_pending_or_running() || !self.bottom_pane.no_modal_or_popup_active() {
++        if self.is_user_turn_pending_or_running()
++            || self.input_queue.suppress_queue_autosend
++            || !self.bottom_pane.no_modal_or_popup_active()
++        {
+             return QueueDrain::Stop;
+         }
+         match cmd {
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap
+index 8ff4227504..e532fa14a6 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap
+@@ -7,7 +7,7 @@ expression: terminal_title_popup_snapshot(&mut chat)
+ 
+   Type to search
+   >
+-› [x] thread-title   Current thread title, or thread identifier when unnamed
++› [x] thread-title   Manual /rename value, or Starting Session when unnamed
+   [x] git-branch     Current Git branch (omitted when unavailable)
+   [x] task-progress  Latest task progress from update_plan (omitted until available)
+   [ ] app-name       Codex app name
+@@ -16,5 +16,5 @@ expression: terminal_title_popup_snapshot(&mut chat)
+   [ ] activity       Spinner while working, action-required message while blocked.
+   [ ] run-state      Compact session run-state text (Ready, Working, Thinking)
+ 
+-  thread title | feat/awesome-feature | Tasks 0/0
++  Starting Session | feat/awesome-feature | Tasks 0/0
+   Press space to toggle; ←/→ to move; enter to confirm and close; esc to close
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_live_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_live_only.snap
+index 8c149b8cc9..99710d30b2 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_live_only.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_live_only.snap
+@@ -8,7 +8,7 @@ expression: terminal_title_popup_snapshot(&mut chat)
+   Type to search
+   >
+ › [x] project-name   Project name (falls back to current directory name)
+-  [x] thread-title   Current thread title, or thread identifier when unnamed
++  [x] thread-title   Manual /rename value, or Starting Session when unnamed
+   [x] git-branch     Current Git branch (omitted when unavailable)
+   [x] task-progress  Latest task progress from update_plan (omitted until available)
+   [ ] app-name       Codex app name
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap
+index b04e07bd9b..f6fdf03aab 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap
+@@ -8,7 +8,7 @@ expression: terminal_title_popup_snapshot(&mut chat)
+   Type to search
+   >
+ › [x] project-name   Project name (falls back to current directory name)
+-  [x] thread-title   Current thread title, or thread identifier when unnamed
++  [x] thread-title   Manual /rename value, or Starting Session when unnamed
+   [x] task-progress  Latest task progress from update_plan (omitted until available)
+   [ ] app-name       Codex app name
+   [ ] current-dir    Current working directory
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_rate_limits.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_rate_limits.snap
+index c821ddce93..9f7280e8cb 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_rate_limits.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_rate_limits.snap
+@@ -14,7 +14,7 @@ expression: terminal_title_popup_snapshot(&mut chat)
+   [ ] current-dir    Current working directory
+   [ ] activity       Spinner while working, action-required message while blocked.
+   [ ] run-state      Compact session run-state text (Ready, Working, Thinking)
+-  [ ] thread-title   Current thread title, or thread identifier when unnamed
++  [ ] thread-title   Manual /rename value, or Starting Session when unnamed
+ 
+   monthly 65% left | weekly 50% left
+   Press space to toggle; ←/→ to move; enter to confirm and close; esc to close
+diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
+index 7120462330..86a80f129a 100644
+--- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
++++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
+@@ -813,9 +813,15 @@ impl ChatWidget {
+             )),
+             TerminalTitleItem::Spinner => self.terminal_title_spinner_text_at(now),
+             TerminalTitleItem::Status => Some(self.run_state_status_text()),
+-            TerminalTitleItem::Thread => self
+-                .status_line_value_for_item(StatusLineItem::ThreadTitle)
+-                .map(|value| Self::truncate_terminal_title_part(value, /*max_chars*/ 48)),
++            TerminalTitleItem::Thread => Some(Self::truncate_terminal_title_part(
++                self.thread_name
++                    .as_deref()
++                    .map(str::trim)
++                    .filter(|name| !name.is_empty())
++                    .unwrap_or("Starting Session")
++                    .to_string(),
++                /*max_chars*/ 48,
++            )),
+             TerminalTitleItem::GitBranch => self.status_line_branch.as_ref().map(|branch| {
+                 Self::truncate_terminal_title_part(branch.clone(), /*max_chars*/ 32)
+             }),
+diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
+index d683aa3fbf..838a0cd760 100644
+--- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
++++ b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
+@@ -459,26 +459,27 @@ async fn queued_bare_rename_drains_next_input_after_name_update() {
+     complete_turn_with_message(&mut chat, "turn-1", Some("done"));
+ 
+     assert_eq!(chat.input_queue.queued_user_messages.len(), 1);
+-    assert!(render_bottom_popup(&chat, /*width*/ 80).contains("Name thread"));
+     assert_matches!(op_rx.try_recv(), Err(TryRecvError::Empty));
+ 
+-    chat.handle_paste("Queued rename".to_string());
+-    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+-
+     let events = std::iter::from_fn(|| rx.try_recv().ok()).collect::<Vec<_>>();
+     assert!(
+         events.iter().any(|event| matches!(
+             event,
+-            AppEvent::CodexOp(Op::SetThreadName { name }) if name == "Queued rename"
++            AppEvent::GenerateThreadName { parent_thread_id }
++                if *parent_thread_id == thread_id
+         )),
+-        "expected rename prompt to submit thread name; events: {events:?}"
++        "expected bare /rename to request a generated name; events: {events:?}"
+     );
++    assert!(chat.input_queue.suppress_queue_autosend);
+ 
++    // The app clears suppression after the invisible naming turn succeeds, before
++    // the normal thread-name notification arrives.
++    chat.set_queue_autosend_suppressed(/*suppressed*/ false);
+     chat.handle_server_notification(
+         ServerNotification::ThreadNameUpdated(
+             codex_app_server_protocol::ThreadNameUpdatedNotification {
+                 thread_id: thread_id.to_string(),
+-                thread_name: Some("Queued rename".to_string()),
++                thread_name: Some("Generated Rename".to_string()),
+             },
+         ),
+         /*replay_kind*/ None,
+@@ -1169,36 +1170,34 @@ async fn interrupted_merged_message_history_encodes_mentions_once() {
+ }
+ 
+ #[tokio::test]
+-async fn slash_rename_prefills_existing_thread_name() {
++async fn slash_rename_requests_a_generated_name() {
+     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
++    let thread_id = ThreadId::new();
++    chat.thread_id = Some(thread_id);
+     chat.thread_name = Some("Current project title".to_string());
+ 
+     chat.dispatch_command(SlashCommand::Rename);
+ 
+-    let popup = render_bottom_popup(&chat, /*width*/ 80);
+-    assert_chatwidget_snapshot!("slash_rename_prefilled_prompt", popup);
+-
+-    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+-
+     assert_matches!(
+         rx.try_recv(),
+-        Ok(AppEvent::CodexOp(Op::SetThreadName { name })) if name == "Current project title"
++        Ok(AppEvent::GenerateThreadName { parent_thread_id }) if parent_thread_id == thread_id
+     );
++    assert!(chat.no_modal_or_popup_active());
++    assert!(chat.input_queue.suppress_queue_autosend);
+ }
+ 
+ #[tokio::test]
+-async fn slash_rename_without_existing_thread_name_starts_empty() {
++async fn slash_rename_without_a_ready_thread_reports_an_error() {
+     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+ 
+     chat.dispatch_command(SlashCommand::Rename);
+ 
+-    let popup = render_bottom_popup(&chat, /*width*/ 80);
+-    assert!(popup.contains("Name thread"));
+-    assert!(popup.contains("Type a name and press Enter"));
+-
+-    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+-
+-    assert_matches!(rx.try_recv(), Err(TryRecvError::Empty));
++    let rendered = drain_insert_history(&mut rx)
++        .iter()
++        .map(|cell| lines_to_single_string(cell))
++        .collect::<Vec<_>>()
++        .join("\n");
++    assert!(rendered.contains("Session is still starting"));
+ }
+ 
+ #[tokio::test]
+diff --git a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
+index 7445162759..b7150841f8 100644
+--- a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
++++ b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
+@@ -3,6 +3,46 @@
+ use super::*;
+ use pretty_assertions::assert_eq;
+ 
++#[tokio::test]
++async fn terminal_title_changes_only_after_manual_rename() {
++    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
++    chat.config.tui_terminal_title = Some(vec!["thread-title".to_string()]);
++    chat.refresh_terminal_title();
++
++    assert_eq!(
++        chat.last_terminal_title.as_deref(),
++        Some("Starting Session")
++    );
++
++    chat.on_plan_update(UpdatePlanArgs {
++        explanation: Some("Changing the work phase".to_string()),
++        plan: vec![PlanItemArg {
++            step: "Run the focused tests".to_string(),
++            status: StepStatus::InProgress,
++        }],
++    });
++    chat.refresh_terminal_title();
++    assert_eq!(
++        chat.last_terminal_title.as_deref(),
++        Some("Starting Session")
++    );
++
++    let thread_id = chat.thread_id.unwrap_or_else(|| {
++        let thread_id = ThreadId::new();
++        chat.thread_id = Some(thread_id);
++        thread_id
++    });
++    chat.on_thread_name_updated(thread_id, Some("Session Rename".to_string()));
++    assert_eq!(chat.last_terminal_title.as_deref(), Some("Session Rename"));
++
++    chat.on_plan_update(UpdatePlanArgs {
++        explanation: Some("Another phase change".to_string()),
++        plan: vec![],
++    });
++    chat.refresh_terminal_title();
++    assert_eq!(chat.last_terminal_title.as_deref(), Some("Session Rename"));
++}
++
+ #[tokio::test]
+ async fn terminal_title_shows_action_required_while_exec_approval_is_pending() {
+     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
