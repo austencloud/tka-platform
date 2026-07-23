@@ -180,7 +180,24 @@
         stack: error instanceof Error ? error.stack : undefined,
       });
 
-      googleError = mapAuthError(error);
+      // Recovery for a webview arrival detection missed (e.g. the Google iOS
+      // app, or an app whose token changed): OAuth itself rejected the
+      // environment. Surface the escape path instead of a raw dead end, and
+      // record it so the detection gap is visible rather than silent.
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        errorCode === "auth/operation-not-supported-in-this-environment" ||
+        /disallowed_useragent/i.test(message)
+      ) {
+        googleError = blockedProviderMessage("Google");
+        captureEvent("inapp_browser_oauth_rejected", {
+          provider: "google",
+          route: analyticsRoute(),
+        });
+        revealEscapeNote();
+      } else {
+        googleError = mapAuthError(error);
+      }
     } finally {
       loadingProvider = null;
     }
