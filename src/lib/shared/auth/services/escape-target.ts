@@ -14,6 +14,17 @@
 const ANDROID_PACKAGE = "com.tkaflowarts.composer";
 /** x-safari-https:// is reliable on iOS 17+; older iOS raises an error dialog. */
 const IOS_MIN_SCHEME_VERSION = 17;
+/**
+ * Route prefixes the native app claims via https App Links (AndroidManifest +
+ * AASA). An app-target intent for anything else can't be resolved by the
+ * installed app, so it must be bridged through a claimed path (see below).
+ */
+const COVERED_APP_PREFIXES = ["/q/", "/sequence/", "/store/"];
+const APP_BRIDGE_PATH = "/store/open";
+
+function isCoveredAppRoute(pathname: string): boolean {
+  return COVERED_APP_PREFIXES.some((p) => pathname.startsWith(p));
+}
 
 export type EscapeMethod =
   | "android_intent"
@@ -84,10 +95,19 @@ function androidIntent(u: URL, input: EscapeInput): EscapeTarget {
       input.playStoreUrl ??
         `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`
     );
+    // The app only App-Links a few route families. A route it doesn't claim
+    // (e.g. /create/construct) can't resolve the intent, so an installed app
+    // would be skipped and the user bounced to the store. Route those through a
+    // claimed bridge path carrying the real destination for the app to restore.
+    const appTail = isCoveredAppRoute(u.pathname)
+      ? tail
+      : `${u.host}${APP_BRIDGE_PATH}?to=${encodeURIComponent(
+          u.pathname + u.search + u.hash
+        )}`;
     return {
       method: "android_intent",
       label: "Open in the app",
-      url: `intent://${tail}#Intent;scheme=https;package=${ANDROID_PACKAGE};S.browser_fallback_url=${fallback};end`,
+      url: `intent://${appTail}#Intent;scheme=https;package=${ANDROID_PACKAGE};S.browser_fallback_url=${fallback};end`,
       isAppTarget: true,
     };
   }

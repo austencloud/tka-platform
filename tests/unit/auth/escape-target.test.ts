@@ -147,6 +147,32 @@ describe("resolveEscapeTarget — boundaries", () => {
     expect(t.label).toBe("Open in browser");
   });
 
+  it("android app-target on a covered route (/q/) deep-links straight to it", () => {
+    const t = resolveEscapeTarget({
+      platform: "android",
+      iosMajorVersion: null,
+      appLaunched: true,
+      currentUrl: "https://tkaflowarts.com/q/ABCD",
+    });
+    const dataPart = t.url!.split("#Intent")[0];
+    expect(dataPart).toContain("/q/ABCD");
+    expect(dataPart).not.toContain("/store/open");
+  });
+
+  it("android app-target on an UNcovered route bridges through /store/open", () => {
+    const t = resolveEscapeTarget({
+      platform: "android",
+      iosMajorVersion: null,
+      appLaunched: true,
+      currentUrl: "https://tkaflowarts.com/create/construct?x=1",
+    });
+    const dataPart = t.url!.split("#Intent")[0];
+    // The app doesn't App-Link /create, so it routes through a claimed bridge
+    // path carrying the real destination.
+    expect(dataPart).toContain("/store/open?to=");
+    expect(decodeURIComponent(dataPart)).toContain("/create/construct?x=1");
+  });
+
   it("ios appLaunched=true surfaces an App Store action", () => {
     const t = resolveEscapeTarget({
       platform: "ios",

@@ -80,6 +80,25 @@
     }
   }
 
+  // Warn a guest with unsaved work BEFORE they send a link they'll open in
+  // another browser, where a fresh identity is created and the drafts strand.
+  // Detached/non-blocking: IndexedDB stalls in webviews, so this resolves into
+  // state rather than gating render.
+  let pendingGuestDrafts = $state(false);
+  $effect(() => {
+    if (!inAppBrowser) {
+      pendingGuestDrafts = false;
+      return;
+    }
+    let cancelled = false;
+    void hasPendingGuestDrafts().then((pending) => {
+      if (!cancelled) pendingGuestDrafts = pending;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
   async function sendEmailLink() {
     const requestId = crypto.randomUUID();
     const startedAt = performance.now();
@@ -214,6 +233,13 @@
 >
   <p class="magic-link-hint">{hint}</p>
 
+  {#if pendingGuestDrafts}
+    <p class="drift-warning" role="status">
+      Your unsaved work stays on this browser. Finish signing in here, or it
+      won't follow the link.
+    </p>
+  {/if}
+
   <div class="form-group">
     <label for="email-link">{t("form_email")}</label>
     <input
@@ -308,6 +334,18 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     text-align: center;
     line-height: 1.4;
+  }
+
+  .drift-warning {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: clamp(0.75rem, 1.6vh, 0.875rem);
+    line-height: 1.4;
+    text-align: center;
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    background: var(--semantic-warning-bg, rgba(234, 179, 8, 0.12));
+    border: 1px solid var(--semantic-warning, rgba(234, 179, 8, 0.4));
+    border-radius: 0.5rem;
   }
 
   .form-group {
