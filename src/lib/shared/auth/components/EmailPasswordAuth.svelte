@@ -17,7 +17,10 @@
   import { onDestroy } from "svelte";
   import { auth } from "../firebase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { upgradeAnonymousWithEmail } from "$lib/shared/auth/services/anonymous-upgrade";
+  import {
+    captureAnonymousDrafts,
+    upgradeAnonymousWithEmail,
+  } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
 
@@ -134,9 +137,22 @@
         resetAttempts();
         await new Promise((resolve) => setTimeout(resolve, 1200));
       } else {
+        // If a guest with a just-saved (Dexie-only, SP1) sequence signs into an
+        // EXISTING account here, signInWithEmailAndPassword swaps the session
+        // uid out from under the anonymous one — the guest's local sequence
+        // would otherwise be silently abandoned. Capture before the swap, same
+        // as the collision branch in upgradeAnonymousWithEmail, then offer the
+        // import after sign-in succeeds.
+        const anonUid = auth.currentUser?.isAnonymous
+          ? auth.currentUser.uid
+          : null;
+        const drafts = anonUid ? await captureAnonymousDrafts(anonUid) : [];
         await signInWithEmailAndPassword(auth, email, password);
         recordAuthSubmission("password", mode);
         resetAttempts();
+        if (drafts.length > 0) {
+          promptAnonymousImport(drafts);
+        }
       }
 
       // Don't navigate on success. The wrapping AuthDrawer/AuthSheet closes
