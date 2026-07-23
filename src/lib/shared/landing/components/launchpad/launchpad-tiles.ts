@@ -59,7 +59,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		id: "composer",
 		href: "/composer",
 		heading: "Composer",
-		descriptor: "Write a sequence in TKA letters and play it back.",
+		descriptor: "Build, animate, collect, and share TKA sequences!",
 		span: "2x2",
 		color: "#a78bfa",
 		icon: "fa-pen-nib",
