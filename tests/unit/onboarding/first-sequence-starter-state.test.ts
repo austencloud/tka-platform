@@ -203,6 +203,24 @@ describe("firstSequenceStarterState", () => {
 			expect(firstSequenceStarterState.isEligible).toBe(false);
 		});
 
+		it("two concurrent resolve() calls join one run and both settle to the same eligibility", async () => {
+			mocks.authState.effectiveUserId = null;
+			mocks.dexieCount.mockResolvedValue(0);
+			firstSequenceStarterState.resetCloudSync();
+
+			// Kick off two resolves before either settles - the arbitration
+			// (CreateModule) and the mount effect (StandardWorkspaceLayout) race
+			// this way. Both must await the SAME settled eligibility.
+			await Promise.all([
+				firstSequenceStarterState.resolve(),
+				firstSequenceStarterState.resolve(),
+			]);
+
+			expect(firstSequenceStarterState.eligibility).toBe("eligible");
+			// The library probe ran once, not once per caller.
+			expect(mocks.dexieCount).toHaveBeenCalledTimes(1);
+		});
+
 		it("a dismissal hides an eligible starter, and a session rearm forces it back", async () => {
 			mocks.authState.effectiveUserId = null;
 			mocks.dexieCount.mockResolvedValue(0);

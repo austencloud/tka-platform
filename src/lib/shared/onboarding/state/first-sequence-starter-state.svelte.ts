@@ -92,10 +92,13 @@ function createFirstSequenceStarterState() {
     eligibility: "unknown",
   });
 
-  // Guards resolve() against overlapping runs (the effect that drives it in
-  // StandardWorkspaceLayout plus the awaited call in CreateModule can both
-  // fire before the first async check settles).
-  let resolving = false;
+  // Shared in-flight resolve() promise. Two callers race to resolve
+  // eligibility — the effect that drives it in StandardWorkspaceLayout and the
+  // awaited call in the CreateModule tutorial arbitration. A second caller
+  // JOINS this promise rather than early-returning, so `await resolve()` always
+  // sees the SETTLED eligibility (otherwise the arbitration could read a still-
+  // `unknown` state and fire the legacy tutorial alongside the starter).
+  let resolvePromise: Promise<void> | null = null;
 
   function resolveCloudSync() {
     state.cloudSynced = true;
@@ -147,30 +150,36 @@ function createFirstSequenceStarterState() {
      * short-circuits when the flag is off (feature dark - spend no read), and
      * leaves eligibility `unknown` on failure so we never assume "empty".
      */
-    async resolve(): Promise<void> {
-      if (!isBrowser) return;
+    resolve(): Promise<void> {
+      if (!isBrowser) return Promise.resolve();
       // Feature dark: the getter's own flag check keeps isEligible false, so
       // there's nothing to gain from a Firestore/Dexie read here.
-      if (!postHogFeatureFlagService.canAccess(STARTER_FLAG)) return;
-      if (state.eligibility !== "unknown") return;
-      if (resolving) return;
-      resolving = true;
+      if (!postHogFeatureFlagService.canAccess(STARTER_FLAG))
+        return Promise.resolve();
+      if (state.eligibility !== "unknown") return Promise.resolve();
+      // A resolve is already in flight - join it so awaiters see the settled
+      // eligibility, not a half-resolved `unknown`.
+      if (resolvePromise) return resolvePromise;
 
-      try {
-        // Respect a dismissal made on another device before we ever show.
-        await this.syncFromCloud();
-        const hasSaved = await resolveHasSavedAnything();
-        state.eligibility = hasSaved ? "ineligible" : "eligible";
-      } catch (error) {
-        // Stay `unknown` (never "empty") - the card stays hidden and a later
-        // resolve() can retry.
-        console.warn(
-          "[firstSequenceStarterState] Failed to resolve eligibility:",
-          error
-        );
-      } finally {
-        resolving = false;
-      }
+      resolvePromise = (async () => {
+        try {
+          // Respect a dismissal made on another device before we ever show.
+          await this.syncFromCloud();
+          const hasSaved = await resolveHasSavedAnything();
+          state.eligibility = hasSaved ? "ineligible" : "eligible";
+        } catch (error) {
+          // Stay `unknown` (never "empty") - the card stays hidden and a later
+          // resolve() can retry.
+          console.warn(
+            "[firstSequenceStarterState] Failed to resolve eligibility:",
+            error
+          );
+        } finally {
+          resolvePromise = null;
+        }
+      })();
+
+      return resolvePromise;
     },
 
     /**
@@ -211,7 +220,7 @@ function createFirstSequenceStarterState() {
       state.syncInProgress = false;
       state.sessionRearm = false;
       state.eligibility = "unknown";
-      resolving = false;
+      resolvePromise = null;
 
       removeLocalStorageItem(DISMISSED_KEY);
     },
@@ -225,7 +234,7 @@ function createFirstSequenceStarterState() {
       state.cloudSynced = false;
       state.syncInProgress = false;
       state.eligibility = "unknown";
-      resolving = false;
+      resolvePromise = null;
     },
 
     /** Mark cloud sync complete without a read (sync path failed externally). */
