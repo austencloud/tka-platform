@@ -42,9 +42,13 @@
   const driverOptions = $derived(
     (
       [
-        { value: "blue", label: "Blue" },
-        { value: "red", label: "Red" },
-      ] as { value: FuseSide; label: string }[]
+        { value: "blue", label: "Blue", tone: "blue" },
+        { value: "red", label: "Red", tone: "red" },
+      ] as {
+        value: FuseSide;
+        label: string;
+        tone: "blue" | "red";
+      }[]
     ).map((option) => ({ ...option, disabled }))
   );
 
@@ -62,7 +66,6 @@
   const driverLabel = $derived(
     fuseState.driverSide === "blue" ? "Blue" : "Red"
   );
-  const driverColor = $derived<"blue" | "red">(fuseState.driverSide);
   const followerColor = $derived(
     fuseState.driverSide === "blue"
       ? "var(--prop-red, #f44336)"
@@ -86,7 +89,7 @@
         options={driverOptions}
         value={fuseState.driverSide}
         onchange={handleDriver}
-        color={driverColor}
+        color="accent"
         size="md"
       />
     </div>

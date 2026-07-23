@@ -12,9 +12,11 @@
   let {
     onOpenViewer,
     compact = false,
+    condensedAction = false,
   }: {
     onOpenViewer: () => Promise<void>;
     compact?: boolean;
+    condensedAction?: boolean;
   } = $props();
   const { state: fuseState } = getFuseContext();
   let tempoOpen = $state(false);
@@ -143,8 +145,12 @@
 
       <div class="fuse-slot">
         <ActionButton
-          label="Open combined sequence viewer"
-          busyLabel="Opening combined sequence..."
+          label={condensedAction
+            ? "Open viewer"
+            : "Open combined sequence viewer"}
+          busyLabel={condensedAction
+            ? "Opening viewer..."
+            : "Opening combined sequence..."}
           icon={fuseState.isFusing ? "fa-spinner fa-spin" : "fa-expand"}
           color="fuse"
           fullWidth={true}

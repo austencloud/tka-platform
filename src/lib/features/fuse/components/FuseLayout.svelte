@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { LANDSCAPE_THRESHOLDS } from "$lib/shared/device/domain/constants/device-constants";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getFuseContext } from "../context/fuse-context";
   import FuseModeBar from "./FuseModeBar.svelte";
@@ -11,12 +12,14 @@
   const { state: fuseState } = getFuseContext();
   let containerElement = $state<HTMLDivElement | null>(null);
   let compact = $state(true);
+  let landscapeSplit = $state(false);
   let settingsOpen = $state(false);
   // On the locked desktop layout the source cards sit in a tall column with
   // room to spare, so each pictograph stays large even with a start position
   // and a mandala added. Gate the full choreo card on that size (matching the
   // 1100/780 layout breakpoint) so smaller screens keep the lean, big-cell view.
   let fullCard = $state(false);
+  const controlsInDrawer = $derived(!fullCard);
 
   // Desktop-only draggable seam between the path column and the animation
   // canvas — same pattern as the sequence viewer's sidebar resize
@@ -189,8 +192,19 @@
     if (!element || typeof ResizeObserver === "undefined") return;
 
     const updateLayoutMode = (width: number, height: number) => {
-      compact = width < 600;
-      fullCard = width >= 1100 && height >= 780;
+      const useCompactLayout = width < 600;
+      const useFullCards = width >= 1100 && height >= 780;
+      const aspectRatio = height > 0 ? width / height : 1;
+      compact = useCompactLayout;
+      fullCard = useFullCards;
+      // Use the measured Fuse slot, not the physical screen: Android chrome and
+      // the app nav can pull an unfolded Fold's content height below 600px.
+      // Phone-shaped landscape screens stay on the existing scroll layout.
+      landscapeSplit =
+        !useFullCards &&
+        !useCompactLayout &&
+        width > height &&
+        aspectRatio <= LANDSCAPE_THRESHOLDS.WIDE_ASPECT_RATIO;
       containerWidth = width;
     };
     updateLayoutMode(element.clientWidth, element.clientHeight);
@@ -227,6 +241,8 @@
   <div
     class="fuse-workspace themed-scrollbar"
     class:compact-workspace={compact}
+    class:condensed-workspace={controlsInDrawer}
+    class:landscape-workspace={landscapeSplit}
     class:dragging
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
     aria-busy={fuseState.isLoadingLength ||
@@ -234,10 +250,10 @@
       fuseState.isFusing}
   >
     <FuseWorkspaceHeader
-      {compact}
+      compact={controlsInDrawer}
       onOpenOptions={() => (settingsOpen = true)}
     />
-    {#if !compact}
+    {#if !controlsInDrawer}
       <div class="fuse-mode-row">
         <FuseModeBar />
         {#if fuseState.mode === "symmetry"}
@@ -280,11 +296,20 @@
         </div>
         <FuseSourceCard side="red" compactHero={true} />
       </div>
+    {:else if landscapeSplit}
+      <div class="fuse-left-col">
+        <FuseSourceCard side="blue" full={false} />
+        <FuseSourceCard side="red" full={false} />
+      </div>
     {:else}
       <FuseSourceCard side="blue" full={false} />
       <FuseSourceCard side="red" full={false} />
     {/if}
-    <FusePreviewStage onOpenViewer={handleOpenViewer} {compact} />
+    <FusePreviewStage
+      onOpenViewer={handleOpenViewer}
+      {compact}
+      condensedAction={landscapeSplit}
+    />
   </div>
 
   <FuseSettingsDrawer bind:isOpen={settingsOpen} />
@@ -489,6 +514,14 @@
         "preview preview";
       gap: clamp(10px, 1.4cqw, 14px);
     }
+
+    .fuse-workspace.condensed-workspace:not(.landscape-workspace) {
+      grid-template-rows: repeat(3, max-content);
+      grid-template-areas:
+        "header header"
+        "blue red"
+        "preview preview";
+    }
   }
 
   /* One-page fit layout: any container with real height locks to the viewport
@@ -505,6 +538,23 @@
       align-content: stretch;
       overflow: hidden;
     }
+
+    .fuse-workspace.condensed-workspace:not(.landscape-workspace) {
+      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.7fr);
+    }
+  }
+
+  /* Unfolded foldables and landscape tablets: reuse the desktop source column,
+     but keep the lean source cards so the notation remains the hero. The
+     preview now owns the full content-row height instead of a shallow row. */
+  .fuse-workspace.landscape-workspace {
+    grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.15fr);
+    grid-template-rows: max-content minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "left preview";
+    align-content: stretch;
+    overflow: hidden;
   }
 
   /* Locked desktop layout: cards stack in a left column beside a tall preview.
