@@ -23,7 +23,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#1a3a5e",
     iconPath: "/images/elements/water-v2.png",
     cardTintOpacity: 0.25,
-    iconScale: 0.9,
+    iconScale: 0.85,
   },
   {
     familyId: "tog-same",
@@ -33,7 +33,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a4a29",
     iconPath: "/images/elements/earth-v2.png",
     cardTintOpacity: 0.15,
-    iconScale: 0.78,
+    iconScale: 0.9,
   },
   {
     familyId: "quarter-same",
@@ -43,7 +43,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#7a6a00",
     iconPath: "/images/elements/sun-v4.png",
     cardTintOpacity: 0.09,
-    iconScale: 1.06,
+    iconScale: 1.08,
   },
   {
     familyId: "split-opp",
@@ -63,7 +63,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#3a6a8b",
     iconPath: "/images/elements/air-v2.png",
     cardTintOpacity: 0.16,
-    iconScale: 1.12,
+    iconScale: 0.98,
   },
   {
     familyId: "quarter-opp",
@@ -73,7 +73,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a1540",
     iconPath: "/images/elements/moon-v2.png",
     cardTintOpacity: 0.09,
-    iconScale: 0.84,
+    iconScale: 0.95,
   },
 ] as const;
 

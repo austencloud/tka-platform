@@ -434,13 +434,18 @@
      no-layout-shift; only opacity/entrance-scale animate. */
   .element-badge {
     position: absolute;
-    right: clamp(8px, 3cqi, 16px);
-    bottom: clamp(8px, 3cqi, 16px);
+    /* Mirror the bottom-left TKA glyph so the two corners read as a pair. That
+       glyph is a <g translate(50,800)> in GlyphOverlay's 950-unit viewBox — a
+       ~50/950 (5.26%) margin from the left and bottom edges. Pure cqi (no clamp)
+       so the badge tracks the glyph as the stage scales. */
+    right: 5.26cqi;
+    bottom: 5.26cqi;
     z-index: 3;
     display: grid;
     place-items: center;
-    width: clamp(30px, 12cqi, 52px);
-    height: clamp(30px, 12cqi, 52px);
+    /* ~10.5% of the stage matches the glyph letter's ~100/950 height. */
+    width: clamp(26px, 10cqi, 46px);
+    height: clamp(26px, 10cqi, 46px);
     opacity: 0;
     transform: scale(0.9);
     transition:
