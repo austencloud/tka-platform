@@ -41,6 +41,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
   import SupportModal from "../../support/components/SupportModal.svelte";
+  import PostSaveActivationHost from "../../onboarding/components/PostSaveActivationHost.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
   import {
     getCurrentSheet,
@@ -595,6 +596,9 @@ import type { SheetType } from "../../navigation/services/types";
 
     <!-- Support modal — in-app "buy me a coffee" (self-driven via supportModalState) -->
     <SupportModal />
+
+    <!-- Post-save activation nudge — self-driven via postSaveActivation (SP3 Part B) -->
+    <PostSaveActivationHost />
 
     <!-- Legal sheets (terms/privacy - route-based) -->
     <LegalSheet

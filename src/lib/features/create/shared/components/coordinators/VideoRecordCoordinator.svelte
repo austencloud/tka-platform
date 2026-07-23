@@ -28,6 +28,7 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
     createRecordingMetadata,
     detectDeviceType,
   } from "$lib/shared/video-record/domain/recording-metadata";
+  import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
 
   const logger = createComponentLogger("VideoRecordCoordinator");
@@ -116,6 +117,14 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
       const sequenceId = saved.sequenceId;
 
       logger.success("Sequence saved to library with ID:", sequenceId);
+
+      // SP3 Part B: fired at root, after the save resolves — this coordinator
+      // has no dedicated "keep" panel to close first (SaveToLibraryDialog
+      // closes itself below, but the video record flow keeps going into the
+      // upload step), so the nudge queues immediately.
+      if (saved.persisted) {
+        postSaveActivation.onGuestSaveSucceeded(sequenceId);
+      }
 
       // File the freshly-saved sequence into any collections chosen in the
       // save dialog. The sequence id only exists now, so this can't happen at

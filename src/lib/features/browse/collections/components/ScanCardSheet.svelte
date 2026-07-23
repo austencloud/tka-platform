@@ -47,6 +47,7 @@ the geo dashboard).
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+	import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
 	let {
 		collectionId,
@@ -205,6 +206,13 @@ the geo dashboard).
 					);
 					targetId = saved.sequenceId;
 					createdLibraryId = saved.sequenceId;
+
+					// SP3 Part B: root-level fire (no panel to close here) — a
+					// scanned printed card is a genuine "first save" moment for a
+					// guest, same as the Create/viewer paths.
+					if (saved.persisted) {
+						postSaveActivation.onGuestSaveSucceeded(saved.sequenceId);
+					}
 				} catch (err) {
 					if (err instanceof LibraryError && err.code === "ALREADY_EXISTS") {
 						// Identical content already lives in the library under another

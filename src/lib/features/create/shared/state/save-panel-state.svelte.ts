@@ -12,8 +12,9 @@ import { LibraryError } from "$lib/shared/library/domain/library-error";
 import type { CreateModuleContext } from "../context/create-module-context";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
+import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
 type ContentModerator = { checkWord: (word: string) => ContentModerationResult };
 
@@ -317,11 +318,25 @@ export function createSavePanelState(deps: SavePanelDeps) {
         duration: 6000,
         action: {
           label: "Go to library",
-          onClick: () => navigationState.setCurrentModule("browse", "library"),
+          // Route through the coordinator, not navigationState.setCurrentModule
+          // directly: setCurrentModule only moves the nav-bar highlight, while
+          // the rendered module comes from ui-state's activeModule (set by
+          // switchModule). handleModuleChange syncs both (+ history + transition),
+          // so the content actually swaps to Browse > Library instead of stalling.
+          onClick: () => void handleModuleChange("browse", "library"),
         },
       });
 
       handleClose();
+
+      // SP3 Part B: offer the keep-on-first-save nudge after the panel is
+      // gone, not on top of it. Guarded on persisted (not just "no throw") —
+      // the coordinator itself re-checks guest status + the once-per-uid
+      // guard, but a non-persisted result means the sequence isn't actually
+      // durable, so there's nothing to lose by converting to yet.
+      if (result.persisted) {
+        postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
+      }
     } catch (error) {
       logger.error("Failed to save sequence:", error);
       saveStep = 0;

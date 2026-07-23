@@ -1,5 +1,6 @@
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -10,6 +11,7 @@ import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
 export interface LibraryActionHandlerDeps {
   getSequence: () => SequenceData | null;
@@ -97,7 +99,6 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
       return;
     }
     try {
-      const libraryRepo = getLibraryRepository();
       const currentPathShape = getAnimationVisibilityManager().getPathShape();
       const pathShapeMetadata = currentPathShape !== "arc"
         ? { ...sequence.metadata, pathShape: currentPathShape }
@@ -123,8 +124,27 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
           catDogMode,
         },
       });
-      await libraryRepo.saveSequence(sequenceWithIntent);
+      const name =
+        sequenceWithIntent.word ||
+        sequenceWithIntent.steps
+          ?.map((step) => step?.letter || "")
+          .filter(Boolean)
+          .join("") ||
+        "";
+      const result = await getLibrarySaveService().saveSequence(sequenceWithIntent, {
+        name,
+        visibility: "private",
+        tags: [],
+        notes: "",
+      });
       showToast("Saved to library", "success");
+
+      // SP3 Part B: viewer save has no panel to close first (unlike the
+      // Create Save panel), so fire straight from the result — this is the
+      // root-level "no panel" case the design doc calls out.
+      if (result.persisted) {
+        postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
+      }
     } catch (error) {
       console.error("Failed to save sequence:", error);
       const msg = error instanceof Error ? error.message : "Failed to save sequence";
