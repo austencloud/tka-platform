@@ -10,12 +10,6 @@
 -->
 <script lang="ts">
   import { signInWithEmail, signInWithGoogle } from "$lib/shared/auth/services/authenticator";
-  import {
-    upgradeAnonymousWithEmail,
-    upgradeAnonymousWithGoogle,
-  } from "$lib/shared/auth/services/anonymous-upgrade";
-  import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
-  import { getAuthInstance } from "$lib/shared/auth/firebase";
   import { desktopState } from "../../state/desktop-state.svelte";
   import RetroButton from "../primitives/RetroButton.svelte";
 
@@ -62,15 +56,7 @@
     errorMessage = "";
 
     try {
-      const auth = await getAuthInstance();
-      if (auth.currentUser?.isAnonymous) {
-        const result = await upgradeAnonymousWithEmail(email.trim(), password);
-        if (result.status === "collision-signed-in") {
-          promptAnonymousImport(result.importable ?? []);
-        }
-      } else {
-        await signInWithEmail(email.trim(), password);
-      }
+      await signInWithEmail(email.trim(), password);
       handleSuccess();
     } catch (error) {
       errorMessage =
@@ -92,15 +78,7 @@
     errorMessage = "";
 
     try {
-      const auth = await getAuthInstance();
-      if (auth.currentUser?.isAnonymous) {
-        const result = await upgradeAnonymousWithGoogle();
-        if (result.status === "collision-signed-in") {
-          promptAnonymousImport(result.importable ?? []);
-        }
-      } else {
-        await signInWithGoogle();
-      }
+      await signInWithGoogle();
       handleSuccess();
     } catch (error) {
       errorMessage =
