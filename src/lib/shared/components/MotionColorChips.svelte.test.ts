@@ -66,6 +66,30 @@ describe("MotionColorChips", () => {
       .toHaveAttribute("aria-pressed", "false");
   });
 
+  it("supports Blue/Red labels in a stacked control without losing accessible names", async () => {
+    render(MotionColorChips, {
+      showBlue: true,
+      showRed: false,
+      onToggleBlue: vi.fn(),
+      onToggleRed: vi.fn(),
+      blueLabel: "Blue",
+      redLabel: "Red",
+      layout: "column",
+      showVisibilityIcons: true,
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: "Hide blue motion" }))
+      .toHaveAttribute("aria-pressed", "true");
+    await expect
+      .element(page.getByRole("button", { name: "Show red motion" }))
+      .toHaveAttribute("aria-pressed", "false");
+    expect(
+      document.querySelector(".motion-color-chips")?.classList.contains("column")
+    ).toBe(true);
+    expect(document.querySelectorAll(".motion-color-chips i")).toHaveLength(2);
+  });
+
   it("has no AAA a11y violations", async () => {
     render(MotionColorChips, {
       showBlue: true,

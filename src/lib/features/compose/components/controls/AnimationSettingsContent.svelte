@@ -14,6 +14,7 @@
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import SimpleTrailControls from "$lib/shared/animation-engine/components/trail/SimpleTrailControls.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
+  import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
   import StepModeSettings from "./StepModeSettings.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
@@ -73,36 +74,16 @@
     <!-- Motion Visibility -->
     <section class="settings-section compact">
       <h4 class="settings-section-title">Motion Visibility</h4>
-      <div class="visibility-toggles">
-        <button
-          class="visibility-toggle blue"
-          class:active={blueMotionVisible}
-          onclick={onToggleBlue}
-          type="button"
-          aria-label={blueMotionVisible
-            ? "Hide blue motion"
-            : "Show blue motion"}
-        >
-          <i
-            class="fas {blueMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
-            aria-hidden="true"
-          ></i>
-          <span>Blue</span>
-        </button>
-        <button
-          class="visibility-toggle red"
-          class:active={redMotionVisible}
-          onclick={onToggleRed}
-          type="button"
-          aria-label={redMotionVisible ? "Hide red motion" : "Show red motion"}
-        >
-          <i
-            class="fas {redMotionVisible ? 'fa-eye' : 'fa-eye-slash'}"
-            aria-hidden="true"
-          ></i>
-          <span>Red</span>
-        </button>
-      </div>
+      <MotionColorChips
+        showBlue={blueMotionVisible}
+        showRed={redMotionVisible}
+        {onToggleBlue}
+        {onToggleRed}
+        blueLabel="Blue"
+        redLabel="Red"
+        layout="column"
+        showVisibilityIcons
+      />
     </section>
   </div>
 
@@ -176,57 +157,4 @@
     margin: 0;
   }
 
-  /* Visibility toggles - vertical stack in compact layout */
-  .visibility-toggles {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .visibility-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 36px;
-    padding: 6px 10px;
-    background: var(--theme-card-bg);
-    border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 8px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .visibility-toggle.blue.active {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--prop-blue) 20%, transparent) 0%,
-      color-mix(in srgb, var(--prop-blue) 15%, transparent) 100%
-    );
-    border-color: color-mix(in srgb, var(--prop-blue) 40%, transparent);
-    color: color-mix(in srgb, var(--prop-blue) 60%, white);
-  }
-
-  .visibility-toggle.red.active {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--prop-red) 20%, transparent) 0%,
-      color-mix(in srgb, var(--prop-red) 15%, transparent) 100%
-    );
-    border-color: color-mix(in srgb, var(--prop-red) 40%, transparent);
-    color: color-mix(in srgb, var(--prop-red) 60%, white);
-  }
-
-  .visibility-toggle:active {
-    transform: scale(0.97);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .visibility-toggle {
-      transition: none;
-    }
-  }
 </style>

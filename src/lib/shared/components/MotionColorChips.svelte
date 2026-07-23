@@ -17,21 +17,45 @@
     showRed: boolean;
     onToggleBlue: () => void;
     onToggleRed: () => void;
+    blueLabel?: string;
+    redLabel?: string;
+    layout?: "row" | "column";
+    showVisibilityIcons?: boolean;
   }
 
-  let { showBlue, showRed, onToggleBlue, onToggleRed }: Props = $props();
+  let {
+    showBlue,
+    showRed,
+    onToggleBlue,
+    onToggleRed,
+    blueLabel = "Left",
+    redLabel = "Right",
+    layout = "row",
+    showVisibilityIcons = false,
+  }: Props = $props();
 </script>
 
-<div class="motion-color-chips" role="group" aria-label="Motion visibility">
+<div
+  class="motion-color-chips"
+  class:column={layout === "column"}
+  role="group"
+  aria-label="Motion visibility"
+>
   <button
     type="button"
     class="chip blue"
     class:active={showBlue}
     onclick={() => onToggleBlue()}
     aria-pressed={showBlue}
-    aria-label={showBlue ? "Hide left motion" : "Show left motion"}
+    aria-label={`${showBlue ? "Hide" : "Show"} ${blueLabel.toLowerCase()} motion`}
   >
-    Left
+    {#if showVisibilityIcons}
+      <i
+        class="fas {showBlue ? 'fa-eye' : 'fa-eye-slash'}"
+        aria-hidden="true"
+      ></i>
+    {/if}
+    {blueLabel}
   </button>
   <button
     type="button"
@@ -39,9 +63,15 @@
     class:active={showRed}
     onclick={() => onToggleRed()}
     aria-pressed={showRed}
-    aria-label={showRed ? "Hide right motion" : "Show right motion"}
+    aria-label={`${showRed ? "Hide" : "Show"} ${redLabel.toLowerCase()} motion`}
   >
-    Right
+    {#if showVisibilityIcons}
+      <i
+        class="fas {showRed ? 'fa-eye' : 'fa-eye-slash'}"
+        aria-hidden="true"
+      ></i>
+    {/if}
+    {redLabel}
   </button>
 </div>
 
@@ -50,6 +80,12 @@
     display: flex;
     gap: 6px;
     align-items: center;
+  }
+
+  .motion-color-chips.column {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
 
   .chip {
@@ -66,9 +102,25 @@
     min-height: var(--min-touch-target, 44px);
   }
 
+  .chip.blue {
+    color: color-mix(
+      in srgb,
+      var(--prop-blue, #2196f3) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .chip.red {
+    color: color-mix(
+      in srgb,
+      var(--prop-red, #f44336) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
   .chip:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    color: rgba(255, 255, 255, 0.95);
+    filter: brightness(1.18);
   }
 
   .chip.blue.active {
@@ -81,5 +133,9 @@
     background: color-mix(in srgb, var(--prop-red, #f44336) 22%, transparent);
     border-color: var(--prop-red, #f44336);
     color: #fff;
+  }
+
+  .chip i {
+    margin-right: 6px;
   }
 </style>
