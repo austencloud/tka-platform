@@ -822,9 +822,6 @@ function formatGitHubReleaseNotes(changelog) {
     releaseNotes += "\n";
   }
 
-  releaseNotes +=
-    "\n---\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
-
   return releaseNotes;
 }
 
