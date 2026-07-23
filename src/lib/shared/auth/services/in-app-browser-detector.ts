@@ -71,10 +71,6 @@ export class InAppBrowserDetector {
     return this.detect().isInApp;
   }
 
-  getInAppBrowserName(): string | null {
-    return this.detect().name;
-  }
-
   /** Which escape hatch applies. Android gets a scheme; iOS gets instructions. */
   getPlatform(): InAppBrowserPlatform {
     if (this.isAndroid()) return "android";
@@ -114,47 +110,6 @@ export class InAppBrowserDetector {
     const forced = this.getForcedValue(searchParams);
     if (forced === "ios" || forced === "android") return forced;
     return this.getPlatform();
-  }
-
-  getOpenInBrowserUrl(): string {
-    const currentUrl = typeof window !== "undefined" ? window.location.href : "";
-
-    if (this.isAndroid()) {
-      const url = new URL(currentUrl);
-      // Two deliberate departures from the obvious form:
-      //
-      // No package=com.android.chrome. Pinning the package dead-ends on a
-      // device where Chrome is absent or disabled; the generic form resolves
-      // against whatever browser is installed.
-      //
-      // S.browser_fallback_url is Chrome's documented escape for when nothing
-      // resolves the intent. Without it the tap silently does nothing, which is
-      // indistinguishable from a broken button.
-      //
-      // The page fragment is dropped because the "#Intent;...;end" block IS the
-      // URI's fragment — a second "#" truncates it and the whole intent stops
-      // parsing. browser_fallback_url below carries the complete address, but
-      // only the fallback path uses it: when a browser DOES resolve the intent
-      // it navigates to the data URI above, so the hash is gone on the success
-      // path too. Known, accepted gap — it costs a hash-addressed deep link its
-      // anchor (/glossary#term scrolls to the top of the page instead of the
-      // term). Closing it means smuggling the fragment through as a query param
-      // and restoring it into location.hash on arrival; not built, because
-      // nothing yet says how often anyone escapes from a fragment URL.
-      const fallback = encodeURIComponent(currentUrl);
-      return `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;S.browser_fallback_url=${fallback};end`;
-    }
-
-    // iOS has no scheme that reliably hands a URL to Safari from inside a
-    // webview (x-safari-https:// is broken in Instagram's specifically), so the
-    // caller shows the app's own "Open in Safari" instructions plus a copy
-    // button instead of firing something that surfaces a native error dialog.
-    return currentUrl;
-  }
-
-  canOpenInExternalBrowser(): boolean {
-    // Only Android supports intent:// URLs for opening in external browser
-    return this.isAndroid();
   }
 
   private detect(): { isInApp: boolean; name: string | null } {
