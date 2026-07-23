@@ -22,7 +22,29 @@ names the canonical primitives and the routing decision explicitly.
 reach for a workaround: `size="sm"` (denser rows, touch-target floor preserved),
 `iconSnippet` (a Snippet slot for a bitmap/inline-SVG leading glyph when `icon`'s
 FontAwesome class won't do), `count`, `chipColor`. `SegmentedControl` supports
-`size="sm"`, `color`, and an optional per-`Option` `count` badge.
+`size="sm"`, `color`, and optional per-`Option` `count` and `tone` values.
+
+## Blue / Red Prop Identity
+
+When an option means the blue/left prop or red/right prop, set its
+`SegmentedControl` option `tone` to `"blue"` or `"red"`. The tone colors the
+option before selection and follows the selected indicator.
+
+For a single option in a row, keep a visible Blue/Red or Left/Right label —
+one tinted chip among neutral siblings is not self-evident. But when the WHOLE
+control is already unmistakably that prop (a fully blue-tinted row: border,
+background wash, and the selected-turn indicator all blue) AND a non-visual
+identity cue remains (the container's `aria-label`, e.g. `"Blue turns"`), the
+word is redundant and may be dropped — colour plus the aria-label carries it.
+Austen (2026-07-22, option-picker turns rows): *"no need for the words blue and
+red when the thing itself is both blue and red ... having it be colored is
+plenty enough."* Never drop BOTH the word and the aria-label; that strands
+screen-reader and colour-blind users.
+
+Do not infer prop identity from the words Left and Right. Those words also name
+camera views, prop ends, and spatial directions. The caller owns the meaning and
+must opt in with `tone`. Independent Blue/Red visibility toggles use the shared
+`MotionColorChips` component, which carries the same semantic colors.
 
 ## The Routing Rule (apply per bar)
 

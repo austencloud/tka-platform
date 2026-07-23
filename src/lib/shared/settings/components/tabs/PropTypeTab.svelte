@@ -406,15 +406,23 @@
       <!-- Narrow: one grid, Blue/Red tab picks the hand it edits -->
       <SegmentedControl
         options={[
-          { value: "blue", label: t("settings_select_left_prop") },
-          { value: "red", label: t("settings_select_right_prop") },
+          {
+            value: "blue",
+            label: t("settings_select_left_prop"),
+            tone: "blue",
+          },
+          {
+            value: "red",
+            label: t("settings_select_right_prop"),
+            tone: "red",
+          },
         ]}
         value={mobileHand}
         onchange={(hand) => {
           hapticService?.trigger("selection");
           mobileHand = hand;
         }}
-        color={mobileHand}
+        color="accent"
         size="sm"
       />
       {#if mobileHand === "blue"}

@@ -11,10 +11,14 @@
 
   const state = getStickerLabContext();
 
-  const variantOptions = [
-    { value: "blue" as StickerVariant, label: "Blue" },
-    { value: "red" as StickerVariant, label: "Red" },
-    { value: "full" as StickerVariant, label: "Full" },
+  const variantOptions: {
+    value: StickerVariant;
+    label: string;
+    tone?: "blue" | "red";
+  }[] = [
+    { value: "blue", label: "Blue", tone: "blue" },
+    { value: "red", label: "Red", tone: "red" },
+    { value: "full", label: "Full" },
   ];
 
   const backgroundOptions = [
@@ -46,7 +50,7 @@
       options={variantOptions}
       value={sticker.variant}
       onchange={(v) => state.setVariant(sticker.id, v)}
-      color="blue"
+      color="accent"
       size="sm"
     />
   </div>

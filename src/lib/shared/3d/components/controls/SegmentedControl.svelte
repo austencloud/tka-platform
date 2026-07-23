@@ -8,6 +8,10 @@
    * keyed and FLIPped so survivors glide + scale into their new geometry
    * instead of the row snapping, and arrivals pop in. Static option lists —
    * most consumers — never trigger either.
+   *
+   * Options that represent a prop or hand carry their own tone. This keeps
+   * Blue / Left and Red / Right identifiable even when neither is selected,
+   * while the visible label remains the cue for anyone who cannot read color.
    */
   import { flip } from "svelte/animate";
   import { flipDuration, popIn } from "$lib/shared/transitions/motion";
@@ -20,6 +24,8 @@
     count?: number | null;
     /** Not selectable (e.g. a "coming soon" size). Still rendered, dimmed. */
     disabled?: boolean;
+    /** Semantic option color. Use blue/red when the option means that prop. */
+    tone?: "blue" | "red" | "accent";
   }
 
   interface Props {
@@ -33,6 +39,10 @@
     color?: "blue" | "red" | "accent";
     /** Size variant */
     size?: "sm" | "md";
+    /** Accessible name for the option group. */
+    ariaLabel?: string;
+    /** ID of a visible label that names the option group. */
+    ariaLabelledby?: string;
   }
 
   let {
@@ -41,6 +51,8 @@
     onchange,
     color = "blue",
     size = "md",
+    ariaLabel,
+    ariaLabelledby,
   }: Props = $props();
 
   function handleSelect(val: T) {
@@ -49,6 +61,7 @@
 
   // Find selected index for indicator position
   const selectedIndex = $derived(options.findIndex((o) => o.value === value));
+  const selectedTone = $derived(options[selectedIndex]?.tone ?? color);
 </script>
 
 <div
@@ -57,15 +70,23 @@
   class:blue={color === "blue"}
   class:red={color === "red"}
   class:accent={color === "accent"}
+  role={ariaLabel || ariaLabelledby ? "group" : undefined}
+  aria-label={ariaLabel}
+  aria-labelledby={ariaLabelledby}
   style="--count: {options.length}"
 >
-  <div class="indicator" style="--index: {selectedIndex}"></div>
+  <div
+    class="indicator"
+    data-tone={selectedTone}
+    style="--index: {selectedIndex}"
+  ></div>
 
   {#each options as option (option.value)}
     <button
       type="button"
       class="segment"
       class:selected={value === option.value}
+      data-tone={option.tone}
       onclick={() => handleSelect(option.value)}
       aria-label={option.label}
       title={option.label}
@@ -111,19 +132,20 @@
        resize, and an un-animated indicator would snap while they glide. */
     transition:
       left var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
-      width var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1);
+      width var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      background-color var(--duration-normal, 200ms) ease;
     z-index: 0;
   }
 
-  .blue .indicator {
-    background: var(--prop-blue);
+  .indicator[data-tone="blue"] {
+    background: var(--prop-blue, #2e8bf0);
   }
 
-  .red .indicator {
-    background: var(--prop-red);
+  .indicator[data-tone="red"] {
+    background: var(--prop-red, #ed1c24);
   }
 
-  .accent .indicator {
+  .indicator[data-tone="accent"] {
     background: var(--theme-accent, #8b6cff);
   }
 
@@ -195,6 +217,34 @@
 
   .segment:hover {
     color: var(--theme-text);
+  }
+
+  .segment[data-tone="blue"]:not(.selected) {
+    color: color-mix(
+      in srgb,
+      var(--prop-blue, #2e8bf0) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .segment[data-tone="red"]:not(.selected) {
+    color: color-mix(
+      in srgb,
+      var(--prop-red, #ed1c24) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .segment[data-tone="accent"]:not(.selected) {
+    color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 68%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .segment[data-tone]:hover:not(.selected) {
+    filter: brightness(1.18);
   }
 
   .segment.selected {

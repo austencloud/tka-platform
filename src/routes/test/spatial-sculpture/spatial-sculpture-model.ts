@@ -58,9 +58,13 @@ export const LAYOUT_OPTIONS: { value: LayoutMode; label: string }[] = [
   { value: "studio", label: "Step studio" },
 ];
 
-export const HAND_OPTIONS: { value: PropSide; label: string }[] = [
-  { value: "blue", label: "Blue path" },
-  { value: "red", label: "Red path" },
+export const HAND_OPTIONS: {
+  value: PropSide;
+  label: string;
+  tone: "blue" | "red";
+}[] = [
+  { value: "blue", label: "Blue path", tone: "blue" },
+  { value: "red", label: "Red path", tone: "red" },
 ];
 
 export const MOTION_OPTIONS: {

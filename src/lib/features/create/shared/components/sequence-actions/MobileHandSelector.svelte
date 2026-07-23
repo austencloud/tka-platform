@@ -110,26 +110,64 @@
     pointer-events: none;
   }
 
+  /* Prop identity stays visible before selection; the label carries the same
+     meaning without color for monochrome and color-blind readers. */
+  .segment.blue {
+    color: color-mix(
+      in srgb,
+      var(--prop-blue, #2e8bf0) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .segment.both {
+    color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 68%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .segment.red {
+    color: color-mix(
+      in srgb,
+      var(--prop-red, #ed1c24) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
   /* Active states per hand color */
   .segment.blue.active {
-    background: rgba(59, 130, 246, 0.3);
-    color: rgb(147, 197, 253);
+    background: color-mix(
+      in srgb,
+      var(--prop-blue, #2e8bf0) 30%,
+      transparent
+    );
+    color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 52%, white);
   }
 
   .segment.both.active {
-    background: rgba(168, 85, 247, 0.3);
-    color: rgb(216, 180, 254);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 30%,
+      transparent
+    );
+    color: color-mix(in srgb, var(--theme-accent, #8b6cff) 52%, white);
   }
 
   .segment.red.active {
-    background: rgba(239, 68, 68, 0.3);
-    color: rgb(252, 165, 165);
+    background: color-mix(
+      in srgb,
+      var(--prop-red, #ed1c24) 30%,
+      transparent
+    );
+    color: color-mix(in srgb, var(--prop-red, #ed1c24) 52%, white);
   }
 
   /* Hover */
   .segment:not(.active):hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    filter: brightness(1.18);
   }
 
   /* Focus */

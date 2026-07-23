@@ -89,6 +89,38 @@ describe("SegmentedControl", () => {
     await expectNoA11yViolations();
   });
 
+  it("carries a prop tone from each option to the selected indicator", async () => {
+    const onchange = vi.fn();
+    const options = [
+      { value: "blue", label: "Left", tone: "blue" as const },
+      { value: "both", label: "Both", tone: "accent" as const },
+      { value: "red", label: "Right", tone: "red" as const },
+    ];
+    const screen = render(SegmentedControl, {
+      options,
+      value: "blue",
+      onchange,
+      color: "accent",
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: "Left" }))
+      .toHaveAttribute("data-tone", "blue");
+    expect(
+      document.querySelector<HTMLElement>(".indicator")?.dataset.tone
+    ).toBe("blue");
+
+    await screen.rerender({
+      options,
+      value: "red",
+      onchange,
+      color: "accent",
+    });
+    expect(
+      document.querySelector<HTMLElement>(".indicator")?.dataset.tone
+    ).toBe("red");
+  });
+
   it("has no AAA a11y violations", async () => {
     render(SegmentedControl, { options: OPTIONS, value: "a", onchange: vi.fn() });
     await expectNoA11yViolations();
