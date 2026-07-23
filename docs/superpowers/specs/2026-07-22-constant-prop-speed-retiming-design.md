@@ -402,4 +402,3 @@ Do not start with cosmetic changes. The runtime timing result and pair-only cont
 - Retrofitting guessed timing onto old cards
 - General unequal proportional rates
 - Acceleration, jerk, or biomechanical optimization
-
