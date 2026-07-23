@@ -269,6 +269,8 @@
       class="social-compact-button social-compact-button--google"
       onclick={handleGoogleClick}
       disabled={isLoading}
+      aria-expanded={showEscapeNote}
+      aria-controls="inapp-escape-note"
       aria-label={`${mode === "signin" ? "Sign in with Google" : "Sign up with Google"}${
         lastMethod === "google" ? ", last used on this device" : ""
       }`}
@@ -332,7 +334,12 @@
     <p class="error-message" role="alert">{providerError}</p>
   {/if}
   {#if showEscapeNote}
-    <div class="escape-note">
+    <div
+      class="escape-note"
+      id="inapp-escape-note"
+      role="region"
+      aria-label="Open this page in your browser"
+    >
       <p class="escape-note-lead">Or open this page in your browser:</p>
       <InAppEscapeControls
         target={escapeAction}

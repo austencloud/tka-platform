@@ -173,6 +173,13 @@
     }
   }
 
+  // Focus + select the manual field the moment it's revealed, so a long-press
+  // "Copy" callout is one tap away instead of requiring the user to tap in first.
+  function autoselect(node: HTMLInputElement) {
+    node.focus();
+    node.select();
+  }
+
   function copyViaSelection(): boolean {
     const field = document.createElement("textarea");
     field.value = currentUrl;
@@ -231,15 +238,18 @@
 
   {#if copyFailed}
     <!-- Every programmatic path is blocked in this webview; hand over a field to
-         long-press. Pre-selected so the copy callout shows on the first tap. -->
+         long-press. use:autoselect focuses AND selects it on reveal so the copy
+         callout is one tap away (the onfocus select is the fallback). -->
     <input
       class="manual-copy"
       type="text"
       readonly
       value={currentUrl}
       aria-label="Page link — press and hold to copy"
+      use:autoselect
       onfocus={(e) => e.currentTarget.select()}
     />
+    <p class="status" aria-live="polite">Couldn't copy automatically — press and hold the link above.</p>
   {/if}
 </div>
 
@@ -280,7 +290,9 @@
 
   .primary-button {
     border: none;
-    background: linear-gradient(135deg, #4285f4, #34a853);
+    /* Darker stops than the brand blue/green: white text needs 4.5:1 (WCAG AA)
+       and #4285f4/#34a853 measured ~3.1–3.6:1. These pass across the gradient. */
+    background: linear-gradient(135deg, #1a56db, #177245);
     color: white;
   }
 
