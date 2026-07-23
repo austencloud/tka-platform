@@ -13,11 +13,13 @@ import type { GenerationOptions } from "$lib/shared/foundation/domain/models/gen
 import {
   DifficultyLevel, GenerationMode, } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import type { SaveResult } from "$lib/features/library/services/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
 
@@ -141,8 +143,8 @@ export async function generateRetroSequence(
 export async function saveRetroSequence(
   sequenceData: SequenceData,
   dosName: string,
-): Promise<LibrarySequence> {
-  const repo = getLibraryRepository();
+): Promise<SaveResult> {
+  const saveService = getLibrarySaveService();
 
   // Turn "FIRFLOWB" into "Firflowb" as a display-friendly name.
   // The user chose the name in the DOS save dialog - keep it simple.
@@ -151,7 +153,7 @@ export async function saveRetroSequence(
     .toLowerCase()
     .replace(/^\w/, (c) => c.toUpperCase());
 
-  return await repo.saveSequenceWithMetadata(sequenceData, {
+  return await saveService.saveSequence(sequenceData, {
     name: humanName,
     displayName: dosName,
     visibility: "private",
