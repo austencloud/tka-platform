@@ -124,6 +124,19 @@ describe("postSaveActivation", () => {
 			expect(mocks.captureEvent).not.toHaveBeenCalled();
 		});
 
+		it("is idempotent — a second call (e.g. host effect re-run on uid change) does not re-emit shown or re-mark the guard", () => {
+			postSaveActivation.onGuestSaveSucceeded("seq-1");
+			postSaveActivation.markPresented();
+			postSaveActivation.markPresented();
+
+			expect(mocks.markSeen).toHaveBeenCalledTimes(1);
+			expect(
+				mocks.captureEvent.mock.calls.filter(
+					([name]) => name === "onboarding_guest_first_save_prompt_shown"
+				)
+			).toHaveLength(1);
+		});
+
 		it("a queued-but-never-presented prompt never consumes the guard", () => {
 			postSaveActivation.onGuestSaveSucceeded("seq-1");
 			postSaveActivation.reset();

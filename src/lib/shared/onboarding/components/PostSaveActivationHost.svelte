@@ -18,7 +18,6 @@
    */
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { postSaveActivation } from "../state/post-save-activation-state.svelte";
 
   const visible = $derived(postSaveActivation.visible);
@@ -26,22 +25,18 @@
   // Fires once the nudge has actually mounted into the DOM for this visible
   // state — not before. Guards against consuming the guest's one-shot guard
   // for a prompt that was queued but never actually shown (e.g. the host
-  // itself unmounts before paint).
+  // itself unmounts before paint). The coordinator latches markPresented, so
+  // a reactive re-run here can't double-emit.
   $effect(() => {
     if (visible) {
       postSaveActivation.markPresented();
     }
   });
 
-  function acceptAndOpenSignup() {
-    postSaveActivation.dismissPrompt();
-    authDrawerState.show("signup", "guest-first-save");
-  }
-
-  function loginInstead() {
-    postSaveActivation.dismissPrompt();
-    authDrawerState.show("signin", "guest-first-save");
-  }
+  // Route both actions through the coordinator so the conversion funnel is
+  // logged correctly: accept() → _accepted + signup drawer, login() → _login +
+  // signin drawer. (Rolling our own dismiss+open here logged every click as a
+  // _declined, corrupting the Leak-B breakdown.)
 </script>
 
 <!-- Post-save activation nudge - fires once after a guest's first save
@@ -55,8 +50,8 @@
 >
   <AuthNudge
     trigger="guest-first-save"
-    onCreateAccount={acceptAndOpenSignup}
-    onLogin={loginInstead}
+    onCreateAccount={() => postSaveActivation.accept()}
+    onLogin={() => postSaveActivation.login()}
     onDismiss={() => postSaveActivation.dismissPrompt()}
   />
 </BaseModal>

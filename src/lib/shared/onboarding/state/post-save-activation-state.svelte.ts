@@ -48,6 +48,12 @@ function logPrompt(
 
 let _pending = $state(false);
 let _sequenceId = $state<string | null>(null);
+// Latch so markPresented() fires exactly once per queued prompt. The host calls
+// it from a reactive $effect whose tracked deps include authState.effectiveUserId
+// (read below), so a silent uid-swap / token refresh while the nudge is open
+// re-runs the effect — without this latch that would double-emit _shown and
+// re-mark the guard on the new uid.
+let _presented = $state(false);
 
 export const postSaveActivation = {
   /** Whether an eligible prompt is queued and ready for the host to render. */
@@ -82,16 +88,19 @@ export const postSaveActivation = {
     if (hasSeen(uid)) return;
 
     _sequenceId = sequenceId;
+    _presented = false;
     _pending = true;
   },
 
   /**
    * Phase 2 — call once the host has actually mounted AuthNudge for this
-   * queued prompt. Consumes the guard and fires the shown event. Safe to
-   * call multiple times; only the first call after a queue does anything.
+   * queued prompt. Consumes the guard and fires the shown event. Idempotent:
+   * only the first call per queued prompt does anything (the _presented latch),
+   * so a reactive re-run of the host effect can't double-emit.
    */
   markPresented() {
-    if (!_pending) return;
+    if (!_pending || _presented) return;
+    _presented = true;
 
     const uid = authState.effectiveUserId;
     if (uid) markSeen(uid);
@@ -123,11 +132,13 @@ export const postSaveActivation = {
   hide() {
     _pending = false;
     _sequenceId = null;
+    _presented = false;
   },
 
   /** Full reset — called on signout so a new session starts clean. */
   reset() {
     _pending = false;
     _sequenceId = null;
+    _presented = false;
   },
 };

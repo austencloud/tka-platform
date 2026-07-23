@@ -20,6 +20,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
+import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
 
@@ -153,13 +154,21 @@ export async function saveRetroSequence(
     .toLowerCase()
     .replace(/^\w/, (c) => c.toUpperCase());
 
-  return await saveService.saveSequence(sequenceData, {
+  const result = await saveService.saveSequence(sequenceData, {
     name: humanName,
     displayName: dosName,
     visibility: "private",
     tags: [],
     notes: "",
   });
+
+  // Keep-on-first-save (SP3 Part B): the retro shell is the fifth durable save
+  // path, so a guest's first save here should also raise the "create a free
+  // account" prompt. The coordinator gates flag / guest / once-only itself.
+  if (result.persisted) {
+    postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
+  }
+  return result;
 }
 
 /**
