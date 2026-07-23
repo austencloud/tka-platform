@@ -1,10 +1,8 @@
 <!--
   BuilderControls.svelte - Context-sensitive overlay controls for the assemble grid.
 
-  Mobile bottom bar: single hand toggle (left) + Complete/New action (right).
-  Top-center: instruction text with inline tappable turn/orientation control.
-  Desktop: triggers hidden (BuilderTurnBar handles turns, header handles hands).
-  Action row (Complete / New) below grid on desktop.
+  Mobile: a dedicated instruction/control strip above the grid and a full-width
+  hand picker below it. Desktop keeps those controls in the builder header.
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
@@ -75,9 +73,115 @@
 
 <!-- Grid overlay -->
 <div class="controls-overlay">
-  <!-- Top-center: instruction text only (mobile only) -->
-  <div class="top-status-area">
-    <span class="instruction-text">{phaseInstruction}</span>
+  <!-- Mobile status strip. Controls live in flow with the instruction so a
+       growing label can wrap without ever sitting underneath a button. -->
+  <div
+    class="top-status-area"
+    class:has-phase-controls={controlVisibility.orientation ||
+      controlVisibility.motionSettings}
+    class:has-dual-controls={controlVisibility.orientation &&
+      controlVisibility.motionSettings}
+  >
+    <div class="status-line">
+      <span class="instruction-text">{phaseInstruction}</span>
+
+      <div class="phase-controls">
+        <!-- Orientation control: during placing phase -->
+        {#if controlVisibility.orientation}
+          <div class="inline-control-wrapper">
+            <Popover.Root bind:open={oriPopoverOpen}>
+              <Popover.Trigger>
+                {#snippet child({ props })}
+                  <button
+                    {...props}
+                    class="inline-trigger"
+                    aria-label="Orientation: {currentOriLabel}"
+                  >
+                    <i class="fas fa-compass" aria-hidden="true"></i>
+                    <span>{currentOriLabel}</span>
+                  </button>
+                {/snippet}
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  side="bottom"
+                  align="end"
+                  sideOffset={8}
+                  collisionPadding={8}
+                  class="assemble-popover-panel orientation-popover"
+                  aria-label="Starting orientation"
+                >
+                  <BuilderOrientationPicker
+                    value={builderState.currentOrientation}
+                    onchange={(orientation) => {
+                      builderState.setOrientation(orientation);
+                      oriPopoverOpen = false;
+                    }}
+                    onHelp={() => {
+                      oriPopoverOpen = false;
+                      explainerOpen = true;
+                    }}
+                  />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          </div>
+        {/if}
+
+        <!-- The next motion's turn settings are available as soon as its start point exists. -->
+        {#if controlVisibility.motionSettings}
+          <div class="inline-control-wrapper">
+            <Popover.Root bind:open={turnsPopoverOpen}>
+              <Popover.Trigger>
+                {#snippet child({ props })}
+                  <button
+                    {...props}
+                    class="inline-trigger"
+                    aria-label="Turn settings: {isFloat
+                      ? 'Float'
+                      : `${rotLabel} ${builderState.turnCount}`}"
+                  >
+                    {#if !isFloat}
+                      <i
+                        class="fas fa-rotate-right"
+                        class:flipped={isFlipped}
+                        aria-hidden="true"
+                      ></i>
+                    {/if}
+                    <span
+                      >{isFloat
+                        ? "fl"
+                        : `${rotLabel} ${builderState.turnCount}`}</span
+                    >
+                  </button>
+                {/snippet}
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  side="bottom"
+                  align="end"
+                  sideOffset={8}
+                  collisionPadding={8}
+                  class="assemble-popover-panel turns-popover"
+                  aria-label="Turn count and rotation direction"
+                >
+                  <BuilderMotionSettings
+                    turnCount={builderState.turnCount}
+                    rotationDirection={builderState.rotationDirection}
+                    onchangeTurnCount={(turnCount) =>
+                      builderState.setTurnCount(turnCount)}
+                    onchangeRotationDirection={(direction) =>
+                      builderState.setRotationDirection(direction)}
+                    stacked
+                  />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          </div>
+        {/if}
+      </div>
+    </div>
+
     {#if builderState.canChangeGridMode}
       <div class="mobile-grid-picker">
         <GridModePicker
@@ -87,103 +191,6 @@
           onGridModeChange={(mode) => builderState.setGridMode(mode)}
           onCenterChange={(show) => builderState.setShowCenter(show)}
         />
-      </div>
-    {/if}
-  </div>
-
-  <!-- Top-left: turn/orientation trigger (mobile only) -->
-  <div class="top-left-control">
-    <!-- Orientation control: during placing phase -->
-    {#if controlVisibility.orientation}
-      <div class="inline-control-wrapper">
-        <Popover.Root bind:open={oriPopoverOpen}>
-          <Popover.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                class="inline-trigger"
-                aria-label="Orientation: {currentOriLabel}"
-              >
-                <i class="fas fa-compass" aria-hidden="true"></i>
-                <span>{currentOriLabel}</span>
-              </button>
-            {/snippet}
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              side="bottom"
-              align="start"
-              sideOffset={8}
-              collisionPadding={8}
-              class="assemble-popover-panel orientation-popover"
-              aria-label="Starting orientation"
-            >
-              <BuilderOrientationPicker
-                value={builderState.currentOrientation}
-                onchange={(orientation) => {
-                  builderState.setOrientation(orientation);
-                  oriPopoverOpen = false;
-                }}
-                onHelp={() => {
-                  oriPopoverOpen = false;
-                  explainerOpen = true;
-                }}
-              />
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
-      </div>
-    {/if}
-
-    <!-- The next motion's turn settings are available as soon as its start point exists. -->
-    {#if controlVisibility.motionSettings}
-      <div class="inline-control-wrapper">
-        <Popover.Root bind:open={turnsPopoverOpen}>
-          <Popover.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                class="inline-trigger"
-                aria-label="Turn settings: {isFloat
-                  ? 'Float'
-                  : `${rotLabel} ${builderState.turnCount}`}"
-              >
-                {#if !isFloat}
-                  <i
-                    class="fas fa-rotate-right"
-                    class:flipped={isFlipped}
-                    aria-hidden="true"
-                  ></i>
-                {/if}
-                <span
-                  >{isFloat
-                    ? "fl"
-                    : `${rotLabel} ${builderState.turnCount}`}</span
-                >
-              </button>
-            {/snippet}
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              side="bottom"
-              align="start"
-              sideOffset={8}
-              collisionPadding={8}
-              class="assemble-popover-panel turns-popover"
-              aria-label="Turn count and rotation direction"
-            >
-              <BuilderMotionSettings
-                turnCount={builderState.turnCount}
-                rotationDirection={builderState.rotationDirection}
-                onchangeTurnCount={(turnCount) =>
-                  builderState.setTurnCount(turnCount)}
-                onchangeRotationDirection={(direction) =>
-                  builderState.setRotationDirection(direction)}
-                stacked
-              />
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
       </div>
     {/if}
   </div>
@@ -263,15 +270,14 @@
     justify-content: space-between;
   }
 
-  /* ── Top-center status area (mobile only) ── */
+  /* ── Mobile status strip ── */
   .top-status-area {
     display: none;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    align-items: stretch;
     gap: var(--settings-spacing-sm, 8px);
-    /* Position at ~30% from top - midpoint between top dot and grid edge */
-    padding-top: 2%;
+    width: min(100%, 520px);
+    margin-inline: auto;
     pointer-events: none;
   }
 
@@ -281,32 +287,68 @@
     }
   }
 
+  .status-line {
+    align-self: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: var(--settings-spacing-sm, 8px);
+    width: fit-content;
+    max-width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 5px 7px 5px 12px;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #26c6da) 24%, transparent);
+    border-radius: var(--settings-radius-md, 14px);
+    background: linear-gradient(
+      135deg,
+      color-mix(
+        in srgb,
+        var(--theme-panel-bg, rgba(7, 18, 25, 0.94)) 78%,
+        transparent
+      ),
+      color-mix(in srgb, var(--theme-accent, #26c6da) 8%, transparent)
+    );
+    box-shadow:
+      0 10px 26px color-mix(in srgb, var(--theme-shadow, #000) 30%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px) saturate(125%);
+  }
+
+  .top-status-area.has-phase-controls .status-line {
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
   .instruction-text {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
     color: var(--theme-text, #fff);
     text-shadow: 0 1px 6px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     pointer-events: none;
   }
 
+  .has-phase-controls .instruction-text {
+    text-align: left;
+  }
+
   .mobile-grid-picker {
+    width: 100%;
     pointer-events: auto;
   }
 
-  /* ── Top-left control area (turn/orientation trigger on mobile) ── */
-  .top-left-control {
+  .phase-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  .phase-controls:empty {
     display: none;
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    pointer-events: auto;
-    z-index: 10;
-  }
-
-  @container tool-panel (max-width: 768px) {
-    .top-left-control {
-      display: flex;
-    }
   }
 
   /* ── Inline turn/orientation trigger ── */
@@ -318,20 +360,43 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
-    border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
-    border-radius: 8px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    color: var(--theme-accent, #6366f1);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
+    min-width: var(--min-touch-target, 44px);
     min-height: var(--min-touch-target, 44px);
-    transition: background 0.15s ease;
+    padding: 6px 11px;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #26c6da) 46%, transparent);
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #26c6da) 13%,
+      var(--theme-card-bg, rgba(10, 22, 30, 0.92))
+    );
+    color: var(--theme-accent, #6366f1);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
   .inline-trigger:hover {
-    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.12));
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #26c6da) 72%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #26c6da) 22%,
+      var(--theme-card-bg, rgba(10, 22, 30, 0.92))
+    );
+  }
+
+  .inline-trigger:active {
+    transform: scale(0.96);
   }
 
   .inline-trigger i {
@@ -374,8 +439,8 @@
   /* ── Bottom bar (mobile only) ── */
   .bottom-bar {
     display: none;
-    justify-content: space-between;
-    align-items: flex-end;
+    position: relative;
+    width: 100%;
     pointer-events: none;
   }
 
@@ -386,16 +451,23 @@
   }
 
   .mobile-hand-picker {
-    width: min(210px, 62vw);
+    width: 100%;
     pointer-events: auto;
   }
 
   /* ── Action slot (mobile) ── */
   .action-slot {
     display: none;
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + var(--settings-spacing-sm, 8px));
+    justify-content: flex-end;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transform: translateY(6px);
+    transition:
+      opacity var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
     gap: var(--settings-spacing-sm, 8px);
   }
 
@@ -407,6 +479,7 @@
 
   .action-slot.visible {
     opacity: 1;
+    transform: translateY(0);
     pointer-events: auto;
   }
 
@@ -450,9 +523,25 @@
     outline-offset: 2px;
   }
 
+  @container tool-panel (max-width: 420px) {
+    .top-status-area.has-dual-controls .status-line {
+      grid-template-columns: minmax(0, 1fr);
+      padding: 8px;
+    }
+
+    .has-dual-controls .instruction-text {
+      text-align: center;
+    }
+
+    .has-dual-controls .phase-controls {
+      justify-content: center;
+    }
+  }
+
   /* === Reduced motion === */
   @media (prefers-reduced-motion: reduce) {
     .action-row,
+    .action-slot,
     .inline-trigger,
     .inline-trigger i {
       transition: none;

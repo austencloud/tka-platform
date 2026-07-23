@@ -82,7 +82,11 @@
         var(--hand-color)
       )
     );
-    color: color-mix(in srgb, var(--theme-text, #fff) 62%, transparent);
+    color: color-mix(
+      in srgb,
+      var(--hand-color) 68%,
+      var(--theme-text, #fff)
+    );
     cursor: pointer;
     transition:
       background var(--duration-fast, 150ms) ease,
@@ -176,10 +180,6 @@
   @container tool-panel (max-width: 420px) {
     .hand-picker {
       grid-template-columns: repeat(2, minmax(58px, 1fr));
-    }
-
-    .hand-label {
-      font-size: var(--font-size-compact, 12px);
     }
   }
 

@@ -73,4 +73,23 @@
     flex: 0 1 auto;
     min-width: 220px;
   }
+
+  @container tool-panel (max-width: 768px) {
+    .grid-mode-picker {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      width: 100%;
+      gap: 6px;
+    }
+
+    .mode-segment {
+      min-width: 0;
+    }
+  }
+
+  @container tool-panel (max-width: 300px) {
+    .grid-mode-picker {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
 </style>
