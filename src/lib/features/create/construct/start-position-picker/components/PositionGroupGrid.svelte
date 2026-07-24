@@ -58,7 +58,7 @@
     onanimationend={() => onAnimationEnd(pictographData.id)}
   >
     <div class="pictograph-wrapper">
-      <PictographContainer {pictographData} />
+      <PictographContainer {pictographData} propRenderContext="editor" />
     </div>
   </div>
 {/each}

@@ -91,6 +91,7 @@
           {pictographData}
           {bluePropTypeOverride}
           {redPropTypeOverride}
+          propRenderContext="editor"
         />
       </div>
     </div>

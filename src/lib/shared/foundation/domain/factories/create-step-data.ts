@@ -39,6 +39,10 @@ export function createStepData(data: CreateStepDataInput = {}): StepData {
     blueReversal: data.blueReversal ?? false,
     redReversal: data.redReversal ?? false,
     isBlank: data.isBlank ?? false,
+    ...(data.gridMode !== undefined && { gridMode: data.gridMode }),
+    ...(data.variation !== undefined && { variation: data.variation }),
+    ...(data.isBridge !== undefined && { isBridge: data.isBridge }),
+    ...(data.category !== undefined && { category: data.category }),
     // Beta offset swap — preserve if set
     ...(data.betaSwapped !== undefined && { betaSwapped: data.betaSwapped }),
   };

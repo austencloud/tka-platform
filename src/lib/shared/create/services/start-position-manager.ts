@@ -15,7 +15,21 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { getGridLocationsFromPosition } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import {
+  getGridLocationsFromPosition,
+  getGridPositionFromLocations,
+} from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+
+export interface StartPositionPlacement {
+  blueLocation: GridLocation;
+  redLocation: GridLocation;
+  gridMode: GridMode;
+  blueOrientation?: Orientation;
+  redOrientation?: Orientation;
+  bluePropType?: PropType;
+  redPropType?: PropType;
+  id?: string;
+}
 
 export class StartPositionManager {
 
@@ -94,56 +108,112 @@ export class StartPositionManager {
     blueOrientation: Orientation = Orientation.IN,
     redOrientation: Orientation = Orientation.IN
   ): PictographData[] {
-    return positions.map((pos, index) => {
-      // Get the hand locations for this position (blue and red hand locations)
-      const [blueLocation, redLocation] = this.getHandLocationsForPosition(
-        pos.position
-      );
-
-      // Create proper motion data using factory functions (like the original working implementation)
-      const blueMotion = createMotionData({
-        motionType: MotionType.STATIC,
-        startLocation: blueLocation,
-        endLocation: blueLocation, // Start positions: start === end
-        startOrientation: blueOrientation,
-        endOrientation: blueOrientation,
-        rotationDirection: RotationDirection.NO_ROTATION,
-        turns: 0,
-        color: MotionColor.BLUE,
-        isVisible: true,
-        propType: PropType.STAFF,
-        arrowLocation: blueLocation,
-        gridMode, // Pass the grid mode for correct arrow positioning
-      });
-
-      const redMotion = createMotionData({
-        motionType: MotionType.STATIC,
-        startLocation: redLocation,
-        endLocation: redLocation, // Start positions: start === end
-        startOrientation: redOrientation,
-        endOrientation: redOrientation,
-        rotationDirection: RotationDirection.NO_ROTATION,
-        turns: 0,
-        color: MotionColor.RED,
-        isVisible: true,
-        propType: PropType.STAFF,
-        arrowLocation: redLocation,
-        gridMode, // Pass the grid mode for correct arrow positioning
-      });
-
-      // Create proper pictograph data using factory function (like the original working implementation)
-      // Note: gridMode is stored in the motion data, not the pictograph itself
-      return createPictographData({
-        id: `start-pos-${index}`, // Stable across grid modes so components animate in-place
+    return positions.map((pos, index) =>
+      this.createStartPosition({
+        position: pos.position,
         letter: pos.letter,
-        startPosition: pos.position,
-        endPosition: pos.position,
-        motions: {
-          [MotionColor.BLUE]: blueMotion,
-          [MotionColor.RED]: redMotion,
-        },
-      });
+        gridMode,
+        blueOrientation,
+        redOrientation,
+        id: `start-pos-${index}`,
+      })
+    );
+  }
+
+  /**
+   * Create the same canonical start pictograph used by presets from two direct
+   * placements. This keeps Build a pose out of the sequence data layer.
+   */
+  createStartPositionFromLocations(
+    placement: StartPositionPlacement
+  ): PictographData {
+    const position = getGridPositionFromLocations(
+      placement.blueLocation,
+      placement.redLocation
+    );
+
+    return this.createStartPosition({
+      position,
+      letter: this.getStaticLetterForPosition(position),
+      gridMode: placement.gridMode,
+      blueOrientation: placement.blueOrientation,
+      redOrientation: placement.redOrientation,
+      bluePropType: placement.bluePropType,
+      redPropType: placement.redPropType,
+      id: placement.id ?? "start-built-pose",
     });
+  }
+
+  private createStartPosition({
+    position,
+    letter,
+    gridMode,
+    blueOrientation = Orientation.IN,
+    redOrientation = Orientation.IN,
+    bluePropType = PropType.STAFF,
+    redPropType = PropType.STAFF,
+    id = crypto.randomUUID(),
+  }: {
+    position: GridPosition;
+    letter: Letter;
+    gridMode: GridMode;
+    blueOrientation?: Orientation;
+    redOrientation?: Orientation;
+    bluePropType?: PropType;
+    redPropType?: PropType;
+    id?: string;
+  }): PictographData {
+    const [blueLocation, redLocation] =
+      this.getHandLocationsForPosition(position);
+
+    const blueMotion = createMotionData({
+      motionType: MotionType.STATIC,
+      startLocation: blueLocation,
+      endLocation: blueLocation,
+      startOrientation: blueOrientation,
+      endOrientation: blueOrientation,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      turns: 0,
+      color: MotionColor.BLUE,
+      isVisible: true,
+      propType: bluePropType,
+      arrowLocation: blueLocation,
+      gridMode,
+    });
+
+    const redMotion = createMotionData({
+      motionType: MotionType.STATIC,
+      startLocation: redLocation,
+      endLocation: redLocation,
+      startOrientation: redOrientation,
+      endOrientation: redOrientation,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      turns: 0,
+      color: MotionColor.RED,
+      isVisible: true,
+      propType: redPropType,
+      arrowLocation: redLocation,
+      gridMode,
+    });
+
+    return createPictographData({
+      id,
+      letter,
+      startPosition: position,
+      endPosition: position,
+      motions: {
+        [MotionColor.BLUE]: blueMotion,
+        [MotionColor.RED]: redMotion,
+      },
+    });
+  }
+
+  private getStaticLetterForPosition(position: GridPosition): Letter {
+    if (position.startsWith("alpha")) return Letter.ALPHA;
+    if (position.startsWith("beta")) return Letter.BETA;
+    if (position.startsWith("gamma")) return Letter.GAMMA;
+
+    throw new Error(`Unsupported Construct start position: ${position}`);
   }
 
   private getHandLocationsForPosition(

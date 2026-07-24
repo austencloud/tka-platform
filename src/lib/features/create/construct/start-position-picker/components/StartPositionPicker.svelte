@@ -6,10 +6,10 @@ Controls moved below the grid for better UX
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import {
@@ -17,9 +17,17 @@ Controls moved below the grid for better UX
     type SimplifiedStartPositionState,
   } from "$lib/shared/create/state/start-position-state.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
+  import BuildStartPose from "./BuildStartPose.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
+  import {
+    logConstructStartPoseCancelled,
+    logConstructStartPosePath,
+    type StartPosePath,
+  } from "../../services/construct-analytics";
 
   // The guest "New here? Show me how" chip was removed: it only ever rendered
   // in the exact window the create-tutorial prompt was already on screen (both
@@ -28,6 +36,10 @@ Controls moved below the grid for better UX
 
   // Local storage key for persisting picker preferences
   const STORAGE_KEY = "tka-start-position-picker-prefs";
+  const START_POSITION_PATHS = [
+    { value: "presets" as const, label: "Presets" },
+    { value: "build" as const, label: "Build a pose" },
+  ];
 
   // Props - receive navigation callbacks and layout detection
   const {
@@ -38,6 +50,10 @@ Controls moved below the grid for better UX
     embedded = false,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    initialStartPosition = null,
+    lockedGridMode = undefined,
+    validationMessage = null,
+    onPositionSubmitted = () => {},
   } = $props<{
     startPositionState?: SimplifiedStartPositionState | null;
     onNavigateToAdvanced?: () => void;
@@ -52,6 +68,13 @@ Controls moved below the grid for better UX
      *  settings) — same convention as StepCell/PictographContainer. */
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
+    initialStartPosition?: PictographData | null;
+    lockedGridMode?: GridMode;
+    validationMessage?: string | null;
+    onPositionSubmitted?: (
+      position: PictographData,
+      path: StartPosePath
+    ) => void;
   }>();
 
   // Create simplified state - use $derived to handle prop changes
@@ -61,6 +84,26 @@ Controls moved below the grid for better UX
 
   // State for showing advanced picker
   let showAdvancedPicker = $state(false);
+  let pickerPath = $state<StartPosePath>("presets");
+  let buildPathOpened = false;
+  let buildPoseSubmitted = false;
+
+  const effectiveBluePropType = $derived(
+    bluePropTypeOverride ??
+      settingsService.settings.bluePropType ??
+      PropType.STAFF
+  );
+  const effectiveRedPropType = $derived(
+    redPropTypeOverride ??
+      settingsService.settings.redPropType ??
+      PropType.STAFF
+  );
+  const initialBlueLocation = $derived(
+    initialStartPosition?.motions.blue?.startLocation ?? null
+  );
+  const initialRedLocation = $derived(
+    initialStartPosition?.motions.red?.startLocation ?? null
+  );
 
   // Services
   let hapticService: HapticFeedback;
@@ -70,10 +113,38 @@ Controls moved below the grid for better UX
     hapticService = getHapticFeedback();
     loadPersistedPreferences();
 
+    if (
+      lockedGridMode !== undefined &&
+      pickerState.currentGridMode !== lockedGridMode
+    ) {
+      void pickerState.loadPositions(lockedGridMode);
+    }
+
+    const initialBlueOrientation =
+      initialStartPosition?.motions.blue?.startOrientation;
+    const initialRedOrientation =
+      initialStartPosition?.motions.red?.startOrientation;
+    if (initialBlueOrientation) {
+      void pickerState.setBlueOrientation(initialBlueOrientation);
+    }
+    if (initialRedOrientation) {
+      void pickerState.setRedOrientation(initialRedOrientation);
+    }
+
     // Always ensure positions are loaded - loadPersistedPreferences may
     // skip loadPositions if there are no stored prefs or no gridMode pref.
     if (pickerState.positions.length === 0 && !showAdvancedPicker) {
       void pickerState.loadPositions();
+    }
+
+    if (pickerPath === "build") {
+      buildPathOpened = true;
+    }
+  });
+
+  onDestroy(() => {
+    if (pickerPath === "build" && buildPathOpened && !buildPoseSubmitted) {
+      logConstructStartPoseCancelled("build");
     }
   });
 
@@ -87,6 +158,7 @@ Controls moved below the grid for better UX
 
       const prefs = JSON.parse(stored) as {
         showAdvanced?: boolean;
+        pickerPath?: StartPosePath;
         gridMode?: string;
         orientation?: string; // legacy single orientation
         blueOrientation?: string;
@@ -99,6 +171,10 @@ Controls moved below the grid for better UX
         if (showAdvancedPicker) {
           onNavigateToAdvanced?.();
         }
+      }
+
+      if (prefs.pickerPath === "presets" || prefs.pickerPath === "build") {
+        pickerPath = prefs.pickerPath;
       }
 
       // Restore per-hand orientation preferences (with legacy fallback)
@@ -140,6 +216,7 @@ Controls moved below the grid for better UX
     try {
       const prefs = {
         showAdvanced: showAdvancedPicker,
+        pickerPath,
         gridMode:
           pickerState.currentGridMode === GridMode.DIAMOND ? "DIAMOND" : "BOX",
         blueOrientation: pickerState.blueOrientation,
@@ -174,7 +251,31 @@ Controls moved below the grid for better UX
   // Handle position selection
   async function handlePositionSelect(position: PictographData) {
     hapticService?.trigger("selection");
+    const submittedPath = pickerPath;
+    if (submittedPath === "build") {
+      buildPoseSubmitted = true;
+    }
+    onPositionSubmitted(position, submittedPath);
     await pickerState.selectPosition(position);
+  }
+
+  function handlePathChange(path: StartPosePath) {
+    hapticService?.trigger("selection");
+    if (
+      pickerPath === "build" &&
+      path !== "build" &&
+      buildPathOpened &&
+      !buildPoseSubmitted
+    ) {
+      logConstructStartPoseCancelled("build");
+    }
+    if (path === "build") {
+      buildPathOpened = true;
+      buildPoseSubmitted = false;
+    }
+    pickerPath = path;
+    logConstructStartPosePath(path);
+    persistPreferences();
   }
 
   // Handle toggle between simple and advanced
@@ -228,18 +329,46 @@ Controls moved below the grid for better UX
 
 <div class="start-pos-picker" data-testid="start-position-picker">
   {#if !embedded}
-    <p class="workspace-hint">Choose your start position</p>
+    <p class="workspace-hint">Choose or build your start pose</p>
   {/if}
 
-  <!-- Animated transition container - keyed on view mode only (grid mode animates in-place) -->
+  <div class="path-selector">
+    <SegmentedControl
+      options={START_POSITION_PATHS}
+      value={pickerPath}
+      onchange={handlePathChange}
+      color="accent"
+      size="sm"
+      ariaLabel="Start pose method"
+    />
+  </div>
+
+  {#if validationMessage}
+    <p class="validation-message" role="alert">{validationMessage}</p>
+  {/if}
+
+  <!-- Path/view changes crossfade; grid mode still updates in place. -->
   <div class="picker-view">
-    {#key showAdvancedPicker}
+    {#key `${pickerPath}-${showAdvancedPicker}`}
       <div
         class="picker-content"
         in:scale={{ start: 0.92, duration: 250, delay: 200, easing: cubicOut }}
         out:scale={{ start: 0.92, duration: 200, easing: cubicOut }}
       >
-        {#if showAdvancedPicker}
+        {#if pickerPath === "build"}
+          <BuildStartPose
+            gridMode={pickerState.currentGridMode}
+            bluePropType={effectiveBluePropType}
+            redPropType={effectiveRedPropType}
+            blueOrientation={pickerState.blueOrientation}
+            redOrientation={pickerState.redOrientation}
+            {initialBlueLocation}
+            {initialRedLocation}
+            onBlueOrientationChange={handleBlueOrientationChange}
+            onRedOrientationChange={handleRedOrientationChange}
+            onApply={handlePositionSelect}
+          />
+        {:else if showAdvancedPicker}
           <!-- Advanced picker with all 16 variations -->
           <AdvancedStartPositionPicker
             pictographDataSet={pickerState.allVariations}
@@ -269,57 +398,62 @@ Controls moved below the grid for better UX
   <!-- Controls Footer - below grid (hidden when embedded, e.g. the create tutorial) -->
   {#if !embedded}
   <div class="controls-footer">
-    <div class="orientation-controls">
-      <OrientationCycler
-        orientation={pickerState.blueOrientation}
-        onOrientationChange={handleBlueOrientationChange}
-        color="blue"
-      />
+    {#if pickerPath === "presets"}
+      <div class="orientation-controls">
+        <OrientationCycler
+          orientation={pickerState.blueOrientation}
+          onOrientationChange={handleBlueOrientationChange}
+          color="blue"
+        />
 
-      <OrientationCycler
-        orientation={pickerState.redOrientation}
-        onOrientationChange={handleRedOrientationChange}
-        color="red"
-      />
-    </div>
+        <OrientationCycler
+          orientation={pickerState.redOrientation}
+          onOrientationChange={handleRedOrientationChange}
+          color="red"
+        />
+      </div>
+    {/if}
 
     <div class="mode-controls">
-      <button
-        class="control-button"
-        onclick={handleToggleView}
-        aria-label={`Show ${viewModeLabel}`}
-      >
-        <svg
-          class="control-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      {#if pickerPath === "presets"}
+        <button
+          class="control-button"
+          onclick={handleToggleView}
+          aria-label={`Show ${viewModeLabel}`}
         >
-          {#if showAdvancedPicker}
-            <!-- Minimize icon -->
-            <polyline points="4 14 10 14 10 20" />
-            <polyline points="20 10 14 10 14 4" />
-            <line x1="14" y1="10" x2="21" y2="3" />
-            <line x1="3" y1="21" x2="10" y2="14" />
-          {:else}
-            <!-- Grid/expand icon -->
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" />
-          {/if}
-        </svg>
-        <span class="control-label">{viewModeLabel}</span>
-      </button>
+          <svg
+            class="control-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            {#if showAdvancedPicker}
+              <!-- Minimize icon -->
+              <polyline points="4 14 10 14 10 20" />
+              <polyline points="20 10 14 10 14 4" />
+              <line x1="14" y1="10" x2="21" y2="3" />
+              <line x1="3" y1="21" x2="10" y2="14" />
+            {:else}
+              <!-- Grid/expand icon -->
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            {/if}
+          </svg>
+          <span class="control-label">{viewModeLabel}</span>
+        </button>
+      {/if}
 
-      <button
-        class="control-button"
-        onclick={handleGridModeToggle}
-        aria-label={`Switch to ${gridModeLabel} grid`}
-      >
+      {#if lockedGridMode === undefined}
+        <button
+          class="control-button"
+          onclick={handleGridModeToggle}
+          aria-label={`Switch to ${gridModeLabel} grid`}
+        >
         <svg
           class="control-icon"
           viewBox="0 0 24 24"
@@ -337,8 +471,9 @@ Controls moved below the grid for better UX
             <polygon points="12 2 22 12 12 22 2 12" />
           {/if}
         </svg>
-        <span class="control-label">{gridModeLabel}</span>
-      </button>
+          <span class="control-label">{gridModeLabel}</span>
+        </button>
+      {/if}
     </div>
   </div>
   {/if}
@@ -375,6 +510,31 @@ Controls moved below the grid for better UX
     white-space: nowrap;
     color: var(--theme-text, #fff);
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  }
+
+  .path-selector {
+    flex-shrink: 0;
+    width: min(calc(100% - 24px), 360px);
+    margin: 10px auto 4px;
+  }
+
+  .validation-message {
+    flex: 0 0 auto;
+    width: min(calc(100% - 24px), 520px);
+    margin: 4px auto 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--theme-danger) 62%, transparent);
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--theme-danger) 12%,
+      var(--theme-card-bg)
+    );
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.35;
+    text-align: center;
   }
 
   /* ============================================

@@ -32,6 +32,8 @@ import { UndoOperationType } from "../services/undo-manager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { IFilterPersister } from "../../construct/option-picker/services/filter-persister";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
+import { invalidateLoopDisplayCache } from "$lib/shared/create/services/loop-certificate";
+import { updateSequenceStartPose } from "../../construct/start-position-picker/services/update-sequence-start-pose";
 
 /**
  * Minimal interface for createModuleState dependency
@@ -164,26 +166,18 @@ export function createConstructTabState(
       return;
     }
 
-    if (source === "user" && undoController) {
-      undoController.pushUndoSnapshot(UndoOperationType.SELECT_START_POSITION, {
-        description: "Select start position",
-      });
-    }
-
-    setShowStartPositionPicker(false);
-    setSelectedStartPosition(pictographData);
-
-    // Create proper StartPositionData from the selected pictograph
+    const currentSequence = sequenceState?.currentSequence ?? null;
+    const currentStart =
+      currentSequence?.startingPosition ?? currentSequence?.startPosition;
     const startPositionData = createStartPositionData({
       ...pictographData,
-      id: `start-${Date.now()}`,
+      id: currentStart?.id ?? `start-${Date.now()}`,
     });
 
-    if (sequenceState) {
-      sequenceState.setSelectedStartPosition(startPositionData);
-    }
-
     if (source !== "user" || !sequenceState) {
+      setShowStartPositionPicker(false);
+      setSelectedStartPosition(startPositionData);
+      sequenceState?.setSelectedStartPosition(startPositionData);
       return;
     }
 
@@ -194,6 +188,46 @@ export function createConstructTabState(
     // Get the current grid mode from the start position picker to ensure
     // the sequence is created with the correct grid mode (Diamond or Box)
     const currentGridMode = startPositionStateService.currentGridMode;
+
+    if (currentSequence) {
+      const update = updateSequenceStartPose(
+        currentSequence,
+        startPositionData,
+        currentGridMode
+      );
+
+      if (!update.ok) {
+        setError(
+          update.reason === "grid-mismatch"
+            ? "This sequence uses a different grid. Keep its current grid to edit the start pose."
+            : "This pose does not connect to step 1. Move the props to the position where step 1 begins."
+        );
+        setShowStartPositionPicker(true);
+        return;
+      }
+
+      undoController?.pushUndoSnapshot(UndoOperationType.UPDATE_BEAT, {
+        stepNumber: 0,
+        stepIndex: 0,
+        description: "Update start pose",
+      });
+
+      sequenceState.setCurrentSequence(update.sequence);
+      sequenceState.clearSelection();
+      setSelectedStartPosition(startPositionData);
+      setShowStartPositionPicker(false);
+      clearError();
+      invalidateLoopDisplayCache();
+      return;
+    }
+
+    undoController?.pushUndoSnapshot(UndoOperationType.SELECT_START_POSITION, {
+      description: "Select start position",
+    });
+
+    setShowStartPositionPicker(false);
+    setSelectedStartPosition(pictographData);
+    sequenceState.setSelectedStartPosition(startPositionData);
 
     sequenceState
       .createSequence({
