@@ -2,14 +2,14 @@
 status: active
 value: 4
 effort: S
-remaining: "Implementation and lifecycle tests are complete. Remaining: verify acquisition, reacquisition, Review release, and actual screen auto-lock behavior on the target iPhone."
+remaining: "Implementation and lifecycle tests are complete for viewer Practice, Train, and Meditation. Remaining: verify acquisition, reacquisition, session-end release, and actual screen auto-lock behavior on the target iPhone."
 depends_on: ""
 plan_path: ""
-tags: ["train", "mobile", "wake-lock", "device"]
-last_triaged: 2026-07-23
+tags: ["practice", "train", "viewer", "mobile", "wake-lock", "device"]
+last_triaged: 2026-07-24
 ---
 
-# Train Screen Wake Lock: Design Spec
+# Practice Screen Wake Lock: Design Spec
 
 ## Field report
 
@@ -18,8 +18,10 @@ while the sequence was running. This is a direct training interruption: the
 performer is using their hands and cannot keep tapping the display.
 
 This is not a platform-wide absence. The Mandala meditation session already
-requests a screen wake lock. The missing behavior is specific to the Train
-session lifecycle.
+requests a screen wake lock. The initial implementation covered the standalone
+Train lifecycle but missed the released sequence-viewer Practice lifecycle.
+Because the viewer is the product's primary practice home, both practice
+surfaces need the same activity-scoped behavior.
 
 ## Current path and evidence
 
@@ -35,11 +37,27 @@ TrainModePanel
   -> REVIEW or resetToSetup()
 ```
 
-`src/lib/features/train/components/TrainModePanel.svelte` starts and stops the
-beat loop from `trainState.isPerforming`, but it never asks the browser to keep
-the display awake.
+Before this change, `src/lib/features/train/components/TrainModePanel.svelte`
+started and stopped the beat loop from `trainState.isPerforming`, but never
+asked the browser to keep the display awake.
 
-The only wake-lock implementation in the repository is private to
+The released viewer Practice path is:
+
+```text
+SequenceViewerShell
+  -> playback.enterPracticeMode()
+  -> playback.handlePracticeStart()
+  -> 3·2·1 count-in
+  -> tempo-practice run
+  -> playback.handlePracticeStop() or exitPracticeMode()
+```
+
+`src/lib/shared/sequence-viewer/components/playback-controller.svelte.ts` owns
+that complete lifecycle, including count-in, pause, automatic completion, Stop,
+exit, and viewer disposal.
+
+Before this change, the only wake-lock implementation in the repository was
+private to
 `src/lib/features/mandala/tabs/meditate/state/meditation-session.svelte.ts`.
 It:
 
@@ -55,14 +73,14 @@ would create two subtly different release and visibility rules.
 
 ## Outcome
 
-While Train is performing, the app requests a screen wake lock. It releases the
-lock as soon as Train leaves the performing state or the panel is destroyed.
-If the browser releases the lock while the document is hidden, Train requests a
-new sentinel when the document becomes visible and the same performance is
-still active.
+While a viewer Practice run or Train performance is active, the app requests a
+screen wake lock. It releases the lock as soon as the run ends or its owner is
+destroyed. If the browser releases the lock while the document is hidden, the
+owner requests a new sentinel when the document becomes visible and the same
+session is still active.
 
 Unsupported browsers, low-power rejection, and user-forced release must never
-prevent a Train session from starting or ending.
+prevent a practice or meditation session from starting or ending.
 
 ## Reuse decision
 
@@ -101,9 +119,9 @@ export function createScreenWakeLockManager(
 The optional dependencies provide the document and wake-lock request function
 for unit tests. Production callers use browser globals.
 
-This is an instance factory, not a module singleton. Train and Meditation own
-separate activity lifecycles, and one consumer releasing a singleton must not
-cancel another consumer's lock.
+This is an instance factory, not a module singleton. Viewer Practice, Train,
+and Meditation own separate activity lifecycles, and one consumer releasing a
+singleton must not cancel another consumer's lock.
 
 The module and factory must remain safe during server rendering. They do not
 read `window`, `document`, or `navigator` at import time. Browser ownership is
@@ -131,20 +149,20 @@ The manager owns these non-reactive values:
 - no live sentinel exists;
 - no request is already in flight.
 
-The caller does not await this method. Train must not hold its state transition
-open while the operating system decides whether to grant a lock.
+The caller does not await this method. The activity must not hold its state
+transition open while the operating system decides whether to grant a lock.
 
 ### Pending-request race
 
-A request may resolve after Train has already stopped. Capture the generation
-at request start. When it resolves:
+A request may resolve after the owning activity has already stopped. Capture
+the generation at request start. When it resolves:
 
 - keep the sentinel only if the manager is still active, visible, undisposed,
   and on the same generation;
 - otherwise release the newly returned sentinel immediately.
 
-This prevents a late promise from keeping the screen awake on the Review or
-Setup screen.
+This prevents a late promise from keeping the screen awake after the session
+has returned to setup or Review.
 
 ### Browser release
 
@@ -190,6 +208,21 @@ listener. Repeated deactivate and dispose calls are no-ops.
 The beat timer remains the owner of timing. The wake-lock manager does not
 pause, resume, or alter Train state.
 
+## Viewer Practice integration
+
+`playback-controller.svelte.ts` creates one manager next to the tempo-practice
+orchestrator.
+
+1. `handlePracticeStart()` calls `setActive(true)` from the Start tap before the
+   timer-driven count-in begins.
+2. The lock remains active if playback is paused during the same practice run.
+3. Stop, automatic completion, practice exit, and cleanup call
+   `setActive(false)`.
+4. `dispose()` calls `dispose()`.
+
+Entering Practice setup does not request a lock. Ordinary viewer playback
+outside Practice also remains unchanged.
+
 ## Meditation migration
 
 `createMeditationSession()` creates the shared manager and removes its private
@@ -209,13 +242,17 @@ would make the extraction decorative and allow the two policies to drift.
 
 No modal, toast, or blocking error is added.
 
-Wake-lock denial is a device policy outcome, not a failed Train operation.
+Wake-lock denial is a device policy outcome, not a failed practice operation.
 The activity remains usable, and repeated error UI would provide no useful
 recovery action. Development logging may use one debug-level entry, but denial
 must not enter the global exception stream.
 
 ## Acceptance criteria
 
+- Starting a viewer Practice run requests one screen wake lock before count-in.
+- Practice setup and ordinary viewer playback do not hold a wake lock.
+- Pausing playback during an active Practice run keeps the wake lock.
+- Stop, automatic completion, practice exit, and viewer disposal release it.
 - Starting a Train performance requests one screen wake lock.
 - Setup and sequence browsing do not hold a wake lock.
 - Entering Review, returning to Setup, or leaving Train releases the held lock.
@@ -235,8 +272,8 @@ must not enter the global exception stream.
 
 ### Automated
 
-Add `tests/unit/device/screen-wake-lock-manager.test.ts` with fakes for
-`Document`, the request function, and `WakeLockSentinel`.
+`tests/unit/device/screen-wake-lock-manager.test.ts` uses fakes for `Document`,
+the request function, and `WakeLockSentinel`.
 
 Cover:
 
@@ -252,20 +289,24 @@ Cover:
 10. rejected requests settle without an unhandled promise;
 11. construction without browser globals is a safe no-op.
 
-Run the focused unit test and the project's TypeScript/Svelte check after the
-implementation.
+`tests/unit/sequence-viewer/viewer-practice-wake-lock.test.ts` covers viewer
+Start, Stop, and disposal ownership. Run both focused files and the project's
+TypeScript/Svelte check after the implementation.
 
 ### Device proof
 
 Use an iPhone with a short Auto-Lock interval.
 
-1. Start a Train performance longer than that interval and leave the screen
-   untouched. The display remains on.
-2. End the performance and leave the Review screen untouched. The device is
-   allowed to dim and lock again.
-3. During another performance, background and restore the app. The display
-   remains awake after return.
-4. Repeat in Safari and the installed app or Home Screen build used by the
+1. Open any sequence in the released viewer, enter Practice, and start a run
+   longer than that interval. Leave the screen untouched. The display remains
+   on through count-in and playback.
+2. Stop the run and leave Practice setup untouched. The device is allowed to
+   dim and lock again.
+3. During another run, background and restore the app. The display remains
+   awake after return.
+4. In the development build, repeat with a Train performance. End the
+   performance and confirm the Review screen can dim and lock again.
+5. Repeat in Safari and the installed app or Home Screen build used by the
    field report.
 
 An Android Chrome pass confirms the shared browser path, but it does not replace
@@ -281,8 +322,12 @@ the iPhone proof.
   `src/lib/features/train/components/TrainModePanel.svelte`.
 - Edit
   `src/lib/features/mandala/tabs/meditate/state/meditation-session.svelte.ts`.
+- Edit
+  `src/lib/shared/sequence-viewer/components/playback-controller.svelte.ts`.
+- Create
+  `tests/unit/sequence-viewer/viewer-practice-wake-lock.test.ts`.
 
-No dependency, global state, viewport policy, or Train timing file changes.
+No dependency, global state, viewport policy, or practice timing file changes.
 
 ## Browser research
 
@@ -292,3 +337,6 @@ No dependency, global state, viewport policy, or Train timing file changes.
 - [W3C: Screen Wake Lock API](https://www.w3.org/TR/screen-wake-lock/)
   defines the sentinel lifecycle and keeps final control with the user agent
   and device owner.
+- [WebKit: Features in Safari 18.4](https://webkit.org/blog/16574/webkit-features-in-safari-18-4/)
+  confirms Screen Wake Lock support in iOS and iPadOS Home Screen Web Apps
+  beginning with 18.4.

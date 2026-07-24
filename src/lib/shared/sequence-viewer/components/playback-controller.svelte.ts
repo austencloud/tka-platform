@@ -20,6 +20,7 @@ import { TempoPracticeOrchestrator, type TempoPracticeConfig } from "$lib/shared
 import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
 import { Metronome } from "$lib/shared/audio/metronome";
 import type { PracticeViewPrefs } from "$lib/shared/sequence-viewer/state/practice-view-prefs.svelte";
+import { createScreenWakeLockManager } from "$lib/shared/device/services/screen-wake-lock-manager";
 
 export interface PlaybackControllerDeps {
   modalAnimationState: AnimationPanelState;
@@ -122,6 +123,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   // ── Practice training ──
   const practiceOrchestrator = new TempoPracticeOrchestrator();
   const practiceState = createTempoPracticeState();
+  const screenWakeLockManager = createScreenWakeLockManager();
 
   // ── Scrub gesture ──
   let wasPlayingBeforeScrub = false;
@@ -224,6 +226,9 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     if (_countInActive || practicePhase === "running") return;
     _countInActive = true;
 
+    // Ask from the Start tap itself. The practice run begins with timer-driven
+    // count-in ticks, so waiting for GO would lose the initiating user gesture.
+    screenWakeLockManager.setActive(true);
     _hapticService?.trigger("selection");
     // Start is a user gesture; unlock audio now so the count-in ticks — which
     // fire on later, non-gesture timer turns — can play.
@@ -280,6 +285,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   /** Leave practice mode entirely; stop the ramp if it's running. */
   function exitPracticeMode() {
     if (practicePhase === "running") stopPracticeIfActive();
+    screenWakeLockManager.setActive(false);
     practicePhase = "off";
     _hapticService?.trigger("selection");
   }
@@ -383,6 +389,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   }
 
   function handlePracticeStop() {
+    screenWakeLockManager.setActive(false);
     if (!_playbackController) return;
 
     // Cancelled during the count-in — the ramp never ran, so skip the completion
@@ -422,6 +429,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
 
   // ── Practice cleanup ──
   function stopPracticeIfActive() {
+    screenWakeLockManager.setActive(false);
     cancelCountIn();
     if (practiceOrchestrator.isActive()) {
       practiceOrchestrator.stop();
@@ -436,6 +444,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
       startHoldTimer = null;
     }
     stopPracticeIfActive();
+    screenWakeLockManager.dispose();
     _metronome?.dispose();
     _metronome = null;
     cleanupSubscription?.();

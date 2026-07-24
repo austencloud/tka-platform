@@ -36,9 +36,9 @@ export interface IScreenWakeLockManager {
 /**
  * Keeps the screen awake only while one user activity needs it.
  *
- * Each activity owns its own instance. Stopping Train must not release a lock
- * held by Meditation, and a late browser response must not keep the Review
- * screen awake after Train has ended.
+ * Each activity owns its own instance. Stopping Practice must not release a
+ * lock held by Meditation, and a late browser response must not keep an ended
+ * session awake.
  */
 export function createScreenWakeLockManager(
   dependencies: ScreenWakeLockDependencies = {}
