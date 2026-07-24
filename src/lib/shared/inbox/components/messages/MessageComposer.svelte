@@ -455,7 +455,7 @@
     border-radius: 24px;
     color: var(--theme-text);
     font-family: inherit;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     line-height: 1.4;
     resize: none;
     outline: none;
@@ -481,6 +481,12 @@
 
   textarea:disabled {
     opacity: 0.6;
+  }
+
+  @media (min-width: 480px) and (hover: hover) and (pointer: fine) {
+    textarea {
+      font-size: var(--font-size-sm);
+    }
   }
 
   .send-button {

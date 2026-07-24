@@ -346,6 +346,7 @@
     margin: 0 0 4px;
     font-size: var(--font-size-sm);
     line-height: 1.4;
+    white-space: pre-wrap;
     word-break: break-word;
     color: var(--theme-text);
   }
