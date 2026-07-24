@@ -5,7 +5,7 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 
 [vars]
 PUBLIC_ENVIRONMENT = "production"
-R2_PUBLIC_URL = "https://pub-f5505ed75927471cb198c54336317370.r2.dev"
+R2_PUBLIC_URL = "https://assets.tkaflowarts.com"
 
 [[r2_buckets]]
 binding = "QR_VIDEOS"

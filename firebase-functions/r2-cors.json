@@ -1,6 +1,16 @@
 {
   "rules": [
     {
+      "id": "public-read-any-origin",
+      "allowed": {
+        "origins": ["*"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["Content-Type", "Content-Length"]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    },
+    {
       "id": "app-and-local-dev-uploads",
       "allowed": {
         "origins": [
@@ -13,19 +23,10 @@
           "capacitor://localhost",
           "https://localhost"
         ],
-        "methods": ["PUT", "GET", "HEAD"],
+        "methods": ["PUT"],
         "headers": ["Content-Type", "Content-Length"]
       },
       "exposeHeaders": ["ETag"],
-      "maxAgeSeconds": 3600
-    },
-    {
-      "id": "public-read-any-origin",
-      "allowed": {
-        "origins": ["*"],
-        "methods": ["GET", "HEAD"],
-        "headers": ["Content-Type", "Content-Length"]
-      },
       "maxAgeSeconds": 3600
     }
   ]

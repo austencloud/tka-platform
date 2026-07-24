@@ -114,7 +114,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       scriptSrc,
       "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-      "connect-src 'self' blob: data: https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.cloudfunctions.net https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com https://pub-f5505ed75927471cb198c54336317370.r2.dev https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net https://cloudflareinsights.com wss://*.firebaseio.com wss://*.peerjs.com ws://localhost:*",
+      "connect-src 'self' blob: data: https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.cloudfunctions.net https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com https://assets.tkaflowarts.com https://pub-f5505ed75927471cb198c54336317370.r2.dev https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net https://cloudflareinsights.com wss://*.firebaseio.com wss://*.peerjs.com ws://localhost:*",
       "img-src 'self' data: blob: https: http:",
       "media-src 'self' blob: https://firebasestorage.googleapis.com https://storage.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",

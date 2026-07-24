@@ -15,11 +15,11 @@ npm run r2:cors:list    # verify
 
 ## Rules
 
-1. **`app-and-local-dev-uploads`** — `PUT, GET, HEAD` from the production origins,
-   the local dev server, and Capacitor native WebView origins. Exposes `ETag`
-   (required so multipart video uploads can read part ETags).
-2. **`public-read-any-origin`** — `GET, HEAD` from `*` so public URLs load
-   cross-origin anywhere.
+1. **`public-read-any-origin`** allows `GET` and `HEAD` from `*`, so public
+   assets load cross-origin without caching a response for one specific origin.
+2. **`app-and-local-dev-uploads`** allows `PUT` from the production origins,
+   local dev server, and Capacitor native WebView origins. Both rules expose
+   `ETag`, which multipart uploads need when reading part responses.
 
 ## Origin gotcha (the bug this fixed, 2026-06-26)
 
