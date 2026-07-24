@@ -7,6 +7,20 @@ import type { TextRenderer } from "./text-renderer";
 import { convertGlyphCacheToBitmaps } from "./glyph-bitmap-loader";
 import { bundleTransferables } from "./card-asset-bundle";
 
+type CompositionProgress = Parameters<CompositionProgressCallback>[0];
+
+function reportFinalizing(
+  onProgress: CompositionProgressCallback | undefined,
+  latestProgress: CompositionProgress | undefined,
+): void {
+  if (!onProgress || latestProgress?.stage === "finalizing") return;
+  onProgress({
+    current: latestProgress?.current ?? 1,
+    total: latestProgress?.total ?? 1,
+    stage: "finalizing",
+  });
+}
+
 // ---- Protocol types (shared with composition.worker.ts) ----
 
 export interface GlyphTransferEntry {
@@ -67,6 +81,7 @@ interface PendingRequest {
   // (no webp Blob conversion, no bitmap close — the caller owns it). Used by
   // composeFrontBitmap so the main thread keeps the cheap stripe/bleed wrap.
   resolveBitmap?: (bitmap: ImageBitmap) => void;
+  latestProgress?: CompositionProgress;
 }
 
 // One in-flight 1644x2244 RGBA card canvas per worker ≈ 14.7 MB. Reserve a core
@@ -372,11 +387,13 @@ export class CompositionDispatcher {
     if (!pending) return;
 
     if (data.type === "progress") {
-      pending.onProgress?.({
+      const progress: CompositionProgress = {
         current: data.current,
         total: data.total,
         stage: data.stage as "preparing" | "rendering" | "finalizing",
-      });
+      };
+      pending.latestProgress = progress;
+      pending.onProgress?.(progress);
       return;
     }
 
@@ -395,6 +412,7 @@ export class CompositionDispatcher {
         pending.resolveBitmap(data.bitmap);
         return;
       }
+      reportFinalizing(pending.onProgress, pending.latestProgress);
       const canvas = new OffscreenCanvas(data.bitmap.width, data.bitmap.height);
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(data.bitmap, 0, 0);
@@ -426,10 +444,28 @@ export class CompositionDispatcher {
     // options.qrImageBitmap (falls back to its own generator otherwise). Thread
     // the transferred bitmap in so the fallback path matches the worker path.
     const opts = qrBitmap ? { ...options, qrImageBitmap: qrBitmap } : options;
+    let latestProgress: CompositionProgress | undefined;
+    const forwardProgress: CompositionProgressCallback | undefined = onProgress
+      ? (progress) => {
+          latestProgress = progress;
+          onProgress(progress);
+        }
+      : undefined;
     const canvas: RenderCanvas = opts.cardMode
-      ? await this.imageComposer.composeCardImage(sequence, opts, onProgress, signal)
-      : await this.imageComposer.composeSequenceImage(sequence, opts, onProgress, signal);
+      ? await this.imageComposer.composeCardImage(
+          sequence,
+          opts,
+          forwardProgress,
+          signal,
+        )
+      : await this.imageComposer.composeSequenceImage(
+          sequence,
+          opts,
+          forwardProgress,
+          signal,
+        );
 
+    reportFinalizing(onProgress, latestProgress);
     if (canvas instanceof OffscreenCanvas) {
       return canvas.convertToBlob({ type: "image/webp", quality: 0.9 });
     }

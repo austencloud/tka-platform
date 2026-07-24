@@ -12,7 +12,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
+import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
@@ -23,6 +23,7 @@ import type {
   CompositionDefaults,
 } from "$lib/shared/browse/services/thumbnail-key-deriver";
 import type { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
+import type { ThumbnailStage } from "./thumbnail-metrics-collector";
 
 /** Result of a thumbnail render. `qrConsistent` is false only when a QR was
  * requested but its bitmap could not be produced — the orchestrator uses it to
@@ -51,6 +52,10 @@ export type RenderProgressCallback = (progress: {
   total: number;
   stage: "preparing" | "rendering" | "finalizing";
 }) => void;
+export type RenderStageCallback = (
+  stage: ThumbnailStage,
+  details?: { workerEligible?: boolean }
+) => void;
 
 const DEFAULT_BEAT_SIZE = 240;
 const DEFAULT_FORMAT = "WebP" as const;
@@ -88,15 +93,18 @@ export class ThumbnailRenderer {
     input: ThumbnailRenderInput,
     options?: RenderOptions,
     onProgress?: RenderProgressCallback,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onStage?: RenderStageCallback
   ): Promise<ThumbnailRenderResult> {
     // Load full sequence data if needed (fetches from user's source doc)
+    onStage?.("sequence_load");
     const loadedSequence = await this.ensureFullSequenceData(
       sequence,
       input.sequenceName
     );
 
     // Resolve loopType: loaded doc -> index fallback -> runtime detection
+    onStage?.("loop_and_start");
     let resolvedLoopType = loadedSequence.loopType ?? sequence.loopType ?? null;
 
     if (
@@ -138,6 +146,7 @@ export class ThumbnailRenderer {
     const wantsQR = input.visibility?.showQRCode === true;
     let qrBitmap: ImageBitmap | null = null;
     if (wantsQR) {
+      onStage?.("qr_bitmap");
       try {
         const generator = this.qrCodeGeneratorFactory?.();
         if (generator) {
@@ -163,6 +172,9 @@ export class ThumbnailRenderer {
 
     // Render via CompositionDispatcher (worker pool with main-thread fallback)
     // Explicitly pass loopType in options so it doesn't rely on sequence fallback
+    onStage?.("composition", {
+      workerEligible: CompositionDispatcher.canUseWorker(),
+    });
     const blob = await this.compositionDispatcher.compose(
       sequenceWithStartPos,
       {
@@ -173,7 +185,12 @@ export class ThumbnailRenderer {
         // Card mode: use 5:7 playing card layout for physical card export
         cardMode: input.cardMode ?? false,
       },
-      onProgress,
+      (progress) => {
+        if (progress.stage === "finalizing") {
+          onStage?.("finalize");
+        }
+        onProgress?.(progress);
+      },
       signal,
       qrBitmap
     );

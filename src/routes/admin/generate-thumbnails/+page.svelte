@@ -4,7 +4,7 @@
   Renders + uploads the selected scope of gallery thumbnails through the REAL
   ThumbnailRenderOrchestrator (zero parity risk), warming the shared cloud cache
   so cold-cache 404s stop. The AdminToolbar "Warm Gallery (lean)" button runs a
-  fixed staff/dark/QR subset; this page exposes the full prop × mode × QR matrix
+  fixed staff + fan/dark/QR subset; this page exposes the full prop × mode × QR matrix
   for a deliberate leave-it-running pass.
 
   After a run, index + bundle the results (credentialed, outside the browser):
@@ -48,7 +48,9 @@
   const isAdmin = $derived(featureFlagService.isAdmin);
 
   // Scope selection — lean defaults (matches the observed cold set).
-  let selectedProps = $state<Set<PropType>>(new Set([PropType.STAFF]));
+  let selectedProps = $state<Set<PropType>>(
+    new Set([PropType.STAFF, PropType.FAN])
+  );
   let darkMode = $state(true);
   let lightMode = $state(false);
   let noQr = $state(true);
@@ -68,13 +70,20 @@
   function selectAllProps() {
     selectedProps = new Set(ALL_PROPS);
   }
-  function selectStaffOnly() {
-    selectedProps = new Set([PropType.STAFF]);
+  function selectStaffAndFan() {
+    selectedProps = new Set([PropType.STAFF, PropType.FAN]);
+    darkMode = true;
+    lightMode = false;
+    noQr = true;
+    qr = true;
   }
 
   const scope = $derived<WarmScope>({
     props: ALL_PROPS.filter((p) => selectedProps.has(p)),
-    modes: [...(darkMode ? (["dark"] as const) : []), ...(lightMode ? (["light"] as const) : [])],
+    modes: [
+      ...(darkMode ? (["dark"] as const) : []),
+      ...(lightMode ? (["light"] as const) : []),
+    ],
     qr: [...(noQr ? [false] : []), ...(qr ? [true] : [])],
   });
 
@@ -166,7 +175,8 @@
     <h1>Gallery Thumbnail Warm</h1>
     <p class="subtitle">
       Render + upload gallery thumbnails through the real renderer to warm the
-      shared cloud cache. After a run: <code>npm run thumbnails:manifest</code> then
+      shared cloud cache. After a run: <code>npm run thumbnails:manifest</code>
+      then
       <code>npm run thumbnails:sync</code>.
     </p>
   </header>
@@ -179,8 +189,12 @@
         <div class="scope-head">
           <span class="scope-label">Props</span>
           <div class="scope-actions">
-            <button type="button" class="mini" onclick={selectStaffOnly}>Staff only</button>
-            <button type="button" class="mini" onclick={selectAllProps}>All props</button>
+            <button type="button" class="mini" onclick={selectStaffAndFan}
+              >Staff + fan</button
+            >
+            <button type="button" class="mini" onclick={selectAllProps}
+              >All props</button
+            >
           </div>
         </div>
         <div class="chips">
@@ -199,16 +213,40 @@
       <div class="scope-row">
         <span class="scope-label">Mode</span>
         <div class="chips">
-          <FilterChipBase label="Dark" mode="toggle" size="sm" active={darkMode} onclick={() => (darkMode = !darkMode)} />
-          <FilterChipBase label="Light" mode="toggle" size="sm" active={lightMode} onclick={() => (lightMode = !lightMode)} />
+          <FilterChipBase
+            label="Dark"
+            mode="toggle"
+            size="sm"
+            active={darkMode}
+            onclick={() => (darkMode = !darkMode)}
+          />
+          <FilterChipBase
+            label="Light"
+            mode="toggle"
+            size="sm"
+            active={lightMode}
+            onclick={() => (lightMode = !lightMode)}
+          />
         </div>
       </div>
 
       <div class="scope-row">
         <span class="scope-label">QR</span>
         <div class="chips">
-          <FilterChipBase label="No-QR" mode="toggle" size="sm" active={noQr} onclick={() => (noQr = !noQr)} />
-          <FilterChipBase label="QR" mode="toggle" size="sm" active={qr} onclick={() => (qr = !qr)} />
+          <FilterChipBase
+            label="No-QR"
+            mode="toggle"
+            size="sm"
+            active={noQr}
+            onclick={() => (noQr = !noQr)}
+          />
+          <FilterChipBase
+            label="QR"
+            mode="toggle"
+            size="sm"
+            active={qr}
+            onclick={() => (qr = !qr)}
+          />
         </div>
       </div>
 
@@ -228,8 +266,14 @@
 
     <div class="controls">
       {#if !isRunning}
-        <button type="button" class="btn primary" onclick={start} disabled={!scopeValid}>
-          Start warm ({scope.props.length} × {scope.modes.length} × {scope.qr.length} per sequence)
+        <button
+          type="button"
+          class="btn primary"
+          onclick={start}
+          disabled={!scopeValid}
+        >
+          Start warm ({scope.props.length} × {scope.modes.length} × {scope.qr
+            .length} per sequence)
         </button>
       {:else}
         <button type="button" class="btn danger" onclick={cancel}>Stop</button>
@@ -242,7 +286,10 @@
           <div class="fill" style:width="{percent}%"></div>
         </div>
         <div class="stats">
-          <span>{progress.done.toLocaleString()} / {progress.total.toLocaleString()} ({percent}%)</span>
+          <span
+            >{progress.done.toLocaleString()} / {progress.total.toLocaleString()}
+            ({percent}%)</span
+          >
           {#if !progress.finished}<span>ETA {eta}</span>{/if}
         </div>
         <div class="tally">
@@ -253,10 +300,26 @@
         {#if progress.current && !progress.finished}
           <div class="current">{progress.current}</div>
         {/if}
+        {#if progress.failedCombinations.length > 0}
+          <details class="failure-details">
+            <summary>
+              {progress.failedCombinations.length} failed {progress
+                .failedCombinations.length === 1
+                ? "combination"
+                : "combinations"}
+            </summary>
+            <ul>
+              {#each progress.failedCombinations as combination}
+                <li>{combination}</li>
+              {/each}
+            </ul>
+          </details>
+        {/if}
         {#if progress.finished}
           <div class="done">
-            {progress.cancelled ? "Cancelled" : "Done"} — now run
-            <code>npm run thumbnails:manifest</code> + <code>npm run thumbnails:sync</code>.
+            {progress.cancelled ? "Cancelled" : "Done"}. Next, run
+            <code>npm run thumbnails:manifest</code> +
+            <code>npm run thumbnails:sync</code>.
           </div>
         {/if}
       </section>
@@ -265,10 +328,11 @@
     <header class="header section-gap">
       <h1>Scan-Card Cell Warm</h1>
       <p class="subtitle">
-        Render + upload the canonical per-pictograph cells
-        (<code>pictograph-cells/</code>) for every durable QR shortcode, so /q
-        scanners download images instead of rasterizing. Resolves each card's
-        exact blue/red props and verifies both light and dark assets.
+        Render + upload the canonical per-pictograph cells (<code
+          >pictograph-cells/</code
+        >) for every durable QR shortcode, so /q scanners download images
+        instead of rasterizing. Resolves each card's exact blue/red props and
+        verifies both light and dark assets.
       </p>
     </header>
 
@@ -278,7 +342,9 @@
           Start cell warm (all QR codes)
         </button>
       {:else}
-        <button type="button" class="btn danger" onclick={cancelCells}>Stop</button>
+        <button type="button" class="btn danger" onclick={cancelCells}
+          >Stop</button
+        >
       {/if}
     </div>
 
@@ -288,7 +354,10 @@
           <div class="fill" style:width="{cellPercent}%"></div>
         </div>
         <div class="stats">
-          <span>{cellProgress.done.toLocaleString()} / {cellProgress.total.toLocaleString()} ({cellPercent}%)</span>
+          <span
+            >{cellProgress.done.toLocaleString()} / {cellProgress.total.toLocaleString()}
+            ({cellPercent}%)</span
+          >
           {#if !cellProgress.finished}<span>ETA {cellEta}</span>{/if}
         </div>
         <div class="tally">
@@ -299,8 +368,8 @@
         {/if}
         {#if cellProgress.finished}
           <div class="done">
-            {cellProgress.cancelled ? "Cancelled" : "Done"} — cells live in the
-            cloud store; /q probes find them immediately (no manifest step).
+            {cellProgress.cancelled ? "Cancelled" : "Done"} — cells live in the cloud
+            store; /q probes find them immediately (no manifest step).
           </div>
         {/if}
       </section>
@@ -449,6 +518,20 @@
     font-family: var(--font-mono, monospace);
     font-size: 0.85rem;
     color: var(--theme-text-dim);
+  }
+  .failure-details {
+    color: var(--semantic-error, #ef4444);
+  }
+  .failure-details summary {
+    cursor: pointer;
+  }
+  .failure-details ul {
+    max-height: 16rem;
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+    overflow: auto;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.85rem;
   }
   .done {
     padding: 0.75rem 1rem;

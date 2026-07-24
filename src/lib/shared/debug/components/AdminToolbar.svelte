@@ -22,7 +22,7 @@
   import { adminToolbarState } from "$lib/shared/debug/state/admin-toolbar-state.svelte";
   import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
-  import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
   import * as cloudThumbnailCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { getThumbnailLocalCache } from "$lib/shared/browse/get-thumbnail-local-cache";
@@ -163,8 +163,8 @@ import type { QuickAccessUser } from "../services/types";
     }, 2000);
   }
 
-  function previewCreateTutorial() {
-    createTutorialState.reset();
+  async function previewCreateTutorial() {
+    await handleModuleChange("create", "construct");
     appEntryState.replay();
     introResetMessage = "Create tutorial opened";
     setTimeout(() => {
@@ -232,8 +232,8 @@ import type { QuickAccessUser } from "../services/types";
   let warmHandle: WarmHandle | null = null;
 
   /**
-   * Lean one-click warm: renders + uploads the observed cold set (staff, dark,
-   * QR + non-QR) through the real orchestrator so those cloud thumbnails exist.
+   * Lean one-click warm: renders + uploads the observed cold set (staff + fan,
+   * dark, QR + non-QR) through the real orchestrator so those cloud thumbnails exist.
    * Clicking again while running cancels. Full-matrix control lives at
    * /admin/generate-thumbnails. Follow a run with `npm run thumbnails:manifest`
    * + `npm run thumbnails:sync` to index + bundle the results.
@@ -247,11 +247,21 @@ import type { QuickAccessUser } from "../services/types";
     introResetMessage = "Warming gallery thumbnails...";
 
     warmHandle = startGalleryWarm(
-      { props: [PropType.STAFF], modes: ["dark"], qr: [false, true] },
+      {
+        props: [PropType.STAFF, PropType.FAN],
+        modes: ["dark"],
+        qr: [false, true],
+      },
       (p) => {
         introResetMessage = p.finished
           ? `Warm ${p.cancelled ? "cancelled" : "done"}: ${p.rendered} new, ${p.skipped} cached, ${p.failed} failed`
           : `Warming ${p.done}/${p.total} — ${p.rendered} new`;
+        if (p.finished && p.failedCombinations.length > 0) {
+          console.warn(
+            "[Gallery warm] Failed combinations:",
+            p.failedCombinations
+          );
+        }
       }
     );
 

@@ -18,13 +18,23 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type { ThumbnailVariant, ThumbnailRenderInput, ThumbnailVisibilitySettings } from "$lib/shared/browse/services/thumbnail-key-deriver";
+  import type {
+    ThumbnailVariant,
+    ThumbnailRenderInput,
+    ThumbnailVisibilitySettings,
+  } from "$lib/shared/browse/services/thumbnail-key-deriver";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
   import { getThumbnailLocalCache } from "$lib/shared/browse/get-thumbnail-local-cache";
-  import type { ThumbnailLoadStatus, ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/thumbnail-render-orchestrator";
+  import type {
+    ThumbnailLoadStatus,
+    ThumbnailRenderOrchestrator,
+  } from "$lib/shared/browse/services/thumbnail-render-orchestrator";
   import type { ThumbnailLocalCache } from "$lib/shared/browse/services/thumbnail-local-cache";
   import { deriveKey } from "$lib/shared/browse/services/thumbnail-key-deriver";
-  import { buildGalleryRenderInput, galleryStepCount } from "$lib/shared/browse/services/gallery-render-input";
+  import {
+    buildGalleryRenderInput,
+    galleryStepCount,
+  } from "$lib/shared/browse/services/gallery-render-input";
   import { invalidateUrl as invalidateCloudUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -105,6 +115,7 @@
   let status = $state<ThumbnailLoadStatus>({ state: "idle" });
   let isVisible = $state(false);
   let currentKeyHash = $state<string | null>(null);
+  let currentRequestController: AbortController | null = null;
 
   // Non-reactive flag to skip cache after 404 (avoids $effect dependency loop)
   let skipCacheOnNextRequest = false;
@@ -115,7 +126,6 @@
   let orchestrator: ThumbnailRenderOrchestrator | null = null;
   let localCache: ThumbnailLocalCache | null = null;
   let servicesReady = $state(false);
-
 
   // Layout calculator resolved synchronously (direct import for instant HMR)
 
@@ -135,7 +145,8 @@
   // ignored per-length overrides, so a one-count set to "Left Column" still
   // rendered row-mode in the gallery.
   const effectiveStartPositionLayout = $derived(
-    startPositionLayout ?? compositionManager.getStartPositionLayoutForStepCount(stepCount)
+    startPositionLayout ??
+      compositionManager.getStartPositionLayoutForStepCount(stepCount)
   );
 
   // Derived: sequence name (raw) — used as the cache-key + source-doc lookup
@@ -193,8 +204,6 @@
     })
   );
 
-
-
   // Intersection observer for lazy loading
   let observer: IntersectionObserver | null = null;
 
@@ -228,6 +237,8 @@
   // Listen for cache invalidation (fired by admin "Clear Cloud Thumbnails" button)
   function handleCacheCleared() {
     if (!isVisible) return; // Only re-render visible thumbnails
+    currentRequestController?.abort();
+    currentRequestController = null;
     // Revoke old blob URL to prevent memory leak
     if (thumbnailUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(thumbnailUrl);
@@ -257,14 +268,16 @@
       clearTimeout(errorDebounceTimer);
     }
 
-    // Cancel any pending render
-    if (currentKeyHash && orchestrator) {
-      orchestrator.cancel({ hash: currentKeyHash });
-    }
+    currentRequestController?.abort();
+    currentRequestController = null;
 
     // Don't revoke blob URLs that are in the memory cache - other components may reuse them.
     // The memory cache handles revocation on LRU eviction.
-    if (thumbnailUrl?.startsWith("blob:") && orchestrator && !orchestrator.getCached(currentKeyHash ?? "")) {
+    if (
+      thumbnailUrl?.startsWith("blob:") &&
+      orchestrator &&
+      !orchestrator.getCached(currentKeyHash ?? "")
+    ) {
       URL.revokeObjectURL(thumbnailUrl);
     }
   });
@@ -286,7 +299,9 @@
     if (errorDebounceTimer) return;
 
     const urlType = thumbnailUrl?.startsWith("blob:") ? "blob" : "cloud";
-    console.warn(`[Thumbnail] "${sequenceName}" - img ERROR (${urlType}) - will re-render`);
+    console.warn(
+      `[Thumbnail] "${sequenceName}" - img ERROR (${urlType}) - will re-render`
+    );
 
     if (!orchestrator) return;
 
@@ -337,7 +352,8 @@
 
     // Cancel previous render
     if (currentKeyHash) {
-      orchestrator.cancel({ hash: currentKeyHash });
+      currentRequestController?.abort();
+      currentRequestController = null;
     }
     currentKeyHash = key.hash;
 
@@ -366,6 +382,11 @@
 
     // Calculate priority based on Y position (lower = closer to top = higher priority)
     const priority = containerRef?.getBoundingClientRect().top ?? Infinity;
+    const requestController = new AbortController();
+    currentRequestController = requestController;
+    const requestIsCurrent = () =>
+      key.hash === currentKeyHash &&
+      currentRequestController === requestController;
 
     // Request thumbnail (cache check → queue → render → upload)
     orchestrator
@@ -374,23 +395,38 @@
         input: renderInput,
         skipCache: shouldSkipCache,
         priority,
+        signal: requestController.signal,
         onStatusChange: (s) => {
-          status = s;
+          if (requestIsCurrent()) {
+            status = s;
+          }
         },
       })
       .then((result) => {
         // Only apply if still current
-        if (key.hash === currentKeyHash) {
-          thumbnailUrl = result.url;
-          // Ensure loading overlay clears - prevents race where a re-queued
-          // render sets status back to "queued" while thumbnailUrl persists
-          status = { state: "complete", url: result.url ?? "" };
+        if (requestIsCurrent()) {
+          if (result.url) {
+            thumbnailUrl = result.url;
+            // Ensure loading overlay clears - prevents race where a re-queued
+            // render sets status back to "queued" while thumbnailUrl persists
+            status = { state: "complete", url: result.url };
+          } else if (result.error) {
+            thumbnailUrl = null;
+            status = { state: "error", error: result.error };
+          }
         }
       })
       .catch((err) => {
+        const isCancellation =
+          err?.message === "Cancelled" || err?.name === "AbortError";
         // Only show error if still current and not cancelled
-        if (key.hash === currentKeyHash && err.message !== "Cancelled") {
+        if (requestIsCurrent() && !isCancellation) {
           status = { state: "error", error: err };
+        }
+      })
+      .then(() => {
+        if (currentRequestController === requestController) {
+          currentRequestController = null;
         }
       });
   });
@@ -398,9 +434,9 @@
   // Derive display states
   const isLoading = $derived(
     status.state === "checking-cache" ||
-    status.state === "queued" ||
-    status.state === "rendering" ||
-    status.state === "uploading"
+      status.state === "queued" ||
+      status.state === "rendering" ||
+      status.state === "uploading"
   );
   const hasError = $derived(status.state === "error");
 
@@ -452,7 +488,10 @@
         if (status.progress && status.progress.total > 0) {
           // Show progress relative to beat count, not total (which includes start position)
           // current starts at 1 for start position, so subtract 1 for beat-only display
-          const currentStep = Math.max(0, status.progress.current - (status.progress.total - stepCount));
+          const currentStep = Math.max(
+            0,
+            status.progress.current - (status.progress.total - stepCount)
+          );
           return `${currentStep}/${stepCount}`;
         }
         return "Rendering";
@@ -521,17 +560,28 @@
     />
     <!-- Loading overlay during re-renders (e.g., prop change) -->
     {#if isLoading}
-      <RenderingOverlay label={statusLabel} progress={progressPercent} showProgressBar={true} />
+      <RenderingOverlay
+        label={statusLabel}
+        progress={progressPercent}
+        showProgressBar={true}
+      />
     {/if}
   {:else if hasError}
     <div class="error-placeholder" aria-label="Failed to load">
       <span class="error-icon">!</span>
-      <div class="placeholder-glyph"><TKAWordGlyph word={displayName} height={24} darkMode={!lightMode} /></div>
+      <div class="placeholder-glyph">
+        <TKAWordGlyph word={displayName} height={24} darkMode={!lightMode} />
+      </div>
     </div>
   {:else}
     <!-- Unified placeholder: always shows word, conditionally shows loading indicators -->
-    <div class="loading-placeholder" aria-label={isLoading ? statusLabel : "Waiting to load"}>
-      <div class="placeholder-glyph"><TKAWordGlyph word={displayName} height={24} darkMode={!lightMode} /></div>
+    <div
+      class="loading-placeholder"
+      aria-label={isLoading ? statusLabel : "Waiting to load"}
+    >
+      <div class="placeholder-glyph">
+        <TKAWordGlyph word={displayName} height={24} darkMode={!lightMode} />
+      </div>
       {#if isLoading}
         <div class="loading-indicator">
           <ProgressRing percent={-1} size={24} strokeWidth={2} />

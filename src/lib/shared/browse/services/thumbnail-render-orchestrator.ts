@@ -16,11 +16,15 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ThumbnailRenderInput, ThumbnailCacheKey } from "./thumbnail-key-deriver";
 import * as keyDeriverModule from "./thumbnail-key-deriver";
-import type { ThumbnailRenderQueue } from "./thumbnail-render-queue";
+import {
+  ThumbnailRenderTimeoutError,
+  type ThumbnailRenderQueue,
+} from "./thumbnail-render-queue";
 import type { ThumbnailRenderer } from "$lib/shared/browse/services/thumbnail-renderer";
 import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
 import type { ThumbnailLocalCache } from "./thumbnail-local-cache";
 import type { ThumbnailMetricsCollector } from "./thumbnail-metrics-collector";
+import { captureThumbnailRenderFailure } from "$lib/shared/analytics/thumbnail-analytics";
 
 export interface RenderProgress {
   current: number;
@@ -50,6 +54,9 @@ export interface ThumbnailRequest {
 
   /** Priority for queue ordering (lower = higher priority). Use element's Y position. */
   priority?: number;
+
+  /** Cancels only this caller; shared same-key rendering continues for others. */
+  signal?: AbortSignal;
 }
 export interface ThumbnailResult {
   /** URL to display (either cloud URL or blob URL), null if render failed */
@@ -63,6 +70,13 @@ export interface ThumbnailResult {
 
   /** Error if rendering failed (only present when url is null) */
   error?: Error;
+
+  /**
+   * A visible render can be intentionally left uncached when it does not match
+   * its key. Admin warmers use this signal instead of counting that fallback as
+   * a successfully warmed asset.
+   */
+  cacheWriteSkippedReason?: "qr_inconsistent";
 }
 
 // In-memory LRU cache of hash → blobUrl for instant revisits.
@@ -143,10 +157,60 @@ function sanitizeForStaticPath(name: string): string {
   return name.replace(/:/g, "-").replace(/[?<>"|*]/g, "_");
 }
 
+function isRenderCancellation(error: Error): boolean {
+  return error.message === "Cancelled" || error.name === "AbortError";
+}
+
+function cancellationError(signal: AbortSignal): Error {
+  if (signal.reason instanceof Error) return signal.reason;
+  return new DOMException(
+    typeof signal.reason === "string" ? signal.reason : "Cancelled",
+    "AbortError"
+  );
+}
+
+function normalizeRenderError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error !== "object" || error === null) {
+    return new Error(String(error));
+  }
+
+  const errorLike = error as {
+    code?: unknown;
+    message?: unknown;
+    name?: unknown;
+  };
+  const normalized = new Error(
+    typeof errorLike.message === "string" ? errorLike.message : String(error)
+  ) as Error & { code?: string };
+  if (typeof errorLike.name === "string") {
+    normalized.name = errorLike.name;
+  }
+  if (typeof errorLike.code === "string") {
+    normalized.code = errorLike.code;
+  }
+  return normalized;
+}
+
+function renderErrorCode(error: Error): string {
+  if (
+    error instanceof ThumbnailRenderTimeoutError ||
+    (error as Error & { code?: string }).code === "THUMBNAIL_RENDER_TIMEOUT"
+  ) {
+    return "THUMBNAIL_RENDER_TIMEOUT";
+  }
+  if (error.message.includes("ORPHANED_SEQUENCE")) {
+    return "ORPHANED_SEQUENCE";
+  }
+  return "RENDER_FAILED";
+}
+
 function uploadToCloud(orchestrator: ThumbnailRenderOrchestrator, key: ThumbnailCacheKey, blob: Blob): void {
   cloudCacheModule.upload(orchestrator.buildCloudKey(key), blob)
-    .then(() => {
-      orchestrator['metrics']?.recordUpload(true);
+    .then((url) => {
+      if (url) {
+        orchestrator['metrics']?.recordUpload(true);
+      }
     })
     .catch(() => {
       // Non-fatal - image is displayed, just couldn't upload for others
@@ -208,7 +272,29 @@ export class ThumbnailRenderOrchestrator {
     const mustSkipCache = request.skipCache || lastRenderedGen < this.cacheGeneration;
 
     // Start metrics tracking
-    const requestId = this.metrics?.startRequest(true) ?? "";
+    const requestId =
+      this.metrics?.startRequest(true, {
+        cacheKeyHash: key.hash,
+        sequenceId: request.sequence.id || key.inputs.sequenceId || null,
+        variant: key.inputs.variant,
+        propKey: key.propKey,
+        qrRequested: key.inputs.visibility?.showQRCode ?? false,
+        lightMode: key.inputs.lightMode,
+        usesDefaults: key.usesDefaults,
+        initialStepCount:
+          request.sequence.steps?.length ??
+          request.sequence.sequenceLength ??
+          0,
+        queueDepthAtEnqueue: null,
+        activeAtEnqueue: null,
+        workerEligible: null,
+      }) ?? "";
+    const assertRequestActive = () => {
+      if (!request.signal?.aborted) return;
+      this.metrics?.cancelRequest(requestId);
+      throw cancellationError(request.signal);
+    };
+    assertRequestActive();
 
     // Step 0: In-memory URL cache (synchronous, zero latency)
     // Survives component remounts - eliminates placeholder flash on revisits
@@ -224,7 +310,9 @@ export class ThumbnailRenderOrchestrator {
 
     // Step 1: Check STATIC bundled thumbnails (instant, no network latency)
     if (key.usesDefaults && !mustSkipCache) {
+      this.metrics?.startStage(requestId, "static_manifest");
       const manifest = await getStaticManifest();
+      assertRequestActive();
       // Current format first (variant/prop/name_id_mode — mirrors cloud storage
       // paths), legacy format second (prop/name_mode — pre-variant bundles).
       const staticKey = [this.buildStaticKey(key), this.buildLegacyStaticKey(key)]
@@ -245,7 +333,9 @@ export class ThumbnailRenderOrchestrator {
 
     // Step 2: Check LOCAL IndexedDB cache (instant, personalized)
     if (!mustSkipCache) {
+      this.metrics?.startStage(requestId, "local_cache");
       const localBlob = await this.localCache.get(key.hash);
+      assertRequestActive();
       if (localBlob) {
         const url = URL.createObjectURL(localBlob);
         this.memoryCache.set(key.hash, url);
@@ -259,6 +349,7 @@ export class ThumbnailRenderOrchestrator {
 
     // Step 3: Check cloud in-memory URL cache (instant, session-only)
     if (key.usesDefaults && !mustSkipCache) {
+      this.metrics?.startStage(requestId, "cloud_lookup");
       const memoryCached = cloudCacheModule.getCachedUrl(cloudKey);
       if (memoryCached) {
         this.memoryCache.set(key.hash, memoryCached);
@@ -273,6 +364,7 @@ export class ThumbnailRenderOrchestrator {
       if (memoryCached === undefined) {
         request.onStatusChange?.({ state: "checking-cache" });
         const cloudUrl = await cloudCacheModule.getUrl(cloudKey, request.priority);
+        assertRequestActive();
         if (cloudUrl) {
           this.saveCloudBlobToLocal(cloudUrl, key.hash);
           this.memoryCache.set(key.hash, cloudUrl);
@@ -288,71 +380,119 @@ export class ThumbnailRenderOrchestrator {
     // Step 5: Need to render - queue to throttle concurrent renders
     request.onStatusChange?.({ state: "queued", position: 0 });
     const queueStartTime = performance.now();
+    this.metrics?.startStage(requestId, "queue_wait");
 
     // Track queue depth
     const queueStats = this.queue.getStats();
-    this.metrics?.recordQueueDepth(queueStats.queued + queueStats.active);
+    this.metrics?.recordQueueState(requestId, queueStats);
+    assertRequestActive();
+
+    let queueWaitTime: number | undefined;
+    let renderStartTime: number | undefined;
+    let executedThisRequest = false;
 
     try {
-      return await this.queue.enqueue(key.hash, async (signal) => {
-        const queueWaitTime = performance.now() - queueStartTime;
-        const renderStartTime = performance.now();
+      const result = await this.queue.enqueue(
+        key.hash,
+        async (signal) => {
+          executedThisRequest = true;
+          queueWaitTime = performance.now() - queueStartTime;
+          renderStartTime = performance.now();
 
-        // Render locally with progress tracking
-        request.onStatusChange?.({ state: "rendering" });
-        const { blob, qrConsistent } = await this.renderer.render(
-          request.sequence,
-          key.inputs,
-          undefined, // use default render options
-          (progress) => {
-            // Forward progress updates to status callback
-            request.onStatusChange?.({
-              state: "rendering",
-              progress: {
-                current: progress.current,
-                total: progress.total,
-                stage: progress.stage,
-              },
-            });
-          },
-          signal
-        );
+          // Render locally with progress tracking
+          if (!request.signal?.aborted) {
+            request.onStatusChange?.({ state: "rendering" });
+          }
+          const { blob, qrConsistent } = await this.renderer.render(
+            request.sequence,
+            key.inputs,
+            undefined, // use default render options
+            (progress) => {
+              if (signal.aborted || request.signal?.aborted) return;
+              this.metrics?.recordProgress(requestId, progress);
+              // Forward progress updates to status callback
+              request.onStatusChange?.({
+                state: "rendering",
+                progress: {
+                  current: progress.current,
+                  total: progress.total,
+                  stage: progress.stage,
+                },
+              });
+            },
+            signal,
+            (stage, details) => {
+              this.metrics?.startStage(requestId, stage, details);
+            }
+          );
 
-        const renderTime = performance.now() - renderStartTime;
-
-        // Create blob URL for display
-        const url = URL.createObjectURL(blob);
-
-        // Persist ONLY when the render matches its key. A QR-on key whose QR
-        // bitmap failed to produce yields a QR-less image — displaying it once
-        // is fine, but caching/uploading it under the QR key would poison the
-        // shared cache for everyone. Skip all cache writes so the next mount
-        // retries (and succeeds once the short code / network is available).
-        if (qrConsistent) {
-          // Save to local cache (for ALL thumbnails - instant next time)
-          this.localCache.set(key.hash, blob).catch(() => {});
-
-          // Upload to cloud (for shared/default classes only — includes the
-          // deterministic QR variant now)
-          if (key.usesDefaults) {
-            uploadToCloud(this, key, blob);
+          // The queue deadline may have won while a non-cooperative renderer was
+          // still finishing blob encoding. Never let that late completion create
+          // a URL, populate caches, upload, or overwrite the timeout error state.
+          if (signal.aborted) {
+            throw new DOMException("Aborted", "AbortError");
           }
 
-          // Store in memory cache for instant revisits
-          this.memoryCache.set(key.hash, url);
-          this.renderedGenerations.set(key.hash, this.cacheGeneration);
-        }
-        this.completedCount++;
-        this.metrics?.endRequest(requestId, "render", { queueWaitTime, renderTime });
-        request.onStatusChange?.({ state: "complete", url });
+          const renderTime = performance.now() - renderStartTime;
 
-        return { url, fromCache: false, key };
-      }, request.priority);
+          // Create blob URL for display
+          const url = URL.createObjectURL(blob);
+
+          // Persist ONLY when the render matches its key. A QR-on key whose QR
+          // bitmap failed to produce yields a QR-less image — displaying it once
+          // is fine, but caching/uploading it under the QR key would poison the
+          // shared cache for everyone. Skip all cache writes so the next mount
+          // retries (and succeeds once the short code / network is available).
+          if (qrConsistent) {
+            // Save to local cache (for ALL thumbnails - instant next time)
+            this.localCache.set(key.hash, blob).catch(() => {});
+
+            // Upload to cloud (for shared/default classes only — includes the
+            // deterministic QR variant now)
+            if (key.usesDefaults) {
+              uploadToCloud(this, key, blob);
+            }
+
+            // Store in memory cache for instant revisits
+            this.memoryCache.set(key.hash, url);
+            this.renderedGenerations.set(key.hash, this.cacheGeneration);
+          }
+          this.completedCount++;
+          this.metrics?.endRequest(requestId, "render", {
+            queueWaitTime,
+            renderTime,
+          });
+          if (!request.signal?.aborted) {
+            request.onStatusChange?.({ state: "complete", url });
+          }
+
+          return {
+            url,
+            fromCache: false,
+            key,
+            cacheWriteSkippedReason: qrConsistent
+              ? undefined
+              : ("qr_inconsistent" as const),
+          };
+        },
+        request.priority,
+        request.signal
+      );
+
+      // A second card requesting the same key shares the queue promise. Its
+      // request still needs a terminal metric even though the first card owned
+      // the renderer callbacks.
+      if (!executedThisRequest) {
+        this.metrics?.endRequest(requestId, "render", {
+          queueWaitTime: performance.now() - queueStartTime,
+        });
+      }
+      return result;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeRenderError(error);
 
       // Let cancellations propagate
-      if (err.message === "Cancelled") {
+      if (isRenderCancellation(err)) {
         this.metrics?.cancelRequest(requestId);
         throw err;
       }
@@ -360,7 +500,8 @@ export class ThumbnailRenderOrchestrator {
       // Log the error but don't throw - return a failed result gracefully
       // This prevents unhandled promise rejections for corrupt/orphaned sequences
       // Use debug level for orphaned sequences (data issue, not bug) to reduce console noise
-      const isOrphanedSequence = err.message.includes("ORPHANED_SEQUENCE");
+      const errorCode = renderErrorCode(err);
+      const isOrphanedSequence = errorCode === "ORPHANED_SEQUENCE";
       if (isOrphanedSequence) {
         console.debug(
           `[ThumbnailRenderOrchestrator] Orphaned sequence "${key.inputs.sequenceName}" - has no step data`
@@ -371,7 +512,17 @@ export class ThumbnailRenderOrchestrator {
           err.message
         );
       }
-      this.metrics?.endRequest(requestId, "failed");
+      const failureMetrics = this.metrics?.endRequest(requestId, "failed", {
+        queueWaitTime,
+        renderTime:
+          renderStartTime === undefined
+            ? undefined
+            : performance.now() - renderStartTime,
+        errorCode,
+      });
+      if (!isOrphanedSequence && failureMetrics) {
+        captureThumbnailRenderFailure(err, failureMetrics);
+      }
       request.onStatusChange?.({ state: "error", error: err });
 
       // Return a failed result instead of throwing

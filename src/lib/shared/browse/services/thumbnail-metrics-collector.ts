@@ -1,166 +1,336 @@
 /**
- * ThumbnailMetricsCollector
+ * Browser-lifetime instrumentation for the thumbnail cache and render path.
  *
- * Lightweight instrumentation for thumbnail caching performance.
- * Collects timing and hit rate data to inform optimization decisions.
- *
- * Usage:
- * - Call logNow() from DevTools console for a formatted dump
- * - Call getSummary() programmatically
+ * The collector keeps request data bounded while retaining enough context to
+ * reproduce a failed public thumbnail without collecting sequence content.
  */
 
+import { LogCollapsingLowestDenseDDSketch } from "@datadog/sketches-js";
+import type { ThumbnailVariant } from "./thumbnail-key-deriver";
+
 export type CacheLayer = "memory" | "static" | "local" | "cloud" | "render";
+type SummaryLayer = CacheLayer | "failed";
+
+export const THUMBNAIL_STAGES = [
+  "static_manifest",
+  "local_cache",
+  "cloud_lookup",
+  "queue_wait",
+  "sequence_load",
+  "loop_and_start",
+  "qr_bitmap",
+  "composition",
+  "finalize",
+] as const;
+
+export type ThumbnailStage = (typeof THUMBNAIL_STAGES)[number];
+
+export interface ThumbnailProgressSnapshot {
+  current: number;
+  total: number;
+  stage: "preparing" | "rendering" | "finalizing";
+}
+
+/**
+ * The complete production allowlist for per-request thumbnail context.
+ * Sequence steps, names, notes, creator data, and profile fields never enter it.
+ */
+export interface ThumbnailRequestContext {
+  cacheKeyHash: string;
+  sequenceId: string | null;
+  variant: ThumbnailVariant;
+  propKey: string;
+  qrRequested: boolean;
+  lightMode: boolean;
+  usesDefaults: boolean;
+  initialStepCount: number;
+  queueDepthAtEnqueue: number | null;
+  activeAtEnqueue: number | null;
+  workerEligible: boolean | null;
+}
 
 export interface ThumbnailRequestMetrics {
-  /** Unique request ID for correlation */
   requestId: string;
-
-  /** Which cache layer served this request */
   layer: CacheLayer | "failed";
-
-  /** Time from request start to URL available (ms) */
   timeToUrl: number;
-
-  /** Was the thumbnail visible when request started? */
   wasVisibleAtStart: boolean;
-
-  /** Did the user scroll away before completion? */
   wasCancelled: boolean;
-
-  /** For renders: time spent in queue before render started */
+  context: ThumbnailRequestContext;
+  stageDurations: Partial<Record<ThumbnailStage, number>>;
+  lastStage?: ThumbnailStage;
+  lastStageElapsedTime?: number;
+  latestProgress?: ThumbnailProgressSnapshot;
   queueWaitTime?: number;
-
-  /** For renders: actual render duration */
   renderTime?: number;
-
-  /** For cloud: upload succeeded? */
-  uploadSucceeded?: boolean;
+  errorCode?: string;
 }
 
 export interface TimingDistribution {
-  /** Number of samples */
   count: number;
-  /** Mean (average) in ms */
   mean: number;
-  /** Standard deviation in ms */
   stdDev: number;
-  /** Minimum value in ms */
   min: number;
-  /** Maximum value in ms */
   max: number;
-  /** 50th percentile (median) in ms */
   p50: number;
-  /** 95th percentile in ms - 95% of requests faster than this */
   p95: number;
-  /** 99th percentile in ms - 99% of requests faster than this */
   p99: number;
 }
 
 export interface ThumbnailMetricsSummary {
-  /** Total requests tracked */
   totalRequests: number;
-
-  /** Requests by layer */
+  renderRequests: number;
   byLayer: Record<CacheLayer | "failed", number>;
-
-  /** Average time to URL by layer (ms) */
   avgTimeByLayer: Record<CacheLayer | "failed", number>;
-
-  /** Hit rate per layer (as percentage of total) */
   hitRateByLayer: Record<CacheLayer | "failed", number>;
-
-  /** Percentage of requests cancelled before completion */
   cancelRate: number;
-
-  /** Percentage of render attempts that failed */
   renderFailureRate: number;
-
-  /** Percentage of cloud uploads that succeeded */
   uploadSuccessRate: number;
-
-  /** Highest queue depth observed */
   queueHighWaterMark: number;
-
-  /** Average queue wait time for rendered items (ms) */
   avgQueueWaitTime: number;
-
-  /** Average render time (ms) */
   avgRenderTime: number;
-
-  /** Session duration (ms) */
   sessionDuration: number;
-
-  /** Full timing distribution across all requests */
   timeDistribution: TimingDistribution;
-
-  /** Timing distribution by layer (only layers with data) */
-  timeDistributionByLayer: Partial<Record<CacheLayer | "failed", TimingDistribution>>;
+  timeDistributionByLayer: Partial<
+    Record<CacheLayer | "failed", TimingDistribution>
+  >;
+  queueWaitDistribution: TimingDistribution;
+  renderTimeDistribution: TimingDistribution;
+  stageDistributions: Partial<Record<ThumbnailStage, TimingDistribution>>;
+  byVariantAndProp: Record<string, number>;
+  timeoutCount: number;
+  orphanedSequenceCount: number;
+  orphanedSequenceIds: string[];
+  longestStage: { stage: ThumbnailStage; duration: number } | null;
 }
 
 interface PendingRequest {
   startTime: number;
   isVisible: boolean;
+  context: ThumbnailRequestContext;
+  stageDurations: Partial<Record<ThumbnailStage, number>>;
+  currentStage?: ThumbnailStage;
+  stageStartTime?: number;
+  latestProgress?: ThumbnailProgressSnapshot;
+}
+
+export type ThumbnailMetricsClock = () => number;
+
+const MAX_STORED_REQUESTS = 1000;
+const MAX_ORPHANED_SEQUENCE_IDS = 25;
+const TIMING_RELATIVE_ACCURACY = 0.01;
+const TIMING_SKETCH_BIN_LIMIT = 1024;
+const SUMMARY_LAYERS: readonly SummaryLayer[] = [
+  "memory",
+  "static",
+  "local",
+  "cloud",
+  "render",
+  "failed",
+];
+
+/**
+ * Keeps exact scalar statistics while DDSketch bounds the memory needed for
+ * page-lifetime latency percentiles. Collapsing low bins preserves resolution
+ * in the high tail that this incident needs to diagnose.
+ */
+class TimingAccumulator {
+  private readonly sketch = new LogCollapsingLowestDenseDDSketch({
+    relativeAccuracy: TIMING_RELATIVE_ACCURACY,
+    binLimit: TIMING_SKETCH_BIN_LIMIT,
+  });
+  private runningMean = 0;
+  private squaredDifferenceTotal = 0;
+
+  get count(): number {
+    return this.sketch.count;
+  }
+
+  record(value: number): void {
+    const nextCount = this.sketch.count + 1;
+    const delta = value - this.runningMean;
+    this.runningMean += delta / nextCount;
+    this.squaredDifferenceTotal += delta * (value - this.runningMean);
+    this.sketch.accept(value);
+  }
+
+  distribution(): TimingDistribution {
+    if (this.sketch.count === 0) {
+      return {
+        count: 0,
+        mean: 0,
+        stdDev: 0,
+        min: 0,
+        max: 0,
+        p50: 0,
+        p95: 0,
+        p99: 0,
+      };
+    }
+
+    const exactSingleValue =
+      this.sketch.count === 1 ? this.sketch.min : undefined;
+    return {
+      count: this.sketch.count,
+      mean: this.runningMean,
+      stdDev: Math.sqrt(
+        Math.max(0, this.squaredDifferenceTotal / this.sketch.count)
+      ),
+      min: this.sketch.min,
+      max: this.sketch.max,
+      p50: exactSingleValue ?? this.sketch.getValueAtQuantile(0.5),
+      p95: exactSingleValue ?? this.sketch.getValueAtQuantile(0.95),
+      p99: exactSingleValue ?? this.sketch.getValueAtQuantile(0.99),
+    };
+  }
+}
+
+interface LifetimeThumbnailMetrics {
+  totalRequests: number;
+  byLayer: Record<SummaryLayer, number>;
+  time: TimingAccumulator;
+  timeByLayer: Record<SummaryLayer, TimingAccumulator>;
+  queueWait: TimingAccumulator;
+  renderTime: TimingAccumulator;
+  stages: Record<ThumbnailStage, TimingAccumulator>;
+  cancelledCount: number;
+  renderFailures: number;
+  timeoutCount: number;
+  orphanedSequenceCount: number;
+  orphanedSequenceIds: Set<string>;
+  byVariantAndProp: Record<string, number>;
+  longestStage: ThumbnailMetricsSummary["longestStage"];
+}
+
+function createLayerRecord<T>(createValue: () => T): Record<SummaryLayer, T> {
+  return Object.fromEntries(
+    SUMMARY_LAYERS.map((layer) => [layer, createValue()])
+  ) as Record<SummaryLayer, T>;
+}
+
+function createLifetimeMetrics(): LifetimeThumbnailMetrics {
+  return {
+    totalRequests: 0,
+    byLayer: createLayerRecord(() => 0),
+    time: new TimingAccumulator(),
+    timeByLayer: createLayerRecord(() => new TimingAccumulator()),
+    queueWait: new TimingAccumulator(),
+    renderTime: new TimingAccumulator(),
+    stages: Object.fromEntries(
+      THUMBNAIL_STAGES.map((stage) => [stage, new TimingAccumulator()])
+    ) as Record<ThumbnailStage, TimingAccumulator>,
+    cancelledCount: 0,
+    renderFailures: 0,
+    timeoutCount: 0,
+    orphanedSequenceCount: 0,
+    orphanedSequenceIds: new Set(),
+    byVariantAndProp: {},
+    longestStage: null,
+  };
 }
 
 export class ThumbnailMetricsCollector {
-  private sessionStart = Date.now();
+  private sessionStart: number;
   private requestCounter = 0;
   private pendingRequests = new Map<string, PendingRequest>();
   private completedRequests: ThumbnailRequestMetrics[] = [];
+  private lifetime: LifetimeThumbnailMetrics;
   private queueHighWaterMark = 0;
   private uploadSuccesses = 0;
   private uploadFailures = 0;
 
-  // Keep only last N requests to prevent memory bloat
-  private readonly MAX_STORED_REQUESTS = 1000;
+  constructor(
+    private readonly now: ThumbnailMetricsClock = () => performance.now(),
+    private readonly wallNow: ThumbnailMetricsClock = () => Date.now()
+  ) {
+    this.sessionStart = this.wallNow();
+    this.lifetime = createLifetimeMetrics();
+  }
 
-  startRequest(isVisible: boolean): string {
+  startRequest(isVisible: boolean, context: ThumbnailRequestContext): string {
     const requestId = `req_${++this.requestCounter}`;
     this.pendingRequests.set(requestId, {
-      startTime: performance.now(),
+      startTime: this.now(),
       isVisible,
+      context: { ...context },
+      stageDurations: {},
     });
     return requestId;
+  }
+
+  startStage(
+    requestId: string,
+    stage: ThumbnailStage,
+    details?: { workerEligible?: boolean }
+  ): void {
+    const pending = this.pendingRequests.get(requestId);
+    if (!pending) return;
+
+    if (details?.workerEligible !== undefined) {
+      pending.context.workerEligible = details.workerEligible;
+    }
+
+    if (pending.currentStage === stage) return;
+
+    const now = this.now();
+    this.finishCurrentStage(pending, now);
+    pending.currentStage = stage;
+    pending.stageStartTime = now;
+  }
+
+  recordQueueState(
+    requestId: string,
+    state: { queued: number; active: number }
+  ): void {
+    const pending = this.pendingRequests.get(requestId);
+    if (!pending) return;
+    pending.context.queueDepthAtEnqueue = state.queued;
+    pending.context.activeAtEnqueue = state.active;
+    this.recordQueueDepth(state.queued + state.active);
+  }
+
+  recordProgress(requestId: string, progress: ThumbnailProgressSnapshot): void {
+    const pending = this.pendingRequests.get(requestId);
+    if (!pending) return;
+    pending.latestProgress = { ...progress };
   }
 
   endRequest(
     requestId: string,
     layer: CacheLayer | "failed",
-    details?: { queueWaitTime?: number; renderTime?: number }
-  ): void {
+    details?: {
+      queueWaitTime?: number;
+      renderTime?: number;
+      errorCode?: string;
+    }
+  ): ThumbnailRequestMetrics | null {
     const pending = this.pendingRequests.get(requestId);
-    if (!pending) return;
+    if (!pending) return null;
 
     this.pendingRequests.delete(requestId);
-
-    const metrics: ThumbnailRequestMetrics = {
+    const metrics = this.completePendingRequest(
       requestId,
+      pending,
       layer,
-      timeToUrl: performance.now() - pending.startTime,
-      wasVisibleAtStart: pending.isVisible,
-      wasCancelled: false,
-      queueWaitTime: details?.queueWaitTime,
-      renderTime: details?.renderTime,
-    };
-
+      false,
+      details
+    );
     this.addCompletedRequest(metrics);
+    return metrics;
   }
 
-  cancelRequest(requestId: string): void {
+  cancelRequest(requestId: string): ThumbnailRequestMetrics | null {
     const pending = this.pendingRequests.get(requestId);
-    if (!pending) return;
+    if (!pending) return null;
 
     this.pendingRequests.delete(requestId);
-
-    const metrics: ThumbnailRequestMetrics = {
+    const metrics = this.completePendingRequest(
       requestId,
-      layer: "failed",
-      timeToUrl: performance.now() - pending.startTime,
-      wasVisibleAtStart: pending.isVisible,
-      wasCancelled: true,
-    };
-
+      pending,
+      "failed",
+      true
+    );
     this.addCompletedRequest(metrics);
+    return metrics;
   }
 
   recordUpload(succeeded: boolean): void {
@@ -172,322 +342,227 @@ export class ThumbnailMetricsCollector {
   }
 
   recordQueueDepth(depth: number): void {
-    if (depth > this.queueHighWaterMark) {
-      this.queueHighWaterMark = depth;
-    }
+    this.queueHighWaterMark = Math.max(this.queueHighWaterMark, depth);
+  }
+
+  getCompletedRequests(): readonly ThumbnailRequestMetrics[] {
+    return this.completedRequests.map((request) => ({
+      ...request,
+      context: { ...request.context },
+      stageDurations: { ...request.stageDurations },
+      latestProgress: request.latestProgress
+        ? { ...request.latestProgress }
+        : undefined,
+    }));
   }
 
   getSummary(): ThumbnailMetricsSummary {
-    const byLayer: Record<CacheLayer | "failed", number> = {
-      memory: 0,
-      static: 0,
-      local: 0,
-      cloud: 0,
-      render: 0,
-      failed: 0,
-    };
-
-    const timesByLayer: Record<CacheLayer | "failed", number[]> = {
-      memory: [],
-      static: [],
-      local: [],
-      cloud: [],
-      render: [],
-      failed: [],
-    };
-
-    let cancelledCount = 0;
-    let renderFailures = 0;
-    const queueWaitTimes: number[] = [];
-    const renderTimes: number[] = [];
-
-    for (const req of this.completedRequests) {
-      byLayer[req.layer]++;
-      timesByLayer[req.layer].push(req.timeToUrl);
-
-      if (req.wasCancelled) {
-        cancelledCount++;
-      }
-
-      if (req.layer === "failed" && !req.wasCancelled) {
-        renderFailures++;
-      }
-
-      if (req.queueWaitTime !== undefined) {
-        queueWaitTimes.push(req.queueWaitTime);
-      }
-
-      if (req.renderTime !== undefined) {
-        renderTimes.push(req.renderTime);
+    const total = this.lifetime.totalRequests;
+    const byLayer = { ...this.lifetime.byLayer };
+    const renderRequests = byLayer.render + this.lifetime.renderFailures;
+    const totalUploads = this.uploadSuccesses + this.uploadFailures;
+    const avgTimeByLayer = createLayerRecord(() => 0);
+    const hitRateByLayer = createLayerRecord(() => 0);
+    const timeDistributionByLayer: ThumbnailMetricsSummary["timeDistributionByLayer"] =
+      {};
+    for (const layer of SUMMARY_LAYERS) {
+      const distribution = this.lifetime.timeByLayer[layer].distribution();
+      avgTimeByLayer[layer] = distribution.mean;
+      hitRateByLayer[layer] = total > 0 ? (byLayer[layer] / total) * 100 : 0;
+      if (distribution.count > 0) {
+        timeDistributionByLayer[layer] = distribution;
       }
     }
-
-    const total = this.completedRequests.length;
-    const renderAttempts = byLayer.render + renderFailures;
-    const totalUploads = this.uploadSuccesses + this.uploadFailures;
-
-    const avgTimeByLayer: Record<CacheLayer | "failed", number> = {
-      memory: this.avg(timesByLayer.memory),
-      static: this.avg(timesByLayer.static),
-      local: this.avg(timesByLayer.local),
-      cloud: this.avg(timesByLayer.cloud),
-      render: this.avg(timesByLayer.render),
-      failed: this.avg(timesByLayer.failed),
-    };
-
-    const hitRateByLayer: Record<CacheLayer | "failed", number> = {
-      memory: total > 0 ? (byLayer.memory / total) * 100 : 0,
-      static: total > 0 ? (byLayer.static / total) * 100 : 0,
-      local: total > 0 ? (byLayer.local / total) * 100 : 0,
-      cloud: total > 0 ? (byLayer.cloud / total) * 100 : 0,
-      render: total > 0 ? (byLayer.render / total) * 100 : 0,
-      failed: total > 0 ? (byLayer.failed / total) * 100 : 0,
-    };
-
-    // Build timing distributions
-    const allTimes = this.completedRequests.map((r) => r.timeToUrl);
-    const timeDistribution = this.buildDistribution(allTimes);
-
-    const timeDistributionByLayer: Partial<Record<CacheLayer | "failed", TimingDistribution>> = {};
-    for (const layer of ["memory", "static", "local", "cloud", "render", "failed"] as const) {
-      if (timesByLayer[layer].length > 0) {
-        timeDistributionByLayer[layer] = this.buildDistribution(timesByLayer[layer]);
+    const stageDistributions: ThumbnailMetricsSummary["stageDistributions"] =
+      {};
+    for (const stage of THUMBNAIL_STAGES) {
+      const distribution = this.lifetime.stages[stage].distribution();
+      if (distribution.count > 0) {
+        stageDistributions[stage] = distribution;
       }
     }
 
     return {
       totalRequests: total,
+      renderRequests,
       byLayer,
       avgTimeByLayer,
       hitRateByLayer,
-      cancelRate: total > 0 ? (cancelledCount / total) * 100 : 0,
+      cancelRate: total > 0 ? (this.lifetime.cancelledCount / total) * 100 : 0,
       renderFailureRate:
-        renderAttempts > 0 ? (renderFailures / renderAttempts) * 100 : 0,
+        renderRequests > 0
+          ? (this.lifetime.renderFailures / renderRequests) * 100
+          : 0,
       uploadSuccessRate:
         totalUploads > 0 ? (this.uploadSuccesses / totalUploads) * 100 : 0,
       queueHighWaterMark: this.queueHighWaterMark,
-      avgQueueWaitTime: this.avg(queueWaitTimes),
-      avgRenderTime: this.avg(renderTimes),
-      sessionDuration: Date.now() - this.sessionStart,
-      timeDistribution,
+      avgQueueWaitTime: this.lifetime.queueWait.distribution().mean,
+      avgRenderTime: this.lifetime.renderTime.distribution().mean,
+      sessionDuration: this.wallNow() - this.sessionStart,
+      timeDistribution: this.lifetime.time.distribution(),
       timeDistributionByLayer,
+      queueWaitDistribution: this.lifetime.queueWait.distribution(),
+      renderTimeDistribution: this.lifetime.renderTime.distribution(),
+      stageDistributions,
+      byVariantAndProp: { ...this.lifetime.byVariantAndProp },
+      timeoutCount: this.lifetime.timeoutCount,
+      orphanedSequenceCount: this.lifetime.orphanedSequenceCount,
+      orphanedSequenceIds: [...this.lifetime.orphanedSequenceIds],
+      longestStage: this.lifetime.longestStage
+        ? { ...this.lifetime.longestStage }
+        : null,
     };
   }
 
   reset(): void {
-    this.sessionStart = Date.now();
+    this.sessionStart = this.wallNow();
     this.requestCounter = 0;
     this.pendingRequests.clear();
     this.completedRequests = [];
+    this.lifetime = createLifetimeMetrics();
     this.queueHighWaterMark = 0;
     this.uploadSuccesses = 0;
     this.uploadFailures = 0;
   }
 
   startLogging(): void {
-    // No-op - metrics are collected silently.
-    // Call logNow() from DevTools console if needed.
+    // Metrics are collected at the call sites. DevTools can call logNow().
   }
 
   stopLogging(): void {
-    // No-op - no active listeners to clean up.
+    // There are no polling listeners to stop.
   }
 
   logNow(): void {
     const summary = this.getSummary();
+    if (summary.totalRequests === 0) return;
 
-    if (summary.totalRequests === 0) {
-      return;
-    }
-
-    const _sessionMins = (summary.sessionDuration / 60000).toFixed(1);
-
-
-
-    // Cache hit rates
-    console.log("📊 Cache Hit Rates:");
+    console.log("Thumbnail cache outcomes:");
+    console.table(
+      Object.fromEntries(
+        SUMMARY_LAYERS.map((layer) => [
+          layer,
+          {
+            count: summary.byLayer[layer],
+            rate: `${summary.hitRateByLayer[layer].toFixed(1)}%`,
+            average: `${summary.avgTimeByLayer[layer].toFixed(0)}ms`,
+          },
+        ])
+      )
+    );
+    console.log("Thumbnail tail latency:");
     console.table({
-      Static: {
-        hits: summary.byLayer.static,
-        rate: `${summary.hitRateByLayer.static.toFixed(1)}%`,
-        avgTime: `${summary.avgTimeByLayer.static.toFixed(0)}ms`,
-      },
-      Local: {
-        hits: summary.byLayer.local,
-        rate: `${summary.hitRateByLayer.local.toFixed(1)}%`,
-        avgTime: `${summary.avgTimeByLayer.local.toFixed(0)}ms`,
-      },
-      Cloud: {
-        hits: summary.byLayer.cloud,
-        rate: `${summary.hitRateByLayer.cloud.toFixed(1)}%`,
-        avgTime: `${summary.avgTimeByLayer.cloud.toFixed(0)}ms`,
-      },
-      Render: {
-        hits: summary.byLayer.render,
-        rate: `${summary.hitRateByLayer.render.toFixed(1)}%`,
-        avgTime: `${summary.avgTimeByLayer.render.toFixed(0)}ms`,
-      },
-      Failed: {
-        hits: summary.byLayer.failed,
-        rate: `${summary.hitRateByLayer.failed.toFixed(1)}%`,
-        avgTime: `${summary.avgTimeByLayer.failed.toFixed(0)}ms`,
-      },
+      "Time to URL p50": `${summary.timeDistribution.p50.toFixed(0)}ms`,
+      "Time to URL p95": `${summary.timeDistribution.p95.toFixed(0)}ms`,
+      "Time to URL p99": `${summary.timeDistribution.p99.toFixed(0)}ms`,
+      "Render p95": `${summary.renderTimeDistribution.p95.toFixed(0)}ms`,
+      "Queue p95": `${summary.queueWaitDistribution.p95.toFixed(0)}ms`,
+      "Queue high water": summary.queueHighWaterMark,
+      Timeouts: summary.timeoutCount,
     });
-
-    // Key metrics
-    console.log("📈 Key Metrics:");
-    console.table({
-      "Cancel Rate": `${summary.cancelRate.toFixed(1)}%`,
-      "Render Failure Rate": `${summary.renderFailureRate.toFixed(1)}%`,
-      "Upload Success Rate": `${summary.uploadSuccessRate.toFixed(1)}%`,
-      "Queue High Water Mark": summary.queueHighWaterMark,
-      "Avg Queue Wait": `${summary.avgQueueWaitTime.toFixed(0)}ms`,
-      "Avg Render Time": `${summary.avgRenderTime.toFixed(0)}ms`,
-    });
-
-    // Timing distribution (the stats that matter for user experience)
-    const d = summary.timeDistribution;
-    if (d.count > 0) {
-      console.log("⏱️ Timing Distribution (all requests):");
-      console.table({
-        "P50 (median)": `${d.p50.toFixed(0)}ms`,
-        "P95 (95% faster)": `${d.p95.toFixed(0)}ms`,
-        "P99 (99% faster)": `${d.p99.toFixed(0)}ms`,
-        "Std Dev": `${d.stdDev.toFixed(0)}ms`,
-        "Min / Max": `${d.min.toFixed(0)}ms / ${d.max.toFixed(0)}ms`,
-      });
-    }
-
-    // Recommendations based on data
-    this.logRecommendations(summary);
-
-    console.groupEnd();
   }
 
-  private logRecommendations(summary: ThumbnailMetricsSummary): void {
-    const recommendations: string[] = [];
-
-    // High cancel rate suggests preloading would help
-    if (summary.cancelRate > 20) {
-      recommendations.push(
-        `⚠️ High cancel rate (${summary.cancelRate.toFixed(0)}%) - preloading might help`
-      );
+  private completePendingRequest(
+    requestId: string,
+    pending: PendingRequest,
+    layer: CacheLayer | "failed",
+    wasCancelled: boolean,
+    details?: {
+      queueWaitTime?: number;
+      renderTime?: number;
+      errorCode?: string;
     }
+  ): ThumbnailRequestMetrics {
+    const now = this.now();
+    const lastStage = pending.currentStage;
+    const lastStageElapsedTime =
+      pending.stageStartTime === undefined
+        ? undefined
+        : now - pending.stageStartTime;
+    this.finishCurrentStage(pending, now);
 
-    // Low static hit rate means bundling isn't helping much
+    return {
+      requestId,
+      layer,
+      timeToUrl: now - pending.startTime,
+      wasVisibleAtStart: pending.isVisible,
+      wasCancelled,
+      context: { ...pending.context },
+      stageDurations: { ...pending.stageDurations },
+      lastStage,
+      lastStageElapsedTime,
+      latestProgress: pending.latestProgress
+        ? { ...pending.latestProgress }
+        : undefined,
+      queueWaitTime: details?.queueWaitTime,
+      renderTime: details?.renderTime,
+      errorCode: details?.errorCode,
+    };
+  }
+
+  private finishCurrentStage(pending: PendingRequest, now: number): void {
     if (
-      summary.hitRateByLayer.static < 10 &&
-      summary.totalRequests > 50
+      pending.currentStage === undefined ||
+      pending.stageStartTime === undefined
     ) {
-      recommendations.push(
-        `📦 Low static hit rate (${summary.hitRateByLayer.static.toFixed(0)}%) - bundling strategy needs review`
-      );
+      return;
     }
-
-    // High local hit rate is good
-    if (summary.hitRateByLayer.local > 50) {
-      recommendations.push(
-        `✅ Great local cache hit rate (${summary.hitRateByLayer.local.toFixed(0)}%)`
-      );
-    }
-
-    // Queue backing up suggests need more concurrency
-    if (summary.queueHighWaterMark > 10) {
-      recommendations.push(
-        `🔄 Queue peaked at ${summary.queueHighWaterMark} - consider increasing concurrency`
-      );
-    }
-
-    // Render failures suggest retry logic needed
-    if (summary.renderFailureRate > 5) {
-      recommendations.push(
-        `❌ Render failure rate ${summary.renderFailureRate.toFixed(0)}% - retry logic would help`
-      );
-    }
-
-    // Upload failures mean crowd-sourcing isn't working
-    if (summary.uploadSuccessRate < 90 && this.uploadSuccesses + this.uploadFailures > 10) {
-      recommendations.push(
-        `☁️ Upload success rate only ${summary.uploadSuccessRate.toFixed(0)}% - check cloud connectivity`
-      );
-    }
-
-    // P95-based recommendations (user experience focused)
-    const d = summary.timeDistribution;
-    if (d.count >= 20) {
-      // High variance suggests inconsistent performance
-      if (d.stdDev > d.mean * 0.8) {
-        recommendations.push(
-          `📊 High variance (stdDev ${d.stdDev.toFixed(0)}ms vs mean ${d.mean.toFixed(0)}ms) - performance is inconsistent`
-        );
-      }
-      // P95 much higher than median suggests tail latency issues
-      if (d.p95 > d.p50 * 3 && d.p95 > 500) {
-        recommendations.push(
-          `🐢 Tail latency: P95 (${d.p95.toFixed(0)}ms) is ${(d.p95 / d.p50).toFixed(1)}x the median - 5% of users waiting much longer`
-        );
-      }
-      // Good P95 is a positive signal
-      if (d.p95 < 200) {
-        recommendations.push(
-          `✅ Excellent P95 (${d.p95.toFixed(0)}ms) - 95% of thumbnails load quickly`
-        );
-      }
-    }
-
-    if (recommendations.length > 0) {
-      console.log("💡 Recommendations:");
-      recommendations.forEach((r) => console.log(`   ${r}`));
-    }
+    const previous = pending.stageDurations[pending.currentStage] ?? 0;
+    pending.stageDurations[pending.currentStage] =
+      previous + Math.max(0, now - pending.stageStartTime);
   }
 
   private addCompletedRequest(metrics: ThumbnailRequestMetrics): void {
+    this.recordLifetimeMetrics(metrics);
     this.completedRequests.push(metrics);
-
-    // Trim old requests to prevent memory bloat
-    if (this.completedRequests.length > this.MAX_STORED_REQUESTS) {
-      this.completedRequests = this.completedRequests.slice(-this.MAX_STORED_REQUESTS);
+    if (this.completedRequests.length > MAX_STORED_REQUESTS) {
+      this.completedRequests =
+        this.completedRequests.slice(-MAX_STORED_REQUESTS);
     }
   }
 
-  private avg(values: number[]): number {
-    if (values.length === 0) return 0;
-    return values.reduce((a, b) => a + b, 0) / values.length;
-  }
+  private recordLifetimeMetrics(metrics: ThumbnailRequestMetrics): void {
+    const lifetime = this.lifetime;
+    lifetime.totalRequests++;
+    lifetime.byLayer[metrics.layer]++;
+    lifetime.time.record(metrics.timeToUrl);
+    lifetime.timeByLayer[metrics.layer].record(metrics.timeToUrl);
 
-  private stdDev(values: number[], mean: number): number {
-    if (values.length < 2) return 0;
-    const squaredDiffs = values.map((v) => Math.pow(v - mean, 2));
-    return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
-  }
+    const groupKey = `${metrics.context.variant}:${metrics.context.propKey}`;
+    lifetime.byVariantAndProp[groupKey] =
+      (lifetime.byVariantAndProp[groupKey] ?? 0) + 1;
 
-  private percentile(sortedValues: number[], p: number): number {
-    if (sortedValues.length === 0) return 0;
-    if (sortedValues.length === 1) return sortedValues[0]!;
-    const index = (p / 100) * (sortedValues.length - 1);
-    const lower = Math.floor(index);
-    const upper = Math.ceil(index);
-    if (lower === upper) return sortedValues[lower]!;
-    // Linear interpolation
-    const fraction = index - lower;
-    return sortedValues[lower]! + fraction * (sortedValues[upper]! - sortedValues[lower]!);
-  }
-
-  private buildDistribution(values: number[]): TimingDistribution {
-    if (values.length === 0) {
-      return { count: 0, mean: 0, stdDev: 0, min: 0, max: 0, p50: 0, p95: 0, p99: 0 };
+    if (metrics.wasCancelled) lifetime.cancelledCount++;
+    if (metrics.layer === "failed" && !metrics.wasCancelled) {
+      lifetime.renderFailures++;
     }
-    const sorted = [...values].sort((a, b) => a - b);
-    const mean = this.avg(values);
-    return {
-      count: values.length,
-      mean,
-      stdDev: this.stdDev(values, mean),
-      min: sorted[0]!,
-      max: sorted[sorted.length - 1]!,
-      p50: this.percentile(sorted, 50),
-      p95: this.percentile(sorted, 95),
-      p99: this.percentile(sorted, 99),
-    };
+    if (metrics.errorCode === "THUMBNAIL_RENDER_TIMEOUT") {
+      lifetime.timeoutCount++;
+    }
+    if (metrics.errorCode === "ORPHANED_SEQUENCE") {
+      lifetime.orphanedSequenceCount++;
+      if (
+        metrics.context.sequenceId &&
+        lifetime.orphanedSequenceIds.size < MAX_ORPHANED_SEQUENCE_IDS
+      ) {
+        lifetime.orphanedSequenceIds.add(metrics.context.sequenceId);
+      }
+    }
+
+    if (metrics.queueWaitTime !== undefined) {
+      lifetime.queueWait.record(metrics.queueWaitTime);
+    }
+    if (metrics.renderTime !== undefined) {
+      lifetime.renderTime.record(metrics.renderTime);
+    }
+
+    for (const stage of THUMBNAIL_STAGES) {
+      const duration = metrics.stageDurations[stage];
+      if (duration === undefined) continue;
+      lifetime.stages[stage].record(duration);
+      if (!lifetime.longestStage || duration > lifetime.longestStage.duration) {
+        lifetime.longestStage = { stage, duration };
+      }
+    }
   }
 }

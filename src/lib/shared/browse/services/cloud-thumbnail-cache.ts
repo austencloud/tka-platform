@@ -15,8 +15,8 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
-import { getStorageInstance } from "$lib/shared/auth/firebase";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
+import { getAuthInstance, getStorageInstance } from "$lib/shared/auth/firebase";
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ThumbnailVariant } from "$lib/shared/browse/services/thumbnail-key-deriver";
 
@@ -53,7 +53,7 @@ interface CachedUrl {
 }
 
 const urlCache = new Map<string, CachedUrl>();
-const pendingUploads = new Map<string, Promise<string>>();
+const pendingUploads = new Map<string, Promise<string | null>>();
 
 // Manifest loading state
 let manifestLoaded = false;
@@ -392,16 +392,30 @@ export async function exists(key: CloudThumbnailKey): Promise<boolean> {
 
 /**
  * Upload rendered thumbnail to Firebase Storage
- * Returns the public URL of the uploaded image
+ * Returns the public URL of the uploaded image, or null when the visitor is
+ * signed out and therefore cannot write to the shared cache.
  * Handles race conditions gracefully (first upload wins)
  */
-export async function upload(key: CloudThumbnailKey, blob: Blob): Promise<string> {
+export async function upload(
+  key: CloudThumbnailKey,
+  blob: Blob
+): Promise<string | null> {
   const cacheKey = getCacheKey(key);
 
   // Check if there's already a pending upload for this key
   const pendingUpload = pendingUploads.get(cacheKey);
   if (pendingUpload) {
     return pendingUpload;
+  }
+
+  // Gallery browsing is public, but the shared Storage path only accepts
+  // authenticated writes. Wait until Firebase has restored any persisted
+  // session before deciding. Without this boundary, every signed-out cache miss
+  // makes a doomed upload request and fills the browser console with 403s.
+  const auth = await getAuthInstance();
+  await auth.authStateReady();
+  if (!auth.currentUser) {
+    return null;
   }
 
   // Check if it already exists (race condition check)

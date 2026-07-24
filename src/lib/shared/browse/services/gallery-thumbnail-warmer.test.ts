@@ -82,6 +82,7 @@ describe("startGalleryWarm", () => {
     expect(final.rendered).toBe(1);
     expect(final.skipped).toBe(1);
     expect(final.failed).toBe(1);
+    expect(final.failedCombinations).toEqual(["C [C] (staff, dark)"]);
     expect(final.finished).toBe(true);
     expect(final.cancelled).toBe(false);
   });
@@ -99,8 +100,33 @@ describe("startGalleryWarm", () => {
     const final = await handle.promise;
 
     expect(final.failed).toBe(1);
+    expect(final.failedCombinations).toEqual(["A [A] (staff, dark)"]);
     expect(final.rendered).toBe(1);
     expect(final.done).toBe(2);
+  });
+
+  it("distinguishes same-word failure identities by public sequence ID", async () => {
+    const { orchestrator } = fakeOrchestrator(() => nullResult());
+    const single: WarmScope = {
+      props: [PropType.FAN],
+      modes: ["dark"],
+      qr: [false],
+    };
+    const handle = startGalleryWarm(single, () => {}, {
+      orchestrator,
+      loader: loaderOf([
+        seq({ id: "variant-1", word: "AB" }),
+        seq({ id: "variant-2", word: "AB" }),
+      ]),
+      concurrency: 1,
+    });
+
+    const final = await handle.promise;
+
+    expect(final.failedCombinations).toEqual([
+      "AB [variant-1] (fan, dark)",
+      "AB [variant-2] (fan, dark)",
+    ]);
   });
 
   it("builds a usesDefaults input: gallery variant, row layout, mandala on, QR per combo", async () => {

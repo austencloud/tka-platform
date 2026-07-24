@@ -24,6 +24,8 @@ export default defineConfig({
       "src/**/__tests__/**/*.{test,spec}.{js,ts}",
       "src/lib/features/library/services/warm-all-scan-cells.test.ts",
       "src/lib/shared/offline/services/sw-update-manager.test.ts",
+      "src/lib/shared/browse/services/gallery-thumbnail-warmer.test.ts",
+      "src/lib/shared/browse/services/thumbnail-render-orchestrator.test.ts",
       "src/lib/shared/render/services/cloud-cell-key.test.ts",
       "src/lib/shared/render/services/pictograph-cloud-cache.test.ts",
       "src/lib/shared/render/services/warm-sequence-cells.test.ts",

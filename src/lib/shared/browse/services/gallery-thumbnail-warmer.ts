@@ -50,7 +50,9 @@ export interface WarmProgress {
   skipped: number;
   /** Render returned no image (orphaned/corrupt sequence). */
   failed: number;
-  /** Human label of the combo just processed, e.g. "IIII (staff, dark, qr)". */
+  /** Exact combinations that failed, suitable for a targeted retry. */
+  failedCombinations: readonly string[];
+  /** Exact combo label, e.g. "IIII [public-id] (staff, dark, qr)". */
   current?: string;
   /** True once the run has finished (or was cancelled). */
   finished: boolean;
@@ -89,7 +91,16 @@ const DEFAULT_CONCURRENCY = 4;
 
 function comboLabel(c: Combo): string {
   const name = c.sequence.word || c.sequence.name || "?";
-  return `${name} (${c.prop}, ${c.mode}${c.qr ? ", qr" : ""})`;
+  const id = c.sequence.id || "missing-id";
+  return `${name} [${id}] (${c.prop}, ${c.mode}${c.qr ? ", qr" : ""})`;
+}
+
+function recordFailure(progress: WarmProgress, combo: Combo): void {
+  progress.failed++;
+  progress.failedCombinations = [
+    ...progress.failedCombinations,
+    comboLabel(combo),
+  ];
 }
 
 /**
@@ -129,6 +140,7 @@ export function startGalleryWarm(
     rendered: 0,
     skipped: 0,
     failed: 0,
+    failedCombinations: [],
     finished: false,
     cancelled: false,
   };
@@ -194,15 +206,18 @@ export function startGalleryWarm(
             input,
           });
 
-          if (result.url == null) {
-            progress.failed++;
+          if (
+            result.url == null ||
+            result.cacheWriteSkippedReason === "qr_inconsistent"
+          ) {
+            recordFailure(progress, combo);
           } else if (result.fromCache) {
             progress.skipped++;
           } else {
             progress.rendered++;
           }
         } catch {
-          progress.failed++;
+          recordFailure(progress, combo);
         }
 
         progress.done++;

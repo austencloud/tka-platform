@@ -23,7 +23,6 @@ export interface QueueStats {
   activeIds: string[];
 }
 
-
 interface QueuedTask<T> {
   id: string;
   execute: (signal: AbortSignal) => Promise<T>;
@@ -39,70 +38,160 @@ const DEFAULT_MAX_CONCURRENT = 8;
 // If a render hangs (stalled fetch, infinite loop), reclaim the slot after this timeout
 const RENDER_TIMEOUT_MS = 15_000;
 
+export class ThumbnailRenderTimeoutError extends Error {
+  readonly code = "THUMBNAIL_RENDER_TIMEOUT";
+
+  constructor(readonly timeoutMs: number) {
+    super(`Thumbnail render exceeded ${timeoutMs}ms`);
+    this.name = "ThumbnailRenderTimeoutError";
+  }
+}
+
+function normalizeQueueError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === "object" && error !== null) {
+    const errorLike = error as { message?: unknown; name?: unknown };
+    const normalized = new Error(
+      typeof errorLike.message === "string" ? errorLike.message : String(error)
+    );
+    if (typeof errorLike.name === "string") normalized.name = errorLike.name;
+    return normalized;
+  }
+  return new Error(String(error));
+}
+
+function cancellationError(signal?: AbortSignal): Error {
+  if (signal?.reason instanceof Error) return signal.reason;
+  return new DOMException(
+    typeof signal?.reason === "string" ? signal.reason : "Cancelled",
+    "AbortError"
+  );
+}
+
 export class ThumbnailRenderQueue {
   private queue: QueuedTask<unknown>[] = [];
   private activeCount = 0;
   private activeIds = new Set<string>();
   private activeControllers = new Map<string, AbortController>();
   private pendingPromises = new Map<string, Promise<unknown>>();
+  private consumerCounts = new Map<string, number>();
   private maxConcurrent = DEFAULT_MAX_CONCURRENT;
 
-  enqueue<T>(id: string, execute: (signal: AbortSignal) => Promise<T>, priority: number = Infinity): Promise<T> {
-    // If this ID already has a pending promise, return it (deduplication)
-    const existing = this.pendingPromises.get(id);
-    if (existing) {
-      return existing as Promise<T>;
+  enqueue<T>(
+    id: string,
+    execute: (signal: AbortSignal) => Promise<T>,
+    priority: number = Infinity,
+    consumerSignal?: AbortSignal
+  ): Promise<T> {
+    if (consumerSignal?.aborted) {
+      return Promise.reject(cancellationError(consumerSignal));
     }
 
-    // Create new promise for this task
-    const promise = new Promise<T>((resolve, reject) => {
-      const task: QueuedTask<T> = { id, execute, resolve, reject, priority };
+    let corePromise = this.pendingPromises.get(id) as Promise<T> | undefined;
+    if (!corePromise) {
+      corePromise = new Promise<T>((resolve, reject) => {
+        const task: QueuedTask<T> = { id, execute, resolve, reject, priority };
 
-      // Insert in priority order (lower priority value = higher priority = front of queue)
-      const insertIndex = this.queue.findIndex(t => t.priority > priority);
-      if (insertIndex === -1) {
-        this.queue.push(task as QueuedTask<unknown>);
-      } else {
-        this.queue.splice(insertIndex, 0, task as QueuedTask<unknown>);
-      }
+        // Insert in priority order (lower priority value = higher priority = front of queue)
+        const insertIndex = this.queue.findIndex((t) => t.priority > priority);
+        if (insertIndex === -1) {
+          this.queue.push(task as QueuedTask<unknown>);
+        } else {
+          this.queue.splice(insertIndex, 0, task as QueuedTask<unknown>);
+        }
 
-      this.processQueue();
-    });
+        this.processQueue();
+      });
 
-    // Store for deduplication
-    this.pendingPromises.set(id, promise);
+      this.pendingPromises.set(id, corePromise);
 
-    // Clean up when done
-    promise.finally(() => {
-      this.pendingPromises.delete(id);
-    });
+      // Clean up on either outcome without creating an ignored rejected promise.
+      // finally() returns a child promise that preserves the original rejection;
+      // callers handled `corePromise`, but that unobserved child surfaced globally.
+      const forgetPending = () => {
+        if (this.pendingPromises.get(id) === corePromise) {
+          this.pendingPromises.delete(id);
+        }
+      };
+      void corePromise.then(forgetPending, forgetPending);
+    }
 
-    return promise;
+    return this.attachConsumer(id, corePromise, consumerSignal);
   }
 
   cancel(id: string): void {
-    const index = this.queue.findIndex((t) => t.id === id);
-    if (index !== -1) {
-      // Remove from queue without rejecting - the component is being destroyed
-      // or switching to a new key, so no one is waiting for this promise anymore.
-      // Let the promise hang rather than creating unhandled rejections.
-      this.queue.splice(index, 1);
-      this.pendingPromises.delete(id);
-    }
+    this.consumerCounts.delete(id);
+    this.cancelCoreTask(id);
   }
 
   cancelAll(): void {
-    // Clear all pending promises without rejecting - avoids unhandled rejections
-    for (const task of this.queue) {
+    this.consumerCounts.clear();
+    const queuedTasks = this.queue.splice(0);
+    for (const task of queuedTasks) {
       this.pendingPromises.delete(task.id);
+      task.reject(new DOMException("Cancelled", "AbortError"));
     }
-    this.queue = [];
 
     // Abort all actively running renders so they bail out between beats
     for (const controller of this.activeControllers.values()) {
       controller.abort();
     }
-    this.activeControllers.clear();
+  }
+
+  private cancelCoreTask(id: string): void {
+    const index = this.queue.findIndex((t) => t.id === id);
+    if (index !== -1) {
+      const [task] = this.queue.splice(index, 1);
+      this.pendingPromises.delete(id);
+      task?.reject(new DOMException("Cancelled", "AbortError"));
+      return;
+    }
+
+    this.activeControllers.get(id)?.abort();
+  }
+
+  private attachConsumer<T>(
+    id: string,
+    corePromise: Promise<T>,
+    signal?: AbortSignal
+  ): Promise<T> {
+    this.consumerCounts.set(id, (this.consumerCounts.get(id) ?? 0) + 1);
+
+    return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const finish = (cancelCoreIfLast: boolean): boolean => {
+        if (settled) return false;
+        settled = true;
+        signal?.removeEventListener("abort", onAbort);
+        this.releaseConsumer(id, cancelCoreIfLast);
+        return true;
+      };
+      const onAbort = () => {
+        if (finish(true)) reject(cancellationError(signal));
+      };
+
+      signal?.addEventListener("abort", onAbort, { once: true });
+      corePromise.then(
+        (value) => {
+          if (finish(false)) resolve(value);
+        },
+        (error) => {
+          if (finish(false)) reject(error);
+        }
+      );
+    });
+  }
+
+  private releaseConsumer(id: string, cancelCoreIfLast: boolean): void {
+    const count = this.consumerCounts.get(id);
+    if (count === undefined) return;
+    if (count > 1) {
+      this.consumerCounts.set(id, count - 1);
+      return;
+    }
+
+    this.consumerCounts.delete(id);
+    if (cancelCoreIfLast) this.cancelCoreTask(id);
   }
 
   getStats(): QueueStats {
@@ -147,18 +236,19 @@ export class ThumbnailRenderQueue {
         task.execute(controller.signal),
         new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
-            // Abort the hung render so it actually stops consuming resources and
-            // can't fire a late completion — mirrors cancelAll(). Without this the
-            // slot is freed while the render keeps running, so real concurrency
-            // can exceed maxConcurrent.
+            // Settle the race as a typed deadline before aborting the work.
+            // Abort listeners run synchronously and may reject `execute` with
+            // AbortError; aborting first would let that cancellation mask the
+            // timeout that caused it. The signal is still aborted in this same
+            // callback, before control returns to the event loop.
+            reject(new ThumbnailRenderTimeoutError(RENDER_TIMEOUT_MS));
             controller.abort();
-            reject(new Error("Render timeout"));
           }, RENDER_TIMEOUT_MS);
         }),
       ]);
       task.resolve(result);
     } catch (error) {
-      task.reject(error instanceof Error ? error : new Error(String(error)));
+      task.reject(normalizeQueueError(error));
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
       this.activeCount--;

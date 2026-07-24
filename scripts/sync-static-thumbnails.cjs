@@ -17,24 +17,26 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
-// Initialize Firebase Admin
 const serviceAccountPath = path.resolve(__dirname, "../serviceAccountKey.json");
+const STATIC_DIR = path.resolve(__dirname, "../static/thumbnails");
 
-try {
-  const serviceAccount = require(serviceAccountPath);
+function getStorageBucket() {
+  let serviceAccount;
+  try {
+    serviceAccount = require(serviceAccountPath);
+  } catch {
+    throw new Error(
+      "Failed to load service account. Make sure serviceAccountKey.json exists."
+    );
+  }
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       storageBucket: "the-kinetic-alphabet.firebasestorage.app",
     });
   }
-} catch (error) {
-  console.error("Failed to load service account. Make sure serviceAccountKey.json exists.");
-  process.exit(1);
+  return admin.storage().bucket();
 }
-
-const bucket = admin.storage().bucket();
-const STATIC_DIR = path.resolve(__dirname, "../static/thumbnails");
 
 /**
  * Download a file from URL to local path
@@ -42,26 +44,30 @@ const STATIC_DIR = path.resolve(__dirname, "../static/thumbnails");
 function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destPath);
-    https.get(url, (response) => {
-      if (response.statusCode === 302 || response.statusCode === 301) {
-        // Follow redirect
-        https.get(response.headers.location, (redirectResponse) => {
-          redirectResponse.pipe(file);
+    https
+      .get(url, (response) => {
+        if (response.statusCode === 302 || response.statusCode === 301) {
+          // Follow redirect
+          https
+            .get(response.headers.location, (redirectResponse) => {
+              redirectResponse.pipe(file);
+              file.on("finish", () => {
+                file.close();
+                resolve();
+              });
+            })
+            .on("error", reject);
+        } else if (response.statusCode === 200) {
+          response.pipe(file);
           file.on("finish", () => {
             file.close();
             resolve();
           });
-        }).on("error", reject);
-      } else if (response.statusCode === 200) {
-        response.pipe(file);
-        file.on("finish", () => {
-          file.close();
-          resolve();
-        });
-      } else {
-        reject(new Error(`HTTP ${response.statusCode}`));
-      }
-    }).on("error", reject);
+        } else {
+          reject(new Error(`HTTP ${response.statusCode}`));
+        }
+      })
+      .on("error", reject);
   });
 }
 
@@ -80,17 +86,49 @@ function ensureDir(dirPath) {
 function sanitizeFilename(filename) {
   // Replace characters that are illegal in Windows filenames
   return filename
-    .replace(/:/g, "-")  // colons (from timestamps)
+    .replace(/:/g, "-") // colons (from timestamps)
     .replace(/\?/g, "_") // question marks
-    .replace(/</g, "_")  // less than
-    .replace(/>/g, "_")  // greater than
-    .replace(/"/g, "_")  // quotes
+    .replace(/</g, "_") // less than
+    .replace(/>/g, "_") // greater than
+    .replace(/"/g, "_") // quotes
     .replace(/\|/g, "_") // pipe
     .replace(/\*/g, "_"); // asterisk
 }
 
+/**
+ * Group manifest keys by the cache dimensions that decide whether Browse can
+ * serve a requested thumbnail without entering the renderer.
+ */
+function buildCoverageSummary(manifestKeys) {
+  const coverage = {};
+
+  for (const key of [...manifestKeys].sort()) {
+    const parts = key.split("/");
+    const hasVariant = parts.length >= 3;
+    const variant = hasVariant ? parts[0] : "legacy";
+    const prop = hasVariant ? parts[1] : parts[0];
+    const filename = hasVariant
+      ? parts.slice(2).join("/")
+      : parts.slice(1).join("/");
+    if (!variant || !prop || !filename) continue;
+
+    const suffix = filename.match(/_(qr_)?(dark|light)$/);
+    const mode = suffix?.[2] ?? "unknown";
+    const qrClass = suffix?.[1] ? "qr" : "noQr";
+
+    coverage[variant] ??= {};
+    coverage[variant][prop] ??= {};
+    coverage[variant][prop][mode] ??= { noQr: 0, qr: 0, total: 0 };
+    coverage[variant][prop][mode][qrClass]++;
+    coverage[variant][prop][mode].total++;
+  }
+
+  return coverage;
+}
+
 async function syncThumbnails() {
   console.log("Syncing cloud thumbnails to static folder...\n");
+  const bucket = getStorageBucket();
 
   // Clean existing static thumbnails
   if (fs.existsSync(STATIC_DIR)) {
@@ -102,8 +140,8 @@ async function syncThumbnails() {
   const [files] = await bucket.getFiles({ prefix: "thumbnails/" });
 
   // Filter to only .webp files (exclude manifest.json and directories)
-  const thumbnailFiles = files.filter(f =>
-    f.name.endsWith(".webp") && !f.name.endsWith("/")
+  const thumbnailFiles = files.filter(
+    (f) => f.name.endsWith(".webp") && !f.name.endsWith("/")
   );
 
   console.log(`Found ${thumbnailFiles.length} thumbnails in cloud storage.\n`);
@@ -116,40 +154,44 @@ async function syncThumbnails() {
   for (let i = 0; i < thumbnailFiles.length; i += BATCH_SIZE) {
     const batch = thumbnailFiles.slice(i, i + BATCH_SIZE);
 
-    await Promise.all(batch.map(async (file) => {
-      try {
-        // Get signed URL for download
-        const [url] = await file.getSignedUrl({
-          action: "read",
-          expires: Date.now() + 60000, // 1 minute
-        });
+    await Promise.all(
+      batch.map(async (file) => {
+        try {
+          // Get signed URL for download
+          const [url] = await file.getSignedUrl({
+            action: "read",
+            expires: Date.now() + 60000, // 1 minute
+          });
 
-        // Convert cloud path to local path
-        // Cloud: thumbnails/gallery/club/Butterfly_dark.webp
-        // Local: static/thumbnails/gallery/club/Butterfly_dark.webp
-        const relativePath = file.name.replace(/^thumbnails\//, "");
-        // Sanitize filename for Windows compatibility
-        const pathParts = relativePath.split("/");
-        const filename = pathParts.pop();
-        const sanitizedFilename = sanitizeFilename(filename);
-        const sanitizedPath = [...pathParts, sanitizedFilename].join("/");
-        const localPath = path.join(STATIC_DIR, sanitizedPath);
+          // Convert cloud path to local path
+          // Cloud: thumbnails/gallery/club/Butterfly_dark.webp
+          // Local: static/thumbnails/gallery/club/Butterfly_dark.webp
+          const relativePath = file.name.replace(/^thumbnails\//, "");
+          // Sanitize filename for Windows compatibility
+          const pathParts = relativePath.split("/");
+          const filename = pathParts.pop();
+          const sanitizedFilename = sanitizeFilename(filename);
+          const sanitizedPath = [...pathParts, sanitizedFilename].join("/");
+          const localPath = path.join(STATIC_DIR, sanitizedPath);
 
-        // Ensure parent directory exists
-        ensureDir(path.dirname(localPath));
+          // Ensure parent directory exists
+          ensureDir(path.dirname(localPath));
 
-        // Download
-        await downloadFile(url, localPath);
-        downloaded++;
-      } catch (error) {
-        console.warn(`Failed to download ${file.name}: ${error.message}`);
-        failed++;
-      }
-    }));
+          // Download
+          await downloadFile(url, localPath);
+          downloaded++;
+        } catch (error) {
+          console.warn(`Failed to download ${file.name}: ${error.message}`);
+          failed++;
+        }
+      })
+    );
 
     // Progress
     const progress = Math.min(i + BATCH_SIZE, thumbnailFiles.length);
-    process.stdout.write(`\rDownloaded ${downloaded}/${thumbnailFiles.length} thumbnails...`);
+    process.stdout.write(
+      `\rDownloaded ${downloaded}/${thumbnailFiles.length} thumbnails...`
+    );
   }
 
   console.log(`\n\nSync complete!`);
@@ -170,7 +212,9 @@ async function syncThumbnails() {
       } else if (entry.name.endsWith(".webp")) {
         // Key format: variant/propType/sequenceName_mode (without .webp)
         // These are already sanitized filenames on disk
-        const key = prefix ? `${prefix}/${entry.name.replace(".webp", "")}` : entry.name.replace(".webp", "");
+        const key = prefix
+          ? `${prefix}/${entry.name.replace(".webp", "")}`
+          : entry.name.replace(".webp", "");
         manifestKeys.push(key);
       }
     }
@@ -181,11 +225,14 @@ async function syncThumbnails() {
     keys: manifestKeys,
     generated: new Date().toISOString(),
     count: manifestKeys.length,
+    coverage: buildCoverageSummary(manifestKeys),
   };
 
   const manifestPath = path.join(STATIC_DIR, "manifest.json");
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
   console.log(`\nGenerated manifest with ${manifestKeys.length} entries.`);
+  console.log("Coverage summary:");
+  console.log(JSON.stringify(manifest.coverage, null, 2));
 
   // Calculate total size
   let totalSize = 0;
@@ -204,12 +251,19 @@ async function syncThumbnails() {
   console.log(`  Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
 }
 
-syncThumbnails()
-  .then(() => {
-    console.log("\nDone!");
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error("Error syncing thumbnails:", error);
-    process.exit(1);
-  });
+if (require.main === module) {
+  syncThumbnails()
+    .then(() => {
+      console.log("\nDone!");
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error("Error syncing thumbnails:", error);
+      process.exit(1);
+    });
+}
+
+module.exports = {
+  buildCoverageSummary,
+  sanitizeFilename,
+};

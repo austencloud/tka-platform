@@ -42,7 +42,8 @@ function makeOrchestrator() {
     qrConsistent: true,
   }));
   const queue = {
-    enqueue: (_hash: string, task: (signal?: AbortSignal) => Promise<unknown>) => task(),
+    enqueue: (_hash: string, task: (signal: AbortSignal) => Promise<unknown>) =>
+      task(new AbortController().signal),
     getStats: () => ({ queued: 0, active: 0 }),
     cancel: () => {},
   };
