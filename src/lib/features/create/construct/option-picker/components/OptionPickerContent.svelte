@@ -31,6 +31,13 @@ Uses organizer and sizer services for section grouping and sizing.
     TurnValue,
   } from "$lib/shared/create/services/level-turn-values";
   import { identifyContinuation } from "../services/continuation-identifier";
+  import { buildMovementFamilyPanels } from "../services/movement-type-navigation";
+  import type { MovementFamilyKey } from "../services/section-title-formatter";
+  import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import {
+    logConstructMovementFamilySelected,
+    type MovementFamilyNavigationSource,
+  } from "../../services/construct-analytics";
 
   interface Props {
     options: PreparedPictographData[];
@@ -95,6 +102,7 @@ Uses organizer and sizer services for section grouping and sizing.
     onBlueRotationChange,
     onRedRotationChange,
   }: Props = $props();
+  const createContext = tryGetCreateModuleContext();
 
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
@@ -234,14 +242,13 @@ Uses organizer and sizer services for section grouping and sizing.
 
   // Use swipe layout when in mobile stacked layout OR narrow container
   const shouldUseSwipeLayout = $derived(() => {
-    const sections = continuationState().sections;
     // Use swipe when:
     // - In mobile stacked layout (always use swipe for mobile)
     // - OR not using wide layout (container < 750px)
     // - AND not using compact 4x4 (continuous mode)
-    // - AND have multiple sections to swipe between
+    // Fixed movement-family panels remain mounted even when a family is empty.
     const shouldSwipe = isMobileStackedLayout() || !shouldUseWideLayout;
-    return shouldSwipe && !shouldUseCompact4x4() && sections.length > 1;
+    return shouldSwipe && !shouldUseCompact4x4();
   });
 
   // The unified header (filter + turns) replaces the standalone filter pill on the
@@ -269,25 +276,16 @@ Uses organizer and sizer services for section grouping and sizing.
 
   // For swipe layout: combine Types 4-6 into a single grouped panel
   const swipeSections = $derived(() => {
-    const sections123 = types123Sections();
-    const sections456 = types456Sections();
-
-    // Combine all Types 4-6 pictographs into one grouped section
-    const grouped456Pictographs = sections456.flatMap((s) => s.pictographs);
-
-    if (grouped456Pictographs.length === 0) {
-      return sections123;
-    }
-
-    return [
-      ...sections123,
-      {
-        title: "Types 4-6",
-        pictographs: grouped456Pictographs,
-        type: "grouped" as const,
-      },
-    ];
+    return buildMovementFamilyPanels(continuationState().sections);
   });
+
+  function notifyMovementFamilySelected(
+    family: MovementFamilyKey,
+    source: MovementFamilyNavigationSource
+  ) {
+    createContext?.constructTutorialState.recordMovementType();
+    logConstructMovementFamilySelected({ family, source });
+  }
 
   // ==================== DESKTOP SIZING ====================
   // Desktop uses the sizer service to calculate appropriate card sizes
@@ -322,16 +320,16 @@ Uses organizer and sizer services for section grouping and sizing.
   // Both configs use consistent values to prevent size "burst" when toggling
 
   // Height to subtract when calculating available space for content.
-  // The compact settings button floats in the swipe gutter, so the cards keep
-  // the full picker height. Swipe dots still own a row below sectioned layouts.
-  const SWIPE_DOTS_HEIGHT = 73;
+  // The compact type header owns a fixed row above the carousel without
+  // changing the workspace dimensions as panels change.
+  const TYPE_NAVIGATION_HEIGHT = 40;
 
   // Calculate effective height for swipe layout accounting for UI chrome
   const effectiveSwipeHeight = $derived(() => {
     let height = containerHeight;
-    // Subtract swipe dots height (always present in swipe layout)
+    // Subtract the type selector row (always present in swipe layout).
     if (shouldUseSwipeLayout()) {
-      height -= SWIPE_DOTS_HEIGHT;
+      height -= TYPE_NAVIGATION_HEIGHT;
     }
     return Math.max(200, height); // Ensure minimum usable height
   });
@@ -415,10 +413,10 @@ Uses organizer and sizer services for section grouping and sizing.
         </div>
       {/if}
 
-      <!-- Narrow layouts keep settings in the upper-left swipe gutter. The
-           floating button gives every vertical pixel back to the pictographs,
-           while its tray still opens upward over the workspace. -->
-      {#if showCompactControls()}
+      <!-- Continuous mode has no movement-type header, so its settings trigger
+           keeps the established corner position. Swipe mode places the same
+           trigger inside its three-part header below. -->
+      {#if showCompactControls() && !shouldUseSwipeLayout()}
         <div class="controls-corner">
           <OptionPickerControlsPopover
             showFilter={shouldShowFilterControl()}
@@ -479,7 +477,31 @@ Uses organizer and sizer services for section grouping and sizing.
             {currentSequence}
             {onSlotClicked}
             {getContinuationIndex}
-          />
+            onMovementFamilySelected={notifyMovementFamilySelected}
+            settingsEnabled={showCompactControls()}
+            settingsHasTurnRows={turnControlsEditable && level > 1}
+            openIntoWorkspace={isMobileStackedLayout()}
+          >
+            {#snippet settingsContent()}
+              <OptionPickerHeader
+                layout="compact"
+                showFilter={shouldShowFilterControl()}
+                showTurnControls={turnControlsEditable}
+                {isContinuousOnly}
+                {onToggleContinuous}
+                {blueTurns}
+                {redTurns}
+                {level}
+                {onLevelChange}
+                {blueRotation}
+                {redRotation}
+                onBlueChange={onBlueTurnsChange}
+                onRedChange={onRedTurnsChange}
+                {onBlueRotationChange}
+                {onRedRotationChange}
+              />
+            {/snippet}
+          </OptionViewerSwipeLayout>
         </div>
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
         <!-- ==================== WIDE DESKTOP LAYOUT ==================== -->
@@ -584,8 +606,7 @@ Uses organizer and sizer services for section grouping and sizing.
     z-index: 5;
   }
 
-  /* The swipe layout already protects this corner for navigation. Floating the
-     settings trigger there keeps it reachable without shrinking the card grid. */
+  /* Continuous mode has no movement-type header to host this trigger. */
   .controls-corner {
     position: absolute;
     top: 2px;

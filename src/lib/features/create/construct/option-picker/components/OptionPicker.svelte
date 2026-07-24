@@ -46,6 +46,9 @@ Delegates all rendering to child components.
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { DarkModeProvider } from "$lib/shared/animation-engine/services/dark-mode-provider";
   import OptionPickerContent from "./OptionPickerContent.svelte";
+  import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import { setOptionAuditionContext } from "../context/option-audition-context";
+  import { buildAppendedOptionSequence } from "../services/build-appended-option-sequence";
 
   // Props
   interface Props {
@@ -88,6 +91,12 @@ Delegates all rendering to child components.
     blueTurnsOverride = undefined,
     redTurnsOverride = undefined,
   }: Props = $props();
+
+  const createContext = tryGetCreateModuleContext();
+  setOptionAuditionContext({
+    start: handleAuditionStart,
+    end: handleAuditionEnd,
+  });
 
   // State
   let pickerState = $state<ReturnType<typeof createOptionPickerState> | null>(
@@ -244,9 +253,6 @@ Delegates all rendering to child components.
   let darkMode = $state(false);
   let darkModeProvider: DarkModeProvider | null = null;
 
-  // Brief debounce to prevent double-tap during option loading
-  const SELECTION_DEBOUNCE_MS = 300;
-
   // Handle continuous toggle - updates internal state and notifies parent
   function handleToggleContinuous(value: boolean) {
     internalContinuousOnly = value;
@@ -254,6 +260,38 @@ Delegates all rendering to child components.
       pickerState.setContinuousOnly(value);
     }
     onToggleContinuous?.(value);
+  }
+
+  function handleAuditionStart(option: PictographData): boolean {
+    if (!createContext || isSelecting) return false;
+
+    const baseSequence =
+      createContext.CreateModuleState.sequenceState.getCurrentSequence();
+    if (!baseSequence) return false;
+
+    const activatedAt = performance.now();
+    const application = buildAppendedOptionSequence(baseSequence, option, {
+      onRecoverableError: (stage, error) => {
+        console.warn(
+          `OptionPicker: ${stage} calculation failed during audition`,
+          error
+        );
+      },
+    });
+
+    hapticService?.trigger("selection");
+    createContext.panelState.enterChangedTransitionPlayback({
+      sequence: application.sequence,
+      sourceSequenceRevision:
+        createContext.CreateModuleState.sequenceState.currentSequenceRevision,
+      stepNumber: application.stepNumber,
+      activatedAt,
+    });
+    return true;
+  }
+
+  function handleAuditionEnd() {
+    createContext?.panelState.exitChangedTransitionPlayback();
   }
 
   function handleSlotClicked(typeSection: string, slotIndex: number) {
@@ -302,8 +340,10 @@ Delegates all rendering to child components.
     }
 
     if (filtered.length === 0) {
-      // Don't clear preparedOptions - keep old ones visible so grid
-      // slots stay mounted and can transition when new data arrives
+      // Loading returns above, so an empty ready state is authoritative. Clear
+      // stale tiles instead of offering an option from the prior filter state.
+      preparedOptions = [];
+      isSelecting = false;
       return;
     }
 
@@ -438,6 +478,7 @@ Delegates all rendering to child components.
     initialize();
 
     return () => {
+      handleAuditionEnd();
       if (darkModeUnsubscribe) {
         darkModeUnsubscribe();
       }

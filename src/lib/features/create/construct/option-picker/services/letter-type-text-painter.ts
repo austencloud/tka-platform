@@ -5,14 +5,19 @@
  * Colors specific words in letter type descriptions to match the desktop app styling.
  */
 
-const COLORS = {
+export const LETTER_TYPE_TEXT_COLORS = {
   Shift: "#6F2DA8", // Purple
   Dual: "#00b3ff", // Blue
   Dash: "#26e600", // Green
   Cross: "#26e600", // Green
   Static: "#eb7d00", // Orange
-  "-": "currentColor", // Inherit from parent (adapts to theme)
 } as const;
+
+export interface ColoredTextPart {
+  text: string;
+  /** Omitted for punctuation that should inherit from its parent. */
+  color?: string;
+}
 
 /**
  * Escape HTML special characters. The output of this module is consumed via
@@ -35,14 +40,33 @@ function escapeHtml(text: string): string {
  * @returns HTML string with colored spans
  */
 export function getColoredText(text: string, bold = false): string {
-  const words = text.split("-");
-  const styled = words.map((word) => {
-    const color = COLORS[word as keyof typeof COLORS] || "currentColor";
-    const weight = bold ? " font-weight: bold;" : "";
-    return `<span style="color: ${color};${weight}">${escapeHtml(word)}</span>`;
-  });
+  return getColoredTextParts(text)
+    .map((part) => {
+      if (!part.color) return escapeHtml(part.text);
 
-  return text.includes("-") ? styled.join("-") : styled.join("");
+      const color = part.color;
+      const weight = bold ? " font-weight: bold;" : "";
+      return `<span style="color: ${color};${weight}">${escapeHtml(part.text)}</span>`;
+    })
+    .join("");
+}
+
+/**
+ * Return the same semantic color fragments used by section headings without
+ * forcing consumers through {@html}. Interactive labels can render these parts
+ * as normal Svelte markup and keep their accessible name separate.
+ */
+export function getColoredTextParts(text: string): ColoredTextPart[] {
+  return text.split("-").flatMap((word, index) => {
+    const color =
+      LETTER_TYPE_TEXT_COLORS[word as keyof typeof LETTER_TYPE_TEXT_COLORS] ??
+      "currentColor";
+    const wordPart = { text: word, color };
+
+    if (index === 0) return [wordPart];
+
+    return [{ text: "-" }, wordPart];
+  });
 }
 
 /**

@@ -8,17 +8,25 @@ Renders a section with:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { reversalDetector as _reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+  import {
+    reversalDetector as _reversalDetector,
+    type ReversalDetector,
+  } from "$lib/shared/create/services/reversal-detector";
   import type { PictographWithReversals } from "$lib/shared/create/services/reversal-detector";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { calculateFitSize as calculateGridFitSize, calculateOptimalColumnLayout } from "../../services/option-grid-fit-calculator";
+  import {
+    calculateFitSize as calculateGridFitSize,
+    calculateOptimalColumnLayout,
+  } from "../../services/option-grid-fit-calculator";
   import { onMount } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
+  import { tryGetOptionAuditionContext } from "../../context/option-audition-context";
+  import { createHoldToAuditionAttachment } from "../../services/hold-to-audition";
 
   // Props - Dark mode is handled via CSS (:root.dark) not prop drilling
   const {
@@ -58,6 +66,7 @@ Renders a section with:
   // Services - resolve synchronously to avoid first-render sizing issues
   let hapticService: HapticFeedback | null = null;
   const reversalDetector: ReversalDetector = _reversalDetector;
+  const auditionContext = tryGetOptionAuditionContext();
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -284,6 +293,26 @@ Renders a section with:
     contextMenuHost.openContextMenu(e.clientX, e.clientY);
   }
 
+  function toPictographData(
+    pictographWithReversals: PictographWithReversals
+  ): PictographData {
+    const { blueReversal, redReversal, ...pictographData } =
+      pictographWithReversals;
+    return pictographData as PictographData;
+  }
+
+  const holdToAudition = createHoldToAuditionAttachment({
+    isDisabled: () => !auditionContext,
+    onStart: (node) => {
+      const index = Number(node.dataset.optionIndex);
+      const pictograph = displayedItems()[index];
+      return pictograph
+        ? (auditionContext?.start(toPictographData(pictograph)) ?? false)
+        : false;
+    },
+    onEnd: () => auditionContext?.end(),
+  });
+
   // Handle pictograph selection
   function handlePictographClick(
     pictographWithReversals: PictographWithReversals,
@@ -296,9 +325,7 @@ Renders a section with:
     onSlotClicked?.(letterType, index);
 
     // Extract the original PictographData for selection (remove reversal flags)
-    const { blueReversal, redReversal, ...pictographData } =
-      pictographWithReversals;
-    onPictographSelected(pictographData as PictographData);
+    onPictographSelected(toPictographData(pictographWithReversals));
   }
 </script>
 
@@ -336,7 +363,11 @@ Renders a section with:
         style:--pictograph-size="{optimalLayout().pictographSize}px"
         data-testid="option-item"
         data-letter={pictograph.letter}
-        aria-label="Select {pictograph.letter}"
+        data-option-index={index}
+        aria-label="Select {pictograph.letter ?? 'movement'}. Hold to preview."
+        aria-keyshortcuts="Shift+Space"
+        title="Tap to select. Hold to preview."
+        {@attach holdToAudition}
       >
         <OptionPictographCell
           pictographData={pictograph as PreparedPictographData}
@@ -388,6 +419,13 @@ Renders a section with:
     box-sizing: border-box;
     overflow: hidden;
     box-shadow: var(--option-card-shadow);
+    transition:
+      transform 0.3s ease,
+      filter 0.3s ease,
+      box-shadow 0.3s ease;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .pictograph-option.continuation {
@@ -415,8 +453,36 @@ Renders a section with:
     transform: scale(0.97);
   }
 
-  .pictograph-option:focus {
-    outline: none;
+  .pictograph-option:global(.option-audition-active) {
+    z-index: 4;
+    transform: translateY(-6px) scale(1.08);
+    filter: brightness(1.08);
+    box-shadow:
+      0 0 0 3px
+        color-mix(in srgb, var(--theme-accent, #3b82f6) 70%, transparent),
+      0 14px 28px -14px
+        color-mix(in srgb, var(--border-primary) 70%, transparent),
+      var(--option-card-shadow-hover);
+    transition:
+      transform 320ms cubic-bezier(0.2, 1.55, 0.35, 1),
+      filter 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .pictograph-option:focus-visible {
+    outline: 2px solid var(--theme-accent, #3b82f6);
+    outline-offset: 2px;
     filter: brightness(1.05);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pictograph-option {
+      transition: none;
+    }
+
+    .pictograph-option:hover,
+    .pictograph-option:global(.option-audition-active) {
+      transform: none;
+    }
   }
 </style>

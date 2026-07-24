@@ -2,8 +2,8 @@
   OptionPickerHeader.svelte
 
   Shared controls for the construct option picker. The wide layout renders this
-  as its pinned header; narrow layouts render the compact variant inside the
-  option-controls popover. Both surfaces expose the same settings:
+  as its pinned header; narrow layouts render the compact variant inside either
+  the shared utility tray or the continuous-grid popover. Every surface exposes:
     • the All / Continuous filter (left),
     • the working Level (centered, wearing the canonical level colours),
   over a turns row that appears when the level HAS turns.

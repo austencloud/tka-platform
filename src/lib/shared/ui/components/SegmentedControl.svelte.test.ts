@@ -121,6 +121,101 @@ describe("SegmentedControl", () => {
     ).toBe("red");
   });
 
+  it("supports an automatically activated tablist with roving keyboard focus", async () => {
+    const onchange = vi.fn();
+    const screen = render(SegmentedControl, {
+      options: [
+        {
+          value: "a",
+          label: "Type 1: Dual-Shift",
+          shortLabel: "1",
+          id: "type-1-tab",
+          controls: "type-1-panel",
+        },
+        {
+          value: "b",
+          label: "Type 2: Shift",
+          shortLabel: "2",
+          id: "type-2-tab",
+          controls: "type-2-panel",
+        },
+      ],
+      value: "a",
+      onchange,
+      semantics: "tabs",
+      ariaLabel: "Movement type",
+    });
+
+    const firstTab = page.getByRole("tab", { name: "Type 1: Dual-Shift" });
+    await expect.element(firstTab).toHaveAttribute("aria-selected", "true");
+    await expect.element(firstTab).toHaveAttribute("tabindex", "0");
+    await expect
+      .element(firstTab)
+      .toHaveAttribute("aria-controls", "type-1-panel");
+    expect(page.getByText("1").elements()).toHaveLength(1);
+
+    const firstTabElement = firstTab.element() as HTMLButtonElement;
+    firstTabElement.focus();
+    firstTabElement.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        bubbles: true,
+      })
+    );
+    expect(onchange).toHaveBeenCalledWith("b");
+
+    await screen.rerender({
+      options: [
+        {
+          value: "a",
+          label: "Type 1: Dual-Shift",
+          shortLabel: "1",
+          id: "type-1-tab",
+          controls: "type-1-panel",
+        },
+        {
+          value: "b",
+          label: "Type 2: Shift",
+          shortLabel: "2",
+          id: "type-2-tab",
+          controls: "type-2-panel",
+        },
+      ],
+      value: "b",
+      onchange,
+      semantics: "tabs",
+      ariaLabel: "Movement type",
+    });
+    await expect
+      .element(page.getByRole("tab", { name: "Type 2: Shift" }))
+      .toHaveAttribute("tabindex", "0");
+  });
+
+  it("supports a keyboard-operated single-select radio group", async () => {
+    const onchange = vi.fn();
+    render(SegmentedControl, {
+      options: OPTIONS,
+      value: "a",
+      onchange,
+      semantics: "radiogroup",
+      ariaLabel: "Movement type",
+    });
+
+    const alpha = page.getByRole("radio", { name: "Alpha" });
+    await expect.element(alpha).toHaveAttribute("aria-checked", "true");
+    await expect.element(alpha).toHaveAttribute("tabindex", "0");
+
+    const alphaElement = alpha.element() as HTMLButtonElement;
+    alphaElement.focus();
+    alphaElement.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "End",
+        bubbles: true,
+      })
+    );
+    expect(onchange).toHaveBeenCalledWith("c");
+  });
+
   it("has no AAA a11y violations", async () => {
     render(SegmentedControl, { options: OPTIONS, value: "a", onchange: vi.fn() });
     await expectNoA11yViolations();

@@ -1,10 +1,9 @@
 <!--
   OptionPickerControlsPopover.svelte
 
-  Narrow layouts keep one compact settings button in the swipe gutter. The same
-  filter, level, turns, and spin controls used by the wide header open above it.
-  Bits UI owns focus, Escape, outside dismissal, collision handling, and the
-  trigger's expanded state.
+  Continuous compact layouts have no movement-type header, so their settings
+  remain in this anchored popover. Sectioned swipe layouts render the same
+  OptionPickerHeader inside their shared utility tray instead.
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
@@ -17,6 +16,7 @@
     type TurnValue,
   } from "$lib/shared/create/services/level-turn-values";
   import OptionPickerHeader from "./OptionPickerHeader.svelte";
+  import OptionPickerIconButton from "./OptionPickerIconButton.svelte";
 
   interface Props {
     showFilter: boolean;
@@ -34,6 +34,7 @@
     onBlueRotationChange: (dir: RotationDirection) => void;
     onRedRotationChange: (dir: RotationDirection) => void;
     open?: boolean;
+    triggerDensity?: "standard" | "compact";
   }
 
   let {
@@ -52,6 +53,7 @@
     onBlueRotationChange,
     onRedRotationChange,
     open = $bindable(false),
+    triggerDensity = "standard",
   }: Props = $props();
 
   const modeLabel = $derived(isContinuousOnly ? "Continuous" : "All");
@@ -73,18 +75,14 @@
 <Popover.Root bind:open>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <button
+      <OptionPickerIconButton
         {...props}
-        type="button"
-        class="controls-trigger"
-        class:open
+        icon="fa-sliders"
+        density={triggerDensity}
+        active={open}
         aria-label={triggerLabel}
         title="Option settings"
-      >
-        <span class="trigger-icon" aria-hidden="true">
-          <i class="fas fa-sliders"></i>
-        </span>
-      </button>
+      />
     {/snippet}
   </Popover.Trigger>
 
@@ -154,78 +152,6 @@
 </Popover.Root>
 
 <style>
-  .controls-trigger {
-    box-sizing: border-box;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    padding: 0;
-    background: var(--theme-card-bg, rgba(10, 18, 30, 0.88));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: var(--radius-lg, 12px);
-    color: color-mix(in srgb, var(--theme-accent, #22b8db) 76%, white);
-    cursor: pointer;
-    box-shadow:
-      0 5px 16px var(--theme-shadow, rgba(0, 0, 0, 0.28)),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    transition:
-      background var(--duration-normal, 200ms) ease,
-      border-color var(--duration-normal, 200ms) ease,
-      color var(--duration-normal, 200ms) ease,
-      box-shadow var(--duration-normal, 200ms) ease,
-      transform var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .controls-trigger:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
-    color: color-mix(in srgb, var(--theme-accent, #22b8db) 58%, white);
-  }
-
-  .controls-trigger.open {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #22b8db) 12%,
-      var(--theme-panel-bg, rgba(10, 18, 30, 0.96))
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #22b8db) 52%,
-      var(--theme-stroke, rgba(255, 255, 255, 0.14))
-    );
-    box-shadow:
-      0 6px 20px var(--theme-shadow, rgba(0, 0, 0, 0.3)),
-      inset 0 1px 0
-        color-mix(in srgb, var(--theme-accent, #22b8db) 24%, transparent);
-  }
-
-  .controls-trigger:active {
-    transform: scale(0.94);
-  }
-
-  .controls-trigger:focus-visible {
-    outline: 2px solid var(--theme-accent, #22b8db);
-    outline-offset: 2px;
-  }
-
-  .trigger-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    transition: transform var(--duration-fast, 150ms) ease;
-  }
-
-  .trigger-icon i {
-    font-size: 1rem;
-  }
-
   .controls-popover {
     width: min(
       32rem,
@@ -325,13 +251,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .controls-trigger,
-    .trigger-icon,
     .popover-close {
       transition: none;
     }
 
-    .controls-trigger:active,
     .popover-close:active {
       transform: none;
     }

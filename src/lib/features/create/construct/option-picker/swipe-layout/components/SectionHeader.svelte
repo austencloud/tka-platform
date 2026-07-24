@@ -8,42 +8,15 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   --option-header-bg, --option-header-border, --option-header-shadow, --option-header-text
 -->
 <script lang="ts">
-  import { formatSectionHeader } from "../../services/letter-type-text-painter";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { formatSectionTitle } from "../../services/section-title-formatter";
 
   const { letterType = "mixed" } = $props<{
     letterType?: string;
   }>();
 
-  // Type descriptions mapping
-  const typeDescriptions: Record<
-    string,
-    { description: string; typeName: string }
-  > = {
-    Type1: { description: "Dual-Shift", typeName: "Type 1" },
-    Type2: { description: "Shift", typeName: "Type 2" },
-    Type3: { description: "Cross-Shift", typeName: "Type 3" },
-    Type4: { description: "Dash", typeName: "Type 4" },
-    Type5: { description: "Dual-Dash", typeName: "Type 5" },
-    Type6: { description: "Static", typeName: "Type 6" },
-    mixed: { description: "All Types", typeName: "Options" },
-    "Types 4-6": { description: "Dash Types", typeName: "Types 4-6" },
-  };
-
-  const typeInfo = $derived(() => {
-    return (
-      typeDescriptions[letterType] || {
-        description: "All Types",
-        typeName: "Options",
-      }
-    );
-  });
-
-  // Generate colored header text
   const buttonText = $derived(
-    formatSectionHeader(
-      typeInfo().typeName,
-      typeInfo().description
-    )
+    formatSectionTitle(letterType, (descriptor) => t(descriptor.translationKey))
   );
 </script>
 
@@ -134,6 +107,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   .label-text {
     display: block;
     color: var(--option-header-text, #000000);
-    transition: color var(--option-dark-transition, var(--duration-fast) ease-out);
+    transition: color
+      var(--option-dark-transition, var(--duration-fast) ease-out);
   }
 </style>

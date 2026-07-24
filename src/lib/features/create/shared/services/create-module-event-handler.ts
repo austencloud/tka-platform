@@ -8,20 +8,18 @@
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import type { SequenceData } from "../../../../shared/foundation/domain/models/sequence-data";
 
 import type { ConstructCoordinator } from "./construct-coordinator";
 import type { PictographData } from "../../../../shared/pictograph/shared/domain/models/pictograph-data";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import {
-  updateStartOrientations,
-  updateEndOrientations,
-} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 
 import { getConstructCoordinator } from "$lib/features/create/shared/get-construct-coordinator";
+import { buildAppendedOptionSequence } from "$lib/features/create/construct/option-picker/services/build-appended-option-sequence";
+import { invalidateLoopDisplayCache } from "$lib/shared/create/services/loop-certificate";
+import { UndoOperationType } from "./undo-manager";
 
 export class CreateModuleEventHandler {
   private constructCoordinator: ConstructCoordinator | null = null;
@@ -40,7 +38,10 @@ export class CreateModuleEventHandler {
 
   // Callback to push undo snapshot
   private pushUndoSnapshotCallback:
-    | ((type: "ADD_BEAT", metadata?: unknown) => void)
+    | ((type: UndoOperationType, metadata?: unknown) => void)
+    | null = null;
+  private optionAppliedCallback:
+    | ((sequence: SequenceData, stepNumber: number) => void)
     | null = null;
 
   constructor() {
@@ -54,7 +55,10 @@ export class CreateModuleEventHandler {
 
     // Resolve services via ITI container - services may be undefined if not registered
     try {
-      this.constructCoordinator = getConstructCoordinator() as unknown as ConstructCoordinator | undefined ?? null;
+      this.constructCoordinator =
+        (getConstructCoordinator() as unknown as
+          | ConstructCoordinator
+          | undefined) ?? null;
     } catch {
       this.constructCoordinator = null;
     }
@@ -90,9 +94,15 @@ export class CreateModuleEventHandler {
    * Set callback to push undo snapshot
    */
   setPushUndoSnapshotCallback(
-    pushUndoSnapshot: (type: "ADD_BEAT", metadata?: unknown) => void
+    pushUndoSnapshot: (type: UndoOperationType, metadata?: unknown) => void
   ): void {
     this.pushUndoSnapshotCallback = pushUndoSnapshot;
+  }
+
+  setOptionAppliedCallback(
+    callback: (sequence: SequenceData, stepNumber: number) => void
+  ): void {
+    this.optionAppliedCallback = callback;
   }
 
   private ensureInitialized() {
@@ -122,77 +132,36 @@ export class CreateModuleEventHandler {
       const nextStepNumber = currentSequence.steps.length + 1;
 
       // 📸 PUSH UNDO SNAPSHOT: Save state BEFORE adding beat (now deferred via queueMicrotask)
-      this.pushUndoSnapshotCallback?.("ADD_BEAT", {
+      this.pushUndoSnapshotCallback?.(UndoOperationType.ADD_BEAT, {
         stepNumber: nextStepNumber,
         description: `Add step ${nextStepNumber}`,
       });
 
-      // 🔄 REVERSAL DETECTION: Calculate reversals for the new beat based on current sequence
-      let reversalInfo = { blueReversal: false, redReversal: false };
-      if (this.ReversalDetector && currentSequence.steps.length > 0) {
-        try {
-          reversalInfo = this.ReversalDetector.detectReversalForOption(
-            [...currentSequence.steps], // Spread to mutable array for interface compatibility
-            option
-          );
-        } catch (reversalError) {
+      const application = buildAppendedOptionSequence(currentSequence, option, {
+        reversalDetector: this.ReversalDetector,
+        onRecoverableError: (stage, error) => {
+          const operation =
+            stage === "reversal"
+              ? "detect reversals"
+              : "calculate orientations";
           console.warn(
-            `⚠️ CreateModuleEventHandler: Failed to detect reversals for beat ${nextStepNumber}:`,
-            reversalError
+            `⚠️ CreateModuleEventHandler: Failed to ${operation} for beat ${nextStepNumber}:`,
+            error
           );
-          // Continue without reversal data rather than failing
-        }
-      }
-
-      // Create initial step data from option with correct beat number and reversals
-      let stepData = createStepData({
-        ...option, // Spread PictographData properties since StepData extends PictographData
-        stepNumber: nextStepNumber,
-        isBlank: false, // This is a real beat with pictograph data
-        blueReversal: reversalInfo.blueReversal,
-        redReversal: reversalInfo.redReversal,
+        },
       });
+      const stepData = application.step;
+      const finalSequence = application.sequence;
 
       performance.mark("beat-data-created");
-
-      // 🔄 OPTIMIZATION: Calculate orientations BEFORE UI update to batch into single update
-      if (currentSequence.steps.length > 0) {
-        const lastStep =
-          currentSequence.steps[currentSequence.steps.length - 1];
-
-        // Only apply orientation calculations if both steps have motion data
-        if (lastStep && !lastStep.isBlank && !stepData.isBlank) {
-          try {
-            // Update start orientations from the last beat's end orientations
-            stepData = updateStartOrientations(
-              stepData,
-              lastStep
-            );
-            performance.mark("start-orientations-complete");
-
-            // Update end orientations based on the motion calculations
-            stepData =
-              updateEndOrientations(stepData);
-            performance.mark("end-orientations-complete");
-          } catch (orientationError) {
-            console.warn(
-              `⚠️ CreateModuleEventHandler: Failed to calculate orientations for beat ${nextStepNumber}:`,
-              orientationError
-            );
-            // Continue without orientation updates rather than failing completely
-          }
-        }
-      }
       performance.mark("orientation-processing-complete");
 
       // 🚀 SINGLE UI UPDATE: Add beat with orientations already calculated
-      const finalSequence = {
-        ...currentSequence,
-        steps: [...currentSequence.steps, stepData],
-      };
       performance.mark("sequence-updated");
 
       this.updateSequenceCallback?.(finalSequence);
+      this.optionAppliedCallback?.(finalSequence, nextStepNumber);
+      invalidateLoopDisplayCache();
       performance.mark("ui-callback-complete");
 
       // 📝 ADD TO HISTORY: Track this option addition for undo functionality
@@ -215,7 +184,8 @@ export class CreateModuleEventHandler {
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Something went wrong adding that step",
-        technicalDetails: error instanceof Error ? error.message : String(error),
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "error",
         context: {

@@ -86,7 +86,7 @@
   // This prevents the "burst" effect where content initially renders at full width,
   // then shrinks when arrows appear after slide count is determined.
   // We assume arrows WILL be present initially to avoid layout shift.
-  let navPadding = $derived(() =>
+  let navPadding = $derived.by(() =>
     showArrows ? measuredArrowWidth + ARROW_SPACING : 0
   );
 

@@ -1,0 +1,134 @@
+import { page } from "vitest/browser";
+import { render } from "vitest-browser-svelte";
+import { describe, expect, it, vi } from "vitest";
+import OptionPickerDesktopLayoutHarness from "./OptionPickerDesktopLayoutHarness.svelte";
+
+describe("OptionPickerContent desktop layout", () => {
+  it("does not render redundant movement navigation above visible sections", async () => {
+    render(OptionPickerDesktopLayoutHarness);
+
+    await vi.waitFor(() => {
+      expect(document.querySelector(".sections-container")).not.toBeNull();
+    });
+
+    expect(
+      page.getByRole("tablist", { name: "Movement type" }).elements()
+    ).toHaveLength(0);
+    expect(
+      page.getByRole("radiogroup", { name: "Movement type" }).elements()
+    ).toHaveLength(0);
+  });
+
+  it("keeps the mobile movement controls aligned without an action prompt", async () => {
+    await page.viewport(327, 708);
+
+    render(OptionPickerDesktopLayoutHarness, {
+      width: 327,
+      height: 300,
+      sideBySide: false,
+      topOffset: 350,
+    });
+
+    const tabs = page.getByRole("tablist", { name: "Movement type" });
+    const settings = page.getByRole("button", { name: /^Option settings/ });
+    const info = page.getByRole("button", { name: "Explain movement types" });
+    await expect.element(tabs).toBeInTheDocument();
+    await expect.element(settings).toBeInTheDocument();
+    await expect.element(info).toBeInTheDocument();
+    expect(page.getByText("Add next step").elements()).toHaveLength(0);
+
+    const header = document.querySelector<HTMLElement>(".type-navigation");
+    expect(header).not.toBeNull();
+    const headerBounds = header!.getBoundingClientRect();
+    const settingsBounds = settings.element().getBoundingClientRect();
+    const tabsBounds = tabs.element().getBoundingClientRect();
+    const infoBounds = info.element().getBoundingClientRect();
+    expect(headerBounds.height).toBeLessThanOrEqual(40);
+    expect(settingsBounds.right).toBeLessThanOrEqual(tabsBounds.left);
+    expect(tabsBounds.right).toBeLessThanOrEqual(infoBounds.left);
+    expect(
+      Math.abs(
+        settingsBounds.top +
+          settingsBounds.height / 2 -
+          (infoBounds.top + infoBounds.height / 2)
+      )
+    ).toBeLessThanOrEqual(1);
+
+    const carousel = document.querySelector<HTMLElement>(".carousel-area");
+    expect(carousel).not.toBeNull();
+    const carouselTopBefore = carousel!.getBoundingClientRect().top;
+
+    await settings.click();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const settingsRegion = page.getByRole("region", {
+      name: "Option settings",
+    });
+    await expect.element(settingsRegion).toBeVisible();
+    const settingsPanel =
+      document.querySelector<HTMLElement>(".settings-panel");
+    expect(settingsPanel).not.toBeNull();
+    const settingsRegionBounds = settingsRegion
+      .element()
+      .getBoundingClientRect();
+    expect(settingsRegionBounds.height).toBeLessThanOrEqual(233);
+    expect(settingsRegionBounds.bottom).toBeLessThanOrEqual(headerBounds.top);
+    expect(settingsPanel!.scrollHeight).toBeLessThanOrEqual(
+      settingsPanel!.clientHeight
+    );
+    expect(
+      Math.abs(carousel!.getBoundingClientRect().top - carouselTopBefore)
+    ).toBeLessThanOrEqual(1);
+
+    await settings.click();
+    await expect.element(settings).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("reserves only the controls that exist at each mobile level", async () => {
+    await page.viewport(327, 708);
+
+    const screen = render(OptionPickerDesktopLayoutHarness, {
+      width: 327,
+      height: 300,
+      sideBySide: false,
+      topOffset: 350,
+      level: 1,
+    });
+
+    const settings = page.getByRole("button", { name: /^Option settings/ });
+    await settings.click();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const settingsRegion = page.getByRole("region", {
+      name: "Option settings",
+    });
+    const settingsPanel =
+      document.querySelector<HTMLElement>(".settings-panel");
+    expect(settingsPanel).not.toBeNull();
+    const level1Height = settingsRegion
+      .element()
+      .getBoundingClientRect().height;
+    expect(level1Height).toBeLessThanOrEqual(89);
+    expect(settingsPanel!.scrollHeight).toBeLessThanOrEqual(
+      settingsPanel!.clientHeight
+    );
+
+    await screen.rerender({
+      width: 327,
+      height: 300,
+      sideBySide: false,
+      topOffset: 350,
+      level: 2,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const level2Height = settingsRegion
+      .element()
+      .getBoundingClientRect().height;
+    expect(level2Height).toBeLessThanOrEqual(233);
+    expect(level2Height).toBeGreaterThan(level1Height + 100);
+    expect(settingsPanel!.scrollHeight).toBeLessThanOrEqual(
+      settingsPanel!.clientHeight
+    );
+  });
+});

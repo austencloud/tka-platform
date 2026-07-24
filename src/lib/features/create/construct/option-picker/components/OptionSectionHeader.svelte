@@ -7,7 +7,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   --option-header-bg, --option-header-border, --option-header-shadow, --option-header-text
 -->
 <script lang="ts">
-  import { formatSectionHeader } from "../services/letter-type-text-painter";
+  import { formatSectionTitle } from "../services/section-title-formatter";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -16,29 +16,8 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
 
   const { letterType }: Props = $props();
 
-  // Use translated descriptions
-  const getTypeDescriptions = () => ({
-    Type1: { typeName: "Type 1", description: t("create_type_dual_shift") },
-    Type2: { typeName: "Type 2", description: t("create_type_shift") },
-    Type3: { typeName: "Type 3", description: t("create_type_cross_shift") },
-    Type4: { typeName: "Type 4", description: t("create_type_dash") },
-    Type5: { typeName: "Type 5", description: t("create_type_dual_dash") },
-    Type6: { typeName: "Type 6", description: t("create_type_static") },
-  });
-
-  const typeInfo = $derived.by(() => {
-    const descriptions = getTypeDescriptions();
-    return descriptions[letterType as keyof typeof descriptions] || {
-      typeName: "Type ?",
-      description: t("create_type_unknown"),
-    };
-  });
-
   const formattedText = $derived(
-    formatSectionHeader(
-      typeInfo.typeName,
-      typeInfo.description
-    )
+    formatSectionTitle(letterType, (descriptor) => t(descriptor.translationKey))
   );
 </script>
 
@@ -93,7 +72,8 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   .label-text {
     display: block;
     color: var(--option-header-text, #000000);
-    transition: color var(--option-dark-transition, var(--duration-fast) ease-out);
+    transition: color
+      var(--option-dark-transition, var(--duration-fast) ease-out);
   }
 
   @media (max-height: 800px) {

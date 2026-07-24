@@ -9,6 +9,8 @@ Receives pre-calculated data, just renders it.
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionCardContent from "./OptionCardContent.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
+  import { tryGetOptionAuditionContext } from "../context/option-audition-context";
+  import { createHoldToAuditionAttachment } from "../services/hold-to-audition";
 
   interface Props {
     pictograph: PreparedPictographData;
@@ -31,6 +33,12 @@ Receives pre-calculated data, just renders it.
   }: Props = $props();
 
   const borderColors = $derived(getLetterBorderColors(pictograph.letter));
+  const auditionContext = tryGetOptionAuditionContext();
+  const holdToAudition = createHoldToAuditionAttachment({
+    isDisabled: () => disabled || !auditionContext,
+    onStart: () => auditionContext?.start(pictograph) ?? false,
+    onEnd: () => auditionContext?.end(),
+  });
 
   let contextMenuHost: PictographContextMenuHost;
 
@@ -58,7 +66,10 @@ Receives pre-calculated data, just renders it.
   style:--border-secondary={borderColors.secondary}
   data-testid="option-card"
   data-letter={pictograph.letter}
-  aria-label="Select {pictograph.letter}"
+  aria-label="Select {pictograph.letter}. Hold to preview."
+  aria-keyshortcuts="Shift+Space"
+  title="Tap to select. Hold to preview."
+  {@attach holdToAudition}
 >
   <OptionCardContent {pictograph} {blueReversal} {redReversal} />
 </button>
@@ -83,6 +94,9 @@ Receives pre-calculated data, just renders it.
       transform 0.3s ease,
       filter 0.3s ease,
       box-shadow 0.3s ease;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .option-card:disabled {
@@ -101,6 +115,22 @@ Receives pre-calculated data, just renders it.
   .option-card:active {
     transform: scale(0.97);
     transition: transform var(--duration-instant) ease;
+  }
+
+  .option-card:global(.option-audition-active) {
+    z-index: 4;
+    transform: translateY(-6px) scale(1.08);
+    filter: brightness(1.08);
+    box-shadow:
+      0 0 0 3px
+        color-mix(in srgb, var(--theme-accent, #3b82f6) 70%, transparent),
+      0 14px 28px -14px
+        color-mix(in srgb, var(--border-primary) 70%, transparent),
+      var(--option-card-shadow-hover);
+    transition:
+      transform 320ms cubic-bezier(0.2, 1.55, 0.35, 1),
+      filter 160ms ease,
+      box-shadow 160ms ease;
   }
 
   .option-card:focus-visible {
@@ -128,6 +158,12 @@ Receives pre-calculated data, just renders it.
 
     .option-card:active {
       transform: scale(0.97);
+    }
+
+    .option-card:global(.option-audition-active) {
+      transform: none;
+      filter: brightness(1.08);
+      transition: none;
     }
   }
 </style>

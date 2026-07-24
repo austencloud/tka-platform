@@ -160,7 +160,9 @@ export class CreateModuleInitializer {
     // Initialize services
     const t1 = performance.now();
     await this.CreateModuleOrchestrator.initialize();
-    console.log(`[Create init] Orchestrator: ${Math.round(performance.now() - t1)}ms`);
+    console.log(
+      `[Create init] Orchestrator: ${Math.round(performance.now() - t1)}ms`
+    );
 
     // Initialize all tab states + start positions in parallel (independent of each other)
     const t2 = performance.now();
@@ -170,7 +172,9 @@ export class CreateModuleInitializer {
       assembleTabState.initializeAssembleTab(),
       this.loadStartPositions(GridMode.DIAMOND),
     ]);
-    console.log(`[Create init] Tabs + start positions: ${Math.round(performance.now() - t2)}ms`);
+    console.log(
+      `[Create init] Tabs + start positions: ${Math.round(performance.now() - t2)}ms`
+    );
     console.log(`[Create init] Total: ${Math.round(performance.now() - t0)}ms`);
 
     return {
@@ -246,7 +250,8 @@ export class CreateModuleInitializer {
 
   configureEventCallbacks(
     CreateModuleState: ICreateModuleState,
-    panelState: PanelCoordinationState
+    panelState: PanelCoordinationState,
+    onOptionApplied: (sequence: SequenceData, stepNumber: number) => void
   ): void {
     const CreateModuleEventHandler = getCreateModuleEventHandler();
 
@@ -269,6 +274,7 @@ export class CreateModuleInitializer {
         metadata as UndoMetadata
       )
     );
+    CreateModuleEventHandler.setOptionAppliedCallback(onOptionApplied);
 
     // Configure panel state callbacks on sequenceState
     type SequenceStateWithCallbacks = typeof CreateModuleState.sequenceState & {
@@ -281,7 +287,8 @@ export class CreateModuleInitializer {
       onAnimationStart?: () => void;
       onAnimationEnd?: () => void;
     };
-    const seqState = CreateModuleState.sequenceState as SequenceStateWithCallbacks;
+    const seqState =
+      CreateModuleState.sequenceState as SequenceStateWithCallbacks;
 
     seqState.onEditPanelOpen = (
       stepIndex: number,

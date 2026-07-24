@@ -15,10 +15,15 @@
    */
   import { flip } from "svelte/animate";
   import { flipDuration, popIn } from "$lib/shared/transitions/motion";
+  import type { Snippet } from "svelte";
 
   interface Option {
     value: T;
     label: string;
+    /** Compact visible label; the full label remains the accessible name. */
+    shortLabel?: string;
+    /** More descriptive accessible name, such as a label plus result count. */
+    ariaLabel?: string;
     icon?: string; // FontAwesome class
     /** Optional trailing count badge (e.g. number of items in this group). */
     count?: number | null;
@@ -26,6 +31,9 @@
     disabled?: boolean;
     /** Semantic option color. Use blue/red when the option means that prop. */
     tone?: "blue" | "red" | "accent";
+    /** Tab ID and controlled panel ID when semantics="tabs". */
+    id?: string;
+    controls?: string;
   }
 
   interface Props {
@@ -39,10 +47,16 @@
     color?: "blue" | "red" | "accent";
     /** Size variant */
     size?: "sm" | "md";
+    /** Compact visual shell with a larger invisible pointer target. */
+    density?: "standard" | "compact";
     /** Accessible name for the option group. */
     ariaLabel?: string;
     /** ID of a visible label that names the option group. */
     ariaLabelledby?: string;
+    /** Tabs and radio groups add roving focus and arrow-key selection. */
+    semantics?: "button-group" | "tabs" | "radiogroup";
+    /** Custom visible content. The option's label still owns its accessible name. */
+    optionContent?: Snippet<[T]>;
   }
 
   let {
@@ -51,8 +65,11 @@
     onchange,
     color = "blue",
     size = "md",
+    density = "standard",
     ariaLabel,
     ariaLabelledby,
+    semantics = "button-group",
+    optionContent,
   }: Props = $props();
 
   function handleSelect(val: T) {
@@ -62,15 +79,71 @@
   // Find selected index for indicator position
   const selectedIndex = $derived(options.findIndex((o) => o.value === value));
   const selectedTone = $derived(options[selectedIndex]?.tone ?? color);
+
+  function handleSingleSelectKeydown(
+    event: KeyboardEvent,
+    optionIndex: number
+  ) {
+    if (semantics === "button-group") return;
+
+    const enabledIndexes = options.flatMap((option, index) =>
+      option.disabled ? [] : [index]
+    );
+    const currentEnabledIndex = enabledIndexes.indexOf(optionIndex);
+    if (currentEnabledIndex === -1) return;
+
+    let nextEnabledIndex: number | null = null;
+    switch (event.key) {
+      case "ArrowLeft":
+        nextEnabledIndex =
+          (currentEnabledIndex - 1 + enabledIndexes.length) %
+          enabledIndexes.length;
+        break;
+      case "ArrowRight":
+        nextEnabledIndex = (currentEnabledIndex + 1) % enabledIndexes.length;
+        break;
+      case "Home":
+        nextEnabledIndex = 0;
+        break;
+      case "End":
+        nextEnabledIndex = enabledIndexes.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    if (nextEnabledIndex === null) return;
+    const nextOptionIndex = enabledIndexes[nextEnabledIndex];
+    if (nextOptionIndex === undefined) return;
+    const nextOption = options[nextOptionIndex];
+    if (!nextOption) return;
+
+    const currentTarget = event.currentTarget as HTMLButtonElement;
+    const segments =
+      currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+        "button.segment"
+      );
+    segments?.[nextOptionIndex]?.focus();
+    handleSelect(nextOption.value);
+  }
 </script>
 
 <div
   class="segmented-control"
   class:sm={size === "sm"}
+  class:compact={density === "compact"}
   class:blue={color === "blue"}
   class:red={color === "red"}
   class:accent={color === "accent"}
-  role={ariaLabel || ariaLabelledby ? "group" : undefined}
+  role={semantics === "tabs"
+    ? "tablist"
+    : semantics === "radiogroup"
+      ? "radiogroup"
+      : ariaLabel || ariaLabelledby
+        ? "group"
+        : undefined}
+  aria-orientation={semantics !== "button-group" ? "horizontal" : undefined}
   aria-label={ariaLabel}
   aria-labelledby={ariaLabelledby}
   style="--count: {options.length}"
@@ -88,17 +161,41 @@
       class:selected={value === option.value}
       data-tone={option.tone}
       onclick={() => handleSelect(option.value)}
-      aria-label={option.label}
+      onkeydown={(event) =>
+        handleSingleSelectKeydown(event, options.indexOf(option))}
+      id={option.id}
+      role={semantics === "tabs"
+        ? "tab"
+        : semantics === "radiogroup"
+          ? "radio"
+          : undefined}
+      aria-controls={semantics === "tabs" ? option.controls : undefined}
+      aria-selected={semantics === "tabs" ? value === option.value : undefined}
+      aria-checked={semantics === "radiogroup"
+        ? value === option.value
+        : undefined}
+      tabindex={semantics !== "button-group"
+        ? value === option.value
+          ? 0
+          : -1
+        : 0}
+      aria-label={option.ariaLabel ?? option.label}
       title={option.label}
-      aria-pressed={value === option.value}
+      aria-pressed={semantics === "button-group"
+        ? value === option.value
+        : undefined}
       disabled={option.disabled}
       in:popIn
       animate:flip={{ duration: flipDuration() }}
     >
-      {#if option.icon}
+      {#if optionContent}
+        <span class="segment-label">
+          {@render optionContent(option.value)}
+        </span>
+      {:else if option.icon}
         <i class={option.icon} aria-hidden="true"></i>
       {:else}
-        <span class="segment-label">{option.label}</span>
+        <span class="segment-label">{option.shortLabel ?? option.label}</span>
       {/if}
       {#if option.count != null}
         <span class="segment-count">{option.count}</span>
@@ -119,6 +216,14 @@
     padding: 3px;
     gap: 2px;
     width: 100%;
+  }
+
+  /* Dense toolbars need less visible chrome without making the targets harder
+     to tap. The buttons stay 32px tall on screen and extend their hit area to
+     48px, matching the established mobile hand-selector pattern. */
+  .segmented-control.compact {
+    gap: 1px;
+    padding: 2px;
   }
 
   .indicator {
@@ -147,6 +252,13 @@
 
   .indicator[data-tone="accent"] {
     background: var(--theme-accent, #8b6cff);
+  }
+
+  .compact .indicator {
+    top: 2px;
+    bottom: 2px;
+    left: calc(2px + (100% - 4px) / var(--count) * var(--index));
+    width: calc((100% - 4px) / var(--count) - 1px);
   }
 
   .segment {
@@ -213,6 +325,20 @@
     /* Touch target uses var(--min-touch-target) for WCAG AA */
     padding: 0.45rem 0.7rem;
     font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .compact .segment {
+    box-sizing: border-box;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 0.5rem;
+    overflow: visible;
+  }
+
+  .compact .segment::before {
+    content: "";
+    position: absolute;
+    inset: -8px 0;
   }
 
   .segment:hover {
