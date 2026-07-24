@@ -13,6 +13,20 @@ export function getAuthErrorCode(error: unknown): string | undefined {
 }
 
 /**
+ * Provider popups can be blocked, dismissed, or superseded without indicating
+ * an application failure. Callers may still show recovery copy, but these
+ * outcomes should be measured as interaction events rather than exceptions.
+ */
+export function isExpectedAuthInterruption(error: unknown): boolean {
+  const errorCode = getAuthErrorCode(error);
+  return (
+    errorCode === "auth/popup-blocked" ||
+    errorCode === "auth/popup-closed-by-user" ||
+    errorCode === "auth/cancelled-popup-request"
+  );
+}
+
+/**
  * Map a Firebase Auth error (or error code) to a user-facing message.
  * Returns null when the "error" is really a user-initiated cancellation.
  */

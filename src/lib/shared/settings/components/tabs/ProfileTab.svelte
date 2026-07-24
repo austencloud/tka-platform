@@ -503,7 +503,7 @@
   bind:isOpen={showClearCacheConfirm}
   variant="warning"
   title="Clear cached data?"
-  message="This removes locally stored data and reloads the page. Your account and saved sequences are not affected."
+  message="This signs you out, removes locally stored data, and reloads the page. Cloud-saved sequences stay in your account."
   confirmText="Clear cache"
   cancelText="Cancel"
   onConfirm={performClearCache}

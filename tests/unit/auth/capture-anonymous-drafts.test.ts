@@ -50,6 +50,13 @@ vi.mock("$lib/shared/auth/firebase", () => ({
   getAuthInstance: async () => ({ currentUser: null }),
 }));
 
+vi.mock("$lib/shared/library/get-library-repository", () => ({
+  getLibraryRepository: vi.fn(),
+}));
+vi.mock("$lib/shared/gamification/get-prop-unlock-manager", () => ({
+  getPropUnlockManager: vi.fn(),
+}));
+
 import { captureAnonymousDrafts } from "$lib/shared/auth/services/anonymous-upgrade";
 
 beforeEach(() => {

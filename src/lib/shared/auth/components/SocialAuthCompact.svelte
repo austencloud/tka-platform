@@ -12,13 +12,8 @@
   import FacebookIcon from "./icons/FacebookIcon.svelte";
   import GoogleIcon from "./icons/GoogleIcon.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import {
-    browserLocalPersistence,
-    indexedDBLocalPersistence,
-    setPersistence,
-  } from "firebase/auth";
   import { browser } from "$app/environment";
-  import { getAuthInstance } from "../firebase";
+  import { configureAuthPersistence, getAuthInstance } from "../firebase";
   import {
     signInWithGoogle,
     signInWithInstagram,
@@ -33,6 +28,7 @@
   import {
     mapAuthError,
     getAuthErrorCode,
+    isExpectedAuthInterruption,
   } from "$lib/shared/auth/services/auth-error-messages";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import LastUsedBadge from "./LastUsedBadge.svelte";
@@ -41,6 +37,7 @@
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
   import {
     captureEvent,
+    captureException,
     captureWhenReady,
   } from "$lib/shared/analytics/services/posthog";
   import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
@@ -158,12 +155,7 @@
       // always returns an Auth wired to the current app.
       const auth = await getAuthInstance();
 
-      // Set persistence for reliable auth state
-      try {
-        await setPersistence(auth, indexedDBLocalPersistence);
-      } catch {
-        await setPersistence(auth, browserLocalPersistence);
-      }
+      await configureAuthPersistence(auth);
 
       // Don't navigate on success: the AuthDrawer/AuthSheet that wraps this
       // button unmounts via `{#if !isAuthenticated}` in MainApplication, so
@@ -183,16 +175,6 @@
     } catch (error: unknown) {
       const errorCode = getAuthErrorCode(error);
 
-      // Log the full error so we can see the stack in devtools. Firebase
-      // swallows a lot of context inside FirebaseError; the stack is the
-      // only reliable way to identify which call threw.
-      console.error("[SocialAuthCompact] Google sign-in failed", {
-        error,
-        code: errorCode,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-
       // Recovery for a webview arrival detection missed (e.g. the Google iOS
       // app, or an app whose token changed): OAuth itself rejected the
       // environment. Surface the escape path instead of a raw dead end, and
@@ -208,7 +190,22 @@
           route: analyticsRoute(),
         });
         revealEscapeNote();
+      } else if (isExpectedAuthInterruption(error)) {
+        providerError = mapAuthError(error);
+        captureEvent("auth_provider_interrupted", {
+          provider: "google",
+          reason: errorCode ?? "unknown",
+        });
       } else {
+        console.warn(
+          "[SocialAuthCompact] Unexpected Google sign-in failure",
+          error
+        );
+        captureException(error, {
+          auth_error_code: errorCode,
+          provider: "google",
+          surface: "social_auth_compact",
+        });
         providerError = mapAuthError(error);
       }
     } finally {

@@ -1,13 +1,9 @@
 import type { User } from "firebase/auth";
-import {
-  browserLocalPersistence,
-  indexedDBLocalPersistence,
-  setPersistence,
-  signInWithCustomToken,
-} from "firebase/auth";
+import { signInWithCustomToken } from "firebase/auth";
 import { doc, onSnapshot, type DocumentData } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import {
+  configureAuthPersistence,
   getAuthInstance,
   getFirestoreInstance,
   getFunctionsInstance,
@@ -239,11 +235,7 @@ async function waitForInstagramState(
 
 async function setReliablePersistence(): Promise<void> {
   const auth = await getAuthInstance();
-  try {
-    await setPersistence(auth, indexedDBLocalPersistence);
-  } catch {
-    await setPersistence(auth, browserLocalPersistence);
-  }
+  await configureAuthPersistence(auth);
 }
 
 /** Run the custom Instagram OAuth flow and finish with a Firebase custom token. */

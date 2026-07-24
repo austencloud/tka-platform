@@ -148,6 +148,11 @@ const EXCEPTION_NOISE = [
   // (foreground-message-handler.ts), this covers any path that still reaches
   // the SDK's own feature-detection throw.
   /messaging\/unsupported-browser/,
+  // AccountManager deliberately terminates Firestore before deleting its
+  // browser cache. Snapshot listeners that are already queued can report this
+  // SDK lifecycle message during that teardown; there is no failed app action.
+  /^Firestore shutting down$/,
+  /@firebase\/firestore:.*Uncaught Error in snapshot listener:.*Firestore shutting down/,
 ];
 
 /**

@@ -20,7 +20,10 @@
  */
 
 import { getUserDocumentManager } from "$lib/shared/auth/get-user-document-manager";
-import { updateFacebookProfilePictureIfNeeded, updateGoogleProfilePictureIfNeeded } from "$lib/shared/auth/services/profile-picture-manager";
+import {
+  updateFacebookProfilePictureIfNeeded,
+  updateGoogleProfilePictureIfNeeded,
+} from "$lib/shared/auth/services/profile-picture-manager";
 import { consumePendingLinkForUser } from "$lib/shared/auth/services/pending-credential-link";
 import {
   onAuthStateChanged,
@@ -35,7 +38,11 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 import { featureFlagService } from "../services/post-hog-feature-flag-service.svelte";
 import type { UserRole } from "../domain/models/user-role";
 import { isFullAccountUser } from "../domain/access-tier";
-import { identifyUser, resetUser, captureEvent } from "../../analytics/services/posthog";
+import {
+  identifyUser,
+  resetUser,
+  captureWhenReady,
+} from "../../analytics/services/posthog";
 import { getScanSourceCode } from "../../analytics/scan-attribution";
 
 import { linkDeviceToUser } from "$lib/shared/auth/services/device-id-service";
@@ -50,6 +57,7 @@ import {
 } from "../services/profile-field-updater";
 import { initializeChildServices } from "../services/auth-boot-orchestrator";
 import { clearBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 
 interface AuthState {
   user: User | null;
@@ -92,8 +100,10 @@ let _state = $state<AuthState>(
 );
 
 // Auth listener cleanup - preserve across HMR so we don't lose the active listener
-let cleanupAuthListener: (() => void) | null = hmrAuthData?.cleanupAuthListener ?? null;
-let cleanupSubscriptionListener: (() => void) | null = hmrAuthData?.cleanupSubscriptionListener ?? null;
+let cleanupAuthListener: (() => void) | null =
+  hmrAuthData?.cleanupAuthListener ?? null;
+let cleanupSubscriptionListener: (() => void) | null =
+  hmrAuthData?.cleanupSubscriptionListener ?? null;
 
 // Track whether child services (settings, arrows, onboarding, etc.) have been initialized.
 // On HMR, the auth listener fires again because the Firebase app instance rotates, but
@@ -226,7 +236,10 @@ export function getRole(): UserRole {
  * Initialize subscription status listener
  * Watches Firestore for subscription changes and syncs role to auth state
  */
-async function initializeSubscriptionListener(user: User): Promise<void> {
+async function initializeSubscriptionListener(
+  user: User,
+  permissionRetry = 0
+): Promise<void> {
   // Clean up existing listener if any
   if (cleanupSubscriptionListener) {
     cleanupSubscriptionListener();
@@ -274,6 +287,28 @@ async function initializeSubscriptionListener(user: User): Promise<void> {
         }
       },
       (error) => {
+        // A listener can report its final permission error after sign-out. Its
+        // owner is already gone, so that is expected teardown rather than an
+        // actionable exception.
+        if (_state.user?.uid !== user.uid) return;
+
+        if (permissionRetry === 0 && isPermissionDeniedError(error)) {
+          void user
+            .getIdToken(true)
+            .then(async () => {
+              if (_state.user?.uid === user.uid) {
+                await initializeSubscriptionListener(user, 1);
+              }
+            })
+            .catch((refreshError) => {
+              console.error(
+                "❌ [authState] Subscription retry failed:",
+                refreshError
+              );
+            });
+          return;
+        }
+
         console.error("❌ [authState] Subscription listener error:", error);
       }
     );
@@ -408,13 +443,18 @@ async function doInitializeAuthListener(): Promise<void> {
           // can't refresh (no network), we restore the last verified role
           // so admin modules remain accessible at festivals etc.
           try {
-            localStorage.setItem("tka-offline-auth-cache", JSON.stringify({
-              uid: user.uid,
-              role,
-              isAdmin,
-              timestamp: Date.now(),
-            }));
-          } catch { /* quota exceeded or private browsing — non-critical */ }
+            localStorage.setItem(
+              "tka-offline-auth-cache",
+              JSON.stringify({
+                uid: user.uid,
+                role,
+                isAdmin,
+                timestamp: Date.now(),
+              })
+            );
+          } catch {
+            /* quota exceeded or private browsing — non-critical */
+          }
         } catch (_error) {
           console.warn("⚠️ [authState] Failed to read cached token:", _error);
 
@@ -435,7 +475,9 @@ async function doInitializeAuthListener(): Promise<void> {
                 console.info("📴 [authState] Using offline-cached role:", role);
               }
             }
-          } catch { /* corrupted cache — proceed with default role */ }
+          } catch {
+            /* corrupted cache — proceed with default role */
+          }
         }
       }
 
@@ -453,14 +495,22 @@ async function doInitializeAuthListener(): Promise<void> {
         import("$lib/shared/auth/firebase")
           .then(({ getFirestoreInstance }) => getFirestoreInstance())
           .catch((error) => {
-            console.error("❌ [authState] Failed to initialize Firestore:", error);
+            console.error(
+              "❌ [authState] Failed to initialize Firestore:",
+              error
+            );
           });
 
         const userDocumentService = getUserDocumentManager();
         if (userDocumentService) {
-          userDocumentService.createOrUpdateUserDocument(user).catch((error) => {
-            console.error("❌ [authState] Failed to update user document:", error);
-          });
+          userDocumentService
+            .createOrUpdateUserDocument(user)
+            .catch((error) => {
+              console.error(
+                "❌ [authState] Failed to update user document:",
+                error
+              );
+            });
         }
 
         // If a Facebook sign-in collided with an existing account, the pending
@@ -470,23 +520,36 @@ async function doInitializeAuthListener(): Promise<void> {
           .then((linkedProviderId) => {
             if (linkedProviderId === "facebook.com") {
               void import("$lib/shared/toast/state/toast-state.svelte").then(
-                ({ toast }) => toast.success("Facebook connected to your account.")
+                ({ toast }) =>
+                  toast.success("Facebook connected to your account.")
               );
             }
           })
           .catch((error: unknown) => {
-            console.warn("⚠️ [authState] Pending credential link failed:", error);
+            console.warn(
+              "⚠️ [authState] Pending credential link failed:",
+              error
+            );
           });
 
         updateFacebookProfilePictureIfNeeded(user).catch((error: unknown) => {
-          console.warn("⚠️ [authState] Facebook profile picture update failed:", error);
+          console.warn(
+            "⚠️ [authState] Facebook profile picture update failed:",
+            error
+          );
         });
         updateGoogleProfilePictureIfNeeded(user).catch((error: unknown) => {
-          console.warn("⚠️ [authState] Google profile picture update failed:", error);
+          console.warn(
+            "⚠️ [authState] Google profile picture update failed:",
+            error
+          );
         });
 
         featureFlagService.initialize(user.uid, role).catch((_error) => {
-          console.warn("⚠️ [authState] Failed to initialize feature flags:", _error);
+          console.warn(
+            "⚠️ [authState] Failed to initialize feature flags:",
+            _error
+          );
         });
 
         linkDeviceToUser(user.uid).catch((err: unknown) => {
@@ -494,7 +557,10 @@ async function doInitializeAuthListener(): Promise<void> {
         });
       } else {
         featureFlagService.initialize(null).catch((_error) => {
-          console.warn("⚠️ [authState] Failed to initialize feature flags:", _error);
+          console.warn(
+            "⚠️ [authState] Failed to initialize feature flags:",
+            _error
+          );
         });
       }
 
@@ -519,7 +585,9 @@ async function doInitializeAuthListener(): Promise<void> {
           email: user.email ?? undefined,
           name: user.displayName ?? undefined,
           role,
-          createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : undefined,
+          createdAt: user.metadata.creationTime
+            ? new Date(user.metadata.creationTime)
+            : undefined,
           isPremium: role === "premium" || role === "admin",
           isTester: role === "tester" || role === "admin",
           isAdmin,
@@ -537,7 +605,7 @@ async function doInitializeAuthListener(): Promise<void> {
         // own guest_upgraded_to_account event (anonymous-upgrade.ts) instead,
         // so a fresh anon session isn't miscounted as a signup.
         if (isNewSignup && !user.isAnonymous) {
-          captureEvent("user_signed_up", {
+          captureWhenReady("user_signed_up", {
             scan_source_code: getScanSourceCode() ?? null,
           });
         }
@@ -607,8 +675,11 @@ export async function signOut(): Promise<void> {
     // loaded, it will eagerly re-prompt the user the instant any surface
     // that mounts <GoogleOneTap autoPrompt /> reappears.
     try {
-      (window as { google?: { accounts?: { id?: { disableAutoSelect?: () => void } } } })
-        .google?.accounts?.id?.disableAutoSelect?.();
+      (
+        window as {
+          google?: { accounts?: { id?: { disableAutoSelect?: () => void } } };
+        }
+      ).google?.accounts?.id?.disableAutoSelect?.();
     } catch {
       // GSI may not be loaded yet; nothing to do.
     }
@@ -746,10 +817,11 @@ export async function signOut(): Promise<void> {
     }
 
     try {
-      const [{ collectionsState }, { followedCollectionsState }] = await Promise.all([
-        import("$lib/features/library/state/collections-state.svelte"),
-        import("$lib/features/library/state/followed-collections-state.svelte"),
-      ]);
+      const [{ collectionsState }, { followedCollectionsState }] =
+        await Promise.all([
+          import("$lib/features/library/state/collections-state.svelte"),
+          import("$lib/features/library/state/followed-collections-state.svelte"),
+        ]);
       // Otherwise the previous user's Firestore listeners stay live after
       // logout and throw permission errors once the auth token is revoked.
       collectionsState.teardown();
@@ -758,9 +830,8 @@ export async function signOut(): Promise<void> {
       // signed-in account on the same device.
       const outgoingUid = _state.user?.uid;
       if (outgoingUid) {
-        const { clearMirror } = await import(
-          "$lib/features/library/services/collection-cache-mirror"
-        );
+        const { clearMirror } =
+          await import("$lib/features/library/services/collection-cache-mirror");
         clearMirror(outgoingUid);
       }
     } catch {
@@ -776,7 +847,10 @@ export async function signOut(): Promise<void> {
   }
 }
 
-export async function changeEmail(newEmail: string, currentPassword: string): Promise<ProfileFieldUpdateResult> {
+export async function changeEmail(
+  newEmail: string,
+  currentPassword: string
+): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doChangeEmail(user, newEmail, currentPassword);
@@ -814,7 +888,9 @@ export async function refreshUser(): Promise<void> {
   }
 }
 
-export async function updateDisplayName(displayName: string): Promise<ProfileFieldUpdateResult> {
+export async function updateDisplayName(
+  displayName: string
+): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   const result = await doUpdateDisplayName(user, displayName);
@@ -822,19 +898,25 @@ export async function updateDisplayName(displayName: string): Promise<ProfileFie
   return result;
 }
 
-export async function updateUsername(newUsername: string): Promise<ProfileFieldUpdateResult> {
+export async function updateUsername(
+  newUsername: string
+): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doUpdateUsername(user, newUsername);
 }
 
-export async function updateInstagramUsername(username: string): Promise<ProfileFieldUpdateResult> {
+export async function updateInstagramUsername(
+  username: string
+): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doUpdateInstagramUsername(user, username);
 }
 
-export async function updatePronouns(pronouns: string): Promise<ProfileFieldUpdateResult> {
+export async function updatePronouns(
+  pronouns: string
+): Promise<ProfileFieldUpdateResult> {
   const user = _state.user;
   if (!user) throw new Error("No authenticated user");
   return doUpdatePronouns(user, pronouns);
@@ -888,7 +970,10 @@ export interface AuthStateHandle {
   initialize(): Promise<void>;
   initializeAuthListener(): Promise<void>;
   signOut(): Promise<void>;
-  changeEmail(newEmail: string, currentPassword: string): Promise<ProfileFieldUpdateResult>;
+  changeEmail(
+    newEmail: string,
+    currentPassword: string
+  ): Promise<ProfileFieldUpdateResult>;
   updateDisplayName(displayName: string): Promise<ProfileFieldUpdateResult>;
   updateUsername(newUsername: string): Promise<ProfileFieldUpdateResult>;
   updateInstagramUsername(username: string): Promise<ProfileFieldUpdateResult>;

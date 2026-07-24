@@ -87,6 +87,11 @@ vi.mock("$lib/shared/auth/state/anonymous-import-prompt.svelte", () => ({
   promptAnonymousImport: promptRef.promptAnonymousImport,
 }));
 
+vi.mock("$lib/shared/auth/services/instagram-auth", () => ({
+  authenticateWithInstagram: vi.fn(),
+  disconnectInstagramAccount: vi.fn(),
+}));
+
 // PROP_TYPE_DISPLAY_REGISTRY pulls a wide import graph; the profile-picture
 // tests only need getProviderIds + updateFacebookProfilePictureIfNeeded, so stub
 // the registry to keep this a true unit test.

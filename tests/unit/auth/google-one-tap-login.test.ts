@@ -100,6 +100,11 @@ vi.mock("$lib/shared/auth/state/anonymous-import-prompt.svelte", () => ({
   promptAnonymousImport: promptRef.promptAnonymousImport,
 }));
 
+vi.mock("$lib/shared/auth/services/instagram-auth", () => ({
+  authenticateWithInstagram: vi.fn(),
+  disconnectInstagramAccount: vi.fn(),
+}));
+
 import { signInWithGoogleCredential } from "$lib/shared/auth/services/authenticator";
 
 beforeEach(() => {

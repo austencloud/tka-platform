@@ -8,7 +8,9 @@ vi.mock("$env/dynamic/public", () => ({
 vi.mock("$lib/shared/foundation/services/device-id", () => ({
   getDeviceId: () => "device-1",
 }));
-vi.mock("posthog-js", () => ({ default: { init: vi.fn(), reloadFeatureFlags: vi.fn() } }));
+vi.mock("posthog-js", () => ({
+  default: { init: vi.fn(), reloadFeatureFlags: vi.fn() },
+}));
 
 import { dropKnownNoise } from "$lib/shared/analytics/services/posthog";
 
@@ -53,7 +55,11 @@ describe("dropKnownNoise (PostHog before_send)", () => {
   });
 
   it("passes through an $exception event with no $exception_list", () => {
-    const event: CaptureResult = { uuid: "test-uuid", event: "$exception", properties: {} };
+    const event: CaptureResult = {
+      uuid: "test-uuid",
+      event: "$exception",
+      properties: {},
+    };
     expect(dropKnownNoise(event)).toBe(event);
   });
 
@@ -77,7 +83,9 @@ describe("dropKnownNoise (PostHog before_send)", () => {
       "Reject batch",
       "maybeGarbageCollectMultiClientState",
     ]) {
-      const event = exceptionEvent(`Failed to obtain primary lease for action '${action}'`);
+      const event = exceptionEvent(
+        `Failed to obtain primary lease for action '${action}'`
+      );
       expect(dropKnownNoise(event)).toBeNull();
     }
   });
@@ -86,7 +94,9 @@ describe("dropKnownNoise (PostHog before_send)", () => {
     // Deliberate: this message shape is only ever emitted by Firestore's own
     // background maintenance, so a new action name is more of the same noise
     // rather than new behaviour worth surfacing.
-    const event = exceptionEvent("Failed to obtain primary lease for action 'Something New'");
+    const event = exceptionEvent(
+      "Failed to obtain primary lease for action 'Something New'"
+    );
     expect(dropKnownNoise(event)).toBeNull();
   });
 
@@ -104,8 +114,30 @@ describe("dropKnownNoise (PostHog before_send)", () => {
     expect(dropKnownNoise(event)).toBeNull();
   });
 
+  it("drops Firestore's expected cache-clear shutdown messages", () => {
+    expect(
+      dropKnownNoise(exceptionEvent("Firestore shutting down"))
+    ).toBeNull();
+    expect(
+      dropKnownNoise(
+        exceptionEvent(
+          "@firebase/firestore: Firestore (12.1.0): Uncaught Error in snapshot listener: FirebaseError: [code=aborted]: Firestore shutting down"
+        )
+      )
+    ).toBeNull();
+  });
+
+  it("keeps other Firestore aborted errors visible", () => {
+    const event = exceptionEvent(
+      "FirebaseError: [code=aborted]: transaction contention"
+    );
+    expect(dropKnownNoise(event)).toBe(event);
+  });
+
   it("passes through a real, unrelated exception unchanged (same object)", () => {
-    const event = exceptionEvent("TypeError: Cannot read properties of undefined (reading 'foo')");
+    const event = exceptionEvent(
+      "TypeError: Cannot read properties of undefined (reading 'foo')"
+    );
     expect(dropKnownNoise(event)).toBe(event);
   });
 
@@ -128,7 +160,11 @@ describe("dropKnownNoise (PostHog before_send)", () => {
       properties: {
         $exception_list: [
           { type: "Error", value: "Sequence save failed" },
-          { type: "Error", value: "Failed to obtain primary lease for action 'Collect garbage'" },
+          {
+            type: "Error",
+            value:
+              "Failed to obtain primary lease for action 'Collect garbage'",
+          },
         ],
       },
     };
@@ -141,7 +177,11 @@ describe("dropKnownNoise (PostHog before_send)", () => {
       event: "$exception",
       properties: {
         $exception_list: [
-          { type: "Error", value: "ResizeObserver loop completed with undelivered notifications." },
+          {
+            type: "Error",
+            value:
+              "ResizeObserver loop completed with undelivered notifications.",
+          },
           { type: "Error", value: "some inner detail" },
         ],
       },

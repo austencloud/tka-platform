@@ -5,7 +5,11 @@ import {
   deleteUser,
 } from "firebase/auth";
 import { doc, deleteDoc, setDoc } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../firebase";
+import {
+  auth,
+  getFirestoreInstance,
+  shutdownFirestoreForCacheClear,
+} from "../firebase";
 import { nuclearCacheClear } from "../utils/nuclear-cache-clear";
 import {
   reauthenticateWithGoogle,
@@ -211,10 +215,15 @@ export class AccountManager {
     this.haptics.trigger("selection");
 
     try {
+      // Stop owner-scoped listeners and invalidate Auth before terminating
+      // Firestore. Deleting live SDK databases caused snapshot listeners to
+      // throw a burst of "Firestore shutting down" exceptions.
+      await authState.signOut().catch(() => {});
+      await shutdownFirestoreForCacheClear().catch(() => {});
       await nuclearCacheClear();
       setTimeout(() => {
         window.location.reload();
-      }, 500);
+      }, 0);
     } catch (error) {
       console.error("Failed to clear cache:", error);
       this.haptics.trigger("error");

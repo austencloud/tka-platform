@@ -22,6 +22,7 @@ import {
   type Auth,
   browserLocalPersistence,
   browserPopupRedirectResolver,
+  inMemoryPersistence,
   indexedDBLocalPersistence,
   setPersistence,
 } from "firebase/auth";
@@ -30,10 +31,15 @@ import type { Database } from "firebase/database";
 import type { FirebaseStorage } from "firebase/storage";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { resolveAuthDomain } from "./auth-domain";
-import { getFirebaseHMRManager, type FirebaseHMRManager } from "./firebase-hmr-manager";
+import {
+  getFirebaseHMRManager,
+  type FirebaseHMRManager,
+} from "./firebase-hmr-manager";
 import { getInAppBrowserDetector } from "./get-in-app-browser-detector";
-import type { Functions } from 'firebase/functions';
-import type { Unsubscribe } from 'firebase/firestore';
+import { shouldAvoidIndexedDbPersistence } from "./services/indexeddb-persistence-policy";
+import type { Functions } from "firebase/functions";
+import type { Unsubscribe } from "firebase/firestore";
+import { browser } from "$app/environment";
 
 const debug = createComponentLogger("Firebase");
 
@@ -118,6 +124,39 @@ let authInstance: Auth | null = null;
 let authInitPromise: Promise<Auth> | null = null;
 
 /**
+ * Select the most reliable supported Auth persistence for this browser.
+ * WebKit uses localStorage because losing its IndexedDB server can otherwise
+ * invalidate the user's Auth state and Firestore credentials together.
+ */
+export async function configureAuthPersistence(
+  authToConfigure: Auth
+): Promise<void> {
+  if (shouldAvoidIndexedDbPersistence()) {
+    try {
+      await setPersistence(authToConfigure, browserLocalPersistence);
+      debug.info("Auth persistence: localStorage (WebKit)");
+    } catch {
+      await setPersistence(authToConfigure, inMemoryPersistence);
+      debug.info("Auth persistence: memory (WebKit fallback)");
+    }
+    return;
+  }
+
+  try {
+    await setPersistence(authToConfigure, indexedDBLocalPersistence);
+    debug.success("Auth persistence: IndexedDB");
+  } catch {
+    try {
+      await setPersistence(authToConfigure, browserLocalPersistence);
+      debug.info("Auth persistence: localStorage (fallback)");
+    } catch {
+      await setPersistence(authToConfigure, inMemoryPersistence);
+      debug.info("Auth persistence: memory (fallback)");
+    }
+  }
+}
+
+/**
  * Get Firebase Auth instance (lazy, HMR-safe)
  *
  * This is the recommended way to access Auth. It:
@@ -148,15 +187,9 @@ export async function getAuthInstance(): Promise<Auth> {
 
     // Configure persistence
     try {
-      await setPersistence(authInstance, indexedDBLocalPersistence);
-      debug.success("Auth persistence: IndexedDB");
-    } catch {
-      try {
-        await setPersistence(authInstance, browserLocalPersistence);
-        debug.info("Auth persistence: localStorage (fallback)");
-      } catch (error) {
-        debug.warn("Auth persistence configuration failed:", error);
-      }
+      await configureAuthPersistence(authInstance);
+    } catch (error) {
+      debug.warn("Auth persistence configuration failed:", error);
     }
 
     return authInstance;
@@ -202,13 +235,26 @@ export function getAuthSync(): Auth {
  * @deprecated Use getAuthInstance() for HMR safety
  */
 function initAuthWithPersistence(): Auth {
+  // SSR has no browser storage or popup environment. Firebase falls back to
+  // in-memory persistence when dependencies are omitted; passing the browser
+  // hierarchy here makes its floating initializer assert during prerender.
+  if (!browser) {
+    return initializeAuth(app);
+  }
+
   // initializeAuth can only run once per Firebase app - fall back to getAuth
   // if it's already been initialized (e.g., via HMR or another call site).
   // popupRedirectResolver is required here because signInWithPopup relies on it;
   // getAuth() installs it by default, but initializeAuth() does not.
   try {
     return initializeAuth(app, {
-      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      persistence: shouldAvoidIndexedDbPersistence()
+        ? [browserLocalPersistence, inMemoryPersistence]
+        : [
+            indexedDBLocalPersistence,
+            browserLocalPersistence,
+            inMemoryPersistence,
+          ],
       popupRedirectResolver: browserPopupRedirectResolver,
     });
   } catch {
@@ -256,7 +302,9 @@ function isFirestoreCorruptionError(error: unknown): boolean {
 function isAlreadyStartedError(error: unknown): boolean {
   const code = (error as { code?: string } | null)?.code;
   const message = error instanceof Error ? error.message : "";
-  return code === "failed-precondition" || message.includes("already been started");
+  return (
+    code === "failed-precondition" || message.includes("already been started")
+  );
 }
 
 /**
@@ -321,8 +369,11 @@ export async function getFirestoreInstance(): Promise<Firestore> {
 }
 
 async function initializeFirestore(): Promise<Firestore> {
-  const { getFirestore, initializeFirestore: initFs, memoryLocalCache } =
-    await import("firebase/firestore");
+  const {
+    getFirestore,
+    initializeFirestore: initFs,
+    memoryLocalCache,
+  } = await import("firebase/firestore");
 
   // DEV: memory cache (avoids HMR corruption) + forced long-polling.
   // experimentalAutoDetectLongPolling is on by default, but its probe still
@@ -339,7 +390,9 @@ async function initializeFirestore(): Promise<Firestore> {
         experimentalForceLongPolling: true,
       });
       usingMemoryCache = true;
-      debug.success("Firestore initialized with memory cache + long-polling (dev)");
+      debug.success(
+        "Firestore initialized with memory cache + long-polling (dev)"
+      );
     } catch {
       // Already initialized (HMR) — reuse the existing instance, which already
       // carries the long-polling setting from the first init.
@@ -375,6 +428,18 @@ async function initializeFirestore(): Promise<Firestore> {
     return firestoreInstance;
   }
 
+  // WebKit's IndexedDB server can disappear while a page is still open. Once
+  // that happens, Firestore's persistent cache retries every listener against
+  // the same dead connection. Keep network-backed Firestore fully functional
+  // with its supported memory cache on Safari and every iOS browser.
+  if (shouldAvoidIndexedDbPersistence()) {
+    firestoreInstance = initFs(app, { localCache: memoryLocalCache() });
+    usingMemoryCache = true;
+    debug.info("Firestore memory-only (WebKit)");
+    hmrManager.setFirestore(firestoreInstance);
+    return firestoreInstance;
+  }
+
   // In-app webviews partition IndexedDB unpredictably, and these sessions are
   // short by nature: the visitor is on their way to a real browser. Skip the
   // 5s persistent-cache race rather than spend it, and skip the multi-tab lease
@@ -406,7 +471,10 @@ async function initializeFirestore(): Promise<Firestore> {
         return fs;
       })(),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore persistent cache timed out")), FIRESTORE_INIT_TIMEOUT)
+        setTimeout(
+          () => reject(new Error("Firestore persistent cache timed out")),
+          FIRESTORE_INIT_TIMEOUT
+        )
       ),
     ]);
   } catch (error) {
@@ -443,6 +511,46 @@ async function initializeFirestore(): Promise<Firestore> {
 /** Check if Firestore is using memory-only cache */
 export function isFirestoreUsingMemoryCache(): boolean {
   return usingMemoryCache;
+}
+
+/**
+ * Release Firestore before a user-requested full cache clear.
+ *
+ * Firebase only permits clearing its IndexedDB persistence after termination.
+ * AccountManager removes live listeners first, then calls this boundary before
+ * deleting the rest of the app's browser storage and reloading.
+ */
+export async function shutdownFirestoreForCacheClear(): Promise<void> {
+  let firestore = firestoreInstance ?? hmrManager.getFirestore();
+  if (!firestore && firestoreInitPromise) {
+    firestore = await firestoreInitPromise.catch(() => null);
+  }
+  if (!firestore) return;
+
+  const { clearIndexedDbPersistence, terminate } =
+    await import("firebase/firestore");
+
+  try {
+    await terminate(firestore);
+  } catch (error) {
+    // A corrupted IndexedDB connection can make termination itself reject.
+    // The raw browser-storage clear that follows remains the recovery path.
+    debug.warn("Firestore termination needed browser fallback:", error);
+  } finally {
+    firestoreInstance = null;
+    firestoreInitPromise = null;
+    usingMemoryCache = false;
+    hmrManager.clearFirestore();
+  }
+
+  try {
+    await clearIndexedDbPersistence(firestore);
+  } catch (error) {
+    // The broader cache clear still deletes the database directly. WebKit may
+    // reject this SDK call when the very problem being repaired is a lost
+    // IndexedDB server connection.
+    debug.warn("Firestore persistence clear needed browser fallback:", error);
+  }
 }
 
 // ============================================================================

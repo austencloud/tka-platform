@@ -25,12 +25,13 @@ import {
   isSignInWithEmailLink,
   parseActionCodeURL,
   signInWithEmailLink,
-  browserLocalPersistence,
-  indexedDBLocalPersistence,
-  setPersistence,
 } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
-import { auth, getFunctionsInstance } from "../firebase";
+import {
+  auth,
+  configureAuthPersistence,
+  getFunctionsInstance,
+} from "../firebase";
 
 export interface EmailLinkCompletionResult {
   /** A magic link was present and sign-in completed. */
@@ -157,11 +158,7 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
     }
 
     // Persistence must be configured before sign-in so the session survives reload.
-    try {
-      await setPersistence(auth, indexedDBLocalPersistence);
-    } catch {
-      await setPersistence(auth, browserLocalPersistence);
-    }
+    await configureAuthPersistence(auth);
 
     // Re-register method=magic_link on THIS tab before the credential is
     // exchanged. The tab that requested the link registered it in
@@ -182,13 +179,13 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
       const anonUid = auth.currentUser.uid;
       const credential = EmailAuthProvider.credentialWithLink(savedEmail, link);
       try {
-        await linkWithCredential(auth.currentUser, credential);
+        const result = await linkWithCredential(auth.currentUser, credential);
         // Guest just upgraded to a full account — fire the admin signup
         // notification (createOrUpdateUserDocument skips it for anon users,
         // and the linked uid's doc already exists so it won't re-fire there).
         const { notifyUpgradeSignup } =
           await import("$lib/shared/auth/services/anonymous-upgrade");
-        void notifyUpgradeSignup();
+        await notifyUpgradeSignup(result.user);
       } catch (linkErr) {
         const code = (linkErr as { code?: string })?.code;
         if (

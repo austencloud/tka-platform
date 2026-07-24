@@ -6,16 +6,13 @@
    */
 
   import {
-    browserLocalPersistence,
     createUserWithEmailAndPassword,
-    indexedDBLocalPersistence,
     sendEmailVerification,
-    setPersistence,
     signInWithEmailAndPassword,
     updateProfile,
   } from "firebase/auth";
   import { onDestroy } from "svelte";
-  import { auth } from "../firebase";
+  import { auth, configureAuthPersistence } from "../firebase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import {
     captureAnonymousDrafts,
@@ -95,11 +92,7 @@
     success = null;
 
     try {
-      try {
-        await setPersistence(auth, indexedDBLocalPersistence);
-      } catch {
-        await setPersistence(auth, browserLocalPersistence);
-      }
+      await configureAuthPersistence(auth);
 
       // recordAuthSubmission has to land the instant the credential resolves,
       // never after. Firebase's onAuthStateChanged fires within milliseconds
@@ -114,7 +107,9 @@
           if (upgrade.status === "linked") {
             recordAuthSubmission("password", mode);
             if (name.trim() && auth.currentUser) {
-              await updateProfile(auth.currentUser, { displayName: name.trim() });
+              await updateProfile(auth.currentUser, {
+                displayName: name.trim(),
+              });
             }
             if (auth.currentUser && !auth.currentUser.emailVerified) {
               await sendEmailVerification(auth.currentUser);
@@ -126,7 +121,11 @@
             promptAnonymousImport(upgrade.importable ?? []);
           }
         } else {
-          const result = await createUserWithEmailAndPassword(auth, email, password);
+          const result = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
           recordAuthSubmission("password", mode);
           if (name.trim()) {
             await updateProfile(result.user, { displayName: name.trim() });
@@ -247,7 +246,9 @@
           type="button"
           class="toggle"
           onclick={() => (showPassword = !showPassword)}
-          aria-label={showPassword ? t("auth_hide_password") : t("auth_show_password")}
+          aria-label={showPassword
+            ? t("auth_hide_password")
+            : t("auth_show_password")}
         >
           <i
             class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"
@@ -279,7 +280,9 @@
       onclick={toggleMode}
       disabled={loading}
     >
-      {mode === "signin" ? t("auth_need_account") : t("auth_have_account_signin")}
+      {mode === "signin"
+        ? t("auth_need_account")
+        : t("auth_have_account_signin")}
     </button>
   </form>
 </div>

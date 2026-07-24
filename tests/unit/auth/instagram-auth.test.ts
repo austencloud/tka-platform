@@ -1,4 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("firebase/auth", () => ({
+  signInWithCustomToken: vi.fn(),
+}));
+vi.mock("firebase/firestore", () => ({
+  doc: vi.fn(),
+  onSnapshot: vi.fn(),
+}));
+vi.mock("firebase/functions", () => ({
+  httpsCallable: vi.fn(),
+}));
+vi.mock("$lib/shared/auth/firebase", () => ({
+  configureAuthPersistence: vi.fn(),
+  getAuthInstance: vi.fn(),
+  getFirestoreInstance: vi.fn(),
+  getFunctionsInstance: vi.fn(),
+}));
+
 import {
   getInstagramAuthErrorCode,
   getInstagramAuthErrorMessage,

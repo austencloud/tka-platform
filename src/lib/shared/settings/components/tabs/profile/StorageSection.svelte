@@ -1,7 +1,6 @@
 <!-- StorageSection.svelte - Cache clearing controls + offline download -->
 <script lang="ts">
-
-import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
+  import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
   import { onMount } from "svelte";
   import GlassCard from "./GlassCard.svelte";
 
@@ -82,7 +81,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
 
   // Neutral (non-success) tone for every "nothing durable happened" outcome.
   const resultIsInfo = $derived(
-    lastResult != null && (!lastResult.supported || lastResult.reason !== undefined)
+    lastResult != null &&
+      (!lastResult.supported || lastResult.reason !== undefined)
   );
 
   const downloadLabel = $derived(
@@ -136,14 +136,18 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         <div class="cache-stats">
           <div class="stat-row">
             <span class="stat-label">Gallery sequences</span>
-            <span class="stat-value">{offlineStats.gallerySequenceCount.toLocaleString()}</span>
+            <span class="stat-value"
+              >{offlineStats.gallerySequenceCount.toLocaleString()}</span
+            >
           </div>
           <div class="stat-row">
             <span class="stat-label">Thumbnails cached</span>
             <span class="stat-value">
               {offlineStats.thumbnailsCached.toLocaleString()}
               {#if offlineStats.thumbnailsSizeBytes > 0}
-                <span class="stat-size">({formatBytes(offlineStats.thumbnailsSizeBytes)})</span>
+                <span class="stat-size"
+                  >({formatBytes(offlineStats.thumbnailsSizeBytes)})</span
+                >
               {/if}
             </span>
           </div>
@@ -151,9 +155,15 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
             <div class="stat-row">
               <span class="stat-label">Device storage</span>
               <span class="stat-value">
-                {formatBytes(offlineStats.storageUsedBytes)} of {formatBytes(offlineStats.storageQuotaBytes)}
+                {formatBytes(offlineStats.storageUsedBytes)} of {formatBytes(
+                  offlineStats.storageQuotaBytes
+                )}
                 {#if offlineStats.storagePersisted}
-                  <span class="stat-size" title="The browser granted durable storage; cached data is exempt from automatic cleanup.">· protected</span>
+                  <span
+                    class="stat-size"
+                    title="The browser granted durable storage; cached data is exempt from automatic cleanup."
+                    >· protected</span
+                  >
                 {/if}
               </span>
             </div>
@@ -167,7 +177,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         onclick={handleDownloadForOffline}
         disabled={isDownloading}
       >
-        <i class="fas {isDownloading ? 'fa-spinner fa-spin' : 'fa-download'}" aria-hidden="true"></i>
+        <i
+          class="fas {isDownloading ? 'fa-spinner fa-spin' : 'fa-download'}"
+          aria-hidden="true"
+        ></i>
         <span class="download-label">{downloadLabel}</span>
       </button>
 
@@ -182,21 +195,28 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       {#if !cachingSupported && !lastResult}
         <p class="hint-text info-note">
           <i class="fas fa-circle-info" aria-hidden="true"></i>
-          Offline caching runs on the installed app or tkaflowarts.com — not localhost. The service worker that stores assets is disabled in dev.
+          Offline caching runs on the installed app or tkaflowarts.com — not localhost.
+          The service worker that stores assets is disabled in dev.
         </p>
       {:else}
         <p class="hint-text">
-          Caches pictograph art so the gallery and sequences render offline, and warms gallery thumbnails for instant loading.
+          Caches pictograph art so the gallery and sequences render offline, and
+          warms gallery thumbnails for instant loading.
         </p>
       {/if}
 
       <!-- Clear Cache button -->
-      <button class="action-btn" onclick={handleClearCache} disabled={isClearing}>
+      <button
+        class="action-btn"
+        onclick={handleClearCache}
+        disabled={isClearing}
+      >
         <i class="fas fa-broom" aria-hidden="true"></i>
         <span>{isClearing ? "Clearing..." : "Clear Cache"}</span>
       </button>
       <p class="hint-text">
-        Clears IndexedDB, localStorage, and cookies. Your cloud data is safe.
+        Signs you out and clears IndexedDB, localStorage, and cookies. Cloud
+        data stays in your account.
       </p>
     </div>
   {/snippet}
@@ -230,7 +250,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   .status-badge.ready {
     color: var(--semantic-success);
     background: color-mix(in srgb, var(--semantic-success) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-success) 30%, transparent);
   }
 
   .status-badge.not-cached {
@@ -248,7 +269,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     gap: 4px;
     padding: clamp(8px, 2cqi, 10px) clamp(10px, 2.5cqi, 14px);
     background: color-mix(in srgb, var(--theme-text) 4%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-stroke, rgba(255, 255, 255, 0.1)) 60%, transparent);
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-stroke, rgba(255, 255, 255, 0.1)) 60%,
+        transparent
+      );
     border-radius: clamp(6px, 1.5cqi, 8px);
   }
 
@@ -321,14 +347,30 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
 
   /* Download button uses a more prominent accent style */
   .download-btn {
-    background: color-mix(in srgb, var(--semantic-success, #4caf50) 15%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #4caf50) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #4caf50) 15%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #4caf50) 40%,
+      transparent
+    );
     color: var(--semantic-success, #4caf50);
   }
 
   .download-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-success, #4caf50) 25%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #4caf50) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #4caf50) 25%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #4caf50) 60%,
+      transparent
+    );
     box-shadow: 0 8px 24px
       color-mix(in srgb, var(--semantic-success, #4caf50) 20%, transparent);
   }

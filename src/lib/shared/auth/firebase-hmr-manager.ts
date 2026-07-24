@@ -126,7 +126,11 @@ export class FirebaseHMRManager {
    */
   static getInstance(config?: Partial<FirebaseHMRConfig>): FirebaseHMRManager {
     // Check globalThis first to survive HMR module re-evaluation
-    if (!FirebaseHMRManager.instance && typeof globalThis !== "undefined" && globalThis.__FIREBASE_HMR_MANAGER__) {
+    if (
+      !FirebaseHMRManager.instance &&
+      typeof globalThis !== "undefined" &&
+      globalThis.__FIREBASE_HMR_MANAGER__
+    ) {
       FirebaseHMRManager.instance = globalThis.__FIREBASE_HMR_MANAGER__;
     }
 
@@ -145,7 +149,10 @@ export class FirebaseHMRManager {
    * Restore instance from global (for HMR)
    */
   static restoreFromGlobal(): FirebaseHMRManager | null {
-    if (typeof globalThis !== "undefined" && globalThis.__FIREBASE_HMR_MANAGER__) {
+    if (
+      typeof globalThis !== "undefined" &&
+      globalThis.__FIREBASE_HMR_MANAGER__
+    ) {
       FirebaseHMRManager.instance = globalThis.__FIREBASE_HMR_MANAGER__;
       return FirebaseHMRManager.instance;
     }
@@ -241,6 +248,14 @@ export class FirebaseHMRManager {
   }
 
   /**
+   * Forget a deliberately terminated instance before the page reloads.
+   */
+  clearFirestore(): void {
+    this.state.firestore = null;
+    this.log("Firestore instance cleared");
+  }
+
+  /**
    * Set the Database instance (called during lazy init)
    */
   setDatabase(database: Database): void {
@@ -262,7 +277,10 @@ export class FirebaseHMRManager {
     resubscribe: () => Unsubscribe
   ): Unsubscribe {
     if (this.listenerRegistry.size >= this.config.maxListeners) {
-      this.log(`Listener registry full (${this.config.maxListeners}), skipping: ${id}`, "warn");
+      this.log(
+        `Listener registry full (${this.config.maxListeners}), skipping: ${id}`,
+        "warn"
+      );
       return resubscribe();
     }
 
@@ -328,7 +346,9 @@ export class FirebaseHMRManager {
    */
   registerPresenceHandler(handler: () => Promise<void> | void): () => void {
     this.presenceHandlers.push(handler);
-    this.log(`Registered presence handler (${this.presenceHandlers.length} total)`);
+    this.log(
+      `Registered presence handler (${this.presenceHandlers.length} total)`
+    );
 
     return () => {
       const index = this.presenceHandlers.indexOf(handler);
@@ -409,8 +429,8 @@ export class FirebaseHMRManager {
    */
   async onHMRAccept(
     firebaseConfig: Record<string, string>,
-    initializeApp: typeof import('firebase/app').initializeApp, // eslint-disable-line @typescript-eslint/consistent-type-imports
-    getAuth: typeof import('firebase/auth').getAuth // eslint-disable-line @typescript-eslint/consistent-type-imports
+    initializeApp: typeof import("firebase/app").initializeApp, // eslint-disable-line @typescript-eslint/consistent-type-imports
+    getAuth: typeof import("firebase/auth").getAuth // eslint-disable-line @typescript-eslint/consistent-type-imports
   ): Promise<void> {
     if (this.rotationPromise) {
       await this.rotationPromise;
@@ -420,7 +440,11 @@ export class FirebaseHMRManager {
     const startTime = Date.now();
     this.metrics.totalRotations++;
 
-    this.rotationPromise = this.performRotation(firebaseConfig, initializeApp, getAuth);
+    this.rotationPromise = this.performRotation(
+      firebaseConfig,
+      initializeApp,
+      getAuth
+    );
 
     try {
       await this.rotationPromise;
@@ -449,8 +473,8 @@ export class FirebaseHMRManager {
    */
   private async performRotation(
     firebaseConfig: Record<string, string>,
-    initializeApp: typeof import('firebase/app').initializeApp, // eslint-disable-line @typescript-eslint/consistent-type-imports
-    getAuth: typeof import('firebase/auth').getAuth // eslint-disable-line @typescript-eslint/consistent-type-imports
+    initializeApp: typeof import("firebase/app").initializeApp, // eslint-disable-line @typescript-eslint/consistent-type-imports
+    getAuth: typeof import("firebase/auth").getAuth // eslint-disable-line @typescript-eslint/consistent-type-imports
   ): Promise<void> {
     this.state.phase = "rotating";
     this.state.currentAppId++;
@@ -516,7 +540,9 @@ export class FirebaseHMRManager {
         if (this.state.auth!.currentUser) {
           clearTimeout(timeout);
           unsubscribe();
-          this.log(`Auth already restored: ${this.state.auth!.currentUser.uid}`);
+          this.log(
+            `Auth already restored: ${this.state.auth!.currentUser.uid}`
+          );
           this.metrics.authTransfersSucceeded++;
           resolve();
         }
@@ -571,7 +597,9 @@ export class FirebaseHMRManager {
       return;
     }
 
-    this.log(`Re-establishing ${this.presenceHandlers.length} presence handlers`);
+    this.log(
+      `Re-establishing ${this.presenceHandlers.length} presence handlers`
+    );
 
     for (const handler of this.presenceHandlers) {
       try {
@@ -629,7 +657,6 @@ export class FirebaseHMRManager {
 // ============================================================================
 
 declare global {
-   
   var __FIREBASE_HMR_MANAGER__: FirebaseHMRManager | undefined;
 }
 

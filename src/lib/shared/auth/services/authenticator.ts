@@ -10,15 +10,12 @@ import {
   EmailAuthProvider,
   FacebookAuthProvider,
   GoogleAuthProvider,
-  browserLocalPersistence,
   createUserWithEmailAndPassword,
-  indexedDBLocalPersistence,
   linkWithCredential,
   linkWithPopup,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   sendEmailVerification,
-  setPersistence,
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -27,7 +24,7 @@ import {
   updateProfile,
   type AuthError,
 } from "firebase/auth";
-import { auth, getAuthInstance } from "../firebase";
+import { auth, configureAuthPersistence, getAuthInstance } from "../firebase";
 import {
   captureAnonymousDrafts,
   notifyUpgradeSignup,
@@ -37,7 +34,7 @@ import {
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 import { clearPendingLink, stashPendingLink } from "./pending-credential-link";
 import { recordLastAuthMethod } from "./last-auth-method.svelte";
-import { captureEvent } from "$lib/shared/analytics/services/posthog";
+import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
 import {
   authenticateWithInstagram,
   disconnectInstagramAccount,
@@ -180,22 +177,18 @@ export async function signInWithInstagram(): Promise<void> {
   const drafts = await captureAnonymousDrafts(anonymousUser.uid);
   const result = await authenticateWithInstagram("signin");
   if (result.collision) {
-    captureEvent("guest_upgraded_to_account", {
+    captureWhenReady("guest_upgraded_to_account", {
       status: "collision-signed-in",
     });
     promptAnonymousImport(drafts);
   } else {
-    void notifyUpgradeSignup();
+    await notifyUpgradeSignup(authInstance.currentUser ?? undefined);
   }
   recordLastAuthMethod("instagram");
 }
 
 async function setAuthPersistence(): Promise<void> {
-  try {
-    await setPersistence(auth, indexedDBLocalPersistence);
-  } catch {
-    await setPersistence(auth, browserLocalPersistence);
-  }
+  await configureAuthPersistence(auth);
 }
 
 export async function signInWithEmail(

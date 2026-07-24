@@ -5,14 +5,21 @@
 // (isEmailLinkPending) stays read-only, while the cross-device path resolves
 // the original email from short-lived opaque state instead of asking again.
 
+// @vitest-environment jsdom
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   isSignInWithEmailLink: vi.fn(),
   parseActionCodeURL: vi.fn(),
   signInWithEmailLink: vi.fn(async () => ({})),
-  linkWithCredential: vi.fn(async () => ({})),
-  setPersistence: vi.fn(async () => undefined),
+  linkWithCredential: vi.fn(),
+  configureAuthPersistence: vi.fn(async () => undefined),
+  linkedUser: {
+    uid: "anon-1",
+    isAnonymous: false,
+  },
+  notifyUpgradeSignup: vi.fn(async () => undefined),
   credentialWithLink: vi.fn(() => ({ providerId: "password" })),
   resolveEmail: vi.fn(async () => ({
     data: {
@@ -30,9 +37,6 @@ vi.mock("firebase/auth", () => ({
   parseActionCodeURL: h.parseActionCodeURL,
   signInWithEmailLink: h.signInWithEmailLink,
   linkWithCredential: h.linkWithCredential,
-  setPersistence: h.setPersistence,
-  browserLocalPersistence: {},
-  indexedDBLocalPersistence: {},
   EmailAuthProvider: {
     credentialWithLink: h.credentialWithLink,
   },
@@ -53,6 +57,7 @@ const authRef = vi.hoisted(() => ({
 }));
 vi.mock("$lib/shared/auth/firebase", () => ({
   auth: authRef.current,
+  configureAuthPersistence: h.configureAuthPersistence,
   getFunctionsInstance: h.getFunctionsInstance,
 }));
 
@@ -63,7 +68,7 @@ vi.mock("$lib/shared/onboarding/state/first-run-state.svelte", () => ({
   firstRunState: { markSkipped: h.markFirstRunSkipped },
 }));
 vi.mock("$lib/shared/auth/services/anonymous-upgrade", () => ({
-  notifyUpgradeSignup: vi.fn(async () => undefined),
+  notifyUpgradeSignup: h.notifyUpgradeSignup,
   upgradeMagicLinkCollision: vi.fn(async () => []),
 }));
 
@@ -89,6 +94,7 @@ beforeEach(() => {
       email: "linked@example.com",
     },
   });
+  h.linkWithCredential.mockResolvedValue({ user: h.linkedUser });
   // Firebase's action-link parser is mocked above, so each test can opt into
   // an opaque-state link without constructing a real oobCode.
 });
@@ -233,6 +239,7 @@ describe("completeEmailLinkSignIn — the code-consuming call", () => {
 
     expect(result.completed).toBe(true);
     expect(h.linkWithCredential).toHaveBeenCalledTimes(1);
+    expect(h.notifyUpgradeSignup).toHaveBeenCalledWith(h.linkedUser);
     expect(h.signInWithEmailLink).not.toHaveBeenCalled();
   });
 

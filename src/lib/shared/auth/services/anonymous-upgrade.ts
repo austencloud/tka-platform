@@ -16,6 +16,7 @@ import {
   signInWithEmailAndPassword,
   signInWithEmailLink,
   type AuthError,
+  type User,
 } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
 import { stashPendingLink } from "$lib/shared/auth/services/pending-credential-link";
@@ -23,7 +24,7 @@ import { recordLastAuthMethod } from "$lib/shared/auth/services/last-auth-method
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { captureEvent } from "$lib/shared/analytics/services/posthog";
+import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
 import * as dexiePersistence from "$lib/shared/persistence/services/dexie-persistence-service";
 import { getSavedSequenceIds } from "$lib/shared/library/services/saved-sequence-ledger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -110,11 +111,16 @@ export async function captureAnonymousDrafts(
  * dialog + toast). The non-anon guard below guarantees we only confirm a real
  * upgrade.
  */
-export async function notifyUpgradeSignup(): Promise<void> {
+export async function notifyUpgradeSignup(linkedUser?: User): Promise<void> {
   try {
-    const auth = await getAuthInstance();
-    const user = auth.currentUser;
-    if (!user || user.isAnonymous) return;
+    const user = linkedUser ?? (await getAuthInstance()).currentUser;
+    if (!user) return;
+    // Linking mutates the User before every Firestore client necessarily sees
+    // its replacement token. Complete that transition here so profile writes
+    // and username claims run with a full-account provider claim.
+    await user.getIdToken(true);
+    if (user.isAnonymous) return;
+
     // Clear the guest flag now that this uid is a full account, so the creator
     // surfaces in Browse Creators. onAuthStateChanged doesn't reliably fire on
     // an in-place link, so we do it explicitly. createOrUpdateUserDocument's
@@ -138,7 +144,7 @@ export async function notifyUpgradeSignup(): Promise<void> {
     // Discrete guest→account conversion event, separate from identify() -
     // fires exactly once here since this is the single call site for every
     // in-place link path (Google/Facebook/Email + magic-link, native or web).
-    captureEvent("guest_upgraded_to_account", { status: "linked" });
+    captureWhenReady("guest_upgraded_to_account", { status: "linked" });
     // Admin upgrade notifications are handled server-side by the
     // pulseUserActivity cloud function (fires when isAnonymous flips false
     // on the user doc). The old client-side notify was rules-denied.
@@ -164,14 +170,14 @@ export async function upgradeAnonymousWithGoogleCredential(
   const auth = await getAuthInstance();
   const drafts = await captureAnonymousDrafts(anon.uid);
   try {
-    await linkWithCredential(anon, credential);
-    void notifyUpgradeSignup();
+    const result = await linkWithCredential(anon, credential);
+    await notifyUpgradeSignup(result.user);
     recordLastAuthMethod("google");
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
       await signInWithCredential(auth, credential);
-      captureEvent("guest_upgraded_to_account", {
+      captureWhenReady("guest_upgraded_to_account", {
         status: "collision-signed-in",
       });
       recordLastAuthMethod("google");
@@ -201,8 +207,8 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   provider.addScope("email");
   provider.addScope("profile");
   try {
-    await linkWithPopup(anon, provider);
-    void notifyUpgradeSignup();
+    const result = await linkWithPopup(anon, provider);
+    await notifyUpgradeSignup(result.user);
     recordLastAuthMethod("google");
     return { status: "linked" };
   } catch (error) {
@@ -210,7 +216,7 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
       const cred = GoogleAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
-      captureEvent("guest_upgraded_to_account", {
+      captureWhenReady("guest_upgraded_to_account", {
         status: "collision-signed-in",
       });
       recordLastAuthMethod("google");
@@ -229,8 +235,8 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
   provider.addScope("email");
   provider.addScope("public_profile");
   try {
-    await linkWithPopup(anon, provider);
-    void notifyUpgradeSignup();
+    const result = await linkWithPopup(anon, provider);
+    await notifyUpgradeSignup(result.user);
     recordLastAuthMethod("facebook");
     return { status: "linked" };
   } catch (error) {
@@ -238,7 +244,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
       const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
-      captureEvent("guest_upgraded_to_account", {
+      captureWhenReady("guest_upgraded_to_account", {
         status: "collision-signed-in",
       });
       recordLastAuthMethod("facebook");
@@ -272,14 +278,14 @@ export async function upgradeAnonymousWithEmail(
   const drafts = await captureAnonymousDrafts(anon.uid);
   const credential = EmailAuthProvider.credential(email.trim(), password);
   try {
-    await linkWithCredential(anon, credential);
-    void notifyUpgradeSignup();
+    const result = await linkWithCredential(anon, credential);
+    await notifyUpgradeSignup(result.user);
     recordLastAuthMethod("password");
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      captureEvent("guest_upgraded_to_account", {
+      captureWhenReady("guest_upgraded_to_account", {
         status: "collision-signed-in",
       });
       recordLastAuthMethod("password");
@@ -322,7 +328,9 @@ export async function upgradeMagicLinkCollision(
   const auth = await getAuthInstance();
   const drafts = await captureAnonymousDrafts(anonUid);
   await signInWithEmailLink(auth, email, link);
-  captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+  captureWhenReady("guest_upgraded_to_account", {
+    status: "collision-signed-in",
+  });
   recordLastAuthMethod("magic-link");
   return drafts;
 }
