@@ -38,10 +38,13 @@ import type {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
+import type { ChangedTransitionPlayback } from "$lib/shared/create/domain/changed-transition-playback";
 
 // Lazy import to break circular dependency
 // panel-coordination-state ↔ create-module-state-ref ↔ construct-tab-state (cycle)
-let _cachedGetCreateModuleStateRef: (() => CreateModuleState | null) | undefined;
+let _cachedGetCreateModuleStateRef:
+  | (() => CreateModuleState | null)
+  | undefined;
 function getCreateModuleStateRefLazy() {
   if (!_cachedGetCreateModuleStateRef) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -305,6 +308,13 @@ export interface PanelCoordinationState {
   exitDurationPreviewMode(apply: boolean): { sequence: SequenceData | null };
   setPreviewSequence(sequence: SequenceData): void;
 
+  // Temporary contextual playback while a Construct option is held
+  get changedTransitionPlayback(): ChangedTransitionPlayback | null;
+  enterChangedTransitionPlayback(
+    playback: Omit<ChangedTransitionPlayback, "requestId">
+  ): void;
+  exitChangedTransitionPlayback(): void;
+
   // LOOP Completion Flow (triggers confirmation dialog in CreateModule)
   requestLoopCompletion(loopType: LOOPType): void;
   setLoopCompletionCallback(cb: (loopType: LOOPType) => void): void;
@@ -415,6 +425,10 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let isDurationPreviewMode = $state(false);
   let previewSequence = $state<SequenceData | null>(null);
   let originalSequence = $state<SequenceData | null>(null);
+  let changedTransitionPlayback = $state<ChangedTransitionPlayback | null>(
+    null
+  );
+  let changedTransitionPlaybackRequestId = 0;
 
   // Preset drawer state
   let isPresetDrawerOpen = $state(false);
@@ -469,6 +483,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isPresetDrawerOpen = false;
 
     isSequenceViewerOpen = false;
+    changedTransitionPlayback = null;
   }
 
   return {
@@ -907,6 +922,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     enterDurationPreviewMode(sequence: SequenceData) {
+      changedTransitionPlayback = null;
       isDurationPreviewMode = true;
       originalSequence = sequence;
       previewSequence = sequence;
@@ -922,6 +938,25 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     setPreviewSequence(sequence: SequenceData) {
       previewSequence = sequence;
+    },
+
+    get changedTransitionPlayback() {
+      return changedTransitionPlayback;
+    },
+
+    enterChangedTransitionPlayback(playback) {
+      isDurationPreviewMode = false;
+      previewSequence = null;
+      originalSequence = null;
+      changedTransitionPlaybackRequestId += 1;
+      changedTransitionPlayback = {
+        ...playback,
+        requestId: changedTransitionPlaybackRequestId,
+      };
+    },
+
+    exitChangedTransitionPlayback() {
+      changedTransitionPlayback = null;
     },
 
     // LOOP Completion Flow

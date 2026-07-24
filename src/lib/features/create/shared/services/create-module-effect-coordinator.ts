@@ -156,6 +156,7 @@ export function setupEffects(config: CreateModuleEffectConfig): () => void {
       createAutoEditPanelEffect({
         CreateModuleState: createModuleState,
         panelState,
+        shouldAutoOpen: () => navigationState.activeTab !== "construct",
       })
     );
 
@@ -164,6 +165,7 @@ export function setupEffects(config: CreateModuleEffectConfig): () => void {
       createAutoStepEditorEffect({
         CreateModuleState: createModuleState,
         panelState,
+        shouldAutoOpen: () => navigationState.activeTab !== "construct",
       })
     );
 

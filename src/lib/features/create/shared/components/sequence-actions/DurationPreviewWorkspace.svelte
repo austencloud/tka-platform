@@ -1,16 +1,6 @@
 <!--
-  DurationPreviewWorkspace.svelte
-
-  Split workspace for live preview of duration patterns.
-
-  Layout (desktop):
-  - Top: Animation preview (props animating with current timing)
-  - Bottom: Horizontal timeline strip (single row, duration-proportional widths)
-
-  Features:
-  - Auto-plays animation in a loop
-  - Updates instantly when duration pattern changes
-  - Horizontal scrollable timeline with duration-proportional cell widths
+  The Create workspace's existing AnimatorCanvas preview surface.
+  Duration editing loops the full sequence; option trials play one bounded range.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -18,107 +8,158 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
   import { formatDurationCompact } from "../../domain/models/duration-pattern-data";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { shouldAutoplayMotion } from "$lib/shared/animation-engine/services/motion-autoplay-policy";
+  import { toAnimatorMotionCursor } from "$lib/shared/create/domain/changed-transition-playback";
 
   interface Props {
-    /** Sequence to preview with duration pattern applied */
     sequence: SequenceData;
-    /** Current step being animated (0-based, fractional) */
+    variant?: "duration" | "changed-transition";
+    /** Inclusive, zero-based playback boundary. */
+    startStep?: number;
+    /** Exclusive, zero-based playback boundary. */
+    endStepExclusive?: number;
+    /** Step held on screen when autoplay is disabled. */
+    changedStep?: number;
     currentStep?: number;
-    /** Whether animation is playing */
     isPlaying?: boolean;
+    onPreviewReady?: (latencyMs: number, autoplay: boolean) => void;
+    onPlaybackComplete?: () => void;
+    activatedAt?: number;
   }
 
   let {
     sequence,
-    currentStep = 0,
+    variant = "duration",
+    startStep = 0,
+    endStepExclusive = sequence.steps.length,
+    changedStep = startStep,
+    currentStep = startStep,
     isPlaying = true,
+    onPreviewReady = () => {},
+    onPlaybackComplete = () => {},
+    activatedAt,
   }: Props = $props();
 
-  // Create local animation state for preview
   const animationState = createAnimationPanelState();
-
-  // Animation loop management
   let animationFrameId: number | null = null;
   let lastTime = 0;
-  let localCurrentStep = $state(0);
-  let localIsPlaying = $state(true);
-
-  // Prop states for animation
+  let localCurrentStep = $state(currentStep);
+  let localIsPlaying = $state(false);
+  let mounted = false;
+  let canvasReady = $state(false);
+  let hasStarted = $state(false);
+  let previewReadyReported = false;
+  let playbackCompletionReported = false;
+  let systemPrefersReducedMotion = $state(false);
   let blueProp = $state(animationState.bluePropState);
   let redProp = $state(animationState.redPropState);
 
-  // Update animation state when sequence changes
   $effect(() => {
     animationState.setSequenceData(sequence);
     animationState.setTotalSteps(sequence.steps.length);
   });
 
-  // Sync external props
-  $effect(() => {
-    localCurrentStep = currentStep;
-  });
-
-  $effect(() => {
-    localIsPlaying = isPlaying;
-  });
-
-  // Calculate total duration of sequence (accounting for duration multipliers)
+  const reducedMotionSetting = $derived(
+    settingsService.currentSettings.reducedMotion ?? false
+  );
+  const autoplayAllowed = $derived(
+    shouldAutoplayMotion({
+      reducedMotionSetting,
+      systemPrefersReducedMotion,
+    })
+  );
+  const isChangedTransition = $derived(variant === "changed-transition");
+  const safeStartStep = $derived(
+    Math.max(0, Math.min(startStep, Math.max(0, sequence.steps.length - 1)))
+  );
+  const safeEndStep = $derived(
+    Math.max(
+      safeStartStep + 1,
+      Math.min(endStepExclusive, sequence.steps.length)
+    )
+  );
+  const safeChangedStep = $derived(
+    Math.max(safeStartStep, Math.min(changedStep, safeEndStep - 1))
+  );
+  // This workspace keeps a zero-based cursor so its bounded window can index
+  // sequence.steps directly. AnimatorCanvas uses 1 for motion 1, 2 for motion
+  // 2, and so on; 0 is the sequence's held start pose.
+  const animatorCurrentStep = $derived(
+    toAnimatorMotionCursor(localCurrentStep)
+  );
   const totalDuration = $derived.by(() => {
-    return sequence.steps.reduce((sum, step) => {
-      return sum + (step.duration ?? 1.0);
-    }, 0);
+    return sequence.steps
+      .slice(safeStartStep, safeEndStep)
+      .reduce((sum, step) => sum + (step.duration ?? 1), 0);
   });
 
-  // Animation loop - plays through sequence with duration-aware timing
+  $effect(() => {
+    if (mounted && reducedMotionSetting) {
+      untrack(() => {
+        stopPreview();
+        localCurrentStep = safeChangedStep;
+        animationState.setCurrentStep(animatorCurrentStep);
+      });
+    }
+  });
+
   function startAnimationLoop() {
-    if (animationFrameId !== null) return;
+    if (!mounted || animationFrameId !== null || !localIsPlaying) return;
 
     lastTime = performance.now();
 
     function animate(timestamp: number) {
       if (!localIsPlaying) {
-        animationFrameId = requestAnimationFrame(animate);
+        animationFrameId = null;
         return;
       }
 
       const deltaMs = timestamp - lastTime;
       lastTime = timestamp;
-
-      // Calculate step progress based on durations
-      // Base duration is 1000ms per unit duration at speed 1.0
       const speed = animationState.speed;
       const baseMs = 1000 / speed;
-
-      // Find current step and progress within it
       let accumulatedDuration = 0;
-      let stepIndex = 0;
+      let stepIndex = safeStartStep;
 
-      // Convert localCurrentStep to accumulated time
-      for (let i = 0; i < sequence.steps.length && i < Math.floor(localCurrentStep); i++) {
+      for (
+        let i = safeStartStep;
+        i < safeEndStep && i < Math.floor(localCurrentStep);
+        i++
+      ) {
         accumulatedDuration += sequence.steps[i]?.duration ?? 1.0;
       }
 
-      // Add fractional part of current step
-      if (Math.floor(localCurrentStep) < sequence.steps.length) {
-        const currentStepDuration = sequence.steps[Math.floor(localCurrentStep)]?.duration ?? 1.0;
+      if (Math.floor(localCurrentStep) < safeEndStep) {
+        const currentStepDuration =
+          sequence.steps[Math.floor(localCurrentStep)]?.duration ?? 1.0;
         accumulatedDuration += (localCurrentStep % 1) * currentStepDuration;
       }
 
-      // Advance time
       accumulatedDuration += deltaMs / baseMs;
 
-      // Wrap around if needed (loop)
       const total = totalDuration;
       if (accumulatedDuration >= total) {
-        accumulatedDuration = accumulatedDuration % total;
+        if (isChangedTransition) {
+          localCurrentStep = Math.max(safeStartStep, safeEndStep - 0.001);
+          animationState.setCurrentStep(animatorCurrentStep);
+          localIsPlaying = false;
+          animationState.setIsPlaying(false);
+          animationFrameId = null;
+          if (!playbackCompletionReported) {
+            playbackCompletionReported = true;
+            onPlaybackComplete();
+          }
+          return;
+        }
+        accumulatedDuration %= total;
       }
 
-      // Convert back to step number
       let remaining = accumulatedDuration;
-      stepIndex = 0;
-      while (stepIndex < sequence.steps.length) {
+      stepIndex = safeStartStep;
+      while (stepIndex < safeEndStep) {
         const stepDuration = sequence.steps[stepIndex]?.duration ?? 1.0;
         if (remaining < stepDuration) {
           break;
@@ -127,14 +168,14 @@
         stepIndex++;
       }
 
-      if (stepIndex < sequence.steps.length) {
+      if (stepIndex < safeEndStep) {
         const stepDuration = sequence.steps[stepIndex]?.duration ?? 1.0;
-        localCurrentStep = stepIndex + (remaining / stepDuration);
+        localCurrentStep = stepIndex + remaining / stepDuration;
       } else {
-        localCurrentStep = 0; // Wrap to start
+        localCurrentStep = safeStartStep;
       }
 
-      animationState.setCurrentStep(localCurrentStep);
+      animationState.setCurrentStep(animatorCurrentStep);
       animationFrameId = requestAnimationFrame(animate);
     }
 
@@ -148,8 +189,90 @@
     }
   }
 
-  onMount(() => {
+  function playPreview() {
+    hasStarted = true;
+    playbackCompletionReported = false;
+    localCurrentStep = safeStartStep;
+    animationState.setCurrentStep(animatorCurrentStep);
+    localIsPlaying = true;
+    animationState.setIsPlaying(true);
     startAnimationLoop();
+  }
+
+  function stopPreview() {
+    localIsPlaying = false;
+    animationState.setIsPlaying(false);
+    stopAnimationLoop();
+  }
+
+  function reportPreviewReady() {
+    if (
+      !mounted ||
+      !canvasReady ||
+      !isChangedTransition ||
+      previewReadyReported
+    ) {
+      return;
+    }
+
+    previewReadyReported = true;
+    onPreviewReady(
+      activatedAt === undefined ? 0 : performance.now() - activatedAt,
+      isPlaying && autoplayAllowed
+    );
+  }
+
+  function startAutoplayWhenReady() {
+    if (
+      !mounted ||
+      !canvasReady ||
+      localIsPlaying ||
+      !isPlaying ||
+      !autoplayAllowed
+    ) {
+      return;
+    }
+
+    playPreview();
+  }
+
+  function handleCanvasReady() {
+    canvasReady = true;
+    reportPreviewReady();
+    startAutoplayWhenReady();
+  }
+
+  onMount(() => {
+    mounted = true;
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    );
+    systemPrefersReducedMotion = reducedMotionQuery.matches;
+    const handleReducedMotionChange = (event: MediaQueryListEvent) => {
+      systemPrefersReducedMotion = event.matches;
+      if (event.matches) {
+        stopPreview();
+        localCurrentStep = safeChangedStep;
+        animationState.setCurrentStep(animatorCurrentStep);
+      } else {
+        startAutoplayWhenReady();
+      }
+    };
+    reducedMotionQuery.addEventListener("change", handleReducedMotionChange);
+
+    localCurrentStep =
+      isPlaying && autoplayAllowed ? safeStartStep : safeChangedStep;
+    animationState.setCurrentStep(animatorCurrentStep);
+    reportPreviewReady();
+    startAutoplayWhenReady();
+
+    return () => {
+      mounted = false;
+      reducedMotionQuery.removeEventListener(
+        "change",
+        handleReducedMotionChange
+      );
+    };
   });
 
   onDestroy(() => {
@@ -157,8 +280,9 @@
     animationState.dispose();
   });
 
-  // Get the current step data for display
-  const currentStepIndex = $derived(Math.floor(localCurrentStep));
+  const currentStepIndex = $derived(
+    Math.min(safeEndStep - 1, Math.floor(localCurrentStep))
+  );
   const currentStepData = $derived(sequence.steps[currentStepIndex] ?? null);
   const currentLetter = $derived(currentStepData?.letter ?? null);
 
@@ -170,94 +294,117 @@
     return GridMode.DIAMOND;
   });
 
-  // Calculate base unit width (100px per 1.0 duration unit)
   const BASE_UNIT_WIDTH = 100;
-
-  // Auto-scroll timeline to keep current step visible
   let timelineRef: HTMLElement | undefined = $state();
 
   $effect(() => {
     if (!timelineRef) return;
 
-    // Calculate the position of the current step in the timeline
     let offsetX = 0;
     for (let i = 0; i < currentStepIndex; i++) {
       offsetX += (sequence.steps[i]?.duration ?? 1.0) * BASE_UNIT_WIDTH;
     }
 
-    // Get current step width
-    const currentWidth = (sequence.steps[currentStepIndex]?.duration ?? 1.0) * BASE_UNIT_WIDTH;
-
-    // Center the current step in view
+    const currentWidth =
+      (sequence.steps[currentStepIndex]?.duration ?? 1.0) * BASE_UNIT_WIDTH;
     const containerWidth = timelineRef.clientWidth;
-    const targetScroll = offsetX - (containerWidth / 2) + (currentWidth / 2);
+    const targetScroll = offsetX - containerWidth / 2 + currentWidth / 2;
 
     timelineRef.scrollTo({
       left: Math.max(0, targetScroll),
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   });
 </script>
 
-<div class="duration-preview-workspace">
-  <!-- Animation Preview -->
+<div
+  class="duration-preview-workspace"
+  class:changed-transition={isChangedTransition}
+  class:audition={isChangedTransition}
+>
   <div class="animation-section">
     <div class="animation-container">
       <AnimatorCanvas
-        blueProp={blueProp}
-        redProp={redProp}
+        {blueProp}
+        {redProp}
         gridVisible={true}
-        gridMode={gridMode}
+        {gridMode}
         letter={currentLetter}
         stepData={currentStepData}
         sequenceData={sequence}
-        currentStep={localCurrentStep}
+        currentStep={animatorCurrentStep}
         isPlaying={localIsPlaying}
         previewDarkMode={true}
+        hideProgressBar={isChangedTransition}
+        disableContextMenu={isChangedTransition}
+        onInitialized={handleCanvasReady}
       />
+      {#if !canvasReady}
+        <div class="preview-loading" role="status">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          <span>Preparing preview</span>
+        </div>
+      {/if}
     </div>
   </div>
 
-  <!-- Horizontal Timeline Strip -->
-  <div class="timeline-section">
-    <div class="timeline-header">
-      <span class="timeline-label">Timeline</span>
-      <span class="duration-hint">Width = duration</span>
-    </div>
-    <div class="timeline-strip" bind:this={timelineRef}>
-      <div class="timeline-track">
-        {#each sequence.steps as step, index}
-          {@const duration = step.duration ?? 1.0}
-          {@const isActive = index === currentStepIndex}
-          {@const width = duration * BASE_UNIT_WIDTH}
-          <div
-            class="timeline-cell"
-            class:active={isActive}
-            style="width: {width}px; min-width: {width}px;"
-          >
-            <div class="cell-pictograph">
-              <PictographContainer
-                pictographData={step}
-                showTKA={false}
-                showTnD={false}
-                showPositions={false}
-                showReversals={false}
-                showElemental={false}
-                disableTransitions={true}
-              />
-            </div>
-            <div class="cell-info">
-              <span class="beat-number">{index + 1}</span>
-              <span class="duration-badge">{formatDurationCompact(duration)}</span>
-            </div>
-            {#if step.letter}
-              <span class="letter-badge">{step.letter}</span>
-            {/if}
-          </div>
-        {/each}
+  {#if isChangedTransition}
+    <div class="context-controls">
+      <div class="context-status" aria-live="polite">
+        <strong>Previewing {currentLetter ?? "movement"}</strong>
+        <span>
+          {#if !autoplayAllowed && !hasStarted}
+            Motion paused. Release to return.
+          {:else}
+            Release to return
+          {/if}
+        </span>
       </div>
     </div>
-  </div>
+  {:else}
+    <div class="timeline-section">
+      <div class="timeline-header">
+        <span class="timeline-label">Timeline</span>
+        <span class="duration-hint">Width = duration</span>
+      </div>
+      <div class="timeline-strip" bind:this={timelineRef}>
+        <div class="timeline-track">
+          {#each sequence.steps as step, index}
+            {@const duration = step.duration ?? 1.0}
+            {@const isActive = index === currentStepIndex}
+            {@const width = duration * BASE_UNIT_WIDTH}
+            <div
+              class="timeline-cell"
+              class:active={isActive}
+              style="width: {width}px; min-width: {width}px;"
+            >
+              <div class="cell-pictograph">
+                <PictographContainer
+                  pictographData={step}
+                  propRenderContext="editor"
+                  showTKA={false}
+                  showTnD={false}
+                  showPositions={false}
+                  showReversals={false}
+                  showElemental={false}
+                  disableTransitions={true}
+                />
+              </div>
+              <div class="cell-info">
+                <span class="beat-number">{index + 1}</span>
+                <span class="duration-badge"
+                  >{formatDurationCompact(duration)}</span
+                >
+              </div>
+              {#if step.letter}
+                <span class="letter-badge">{step.letter}</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -270,6 +417,7 @@
     padding: 12px;
     background: var(--theme-panel-bg);
     overflow: hidden;
+    container: workspace-preview / inline-size;
   }
 
   .animation-section {
@@ -284,7 +432,25 @@
     overflow: hidden;
   }
 
+  .duration-preview-workspace.audition .animation-section {
+    transform-origin: 50% 100%;
+    animation: audition-canvas-enter 320ms cubic-bezier(0.2, 1.35, 0.35, 1) both;
+  }
+
+  @keyframes audition-canvas-enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .animation-container {
+    position: relative;
     width: 100%;
     height: 100%;
     max-width: 100%;
@@ -292,6 +458,51 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .preview-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
+    background: color-mix(in srgb, var(--theme-card-bg) 82%, transparent);
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 14px);
+    pointer-events: none;
+  }
+
+  .context-controls {
+    flex: 0 0 auto;
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--settings-spacing-md, 12px);
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 12px);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+  }
+
+  .context-status {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--theme-text);
+  }
+
+  .context-status strong {
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.25;
+  }
+
+  .context-status span {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-xs, 12px);
+    line-height: 1.25;
   }
 
   .timeline-section {
@@ -418,5 +629,26 @@
     background: rgba(0, 0, 0, 0.5);
     color: var(--theme-text);
     border-radius: 3px;
+  }
+
+  @container workspace-preview (max-width: 440px) {
+    .context-status {
+      align-items: center;
+      text-align: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .duration-preview-workspace.audition .animation-section {
+      animation: none;
+    }
+
+    .preview-loading i {
+      animation: none;
+    }
+
+    .timeline-cell {
+      transition: none;
+    }
   }
 </style>

@@ -59,4 +59,28 @@ describe("setCurrentSequence reconciles derived fields", () => {
     core.setCurrentSequence(null);
     expect(core.currentSequence).toBeNull();
   });
+
+  it("issues a new primitive revision for every active-document write", () => {
+    const first = createSequenceCoreState();
+    const second = createSequenceCoreState();
+    const sequence = {
+      id: "revision-source",
+      name: "",
+      word: "",
+      steps: [],
+      difficulty: 1,
+      metadata: {},
+    } as unknown as SequenceData;
+
+    first.setCurrentSequence(sequence);
+    const initialRevision = first.currentSequenceRevision;
+    first.setCurrentSequence({ ...sequence, name: "Updated" });
+
+    expect(first.currentSequenceRevision).toBeGreaterThan(initialRevision);
+
+    second.setCurrentSequence(sequence);
+    expect(second.currentSequenceRevision).not.toBe(
+      first.currentSequenceRevision
+    );
+  });
 });

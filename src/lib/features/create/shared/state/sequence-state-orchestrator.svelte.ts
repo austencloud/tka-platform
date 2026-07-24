@@ -501,6 +501,9 @@ export function createSequenceState(services: SequenceStateServices) {
     get currentSequence() {
       return coreState.currentSequence;
     },
+    get currentSequenceRevision() {
+      return coreState.currentSequenceRevision;
+    },
     get sequences() {
       return coreState.sequences;
     },

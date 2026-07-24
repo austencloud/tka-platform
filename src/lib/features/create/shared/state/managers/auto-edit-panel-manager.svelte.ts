@@ -30,6 +30,8 @@ export interface AutoEditPanelConfig {
   panelState: PanelCoordinationState;
   /** Optional: Direct getter for selectedStepNumber to ensure reactivity */
   getSelectedStepNumber?: () => number | null;
+  /** Construct keeps selection in the live option workflow instead of opening a drawer. */
+  shouldAutoOpen?: () => boolean;
 }
 
 /**
@@ -46,8 +48,13 @@ export function createAutoEditPanelEffect(
       const selectedStepNumbers =
         CreateModuleState.sequenceState.selectedStepNumbers;
       const selectedCount = selectedStepNumbers.size ?? 0;
+      const shouldAutoOpen = config.shouldAutoOpen?.() ?? true;
 
-      if (selectedCount > 1 && !panelState.isStepEditorPanelOpen) {
+      if (
+        shouldAutoOpen &&
+        selectedCount > 1 &&
+        !panelState.isStepEditorPanelOpen
+      ) {
         // Map beat numbers to step data
         const stepNumbersArray = Array.from(selectedStepNumbers).sort(
           (a, b) => a - b
@@ -103,6 +110,12 @@ export function createAutoStepEditorEffect(
       // Get the sequence state fresh each time
       const seqState = CreateModuleState.sequenceState;
       const selectedStepNumber = seqState.selectedStepNumber;
+      const shouldAutoOpen = config.shouldAutoOpen?.() ?? true;
+
+      if (!shouldAutoOpen) {
+        lastSelectedBeat = null;
+        return;
+      }
 
       // Only act when selection CHANGES (prevents fight with manual close)
       if (selectedStepNumber !== lastSelectedBeat) {

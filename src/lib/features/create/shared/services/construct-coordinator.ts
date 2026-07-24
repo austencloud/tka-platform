@@ -92,6 +92,14 @@ export class ConstructCoordinator {
     }
   }
 
+  async handleBeatReplaced(stepData: Step): Promise<void> {
+    try {
+      this.notifyComponents("beat_replaced", { stepData });
+    } catch (error) {
+      console.error("Error handling beat replacement:", error);
+    }
+  }
+
   handleGenerationRequest(config: Record<string, unknown>): void {
     try {
       // Generation is handled by the generate module components

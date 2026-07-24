@@ -16,6 +16,7 @@ import { normalizeSequenceDerived } from "$lib/shared/create/services/sequence-d
 
 export interface SequenceCoreStateData {
   currentSequence: SequenceData | null;
+  currentSequenceRevision: number;
   sequences: SequenceData[];
   isLoading: boolean;
   error: string | null;
@@ -23,11 +24,19 @@ export interface SequenceCoreStateData {
   selectedSequenceId: string | null;
 }
 
+let nextCurrentSequenceRevision = 0;
+
+function claimCurrentSequenceRevision(): number {
+  nextCurrentSequenceRevision += 1;
+  return nextCurrentSequenceRevision;
+}
+
 export function createSequenceCoreState(
   onCurrentSequenceChange?: (sequence: SequenceData | null) => void
 ) {
   const state = $state<SequenceCoreStateData>({
     currentSequence: null,
+    currentSequenceRevision: 0,
     sequences: [],
     isLoading: false,
     error: null,
@@ -53,6 +62,9 @@ export function createSequenceCoreState(
     // Getters
     get currentSequence() {
       return currentSequenceWithGridMode;
+    },
+    get currentSequenceRevision() {
+      return state.currentSequenceRevision;
     },
     get sequences() {
       return state.sequences;
@@ -91,6 +103,7 @@ export function createSequenceCoreState(
         ? normalizeSequenceDerived(sequence)
         : sequence;
       state.currentSequence = reconciled;
+      state.currentSequenceRevision = claimCurrentSequenceRevision();
       state.selectedSequenceId = reconciled?.id ?? null;
       // Derive gridMode from the reconciled sequence — never trust the stored value.
       if (reconciled?.gridMode !== undefined) {
@@ -116,6 +129,7 @@ export function createSequenceCoreState(
       }
       if (state.currentSequence?.id === updatedSequence.id) {
         state.currentSequence = updatedSequence;
+        state.currentSequenceRevision = claimCurrentSequenceRevision();
         onCurrentSequenceChange?.(updatedSequence);
       }
     },
@@ -124,6 +138,7 @@ export function createSequenceCoreState(
       state.sequences = state.sequences.filter((s) => s.id !== sequenceId);
       if (state.currentSequence?.id === sequenceId) {
         state.currentSequence = null;
+        state.currentSequenceRevision = claimCurrentSequenceRevision();
         state.selectedSequenceId = null;
         onCurrentSequenceChange?.(null);
       }
@@ -142,11 +157,15 @@ export function createSequenceCoreState(
     },
 
     setGridMode(mode: GridMode) {
+      if (state.gridMode !== mode) {
+        state.currentSequenceRevision = claimCurrentSequenceRevision();
+      }
       state.gridMode = mode;
     },
 
     reset() {
       state.currentSequence = null;
+      state.currentSequenceRevision = claimCurrentSequenceRevision();
       state.sequences = [];
       state.isLoading = false;
       state.error = null;
