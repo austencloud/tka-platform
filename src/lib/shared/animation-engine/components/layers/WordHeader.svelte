@@ -25,8 +25,10 @@ Supports letter highlighting during animation playback.
   import { DURATION } from "$lib/shared/transitions/transitions";
 
   const cache = browser ? getGlyphCache() : null;
+  let glyphLoadVersion = $state(0);
 
   function getGlyphUrl(letter: string): string | null {
+    void glyphLoadVersion;
     if (!cache) return null;
     const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
     return cache.getGlyphDataUrl(base);
@@ -217,6 +219,31 @@ Supports letter highlighting during animation playback.
       return units;
     }
     return parsedLetters.map((letter, i) => ({ kind: "letter" as const, letter, letterIdx: i }));
+  });
+
+  const neededBaseLetters = $derived.by(() => [
+    ...new Set(
+      displayUnits.flatMap((unit) =>
+        unit.kind === "letter"
+          ? [isDashLetter(unit.letter) ? getBaseLetter(unit.letter) : unit.letter]
+          : []
+      )
+    ),
+  ]);
+
+  // The global glyph warmup runs while the browser is idle. Playback can
+  // start first, so load this header's letters immediately and repaint when
+  // the shared, non-reactive cache receives them.
+  $effect(() => {
+    if (!cache) return;
+    const missing = neededBaseLetters.filter(
+      (letter) => letter && !cache.getGlyphDataUrl(letter)
+    );
+    if (missing.length === 0) return;
+
+    cache.loadGlyphsByLetter(missing).then(() => {
+      glyphLoadVersion++;
+    });
   });
 
   /**
@@ -418,6 +445,9 @@ Supports letter highlighting during animation playback.
     display: inline-flex;
     align-items: center;
     gap: 0.08em;
+    font-family: "TKA Letters", var(--font-sans, sans-serif);
+    font-feature-settings: "liga" 1, "dlig" 1;
+    font-weight: normal;
     opacity: 0.2;
     transition:
       filter 0.15s ease,

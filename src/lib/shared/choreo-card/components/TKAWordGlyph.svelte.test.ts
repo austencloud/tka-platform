@@ -1,11 +1,32 @@
 import { render } from "vitest-browser-svelte";
 import { page } from "vitest/browser";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import TKAWordGlyphHarness from "./__tests__/TKAWordGlyphHarness.svelte";
+
+const glyphCacheState = vi.hoisted(() => ({
+  loaded: new Set<string>(),
+  loadCalls: [] as string[][],
+  pendingLetters: [] as string[],
+  resolvePending: null as (() => void) | null,
+}));
 
 vi.mock("$lib/shared/render/get-glyph-cache", () => ({
   getGlyphCache: () => ({
-    getGlyphDataUrl: () => "/test-glyph.svg",
+    getGlyphDataUrl: (letter: string) =>
+      glyphCacheState.loaded.has(letter) ? "/test-glyph.svg" : null,
+    loadGlyphsByLetter: (letters: string[]) => {
+      glyphCacheState.loadCalls.push([...letters]);
+      glyphCacheState.pendingLetters = [...letters];
+
+      return new Promise<void>((resolve) => {
+        glyphCacheState.resolvePending = () => {
+          for (const letter of glyphCacheState.pendingLetters) {
+            glyphCacheState.loaded.add(letter);
+          }
+          resolve();
+        };
+      });
+    },
   }),
 }));
 
@@ -14,6 +35,16 @@ function nextPaint(): Promise<void> {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
   );
 }
+
+beforeEach(() => {
+  glyphCacheState.loaded.clear();
+  for (const letter of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+    glyphCacheState.loaded.add(letter);
+  }
+  glyphCacheState.loadCalls.length = 0;
+  glyphCacheState.pendingLetters = [];
+  glyphCacheState.resolvePending = null;
+});
 
 describe("TKAWordGlyph fitToParent", () => {
   it("keeps every glyph inside a narrow host and returns to natural scale", async () => {
@@ -40,5 +71,28 @@ describe("TKAWordGlyph fitToParent", () => {
     await nextPaint();
 
     expect(row.style.transform).toBe("scale(1)");
+  });
+
+  it("uses the TKA font while a Greek glyph loads, then swaps in its SVG", async () => {
+    render(TKAWordGlyphHarness, {
+      width: 280,
+      word: "γ",
+    });
+
+    const host = page.getByTestId("glyph-host").element() as HTMLElement;
+    await vi.waitFor(() => {
+      expect(host.querySelector(".glyph-fallback")?.textContent).toBe("γ");
+    });
+
+    const fallback = host.querySelector(".glyph-fallback") as HTMLElement;
+    expect(getComputedStyle(fallback).fontFamily).toContain("TKA Letters");
+    expect(glyphCacheState.loadCalls).toEqual([["γ"]]);
+
+    glyphCacheState.resolvePending?.();
+
+    await vi.waitFor(() => {
+      expect(host.querySelector('img[alt="γ"]')).not.toBeNull();
+    });
+    expect(host.querySelector(".glyph-fallback")).toBeNull();
   });
 });

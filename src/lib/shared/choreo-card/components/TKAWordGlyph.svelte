@@ -25,6 +25,16 @@
 
   const segments = $derived(word ? compressWord(word) : []);
   const hasCompression = $derived(segments.some((s: CompressedSegment) => s.repeat > 1));
+  const neededBaseLetters = $derived.by(() => [
+    ...new Set(
+      segments.flatMap((segment) =>
+        segment.tokens.map((token) =>
+          isDashLetter(token) ? getBaseLetter(token) : token
+        )
+      )
+    ),
+  ]);
+  let glyphLoadVersion = $state(0);
   let availableWidth = $state(0);
   let naturalWidth = $state(0);
   const fitScale = $derived(
@@ -32,6 +42,25 @@
       ? availableWidth / naturalWidth
       : 1
   );
+
+  // The app-wide warmup waits for an idle moment. A gallery card can appear
+  // before that, so load the exact letters this word needs and repaint when
+  // the shared cache receives them.
+  $effect(() => {
+    const missing = neededBaseLetters.filter(
+      (letter) => letter && !cache.getGlyphDataUrl(letter)
+    );
+    if (missing.length === 0) return;
+
+    cache.loadGlyphsByLetter(missing).then(() => {
+      glyphLoadVersion++;
+    });
+  });
+
+  function getGlyphUrl(letter: string): string | null {
+    void glyphLoadVersion;
+    return cache.getGlyphDataUrl(letter);
+  }
 </script>
 
 {#if segments.length > 0}
@@ -57,19 +86,25 @@
       <span class="token-row" style="gap: {height * LETTER_GAP_RATIO}px;">
         {#each segment.tokens as token}
           {@const baseLetter = isDashLetter(token) ? getBaseLetter(token) : token}
-          {@const dataUrl = cache.getGlyphDataUrl(baseLetter)}
-          {#if dataUrl}
-            {@const isAlpha = baseLetter === 'α'}
-            <span class="glyph" style="gap: {height * DASH_GAP_RATIO}px;">
+          {@const dataUrl = getGlyphUrl(baseLetter)}
+          {@const isAlpha = baseLetter === 'α'}
+          <span class="glyph" style="gap: {height * DASH_GAP_RATIO}px;">
+            {#if dataUrl}
               <img src={dataUrl} alt={token} height={height} draggable="false" class:alpha-baseline={isAlpha} />
-              {#if isDashLetter(token)}
-                <span
-                  class="dash-bar"
-                  style="height: {height * DASH_HEIGHT_RATIO}px; width: {height * DASH_WIDTH_RATIO}px;"
-                ></span>
-              {/if}
-            </span>
-          {/if}
+            {:else}
+              <span
+                class="glyph-fallback"
+                class:alpha-baseline={isAlpha}
+                style="height: {height}px; font-size: {height}px;"
+              >{baseLetter}</span>
+            {/if}
+            {#if isDashLetter(token)}
+              <span
+                class="dash-bar"
+                style="height: {height * DASH_HEIGHT_RATIO}px; width: {height * DASH_WIDTH_RATIO}px;"
+              ></span>
+            {/if}
+          </span>
         {/each}
       </span>
     {/each}
@@ -123,6 +158,20 @@
   }
 
   .glyph img.alpha-baseline {
+    transform: translateY(10%);
+  }
+
+  .glyph-fallback {
+    display: inline-flex;
+    align-items: center;
+    font-family: "TKA Letters", var(--font-sans, sans-serif);
+    font-feature-settings: "liga" 1, "dlig" 1;
+    font-weight: normal;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .glyph-fallback.alpha-baseline {
     transform: translateY(10%);
   }
 
