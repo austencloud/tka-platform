@@ -19,6 +19,10 @@
     EFFECT_CONTROLS,
     type ControlDescriptor,
   } from "$lib/shared/effects/domain/effect-control-manifest";
+  import {
+    formatEffectSliderValue,
+    type EffectControlOverrides,
+  } from "$lib/shared/effects/effect-control-fields";
   import { getPatternDescriptor } from "$lib/shared/animation-engine/domain/patterns/registry";
   import EffectControlStack from "./EffectControlStack.svelte";
 
@@ -28,10 +32,7 @@
     /** Cross-store field get/set overrides (e.g. Trails' animationSettings
      *  fields). Passed straight through to EffectControlStack; also used here so
      *  chip values + conditional visibility read the right source. */
-    overrides?: Record<
-      string,
-      { get: () => unknown; set: (v: unknown) => void }
-    >;
+    overrides?: EffectControlOverrides;
     onSettingChange?: (
       setting: string,
       previousValue: string | number | boolean | null,
@@ -81,9 +82,7 @@
     const v = readField(c.field);
     switch (c.type) {
       case "slider": {
-        const n = v as number;
-        if (c.pct) return `${Math.round(n * 100)}%`;
-        return Number.isInteger(n) ? `${n}` : n.toFixed(1);
+        return formatEffectSliderValue(c, v);
       }
       case "segmented":
         return c.options?.find((o) => o.value === v)?.label ?? "";

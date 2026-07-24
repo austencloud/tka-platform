@@ -19,13 +19,8 @@
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
+  import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
-  import {
-    hexToFlameColor,
-    flameColorToHex,
-    DEFAULT_PROP_FLAME_COLORS,
-  } from "$lib/shared/animation-engine/domain/types/fire-types";
 
   /** Synthetic chip id for the factory default look (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
@@ -85,54 +80,18 @@
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
 
-  // Cross-store field overrides for the tune-strip. EffectsPanel is the one
-  // layer that legitimately knows both effectsConfig AND the other stores, so it
-  // builds the get/set adapters here and the manifest / shared components stay
-  // store-agnostic. Trails' tailLength+trackingMode live in animationSettings.trail
-  // (canvas2d-translator reads them there); Fire's colors are a flame-color pair
-  // needing hex↔flame conversion + a colorBlend side-effect.
-  type TuneOverrides = Record<
-    string,
-    { get: () => unknown; set: (v: unknown) => void }
-  >;
-  const tuneOverrides = $derived.by<TuneOverrides | undefined>(() => {
-    if (activeEffect === "trails") {
-      const o: TuneOverrides = {
-        tailLength: {
-          get: () => animationSettings.trail.tailLength,
-          set: (v) => animationSettings.setTailLength(v as number),
-        },
-        trackingMode: {
-          get: () => animationSettings.trail.trackingMode,
-          set: (v) => animationSettings.setTrackingMode(v as TrackingMode),
-        },
-      };
-      return o;
-    }
-    if (activeEffect === "fire") {
-      const readHex = (i: 0 | 1) => {
-        const pc = effectsConfigState.fire.propColors;
-        return flameColorToHex(pc?.[i] ?? DEFAULT_PROP_FLAME_COLORS[i]);
-      };
-      const write = (left: string, right: string) =>
-        effectsConfigState.updateEffect("fire", {
-          colorBlend: 1.0,
-          propColors: [hexToFlameColor(left), hexToFlameColor(right)],
-        });
-      const o: TuneOverrides = {
-        fireLeftHex: {
-          get: () => readHex(0),
-          set: (v) => write(v as string, readHex(1)),
-        },
-        fireRightHex: {
-          get: () => readHex(1),
-          set: (v) => write(readHex(0), v as string),
-        },
-      };
-      return o;
-    }
-    return undefined;
-  });
+  // Trails and fire keep a few values outside their effect intent. Both viewer
+  // surfaces use the same adapters so their FX controls display and edit the
+  // same values.
+  const tuneOverrides = $derived(
+    isEffectId(activeEffect)
+      ? createEffectControlOverrides(
+          activeEffect,
+          effectsConfigState,
+          animationSettings
+        )
+      : undefined
+  );
 
   // Honest highlight. Priority:
   //   1. live config == factory default            → Default chip (canonical anchor)

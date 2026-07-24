@@ -18,9 +18,12 @@
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
     EFFECT_CONTROLS,
-    type ControlDescriptor,
     type ControlTier,
   } from "$lib/shared/effects/domain/effect-control-manifest";
+  import {
+    formatEffectSliderValue,
+    type EffectControlOverrides,
+  } from "$lib/shared/effects/effect-control-fields";
 
   interface Props {
     effect: EffectId;
@@ -39,10 +42,7 @@
      *  separate animationSettings.trail store). Keyed by descriptor `field`. The
      *  host builds these — it is the layer that legitimately knows both stores,
      *  so the manifest and this component stay store-agnostic. */
-    overrides?: Record<
-      string,
-      { get: () => unknown; set: (v: unknown) => void }
-    >;
+    overrides?: EffectControlOverrides;
     onSettingChange?: (
       setting: string,
       previousValue: string | number | boolean | null,
@@ -106,10 +106,6 @@
       onSettingChange?.(field, previous, value, coalesce);
     }
   }
-  function fmt(c: ControlDescriptor, v: number): string {
-    if (c.pct) return `${Math.round(v * 100)}%`;
-    return Number.isInteger(v) ? `${v}` : v.toFixed(1);
-  }
 </script>
 
 <div class="control-stack" class:hide-label={hideLabel}>
@@ -126,7 +122,8 @@
           oninput={(e) => set(c.field, parseFloat(e.currentTarget.value), true)}
           class="ctl-slider"
         />
-        <span class="ctl-value">{fmt(c, get(c.field) as number)}</span>
+        <span class="ctl-value">{formatEffectSliderValue(c, get(c.field))}</span
+        >
       </div>
     {:else if c.type === "segmented" || c.type === "palette"}
       {@const opts =

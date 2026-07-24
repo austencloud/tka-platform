@@ -32,6 +32,8 @@
   import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
+  import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
@@ -200,6 +202,11 @@
       ? (activeEffectKey as EffectId)
       : null
   );
+  const controlOverrides = $derived(
+    activeEffectId
+      ? createEffectControlOverrides(activeEffectId, config, animationSettings)
+      : undefined
+  );
   let showAdvanced = $state(false);
   const hasAdvanced = $derived(
     activeEffectId ? advancedControls(activeEffectId).length > 0 : false
@@ -330,6 +337,7 @@
       <EffectControlStack
         effect={activeEffectId}
         {config}
+        overrides={controlOverrides}
         onSettingChange={handleEffectSettingChange}
       />
       {#if hasAdvanced}
@@ -349,6 +357,7 @@
           <EffectControlStack
             effect={activeEffectId}
             {config}
+            overrides={controlOverrides}
             tiers={["advanced"]}
             onSettingChange={handleEffectSettingChange}
           />
