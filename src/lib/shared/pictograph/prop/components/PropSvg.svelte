@@ -9,7 +9,10 @@ at the cached position and animate to the new one, enabling smooth transitions
 even when Svelte recreates the component instance.
 -->
 <script module lang="ts">
-  import { getPropPositionCache, clearPropPositionCache } from "../prop-position-cache";
+  import {
+    getPropPositionCache,
+    clearPropPositionCache,
+  } from "../prop-position-cache";
   const positionCache = getPropPositionCache();
   export { clearPropPositionCache };
 </script>
@@ -25,6 +28,11 @@ even when Svelte recreates the component instance.
   import type { MotionData } from "../../shared/domain/models/motion-data";
   import type { PropAssets } from "../domain/models/prop-assets";
   import type { PropPosition } from "../domain/models/prop-position";
+  import {
+    applyEditorTorchPalette,
+    needsEditorContrast,
+    type PropRenderContext,
+  } from "../domain/prop-render-context";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
@@ -92,6 +100,8 @@ even when Svelte recreates the component instance.
     onPropClick,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    propRenderContext = "standard",
+    darkMode = false,
   } = $props<{
     motionData: MotionData;
     propAssets: PropAssets;
@@ -102,7 +112,24 @@ even when Svelte recreates the component instance.
     onPropClick?: () => void;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Editor grids opt in to a surface-aware torch palette. */
+    propRenderContext?: PropRenderContext;
+    /** The actual pictograph surface, used to choose the opposing shaft color. */
+    darkMode?: boolean;
   }>();
+
+  const renderedPropType = $derived(propAssets.propType ?? motionData.propType);
+  const showEditorContrast = $derived(
+    needsEditorContrast(propRenderContext, renderedPropType)
+  );
+  const renderedArtwork = $derived(
+    applyEditorTorchPalette(
+      propAssets.imageSrc,
+      propRenderContext,
+      renderedPropType,
+      darkMode
+    )
+  );
 
   type MotionSnapshot = {
     startOrientation?: Orientation;
@@ -123,7 +150,6 @@ even when Svelte recreates the component instance.
   let displayedRotation = $state<number>(0);
   let previousRotation: number | null = null;
   let previousSnapshot: MotionSnapshot | null = null;
-
 
   // Track displayed position for smooth CSS transitions
   // CSS transitions require the old value to be rendered before the new value
@@ -165,7 +191,8 @@ even when Svelte recreates the component instance.
     // `actualPropType` and leave the red hand looking like an un-mirrored left hand.
     if (
       motionData.color === MotionColor.RED &&
-      (actualPropType === PropType.HAND || motionData.propType === PropType.HAND)
+      (actualPropType === PropType.HAND ||
+        motionData.propType === PropType.HAND)
     ) {
       return true;
     }
@@ -255,12 +282,16 @@ even when Svelte recreates the component instance.
       rotationDirection: motionData?.rotationDirection,
     };
 
-    const isFirstRender = previousSnapshot === null || previousRotation === null;
+    const isFirstRender =
+      previousSnapshot === null || previousRotation === null;
 
     if (isFirstRender) {
       displayedRotation = targetRotation;
     } else {
-      const direction = determineAnimationDirection(previousSnapshot!, snapshot);
+      const direction = determineAnimationDirection(
+        previousSnapshot!,
+        snapshot
+      );
       displayedRotation = resolveRotation(
         previousRotation!,
         targetRotation,
@@ -390,6 +421,20 @@ even when Svelte recreates the component instance.
   }
 </script>
 
+{#snippet propArtwork()}
+  {#if showEditorContrast}
+    <g
+      class="editor-torch-artwork"
+      data-editor-prop-contrast
+      data-editor-torch-palette={darkMode ? "dark" : "light"}
+    >
+      {@html renderedArtwork}
+    </g>
+  {:else}
+    {@html renderedArtwork}
+  {/if}
+{/snippet}
+
 {#if showProp}
   {#if isClickable && onPropClick}
     <!-- Interactive prop - clickable button -->
@@ -410,7 +455,7 @@ even when Svelte recreates the component instance.
       role="button"
       tabindex="0"
     >
-      {@html propAssets.imageSrc}
+      {@render propArtwork()}
       {#if isSelected}
         <circle
           class="selection-ring"
@@ -434,7 +479,7 @@ even when Svelte recreates the component instance.
       data-prop-type={motionData?.propType}
       style="transform: {transformString};"
     >
-      {@html propAssets.imageSrc}
+      {@render propArtwork()}
       {#if isSelected}
         <circle
           class="selection-ring"
@@ -456,8 +501,9 @@ even when Svelte recreates the component instance.
     pointer-events: none;
     /* Smooth transition for position, rotation, and prop type changes */
     /* IMPORTANT: transform must be a CSS property (not SVG attribute) for transitions to work */
-    transition: transform var(--duration-normal) ease,
-                opacity 150ms ease;
+    transition:
+      transform var(--duration-normal) ease,
+      opacity 150ms ease;
   }
 
   /* Brief fade when prop type changes (SVG content swap) */
@@ -481,5 +527,14 @@ even when Svelte recreates the component instance.
 
   .selection-ring {
     pointer-events: none;
+  }
+
+  @media (forced-colors: active) {
+    .editor-torch-artwork :global([data-torch-shaft]),
+    .editor-torch-artwork :global([data-torch-metal]),
+    .editor-torch-artwork :global([data-torch-flame-part]) {
+      fill: CanvasText !important;
+      stroke: CanvasText !important;
+    }
   }
 </style>

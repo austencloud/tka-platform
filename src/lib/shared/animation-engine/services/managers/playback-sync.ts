@@ -84,6 +84,7 @@ export class PlaybackSync {
   private previewDarkModeActive: boolean = false;
   private _prevTrailsActive: boolean = true;
   private _prevPropsVisible: boolean = true;
+  private _prevMandalaVisible: boolean = false;
   private prevPathShape: "arc" | "linear" | "concave" = "arc";
   private prevMotionAwarePaths: boolean = false;
 
@@ -135,6 +136,7 @@ export class PlaybackSync {
     this._lastPropsRef = null;
     this.prevStepData = null;
     this.prevSequenceData = null;
+    this._prevMandalaVisible = false;
   }
 
   // ── Main per-frame orchestration ─────────────────────────────────────────────
@@ -396,6 +398,22 @@ export class PlaybackSync {
     this.state.setVisibilityState(state);
 
     const vm = getVM();
+
+    // The mandala is a fundamental canvas layer, not an effect assignment.
+    // Create its backing canvas only while the persisted visibility toggle is
+    // on, then repaint immediately even when playback is paused.
+    if (state.mandala !== this._prevMandalaVisible) {
+      this._prevMandalaVisible = state.mandala;
+      lifecycleManager.syncMandalaOverlay(state.mandala);
+      if (this.state.isInitialized) {
+        lifecycleManager.renderLoop?.triggerRender(() =>
+          frameSystem.buildFrameParams(
+            this._lastPropsRef ?? DEFAULT_ENGINE_PROPS,
+            buildFrameDeps(),
+          )
+        );
+      }
+    }
 
     // Sync Dark Mode to renderer when it changes
     if (state.darkMode !== propSystem.prevDarkMode && !this.previewDarkModeActive) {

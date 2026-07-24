@@ -367,6 +367,7 @@
             pictographData={displayedStepData}
             arrowsClickable={isAdmin()}
             disableTransitions={true}
+            propRenderContext="editor"
           />
         </div>
       </div>

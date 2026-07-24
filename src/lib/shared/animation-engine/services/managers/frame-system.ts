@@ -28,11 +28,16 @@ import type { TrailSettings } from "../../domain/types/trail-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { EffectRendererManager } from "../effect-renderer-manager";
+import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 
 export class FrameSystem {
   // ── Owned services ──────────────────────────────────────────────────────────
   readonly frameParameterBuilder = new FrameParameterBuilder();
   private readonly frameBuilder = new FrameBuilder();
+  private readonly mandalaPathOptions: MandalaPathOptions = {
+    pathShape: "arc",
+    motionAware: false,
+  };
 
   constructor(
     private readonly state: AnimatorState,
@@ -60,7 +65,7 @@ export class FrameSystem {
       getVM: () => import("$lib/shared/animation-engine/state/animation-visibility-state.svelte").AnimationVisibilityStateManager;
     }
   ): RenderFrameParams {
-    return this.frameParameterBuilder.getFrameParams(props, this.state, {
+    const params = this.frameParameterBuilder.getFrameParams(props, this.state, {
       prevDarkMode: this.deps.propSystem.prevDarkMode,
       prevHasFireTips: buildDeps.effectRendererManager.wasEnabled("fire"),
       prevHasCharcoalTips: buildDeps.effectRendererManager.wasEnabled("charcoal"),
@@ -72,6 +77,14 @@ export class FrameSystem {
       getVM: buildDeps.getVM,
       orchestrator: this.deps.lifecycleManager.orchestrator,
     });
+
+    const vm = buildDeps.getVM();
+    this.mandalaPathOptions.pathShape = vm.getPathShape();
+    this.mandalaPathOptions.motionAware = vm.getMotionAwarePaths();
+    params.mandalaVisible = this.state.visibilityState.mandala;
+    params.mandalaSteps = props.sequenceData?.steps ?? null;
+    params.mandalaPathOptions = this.mandalaPathOptions;
+    return params;
   }
 
   // ── Label calculations ───────────────────────────────────────────────────────

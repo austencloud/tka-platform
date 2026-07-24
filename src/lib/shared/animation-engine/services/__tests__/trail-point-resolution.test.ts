@@ -79,6 +79,30 @@ describe("canonical trail point resolution", () => {
     });
   });
 
+  it("does not let a legacy center-only assignment hijack prop-end tracking", () => {
+    setTrailPointOverrideProvider(() => ({
+      left: { type: "custom", dx: 0, dy: 0 },
+      right: { type: "custom", dx: 0, dy: 0 },
+    }));
+
+    expect(resolveTrailPointConfig("staff", TrackingMode.RIGHT_END)).toEqual({
+      left: { type: "tip", index: 0 },
+      right: { type: "tip", index: 1 },
+    });
+  });
+
+  it("keeps non-center custom assignments authoritative", () => {
+    setTrailPointOverrideProvider(() => ({
+      left: { type: "custom", dx: -140, dy: 5 },
+      right: { type: "custom", dx: 140, dy: -5 },
+    }));
+
+    expect(resolveTrailPointConfig("staff", TrackingMode.RIGHT_END)).toEqual({
+      left: { type: "custom", dx: -140, dy: 5 },
+      right: { type: "custom", dx: 140, dy: -5 },
+    });
+  });
+
   it("resolves HAND mode to a single prop-center source for any prop", () => {
     const handConfig = {
       left: { type: "none" },

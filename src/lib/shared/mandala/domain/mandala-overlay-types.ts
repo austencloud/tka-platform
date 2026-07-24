@@ -2,6 +2,11 @@ import type { PreparedMandalaPaths } from "../services/types";
 
 export interface MandalaOverlayConfig {
 	enabled: boolean;
+	/**
+	 * guide = show the complete path beneath the animation so live trails can
+	 * trace it; drawing = progressively reveal and retain the path.
+	 */
+	mode: "guide" | "drawing";
 	/** How long before fully faded - multiplier of loop duration (default: 1.0) */
 	fadeDurationMultiplier: number;
 	/** Line thickness in canvas pixels (default: 2.5) */
@@ -16,6 +21,7 @@ export interface MandalaOverlayConfig {
 
 export const DEFAULT_MANDALA_OVERLAY_CONFIG: MandalaOverlayConfig = {
 	enabled: false,
+	mode: "guide",
 	fadeDurationMultiplier: 1.0,
 	strokeWidth: 2.5,
 	show: "both",
@@ -32,6 +38,8 @@ export interface MandalaOverlayRenderParams {
 	config: MandalaOverlayConfig;
 	/** Seconds since last frame */
 	deltaTime: number;
+	/** Animation clock for this frame in milliseconds */
+	currentTime: number;
 	/** Canvas size in pixels */
 	canvasSize: number;
 	/** Current animation step index - used to detect seeks/jumps */

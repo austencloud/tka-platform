@@ -39,6 +39,7 @@ with pre-prepared data for better performance.
   import { describePictograph } from "../domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PropType } from "../../prop/domain/enums/prop-type";
+  import type { PropRenderContext } from "../../prop/domain/prop-render-context";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
@@ -87,6 +88,8 @@ with pre-prepared data for better performance.
     onToggleNonRadial = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
+    // Editor grids can opt in without changing saved or exported pictographs.
+    propRenderContext = "standard",
     // Print Mode: pure white background for professional print output
     printMode = false,
     // Transparent background: skip the background fill so the glyph floats
@@ -141,6 +144,8 @@ with pre-prepared data for better performance.
     onToggleNonRadial?: () => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
+    /** Editor grids opt in to context-scoped prop contrast. */
+    propRenderContext?: PropRenderContext;
     /** Print Mode: pure white background for professional print output (Choreo Cards). */
     printMode?: boolean;
     /** Skip the background fill so the glyph floats on the host surface. */
@@ -524,6 +529,7 @@ with pre-prepared data for better performance.
         {arrowsClickable}
         {showArrow}
         darkMode={effectiveDarkMode}
+        {propRenderContext}
         {printMode}
         {transparentBackground}
         {onToggleTKA}
@@ -566,6 +572,7 @@ with pre-prepared data for better performance.
             {arrowsClickable}
             {showArrow}
             darkMode={effectiveDarkMode}
+            {propRenderContext}
             {printMode}
             {transparentBackground}
             {onToggleTKA}

@@ -48,6 +48,17 @@ export interface TrailPointConfig {
   right: TrailPointSource;
 }
 
+function isPropCenterSource(source: TrailPointSource): boolean {
+  return source.type === "custom" && source.dx === 0 && source.dy === 0;
+}
+
+function isCenterOnlyConfig(config: TrailPointConfig): boolean {
+  const enabledSources = [config.left, config.right].filter(
+    (source) => source.type !== "none",
+  );
+  return enabledSources.length > 0 && enabledSources.every(isPropCenterSource);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Override Provider (callback pattern avoids circular dependency with feature layer)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -148,5 +159,14 @@ export function resolveTrailPointConfig(
   trackingMode?: TrackingMode
 ): TrailPointConfig {
   if (trackingMode === TrackingMode.HAND) return HAND_TRAIL_CONFIG;
-  return getTrailPointConfig(propType) ?? getDefaultTrailPointConfig(propType);
+
+  const override = getTrailPointConfig(propType);
+  // Before Hand was its own tracking mode, the Effects Lab's Custom button
+  // initialized both offsets to (0,0). Those saved assignments now mean Hand,
+  // not Pinky/Thumb/Both. Ignore only that exact legacy shape so prop-end modes
+  // return to the prop's real tips while every non-center custom assignment
+  // remains authoritative.
+  if (override && !isCenterOnlyConfig(override)) return override;
+
+  return getDefaultTrailPointConfig(propType);
 }

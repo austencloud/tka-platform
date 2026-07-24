@@ -19,6 +19,7 @@ import {
 } from "../domain/mandala-constants";
 import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
 import type { MandalaPaths, MandalaRenderOptions } from "../domain/mandala-types";
+import { compositeMandalaOverlap } from "./mandala-overlap-compositor";
 
 let maskIdCounter = 0;
 
@@ -359,28 +360,23 @@ export function renderMandalaToCanvas(
 			drawMaskPath(rC, p.d, style, strokeWidth);
 		}
 
-		bC.setTransform(1, 0, 0, 1, 0, 0);
-		bC.globalCompositeOperation = "destination-in";
-		bC.drawImage(maskR, 0, 0);
-
-		bC.globalCompositeOperation = "source-in";
 		// The overlap is a thin masked region with a bloom halo; a single
 		// representative color (gradient start in flow mode) reads identically to
 		// the SVG's per-path purple gradient here.
-		bC.fillStyle = gradient ? gradient.purple[0] : (options.palette?.purpleStroke ?? PURPLE_STROKE);
-		bC.fillRect(0, 0, w, h);
-
-		ctx.save();
-		ctx.setTransform(1, 0, 0, 1, 0, 0);
-		ctx.globalAlpha = 0.9;
-		if (glow) {
-			// Wider purple halo emulates the SVG `bloom` filter merged under the
-			// purple overlap core.
-			ctx.shadowColor = gradient ? gradient.purple[0] : (options.palette?.purpleStroke ?? PURPLE_STROKE);
-			ctx.shadowBlur = glow.bloomBlur ?? glow.blur;
-		}
-		ctx.drawImage(maskB, 0, 0);
-		ctx.restore();
+		const overlapColor =
+			gradient?.purple[0] ??
+			options.palette?.purpleStroke ??
+			PURPLE_STROKE;
+		compositeMandalaOverlap({
+			targetContext: ctx,
+			overlapMaskContext: bC,
+			overlapMaskCanvas: maskB,
+			otherMaskCanvas: maskR,
+			width: w,
+			height: h,
+			color: overlapColor,
+			shadowBlur: glow ? (glow.bloomBlur ?? glow.blur) : undefined,
+		});
 	}
 
 	ctx.restore();

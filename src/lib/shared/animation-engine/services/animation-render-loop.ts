@@ -38,6 +38,12 @@ import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { FireTipUpdateResult } from './fire-tip-tracker';
 import type { FireFrameInput } from '../domain/types/fire-types';
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overlay-canvas";
+import { MandalaPathPreparer } from "$lib/shared/mandala/services/mandala-path-preparer";
+import {
+  DEFAULT_MANDALA_OVERLAY_CONFIG,
+  type MandalaOverlayConfig,
+} from "$lib/shared/mandala/domain/mandala-overlay-types";
 
 // ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every
@@ -89,6 +95,15 @@ function hasTrailTips(map: TipEffectMap | undefined): boolean {
   return Object.values(map).some(a => a.effect === "trails");
 }
 
+const MANDALA_GUIDE_CONFIG: MandalaOverlayConfig = {
+  ...DEFAULT_MANDALA_OVERLAY_CONFIG,
+  enabled: true,
+  mode: "guide",
+  // Match the Shape Matrix's ghost-guide treatment so the live trail remains
+  // the brightest read while it runs directly over the mandala path.
+  opacity: 0.55,
+};
+
 
 /**
  * Context shared across all registry effect dispatches within a single frame.
@@ -130,6 +145,9 @@ export class AnimationRenderLoop {
   private fireTipTracker: FireTipTracker | null = null;
   private ledTipTracker: LedTipTracker | null = null;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
+  private mandalaOverlay: MandalaOverlayCanvas | null = null;
+  private readonly mandalaPathPreparer = new MandalaPathPreparer();
+  private previousMandalaPaths: ReturnType<MandalaPathPreparer["prepare"]> = null;
   /**
    * Registry-driven renderer map. Keyed by EffectType id.
    * Populated/updated via initialize() and updateConfig().
@@ -238,6 +256,7 @@ export class AnimationRenderLoop {
     this.fireTipTracker = config.fireTipTracker ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
     this.onEffectError = config.onEffectError ?? null;
+    this.mandalaOverlay = config.mandalaOverlay ?? null;
     this.previousBlueTrailPropType = undefined;
     this.previousRedTrailPropType = undefined;
 
@@ -266,7 +285,12 @@ export class AnimationRenderLoop {
     if (config.TrailCapturer !== undefined)
       this.TrailCapturer = config.TrailCapturer;
     if (config.pathCache !== undefined) this.pathCache = config.pathCache;
-    if (config.canvasSize !== undefined) this.canvasSize = config.canvasSize;
+    if (config.canvasSize !== undefined && config.canvasSize !== this.canvasSize) {
+      this.canvasSize = config.canvasSize;
+      this.mandalaOverlay?.resize(this.canvasSize, this.canvasSize);
+      this.mandalaPathPreparer.clearCache();
+      this.previousMandalaPaths = null;
+    }
     if (config.frameBudgetMonitor !== undefined)
       this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     if (config.fireTipTracker !== undefined)
@@ -275,6 +299,11 @@ export class AnimationRenderLoop {
       this.ledTipTracker = config.ledTipTracker ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
+    if (config.mandalaOverlay !== undefined) {
+      this.mandalaOverlay = config.mandalaOverlay;
+      this.mandalaPathPreparer.clearCache();
+      this.previousMandalaPaths = null;
+    }
     // Merge renderer additions/removals from the registry record.
     if (config.renderers !== undefined) {
       for (const [id, renderer] of Object.entries(config.renderers as Record<string, EffectRendererLike | null | undefined>)) {
@@ -401,6 +430,9 @@ export class AnimationRenderLoop {
     this.getFrameParamsCallback = null;
     this.fireTipTracker = null;
     this.ledTipTracker = null;
+    this.mandalaOverlay = null;
+    this.mandalaPathPreparer.clearCache();
+    this.previousMandalaPaths = null;
     this.previousBlueTrailPropType = undefined;
     this.previousRedTrailPropType = undefined;
     // Dispose all renderers in the registry map.
@@ -841,6 +873,8 @@ export class AnimationRenderLoop {
       hasTrailTips(params.tipEffectMap) && trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
       this.renderer?.isBackgroundTransitioning() ?? false;
+    const mandalaTransitioning =
+      this.mandalaOverlay?.isTransitioning() ?? false;
 
     // Build a per-effect active map using the exact same gating semantics as before:
     //   fire:     params.fireConfig != null && renderer.isInitialized()
@@ -874,6 +908,7 @@ export class AnimationRenderLoop {
       this.needsRender ||
       isPlaying ||
       backgroundTransitioning ||
+      mandalaTransitioning ||
       anyEffectActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
@@ -997,6 +1032,14 @@ export class AnimationRenderLoop {
       visibility.blueMotionVisible && props.blueProp !== null;
     const effectiveRedMotionVisible =
       visibility.redMotionVisible && props.redProp !== null;
+
+    this.renderMandalaGuide(
+      params,
+      dtSeconds,
+      currentTime,
+      effectiveBlueMotionVisible,
+      effectiveRedMotionVisible,
+    );
 
     // Build additional layer render data
     const additionalLayerRenderData = props.additionalLayers.map((layer, i) => {
@@ -1507,6 +1550,93 @@ export class AnimationRenderLoop {
       this.fpsWindowDrops = 0;
       this.fpsWindowLongTaskMs = 0;
     }
+  }
+
+  /**
+   * Paint the complete engine-aligned path guide beneath the scene. Geometry is
+   * cached by sequence, path policy, prop types, and resolved trail endpoints,
+   * so the per-frame path is an identity check after the first preparation.
+   */
+  private renderMandalaGuide(
+    params: RenderFrameParams,
+    deltaTime: number,
+    currentTime: number,
+    showBlue: boolean,
+    showRed: boolean,
+  ): void {
+    const overlay = this.mandalaOverlay;
+    if (!overlay) return;
+
+    const steps = params.mandalaSteps;
+    if (
+      !params.mandalaVisible ||
+      params.suppress2DOverlays ||
+      !steps ||
+      steps.length === 0 ||
+      (!showBlue && !showRed)
+    ) {
+      overlay.setVisible(false);
+      return;
+    }
+
+    // A prop type becomes reactive before its replacement texture finishes
+    // loading. Keep the old guide in place during that gap so the mandala and
+    // prop begin their crossfades together once the new artwork is ready.
+    if (
+      params.trailsSuppressedUntilTextureLoad &&
+      this.previousMandalaPaths
+    ) {
+      overlay.setVisible(true);
+      overlay.renderFrame({
+        preparedPaths: this.previousMandalaPaths,
+        progress: 1,
+        config: MANDALA_GUIDE_CONFIG,
+        deltaTime,
+        currentTime,
+        canvasSize: this.canvasSize,
+        currentStep: params.currentStep,
+      });
+      return;
+    }
+
+    const show = showBlue && showRed ? "both" : showBlue ? "blue" : "red";
+    const preparedPaths = this.mandalaPathPreparer.prepare(
+      steps,
+      this.canvasSize,
+      {
+        show,
+        bluePropType: params.bluePropType,
+        redPropType: params.redPropType,
+        trackingMode: params.trailSettings.trackingMode,
+        pathOptions: params.mandalaPathOptions,
+        blueColor: params.trailSettings.blueColor,
+        redColor: params.trailSettings.redColor,
+        sequenceKey: params.sequenceContentHash,
+      },
+    );
+
+    if (!preparedPaths) {
+      overlay.setVisible(false);
+      return;
+    }
+
+    if (
+      MANDALA_GUIDE_CONFIG.mode === "drawing" &&
+      this.previousMandalaPaths !== preparedPaths
+    ) {
+      overlay.clear();
+    }
+    this.previousMandalaPaths = preparedPaths;
+    overlay.setVisible(true);
+    overlay.renderFrame({
+      preparedPaths,
+      progress: 1,
+      config: MANDALA_GUIDE_CONFIG,
+      deltaTime,
+      currentTime,
+      canvasSize: this.canvasSize,
+      currentStep: params.currentStep,
+    });
   }
 
   private static compactByTrailFlag(points: TrailPoint[], tipMap: TipEffectMap): void {

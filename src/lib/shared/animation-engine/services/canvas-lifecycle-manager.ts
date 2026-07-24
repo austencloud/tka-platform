@@ -42,6 +42,7 @@ import type { AnimationVisibilityState } from "./animation-visibility-synchroniz
 import { FireTipTracker } from "./fire-tip-tracker";
 import { LedTipTracker } from "./led-tip-tracker";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overlay-canvas";
 
 /**
  * Context passed to CanvasLifecycleManager.initialize().
@@ -98,6 +99,9 @@ export class CanvasLifecycleManager {
   private _glyphTextureService: IGlyphTextureLoader | null = null;
   private _propTextureService: IPropTextureLoader | null = null;
   private _unsubscribeVisibility: (() => void) | null = null;
+  private _mandalaOverlay: MandalaOverlayCanvas | null = null;
+  private _containerElement: HTMLDivElement | null = null;
+  private _initialCanvasSize = 0;
 
   // ── Services loaded during init that the engine also reads post-init ────────
   private _animationRenderer: AnimationRenderer | null = null;
@@ -171,6 +175,8 @@ export class CanvasLifecycleManager {
       onVisibilityChange,
       instanceId,
     } = ctx;
+    this._containerElement = containerElement;
+    this._initialCanvasSize = canvasSize;
     const propPipeline = propSystem.propPipeline;
     const propTypeManager = propSystem.propTypeManager;
 
@@ -384,6 +390,7 @@ export class CanvasLifecycleManager {
       frameBudgetMonitor,
       fireTipTracker: erm.fireTipTracker,
       ledTipTracker: erm.ledTipTracker,
+      mandalaOverlay: this._mandalaOverlay,
       onEffectError: callbacks.onEffectError,
     });
 
@@ -422,6 +429,30 @@ export class CanvasLifecycleManager {
     this._resizer?.resumeObservation();
   }
 
+  /**
+   * Lazily own the mandala layer so canvases that leave the feature off pay no
+   * DOM or backing-buffer cost. The render loop owns frame drawing, while this
+   * manager owns creation, attachment, and disposal.
+   */
+  syncMandalaOverlay(enabled: boolean): void {
+    if (enabled) {
+      if (this._mandalaOverlay || !this._containerElement) return;
+      const size =
+        this._resizer?.state.currentSize || this._initialCanvasSize || 500;
+      const overlay = new MandalaOverlayCanvas();
+      overlay.initialize(this._containerElement, size, size);
+      this._mandalaOverlay = overlay;
+      this._renderLoop?.updateConfig({ mandalaOverlay: overlay });
+      return;
+    }
+
+    if (!this._mandalaOverlay) return;
+    const overlay = this._mandalaOverlay;
+    this._mandalaOverlay = null;
+    this._renderLoop?.updateConfig({ mandalaOverlay: null });
+    overlay.dispose();
+  }
+
   dispose(callbacks?: {
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: (v: boolean) => void;
@@ -436,6 +467,8 @@ export class CanvasLifecycleManager {
 
     this._renderLoop?.dispose();
     this._resizer?.teardown();
+    this._mandalaOverlay?.dispose();
+    this._mandalaOverlay = null;
 
     this._glyphTextureService?.dispose?.();
     this._propTextureService?.dispose?.();
@@ -452,5 +485,8 @@ export class CanvasLifecycleManager {
         onInitialized: (initialized) => callbacks.onInitialized?.(initialized),
       });
     }
+
+    this._containerElement = null;
+    this._initialCanvasSize = 0;
   }
 }

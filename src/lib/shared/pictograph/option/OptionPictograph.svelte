@@ -9,6 +9,7 @@
   import { isVisibleMotion } from "../shared/domain/models/motion-data";
   import PictographRenderer from "../shared/components/PictographRenderer.svelte";
   import { getVisibilityStateManager } from "../shared/state/visibility-state.svelte";
+  import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
   import type { GridLocation } from "../grid/domain/enums/grid-enums";
 
   let {
@@ -22,6 +23,7 @@
   }>();
 
   const vm = getVisibilityStateManager();
+  const animationVisibilityManager = getAnimationVisibilityManager();
 
   let showGrid = $state(vm.getGridVisibility());
   let showTKA = $state(vm.getGlyphVisibility("tkaGlyph"));
@@ -31,6 +33,7 @@
   let showElemental = $state(vm.getGlyphVisibility("elementalGlyph"));
   let showPositions = $state(vm.getGlyphVisibility("positionsGlyph"));
   let handPointVisibility = $state<"all" | "active" | "none">(vm.getHandPointVisibility());
+  let darkMode = $state(animationVisibilityManager.isDarkMode());
 
   function syncAll() {
     showGrid = vm.getGridVisibility();
@@ -43,9 +46,17 @@
     handPointVisibility = vm.getHandPointVisibility();
   }
 
+  function syncDarkMode() {
+    darkMode = animationVisibilityManager.isDarkMode();
+  }
+
   onMount(() => {
     vm.registerObserver(syncAll, ["all"]);
-    return () => vm.unregisterObserver(syncAll);
+    animationVisibilityManager.registerObserver(syncDarkMode);
+    return () => {
+      vm.unregisterObserver(syncAll);
+      animationVisibilityManager.unregisterObserver(syncDarkMode);
+    };
   });
 
   // Compute active locations from motion end positions (where props are)
@@ -74,4 +85,6 @@
   {showPositions}
   {handPointVisibility}
   {activeLocations}
+  {darkMode}
+  propRenderContext="editor"
 />

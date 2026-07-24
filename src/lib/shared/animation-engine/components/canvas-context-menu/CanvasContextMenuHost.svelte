@@ -10,7 +10,10 @@
     ContextMenuEntry,
   } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildCanvasContextMenuItems } from "./canvas-context-menu-builder";
-  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import {
+    getAnimationVisibilityManager,
+    type AnimationVisibilityStateManager,
+  } from "../../state/animation-visibility-state.svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   interface Props {
@@ -21,6 +24,8 @@
     /** Extra entries a consumer injects (e.g. "Save tunnel"). Prepended before
      *  the built-in items. Defaults to [] so existing consumers are unaffected. */
     extraItems?: ContextMenuEntry[];
+    /** Canvas-scoped manager when this animator does not use the global state. */
+    visibilityManager?: AnimationVisibilityStateManager;
   }
 
   const {
@@ -29,6 +34,7 @@
     captureEffectDiagnostics,
     onToggle3DView,
     extraItems = [],
+    visibilityManager: visibilityManagerOverride,
   }: Props = $props();
 
   // Try to read the viewer-3d context. When this component is rendered inside
@@ -45,7 +51,8 @@
   let menuState: ContextMenuState = $state({ open: false });
   let menuItemsVersion: number = $state(0);
 
-  const visibilityManager = getAnimationVisibilityManager();
+  const visibilityManager =
+    visibilityManagerOverride ?? getAnimationVisibilityManager();
   let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
   try {
     effectsConfigState = getEffectsConfigContext();

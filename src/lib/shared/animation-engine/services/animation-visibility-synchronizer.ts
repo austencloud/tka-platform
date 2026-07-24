@@ -22,6 +22,8 @@ export interface AnimationVisibilityState {
   darkMode: boolean;
   /** Word header overlay showing sequence name */
   wordHeader: boolean;
+  /** Engine-aligned mandala path guide beneath the 2D animation */
+  mandala: boolean;
   activeEffect: EffectType;
   tipEffectMap: TipEffectMap;
 }
@@ -57,6 +59,7 @@ export class AnimationVisibilitySynchronizer {
       tkaGlyph: this.manager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       darkMode: this.manager.isDarkMode(),
       wordHeader: this.manager.getVisibility("wordHeader"),
+      mandala: this.manager.getVisibility("mandala"),
       activeEffect,
       tipEffectMap,
     };

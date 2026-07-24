@@ -277,6 +277,7 @@ export class PictographPreparer {
             imageSrc: renderData.svgData.svgContent,
             viewBox: `${renderData.svgData.viewBox.width} ${renderData.svgData.viewBox.height}`,
             center: renderData.svgData.center,
+            propType: motion.propType,
           };
 
           positions[color] = {

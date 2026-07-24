@@ -31,14 +31,17 @@ import type {
 	SVGPathData,
 	MandalaPoint,
 } from "../domain/mandala-types";
-import type { StepLike, MotionLike, MandalaPathOptions } from "./types";
+import type {
+	StepLike,
+	MotionLike,
+	MandalaPathOptions,
+	MandalaTipOffset,
+	MandalaTipOverrides,
+} from "./types";
 
 // ─── Internal types ─────────────────────────────────────────────────────────
 
-interface TipOffset {
-	dx: number;
-	dy: number;
-}
+type TipOffset = MandalaTipOffset;
 
 interface MotionEndpoints {
 	startCenterAngle: number;
@@ -564,19 +567,44 @@ function buildCacheKey(
 function computePointSets(
 	stepsWithMotions: readonly StepLike[],
 	options: MandalaPathOptions | undefined,
-	dx: number,
-	dy: number
+	tipOverrides?: MandalaTipOverrides | MandalaTipOffset,
 ): { blue: MandalaPoint[][]; red: MandalaPoint[][] } {
-	// One-ended prop (club) traces only the outer tip; two-ended (staff) both.
-	const tips = options?.tipEnds === 1 ? [{ dx, dy }] : [{ dx: -dx, dy }, { dx, dy }];
+	const defaultDx =
+		tipOverrides && "dx" in tipOverrides
+			? tipOverrides.dx
+			: MANDALA_STANDARD_TIP_DX;
+	const defaultDy =
+		tipOverrides && "dy" in tipOverrides
+			? tipOverrides.dy
+			: 0;
+	// Legacy callers provide one axial offset plus tipEnds. The animation
+	// overlay provides independent point arrays so each hand can follow its
+	// current prop's real trail sources, including asymmetric custom points.
+	const defaultTips =
+		options?.tipEnds === 1
+			? [{ dx: defaultDx, dy: defaultDy }]
+			: [
+					{ dx: -defaultDx, dy: defaultDy },
+					{ dx: defaultDx, dy: defaultDy },
+				];
+	const blueTips =
+		tipOverrides && "blue" in tipOverrides
+			? tipOverrides.blue
+			: defaultTips;
+	const redTips =
+		tipOverrides && "red" in tipOverrides
+			? tipOverrides.red
+			: defaultTips;
 	const gridRadius = MANDALA_GRID_RADIUS;
 	const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
 
 	const blue: MandalaPoint[][] = [];
 	const red: MandalaPoint[][] = [];
 
-	for (const tip of tips) {
+	for (const tip of blueTips) {
 		blue.push(generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options));
+	}
+	for (const tip of redTips) {
 		red.push(generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options));
 	}
 
@@ -594,7 +622,7 @@ export function calculateMorphed(
 	optionsFrom: MandalaPathOptions | undefined,
 	optionsTo: MandalaPathOptions | undefined,
 	t: number,
-	tipOverride?: { dx: number; dy: number }
+	tipOverride?: MandalaTipOverrides | MandalaTipOffset,
 ): MandalaPaths {
 	const stepsWithMotions = steps.filter(
 		(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
@@ -603,11 +631,8 @@ export function calculateMorphed(
 		return { blue: [], red: [], purple: [] };
 	}
 
-	const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
-	const dy = tipOverride?.dy ?? 0;
-
-	const from = computePointSets(stepsWithMotions, optionsFrom, dx, dy);
-	const to = computePointSets(stepsWithMotions, optionsTo, dx, dy);
+	const from = computePointSets(stepsWithMotions, optionsFrom, tipOverride);
+	const to = computePointSets(stepsWithMotions, optionsTo, tipOverride);
 
 	const blueSets = from.blue.map((set, i) => lerpPointSet(set, to.blue[i] ?? set, t));
 	const redSets = from.red.map((set, i) => lerpPointSet(set, to.red[i] ?? set, t));
@@ -624,7 +649,7 @@ export function calculate(
 	_bluePropType?: string,
 	_redPropType?: string,
 	options?: MandalaPathOptions,
-	tipOverride?: { dx: number; dy: number }
+	tipOverride?: MandalaTipOverrides | MandalaTipOffset,
 ): MandalaPaths {
 	const skipCache = tipOverride !== undefined;
 
@@ -648,10 +673,7 @@ export function calculate(
 		return { blue: [], red: [], purple: [] };
 	}
 
-	const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
-	const dy = tipOverride?.dy ?? 0;
-
-	const sets = computePointSets(stepsWithMotions, options, dx, dy);
+	const sets = computePointSets(stepsWithMotions, options, tipOverride);
 	const result: MandalaPaths = {
 		blue: pointSetsToPaths(sets.blue),
 		red: pointSetsToPaths(sets.red),

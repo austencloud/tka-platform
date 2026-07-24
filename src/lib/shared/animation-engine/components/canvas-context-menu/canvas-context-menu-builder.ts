@@ -294,6 +294,14 @@ function buildVisibilityChildren(
       action: () => vm.toggleVisibility("wordHeader"),
     },
     {
+      id: "vis-mandala",
+      label: "Mandala",
+      icon: "fa-draw-polygon",
+      checked: settings.mandala,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("mandala"),
+    },
+    {
       id: "vis-progress-bar",
       label: "Progress Bar",
       icon: "fa-bars-progress",

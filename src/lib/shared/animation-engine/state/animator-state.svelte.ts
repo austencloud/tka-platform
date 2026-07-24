@@ -93,6 +93,7 @@ export function createAnimatorState(): AnimatorState {
       tkaGlyph: true,
       darkMode: false,
       wordHeader: true,
+      mandala: false,
       activeEffect: "trails" as EffectType,
       tipEffectMap: {} as TipEffectMap,
     } as AnimationVisibilityState,

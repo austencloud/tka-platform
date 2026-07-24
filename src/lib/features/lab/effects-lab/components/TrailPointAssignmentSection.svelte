@@ -45,6 +45,19 @@
   let leftTipIndex = $derived(leftSource?.type === "tip" ? leftSource.index : -1);
   let rightTipIndex = $derived(rightSource?.type === "tip" ? rightSource.index : -1);
 
+  function seedCustomSource(
+    source: TrailPointSource | null,
+    fallback: TrailPointSource,
+  ): TrailPointSource {
+    const seed = source && source.type !== "none" ? source : fallback;
+    if (seed.type === "custom") return seed;
+    if (seed.type === "tip") {
+      const point = editorState.points[seed.index];
+      if (point) return { type: "custom", dx: point.dx, dy: point.dy };
+    }
+    return { type: "custom", dx: 0, dy: 0 };
+  }
+
   function selectMode(newMode: Mode) {
     if (newMode === "auto") {
       editorState.clearTrailConfig();
@@ -68,9 +81,10 @@
     }
 
     if (newMode === "custom") {
+      const defaults = getDefaultTrailPointConfig(editorState.selectedPropType);
       const config: TrailPointConfig = {
-        left: leftSource?.type === "custom" ? leftSource : { type: "custom", dx: 0, dy: 0 },
-        right: rightSource?.type === "custom" ? rightSource : { type: "custom", dx: 0, dy: 0 },
+        left: seedCustomSource(leftSource, defaults.left),
+        right: seedCustomSource(rightSource, defaults.right),
       };
       editorState.saveTrailConfig(config);
     }

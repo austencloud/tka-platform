@@ -22,6 +22,11 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { EffectType, TipEffectMap } from "../domain/types/tip-effect-types";
 import type { EffectRendererLike } from "./effects/effect-renderer";
+import type { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overlay-canvas";
+import type {
+  MandalaPathOptions,
+  StepLike,
+} from "$lib/shared/mandala/services/types";
 
 /**
  * Configuration for render loop initialization
@@ -43,6 +48,8 @@ export interface RenderLoopConfig {
    * null values signal removal (the render loop deletes the entry from its Map).
    */
   renderers?: Partial<Record<EffectType, EffectRendererLike | null>>;
+  /** Bottom-layer mandala guide. Created lazily when its visibility toggle is on. */
+  mandalaOverlay?: MandalaOverlayCanvas | null;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
 }
@@ -167,6 +174,12 @@ export interface RenderFrameParams {
    * with this transient per-swap suppression.
    */
   trailsSuppressedUntilTextureLoad?: boolean;
+  /** Whether the engine-aligned mandala guide is enabled for this canvas. */
+  mandalaVisible?: boolean;
+  /** Sequence motions used to prepare the complete prop-tip guide paths. */
+  mandalaSteps?: readonly StepLike[] | null;
+  /** Path-shape policy shared with live trail interpolation. */
+  mandalaPathOptions?: MandalaPathOptions;
 }
 
 /**

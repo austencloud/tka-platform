@@ -322,6 +322,7 @@ export class AnimationEngine {
       tkaGlyph: vm.getVisibility("tkaGlyph"),
       darkMode: vm.isDarkMode(),
       wordHeader: vm.getVisibility("wordHeader"),
+      mandala: vm.getVisibility("mandala"),
       activeEffect: (ecs?.activeEffect ?? "none") as EffectType,
       tipEffectMap: ecs?.tipEffectMap ?? {},
     });

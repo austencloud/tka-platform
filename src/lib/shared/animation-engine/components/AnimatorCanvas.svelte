@@ -682,6 +682,7 @@ Last audit: 2025-12-27
       captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
       extraItems={extraContextMenuItems}
+      {visibilityManager}
     />
   {/if}
 </div>

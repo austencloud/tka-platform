@@ -30,7 +30,9 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   staff_v2: { width: 300, height: 48.6 },
 
   // Club family
-  club: { width: 300, height: 39.63 },
+  // The regular club stops short of the grid center so its visible end, trails,
+  // and mandala all share the same ~130-unit reach.
+  club: { width: 258.67, height: 34.17 },
   bigclub: { width: 300.5, height: 77.2 },
 
   // Fan family
@@ -104,8 +106,11 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigdoublefrostedball: { width: 600, height: 300 },
 
   // Torch family
-  torch: { width: 300, height: 15.5 },
-  bigtorch: { width: 325, height: 32.6 },
+  // The flame extends beyond the old wick-only artwork. These viewBoxes grow
+  // symmetrically around the original prop center, so the hand pivot and the
+  // canonical trail attachment stay fixed while the full flame remains visible.
+  torch: { width: 360, height: 35.7 },
+  bigtorch: { width: 402, height: 57.3 },
 };
 
 /**

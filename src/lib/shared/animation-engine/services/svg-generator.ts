@@ -9,6 +9,10 @@ import {
   type ThemeMode,
 } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  EDITOR_TORCH_PALETTE,
+  recolorMarkedPart,
+} from "$lib/shared/pictograph/prop/domain/prop-render-context";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 /**
@@ -191,15 +195,24 @@ export function generateRedStaffSvg(): string {
  */
 export async function generatePropSvg(
   propType: string = "staff",
-  color: string
+  color: string,
+  themeMode: ThemeMode = getCurrentThemeMode()
 ): Promise<PropSvgData> {
   // Use the 300px scaled versions from animated directory for animation display
   const propTypeLower = propType.toLowerCase();
   const path = `/images/props/animated/${propTypeLower}.svg`;
   const originalSvg = await fetchPropSvg(path);
   const coloredSvg = applyColorToPropSvg(originalSvg, color, propTypeLower);
+  const contrastAdjustedSvg =
+    propTypeLower === "torch" || propTypeLower === "bigtorch"
+      ? recolorMarkedPart(
+          coloredSvg,
+          "data-animated-torch-shaft",
+          EDITOR_TORCH_PALETTE[themeMode].shaft
+        )
+      : coloredSvg;
   const { width, height } = extractViewBoxDimensions(originalSvg);
-  return { svg: coloredSvg, width, height };
+  return { svg: contrastAdjustedSvg, width, height };
 }
 
 /**
@@ -221,7 +234,8 @@ export async function generateBluePropSvg(
       : getCurrentThemeMode();
   return generatePropSvg(
     propType,
-    getMotionColor(MotionColor.BLUE, themeMode)
+    getMotionColor(MotionColor.BLUE, themeMode),
+    themeMode
   );
 }
 
@@ -244,7 +258,8 @@ export async function generateRedPropSvg(
       : getCurrentThemeMode();
   return generatePropSvg(
     propType,
-    getMotionColor(MotionColor.RED, themeMode)
+    getMotionColor(MotionColor.RED, themeMode),
+    themeMode
   );
 }
 

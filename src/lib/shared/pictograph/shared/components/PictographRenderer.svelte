@@ -23,6 +23,10 @@ Usage:
   import { isVisibleMotion, type MotionData } from "../domain/models/motion-data";
   import GridSvg from "../../grid/components/GridSvg.svelte";
   import PropSvg from "../../prop/components/PropSvg.svelte";
+  import {
+    EDITOR_TORCH_PALETTE,
+    type PropRenderContext,
+  } from "../../prop/domain/prop-render-context";
   import ArrowSvg from "../../arrow/rendering/components/ArrowSvg.svelte";
   import TKAGlyph, {
     getLetterDimensions,
@@ -87,6 +91,8 @@ Usage:
     onPropClick = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
+    // Editor-only prop legibility treatment. Standard rendering is untouched.
+    propRenderContext = "standard",
     // Print Mode: uses pure white background for professional print output (Choreo Cards)
     printMode = false,
     // Transparent background: grid and props float on parent's background
@@ -145,6 +151,8 @@ Usage:
     onPropClick?: (hand: "blue" | "red") => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
+    /** Editor grids opt in to context-scoped prop contrast. */
+    propRenderContext?: PropRenderContext;
     /** Print Mode: pure white background for professional print (Choreo Cards). */
     printMode?: boolean;
     /** Transparent background - grid and props float on parent's background */
@@ -363,7 +371,20 @@ Usage:
   >
     <desc>{a11yLabel}</desc>
     <!-- Background - fills entire expanded viewBox -->
-    <rect width={expandedWidth} height={BASE_SIZE} fill={transparentBackground ? "none" : printMode ? "#ffffff" : darkMode === true ? "#0a0a0f" : darkMode === false ? "#d8d8d2" : "var(--dm-pictograph-bg)"} pointer-events="none" />
+    <rect
+      width={expandedWidth}
+      height={BASE_SIZE}
+      fill={transparentBackground
+        ? "none"
+        : printMode
+          ? "#ffffff"
+          : darkMode === true
+            ? EDITOR_TORCH_PALETTE.dark.background
+            : darkMode === false
+              ? EDITOR_TORCH_PALETTE.light.background
+              : "var(--dm-pictograph-bg)"}
+      pointer-events="none"
+    />
 
     <!-- Core content (grid, props, arrows) - centered in expanded viewBox -->
     <g transform="translate({coreContentOffset}, 0)">
@@ -398,6 +419,8 @@ Usage:
                 ? () => onPropClick(color)
                 : undefined}
               {cellIndex}
+              {propRenderContext}
+              darkMode={darkMode ?? false}
             />
           </g>
         {/if}

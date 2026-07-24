@@ -266,25 +266,38 @@ export class ExportFrameCompositor {
       offscreenCtx.fillStyle = "#000";
       offscreenCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
       const canvasY = headerHeight > 0 ? headerHeight : 0;
-      offscreenCtx.drawImage(
-        canvas,
-        0, 0, canvas.width, canvas.height,
-        0, canvasY, outputCanvasSize, outputCanvasSize
-      );
 
       const container = canvas.parentElement;
-      if (container) {
-        const overlayCanvases = container.querySelectorAll("canvas");
-        for (const overlay of overlayCanvases) {
-          if (overlay === canvas) continue;
-          if (overlay.width === 0 || overlay.height === 0) continue;
+      const overlayCanvases = container
+        ? Array.from(container.querySelectorAll("canvas")).filter(
+            (overlay) =>
+              overlay !== canvas &&
+              overlay.width > 0 &&
+              overlay.height > 0,
+          )
+        : [];
+      const mandalaUnderlays = overlayCanvases.filter(
+        (overlay) => overlay.getAttribute("data-animation-layer") === "mandala",
+      );
+      const foregroundOverlays = overlayCanvases.filter(
+        (overlay) => overlay.getAttribute("data-animation-layer") !== "mandala",
+      );
+      const drawLayer = (layer: HTMLCanvasElement) => {
+        offscreenCtx.drawImage(
+          layer,
+          0, 0, layer.width, layer.height,
+          0, canvasY, outputCanvasSize, outputCanvasSize
+        );
+      };
 
-          offscreenCtx.drawImage(
-            overlay,
-            0, 0, overlay.width, overlay.height,
-            0, canvasY, outputCanvasSize, outputCanvasSize
-          );
-        }
+      // The browser places the mandala at z=0, beneath the transparent scene
+      // canvas. DOM-query composition does not honor z-index, so preserve that
+      // order explicitly before drawing props/grid and the foreground effects.
+      for (const underlay of mandalaUnderlays) drawLayer(underlay);
+      drawLayer(canvas);
+
+      if (container) {
+        for (const overlay of foregroundOverlays) drawLayer(overlay);
       }
     }
   }

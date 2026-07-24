@@ -343,6 +343,7 @@
   <PictographContainer
     pictographData={stepDataWithSelection}
     disableTransitions={true}
+    propRenderContext="editor"
     {musicalPosition}
     {widthMultiplier}
     cellIndex={index}

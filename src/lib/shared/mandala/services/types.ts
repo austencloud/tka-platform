@@ -31,12 +31,33 @@ export interface MandalaPathOptions {
 	tipEnds?: 1 | 2;
 }
 
+/**
+ * One prop-local point whose path the mandala should trace.
+ *
+ * These offsets use the animation engine's 950-unit coordinate space. The
+ * geometry calculator scales them into mandala space, then the animation
+ * overlay scales them back into the live canvas. Keeping the original offset
+ * intact is what makes a club, staff, fan, or custom trail point land on the
+ * same pixels as its rendered trail.
+ */
+export interface MandalaTipOffset {
+	dx: number;
+	dy: number;
+}
+
+/** Per-hand tip points used when blue and red props have different geometry. */
+export interface MandalaTipOverrides {
+	blue: readonly MandalaTipOffset[];
+	red: readonly MandalaTipOffset[];
+}
+
 
 // --- From MandalaPathPreparer ---
 export interface PreparedMandalaPath {
 	path2d: Path2D;
 	totalLength: number;
 	color: string;
+	hand: "blue" | "red";
 }
 
 export interface PreparedMandalaPaths {

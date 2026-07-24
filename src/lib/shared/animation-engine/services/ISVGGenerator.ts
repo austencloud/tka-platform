@@ -6,6 +6,7 @@
 
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PropSvgData } from "$lib/shared/animation-engine/domain/types/svg-types";
+import type { ThemeMode } from "$lib/shared/utils/svg-color-utils";
 
 export type { PropSvgData } from "$lib/shared/animation-engine/domain/types/svg-types";
 
@@ -22,7 +23,11 @@ export interface ISVGGenerator {
    * @param color - Hex color for the prop
    * @returns PropSvgData with SVG string and viewBox dimensions
    */
-  generatePropSvg(propType: string, color: string): Promise<PropSvgData>;
+  generatePropSvg(
+    propType: string,
+    color: string,
+    themeMode?: ThemeMode
+  ): Promise<PropSvgData>;
 
   /**
    * Generate blue prop SVG with dynamic prop type

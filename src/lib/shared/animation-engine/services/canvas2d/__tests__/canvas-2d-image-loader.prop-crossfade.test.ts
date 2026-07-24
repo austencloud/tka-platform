@@ -4,7 +4,7 @@ const { PROP_GEOMETRY } = vi.hoisted(() => ({
   PROP_GEOMETRY: {
     staff: { width: 270, height: 83.1 },
     fan: { width: 300, height: 239.4 },
-    club: { width: 300, height: 39.63 },
+    club: { width: 258.67, height: 34.17 },
     buugeng: { width: 300, height: 155.26 },
   } as Record<string, { width: number; height: number }>,
 }));

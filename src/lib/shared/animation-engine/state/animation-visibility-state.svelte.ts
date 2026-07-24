@@ -42,6 +42,7 @@ interface AnimationVisibilitySettings {
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
   wordHeader: boolean; // Word/sequence name header at top
   progressBar: boolean; // Segmented progress bar in word header
+  mandala: boolean; // Engine-aligned prop-tip path guide beneath the animation
 
   // Global Effects (applies to pictograph, animation, and image export)
   // Dark Mode: dark background, inverted grid, white text/outlines
@@ -130,6 +131,7 @@ export class AnimationVisibilityStateManager {
       speed: 1.0, // Default to 60 BPM
       wordHeader: true, // Show word/sequence name by default
       progressBar: true, // Show progress bar by default
+      mandala: false,
 
       // Global effects
       darkMode: true, // Dark Mode enabled by default (better first impression)

@@ -176,6 +176,12 @@ export class FrameParameterBuilder {
     sequenceContentHash: undefined,
     tipEffectMap: {},
     trailsSuppressedUntilTextureLoad: false,
+    mandalaVisible: false,
+    mandalaSteps: null,
+    mandalaPathOptions: {
+      pathShape: "arc",
+      motionAware: false,
+    },
   };
 
   /**

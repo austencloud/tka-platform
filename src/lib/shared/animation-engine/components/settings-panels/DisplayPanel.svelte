@@ -28,6 +28,7 @@
   let propsVisible = $state(vm.getVisibility("props"));
   let wordHeader = $state(vm.getVisibility("wordHeader"));
   let progressBar = $state(vm.getVisibility("progressBar"));
+  let mandala = $state(vm.getVisibility("mandala"));
   let pathLines = $state(
     vm.getVisibility("bluePathLines") || vm.getVisibility("redPathLines")
   );
@@ -39,6 +40,7 @@
     propsVisible = vm.getVisibility("props");
     wordHeader = vm.getVisibility("wordHeader");
     progressBar = vm.getVisibility("progressBar");
+    mandala = vm.getVisibility("mandala");
     pathLines =
       vm.getVisibility("bluePathLines") || vm.getVisibility("redPathLines");
   }
@@ -138,6 +140,13 @@
       icon: "fas fa-bars-progress",
       active: () => progressBar,
       toggle: () => vm.toggleVisibility("progressBar"),
+    },
+    {
+      id: "mandala",
+      label: "Mandala",
+      icon: "fas fa-draw-polygon",
+      active: () => mandala,
+      toggle: () => vm.toggleVisibility("mandala"),
     },
     {
       id: "pathLines",

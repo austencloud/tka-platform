@@ -51,10 +51,10 @@ const BIGSTAFF_TIP_POINTS: PropTipConfig = {
 
 // ─── Club Family ──────────────────────────────────────────────────────────────
 
-// Regular (small) club is single-ended — one weighted tip at the outer end,
-// matching the club/sword single-tip convention.
+// The regular club is center-pivoted inside a 258.67-unit viewBox. Using its
+// exact half-width keeps the mandala and live trails on the resized visible tip.
 const CLUB_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 130, dy: 0 }],
+  points: [{ dx: 129.335, dy: 0 }],
 };
 
 // Big club is bilateral — two mirror-symmetric ends (Knob / Bulb). Prop width is
