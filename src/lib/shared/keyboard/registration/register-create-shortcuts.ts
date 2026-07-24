@@ -20,6 +20,7 @@ import { getSettings, updateSettings } from "$lib/shared/application/state/app-s
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
 const debug = createComponentLogger("CreateShortcuts");
 
@@ -333,6 +334,12 @@ export function registerCreateShortcuts(
 
       if (!success) {
         debug.log("Ctrl+Z - Nothing to undo");
+      } else if (navigationState.activeTab === "construct") {
+        void import("$lib/features/create/construct/services/construct-analytics").then(
+          ({ logConstructImmediateUndo }) => {
+            logConstructImmediateUndo();
+          }
+        );
       }
     },
   });

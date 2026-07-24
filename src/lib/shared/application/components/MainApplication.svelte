@@ -127,12 +127,28 @@ import type { SheetType } from "../../navigation/services/types";
   // Module-level so it survives component remounts (e.g., navigating from
   // /q/[code] back to a main app route remounts MainApplication fresh).
   const showAuthLoadingSpinner = $derived(authLoading && !_mainInterfaceShown);
+  let hasRoutedActiveConstructTutorial = false;
 
   // Mark MainInterface as shown once auth loading completes for the first time
   $effect(() => {
     if (!authLoading && !initializationError) {
       _mainInterfaceShown = true;
     }
+  });
+
+  // The tutorial now runs inside the real Construct workspace. Route there
+  // once when it starts, including manual replay from Settings or admin tools.
+  $effect(() => {
+    const tutorialIsActive = appEntryState.isCreateTutorial();
+
+    if (!tutorialIsActive) {
+      hasRoutedActiveConstructTutorial = false;
+      return;
+    }
+    if (hasRoutedActiveConstructTutorial) return;
+
+    hasRoutedActiveConstructTutorial = true;
+    void handleModuleChange("create", "construct");
   });
 
   // Route-based sheet state
@@ -557,15 +573,6 @@ import type { SheetType } from "../../navigation/services/types";
               }}
             />
           {/if}
-        {/await}
-      </div>
-    {:else if appEntryState.isCreateTutorial()}
-      <div class="fullscreen-overlay">
-        {#await import("../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte") then mod}
-          <mod.default
-            onComplete={() => appEntryState.completeEntry()}
-            onSkip={() => appEntryState.skipToComplete()}
-          />
         {/await}
       </div>
     {/if}

@@ -21,12 +21,18 @@
   // Construct is the default tab so ConstructTabContent stays eager. This keeps
   // ~400 files out of the Create module's first-paint graph (see scripts/trace-create-three.cjs).
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
+  import {
+    logConstructStartPoseCompleted,
+    type StartPosePath,
+  } from "../../construct/services/construct-analytics";
+  import { getStartPositionDisplayLabel } from "../../construct/start-position-picker/services/start-position-display-label";
 
   // Get context
   const ctx = getCreateModuleContext();
   const {
     CreateModuleState: createModuleState,
     constructTabState,
+    constructTutorialState,
     panelState,
     layout,
   } = ctx;
@@ -47,6 +53,16 @@
       constructTabState?.isPersistenceInitialized !== false
   );
 
+  const activeSequenceState = $derived.by(() => {
+    const state = createModuleState.getActiveTabSequenceState();
+    void state.selectedStepNumber;
+    return state;
+  });
+
+  const isStartPositionSelected = $derived(
+    activeSequenceState.selectedStepNumber === 0
+  );
+
   // Properly handle null state - don't convert to false, let it stay null for loading detection
   const shouldShowStartPositionPicker = $derived.by(() => {
     if (!isPersistenceFullyInitialized) return null;
@@ -56,7 +72,7 @@
     // Return null if state is not yet determined (still initializing)
     if (pickerState === null) return null;
 
-    return pickerState;
+    return pickerState || isStartPositionSelected;
   });
 
   // Loading when either persistence isn't ready OR picker state is null (still determining)
@@ -69,7 +85,6 @@
   // Include startingPosition as the first element if it exists
   // IMPORTANT: Use getActiveTabSequenceState() to get tab-specific data
   const currentSequenceData = $derived.by(() => {
-    const activeSequenceState = createModuleState.getActiveTabSequenceState();
     const seq = activeSequenceState.currentSequence;
     if (!seq) return [];
 
@@ -83,7 +98,6 @@
   // Get grid mode from the sequence (source of truth after transforms)
   // Falls back to startPositionState when no sequence exists yet
   const sequenceGridMode = $derived.by(() => {
-    const activeSequenceState = createModuleState.getActiveTabSequenceState();
     const seq = activeSequenceState.currentSequence;
     // Use sequence's grid mode if available (updated by rotations)
     if (seq?.gridMode) return seq.gridMode;
@@ -93,10 +107,23 @@
       GridMode.DIAMOND
     );
   });
+  const currentStartPosition = $derived(
+    activeSequenceState.currentSequence?.startingPosition ??
+      activeSequenceState.currentSequence?.startPosition ??
+      null
+  );
+  const isEditingExistingStart = $derived(
+    isStartPositionSelected &&
+      activeSequenceState.currentSequence !== null
+  );
 
   // Transition state for undo animations
   let isUndoingOption = $state(false);
 
+  let pendingStartPose = $state<{
+    path: StartPosePath;
+    previousPosition: PictographData | null;
+  } | null>(null);
 
   // Props (only callbacks and bindable refs)
   let {
@@ -112,6 +139,35 @@
     onOpenFilters: () => void;
     onCloseFilters: () => void;
   } = $props();
+
+  function handleStartPositionSubmitted(
+    _position: PictographData,
+    path: StartPosePath
+  ) {
+    pendingStartPose = {
+      path,
+      previousPosition: currentStartPosition,
+    };
+  }
+
+  $effect(() => {
+    const pending = pendingStartPose;
+    const committedPosition = currentStartPosition;
+    if (!pending || !committedPosition) return;
+    if (committedPosition === pending.previousPosition) return;
+
+    logConstructStartPoseCompleted({
+      path: pending.path,
+      gridMode: sequenceGridMode,
+    });
+
+    const label = getStartPositionDisplayLabel(committedPosition);
+    if (label) {
+      constructTutorialState.recordStartPose(label);
+    }
+    pendingStartPose = null;
+  });
+
 </script>
 
 <div class="tool-panel-wrapper">
@@ -140,6 +196,9 @@
                 startPositionState={constructTabState.startPositionStateService}
                 currentSequence={currentSequenceData}
                 currentGridMode={sequenceGridMode}
+                initialStartPosition={currentStartPosition}
+                lockStartGridMode={isEditingExistingStart}
+                startPositionValidationMessage={constructTabState.error}
                 {onOptionSelected}
                 {isUndoingOption}
                 onStartPositionNavigateToAdvanced={() => {}}
@@ -151,6 +210,7 @@
                 isContinuousOnly={constructTabState.isContinuousOnly}
                 onToggleContinuous={(value) =>
                   constructTabState.setContinuousOnly(value)}
+                onStartPositionSubmitted={handleStartPositionSubmitted}
               />
             {/if}
           {:else if activeToolPanel === "generate"}

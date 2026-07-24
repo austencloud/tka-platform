@@ -14,6 +14,8 @@
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
   import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
+  import ConstructTutorialGuide from "../../construct/tutorial/components/ConstructTutorialGuide.svelte";
+  import type { StartPosePath } from "../../construct/services/construct-analytics";
   // Props
   let {
     shouldShowStartPositionPicker,
@@ -21,6 +23,9 @@
     onOptionSelected,
     currentSequence = [],
     currentGridMode = GridMode.DIAMOND,
+    initialStartPosition = null,
+    lockStartGridMode = false,
+    startPositionValidationMessage = null,
     isUndoingOption = false,
     onStartPositionNavigateToAdvanced,
     onStartPositionNavigateToDefault,
@@ -30,12 +35,16 @@
     isContinuousOnly = false,
     isFilterPanelOpen = false,
     onToggleContinuous = () => {},
+    onStartPositionSubmitted = () => {},
   } = $props<{
     shouldShowStartPositionPicker: boolean;
     startPositionState?: SimplifiedStartPositionState | null;
     onOptionSelected: (option: PictographData) => Promise<void>;
     currentSequence?: PictographData[];
     currentGridMode?: GridMode;
+    initialStartPosition?: PictographData | null;
+    lockStartGridMode?: boolean;
+    startPositionValidationMessage?: string | null;
     isUndoingOption?: boolean;
     onStartPositionNavigateToAdvanced?: () => void;
     onStartPositionNavigateToDefault?: () => void;
@@ -45,6 +54,10 @@
     isContinuousOnly?: boolean;
     isFilterPanelOpen?: boolean;
     onToggleContinuous?: (value: boolean) => void;
+    onStartPositionSubmitted?: (
+      position: PictographData,
+      path: StartPosePath
+    ) => void;
   }>();
 </script>
 
@@ -55,6 +68,7 @@
     ? "start-position"
     : "options"}
 >
+  <ConstructTutorialGuide />
   <div class="content-container">
     <div class="construct-scroll-area transparent-scroll">
       <!-- Instant swap - workspace expansion is the visual transition -->
@@ -62,9 +76,13 @@
         {#if shouldShowStartPositionPicker}
           <StartPositionPicker
             {startPositionState}
+            {initialStartPosition}
+            lockedGridMode={lockStartGridMode ? currentGridMode : undefined}
+            validationMessage={startPositionValidationMessage}
             onNavigateToAdvanced={onStartPositionNavigateToAdvanced}
             onNavigateToDefault={onStartPositionNavigateToDefault}
             {isSideBySideLayout}
+            onPositionSubmitted={onStartPositionSubmitted}
           />
         {:else}
           <OptionPicker
@@ -90,6 +108,7 @@
     overflow: hidden;
     height: 100%;
     width: 100%;
+    container-type: inline-size;
   }
 
   .content-container {

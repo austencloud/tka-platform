@@ -2,7 +2,7 @@
   TutorialPrompt - Opt-in card shown after FirstRunWizard
 
   Asks the user if they want a guided tour of the builder.
-  Accept launches the full CreateTutorialWizard.
+  Accept starts guidance beside the real Construct controls.
   Skip goes straight to the main app.
 -->
 <script lang="ts">
@@ -84,7 +84,7 @@
 
     <h2 id="tutorial-prompt-title" class="prompt-title">Quick tour?</h2>
     <p class="prompt-body">
-      Build a short sequence step by step. Takes about a minute.
+      Build a short sequence in Construct with one prompt at a time.
     </p>
 
     <div class="prompt-actions">

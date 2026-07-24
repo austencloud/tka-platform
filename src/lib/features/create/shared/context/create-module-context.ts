@@ -19,6 +19,7 @@ import type { CreateModuleOrchestrators } from "../types/create-module-services"
 import type { SessionManager } from "../services/session-manager.svelte";
 import type { Autosaver } from "../services/autosaver";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+import type { ConstructTutorialState } from "$lib/features/create/construct/tutorial/state/construct-tutorial-state.svelte";
 
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
@@ -31,6 +32,7 @@ export interface CreateModuleContext {
   // Core state
   CreateModuleState: CreateModuleState;
   constructTabState: ConstructTabState;
+  constructTutorialState: ConstructTutorialState;
   panelState: PanelCoordinationState;
 
   // Services

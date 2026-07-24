@@ -59,8 +59,9 @@
     });
   }
 
-  function handleReplayTutorial() {
+  async function handleReplayTutorial() {
     hapticService?.trigger("selection");
+    await handleModuleChange("create", "construct");
     appEntryState.replay();
   }
 

@@ -1,11 +1,10 @@
 <script lang="ts">
-
-// get-create-module-initializer (64-file subtree) and get-extension-flow-coordinator
-// (10-file subtree) are imported dynamically at their only call sites (onMount /
-// LOOP action) so they stay OUT of the Create module's eager first-paint graph.
-// See scripts/trace-create-three.cjs. getLibraryRepository stays static — it's
-// read synchronously by a context getter children rely on.
-import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  // get-create-module-initializer (64-file subtree) and get-extension-flow-coordinator
+  // (10-file subtree) are imported dynamically at their only call sites (onMount /
+  // LOOP action) so they stay OUT of the Create module's eager first-paint graph.
+  // See scripts/trace-create-three.cjs. getLibraryRepository stays static — it's
+  // read synchronously by a context getter children rely on.
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
   /**
    * CreateModule.svelte - COMPOSITION ROOT
@@ -78,12 +77,14 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import {
+    resolveAccessTier,
+    getMaxBeats,
+  } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
-  import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
@@ -94,6 +95,8 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import PropUnlockCelebration from "$lib/shared/gamification/components/PropUnlockCelebration.svelte";
   import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
   import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
+  import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
+  import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
 
   const logger = createComponentLogger("CreateModule");
 
@@ -133,6 +136,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   // COMPONENT STATE
   // ============================================================================
   let panelState = createPanelCoordinationState();
+  const constructTutorialState = createConstructTutorialState();
   let animatingStepNumber = $state<number | null>(null);
   let shouldUseSideBySideLayout = $state<boolean>(false);
   let error = $state<string | null>(null);
@@ -145,7 +149,11 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
 
   // Auth/tier state for beat cap enforcement
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    )
   );
   let showBeatCapNudge = $state(false);
   const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
@@ -205,6 +213,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
       }
       return constructTabState;
     },
+    constructTutorialState,
     panelState,
     get services() {
       if (!services) {
@@ -227,6 +236,34 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
         error = err;
       },
     },
+  });
+
+  let entryTutorialWasActive = false;
+
+  $effect(() => {
+    const entryTutorialIsActive = appEntryState.isCreateTutorial();
+
+    if (entryTutorialIsActive && !entryTutorialWasActive) {
+      constructTutorialState.start();
+    } else if (!entryTutorialIsActive && entryTutorialWasActive) {
+      constructTutorialState.reset();
+    }
+
+    entryTutorialWasActive = entryTutorialIsActive;
+  });
+
+  $effect(() => {
+    if (
+      constructTutorialState.status === "dismissed" &&
+      appEntryState.isCreateTutorial()
+    ) {
+      appEntryState.skipToComplete();
+    } else if (
+      constructTutorialState.status === "completed" &&
+      appEntryState.isCreateTutorial()
+    ) {
+      appEntryState.completeEntry();
+    }
   });
 
   // ============================================================================
@@ -290,14 +327,15 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
       try {
         const initStart = performance.now();
         initProgress = "Resolving services...";
-        const { getCreateModuleInitializer } = await import(
-          "$lib/features/create/shared/get-create-module-initializer"
-        );
+        const { getCreateModuleInitializer } =
+          await import("$lib/features/create/shared/get-create-module-initializer");
         const initService = getCreateModuleInitializer();
 
         initProgress = "Initializing workspace...";
         const result = await initService.initialize();
-        logger.log(`Create init took ${Math.round(performance.now() - initStart)}ms`);
+        logger.log(
+          `Create init took ${Math.round(performance.now() - initStart)}ms`
+        );
 
         // Extract all services and state from initialization result
         services = {
@@ -342,7 +380,17 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
         // Wire LOOP completion callback so the workspace header can trigger the flow
         panelState.setLoopCompletionCallback(handleLoopCompletionRequest);
 
-        initService.configureEventCallbacks(CreateModuleState, panelState);
+        initService.configureEventCallbacks(
+          CreateModuleState,
+          panelState,
+          (sequence, stepNumber) => {
+            logConstructOptionApplied({ stepNumber });
+            constructTutorialState.recordOptionApplied({
+              stepNumber,
+              letter: sequence.steps[stepNumber - 1]?.letter ?? null,
+            });
+          }
+        );
 
         // Start panel persistence tracking (handles navigation changes, panel close detection)
         panelPersistenceCleanup = panelPersistenceService?.startTracking({
@@ -353,30 +401,22 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
         // Start effect coordinator (manages all reactive effects)
         setupEffectCoordinator();
 
-        // Generate a local session ID - no Firestore dependency, no auth needed
-        const localSessionId = crypto.randomUUID();
+        // One collision-resistant ID owns the draft and the session record.
+        const sessionId = crypto.randomUUID();
+        sessionManager = new SessionManager(sessionId);
 
-        // Start autosave immediately using the local ID; writes to Dexie regardless of auth
+        // The first non-empty autosave creates the Firestore session. Opening
+        // and closing an untouched workspace leaves no empty cloud record.
         autosaver = new Autosaver();
         autosaver.startAutosave(
           () => CreateModuleState?.sequenceState.currentSequence || null,
-          localSessionId,
-          30000
+          sessionId,
+          30000,
+          (sequence) =>
+            sessionManager?.recordAutosave(sequence.steps.length, sequence.name)
         );
 
-        logger.success("Autosave started (local session)");
-
-        // Lazy session creation - only when authenticated and online.
-        // A real Firestore session is best-effort; autosave never depends on it.
-        if (authState.isAuthenticated && networkStatusState.isOnline) {
-          sessionManager = new SessionManager();
-          sessionManager.createSession().then(
-            () => logger.success("Firestore session created"),
-            (e) => logger.warn("[CreateModule] Session creation deferred:", e)
-          );
-        } else {
-          logger.info("Session creation skipped (not authenticated or offline)");
-        }
+        logger.success("Autosave started");
 
         logger.success("CreateModule initialized successfully");
 
@@ -494,7 +534,9 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
       // Cleanup session management
       autosaver?.stopAutosave();
       if (sessionManager?.getCurrentSession()) {
-        sessionManager.abandonSession();
+        void sessionManager.abandonSession().catch((sessionError) => {
+          logger.warn("[CreateModule] Session cleanup failed:", sessionError);
+        });
       }
     };
   });
@@ -509,7 +551,8 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     }
 
     // Enforce tier beat cap before adding a new beat to the sequence
-    const currentSteps = CreateModuleState?.sequenceState.getCurrentBeats().length ?? 0;
+    const currentSteps =
+      CreateModuleState?.sequenceState.getCurrentBeats().length ?? 0;
     const maxSteps = getMaxBeats(accessTier);
     if (currentSteps >= maxSteps) {
       showBeatCapNudge = true;
@@ -577,9 +620,8 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   async function handleLoopCompletionRequest(loopType: LOOPType) {
     if (!CreateModuleState) return;
 
-    const { getExtensionFlowCoordinator } = await import(
-      "$lib/features/create/shared/get-extension-flow-coordinator"
-    );
+    const { getExtensionFlowCoordinator } =
+      await import("$lib/features/create/shared/get-extension-flow-coordinator");
     const extensionFlowCoordinator = getExtensionFlowCoordinator();
     if (!extensionFlowCoordinator) return;
 
@@ -618,9 +660,8 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   async function confirmLoopCompletion() {
     if (!pendingLoopType || isApplyingLoop || !CreateModuleState) return;
 
-    const { getExtensionFlowCoordinator } = await import(
-      "$lib/features/create/shared/get-extension-flow-coordinator"
-    );
+    const { getExtensionFlowCoordinator } =
+      await import("$lib/features/create/shared/get-extension-flow-coordinator");
     const extensionFlowCoordinator = getExtensionFlowCoordinator();
     if (!extensionFlowCoordinator) return;
 
@@ -633,7 +674,10 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
 
     CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
 
-    const result = await extensionFlowCoordinator.applyLoop(sequence, pendingLoopType);
+    const result = await extensionFlowCoordinator.applyLoop(
+      sequence,
+      pendingLoopType
+    );
 
     if (result.success && result.sequence) {
       activeSeqState.setCurrentSequence(result.sequence);
@@ -665,7 +709,6 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     if (!handlers) return;
     handlers.handleOpenFilterPanel(panelState);
   }
-
 
   function handleOpenSequenceActions() {
     if (!handlers) return;
@@ -832,13 +875,23 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     open={showBeatCapNudge && beatCapNudgeAllowed}
     size="fit"
     class="chromeless"
-    onclose={() => { showBeatCapNudge = false; }}
+    onclose={() => {
+      showBeatCapNudge = false;
+    }}
   >
     <AuthNudge
       trigger={beatCapNudgeTrigger}
-      onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
-      onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
-      onDismiss={() => { showBeatCapNudge = false; }}
+      onCreateAccount={() => {
+        showBeatCapNudge = false;
+        authDrawerState.show("signup");
+      }}
+      onLogin={() => {
+        showBeatCapNudge = false;
+        authDrawerState.show("signin");
+      }}
+      onDismiss={() => {
+        showBeatCapNudge = false;
+      }}
     />
   </BaseModal>
 
