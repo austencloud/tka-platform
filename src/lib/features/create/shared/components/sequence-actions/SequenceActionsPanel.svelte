@@ -752,8 +752,6 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
         {:else if subView === "duration"}
           <DurationPatternView
             {sequence}
-            targetHand={panelState.targetHand}
-            onTargetHandChange={(hand) => panelState.setTargetHand(hand)}
             onPreview={handleDurationPreview}
             onApply={handleDurationApply}
           />
