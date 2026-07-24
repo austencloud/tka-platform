@@ -34,17 +34,22 @@
   function isLoading(key: string, requiresAsync: boolean): boolean {
     if (!requiresAsync) return false;
     if (!sceneFeatures.isEnabled(key)) return false;
-    return !sceneFeatures.isReady(key);
+    return !sceneFeatures.isReady(key) && !sceneFeatures.getError(key);
   }
 
   function toggleFeature(key: string, enabled: boolean): void {
-    sceneFeatures.toggle(key);
+    const failed = sceneFeatures.getError(key) !== null;
+    if (enabled && failed) {
+      sceneFeatures.requestRetry(key);
+    } else {
+      sceneFeatures.toggle(key);
+    }
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_scene",
       `feature_${key}`,
       enabled,
-      !enabled
+      failed ? enabled : !enabled
     );
   }
 </script>
@@ -53,13 +58,17 @@
   {#each sceneFeatures.features as feature (feature.key)}
     {@const enabled = sceneFeatures.isEnabled(feature.key)}
     {@const loading = isLoading(feature.key, feature.requiresAsyncLoad)}
+    {@const error = sceneFeatures.getError(feature.key)}
     <button
       type="button"
       class="tile"
       class:loading
+      class:failed={error !== null}
       style:--tile-color={ACCENTS[feature.key] ?? "#888"}
       aria-pressed={enabled}
-      aria-label={feature.label + " scene feature"}
+      aria-label={error
+        ? `${feature.label} failed to load. Retry`
+        : `${feature.label} scene feature`}
       onclick={() => toggleFeature(feature.key, enabled)}
     >
       <div
@@ -67,7 +76,7 @@
         style:background-image="url(/images/scene-thumbs/{feature.key}.png)"
       ></div>
       <div class="foot">
-        <span class="label">{feature.label}</span>
+        <span class="label">{error ? "Retry" : feature.label}</span>
         <span class="status" aria-hidden="true"></span>
       </div>
     </button>
@@ -156,6 +165,15 @@
   .tile[aria-pressed="true"] .status {
     background: var(--tile-color);
     box-shadow: 0 0 10px var(--tile-color);
+  }
+
+  .tile.failed {
+    border-color: #ef4444;
+  }
+
+  .tile.failed .status {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.75);
   }
 
   .tile.loading .thumb::after {

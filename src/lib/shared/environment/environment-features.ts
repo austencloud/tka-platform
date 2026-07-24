@@ -12,9 +12,23 @@ import type { ModuleId } from "$lib/shared/navigation/domain/types";
 /**
  * Check if running in production environment
  */
+export function resolveProductionEnvironment(
+  isBrowserRuntime: boolean,
+  isProductionBuild: boolean,
+  publicEnvironment?: string
+): boolean {
+  if (!isBrowserRuntime) return false;
+  return isProductionBuild || publicEnvironment === "production";
+}
+
 export function isProduction(): boolean {
-  if (!browser) return false;
-  return import.meta.env.PUBLIC_ENVIRONMENT === "production";
+  // Production builds must stay production even when an optional deployment
+  // label is absent. Otherwise unreleased assets can load and 404 for users.
+  return resolveProductionEnvironment(
+    browser,
+    import.meta.env.PROD,
+    import.meta.env.PUBLIC_ENVIRONMENT
+  );
 }
 
 /**

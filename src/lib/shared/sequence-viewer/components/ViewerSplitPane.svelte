@@ -23,6 +23,8 @@
   import PracticeCountInOverlay from "./PracticeCountInOverlay.svelte";
   import CameraPreview from "$lib/shared/train/components/CameraPreview.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
@@ -310,29 +312,14 @@
   // imported once a 3D pane is actually activated, so any chunk that touches
   // ViewerSplitPane (e.g. the lightweight QR landing page, which never sets a
   // 3D pane) stays Three-free until/unless the user opens a 3D view.
-  let Viewer3DCanvas = $state<
-    | typeof import("$lib/shared/3d/components/Viewer3DCanvas.svelte").default
-    | null
-  >(null);
-  let PerformerHub = $state<
-    | typeof import("$lib/shared/3d/components/controls/PerformerHub.svelte").default
-    | null
-  >(null);
+  const loadViewer3DCanvas = () =>
+    import("$lib/shared/3d/components/Viewer3DCanvas.svelte");
+  const loadPerformerHub = () =>
+    import("$lib/shared/3d/components/controls/PerformerHub.svelte");
   const needs3D = $derived(
     splitConfig.leftPane === "animation-3d" ||
       splitConfig.rightPane === "animation-3d"
   );
-  $effect(() => {
-    if (needs3D && !Viewer3DCanvas) {
-      void Promise.all([
-        import("$lib/shared/3d/components/Viewer3DCanvas.svelte"),
-        import("$lib/shared/3d/components/controls/PerformerHub.svelte"),
-      ]).then(([canvas, hub]) => {
-        Viewer3DCanvas = canvas.default;
-        PerformerHub = hub.default;
-      });
-    }
-  });
 
   // Preload heavy 3D scene assets only when a 3D pane is in play — keeps the
   // 3D asset-loader import path off 2D-only pages.
@@ -437,6 +424,27 @@
   });
 </script>
 
+{#snippet viewer3DLoading()}
+  <div
+    class="loading-state viewer-3d-load-state"
+    role="status"
+    aria-label="Loading 3D viewer"
+  >
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
+  </div>
+{/snippet}
+
+{#snippet viewer3DError(_error: unknown, retry: () => void)}
+  <div class="error-state viewer-3d-load-state" role="alert">
+    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+    <span>3D viewer couldn't load. Check your connection and try again.</span>
+    <PanelButton variant="secondary" onclick={retry}>
+      <i class="fas fa-rotate-right" aria-hidden="true"></i>
+      <span>Try again</span>
+    </PanelButton>
+  </div>
+{/snippet}
+
 <div
   class="split-view view-container"
   class:practice={practiceActive}
@@ -485,34 +493,41 @@
           class="canvas-layer canvas-3d-layer"
           style="opacity:1;pointer-events:auto;"
         >
-          {#if Viewer3DCanvas}
-            <Viewer3DCanvas
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              {bpm}
-              {onBpmChange}
-              bluePropType={propRendering.bluePropType != null
-                ? String(propRendering.bluePropType)
-                : null}
-              redPropType={propRendering.redPropType != null
-                ? String(propRendering.redPropType)
-                : null}
-              hideOverlays={false}
-              fullScreen={layout.focusedPane === "animation"}
-              onExitFullScreen={onUnfocusPane}
-              {onPlaybackToggle}
-              {onSystemPlaybackChange}
-              {onProgressBarSeek}
-              {playbackMode}
-              {onPlaybackModeChange}
-              onSettingChange={onViewer3DSettingChange}
-              onSceneReadyChange={(ready) => {
+          <LazyMount
+            loader={loadViewer3DCanvas}
+            active={_3dLeftActive}
+            debugName="3D viewer canvas"
+            placeholder={viewer3DLoading}
+            error={viewer3DError}
+            props={{
+              sequenceData: playback.animationState.sequenceData,
+              currentStep: playback.currentStep,
+              isPlaying: playback.isPlaying,
+              bpm,
+              onBpmChange,
+              bluePropType:
+                propRendering.bluePropType != null
+                  ? String(propRendering.bluePropType)
+                  : null,
+              redPropType:
+                propRendering.redPropType != null
+                  ? String(propRendering.redPropType)
+                  : null,
+              hideOverlays: false,
+              fullScreen: layout.focusedPane === "animation",
+              onExitFullScreen: onUnfocusPane,
+              onPlaybackToggle,
+              onSystemPlaybackChange,
+              onProgressBarSeek,
+              playbackMode,
+              onPlaybackModeChange,
+              onSettingChange: onViewer3DSettingChange,
+              onSceneReadyChange: (ready: boolean) => {
                 _scene3dReady = ready;
                 onSceneReadyChange?.(ready);
-              }}
-            />
-          {/if}
+              },
+            }}
+          />
         </div>
       </div>
     {/if}
@@ -613,9 +628,12 @@
           onSettingChange={onViewer3DSettingChange}
           onAction={onViewer3DAction}
         />
-        {#if PerformerHub}
-          <PerformerHub onSettingChange={onViewer3DSettingChange} />
-        {/if}
+        <LazyMount
+          loader={loadPerformerHub}
+          active={_3dLeftActive}
+          debugName="3D performer controls"
+          props={{ onSettingChange: onViewer3DSettingChange }}
+        />
       </div>
     {/if}
 
@@ -841,30 +859,37 @@
             class="canvas-layer canvas-3d-layer"
             style="opacity:1;pointer-events:auto;"
           >
-            {#if Viewer3DCanvas}
-              <Viewer3DCanvas
-                sequenceData={playback.animationState.sequenceData}
-                currentStep={playback.currentStep}
-                isPlaying={playback.isPlaying}
-                {bpm}
-                {onBpmChange}
-                bluePropType={propRendering.bluePropType != null
-                  ? String(propRendering.bluePropType)
-                  : null}
-                redPropType={propRendering.redPropType != null
-                  ? String(propRendering.redPropType)
-                  : null}
-                hideOverlays={false}
-                fullScreen={false}
-                onExitFullScreen={onUnfocusPane}
-                {onPlaybackToggle}
-                {onSystemPlaybackChange}
-                {onProgressBarSeek}
-                {playbackMode}
-                {onPlaybackModeChange}
-                onSettingChange={onViewer3DSettingChange}
-              />
-            {/if}
+            <LazyMount
+              loader={loadViewer3DCanvas}
+              active={splitConfig.rightPane === "animation-3d"}
+              debugName="3D viewer canvas"
+              placeholder={viewer3DLoading}
+              error={viewer3DError}
+              props={{
+                sequenceData: playback.animationState.sequenceData,
+                currentStep: playback.currentStep,
+                isPlaying: playback.isPlaying,
+                bpm,
+                onBpmChange,
+                bluePropType:
+                  propRendering.bluePropType != null
+                    ? String(propRendering.bluePropType)
+                    : null,
+                redPropType:
+                  propRendering.redPropType != null
+                    ? String(propRendering.redPropType)
+                    : null,
+                hideOverlays: false,
+                fullScreen: false,
+                onExitFullScreen: onUnfocusPane,
+                onPlaybackToggle,
+                onSystemPlaybackChange,
+                onProgressBarSeek,
+                playbackMode,
+                onPlaybackModeChange,
+                onSettingChange: onViewer3DSettingChange,
+              }}
+            />
           </div>
         </div>
       {/if}
@@ -1412,6 +1437,13 @@
 
   .error-state {
     color: var(--semantic-error, #f87171);
+  }
+
+  .viewer-3d-load-state {
+    width: 100%;
+    height: 100%;
+    padding: var(--spacing-lg, 24px);
+    text-align: center;
   }
 
   /* ========================================

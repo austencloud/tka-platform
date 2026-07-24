@@ -1,6 +1,7 @@
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { describe, expect, it, vi } from "vitest";
+import LazyMountLifecycleTestHarness from "./LazyMountLifecycleTestHarness.svelte";
 import LazyMountTestHarness from "./LazyMountTestHarness.svelte";
 
 describe("LazyMount recovery", () => {
@@ -21,7 +22,28 @@ describe("LazyMount recovery", () => {
     await expect
       .element(page.getByRole("status", { name: "Lazy mount status" }))
       .toHaveTextContent("loaded");
-    expect(errorLog).toHaveBeenCalledOnce();
+    expect(errorLog).toHaveBeenCalledWith(
+      "[LazyMount] failed to load test component",
+      expect.any(Error)
+    );
+    errorLog.mockRestore();
+  });
+
+  it("settles a late rejection without reporting it after teardown", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(LazyMountLifecycleTestHarness);
+
+    await expect
+      .element(page.getByRole("status", { name: "Lazy mount teardown status" }))
+      .toHaveTextContent("loading");
+
+    await page.getByRole("button", { name: "Close loader" }).click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    await expect
+      .element(page.getByRole("status", { name: "Lazy mount teardown status" }))
+      .toHaveTextContent("loading");
+    expect(errorLog).not.toHaveBeenCalled();
     errorLog.mockRestore();
   });
 });

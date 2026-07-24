@@ -31,7 +31,7 @@
    * exactly (same aspect boxes, same chrome heights); the swap then causes zero
    * layout shift by construction (no-layout-shift.md).
    */
-  import type { Component, Snippet } from "svelte";
+  import { onDestroy, type Component, type Snippet } from "svelte";
 
   let {
     loader,
@@ -41,6 +41,7 @@
     placeholder,
     error,
     onStatusChange,
+    debugName = "component",
   }: {
     /** Dynamic import of the component module. */
     loader: () => Promise<{ default: Component<any> }>;
@@ -56,17 +57,22 @@
     error?: Snippet<[unknown, () => void]>;
     /** Mount-attempt lifecycle for truthful parent loading states and queues. */
     onStatusChange?: (status: "loading" | "loaded" | "error") => void;
+    /** Identifies the failed chunk in diagnostics without exposing it in the UI. */
+    debugName?: string;
   } = $props();
 
   let Loaded = $state<Component<any> | null>(null);
   let loadError = $state<unknown>(null);
   let started = false;
+  let destroyed = false;
   // Single in-flight import shared by mount + prefetch, so warming the chunk
   // and the eventual mount never double-fetch.
   let modPromise: Promise<{ default: Component<any> }> | null = null;
 
   function load(): Promise<{ default: Component<any> }> {
-    return (modPromise ??= loader());
+    // Normalize a synchronous loader throw into the same owned rejection path
+    // as import(), so neither form can escape the component's error boundary.
+    return (modPromise ??= Promise.resolve().then(loader));
   }
 
   function mountLoadedComponent(): void {
@@ -75,13 +81,18 @@
     onStatusChange?.("loading");
     void load().then(
       (module) => {
+        if (destroyed) return;
         loadError = null;
         Loaded = module.default;
         onStatusChange?.("loaded");
       },
       (caught) => {
+        // Dynamic imports cannot be aborted. Their rejection still has an
+        // attached handler, but a closed drawer/viewer no longer owns UI state
+        // or diagnostics after teardown.
+        if (destroyed) return;
         loadError = caught;
-        console.error("[LazyMount] failed to load component", caught);
+        console.error(`[LazyMount] failed to load ${debugName}`, caught);
         onStatusChange?.("error");
       }
     );
@@ -97,6 +108,10 @@
     mountLoadedComponent();
   }
 
+  onDestroy(() => {
+    destroyed = true;
+  });
+
   $effect(() => {
     if (active && !started) {
       mountLoadedComponent();
@@ -107,19 +122,31 @@
   // triggered the import (active flip or a prior prefetch tick).
   $effect(() => {
     if (!prefetch || modPromise || active) return;
-    const schedule: (cb: () => void) => void =
-      typeof requestIdleCallback !== "undefined"
-        ? (cb) => requestIdleCallback(cb, { timeout: 2000 })
-        : (cb) => setTimeout(cb, 200);
-    schedule(() => {
-      if (!modPromise) {
+    let cancelled = false;
+    const warm = () => {
+      if (!cancelled && !destroyed && !modPromise) {
         load().catch(() => {
+          if (cancelled || destroyed) return;
           // Prefetch is speculative. Let the active mount make a fresh request
           // and own the visible recovery state if the chunk is still missing.
           modPromise = null;
         });
       }
-    });
+    };
+
+    if (typeof requestIdleCallback !== "undefined") {
+      const handle = requestIdleCallback(warm, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(handle);
+      };
+    }
+
+    const handle = setTimeout(warm, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   });
 </script>
 

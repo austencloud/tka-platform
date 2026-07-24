@@ -16,21 +16,15 @@
    */
 
   import { T } from "@threlte/core";
-  import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { seatedAudienceLoader } from "@austencloud/scene-3d";
   import SeatedFigure3D from "./SeatedFigure3D.svelte";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
-  import { isProduction } from "../../environment/environment-features";
-
-  // The avatar GLBs (16–124 MB each, ~711 MB raw Mixamo) are gitignored and
-  // deployed nowhere — every `/models/avatars/chXX.glb` 404s in production and
-  // floods the console. They can't ship until re-exported through the Blender
-  // optimization pipeline (decimate + KTX2 + Draco) and hosted on R2. Until
-  // then the audience is dev-only: skip the preload and render zero seats in
-  // production so no 404 fires. Re-enable by removing this guard once optimized
-  // avatars live on R2 and AVATAR_URLS points at the CDN.
-  const audienceDisabled = isProduction();
+  import {
+    SEATED_AUDIENCE_ANIMATION_URLS,
+    SEATED_AUDIENCE_AVATAR_URLS,
+  } from "../config/seated-audience-assets";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
   interface Props {
     count?: number;
@@ -45,20 +39,6 @@
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
-
-  const AVATAR_URLS = [
-    "/models/avatars/ch18.glb",
-    "/models/avatars/ch24.glb",
-    "/models/avatars/ch34.glb",
-    "/models/avatars/ch10.glb",
-    "/models/avatars/ch12.glb",
-    "/models/avatars/ch44.glb",
-  ] as const;
-
-  const ANIMATION_URLS = [
-    "/animations/sitting-idle-a.fbx",
-    "/animations/sitting-idle-b.fbx",
-  ] as const;
 
   let sceneFeatures: ReturnType<typeof getSceneFeatureContext> | null = null;
   try {
@@ -78,7 +58,6 @@
   }
 
   const seats = $derived.by<Seat[]>(() => {
-    if (audienceDisabled) return [];
     const result: Seat[] = [];
     for (let i = 0; i < count; i++) {
       const t = count === 1 ? 0.5 : i / (count - 1);
@@ -88,8 +67,12 @@
         z: Math.cos(angle) * arcRadius,
         yaw: Math.PI + angle,
         sizeScale: 0.92 + ((i * 37) % 10) * 0.016,
-        modelUrl: AVATAR_URLS[i % AVATAR_URLS.length]!,
-        animationUrl: ANIMATION_URLS[i % ANIMATION_URLS.length]!,
+        modelUrl:
+          SEATED_AUDIENCE_AVATAR_URLS[i % SEATED_AUDIENCE_AVATAR_URLS.length]!,
+        animationUrl:
+          SEATED_AUDIENCE_ANIMATION_URLS[
+            i % SEATED_AUDIENCE_ANIMATION_URLS.length
+          ]!,
         timeOffset: (i * 0.47) % 2.3,
       });
     }
@@ -98,29 +81,60 @@
 
   let isReady = $state(false);
 
-  onMount(() => {
-    // Production: assets aren't deployed — don't fire 404s. Report ready so the
-    // SceneLoadingCurtain still lifts, just with an empty audience.
-    if (audienceDisabled) {
-      isReady = true;
-      sceneFeatures?.reportReady("audience");
-      return;
+  const RETRY_DELAY_MS = 750;
+  const MAX_PRELOAD_ATTEMPTS = 2;
+
+  $effect(() => {
+    sceneFeatures?.getRetryRequest("audience");
+    let cancelled = false;
+
+    async function preloadAudience(): Promise<void> {
+      isReady = false;
+
+      let lastError: unknown = new Error("Audience preload failed");
+      for (let attempt = 1; attempt <= MAX_PRELOAD_ATTEMPTS; attempt += 1) {
+        try {
+          await seatedAudienceLoader.preloadAll(
+            SEATED_AUDIENCE_AVATAR_URLS,
+            SEATED_AUDIENCE_ANIMATION_URLS
+          );
+          if (cancelled) return;
+          isReady = true;
+          sceneFeatures?.reportReady("audience");
+          return;
+        } catch (error) {
+          lastError = error;
+          if (cancelled) return;
+          if (attempt < MAX_PRELOAD_ATTEMPTS) {
+            console.warn(
+              `[SeatedAudience3D] preload attempt ${attempt} failed; retrying`,
+              error
+            );
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+          }
+        }
+      }
+
+      if (cancelled) return;
+      const failure =
+        lastError instanceof Error ? lastError : new Error(String(lastError));
+      console.error("[SeatedAudience3D] preload failed:", failure);
+      sceneFeatures?.reportFailed("audience", "Audience models couldn't load.");
+      getErrorHandler().showUserError({
+        message: "The audience couldn't load. Use Retry in Scene settings.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: {
+          module: "3d",
+          tab: "scene",
+          action: "loadAudience",
+        },
+      });
     }
 
-    let cancelled = false;
-    seatedAudienceLoader
-      .preloadAll(AVATAR_URLS, ANIMATION_URLS)
-      .then(() => {
-        if (cancelled) return;
-        isReady = true;
-        sceneFeatures?.reportReady("audience");
-      })
-      .catch((err) => {
-        console.error("[SeatedAudience3D] preload failed:", err);
-        // Still report ready so the curtain can lift - better a missing
-        // audience than a permanent loading state.
-        if (!cancelled) sceneFeatures?.reportReady("audience");
-      });
+    void preloadAudience();
+
     return () => {
       cancelled = true;
     };

@@ -13,7 +13,7 @@
 
   const sceneFeatures = getSceneFeatureContext();
 
-  const progress = $derived(sceneFeatures.readyProgress);
+  const progress = $derived(sceneFeatures.settledProgress);
 
   // Track whether the initial load has completed. Once it has,
   // the curtain never comes back - even if the user toggles on
@@ -21,7 +21,7 @@
   let initialLoadComplete = $state(false);
 
   $effect(() => {
-    if (sceneFeatures.allEnabledReady && !initialLoadComplete) {
+    if (sceneFeatures.allEnabledSettled && !initialLoadComplete) {
       initialLoadComplete = true;
     }
   });
@@ -33,7 +33,11 @@
     const enabled = sceneFeatures.features.filter(
       (f) => f.requiresAsyncLoad && sceneFeatures.isEnabled(f.key)
     );
-    const pending = enabled.filter((f) => !sceneFeatures.isReady(f.key));
+    const pending = enabled.filter(
+      (feature) =>
+        !sceneFeatures.isReady(feature.key) &&
+        !sceneFeatures.getError(feature.key)
+    );
     console.debug(
       `[Curtain] progress=${(progress * 100).toFixed(0)}% | enabled=[${enabled.map((f) => f.key)}] | pending=[${pending.map((f) => f.key)}]`
     );

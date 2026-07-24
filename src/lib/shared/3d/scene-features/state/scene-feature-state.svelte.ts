@@ -36,6 +36,8 @@ export function createSceneFeatureState(
   let enabledMap = $state<Record<string, boolean>>({ ...initialToggles });
   let readySet = $state<Set<string>>(new Set());
   let progressMap = $state<Record<string, number>>({});
+  let errorMap = $state<Record<string, string>>({});
+  let retryRequestMap = $state<Record<string, number>>({});
 
   function getEnabledAsyncFeatures(): SceneFeature[] {
     return SCENE_FEATURES.filter((f) => f.requiresAsyncLoad && enabledMap[f.key]);
@@ -47,6 +49,14 @@ export function createSceneFeatureState(
 
   function isReady(key: string): boolean {
     return readySet.has(key);
+  }
+
+  function getError(key: string): string | null {
+    return errorMap[key] ?? null;
+  }
+
+  function getRetryRequest(key: string): number {
+    return retryRequestMap[key] ?? 0;
   }
 
   function toggle(key: string): void {
@@ -71,18 +81,42 @@ export function createSceneFeatureState(
   }
 
   function reportReady(key: string): void {
+    const { [key]: _, ...remainingErrors } = errorMap;
+    errorMap = remainingErrors;
     if (readySet.has(key)) return;
     console.debug(`[SceneFeature] ${key} READY`);
     readySet = new Set([...readySet, key]);
   }
 
+  function reportFailed(key: string, message: string): void {
+    if (readySet.has(key)) {
+      const next = new Set(readySet);
+      next.delete(key);
+      readySet = next;
+    }
+    if (errorMap[key] === message) return;
+    console.error(`[SceneFeature] ${key} FAILED: ${message}`);
+    errorMap = { ...errorMap, [key]: message };
+  }
+
   function resetReady(key: string): void {
-    if (!readySet.has(key)) return;
-    const next = new Set(readySet);
-    next.delete(key);
-    readySet = next;
-    const { [key]: _, ...rest } = progressMap;
-    progressMap = rest;
+    if (readySet.has(key)) {
+      const next = new Set(readySet);
+      next.delete(key);
+      readySet = next;
+    }
+    const { [key]: _progress, ...remainingProgress } = progressMap;
+    progressMap = remainingProgress;
+    const { [key]: _error, ...remainingErrors } = errorMap;
+    errorMap = remainingErrors;
+  }
+
+  function requestRetry(key: string): void {
+    resetReady(key);
+    retryRequestMap = {
+      ...retryRequestMap,
+      [key]: (retryRequestMap[key] ?? 0) + 1,
+    };
   }
 
   function reset(): void {
@@ -104,15 +138,29 @@ export function createSceneFeatureState(
     },
     isEnabled,
     isReady,
+    getError,
+    getRetryRequest,
     toggle,
     reportProgress,
     reportReady,
+    reportFailed,
     resetReady,
+    requestRetry,
     get allEnabledReady(): boolean {
       const asyncFeatures = getEnabledAsyncFeatures();
       return (
         asyncFeatures.length === 0 ||
         asyncFeatures.every((f) => readySet.has(f.key))
+      );
+    },
+    get allEnabledSettled(): boolean {
+      const asyncFeatures = getEnabledAsyncFeatures();
+      return (
+        asyncFeatures.length === 0 ||
+        asyncFeatures.every(
+          (feature) =>
+            readySet.has(feature.key) || errorMap[feature.key] !== undefined
+        )
       );
     },
     get readyProgress(): number {
@@ -124,6 +172,19 @@ export function createSceneFeatureState(
           sum += 1;
         } else {
           sum += progressMap[f.key] ?? 0;
+        }
+      }
+      return sum / asyncFeatures.length;
+    },
+    get settledProgress(): number {
+      const asyncFeatures = getEnabledAsyncFeatures();
+      if (asyncFeatures.length === 0) return 1;
+      let sum = 0;
+      for (const feature of asyncFeatures) {
+        if (readySet.has(feature.key) || errorMap[feature.key] !== undefined) {
+          sum += 1;
+        } else {
+          sum += progressMap[feature.key] ?? 0;
         }
       }
       return sum / asyncFeatures.length;

@@ -18,6 +18,7 @@
 <LazyMount
   {loader}
   active={true}
+  debugName="test component"
   onStatusChange={(next) => (status = next)}
 >
   {#snippet placeholder()}

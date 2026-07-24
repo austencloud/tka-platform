@@ -79,7 +79,7 @@
         camera,
         controls,
         playerModel: {
-          url: "https://pub-f5505ed75927471cb198c54336317370.r2.dev/models/avatars/y-bot.glb",
+          url: "https://assets.tkaflowarts.com/models/avatars/v2026-07-23-r1/y-bot.glb.bin",
           scale: 0.01,  // Mixamo models are ~100 units tall, need 0.01 to be ~1m
           idleAnim: "",
           walkAnim: "",

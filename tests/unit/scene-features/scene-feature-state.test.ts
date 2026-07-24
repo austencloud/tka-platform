@@ -60,6 +60,41 @@ describe("createSceneFeatureState", () => {
     expect(state.allEnabledReady).toBe(true);
   });
 
+  it("settles a failed feature without pretending it loaded", () => {
+    const state = createSceneFeatureState();
+    state.reportFailed("environment", "Environment couldn't load.");
+
+    expect(state.isReady("environment")).toBe(false);
+    expect(state.getError("environment")).toBe("Environment couldn't load.");
+    expect(state.allEnabledReady).toBe(false);
+    expect(state.allEnabledSettled).toBe(true);
+    expect(state.settledProgress).toBe(1);
+  });
+
+  it("clears a failed feature and issues a new retry request", () => {
+    const state = createSceneFeatureState();
+    state.reportFailed("environment", "Environment couldn't load.");
+
+    state.requestRetry("environment");
+
+    expect(state.getError("environment")).toBeNull();
+    expect(state.allEnabledSettled).toBe(false);
+    expect(state.getRetryRequest("environment")).toBe(1);
+  });
+
+  it("moves cleanly from ready to failed and back to ready", () => {
+    const state = createSceneFeatureState();
+    state.reportReady("environment");
+
+    state.reportFailed("environment", "Environment couldn't reload.");
+    expect(state.isReady("environment")).toBe(false);
+    expect(state.getError("environment")).toBe("Environment couldn't reload.");
+
+    state.reportReady("environment");
+    expect(state.isReady("environment")).toBe(true);
+    expect(state.getError("environment")).toBeNull();
+  });
+
   it("readyProgress tracks fraction of ready async features", () => {
     const state = createSceneFeatureState({ audience: true });
     expect(state.readyProgress).toBe(0);
