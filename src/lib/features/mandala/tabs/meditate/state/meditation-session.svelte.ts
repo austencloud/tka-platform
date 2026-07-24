@@ -14,6 +14,7 @@ import type {
 	MeditationSessionStatus,
 } from "../domain/meditation-types";
 import { getPatternCycleTime } from "../domain/meditation-types";
+import { createScreenWakeLockManager } from "$lib/shared/device/services/screen-wake-lock-manager";
 
 const PHASE_ORDER: BreathPhase[] = ["inhale", "hold-in", "exhale", "hold-out"];
 
@@ -87,7 +88,7 @@ export function createMeditationSession(): MeditationSession {
 	let prevPhase: BreathPhase | null = null;
 	let onCompleteCallback: (() => void) | undefined;
 	let onPhaseChangeCallback: ((phase: BreathPhase) => void) | undefined;
-	let wakeLockSentinel: WakeLockSentinel | null = null;
+	const screenWakeLockManager = createScreenWakeLockManager();
 
 	// ── Visibility change handler ──────────────────────────────────
 	function handleVisibilityChange() {
@@ -100,36 +101,6 @@ export function createMeditationSession(): MeditationSession {
 				tabHiddenAt = null;
 			}
 			paused = false;
-		}
-	}
-
-	// ── Wake Lock ──────────────────────────────────────────────────
-	async function acquireWakeLock() {
-		if (!("wakeLock" in navigator)) return;
-		try {
-			wakeLockSentinel = await navigator.wakeLock.request("screen");
-			wakeLockSentinel.addEventListener("release", handleWakeLockRelease);
-		} catch {
-			// Graceful degradation — API unavailable or permission denied
-		}
-	}
-
-	function handleWakeLockRelease() {
-		// Re-acquire if session is still running (iOS 16.4–18.3 PWA bug mitigation)
-		if (status === "running") {
-			acquireWakeLock();
-		}
-	}
-
-	async function releaseWakeLock() {
-		if (wakeLockSentinel) {
-			wakeLockSentinel.removeEventListener("release", handleWakeLockRelease);
-			try {
-				await wakeLockSentinel.release();
-			} catch {
-				// Already released
-			}
-			wakeLockSentinel = null;
 		}
 	}
 
@@ -240,7 +211,7 @@ export function createMeditationSession(): MeditationSession {
 			rafId = null;
 		}
 		document.removeEventListener("visibilitychange", handleVisibilityChange);
-		releaseWakeLock();
+		screenWakeLockManager.setActive(false);
 	}
 
 	function start(
@@ -280,8 +251,7 @@ export function createMeditationSession(): MeditationSession {
 		// Register visibility handler
 		document.addEventListener("visibilitychange", handleVisibilityChange);
 
-		// Acquire wake lock (user gesture context from start button)
-		acquireWakeLock();
+		screenWakeLockManager.setActive(true);
 
 		// Fire initial phase callback
 		onPhaseChangeCallback?.(currentPhase);
@@ -298,6 +268,7 @@ export function createMeditationSession(): MeditationSession {
 
 	function dispose(): void {
 		stopInternal();
+		screenWakeLockManager.dispose();
 		status = "idle";
 		elapsedSeconds = 0;
 		breathCount = 0;

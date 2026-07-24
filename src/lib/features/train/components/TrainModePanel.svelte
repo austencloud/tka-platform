@@ -27,6 +27,7 @@
   import ModePickerSheet from "./practice/ModePickerSheet.svelte";
   import GridSettingsSheet from "./practice/GridSettingsSheet.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { createScreenWakeLockManager } from "$lib/shared/device/services/screen-wake-lock-manager";
 
   interface Props {
     sequence?: SequenceData | null;
@@ -57,6 +58,7 @@
 
   // Initialize train state
   const trainState = createTrainState();
+  const screenWakeLockManager = createScreenWakeLockManager();
 
   // Services
   let detectionService: MediaPipeDetector | null = $state(null);
@@ -193,6 +195,7 @@
   function handleStartCountdown() {
     hapticService?.trigger("selection");
     // Skip countdown - start immediately for faster testing
+    screenWakeLockManager.setActive(true);
     trainState.startPerformance();
   }
 
@@ -208,6 +211,8 @@
 
   // Timing system - start beat timer when performance begins
   $effect(() => {
+    screenWakeLockManager.setActive(trainState.isPerforming);
+
     if (trainState.isPerforming && !stepAnimationFrameId) {
       startStepTimer();
       // Record session start time
@@ -338,6 +343,7 @@
   });
 
   onDestroy(() => {
+    screenWakeLockManager.dispose();
     stopBeatTimer();
     if (detectionService) {
       detectionService.stopDetection();
