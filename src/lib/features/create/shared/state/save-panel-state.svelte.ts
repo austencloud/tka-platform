@@ -2,7 +2,11 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
 import { computeHash as computeSequenceHash } from "$lib/shared/library/services/sequence-content-hasher";
-import { isEmptySequence, meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
+import {
+  isEmptySequence,
+  meetsCommunityMinimum,
+  MIN_COMMUNITY_STEPS,
+} from "$lib/shared/library/domain/sequence-min-length";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
 import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/hall-of-shame-submitter";
@@ -16,7 +20,9 @@ import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigatio
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
-type ContentModerator = { checkWord: (word: string) => ContentModerationResult };
+type ContentModerator = {
+  checkWord: (word: string) => ContentModerationResult;
+};
 
 export interface SavePanelDeps {
   ctx: CreateModuleContext;
@@ -34,17 +40,17 @@ export interface SavePanelProps {
 }
 
 export function createSavePanelState(deps: SavePanelDeps) {
-  const { ctx, librarySaveService, contentModerator, hallOfShameSubmitter } = deps;
+  const { ctx, librarySaveService, contentModerator, hallOfShameSubmitter } =
+    deps;
   const { CreateModuleState } = ctx;
   const logger = createComponentLogger("SaveToLibraryPanel");
 
   // Save steps definition (static)
   const saveSteps = [
-    { icon: "fa-image", label: "Creating thumbnail" },
-    { icon: "fa-cloud-upload-alt", label: "Uploading preview" },
+    { icon: "fa-save", label: "Saving locally" },
     { icon: "fa-tags", label: "Creating tags" },
-    { icon: "fa-save", label: "Saving to library" },
-    { icon: "fa-sync", label: "Syncing data" },
+    { icon: "fa-cloud-upload-alt", label: "Syncing to cloud" },
+    { icon: "fa-sync", label: "Refreshing library" },
   ];
 
   const headerTitle = "Save to Library";
@@ -56,7 +62,6 @@ export function createSavePanelState(deps: SavePanelDeps) {
   let isOpen = $state(false);
   let isSaving = $state(false);
   let saveStep = $state(0);
-  let renderProgress = $state({ current: 0, total: 0 });
   let publishToCommunity = $state(false);
 
   // Form state
@@ -89,7 +94,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
   const isBottomSheet = $derived(!ctx.layout.shouldUseSideBySideLayout);
 
   const activeSequenceState = $derived.by(() =>
-    CreateModuleState.getActiveTabSequenceState(),
+    CreateModuleState.getActiveTabSequenceState()
   );
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
 
@@ -97,17 +102,12 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   const currentUser = $derived(authState.user);
   const creatorName = $derived(
-    currentUser?.displayName || currentUser?.email || "Anonymous",
+    currentUser?.displayName || currentUser?.email || "Anonymous"
   );
   const darkMode = $derived(getSettings().darkMode ?? false);
 
-  const isFlagged = $derived(moderationResult !== null && !moderationResult.isAllowed);
-
-  // Dynamic label for step 1 showing render progress
-  const step1Label = $derived(
-    saveStep === 1 && renderProgress.total > 0
-      ? `Rendering frame ${renderProgress.current} of ${renderProgress.total}`
-      : "Creating thumbnail",
+  const isFlagged = $derived(
+    moderationResult !== null && !moderationResult.isAllowed
   );
 
   // Props getter — allows the component to bind its reactive props into this factory.
@@ -139,7 +139,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   // Duplicate detection
   const duplicateCheck = $derived.by(() => {
-    if (!tkaName || !isOpen) return { hasDuplicate: false, existingSequences: [] as unknown[] };
+    if (!tkaName || !isOpen)
+      return { hasDuplicate: false, existingSequences: [] as unknown[] };
     return libraryState.checkForDuplicate(tkaName);
   });
   const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
@@ -161,10 +162,12 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // The community gallery requires MIN_COMMUNITY_STEPS. Under that, the Make
   // Public toggle is disabled with a note — the sequence still saves to the
   // personal library. (Repository + syncer enforce the same floor as a backstop.)
-  const canPublishToCommunity = $derived(!!sequence && meetsCommunityMinimum(sequence));
+  const canPublishToCommunity = $derived(
+    !!sequence && meetsCommunityMinimum(sequence)
+  );
 
   const canSave = $derived(
-    !!tkaName && !isSaving && !isFlagged && !isExactDuplicate && !isTooShort,
+    !!tkaName && !isSaving && !isFlagged && !isExactDuplicate && !isTooShort
   );
 
   // ---------------------------------------------------------------------------
@@ -250,7 +253,6 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
     isSaving = true;
     saveStep = 1;
-    renderProgress = { current: 0, total: 0 };
 
     try {
       logger.info("Saving sequence to library...", {
@@ -268,10 +270,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
         },
         (progress: SaveProgress) => {
           saveStep = progress.step;
-          if (progress.renderProgress) {
-            renderProgress = progress.renderProgress;
-          }
-        },
+        }
       );
 
       logger.success("Sequence saved to library with ID:", result.sequenceId);
@@ -292,9 +291,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
       // time. Lazy import keeps the firestore-heavy manager off panel init.
       if (selectedCollectionIds.length > 0) {
         try {
-          const { addSequenceToCollection } = await import(
-            "$lib/shared/library/services/collection-manager"
-          );
+          const { addSequenceToCollection } =
+            await import("$lib/shared/library/services/collection-manager");
           for (const collectionId of selectedCollectionIds) {
             await addSequenceToCollection(collectionId, result.sequenceId);
           }
@@ -303,8 +301,23 @@ export function createSavePanelState(deps: SavePanelDeps) {
         }
       }
 
+      const sessionId =
+        ctx.sessionManager?.getSessionId() ?? ctx.autosaver?.getSessionId();
+      try {
+        await ctx.autosaver?.deleteLocalDraft(sessionId);
+      } catch (draftError) {
+        logger.warn("Could not remove the completed local draft:", draftError);
+      }
+
       if (ctx.sessionManager) {
-        await ctx.sessionManager.markAsSaved(result.sequenceId);
+        void ctx.sessionManager.markAsSaved(result.sequenceId).catch(
+          (sessionError) => {
+            logger.warn(
+              "Could not complete the cloud session lifecycle:",
+              sessionError
+            );
+          }
+        );
       }
 
       props.onSaveComplete?.(result.sequenceId);
@@ -447,61 +460,130 @@ export function createSavePanelState(deps: SavePanelDeps) {
     },
 
     // Mutable state (getters + setters where component needs write access)
-    get isOpen() { return isOpen; },
-    set isOpen(v: boolean) { isOpen = v; },
+    get isOpen() {
+      return isOpen;
+    },
+    set isOpen(v: boolean) {
+      isOpen = v;
+    },
 
-    get isSaving() { return isSaving; },
+    get isSaving() {
+      return isSaving;
+    },
 
-    get saveStep() { return saveStep; },
+    get saveStep() {
+      return saveStep;
+    },
 
-    get renderProgress() { return renderProgress; },
+    get publishToCommunity() {
+      return publishToCommunity;
+    },
+    set publishToCommunity(v: boolean) {
+      publishToCommunity = v;
+    },
 
-    get publishToCommunity() { return publishToCommunity; },
-    set publishToCommunity(v: boolean) { publishToCommunity = v; },
+    get notes() {
+      return notes;
+    },
+    set notes(v: string) {
+      notes = v;
+    },
 
-    get notes() { return notes; },
-    set notes(v: string) { notes = v; },
+    get showNotes() {
+      return showNotes;
+    },
+    set showNotes(v: boolean) {
+      showNotes = v;
+    },
 
-    get showNotes() { return showNotes; },
-    set showNotes(v: boolean) { showNotes = v; },
+    get selectedCollectionIds() {
+      return selectedCollectionIds;
+    },
+    set selectedCollectionIds(v: string[]) {
+      selectedCollectionIds = v;
+    },
 
-    get selectedCollectionIds() { return selectedCollectionIds; },
-    set selectedCollectionIds(v: string[]) { selectedCollectionIds = v; },
+    get panelWidth() {
+      return panelWidth;
+    },
+    set panelWidth(v: number) {
+      panelWidth = v;
+    },
 
-    get panelWidth() { return panelWidth; },
-    set panelWidth(v: number) { panelWidth = v; },
+    get moderationResult() {
+      return moderationResult;
+    },
 
-    get moderationResult() { return moderationResult; },
+    get showAppealModal() {
+      return showAppealModal;
+    },
+    set showAppealModal(v: boolean) {
+      showAppealModal = v;
+    },
 
-    get showAppealModal() { return showAppealModal; },
-    set showAppealModal(v: boolean) { showAppealModal = v; },
+    get savedSequenceIdForAppeal() {
+      return savedSequenceIdForAppeal;
+    },
 
-    get savedSequenceIdForAppeal() { return savedSequenceIdForAppeal; },
+    get showShameGate() {
+      return showShameGate;
+    },
 
-    get showShameGate() { return showShameGate; },
+    get isSubmittingToShame() {
+      return isSubmittingToShame;
+    },
 
-    get isSubmittingToShame() { return isSubmittingToShame; },
+    get shameSubmitError() {
+      return shameSubmitError;
+    },
 
-    get shameSubmitError() { return shameSubmitError; },
-
-    get isExactDuplicate() { return isExactDuplicate; },
+    get isExactDuplicate() {
+      return isExactDuplicate;
+    },
 
     // Derived values (read-only)
-    get isBottomSheet() { return isBottomSheet; },
-    get sequence() { return sequence; },
-    get isMobileLayout() { return isMobileLayout; },
-    get currentUser() { return currentUser; },
-    get creatorName() { return creatorName; },
-    get darkMode() { return darkMode; },
-    get isFlagged() { return isFlagged; },
-    get step1Label() { return step1Label; },
-    get hasDuplicate() { return hasDuplicate; },
-    get duplicateCount() { return duplicateCount; },
-    get isAlreadyPublished() { return isAlreadyPublished; },
-    get canPublishToCommunity() { return canPublishToCommunity; },
-    get communityMinSteps() { return MIN_COMMUNITY_STEPS; },
-    get canSave() { return canSave; },
-    get tkaName() { return tkaName; },
+    get isBottomSheet() {
+      return isBottomSheet;
+    },
+    get sequence() {
+      return sequence;
+    },
+    get isMobileLayout() {
+      return isMobileLayout;
+    },
+    get currentUser() {
+      return currentUser;
+    },
+    get creatorName() {
+      return creatorName;
+    },
+    get darkMode() {
+      return darkMode;
+    },
+    get isFlagged() {
+      return isFlagged;
+    },
+    get hasDuplicate() {
+      return hasDuplicate;
+    },
+    get duplicateCount() {
+      return duplicateCount;
+    },
+    get isAlreadyPublished() {
+      return isAlreadyPublished;
+    },
+    get canPublishToCommunity() {
+      return canPublishToCommunity;
+    },
+    get communityMinSteps() {
+      return MIN_COMMUNITY_STEPS;
+    },
+    get canSave() {
+      return canSave;
+    },
+    get tkaName() {
+      return tkaName;
+    },
 
     // Action handlers
     handleSave,

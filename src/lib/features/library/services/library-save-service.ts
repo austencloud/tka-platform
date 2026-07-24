@@ -2,11 +2,10 @@
  * LibrarySaveService - Orchestrates saving sequences to library
  *
  * Handles the multi-step process of saving a sequence:
- * 1. Generate thumbnail image (with caching optimization)
- * 2. Optimistic save to Dexie (instant, works offline)
- * 3. Create any new tags that don't exist
- * 4. Background Firestore sync (non-blocking)
- * 5. Refresh library state
+ * 1. Save to Dexie (instant, works offline)
+ * 2. Create any new tags that don't exist
+ * 3. Start Firestore sync and thumbnail work in the background
+ * 4. Refresh library state
  *
  * The Dexie write in step 2 makes saving work offline. Firestore syncs
  * in the background and fails gracefully if the user is offline - the
@@ -21,11 +20,15 @@ import { findTagByName, createUserTag } from "./tag-manager";
 import type { ArtifactExtractor } from "./artifact-extractor";
 import { TAG_COLORS } from "../domain/models/tag";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte.ts";
-import type {
-  SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
+import type { SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
-import { isEmptySequence, meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
+import {
+  isEmptySequence,
+  meetsCommunityMinimum,
+  MIN_COMMUNITY_STEPS,
+  withCanonicalStepCount,
+} from "$lib/shared/library/domain/sequence-min-length";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -107,14 +110,10 @@ export class LibrarySaveService {
       visibility = "private";
     }
 
-    const emitProgress = (
-      step: number,
-      renderProgress?: { current: number; total: number }
-    ) => {
+    const emitProgress = (step: number) => {
       onProgress?.({
         step,
-        stepLabel: this.getStepLabel(step, renderProgress),
-        renderProgress,
+        stepLabel: this.getStepLabel(step),
       });
     };
 
@@ -170,7 +169,8 @@ export class LibrarySaveService {
     if (!alreadySavedLocally) {
       try {
         const preCheckHash = await computeHash(resolvedSequence);
-        const isDuplicate = await this.libraryRepository.hasMatchingContent(preCheckHash);
+        const isDuplicate =
+          await this.libraryRepository.hasMatchingContent(preCheckHash);
         if (isDuplicate) {
           throw new LibraryError(
             "This exact sequence is already in your library",
@@ -180,26 +180,23 @@ export class LibrarySaveService {
         }
       } catch (error) {
         if (error instanceof LibraryError) throw error;
-        console.warn("[LibrarySaveService] Duplicate pre-check failed (proceeding without it):", error);
+        console.warn(
+          "[LibrarySaveService] Duplicate pre-check failed (proceeding without it):",
+          error
+        );
       }
     }
 
-    // Step 1: Generate thumbnail image
+    // Step 1: Save to Dexie before rendering or uploading a thumbnail. The
+    // user's work is safe immediately even when image rendering, R2, or the
+    // network stalls.
     emitProgress(1);
-    const thumbnailUrl = await this.generateAndUploadThumbnail(
-      resolvedSequence,
-      emitProgress
-    );
-
-    // Step 2: Optimistic save to Dexie (instant, works offline)
-    // The sequence is safe in local storage before we ever touch Firestore.
-    emitProgress(2);
-    const sequenceToSave: SequenceData = {
+    const sequenceToSave = withCanonicalStepCount({
       ...resolvedSequence,
       name,
       displayName: displayName || undefined,
       tags: [...tags],
-      thumbnails: thumbnailUrl ? [thumbnailUrl] : [...(sequence.thumbnails ?? [])],
+      thumbnails: [...(sequence.thumbnails ?? [])],
       isFavorite: false,
       // Cloud sync hasn't happened yet - the background Firestore write below
       // flips this to "synced"/"failed" once it settles. Lets the library UI
@@ -208,7 +205,7 @@ export class LibrarySaveService {
       // 2026-07-18-onboarding-silent-work-loss.md.
       syncStatus: "pending",
       pendingSyncMetadata: { visibility, notes: notes ?? "" },
-    };
+    });
     let persisted = false;
     try {
       // JSON round-trip strips Firestore Timestamps and other non-cloneable objects
@@ -221,7 +218,10 @@ export class LibrarySaveService {
       // surface it instead of swallowing, so the user isn't shown "Saved!" for a
       // sequence that may exist nowhere (the Firestore sync below is
       // fire-and-forget and may be offline).
-      console.warn("[LibrarySaveService] Dexie optimistic save failed:", dexieError);
+      console.warn(
+        "[LibrarySaveService] Dexie optimistic save failed:",
+        dexieError
+      );
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message:
@@ -229,7 +229,9 @@ export class LibrarySaveService {
         technicalDetails:
           dexieError instanceof Error ? dexieError.message : String(dexieError),
         error:
-          dexieError instanceof Error ? dexieError : new Error(String(dexieError)),
+          dexieError instanceof Error
+            ? dexieError
+            : new Error(String(dexieError)),
         severity: "error",
         context: { module: "library", action: "save-to-library" },
       });
@@ -256,15 +258,32 @@ export class LibrarySaveService {
       );
     }
 
-    // Step 3: Create any new tags
-    emitProgress(3);
+    // Step 2: Create any new tags
+    emitProgress(2);
     await this.createNewTags(tags);
 
-    // Step 4: Background Firestore sync (non-blocking)
+    const syncMetadata = {
+      name,
+      displayName,
+      visibility,
+      tags,
+      notes: notes ?? "",
+    };
+
+    // Step 3: Background Firestore sync (non-blocking)
     // If offline, the sequence is already in Dexie and the user sees success.
-    emitProgress(4);
-    this.syncToFirestore(resolvedSequence, { name, displayName, visibility, tags, notes: notes ?? "", thumbnailUrl })
-      .catch(err => console.warn("[LibrarySaveService] Firestore sync pending:", err));
+    emitProgress(3);
+    const initialCloudSync = this.syncToFirestore(sequenceToSave, syncMetadata);
+
+    // Thumbnail work is an enhancement to an already-durable save. A slow or
+    // blocked upload must never hold the save overlay open. Once the image is
+    // ready, patch the local row and then the cloud document.
+    void this.generateAndAttachThumbnail(
+      sequenceToSave,
+      initialCloudSync
+    ).catch((error) =>
+      console.warn("[LibrarySaveService] Thumbnail follow-up failed:", error)
+    );
 
     // Fire-and-forget: pre-render this sequence's pictograph cells to the cloud
     // store (canonical visibility + intendedProp) so the first person to scan
@@ -283,27 +302,36 @@ export class LibrarySaveService {
     // Fire-and-forget: decompose the sequence into hand paths and solo props
     // so they're independently queryable in the user's artifact repositories.
     const currentUserId = authState.effectiveUserId;
-    if (this.artifactExtractor && currentUserId && sequenceToSave.blueSoloProp && sequenceToSave.redSoloProp) {
-      this.artifactExtractor.extract(sequenceToSave, currentUserId).catch((err) =>
-        console.error("Artifact extraction failed (non-blocking):", err)
-      );
+    if (
+      this.artifactExtractor &&
+      currentUserId &&
+      sequenceToSave.blueSoloProp &&
+      sequenceToSave.redSoloProp
+    ) {
+      this.artifactExtractor
+        .extract(sequenceToSave, currentUserId)
+        .catch((err) =>
+          console.error("Artifact extraction failed (non-blocking):", err)
+        );
     }
 
-    // Step 5: Refresh library state
-    emitProgress(5);
+    // Step 4: Refresh library state
+    emitProgress(4);
     await this.refreshLibraryState();
 
-    // Step 6: Complete
-    emitProgress(6);
+    // Step 5: Complete
+    emitProgress(5);
 
     // Value-moment nudge: a guest just saved successfully. Encourage account
     // creation once per device. Members (full accounts) never see this.
     this.maybeNudgeGuestToSignUp();
 
     // Brief pause to show success state
-    await new Promise((resolve) => setTimeout(resolve, SUCCESS_STATE_LINGER_MS));
+    await new Promise((resolve) =>
+      setTimeout(resolve, SUCCESS_STATE_LINGER_MS)
+    );
 
-    return { sequenceId, thumbnailUrl, persisted, isGuest: !isFullAccount };
+    return { sequenceId, persisted, isGuest: !isFullAccount };
   }
 
   /**
@@ -329,24 +357,14 @@ export class LibrarySaveService {
     );
   }
 
-  getStepLabel(
-    step: number,
-    renderProgress?: { current: number; total: number }
-  ): string {
+  getStepLabel(step: number): string {
     const labels: Record<number, string> = {
-      1: "Creating thumbnail",
-      2: "Saving locally",
-      3: "Creating tags",
-      4: "Syncing to cloud",
-      5: "Refreshing library",
-      6: "Complete",
+      1: "Saving locally",
+      2: "Creating tags",
+      3: "Syncing to cloud",
+      4: "Refreshing library",
+      5: "Complete",
     };
-
-    // Dynamic label for step 1 with render progress
-    // Uses "frame" instead of "beat" since total includes start position
-    if (step === 1 && renderProgress && renderProgress.total > 0) {
-      return `Rendering frame ${renderProgress.current} of ${renderProgress.total}`;
-    }
 
     return labels[step] || "Processing...";
   }
@@ -365,21 +383,55 @@ export class LibrarySaveService {
       notes: string;
       thumbnailUrl?: string;
     }
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       await this.libraryRepository.saveSequenceWithMetadata(sequence, metadata);
       await markSequenceSyncStatus(sequence.id, "synced");
+      return true;
     } catch (error) {
       if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
         toast.info("This exact sequence is already in your library.");
         // The content is already safe in Firestore under an existing doc -
         // this save didn't create a duplicate, but nothing was lost.
         await markSequenceSyncStatus(sequence.id, "synced");
+        return true;
       } else {
-        console.warn("[LibrarySaveService] Firestore sync failed (data safe in Dexie):", error);
+        console.warn(
+          "[LibrarySaveService] Firestore sync failed (data safe in Dexie):",
+          error
+        );
         await markSequenceSyncStatus(sequence.id, "failed");
+        return false;
       }
     }
+  }
+
+  private async generateAndAttachThumbnail(
+    sequence: SequenceData,
+    initialCloudSync: Promise<boolean>
+  ): Promise<void> {
+    const thumbnailUrl = await this.generateAndUploadThumbnail(sequence);
+    if (!thumbnailUrl) return;
+
+    const thumbnails = [
+      thumbnailUrl,
+      ...sequence.thumbnails.filter((url) => url !== thumbnailUrl),
+    ];
+
+    try {
+      await db.sequences.update(sequence.id, { thumbnails });
+    } catch (error) {
+      console.warn(
+        "[LibrarySaveService] Could not attach thumbnail to local save:",
+        error
+      );
+    }
+
+    // If the first cloud write failed, the retry service reads this freshly
+    // patched Dexie row and carries the thumbnail on its next bounded pass.
+    if (!(await initialCloudSync)) return;
+
+    await this.libraryRepository.attachThumbnail(sequence.id, thumbnailUrl);
   }
 
   /**
@@ -387,11 +439,7 @@ export class LibrarySaveService {
    * Returns thumbnail URL or undefined if generation/upload fails
    */
   private async generateAndUploadThumbnail(
-    sequence: SequenceData,
-    emitProgress: (
-      step: number,
-      renderProgress?: { current: number; total: number }
-    ) => void
+    sequence: SequenceData
   ): Promise<string | undefined> {
     if (!this.shareService || !this.uploadService) {
       console.warn(
@@ -410,19 +458,11 @@ export class LibrarySaveService {
       const imageCompositionManager = getImageCompositionManager();
       const userName = authState.user?.displayName || "";
 
-      const imageBlob = await this.shareService.getCardImageBlob(
-        sequence,
-        { darkMode: imageCompositionManager.darkMode, userName },
-        (progress: { current: number; total: number; stage: string }) => {
-          emitProgress(1, {
-            current: progress.current,
-            total: progress.total,
-          });
-        }
-      );
+      const imageBlob = await this.shareService.getCardImageBlob(sequence, {
+        darkMode: imageCompositionManager.darkMode,
+        userName,
+      });
 
-      // Step 2: Upload thumbnail
-      emitProgress(2);
       const uploadResult = await this.uploadService.uploadSequenceThumbnail(
         sequence.id,
         imageBlob,
@@ -439,7 +479,8 @@ export class LibrarySaveService {
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Sequence saved, but the thumbnail didn't generate",
-        technicalDetails: error instanceof Error ? error.message : String(error),
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "warning",
         context: {

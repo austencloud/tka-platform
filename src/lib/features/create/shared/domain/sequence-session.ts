@@ -55,10 +55,11 @@ export interface SequenceSession {
  */
 export function createSequenceSession(
   userId: string,
-  deviceId: string
+  deviceId: string,
+  sessionId: string
 ): Omit<SequenceSession, "createdAt" | "lastModified" | "lastAutosave"> {
   return {
-    sessionId: crypto.randomUUID(),
+    sessionId,
     userId,
     deviceId,
     isSaved: false,

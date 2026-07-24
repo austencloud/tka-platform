@@ -1,9 +1,7 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
-  updateDoc,
   query,
   where,
   writeBatch,
@@ -72,10 +70,10 @@ export class LibraryBatchOperations {
 
     // Chunk the delete writes so a large multi-select never exceeds Firestore's
     // 500-op batch limit. Each public sequence costs 2 ops (user doc + public
-    // mirror), so 200 sequences per batch = up to 400 ops, safely under 500.
+    // mirror), plus one profile-counter write, so 200 sequences per batch
+    // stays safely under 500.
     const DELETE_BATCH_SIZE = 200;
     const idsToDelete = sequenceIds.filter((id) => existingSequences.has(id));
-    let deletedCount = 0;
 
     const userDocRef =
       idsToDelete.length > 0 ? doc(firestore, `users/${userId}`) : null;
@@ -84,6 +82,7 @@ export class LibraryBatchOperations {
       for (let i = 0; i < idsToDelete.length; i += DELETE_BATCH_SIZE) {
         const chunk = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
         const batch = writeBatch(firestore);
+        let chunkDeletedCount = 0;
 
         for (const sequenceId of chunk) {
           const existing = existingSequences.get(sequenceId);
@@ -94,34 +93,25 @@ export class LibraryBatchOperations {
           batch.delete(
             doc(firestore, getUserSequencePath(userId, sequenceId))
           );
-          deletedCount++;
+          chunkDeletedCount++;
+        }
+
+        if (userDocRef && chunkDeletedCount > 0) {
+          batch.set(
+            userDocRef,
+            {
+              sequenceCount: increment(-chunkDeletedCount),
+              lastActivityDate: serverTimestamp(),
+            },
+            { merge: true }
+          );
         }
 
         await trackWrite(() => batch.commit(), "library");
       }
 
-      // Apply the sequence-count decrement once, after all delete batches land,
-      // rather than duplicating it per chunk.
-      if (userDocRef && deletedCount > 0) {
-        await trackWrite(
-          () =>
-            updateDoc(userDocRef, {
-              sequenceCount: increment(-deletedCount),
-            }),
-          "library"
-        );
-      }
-
       for (const sequenceId of idsToDelete) {
         notifyLibraryMutated(sequenceId);
-      }
-
-      if (userDocRef) {
-        const userSnap = await getDoc(userDocRef);
-        const count = (userSnap.data()?.["sequenceCount"] as number) ?? 0;
-        if (count < 0) {
-          await updateDoc(userDocRef, { sequenceCount: 0 });
-        }
       }
     } catch (error) {
       this.reportError(

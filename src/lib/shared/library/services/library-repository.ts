@@ -12,7 +12,6 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   orderBy,
   where,
@@ -21,6 +20,7 @@ import {
   serverTimestamp,
   increment,
   getCountFromServer,
+  writeBatch,
   type Unsubscribe,
   type DocumentData,
 } from "firebase/firestore";
@@ -28,7 +28,10 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { hydrate, ensureComposition } from "$lib/shared/foundation/services/sequence-hydrator";
+import {
+  hydrate,
+  ensureComposition,
+} from "$lib/shared/foundation/services/sequence-hydrator";
 import {
   firestoreGet,
   firestoreList,
@@ -38,7 +41,7 @@ import {
   LibrarySequenceDocSchema,
   UserProfileDocSchema,
 } from "$lib/shared/library/domain/library-schemas";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import type { ConflictResolver } from "$lib/shared/offline/services/conflict-resolver";
@@ -51,7 +54,9 @@ import { decideFork } from "$lib/shared/library/services/fork-decision";
 import { getTagMigrator } from "$lib/shared/library/get-tag-migrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
-  LibraryStats, LibraryQueryOptions } from "$lib/shared/library/domain/library-contract-types";
+  LibraryStats,
+  LibraryQueryOptions,
+} from "$lib/shared/library/domain/library-contract-types";
 import type {
   LibrarySequence,
   SequenceVisibility,
@@ -69,7 +74,12 @@ import {
 import { LibraryRecycleBin } from "$lib/shared/library/services/library-recycle-bin";
 import { LibraryBatchOperations } from "$lib/shared/library/services/library-batch-operations";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
-import { isEmptySequence, meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
+import {
+  isEmptySequence,
+  meetsCommunityMinimum,
+  MIN_COMMUNITY_STEPS,
+  withCanonicalStepCount,
+} from "$lib/shared/library/domain/sequence-min-length";
 
 export class LibraryRepository {
   /**
@@ -90,14 +100,16 @@ export class LibraryRepository {
       () => this.getUserId(),
       (id) => this.getSequence(id),
       this.publicIndexSyncer,
-      (msg, err, action, data, severity) => this.reportError(msg, err, action, data, severity)
+      (msg, err, action, data, severity) =>
+        this.reportError(msg, err, action, data, severity)
     );
     this.batchOps = new LibraryBatchOperations(
       () => getFirestoreInstance(),
       () => this.getUserId(),
       (d, id) => this.mapDocToLibrarySequence(d, id),
       this.publicIndexSyncer,
-      (msg, err, action, data, severity) => this.reportError(msg, err, action, data, severity)
+      (msg, err, action, data, severity) =>
+        this.reportError(msg, err, action, data, severity)
     );
   }
 
@@ -117,7 +129,8 @@ export class LibraryRepository {
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message,
-        technicalDetails: error instanceof Error ? error.message : String(error),
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity,
         context: {
@@ -190,13 +203,16 @@ export class LibraryRepository {
     // public-sequences-loader.ts. Without it these docs hydrate to an empty
     // steps array and read as "0 steps" everywhere in the gallery.
     // Fall back to stored word/name only if none is available.
-    const steps = (data["steps"] || seqData["steps"] || data["beats"] || seqData["beats"]) as
+    const steps = (data["steps"] ||
+      seqData["steps"] ||
+      data["beats"] ||
+      seqData["beats"]) as Array<{ letter?: string }> | undefined;
+    const stepPairings = (data["stepPairings"] || seqData["stepPairings"]) as
       | Array<{ letter?: string }>
       | undefined;
-    const stepPairings = (data["stepPairings"] || seqData["stepPairings"]) as Array<{ letter?: string }> | undefined;
     let word: string | null = null;
 
-    const letterSource = (steps && steps.length > 0) ? steps : stepPairings;
+    const letterSource = steps && steps.length > 0 ? steps : stepPairings;
     if (letterSource && letterSource.length > 0) {
       word = letterSource
         .map((step) => step.letter ?? "")
@@ -207,7 +223,12 @@ export class LibraryRepository {
     // Fallback to stored values if derivation failed
     // Check both top-level and nested sequenceData for word/name
     if (!word) {
-      word = data["word"] || seqData["word"] || data["name"] || seqData["name"] || id;
+      word =
+        data["word"] ||
+        seqData["word"] ||
+        data["name"] ||
+        seqData["name"] ||
+        id;
     }
 
     // Smart date fallbacks for backwards compatibility with older sequences
@@ -232,9 +253,10 @@ export class LibraryRepository {
       // beats docs the spread above leaves `steps` absent, so set it here.
       // hydrate() overrides this with freshly derived steps when the doc
       // carries compositional fields.
-      ...(steps && steps.length > 0 && {
-        steps: steps as unknown as LibrarySequence["steps"],
-      }),
+      ...(steps &&
+        steps.length > 0 && {
+          steps: steps as unknown as LibrarySequence["steps"],
+        }),
       sequenceTags,
       // Birthday field - original creation date (never changes after being set)
       birthday: this.toDateOrUndefined(data["birthday"]),
@@ -247,8 +269,7 @@ export class LibraryRepository {
       forkAttribution: forkAttr
         ? {
             ...forkAttr,
-            forkedAt:
-              this.toDateOrUndefined(forkAttr.forkedAt) ?? new Date(),
+            forkedAt: this.toDateOrUndefined(forkAttr.forkedAt) ?? new Date(),
           }
         : undefined,
     } as LibrarySequence;
@@ -391,10 +412,7 @@ export class LibraryRepository {
     // matches AND the motion data is byte-for-byte identical. Without this check,
     // you'd end up with two entries in the Variations pane that look identical.
     if (isNewSequence && incomingHash) {
-      const sequencesRef = collection(
-        firestore,
-        getUserSequencesPath(userId)
-      );
+      const sequencesRef = collection(firestore, getUserSequencesPath(userId));
       const duplicateQuery = query(
         sequencesRef,
         where("contentHash", "==", incomingHash),
@@ -445,6 +463,7 @@ export class LibraryRepository {
       // Composition services not available (e.g. during SSR or early boot).
       // Save without compositional fields - the migration script can backfill.
     }
+    libSeq = withCanonicalStepCount(libSeq);
 
     // Community gate: a sub-minimum sequence can live in the user's library but
     // must never enter the community gallery. Degrade its visibility BEFORE the
@@ -489,57 +508,49 @@ export class LibraryRepository {
     // Recursively strip undefined values - Firestore rejects them in setDoc
     const writeData = stripUndefined(rawWriteData as Record<string, unknown>);
 
-    // Fire-and-forget: setDoc queues locally, syncs when online
-    // trackWrite monitors the sync status but we don't block on it
-    trackWrite(() => setDoc(sequenceDocRef, writeData), "library").catch((error) => {
+    // The sequence and its profile count describe the same save. Committing
+    // them together prevents a successful sequence write from leaving the
+    // creator profile at zero when the second write loses auth or connectivity.
+    const saveBatch = writeBatch(firestore);
+    saveBatch.set(sequenceDocRef, writeData);
+    saveBatch.set(
+      userDocRef,
+      isNewSequence
+        ? {
+            sequenceCount: increment(1),
+            lastActivityDate: serverTimestamp(),
+          }
+        : { lastActivityDate: serverTimestamp() },
+      { merge: true }
+    );
+
+    try {
+      await trackWrite(() => saveBatch.commit(), "library");
+    } catch (error) {
       this.reportError(
         "Failed to save sequence. Your changes may not sync to other devices.",
         error,
         "save-sequence",
         { sequenceId: actualSequenceId }
       );
-    });
+      throw new LibraryError(
+        "Failed to sync this sequence to the cloud.",
+        "NETWORK",
+        actualSequenceId
+      );
+    }
 
     // Track the local write version for conflict detection
     const newVersion = writeData._version as number;
     this.conflictResolver?.trackLocalWrite(actualSequenceId, newVersion);
-
-    // Update user stats - separate non-blocking write
-    // Uses setDoc with merge instead of updateDoc so it works even if the
-    // user document hasn't been created yet (race with auth state init).
-    if (isNewSequence) {
-      trackWrite(
-        () =>
-          setDoc(
-            userDocRef,
-            {
-              sequenceCount: increment(1),
-              lastActivityDate: serverTimestamp(),
-            },
-            { merge: true }
-          ),
-        "library"
-      ).catch((error) => {
-        console.error("[LibraryRepository] Failed to update user stats:", error);
-      });
-    } else {
-      setDoc(
-        userDocRef,
-        { lastActivityDate: serverTimestamp() },
-        { merge: true }
-      ).catch((error) => {
-        console.error("[LibraryRepository] Failed to update activity:", error);
-      });
-    }
 
     // Post-write: Tag migration. Await the migration so finalSequence carries
     // the migrated tags BEFORE notifyLibrarySequenceAdded and the public-index
     // sync run below — those read finalSequence synchronously, so if the
     // migration only resolved in a later .then() the listeners and public
     // mirror would receive the tag-less snapshot and the migrated tags would
-    // never reach the gallery. The primary sequence doc write above stays
-    // fire-and-forget, and the tag doc write here stays fire-and-forget, so the
-    // offline-first save path is preserved.
+    // never reach the gallery. The primary sequence/profile batch above is
+    // already durable; this legacy tag backfill remains a non-blocking follow-up.
     let finalSequence = libSeq;
     if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
       try {
@@ -576,24 +587,35 @@ export class LibraryRepository {
             "warning"
           );
         });
-    } else if (finalSequence.visibility === "public" && !this.publicIndexSyncer) {
-      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
-    } else if (finalSequence.visibility !== "public" && this.publicIndexSyncer) {
+    } else if (
+      finalSequence.visibility === "public" &&
+      !this.publicIndexSyncer
+    ) {
+      console.warn(
+        "[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT appear in the public gallery.",
+        { sequenceId: finalSequence.id }
+      );
+    } else if (
+      finalSequence.visibility !== "public" &&
+      this.publicIndexSyncer
+    ) {
       // A PRIVATE save can land on an id that was previously saved public
       // (word-derived ids make re-saves overwrite the same doc). Without this,
       // the old publicSequences mirror survives — a private sequence stays
       // discoverable in the gallery and inflates public member counts.
       // removeFromPublicIndex treats an absent mirror as success, so this is a
       // no-op for first-time private saves.
-      this.publicIndexSyncer.removeFromPublicIndex(finalSequence.id).catch((error) => {
-        this.reportError(
-          "Saved privately, but the old public copy may still be visible in the gallery.",
-          error,
-          "public-index-sync",
-          { sequenceId: finalSequence.id },
-          "warning"
-        );
-      });
+      this.publicIndexSyncer
+        .removeFromPublicIndex(finalSequence.id)
+        .catch((error) => {
+          this.reportError(
+            "Saved privately, but the old public copy may still be visible in the gallery.",
+            error,
+            "public-index-sync",
+            { sequenceId: finalSequence.id },
+            "warning"
+          );
+        });
     }
 
     return finalSequence;
@@ -634,19 +656,59 @@ export class LibraryRepository {
     });
   }
 
+  /**
+   * Attach a completed background thumbnail without replaying the original
+   * full-document save. The render can finish well after the user has edited
+   * the sequence again; a field-level update keeps those newer edits intact.
+   */
+  async attachThumbnail(
+    sequenceId: string,
+    thumbnailUrl: string
+  ): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+    const existing = await this.getSequence(sequenceId);
+    if (!existing) {
+      throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
+    }
+
+    const thumbnails = [
+      thumbnailUrl,
+      ...existing.thumbnails.filter((url) => url !== thumbnailUrl),
+    ];
+
+    await trackWrite(
+      () =>
+        updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
+          thumbnails,
+          updatedAt: serverTimestamp(),
+        }),
+      "library"
+    );
+
+    notifyLibrarySequenceUpdated(sequenceId, { thumbnails });
+
+    if (existing.visibility === "public" && this.publicIndexSyncer) {
+      await this.publicIndexSyncer.updateThumbnails(sequenceId, thumbnails);
+    }
+  }
+
   async getSequence(sequenceId: string): Promise<LibrarySequence | null> {
     const userId = this.getUserId();
     const validated = await firestoreGet(
       getUserSequencesPath(userId),
       sequenceId,
-      LibrarySequenceDocSchema,
+      LibrarySequenceDocSchema
     );
 
     if (!validated) {
       return null;
     }
 
-    const seq = this.mapDocToLibrarySequence(validated as DocumentData, sequenceId);
+    const seq = this.mapDocToLibrarySequence(
+      validated as DocumentData,
+      sequenceId
+    );
 
     // Hydrate: derive steps from compositional fields if present
     try {
@@ -666,7 +728,7 @@ export class LibraryRepository {
       {
         where: [{ field: "contentHash", op: "==", value: contentHash }],
         limit: 1,
-      },
+      }
     );
     return results.length > 0;
   }
@@ -728,12 +790,18 @@ export class LibraryRepository {
     });
 
     // Notify listeners so caches can patch without a Firestore round-trip
-    notifyLibrarySequenceUpdated(sequenceId, updates as Record<string, unknown>);
+    notifyLibrarySequenceUpdated(
+      sequenceId,
+      updates as Record<string, unknown>
+    );
 
     // Handle visibility changes (async, non-blocking)
     if (updates.visibility && updates.visibility !== existing.visibility) {
       if (!this.publicIndexSyncer) {
-        console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null - public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
+        console.warn(
+          "[LibraryRepository] Visibility changed but publicIndexSyncer is null - public gallery will not reflect this change.",
+          { sequenceId, newVisibility: updates.visibility }
+        );
       } else if (updates.visibility === "public") {
         // Ensure compositional fields are fresh before publishing
         const compositionReady = { ...updated, ...ensureComposition(updated) };
@@ -780,27 +848,45 @@ export class LibraryRepository {
     // only refreshes on an explicit reload anyway; awaiting it just slows down
     // the delete. Errors are logged but not rethrown.
     if (existing.visibility === "public" && this.publicIndexSyncer) {
-      this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) => {
-        this.reportError(
-          "Sequence deleted, but it may still appear in the community gallery.",
-          error,
-          "public-index-remove",
-          { sequenceId },
-          "warning"
-        );
-      });
+      this.publicIndexSyncer
+        .removeFromPublicIndex(sequenceId)
+        .catch((error) => {
+          this.reportError(
+            "Sequence deleted, but it may still appear in the community gallery.",
+            error,
+            "public-index-remove",
+            { sequenceId },
+            "warning"
+          );
+        });
     } else if (existing.visibility === "public" && !this.publicIndexSyncer) {
-      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT be removed from the public gallery.", { sequenceId });
+      console.warn(
+        "[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT be removed from the public gallery.",
+        { sequenceId }
+      );
     }
 
+    // The private document and its denormalized profile count are one
+    // invariant. Commit them together so an offline transition or auth race
+    // cannot delete the sequence while leaving the count unchanged.
+    const deleteBatch = writeBatch(firestore);
+    deleteBatch.delete(
+      doc(firestore, getUserSequencePath(userId, sequenceId))
+    );
+    deleteBatch.set(
+      doc(firestore, `users/${userId}`),
+      {
+        sequenceCount: increment(-1),
+        lastActivityDate: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
     // Await the local write so callers can safely reload data immediately after.
-    // trackWrite queues to Firestore's local cache first (offline-persistence), so
-    // this resolves quickly - it does NOT block on server acknowledgment.
+    // trackWrite queues to Firestore's local cache first when persistence is
+    // available, so this does not wait for a server round trip.
     try {
-      await trackWrite(
-        () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
-        "library"
-      );
+      await trackWrite(() => deleteBatch.commit(), "library");
     } catch (error) {
       // Surface the failure instead of swallowing it. Callers optimistically
       // remove the card and show a success toast; if the delete never landed,
@@ -817,31 +903,6 @@ export class LibraryRepository {
 
     // Notify listeners so caches can remove the entry immediately (success only)
     notifyLibraryMutated(sequenceId);
-
-    // Decrement user's sequenceCount (async, non-blocking, clamped to 0)
-    const userDocRef = doc(firestore, `users/${userId}`);
-    setDoc(
-      userDocRef,
-      { sequenceCount: increment(-1) },
-      { merge: true }
-    )
-      .then(async () => {
-        const userSnap = await getDoc(userDocRef);
-        const count = (userSnap.data()?.["sequenceCount"] as number) ?? 0;
-        if (count < 0) {
-          await setDoc(
-            userDocRef,
-            { sequenceCount: 0 },
-            { merge: true }
-          );
-        }
-      })
-      .catch((error) => {
-        console.error(
-          `[LibraryRepository] Failed to decrement sequenceCount for user ${userId}:`,
-          error
-        );
-      });
   }
 
   async getSequences(
@@ -914,7 +975,11 @@ export class LibraryRepository {
     let ownerAvatarUrl: string | undefined;
 
     try {
-      const userProfile = await firestoreGet("users", userId, UserProfileDocSchema);
+      const userProfile = await firestoreGet(
+        "users",
+        userId,
+        UserProfileDocSchema
+      );
       if (userProfile) {
         ownerDisplayName = userProfile.displayName ?? undefined;
         ownerAvatarUrl = userProfile.photoURL ?? undefined;
@@ -1013,7 +1078,10 @@ export class LibraryRepository {
           (snapshot) => {
             const sequences: LibrarySequence[] = [];
             snapshot.forEach((docSnap) => {
-              let serverSeq = { ...this.mapDocToLibrarySequence(docSnap.data(), docSnap.id), ownerId: userId } as LibrarySequence;
+              let serverSeq = {
+                ...this.mapDocToLibrarySequence(docSnap.data(), docSnap.id),
+                ownerId: userId,
+              } as LibrarySequence;
               {
                 try {
                   serverSeq = hydrate(serverSeq) as LibrarySequence;
@@ -1028,23 +1096,31 @@ export class LibraryRepository {
               if (this.conflictResolver && !docSnap.metadata.hasPendingWrites) {
                 const localSeq = this.localSequenceCache.get(docSnap.id);
                 if (localSeq) {
-                  const conflict = this.conflictResolver.detectConflict(localSeq, serverSeq);
+                  const conflict = this.conflictResolver.detectConflict(
+                    localSeq,
+                    serverSeq
+                  );
                   if (conflict) {
-                    this.conflictResolver.promptForResolution(conflict).then((resolution) => {
-                      this.conflictResolver!.resolveConflict(conflict, resolution);
-                      if (resolution === "keep-local") {
-                        this.resaveSequenceForConflict(localSeq);
-                      } else {
-                        // No prompt UI is registered yet, so server-wins is
-                        // silent by default. The user must at least be told
-                        // their pending edit was replaced.
-                        const name = serverSeq.word || conflict.sequenceId;
-                        toast.warning(
-                          `"${name}" was updated on another device. Kept the newer version; your offline edit was replaced.`,
-                          6000
+                    this.conflictResolver
+                      .promptForResolution(conflict)
+                      .then((resolution) => {
+                        this.conflictResolver!.resolveConflict(
+                          conflict,
+                          resolution
                         );
-                      }
-                    });
+                        if (resolution === "keep-local") {
+                          this.resaveSequenceForConflict(localSeq);
+                        } else {
+                          // No prompt UI is registered yet, so server-wins is
+                          // silent by default. The user must at least be told
+                          // their pending edit was replaced.
+                          const name = serverSeq.word || conflict.sequenceId;
+                          toast.warning(
+                            `"${name}" was updated on another device. Kept the newer version; your offline edit was replaced.`,
+                            6000
+                          );
+                        }
+                      });
                   }
                 }
               }
@@ -1083,22 +1159,34 @@ export class LibraryRepository {
    * Re-save a sequence after user chose "keep-local" in conflict resolution.
    * Writes the local version with an incremented _version to overwrite the server.
    */
-  private async resaveSequenceForConflict(sequence: LibrarySequence): Promise<void> {
+  private async resaveSequenceForConflict(
+    sequence: LibrarySequence
+  ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
       const userId = this.getUserId();
-      const sequenceDocRef = doc(firestore, getUserSequencePath(userId, sequence.id));
+      const sequenceDocRef = doc(
+        firestore,
+        getUserSequencePath(userId, sequence.id)
+      );
 
-      const newVersion = ((sequence._version ?? 0) + 1);
+      const newVersion = (sequence._version ?? 0) + 1;
       trackWrite(
-        () => setDoc(sequenceDocRef, stripUndefined({
-          ...sequence,
-          _version: newVersion,
-          updatedAt: serverTimestamp(),
-        } as Record<string, unknown>)),
+        () =>
+          setDoc(
+            sequenceDocRef,
+            stripUndefined({
+              ...sequence,
+              _version: newVersion,
+              updatedAt: serverTimestamp(),
+            } as Record<string, unknown>)
+          ),
         "library"
       ).catch((error) => {
-        console.error("[LibraryRepository] Failed to re-save after conflict resolution:", error);
+        console.error(
+          "[LibraryRepository] Failed to re-save after conflict resolution:",
+          error
+        );
         toast.error("Failed to save your version. Will retry when online.");
       });
 

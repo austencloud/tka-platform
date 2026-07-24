@@ -17,9 +17,6 @@
   interface Props {
     currentStep: number;
     steps: SaveStep[];
-    renderProgress?: { current: number; total: number };
-    /** Dynamic label for step 1 (e.g., "Rendering frame 3 of 8") */
-    step1Label?: string;
     /** Compact mode: shows simple "Saving..." message instead of detailed steps */
     compact?: boolean;
   }
@@ -27,18 +24,11 @@
   let {
     currentStep,
     steps,
-    renderProgress = { current: 0, total: 0 },
-    step1Label = "Creating thumbnail",
     compact = true, // Default to compact for simpler UX
   }: Props = $props();
 
-  const isComplete = $derived(currentStep === 6);
+  const isComplete = $derived(currentStep === steps.length + 1);
   const progressPercent = $derived((currentStep / steps.length) * 100);
-  const beatProgressPercent = $derived(
-    renderProgress.total > 0
-      ? Math.round((renderProgress.current / renderProgress.total) * 100)
-      : 0
-  );
 </script>
 
 <div class="save-progress-overlay">
@@ -60,7 +50,10 @@
         </div>
         <h3>Saving to library...</h3>
         <div class="progress-bar-container">
-          <div class="progress-bar-fill" style="width: {progressPercent}%"></div>
+          <div
+            class="progress-bar-fill"
+            style="width: {progressPercent}%"
+          ></div>
         </div>
       </div>
     {:else}
@@ -75,24 +68,9 @@
           ></i>
         </div>
         <h3>
-          {currentStep === 1
-            ? step1Label
-            : steps[currentStep - 1]?.label || "Preparing..."}
+          {steps[currentStep - 1]?.label || "Preparing..."}
         </h3>
       </div>
-
-      <!-- Granular beat progress during step 1 -->
-      {#if currentStep === 1 && renderProgress.total > 0}
-        <div class="beat-progress">
-          <div class="beat-progress-bar">
-            <div
-              class="beat-progress-fill"
-              style="width: {beatProgressPercent}%"
-            ></div>
-          </div>
-          <span class="beat-progress-text">{beatProgressPercent}%</span>
-        </div>
-      {/if}
 
       <div class="progress-steps">
         {#each steps as step, i}
@@ -111,7 +89,7 @@
                 <span class="step-number">{i + 1}</span>
               {/if}
             </div>
-            <span class="step-label">{i === 0 ? step1Label : step.label}</span>
+            <span class="step-label">{step.label}</span>
           </div>
         {/each}
       </div>
@@ -351,43 +329,6 @@
     font-weight: 500;
   }
 
-  /* Beat Progress (granular progress during thumbnail creation) */
-  .beat-progress {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .beat-progress-bar {
-    flex: 1;
-    height: 8px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .beat-progress-fill {
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      var(--theme-accent-strong, #8b5cf6) 0%,
-      var(--theme-accent, #a78bfa) 100%
-    );
-    border-radius: 4px;
-    transition: width var(--duration-fast) ease-out;
-    box-shadow: 0 0 8px
-      color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 50%, transparent);
-  }
-
-  .beat-progress-text {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-accent-strong, var(--theme-accent-strong));
-    min-width: 40px;
-    text-align: right;
-  }
-
   /* Progress Bar */
   .progress-bar-container {
     width: 100%;
@@ -450,7 +391,8 @@
   .success-circle i {
     font-size: var(--font-size-3xl);
     color: white;
-    animation: checkPop var(--duration-emphasis) ease var(--duration-normal) both;
+    animation: checkPop var(--duration-emphasis) ease var(--duration-normal)
+      both;
   }
 
   @keyframes checkPop {

@@ -1,6 +1,5 @@
 <script lang="ts">
-
-import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
+  import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   /**
    * Video Record Coordinator Component
    *
@@ -29,7 +28,6 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
     detectDeviceType,
   } from "$lib/shared/video-record/domain/recording-metadata";
   import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
-
 
   const logger = createComponentLogger("VideoRecordCoordinator");
 
@@ -131,9 +129,8 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
       // dialog time — the picker collected the ids and we apply them here.
       if (metadata.collectionIds?.length) {
         try {
-          const { addSequenceToCollection } = await import(
-            "$lib/shared/library/services/collection-manager"
-          );
+          const { addSequenceToCollection } =
+            await import("$lib/shared/library/services/collection-manager");
           for (const collectionId of metadata.collectionIds) {
             await addSequenceToCollection(collectionId, sequenceId);
           }
@@ -142,9 +139,20 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
         }
       }
 
-      // Mark session as saved
-      await ctx.sessionManager.markAsSaved(sequenceId);
-      logger.info("Session marked as saved");
+      const sessionId =
+        ctx.sessionManager.getSessionId() ?? ctx.autosaver?.getSessionId();
+      try {
+        await ctx.autosaver?.deleteLocalDraft(sessionId);
+      } catch (draftError) {
+        logger.warn("Could not remove the completed local draft:", draftError);
+      }
+
+      void ctx.sessionManager.markAsSaved(sequenceId).catch((sessionError) => {
+        logger.warn(
+          "Could not complete the cloud session lifecycle:",
+          sessionError
+        );
+      });
 
       // Refresh library state if available
       try {
@@ -189,7 +197,9 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
       const uploadResult = await uploadService.uploadPerformanceVideo(
         sequenceId,
         recording.videoBlob!,
-        { onProgress: (progress) => logger.log(`Upload progress: ${progress}%`) }
+        {
+          onProgress: (progress) => logger.log(`Upload progress: ${progress}%`),
+        }
       );
 
       // Create metadata using upload result
@@ -220,7 +230,8 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't save your recording",
-        technicalDetails: error instanceof Error ? error.message : String(error),
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "error",
         context: {

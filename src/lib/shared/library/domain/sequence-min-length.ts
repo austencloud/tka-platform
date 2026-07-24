@@ -27,6 +27,29 @@ export function getPersistedStepCount(sequence: SequenceData): number {
   return sequence.sequenceLength ?? 0;
 }
 
+/**
+ * Stamp the derived step count onto fields that leave the browser.
+ *
+ * `metadata.length` is a legacy creation-time value. Construct starts at zero
+ * and grows one step at a time, so that value becomes stale unless save fixes
+ * it. Keep the key accurate when it is present, and always populate the
+ * dedicated `sequenceLength` field used by current readers.
+ */
+export function withCanonicalStepCount<T extends SequenceData>(sequence: T): T {
+  const sequenceLength = getPersistedStepCount(sequence);
+  const currentMetadata = sequence.metadata ?? {};
+  const metadata =
+    "length" in currentMetadata
+      ? { ...currentMetadata, length: sequenceLength }
+      : currentMetadata;
+
+  return {
+    ...sequence,
+    metadata,
+    sequenceLength,
+  };
+}
+
 /** True when a sequence has no motion steps — there is nothing to save. */
 export function isEmptySequence(sequence: SequenceData): boolean {
   return getPersistedStepCount(sequence) < MIN_SAVE_STEPS;

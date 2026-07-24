@@ -13,6 +13,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   deleteDoc,
   serverTimestamp,
   collection,
@@ -269,6 +270,27 @@ export class PublicIndexSyncer {
       }
       throw error; // Re-throw so callers know the sync failed
     }
+  }
+
+  /**
+   * Patch a completed background thumbnail without replaying a full public
+   * sequence snapshot that may already be stale.
+   */
+  async updateThumbnails(
+    sequenceId: string,
+    thumbnails: string[]
+  ): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const publicThumbnails = thumbnails.slice(0, 3);
+
+    await updateDoc(doc(firestore, getPublicSequencePath(sequenceId)), {
+      thumbnails: publicThumbnails,
+      updatedAt: serverTimestamp(),
+    });
+    this.browseLoader?.updateThumbnailsInCache(
+      sequenceId,
+      publicThumbnails
+    );
   }
 
   /**

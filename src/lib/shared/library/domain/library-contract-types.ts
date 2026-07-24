@@ -58,15 +58,10 @@ export interface SaveToLibraryOptions {
 }
 
 export interface SaveProgress {
-  /** Current step (1-6, where 6 is complete) */
+  /** Current step (1-5, where 5 is complete) */
   step: number;
   /** Human-readable step label */
   stepLabel: string;
-  /** Granular progress for thumbnail rendering */
-  renderProgress?: {
-    current: number;
-    total: number;
-  };
 }
 
 export interface SaveResult {

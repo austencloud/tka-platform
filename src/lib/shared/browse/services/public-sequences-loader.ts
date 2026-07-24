@@ -214,6 +214,25 @@ export class PublicSequencesLoader {
   }
 
   /**
+   * Patch a background thumbnail into the warm gallery cache without replacing
+   * any newer sequence fields.
+   */
+  updateThumbnailsInCache(sequenceId: string, thumbnails: string[]): void {
+    if (!this.cachedSequences) return;
+    const index = this.cachedSequences.findIndex(
+      (sequence) => sequence.id === sequenceId
+    );
+    if (index < 0) return;
+
+    const next = [...this.cachedSequences];
+    next[index] = {
+      ...next[index]!,
+      thumbnails: [...thumbnails],
+    };
+    this.cachedSequences = next;
+  }
+
+  /**
    * Force a fresh Firestore fetch regardless of cache state.
    * Used by the prefetcher to sync in the background after warming from IndexedDB.
    * Updates the in-memory cache and persists to IndexedDB offline cache.

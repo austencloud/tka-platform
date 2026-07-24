@@ -31,8 +31,22 @@ import { UserWorkType } from "$lib/shared/persistence/domain/enums/user-work-typ
 
 export class Autosaver {
   private autosaveInterval: number | null = null;
+  private activeSessionId: string | null = null;
   private isDirty = false;
   private saving = false;
+  private finalizingDraft = false;
+  private saveCompletion: Promise<void> | null = null;
+  private cloudSaveQueue: Promise<void> = Promise.resolve();
+
+  private queueCloudSave(operation: () => Promise<void>): void {
+    const queued = this.cloudSaveQueue.then(operation, operation);
+    this.cloudSaveQueue = queued.catch((error) => {
+      // Cloud backup is secondary to the completed local write, but every
+      // failure remains attributed and the queue stays usable for the next
+      // autosave or completion drain.
+      console.warn("[Autosaver] Firestore draft sync failed:", error);
+    });
+  }
 
   /**
    * Save a draft.
@@ -44,10 +58,22 @@ export class Autosaver {
   async saveDraft(
     sessionId: string,
     sequenceData: SequenceData
-  ): Promise<void> {
+  ): Promise<boolean> {
+    // Completion owns the draft lifecycle until its pending local and cloud
+    // writes settle. An edit made during this window keeps isDirty set and is
+    // picked up by the next interval after finalization.
+    if (this.finalizingDraft) return false;
+
     // Guard against concurrent saves (interval + manual can overlap)
-    if (this.saving) return;
+    if (this.saving) {
+      await this.saveCompletion;
+      return false;
+    }
     this.saving = true;
+    let releaseSave!: () => void;
+    this.saveCompletion = new Promise((resolve) => {
+      releaseSave = resolve;
+    });
 
     // Capture-and-clear the dirty flag up front. A markDirty() that lands while
     // the write below is awaiting must NOT be erased — clearing before the await
@@ -59,12 +85,14 @@ export class Autosaver {
       // --- Dexie (local, always) ---
       // Deep-clone via JSON to strip non-cloneable objects (Firestore Timestamps,
       // class instances, functions) that IndexedDB's structured clone rejects.
-      const cloneableData = JSON.parse(JSON.stringify({
-        sessionId,
-        sequenceData,
-        stepCount: sequenceData.steps.length,
-        name: sequenceData.name,
-      }));
+      const cloneableData = JSON.parse(
+        JSON.stringify({
+          sessionId,
+          sequenceData,
+          stepCount: sequenceData.steps.length,
+          name: sequenceData.name,
+        })
+      );
 
       // Keep exactly one draft row per (type, tabId). userWork is ++id
       // auto-increment, so put() with no key INSERTs a fresh row on every
@@ -84,29 +112,33 @@ export class Autosaver {
         version: 1,
       });
 
-    // --- Firestore (cloud, fire-and-forget) ---
-    const user = getAuthSync().currentUser;
-    if (user) {
-      const draftData = createDraftSequence(sessionId, user.uid, sequenceData);
-      // Deep-clone the sequence data via JSON to strip undefined values -
-      // Firestore rejects them (e.g. startPosition.startPosition can be
-      // undefined on fresh pictographs). Timestamps are added after the
-      // clone since serverTimestamp() is a Firestore sentinel, not JSON.
-      const cleanData = JSON.parse(JSON.stringify(draftData));
-      cleanData.createdAt = serverTimestamp();
-      cleanData.updatedAt = serverTimestamp();
+      // --- Firestore (cloud, fire-and-forget) ---
+      const user = getAuthSync().currentUser;
+      if (user) {
+        const draftData = createDraftSequence(
+          sessionId,
+          user.uid,
+          sequenceData
+        );
+        // Deep-clone the sequence data via JSON to strip undefined values -
+        // Firestore rejects them (e.g. startPosition.startPosition can be
+        // undefined on fresh pictographs). Timestamps are added after the
+        // clone since serverTimestamp() is a Firestore sentinel, not JSON.
+        const cleanData = JSON.parse(JSON.stringify(draftData));
+        cleanData.createdAt = serverTimestamp();
+        cleanData.updatedAt = serverTimestamp();
 
-      getFirestoreInstance().then((firestore) => {
-        const draftRef = doc(
-          firestore,
-          `users/${user.uid}/drafts/${sessionId}`
-        );
-        trackWrite(() => setDoc(draftRef, cleanData, { merge: true })).catch(
-          (err) =>
-            console.warn("[Autosaver] Firestore draft sync failed:", err)
-        );
-      });
-    }
+        this.queueCloudSave(async () => {
+          const firestore = await getFirestoreInstance();
+          const draftRef = doc(
+            firestore,
+            `users/${user.uid}/drafts/${sessionId}`
+          );
+          await trackWrite(() => setDoc(draftRef, cleanData, { merge: true }));
+        });
+      }
+
+      return true;
     } catch (err) {
       // Write failed — re-arm the dirty flag so the next interval tick retries
       // this edit (we cleared it up front for the race fix above).
@@ -114,6 +146,8 @@ export class Autosaver {
       throw err;
     } finally {
       this.saving = false;
+      releaseSave();
+      this.saveCompletion = null;
     }
   }
 
@@ -176,10 +210,7 @@ export class Autosaver {
    * Delete a draft
    */
   async deleteDraft(sessionId: string): Promise<void> {
-    await db.userWork
-      .where("[type+tabId]")
-      .equals([UserWorkType.SEQUENCE_DRAFT, "create"])
-      .delete();
+    await this.deleteLocalDraft(sessionId);
 
     const user = getAuthSync().currentUser;
     if (!user) return;
@@ -187,6 +218,45 @@ export class Autosaver {
     const firestore = await getFirestoreInstance();
     const draftRef = doc(firestore, `users/${user.uid}/drafts/${sessionId}`);
     await trackWrite(() => deleteDoc(draftRef));
+  }
+
+  /**
+   * Delete only the local draft owned by this Create session.
+   */
+  async deleteLocalDraft(sessionId = this.activeSessionId): Promise<void> {
+    if (!sessionId) return;
+
+    this.finalizingDraft = true;
+    this.isDirty = false;
+
+    try {
+      // A local save can enqueue its cloud write before it resolves. Drain in
+      // that order so the later atomic cloud delete cannot be resurrected by
+      // an older autosave finishing late.
+      await this.saveCompletion;
+      await this.cloudSaveQueue;
+
+      const drafts = await db.userWork
+        .where("[type+tabId]")
+        .equals([UserWorkType.SEQUENCE_DRAFT, "create"])
+        .toArray();
+      const matchingIds = drafts.flatMap((draft) => {
+        const data = draft.data as { sessionId?: string } | undefined;
+        return data?.sessionId === sessionId && draft.id !== undefined
+          ? [draft.id]
+          : [];
+      });
+
+      if (matchingIds.length > 0) {
+        await db.userWork.bulkDelete(matchingIds);
+      }
+    } finally {
+      this.finalizingDraft = false;
+    }
+  }
+
+  getSessionId(): string | null {
+    return this.activeSessionId;
   }
 
   /**
@@ -212,9 +282,11 @@ export class Autosaver {
   startAutosave(
     onSave: () => SequenceData | null,
     sessionId: string,
-    intervalMs = 30000
+    intervalMs = 30000,
+    onDraftSaved?: (sequenceData: SequenceData) => Promise<void> | void
   ): void {
     this.stopAutosave();
+    this.activeSessionId = sessionId;
 
     this.autosaveInterval = window.setInterval(async () => {
       if (!this.isDirty) return;
@@ -223,7 +295,11 @@ export class Autosaver {
       if (!sequenceData || sequenceData.steps.length === 0) return;
 
       try {
-        await this.saveDraft(sessionId, sequenceData);
+        const saved = await this.saveDraft(sessionId, sequenceData);
+        if (!saved) return;
+        void Promise.resolve(onDraftSaved?.(sequenceData)).catch((error) => {
+          console.warn("[Autosaver] Session tracking failed:", error);
+        });
       } catch (error) {
         console.error("Failed to autosave draft:", error);
       }

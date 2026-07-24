@@ -28,7 +28,6 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import type {
   LibraryCollection,
-  SystemCollectionType,
   SeededSystemCollectionType,
 } from "$lib/shared/library/domain/models/collection";
 import {
@@ -68,10 +67,7 @@ export async function ensureSystemCollections(): Promise<void> {
 
   for (const type of systemTypes) {
     const collectionId = SYSTEM_COLLECTION_IDS[type];
-    const docRef = doc(
-      firestore,
-      getUserCollectionPath(userId, collectionId)
-    );
+    const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -140,13 +136,21 @@ export async function createUserCollection(
       ...newCollection,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }).filter(([, value]) => value !== undefined),
+    }).filter(([, value]) => value !== undefined)
   );
   try {
-    await setDoc(docRef, docData);
-
     const userDocRef = doc(firestore, `users/${userId}`);
-    await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
+    const batch = writeBatch(firestore);
+    batch.set(docRef, docData);
+    batch.set(
+      userDocRef,
+      {
+        collectionCount: increment(1),
+        lastActivityDate: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    await batch.commit();
   } catch (error) {
     console.error("[CollectionManager] Failed to create collection:", error);
     toast.error("Failed to create collection. Please try again.");
@@ -200,12 +204,23 @@ export async function createSmartUserCollection(
     }).filter(([, value]) => value !== undefined)
   );
   try {
-    await setDoc(docRef, docData);
-
     const userDocRef = doc(firestore, `users/${userId}`);
-    await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
+    const batch = writeBatch(firestore);
+    batch.set(docRef, docData);
+    batch.set(
+      userDocRef,
+      {
+        collectionCount: increment(1),
+        lastActivityDate: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    await batch.commit();
   } catch (error) {
-    console.error("[CollectionManager] Failed to create smart collection:", error);
+    console.error(
+      "[CollectionManager] Failed to create smart collection:",
+      error
+    );
     toast.error("Failed to create smart collection. Please try again.");
     throw new CollectionError(
       "Failed to create smart collection",
@@ -281,7 +296,9 @@ export async function syncSmartCollectionCount(
   }
 }
 
-export async function getCollection(collectionId: string): Promise<LibraryCollection | null> {
+export async function getCollection(
+  collectionId: string
+): Promise<LibraryCollection | null> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
@@ -383,6 +400,17 @@ export async function deleteCollection(collectionId: string): Promise<void> {
   }
 
   batch.delete(doc(firestore, getUserCollectionPath(userId, collectionId)));
+  batch.set(
+    doc(firestore, `users/${userId}`),
+    {
+      // Match creation's atomic transform. Computing an "exact" count before
+      // the batch lets a concurrent create land between the read and commit,
+      // then this delete overwrites the newer total with stale data.
+      collectionCount: increment(-1),
+      lastActivityDate: serverTimestamp(),
+    },
+    { merge: true }
+  );
 
   try {
     await batch.commit();
@@ -400,10 +428,7 @@ export async function deleteCollection(collectionId: string): Promise<void> {
 export async function getCollections(): Promise<LibraryCollection[]> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
-  const collectionsRef = collection(
-    firestore,
-    getUserCollectionsPath(userId)
-  );
+  const collectionsRef = collection(firestore, getUserCollectionsPath(userId));
   const q = query(collectionsRef, orderBy("sortOrder", "asc"));
 
   const snapshot = await getDocs(q);
@@ -454,10 +479,7 @@ export async function addSequenceToCollection(
   // The sequence might not exist locally when favoriting someone else's public
   // sequence or a sequence from the generate module that hasn't been saved yet.
   try {
-    const sequenceRef = doc(
-      firestore,
-      getUserSequencePath(userId, sequenceId)
-    );
+    const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
     await updateDoc(sequenceRef, {
       collectionIds: arrayUnion(collectionId),
       updatedAt: serverTimestamp(),
@@ -465,7 +487,9 @@ export async function addSequenceToCollection(
   } catch (err: unknown) {
     const isNotFound =
       (err instanceof Error && err.message.includes("No document to update")) ||
-      (typeof err === "object" && err !== null && "code" in err &&
+      (typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
         (err as { code: string }).code === "not-found");
     if (!isNotFound) {
       throw err;
@@ -519,10 +543,7 @@ export async function removeSequenceFromCollection(
   }
 
   try {
-    const sequenceRef = doc(
-      firestore,
-      getUserSequencePath(userId, sequenceId)
-    );
+    const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
     await updateDoc(sequenceRef, {
       collectionIds: arrayRemove(collectionId),
       updatedAt: serverTimestamp(),
@@ -530,7 +551,9 @@ export async function removeSequenceFromCollection(
   } catch (err: unknown) {
     const isNotFound =
       (err instanceof Error && err.message.includes("No document to update")) ||
-      (typeof err === "object" && err !== null && "code" in err &&
+      (typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
         (err as { code: string }).code === "not-found");
     if (!isNotFound) {
       throw err;
@@ -743,16 +766,15 @@ export function subscribeToCollection(
 // REORDERING
 // ============================================================
 
-export async function reorderCollections(collectionIds: string[]): Promise<void> {
+export async function reorderCollections(
+  collectionIds: string[]
+): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
   const batch = writeBatch(firestore);
 
   collectionIds.forEach((collectionId, index) => {
-    const docRef = doc(
-      firestore,
-      getUserCollectionPath(userId, collectionId)
-    );
+    const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
     batch.update(docRef, {
       sortOrder: index,
       updatedAt: serverTimestamp(),
@@ -762,10 +784,7 @@ export async function reorderCollections(collectionIds: string[]): Promise<void>
   try {
     await batch.commit();
   } catch (error) {
-    console.error(
-      "[CollectionManager] Failed to reorder collections:",
-      error
-    );
+    console.error("[CollectionManager] Failed to reorder collections:", error);
     toast.error("Failed to reorder collections. Please try again.");
     throw new CollectionError("Failed to reorder collections", "NETWORK");
   }
@@ -808,8 +827,11 @@ export async function getFavoriteIds(): Promise<Set<string>> {
 // New code should use public-collection-loader directly.
 // ============================================================
 
-export async function getUserPublicCollections(userId: string): Promise<LibraryCollection[]> {
-  const { getUserPublicCollections: load } = await import("$lib/features/library/services/public-collection-loader");
+export async function getUserPublicCollections(
+  userId: string
+): Promise<LibraryCollection[]> {
+  const { getUserPublicCollections: load } =
+    await import("$lib/features/library/services/public-collection-loader");
   return load(userId);
 }
 
@@ -817,11 +839,15 @@ export async function getUserCollectionSequences(
   userId: string,
   collectionId: string
 ): Promise<LibrarySequence[]> {
-  const { getUserCollectionSequences: load } = await import("$lib/features/library/services/public-collection-loader");
+  const { getUserCollectionSequences: load } =
+    await import("$lib/features/library/services/public-collection-loader");
   return load(userId, collectionId);
 }
 
-export async function getUserPublicFavoriteIds(userId: string): Promise<string[]> {
-  const { getUserPublicFavoriteIds: load } = await import("$lib/features/library/services/public-collection-loader");
+export async function getUserPublicFavoriteIds(
+  userId: string
+): Promise<string[]> {
+  const { getUserPublicFavoriteIds: load } =
+    await import("$lib/features/library/services/public-collection-loader");
   return load(userId);
 }

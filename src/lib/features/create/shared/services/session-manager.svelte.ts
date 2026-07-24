@@ -19,6 +19,7 @@ import {
   where,
   getDocs,
   serverTimestamp,
+  writeBatch,
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
@@ -30,11 +31,12 @@ import {
 
 export class SessionManager {
   private currentSession = $state<SequenceSession | null>(null);
-  private deviceId: string;
+  private operationQueue: Promise<void> = Promise.resolve();
 
-  constructor() {
-    this.deviceId = generateDeviceId();
-  }
+  constructor(
+    private readonly sessionId: string = crypto.randomUUID(),
+    private readonly deviceId: string = generateDeviceId()
+  ) {}
 
   /**
    * Get the current active session
@@ -44,36 +46,103 @@ export class SessionManager {
   }
 
   /**
-   * Create a new session
+   * The one ID shared by the local draft and its Firestore session.
    */
-  async createSession(): Promise<SequenceSession | null> {
-    const user = getAuthSync().currentUser;
-    if (!user) {
-      // Guest (no Firebase identity): session tracking is a Firestore-backed
-      // convenience, not a hard requirement. No-op rather than throw so the
-      // create flow works for signed-out users without console noise.
-      return null;
-    }
+  getSessionId(): string {
+    return this.sessionId;
+  }
 
-    const sessionData = createSequenceSession(user.uid, this.deviceId);
+  private runExclusive<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operationQueue.then(operation, operation);
+    this.operationQueue = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  }
 
-    const session: SequenceSession = {
+  private buildSession(userId: string): SequenceSession {
+    const sessionData = createSequenceSession(
+      userId,
+      this.deviceId,
+      this.sessionId
+    );
+
+    return {
       ...sessionData,
       createdAt: serverTimestamp() as Timestamp,
       lastModified: serverTimestamp() as Timestamp,
       lastAutosave: null,
     };
+  }
 
-    // Save to Firestore
-    const firestore = await getFirestoreInstance();
-    const sessionRef = doc(
-      firestore,
-      `users/${user.uid}/sessions/${session.sessionId}`
-    );
-    await setDoc(sessionRef, session);
+  /**
+   * Create a new session
+   */
+  async createSession(): Promise<SequenceSession | null> {
+    return this.runExclusive(async () => {
+      if (this.currentSession) return this.currentSession;
 
-    this.currentSession = session;
-    return session;
+      const user = getAuthSync().currentUser;
+      if (!user) {
+        // Session tracking is optional for signed-out users. The same manager
+        // can begin tracking later if an anonymous identity is provisioned.
+        return null;
+      }
+
+      const session = this.buildSession(user.uid);
+
+      const firestore = await getFirestoreInstance();
+      const sessionRef = doc(
+        firestore,
+        `users/${user.uid}/sessions/${this.sessionId}`
+      );
+      await setDoc(sessionRef, session);
+
+      this.currentSession = session;
+      return session;
+    });
+  }
+
+  /**
+   * Persist the first meaningful session record after a non-empty draft lands.
+   * Subsequent autosaves update that same record.
+   */
+  async recordAutosave(stepCount: number, name?: string): Promise<void> {
+    await this.runExclusive(async () => {
+      const user = getAuthSync().currentUser;
+      if (!user) return;
+
+      const firestore = await getFirestoreInstance();
+      const sessionRef = doc(
+        firestore,
+        `users/${user.uid}/sessions/${this.sessionId}`
+      );
+      const lastAutosave = serverTimestamp() as Timestamp;
+      const lastModified = serverTimestamp() as Timestamp;
+      const session = this.currentSession ?? this.buildSession(user.uid);
+      const updates: Partial<SequenceSession> = {
+        isSaved: false,
+        sequenceId: null,
+        stepCount,
+        lastAutosave,
+        lastModified,
+        status: "active",
+      };
+
+      if (name) updates.name = name;
+
+      await setDoc(
+        sessionRef,
+        this.currentSession ? updates : { ...session, ...updates },
+        { merge: true }
+      );
+
+      this.currentSession = {
+        ...session,
+        ...updates,
+      };
+    });
   }
 
   /**
@@ -119,10 +188,47 @@ export class SessionManager {
    * Mark session as saved with sequence ID
    */
   async markAsSaved(sequenceId: string): Promise<void> {
-    await this.updateSession({
-      isSaved: true,
-      sequenceId,
-      status: "completed",
+    await this.runExclusive(async () => {
+      const user = getAuthSync().currentUser;
+      if (!user) return;
+
+      const firestore = await getFirestoreInstance();
+      const sessionRef = doc(
+        firestore,
+        `users/${user.uid}/sessions/${this.sessionId}`
+      );
+      const draftRef = doc(
+        firestore,
+        `users/${user.uid}/drafts/${this.sessionId}`
+      );
+      const session = this.currentSession ?? this.buildSession(user.uid);
+      const completedSession: SequenceSession = {
+        ...session,
+        isSaved: true,
+        sequenceId,
+        status: "completed",
+        lastModified: serverTimestamp() as Timestamp,
+      };
+
+      // Keep the cloud lifecycle atomic: a completed session must not retain
+      // the draft it replaced, and a failed batch leaves both recoverable.
+      const batch = writeBatch(firestore);
+      batch.set(
+        sessionRef,
+        this.currentSession
+          ? {
+              isSaved: true,
+              sequenceId,
+              status: "completed",
+              lastModified: completedSession.lastModified,
+            }
+          : completedSession,
+        { merge: true }
+      );
+      batch.delete(draftRef);
+      await batch.commit();
+
+      this.currentSession = completedSession;
     });
   }
 
@@ -199,9 +305,31 @@ export class SessionManager {
    * Abandon current session (marks as abandoned in Firestore)
    */
   async abandonSession(): Promise<void> {
-    if (this.currentSession) {
-      await this.updateSession({ status: "abandoned" });
+    await this.runExclusive(async () => {
+      if (!this.currentSession) return;
+
+      // A later component teardown must not overwrite a completed session.
+      if (this.currentSession.status === "completed") {
+        this.currentSession = null;
+        return;
+      }
+
+      const user = getAuthSync().currentUser;
+      if (!user) {
+        this.currentSession = null;
+        return;
+      }
+
+      const firestore = await getFirestoreInstance();
+      const sessionRef = doc(
+        firestore,
+        `users/${user.uid}/sessions/${this.sessionId}`
+      );
+      await updateDoc(sessionRef, {
+        status: "abandoned",
+        lastModified: serverTimestamp(),
+      });
       this.currentSession = null;
-    }
+    });
   }
 }

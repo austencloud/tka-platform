@@ -1,35 +1,82 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const dbPutMock = vi.fn();
 const dbGetMock = vi.fn().mockResolvedValue(undefined);
 const dbCountMock = vi.fn().mockResolvedValue(0);
+const dbUpdateMock = vi.fn().mockResolvedValue(1);
 
 vi.mock("$lib/shared/persistence/database/tka-database", () => ({
-  db: { sequences: { put: (...a: unknown[]) => dbPutMock(...a), get: (...a: unknown[]) => dbGetMock(...a), count: (...a: unknown[]) => dbCountMock(...a) } },
+  db: {
+    sequences: {
+      put: (...a: unknown[]) => dbPutMock(...a),
+      get: (...a: unknown[]) => dbGetMock(...a),
+      count: (...a: unknown[]) => dbCountMock(...a),
+      update: (...a: unknown[]) => dbUpdateMock(...a),
+    },
+  },
 }));
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-  authState: { isAuthenticated: true, isAnonymous: false, user: { displayName: "Test", uid: "u1" }, effectiveUserId: "u1" },
+  authState: {
+    isAuthenticated: true,
+    isAnonymous: false,
+    user: { displayName: "Test", uid: "u1" },
+    effectiveUserId: "u1",
+  },
 }));
-vi.mock("$lib/shared/auth/services/guest-identity", () => ({ ensureGuestIdentity: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("$lib/shared/auth/state/auth-ui-state.svelte", () => ({ openAuthDialog: vi.fn() }));
-vi.mock("$lib/shared/toast/state/toast-state.svelte.ts", () => ({ toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
-vi.mock("$lib/shared/application/get-error-handler", () => ({ getErrorHandler: () => ({ showUserError: vi.fn() }) }));
-vi.mock("$lib/shared/render/services/warm-sequence-cells", () => ({ warmSequenceCells: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("$lib/shared/share/state/image-composition-state.svelte.ts", () => ({ getImageCompositionManager: () => ({ darkMode: true }) }));
-vi.mock("$lib/features/library/services/tag-manager", () => ({ findTagByName: vi.fn().mockResolvedValue(undefined), createUserTag: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("$lib/shared/library/services/sequence-content-hasher", () => ({ computeHash: vi.fn().mockResolvedValue("hash-1") }));
-vi.mock("$lib/features/library/services/library-sync-retry", () => ({ markSequenceSyncStatus: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("$lib/shared/auth/services/guest-identity", () => ({
+  ensureGuestIdentity: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("$lib/shared/auth/state/auth-ui-state.svelte", () => ({
+  openAuthDialog: vi.fn(),
+}));
+vi.mock("$lib/shared/toast/state/toast-state.svelte.ts", () => ({
+  toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn() },
+}));
+vi.mock("$lib/shared/application/get-error-handler", () => ({
+  getErrorHandler: () => ({ showUserError: vi.fn() }),
+}));
+vi.mock("$lib/shared/render/services/warm-sequence-cells", () => ({
+  warmSequenceCells: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("$lib/shared/share/state/image-composition-state.svelte.ts", () => ({
+  getImageCompositionManager: () => ({ darkMode: true }),
+}));
+vi.mock("$lib/features/library/services/tag-manager", () => ({
+  findTagByName: vi.fn().mockResolvedValue(undefined),
+  createUserTag: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("$lib/shared/library/services/sequence-content-hasher", () => ({
+  computeHash: vi.fn().mockResolvedValue("hash-1"),
+}));
+vi.mock("$lib/features/library/services/library-sync-retry", () => ({
+  markSequenceSyncStatus: vi.fn().mockResolvedValue(undefined),
+}));
 // Keep the real, Firestore-touching library-state module out of the test: the
 // service's refreshLibraryState() dynamic-imports it after a successful save.
-vi.mock("$lib/features/library/state/library-state.svelte", () => ({ libraryState: { loadSequences: vi.fn().mockResolvedValue(undefined) } }));
+vi.mock("$lib/features/library/state/library-state.svelte", () => ({
+  libraryState: { loadSequences: vi.fn().mockResolvedValue(undefined) },
+}));
 
-const { LibrarySaveService } = await import("$lib/features/library/services/library-save-service");
-const { LibraryError } = await import("$lib/shared/library/domain/library-error");
+const { LibrarySaveService } =
+  await import("$lib/features/library/services/library-save-service");
+const { LibraryError } =
+  await import("$lib/shared/library/domain/library-error");
 const { authState } = await import("$lib/shared/auth/state/auth-state.svelte");
 
-function makeSequence(o: Record<string, unknown> = {}) { return { id: "seq-1", steps: [{ letter: "A" }], thumbnails: [], ...o } as any; }
-function makeOptions() { return { name: "A", visibility: "private" as const, tags: [], notes: "" }; }
-function makeRepository(o: Record<string, unknown> = {}) { return { hasMatchingContent: vi.fn().mockResolvedValue(false), saveSequenceWithMetadata: vi.fn().mockResolvedValue({}) , ...o } as any; }
+function makeSequence(o: Record<string, unknown> = {}) {
+  return { id: "seq-1", steps: [{ letter: "A" }], thumbnails: [], ...o } as any;
+}
+function makeOptions() {
+  return { name: "A", visibility: "private" as const, tags: [], notes: "" };
+}
+function makeRepository(o: Record<string, unknown> = {}) {
+  return {
+    hasMatchingContent: vi.fn().mockResolvedValue(false),
+    saveSequenceWithMetadata: vi.fn().mockResolvedValue({}),
+    attachThumbnail: vi.fn().mockResolvedValue(undefined),
+    ...o,
+  } as any;
+}
 
 describe("LibrarySaveService.saveSequence - durable-save contract", () => {
   beforeEach(() => {
@@ -41,12 +88,20 @@ describe("LibrarySaveService.saveSequence - durable-save contract", () => {
     (authState as any).isAnonymous = false;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("rejects with LibraryError(PERSIST_FAILED) when the Dexie put fails", async () => {
     dbPutMock.mockRejectedValueOnce(new Error("quota"));
     const service = new LibrarySaveService(null, null, makeRepository(), null);
-    await expect(service.saveSequence(makeSequence(), makeOptions())).rejects.toMatchObject({ code: "PERSIST_FAILED" });
+    await expect(
+      service.saveSequence(makeSequence(), makeOptions())
+    ).rejects.toMatchObject({ code: "PERSIST_FAILED" });
     dbPutMock.mockRejectedValueOnce(new Error("quota"));
-    await expect(service.saveSequence(makeSequence(), makeOptions())).rejects.toBeInstanceOf(LibraryError);
+    await expect(
+      service.saveSequence(makeSequence(), makeOptions())
+    ).rejects.toBeInstanceOf(LibraryError);
   });
 
   it("resolves with persisted:true and isGuest reflecting auth state on success", async () => {
@@ -74,13 +129,119 @@ describe("LibrarySaveService.saveSequence - durable-save contract", () => {
     expect(result.persisted).toBe(true);
   });
 
+  it("repairs stale step counts in the durable local copy", async () => {
+    dbPutMock.mockResolvedValue(undefined);
+    dbGetMock.mockResolvedValue(undefined);
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+
+    await service.saveSequence(
+      makeSequence({
+        steps: undefined,
+        stepPairings: [{}, {}, {}, {}, {}, {}],
+        sequenceLength: 0,
+        metadata: { length: 0 },
+      }),
+      makeOptions()
+    );
+
+    expect(dbPutMock.mock.calls[0]?.[0]).toMatchObject({
+      sequenceLength: 6,
+      metadata: { length: 6 },
+    });
+  });
+
+  it("reports only the save stages that still run in the foreground", async () => {
+    vi.useFakeTimers();
+    const progress: Array<{ step: number; stepLabel: string }> = [];
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+
+    const save = service.saveSequence(makeSequence(), makeOptions(), (update) =>
+      progress.push(update)
+    );
+    await vi.advanceTimersByTimeAsync(800);
+    await save;
+
+    expect(progress).toEqual([
+      { step: 1, stepLabel: "Saving locally" },
+      { step: 2, stepLabel: "Creating tags" },
+      { step: 3, stepLabel: "Syncing to cloud" },
+      { step: 4, stepLabel: "Refreshing library" },
+      { step: 5, stepLabel: "Complete" },
+    ]);
+  });
+
   it("rejects with LibraryError(ALREADY_EXISTS) synchronously for a new duplicate, no Dexie write", async () => {
     dbPutMock.mockResolvedValue(undefined);
     dbGetMock.mockResolvedValue(undefined);
-    const repository = makeRepository({ hasMatchingContent: vi.fn().mockResolvedValue(true) });
+    const repository = makeRepository({
+      hasMatchingContent: vi.fn().mockResolvedValue(true),
+    });
     const service = new LibrarySaveService(null, null, repository, null);
-    await expect(service.saveSequence(makeSequence(), makeOptions())).rejects.toMatchObject({ code: "ALREADY_EXISTS" });
+    await expect(
+      service.saveSequence(makeSequence(), makeOptions())
+    ).rejects.toMatchObject({ code: "ALREADY_EXISTS" });
     expect(repository.hasMatchingContent).toHaveBeenCalled();
     expect(dbPutMock).not.toHaveBeenCalled();
+  });
+
+  it("does not wait for thumbnail rendering before completing a durable save", async () => {
+    vi.useFakeTimers();
+    const getCardImageBlob = vi.fn(() => new Promise<Blob>(() => undefined));
+    const uploadSequenceThumbnail = vi.fn();
+    const repository = makeRepository();
+    const service = new LibrarySaveService(
+      { getCardImageBlob } as any,
+      { uploadSequenceThumbnail } as any,
+      repository,
+      null
+    );
+
+    const save = service.saveSequence(makeSequence(), makeOptions());
+    await vi.advanceTimersByTimeAsync(800);
+
+    await expect(save).resolves.toMatchObject({
+      sequenceId: "seq-1",
+      persisted: true,
+    });
+    expect(dbPutMock).toHaveBeenCalledOnce();
+    expect(getCardImageBlob).toHaveBeenCalledOnce();
+    expect(uploadSequenceThumbnail).not.toHaveBeenCalled();
+  });
+
+  it("attaches a completed thumbnail locally and to the existing cloud save", async () => {
+    vi.useFakeTimers();
+    const thumbnailUrl = "https://assets.example.com/thumbnail.png";
+    const repository = makeRepository();
+    const service = new LibrarySaveService(
+      {
+        getCardImageBlob: vi
+          .fn()
+          .mockResolvedValue(new Blob(["png"], { type: "image/png" })),
+      } as any,
+      {
+        uploadSequenceThumbnail: vi.fn().mockResolvedValue({
+          url: thumbnailUrl,
+          key: "thumbnail.png",
+        }),
+      } as any,
+      repository,
+      null
+    );
+
+    const save = service.saveSequence(makeSequence(), makeOptions());
+    await vi.advanceTimersByTimeAsync(800);
+    await save;
+    await vi.waitFor(() =>
+      expect(repository.attachThumbnail).toHaveBeenCalledTimes(1)
+    );
+
+    expect(dbUpdateMock).toHaveBeenCalledWith("seq-1", {
+      thumbnails: [thumbnailUrl],
+    });
+    expect(repository.saveSequenceWithMetadata).toHaveBeenCalledOnce();
+    expect(repository.attachThumbnail).toHaveBeenCalledWith(
+      "seq-1",
+      thumbnailUrl
+    );
   });
 });

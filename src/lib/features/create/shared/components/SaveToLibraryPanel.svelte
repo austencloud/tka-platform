@@ -58,14 +58,28 @@
   const ctx = getCreateModuleContext();
 
   // Resolve services (once, at component init)
-  let librarySaveService: ReturnType<typeof getLibrarySaveService> | null = null;
-  try { librarySaveService = getLibrarySaveService(); } catch { /* optional */ }
+  let librarySaveService: ReturnType<typeof getLibrarySaveService> | null =
+    null;
+  try {
+    librarySaveService = getLibrarySaveService();
+  } catch {
+    /* optional */
+  }
 
   let contentModerator: ReturnType<typeof getContentModerator> | null = null;
-  try { contentModerator = getContentModerator(); } catch { /* optional */ }
+  try {
+    contentModerator = getContentModerator();
+  } catch {
+    /* optional */
+  }
 
-  let hallOfShameSubmitter: ReturnType<typeof getHallOfShameSubmitter> | null = null;
-  try { hallOfShameSubmitter = getHallOfShameSubmitter(); } catch { /* optional */ }
+  let hallOfShameSubmitter: ReturnType<typeof getHallOfShameSubmitter> | null =
+    null;
+  try {
+    hallOfShameSubmitter = getHallOfShameSubmitter();
+  } catch {
+    /* optional */
+  }
 
   // Create the reactive state object
   const s = createSavePanelState({
@@ -76,7 +90,13 @@
   });
 
   // Bind props reactively so the state factory can read them
-  s.setPropsGetter(() => ({ show, word, showShareContext, onClose, onSaveComplete }));
+  s.setPropsGetter(() => ({
+    show,
+    word,
+    showShareContext,
+    onClose,
+    onSaveComplete,
+  }));
 
   // DOM-bound effects that must stay in the component
   // ResizeObserver for responsive layout detection
@@ -121,14 +141,8 @@
   ariaLabel="Add to Gallery"
 >
   <div class="panel-inner" bind:this={panelInnerEl}>
-
     {#if s.isSaving}
-      <SaveProgressOverlay
-        currentStep={s.saveStep}
-        steps={s.saveSteps}
-        renderProgress={s.renderProgress}
-        step1Label={s.step1Label}
-      />
+      <SaveProgressOverlay currentStep={s.saveStep} steps={s.saveSteps} />
     {/if}
 
     <button
@@ -170,7 +184,9 @@
               showLoopGlyph={compositionManager.showLoopGlyph}
               showQRCode={compositionManager.showQRCode}
               showMandala={compositionManager.showMandala}
-              columnCount={compositionManager.getColumnCountForStepCount(s.sequence.steps?.length ?? 0)}
+              columnCount={compositionManager.getColumnCountForStepCount(
+                s.sequence.steps?.length ?? 0
+              )}
             />
           </div>
         </div>
@@ -199,8 +215,8 @@
             <span>Content flagged by moderation</span>
           </div>
           <p class="warning-text">
-            This sequence contains content that cannot be published to the public gallery.
-            You can still save it privately or share via link.
+            This sequence contains content that cannot be published to the
+            public gallery. You can still save it privately or share via link.
           </p>
           <div class="flagged-terms">
             {#each s.moderationResult.flaggedTerms as term}
@@ -244,13 +260,18 @@
 
       <!-- Community visibility section -->
       {#if !s.isFlagged}
-        <div class="community-section" class:disabled={!s.canPublishToCommunity}>
+        <div
+          class="community-section"
+          class:disabled={!s.canPublishToCommunity}
+        >
           <label class="toggle-row">
             <div class="toggle-label">
               <i class="fas fa-globe" aria-hidden="true"></i>
               <div class="toggle-label-text">
                 <span class="toggle-label-main">Make this sequence public</span>
-                <span class="toggle-label-sub">Anyone can find and view it in the community library</span>
+                <span class="toggle-label-sub"
+                  >Anyone can find and view it in the community library</span
+                >
               </div>
             </div>
             <button
@@ -274,7 +295,8 @@
           {#if !s.canPublishToCommunity}
             <p class="community-note">
               <i class="fas fa-circle-info" aria-hidden="true"></i>
-              Needs at least {s.communityMinSteps} steps to post to the community. Saves to your library.
+              Needs at least {s.communityMinSteps} steps to post to the community.
+              Saves to your library.
             </p>
           {/if}
         </div>
@@ -287,7 +309,9 @@
             <i class="fas fa-folder-open" aria-hidden="true"></i>
             <div class="section-heading-text">
               <span class="section-heading-main">Add to a collection</span>
-              <span class="section-heading-sub">Keep it organized in your library</span>
+              <span class="section-heading-sub"
+                >Keep it organized in your library</span
+              >
             </div>
           </div>
           <CollectionPickerContent
@@ -458,8 +482,13 @@
   /* Content Moderation Warning */
   .moderation-warning {
     padding: 16px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -478,7 +507,11 @@
 
   .flagged-term {
     padding: 4px 10px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
     border-radius: 6px;
     font-size: var(--font-size-compact, 12px);
     font-family: var(--font-mono, monospace);
@@ -497,7 +530,8 @@
     gap: 8px;
     padding: 10px 16px;
     background: transparent;
-    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
+    border: 1.5px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-sm, 14px);
@@ -507,7 +541,11 @@
   }
 
   .appeal-button:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     border-color: var(--semantic-error, #ef4444);
   }
 
@@ -520,8 +558,13 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-sm, 14px);
@@ -531,7 +574,11 @@
   }
 
   .shame-button:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
     border-color: var(--semantic-error, #ef4444);
   }
 
@@ -591,8 +638,16 @@
 
   .info-tag-saved {
     color: var(--semantic-success, #22c55e);
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 30%,
+      transparent
+    );
   }
 
   .info-tag-saved i {
@@ -611,7 +666,11 @@
 
   /* Saved state button - green checkmark instead of purple gradient */
   .button-saved {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent) !important;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 20%,
+      transparent
+    ) !important;
     box-shadow: none !important;
     color: var(--semantic-success, #22c55e) !important;
     cursor: default !important;
