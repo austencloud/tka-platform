@@ -32,7 +32,9 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
     dispose = () => manager.dispose();
     manager.addInputSuppressor((e) => e.code.startsWith("Numpad"));
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { code: "NumpadDecimal", key: "Delete" }));
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "NumpadDecimal", key: "Delete" })
+    );
     expect(findMatches).not.toHaveBeenCalled();
   });
 
@@ -41,20 +43,38 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
     dispose = () => manager.dispose();
     manager.addInputSuppressor((e) => e.code.startsWith("Numpad"));
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyA", key: "a" }));
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "KeyA", key: "a" })
+    );
     expect(findMatches).toHaveBeenCalled();
   });
 
   it("resumes matching after the suppressor is released", () => {
     const { manager, findMatches } = makeManager();
     dispose = () => manager.dispose();
-    const release = manager.addInputSuppressor((e) => e.code.startsWith("Numpad"));
+    const release = manager.addInputSuppressor((e) =>
+      e.code.startsWith("Numpad")
+    );
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { code: "Numpad2", key: "ArrowDown" }));
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "Numpad2", key: "ArrowDown" })
+    );
     expect(findMatches).not.toHaveBeenCalled();
 
     release();
-    window.dispatchEvent(new KeyboardEvent("keydown", { code: "Numpad2", key: "ArrowDown" }));
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "Numpad2", key: "ArrowDown" })
+    );
     expect(findMatches).toHaveBeenCalledOnce();
+  });
+
+  it("ignores Safari keydown-shaped events that do not expose a key", () => {
+    const { manager, findMatches } = makeManager();
+    dispose = () => manager.dispose();
+
+    expect(() => {
+      window.dispatchEvent(new Event("keydown"));
+    }).not.toThrow();
+    expect(findMatches).not.toHaveBeenCalled();
   });
 });

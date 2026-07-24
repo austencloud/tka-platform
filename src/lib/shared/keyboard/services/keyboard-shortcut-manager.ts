@@ -17,7 +17,10 @@ import { Shortcut } from "../domain/models/shortcut";
 import { NormalizedKeyboardEvent } from "../domain/models/keyboard-event";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
-import { hasOpenDrawers, dismissTopDrawer } from "$lib/shared/foundation/ui/drawer/drawer-stack";
+import {
+  hasOpenDrawers,
+  dismissTopDrawer,
+} from "$lib/shared/foundation/ui/drawer/drawer-stack";
 import { getActiveModule } from "$lib/shared/application/state/ui/ui-state.svelte";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
@@ -215,10 +218,19 @@ export class KeyboardShortcutManager {
       if (suppress(event)) return;
     }
 
+    // PostHog captured Safari dispatching a keydown-shaped event without `key`
+    // while an auth input was active. There is nothing a shortcut can match in
+    // that event, so stop before normalization instead of turning it into a
+    // burst of uncaught exceptions.
+    if (typeof event.key !== "string" || event.key.length === 0) return;
+
     // Skip WASD shortcuts when an arrow is selected for adjustment
     // The ArrowAdjustmentControls component handles WASD in this case
     const key = event.key.toLowerCase();
-    if (selectedArrowState.selectedArrow && ["w", "a", "s", "d"].includes(key)) {
+    if (
+      selectedArrowState.selectedArrow &&
+      ["w", "a", "s", "d"].includes(key)
+    ) {
       // Arrow is selected, let ArrowAdjustmentPanel handle WASD
       return;
     }
@@ -250,7 +262,8 @@ export class KeyboardShortcutManager {
 
     // Check if we should ignore (e.g., typing in input)
     // forceExecute bypasses the interactive element check
-    if (!shortcut.forceExecute && normalized.shouldIgnore(shortcut.isSingleKey)) return;
+    if (!shortcut.forceExecute && normalized.shouldIgnore(shortcut.isSingleKey))
+      return;
 
     // If a drawer is open and this is a single-key shortcut,
     // dismiss the top drawer, then execute the shortcut.
