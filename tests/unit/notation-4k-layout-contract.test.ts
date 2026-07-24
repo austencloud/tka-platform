@@ -63,7 +63,7 @@ describe("notation 4K layout lab artifacts", () => {
       'import MarketingChrome from "$lib/shared/landing/components/MarketingChrome.svelte"'
     );
     expect(source).toContain(
-      'import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte"'
+      'import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte"'
     );
     expect(source.match(/<NotationLayoutStudy\b/g)).toHaveLength(1);
     expect(source).toContain('let layoutMode = $state<LayoutMode>("atlas")');

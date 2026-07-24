@@ -173,23 +173,30 @@ vi.mock("firebase/app", () => ({
   getApp: vi.fn(() => ({ name: "[DEFAULT]" })),
 }));
 
-vi.mock("firebase/auth", () => ({
-  getAuth: vi.fn(() => ({
+vi.mock("firebase/auth", () => {
+  const createMockAuth = () => ({
     currentUser: null,
     onAuthStateChanged: vi.fn(),
     signInWithEmailAndPassword: vi.fn(),
     signOut: vi.fn(),
-  })),
-  browserLocalPersistence: {},
-  indexedDBLocalPersistence: {},
-  setPersistence: vi.fn(() => Promise.resolve()),
-  signInWithEmailAndPassword: vi.fn(() => Promise.resolve()),
-  createUserWithEmailAndPassword: vi.fn(() => Promise.resolve()),
-  signOut: vi.fn(() => Promise.resolve()),
-  onAuthStateChanged: vi.fn(),
-  GoogleAuthProvider: vi.fn(),
-  signInWithPopup: vi.fn(() => Promise.resolve()),
-}));
+  });
+
+  return {
+    getAuth: vi.fn(createMockAuth),
+    initializeAuth: vi.fn(createMockAuth),
+    browserLocalPersistence: {},
+    browserPopupRedirectResolver: {},
+    indexedDBLocalPersistence: {},
+    inMemoryPersistence: {},
+    setPersistence: vi.fn(() => Promise.resolve()),
+    signInWithEmailAndPassword: vi.fn(() => Promise.resolve()),
+    createUserWithEmailAndPassword: vi.fn(() => Promise.resolve()),
+    signOut: vi.fn(() => Promise.resolve()),
+    onAuthStateChanged: vi.fn(),
+    GoogleAuthProvider: vi.fn(),
+    signInWithPopup: vi.fn(() => Promise.resolve()),
+  };
+});
 
 // FieldValue is a real exported class in firebase/firestore (see
 // @firebase/firestore dist: `class FieldValue { ... }`, with

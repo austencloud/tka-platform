@@ -73,7 +73,8 @@ describe("native snapshot extraction", () => {
     const plan = createTarExtractionPlan(
       buildRoot,
       join(buildRoot, "source.tar"),
-      join(buildRoot, "source")
+      join(buildRoot, "source"),
+      "win32"
     );
 
     expect(plan).toEqual({

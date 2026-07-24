@@ -122,4 +122,16 @@ describe("Create workspace action rail contract", () => {
       /grid-template-areas:\s*"left left left"\s*"\. center right"/
     );
   });
+
+  it("keeps each side group packed instead of spacing buttons into equal cells", () => {
+    expect(buttonPanelSource).toMatch(
+      /\.left-zone,\s*\.right-zone\s*\{[^}]*display:\s*flex;[^}]*width:\s*max-content;[^}]*gap:\s*var\(--settings-workspace-action-gap\);/s
+    );
+    expect(buttonPanelSource).not.toContain(
+      "grid-template-columns: repeat(3, minmax(0, 1fr));"
+    );
+    expect(buttonPanelSource).not.toContain(
+      "grid-template-columns: repeat(2, minmax(0, 1fr));"
+    );
+  });
 });
