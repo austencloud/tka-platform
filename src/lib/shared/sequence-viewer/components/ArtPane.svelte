@@ -306,7 +306,7 @@
     previousMandalaDelivery = delivery;
   });
 
-  // Auto-export intent (collection page "Export video" button): consume the
+  // Auto-export intent (collection page "Create video" button): consume the
   // session flag once, then fire the normal export path as soon as the live
   // playback controller + hydrated sequence exist. Poll (250ms, 15s cap) —
   // readiness spans the orchestrator's async service load, which has no single

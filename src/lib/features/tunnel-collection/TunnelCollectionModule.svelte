@@ -308,7 +308,7 @@
               onclick={() => openTunnelInViewer(selected!, { autoExport: true })}
             >
               <i class="fas fa-video" aria-hidden="true"></i>
-              <span>Export video</span>
+              <span>Create video</span>
             </button>
             <button
               type="button"
@@ -316,7 +316,7 @@
               onclick={() => openTunnelInViewer(selected!)}
             >
               <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
-              <span>Open in Viewer</span>
+              <span>Customize tunnel</span>
             </button>
           </div>
 

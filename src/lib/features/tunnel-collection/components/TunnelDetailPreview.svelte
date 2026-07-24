@@ -120,6 +120,7 @@
       bluePropType={snap.props.bluePropType}
       redPropType={snap.props.redPropType}
       bind:playing
+      stageFit="contain"
     />
   </div>
   <button

@@ -135,7 +135,9 @@ export function openTunnelInViewer(
   openSequenceOverlay(sequence, { initialBpm: snap.playback.bpm });
 
   showToast({
-    message: `Viewer now using "${tunnel.name}"`,
+    message: options.autoExport
+      ? `Creating video for "${tunnel.name}"`
+      : `Opened "${tunnel.name}" with its saved settings`,
     type: "success",
     duration: 8000,
     action: {

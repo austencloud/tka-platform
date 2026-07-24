@@ -24,6 +24,7 @@
     onSaveTunnel,
     onPlayingChange,
     playing = $bindable(true),
+    stageFit = "cover",
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -44,6 +45,8 @@
      *  hosts with their own pause control (e.g. the collection's detail
      *  preview) stay in sync — WCAG 2.2.2. */
     playing?: boolean;
+    /** The viewer fills its pane; framed previews preserve the complete tunnel. */
+    stageFit?: "cover" | "contain";
   } = $props();
 
   function handlePlaybackToggle(): void {
@@ -154,7 +157,7 @@
   );
 </script>
 
-<div class="tunnel-art">
+<div class="tunnel-art" class:contained={stageFit === "contain"}>
   <div class="stage">
     {#if seq}
       <AnimatorCanvas
@@ -211,6 +214,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  .tunnel-art.contained .stage {
+    inset: 0;
   }
   .stage :global(canvas) {
     max-width: 100%;
