@@ -13,7 +13,6 @@ import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/model
 import type { InterpolationResult } from "./animation-state-manager";
 import { lerpAngle, normalizeAnglePositive } from "./angle-calculator";
 import { calculateMotionEndpoints } from "./endpoint-calculator";
-import { concaveRadiusProfile } from "$lib/shared/3d/services/petal-path";
 import {
   getAnimationVisibilityManager,
   type AnimationVisibilityStateManager,
@@ -80,8 +79,7 @@ export function interpolatePropAngles(
       blueMotion.motionType,
       stepProgress,
       blueMotion.pathShape,
-      vm,
-      typeof blueMotion.turns === "number" ? blueMotion.turns : 0
+      vm
     );
   }
 
@@ -94,8 +92,7 @@ export function interpolatePropAngles(
       redMotion.motionType,
       stepProgress,
       redMotion.pathShape,
-      vm,
-      typeof redMotion.turns === "number" ? redMotion.turns : 0
+      vm
     );
   }
 
@@ -111,9 +108,7 @@ function interpolateMotion(
   motionType: MotionType,
   progress: number,
   motionPathShape?: "arc" | "linear" | "concave",
-  vm?: AnimationVisibilityStateManager,
-  turns?: number,
-  concaveDepth?: number
+  vm?: AnimationVisibilityStateManager
 ): {
   centerPathAngle: number;
   staffRotationAngle: number;
@@ -127,7 +122,7 @@ function interpolateMotion(
   }
 
   if (pathType === "concave") {
-    return interpolateConcaveMotion(endpoints, progress, turns ?? 0, concaveDepth ?? 0);
+    return interpolateConcaveMotion(endpoints, progress);
   }
 
   return {
@@ -181,30 +176,40 @@ function interpolateLinearMotion(
 }
 
 /**
- * Concave path: petal model (see $lib/shared/3d/services/petal-path). Angle
- * rides the arc; radius dips toward center once per petal
- * (petalsPerStep = 1 + turns), replacing the legacy chord-reflection math.
+ * Concave path: reflection of the arc path across the straight line.
+ * At every t, concavePoint = 2·straightPoint - circlePoint.
  */
 function interpolateConcaveMotion(
   endpoints: MotionEndpoints,
-  progress: number,
-  turns: number,
-  concaveDepth: number
+  progress: number
 ): {
   centerPathAngle: number;
   staffRotationAngle: number;
   x?: number;
   y?: number;
 } {
-  const centerPathAngle = lerpAngle(
+  // Circle point (arc path)
+  const arcAngle = lerpAngle(
     endpoints.startCenterAngle,
     endpoints.targetCenterAngle,
     progress
   );
-  const radius = concaveRadiusProfile(progress, turns, concaveDepth);
-  const concaveX = Math.cos(centerPathAngle) * radius;
-  const concaveY = Math.sin(centerPathAngle) * radius;
+  const circleX = Math.cos(arcAngle);
+  const circleY = Math.sin(arcAngle);
 
+  // Straight line point
+  const startX = Math.cos(endpoints.startCenterAngle);
+  const startY = Math.sin(endpoints.startCenterAngle);
+  const endX = Math.cos(endpoints.targetCenterAngle);
+  const endY = Math.sin(endpoints.targetCenterAngle);
+  const straightX = startX + (endX - startX) * progress;
+  const straightY = startY + (endY - startY) * progress;
+
+  // Reflect circle across straight line
+  const concaveX = 2 * straightX - circleX;
+  const concaveY = 2 * straightY - circleY;
+
+  const centerPathAngle = Math.atan2(concaveY, concaveX);
   const staffRotationAngle = normalizeAnglePositive(
     endpoints.startStaffAngle + endpoints.staffRotationDelta * progress
   );

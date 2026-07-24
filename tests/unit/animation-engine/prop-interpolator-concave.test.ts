@@ -1,14 +1,7 @@
-/**
- * 2D concave interpolation, ported onto the shared petal model
- * ($lib/shared/3d/services/petal-path). Mirrors the 3D contract in
- * tests/unit/3d/prop-state-interpolator-concave.test.ts — angle rides the
- * arc, radius = concaveRadiusProfile(progress, turns, concaveDepth).
- */
 import { describe, it, expect } from "vitest";
 import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { BASE_DIP_RADIUS } from "$lib/shared/3d/services/petal-path";
 import {
   MotionColor,
   MotionType,
@@ -18,7 +11,27 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getPathPoints } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
 
-function radiusAt(turns: number, progress: number): number {
+interface Point {
+  x: number;
+  y: number;
+}
+
+function expectedReflectedPoint(progress: number): Point {
+  const start = { x: 0, y: -1 };
+  const end = { x: 1, y: 0 };
+  const arcAngle = -Math.PI / 2 + (Math.PI / 2) * progress;
+  const straight = {
+    x: start.x + (end.x - start.x) * progress,
+    y: start.y + (end.y - start.y) * progress,
+  };
+
+  return {
+    x: 2 * straight.x - Math.cos(arcAngle),
+    y: 2 * straight.y - Math.sin(arcAngle),
+  };
+}
+
+function propPointAt(turns: number, progress: number): Point {
   const step = createStepData({
     motions: {
       [MotionColor.BLUE]: createMotionData({
@@ -36,41 +49,35 @@ function radiusAt(turns: number, progress: number): number {
 
   const result = interpolatePropAngles(step, progress);
   const angles = result.blueAngles as { x?: number; y?: number };
-  const x = angles.x ?? 0;
-  const y = angles.y ?? 0;
-  return Math.hypot(x, y);
+  return {
+    x: angles.x ?? Number.NaN,
+    y: angles.y ?? Number.NaN,
+  };
 }
 
-describe("2D prop-interpolator concave path (petal model)", () => {
-  it("starts and ends on the grid radius", () => {
-    expect(radiusAt(0, 0)).toBeCloseTo(1, 4);
-    expect(radiusAt(0, 1)).toBeCloseTo(1, 4);
-  });
+describe("2D prop-interpolator concave path", () => {
+  it.each([0, 0.25, 0.5, 0.75, 1])(
+    "reflects the arc across the straight path at progress %s",
+    (progress) => {
+      const actual = propPointAt(0, progress);
+      const expected = expectedReflectedPoint(progress);
 
-  it("0 turns: mid-step dips to the legacy reflection radius (concaveDepth defaults to 0)", () => {
-    expect(radiusAt(0, 0.5)).toBeCloseTo(BASE_DIP_RADIUS, 3);
-  });
+      expect(actual.x).toBeCloseTo(expected.x, 6);
+      expect(actual.y).toBeCloseTo(expected.y, 6);
+    }
+  );
 
-  it("1 turn: valley at mid-step (radius back at 1), dips at quarter points", () => {
-    expect(radiusAt(1, 0.5)).toBeCloseTo(1, 3);
-    expect(radiusAt(1, 0.25)).toBeCloseTo(BASE_DIP_RADIUS, 3);
-    expect(radiusAt(1, 0.75)).toBeCloseTo(BASE_DIP_RADIUS, 3);
-  });
+  it("keeps hand-path geometry independent from prop turns", () => {
+    const zeroTurn = propPointAt(0, 0.25);
+    const oneTurn = propPointAt(1, 0.25);
 
-  // MotionData has no concaveDepth field today (see motion-data.ts) — the 2D
-  // interpolator can only default concaveDepth to 0 until that plumbing
-  // exists. This locks the current (0-depth) behavior rather than asserting
-  // depth=1 like the 3D test, which does carry concaveDepth on MotionConfig3D.
-  it("concaveDepth is not wired for 2D motions yet — defaults to 0 (legacy dip depth)", () => {
-    expect(radiusAt(0, 0.5)).toBeCloseTo(BASE_DIP_RADIUS, 3);
+    expect(oneTurn.x).toBeCloseTo(zeroTurn.x, 6);
+    expect(oneTurn.y).toBeCloseTo(zeroTurn.y, 6);
   });
 });
 
-describe("hand-path-animator concave path (petal model)", () => {
-  // getPathPoints has no turns/concaveDepth input (GridLocation in/out
-  // only) — both default to 0 inside interpolateConcavePoint, reproducing
-  // the single mid-step dip at the legacy reflection radius.
-  function radiusAt(progress: number): number {
+describe("hand-path-animator concave path", () => {
+  function pointAt(progress: number): Point {
     const points = getPathPoints(
       GridLocation.NORTH,
       GridLocation.EAST,
@@ -81,15 +88,20 @@ describe("hand-path-animator concave path (petal model)", () => {
     const GRID_RADIUS = 143.1;
     const idx = Math.round(progress * 4);
     const p = points[idx]!;
-    return Math.hypot(p.x - CENTER, p.y - CENTER) / GRID_RADIUS;
+    return {
+      x: (p.x - CENTER) / GRID_RADIUS,
+      y: (p.y - CENTER) / GRID_RADIUS,
+    };
   }
 
-  it("starts and ends on the grid radius", () => {
-    expect(radiusAt(0)).toBeCloseTo(1, 3);
-    expect(radiusAt(1)).toBeCloseTo(1, 3);
-  });
+  it.each([0, 0.25, 0.5, 0.75, 1])(
+    "uses the same chord-reflection curve at progress %s",
+    (progress) => {
+      const actual = pointAt(progress);
+      const expected = expectedReflectedPoint(progress);
 
-  it("mid-step dips to the legacy reflection radius (0 turns, 0 depth defaults)", () => {
-    expect(radiusAt(0.5)).toBeCloseTo(BASE_DIP_RADIUS, 3);
-  });
+      expect(actual.x).toBeCloseTo(expected.x, 6);
+      expect(actual.y).toBeCloseTo(expected.y, 6);
+    }
+  );
 });
