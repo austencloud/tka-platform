@@ -211,6 +211,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { isViewerReadyToAutoplay } from "$lib/shared/sequence-viewer/services/viewer-autoplay-readiness";
+  import { shouldAutoplayViewer } from "$lib/shared/sequence-viewer/services/viewer-autoplay-policy";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
@@ -251,6 +252,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     onBpmChange?: (bpm: number) => void;
     blockClicks?: boolean;
     handPathMode?: boolean;
+    /** Force the animation surface and request playback after assets settle. */
+    playOnOpen?: boolean;
     forceGuest?: boolean;
     initialRenderMode?: '2d' | '3d';
     initialBlueVisible?: boolean;
@@ -276,6 +279,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     onBpmChange,
     blockClicks = false,
     handPathMode = false,
+    playOnOpen = false,
     forceGuest = false,
     initialRenderMode,
     initialBlueVisible = true,
@@ -327,8 +331,16 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  let viewMode = $state<ViewMode>(loadViewMode());
-  $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
+  let viewMode = $state<ViewMode>(
+    playOnOpen ? "animation" : loadViewMode()
+  );
+  $effect.pre(() => {
+    if (playOnOpen) {
+      viewMode = "animation";
+    } else if (initialViewMode) {
+      viewMode = initialViewMode;
+    }
+  });
 
   const fullscreen = createFullscreenController({
     getHapticService: () => hapticService,
@@ -336,6 +348,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   });
 
   const viewerState = createViewerState();
+  if (playOnOpen) {
+    viewerState.enterExport("animation-export", "animation");
+  }
   const practiceViewPrefs = createPracticeViewPrefs();
   playback.setPracticeViewPrefs(practiceViewPrefs);
 
@@ -690,7 +705,15 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
         if (ready) {
           clearInterval(autoplayReadyTimer!);
           autoplayReadyTimer = null;
-          if (viewMode !== "image") {
+          const systemPrefersReducedMotion =
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          const autoplayAllowed = shouldAutoplayViewer({
+            viewMode,
+            reducedMotionSetting: getSettings().reducedMotion ?? false,
+            systemPrefersReducedMotion,
+          });
+          if (autoplayAllowed && !playback.isPlayingLocal) {
             playbackControllerRef?.togglePlayback();
           }
         }

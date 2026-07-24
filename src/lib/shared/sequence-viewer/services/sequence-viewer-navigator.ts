@@ -29,6 +29,8 @@ export interface OpenSequenceViewerOptions {
 	variations?: SequenceData[];
 	/** When true, renders hand path visualization (HAND props, float arrows, no TKA). */
 	handPathMode?: boolean;
+	/** Open on the 2D animation surface and request playback. */
+	playOnOpen?: boolean;
 }
 
 /**
@@ -72,5 +74,6 @@ export function openSequenceViewer(
 		initialStep: options.initialStep,
 		variations: options.variations,
 		handPathMode: options.handPathMode,
+		playOnOpen: options.playOnOpen,
 	});
 }

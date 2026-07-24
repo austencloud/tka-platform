@@ -73,7 +73,11 @@
         import("$lib/shared/coordinators/sequence-handoff.svelte"),
       ]);
       const { returnPath, returnLabel } = getReturnContext();
-      openSequenceViewer(sequenceWithOwner, { returnPath, returnLabel });
+      openSequenceViewer(sequenceWithOwner, {
+        returnPath,
+        returnLabel,
+        playOnOpen: true,
+      });
     })();
   });
 </script>

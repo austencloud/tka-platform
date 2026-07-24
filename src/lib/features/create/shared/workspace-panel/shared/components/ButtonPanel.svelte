@@ -27,9 +27,14 @@
   import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
   import { workspaceButtonsInZone } from "../workspace-button-layout";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import {
+    logConstructFullPlay,
+    logConstructImmediateUndo,
+  } from "$lib/features/create/construct/services/construct-analytics";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
-  const { CreateModuleState, panelState } = getCreateModuleContext();
+  const { CreateModuleState, constructTutorialState, panelState } =
+    getCreateModuleContext();
 
   // Zone membership + order come from the shared workspace button layout, so the
   // create tutorial's diagram of this panel can never drift from it.
@@ -67,6 +72,25 @@
     const tabState = CreateModuleState.getActiveTabSequenceState();
     return tabState?.currentSequence ?? null;
   });
+  const isConstructTab = $derived(navigationState.activeTab === "construct");
+  const isPlayTutorialTarget = $derived(
+    constructTutorialState.isActive &&
+      constructTutorialState.stage === "play-sequence"
+  );
+
+  function handleUndoAction() {
+    if (isConstructTab) {
+      logConstructImmediateUndo();
+    }
+  }
+
+  function handleFullSequencePlay() {
+    onViewSequence?.();
+    if (!isConstructTab) return;
+
+    logConstructFullPlay(currentSequence?.steps.length ?? 0);
+    constructTutorialState.recordFullPlay();
+  }
 
   // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)
   // Note: SequenceActions is now in left zone, not center
@@ -106,13 +130,17 @@
 
 {#if visible}
   <div class="button-panel-container">
-    <div class="button-panel" transition:fade={{ duration: 200 }}>
+    <div
+      class="button-panel"
+      class:assemble-layout={isAssembleTab}
+      transition:fade={{ duration: 200 }}
+    >
       <!-- LEFT ZONE: order/membership from the shared layout -->
       <div class="left-zone">
         {#each leftButtons as btn (btn.id)}
           {#if btn.id === "undo"}
             <div transition:presenceTransition>
-              <UndoButton {CreateModuleState} />
+              <UndoButton {CreateModuleState} onAction={handleUndoAction} />
             </div>
             {#if isAssembleTab}
               <div transition:presenceTransition>
@@ -137,10 +165,16 @@
           >
             {#each centerButtons as btn (btn.id)}
               {#if btn.id === "view" && showViewSequenceButton && onViewSequence}
-                <div>
+                <div
+                  class:tutorial-target={isPlayTutorialTarget}
+                  data-tutorial-target={isPlayTutorialTarget
+                    ? "play-sequence"
+                    : undefined}
+                >
                   <ViewSequenceButton
-                    onclick={onViewSequence}
+                    onclick={handleFullSequencePlay}
                     isActive={isExportPanelOpen}
+                    purpose="play"
                   />
                 </div>
               {/if}
@@ -181,7 +215,7 @@
   .button-panel {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between; /* Space between left, center, right zones */
     width: 100%;
     border-radius: 24px;
@@ -221,8 +255,10 @@
     gap: 12px;
     position: absolute;
     left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    /* Play is larger than the surrounding controls. Anchor its bottom edge to
+       theirs so it grows upward instead of crossing the workspace border. */
+    bottom: calc((100% - var(--min-touch-target)) / 2);
+    transform: translateX(-50%);
     pointer-events: none;
   }
 
@@ -241,6 +277,12 @@
   .right-zone > div {
     display: inline-block;
     pointer-events: auto;
+  }
+
+  .tutorial-target {
+    border-radius: 999px;
+    outline: 3px solid color-mix(in srgb, var(--theme-accent) 76%, transparent);
+    outline-offset: 4px;
   }
 
   /* Remove mobile tap highlight (blue selection box) */
@@ -275,13 +317,6 @@
     .center-zone,
     .right-zone {
       gap: 8px; /* Compact but comfortable spacing */
-    }
-  }
-
-  /* Compact mobile (iPhone SE, etc.) - use alt touch target */
-  @container button-panel (max-width: 390px) {
-    .button-panel {
-      --min-touch-target: var(--alt-touch-target);
     }
   }
 
@@ -344,48 +379,49 @@
     }
   }
 
-  /* Assemble can show six actions at once. On a phone, reserve three slots on
-     both sides of the viewer control. The matching side tracks keep that
-     control at the row's true midpoint while actions appear and disappear. */
+  /* Play stays at the true center while the two action groups hug their
+     corners. Keeping each side at its natural width prevents spare room from
+     turning into gaps between Actions and Save. */
   @container button-panel (max-width: 480px) {
     .button-panel {
+      --min-touch-target: 48px;
+      --settings-workspace-action-gap: 8px;
       display: grid;
       grid-template-columns:
-        minmax(0, 3fr)
         minmax(0, 1fr)
-        minmax(0, 3fr);
+        50px
+        minmax(0, 1fr);
       align-items: center;
-      column-gap: 4px;
       padding: 6px;
     }
 
     .left-zone,
     .right-zone {
-      width: 100%;
+      display: flex;
+      width: max-content;
       min-width: 0;
-      gap: 0;
+      gap: var(--settings-workspace-action-gap);
     }
 
     .left-zone {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      justify-self: start;
     }
 
     .right-zone {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-self: end;
     }
 
     .center-zone-wrapper {
-      min-width: 0;
-      min-height: var(--min-touch-target, 44px);
+      width: 50px;
+      min-width: 50px;
+      min-height: 50px;
       flex-grow: 0;
     }
 
     .center-zone {
       position: static;
-      width: 100%;
-      min-width: 0;
+      width: 50px;
+      min-width: 50px;
       gap: 0;
       transform: none;
     }
@@ -399,24 +435,38 @@
     }
   }
 
-  @container button-panel (max-width: 307px) {
+  /* On SE-sized workspaces, the four corner actions step down to the
+     44px accessibility target while the 50px Play action keeps priority. */
+  @container button-panel (max-width: 390px) {
     .button-panel {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      --min-touch-target: 44px;
+    }
+  }
+
+  @container button-panel (max-width: 340px) {
+    .button-panel {
+      --settings-workspace-action-gap: 4px;
+      padding-inline: 4px;
+    }
+  }
+
+  @container button-panel (max-width: 330px) {
+    .button-panel.assemble-layout {
       grid-template-areas:
         "left left left"
         ". center right";
       row-gap: 4px;
     }
 
-    .left-zone {
+    .button-panel.assemble-layout .left-zone {
       grid-area: left;
     }
 
-    .center-zone-wrapper {
+    .button-panel.assemble-layout .center-zone-wrapper {
       grid-area: center;
     }
 
-    .right-zone {
+    .button-panel.assemble-layout .right-zone {
       grid-area: right;
     }
   }

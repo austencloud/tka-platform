@@ -145,6 +145,7 @@
       initialBpm={overlay.initialBpm}
       initialStep={overlay.initialStep}
       handPathMode={overlay.handPathMode}
+      playOnOpen={overlay.playOnOpen}
       onClose={handleDismiss}
     >
       {#snippet children(ctx)}

@@ -66,18 +66,32 @@ export interface WorkspaceButtonGlyph {
    *  one button (Undo) whose glyph is an inline SVG, not a FontAwesome icon. */
   icon: string;
   iconType: "fa" | "svg";
+  /** Accessible action name shared by the live button and tutorial. */
+  actionLabel: string;
 }
 
 export const WORKSPACE_BUTTON_ICON: Record<
   WorkspaceButtonId,
   WorkspaceButtonGlyph
 > = {
-  undo: { icon: "undo-svg", iconType: "svg" },
-  clear: { icon: "fa-eraser", iconType: "fa" },
-  view: { icon: "fa-play", iconType: "fa" },
-  "sequence-actions": { icon: "fa-tools", iconType: "fa" },
-  save: { icon: "fa-bookmark", iconType: "fa" },
-  "step-editor": { icon: "fa-hand-pointer", iconType: "fa" },
+  undo: { icon: "undo-svg", iconType: "svg", actionLabel: "Undo" },
+  clear: { icon: "fa-eraser", iconType: "fa", actionLabel: "Clear sequence" },
+  view: { icon: "fa-play", iconType: "fa", actionLabel: "Play sequence" },
+  "sequence-actions": {
+    icon: "fa-tools",
+    iconType: "fa",
+    actionLabel: "Sequence actions",
+  },
+  save: {
+    icon: "fa-bookmark",
+    iconType: "fa",
+    actionLabel: "Save to library",
+  },
+  "step-editor": {
+    icon: "fa-hand-pointer",
+    iconType: "fa",
+    actionLabel: "Edit step",
+  },
 };
 
 /**
@@ -108,8 +122,9 @@ export const WORKSPACE_BUTTON_TUTORIAL: Record<
     colorClass: "error",
   },
   view: {
-    label: "View and Share",
-    description: "Watch your sequence animated with props, or share it.",
+    label: WORKSPACE_BUTTON_ICON.view.actionLabel,
+    description:
+      "Plays the full sequence, with viewer, share, and export tools ready.",
     colorClass: "success",
   },
   "sequence-actions": {

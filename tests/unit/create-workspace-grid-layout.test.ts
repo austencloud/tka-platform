@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { calculateGridLayout } from "../../src/lib/shared/create/utils/grid-calculations";
-import { WORKSPACE_BUTTON_ICON } from "../../src/lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
+import {
+  WORKSPACE_BUTTON_ICON,
+  WORKSPACE_BUTTON_TUTORIAL,
+} from "../../src/lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
 
 const workspaceGridSource = readFileSync(
   resolve(
@@ -15,6 +18,13 @@ const buttonPanelSource = readFileSync(
   resolve(
     process.cwd(),
     "src/lib/features/create/shared/workspace-panel/shared/components/ButtonPanel.svelte"
+  ),
+  "utf8"
+);
+const drawerLauncherSource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/features/create/shared/components/coordinators/SequenceDrawerLauncher.svelte"
   ),
   "utf8"
 );
@@ -96,11 +106,17 @@ describe("WorkspaceGrid mandala placement", () => {
 describe("Create workspace action rail contract", () => {
   it("uses the Play glyph for the sequence viewer", () => {
     expect(WORKSPACE_BUTTON_ICON.view.icon).toBe("fa-play");
+    expect(WORKSPACE_BUTTON_ICON.view.actionLabel).toBe("Play sequence");
+    expect(WORKSPACE_BUTTON_TUTORIAL.view.label).toBe(
+      WORKSPACE_BUTTON_ICON.view.actionLabel
+    );
+    expect(buttonPanelSource).toContain('purpose="play"');
+    expect(drawerLauncherSource).toContain("playOnOpen: true");
   });
 
   it("keeps the viewer control centered at every phone breakpoint", () => {
     expect(buttonPanelSource).toMatch(
-      /grid-template-columns:\s*minmax\(0, 3fr\)\s*minmax\(0, 1fr\)\s*minmax\(0, 3fr\)/
+      /grid-template-columns:\s*minmax\(0, 1fr\)\s*50px\s*minmax\(0, 1fr\)/
     );
     expect(buttonPanelSource).toMatch(
       /grid-template-areas:\s*"left left left"\s*"\. center right"/

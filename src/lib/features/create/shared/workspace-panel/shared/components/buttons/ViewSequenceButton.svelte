@@ -24,7 +24,9 @@
     purpose === "play" ? "fa-play" : WORKSPACE_BUTTON_ICON.view.icon
   );
   const accessibleLabel = $derived(
-    purpose === "play" ? "Play sequence animation" : "Open sequence viewer"
+    purpose === "play"
+      ? WORKSPACE_BUTTON_ICON.view.actionLabel
+      : "Open sequence viewer"
   );
 
   // Resolve haptic feedback service
@@ -39,10 +41,11 @@
 <button
   class="view-sequence-button glass-button"
   class:active={isActive}
+  class:play-purpose={purpose === "play"}
   onclick={handleClick}
   aria-label={accessibleLabel}
-  aria-pressed={isActive}
-  title={purpose === "play" ? "Play" : "Open sequence viewer"}
+  aria-pressed={purpose === "open-viewer" ? isActive : undefined}
+  title={accessibleLabel}
 >
   <i class="fa-solid {icon}" aria-hidden="true"></i>
 </button>
@@ -75,6 +78,49 @@
     animation:
       arrive 400ms ease-out both,
       breathe 2.4s ease-in-out 0.5s infinite;
+  }
+
+  .view-sequence-button.play-purpose {
+    width: 50px;
+    height: 50px;
+    border-width: 2px;
+    transform-origin: center bottom;
+    box-shadow:
+      0 6px 18px color-mix(in srgb, var(--semantic-success) 55%, transparent),
+      0 0 24px color-mix(in srgb, var(--semantic-success) 25%, transparent);
+    animation:
+      play-arrive 400ms ease-out both,
+      play-glow 2.4s ease-in-out 0.5s infinite;
+  }
+
+  @keyframes play-arrive {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes play-glow {
+    0%,
+    100% {
+      box-shadow:
+        0 5px 14px color-mix(in srgb, var(--semantic-success) 45%, transparent),
+        0 0 18px color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    }
+
+    50% {
+      box-shadow:
+        0 6px 18px color-mix(in srgb, var(--semantic-success) 55%, transparent),
+        0 0 24px color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    }
+  }
+
+  .view-sequence-button.play-purpose i {
+    font-size: clamp(1.25rem, 5cqi, 1.75rem);
+    transform: translateX(0.08em);
   }
 
   @keyframes arrive {
@@ -120,6 +166,10 @@
   .view-sequence-button:active {
     transform: scale(0.92);
     transition: transform 80ms ease;
+  }
+
+  .view-sequence-button.play-purpose:active {
+    transform: none;
   }
 
   .view-sequence-button:focus-visible {
