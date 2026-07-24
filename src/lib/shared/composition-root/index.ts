@@ -29,19 +29,29 @@ import {
   clearLoopDisplayCache,
 } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
+import { registerPublicIndexSyncerFactory } from "../library/get-library-repository";
+import { createLazyPublicIndexSyncer } from "../library/services/create-lazy-public-index-syncer";
+
 import { isBootProfileVerbose } from "../analytics/boot-profiler";
 
-const _bootStart = typeof window !== 'undefined' ? performance.now() : 0;
+const _bootStart = typeof window !== "undefined" ? performance.now() : 0;
 
 // ── Critical registrations (browser-only) ──
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   configureShortCodeManager(getBrowseLoader());
   registerLoopDetector(loopDetector);
   registerLoopDisplayResolver(resolveLoopDisplay);
   registerLoopDisplayCacheClearer(clearLoopDisplayCache);
+  registerPublicIndexSyncerFactory(() =>
+    createLazyPublicIndexSyncer(async () => {
+      const { getPublicIndexSyncer } =
+        await import("$lib/features/library/get-public-index-syncer");
+      return getPublicIndexSyncer();
+    })
+  );
 }
 
-if (typeof window !== 'undefined' && isBootProfileVerbose()) {
+if (typeof window !== "undefined" && isBootProfileVerbose()) {
   const totalBoot = performance.now() - _bootStart;
   console.log(
     `%c Composition root (critical) - ${Math.round(totalBoot)}ms`,
@@ -49,14 +59,21 @@ if (typeof window !== 'undefined' && isBootProfileVerbose()) {
   );
 }
 
-// ── Deferred registrations: video export, generation engine, library sync, etc. ──
-// These pull heavy deps (mediabunny, @tka/sequence-engine, content-moderator)
-// that aren't needed for first render. Load after browser is idle.
-if (typeof window !== 'undefined') {
-  const load = () => import("./deferred-registrations");
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => load());
+// ── Deferred registrations: video export, feedback, tag migration, etc. ──
+// These pull heavy dependencies that aren't needed for first render.
+if (typeof window !== "undefined") {
+  const load = async (): Promise<void> => {
+    try {
+      await import("./deferred-registrations");
+    } catch (error) {
+      console.error("[CompositionRoot] Deferred registrations failed:", error);
+    }
+  };
+  const scheduleLoad = () => void load();
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(scheduleLoad, { timeout: 2_000 });
   } else {
-    setTimeout(() => load(), 100);
+    setTimeout(scheduleLoad, 100);
   }
 }

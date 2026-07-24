@@ -6,13 +6,9 @@
  *
  * Moved out of index.ts to cut ~3s off composition-root import time:
  * - VideoExportOrchestrator pulls mediabunny + WebCodecs at import
- * - PublicIndexSyncer pulls content-moderator profanity wordlist at import
  * - FeedbackTesterWorkflow pulls Firestore + notification services
  * - TagMigrator pulls tag-manager
  */
-
-import { registerPublicIndexSyncerFactory } from "$lib/shared/library/get-library-repository";
-import { getPublicIndexSyncer } from "$lib/features/library/get-public-index-syncer";
 
 import { registerTagMigrator } from "$lib/shared/library/get-tag-migrator";
 import { migrateSequenceTags } from "$lib/features/library/services/migrations/tag-migration";
@@ -38,28 +34,31 @@ import { getTipPointOverrideProvider } from "$lib/features/lab/effects-lab/get-t
 try {
   getTipPointOverrideProvider();
 } catch (error) {
-  console.warn("[DeferredRegistrations] Tip point override provider init failed:", error);
+  console.warn(
+    "[DeferredRegistrations] Tip point override provider init failed:",
+    error
+  );
 }
 
-registerPublicIndexSyncerFactory(getPublicIndexSyncer);
 registerTagMigrator(migrateSequenceTags);
 registerFeedbackTesterWorkflow(feedbackTesterWorkflowService);
 
-registerVideoExportOrchestratorFactory(() =>
-  new VideoExportOrchestrator(
-    getVideoExporter(),
-    getCompositeVideoRenderer(),
-    getExportGlyphPrerenderer(),
-    getBackgroundVideoEncoder()
-  )
+registerVideoExportOrchestratorFactory(
+  () =>
+    new VideoExportOrchestrator(
+      getVideoExporter(),
+      getCompositeVideoRenderer(),
+      getExportGlyphPrerenderer(),
+      getBackgroundVideoEncoder()
+    )
 );
 
 try {
   const composer = getImageComposer();
   if (composer) {
-    (composer as unknown as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
-      getQRCodeGenerator()
-    );
+    (
+      composer as unknown as { setQRCodeGenerator: (g: unknown) => void }
+    ).setQRCodeGenerator(getQRCodeGenerator());
   }
 } catch {
   // ImageComposer not yet initialized - QR injection will happen on first use
