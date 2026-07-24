@@ -17,6 +17,14 @@
 @rem
 
 @if "%DEBUG%"=="" @echo off
+@rem AAPT2 inherits the active Windows console code page when it packages
+@rem assets. CP437 corrupts canonical Unicode filenames such as gamma.svg.
+@rem UTF-8 keeps every static asset name byte-for-byte addressable on Android.
+@chcp 65001 >nul
+@if errorlevel 1 (
+    @echo ERROR: Windows code page 65001 is required for Android asset packaging. 1>&2
+    @exit /b 1
+)
 @rem ##########################################################################
 @rem
 @rem  Gradle startup script for Windows

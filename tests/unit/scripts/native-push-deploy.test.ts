@@ -6,12 +6,66 @@ import {
   choosePushedCommit,
   createTarExtractionPlan,
   createNativeBuildEnv,
+  inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
   parsePushUpdates,
   readJavaProperty,
   selectAndroidDevice,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
+
+function makeZipDirectory(
+  entries: Array<{ name: string; utf8: boolean }>
+): Buffer {
+  const centralEntries = entries.map(({ name, utf8 }) => {
+    const filename = Buffer.from(name, "utf8");
+    const header = Buffer.alloc(46);
+    header.writeUInt32LE(0x02014b50, 0);
+    header.writeUInt16LE(utf8 ? 0x0800 : 0, 8);
+    header.writeUInt16LE(filename.length, 28);
+    return Buffer.concat([header, filename]);
+  });
+  const centralDirectory = Buffer.concat(centralEntries);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(centralDirectory.length, 12);
+  end.writeUInt32LE(0, 16);
+  return Buffer.concat([centralDirectory, end]);
+}
+
+describe("native APK filename verification", () => {
+  it("detects Unicode ZIP entries missing the UTF-8 flag", () => {
+    const report = inspectZipFilenameFlags(
+      makeZipDirectory([
+        { name: "assets/A.svg", utf8: false },
+        { name: "assets/γ.svg", utf8: false },
+        { name: "assets/⊕.svg", utf8: true },
+      ])
+    );
+
+    expect(report).toEqual({
+      entryCount: 3,
+      nonAsciiEntryCount: 2,
+      nonUtf8EntryCount: 1,
+      nonUtf8Names: ["assets/γ.svg"],
+      filenames: ["assets/A.svg", "assets/γ.svg", "assets/⊕.svg"],
+    });
+  });
+
+  it("accepts canonical Unicode names carrying the UTF-8 flag", () => {
+    const report = inspectZipFilenameFlags(
+      makeZipDirectory([
+        { name: "assets/Σ.svg", utf8: true },
+        { name: "assets/γ.svg", utf8: true },
+      ])
+    );
+
+    expect(report.nonAsciiEntryCount).toBe(2);
+    expect(report.nonUtf8EntryCount).toBe(0);
+  });
+});
 
 describe("native snapshot extraction", () => {
   it("passes tar paths relative to the build directory", () => {
@@ -24,9 +78,28 @@ describe("native snapshot extraction", () => {
 
     expect(plan).toEqual({
       cwd: buildRoot,
-      args: ["-xf", "source.tar", "-C", "source"],
+      args: [
+        "-xf",
+        "source.tar",
+        "-C",
+        "source",
+        "--options",
+        "hdrcharset=UTF-8",
+      ],
     });
     expect(plan.args.every((token) => !isAbsolute(token))).toBe(true);
+  });
+
+  it("keeps the default extraction command on non-Windows hosts", () => {
+    const buildRoot = resolve("test-results", "native-push");
+    const plan = createTarExtractionPlan(
+      buildRoot,
+      join(buildRoot, "source.tar"),
+      join(buildRoot, "source"),
+      "linux"
+    );
+
+    expect(plan.args).toEqual(["-xf", "source.tar", "-C", "source"]);
   });
 
   it("rejects extraction targets outside the build directory", () => {

@@ -7,6 +7,7 @@ import {
   existsSync,
   mkdirSync,
   openSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -22,6 +23,7 @@ import {
   choosePushedCommit,
   createTarExtractionPlan,
   createNativeBuildEnv,
+  inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
   parsePushUpdates,
@@ -71,6 +73,45 @@ function run(command, args, options = {}) {
 function capture(command, args, options = {}) {
   const result = run(command, args, { ...options, capture: true });
   return result.stdout.trim();
+}
+
+function enableWindowsUtf8CodePage() {
+  if (process.platform !== "win32") return;
+
+  const executable = process.env.SystemRoot
+    ? join(process.env.SystemRoot, "System32", "chcp.com")
+    : "chcp.com";
+  const output = capture(executable, ["65001"]);
+  if (!/\b65001\b/.test(output)) {
+    throw new Error(
+      `Windows did not activate UTF-8 code page 65001: ${output || "no output"}`
+    );
+  }
+  console.log("[native] Windows code page: UTF-8 (65001).");
+}
+
+function listRelativeFiles(root) {
+  const files = [];
+  const directories = [""];
+
+  while (directories.length > 0) {
+    const relativeDirectory = directories.pop();
+    const absoluteDirectory = join(root, relativeDirectory);
+    for (const entry of readdirSync(absoluteDirectory, {
+      withFileTypes: true,
+    })) {
+      const relativePath = relativeDirectory
+        ? `${relativeDirectory}/${entry.name}`
+        : entry.name;
+      if (entry.isDirectory()) {
+        directories.push(relativePath);
+      } else {
+        files.push(relativePath);
+      }
+    }
+  }
+
+  return files;
 }
 
 function assertInside(parent, target) {
@@ -244,11 +285,9 @@ function createSnapshot(repoRoot, snapshotRoot, archivePath, commit) {
     archivePath,
     snapshotRoot
   );
-  run(
-    process.platform === "win32" ? "tar.exe" : "tar",
-    extraction.args,
-    { cwd: extraction.cwd }
-  );
+  run(process.platform === "win32" ? "tar.exe" : "tar", extraction.args, {
+    cwd: extraction.cwd,
+  });
   rmSync(archivePath, { force: true });
 
   copyLocalBuildInputs(repoRoot, snapshotRoot);
@@ -334,6 +373,7 @@ async function readHookInput() {
 
 export async function main() {
   const options = parseArgs(process.argv.slice(2));
+  enableWindowsUtf8CodePage();
   const repoRoot = resolve(capture("git", ["rev-parse", "--show-toplevel"]));
   const headOid = capture("git", ["rev-parse", "HEAD"], { cwd: repoRoot });
   const headRefResult = run("git", ["symbolic-ref", "-q", "HEAD"], {
@@ -430,7 +470,7 @@ export async function main() {
     const androidDir = join(snapshotRoot, "android");
     const gradle =
       process.platform === "win32" ? ".\\gradlew.bat" : "./gradlew";
-    run(gradle, ["assembleDebug", "--console=plain"], {
+    run(gradle, ["assembleDebug", "--console=plain", "--no-daemon"], {
       cwd: androidDir,
       env: buildEnv,
     });
@@ -447,6 +487,30 @@ export async function main() {
     if (!existsSync(builtApk) || statSync(builtApk).size < 1024 * 1024) {
       throw new Error("Gradle finished without producing a valid debug APK.");
     }
+
+    const zipReport = inspectZipFilenameFlags(readFileSync(builtApk));
+    const assetsRoot = join(androidDir, "app", "src", "main", "assets");
+    const expectedUnicodeEntries = listRelativeFiles(assetsRoot)
+      .filter((path) => /[^\x00-\x7f]/.test(path))
+      .map((path) => `assets/${path}`);
+    if (expectedUnicodeEntries.length === 0) {
+      throw new Error(
+        "Synced Android assets contain no Unicode names; native asset verification is incomplete."
+      );
+    }
+
+    const packagedEntries = new Set(zipReport.filenames);
+    const missingUnicodeEntries = expectedUnicodeEntries.filter(
+      (path) => !packagedEntries.has(path)
+    );
+    if (missingUnicodeEntries.length > 0) {
+      throw new Error(
+        `APK renamed or omitted ${missingUnicodeEntries.length} Unicode asset(s): ${missingUnicodeEntries.slice(0, 5).join(", ")}`
+      );
+    }
+    console.log(
+      `[native] Verified ${expectedUnicodeEntries.length} Unicode APK filename(s) byte-for-byte.`
+    );
 
     const outputDir = join(
       repoRoot,

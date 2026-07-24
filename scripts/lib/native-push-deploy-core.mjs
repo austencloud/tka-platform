@@ -1,11 +1,108 @@
 import { isAbsolute, relative, sep } from "node:path";
 
 const ZERO_OID = /^0+$/;
+const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
+const ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
+const ZIP_UTF8_FLAG = 0x0800;
+const ZIP_MAX_COMMENT_BYTES = 0xffff;
+
+export function inspectZipFilenameFlags(bytes) {
+  const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  const minimumEndOffset = Math.max(
+    0,
+    buffer.length - ZIP_MAX_COMMENT_BYTES - 22
+  );
+  let endOffset = -1;
+
+  for (
+    let offset = buffer.length - 22;
+    offset >= minimumEndOffset;
+    offset -= 1
+  ) {
+    if (
+      buffer.readUInt32LE(offset) === ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE
+    ) {
+      endOffset = offset;
+      break;
+    }
+  }
+
+  if (endOffset < 0) {
+    throw new Error("ZIP end-of-central-directory record was not found.");
+  }
+
+  const entryCount = buffer.readUInt16LE(endOffset + 10);
+  const centralDirectorySize = buffer.readUInt32LE(endOffset + 12);
+  const centralDirectoryOffset = buffer.readUInt32LE(endOffset + 16);
+  if (entryCount === 0xffff || centralDirectoryOffset === 0xffffffff) {
+    throw new Error("ZIP64 filename inspection is not supported.");
+  }
+
+  let cursor = centralDirectoryOffset;
+  let nonAsciiEntryCount = 0;
+  let nonUtf8EntryCount = 0;
+  const filenames = [];
+  const nonUtf8Names = [];
+
+  for (let index = 0; index < entryCount; index += 1) {
+    if (
+      cursor + 46 > buffer.length ||
+      buffer.readUInt32LE(cursor) !== ZIP_CENTRAL_DIRECTORY_SIGNATURE
+    ) {
+      throw new Error(`Invalid ZIP central-directory entry at index ${index}.`);
+    }
+
+    const flags = buffer.readUInt16LE(cursor + 8);
+    const filenameLength = buffer.readUInt16LE(cursor + 28);
+    const extraLength = buffer.readUInt16LE(cursor + 30);
+    const commentLength = buffer.readUInt16LE(cursor + 32);
+    const filenameStart = cursor + 46;
+    const entryEnd =
+      filenameStart + filenameLength + extraLength + commentLength;
+    if (entryEnd > buffer.length) {
+      throw new Error(
+        `Truncated ZIP central-directory entry at index ${index}.`
+      );
+    }
+
+    const filename = buffer.subarray(
+      filenameStart,
+      filenameStart + filenameLength
+    );
+    const decodedFilename = filename.toString("utf8");
+    filenames.push(decodedFilename);
+    const hasNonAsciiByte = filename.some((byte) => byte > 0x7f);
+    if (hasNonAsciiByte) {
+      nonAsciiEntryCount += 1;
+      if ((flags & ZIP_UTF8_FLAG) === 0) {
+        nonUtf8EntryCount += 1;
+        if (nonUtf8Names.length < 5) {
+          nonUtf8Names.push(decodedFilename);
+        }
+      }
+    }
+
+    cursor = entryEnd;
+  }
+
+  if (cursor !== centralDirectoryOffset + centralDirectorySize) {
+    throw new Error("ZIP central-directory size does not match its entries.");
+  }
+
+  return {
+    entryCount,
+    nonAsciiEntryCount,
+    nonUtf8EntryCount,
+    nonUtf8Names,
+    filenames,
+  };
+}
 
 export function createTarExtractionPlan(
   buildRoot,
   archivePath,
-  snapshotRoot
+  snapshotRoot,
+  platform = process.platform
 ) {
   const archive = relative(buildRoot, archivePath);
   const destination = relative(buildRoot, snapshotRoot);
@@ -14,12 +111,19 @@ export function createTarExtractionPlan(
     !path || path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
 
   if (paths.some(escapesBuildRoot)) {
-    throw new Error("Tar extraction paths must stay inside the native build root.");
+    throw new Error(
+      "Tar extraction paths must stay inside the native build root."
+    );
+  }
+
+  const args = ["-xf", archive, "-C", destination];
+  if (platform === "win32") {
+    args.push("--options", "hdrcharset=UTF-8");
   }
 
   return {
     cwd: buildRoot,
-    args: ["-xf", archive, "-C", destination],
+    args,
   };
 }
 
