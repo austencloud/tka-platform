@@ -1,4 +1,9 @@
 import { getEnabledFeaturesDefineMap } from "./src/config/feature-flags";
+import {
+  ARROW_SPRITE_WATCH_PATH,
+  createViteDevWatchIgnoredMatcher,
+  I18N_MESSAGES_WATCH_PATH,
+} from "./src/config/vite-dev-watch-policy";
 import { featureGatePlugin } from "./src/config/vite-plugin-feature-gate";
 import { museumPlacementPlugin } from './src/lib/features/museum/dev/museum-placement-plugin';
 import { composerPlacementPlugin } from './src/lib/shared/3d/scene-composer/persistence/composer-placement-plugin';
@@ -155,14 +160,14 @@ const webpEncoderWasmAbsolute = path.resolve(dirname, webpEncoderWasmRelative);
 
 /**
  * 🎯 ARROW SPRITE HMR: Auto-reload when sprite is edited in Illustrator
- * - Watches static/images/arrows-sprite.svg
+ * - Watches the arrow sprite without scanning the rest of static/
  * - Sends custom HMR event when file changes
  * - ArrowSvgLoader listens and reloads sprite without page refresh
  */
 const arrowSpriteHmrPlugin = () => ({
   name: "arrow-sprite-hmr",
   configureServer(server: ViteDevServer) {
-    const spritePath = path.resolve(dirname, "static/images/arrows-sprite.svg");
+    const spritePath = path.resolve(dirname, ARROW_SPRITE_WATCH_PATH);
 
     server.watcher.add(spritePath);
 
@@ -181,14 +186,14 @@ const arrowSpriteHmrPlugin = () => ({
 
 /**
  * 🌐 I18N HMR: Auto-reload translations when locale JSON files change
- * - Watches messages/*.json (excluded from global watcher to save handles)
+ * - Watches messages/*.json through the narrow dev watch policy
  * - Reads the changed file and sends its contents via custom HMR event
  * - i18n.svelte.ts receives the new messages and hot-swaps without page reload
  */
 const i18nHmrPlugin = () => ({
   name: "i18n-hmr",
   configureServer(server: ViteDevServer) {
-    const messagesDir = path.resolve(dirname, "messages");
+    const messagesDir = path.resolve(dirname, I18N_MESSAGES_WATCH_PATH);
 
     server.watcher.add(messagesDir);
 
@@ -1169,60 +1174,14 @@ export default defineConfig(({ mode }) => ({
         stabilityThreshold: 400,
         pollInterval: 30,
       },
-      // 🚨 HANDLE LEAK FIX: Chokidar creates one fs.watch() per directory.
-      // On Windows, each = one kernel handle via ReadDirectoryChangesW.
-      // Without filtering, ~12,000 directories get watched = 50,000-83,000 handles.
-      // Only src/ and static/ need HMR. Everything else is ignored.
-      ignored: [
-        "**/node_modules/**",
-        "**/.git/**",
-        "**/.svelte-kit/**",
-        // Git worktrees: never watch a nested worktree's files. Policy is to
-        // place worktrees as siblings OUTSIDE the checkout (see
-        // .claude/rules/worktree-workflow.md), but .gitignore historically
-        // pointed them at .claude/worktrees/ — ignore both so a nested one
-        // can't reintroduce cross-session HMR churn or handle bloat.
-        "**/.claude/**",
-        "**/.worktrees/**",
-        // "apps" exists inside src/ (retro/win95/components/apps/) so we
-        // match only the root-level apps/ dir using an absolute path.
-        path.resolve(dirname, "apps") + "/**",
-        // Ignore root-level directories that don't need HMR.
-        // Uses **/ prefix because chokidar receives absolute paths on Windows.
-        // CAUTION: These match at ANY depth. Only use names that are unique to
-        // the project root and DON'T appear inside src/ (e.g. "apps" exists at
-        // src/lib/features/retro/win95/components/apps/ — can't use **/apps/**).
-        "**/_ARCHIVE/**",
-        "**/tka-worlds/**",
-        "**/firebase-functions/**",
-        "**/functions/**",
-        "**/mcp-server/**",
-        // Watch packages/sequence-engine/src/ for HMR (shared generation logic).
-        // Ignore everything else under packages/ to avoid handle bloat.
-        "**/packages/*/node_modules/**",
-        "**/packages/*/tests/**",
-        "**/packages/*/dist/**",
-        "**/android-twa/**",
-        "**/_GUIDE/**",
-        "**/Assets/**",
-        "**/deployment/**",
-        "**/docs/**",
-        "**/feedback-images/**",
-        // "**/messages/**" — NOT ignored: i18nHmrPlugin watches these for live translation reload
-        "**/scripts/**",
-        "**/tests/**",
-        "**/.playwright-mcp/**",
-        "**/.wrangler/**",
-        "**/.husky/**",
-        "**/.github/**",
-        "**/.vscode/**",
-        "**/dev-dist/**",
-        "**/build/**",
-        "**/dist/**",
-        // static/ has 514 subdirs (364 in gallery/ alone). Arrow sprite HMR
-        // uses server.watcher.add() for its specific file, so bulk watching isn't needed.
-        "**/static/**",
-      ],
+      // Vite watches the repository root recursively. A denylist grows stale
+      // whenever another tool adds a cache, build tree, or source-code junction.
+      // Keep HMR scoped to app source, workspace source, messages, root config
+      // files, and the one static asset with a custom HMR event.
+      ignored: createViteDevWatchIgnoredMatcher(dirname),
+      // Workspace packages are watched through their real packages/*/src paths,
+      // so following junctions only duplicates work and can escape the checkout.
+      followSymlinks: false,
     },
     // 2026: Preload critical files on dev start
     // warmup removed — was causing vite-plugin-svelte double-compilation errors
