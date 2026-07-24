@@ -98,11 +98,10 @@ export function inspectZipFilenameFlags(bytes) {
   };
 }
 
-export function createTarExtractionPlan(
+export function createArchiveExtractionPlan(
   buildRoot,
   archivePath,
-  snapshotRoot,
-  platform = process.platform
+  snapshotRoot
 ) {
   const archive = relative(buildRoot, archivePath);
   const destination = relative(buildRoot, snapshotRoot);
@@ -112,19 +111,20 @@ export function createTarExtractionPlan(
 
   if (paths.some(escapesBuildRoot)) {
     throw new Error(
-      "Tar extraction paths must stay inside the native build root."
+      "Archive extraction paths must stay inside the native build root."
     );
-  }
-
-  const args = ["-xf", archive, "-C", destination];
-  if (platform === "win32") {
-    args.push("--options", "hdrcharset=UTF-8");
   }
 
   return {
     cwd: buildRoot,
-    args,
+    args: ["-xf", archive, "-C", destination],
   };
+}
+
+export function selectSnapshotArchive(platform = process.platform) {
+  return platform === "win32"
+    ? { filename: "source.zip", format: "zip" }
+    : { filename: "source.tar", format: "tar" };
 }
 
 export function parsePushUpdates(input) {

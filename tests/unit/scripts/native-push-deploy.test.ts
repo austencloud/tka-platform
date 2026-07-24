@@ -4,13 +4,14 @@ import { isAbsolute, join, resolve } from "node:path";
 import {
   buildWindowsCommandLine,
   choosePushedCommit,
-  createTarExtractionPlan,
+  createArchiveExtractionPlan,
   createNativeBuildEnv,
   inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
   parsePushUpdates,
   readJavaProperty,
+  selectSnapshotArchive,
   selectAndroidDevice,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
 
@@ -68,36 +69,41 @@ describe("native APK filename verification", () => {
 });
 
 describe("native snapshot extraction", () => {
-  it("passes tar paths relative to the build directory", () => {
+  it("uses ZIP snapshots on Windows so bsdtar preserves Unicode names", () => {
+    expect(selectSnapshotArchive("win32")).toEqual({
+      filename: "source.zip",
+      format: "zip",
+    });
+  });
+
+  it("keeps tar snapshots on non-Windows hosts", () => {
+    expect(selectSnapshotArchive("linux")).toEqual({
+      filename: "source.tar",
+      format: "tar",
+    });
+  });
+
+  it("passes Windows ZIP paths relative to the build directory", () => {
     const buildRoot = resolve("test-results", "native-push");
-    const plan = createTarExtractionPlan(
+    const plan = createArchiveExtractionPlan(
       buildRoot,
-      join(buildRoot, "source.tar"),
-      join(buildRoot, "source"),
-      "win32"
+      join(buildRoot, "source.zip"),
+      join(buildRoot, "source")
     );
 
     expect(plan).toEqual({
       cwd: buildRoot,
-      args: [
-        "-xf",
-        "source.tar",
-        "-C",
-        "source",
-        "--options",
-        "hdrcharset=UTF-8",
-      ],
+      args: ["-xf", "source.zip", "-C", "source"],
     });
     expect(plan.args.every((token) => !isAbsolute(token))).toBe(true);
   });
 
-  it("keeps the default extraction command on non-Windows hosts", () => {
+  it("passes non-Windows tar paths relative to the build directory", () => {
     const buildRoot = resolve("test-results", "native-push");
-    const plan = createTarExtractionPlan(
+    const plan = createArchiveExtractionPlan(
       buildRoot,
       join(buildRoot, "source.tar"),
-      join(buildRoot, "source"),
-      "linux"
+      join(buildRoot, "source")
     );
 
     expect(plan.args).toEqual(["-xf", "source.tar", "-C", "source"]);
@@ -107,7 +113,7 @@ describe("native snapshot extraction", () => {
     const buildRoot = resolve("test-results", "native-push");
 
     expect(() =>
-      createTarExtractionPlan(
+      createArchiveExtractionPlan(
         buildRoot,
         join(buildRoot, "source.tar"),
         resolve(buildRoot, "..", "outside")

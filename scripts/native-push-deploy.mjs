@@ -21,13 +21,14 @@ import { fileURLToPath } from "node:url";
 import {
   buildWindowsCommandLine,
   choosePushedCommit,
-  createTarExtractionPlan,
+  createArchiveExtractionPlan,
   createNativeBuildEnv,
   inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
   parsePushUpdates,
   readJavaProperty,
+  selectSnapshotArchive,
   selectAndroidDevice,
 } from "./lib/native-push-deploy-core.mjs";
 
@@ -275,12 +276,22 @@ function copyLocalBuildInputs(repoRoot, snapshotRoot) {
   }
 }
 
-function createSnapshot(repoRoot, snapshotRoot, archivePath, commit) {
+function createSnapshot(
+  repoRoot,
+  snapshotRoot,
+  archivePath,
+  archiveFormat,
+  commit
+) {
   mkdirSync(snapshotRoot, { recursive: true });
-  run("git", ["archive", "--format=tar", `--output=${archivePath}`, commit], {
-    cwd: repoRoot,
-  });
-  const extraction = createTarExtractionPlan(
+  run(
+    "git",
+    ["archive", `--format=${archiveFormat}`, `--output=${archivePath}`, commit],
+    {
+      cwd: repoRoot,
+    }
+  );
+  const extraction = createArchiveExtractionPlan(
     dirname(archivePath),
     archivePath,
     snapshotRoot
@@ -427,7 +438,8 @@ export async function main() {
   const gitCommonDir = resolve(repoRoot, gitCommonDirRaw);
   const buildRoot = join(gitCommonDir, "tka-native-push");
   const snapshotRoot = join(buildRoot, "source");
-  const archivePath = join(buildRoot, "source.tar");
+  const snapshotArchive = selectSnapshotArchive();
+  const archivePath = join(buildRoot, snapshotArchive.filename);
   const lockPath = join(buildRoot, "build.lock");
   assertInside(gitCommonDir, buildRoot);
   if (!javaHome) {
@@ -448,7 +460,13 @@ export async function main() {
   try {
     console.log(`[native] Building Android app from ${shortCommit}.`);
     removeSnapshot(buildRoot, snapshotRoot, archivePath);
-    createSnapshot(repoRoot, snapshotRoot, archivePath, commit);
+    createSnapshot(
+      repoRoot,
+      snapshotRoot,
+      archivePath,
+      snapshotArchive.format,
+      commit
+    );
     snapshotCreated = true;
 
     console.log("[native] 1/4 Build web bundle");
