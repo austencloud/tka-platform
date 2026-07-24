@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Keep the cloud-sync and analytics paths hermetic: no real Firestore/PostHog
@@ -8,16 +9,25 @@ vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn(async () => ({})),
 }));
 
-const { mockDocSnap } = vi.hoisted(() => ({
-  mockDocSnap: { exists: false, data: {} as Record<string, unknown> },
-}));
+const { mockDocSnap, batchSetSpy, batchCommitSpy, mockBatch } = vi.hoisted(
+  () => {
+    const batchSetSpy = vi.fn();
+    const batchCommitSpy = vi.fn(async () => {});
+    return {
+      mockDocSnap: { exists: false, data: {} as Record<string, unknown> },
+      batchSetSpy,
+      batchCommitSpy,
+      mockBatch: { set: batchSetSpy, commit: batchCommitSpy },
+    };
+  }
+);
 vi.mock("firebase/firestore", () => ({
   doc: vi.fn(),
   getDoc: vi.fn(async () => ({
     exists: () => mockDocSnap.exists,
     data: () => mockDocSnap.data,
   })),
-  setDoc: vi.fn(async () => {}),
+  writeBatch: vi.fn(() => mockBatch),
   serverTimestamp: vi.fn(() => 0),
 }));
 
@@ -55,6 +65,20 @@ vi.mock("$lib/shared/analytics/services/posthog", () => ({
   captureEvent: captureEventSpy,
 }));
 
+const { markAppCompletedSpy, markAppSkippedSpy, stageAppTerminalStateSpy } =
+  vi.hoisted(() => ({
+    markAppCompletedSpy: vi.fn(async () => {}),
+    markAppSkippedSpy: vi.fn(async () => {}),
+    stageAppTerminalStateSpy: vi.fn(async () => {}),
+  }));
+vi.mock("$lib/shared/onboarding/get-onboarding-persister", () => ({
+  getOnboardingPersister: () => ({
+    markAppCompleted: markAppCompletedSpy,
+    markAppSkipped: markAppSkippedSpy,
+    stageAppTerminalState: stageAppTerminalStateSpy,
+  }),
+}));
+
 type AppEntry =
   typeof import("$lib/shared/onboarding/state/app-entry-state.svelte").appEntryState;
 
@@ -62,9 +86,8 @@ type AppEntry =
  *  can exercise its construction-time seed derivation. */
 async function freshState(): Promise<AppEntry> {
   vi.resetModules();
-  const mod = await import(
-    "$lib/shared/onboarding/state/app-entry-state.svelte"
-  );
+  const mod =
+    await import("$lib/shared/onboarding/state/app-entry-state.svelte");
   return mod.appEntryState;
 }
 
@@ -76,6 +99,11 @@ function resetMocks() {
   flags.AUTO_TOURS_ENABLED = false;
   flags.CREATE_TUTORIAL_ENABLED = true;
   captureEventSpy.mockClear();
+  markAppCompletedSpy.mockClear();
+  markAppSkippedSpy.mockClear();
+  stageAppTerminalStateSpy.mockClear();
+  batchSetSpy.mockClear();
+  batchCommitSpy.mockClear();
 }
 
 describe("appEntryState — seed derivation (hasCompleted/phase can never diverge)", () => {
@@ -200,11 +228,6 @@ describe("appEntryState — localStorage failure doesn't block Firebase sync", (
     mockDocSnap.exists = false;
 
     const state = await freshState();
-    // Import in the same epoch as freshState() so this is the exact `setDoc`
-    // instance app-entry-state's syncToCloud() dynamically imports internally.
-    const { setDoc } = await import("firebase/firestore");
-    (setDoc as ReturnType<typeof vi.fn>).mockClear();
-
     const setItemSpy = vi
       .spyOn(Storage.prototype, "setItem")
       .mockImplementation(() => {
@@ -224,7 +247,7 @@ describe("appEntryState — localStorage failure doesn't block Firebase sync", (
       expect(state.phase).toBe("complete");
 
       await vi.waitFor(() => {
-        expect(setDoc).toHaveBeenCalled();
+        expect(batchCommitSpy).toHaveBeenCalled();
       });
     } finally {
       setItemSpy.mockRestore();
@@ -260,5 +283,49 @@ describe("appEntryState — analytics events", () => {
       "onboarding_tutorial_declined",
     ]);
     expect(names).not.toContain("onboarding_tutorial_completed");
+  });
+
+  it("AUTO_TOURS off records a skip without claiming the tutorial completed", async () => {
+    flags.AUTO_TOURS_ENABLED = false;
+    mockAuthState.user = { uid: "auto-tours-off-uid" };
+    const state = await freshState();
+
+    state.startEntrySequence();
+
+    expect(state.phase).toBe("complete");
+    expect(captureEventSpy).not.toHaveBeenCalledWith(
+      "onboarding_tutorial_completed",
+      expect.anything()
+    );
+    await vi.waitFor(() => {
+      expect(stageAppTerminalStateSpy).toHaveBeenCalledWith(
+        mockBatch,
+        "auto-tours-off-uid",
+        "skipped"
+      );
+    });
+    expect(markAppCompletedSpy).not.toHaveBeenCalled();
+  });
+
+  it("a completed tutorial synchronizes app-wide onboarding completion", async () => {
+    mockAuthState.user = { uid: "completed-tutorial-uid" };
+    const state = await freshState();
+    // Earlier cases also exercise fire-and-forget cloud writes. Let their
+    // dynamic imports settle before measuring this transition in isolation.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    markAppCompletedSpy.mockClear();
+    markAppSkippedSpy.mockClear();
+    stageAppTerminalStateSpy.mockClear();
+
+    state.completeEntry();
+
+    await vi.waitFor(() => {
+      expect(stageAppTerminalStateSpy).toHaveBeenCalledWith(
+        mockBatch,
+        "completed-tutorial-uid",
+        "completed"
+      );
+    });
+    expect(markAppSkippedSpy).not.toHaveBeenCalled();
   });
 });

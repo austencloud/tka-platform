@@ -21,6 +21,7 @@ import {
   onSnapshot,
   serverTimestamp,
   type Unsubscribe,
+  type WriteBatch,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -120,7 +121,10 @@ export class OnboardingPersister {
     }
 
     if (status.appCompletedAt) {
-      safeLocalStorageSetItem(ONBOARDING_COMPLETED_AT_KEY, status.appCompletedAt);
+      safeLocalStorageSetItem(
+        ONBOARDING_COMPLETED_AT_KEY,
+        status.appCompletedAt
+      );
     } else {
       removeLocalStorageItem(ONBOARDING_COMPLETED_AT_KEY);
     }
@@ -192,15 +196,13 @@ export class OnboardingPersister {
       return;
     }
 
+    const cloudStatus = {
+      ...status,
+      updatedAt: serverTimestamp(),
+    };
+
     try {
-      await setDoc(
-        docRef,
-        {
-          ...status,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+      await setDoc(docRef, cloudStatus, { merge: true });
     } catch (error) {
       console.error(
         "❌ [OnboardingPersister] Failed to save to Firebase:",
@@ -231,6 +233,7 @@ export class OnboardingPersister {
   async markAppCompleted(): Promise<void> {
     const status = this.cachedStatus || (await this.loadStatus());
     status.appCompleted = true;
+    status.appSkipped = false;
     status.appCompletedAt = new Date().toISOString();
     await this.saveStatus(status);
   }
@@ -240,8 +243,46 @@ export class OnboardingPersister {
    */
   async markAppSkipped(): Promise<void> {
     const status = this.cachedStatus || (await this.loadStatus());
+    status.appCompleted = false;
     status.appSkipped = true;
+    status.appCompletedAt = null;
     await this.saveStatus(status);
+  }
+
+  /**
+   * Stage app-entry's terminal marker and the app-wide status in the caller's
+   * batch. The explicit user ID prevents an auth or admin-preview change from
+   * splitting the two documents across accounts.
+   */
+  async stageAppTerminalState(
+    batch: WriteBatch,
+    userId: string,
+    reason: "completed" | "declined" | "skipped"
+  ): Promise<void> {
+    const previous = this.cachedStatus ?? this.loadFromLocalStorage();
+    const appCompleted = reason === "completed";
+    const appCompletedAt = appCompleted ? new Date().toISOString() : null;
+    const status: OnboardingStatus = {
+      ...previous,
+      appCompleted,
+      appSkipped: !appCompleted,
+      appCompletedAt,
+    };
+
+    this.saveToLocalStorage(status);
+    this.cachedStatus = status;
+
+    const firestore = await getFirestoreInstance();
+    batch.set(
+      doc(firestore, `users/${userId}/onboarding/status`),
+      {
+        appCompleted,
+        appSkipped: !appCompleted,
+        appCompletedAt,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
   }
 
   /**

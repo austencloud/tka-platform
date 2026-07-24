@@ -19,7 +19,10 @@
  * cloud read (cloudSynced) before showing, for a signed-in user.
  */
 
-import { AUTO_TOURS_ENABLED, CREATE_TUTORIAL_ENABLED } from "../domain/onboarding-flags";
+import {
+  AUTO_TOURS_ENABLED,
+  CREATE_TUTORIAL_ENABLED,
+} from "../domain/onboarding-flags";
 import {
   logOnboardingTutorialOffered,
   logOnboardingTutorialAccepted,
@@ -62,8 +65,7 @@ function createAppEntryState() {
   // tutorial is never shown for returning users who missed it.
   // With auto-tours disabled, first-run-done users land straight on the app.
   const firstRunDone =
-    isBrowser &&
-    localStorage.getItem("tka-first-run-completed") === "true";
+    isBrowser && localStorage.getItem("tka-first-run-completed") === "true";
 
   // SINGLE SEED: an account counts as onboarded if it explicitly completed
   // app-entry, OR first-run is done while auto-tours are switched off (those
@@ -159,7 +161,7 @@ function createAppEntryState() {
       // Auto-tours are deactivated: skip the tutorial prompt entirely and
       // drop the user straight into the app after the first-run wizard.
       if (!AUTO_TOURS_ENABLED) {
-        this.completeEntry();
+        this.completeEntry("skipped");
         return;
       }
 
@@ -194,15 +196,17 @@ function createAppEntryState() {
     async offerCreateTutorial() {
       if (!CREATE_TUTORIAL_ENABLED) return;
       if (state.hasCompleted) return;
-      if (state.phase === "create-tutorial" || state.phase === "tutorial-prompt") {
+      if (
+        state.phase === "create-tutorial" ||
+        state.phase === "tutorial-prompt"
+      ) {
         return;
       }
 
       if (isBrowser) {
         try {
-          const { authState } = await import(
-            "$lib/shared/auth/state/auth-state.svelte"
-          );
+          const { authState } =
+            await import("$lib/shared/auth/state/auth-state.svelte");
           if (authState.user && !state.cloudSynced) {
             pendingOffer = true;
             return;
@@ -253,7 +257,7 @@ function createAppEntryState() {
       }
 
       // Sync to cloud (non-blocking)
-      this.syncToCloud();
+      this.syncToCloud(reason);
     },
 
     /**
@@ -320,13 +324,11 @@ function createAppEntryState() {
       state.syncInProgress = true;
 
       try {
-        const { getFirestoreInstance } = await import(
-          "$lib/shared/auth/firebase"
-        );
+        const { getFirestoreInstance } =
+          await import("$lib/shared/auth/firebase");
         const { doc, getDoc } = await import("firebase/firestore");
-        const { authState } = await import(
-          "$lib/shared/auth/state/auth-state.svelte"
-        );
+        const { authState } =
+          await import("$lib/shared/auth/state/auth-state.svelte");
 
         const userId = authState.effectiveUserId;
         if (!userId) {
@@ -335,10 +337,7 @@ function createAppEntryState() {
         }
 
         const firestore = await getFirestoreInstance();
-        const docRef = doc(
-          firestore,
-          `users/${userId}/onboarding/appEntry`
-        );
+        const docRef = doc(firestore, `users/${userId}/onboarding/appEntry`);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && docSnap.data().completed === true) {
@@ -357,10 +356,7 @@ function createAppEntryState() {
 
         resolveCloudSync();
       } catch (error) {
-        console.warn(
-          "[appEntryState] Failed to sync from cloud:",
-          error
-        );
+        console.warn("[appEntryState] Failed to sync from cloud:", error);
         resolveCloudSync();
       }
     },
@@ -368,30 +364,28 @@ function createAppEntryState() {
     /**
      * Sync entry status TO Firebase.
      */
-    async syncToCloud(): Promise<void> {
+    async syncToCloud(
+      reason: "completed" | "declined" | "skipped" = "completed"
+    ): Promise<void> {
       if (!isBrowser) return;
 
       try {
-        const { getFirestoreInstance } = await import(
-          "$lib/shared/auth/firebase"
-        );
-        const { doc, setDoc, serverTimestamp } = await import(
-          "firebase/firestore"
-        );
-        const { authState } = await import(
-          "$lib/shared/auth/state/auth-state.svelte"
-        );
+        const { getFirestoreInstance } =
+          await import("$lib/shared/auth/firebase");
+        const { doc, writeBatch, serverTimestamp } =
+          await import("firebase/firestore");
+        const { authState } =
+          await import("$lib/shared/auth/state/auth-state.svelte");
 
-        const userId = authState.effectiveUserId;
+        // Onboarding belongs to the authenticated account, never an admin
+        // preview target. Both terminal documents must use the same owner.
+        const userId = authState.user?.uid;
         if (!userId) return;
 
         const firestore = await getFirestoreInstance();
-        const docRef = doc(
-          firestore,
-          `users/${userId}/onboarding/appEntry`
-        );
-
-        await setDoc(
+        const docRef = doc(firestore, `users/${userId}/onboarding/appEntry`);
+        const batch = writeBatch(firestore);
+        batch.set(
           docRef,
           {
             completed: state.hasCompleted,
@@ -399,11 +393,18 @@ function createAppEntryState() {
           },
           { merge: true }
         );
+
+        // appEntry is the state machine's own resume marker. The app-wide
+        // onboarding status is also consumed during auth boot and by the
+        // cross-device preferences sync, so keep both existing persistence
+        // surfaces in agreement at the terminal transition.
+        const { getOnboardingPersister } =
+          await import("$lib/shared/onboarding/get-onboarding-persister");
+        const onboardingPersister = getOnboardingPersister();
+        await onboardingPersister.stageAppTerminalState(batch, userId, reason);
+        await batch.commit();
       } catch (error) {
-        console.warn(
-          "[appEntryState] Failed to sync to cloud:",
-          error
-        );
+        console.warn("[appEntryState] Failed to sync to cloud:", error);
       }
     },
   };

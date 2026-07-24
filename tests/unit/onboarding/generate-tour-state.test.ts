@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Keep the cloud-sync paths hermetic: no real Firestore in a unit run. The
