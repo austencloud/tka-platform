@@ -49,8 +49,8 @@ export interface SaveToLibraryOptions {
   name: string;
   /** Optional custom display name */
   displayName?: string;
-  /** Visibility level */
-  visibility: SequenceVisibility;
+  /** Visibility level. Defaults to public when omitted. */
+  visibility?: SequenceVisibility;
   /** Tag names to apply */
   tags: string[];
   /** Optional notes */

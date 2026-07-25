@@ -179,10 +179,13 @@ export function createSavePanelState(deps: SavePanelDeps) {
     isOpen = _propsGetter().show;
   });
 
-  // Default the community toggle to match the current published state when panel opens
+  // New eligible saves default public. Reopening an existing sequence preserves
+  // its current choice instead of silently publishing a private draft.
   $effect(() => {
     if (_propsGetter().show) {
-      publishToCommunity = isAlreadyPublished && canPublishToCommunity;
+      publishToCommunity = savedSequence
+        ? isAlreadyPublished && canPublishToCommunity
+        : canPublishToCommunity;
     }
   });
 
@@ -310,14 +313,14 @@ export function createSavePanelState(deps: SavePanelDeps) {
       }
 
       if (ctx.sessionManager) {
-        void ctx.sessionManager.markAsSaved(result.sequenceId).catch(
-          (sessionError) => {
+        void ctx.sessionManager
+          .markAsSaved(result.sequenceId)
+          .catch((sessionError) => {
             logger.warn(
               "Could not complete the cloud session lifecycle:",
               sessionError
             );
-          }
-        );
+          });
       }
 
       props.onSaveComplete?.(result.sequenceId);

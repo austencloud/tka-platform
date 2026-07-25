@@ -28,12 +28,15 @@ export type SequenceSyncStatus = "synced" | "pending" | "failed";
  */
 export async function markSequenceSyncStatus(
   sequenceId: string,
-  status: SequenceSyncStatus,
+  status: SequenceSyncStatus
 ): Promise<void> {
   try {
     await db.sequences.update(sequenceId, { syncStatus: status });
   } catch (dexieError) {
-    console.warn("[LibrarySyncRetry] Failed to update sync status:", dexieError);
+    console.warn(
+      "[LibrarySyncRetry] Failed to update sync status:",
+      dexieError
+    );
   }
 }
 
@@ -70,7 +73,7 @@ export async function retryPendingSyncs(): Promise<void> {
         await repo.saveSequenceWithMetadata(sequence, {
           name: sequence.name,
           displayName: sequence.displayName,
-          visibility: sequence.pendingSyncMetadata?.visibility ?? "private",
+          visibility: sequence.pendingSyncMetadata?.visibility ?? "public",
           tags: [...sequence.tags],
           notes: sequence.pendingSyncMetadata?.notes ?? "",
           thumbnailUrl: sequence.thumbnails[0],
@@ -90,7 +93,7 @@ export async function retryPendingSyncs(): Promise<void> {
           hasShownFailureToast = true;
           toast.info(
             "A saved sequence couldn't sync to the cloud. It's safe on this device and we'll keep retrying.",
-            6000,
+            6000
           );
         }
       }

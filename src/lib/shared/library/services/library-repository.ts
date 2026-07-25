@@ -63,6 +63,7 @@ import type {
 } from "$lib/shared/library/domain/models/library-sequence";
 import { createLibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import {
+  getUserCollectionPath,
   getUserSequencesPath,
   getUserSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
@@ -142,6 +143,47 @@ export class LibraryRepository {
     } catch {
       // ErrorHandler itself failed - fall back to toast
       toast.error(message);
+    }
+  }
+
+  /**
+   * Collection documents are the realtime invalidation signal for foreign
+   * detail views and collection-scoped pickers. Touch every collection that
+   * references a sequence after its public mirror changes so other devices
+   * recount and refetch immediately.
+   */
+  private async touchSequenceCollections(
+    userId: string,
+    collectionIds: readonly string[]
+  ): Promise<void> {
+    const uniqueIds = [...new Set(collectionIds)];
+    if (uniqueIds.length === 0) return;
+
+    const firestore = await getFirestoreInstance();
+    const CONCURRENCY = 8;
+    for (let i = 0; i < uniqueIds.length; i += CONCURRENCY) {
+      const results = await Promise.allSettled(
+        uniqueIds
+          .slice(i, i + CONCURRENCY)
+          .map((collectionId) =>
+            updateDoc(
+              doc(firestore, getUserCollectionPath(userId, collectionId)),
+              { updatedAt: serverTimestamp() }
+            )
+          )
+      );
+
+      for (const result of results) {
+        if (result.status === "fulfilled") continue;
+        const code =
+          typeof result.reason === "object" &&
+          result.reason !== null &&
+          "code" in result.reason
+            ? String((result.reason as { code: unknown }).code)
+            : "";
+        if (code === "not-found") continue;
+        throw result.reason;
+      }
     }
   }
 
@@ -574,19 +616,23 @@ export class LibraryRepository {
     // Notify listeners (browse gallery, etc.) so they can insert immediately
     notifyLibrarySequenceAdded(finalSequence);
 
-    // Post-write: Sync to public index (async, non-blocking)
+    // A public save is not complete until its public mirror exists. Awaiting
+    // this write keeps "Saved" from racing ahead of other devices and public
+    // collection readers. The local-first coordinator still preserves the
+    // sequence in Dexie when this cloud step fails.
     if (finalSequence.visibility === "public" && this.publicIndexSyncer) {
-      this.publicIndexSyncer
-        .syncToPublicIndex(finalSequence, userId)
-        .catch((error) => {
-          this.reportError(
-            "Sequence saved, but it may not appear in the community gallery yet.",
-            error,
-            "public-index-sync",
-            { sequenceId: finalSequence.id },
-            "warning"
-          );
-        });
+      try {
+        await this.publicIndexSyncer.syncToPublicIndex(finalSequence, userId);
+      } catch (error) {
+        this.reportError(
+          "Sequence saved locally, but it is not public on other devices yet.",
+          error,
+          "public-index-sync",
+          { sequenceId: finalSequence.id },
+          "warning"
+        );
+        throw error;
+      }
     } else if (
       finalSequence.visibility === "public" &&
       !this.publicIndexSyncer
@@ -605,17 +651,31 @@ export class LibraryRepository {
       // discoverable in the gallery and inflates public member counts.
       // removeFromPublicIndex treats an absent mirror as success, so this is a
       // no-op for first-time private saves.
-      this.publicIndexSyncer
-        .removeFromPublicIndex(finalSequence.id)
-        .catch((error) => {
-          this.reportError(
-            "Saved privately, but the old public copy may still be visible in the gallery.",
-            error,
-            "public-index-sync",
-            { sequenceId: finalSequence.id },
-            "warning"
-          );
-        });
+      try {
+        await this.publicIndexSyncer.removeFromPublicIndex(finalSequence.id);
+      } catch (error) {
+        this.reportError(
+          "Saved privately, but the old public copy may still be visible in the gallery.",
+          error,
+          "public-index-sync",
+          { sequenceId: finalSequence.id },
+          "warning"
+        );
+        throw error;
+      }
+    }
+
+    try {
+      await this.touchSequenceCollections(userId, finalSequence.collectionIds);
+    } catch (error) {
+      this.reportError(
+        "Sequence saved, but its collections may not have refreshed on other devices yet.",
+        error,
+        "collection-refresh",
+        { sequenceId: finalSequence.id },
+        "warning"
+      );
+      throw error;
     }
 
     return finalSequence;
@@ -772,22 +832,47 @@ export class LibraryRepository {
       updatedAt: new Date(),
     };
 
-    // Fire-and-forget: queue write locally, sync when online
-    trackWrite(
+    const visibilityChanged =
+      updates.visibility !== undefined &&
+      updates.visibility !== existing.visibility;
+    const updateWrite = trackWrite(
       () =>
         updateDoc(docRef, {
           ...updates,
           updatedAt: serverTimestamp(),
         }),
       "library"
-    ).catch((error) => {
-      this.reportError(
-        "Failed to update sequence. Your changes may not sync to other devices.",
-        error,
-        "update-sequence",
-        { sequenceId }
-      );
-    });
+    );
+
+    // Visibility is a cross-document invariant: the owner doc must land before
+    // its public mirror is created or removed. Other metadata keeps the
+    // existing optimistic, local-first behavior.
+    if (visibilityChanged) {
+      try {
+        await updateWrite;
+      } catch (error) {
+        this.reportError(
+          "Failed to update sequence visibility.",
+          error,
+          "update-sequence",
+          { sequenceId }
+        );
+        throw new LibraryError(
+          "Failed to update sequence visibility",
+          "NETWORK",
+          sequenceId
+        );
+      }
+    } else {
+      void updateWrite.catch((error) => {
+        this.reportError(
+          "Failed to update sequence. Your changes may not sync to other devices.",
+          error,
+          "update-sequence",
+          { sequenceId }
+        );
+      });
+    }
 
     // Notify listeners so caches can patch without a Firestore round-trip
     notifyLibrarySequenceUpdated(
@@ -795,8 +880,7 @@ export class LibraryRepository {
       updates as Record<string, unknown>
     );
 
-    // Handle visibility changes (async, non-blocking)
-    if (updates.visibility && updates.visibility !== existing.visibility) {
+    if (visibilityChanged && updates.visibility) {
       if (!this.publicIndexSyncer) {
         console.warn(
           "[LibraryRepository] Visibility changed but publicIndexSyncer is null - public gallery will not reflect this change.",
@@ -805,29 +889,47 @@ export class LibraryRepository {
       } else if (updates.visibility === "public") {
         // Ensure compositional fields are fresh before publishing
         const compositionReady = { ...updated, ...ensureComposition(updated) };
-        this.publicIndexSyncer
-          .syncToPublicIndex(compositionReady, userId)
-          .catch((error) => {
-            this.reportError(
-              "Sequence updated, but it may not appear in the community gallery yet.",
-              error,
-              "public-index-sync",
-              { sequenceId },
-              "warning"
-            );
-          });
+        try {
+          await this.publicIndexSyncer.syncToPublicIndex(
+            compositionReady,
+            userId
+          );
+        } catch (error) {
+          this.reportError(
+            "Sequence updated, but it is not public on other devices yet.",
+            error,
+            "public-index-sync",
+            { sequenceId },
+            "warning"
+          );
+          throw error;
+        }
       } else if (existing.visibility === "public") {
-        this.publicIndexSyncer
-          .removeFromPublicIndex(sequenceId)
-          .catch((error) => {
-            this.reportError(
-              "Sequence updated, but it may still appear in the community gallery.",
-              error,
-              "public-index-remove",
-              { sequenceId },
-              "warning"
-            );
-          });
+        try {
+          await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
+        } catch (error) {
+          this.reportError(
+            "Sequence updated, but it may still appear in the community gallery.",
+            error,
+            "public-index-remove",
+            { sequenceId },
+            "warning"
+          );
+          throw error;
+        }
+      }
+
+      try {
+        await this.touchSequenceCollections(userId, existing.collectionIds);
+      } catch (error) {
+        this.reportError(
+          "Visibility changed, but its collections may not have refreshed on other devices yet.",
+          error,
+          "collection-refresh",
+          { sequenceId },
+          "warning"
+        );
+        throw error;
       }
     }
 
@@ -870,9 +972,7 @@ export class LibraryRepository {
     // invariant. Commit them together so an offline transition or auth race
     // cannot delete the sequence while leaving the count unchanged.
     const deleteBatch = writeBatch(firestore);
-    deleteBatch.delete(
-      doc(firestore, getUserSequencePath(userId, sequenceId))
-    );
+    deleteBatch.delete(doc(firestore, getUserSequencePath(userId, sequenceId)));
     deleteBatch.set(
       doc(firestore, `users/${userId}`),
       {
@@ -1038,11 +1138,39 @@ export class LibraryRepository {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
     }
 
-    await this.setVisibility(sequenceId, "public");
+    if (existing.visibility !== "public") {
+      await this.setVisibility(sequenceId, "public");
+      return;
+    }
+
+    // Publishing an already-public owner doc is an explicit repair operation.
+    // This covers legacy records whose public mirror was never written.
+    const userId = this.getUserId();
+    const compositionReady = {
+      ...existing,
+      ...ensureComposition(existing),
+    };
+    await this.publicIndexSyncer.syncToPublicIndex(compositionReady, userId);
+    await this.touchSequenceCollections(userId, existing.collectionIds);
   }
 
   async unpublishSequence(sequenceId: string): Promise<void> {
-    await this.setVisibility(sequenceId, "private");
+    const existing = await this.getSequence(sequenceId);
+    if (!existing) {
+      throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
+    }
+
+    if (existing.visibility === "public") {
+      await this.setVisibility(sequenceId, "private");
+      return;
+    }
+
+    // Likewise, an already-private doc can still have a stale legacy mirror.
+    await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
+    await this.touchSequenceCollections(
+      this.getUserId(),
+      existing.collectionIds
+    );
   }
 
   // ============================================================

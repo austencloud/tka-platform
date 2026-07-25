@@ -104,7 +104,7 @@
       // silently drops guest saves. See SP1 — Durable-Save Unification.
       const saveOptions: SaveToLibraryOptions = {
         name: metadata.name,
-        visibility: metadata.visibility ?? "private",
+        visibility: metadata.visibility ?? "public",
         tags: metadata.tags ?? [],
         notes: metadata.notes ?? "",
       };

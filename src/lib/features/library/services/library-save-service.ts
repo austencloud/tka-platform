@@ -99,7 +99,9 @@ export class LibrarySaveService {
     // user's own library — just not posted to the community gallery. Degrade the
     // requested visibility and tell them, rather than failing the save. The
     // repository + syncer enforce the same invariant as a backstop.
-    let visibility = options.visibility;
+    // Public is the product default. Callers may still opt into private, and
+    // the community minimum below remains the authoritative safety gate.
+    let visibility = options.visibility ?? "public";
     // Decide the downgrade now (it shapes the Dexie/Firestore write metadata
     // below), but DON'T announce "Saved to your library." until the local write
     // actually lands — otherwise a subsequent Dexie failure that rejects this
@@ -313,6 +315,18 @@ export class LibrarySaveService {
         .catch((err) =>
           console.error("Artifact extraction failed (non-blocking):", err)
         );
+    }
+
+    // A signed-in public save must finish its owner write and public mirror
+    // before the UI reports completion. Private saves and guest/offline saves
+    // retain the local-first path above.
+    if (isFullAccount && visibility === "public") {
+      const synced = await initialCloudSync;
+      if (!synced) {
+        toast.warning(
+          "Saved on this device, but it is not public on other devices yet. It will retry when you are online."
+        );
+      }
     }
 
     // Step 4: Refresh library state

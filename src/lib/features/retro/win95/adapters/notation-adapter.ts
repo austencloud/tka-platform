@@ -11,7 +11,9 @@
 
 import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import {
-  DifficultyLevel, GenerationMode, } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  DifficultyLevel,
+  GenerationMode,
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { SaveResult } from "$lib/features/library/services/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -88,7 +90,7 @@ function mapGridMode(mode: string): GridMode {
  * then convert the result to the retro renderer's data format.
  */
 export async function generateRetroSequence(
-  options: RetroGenerationOptions,
+  options: RetroGenerationOptions
 ): Promise<RetroGenerationResult> {
   const orchestrator = getGenerationOrchestrator();
 
@@ -143,7 +145,7 @@ export async function generateRetroSequence(
  */
 export async function saveRetroSequence(
   sequenceData: SequenceData,
-  dosName: string,
+  dosName: string
 ): Promise<SaveResult> {
   const saveService = getLibrarySaveService();
 
@@ -157,7 +159,7 @@ export async function saveRetroSequence(
   const result = await saveService.saveSequence(sequenceData, {
     name: humanName,
     displayName: dosName,
-    visibility: "private",
+    visibility: "public",
     tags: [],
     notes: "",
   });
@@ -176,7 +178,7 @@ export async function saveRetroSequence(
  * Returns null when the sequence no longer exists.
  */
 export async function loadRetroSequence(
-  sequenceId: string,
+  sequenceId: string
 ): Promise<LibrarySequence | null> {
   const repo = getLibraryRepository();
   return await repo.getSequence(sequenceId);

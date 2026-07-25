@@ -191,7 +191,7 @@
         const name = simplifyRepeatedWord(seq.word ?? "");
         const r = await getLibrarySaveService().saveSequence(seq, {
           name,
-          visibility: "private",
+          visibility: "public",
           tags: [],
           notes: "",
         });

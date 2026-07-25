@@ -9,7 +9,7 @@ open and work through the whole stack.
 
 Cards resolve identity-first (resolveForImport): a card backed by a real
 sequence doc is added as a reference; a card whose data lives only in its
-shortcode record (printed deck cards) is silently saved as a private copy
+shortcode record (printed deck cards) is saved under the normal public default
 to My Library first, then filed. Either way the user sees one behavior:
 scan → added. There is no rejection state — every printed card exists in
 the system by construction.
@@ -191,8 +191,8 @@ the geo dashboard).
 
 			if (!resolution.docBacked) {
 				// No referenceable doc behind this card (printed deck cards):
-				// save a private copy to My Library, file that. Silent — the
-				// user asked to keep the card, and now they do.
+				// save it to My Library under the normal public default, then
+				// file it. The community-length gate still protects short cards.
 				try {
 					// Durable save (Dexie + Firestore) so a guest's imported printed
 					// card actually lands in their Dexie-only library. The core
@@ -202,7 +202,7 @@ the geo dashboard).
 					// written. See SP1 — Durable-Save Unification.
 					const saved = await getLibrarySaveService().saveSequence(
 						resolution.sequence,
-						{ name: word, visibility: "private", tags: [], notes: "" },
+						{ name: word, visibility: "public", tags: [], notes: "" },
 					);
 					targetId = saved.sequenceId;
 					createdLibraryId = saved.sequenceId;

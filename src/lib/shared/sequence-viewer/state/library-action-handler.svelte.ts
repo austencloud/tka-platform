@@ -133,7 +133,7 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
         "";
       const result = await getLibrarySaveService().saveSequence(sequenceWithIntent, {
         name,
-        visibility: "private",
+        visibility: "public",
         tags: [],
         notes: "",
       });
