@@ -51,6 +51,11 @@
   import CollectionChipsRow from "$lib/features/library/components/collection-picker/CollectionChipsRow.svelte";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  import { getCollectionSequences } from "$lib/shared/library/services/collection-manager";
+  import { getUserCollectionSequences } from "$lib/features/library/services/public-collection-loader";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+  import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Hydrates one sequence id when a draft/saved act restores. Order matters:
   // most rows on a sheet are the user's OWN sequences, and the public gallery
@@ -147,7 +152,26 @@
     { value: "landscape", label: "Landscape" },
     { value: "portrait", label: "Portrait" },
   ];
+  type PictographSize = "large" | "standard" | "compact";
+  const pictographSizeOptions: { value: PictographSize; label: string }[] = [
+    { value: "large", label: "Large" },
+    { value: "standard", label: "Standard" },
+    { value: "compact", label: "Compact" },
+  ];
   const isAnnotated = $derived(builder.layout.packing === "aligned");
+  const pictographSize = $derived<PictographSize>(
+    builder.layout.columns <= 4 ? "large" : builder.layout.columns <= 6 ? "standard" : "compact"
+  );
+
+  function setPictographSize(size: PictographSize): void {
+    const geometry =
+      size === "large"
+        ? { columns: 4, rowsPerPage: 3 }
+        : size === "standard"
+          ? { columns: 6, rowsPerPage: 4 }
+          : { columns: 8, rowsPerPage: 6 };
+    builder.setLayout(geometry);
+  }
 
   // ── Add-sequences picker (inline docked column) ─────────────────────────────
   // Reuses the full Browse experience (BrowsePanel + a browse engine): real
@@ -290,6 +314,59 @@
     }
   }
 
+  let addingCollectionId = $state<string | null>(null);
+  async function handleAddCollection(collectionId: string): Promise<void> {
+    if (addingCollectionId) return;
+    addingCollectionId = collectionId;
+
+    try {
+      const ownCollection = collectionsState.collections.find(
+        (collection) => collection.id === collectionId
+      );
+      const communityCollection = communityCollectionsState.items.find(
+        (item) => item.collection.id === collectionId
+      );
+
+      const isOwnSource = browseEngine.source === "my-library";
+      const collectionName = isOwnSource
+        ? ownCollection?.name
+        : communityCollection?.collection.name;
+      const sequences = isOwnSource
+        ? await getCollectionSequences(collectionId)
+        : communityCollection
+          ? await getUserCollectionSequences(communityCollection.ownerId, collectionId)
+          : [];
+
+      if (!collectionName) {
+        toast.error("That collection is no longer available.");
+        return;
+      }
+
+      const existingIds = new Set(builder.sequenceIds);
+      const additions = sequences.filter((sequence) => !existingIds.has(sequence.id));
+      const wasEmpty = builder.sequenceIds.length === 0;
+      builder.addHydratedSequences(sequences);
+
+      if (wasEmpty && sequences.length > 0) {
+        builder.setName(collectionName);
+        // Whole-collection printing starts at the large, light sheet geometry.
+        // The PDF exporter already renders every cell in light mode.
+        setPictographSize("large");
+      }
+
+      if (additions.length === 0) {
+        toast.info("That collection is already on this act.");
+      } else {
+        const noun = additions.length === 1 ? "sequence" : "sequences";
+        toast.success(`Added ${additions.length} ${noun} from "${collectionName}".`);
+      }
+    } catch (error) {
+      console.error("[ChoreoSheetView] Failed to add collection:", error);
+      toast.error("Couldn't add that collection. Try again.");
+    } finally {
+      addingCollectionId = null;
+    }
+  }
 
   let exporting = $state(false);
   let exportPct = $state(0);
@@ -600,6 +677,16 @@
             size="sm"
           />
         </div>
+        <div class="setting-col">
+          <span class="setting-label">Pictograph size</span>
+          <SegmentedControl
+            options={pictographSizeOptions}
+            value={pictographSize}
+            onchange={setPictographSize}
+            color="accent"
+            size="sm"
+          />
+        </div>
         {#if isAnnotated}
           <div class="setting-col" transition:growFade={{ axis: "y" }}>
             <span class="setting-label">Orientation</span>
@@ -717,10 +804,14 @@
         </div>
 
         {#if browseSettled}
-          <!-- Collections lead the grid as chips: yours on My Library, followed
-               ones on Community — the row's count gate routes per pool. Sources
+          <!-- Collections lead the grid as chips: yours on My Library, every
+               public collection on Community. The row's count gate routes per pool. Sources
                are the toolbar's standard Community | My Library toggle. -->
-          <CollectionChipsRow engine={browseEngine} />
+          <CollectionChipsRow
+            engine={browseEngine}
+            onAddCollection={(collectionId) => void handleAddCollection(collectionId)}
+            addCollectionBusy={addingCollectionId !== null}
+          />
 
           <div class="browse-panel-host" in:flyFade={{ duration: 150 }}>
             <BrowsePanel
