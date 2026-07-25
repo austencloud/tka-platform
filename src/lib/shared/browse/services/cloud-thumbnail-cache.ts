@@ -59,6 +59,7 @@ const pendingUploads = new Map<string, Promise<string | null>>();
 let manifestLoaded = false;
 let manifestLoadPromise: Promise<number> | null = null;
 const MANIFEST_PATH = "thumbnails/manifest.json";
+const MANIFEST_CACHE_VERSION = 2;
 
 // Firebase Storage bucket - single source of truth
 const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
@@ -69,13 +70,17 @@ const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
 // This prevents 404 spam because we never request things that don't exist
 const KNOWN_EXISTS_KEY = "tka-cloud-thumbnails";
 let knownExists: Set<string> | null = null;
+let sessionConfirmedExists = new Set<string>();
 
 function getKnownExists(): Set<string> {
   if (knownExists) return knownExists;
   try {
     const stored = localStorage.getItem(KNOWN_EXISTS_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored) as { keys: string[]; timestamp: number };
+      const parsed = JSON.parse(stored) as {
+        keys: string[];
+        timestamp: number;
+      };
       // Keep for 7 days (thumbnails don't get deleted often)
       if (Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
         knownExists = new Set(parsed.keys);
@@ -92,6 +97,8 @@ function getKnownExists(): Set<string> {
 function addKnownExists(cacheKey: string): void {
   const exists = getKnownExists();
   exists.add(cacheKey);
+  sessionConfirmedExists.add(cacheKey);
+  clearKnownMissing(cacheKey);
   // Persist periodically (every 10 additions) to avoid excessive writes
   if (exists.size % 10 === 0) {
     persistKnownExists();
@@ -173,6 +180,29 @@ function clearKnownMissing(cacheKey: string): void {
   }
 }
 
+function markCacheKeyMissing(cacheKey: string): void {
+  urlCache.delete(cacheKey);
+  sessionConfirmedExists.delete(cacheKey);
+
+  const exists = getKnownExists();
+  if (exists.delete(cacheKey)) {
+    persistKnownExists();
+  }
+
+  addKnownMissing(cacheKey);
+}
+
+/**
+ * Record a confirmed 404 from an actual thumbnail download.
+ *
+ * The manifest and the browser's persisted positive set are snapshots, so a
+ * deleted object can remain listed after it is gone. A real 404 outranks those
+ * snapshots until the existing 24-hour missing-object TTL expires.
+ */
+export function markMissing(key: CloudThumbnailKey): void {
+  markCacheKeyMissing(getCacheKey(key));
+}
+
 /**
  * Check if a cached entry is still valid (not expired)
  */
@@ -250,7 +280,9 @@ function getCacheKey(key: CloudThumbnailKey): string {
  * Returns undefined if not in cache, null if checked and known not to exist
  * Use this for instant cache hits without async overhead
  */
-export function getCachedUrl(key: CloudThumbnailKey): string | null | undefined {
+export function getCachedUrl(
+  key: CloudThumbnailKey
+): string | null | undefined {
   const cacheKey = getCacheKey(key);
   const cached = urlCache.get(cacheKey);
   if (cached && isCacheValid(cached)) {
@@ -276,7 +308,10 @@ export function getCachedUrl(key: CloudThumbnailKey): string | null | undefined 
  *
  * @param priority - Lower = higher priority (Y position). Visible thumbnails get served first.
  */
-export async function getUrl(key: CloudThumbnailKey, priority: number = Infinity): Promise<string | null> {
+export async function getUrl(
+  key: CloudThumbnailKey,
+  priority: number = Infinity
+): Promise<string | null> {
   const cacheKey = getCacheKey(key);
 
   // Check in-memory cache first (no concurrency limit needed)
@@ -294,17 +329,16 @@ export async function getUrl(key: CloudThumbnailKey, priority: number = Infinity
   const objectUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}`;
   const publicUrl = `${objectUrl}?alt=media`;
 
+  // A confirmed 404 outranks a stale manifest or persisted positive entry.
+  if (isKnownMissing(cacheKey)) {
+    return null;
+  }
+
   // Fast path: manifest or a previous upload/probe confirmed this exists —
   // build the public URL directly, no request needed.
   if (getKnownExists().has(cacheKey)) {
     urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
     return publicUrl;
-  }
-
-  // Unknown key: probe once per TTL. Recently confirmed missing → straight to
-  // local render, no request.
-  if (isKnownMissing(cacheKey)) {
-    return null;
   }
 
   // Acquire a slot before probing (respects the Y-position priority queue)
@@ -316,6 +350,9 @@ export async function getUrl(key: CloudThumbnailKey, priority: number = Infinity
     const cachedAgain = urlCache.get(cacheKey);
     if (cachedAgain && isCacheValid(cachedAgain)) {
       return cachedAgain.url;
+    }
+    if (isKnownMissing(cacheKey)) {
+      return null;
     }
     if (getKnownExists().has(cacheKey)) {
       urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
@@ -331,9 +368,11 @@ export async function getUrl(key: CloudThumbnailKey, priority: number = Infinity
       return publicUrl;
     }
 
-    // Confirmed missing — remember so we don't re-probe for 24h. The caller
-    // renders locally and upload() clears this entry on success.
-    addKnownMissing(cacheKey);
+    // Only a real "not found" result belongs in the negative cache. Permission,
+    // quota, and server failures remain retryable on the next request.
+    if (response.status === 404) {
+      markCacheKeyMissing(cacheKey);
+    }
     return null;
   } catch {
     // Network/CORS error — don't poison the negative cache, just fall back
@@ -356,6 +395,9 @@ export async function download(key: CloudThumbnailKey): Promise<Blob | null> {
 
     const response = await fetch(url);
     if (!response.ok) {
+      if (response.status === 404) {
+        markMissing(key);
+      }
       throw new Error(`HTTP ${response.status}`);
     }
     return await response.blob();
@@ -364,7 +406,8 @@ export async function download(key: CloudThumbnailKey): Promise<Blob | null> {
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Thumbnail didn't load",
-        technicalDetails: error instanceof Error ? error.message : String(error),
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "warning",
         context: {
@@ -446,8 +489,7 @@ async function performUpload(
   key: CloudThumbnailKey,
   blob: Blob
 ): Promise<string> {
-  const { ref, uploadBytes, getDownloadURL } =
-    await import("firebase/storage");
+  const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
   const storage = await getStorageInstance();
   const storagePath = getStoragePath(key);
   const storageRef = ref(storage, storagePath);
@@ -478,6 +520,7 @@ export function clearMemoryCache(includeKnownExists: boolean = false): void {
   urlCache.clear();
   if (includeKnownExists) {
     knownExists = new Set();
+    sessionConfirmedExists = new Set();
     knownMissing = new Map();
     try {
       localStorage.removeItem(KNOWN_EXISTS_KEY);
@@ -523,7 +566,7 @@ async function doLoadManifest(): Promise<number> {
   try {
     // Build direct URL to manifest (public read)
     const encodedPath = encodeURIComponent(MANIFEST_PATH);
-    const manifestUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media`;
+    const manifestUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media&v=${MANIFEST_CACHE_VERSION}`;
 
     const response = await fetch(manifestUrl);
     if (!response.ok) {
@@ -532,22 +575,23 @@ async function doLoadManifest(): Promise<number> {
       return 0;
     }
 
-    const manifest = await response.json() as { keys: string[]; generated: string };
-    const exists = getKnownExists();
-    let added = 0;
+    const manifest = (await response.json()) as {
+      keys: string[];
+      generated: string;
+    };
 
-    for (const key of manifest.keys) {
-      if (!exists.has(key)) {
-        exists.add(key);
-        added++; // eslint-disable-line @typescript-eslint/no-unused-vars
-      }
-    }
-
-    // Persist the merged set
+    // The freshly generated manifest is authoritative for old persisted
+    // positives. Keep only keys confirmed during this live session in addition
+    // to the manifest, and let confirmed 404s override both.
+    knownExists = new Set(
+      [...manifest.keys, ...sessionConfirmedExists].filter(
+        (key) => !isKnownMissing(key)
+      )
+    );
     persistKnownExists();
     manifestLoaded = true;
 
-    return exists.size;
+    return knownExists.size;
   } catch (error) {
     console.warn("[CloudThumbnailCache] Failed to load manifest:", error);
     manifestLoaded = true; // Don't retry continuously
@@ -586,7 +630,7 @@ export async function deleteVariant(
     const result = await listAll(variantRef);
 
     // Collect all files to delete
-    const allItems: { fullPath: string; ref: typeof result.items[0] }[] = [];
+    const allItems: { fullPath: string; ref: (typeof result.items)[0] }[] = [];
 
     // Add root items
     for (const item of result.items) {

@@ -15,7 +15,9 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_NAME).then(async (cache) => {
       // cache: "reload" bypasses the browser HTTP cache so a new SW never
       // precaches stale bytes it happens to have lying around.
-      await cache.addAll(APP_SHELL_URLS.map((url) => new Request(url, { cache: "reload" })));
+      await cache.addAll(
+        APP_SHELL_URLS.map((url) => new Request(url, { cache: "reload" }))
+      );
       await precacheBootChunks(cache);
       await precacheSvgAssets(cache);
     })
@@ -96,13 +98,15 @@ async function precacheSvgAssets(cache) {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names
-          .filter((name) => name !== CACHE_NAME && name !== ASSETS_3D_CACHE)
-          .map((name) => caches.delete(name))
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name !== CACHE_NAME && name !== ASSETS_3D_CACHE)
+            .map((name) => caches.delete(name))
+        )
       )
-    )
   );
   self.clients.claim();
 });
@@ -121,7 +125,18 @@ self.addEventListener("fetch", (event) => {
   // Skip cross-origin requests except Firebase Storage thumbnails
   if (url.origin !== self.location.origin) {
     if (url.hostname === "firebasestorage.googleapis.com") {
-      event.respondWith(staleWhileRevalidate(event.request));
+      // Thumbnail images can serve stale while they refresh, but the manifest
+      // decides which images the app will request. Returning an old manifest
+      // first can trigger hundreds of requests for objects that were deleted
+      // since it was cached, so online reads wait for the current snapshot and
+      // fall back to the cached copy only when the network is unavailable.
+      const isThumbnailManifest =
+        /\/o\/thumbnails(?:%2f|\/)manifest\.json$/i.test(url.pathname);
+      event.respondWith(
+        isThumbnailManifest
+          ? networkFirst(event.request)
+          : staleWhileRevalidate(event.request)
+      );
     }
     return;
   }
@@ -209,7 +224,11 @@ self.addEventListener("fetch", (event) => {
     if (!isPublicRoute) {
       event.respondWith(
         fetchWithTimeout(event.request, 10000).catch(() =>
-          caches.match("/app").then((cached) => cached || new Response("Offline", { status: 503 }))
+          caches
+            .match("/app")
+            .then(
+              (cached) => cached || new Response("Offline", { status: 503 })
+            )
         )
       );
       return;
@@ -308,8 +327,14 @@ function fetchWithTimeout(request, ms) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms);
     fetch(request, { signal: controller.signal })
-      .then((res) => { clearTimeout(timer); resolve(res); })
-      .catch((err) => { clearTimeout(timer); reject(err); });
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
   });
 }
 

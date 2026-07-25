@@ -6,12 +6,15 @@
  * the "known exists" list on app load.
  *
  * Usage: node scripts/generate-thumbnail-manifest.cjs
+ *        node scripts/generate-thumbnail-manifest.cjs --dry-run
  *
  * Requires Firebase Admin SDK credentials (GOOGLE_APPLICATION_CREDENTIALS env var)
  */
 
 const admin = require("firebase-admin");
 const path = require("path");
+
+const dryRun = process.argv.includes("--dry-run");
 
 // Initialize Firebase Admin
 const serviceAccountPath = path.resolve(__dirname, "../serviceAccountKey.json");
@@ -23,8 +26,12 @@ try {
     storageBucket: "the-kinetic-alphabet.firebasestorage.app",
   });
 } catch (error) {
-  console.error("Failed to load service account. Make sure serviceAccountKey.json exists in the project root.");
-  console.error("You can download it from Firebase Console > Project Settings > Service Accounts");
+  console.error(
+    "Failed to load service account. Make sure serviceAccountKey.json exists in the project root."
+  );
+  console.error(
+    "You can download it from Firebase Console > Project Settings > Service Accounts"
+  );
   process.exit(1);
 }
 
@@ -82,6 +89,16 @@ async function generateManifest() {
 
   // Upload manifest to Firebase Storage with public access
   const manifestPath = "thumbnails/manifest.json";
+  if (dryRun) {
+    console.log(
+      `\nDry run: would replace gs://the-kinetic-alphabet.firebasestorage.app/${manifestPath}`
+    );
+    console.log(
+      `Manifest would contain ${cacheKeys.length} live thumbnail keys.`
+    );
+    return;
+  }
+
   const manifestFile = bucket.file(manifestPath);
 
   await manifestFile.save(JSON.stringify(manifest), {
@@ -95,7 +112,9 @@ async function generateManifest() {
   // Ensure the file is publicly accessible
   await manifestFile.makePublic();
 
-  console.log(`\nManifest uploaded to gs://the-kinetic-alphabet.firebasestorage.app/${manifestPath}`);
+  console.log(
+    `\nManifest uploaded to gs://the-kinetic-alphabet.firebasestorage.app/${manifestPath}`
+  );
   console.log(`Total thumbnails indexed: ${cacheKeys.length}`);
 }
 

@@ -30,6 +30,9 @@ vi.mock("firebase/storage", () => ({
 }));
 
 import {
+  clearMemoryCache,
+  getUrl,
+  markMissing,
   upload,
   type CloudThumbnailKey,
 } from "$lib/shared/browse/services/cloud-thumbnail-cache";
@@ -43,6 +46,7 @@ const key: CloudThumbnailKey = {
 };
 
 beforeEach(() => {
+  clearMemoryCache(true);
   localStorage.clear();
   mocks.auth.currentUser = null;
   mocks.auth.authStateReady.mockResolvedValue(undefined);
@@ -95,5 +99,71 @@ describe("cloud-thumbnail-cache upload authorization", () => {
     expect(mocks.auth.authStateReady.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.uploadBytes.mock.invocationCallOrder[0]!
     );
+  });
+});
+
+describe("cloud-thumbnail-cache missing-object memory", () => {
+  it("lets a confirmed 404 override a previously confirmed positive entry", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+    const missingKey = { ...key, sequenceId: "deleted-after-confirmation" };
+
+    const initialUrl = await getUrl(missingKey);
+    markMissing(missingKey);
+    const after404 = await getUrl(missingKey);
+
+    expect(initialUrl).toContain("deleted-after-confirmation");
+    expect(after404).toBeNull();
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("does not poison the missing-object cache for retryable HTTP failures", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+    const retryableKey = { ...key, sequenceId: "retryable-server-error" };
+
+    expect(await getUrl(retryableKey)).toBeNull();
+    expect(await getUrl(retryableKey)).toContain("retryable-server-error");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("replaces stale persisted positives with the freshly loaded manifest", async () => {
+    clearMemoryCache(true);
+    localStorage.setItem(
+      "tka-cloud-thumbnails",
+      JSON.stringify({
+        keys: ["gallery/club/AAAA_stale-persisted_dark"],
+        timestamp: Date.now(),
+      })
+    );
+
+    vi.resetModules();
+    const freshCache =
+      await import("$lib/shared/browse/services/cloud-thumbnail-cache");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          keys: ["gallery/club/BBBB_fresh-manifest_dark"],
+          generated: new Date().toISOString(),
+        }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 404 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await freshCache.loadManifest();
+    const staleResult = await freshCache.getUrl({
+      ...key,
+      sequenceId: "stale-persisted",
+    });
+
+    expect(staleResult).toBeNull();
+    // The stale positive no longer short-circuits to a download URL. It takes
+    // one metadata probe, which records the key in the existing negative cache.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -52,7 +52,9 @@ describe("sw.js install precache", () => {
     expect(
       await h.cacheHas(h.constants.cacheName, "/images/grid/diamond_grid.svg")
     ).toBe(true);
-    expect(await h.cacheHas(h.constants.cacheName, "/images/arrow.svg")).toBe(true);
+    expect(await h.cacheHas(h.constants.cacheName, "/images/arrow.svg")).toBe(
+      true
+    );
     // install no longer force-activates: it must NOT skipWaiting, so an open
     // tab keeps running old code until the user opts into the update.
     expect(h.self.skipWaiting).not.toHaveBeenCalled();
@@ -62,7 +64,10 @@ describe("sw.js install precache", () => {
   // manifest (404) must NEVER fail install and brick SW updates.
   it("survives a missing manifest (404) — install resolves, /app still cached", async () => {
     const h = harnessWithShellRoute();
-    h.route("/svg-precache-manifest.json", respondWith("not found", { status: 404 }));
+    h.route(
+      "/svg-precache-manifest.json",
+      respondWith("not found", { status: 404 })
+    );
 
     await expect(h.dispatchInstall()).resolves.toBeUndefined();
     expect(await h.cacheHas(h.constants.cacheName, "/app")).toBe(true);
@@ -79,14 +84,21 @@ describe("sw.js install precache", () => {
     const h = harnessWithShellRoute();
     h.route(
       "/svg-precache-manifest.json",
-      respondWith({ count: 2, assets: ["/images/good.svg", "/images/gone.svg"] })
+      respondWith({
+        count: 2,
+        assets: ["/images/good.svg", "/images/gone.svg"],
+      })
     );
     h.route("/images/good.svg", respondWith("<svg>good</svg>"));
     h.route("/images/gone.svg", respondWith("nope", { status: 404 }));
 
     await expect(h.dispatchInstall()).resolves.toBeUndefined();
-    expect(await h.cacheHas(h.constants.cacheName, "/images/good.svg")).toBe(true);
-    expect(await h.cacheHas(h.constants.cacheName, "/images/gone.svg")).toBe(false);
+    expect(await h.cacheHas(h.constants.cacheName, "/images/good.svg")).toBe(
+      true
+    );
+    expect(await h.cacheHas(h.constants.cacheName, "/images/gone.svg")).toBe(
+      false
+    );
   });
 
   // Fix: white-screen — /app was cached but its boot chunks were only ever
@@ -124,7 +136,11 @@ describe("sw.js activate", () => {
     const h = createSwHarness();
     await h.seedCache("tka-v2", "/old", "stale entry");
     await h.seedCache(h.constants.cacheName, "/app", SHELL_HTML);
-    await h.seedCache(h.constants.assets3dCacheName, "/models/scene.glb", "glb bytes");
+    await h.seedCache(
+      h.constants.assets3dCacheName,
+      "/models/scene.glb",
+      "glb bytes"
+    );
 
     await h.dispatchActivate();
 
@@ -141,7 +157,11 @@ describe("sw.js /images/* stale-while-revalidate", () => {
   // when the network is down.
   it("serves the cached copy when the network is down", async () => {
     const h = createSwHarness();
-    await h.seedCache(h.constants.cacheName, "/images/props/staff.svg", "<svg>cached</svg>");
+    await h.seedCache(
+      h.constants.cacheName,
+      "/images/props/staff.svg",
+      "<svg>cached</svg>"
+    );
 
     const res = await h.dispatchFetch(`${ORIGIN}/images/props/staff.svg`);
 
@@ -161,7 +181,9 @@ describe("sw.js /images/* stale-while-revalidate", () => {
     expect(await res!.text()).toBe("stale-body"); // stale served, not fresh
 
     await settleBackgroundWork();
-    expect(await h.cacheBody(h.constants.cacheName, "/images/a.svg")).toBe("fresh-body");
+    expect(await h.cacheBody(h.constants.cacheName, "/images/a.svg")).toBe(
+      "fresh-body"
+    );
 
     // Network turns sour: a 404 must NOT overwrite the good cached copy.
     h.route("/images/a.svg", respondWith("error page", { status: 404 }));
@@ -169,7 +191,41 @@ describe("sw.js /images/* stale-while-revalidate", () => {
     expect(await res2!.text()).toBe("fresh-body");
 
     await settleBackgroundWork();
-    expect(await h.cacheBody(h.constants.cacheName, "/images/a.svg")).toBe("fresh-body");
+    expect(await h.cacheBody(h.constants.cacheName, "/images/a.svg")).toBe(
+      "fresh-body"
+    );
+  });
+});
+
+describe("sw.js Firebase thumbnail manifest freshness", () => {
+  it("serves the current manifest online and falls back to its cache offline", async () => {
+    const h = createSwHarness();
+    const manifestUrl =
+      "https://firebasestorage.googleapis.com/v0/b/the-kinetic-alphabet.firebasestorage.app/o/thumbnails%2Fmanifest.json?alt=media&v=2";
+    await h.seedCache(
+      h.constants.cacheName,
+      manifestUrl,
+      JSON.stringify({ keys: ["stale"] })
+    );
+    h.route(
+      manifestUrl,
+      respondWith({ keys: ["current"], generated: "2026-07-24T17:49:18Z" })
+    );
+
+    const online = await h.dispatchFetch(manifestUrl);
+    expect(await online!.json()).toEqual({
+      keys: ["current"],
+      generated: "2026-07-24T17:49:18Z",
+    });
+
+    await settleBackgroundWork();
+    h.routes.delete(manifestUrl);
+
+    const offline = await h.dispatchFetch(manifestUrl);
+    expect(await offline!.json()).toEqual({
+      keys: ["current"],
+      generated: "2026-07-24T17:49:18Z",
+    });
   });
 });
 
@@ -181,7 +237,9 @@ describe("sw.js offline navigation fallbacks", () => {
     const h = createSwHarness();
     await h.seedCache(h.constants.cacheName, "/app", SHELL_HTML);
 
-    const res = await h.dispatchFetch(`${ORIGIN}/q/ABC123`, { mode: "navigate" });
+    const res = await h.dispatchFetch(`${ORIGIN}/q/ABC123`, {
+      mode: "navigate",
+    });
 
     expect(res).not.toBeNull();
     expect(res!.status).toBe(200);
@@ -192,15 +250,23 @@ describe("sw.js offline navigation fallbacks", () => {
   // previously viewed per-URL cached copy, then (and only then) a 503.
   it("falls back to a per-URL cached copy without a shell, and 503 with nothing", async () => {
     const h = createSwHarness();
-    await h.seedCache(h.constants.cacheName, "/sequence/xyz", "<html>seq page</html>");
+    await h.seedCache(
+      h.constants.cacheName,
+      "/sequence/xyz",
+      "<html>seq page</html>"
+    );
 
-    const res = await h.dispatchFetch(`${ORIGIN}/sequence/xyz`, { mode: "navigate" });
+    const res = await h.dispatchFetch(`${ORIGIN}/sequence/xyz`, {
+      mode: "navigate",
+    });
     expect(res!.status).toBe(200);
     expect(await res!.text()).toBe("<html>seq page</html>");
 
     // Cold cache: nothing to serve — explicit 503, not a hang or undefined.
     const h2 = createSwHarness();
-    const res2 = await h2.dispatchFetch(`${ORIGIN}/sequence/xyz`, { mode: "navigate" });
+    const res2 = await h2.dispatchFetch(`${ORIGIN}/sequence/xyz`, {
+      mode: "navigate",
+    });
     expect(res2!.status).toBe(503);
     expect(await res2!.text()).toBe("Offline");
   });
@@ -214,10 +280,14 @@ describe("sw.js passthrough boundaries", () => {
     const h = createSwHarness();
     await h.seedCache(h.constants.cacheName, "/app", SHELL_HTML);
 
-    const postRes = await h.dispatchFetch(`${ORIGIN}/api/save`, { method: "POST" });
+    const postRes = await h.dispatchFetch(`${ORIGIN}/api/save`, {
+      method: "POST",
+    });
     expect(postRes).toBeNull();
 
-    const crossOriginRes = await h.dispatchFetch("https://example.com/whatever");
+    const crossOriginRes = await h.dispatchFetch(
+      "https://example.com/whatever"
+    );
     expect(crossOriginRes).toBeNull();
   });
 
@@ -229,7 +299,9 @@ describe("sw.js passthrough boundaries", () => {
     await h.seedCache(h.constants.cacheName, "/images/x.svg", "cached");
     h.route("/images/x.svg", respondWith("network"));
 
-    expect(await h.dispatchFetch("http://localhost:5173/images/x.svg")).toBeNull();
+    expect(
+      await h.dispatchFetch("http://localhost:5173/images/x.svg")
+    ).toBeNull();
     expect(
       await h.dispatchFetch("http://localhost:5173/app", { mode: "navigate" })
     ).toBeNull();
@@ -248,7 +320,9 @@ describe("sw.js lie-fi timeout", () => {
     // Connection opens, response never comes: a promise that never settles.
     h.route("/sequence/liefi", () => new Promise<Response>(() => {}));
 
-    const pending = h.dispatchFetch(`${ORIGIN}/sequence/liefi`, { mode: "navigate" });
+    const pending = h.dispatchFetch(`${ORIGIN}/sequence/liefi`, {
+      mode: "navigate",
+    });
     await vi.advanceTimersByTimeAsync(11_000);
     const res = await pending;
 

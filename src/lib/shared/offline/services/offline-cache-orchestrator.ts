@@ -1,4 +1,3 @@
-
 import { dev } from "$app/environment";
 import type { NetworkStatusMonitor } from "$lib/shared/sync/services/network-status-monitor";
 import type { GalleryOfflineCache } from "./gallery-offline-cache";
@@ -11,7 +10,11 @@ import {
   deriveKey,
   type ThumbnailRenderInput,
 } from "$lib/shared/browse/services/thumbnail-key-deriver";
-import { getUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
+import {
+  getUrl,
+  loadManifest,
+  markMissing,
+} from "$lib/shared/browse/services/cloud-thumbnail-cache";
 import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
 import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -20,6 +23,7 @@ import { settingsService } from "$lib/shared/settings/state/settings-state.svelt
 // A precached grid SVG that every diamond pictograph needs. Its presence in the
 // SW Cache Storage is a reliable proxy for "pictographs can render offline".
 const OFFLINE_RENDER_PROBE = "/images/grid/diamond_grid.svg";
+const MAX_BACKGROUND_MISSING_THUMBNAILS = 3;
 
 /**
  * Is there a service-worker cache to warm into HERE? Offline caching is a
@@ -30,7 +34,8 @@ const OFFLINE_RENDER_PROBE = "/images/grid/diamond_grid.svg";
  */
 function offlineCachingSupported(): boolean {
   if (dev) return false;
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return false;
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+    return false;
   if (typeof caches === "undefined") return false;
   const host = typeof location !== "undefined" ? location.hostname : "";
   if (host === "localhost" || host === "127.0.0.1") return false;
@@ -68,6 +73,7 @@ export class OfflineCacheOrchestrator {
     // constructed. Ensure it exists so a session that never opened Browse
     // still reads its cached sequences.
     getBrowseLoader();
+    await loadManifest();
     await this.warmCloudThumbnails(false);
   }
 
@@ -76,9 +82,17 @@ export class OfflineCacheOrchestrator {
     return offlineCachingSupported();
   }
 
-  async downloadForOffline(onProgress?: WarmProgress): Promise<DownloadForOfflineResult> {
+  async downloadForOffline(
+    onProgress?: WarmProgress
+  ): Promise<DownloadForOfflineResult> {
     if (!offlineCachingSupported()) {
-      return { supported: false, reason: "unsupported-env", warmed: 0, total: 0, svgsCached: false };
+      return {
+        supported: false,
+        reason: "unsupported-env",
+        warmed: 0,
+        total: 0,
+        svgsCached: false,
+      };
     }
 
     // Warming fetches from the network; without one the batch loop would park
@@ -97,6 +111,7 @@ export class OfflineCacheOrchestrator {
     // without this, going straight to Settings (never opening Browse) reads an
     // empty list from an otherwise-populated cache and warms nothing.
     getBrowseLoader();
+    await loadManifest();
 
     // An explicit click outranks the throttled background warm that Browse
     // kicks off on mount. Cancel it and wait for it to release the guard —
@@ -134,12 +149,13 @@ export class OfflineCacheOrchestrator {
   }
 
   async getCacheStats(): Promise<OfflineCacheStats> {
-    const [galleryStats, thumbnailStats, propSvgsCached, storage] = await Promise.all([
-      this.galleryCache.getStats(),
-      this.thumbnailCache.getStats(),
-      this.checkPropSvgsCached(),
-      this.checkStorage(),
-    ]);
+    const [galleryStats, thumbnailStats, propSvgsCached, storage] =
+      await Promise.all([
+        this.galleryCache.getStats(),
+        this.thumbnailCache.getStats(),
+        this.checkPropSvgsCached(),
+        this.checkStorage(),
+      ]);
     return {
       gallerySequenceCount: galleryStats.count,
       galleryLastSyncedAt: galleryStats.lastSyncedAt,
@@ -162,14 +178,18 @@ export class OfflineCacheOrchestrator {
    * the API is unavailable.
    */
   private async checkStorage(): Promise<
-    Pick<OfflineCacheStats, "storageUsedBytes" | "storageQuotaBytes" | "storagePersisted">
+    Pick<
+      OfflineCacheStats,
+      "storageUsedBytes" | "storageQuotaBytes" | "storagePersisted"
+    >
   > {
     const fallback = {
       storageUsedBytes: null,
       storageQuotaBytes: null,
       storagePersisted: false,
     };
-    if (typeof navigator === "undefined" || !navigator.storage?.estimate) return fallback;
+    if (typeof navigator === "undefined" || !navigator.storage?.estimate)
+      return fallback;
     try {
       const [estimate, persisted] = await Promise.all([
         navigator.storage.estimate(),
@@ -187,10 +207,7 @@ export class OfflineCacheOrchestrator {
 
   async clearOfflineCache(): Promise<void> {
     this.cancel();
-    await Promise.all([
-      this.galleryCache.clear(),
-      this.thumbnailCache.clear(),
-    ]);
+    await Promise.all([this.galleryCache.clear(), this.thumbnailCache.clear()]);
   }
 
   /**
@@ -231,6 +248,7 @@ export class OfflineCacheOrchestrator {
     let warmed = 0;
     let processed = 0;
     let total = 0;
+    let missing = 0;
 
     try {
       const { sequences } = await this.galleryCache.loadCached();
@@ -250,6 +268,7 @@ export class OfflineCacheOrchestrator {
 
       for (let i = 0; i < sequences.length; i += concurrency) {
         if (this.cancelled) break;
+        if (!fullSpeed && missing >= MAX_BACKGROUND_MISSING_THUMBNAILS) break;
 
         // Pause while the tab is hidden - save battery on mobile.
         if (typeof document !== "undefined" && document.hidden) {
@@ -283,17 +302,23 @@ export class OfflineCacheOrchestrator {
                 loopType: sequence.loopType ?? null,
               };
 
-              const cloudKey = renderOrchestrator.buildCloudKey(deriveKey(input));
+              const cloudKey = renderOrchestrator.buildCloudKey(
+                deriveKey(input)
+              );
 
-              // getUrl only returns a URL for thumbnails known to exist in the
-              // cloud (gated by the knownExists manifest), so this never
-              // 404-spams firebasestorage.
+              // The current manifest and the per-browser missing-object cache
+              // filter this list before any image bytes are requested.
               const url = await getUrl(cloudKey);
               if (!url) return;
 
               // Warm the SW Cache Storage; no local IndexedDB write.
               const res = await fetch(url);
-              if (res.ok) warmed++;
+              if (res.ok) {
+                warmed++;
+              } else if (res.status === 404) {
+                markMissing(cloudKey);
+                missing++;
+              }
             } catch {
               // Network failure for one sequence shouldn't abort the batch.
             } finally {

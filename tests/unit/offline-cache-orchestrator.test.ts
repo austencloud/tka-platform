@@ -15,7 +15,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // offlineCachingSupported() requires dev === false. The shared setup file mocks
 // $app/environment with dev: true; this per-file mock overrides it (same
 // pattern as network-conditions.test.ts).
-vi.mock("$app/environment", () => ({ browser: true, dev: false, building: false, version: "test" }));
+vi.mock("$app/environment", () => ({
+  browser: true,
+  dev: false,
+  building: false,
+  version: "test",
+}));
 
 // The orchestrator pulls these module singletons inside its methods. Mock every
 // one BEFORE import so the real module graphs (Dexie, Firebase, Svelte runes)
@@ -25,25 +30,40 @@ vi.mock("$lib/shared/browse/get-browse-loader", () => ({
 }));
 vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
   getUrl: vi.fn(),
+  loadManifest: vi.fn(async () => 0),
+  markMissing: vi.fn(),
 }));
 vi.mock("$lib/shared/browse/services/thumbnail-key-deriver", () => ({
   deriveKey: vi.fn(() => ({ hash: "h" })),
 }));
 vi.mock("$lib/shared/browse/get-thumbnail-render-orchestrator", () => ({
-  getThumbnailRenderOrchestrator: vi.fn(() => ({ buildCloudKey: vi.fn(() => "ck") })),
+  getThumbnailRenderOrchestrator: vi.fn(() => ({
+    buildCloudKey: vi.fn(() => "ck"),
+  })),
 }));
-vi.mock("$lib/shared/animation-engine/state/animation-visibility-state.svelte", () => ({
-  getAnimationVisibilityManager: vi.fn(() => ({ isDarkMode: () => false })),
-}));
+vi.mock(
+  "$lib/shared/animation-engine/state/animation-visibility-state.svelte",
+  () => ({
+    getAnimationVisibilityManager: vi.fn(() => ({ isDarkMode: () => false })),
+  })
+);
 vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
   settingsService: {
-    settings: { bluePropType: "staff", redPropType: "staff", catDogMode: false },
+    settings: {
+      bluePropType: "staff",
+      redPropType: "staff",
+      catDogMode: false,
+    },
   },
 }));
 
 import { OfflineCacheOrchestrator } from "$lib/shared/offline/services/offline-cache-orchestrator";
 import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
-import { getUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
+import {
+  getUrl,
+  loadManifest,
+  markMissing,
+} from "$lib/shared/browse/services/cloud-thumbnail-cache";
 
 const OFFLINE_RENDER_PROBE = "/images/grid/diamond_grid.svg";
 
@@ -119,7 +139,10 @@ let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.stubGlobal("location", new URL("https://tkaflowarts.com/"));
-  Object.defineProperty(navigator, "serviceWorker", { value: {}, configurable: true });
+  Object.defineProperty(navigator, "serviceWorker", {
+    value: {},
+    configurable: true,
+  });
   cachesMatch = vi.fn(async () => undefined);
   vi.stubGlobal("caches", { match: cachesMatch });
   fetchMock = vi.fn(async () => ({ ok: true }));
@@ -130,6 +153,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
   vi.mocked(getUrl).mockReset();
+  vi.mocked(loadManifest).mockResolvedValue(0);
 });
 
 // ---------------------------------------------------------------------------
@@ -160,13 +184,20 @@ describe("downloadForOffline — environment gating", () => {
   // one the batch loop used to park in waitForOnline() forever with the button
   // stuck on "Downloading…". The early return must resolve promptly.
   it("resolves promptly with reason 'offline' when the device has no network", async () => {
-    const { orchestrator } = makeOrchestrator(makeNetworkMonitor({ isOnline: false }));
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor({ isOnline: false })
+    );
 
     const result = await Promise.race([
       orchestrator.downloadForOffline(),
       new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error("downloadForOffline hung — the offline early-return regressed")),
+          () =>
+            reject(
+              new Error(
+                "downloadForOffline hung — the offline early-return regressed"
+              )
+            ),
           500
         )
       ),
@@ -197,8 +228,10 @@ describe("downloadForOffline — gallery converter wiring", () => {
 
     expect(getBrowseLoader).toHaveBeenCalled();
     const loaderOrder = vi.mocked(getBrowseLoader).mock.invocationCallOrder[0];
+    const manifestOrder = vi.mocked(loadManifest).mock.invocationCallOrder[0];
     const loadCachedOrder = galleryCache.loadCached.mock.invocationCallOrder[0];
     expect(loaderOrder).toBeLessThan(loadCachedOrder);
+    expect(manifestOrder).toBeLessThan(loadCachedOrder);
   });
 });
 
@@ -210,7 +243,10 @@ describe("downloadForOffline — warm accounting", () => {
     const galleryCache = makeGalleryCache({
       sequences: [sequence("a"), sequence("b"), sequence("c")],
     });
-    const { orchestrator } = makeOrchestrator(makeNetworkMonitor(), galleryCache);
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
 
     // Cloud URL for 2 of 3; the third has no cloud thumbnail.
     vi.mocked(getUrl)
@@ -242,10 +278,15 @@ describe("downloadForOffline — warm accounting", () => {
     const galleryCache = makeGalleryCache({
       sequences: [sequence("a"), sequence("b")],
     });
-    const { orchestrator } = makeOrchestrator(makeNetworkMonitor(), galleryCache);
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
 
     vi.mocked(getUrl).mockResolvedValue("https://cloud/t.webp");
-    fetchMock.mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false });
+    fetchMock
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: false });
 
     const progress = vi.fn();
     const result = await orchestrator.downloadForOffline(progress);
@@ -254,6 +295,67 @@ describe("downloadForOffline — warm accounting", () => {
     expect(result.total).toBe(2);
     const calls = progress.mock.calls as [number, number][];
     expect(calls[calls.length - 1]).toEqual([2, 2]);
+  });
+
+  it("records confirmed download 404s in the shared missing-thumbnail cache", async () => {
+    const galleryCache = makeGalleryCache({
+      sequences: [sequence("missing")],
+    });
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
+
+    vi.mocked(getUrl).mockResolvedValue("https://cloud/missing.webp");
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+    const result = await orchestrator.downloadForOffline();
+
+    expect(result.warmed).toBe(0);
+    expect(markMissing).toHaveBeenCalledOnce();
+    expect(markMissing).toHaveBeenCalledWith(
+      vi.mocked(getUrl).mock.calls[0]![0]
+    );
+  });
+});
+
+describe("startBackgroundCache — stale manifest guard", () => {
+  it("loads the current manifest before resolving any thumbnail URL", async () => {
+    const galleryCache = makeGalleryCache({
+      sequences: [sequence("a")],
+    });
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
+    vi.mocked(getUrl).mockResolvedValue("https://cloud/a.webp");
+
+    await orchestrator.startBackgroundCache();
+
+    expect(loadManifest).toHaveBeenCalledOnce();
+    expect(getUrl).toHaveBeenCalledOnce();
+    expect(vi.mocked(loadManifest).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(getUrl).mock.invocationCallOrder[0]!
+    );
+  });
+
+  it("stops after the first batch exposes a stale-manifest 404 wave", async () => {
+    const sequences = Array.from({ length: 25 }, (_, i) => sequence(`s${i}`));
+    const galleryCache = makeGalleryCache({ sequences });
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
+
+    vi.mocked(getUrl).mockResolvedValue("https://cloud/missing.webp");
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+    await orchestrator.startBackgroundCache();
+
+    // 4g background concurrency is 10. Once that first in-flight batch reports
+    // more misses than the budget, the remaining 15 entries are never fetched.
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(markMissing).toHaveBeenCalledTimes(10);
   });
 });
 
@@ -266,7 +368,10 @@ describe("downloadForOffline — background warm takeover", () => {
   it("takes over an in-flight background warm and reports a real total", async () => {
     const sequences = [sequence("a"), sequence("b")];
     const galleryCache = makeGalleryCache({ sequences });
-    const { orchestrator } = makeOrchestrator(makeNetworkMonitor(), galleryCache);
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
 
     vi.mocked(getUrl).mockResolvedValue("https://cloud/t.webp");
 
@@ -340,7 +445,10 @@ describe("getCacheStats", () => {
     });
     cachesMatch.mockResolvedValue({});
     const galleryCache = makeGalleryCache({ count: 5, lastSyncedAt: 42 });
-    const { orchestrator } = makeOrchestrator(makeNetworkMonitor(), galleryCache);
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
 
     const stats = await orchestrator.getCacheStats();
 
@@ -362,7 +470,10 @@ describe("getCacheStats", () => {
     });
     cachesMatch.mockResolvedValue(undefined); // probe misses
     const galleryCache = makeGalleryCache({ count: 5, lastSyncedAt: 42 });
-    const { orchestrator } = makeOrchestrator(makeNetworkMonitor(), galleryCache);
+    const { orchestrator } = makeOrchestrator(
+      makeNetworkMonitor(),
+      galleryCache
+    );
 
     const stats = await orchestrator.getCacheStats();
 
