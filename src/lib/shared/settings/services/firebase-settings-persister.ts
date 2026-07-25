@@ -56,7 +56,7 @@ export class FirebaseSettingsPersister {
       if (docSnap.exists()) {
         const data = docSnap.data();
         // Remove Firestore metadata fields
-         
+
         const {
           updatedAt: _updatedAt,
           createdAt: _createdAt,
@@ -219,16 +219,16 @@ export class FirebaseSettingsPersister {
             if (snapshot.exists()) {
               const data = snapshot.data();
               // Remove Firestore metadata fields
-               
+
               const {
                 updatedAt: _updatedAt,
                 createdAt: _createdAt,
                 clearedAt: _clearedAt,
                 ...settings
               } = data;
-              if (Object.keys(settings).length > 0) {
-                callback(settings as AppSettings);
-              }
+              // An existing document with no settings is still authoritative:
+              // subscribers must clear stale optional slices such as imageExport.
+              callback(settings as AppSettings);
             }
           },
           (error) => {

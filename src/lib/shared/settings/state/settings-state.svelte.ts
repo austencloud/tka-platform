@@ -22,6 +22,10 @@ import type { FirebaseSettingsPersister } from "../services/firebase-settings-pe
 import { auth } from "../../auth/firebase";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
+import {
+  getColumnCountPreferenceOwner,
+  sanitizeColumnCountPreference,
+} from "$lib/shared/share/domain/column-count-preference";
 
 const debug = createComponentLogger("SettingsState");
 
@@ -76,7 +80,12 @@ const initialSettings = (() => {
   try {
     const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (!stored) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(stored);
+    const parsed = JSON.parse(stored) as AppSettings & {
+      _localTimestamp?: number;
+    };
+    // A timestamp without an owning UID cannot establish that browser-global
+    // settings are newer than the account Firebase is about to restore.
+    delete parsed._localTimestamp;
     return { ...DEFAULT_SETTINGS, ...parsed };
   } catch {
     return DEFAULT_SETTINGS;
@@ -91,7 +100,12 @@ class SettingsState {
   // Fired only when settings that genuinely came off Firestore are applied.
   // Sub-managers (image composition) cache their own slice at construction, which
   // races auth restore; this is how they learn the authoritative copy arrived.
-  private remoteAppliedListeners = new Set<(settings: AppSettings) => void>();
+  private remoteAppliedListeners = new Set<
+    (settings: AppSettings | null, userId: string) => void
+  >();
+  private lastRemoteApplication:
+    | { settings: AppSettings | null; userId: string }
+    | undefined;
   private syncInitialized = false;
   private isSavingToFirebase = false;
   private pendingFirebaseSave: Promise<void> | null = null;
@@ -101,6 +115,13 @@ class SettingsState {
 
   constructor() {
     if (browser && typeof window !== "undefined") {
+      // The old queue had no UID and could replay account A into account B.
+      // UID-scoped queues below are the only safe format.
+      try {
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      } catch {
+        // Storage can be unavailable in hardened/private browser contexts.
+      }
       this.processOfflineQueue();
 
       this.onlineHandler = () => {
@@ -137,14 +158,20 @@ class SettingsState {
 
     await this.processOfflineQueue();
 
-    if (auth.currentUser && this.firebasePersistence) {
+    const syncUserId = auth.currentUser?.uid;
+    if (syncUserId && this.firebasePersistence) {
       await this.syncFromFirebase();
+      if (auth.currentUser?.uid !== syncUserId) return;
 
       if (this.firebasePersistence.onSettingsChange) {
         this.unsubscribeFirebaseSync =
           this.firebasePersistence.onSettingsChange((remoteSettings) => {
-            if (!this.isSavingToFirebase && !this.firebaseSaveDebounceTimer) {
-              this.applyRemoteSettings(remoteSettings);
+            if (
+              auth.currentUser?.uid === syncUserId &&
+              !this.isSavingToFirebase &&
+              !this.firebaseSaveDebounceTimer
+            ) {
+              this.applyRemoteSettings(remoteSettings, syncUserId);
             }
           });
       }
@@ -153,73 +180,71 @@ class SettingsState {
 
   async syncFromFirebase(): Promise<void> {
     if (!this.firebasePersistence || !auth.currentUser) return;
+    const userId = auth.currentUser.uid;
 
     try {
       const firebaseSettings = await this.firebasePersistence.loadSettings();
-      const localTimestamp = settingsState._localTimestamp || 0;
+      if (auth.currentUser?.uid !== userId) return;
 
       if (firebaseSettings) {
-        if (localTimestamp > 0) {
-          debug.success("Local settings are newer, pushing to Firebase");
-          await this.firebasePersistence.saveSettings(
-            this.getSettingsForPersistence()
-          );
-        } else {
-          this.applyRemoteSettings(firebaseSettings);
+        // Browser-local settings are shared by every identity that uses this
+        // device. They cannot outrank an account document merely because they
+        // carry a timestamp with no UID provenance.
+        this.applyRemoteSettings(firebaseSettings, userId);
 
-          const localBackground = settingsState.backgroundType;
-          const isUsingDefault = localBackground === BackgroundType.COSMIC;
+        const localBackground = settingsState.backgroundType;
+        const isUsingDefault = localBackground === BackgroundType.COSMIC;
 
-          if (firebaseSettings.backgroundType && isUsingDefault) {
-            if (LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]) {
-              const migratedType = LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]!;
-              debug.success(`Firebase has old "${firebaseSettings.backgroundType}", migrating to "${migratedType}"`);
-              settingsState.backgroundType = migratedType;
-              updateBodyBackground(migratedType);
-              applyThemeForBackground(migratedType);
-              updateThemeService(migratedType);
-              this.saveSettingsToStorage(settingsState);
-              await this.firebasePersistence.saveSettings(
-                this.getSettingsForPersistence()
-              );
-            } else {
-              settingsState.backgroundType = firebaseSettings.backgroundType;
-              if (firebaseSettings.backgroundCategory) {
-                settingsState.backgroundCategory =
-                  firebaseSettings.backgroundCategory;
-              }
-              if (firebaseSettings.backgroundColor) {
-                settingsState.backgroundColor = firebaseSettings.backgroundColor;
-              }
-              if (firebaseSettings.gradientColors) {
-                settingsState.gradientColors = firebaseSettings.gradientColors;
-              }
-              if (firebaseSettings.gradientDirection !== undefined) {
-                settingsState.gradientDirection =
-                  firebaseSettings.gradientDirection;
-              }
-
-              updateBodyBackground(firebaseSettings.backgroundType);
-              applyThemeForBackground(firebaseSettings.backgroundType);
-              updateThemeService(firebaseSettings.backgroundType);
-              this.saveSettingsToStorage(settingsState);
-              debug.success("Applied background from Firebase on initial login");
+        if (firebaseSettings.backgroundType && isUsingDefault) {
+          if (LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]) {
+            const migratedType = LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]!;
+            debug.success(`Firebase has old "${firebaseSettings.backgroundType}", migrating to "${migratedType}"`);
+            settingsState.backgroundType = migratedType;
+            updateBodyBackground(migratedType);
+            applyThemeForBackground(migratedType);
+            updateThemeService(migratedType);
+            this.saveSettingsToStorage(settingsState);
+            await this.firebasePersistence.saveSettings(
+              this.getSettingsForPersistence(userId)
+            );
+          } else {
+            settingsState.backgroundType = firebaseSettings.backgroundType;
+            if (firebaseSettings.backgroundCategory) {
+              settingsState.backgroundCategory =
+                firebaseSettings.backgroundCategory;
             }
-          }
-
-          if (firebaseSettings.darkMode !== undefined) {
-            const animVisManager = getAnimationVisibilityManager();
-            if (animVisManager.isDarkMode() !== firebaseSettings.darkMode) {
-              animVisManager.setDarkMode(firebaseSettings.darkMode);
-              debug.success(`Synced pictograph dark mode from Firebase: ${firebaseSettings.darkMode}`);
+            if (firebaseSettings.backgroundColor) {
+              settingsState.backgroundColor = firebaseSettings.backgroundColor;
             }
-          }
+            if (firebaseSettings.gradientColors) {
+              settingsState.gradientColors = firebaseSettings.gradientColors;
+            }
+            if (firebaseSettings.gradientDirection !== undefined) {
+              settingsState.gradientDirection =
+                firebaseSettings.gradientDirection;
+            }
 
-          debug.success("Applied settings from Firebase");
+            updateBodyBackground(firebaseSettings.backgroundType);
+            applyThemeForBackground(firebaseSettings.backgroundType);
+            updateThemeService(firebaseSettings.backgroundType);
+            this.saveSettingsToStorage(settingsState);
+            debug.success("Applied background from Firebase on initial login");
+          }
         }
+
+        if (firebaseSettings.darkMode !== undefined) {
+          const animVisManager = getAnimationVisibilityManager();
+          if (animVisManager.isDarkMode() !== firebaseSettings.darkMode) {
+            animVisManager.setDarkMode(firebaseSettings.darkMode);
+            debug.success(`Synced pictograph dark mode from Firebase: ${firebaseSettings.darkMode}`);
+          }
+        }
+
+        debug.success("Applied settings from Firebase");
       } else {
+        this.publishRemoteApplication(null, userId);
         await this.firebasePersistence.saveSettings(
-          this.getSettingsForPersistence()
+          this.getSettingsForPersistence(userId)
         );
         debug.success("Pushed local settings to Firebase");
       }
@@ -228,7 +253,7 @@ class SettingsState {
     }
   }
 
-  private getSettingsForPersistence(): AppSettings {
+  private getSettingsForPersistence(userId = auth.currentUser?.uid): AppSettings {
     const snapshot = $state.snapshot(settingsState) as AppSettings & { _localTimestamp?: number };
     delete snapshot._localTimestamp;
     if (!snapshot.backgroundType) {
@@ -240,10 +265,32 @@ class SettingsState {
         delete obj[key];
       }
     }
-    return snapshot;
+    return userId
+      ? this.sanitizeImageExportForUser(snapshot, userId)
+      : snapshot;
   }
 
-  private applyRemoteSettings(remoteSettings: AppSettings): void {
+  private sanitizeImageExportForUser(
+    settings: AppSettings,
+    userId: string
+  ): AppSettings {
+    const owner = getColumnCountPreferenceOwner({ uid: userId });
+    const sanitized = sanitizeColumnCountPreference(
+      settings.imageExport,
+      owner
+    );
+    return {
+      ...settings,
+      imageExport: {
+        ...(settings.imageExport ?? {}),
+        columnCountOverrides: sanitized.columnCountOverrides,
+        columnCountPreferenceVersion: sanitized.columnCountPreferenceVersion,
+        columnCountPreferenceOwner: sanitized.columnCountPreferenceOwner,
+      },
+    };
+  }
+
+  private applyRemoteSettings(remoteSettings: AppSettings, userId: string): void {
     const { _localTimestamp: _remoteTs, ...remoteWithoutMeta } = remoteSettings;
     const merged = { ...DEFAULT_SETTINGS, ...remoteWithoutMeta };
 
@@ -274,6 +321,9 @@ class SettingsState {
         ] as never;
       }
     }
+    // Optional account slices must be cleared when the authoritative document
+    // omits them; a shallow defaults merge cannot remove a stale local value.
+    settingsState.imageExport = remoteSettings.imageExport;
     settingsState._localTimestamp = undefined;
 
     if (remoteSettings.darkMode !== undefined) {
@@ -284,10 +334,17 @@ class SettingsState {
     }
 
     this.saveSettingsToStorage(settingsState);
+    this.publishRemoteApplication(remoteSettings, userId);
+  }
 
+  private publishRemoteApplication(
+    settings: AppSettings | null,
+    userId: string
+  ): void {
+    this.lastRemoteApplication = { settings, userId };
     this.remoteAppliedListeners.forEach((listener) => {
       try {
-        listener(remoteSettings);
+        listener(settings, userId);
       } catch (error) {
         console.error("❌ [SettingsState] Remote-applied listener failed:", error);
       }
@@ -300,8 +357,18 @@ class SettingsState {
    * localStorage mirror and can be older than both the local slice stores and the
    * server copy.
    */
-  onRemoteSettingsApplied(listener: (settings: AppSettings) => void): () => void {
+  onRemoteSettingsApplied(
+    listener: (settings: AppSettings | null, userId: string) => void
+  ): () => void {
     this.remoteAppliedListeners.add(listener);
+    if (this.lastRemoteApplication) {
+      const { settings, userId } = this.lastRemoteApplication;
+      try {
+        listener(settings, userId);
+      } catch (error) {
+        console.error("❌ [SettingsState] Remote-applied listener failed:", error);
+      }
+    }
     return () => this.remoteAppliedListeners.delete(listener);
   }
 
@@ -318,6 +385,10 @@ class SettingsState {
 
     this.syncInitialized = false;
     this.firebasePersistence = null;
+    this.lastRemoteApplication = undefined;
+    settingsState.imageExport = undefined;
+    settingsState._localTimestamp = undefined;
+    this.saveSettingsToStorage(settingsState);
 
     if (browser && typeof window !== "undefined" && this.onlineHandler) {
       window.removeEventListener("online", this.onlineHandler);
@@ -431,14 +502,15 @@ class SettingsState {
   }
 
   private saveToFirebaseWithRetry(): void {
-    if (!this.firebasePersistence) {
+    const userId = auth.currentUser?.uid;
+    if (!this.firebasePersistence || !userId) {
       debug.warn("Cannot save to Firebase: firebasePersistence not initialized");
       return;
     }
 
     this.isSavingToFirebase = true;
 
-    const settingsToSave = this.getSettingsForPersistence();
+    const settingsToSave = this.getSettingsForPersistence(userId);
     debug.info("Saving settings to Firebase", {
       propPresetsCount: settingsToSave.propPresets?.length ?? 0,
       selectedPresetIndex: settingsToSave.selectedPresetIndex,
@@ -450,13 +522,15 @@ class SettingsState {
       .saveSettings(settingsToSave)
       .then(() => {
         debug.success("Settings saved to Firebase successfully");
-        settingsState._localTimestamp = undefined;
-        this.saveSettingsToStorage(settingsState);
-        this.clearOfflineQueue();
+        if (auth.currentUser?.uid === userId) {
+          settingsState._localTimestamp = undefined;
+          this.saveSettingsToStorage(settingsState);
+        }
+        this.clearOfflineQueue(userId);
       })
       .catch((error) => {
         console.error("❌ [SettingsState] Failed to save to Firebase:", error);
-        this.queueOfflineChange(settingsToSave);
+        this.queueOfflineChange(settingsToSave, userId);
       })
       .finally(() => {
         this.isSavingToFirebase = false;
@@ -464,7 +538,11 @@ class SettingsState {
       });
   }
 
-  private queueOfflineChange(settings: AppSettings): void {
+  private offlineQueueKey(userId: string): string {
+    return `${OFFLINE_QUEUE_KEY}:${encodeURIComponent(userId)}`;
+  }
+
+  private queueOfflineChange(settings: AppSettings, userId: string): void {
     if (!browser) return;
 
     try {
@@ -472,7 +550,7 @@ class SettingsState {
         settings,
         timestamp: Date.now(),
       };
-      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queueEntry));
+      localStorage.setItem(this.offlineQueueKey(userId), JSON.stringify(queueEntry));
     } catch (error) {
       console.error("Failed to queue offline change:", error);
     }
@@ -480,28 +558,34 @@ class SettingsState {
 
   private async processOfflineQueue(): Promise<void> {
     if (!browser) return;
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
 
     try {
-      const queuedData = localStorage.getItem(OFFLINE_QUEUE_KEY);
+      const queuedData = localStorage.getItem(this.offlineQueueKey(userId));
       if (!queuedData) return;
 
       const queueEntry = JSON.parse(queuedData);
       if (!queueEntry?.settings) return;
 
-      if (this.firebasePersistence && auth.currentUser) {
-        await this.firebasePersistence.saveSettings(queueEntry.settings);
-        this.clearOfflineQueue();
+      if (this.firebasePersistence && auth.currentUser?.uid === userId) {
+        const settings = this.sanitizeImageExportForUser(
+          queueEntry.settings as AppSettings,
+          userId
+        );
+        await this.firebasePersistence.saveSettings(settings);
+        this.clearOfflineQueue(userId);
       }
     } catch (error) {
       console.error("Failed to process offline queue:", error);
     }
   }
 
-  private clearOfflineQueue(): void {
+  private clearOfflineQueue(userId: string): void {
     if (!browser) return;
 
     try {
-      localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      localStorage.removeItem(this.offlineQueueKey(userId));
     } catch (error) {
       console.error("Failed to clear offline queue:", error);
     }
@@ -512,6 +596,8 @@ class SettingsState {
 
     try {
       localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      settingsState.imageExport = undefined;
+      settingsState._localTimestamp = undefined;
       Object.assign(settingsState, DEFAULT_SETTINGS);
 
       if (auth.currentUser && this.firebasePersistence) {
@@ -528,6 +614,8 @@ class SettingsState {
   }
 
   async resetToDefaults(): Promise<void> {
+    settingsState.imageExport = undefined;
+    settingsState._localTimestamp = undefined;
     Object.assign(settingsState, DEFAULT_SETTINGS);
     this.saveSettings();
   }

@@ -134,14 +134,27 @@ function loadFromStorage(): ExportOptionsState {
       const parsed = JSON.parse(stored) as Partial<ExportOptionsState>;
       const video = { ...DEFAULT_VIDEO_OPTIONS, ...parsed.video };
       const split = { ...DEFAULT_SPLIT_OPTIONS, ...parsed.split };
+      const {
+        columnCount: _legacyColumnCount,
+        ...imageWithoutLegacyColumnCount
+      } = (parsed.image ?? {}) as Partial<ImageExportOptions> & {
+        columnCount?: unknown;
+      };
       // Sanitize any stale multi-effect state
       video.effectOverrides = sanitizeEffectOverrides(video.effectOverrides);
       split.effectOverrides = sanitizeEffectOverrides(split.effectOverrides);
-      return {
+      const loaded = {
         video,
         split,
-        image: { ...DEFAULT_IMAGE_OPTIONS, ...parsed.image },
+        image: {
+          ...DEFAULT_IMAGE_OPTIONS,
+          ...imageWithoutLegacyColumnCount,
+        },
       };
+      if (Object.prototype.hasOwnProperty.call(parsed.image ?? {}, "columnCount")) {
+        saveToStorage(loaded);
+      }
+      return loaded;
     }
   } catch (e) {
     console.warn("[ExportOptionsState] Failed to load from storage:", e);

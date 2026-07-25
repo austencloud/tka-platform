@@ -10,8 +10,16 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { InfoCellChoice } from "$lib/shared/sequence-viewer/services/info-cell-display";
+import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
+import {
+  COLUMN_COUNT_PREFERENCE_VERSION,
+  getColumnCountPreferenceOwner,
+  sanitizeColumnCountPreference,
+  type ColumnCountPreferenceSource,
+} from "$lib/shared/share/domain/column-count-preference";
 
 const STORAGE_KEY = "tka-image-composition-settings";
+const COLUMN_PREFERENCES_KEY = `${STORAGE_KEY}:column-preferences-v1`;
 
 export interface ImageCompositionSettings {
   addWord: boolean;
@@ -49,6 +57,9 @@ export interface ImageCompositionSettings {
   // missing keys also use Auto until the user chooses a layout.
   // Controls how many beat columns ChoreoCards use for that sequence length.
   columnCountOverrides: Record<string, number | null>;
+  // Numeric choices are trusted only when these fields match the active identity.
+  columnCountPreferenceVersion?: number;
+  columnCountPreferenceOwner?: string;
 
   // Per-step-count info-cell choice (QR vs Mandala vs None) for cards with a
   // single empty info cell. Keys are step counts as strings. When absent the
@@ -100,14 +111,38 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   addUserInfo: true,
 };
 
+function createSettings(
+  seed: Partial<ImageCompositionSettings> | null = null
+): ImageCompositionSettings {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(seed ?? {}),
+    startPositionLayoutOverrides: {
+      ...(seed?.startPositionLayoutOverrides ?? {}),
+    },
+    columnCountOverrides: {
+      ...(seed?.columnCountOverrides ?? {}),
+    },
+    infoCellChoiceOverrides: {
+      ...(seed?.infoCellChoiceOverrides ?? {}),
+    },
+  };
+}
+
 type Observer = () => void;
 
 class ImageCompositionStateManager {
-  private settings = $state<ImageCompositionSettings>({ ...DEFAULT_SETTINGS });
+  private settings = $state<ImageCompositionSettings>(createSettings());
   private observers = new Set<Observer>();
-  // Set by any user-driven save. A change made in this session outranks anything
-  // a later Firestore snapshot carries, so adoption backs off once it's true.
+  // A user edit can outrank a late snapshot only for the identity that made it.
   private changedThisSession = false;
+  private columnChangedThisSession = false;
+  private activeColumnPreferenceOwner: string | null = null;
+  private initialColumnPreference: ColumnCountPreferenceSource | null = null;
+  private pendingRemoteSettings: {
+    settings: AppSettings | null;
+    userId: string;
+  } | null = null;
 
   constructor() {
     if (browser) {
@@ -115,36 +150,195 @@ class ImageCompositionStateManager {
       // Stay in sync with global dark mode changes
       this.syncWithAnimationVisibility();
       this.adoptRemoteSettingsOnArrival();
+      this.observeAuthIdentity();
     }
   }
 
   /**
-   * Re-seat these settings when the real Firestore copy lands.
-   *
-   * loadSettings() runs at construction, which races Firebase auth restore and
-   * the initial settings fetch — so it can only ever see local copies. Without
-   * this, a stale local copy stayed authoritative for the whole session (and got
-   * pushed back up to Firestore by the "local is newer" branch of
-   * syncFromFirebase, overwriting the good server value). That is what made a
-   * saved "Auto" column choice reappear as 8 on the next launch.
+   * Re-seat these settings when the authoritative Firestore result lands.
+   * The source UID travels with the snapshot so a late callback from account A
+   * can never mutate account B.
    */
   private adoptRemoteSettingsOnArrival(): void {
-    settingsService.onRemoteSettingsApplied?.((remote) => {
-      const incoming = remote.imageExport;
-      if (!incoming || this.changedThisSession) return;
+    settingsService.onRemoteSettingsApplied?.((remote, userId) => {
+      const remoteOwner = getColumnCountPreferenceOwner({ uid: userId });
+      if (this.activeColumnPreferenceOwner === null) {
+        this.pendingRemoteSettings = { settings: remote, userId };
+        return;
+      }
+      if (this.activeColumnPreferenceOwner !== remoteOwner) return;
 
-      this.settings = {
-        ...DEFAULT_SETTINGS,
-        ...incoming,
-        // Owned by AnimationVisibilityManager, not by account settings.
-        darkMode: this.settings.darkMode,
-      };
-      this.normalizeOverrides();
-      // Local copy only: writing back through settingsService would echo into
-      // another snapshot and loop.
+      this.applyRemoteSettings(remote, remoteOwner);
+    });
+  }
+
+  /**
+   * Firebase can report `currentUser === null` while restoring auth. The auth
+   * observer is the boundary at which a browser-global cache can safely be
+   * associated with a guest or a specific account.
+   */
+  private observeAuthIdentity(): void {
+    getAuthSync().onAuthStateChanged((user) => {
+      const owner = getColumnCountPreferenceOwner(user);
+      const previousOwner = this.activeColumnPreferenceOwner;
+      const identityChanged = owner !== this.activeColumnPreferenceOwner;
+      const carryLiveGuestChoiceIntoAnonymousIdentity =
+        identityChanged &&
+        previousOwner === "guest" &&
+        user?.isAnonymous === true &&
+        this.columnChangedThisSession;
+
+      this.activeColumnPreferenceOwner = owner;
+      if (carryLiveGuestChoiceIntoAnonymousIdentity) {
+        this.settings.columnCountPreferenceVersion =
+          COLUMN_COUNT_PREFERENCE_VERSION;
+        this.settings.columnCountPreferenceOwner = owner;
+        this.writeScopedColumnPreference(owner);
+        this.writeLocalCopy();
+        this.pendingRemoteSettings = null;
+        void settingsService.updateSetting(
+          "imageExport",
+          createSettings(this.settings)
+        );
+        this.notifyObservers();
+        return;
+      }
+
+      if (identityChanged) {
+        this.changedThisSession = false;
+        this.columnChangedThisSession = false;
+      }
+
+      const pending = this.pendingRemoteSettings;
+      this.pendingRemoteSettings = null;
+      if (
+        pending &&
+        getColumnCountPreferenceOwner({ uid: pending.userId }) === owner
+      ) {
+        this.applyRemoteSettings(pending.settings, owner);
+        return;
+      }
+
+      const localPreference =
+        this.readScopedColumnPreference(owner) ?? this.initialColumnPreference;
+      this.applyColumnPreference(localPreference, owner);
+    });
+  }
+
+  private applyRemoteSettings(remote: AppSettings | null, owner: string): void {
+    const incoming = remote?.imageExport ?? null;
+    if (this.changedThisSession && this.activeColumnPreferenceOwner === owner) {
+      const remotePreference = sanitizeColumnCountPreference(incoming, owner);
+      const currentPreference = sanitizeColumnCountPreference(
+        this.settings,
+        owner
+      );
+      const remoteHasCurrentColumns =
+        !remotePreference.changed &&
+        this.columnOverridesEqual(
+          remotePreference.columnCountOverrides,
+          currentPreference.columnCountOverrides
+        );
+      const source = this.columnChangedThisSession ? this.settings : incoming;
+      const sanitized = this.applyColumnPreference(source, owner, false);
       this.writeLocalCopy();
       this.notifyObservers();
-    });
+      if (
+        (this.columnChangedThisSession && !remoteHasCurrentColumns) ||
+        (!this.columnChangedThisSession && sanitized.changed)
+      ) {
+        void settingsService.updateSetting(
+          "imageExport",
+          createSettings(this.settings)
+        );
+      }
+      return;
+    }
+
+    const darkMode = this.settings.darkMode;
+    this.settings = createSettings(incoming);
+    // Owned by AnimationVisibilityManager, not by account settings.
+    this.settings.darkMode = darkMode;
+    this.normalizeOverrides();
+
+    const sanitized = this.applyColumnPreference(incoming, owner, false);
+    this.writeLocalCopy();
+    this.notifyObservers();
+
+    if (sanitized.changed) {
+      // This is a migration write, not a user edit. It turns every legacy or
+      // cross-account numeric value into explicit Auto at the cloud boundary.
+      void settingsService.updateSetting(
+        "imageExport",
+        createSettings(this.settings)
+      );
+    }
+  }
+
+  private columnOverridesEqual(
+    left: Record<string, number | null>,
+    right: Record<string, number | null>
+  ): boolean {
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    return (
+      leftKeys.length === rightKeys.length &&
+      leftKeys.every((key) => left[key] === right[key])
+    );
+  }
+
+  private applyColumnPreference(
+    source: ColumnCountPreferenceSource | null,
+    owner: string,
+    notify = true
+  ) {
+    const sanitized = sanitizeColumnCountPreference(source, owner);
+    this.settings.columnCountOverrides = {
+      ...sanitized.columnCountOverrides,
+    };
+    this.settings.columnCountPreferenceVersion =
+      sanitized.columnCountPreferenceVersion;
+    this.settings.columnCountPreferenceOwner =
+      sanitized.columnCountPreferenceOwner;
+    this.writeScopedColumnPreference(owner);
+    this.writeLocalCopy();
+    if (notify) this.notifyObservers();
+    return sanitized;
+  }
+
+  private scopedColumnPreferenceKey(owner: string): string {
+    return `${COLUMN_PREFERENCES_KEY}:${encodeURIComponent(owner)}`;
+  }
+
+  private readScopedColumnPreference(
+    owner: string
+  ): ColumnCountPreferenceSource | null {
+    try {
+      const stored = localStorage.getItem(
+        this.scopedColumnPreferenceKey(owner)
+      );
+      return stored
+        ? (JSON.parse(stored) as ColumnCountPreferenceSource)
+        : null;
+    } catch {
+      console.warn("Failed to load scoped column preferences from storage");
+      return null;
+    }
+  }
+
+  private writeScopedColumnPreference(owner: string): void {
+    try {
+      localStorage.setItem(
+        this.scopedColumnPreferenceKey(owner),
+        JSON.stringify({
+          columnCountOverrides: this.settings.columnCountOverrides,
+          columnCountPreferenceVersion: COLUMN_COUNT_PREFERENCE_VERSION,
+          columnCountPreferenceOwner: owner,
+        })
+      );
+    } catch {
+      console.warn("Failed to save scoped column preferences to storage");
+    }
   }
 
   /**
@@ -182,12 +376,29 @@ class ImageCompositionStateManager {
     const accountMirror = settingsService.currentSettings.imageExport;
     const seed = localCopy ?? (getAuthSync().currentUser ? accountMirror : null);
 
-    this.settings = { ...DEFAULT_SETTINGS, ...(seed ?? {}) };
+    this.initialColumnPreference = seed
+      ? {
+          columnCountOverrides: { ...(seed.columnCountOverrides ?? {}) },
+          columnCountPreferenceVersion: seed.columnCountPreferenceVersion,
+          columnCountPreferenceOwner: seed.columnCountPreferenceOwner,
+        }
+      : null;
+    this.settings = createSettings(seed);
+
+    // Auth may still be restoring. No browser-global number is allowed onto the
+    // card until the auth observer associates a versioned choice with its owner.
+    this.settings.columnCountOverrides = {};
+    this.settings.columnCountPreferenceVersion = undefined;
+    this.settings.columnCountPreferenceOwner = undefined;
+    let migrated = Boolean(
+      seed?.columnCountOverrides &&
+      Object.keys(seed.columnCountOverrides).length > 0
+    );
 
     // Fix truncated default that was persisted due to previous save bug
     if (this.settings.customNotesText === "Created using TKA Scrib") {
       this.settings.customNotesText = DEFAULT_SETTINGS.customNotesText;
-      this.saveToStorage();
+      migrated = true;
     }
 
     // Migrate: old persisted "column" default → new "row" default.
@@ -198,10 +409,10 @@ class ImageCompositionStateManager {
         Object.keys(this.settings.startPositionLayoutOverrides).length === 0)
     ) {
       this.settings.startPositionLayout = "row";
-      this.saveToStorage();
+      migrated = true;
     }
 
-    if (this.normalizeOverrides()) this.saveToStorage();
+    if (this.normalizeOverrides()) migrated = true;
 
     // One-time: retire the "Created using Flow Arts Composer" branding note as a
     // default. Flips ONLY users who never customized the note (text is still the
@@ -216,7 +427,7 @@ class ImageCompositionStateManager {
           this.settings.customNotesText === "Created using Flow Arts Composer"
         ) {
           this.settings.showNotes = false;
-          this.saveToStorage();
+          migrated = true;
         }
         try {
           localStorage.setItem(NOTES_MIGRATION_KEY, "1");
@@ -227,9 +438,11 @@ class ImageCompositionStateManager {
     }
     // Note: darkMode is synced from AnimationVisibilityManager in syncWithAnimationVisibility()
 
-    // Migrations above run saveToStorage; none of them is a user edit, so a real
-    // remote copy is still allowed to win when it lands.
+    // Boot migrations are local-only. Calling settingsService here would mark a
+    // guest snapshot "newer" and let it overwrite the account restored next.
+    if (migrated) this.writeLocalCopy();
     this.changedThisSession = false;
+    this.columnChangedThisSession = false;
   }
 
   private readLocalCopy(): Partial<ImageCompositionSettings> | null {
@@ -279,23 +492,38 @@ class ImageCompositionStateManager {
   }
 
   /**
-   * Persist to the dedicated local store AND the account-settings mirror.
-   *
-   * The mirror write is deliberately NOT gated on auth. It used to be, which let
-   * the two local copies diverge whenever a change happened before auth restored
-   * — and loadSettings() read the mirror. settingsService only forwards to
-   * Firestore when a user is signed in, so an unconditional call here is still
-   * correct for guests.
+   * Persist locally for everyone and to account settings only after Firebase has
+   * confirmed the active identity. Guest writes must not create a shared
+   * `_localTimestamp` that can later be uploaded into a different account.
    */
   private saveToStorage(): void {
     if (!browser) return;
 
     this.changedThisSession = true;
+    const owner = this.activeColumnPreferenceOwner;
+    if (owner) {
+      const sanitized = sanitizeColumnCountPreference(this.settings, owner);
+      this.settings.columnCountOverrides = {
+        ...sanitized.columnCountOverrides,
+      };
+      this.settings.columnCountPreferenceVersion =
+        sanitized.columnCountPreferenceVersion;
+      this.settings.columnCountPreferenceOwner =
+        sanitized.columnCountPreferenceOwner;
+      this.writeScopedColumnPreference(owner);
+    }
     this.writeLocalCopy();
 
-    // Spread to create a plain object - settingsService.updateSetting uses === reference
-    // equality to skip no-ops, and passing the same $state proxy would always match.
-    void settingsService.updateSetting("imageExport", { ...this.settings });
+    const user = getAuthSync().currentUser;
+    if (!user || owner !== getColumnCountPreferenceOwner(user)) {
+      return;
+    }
+
+    // A deep plain copy avoids leaking $state proxies or shared override maps.
+    void settingsService.updateSetting(
+      "imageExport",
+      createSettings(this.settings)
+    );
   }
 
   private notifyObservers(): void {
@@ -387,7 +615,7 @@ class ImageCompositionStateManager {
   // Get all settings (for passing to share service)
   getSettings(): ImageCompositionSettings {
     return {
-      ...this.settings,
+      ...createSettings(this.settings),
       // Include computed addUserInfo for backwards compatibility
       addUserInfo: this.settings.showCreatorName || this.settings.showNotes || this.settings.showBirthday,
     };
@@ -543,7 +771,15 @@ class ImageCompositionStateManager {
    * an older numeric choice instead of leaving that nested value behind.
    */
   setColumnCountForStepCount(stepCount: number, value: number | null): void {
+    const owner =
+      this.activeColumnPreferenceOwner ??
+      getColumnCountPreferenceOwner(getAuthSync().currentUser);
+    this.activeColumnPreferenceOwner = owner;
+    this.settings.columnCountPreferenceVersion =
+      COLUMN_COUNT_PREFERENCE_VERSION;
+    this.settings.columnCountPreferenceOwner = owner;
     this.settings.columnCountOverrides[String(stepCount)] = value;
+    this.columnChangedThisSession = true;
     this.saveToStorage();
     this.notifyObservers();
   }

@@ -139,6 +139,8 @@ export interface AppSettings {
     customNotesText?: string; // Custom text for notes (default: "Created using Flow Arts Composer")
     showLoopGlyph?: boolean; // Show LOOP glyph indicator
     columnCountOverrides?: Record<string, number | null>; // Per-length card columns; null = Auto
+    columnCountPreferenceVersion?: number; // Provenance schema; unversioned numeric values migrate to Auto
+    columnCountPreferenceOwner?: string; // Firebase identity that explicitly chose the numeric value
   };
 }
 
