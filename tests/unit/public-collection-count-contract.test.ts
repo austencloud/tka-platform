@@ -17,9 +17,11 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const LOADER =
-  "src/lib/features/library/services/public-collection-loader.ts";
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
+const LOADER = "src/lib/features/library/services/public-collection-loader.ts";
 
 function read(rel: string): string {
   return readFileSync(path.join(repoRoot, rel), "utf8");
@@ -42,7 +44,9 @@ describe("public-collection count normalization contract", () => {
   it("keeps countPublicMembers module-private to the loader", () => {
     const loader = read(LOADER);
     expect(loader).toMatch(/async function countPublicMembers/);
-    expect(loader).not.toMatch(/export\s+(async\s+)?function countPublicMembers/);
+    expect(loader).not.toMatch(
+      /export\s+(async\s+)?function countPublicMembers/
+    );
   });
 
   it("no file outside the loader references countPublicMembers", () => {
@@ -69,7 +73,26 @@ describe("public-collection count normalization contract", () => {
       expect(start, `${getter} missing from loader`).toBeGreaterThan(-1);
       const body = loader.slice(start, loader.indexOf("\n}", start));
       expect(body, `${getter} must normalize via toPublicView`).toContain(
-        "toPublicView",
+        "toPublicView"
+      );
+    }
+  });
+
+  it("every public-facing subscription routes through toPublicView", () => {
+    const loader = read(LOADER);
+    for (const [subscription, normalizer] of [
+      ["subscribeToAllPublicCollections", "mapPublicCollectionDoc"],
+      ["subscribeToPublicCollection", "toPublicView"],
+    ] as const) {
+      const start = loader.indexOf(`export function ${subscription}`);
+      expect(start, `${subscription} missing from loader`).toBeGreaterThan(-1);
+      const nextExport = loader.indexOf("\nexport ", start + 1);
+      const body = loader.slice(
+        start,
+        nextExport === -1 ? loader.length : nextExport
+      );
+      expect(body, `${subscription} must normalize public counts`).toContain(
+        normalizer
       );
     }
   });

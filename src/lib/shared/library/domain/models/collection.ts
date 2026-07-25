@@ -278,12 +278,19 @@ export function addSequenceToCollection(
   sequenceId: string
 ): LibraryCollection {
   if (collection.sequenceIds.includes(sequenceId)) {
-    return collection; // Already in collection
+    // A duplicate add is also a cheap opportunity to heal an old counter that
+    // drifted away from the authoritative id list.
+    return collection.sequenceCount === collection.sequenceIds.length
+      ? collection
+      : updateCollection(collection, {
+          sequenceCount: collection.sequenceIds.length,
+        });
   }
 
+  const sequenceIds = [...collection.sequenceIds, sequenceId];
   return updateCollection(collection, {
-    sequenceIds: [...collection.sequenceIds, sequenceId],
-    sequenceCount: collection.sequenceCount + 1,
+    sequenceIds,
+    sequenceCount: sequenceIds.length,
   });
 }
 
@@ -295,12 +302,17 @@ export function removeSequenceFromCollection(
   sequenceId: string
 ): LibraryCollection {
   if (!collection.sequenceIds.includes(sequenceId)) {
-    return collection; // Not in collection
+    return collection.sequenceCount === collection.sequenceIds.length
+      ? collection
+      : updateCollection(collection, {
+          sequenceCount: collection.sequenceIds.length,
+        });
   }
 
+  const sequenceIds = collection.sequenceIds.filter((id) => id !== sequenceId);
   return updateCollection(collection, {
-    sequenceIds: collection.sequenceIds.filter((id) => id !== sequenceId),
-    sequenceCount: Math.max(0, collection.sequenceCount - 1),
+    sequenceIds,
+    sequenceCount: sequenceIds.length,
   });
 }
 

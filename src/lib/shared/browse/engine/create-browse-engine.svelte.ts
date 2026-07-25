@@ -647,7 +647,22 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		async refresh(): Promise<void> {
 			libraryCache = null;
 			if (source === "my-library") await loadLibrarySequences();
-			else await loadCommunitySequences();
+			else {
+				try {
+					isLoading = true;
+					sectionsReady = false;
+					error = null;
+					const sequences = await loaderService.refreshFromFirestore();
+					allSequences = deduplicateById(sequences);
+					sectionsReady = true;
+					appendExtraCommunitySequences();
+				} catch (err) {
+					console.error("[BrowseEngine] Failed to refresh community sequences:", err);
+					error = err instanceof Error ? err.message : "Failed to refresh sequences";
+				} finally {
+					isLoading = false;
+				}
+			}
 		},
 
 		// --- Search ---

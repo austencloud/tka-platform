@@ -20,6 +20,7 @@ import {
 } from "$lib/shared/library/services/collection-manager";
 import { setCollectionMembershipResolver } from "$lib/shared/browse/services/browse-filter";
 import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
+import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
 import {
 	readOwnMirror,
 	writeOwnMirror,
@@ -268,13 +269,16 @@ class CollectionsState {
 export const collectionsState = new CollectionsState();
 
 // COLLECTION browse filters resolve membership here — your own collections
-// first, then collections you follow (their members are other people's public
-// sequences, so they filter the community pool). The resolver reads live
-// $state, so an engine pipeline that applied a collection filter recomputes
-// when the collection's members change.
+// first, then every public community collection. Followed state remains a
+// startup fallback for a persisted filter while the global listener's first
+// snapshot is still resolving.
 setCollectionMembershipResolver((collectionId) => {
 	const own = collectionsState.collections.find((c) => c.id === collectionId);
 	if (own) return new Set(own.sequenceIds);
+	const community = communityCollectionsState.items.find(
+		(item) => item.collection.id === collectionId,
+	);
+	if (community) return new Set(community.collection.sequenceIds);
 	const followed = followedCollectionsState.items.find(
 		(i) => i.collection.id === collectionId,
 	);

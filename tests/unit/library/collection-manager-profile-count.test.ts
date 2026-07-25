@@ -7,9 +7,15 @@ const mocks = vi.hoisted(() => {
     delete: vi.fn(),
     commit: vi.fn(),
   };
+  const transaction = {
+    get: vi.fn(),
+    update: vi.fn(),
+  };
 
   return {
     batch,
+    transaction,
+    runTransaction: vi.fn(),
     getDoc: vi.fn(),
     getDocs: vi.fn(),
     captureEvent: vi.fn(),
@@ -26,6 +32,7 @@ vi.mock("firebase/firestore", () => ({
   query: vi.fn((value: unknown) => value),
   orderBy: vi.fn(),
   onSnapshot: vi.fn(),
+  runTransaction: mocks.runTransaction,
   serverTimestamp: vi.fn(() => "server-timestamp"),
   writeBatch: vi.fn(() => mocks.batch),
   arrayUnion: vi.fn(),
@@ -75,6 +82,7 @@ vi.mock("$lib/shared/library/services/collection-firestore-mapper", () => {
 });
 
 import {
+  addSequenceToCollection,
   createSmartUserCollection,
   createUserCollection,
   deleteCollection,
@@ -84,6 +92,12 @@ describe("collection-manager profile count", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.batch.commit.mockResolvedValue(undefined);
+    mocks.runTransaction.mockImplementation(
+      async (
+        _firestore: unknown,
+        operation: (transaction: typeof mocks.transaction) => Promise<void>
+      ) => operation(mocks.transaction)
+    );
   });
 
   it("creates a manual collection and increments the profile count atomically", async () => {
@@ -152,5 +166,48 @@ describe("collection-manager profile count", () => {
       { merge: true }
     );
     expect(mocks.batch.commit).toHaveBeenCalledOnce();
+  });
+
+  it("derives membership count from ids and updates both documents in one transaction", async () => {
+    const collectionData = {
+      name: "Inventions",
+      kind: "manual",
+      sequenceIds: ["sequence-1"],
+      sequenceCount: 7,
+    };
+    mocks.getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => collectionData,
+    });
+    mocks.transaction.get.mockImplementation(async (ref: { path: string }) =>
+      ref.path.endsWith("/collections/collection-1")
+        ? {
+            exists: () => true,
+            data: () => collectionData,
+          }
+        : {
+            exists: () => true,
+            data: () => ({ collectionIds: [] }),
+          }
+    );
+
+    await addSequenceToCollection("collection-1", "sequence-1");
+
+    expect(mocks.runTransaction).toHaveBeenCalledOnce();
+    expect(mocks.transaction.update).toHaveBeenCalledWith(
+      { path: "users/user-1/collections/collection-1" },
+      {
+        sequenceIds: ["sequence-1"],
+        sequenceCount: 1,
+        updatedAt: "server-timestamp",
+      }
+    );
+    expect(mocks.transaction.update).toHaveBeenCalledWith(
+      { path: "users/user-1/sequences/sequence-1" },
+      {
+        collectionIds: ["collection-1"],
+        updatedAt: "server-timestamp",
+      }
+    );
   });
 });

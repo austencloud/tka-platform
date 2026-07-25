@@ -22,9 +22,13 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   query,
   where,
   orderBy,
+  type DocumentData,
+  type QueryDocumentSnapshot,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
@@ -39,6 +43,7 @@ import {
 } from "$lib/shared/library/data/firestore-paths";
 import {
   mapDocToCollection,
+  batchFetchPublicSequences,
   batchFetchSequences,
 } from "$lib/shared/library/services/collection-firestore-mapper";
 
@@ -46,10 +51,7 @@ export async function getUserPublicCollections(
   userId: string
 ): Promise<LibraryCollection[]> {
   const firestore = await getFirestoreInstance();
-  const collectionsRef = collection(
-    firestore,
-    getUserCollectionsPath(userId)
-  );
+  const collectionsRef = collection(firestore, getUserCollectionsPath(userId));
   const q = query(
     collectionsRef,
     where("isPublic", "==", true),
@@ -137,6 +139,21 @@ export interface PublicCollectionWithOwner {
   ownerId: string;
 }
 
+async function mapPublicCollectionDoc(
+  docSnap: QueryDocumentSnapshot<DocumentData>
+): Promise<PublicCollectionWithOwner | null> {
+  const ownerId = docSnap.ref.parent.parent?.id;
+  if (!ownerId) return null;
+
+  const collection = mapDocToCollection(docSnap.data(), docSnap.id);
+  if (collection.systemType) return null;
+
+  return {
+    ownerId,
+    collection: await toPublicView(collection, ownerId),
+  };
+}
+
 /**
  * Fetch every public collection across all users in ONE collection-group query,
  * newest first. Replaces the old per-creator N+1 crawl (list all users → query
@@ -184,8 +201,113 @@ export async function getAllPublicCollections(
   }
 
   return Promise.all(
-    results.map(async (r) => ({ ...r, collection: await toPublicView(r.collection, r.ownerId) }))
+    results.map(async (r) => ({
+      ...r,
+      collection: await toPublicView(r.collection, r.ownerId),
+    }))
   );
+}
+
+/**
+ * Keep the cross-user public collection feed live. Normalization is cached per
+ * changed Firestore document, so an unrelated collection update does not
+ * recount every collection in the feed.
+ */
+export function subscribeToAllPublicCollections(
+  callback: (collections: PublicCollectionWithOwner[]) => void,
+  onError: (error: Error) => void = (error) =>
+    console.error(
+      "[public-collection-loader] Public collection subscription failed:",
+      error
+    ),
+  max = 200
+): Unsubscribe {
+  let disposed = false;
+  let unsubscribe: Unsubscribe | null = null;
+  let snapshotEpoch = 0;
+  let warnedAtCap = false;
+  const normalizedByPath = new Map<
+    string,
+    Promise<PublicCollectionWithOwner | null>
+  >();
+
+  void getFirestoreInstance()
+    .then((firestore) => {
+      if (disposed) return;
+
+      const publicCollectionsQuery = query(
+        collectionGroup(firestore, "collections"),
+        where("isPublic", "==", true),
+        orderBy("updatedAt", "desc"),
+        limit(max)
+      );
+
+      unsubscribe = onSnapshot(
+        publicCollectionsQuery,
+        (snapshot) => {
+          const epoch = ++snapshotEpoch;
+
+          for (const change of snapshot.docChanges()) {
+            const path = change.doc.ref.path;
+            if (change.type === "removed") {
+              normalizedByPath.delete(path);
+            } else {
+              normalizedByPath.set(
+                path,
+                mapPublicCollectionDoc(change.doc).catch((error) => {
+                  console.error(
+                    `[public-collection-loader] Failed to normalize ${path}:`,
+                    error
+                  );
+                  return null;
+                })
+              );
+            }
+          }
+
+          if (snapshot.size >= max && !warnedAtCap) {
+            warnedAtCap = true;
+            console.warn(
+              `[public-collection-loader] Public collection subscription hit the ${max}-doc cap; older public collections are not shown.`
+            );
+          }
+
+          const ordered = snapshot.docs.map((docSnap) => {
+            const path = docSnap.ref.path;
+            const cached =
+              normalizedByPath.get(path) ??
+              mapPublicCollectionDoc(docSnap).catch(() => null);
+            normalizedByPath.set(path, cached);
+            return cached;
+          });
+
+          void Promise.all(ordered)
+            .then((collections) => {
+              if (disposed || epoch !== snapshotEpoch) return;
+              callback(
+                collections.filter(
+                  (item): item is PublicCollectionWithOwner => item !== null
+                )
+              );
+            })
+            .catch(onError);
+        },
+        onError
+      );
+
+      if (disposed) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+    })
+    .catch(onError);
+
+  return () => {
+    disposed = true;
+    snapshotEpoch++;
+    unsubscribe?.();
+    unsubscribe = null;
+  };
 }
 
 /**
@@ -205,6 +327,65 @@ export async function getPublicCollection(
 
   const data = mapDocToCollection(snap.data(), collectionId);
   return data.isPublic ? toPublicView(data, ownerId) : null;
+}
+
+/** Subscribe to one foreign public collection and its normalized public count. */
+export function subscribeToPublicCollection(
+  ownerId: string,
+  collectionId: string,
+  callback: (collection: LibraryCollection | null) => void,
+  onError: (error: Error) => void = (error) =>
+    console.error(
+      "[public-collection-loader] Public collection subscription failed:",
+      error
+    )
+): Unsubscribe {
+  let disposed = false;
+  let unsubscribe: Unsubscribe | null = null;
+  let snapshotEpoch = 0;
+
+  void getFirestoreInstance()
+    .then((firestore) => {
+      if (disposed) return;
+
+      unsubscribe = onSnapshot(
+        doc(firestore, getUserCollectionPath(ownerId, collectionId)),
+        (snapshot) => {
+          const epoch = ++snapshotEpoch;
+          if (!snapshot.exists()) {
+            callback(null);
+            return;
+          }
+
+          const collection = mapDocToCollection(snapshot.data(), collectionId);
+          if (!collection.isPublic) {
+            callback(null);
+            return;
+          }
+
+          void toPublicView(collection, ownerId)
+            .then((publicView) => {
+              if (disposed || epoch !== snapshotEpoch) return;
+              callback(publicView);
+            })
+            .catch(onError);
+        },
+        onError
+      );
+
+      if (disposed) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+    })
+    .catch(onError);
+
+  return () => {
+    disposed = true;
+    snapshotEpoch++;
+    unsubscribe?.();
+    unsubscribe = null;
+  };
 }
 
 export async function getUserCollectionSequences(
@@ -234,15 +415,32 @@ export async function getUserCollectionSequences(
     return [];
   }
 
-  return batchFetchSequences(
+  const ownSequences = await batchFetchSequences(
     firestore,
     userId,
     collectionData.sequenceIds,
     true
   );
+
+  if (ownSequences.length === collectionData.sequenceIds.length) {
+    return ownSequences;
+  }
+
+  const foundIds = new Set(ownSequences.map((sequence) => sequence.id));
+  const missingIds = collectionData.sequenceIds.filter(
+    (sequenceId) => !foundIds.has(sequenceId)
+  );
+  const publicSequences = await batchFetchPublicSequences(
+    firestore,
+    missingIds
+  );
+
+  return [...ownSequences, ...publicSequences];
 }
 
-export async function getUserPublicFavoriteIds(userId: string): Promise<string[]> {
+export async function getUserPublicFavoriteIds(
+  userId: string
+): Promise<string[]> {
   const firestore = await getFirestoreInstance();
 
   // Check if user has public favorites enabled

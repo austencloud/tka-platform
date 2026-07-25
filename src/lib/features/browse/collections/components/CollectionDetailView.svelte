@@ -4,12 +4,11 @@ CollectionDetailView.svelte
 Inside one collection: header (back, icon, name, count, options) above the
 same sequence grid the gallery uses, showing just this collection's members.
 
-The collection doc is a live subscription, so a remove (from a card's menu,
-here or anywhere else) updates the member list immediately. Members are
-fetched once and re-sorted to match the collection's own sequenceIds order —
-the batched Firestore reads return them shuffled otherwise. If the collection
-disappears while open (deleted on another device), we bail back to the list
-instead of showing a ghost.
+The collection doc is a live subscription for both owned and community
+collections, so changes from another device update the member list immediately.
+Members are re-sorted to match the collection's own sequenceIds order because
+batched Firestore reads return them shuffled. If the collection disappears or
+becomes private while open, we bail back to the list instead of showing a ghost.
 -->
 <script lang="ts">
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
@@ -21,8 +20,8 @@ instead of showing a ghost.
 		getCollectionSequences,
 	} from "$lib/shared/library/services/collection-manager";
 	import {
-		getUserPublicCollections,
 		getUserCollectionSequences,
+		subscribeToPublicCollection,
 	} from "$lib/features/library/services/public-collection-loader";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
@@ -56,8 +55,7 @@ instead of showing a ghost.
 		showBack?: boolean;
 		/**
 		 * Set when viewing someone ELSE's public collection (Community view).
-		 * Read-only: no rename/delete/remove, one-shot fetch instead of a live
-		 * subscription (you can't edit it, so there's nothing to stay live for).
+		 * Read-only: no rename/delete/remove, but still live across devices.
 		 */
 		foreignOwnerId?: string | null;
 		/** Creator credit shown under the name for foreign collections. */
@@ -70,6 +68,7 @@ instead of showing a ghost.
 	// The subscription's first answer decides "exists" vs "deleted"; until it
 	// lands we can't tell the difference, so we hold off on the bail-out.
 	let firstSnapshotSeen = $state(false);
+	let memberLoadEpoch = 0;
 
 	const isSystem = $derived(!!collection && isSystemCollection(collection));
 	const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
@@ -81,13 +80,41 @@ instead of showing a ghost.
 		collection = null;
 		members = [];
 		loadingMembers = true;
+		memberLoadEpoch++;
 
-		// Someone else's public collection: one-shot read, nothing to keep live.
 		if (owner) {
 			// Follow state powers the header button; idempotent if already live.
 			followedCollectionsState.ensureStarted();
-			void loadForeign(owner, id);
-			return;
+			let previousFingerprint: string | null = null;
+			const unsubscribe = subscribeToPublicCollection(
+				owner,
+				id,
+				(col) => {
+					firstSnapshotSeen = true;
+					if (!col) {
+						memberLoadEpoch++;
+						onBack();
+						return;
+					}
+
+					collection = col;
+					const fingerprint =
+						`${col.updatedAt.getTime()}:${col.sequenceCount}:` +
+						col.sequenceIds.join("\u0000");
+					if (fingerprint !== previousFingerprint) {
+						previousFingerprint = fingerprint;
+						void loadForeignMembers(owner, id, col);
+					}
+				},
+				(err) => {
+					console.error("[CollectionDetail] Public collection subscription failed:", err);
+					loadingMembers = false;
+				},
+			);
+			return () => {
+				memberLoadEpoch++;
+				unsubscribe();
+			};
 		}
 
 		const unsubscribe = subscribeToCollection(id, (col) => {
@@ -96,6 +123,7 @@ instead of showing a ghost.
 
 			if (!col) {
 				// Deleted (or never existed) — a detail view of nothing helps no one.
+				memberLoadEpoch++;
 				onBack();
 				return;
 			}
@@ -116,51 +144,64 @@ instead of showing a ghost.
 			if (hasNewId) {
 				void loadMembers(id, col);
 			} else {
+				memberLoadEpoch++;
 				members = sortByCollectionOrder(
 					members.filter((m) => col.sequenceIds.includes(m.id)),
 					col.sequenceIds,
 				);
+				loadingMembers = false;
 			}
 		});
 
-		return unsubscribe;
+		return () => {
+			memberLoadEpoch++;
+			unsubscribe();
+		};
 	});
 
-	async function loadForeign(owner: string, id: string) {
+	async function loadForeignMembers(
+		owner: string,
+		id: string,
+		col: LibraryCollection,
+	) {
+		const epoch = ++memberLoadEpoch;
+		loadingMembers = true;
 		try {
-			// The loader only serves public collections, so a private/deleted one
-			// comes back missing — bail to the list rather than render a ghost.
-			const publicCollections = await getUserPublicCollections(owner);
-			if (id !== collectionId) return;
-			const col = publicCollections.find((c) => c.id === id) ?? null;
-			if (!col) {
-				onBack();
-				return;
-			}
-			collection = col;
-
 			const fetched = await getUserCollectionSequences(owner, id);
-			if (id !== collectionId) return;
+			if (
+				epoch !== memberLoadEpoch ||
+				id !== collectionId ||
+				owner !== foreignOwnerId
+			) return;
 			members = sortByCollectionOrder(fetched, col.sequenceIds);
 		} catch (err) {
 			console.error("[CollectionDetail] Failed to load public collection:", err);
 		} finally {
-			if (id === collectionId) loadingMembers = false;
+			if (
+				epoch === memberLoadEpoch &&
+				id === collectionId &&
+				owner === foreignOwnerId
+			) {
+				loadingMembers = false;
+			}
 		}
 	}
 
 	async function loadMembers(id: string, col: LibraryCollection) {
+		const epoch = ++memberLoadEpoch;
 		loadingMembers = true;
 		try {
 			const fetched = await getCollectionSequences(id);
 			// Guard against a stale response after the user navigated to another
 			// collection while this fetch was in flight.
-			if (id !== collectionId) return;
+			if (epoch !== memberLoadEpoch || id !== collectionId) return;
 			members = sortByCollectionOrder(fetched, col.sequenceIds);
 		} catch (err) {
 			console.error("[CollectionDetail] Failed to load members:", err);
 		} finally {
-			if (id === collectionId) loadingMembers = false;
+			if (epoch === memberLoadEpoch && id === collectionId) {
+				loadingMembers = false;
+			}
 		}
 	}
 

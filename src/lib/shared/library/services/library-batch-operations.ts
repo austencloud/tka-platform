@@ -3,6 +3,7 @@ import {
   doc,
   getDocs,
   query,
+  updateDoc,
   where,
   writeBatch,
   serverTimestamp,
@@ -17,6 +18,7 @@ import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { ensureComposition } from "$lib/shared/foundation/services/sequence-hydrator";
 import {
   getUserSequencesPath,
+  getUserCollectionPath,
   getUserSequencePath,
   getPublicSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
@@ -27,6 +29,10 @@ import type {
 } from "$lib/shared/library/domain/models/library-sequence";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
+import {
+  meetsCommunityMinimum,
+  MIN_COMMUNITY_STEPS,
+} from "$lib/shared/library/domain/sequence-min-length";
 
 type MapDocFn = (doc: DocumentData, id: string) => LibrarySequence;
 
@@ -44,6 +50,40 @@ export class LibraryBatchOperations {
       severity?: "error" | "warning"
     ) => void
   ) {}
+
+  private async touchCollections(
+    firestore: Firestore,
+    userId: string,
+    collectionIds: readonly string[]
+  ): Promise<void> {
+    const uniqueIds = [...new Set(collectionIds)];
+    const CONCURRENCY = 8;
+    for (let i = 0; i < uniqueIds.length; i += CONCURRENCY) {
+      const results = await Promise.allSettled(
+        uniqueIds.slice(i, i + CONCURRENCY).map((collectionId) =>
+          updateDoc(
+            doc(
+              firestore,
+              getUserCollectionPath(userId, collectionId)
+            ),
+            { updatedAt: serverTimestamp() }
+          )
+        )
+      );
+
+      for (const result of results) {
+        if (result.status === "fulfilled") continue;
+        const code =
+          typeof result.reason === "object" &&
+          result.reason !== null &&
+          "code" in result.reason
+            ? String((result.reason as { code: unknown }).code)
+            : "";
+        if (code === "not-found") continue;
+        throw result.reason;
+      }
+    }
+  }
 
   async deleteSequences(sequenceIds: string[]): Promise<void> {
     if (sequenceIds.length === 0) return;
@@ -90,9 +130,7 @@ export class LibraryBatchOperations {
           if (existing.visibility === "public") {
             batch.delete(doc(firestore, getPublicSequencePath(sequenceId)));
           }
-          batch.delete(
-            doc(firestore, getUserSequencePath(userId, sequenceId))
-          );
+          batch.delete(doc(firestore, getUserSequencePath(userId, sequenceId)));
           chunkDeletedCount++;
         }
 
@@ -189,6 +227,7 @@ export class LibraryBatchOperations {
 
     const toPublish: LibrarySequence[] = [];
     const toUnpublish: string[] = [];
+    const collectionsToTouch = new Set<string>();
 
     const sequencesRef = collection(firestore, getUserSequencesPath(userId));
     const BATCH_SIZE = 30;
@@ -203,6 +242,9 @@ export class LibraryBatchOperations {
           docSnap.data(),
           docSnap.id
         );
+        for (const collectionId of existing.collectionIds ?? []) {
+          collectionsToTouch.add(collectionId);
+        }
         const docRef = doc(firestore, getUserSequencePath(userId, docSnap.id));
 
         batch.update(docRef, {
@@ -211,13 +253,18 @@ export class LibraryBatchOperations {
           updatedAt: now,
         });
 
-        if (visibility === "public" && existing.visibility !== "public") {
+        if (visibility === "public" && !meetsCommunityMinimum(existing)) {
+          throw new LibraryError(
+            `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery.`,
+            "INVALID_DATA",
+            docSnap.id
+          );
+        }
+
+        if (visibility === "public") {
           const withComposition = ensureComposition(existing);
           toPublish.push({ ...existing, ...withComposition, visibility });
-        } else if (
-          visibility !== "public" &&
-          existing.visibility === "public"
-        ) {
+        } else if (existing.visibility === "public") {
           toUnpublish.push(docSnap.id);
         }
       }
@@ -240,9 +287,21 @@ export class LibraryBatchOperations {
           this.publicIndexSyncer.removeFromPublicIndex(id)
         ),
       ]);
+      await this.touchCollections(
+        firestore,
+        userId,
+        [...collectionsToTouch]
+      );
     } catch (error) {
       console.error("[LibraryRepository] Failed to sync public index:", error);
-      toast.warning("Visibility updated, but public index sync failed.");
+      this.reportError(
+        "Visibility changed, but the public gallery did not finish updating.",
+        error,
+        "visibility-public-index-sync",
+        { sequenceCount: sequenceIds.length },
+        "warning"
+      );
+      throw new LibraryError("Failed to update the public gallery", "NETWORK");
     }
   }
 }

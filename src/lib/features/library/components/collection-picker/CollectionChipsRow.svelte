@@ -7,8 +7,8 @@ are the PRIMARY organization of the library, so pickers surface them here — a
 persistent row above the grid — not buried in the filter sheet.
 
 OWNERSHIP routes the chips: My Library shows your own collections, Community
-shows collections you follow (their members are other people's public
-sequences). Counts never route — your published work also lives in the
+shows every public collection (their members are public sequences). Counts never
+route — your published work also lives in the
 community pool, so count-based routing surfaced your own collections on
 Community, which reads as a bug. Within the routed set, a chip only renders
 when its live count against the current pool (and current filters) is
@@ -26,13 +26,42 @@ even at zero, so it can be dismissed.
 	import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 	import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
-	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
+	import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
 
-	let { engine }: { engine: BrowseEngine } = $props();
+	let {
+		engine,
+		onAddCollection,
+		addCollectionBusy = false,
+	}: {
+		engine: BrowseEngine;
+		onAddCollection?: (collectionId: string) => void;
+		addCollectionBusy?: boolean;
+	} = $props();
 
 	$effect(() => {
 		collectionsState.ensureStarted();
-		followedCollectionsState.ensureStarted();
+		void communityCollectionsState.ensureLoaded();
+	});
+
+	let lastCommunitySignature: string | null = null;
+	$effect(() => {
+		const signature = communityCollectionsState.items
+			.map(
+				(item) =>
+					`${item.ownerId}/${item.collection.id}:${item.collection.updatedAt.getTime()}:${item.collection.sequenceCount}`,
+			)
+			.join("|");
+		if (
+			engine.source !== "community" ||
+			!engine.sectionsReady ||
+			communityCollectionsState.loading ||
+			signature === lastCommunitySignature
+		) {
+			return;
+		}
+
+		lastCommunitySignature = signature;
+		void engine.refresh();
 	});
 
 	const COLLECTION_KEY = String(BrowseFilterType.COLLECTION);
@@ -48,11 +77,13 @@ even at zero, so it can be dismissed.
 					id: c.id,
 					name: c.name,
 					color: c.color,
+					totalCount: c.sequenceCount,
 				}))
-			: followedCollectionsState.items.map((i) => ({
+			: communityCollectionsState.items.map((i) => ({
 					id: i.collection.id,
 					name: i.collection.name,
 					color: i.collection.color,
+					totalCount: i.collection.sequenceCount,
 				})),
 	);
 
@@ -64,6 +95,9 @@ even at zero, so it can be dismissed.
 			}))
 			.filter((c) => c.count > 0 || c.id === activeCollectionId),
 	);
+	const activeCandidate = $derived(
+		candidates.find((candidate) => candidate.id === activeCollectionId) ?? null,
+	);
 
 	// Switching pools with a collection applied would leave a filter for a
 	// collection the new pool doesn't offer — a zero-result grid explained
@@ -73,7 +107,7 @@ even at zero, so it can be dismissed.
 	$effect(() => {
 		const id = activeCollectionId;
 		if (!id) return;
-		if (collectionsState.loading || followedCollectionsState.loading) return;
+		if (collectionsState.loading || communityCollectionsState.loading) return;
 		if (!candidates.some((c) => c.id === id)) {
 			engine.removeFilter(COLLECTION_KEY);
 		}
@@ -113,6 +147,18 @@ even at zero, so it can be dismissed.
 				size="sm"
 			/>
 		{/each}
+		{#if activeCandidate && onAddCollection}
+			<FilterChipBase
+				mode="action"
+				icon="fa-solid fa-plus"
+				label="Add collection"
+				count={activeCandidate.totalCount}
+				chipColor={activeCandidate.color ?? "#c084fc"}
+				disabled={addCollectionBusy}
+				onclick={() => onAddCollection?.(activeCandidate.id)}
+				size="sm"
+			/>
+		{/if}
 	</div>
 {/if}
 

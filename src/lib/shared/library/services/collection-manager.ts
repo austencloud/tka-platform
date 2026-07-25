@@ -16,11 +16,13 @@ import {
   query,
   orderBy,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   writeBatch,
-  arrayUnion,
   arrayRemove,
   increment,
+  type Firestore,
+  type Transaction,
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
@@ -42,6 +44,7 @@ import type { LibrarySequence } from "$lib/shared/library/domain/models/library-
 import {
   getUserCollectionsPath,
   getUserCollectionPath,
+  getPublicSequencePath,
   getUserSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
 import {
@@ -54,6 +57,91 @@ import {
 
 // Re-export so existing imports of CollectionError from this module still work
 export { CollectionError };
+
+class PublicMemberNotReadyError extends Error {
+  constructor(public readonly sequenceId?: string) {
+    super("Public collection member is not ready");
+    this.name = "PublicMemberNotReadyError";
+  }
+}
+
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((sequenceId, index) => sequenceId === right[index])
+  );
+}
+
+/**
+ * Make one member readable through the public index before a public collection
+ * points at it. Own-library sequences are published through the repository so
+ * moderation, minimum length, composition, and mirror shape stay canonical.
+ * A foreign member is valid only when its public mirror already exists.
+ */
+async function ensurePublicMember(
+  firestore: Firestore,
+  userId: string,
+  sequenceId: string
+): Promise<void> {
+  const ownRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+  const ownSnapshot = await getDoc(ownRef);
+
+  if (ownSnapshot.exists()) {
+    const { getLibraryRepository } =
+      await import("$lib/shared/library/get-library-repository");
+    await getLibraryRepository().publishSequence(sequenceId);
+    return;
+  }
+
+  const publicSnapshot = await getDoc(
+    doc(firestore, getPublicSequencePath(sequenceId))
+  );
+  if (!publicSnapshot.exists()) {
+    throw new CollectionError(
+      "A public collection can only contain public sequences",
+      "INVALID_OPERATION",
+      sequenceId
+    );
+  }
+}
+
+async function ensurePublicMembers(
+  firestore: Firestore,
+  userId: string,
+  sequenceIds: readonly string[]
+): Promise<void> {
+  const uniqueIds = [...new Set(sequenceIds)];
+  const CONCURRENCY = 6;
+  for (let i = 0; i < uniqueIds.length; i += CONCURRENCY) {
+    await Promise.all(
+      uniqueIds
+        .slice(i, i + CONCURRENCY)
+        .map((sequenceId) => ensurePublicMember(firestore, userId, sequenceId))
+    );
+  }
+}
+
+async function verifyPublicMemberInTransaction(
+  transaction: Transaction,
+  firestore: Firestore,
+  userId: string,
+  sequenceId: string
+) {
+  const ownRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+  const publicRef = doc(firestore, getPublicSequencePath(sequenceId));
+  const [ownSnapshot, publicSnapshot] = await Promise.all([
+    transaction.get(ownRef),
+    transaction.get(publicRef),
+  ]);
+
+  const ownIsPublic =
+    !ownSnapshot.exists() || ownSnapshot.data()["visibility"] === "public";
+  if (!ownIsPublic || !publicSnapshot.exists()) {
+    throw new PublicMemberNotReadyError(sequenceId);
+  }
+
+  return ownSnapshot;
+}
 
 // ============================================================
 // SYSTEM COLLECTIONS
@@ -353,10 +441,71 @@ export async function updateCollection(
 
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
   try {
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+    if (updates.isPublic === true && !existing.isPublic) {
+      // Publish every member and wait for its public mirror before making the
+      // collection discoverable. The transaction then confirms membership did
+      // not change during that work; if another device added a member, repeat
+      // against the new authoritative id list.
+      let published = false;
+      for (let attempt = 0; attempt < 3 && !published; attempt++) {
+        const latestSnapshot = await getDoc(docRef);
+        if (!latestSnapshot.exists()) {
+          throw new CollectionError(
+            "Collection not found",
+            "NOT_FOUND",
+            collectionId
+          );
+        }
+
+        const latest = mapDocToCollection(latestSnapshot.data(), collectionId);
+        const preparedIds = [...new Set(latest.sequenceIds)];
+        await ensurePublicMembers(firestore, userId, preparedIds);
+
+        try {
+          await runTransaction(firestore, async (transaction) => {
+            const transactionSnapshot = await transaction.get(docRef);
+            if (!transactionSnapshot.exists()) {
+              throw new CollectionError(
+                "Collection not found",
+                "NOT_FOUND",
+                collectionId
+              );
+            }
+
+            const current = mapDocToCollection(
+              transactionSnapshot.data(),
+              collectionId
+            );
+            const currentIds = [...new Set(current.sequenceIds)];
+            if (!sameIds(currentIds, preparedIds)) {
+              throw new PublicMemberNotReadyError();
+            }
+
+            transaction.update(docRef, {
+              ...updates,
+              sequenceIds: currentIds,
+              sequenceCount: currentIds.length,
+              updatedAt: serverTimestamp(),
+            });
+          });
+          published = true;
+        } catch (error) {
+          if (error instanceof PublicMemberNotReadyError && attempt < 2) {
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      if (!published) {
+        throw new PublicMemberNotReadyError();
+      }
+    } else {
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
     console.error("[CollectionManager] Failed to update collection:", error);
     toast.error("Failed to update collection. Please try again.");
@@ -367,11 +516,12 @@ export async function updateCollection(
     );
   }
 
-  return {
-    ...existing,
-    ...updates,
-    updatedAt: new Date(),
-  };
+  const updatedSnapshot = await getDoc(docRef);
+  if (updatedSnapshot.exists()) {
+    return mapDocToCollection(updatedSnapshot.data(), collectionId);
+  }
+
+  throw new CollectionError("Collection not found", "NOT_FOUND", collectionId);
 }
 
 export async function deleteCollection(collectionId: string): Promise<void> {
@@ -451,49 +601,115 @@ export async function addSequenceToCollection(
 ): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
-
   const collectionRef = doc(
     firestore,
     getUserCollectionPath(userId, collectionId)
   );
+  const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+
   try {
-    await updateDoc(collectionRef, {
-      sequenceIds: arrayUnion(sequenceId),
-      sequenceCount: increment(1),
-      updatedAt: serverTimestamp(),
-    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const collectionSnapshot = await getDoc(collectionRef);
+      if (!collectionSnapshot.exists()) {
+        throw new CollectionError(
+          "Collection not found",
+          "NOT_FOUND",
+          collectionId
+        );
+      }
+
+      const before = mapDocToCollection(
+        collectionSnapshot.data(),
+        collectionId
+      );
+      if (before.kind === "smart") {
+        throw new CollectionError(
+          "Cannot modify members of a smart collection",
+          "INVALID_OPERATION",
+          collectionId
+        );
+      }
+      if (before.isPublic) {
+        await ensurePublicMember(firestore, userId, sequenceId);
+      }
+
+      try {
+        await runTransaction(firestore, async (transaction) => {
+          const currentSnapshot = await transaction.get(collectionRef);
+          if (!currentSnapshot.exists()) {
+            throw new CollectionError(
+              "Collection not found",
+              "NOT_FOUND",
+              collectionId
+            );
+          }
+
+          const current = mapDocToCollection(
+            currentSnapshot.data(),
+            collectionId
+          );
+          if (current.kind === "smart") {
+            throw new CollectionError(
+              "Cannot modify members of a smart collection",
+              "INVALID_OPERATION",
+              collectionId
+            );
+          }
+
+          const ownSequenceSnapshot = current.isPublic
+            ? await verifyPublicMemberInTransaction(
+                transaction,
+                firestore,
+                userId,
+                sequenceId
+              )
+            : await transaction.get(sequenceRef);
+
+          const sequenceIds = current.sequenceIds.includes(sequenceId)
+            ? [...current.sequenceIds]
+            : [...current.sequenceIds, sequenceId];
+          transaction.update(collectionRef, {
+            sequenceIds,
+            sequenceCount: sequenceIds.length,
+            updatedAt: serverTimestamp(),
+          });
+
+          if (ownSequenceSnapshot.exists()) {
+            const existingCollectionIds = Array.isArray(
+              ownSequenceSnapshot.data()["collectionIds"]
+            )
+              ? (ownSequenceSnapshot.data()["collectionIds"] as string[])
+              : [];
+            const collectionIds = existingCollectionIds.includes(collectionId)
+              ? existingCollectionIds
+              : [...existingCollectionIds, collectionId];
+            transaction.update(sequenceRef, {
+              collectionIds,
+              updatedAt: serverTimestamp(),
+            });
+          }
+        });
+        return;
+      } catch (error) {
+        if (error instanceof PublicMemberNotReadyError && attempt < 2) {
+          await ensurePublicMember(firestore, userId, sequenceId);
+          continue;
+        }
+        throw error;
+      }
+    }
   } catch (error) {
     console.error(
       "[CollectionManager] Failed to add sequence to collection:",
       error
     );
     toast.error("Failed to add to collection. Please try again.");
+    if (error instanceof CollectionError) throw error;
     throw new CollectionError(
       "Failed to add sequence to collection",
       "NETWORK",
       collectionId
     );
-  }
-
-  // Update sequence's collectionIds if it exists in the user's library.
-  // The sequence might not exist locally when favoriting someone else's public
-  // sequence or a sequence from the generate module that hasn't been saved yet.
-  try {
-    const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-    await updateDoc(sequenceRef, {
-      collectionIds: arrayUnion(collectionId),
-      updatedAt: serverTimestamp(),
-    });
-  } catch (err: unknown) {
-    const isNotFound =
-      (err instanceof Error && err.message.includes("No document to update")) ||
-      (typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code: string }).code === "not-found");
-    if (!isNotFound) {
-      throw err;
-    }
   }
 }
 
@@ -503,31 +719,52 @@ export async function removeSequenceFromCollection(
 ): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
-  const existing = await getCollection(collectionId);
-
-  if (!existing) {
-    return;
-  }
-
-  if (existing.kind === "smart") {
-    // Smart collections derive members from a rule; there is nothing to
-    // hand-remove. The UI hides remove affordances — this is defense in depth.
-    throw new CollectionError(
-      "Cannot modify members of a smart collection",
-      "INVALID_OPERATION",
-      collectionId
-    );
-  }
-
   const collectionRef = doc(
     firestore,
     getUserCollectionPath(userId, collectionId)
   );
+  const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+
   try {
-    await updateDoc(collectionRef, {
-      sequenceIds: arrayRemove(sequenceId),
-      sequenceCount: Math.max(0, existing.sequenceCount - 1),
-      updatedAt: serverTimestamp(),
+    await runTransaction(firestore, async (transaction) => {
+      const [collectionSnapshot, sequenceSnapshot] = await Promise.all([
+        transaction.get(collectionRef),
+        transaction.get(sequenceRef),
+      ]);
+      if (!collectionSnapshot.exists()) return;
+
+      const current = mapDocToCollection(
+        collectionSnapshot.data(),
+        collectionId
+      );
+      if (current.kind === "smart") {
+        throw new CollectionError(
+          "Cannot modify members of a smart collection",
+          "INVALID_OPERATION",
+          collectionId
+        );
+      }
+
+      const sequenceIds = current.sequenceIds.filter((id) => id !== sequenceId);
+      transaction.update(collectionRef, {
+        sequenceIds,
+        sequenceCount: sequenceIds.length,
+        updatedAt: serverTimestamp(),
+      });
+
+      if (sequenceSnapshot.exists()) {
+        const existingCollectionIds = Array.isArray(
+          sequenceSnapshot.data()["collectionIds"]
+        )
+          ? (sequenceSnapshot.data()["collectionIds"] as string[])
+          : [];
+        transaction.update(sequenceRef, {
+          collectionIds: existingCollectionIds.filter(
+            (id) => id !== collectionId
+          ),
+          updatedAt: serverTimestamp(),
+        });
+      }
     });
   } catch (error) {
     console.error(
@@ -535,29 +772,12 @@ export async function removeSequenceFromCollection(
       error
     );
     toast.error("Failed to remove from collection. Please try again.");
+    if (error instanceof CollectionError) throw error;
     throw new CollectionError(
       "Failed to remove sequence from collection",
       "NETWORK",
       collectionId
     );
-  }
-
-  try {
-    const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-    await updateDoc(sequenceRef, {
-      collectionIds: arrayRemove(collectionId),
-      updatedAt: serverTimestamp(),
-    });
-  } catch (err: unknown) {
-    const isNotFound =
-      (err instanceof Error && err.message.includes("No document to update")) ||
-      (typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code: string }).code === "not-found");
-    if (!isNotFound) {
-      throw err;
-    }
   }
 }
 
