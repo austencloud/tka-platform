@@ -256,17 +256,20 @@ const BIGDOUBLESTAR_TIP_POINTS: PropTipConfig = {
 
 // ─── Eightrings Family ────────────────────────────────────────────────────────
 
+// Both entries used to sit on the top of a ring at roughly half the real
+// reach, so the mandala came out ~34% short. These are the artwork's own outer
+// extents, measured off the pictograph SVGs with isPointInFill.
 const EIGHTRINGS_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 64.33, dy: -55.75 },
-    { dx: -64.32, dy: -55.75 },
+    { dx: 128.5, dy: -2.5 },
+    { dx: -128.5, dy: -2.5 },
   ],
 };
 
 const BIGEIGHTRINGS_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 150, dy: -130 },
-    { dx: -150, dy: -130 },
+    { dx: 300, dy: -3.8 },
+    { dx: -300, dy: -3.8 },
   ],
 };
 

@@ -170,7 +170,8 @@ describe("TrailOverlayWebGL2 prop-swap suppression", () => {
     expect(blueLeftRingOf(overlay)).toHaveLength(0);
     const [point] = blueRightRingOf(overlay);
     expect(point?.tipIndex).toBe(2);
-    expect(point?.x).toBeCloseTo(250 + ((150 + 150) * 500) / 950, 8);
+    // hand orbit + the fan's outer rib on the pictograph artwork (130, the club's reach)
+    expect(point?.x).toBeCloseTo(250 + ((150 + 130) * 500) / 950, 8);
     expect(point?.y).toBeCloseTo(250, 8);
   });
 

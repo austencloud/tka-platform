@@ -22,12 +22,14 @@ afterEach(() => {
 
 describe("canonical trail point resolution", () => {
   it("anchors the fan's five effect points to its rendered SVG boundary", () => {
+    // The animation canvas draws the pictograph family now, so the ribs sit on
+    // that artwork's boundary — outer rib on the club's reach.
     expect(getTipPoints("fan").points).toEqual([
-      { dx: 84, dy: -118 },
-      { dx: 115, dy: -67 },
-      { dx: 150, dy: 0 },
-      { dx: 115, dy: 67 },
-      { dx: 84, dy: 118 },
+      { dx: 72.8, dy: -102.03 },
+      { dx: 99.67, dy: -57.93 },
+      { dx: 130, dy: 0 },
+      { dx: 99.67, dy: 57.93 },
+      { dx: 72.8, dy: 102.03 },
     ]);
   });
 
@@ -38,10 +40,10 @@ describe("canonical trail point resolution", () => {
     });
   });
 
-  it("anchors both buugeng trails to the animated SVG terminals", () => {
+  it("anchors both buugeng trails to the pictograph SVG terminals", () => {
     expect(getTipPoints("buugeng").points).toEqual([
-      { dx: 150, dy: 0 },
-      { dx: -150, dy: 0 },
+      { dx: 131.3, dy: 0 },
+      { dx: -131.3, dy: 0 },
     ]);
     expect(getTipPoints("bigbuugeng").points).toEqual([
       { dx: 300, dy: 0 },
@@ -147,7 +149,7 @@ describe("trail source world-space calculation", () => {
       "fan"
     );
 
-    expect(endpoint).toEqual({ x: 475, y: 625, tipIndex: 2 });
+    expect(endpoint).toEqual({ x: 475, y: 605, tipIndex: 2 });
   });
 
   it("rotates both buugeng sources from the prop's true terminal radius", () => {
@@ -165,8 +167,8 @@ describe("trail source world-space calculation", () => {
       "buugeng"
     );
 
-    expect(first).toEqual({ x: 475, y: 625, tipIndex: 0 });
-    expect(second).toEqual({ x: 475, y: 325, tipIndex: 1 });
+    expect(first).toEqual({ x: 475, y: 606.3, tipIndex: 0 });
+    expect(second).toEqual({ x: 475, y: 343.7, tipIndex: 1 });
   });
 
   it("rotates custom offsets instead of treating them as canvas-space offsets", () => {
