@@ -536,12 +536,12 @@ virtualization.
 - [x] 1.5 failure UX: skeleton rows/sheet, reserved slots, Retry all, showUserError routing, missing-vs-error copy — `8270e8b8ba` + `c808c22c9f`
 - [x] 1.5b word display: `simplifyRepeatedWord` + `.tka-font` on every sequence-word surface (fixes live rail violation) — `c808c22c9f`
 - [x] 1.6 all Phase-1 tests green — 42/42 across 6 files; full check clean for touched files
-- [ ] 2.1 stage fit policy (fit-page default, fit-width toggle, 1100px cap deleted, 2-up spread)
-- [ ] 2.2 rail resize + collapse (ResizeHandle, persisted width)
-- [ ] 2.3 toolbar zones + no-shift audit
-- [ ] 2.4 dock container-relative width (dockSlide pin kept)
-- [ ] 2.5 container-query migration of the 900px stack
-- [ ] 2.6 screenshot evidence at 3840 / 2560@1.5 / 1920 / ~900, picker open+closed, both modes; PDF parity check
+- [x] 2.1 stage fit policy (fit-page default, fit-width toggle, 1100px cap deleted, 2-up spread) — `6cbcbc2557`
+- [x] 2.2 rail resize + collapse (ResizeHandle, persisted width) — `8c36547b3a` + `4f7c4841ed`
+- [x] 2.3 toolbar zones + no-shift audit — `8c36547b3a`
+- [x] 2.4 dock container-relative width (dockSlide pin kept via shared `--dock-w`) — `8c36547b3a`
+- [~] 2.5 container-query migration — toolbar is a real `@container choreo-workspace`; body/dock use a ResizeObserver-fed `--workspace-w` instead of root containment, because `container-type` on the root would have offset every `position: fixed` popover (filter Drawer, dropdown chips) rendered inside the view. Element-relative semantics preserved, zero new viewport breakpoints. Data-parity gate passed: zero diffs under `services/` + `domain/`.
+- [ ] 2.6 screenshot evidence at 3840 / 2560@1.5 / 1920 / ~900, picker open+closed, both modes; PDF parity check (Task 13 — needs browser permission)
 - [x] 3.1 thumbnail repair helper: markMissing + local delete + evictHash — `c23988c21c`
 - [x] 3.2 `response.ok` gate in saveCloudBlobToLocal — `c23988c21c`
 - [x] 3.3 thumbnail tests (mock updates + new cases) — 35/35 across 5 files
