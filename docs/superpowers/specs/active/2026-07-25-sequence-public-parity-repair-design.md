@@ -1344,6 +1344,61 @@ The seven questions raised for review, answered.
   (`animatedSequenceUrl`, `gridMode`, and the admin `views`/`creatorName`/
   `creatorId` trio) and the two-read-path trap. See the ledger section.
 
+## Phase 1 hardening round (Fable 5, 2026-07-25 — landed with the Phase 1 modules)
+
+Adversarial review of the Phase 1 workflow output surfaced six defects; all are
+fixed in the committed modules. Decisions that bind later phases:
+
+1. **Blank steps are refused at the persistence boundary.**
+   `normalizeSequenceForPersistence` throws `BLANK_STEPS_UNSUPPORTED` for any
+   sequence containing `isBlank` steps, because the flag does not round-trip:
+   `extractStepPairings` (sequence-decomposer.ts:82) does not carry it and
+   `step-deriver.ts:156` rebuilds every step with `isBlank: false`, while
+   `isBlank` sits in the V2 hash basis (sequence-content-hasher.ts:132) — so a
+   persisted blank would change its own word and identity hash on the next
+   save. No production path creates a blank step today (verified: the only
+   `isBlank: true` writers are Write-module sheet CELLS, a different type).
+   **Phase 2, if blanks are ever wanted:** persist the flag in `stepPairings`,
+   restore it in `deriveSteps`, then delete the refusal.
+2. **Legacy inline `stepNumber === 0` start entries are stripped by the
+   normalizer** before anything counts, composes, or hashes. Both corpus step
+   shapes (legacy raw `steps` with a letterless step 0; modern compositional
+   with none) now normalize onto the content-beats-only basis: word,
+   `sequenceLength`, and pairings agree, and the legacy shape gains the same
+   V2 identity as its modern twin (stragglers self-heal through the
+   version-aware lazy rehash, as in the V1→V2 flip). A start-entry-only
+   document is `EMPTY_SEQUENCE`.
+3. **One name per side.** The builder returns `PublicSequenceProjectionWrite`
+   (write shape, may carry `serverTimestamp()` sentinels); the wire schema owns
+   `PublicSequenceProjection` (read-side application model, real `Date`s) and
+   is the single declaration of `PUBLIC_PROJECTION_SCHEMA_VERSION`, re-exported
+   by the builder.
+4. **Prior state is a required discriminant, not an optional.**
+   `buildPublicSequenceProjection` takes
+   `{ kind: "first-publication" } | { kind: "existing", fields }`. A failed
+   read of the current public document has no representation — the caller must
+   abort, so a read failure can never masquerade as a first publication and
+   reset `publishedAt` or the engagement counters. Phase 2's transaction writer
+   MUST honor this: read inside the transaction, abort on failure.
+5. **`animationFormat` is on the wire schema** (string, tolerant of future
+   formats) and flows through `toPublicSequenceProjection`.
+6. **Ghost-field consumers fixed** (production changes, same commit):
+   `landing-preview/services/sequence-matcher.ts` now reads
+   `ownerDisplayName` (was `author`/`ownerName`, both never written — always
+   rendered "Unknown"); `admin/services/content-query-analyzer.ts` now orders
+   by and reads `viewCount`/`ownerDisplayName`/`ownerId` (was
+   `views`/`creatorName`/`creatorId`, all ghosts — the admin panel showed no
+   data).
+
+**Phase 2 ledger addition — loader assignments.** Writing the missing fields
+repairs only `componentDomains`, which `mapPublicIndexToSequenceData` already
+assigns. The mapper never ASSIGNS `gridMode`, `intendedWord`,
+`reversalPattern`, `animatedSequenceUrl`, `animationFormat`, `startPosition`,
+or `creatorIntent` — Phase 2 must add those assignments (or migrate the loader
+onto `classifyPublicSequenceDocument`, the intended end state) or the Grid
+Mode/reversal filters and Watch-feed split stay dead on path A even with a
+repaired corpus.
+
 ### Sequencing note
 
 The transaction, claim, and rules work prevents future drift but repairs nothing

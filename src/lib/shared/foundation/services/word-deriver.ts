@@ -64,7 +64,11 @@ export function getSequenceDisplayName(sequence: SequenceData): string {
 //      are live in the corpus, so we drop stepNumber 0 when present and treat
 //      its absence as normal.
 //   2. Intentional blank — `isBlank`, honored elsewhere (deck-composer skips
-//      them). Contributes no token but must not block a save forever.
+//      them). Contributes no token and is NOT a derivation failure. Whether a
+//      blank may be PERSISTED is a separate policy owned by
+//      sequence-persistence-normalizer, which currently refuses blanks because
+//      the flag does not survive the round trip (extractStepPairings drops it;
+//      step-deriver rebuilds every step with isBlank: false).
 //   3. Unresolved beat — a content step whose letter never derived. THIS is the
 //      one that must stop a write.
 
