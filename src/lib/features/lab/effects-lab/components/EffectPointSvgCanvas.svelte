@@ -8,6 +8,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { PROP_DIMENSIONS, DEFAULT_PROP_DIMENSIONS, type PropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
+  import { resolvePropSvgPath } from "$lib/shared/animation-engine/services/svg-generator";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 
   interface Props {
@@ -73,7 +74,9 @@
   async function loadPropSvg(propType: string) {
     if (!propShapeGroup) return;
     try {
-      const resp = await fetch(`/images/props/animated/${propType}.svg`);
+      // Same seam the animation canvas draws from. Placing points against a
+      // different family is what left every saved tip point ~15-20% too far out.
+      const resp = await fetch(resolvePropSvgPath(propType.toLowerCase()));
       if (!resp.ok) {
         propShapeGroup.replaceChildren();
         return;

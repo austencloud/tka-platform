@@ -221,7 +221,7 @@ function isAnimatedOnlyProp(propTypeLower: string): boolean {
  * family first — its two files are byte-identical — and this brings the rest
  * with it, landing regular props on a ~130 reach.
  */
-function resolvePropSvgPath(propTypeLower: string): string {
+export function resolvePropSvgPath(propTypeLower: string): string {
   const family = isAnimatedOnlyProp(propTypeLower) ? "animated" : "pictograph";
   return `/images/props/${family}/${propTypeLower}.svg`;
 }
