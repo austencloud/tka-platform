@@ -96,6 +96,12 @@ const AnnotationsSchema = z
   })
   .catch({ cues: [], notes: [], header: { showTitleBlock: true } });
 
+// Display-only snapshot of each referenced sequence (row label + step count), so
+// a sheet opened on a cold device can label its rows before hydration resolves.
+// Optional by design: every doc written before this field existed parses exactly
+// as it did, and the canonical steps still come from the library record.
+const SequenceMetaSchema = z.object({ name: z.string(), stepCount: z.number() });
+
 const ChoreoSheetDocSchema = z.object({
   id: z.string(),
   name: z.string().catch("Untitled Sheet"),
@@ -103,6 +109,7 @@ const ChoreoSheetDocSchema = z.object({
   sequenceIds: z.array(z.string()).catch([]),
   layout: SheetLayoutSchema,
   annotations: AnnotationsSchema,
+  sequenceMeta: z.record(z.string(), SequenceMetaSchema).optional().catch(undefined),
   bpm: z.number().optional().catch(undefined),
   // serverTimestamp can read back as a pending null on the writing client; the
   // optional+catch keeps the doc parseable and toSheet supplies the fallback.
@@ -112,7 +119,19 @@ const ChoreoSheetDocSchema = z.object({
 
 type ChoreoSheetDoc = z.infer<typeof ChoreoSheetDocSchema>;
 
-function toSheet(doc: ChoreoSheetDoc): ChoreoSheet {
+export type SheetSequenceMeta = z.infer<typeof SequenceMetaSchema>;
+
+/**
+ * A loaded sheet plus the optional display-meta snapshot. Carried alongside the
+ * domain type rather than inside it: `ChoreoSheet` is the printable roster, and
+ * meta is a non-authoritative cache the loader may or may not have. Assignable
+ * to `ChoreoSheet` everywhere, so existing consumers are untouched.
+ */
+export type LoadedChoreoSheet = ChoreoSheet & {
+  sequenceMeta?: Record<string, SheetSequenceMeta>;
+};
+
+function toSheet(doc: ChoreoSheetDoc): LoadedChoreoSheet {
   return {
     id: doc.id,
     name: doc.name,
@@ -120,6 +139,7 @@ function toSheet(doc: ChoreoSheetDoc): ChoreoSheet {
     sequenceIds: doc.sequenceIds,
     layout: doc.layout,
     annotations: doc.annotations,
+    sequenceMeta: doc.sequenceMeta,
     bpm: doc.bpm,
     createdAt: doc.createdAt ?? new Date(),
     updatedAt: doc.updatedAt ?? new Date(),
@@ -133,7 +153,7 @@ function toSheet(doc: ChoreoSheetDoc): ChoreoSheet {
  * hydrates to flow mode with empty annotations rather than being rejected. Date
  * fields coerce from Firestore Timestamps OR ISO strings via `firestoreDate`.
  */
-export function parseChoreoSheet(raw: unknown): ChoreoSheet {
+export function parseChoreoSheet(raw: unknown): LoadedChoreoSheet {
   return toSheet(ChoreoSheetDocSchema.parse(raw));
 }
 
@@ -143,7 +163,7 @@ export class ChoreoSheetRepository {
    * user; an explicit ownerId mirrors LibraryRepository.getUserSequences(userId)
    * for reading another user's roster.
    */
-  async listSheets(ownerId?: string): Promise<ChoreoSheet[]> {
+  async listSheets(ownerId?: string): Promise<LoadedChoreoSheet[]> {
     const uid = ownerId ?? requireAuth();
     const docs = await firestoreList(sheetsPath(uid), ChoreoSheetDocSchema, {
       orderBy: [{ field: "updatedAt", direction: "desc" }],
@@ -151,7 +171,7 @@ export class ChoreoSheetRepository {
     return docs.map(toSheet);
   }
 
-  async loadSheet(id: string): Promise<ChoreoSheet | null> {
+  async loadSheet(id: string): Promise<LoadedChoreoSheet | null> {
     const uid = requireAuth();
     const doc = await firestoreGet(sheetsPath(uid), id, ChoreoSheetDocSchema);
     return doc ? toSheet(doc) : null;
@@ -164,8 +184,14 @@ export class ChoreoSheetRepository {
    * Stores only references + layout + metadata — never hydrated steps. The path
    * and stored ownerId both come from the signed-in user, the same way
    * LibraryRepository.saveSequence trusts getUserId() over the incoming object.
+   *
+   * `sequenceMeta` is the optional display snapshot (row label + step count per
+   * id) taken from the ready rows — display only, never a source of steps.
    */
-  async saveSheet(sheet: ChoreoSheet): Promise<ChoreoSheet> {
+  async saveSheet(
+    sheet: ChoreoSheet,
+    sequenceMeta?: Record<string, SheetSequenceMeta>,
+  ): Promise<ChoreoSheet> {
     const uid = requireAuth();
     await firestoreSet(
       sheetsPath(uid),
@@ -182,6 +208,7 @@ export class ChoreoSheetRepository {
         },
         // firestoreSet strips undefined, so an act with no BPM writes no field.
         bpm: sheet.bpm,
+        sequenceMeta,
         createdAt: sheet.createdAt,
       } as Record<string, unknown>,
       { trackOffline: true, repoName: "choreo-sheets" },
