@@ -1221,6 +1221,38 @@ section 7 design:
 
 ### Phase 3: dry-run and repair
 
+**CORE REPAIR LANDED (2026-07-26).** Steps 1–4 and 7 executed:
+
+- `scripts/migrations/snapshot-public-corpus.ts` (new) dumped a recoverable
+  snapshot first: 467 public docs, 467 owner docs (every public doc has a
+  live owner — zero orphans), 0 claims.
+  `backups/pre-reconcile-snapshot-2026-07-26T16-23-52-741Z.json` (gitignored,
+  local).
+- `scripts/migrations/reconcile-sequence-public-projections.ts` (new) dry-ran
+  the full corpus: 137 SAFE_REPROJECT, 328 EXPECTED_LOOP_REPRESENTATION
+  (stored seed word → full expansion, all repairable), 2
+  DUPLICATE_HASH_CONFLICT, and — against the audit's expectations — 0
+  ORPHAN_PUBLIC / 0 PRIVATE_SOURCE_WITH_PUBLIC_MIRROR / 0
+  INCOMPLETE_CANONICAL_DATA (every source normalizes; the audit's
+  field-level classes all collapse into reprojection).
+- Apply wrote 465/465 repairs, 0 failures, one Admin transaction per record
+  (projection + claim mint + owner parity stamps). The post-apply dry run
+  converged: **465 IN_SYNC + 2 DUPLICATE_HASH_CONFLICT, zero proposed
+  writes** (manifests in `backups/reconcile-projections-*.json`).
+- **The 2 duplicates await Austen's pick before phase 4:** `QΛ` and
+  `seq_1766471163932_0hh8pf3sg` — identical content hash
+  (`2_7a9afafe…`), both owned by the primary account; the migration never
+  chooses a survivor.
+- Implementation notes: legacy docs get `publishedAt` reconstructed from the
+  owner's `birthday`/`createdAt` (section 4's suspect-corpus-wide rule);
+  schema-2 docs keep their stored value. The manifest's `changedKeys` diff
+  reuses `PROJECTION_DIGEST_EXCLUDED_KEYS` — diffing
+  `blueSoloProp`/`redSoloProp`/`stepPairings` would flag every record forever
+  (UUIDs regenerate per normalization pass) and IN_SYNC would be
+  unreachable.
+- Still open in this phase: the shortcode mint-path fields + label repair
+  (steps 5–6), static snapshot regeneration + R2 verification (steps 8–9).
+
 1. Export or otherwise retain a recoverable production snapshot.
 2. Run the sequence/public migration in dry-run mode.
 3. Review the JSON manifest, especially duplicate and incomplete classes.
