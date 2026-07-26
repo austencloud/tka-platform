@@ -48,6 +48,10 @@ export class ArrowPlacer {
   // Lazily-loaded (gridMode, propType) buckets, e.g. "diamond:fan".
   private loadedKeys = new Set<string>();
 
+  // Buckets whose load is in flight, keyed the same way. Collapses the N
+  // concurrent ensureLoaded calls a pictograph grid fires into one load.
+  private loadingBuckets = new Map<string, Promise<void>>();
+
   // Props with their own seeded subfolder. Anything else resolves to staff root.
   // MUST stay in sync with SEED_PROPS in scripts/seed-prop-default-placements.mjs —
   // a prop listed here but not seeded there reads a <prop>/ folder that doesn't
@@ -71,7 +75,8 @@ export class ArrowPlacer {
    *  props read their <prop>/ subfolder; staff and unseeded props read root.
    *  The 4 _half segment files are staff-root only (v1) — seeded prop buckets
    *  skip them so a prop bucket doesn't fire 4 spurious missing-file warnings
-   *  for data that hasn't been authored per-prop yet. */
+   *  for data that hasn't been authored per-prop yet. Segment files are also
+   *  grid-mode-invariant: every grid mode reads the DIAMOND copies (see below). */
   private filesFor(gridMode: string, propType: string): Record<string, string> {
     const seeded = ArrowPlacer.SEEDED_PROPS.has(propType);
     const sub = seeded ? `${propType}/` : "";
@@ -81,7 +86,14 @@ export class ArrowPlacer {
     }
     if (sub === "") {
       for (const mt of this.segmentMotionTypes) {
-        files[mt] = `/data/arrow_placement/${gridMode}/default/default_${gridMode}_${mt}_placements.json`;
+        // Segment (half-motion) nudges are authored GLYPH-LOCAL and are
+        // grid-mode-invariant by design (arrow-positioning-orchestrator.ts
+        // rotates one local value with the glyph): a single (motionType, turns)
+        // value serves every location/direction/grid. The diamond files are the
+        // single source of truth — box files must not exist (a second source
+        // would contradict the coverage oracle and the WASD authoring harness,
+        // both diamond-only on purpose).
+        files[mt] = `/data/arrow_placement/diamond/default/default_diamond_${mt}_placements.json`;
       }
     }
     return files;
@@ -121,8 +133,23 @@ export class ArrowPlacer {
     // loadPlacements swallows per-file fetch errors to {} (a missing file is a
     // legitimate empty dataset), so the bucket is cached as-loaded even on a
     // failed fetch — same contract as the pre-prop loader. Missing → {0,0}.
-    await this.loadPlacements(gridMode, propType);
-    this.loadedKeys.add(key);
+    //
+    // In-flight dedup mirrors SimpleJsonCache.loadingPromises: a grid of N
+    // pictographs mounts N concurrent ensureLoaded calls for the same bucket
+    // before any of them finishes, and without this every one of them fans out
+    // its own file loads.
+    let inFlight = this.loadingBuckets.get(key);
+    if (!inFlight) {
+      inFlight = this.loadPlacements(gridMode, propType)
+        .then(() => {
+          this.loadedKeys.add(key);
+        })
+        .finally(() => {
+          this.loadingBuckets.delete(key);
+        });
+      this.loadingBuckets.set(key, inFlight);
+    }
+    await inFlight;
   }
 
   /** Back-compat: staff-scoped load. Prefer ensureLoaded(gridMode, propType). */
