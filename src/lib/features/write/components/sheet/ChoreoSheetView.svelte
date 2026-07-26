@@ -15,14 +15,20 @@
 -->
 <script lang="ts">
   import { flip } from "svelte/animate";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { SequenceSelection, setSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import "$lib/shared/selection/selection.css";
   import {
     createChoreoSheetState,
     setChoreoSheetContext,
+    type RosterRow,
   } from "../../state/choreo-sheet-state.svelte";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
+  import { createSheetSequenceResolver } from "../../services/sheet-sequence-resolver";
+  import { awaitAuthSettled } from "$lib/shared/auth/state/auth-state.svelte";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
   import { downloadChoreoSheetPDF } from "../../services/sheet-pdf-exporter";
   import type {
     ChoreoSheet,
@@ -41,7 +47,6 @@
   import {
     flyFade,
     growFade,
-    popIn,
     flipDuration,
   } from "$lib/shared/transitions/motion";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
@@ -57,49 +62,27 @@
   import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-  // Hydrates one sequence id when a draft/saved act restores. Order matters:
+  // Resolves one sequence id when a draft/saved act restores. Order matters:
   // most rows on a sheet are the user's OWN sequences, and the public gallery
   // loader can never see private library docs — routing everything through it
   // was the bug that made rows show "Failed to load" after navigating away and
   // back. So: private library first, public/community gallery as the fallback.
-  async function loadSheetSequence(id: string): Promise<SequenceData | null> {
-    let own: SequenceData | null = null;
-    try {
-      // steps can be undefined at runtime: the library mapper only sets
-      // `steps` when the doc carries a steps array, and compositional docs
-      // whose hydration failed come back without one. Never trust the typed
-      // shape here — `own.steps.length` on undefined was itself a bug that
-      // turned an existing sequence into "Failed to load".
-      own = await getLibraryRepository().getSequence(id);
-      if (own && (own.steps?.length ?? 0) > 0) return own;
-    } catch {
-      // Signed out or a library fetch failure — the public path below may
-      // still resolve community ids.
-    }
-    const pub = await getBrowseLoader().loadFullSequenceData(id, id);
-    if (pub && (pub.steps?.length ?? 0) > 0) return pub;
-    // Neither path produced steps. Prefer returning SOMETHING found over a
-    // false "Failed to load": the row then shows its real name (with zero
-    // cells) instead of claiming the sequence is gone. Normalize steps to []
-    // so downstream planners/counters never read .length off undefined.
-    const found = pub ?? own;
-    if (!found) {
-      // Terminal miss: name the id and both paths so a bug report carries
-      // everything needed (row tooltip shows the same id).
-      console.warn(
-        `[ChoreoSheet] Sequence "${id}" not found in your library or the ` +
-          `community gallery. It may have been deleted or renamed. ` +
-          `Retry the row, or remove it from the sheet.`,
-      );
-      return null;
-    }
-    return { ...found, steps: found.steps ?? [] };
-  }
+  //
+  // The resolver owns everything else that made a cold restore unreliable: it
+  // waits for auth restoration to settle before touching the private tier (a
+  // restored draft used to race Firebase and come back six rows of red), and it
+  // classifies + auto-retries transient failures instead of presenting them as
+  // deletions.
+  const resolver = createSheetSequenceResolver({
+    loadPrivate: (id) => getLibraryRepository().getSequence(id),
+    loadPublic: (id) => getBrowseLoader().loadFullSequenceData(id, id),
+    awaitAuthSettled,
+  });
 
   // Builder-state object. The sheet auto-saves to localStorage (persistKey) and
   // restores on reload/HMR.
   const builder = createChoreoSheetState({
-    loadSequence: loadSheetSequence,
+    resolveSequence: resolver.resolve,
     persistKey: "tka-choreo-sheet-draft",
   });
   setChoreoSheetContext({ state: builder });
@@ -113,27 +96,25 @@
     selection.selectedId = builder.selectedSequenceId;
   });
 
-  // id → hydrated sequence, for the row list labels/counts. Ids still hydrating
-  // simply show "Loading…" until their data resolves.
-  const byId = $derived(
-    new Map<string, SequenceData>(builder.hydratedSequences.map((s) => [s.id, s])),
-  );
-  function rowLabel(id: string): string {
-    const seq = byId.get(id);
-    if (seq) return seq.displayName ?? seq.word ?? seq.name ?? "Untitled";
-    return builder.failedSequenceIds.has(id) ? "Failed to load" : "Loading…";
+  // Row labels come off the roster, so a row that is still loading shows its
+  // real name from the draft's meta snapshot instead of the word "Loading…".
+  // A repeating word ALWAYS displays in its smallest form (FΨ, not FΨFΨFΨFΨ) —
+  // the raw word stays in the tooltip.
+  function rowLabel(row: RosterRow): string {
+    const raw = row.meta?.name;
+    return raw ? simplifyRepeatedWord(raw) : "…";
   }
-  // Tooltip: failed rows carry the id + what to do, so "Failed to load" is
-  // never a dead end (and a screenshot of the tooltip identifies the doc).
-  function rowTitle(id: string): string {
-    if (!builder.failedSequenceIds.has(id)) return rowLabel(id);
-    return (
-      `Couldn't find "${id}" in your library or the community gallery. ` +
-      `It may have been deleted. Retry, or remove it from the sheet.`
-    );
-  }
-  function rowCount(id: string): number | null {
-    return byId.get(id)?.steps?.length ?? null;
+  // Tooltip: the raw (unsimplified) word, and for a row that didn't resolve, the
+  // id + what to do — so a stuck row is never a dead end, and a screenshot of
+  // the tooltip identifies the doc.
+  function rowTitle(row: RosterRow): string {
+    if (row.status === "missing") {
+      return `"${row.id}" isn't in your library or the gallery. It may have been deleted — remove it from the sheet.`;
+    }
+    if (row.status === "error") {
+      return "This sequence didn't load automatically. Tap to retry.";
+    }
+    return row.meta?.name ?? row.id;
   }
 
   const separatorOptions: { value: GroupSeparator; label: string }[] = [
@@ -306,8 +287,8 @@
   // before adding — otherwise the row draws blank.
   async function handleBrowseSelect(seq: SequenceData): Promise<void> {
     try {
-      const full = await loadSheetSequence(seq.id);
-      builder.addHydratedSequences([full ?? seq]);
+      const outcome = await resolver.resolve(seq.id, new AbortController().signal);
+      builder.addHydratedSequences([outcome.sequence ?? seq]);
     } catch (err) {
       console.warn("[ChoreoSheetView] Failed to hydrate selected sequence:", err);
       builder.addHydratedSequences([seq]);
@@ -368,14 +349,34 @@
     }
   }
 
+  // The roster recovers on its own, so an error surface is EARNED, not eager:
+  // it appears once, only after the automatic retries are spent and nothing is
+  // still in flight. Keyed on the exact id set so a re-render never re-toasts.
+  let reportedErrorIds = $state<string>("");
+  $effect(() => {
+    const errorIds = builder.roster.filter((r) => r.status === "error").map((r) => r.id);
+    const key = errorIds.join(",");
+    if (errorIds.length === 0 || key === reportedErrorIds || builder.isHydrating) return;
+    reportedErrorIds = key;
+    getErrorHandler().showUserError({
+      message: `${errorIds.length} sequence${errorIds.length > 1 ? "s" : ""} didn't load — retry from the rail`,
+      severity: "warning",
+      context: { module: "choreo", tab: "sheet", action: "hydrate-roster" },
+      technicalDetails: builder.roster
+        .filter((r) => r.status !== "ready")
+        .map((r) => `${r.id}: ${r.status}/${r.failure ?? "-"} after ${r.attempts}`)
+        .join("\n"),
+    });
+  });
+
+  const errorRowCount = $derived(builder.roster.filter((r) => r.status === "error").length);
+
   let exporting = $state(false);
   let exportPct = $state(0);
-  let exportError = $state<string | null>(null);
   async function exportPdf() {
-    if (builder.hydratedSequences.length === 0 || exporting) return;
+    if (!builder.rosterComplete || builder.roster.length === 0 || exporting) return;
     exporting = true;
     exportPct = 0;
-    exportError = null;
     try {
       const filename = `${(builder.sheet.name || "choreo-sheet").trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
       await downloadChoreoSheetPDF(
@@ -388,18 +389,23 @@
         builder.breakSequenceIds,
       );
     } catch (error) {
-      console.error("[ChoreoSheetView] PDF export failed:", error);
-      exportError = "PDF export failed. Try again.";
+      // Non-blocking toast rather than an inline strip: the toolbar must never
+      // reflow because something failed.
+      getErrorHandler().showUserError({
+        message: "PDF export failed. Try again.",
+        severity: "warning",
+        context: { module: "choreo", tab: "sheet", action: "export-pdf" },
+        technicalDetails: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       exporting = false;
     }
   }
 
   let saving = $state(false);
-  let saveMessage = $state<string | null>(null);
   // Success feedback happens ON the Save button itself: it briefly turns
-  // success-green with a check + "Saved", then settles back. saveMessage is
-  // reserved for errors.
+  // success-green with a check + "Saved", then settles back. Failures go to the
+  // toast surface, never an inline strip that reflows the toolbar.
   let saveFlash = $state(false);
   let saveFlashTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -423,9 +429,13 @@
   async function save(): Promise<boolean> {
     if (saving) return false;
     saving = true;
-    saveMessage = null;
     try {
-      await getChoreoSheetRepository().saveSheet(builder.sheet);
+      // Display meta rides along so a cold open on another device can label its
+      // rows before hydration resolves. Steps still come from the library.
+      const meta = Object.fromEntries(
+        builder.roster.filter((r) => r.meta).map((r) => [r.id, r.meta!]),
+      );
+      await getChoreoSheetRepository().saveSheet(builder.sheet, meta);
       lastSyncedAt = Date.now();
       saveRefreshKey += 1;
       saveFlash = true;
@@ -433,7 +443,12 @@
       saveFlashTimer = setTimeout(() => (saveFlash = false), 1600);
       return true;
     } catch (error) {
-      saveMessage = error instanceof Error ? error.message : "Save failed";
+      getErrorHandler().showUserError({
+        message: error instanceof Error ? error.message : "Save failed",
+        severity: "warning",
+        context: { module: "choreo", tab: "sheet", action: "save-sheet" },
+        technicalDetails: error instanceof Error ? (error.stack ?? error.message) : String(error),
+      });
       return false;
     } finally {
       saving = false;
@@ -443,22 +458,21 @@
   function openAct(act: ChoreoSheet): void {
     builder.replaceSheet(act);
     lastSyncedAt = Date.now(); // freshly loaded = in sync with the cloud copy
-    saveMessage = null;
   }
 
   function newAct(): void {
     builder.newSheet();
     lastSyncedAt = null;
-    saveMessage = null;
   }
 
   // Deleting the act that's open leaves the builder holding an unsaved draft.
   function handleActDeleted(id: string): void {
-    if (id === builder.sheet.id) {
-      lastSyncedAt = null;
-      saveMessage = null;
-    }
+    if (id === builder.sheet.id) lastSyncedAt = null;
   }
+
+  // Leaving the view abandons any in-flight hydration: the resolver stops
+  // mid-backoff instead of retrying against a builder nobody is watching.
+  onDestroy(() => builder.cancelHydration());
 </script>
 
 <svelte:window
@@ -497,7 +511,8 @@
         class="btn"
         class:active={playerOpen}
         onclick={togglePlayer}
-        disabled={builder.sequenceIds.length === 0}
+        disabled={!builder.rosterComplete || builder.roster.length === 0}
+        title={builder.rosterComplete ? undefined : "Waiting for sequences to load"}
       >
         <i class="fa-solid fa-play" aria-hidden="true"></i>
         Play act
@@ -529,7 +544,8 @@
         type="button"
         class="btn btn-primary"
         onclick={exportPdf}
-        disabled={exporting || builder.hydratedSequences.length === 0}
+        disabled={exporting || !builder.rosterComplete || builder.roster.length === 0}
+        title={builder.rosterComplete ? undefined : "Waiting for sequences to load"}
       >
         <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
         {exporting ? `Exporting ${exportPct}%` : "Export PDF"}
@@ -551,61 +567,78 @@
         </span>
       </span>
     {/if}
-    {#if saveMessage}
-      <span class="save-message" role="alert" transition:flyFade={{ x: -6, y: 0 }}>
-        {saveMessage}
-      </span>
-    {/if}
-    {#if exportError}
-      <span class="save-message" role="alert" transition:flyFade={{ x: -6, y: 0 }}>
-        {exportError}
-      </span>
-    {/if}
   </header>
 
   <div class="sheet-body">
     <!-- Left rail: row list + layout settings -->
     <aside class="rail">
       <section class="rail-block">
-        <h2 class="rail-title">Sequences ({builder.sequenceIds.length})</h2>
+        <div class="rail-head">
+          <h2 class="rail-title">Sequences ({builder.sequenceIds.length})</h2>
+          {#if errorRowCount >= 2}
+            <button
+              type="button"
+              class="retry-all"
+              onclick={() => void builder.retryHydration()}
+            >
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              Retry all
+            </button>
+          {/if}
+        </div>
         <Crossfade key={builder.sequenceIds.length === 0}>
           {#if builder.sequenceIds.length === 0}
             <p class="rail-empty">No sequences yet. Add some to build the sheet.</p>
           {:else}
           <ul class="row-list">
-            {#each builder.sequenceIds as id, i (id)}
+            {#each builder.roster as row, i (row.id)}
               <li
                 class="row-item"
-                class:selected={builder.selectedSequenceId === id}
+                class:selected={builder.selectedSequenceId === row.id}
+                class:missing={row.status === "missing"}
                 animate:flip={{ duration: flipDuration() }}
                 in:growFade={{ axis: "y", x: -8 }}
                 out:growFade={{ axis: "y" }}
               >
                 <button
                   type="button"
-                  class="row-label"
-                  title={rowTitle(id)}
-                  aria-pressed={builder.selectedSequenceId === id}
-                  onclick={() => builder.toggleSequenceSelection(id)}
+                  class="row-label tka-font"
+                  title={rowTitle(row)}
+                  aria-pressed={builder.selectedSequenceId === row.id}
+                  onclick={() => builder.toggleSequenceSelection(row.id)}
                 >
-                  {rowLabel(id)}
+                  {rowLabel(row)}
                 </button>
-                {#if rowCount(id) != null}
-                  <span class="row-count" in:growFade={{ axis: "x" }}>{rowCount(id)}</span>
-                {/if}
-                <div class="row-actions">
-                  {#if builder.failedSequenceIds.has(id)}
+                <span class="row-count">{row.meta?.stepCount ?? ""}</span>
+                <!-- Status slot: ALWAYS mounted, always the same width. Its
+                     contents change with the row's state, so recovery never
+                     reflows the rail. -->
+                <span
+                  class="row-status"
+                  class:show={row.status !== "ready"}
+                  aria-hidden={row.status === "ready"}
+                >
+                  {#if row.status === "loading" || row.status === "retrying"}
+                    <ShimmerBlock circle height="14px" />
+                  {:else if row.status === "error"}
                     <button
-                      transition:popIn
                       type="button"
                       class="icon-btn row-retry"
-                      aria-label="Sequence failed to load — retry"
-                      title="This sequence failed to load. Tap to retry."
-                      onclick={() => void builder.retryHydration(id)}
+                      aria-label="Didn't load — retry"
+                      title="This sequence didn't load automatically. Tap to retry."
+                      onclick={() => void builder.retryHydration(row.id)}
                     >
                       <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                     </button>
+                  {:else if row.status === "missing"}
+                    <i
+                      class="fa-solid fa-circle-question row-missing"
+                      title="Not in your library or the gallery."
+                      aria-label="Not in your library or the gallery"
+                    ></i>
                   {/if}
+                </span>
+                <div class="row-actions">
                   <button
                     type="button"
                     class="icon-btn"
@@ -619,7 +652,7 @@
                     type="button"
                     class="icon-btn"
                     aria-label="Move down"
-                    disabled={i === builder.sequenceIds.length - 1}
+                    disabled={i === builder.roster.length - 1}
                     onclick={() => builder.move(i, i + 1)}
                   >
                     <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
@@ -627,6 +660,7 @@
                   <button
                     type="button"
                     class="icon-btn icon-btn-danger"
+                    class:emphasised={row.status === "missing"}
                     aria-label="Remove from sheet"
                     onclick={() => builder.removeAt(i)}
                   >
@@ -760,10 +794,10 @@
 
     <!-- Preview -->
     <div class="preview-pane">
-      {#if builder.isHydrating && builder.hydratedSequences.length === 0}
-        <p class="preview-status" transition:flyFade>Loading sequences…</p>
-      {/if}
       <SheetPreviewPages
+        placeholderRoster={builder.rosterComplete
+          ? undefined
+          : builder.roster.map((r) => ({ stepCount: r.meta?.stepCount ?? null }))}
         pages={builder.pages}
         geo={builder.geo}
         layout={builder.layout}
@@ -1140,12 +1174,6 @@
     flex-direction: column;
   }
 
-  /* Errors only — success feedback lives on the Save button itself. */
-  .save-message {
-    font-size: var(--font-size-sm, 0.875rem);
-    color: var(--theme-danger, #ef4444);
-  }
-
   /* Loop status. Ghost-sizer keeps the pill width fixed so the toolbar never
      shifts as the word changes (no-layout-shift). */
   .loop-badge {
@@ -1209,6 +1237,34 @@
     margin: 0 0 var(--spacing-xs);
   }
 
+  .rail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+  }
+
+  /* Only earned once two or more rows have exhausted their automatic retries. */
+  .retry-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 8px;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .retry-all:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
+  }
+
   .rail-empty {
     font-size: var(--font-size-sm, 0.875rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
@@ -1244,6 +1300,11 @@
     );
   }
 
+  .row-item.missing {
+    border-color: color-mix(in srgb, var(--theme-danger, #ef4444) 45%, transparent);
+  }
+
+  /* TKA Letters webfont — the glyphs need more size than body copy to read. */
   .row-label {
     flex: 1;
     min-width: 0;
@@ -1255,7 +1316,8 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    font-size: var(--font-size-sm, 0.875rem);
+    font-size: 1.05rem;
+    line-height: 1.3;
     color: var(--theme-text, #fff);
   }
 
@@ -1266,6 +1328,33 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     min-width: 1.5rem;
     text-align: right;
+  }
+
+  /* Reserved status slot. Fixed width, ALWAYS mounted: loading, retrying,
+     error, and ready all occupy the same box, so a row recovering (or failing)
+     never shifts its neighbours (no-layout-shift). */
+  .row-status {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    visibility: hidden;
+  }
+
+  .row-status.show {
+    visibility: visible;
+  }
+
+  .row-status .icon-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .row-missing {
+    color: var(--theme-danger, #ef4444);
+    font-size: var(--font-size-sm, 0.875rem);
   }
 
   .row-actions {
@@ -1301,7 +1390,14 @@
     color: var(--theme-danger, #ef4444);
   }
 
-  /* Failed-hydration retry on a row: danger-tinted so the row reads as broken. */
+  /* A confirmed-missing row has nothing to retry — removing it is the action,
+     so its remove button carries the tint full-time. */
+  .icon-btn-danger.emphasised {
+    color: var(--theme-danger, #ef4444);
+  }
+
+  /* Retry after the automatic attempts are spent: danger-tinted so the row
+     reads as needing a hand. */
   .row-retry {
     color: var(--theme-danger, #ef4444);
   }
@@ -1417,12 +1513,6 @@
     -webkit-backdrop-filter: blur(10px);
     border-radius: 8px;
     padding: var(--spacing-sm);
-  }
-
-  .preview-status {
-    text-align: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-sm, 0.875rem);
   }
 
   @media (max-width: 900px) {
