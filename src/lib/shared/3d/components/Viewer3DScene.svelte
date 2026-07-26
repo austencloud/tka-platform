@@ -55,7 +55,14 @@
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
 
+  // A viewer constructed with a seeded background renders THAT environment,
+  // regardless of the app-wide background — this is what lets a saved-scene
+  // preview show its own ocean inside its own box without repainting the page.
+  // Unseeded (the shared viewer), the environment tracks the global setting
+  // exactly as before.
   const backgroundType = $derived.by((): BackgroundType => {
+    const seeded = viewer3DState.seededBackgroundType;
+    if (seeded) return seeded as BackgroundType;
     try {
       return settingsService.settings?.backgroundType ?? BackgroundType.COSMIC;
     } catch { return BackgroundType.COSMIC; }

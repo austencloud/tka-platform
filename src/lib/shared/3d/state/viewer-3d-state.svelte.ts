@@ -323,16 +323,46 @@ function persistEffectToggles(toggles: Record<string, boolean>): void {
 // Factory
 // ============================================
 
-export function createViewer3DState() {
+/**
+ * Optional construction seed. Every field present here is used INSTEAD OF the
+ * matching localStorage key, and nothing is written back — so a seeded viewer
+ * is fully self-contained.
+ *
+ * This exists because the only way to reproduce a saved 3D scene used to be
+ * `applyScene3DLook`: write the user's localStorage, then let a fresh mount
+ * read it. That works for one viewer and is destructive by construction — it
+ * overwrites settings the user chose, which is why every caller had to pair it
+ * with `captureSettingsCheckpoint` and an Undo toast. It also cannot support
+ * two viewers at once: localStorage is a single global slot, so two mounts
+ * seeding concurrently both read whichever wrote last.
+ *
+ * A gallery of live scene previews needs neither of those properties, hence
+ * the argument. `applyScene3DLook` is untouched and still correct for the
+ * "make my whole app look like this" gesture.
+ */
+export interface Viewer3DStateSeed extends Partial<Viewer3DPersistConfig> {
+  /** Force the initial render mode, bypassing the persisted one. A preview
+   *  always wants "3d" regardless of where the user left the real viewer. */
+  renderMode?: "2d" | "3d";
+  /** Environment to render INSIDE this viewer. Unseeded, the scene falls back
+   *  to the global settingsService value (the shared-viewer behaviour). */
+  backgroundType?: string;
+}
+
+export function createViewer3DState(seed?: Viewer3DStateSeed) {
   const sceneUndo = getSceneUndoManager();
   const _webgl2Available = isWebGL2Available();
+  /** A seeded field wins over storage; `undefined` means "not seeded". */
+  const seeded = <T>(value: T | undefined, fromStorage: () => T): T =>
+    value !== undefined ? value : fromStorage();
   // Start in 2D on viewports too small to host 3D even if '3d' was persisted from
   // a larger screen — avoids briefly mounting the 3D overlay before the
   // orchestrator's fits3D guard corrects it. Non-mutating: storage keeps '3d', so
   // unfolding restores 3D.
-  const _persistedMode =
-    _webgl2Available && fits3DViewportNow() ? loadPersistedMode() : "2d";
-  const _persistedCamera = loadPersistedCamera();
+  const _persistedMode = seeded(seed?.renderMode, () =>
+    _webgl2Available && fits3DViewportNow() ? loadPersistedMode() : "2d"
+  );
+  const _persistedCamera = seeded(seed?.camera, loadPersistedCamera);
 
   // Synchronously restore the last render mode from localStorage so that
   // closing and reopening the sequence drawer keeps the user in 3D if that's
@@ -341,11 +371,11 @@ export function createViewer3DState() {
   let renderMode = $state<"2d" | "3d">(_persistedMode);
   let showPerf = $state(false);
 
-  const _persistedOceanVariant = (() => {
+  const _persistedOceanVariant = seeded(seed?.oceanVariant as OceanVariant | undefined, () => {
     try {
       return (localStorage.getItem(STORAGE_KEY_OCEAN_VARIANT) ?? "abyss") as OceanVariant;
     } catch { return "abyss" as OceanVariant; }
-  })();
+  });
   let oceanVariant = $state<OceanVariant>(_persistedOceanVariant);
 
   // Exclusive popover stack: only one popover can be open at a time.
@@ -364,7 +394,14 @@ export function createViewer3DState() {
   // Viewer-level default settings for the cascade system. Performers with
   // null overrides inherit from these defaults.
   const _defaultSettings = $state<DefaultPerformerSettings>({
-    prop: loadPersistedDefaultProp(),
+    // Seeded prop arrives as a bare string (Viewer3DPersistConfig's shape, and
+    // what Firestore stores), so validate before trusting it as a PropType —
+    // an unknown value falls through to the persisted default rather than
+    // poisoning the cascade.
+    prop:
+      seed?.defaultProp && Object.values(PropType).includes(seed.defaultProp as PropType)
+        ? (seed.defaultProp as PropType)
+        : loadPersistedDefaultProp(),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
     customBluePlane: Plane.WALL,
@@ -782,9 +819,11 @@ export function createViewer3DState() {
 
   let _currentSequenceData = $state<SequenceData | null>(null);
 
-  const effectToggles = $state<Record<string, boolean>>(loadPersistedEffectToggles());
+  const effectToggles = $state<Record<string, boolean>>(
+    seeded(seed?.effectToggles, loadPersistedEffectToggles)
+  );
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
-  let navMode = $state<ViewerNavMode>(loadPersistedNavMode());
+  let navMode = $state<ViewerNavMode>(seeded(seed?.navMode, loadPersistedNavMode));
   let activePreset = $state<string | null>((() => {
     if (typeof localStorage === "undefined") return "behind";
     try { return localStorage.getItem(STORAGE_KEY_PRESET) || "behind"; } catch { return "behind"; }
@@ -954,7 +993,7 @@ export function createViewer3DState() {
     // Restore persisted performers, if any. Each additional snapshot beyond
     // the first one spawns a new performer via the manager so the count
     // matches the saved state before we overwrite their fields.
-    const persisted = loadPersistedPerformers();
+    const persisted = seeded(seed?.performers, loadPersistedPerformers);
     if (persisted && persisted.length > 0) {
       while (performerManager.performers.length < persisted.length) {
         performerManager.addPerformer();
@@ -1130,6 +1169,18 @@ export function createViewer3DState() {
     },
     get oceanVariant() {
       return oceanVariant;
+    },
+    /**
+     * Environment this viewer renders, when it was constructed with one.
+     * `null` = unseeded, and the scene falls back to the global
+     * `settingsService.settings.backgroundType` — the shared-viewer behaviour,
+     * where the 3D environment deliberately tracks the app-wide background.
+     *
+     * A seeded viewer (a saved-scene preview) needs its OWN environment without
+     * repainting the whole page, so it cannot read that global.
+     */
+    get seededBackgroundType(): string | null {
+      return seed?.backgroundType ?? null;
     },
     setOceanVariant(v: OceanVariant) {
       oceanVariant = v;
