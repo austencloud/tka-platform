@@ -16,6 +16,20 @@ const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const CODE_LENGTH = 4;
 const MAX_RETRIES = 20;
 
+// Strict payload-word derivation, shared with the label/payload repair
+// migrations. Loaded through tsx's programmatic API because this script (and
+// its importers show-sequence.mjs / generate-qr.mjs) run under plain node —
+// duplicating the derivation here is exactly the drift the parity-repair spec
+// exists to prevent. Lazily memoized: show-sequence.mjs imports this module
+// for findExistingShortcode alone, which must not pay the src tree's load.
+let derivationPromise = null;
+function loadDerivation() {
+  derivationPromise ??= import("tsx/esm/api").then(({ tsImport }) =>
+    tsImport("./migrations/lib/shortcode-derivation.ts", import.meta.url)
+  );
+  return derivationPromise;
+}
+
 function generateCode(length = CODE_LENGTH) {
   let code = "";
   for (let i = 0; i < length; i++) {
@@ -43,28 +57,50 @@ async function findExistingShortcode(db, sequenceId) {
 }
 
 async function createShortcode(db, sequenceId, publicDoc, sourceDoc, isAdmin, FieldValue) {
-  const word = publicDoc.word || sequenceId;
   const ownerId = publicDoc.ownerId || null;
 
+  // Strict mint (parity-repair spec): the label is DERIVED from the payload
+  // being embedded, never copied from a mutable doc field, and a mint with no
+  // derivable complete word is refused — the same invariant allocateCode
+  // enforces in short-code-manager.ts. publicDoc.word is a cross-check only.
+  const { beats, steps, startPosition, startingPosition } =
+    sourceDoc ?? publicDoc ?? {};
+  const stepsData = beats || steps || [];
+  if (stepsData.length === 0) {
+    throw new Error(
+      `no steps available for ${sequenceId} — refusing a payload-less mint (unresolvable zombie)`
+    );
+  }
+  const { deriveFromSteps, PAYLOAD_SCHEMA_VERSION } = await loadDerivation();
+  const derived = deriveFromSteps(stepsData, "embedded");
+  if (!derived.complete || derived.word.length === 0) {
+    throw new Error(
+      `payload word derivation incomplete for ${sequenceId} (missing beats: ${derived.missingStepIndexes.join(",")}) — refusing to mint`
+    );
+  }
+  if (publicDoc.word && publicDoc.word !== derived.word) {
+    console.log(
+      `(note: publicDoc.word ${JSON.stringify(publicDoc.word)} != derived ${JSON.stringify(derived.word)} — payload wins)`
+    );
+  }
+
   const record = {
-    sequence: word,
+    sequence: derived.word,
+    sequenceName: derived.word,
+    payloadWord: derived.word,
+    payloadStepCount: derived.stepCount,
+    payloadSchemaVersion: PAYLOAD_SCHEMA_VERSION,
     sequenceId,
+    sourceSequenceId: sequenceId,
     ownerId,
     createdAt: isAdmin ? FieldValue.serverTimestamp() : new Date(),
     createdBy: "system",
     scanCount: 0,
+    sequenceData: { steps: stepsData },
   };
-
-  if (sourceDoc) {
-    const { beats, steps, startPosition, startingPosition } = sourceDoc;
-    const stepsData = beats || steps || [];
-    const startPos = startPosition || startingPosition || null;
-    if (stepsData.length > 0) {
-      record.sequenceData = { steps: stepsData };
-      if (startPos) {
-        record.sequenceData.startPosition = startPos;
-      }
-    }
+  const startPos = startPosition || startingPosition || null;
+  if (startPos) {
+    record.sequenceData.startPosition = startPos;
   }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -187,7 +223,7 @@ export { findExistingShortcode, createShortcode };
 // Firestore's gRPC/auth handles keep the Node event loop alive after main()
 // resolves, so without it this process never exits — which is what made
 // generate-qr.mjs (spawnSync of this script) hang forever after minting.
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main()
     .then(() => process.exit(0))
     .catch((err) => {

@@ -1,0 +1,228 @@
+/**
+ * Shared shortcode payload-word derivation (parity-repair spec, "Shortcode
+ * correction"). Extracted from backfill-shortcode-words.ts so payload repairs
+ * (rebuild-truncated-shortcode-payloads.ts) and future diagnostics derive
+ * through the EXACT same code path the label repair used — the dataframe
+ * matcher, the 0-based deck-blob renumbering, and the dual-source arbitration
+ * are all load-bearing findings that must not fork.
+ *
+ * The payload is the authority: the `encoded` blob (falling back to embedded
+ * `sequenceData.steps`) is decoded, each beat's letter is matched against the
+ * pictograph dataframes (the same match `motion-query-handler` performs, done
+ * directly over `parseCsvEdges` because the app's CSV loader is browser-only),
+ * and the result runs through the shared STRICT word API
+ * (`deriveWordStatusFromSteps`).
+ */
+import { readFileSync } from "fs";
+import { join } from "path";
+import { decodeSequenceFromQR } from "../../../src/lib/shared/navigation/services/sequence-encoder";
+import { deriveWordStatusFromSteps } from "../../../src/lib/shared/foundation/services/word-deriver";
+import type { Step } from "@tka/tka-types";
+import {
+  parseCsvEdges,
+  type CsvEdge,
+} from "../../../src/lib/features/choreo-card/services/pictograph-letter-lookup";
+import type { SequenceData } from "../../../src/lib/shared/foundation/domain/models/sequence-data";
+
+export type AnyRec = Record<string, unknown>;
+
+const REPO_ROOT = "E:/tka-platform";
+
+// Both dataframes, parsed once. deriveGridMode is browser-coupled, so match
+// diamond first and fall back to box — a beat only lives in one, and the two
+// alphabets don't collide on the same motion signature.
+const csvPath = (name: string) =>
+  join(REPO_ROOT, "static", "data", "pictographs", name);
+const DIAMOND_EDGES = parseCsvEdges(
+  readFileSync(csvPath("DiamondPictographDataframe.csv"), "utf8")
+);
+const BOX_EDGES = parseCsvEdges(
+  readFileSync(csvPath("BoxPictographDataframe.csv"), "utf8")
+);
+
+const lc = (v: unknown): string => String(v ?? "").toLowerCase();
+
+interface Motion {
+  motionType?: string;
+  startLocation?: string;
+  endLocation?: string;
+  rotationDirection?: string;
+  prefloatMotionType?: string;
+  prefloatRotationDirection?: string;
+}
+
+/** The letter-lookup motion type, mirroring motion-query-handler.getSearchMotionType:
+ *  a float resolves through its prefloat type, or to a shift when it travels. */
+function searchType(m: Motion): string {
+  if (m.prefloatMotionType) return lc(m.prefloatMotionType);
+  if (lc(m.motionType) === "float" && lc(m.startLocation) !== lc(m.endLocation)) {
+    return "pro";
+  }
+  return lc(m.motionType);
+}
+
+/** Match a beat's two motions against one dataframe. Replicates the criteria in
+ *  motion-query-handler.findLetterByMotionConfiguration: motionType + start/end
+ *  location + rotation (rotation ignored for static/dash/unresolved-float), with
+ *  the float→pro/anti alternative expansion. */
+function matchIn(edges: CsvEdge[], blue: Motion, red: Motion): string | null {
+  const blueFloat = lc(blue.motionType) === "float" && !blue.prefloatMotionType;
+  const redFloat = lc(red.motionType) === "float" && !red.prefloatMotionType;
+  const blueTypes =
+    blueFloat && searchType(blue) === "pro" ? ["pro", "anti"] : [searchType(blue)];
+  const redTypes =
+    redFloat && searchType(red) === "pro" ? ["pro", "anti"] : [searchType(red)];
+  const blueRot = lc(blue.prefloatRotationDirection || blue.rotationDirection);
+  const redRot = lc(red.prefloatRotationDirection || red.rotationDirection);
+
+  for (const bt of blueTypes) {
+    for (const rt of redTypes) {
+      const bIgnore = bt === "static" || bt === "dash" || blueFloat;
+      const rIgnore = rt === "static" || rt === "dash" || redFloat;
+      for (const e of edges) {
+        if (
+          lc(e.blueMotionType) === bt &&
+          lc(e.blueStartLocation) === lc(blue.startLocation) &&
+          lc(e.blueEndLocation) === lc(blue.endLocation) &&
+          (bIgnore || lc(e.blueRotationDirection) === blueRot) &&
+          lc(e.redMotionType) === rt &&
+          lc(e.redStartLocation) === lc(red.startLocation) &&
+          lc(e.redEndLocation) === lc(red.endLocation) &&
+          (rIgnore || lc(e.redRotationDirection) === redRot)
+        ) {
+          return e.letter || null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+export function letterForBeat(step: AnyRec): string | null {
+  if (typeof step.letter === "string" && step.letter) return step.letter;
+  const motions = step.motions as { blue?: Motion; red?: Motion } | undefined;
+  const blue = motions?.blue;
+  const red = motions?.red;
+  if (!blue || !red) return null;
+  return matchIn(DIAMOND_EDGES, blue, red) ?? matchIn(BOX_EDGES, blue, red);
+}
+
+export interface PayloadDerivation {
+  word: string;
+  complete: boolean;
+  missingStepIndexes: readonly number[];
+  stepCount: number;
+  source: "encoded" | "embedded";
+  /** Both payload sources derived complete, with the same beat count and the
+   *  same word — the strongest evidence a stored label is simply wrong. */
+  corroborated?: boolean;
+}
+
+export function deriveFromSteps(
+  steps: AnyRec[],
+  source: PayloadDerivation["source"]
+): PayloadDerivation {
+  // Deck-minted embedded blobs number their CONTENT beats 0-based, so the
+  // strict API's `stepNumber !== 0` start-entry filter would eat beat 0 and
+  // the word would lose its first letter (proven on 09PB: embedded letters
+  // "OTWΔ…"×4, naive derivation "TWΔO…"). A TRUE legacy start entry is
+  // letterless by design; a stepNumber-0 beat CARRYING a letter is 0-based
+  // content. Drop only a genuine leading start entry, then renumber the
+  // content beats 1..N so the strict API sees them all.
+  const first = steps[0];
+  const hasTrueStartEntry =
+    first !== undefined &&
+    first.stepNumber === 0 &&
+    (first.letter ?? null) === null &&
+    steps.length > 1 &&
+    steps[1]!.stepNumber === 1;
+  const contentSteps = hasTrueStartEntry ? steps.slice(1) : steps;
+
+  const lettered = contentSteps.map((step, index) => ({
+    ...(step as object),
+    stepNumber: index + 1,
+    letter: letterForBeat(step),
+  }));
+  const status = deriveWordStatusFromSteps(lettered as unknown as Step[]);
+  return {
+    word: status.word,
+    complete: status.complete,
+    missingStepIndexes: status.missingStepIndexes,
+    stepCount: status.stepCount,
+    source,
+  };
+}
+
+/**
+ * Derive the payload word for a shortcode doc through the shared strict API
+ * (`deriveWordStatusFromSteps` → { word, complete, missingStepIndexes,
+ * stepCount }), so completeness and the content-beat count come from the SAME
+ * strict code the runtime uses — never a local reimplementation. Beat letters
+ * are filled by the dataframe match where the payload lacks them.
+ *
+ * BOTH payload sources are derived and the better one wins, because the
+ * decode of old deck-minted blobs is LOSSY: their wire format carried
+ * content-only beats, so the modern decoder consumes the first content beat
+ * as the start position and the word loses its first letter (proven on 09PB:
+ * embedded steps carry all 16 letters "OTWΔ…", the decode yields 15). A lossy
+ * decode can only LOSE beats, never invent them, so:
+ *
+ *   - only one source derivable → use it
+ *   - both complete → prefer MORE content beats; on equal counts the words
+ *     must agree, otherwise the record is quarantined as a source conflict
+ *   - both partial → report the one with fewer missing beats
+ */
+export async function derivePayloadWord(data: AnyRec): Promise<
+  | PayloadDerivation
+  | { conflict: { encoded: PayloadDerivation; embedded: PayloadDerivation } }
+  | null
+> {
+  let fromEncoded: PayloadDerivation | null = null;
+  if (typeof data.encoded === "string" && data.encoded) {
+    try {
+      const decoded = (await decodeSequenceFromQR(data.encoded)) as SequenceData;
+      const decodedSteps = (decoded.steps ?? []) as unknown as AnyRec[];
+      if (decodedSteps.length > 0) {
+        fromEncoded = deriveFromSteps(decodedSteps, "encoded");
+      }
+    } catch {
+      // A decoder rejection ("invalid start/end positions") must not mask a
+      // healthy embedded payload.
+    }
+  }
+
+  let fromEmbedded: PayloadDerivation | null = null;
+  const embedded = data.sequenceData as
+    | { steps?: unknown; beats?: unknown }
+    | undefined;
+  const embeddedSteps = embedded?.steps ?? embedded?.beats;
+  if (Array.isArray(embeddedSteps) && embeddedSteps.length > 0) {
+    fromEmbedded = deriveFromSteps(embeddedSteps as AnyRec[], "embedded");
+  }
+
+  if (!fromEncoded && !fromEmbedded) return null;
+  if (!fromEncoded) return fromEmbedded;
+  if (!fromEmbedded) return fromEncoded;
+
+  if (fromEncoded.complete && fromEmbedded.complete) {
+    if (fromEncoded.stepCount !== fromEmbedded.stepCount) {
+      return fromEncoded.stepCount > fromEmbedded.stepCount
+        ? fromEncoded
+        : fromEmbedded;
+    }
+    if (fromEncoded.word === fromEmbedded.word) {
+      return { ...fromEncoded, corroborated: true };
+    }
+    return { conflict: { encoded: fromEncoded, embedded: fromEmbedded } };
+  }
+  if (fromEncoded.complete) return fromEncoded;
+  if (fromEmbedded.complete) return fromEmbedded;
+  return fromEncoded.missingStepIndexes.length <=
+    fromEmbedded.missingStepIndexes.length
+    ? fromEncoded
+    : fromEmbedded;
+}
+
+/** Matches the mint path's SHORTCODE_PAYLOAD_SCHEMA_VERSION in
+ *  short-code-manager.ts: 2 = strict payload-derived labels. */
+export const PAYLOAD_SCHEMA_VERSION = 2;

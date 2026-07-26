@@ -856,6 +856,42 @@ assumptions didn't survive, all now encoded in
    label-repair runs heal its mints. Folding it onto the strict mint path
    is an open follow-up.
 
+**PAYLOAD REBUILD + BYPASS FOLD LANDED (2026-07-26, same day, follow-up
+pass).** The two payload-defect quarantine classes are now EMPTY:
+
+- `rebuild-truncated-shortcode-payloads.ts` restored all 53
+  `TRUNCATED_PAYLOAD_AT_MINT` payloads (15→16 beats) plus the one
+  `PAYLOAD_MISSING` zombie (8N3I, ∅→16 via its hash-claim twin 2AI7 —
+  provably never printed: deck renders resolve codes by content hash and the
+  claim belongs to the twin; scanCount 0). Sources: 53 via catalog probe —
+  deck mints carry only a catalog-style sequenceId, no deckId/ownerId, so the
+  script lists catalog refs (`listDocuments`, no reads) and `getAll`-probes
+  `catalogs/{id}/sequences/{sequenceId}` across all 114 catalogs. Length/
+  reversal deck variants seed the SAME doc id (8-beat vs 16-beat copies), so
+  every copy is gated on reproducing the stored full-word label BEFORE
+  disambiguation; survivors differing in content hash would fall back to the
+  record's `encoderHash`, then quarantine (`AMBIGUOUS_SOURCES`) — in
+  practice the label gate resolved all 53 uniquely. Mint-time `encoderHash`
+  values were computed from the truncated content and matched nothing; they
+  were deliberately left untouched (claim-topology changes are phase-4
+  policy, not payload repair). Every rebuild re-encoded a fresh blob and
+  proved the round-trip lossless (decode → dataframe derivation → same word,
+  same count) before replacing `encoded`; labels/stamps were then applied by
+  rerunning the standard label repair. Post-rebuild convergence: 20,024
+  LABELS_CURRENT, quarantine 253→199 (22 contradicts / 110 incomplete / 67
+  conflicts — label-doubt only, all payloads playable). Shared derivation now
+  lives in `scripts/migrations/lib/shortcode-derivation.ts` (extracted from
+  the backfill so repairs can never fork from it).
+- `create-shortcodes-batch.js` now mints STRICT: it loads the shared
+  derivation through tsx's programmatic `tsImport` (the script and its
+  importers show-sequence.mjs / generate-qr.mjs run under plain node),
+  derives the label from the steps it embeds, refuses letterless or
+  payload-less mints (the 8N3I zombie class), and stamps
+  `payloadWord`/`payloadStepCount`/`payloadSchemaVersion: 2` +
+  `sourceSequenceId`. `publicDoc.word` is demoted to a logged cross-check.
+  Verified against a fake-Firestore harness: schema-2 record shape, both
+  refusal paths, and import compatibility for show-sequence.mjs.
+
 ### Mint path
 
 Change the order in `ShortCodeManager.allocateCode`:
