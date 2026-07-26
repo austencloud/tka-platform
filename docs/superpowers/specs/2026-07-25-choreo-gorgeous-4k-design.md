@@ -541,13 +541,13 @@ virtualization.
 - [x] 2.3 toolbar zones + no-shift audit — `8c36547b3a`
 - [x] 2.4 dock container-relative width (dockSlide pin kept via shared `--dock-w`) — `8c36547b3a`
 - [~] 2.5 container-query migration — toolbar is a real `@container choreo-workspace`; body/dock use a ResizeObserver-fed `--workspace-w` instead of root containment, because `container-type` on the root would have offset every `position: fixed` popover (filter Drawer, dropdown chips) rendered inside the view. Element-relative semantics preserved, zero new viewport breakpoints. Data-parity gate passed: zero diffs under `services/` + `domain/`.
-- [ ] 2.6 screenshot evidence at 3840 / 2560@1.5 / 1920 / ~900, picker open+closed, both modes; PDF parity check (Task 13 — needs browser permission)
+- [x] 2.6 visual verification DONE (2026-07-26, live browser): frames at 3840×2160, 2560×1440 (picker open + closed), 1920×1080, 1440×900, 820×1180, 375×667; Study + Annotated; loading + ready. Restore repro: draft reload → full roster resolves in ~1.4s, zero manual clicks, zero red. Console clean of placement warnings + thumbnail 404s throughout. PDF exported live: 3 pages matching preview, title block + running headers correct. Three composition defects found and fixed during the pass: unreachable 2-up threshold (`8614dfa78a`), 2-up firing on short stacked stages + full-width stacked segmented controls (`1e632d4320`). Plus a live data bug found + fixed: corrupted serverTimestamp sentinels made an existing library doc parse as null → classified missing (`54eecd99d7`).
 - [x] 3.1 thumbnail repair helper: markMissing + local delete + evictHash — `c23988c21c`
 - [x] 3.2 `response.ok` gate in saveCloudBlobToLocal — `c23988c21c`
 - [x] 3.3 thumbnail tests (mock updates + new cases) — 35/35 across 5 files
 - [x] 4.1 `filesFor` diamond-invariant segment paths — `ee0b810569`
 - [x] 4.2 `ensureLoaded` in-flight dedup — `ee0b810569` (9 loads for 26 concurrent callers, proven)
-- [ ] 4.3 box half spot-check + console-clean evidence (Task 13; box half arrows at pro 0/1/2, anti 1/2, static 2 turns WILL visibly shift — intended)
+- [x] 4.3 console-clean evidence: zero placement warnings across every /choreo load in the live pass (previously 4 warnings ×26). Unit test proves box buckets load diamond `_half` paths. Live box half-motion VISUAL check deferred honestly: the WASD harness is diamond-only by design and no box halved content was on hand to render — revisit when box halved-LOOP content exists.
 - [x] 4.4 arrow-positioning-expert file updated — `ee0b810569` (Codex mirror `.codex/agents/arrow-positioning-expert.toml` = open one-line follow-up)
 - [ ] Final: one full `npm run check` (respect machine-wide gates in `resource-budget.md`), scoped commits per phase
 
