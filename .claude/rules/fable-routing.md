@@ -16,6 +16,38 @@ an orchestrator fanned out Fable workers and exhausted a weekly limit in ~27
 minutes. Anthropic's benchmark of the tiered pattern: Fable orchestrates +
 cheaper models execute = ~96% of the performance at ~46% of the cost.
 
+## Model Tiers (updated 2026-07-25, Opus 5 release)
+
+Opus 5 (`claude-opus-5`, released 2026-07-24) is a step-change over Opus 4.8:
+near-Fable intelligence at half Fable's price ($5/$25 per Mtok, unchanged from
+4.8), 1M context, full effort ladder `low`→`max`, thinking on by default. It is
+the new default executor tier for HARD implementation subagents; Sonnet remains
+the tier for routine implementation; Haiku for mechanical sweeps.
+
+| Work | Dispatch model |
+|---|---|
+| Grep/inventory/mechanical | `haiku`, `effort: low` |
+| Routine implementation from a plan | `sonnet` |
+| Hard implementation, multi-file refactor, code review, bug-hunt | `opus` (Opus 5) |
+| Cross-cutting synthesis, hardest judge stage | session model (Fable) |
+
+Opus 5 behavioral deltas that change how we prompt it (official guidance):
+
+1. **It self-verifies without being told.** Do NOT add "verify your work" /
+   "use a subagent to verify" / "double-check" to Opus 5 subagent prompts —
+   causes over-verification and wasted tokens. Our verification rules still
+   apply to the EVIDENCE it reports back (tool output in the result), just
+   don't instruct extra verification passes.
+2. **It delegates readily.** When an Opus 5 subagent itself has Agent access,
+   cap its spawning explicitly ("do not delegate; finish this yourself").
+3. **Code review: never say "only report high-severity" / "be conservative"**
+   — it obeys literally and under-reports. Ask for everything, filter after.
+4. **Verbosity is prompt-controlled, not effort-controlled.** Lower effort
+   trims thinking, not response length. Add a one-line conciseness instruction
+   to deliverable-writing prompts.
+5. **Effort converts to quality more reliably than any prior Opus** — `low`/
+   `medium` are strong and cheap; use them liberally for cost control.
+
 ## The Sandwich (canonical workflow)
 
 1. **Explore** — Sonnet/Haiku subagents, `effort: low`: map files, gather
@@ -70,7 +102,13 @@ sessions — ultracode licenses orchestration, not waste.
    actual model before a large fan-out — subagent model routing has
    resolved to the parent model in the wild
    (anthropics/claude-code#43869).
-4. **Panels scale to the decision, not the pattern library.** Judge panels,
+4. **Visual work is not a fan-out candidate.** Subagents and judge panels
+   cannot see the page; they produce documents. The 2026-07-25 Creators run
+   spent ~3M tokens on a 4-concept tournament and still shipped a 1765px-wide
+   segmented control, because nobody in the fan-out ever rendered it. Build UI
+   yourself and screenshot it (`visual-verification-mandatory.md`). Austen,
+   seeing the result: *"the workflow sucked. do it yourSELF."*
+5. **Panels scale to the decision, not the pattern library.** Judge panels,
    N-concept tournaments, and adversarial verify passes are for wide-open
    design decisions only. Executing a written spec/design doc = one Sonnet
    executor per phase, zero fan-out. Default sizes when a panel IS

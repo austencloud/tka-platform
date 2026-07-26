@@ -121,6 +121,7 @@ The rules above are a summary. The authoritative, enforced set is in `.claude/ru
 - `never-hand-roll.md` (MASTER) — 500+ components exist. Grep before you build anything. Two searches (internal + external) then justify. Do not rebuild what exists.
 - `autonomy-and-completeness.md` — answer your own questions from the code, finish the task, do not ask what a grep would tell you.
 - `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
+- `visual-verification-mandatory.md` + `4k-native-layout.md` — if your diff changes how something LOOKS, you open a browser and screenshot it yourself, unprompted, at 1920/2560/3840/1440/tablet/960x412/375, and iterate until it is genuinely good. Standing permission — do not ask. A green typecheck is not visual proof.
 - `mcp-ground-truth.md` — never state a TKA domain fact (letter behavior, VTG, position, pictograph) from memory. It must come from an MCP call. See the MCP section below for the catch on this machine.
 - `commit-only-your-own-changes.md` — the git index is SHARED across parallel agents. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
 - `worktree-workflow.md`: work on `main`; branch and worktree creation requires Austen's explicit request in the current conversation.

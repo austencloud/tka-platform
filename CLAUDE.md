@@ -79,11 +79,29 @@ Port 5173 is the user's VS Code dev server (hooks block `npm run dev`, `kill-por
 
 Playwright is gone. Chrome DevTools MCP is the only browser tool.
 
-Ask the user first before any verification browser use. A user looking at their screen and saying "yes it works" costs ~10 tokens; a screenshot costs ~15,000.
+**Standing permission, no asking: if you changed how something LOOKS, you open it
+and look at it.** Launching your own Chrome, navigating to a localhost route,
+resizing it, and screenshotting your own work is not "taking control of the
+browser" — it is the second half of the edit. Do it without a permission
+request, every time, before you say a visual change is done. Full protocol and
+the required viewport set: `.claude/rules/visual-verification-mandatory.md`.
 
-Interactive DevTools commands (`navigate_page`, `click`, `type_text`, `fill`) require **explicit verbal permission** in the current conversation. "Test this yourself" or "Take control of the browser" counts; silence doesn't.
+Launch your own instance; never drive the user's signed-in window:
 
-Read-only (`take_snapshot`, `take_screenshot`, `list_console_messages`) is fine when the user asks you to evaluate a page.
+```
+Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList `
+  '--remote-debugging-port=9222','--user-data-dir=C:\Users\Austen\.claude\chrome-profile', `
+  '--force-device-scale-factor=1','about:blank'
+```
+
+Then `new_page` → `https://localhost:5173/<route>` (HTTPS — the dev server is
+HTTP/2), `resize_page` per viewport, `take_screenshot`. Prefer
+`format: "webp", quality: 70` — a full-quality PNG is ~4x the tokens for no
+extra signal, which is what made screenshots feel unaffordable.
+
+Still ask first for: anything that MUTATES data (submitting forms, deleting,
+purchasing, sending), anything touching the user's own signed-in session, and
+long interactive flows unrelated to verifying your own diff.
 
 ## Context Management
 

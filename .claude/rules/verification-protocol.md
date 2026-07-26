@@ -6,12 +6,29 @@ Claude repeatedly claims visual/UI changes are "fixed" or "should work now" with
 
 ## The Protocol
 
-### After ANY visual/UI change, Claude MUST do ONE of these before responding:
+### After ANY visual/UI change, Claude MUST take a screenshot before responding
 
-1. **Take a screenshot** via Playwright/CDP and include it in the response
-2. **Query runtime state** via browser_evaluate and include the output
-3. **Run tests** that verify the behavior and include pass/fail output
-4. **Say explicitly: "I cannot verify this visually. Please check [specific thing] and tell me what you see."**
+Not "one of these options" — this one. Launch Chrome, load the route, resize,
+`take_screenshot`, and read the frame. Standing permission; no asking. Full
+protocol and the required viewport set: `visual-verification-mandatory.md`.
+
+Runtime queries (`evaluate_script` returning widths, column counts, computed
+sizes) are a cheap *supplement* between frames. They are not a substitute — a
+number cannot tell you the page looks like a scatter of dots.
+
+Passing tests and a green `npm run check` are NOT visual verification. They
+were both green on the day a control shipped 1765px wide.
+
+"I cannot verify this visually — please check X" is reserved for a browser that
+genuinely will not start, and you say what you tried. It is never available
+because you didn't ask permission, and never as a way to hand the screenshot
+back to the user.
+
+### For non-visual changes, one of these still applies:
+
+1. **Query runtime state** and include the output
+2. **Run tests** that verify the behavior and include pass/fail output
+3. **Say explicitly what you could not verify and why**
 
 ### FORBIDDEN phrases without verification evidence in the same message:
 

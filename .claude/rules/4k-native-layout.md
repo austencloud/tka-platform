@@ -71,9 +71,12 @@ delete it and let the ramp do it continuously. Keep a tier only when it
 4. **Use the vertical too.** A wide screen is also a tall one. Fewer/bigger rows
    beat one thin row with 40% of the viewport empty below the fold. If the page
    dead-ends a third of the way down at 4K, it is not done.
-5. **Verify at all three widths.** 1920 / 2350 / 3840 before claiming done.
-   Arithmetic about column counts is not verification of composition
-   (`verification-protocol.md`).
+5. **Screenshot at all three widths.** 1920 / 2350 / 3840, yourself, before
+   claiming done — plus the small end (`visual-verification-mandatory.md` has
+   the full list). Arithmetic about column counts is not verification of
+   composition, and neither is a green typecheck. Austen should never again
+   have to say "now make it work on 4K" — arriving there is the job, not a
+   follow-up round.
 
 ## Forbidden
 
