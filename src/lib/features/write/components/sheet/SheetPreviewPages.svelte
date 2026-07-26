@@ -850,8 +850,15 @@
     font-family: Georgia, "Times New Roman", serif;
   }
 
-  /* Page-1 title block */
+  /* Page-1 title block.
+
+     The height is PINNED to TITLE_BLOCK_PT (sheet-page-layout.ts), the same
+     reservation the band packer subtracts from page 1's budget and the PDF
+     advances by. Content-sized chrome is what let the preview and the planner
+     disagree, and the last band fell off the bottom of a portrait page. */
   .titleblock {
+    box-sizing: border-box;
+    height: calc(186 * var(--pt));
     text-align: center;
     padding-bottom: calc(10 * var(--pt));
   }
@@ -922,10 +929,13 @@
     min-width: calc(120 * var(--pt));
   }
 
-  /* Page-2+ running header */
+  /* Page-2+ running header. Pinned to RUNNING_HEADER_PT for the same reason the
+     title block is — see .titleblock. */
   .runhead {
+    box-sizing: border-box;
+    height: calc(28 * var(--pt));
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     font-size: calc(11 * var(--pt));
     color: var(--print-ink-soft);

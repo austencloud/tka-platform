@@ -21,7 +21,12 @@
  * live preview glyph-for-glyph in BOTH layouts. Block separators stay vector.
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
-import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
+import {
+  getSheetPageLayout,
+  RUNNING_HEADER_PT,
+  TITLE_BLOCK_PT,
+  type SheetPageGeometry,
+} from "../domain/sheet-page-layout";
 import { planSheet, planBands, type SheetPage, type SheetCell } from "./sheet-row-planner";
 import { SHEET_CELL_VISIBILITY } from "./sheet-cell-config";
 import type { ChoreoSheet } from "../domain/types/choreo-sheet";
@@ -238,6 +243,7 @@ export async function buildChoreoSheetPDF(
       geo,
       cues: sheet.annotations.cues,
       notes: sheet.annotations.notes,
+      showTitleBlock: sheet.annotations.header.showTitleBlock,
     });
 
     // Count non-blank cells up front so progress is meaningful card-by-card.
@@ -257,16 +263,21 @@ export async function buildChoreoSheetPDF(
       let yUsed = 0;
 
       // ---- Header band (reserves its own height above the first band) ----
+      // The advance is the RESERVED height, not whatever the drawing happened to
+      // consume — the packer budgeted against these same constants, so the two
+      // cannot disagree about where the first band starts.
       if (page.pageIndex === 0 && sheet.annotations.header.showTitleBlock) {
-        yUsed += drawTitleBlock(pdfPage, sheet, geo, { fontBold, font, fontOblique, ink, inkSoft });
+        drawTitleBlock(pdfPage, sheet, geo, { fontBold, font, fontOblique, ink, inkSoft });
+        yUsed += TITLE_BLOCK_PT;
       } else if (page.pageIndex > 0) {
-        yUsed += drawRunningHeader(pdfPage, sheet, page.pageIndex, page.bands[0]?.cue?.timestamp ?? "", geo, {
+        drawRunningHeader(pdfPage, sheet, page.pageIndex, page.bands[0]?.cue?.timestamp ?? "", geo, {
           font,
           fontOblique,
           ink,
           inkSoft,
           railRule,
         });
+        yUsed += RUNNING_HEADER_PT;
       }
 
       for (let bi = 0; bi < page.bands.length; bi++) {
@@ -383,41 +394,42 @@ function drawTitleBlock(pdfPage: PDFPage, sheet: ChoreoSheet, geo: SheetPageGeom
     pdfPage.drawText(text, { x: centerX - w / 2, y, size, font, color });
   };
 
-  const actSize = 28;
-  const bySize = 12;
-  const madeSize = 10;
+  // Type scale and line boxes mirror the preview's `.titleblock` rules (act 40pt,
+  // by 15pt, made 11pt, tag 13pt at line-height 1.5) so the printed block is the
+  // one on screen, and the two together fill TITLE_BLOCK_PT.
+  const actSize = 40;
+  const bySize = 15;
+  const madeSize = 11;
   const tagSize = 13;
+  const LINE = 1.5;
 
   let ty = topY;
-  ty -= actSize;
-  drawCentered(sheet.name || "Untitled Sheet", ty, f.fontBold, actSize, f.ink);
-  ty -= 10;
+  /** Advance one line box and draw the text on its baseline. */
+  const line = (text: string, size: number, font: PDFFont, color: ReturnType<typeof rgb>, gapBefore = 0) => {
+    ty -= gapBefore;
+    const box = size * LINE;
+    ty -= box;
+    if (text) drawCentered(text, ty + (box - size) / 2 + size * 0.2, font, size, color);
+  };
 
-  if (header.choreographer) {
-    ty -= bySize;
-    drawCentered(`Choreography by ${header.choreographer}`, ty, f.font, bySize, f.inkSoft);
-    ty -= 4;
-  }
+  line(sheet.name || "Untitled Sheet", actSize, f.fontBold, f.ink);
+  line(
+    header.choreographer ? `Choreography by ${header.choreographer}` : "",
+    bySize,
+    f.font,
+    f.inkSoft,
+    6
+  );
   const songLine = header.songArtist
     ? `Song by ${header.songArtist}`
     : header.songName
       ? `Song: ${header.songName}`
       : "";
-  if (songLine) {
-    ty -= bySize;
-    drawCentered(songLine, ty, f.font, bySize, f.inkSoft);
-    ty -= 4;
-  }
-  ty -= madeSize;
-  drawCentered("Created using The Kinetic Alphabet", ty, f.fontOblique, madeSize, f.inkSoft);
-  ty -= 4;
-  if (header.tagline) {
-    ty -= tagSize;
-    drawCentered(header.tagline, ty, f.fontBold, tagSize, f.ink);
-    ty -= 4;
-  }
+  line(songLine, bySize, f.font, f.inkSoft, 6);
+  line("Created using The Kinetic Alphabet", madeSize, f.fontOblique, f.inkSoft, 6);
+  line(header.tagline ?? "", tagSize, f.fontBold, f.ink, 10);
 
-  return topY - ty + geo.interBandGutterPt * 2;
+  return topY - ty;
 }
 
 interface RunHeaderFonts {

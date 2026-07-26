@@ -20,6 +20,29 @@ const RAIL_WIDTH_PT = 64; // ~0.9" left column for timestamp + cue
 const STRIP_FACTOR = 0.5; // note-strip base height as a fraction of a cell
 const INTER_BAND_GUTTER_PT = 6;
 
+/**
+ * Vertical space the page chrome takes off the grid, in points.
+ *
+ * These are RESERVATIONS, not measurements: the preview pins `.titleblock` and
+ * `.runhead` to exactly these heights and the PDF advances by exactly these
+ * heights, so the packer's arithmetic and what actually gets painted cannot
+ * drift apart. Before they existed the packer budgeted the whole page for
+ * bands, and page 1 — the one carrying a ~186pt title block — overflowed its
+ * bottom margin, clipping the last row in portrait.
+ *
+ * The title block's height is fixed because every line is always rendered: the
+ * choreographer, song, and tagline fields show placeholders when empty.
+ */
+export const TITLE_BLOCK_PT = 186;
+export const RUNNING_HEADER_PT = 28;
+
+/** Chrome height for a given page. Page 0 carries the title block (when shown);
+ *  every page after it carries the running header. */
+export function pageChromePt(pageIndex: number, showTitleBlock: boolean): number {
+  if (pageIndex === 0) return showTitleBlock ? TITLE_BLOCK_PT : 0;
+  return RUNNING_HEADER_PT;
+}
+
 export interface SheetPageGeometry {
   pageWidthPt: number;
   pageHeightPt: number;

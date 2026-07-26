@@ -295,6 +295,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
           geo,
           cues: sheet.annotations.cues,
           notes: sheet.annotations.notes,
+          showTitleBlock: sheet.annotations.header.showTitleBlock,
         })
       : []
   );

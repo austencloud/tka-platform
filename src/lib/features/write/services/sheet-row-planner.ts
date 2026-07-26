@@ -17,7 +17,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { ChoreoSheetLayout } from "../domain/types/choreo-sheet";
-import type { SheetPageGeometry } from "../domain/sheet-page-layout";
+import { pageChromePt, type SheetPageGeometry } from "../domain/sheet-page-layout";
 import { bandKey, type CueMark, type NoteMark, type BandKey } from "../domain/types/choreo-sheet";
 
 export interface SheetCell {
@@ -98,6 +98,9 @@ export interface BandPlanInput {
   geo: SheetPageGeometry;
   cues: readonly CueMark[];
   notes: readonly NoteMark[];
+  /** Page 1 carries the title block when this is true, which is ~186pt the
+   *  bands do not get. Defaults to true — that is the sheet's default. */
+  showTitleBlock?: boolean;
 }
 
 // Base band height: pictograph row + note strip + inter-band gutter. Grows in
@@ -150,16 +153,25 @@ export function planBands(input: BandPlanInput): SheetBandPage[] {
     beatIndex += steps.length;
   }
 
-  // 2. Height-packed pagination.
+  // 2. Height-packed pagination. The budget is the grid area MINUS the chrome
+  //    that page carries — the title block on page 1, the running header after.
+  //    Budgeting the full page height is what pushed the last band off the
+  //    bottom of a portrait sheet.
+  const showTitleBlock = input.showTitleBlock ?? true;
+  const budgetFor = (pageIndex: number) =>
+    geo.usableHeightPt - pageChromePt(pageIndex, showTitleBlock);
+
   const pages: SheetBandPage[] = [];
   let current: SheetBand[] = [];
   let used = 0;
   let pageIndex = 0;
+  let budget = budgetFor(0);
   for (const band of bands) {
-    if (current.length > 0 && used + band.heightPt > geo.usableHeightPt) {
+    if (current.length > 0 && used + band.heightPt > budget) {
       pages.push({ bands: current, pageIndex: pageIndex++ });
       current = [];
       used = 0;
+      budget = budgetFor(pageIndex);
     }
     current.push(band);
     used += band.heightPt;

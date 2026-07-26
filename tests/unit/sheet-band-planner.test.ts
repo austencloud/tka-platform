@@ -1,6 +1,11 @@
 // tests/unit/sheet-band-planner.test.ts
 import { describe, it, expect } from "vitest";
-import { getSheetPageLayout } from "$lib/features/write/domain/sheet-page-layout";
+import {
+  getSheetPageLayout,
+  pageChromePt,
+  RUNNING_HEADER_PT,
+  TITLE_BLOCK_PT,
+} from "$lib/features/write/domain/sheet-page-layout";
 import { DEFAULT_SHEET_LAYOUT } from "$lib/features/write/domain/types/choreo-sheet";
 
 const base = { ...DEFAULT_SHEET_LAYOUT };
@@ -33,6 +38,13 @@ describe("sheet geometry — orientation + annotation bands", () => {
     const geo = getSheetPageLayout(base);
     expect(geo.usableHeightPt).toBeGreaterThan(0);
     expect(geo.usableHeightPt).toBeLessThan(geo.pageHeightPt);
+  });
+
+  it("reserves the title block on page 1 and the running header after", () => {
+    expect(pageChromePt(0, true)).toBe(TITLE_BLOCK_PT);
+    expect(pageChromePt(0, false)).toBe(0);
+    expect(pageChromePt(1, true)).toBe(RUNNING_HEADER_PT);
+    expect(pageChromePt(3, false)).toBe(RUNNING_HEADER_PT);
   });
 });
 
@@ -88,5 +100,35 @@ describe("planBands (row-aligned)", () => {
       const sum = page.bands.reduce((h, b) => h + b.heightPt, 0);
       expect(sum).toBeLessThanOrEqual(geo.usableHeightPt + 0.01);
     }
+  });
+
+  it("leaves room for the page chrome — bands never run past the bottom margin", () => {
+    // The regression: page 1 carries a ~186pt title block, and budgeting the
+    // whole page for bands pushed the last row off the bottom in portrait.
+    const portrait = getSheetPageLayout({ ...base, orientation: "portrait", columns: 8 });
+    const many = Array.from({ length: 30 }, (_, i) => seq(`s${i}`, 8));
+    const pages = planBands({ sequences: many, geo: portrait, cues: [], notes: [] });
+
+    expect(pages.length).toBeGreaterThan(1);
+    for (const page of pages) {
+      const chrome = pageChromePt(page.pageIndex, true);
+      const sum = page.bands.reduce((h, b) => h + b.heightPt, 0);
+      expect(chrome).toBeGreaterThan(0);
+      expect(sum + chrome).toBeLessThanOrEqual(portrait.usableHeightPt + 0.01);
+    }
+  });
+
+  it("gives page 1 the extra room back when the title block is off", () => {
+    const portrait = getSheetPageLayout({ ...base, orientation: "portrait", columns: 8 });
+    const many = Array.from({ length: 30 }, (_, i) => seq(`s${i}`, 8));
+    const withTitle = planBands({ sequences: many, geo: portrait, cues: [], notes: [] });
+    const without = planBands({
+      sequences: many,
+      geo: portrait,
+      cues: [],
+      notes: [],
+      showTitleBlock: false,
+    });
+    expect(without[0]!.bands.length).toBeGreaterThan(withTitle[0]!.bands.length);
   });
 });
