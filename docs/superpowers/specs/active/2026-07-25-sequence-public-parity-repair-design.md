@@ -1,0 +1,1365 @@
+# Sequence/Public Parity Repair
+
+> Status: **reviewed and accepted; Phase 1 in progress**
+>
+> Date: 2026-07-25
+>
+> Review: Opus 5, 2026-07-25. Sixteen factual claims were spot-checked against
+> the codebase and all sixteen held; every one of the 26 referenced paths
+> exists. Three corrections and one new evidence section were folded in — see
+> **Review corrections** below. The design is accepted as written apart from
+> those.
+>
+> Scope: sequence persistence, the `publicSequences` materialized view, public
+> content-hash uniqueness, shortcode payload labels, repair tooling, and drift
+> detection.
+
+## Decision
+
+Make the owner sequence and its public projection one consistency boundary.
+
+For a public sequence, one Firestore transaction must write or remove:
+
+1. `users/{uid}/sequences/{sequenceId}`
+2. `publicSequences/{sequenceId}`
+3. `publicSequenceHashes/{contentHashVersion}_{contentHash}`
+4. the user's sequence-count update when the operation creates or deletes the
+   owner sequence
+
+The transaction receives a fully normalized sequence and a public projection
+built by one shared pure function. It never derives a word from `name`, never
+accepts a partial word, and never rebuilds a public document from an
+unhydrated sequence.
+
+Shortcodes remain a separate immutable content boundary. A shortcode label is
+derived from that shortcode's encoded payload, not from the current owner or
+public sequence.
+
+This design removes the failure mode that produced `GI` for Christof's
+`IIECCKIIECCK` sequence and closes the adjacent paths that can produce the same
+class of drift.
+
+## Boundaries
+
+This design does not:
+
+- change TKA letter, motion, LOOP, or start-position derivation rules
+- rewrite shortcode payloads
+- automatically choose between duplicate historical public records
+- make `publicHandPaths` or `publicSoloProps` part of the core sequence
+  transaction
+- claim that private-library content-hash uniqueness is solved
+
+The owner library still has a query-before-write duplicate race. Two duplicate
+hash groups exist in the audited Austen library. The repair audit reports them,
+but a per-user private hash claim would change fork and save semantics and
+needs its own decision. The global public claim in this spec protects only the
+public gallery invariant.
+
+## Why this needs an architectural repair
+
+The repaired record was not an isolated typo. The current write graph permits
+states that the read graph assumes cannot exist.
+
+```text
+current public save
+
+normalize some owner fields
+        |
+        v
+owner sequence + profile batch commits
+        |
+        v
+PublicIndexSyncer performs another write
+        |
+        +---- failure here leaves a public owner doc with no matching mirror
+        |
+        v
+thumbnail and public artifact writes happen later
+```
+
+The public loader describes `publicSequences` as self-contained, but it still
+falls back to `sourceRef` when compositional fields are absent. The syncer
+computes `sequenceLength` from `sequence.steps?.length ?? 0`, so an
+unhydrated, composition-only sequence can be published with a zero length.
+`updateSequence` refreshes the mirror only when visibility changes, so public
+metadata can drift after an ordinary edit. Thumbnail sync and delete also use
+separate writes.
+
+The hand-built public map also drops fields that Browse reads. The shared
+Browse filter searches `intendedWord` and filters `reversalPattern`, but the
+syncer does not persist either field and the public loader does not map them.
+The loader tries to read `componentDomains`, while the syncer persists
+`components` without `componentDomains`. The syncer writes `creatorIntent` and
+`startPosition`, but the public loader's self-contained map drops both before
+hydration. Those failures look like empty search results, a default reversal
+classification, or lost viewer intent, not a broken page.
+
+The word path has a second gap. `deriveWordFromBeats` silently drops steps with
+missing letters. A 12-beat sequence with two unresolved steps can therefore
+produce a plausible 10-token word and pass into persistence. The current Fuse
+regression test catches the historical `GI` case and logs partial derivation,
+but it does not stop a partial result from being stored.
+
+The shortcode path has a third gap. New records prefer `sequence.word` before
+deriving from payload steps. A stale mutable word can be stamped onto an
+otherwise correct immutable encoded payload.
+
+## Evidence from the 2026-07-25 corpus audit
+
+The audit read 467 `publicSequences` documents, their linked owner documents,
+and 20,215 shortcode documents.
+
+### Public and owner sequences
+
+| Finding | Count | Meaning |
+| --- | ---: | --- |
+| Current public words that contradict their own complete step data | 0 | The live Christof mirror was repaired before this design pass. |
+| Public documents without `steps` or compositional `stepPairings` | 7 | Browse rendering depends on `sourceRef`; these are not self-contained. |
+| Those seven with `sequenceLength: 0` despite source lengths of 16, 8, and 8 | 3 | The unhydrated `steps?.length ?? 0` path has produced live bad metadata. |
+| Linked owner documents with blank `word` and an automatic name | 10 | Correct public words are not backed by a canonical source word. |
+| Linked owner word contradicting its source step letters | 1 | The public word matches the steps; the owner word does not. |
+| Public/source `contentHash` drift | 37 | 17 public-only, 11 unequal, 9 source-only. |
+| LOOP prefix-equivalent word differences | 34 | Expected seed-versus-expansion representation, not corruption. |
+
+The seven incomplete public documents are:
+
+- `4def1d13-144f-4016-a1f8-f19ba2a1c950`
+- `fe36e95d-b5a5-4e31-997d-8e7a89f0b753`
+- `seq_1765151657683_bdk70tv1d`
+- `seq_1784439975420_f0bf7a45`
+- `seq_1784441537912_6a60c532`
+- `seq_1784442568487_096360ae`
+- `seq_1784446580186_3ddd5e91`
+
+The owner document with a word that contradicts its own steps is
+`bf8b6fc2-427b-48e5-b84c-d5a82df7694c`.
+
+The broader Austen-library audit found 504 documents with one missing
+`contentHash`, two duplicate-hash groups, seven invalid or missing
+start-position letters, one sentinel timestamp, and six missing `gridMode`
+values. The public corpus has eleven missing hashes and fifteen missing
+`gridMode` values in addition to the seven incomplete projections. Those
+findings belong in the repair report, but only fields derivable from canonical
+sequence data are automatic repairs.
+
+### Shortcodes
+
+| Finding | Count | Treatment |
+| --- | ---: | --- |
+| Total shortcode documents | 20,215 | Audit corpus. |
+| Self-contained through `encoded` | 20,211 | Decode this payload first. |
+| Self-contained through `sequenceData.steps` | 4 | Use the embedded steps. |
+| Linked to a current public sequence | 848 | Link is provenance, not label authority. |
+| Label contradicts the current public word | 16 | Fourteen are valid historical payload versions. |
+| Stale `GI` labels linked to the Christof sequence | 2 | Re-derive each from its own 7-beat or 10-beat payload. |
+| Automatic-name labels from the earlier dry run | 4 | Repair only when the payload produces a complete word. |
+| Missing `sequenceName` with another usable fallback | 12 | Compatibility data, not a broken payload. |
+
+`VOJT` and `Z3WC` still carry `GI`, but their payloads contain 7 and 10 beats.
+Copying `IIECCKIIECCK` from the current 12-beat public sequence would corrupt
+both codes. `KJXS`, whose payload is the repaired 12-beat sequence, now carries
+`IIECCKIIECCK`.
+
+The four automatic-name records are:
+
+- `0XHN`: `Sequence <time>`, with only a partial derived word
+- `3CLR`: `Assemble Sequence`, with only a partial derived word
+- `EK7E`: `Assemble Sequence`, with only a partial derived word
+- `OM76`: `Assemble Sequence`, with no derivable word
+
+All four have `scanCount: 0`. They still need payload-based classification,
+not a blanket rename.
+
+### Snapshot parity
+
+The official R2 snapshot exported at `2026-07-25T03:01:19Z` declares and
+contains 20,200 records. Firestore contained 20,211 encoded records. The eleven
+newer Firestore records are expected between daily exports. The bundled static
+snapshot contains 20,063 records and is an older fallback.
+
+Snapshot lag is not the cause of the `GI` defect. The source records were
+already inconsistent before export.
+
+The shortcode snapshots are intentionally skinny and carry encoded payloads,
+not Firestore label metadata. Label repair remains a Firestore change; snapshot
+verification confirms that the immutable payload did not change. The full
+`publicSequences` static snapshot must be regenerated after projection repair.
+
+## Field-consumer ledger (added by review, 2026-07-25)
+
+Section 3 requires a field-consumer ledger before the projection schema is
+frozen. It was built, and it found more than this design assumed.
+
+### Read but never written — live bugs, silently defaulted
+
+Each of these is read off a `publicSequences`-sourced object and is never in the
+syncer's `publicData` literal. None of them error; each falls back to a default,
+so the feature simply does nothing.
+
+| Field | Consumer | Live symptom |
+| --- | --- | --- |
+| `animatedSequenceUrl` | `feed-loader.ts:105,107,141,148` | The Watch feed's animation-versus-pictograph split can never fire. Every public sequence resolves to `pictograph`. |
+| `gridMode` | `loop-labeler/sequence-loader.ts:43`, `browse-filter.ts:459` | The Grid Mode filter is dead for every gallery sequence. |
+| `intendedWord` | `browse-filter.ts:196` | Contains-letters search silently ignores intended-word matches. |
+| `reversalPattern` | `browse-filter.ts:649-655` | Reversal filter cannot differentiate public sequences; all default to `continuous`. |
+| `componentDomains` | `public-sequences-loader.ts:304,321` → `loop-display-resolver.ts:302` | LOOP component-domain display always falls back to defaults. |
+| `views`, `creatorName`, `creatorId` | `content-query-analyzer.ts:34-71` | Admin "top sequences by views" is non-functional. These are wrong legacy names; the real fields are `viewCount`, `ownerDisplayName`, `ownerId`, and the `orderBy("views","desc")` is meaningless. |
+
+The first three and the admin trio were not in the original evidence section.
+`animatedSequenceUrl` and the admin panel are independent pre-existing defects
+that this projection work happens to fix; they are not parity drift.
+
+### The two-read-path trap
+
+A public sequence reaches the app through **two** different mappers:
+
+1. main Browse gallery → `mapPublicIndexToSequenceData`
+   (`public-sequences-loader.ts:294-371`)
+2. public collection view → `batchFetchPublicSequences`
+   (`collection-firestore-mapper.ts`, raw `...data` spread through
+   `LibrarySequenceDocSchema`)
+
+Path 2 reads seven fields that path 1 drops entirely: `forkCount`, `viewCount`,
+`starCount`, `contentHash`, `contentHashVersion`, `creatorIntent`,
+`startPosition`.
+
+Deriving the projection schema from path 1 alone — the obvious approach, since
+it is the main gallery — silently breaks prop configuration on saved LOOPs,
+start-cell rendering, and the "already saved" badge, and only when a user opens
+a public collection rather than the main grid. The schema must cover both paths.
+
+### Written but not consumed
+
+- `contentHashVersion` is validated on read and never branched on.
+- `encoderHash` backs `where("encoderHash","==")` in
+  `public-sequence-hash-matcher.ts:36`, but its only caller `findPublicMatch()`
+  has zero call sites. The query is dormant. Keep the field (the hash-claim work
+  in section 8 depends on the same basis) but do not treat the matcher as live.
+
+### Confirmed dead
+
+`createPublicSequenceIndex()` (`public-sequence-index.ts:161`, in **both**
+copies) has zero call sites. `public-index-syncer.ts` hand-builds `publicData`
+instead — which is precisely how the declared interface and the real writer
+drifted apart. This is the strongest argument for section 3's single builder.
+
+## Required invariants
+
+### Sequence invariants
+
+1. The owner sequence is the canonical editable record.
+2. A persisted exact word is the concatenation of one non-empty notation token
+   for every hydrated beat, in beat order.
+3. `word` never falls back to `name`, `displayName`, or an automatic title.
+4. `name` and `displayName` remain presentation metadata and may be user-authored.
+5. A persistence boundary rejects incomplete word derivation. Editing state may
+   remain incomplete.
+6. `sequenceLength` comes from the normalized canonical beat count, never from
+   an optional array on an unhydrated input.
+7. `contentHash` and `contentHashVersion` are computed from the same normalized
+   motion data that is persisted.
+8. LOOP data persists the complete expanded beat word. Any shortened LOOP
+   display is a view concern and must not change the stored exact word.
+
+### Public projection invariants
+
+1. `publicSequences/{id}` is a self-contained, versioned materialized view.
+   `sourceRef` is provenance, not a rendering dependency.
+2. A resulting owner document with `visibility: "public"` and
+   `isDeleted != true` has exactly one public document with the same id.
+3. A private, unlisted, soft-deleted, or deleted owner document has no public
+   document.
+4. Public create, public-affecting update, publish, unpublish, and delete commit
+   owner, mirror, and hash claim together or commit nothing.
+5. The public document records the source's `publicProjectionRevision`,
+   `publicProjectionSchemaVersion`, and `publicProjectionDigest`.
+6. Source-owned fields are produced by one projection builder. Callers cannot
+   assemble public maps by hand.
+7. Existing `publishedAt` and public engagement counters survive a projection
+   refresh.
+8. `updatedAt` changes when projection content changes.
+9. A content-hash claim points to one public sequence. Publishing the same hash
+   under another id fails with a typed duplicate result.
+
+### Shortcode invariants
+
+1. A new shortcode has an immutable `encoded` payload or embedded
+   `sequenceData.steps`, as the existing Firestore rule already requires.
+2. `payloadWord` is derived from that exact payload after encoding or decoding.
+3. `payloadWord` is complete for every payload beat. Minting fails if it is not.
+4. A mutable `sequenceId` link is provenance only. Later edits do not relabel an
+   existing shortcode.
+5. A repair derives labels from each shortcode's payload. It never copies the
+   current public word by id.
+
+## Proposed architecture
+
+### 1. Add strict word derivation to the existing word module
+
+Extend
+`src/lib/shared/foundation/services/word-deriver.ts`; do not create another
+word utility.
+
+Add a result type:
+
+```ts
+interface WordDerivationStatus {
+  readonly word: string;
+  readonly complete: boolean;
+  readonly stepCount: number;
+  readonly tokenCount: number;
+  readonly missingStepIndexes: readonly number[];
+  readonly source: "steps" | "stepPairings" | "none";
+}
+```
+
+Add:
+
+```ts
+deriveWordStatus(sequence: SequenceData): WordDerivationStatus
+deriveWordStatusFromSteps(steps: readonly Step[]): WordDerivationStatus
+requireCompleteWord(sequence: SequenceData): string
+```
+
+Rules for the implementation:
+
+- Prefer hydrated `steps`.
+- Use `stepPairings` only when steps are absent, not when steps exist but are
+  incomplete.
+- Treat whitespace-only or missing tokens as unresolved.
+- Preserve token order and glyphs.
+- Report every unresolved beat index.
+- Never consult `word`, `name`, `displayName`, or `intendedWord` for strict
+  derivation.
+- Keep `deriveWord` and `getSequenceDisplayName` as permissive display helpers.
+  Persistence code must call the strict API.
+
+This extends the existing canonical module and turns the current warning-only
+behavior into a reusable gate.
+
+### 2. Normalize once before persistence
+
+Add
+`src/lib/shared/library/services/sequence-persistence-normalizer.ts`.
+
+This orchestration is new because no current boundary combines hydration,
+composition, exact-word validation, canonical count, and identity hash. It
+must reuse:
+
+- `SequenceHydrator.hydrate`
+- `ensureComposition`
+- `withCanonicalStepCount`
+- `deriveWordStatus`
+- `SequenceContentHasher.computeHash`
+- `CONTENT_HASH_VERSION`
+
+The normalizer accepts a full incoming sequence and returns the shape below.
+
+> **Correction:** `LibrarySequenceWriteData` **does not exist** anywhere in the
+> codebase — the name was invented by this spec. The implementation must
+> identify the real owner-document write type (the object that actually reaches
+> `setDoc` in `LibraryRepository.saveSequence`) and either reuse it or declare
+> one, rather than assuming the name resolves.
+
+```ts
+interface NormalizedSequenceWrite {
+  readonly hydrated: SequenceData;
+  readonly ownerData: LibrarySequenceWriteData; // see correction above
+  readonly exactWord: string;
+  readonly sequenceLength: number;
+  readonly contentHash: string;
+  readonly contentHashVersion: number;
+}
+```
+
+The operation order is fixed:
+
+1. Hydrate when `steps` are absent.
+2. Reject empty data.
+3. Derive or refresh compositional fields from the hydrated sequence.
+4. Validate one exact word token per beat.
+5. Stamp the exact word.
+6. Stamp canonical sequence length.
+7. Compute the active-version content hash from the normalized hydrated data.
+8. Strip `undefined` only after all validation succeeds.
+
+The normalizer has no Firestore writes, UI state, cache updates, or toasts. It
+is safe to run before a transaction and from Admin migration tooling.
+
+`saveSequenceWithMetadata` must stop assigning
+`word: sequence.word || metadata.name`. Metadata may set `name` or
+`displayName`; only strict derivation sets `word`.
+
+### 3. Create one canonical public projection
+
+Keep the canonical model in
+`src/lib/shared/foundation/domain/models/public-sequence-index.ts`.
+
+Delete the duplicate
+`src/lib/features/library/domain/models/public-sequence-index.ts` after
+confirming imports. The two files are byte-for-byte copies today.
+
+Delete the unused, incomplete `createPublicSequenceIndex`. Put the pure builder
+in `src/lib/shared/library/services/public-sequence-projection.ts`; the domain
+model file keeps types and schema-facing constants. The builder accepts a
+normalized sequence plus already-resolved projection context:
+
+```ts
+interface PublicProjectionContext {
+  readonly ownerDisplayName: string;
+  readonly ownerAvatarUrl?: string;
+  readonly tagNames: readonly string[];
+  readonly encoderHash: string;
+  readonly loop: {
+    readonly isCircular: boolean;
+    readonly loopType: string | null;
+    readonly period?: number;
+    readonly components?: SequenceData["components"];
+    readonly componentDomains?: SequenceData["componentDomains"];
+    readonly loopSpec?: SequenceData["loopSpec"];
+  };
+  readonly difficultyLevel?: string;
+  readonly level?: number;
+}
+
+interface ExistingPublicOwnedFields {
+  readonly publishedAt?: Timestamp;
+  readonly forkCount?: number;
+  readonly viewCount?: number;
+  readonly starCount?: number;
+}
+
+buildPublicSequenceProjection(
+  normalized: NormalizedSequenceWrite,
+  context: PublicProjectionContext,
+  revision: number,
+  existing?: ExistingPublicOwnedFields
+): Promise<PublicSequenceIndexWriteData>
+```
+
+The builder is deterministic except for timestamps supplied by the writer. It
+must persist all data needed by Browse and the sequence viewer:
+
+- identity: `id`, `sourceRef`, `ownerId`
+- owner projection: display name and avatar
+- presentation: `name`, `displayName`, `intendedWord`, exact `word`,
+  thumbnails
+- canonical count and difficulty
+- LOOP metadata, including `components`, `componentDomains`, and `loopSpec`
+- reversal-pattern metadata used by Browse filters
+- tag names
+- fork attribution and creator intent
+- birthday
+- `contentHash`, `contentHashVersion`, and `encoderHash`
+- `gridMode` and `startPosition`
+- `blueSoloProp`, `redSoloProp`, and `stepPairings`
+- hand-path and solo-prop hashes
+- `publicProjectionRevision`
+- `publicProjectionSchemaVersion`
+- `publicProjectionDigest`
+
+Before freezing the schema, build a field-consumer ledger for
+`PublicSequencesLoader`, Browse filters, the sequence viewer, offline cache,
+share/hash matching, and thumbnail rendering. Every consumed public field must
+be either included in the schema or documented as derived from included data.
+Private notes, performance media paths, and arbitrary metadata are excluded.
+If a public metadata bag is needed for rendering, project an allowlisted typed
+shape instead of copying the extensible source map.
+
+Add a dedicated runtime schema for the wire document. The current loader casts
+Firestore data to `PublicSequenceIndex`, and
+`collection-firestore-mapper.ts` validates public documents with the general
+library schema. Neither verifies a self-contained public projection.
+
+The schema must distinguish Firestore `Timestamp` wire values from application
+`Date` values and provide one conversion function. `PublicSequencesLoader`,
+the offline cache, and hash matcher must import the same canonical type.
+
+During rollout, `PublicSequencesLoader` may use `sourceRef` fallback only for a
+legacy document without projection schema 2. Record a metric for every fallback
+hit. A schema-2 document that fails self-containment validation is an invariant
+violation: report it and exclude it from Browse until repaired. Fetching the
+owner source would hide new drift.
+
+After the corpus migration and compatibility window, Browse accepts only
+schema-2 documents. Keep `sourceRef` for attribution and Admin diagnostics, not
+rendering.
+
+### 4. Define projection field ownership
+
+A full `setDoc` currently risks resetting counters, and it does not merely risk
+resetting `publishedAt` — it **unconditionally overwrites it on every sync**
+(`public-index-syncer.ts:174` sets `publishedAt: serverTimestamp()` in the
+literal, and the literal is written with a full `setDoc`). Every republish has
+already destroyed the original publication time, and the value is not
+recoverable from the public document. The migration must therefore treat
+`publishedAt` as suspect corpus-wide and prefer the owner document's `birthday`
+or `createdAt` when reconstructing it, rather than trusting the mirror.
+
+The builder must use an explicit ownership split.
+
+| Owner | Fields | Refresh rule |
+| --- | --- | --- |
+| Sequence source | word, names, thumbnails, composition, counts derived from composition, hashes, LOOP data, tags, creator intent, fork attribution, birthday | Rebuild through the canonical projection. |
+| User profile | owner display name and avatar | Refresh on profile projection work or the next sequence projection. |
+| Public engagement | `forkCount`, `viewCount`, `starCount` | Preserve unless a named counter operation changes the field. |
+| Publication lifecycle | `publishedAt` | Set once on first publication and preserve on resync. |
+| Projection writer | `updatedAt`, revision, schema version, digest | Change only with projection content. |
+
+The projection digest covers source-owned and profile-owned projection fields.
+It excludes engagement counters and timestamps. Use the existing
+`canonicalJSON` utility. Extract the repeated Web Crypto SHA-256-to-hex code
+into one shared helper instead of adding another private digest
+implementation.
+
+The owner document stores matching
+`publicProjectionRevision`, `publicProjectionSchemaVersion`, and
+`publicProjectionDigest` while public. These fields are cleared on unpublish.
+They are separate from the existing `_version`, which tracks general document
+conflicts. A notes-only update must not force a public projection revision.
+
+### 5. Prepare projection context before the transaction
+
+`PublicIndexSyncer` currently handles moderation, tag and profile reads, LOOP
+detection, projection assembly, Firestore writes, public artifact fanout, error
+feedback, and Browse cache mutation. The word and field-loss defects cross
+those responsibilities. The file fails the single-responsibility test for a
+proven reason, not its line count.
+
+Replace it with
+`src/lib/features/library/services/public-projection-preparer.ts`. Its one job
+is to produce settled `PublicProjectionContext` before a repository
+transaction. It must not own Firestore writes, public artifact writes, cache
+mutation, or user feedback.
+
+Before the transaction it may:
+
+- run content moderation
+- enforce the community minimum
+- read owner display data
+- resolve tag names
+- calculate difficulty
+- detect LOOP data
+- calculate `encoderHash`
+
+Any preparation failure stops before Firestore writes. `encoderHash`, resolved
+tag names, LOOP data, difficulty, and owner metadata are part of one settled
+projection result. An untagged sequence resolves to an empty tag list; a failed
+tag lookup is not the same state. No broad `catch` may convert a calculation or
+read failure into missing projection data.
+
+The current broad `catch` blocks that silently omit derived data need typed
+results. The transaction receives settled projection data and contains no
+moderation, network lookups outside Firestore transaction reads, cache
+mutation, or UI callbacks.
+
+Do not replace the old class with thin cache or transaction wrappers. The
+repository calls the existing Browse-loader cache methods through injected
+post-commit callbacks. The composition root wires those callbacks after the
+transaction resolves.
+
+### 6. Put public writes behind one repository transaction
+
+`LibraryRepository` remains the public library API and orchestrator. Add
+`src/lib/shared/library/services/public-sequence-persister.ts` to implement the
+atomic persistence of the public-sequence aggregate: owner, public projection,
+hash claim, and profile count when applicable. This keeps transaction mechanics
+out of the already broad repository while giving batch, recycle-bin, and
+conflict paths one writer to call.
+
+`LibrarySaveService` may stage the normalized record in Dexie before the cloud
+transaction, marked as pending. That local write is not evidence of
+publication. It must not add the sequence to the Browse cache or present public
+sync as confirmed. A permanent publication rejection keeps the library copy
+private and records the typed blocked reason; a transient failure retains the
+pending public intent for retry.
+
+For a public create or public-affecting update:
+
+1. Normalize the incoming sequence.
+2. Prepare projection context.
+3. Start `runTransaction`.
+4. Read the current owner document, current public document, current hash
+   claim, and proposed hash claim before any write.
+5. Recheck the expected owner `_version` or update precondition.
+6. Reject a proposed claim owned by another public sequence with a typed
+   `PUBLIC_DUPLICATE` result.
+7. Compute the next `publicProjectionRevision`.
+8. Build the public projection while preserving public-owned fields.
+9. Write owner, public projection, hash claim, and profile counter mutation.
+10. Delete a prior claim only when the transaction proves it belongs to this
+    sequence and the content hash changed.
+11. Commit.
+12. Mark the Dexie record synced, update Browse cache, and project independently
+    discoverable public artifacts from the committed projection.
+
+The persister's transaction callback may run more than once. All values captured or
+assigned inside it must be reset on every invocation, following the pattern in
+`ShortCodeManager`'s hash-claim transaction. UI effects and cache writes happen
+only after `runTransaction` resolves.
+
+For a public thumbnail completion, run a narrow transaction that reads the
+owner and public records, patches the owner thumbnails, patches only public
+thumbnails plus projection revision/digest, and preserves every other public
+field. Do not replay an earlier full sequence snapshot.
+
+For unpublish:
+
+- update owner visibility
+- clear owner public-projection stamps
+- delete public projection
+- delete its owned hash claim
+
+For delete:
+
+- delete owner sequence
+- delete public projection if present
+- delete its owned hash claim
+- decrement the profile count
+
+Each operation is one transaction.
+
+Private-only saves can retain offline-capable batched writes when they do not
+touch public projection fields. Firestore client transactions fail offline,
+while batched writes can queue offline. The existing Dexie-first save and
+`library-sync-retry.ts` already provide the queue for a public operation. The
+retry layer must classify:
+
+- transient network and contention failures as retryable
+- `INCOMPLETE_WORD`, moderation failure, and `PUBLIC_DUPLICATE` as
+  non-retryable user-action states
+
+A permanent validation error must not spin in the background retry queue.
+
+`LibrarySaveService` is the single user-feedback boundary for an interactive
+save or publish. Lower repository and projection layers return typed failures
+or let unexpected errors propagate. They must not show a modal and then rethrow,
+which is the current `PublicIndexSyncer` pattern.
+
+Use `getErrorHandler().showUserError()` only for a failure that blocks the
+user-initiated operation or would otherwise look like silent data loss. Supply
+the library module, save/publish action, sequence id, sync state, and typed error
+code as context. Expected validation states need direct messages and a clear
+next action:
+
+- incomplete word: `This sequence has unresolved beats. Finish them before publishing.`
+- public duplicate:
+  `This exact sequence is already in the community gallery. Your library copy remains private.`
+- offline/transient failure:
+  `Couldn't publish this sequence. It is saved on this device and will retry when you are online.`
+
+Background retry records technical failure context without reopening a modal on
+every attempt. A later successful retry clears the pending state. Thumbnail and
+public-artifact failures remain visible through sync status and the audit, but
+they do not report the core sequence transaction as failed after it committed.
+
+### 7. Close batch, recycle-bin, and conflict-resolution bypasses
+
+The shared implementations used by `LibraryRepository` contain more direct
+owner writes:
+
+- `LibraryBatchOperations.deleteSequences`
+- `LibraryBatchOperations.addTagsToSequences`
+- `LibraryBatchOperations.setVisibilityBatch`
+- `LibraryRecycleBin.softDeleteSequence`
+- `LibraryRecycleBin.restoreSequence`
+- `LibraryRecycleBin.purgeSequence`
+- `LibraryRecycleBin.emptyRecycleBin`
+- `LibraryRepository.resaveSequenceForConflict`
+- `LibraryRepository.attachThumbnail` (owner `updateDoc` at :748, then a
+  separate mirror `updateDoc` — functionally covered by the thumbnail
+  transaction in section 6, but it belongs in this ledger)
+
+Two more writers sit **outside `LibraryRepository` entirely** and were missed
+in the first pass:
+
+- `LoopLabelsFirebaseRepository.deleteSequenceFromDatabase`
+  (`src/lib/features/loop-labeler/services/loop-labels-firebase-repository.ts:200-214`)
+  deletes `publicSequences/{id}` directly and never touches the owner document.
+  It leaves an owner record with `visibility: "public"` and no mirror — exactly
+  the drift class this design exists to remove. Worse, after phase 4 that owner
+  document can never be updated again, because every owner update will demand a
+  matching mirror that no longer exists. This is an Admin/labeler tool, so it
+  must either route through unpublish or be restricted to Admin-only repair
+  tooling that fixes both sides.
+- `ShortCodeManager` is correctly out of scope (immutable payload boundary), but
+  confirm no other feature-layer service writes the collection before phase 4.
+  The sweep that found the labeler path was
+  `grep -rn "getPublicSequencePath\|publicSequences" src scripts functions`.
+
+Every path that changes a public projection field or public eligibility must
+call `PublicSequencePersister`.
+
+Batch operations are atomic per sequence, not across the whole selection.
+Prepare each sequence, run the per-sequence transaction with bounded
+concurrency, and return a result for every id. One rejected sequence must not
+hide the committed results for its neighbors. Retrying the failed subset is
+safe.
+
+Specific handling:
+
+- batch visibility uses publish/unpublish transactions, never an owner batch
+  followed by `Promise.all` mirror writes
+- batch delete removes owner, mirror, claim, and profile count per sequence
+- batch tag edits reproject public sequences because the public document stores
+  resolved tag names; private sequences may retain an offline batch
+- collection-only and notes-only edits remain owner-only when their fields are
+  outside the projection key set
+- conflict resolution sends a public winning copy through normalization and the
+  public transaction instead of a standalone `setDoc`
+- soft delete marks the owner `isDeleted: true`, clears public projection
+  stamps, and removes mirror and claim in one transaction
+- a soft-deleted record is not publicly eligible even if its stored visibility
+  remains `public`
+- restore of a formerly public record reruns normalization, moderation, and
+  claim checks before restoring the public projection; a public duplicate
+  restores the library record as private and returns a typed
+  `RESTORED_PRIVATE_PUBLIC_CONFLICT` result
+- purge and empty-bin paths delete any defensive leftover mirror and owned
+  claim in the same per-record transaction
+
+The current feature-layer copies of `library-batch-operations.ts` and
+`library-recycle-bin.ts` have no imports. They are not identical to the shared
+implementations. Delete them after a second import check so future fixes cannot
+land in dead copies.
+
+### 8. Replace query-based public deduplication with a hash claim
+
+Add:
+
+```text
+publicSequenceHashes/{contentHashVersion}_{contentHash}
+```
+
+Claim data:
+
+```ts
+interface PublicSequenceHashClaim {
+  readonly sequenceId: string;
+  readonly ownerId: string;
+  readonly contentHash: string;
+  readonly contentHashVersion: number;
+  readonly createdAt: Timestamp;
+}
+```
+
+This uses the proven `shortcodeHashes/{encoderHash}` transaction pattern.
+The current `where("contentHash", "==", hash)` preflight query is not a
+uniqueness boundary: two clients can both observe no result and then write.
+
+Public duplicate semantics differ from shortcode semantics. A shortcode caller
+can adopt the winning code for the same immutable payload. A sequence publisher
+cannot adopt another owner's sequence id, so a claim owned by another
+sequence returns `PUBLIC_DUPLICATE` and commits nothing.
+
+The claim id includes the hash version so a future hash-basis rollout cannot
+confuse values computed under different bases.
+
+### 9. Enforce transaction shape in Firestore rules
+
+Update both the owner-sequence and public-sequence rule blocks. Add rules for
+`publicSequenceHashes`.
+
+For a resulting public, non-deleted owner document, rules must use `getAfter()`
+to require:
+
+- a public document at the same id
+- `ownerId == request.auth.uid`
+- exact `sourceRef == users/{uid}/sequences/{id}`
+- public `publicProjectionRevision` equals the owner stamp
+- public `publicProjectionSchemaVersion` equals the owner stamp
+- public `publicProjectionDigest` equals the owner stamp
+- exact equality for the core source-owned fields that rules can compare
+  directly, including word, content hash/version, canonical length,
+  compositional fields, and start position
+- a matching hash claim after the transaction
+
+For a public document create or update, rules must require the matching owner
+document after the transaction, public visibility, matching stamps, and the
+same core field checks.
+
+For unpublish, soft delete, or delete, rules must require the public document
+and owned hash claim to be absent after the transaction. A hash claim:
+
+- is publicly readable
+- may be created only by a full user for a matching owner/public transaction
+- may not be updated
+- may be deleted only by its owner as part of a proven unpublish, delete, or
+  hash change, or by Admin
+
+Rules cannot recompute a SHA-256 projection digest. Matching digest stamps are
+an accidental-drift guard, not proof against a malicious owner writing the same
+false digest twice. Direct equality checks protect the critical copied fields;
+the shared builder and audit protect the full projection.
+
+Use `diff().affectedKeys()` on owner updates. Notes and other fields outside the
+public projection may update without rewriting the mirror. Any
+public-projection source key, visibility, or public stamp change requires the
+paired transaction.
+
+Firestore permits 20 document-access calls for an atomic multi-document
+operation and 10 for each individual write evaluation. Do not choose a batch
+size by intuition. Add emulator tests that exercise the full transaction and
+measure the accepted shape before setting any bulk limit.
+
+### 10. Keep public artifacts outside the core transaction
+
+`publicHandPaths` and `publicSoloProps` are independently discoverable indexes.
+They are not needed to render a self-contained `publicSequences` document and
+can expand to a variable number of writes.
+
+Move their existing projection logic to
+`src/lib/features/library/services/public-artifact-projector.ts`. That module
+has one job: idempotently project independently discoverable artifacts after a
+public sequence commit. Add those indexes to the audit and repair path, and
+never let their failure roll back or invalidate a correct public sequence. Do
+not describe them as atomically consistent with the owner sequence.
+
+This is a deliberate boundary, not a hidden follow-up write.
+
+## Shortcode correction
+
+### Mint path
+
+Change the order in `ShortCodeManager.allocateCode`:
+
+1. Produce the self-contained encoded payload.
+2. Decode or use the exact steps that will be written.
+3. Run strict word derivation against those payload steps.
+4. Reject incomplete derivation.
+5. Calculate `encoderHash`.
+6. Write the shortcode and `shortcodeHashes` claim in the existing transaction.
+
+Add first-class fields:
+
+```ts
+payloadWord: string
+payloadStepCount: number
+payloadSchemaVersion: number
+sourceSequenceId?: string
+sourceProjectionRevision?: number
+```
+
+Keep `sequence` and `sequenceName` as compatibility aliases during the reader
+migration. New code writes both aliases from `payloadWord`. Readers prefer
+`payloadWord`, then the legacy fields, and may re-derive from payload when the
+record is old.
+
+Do not use `sequence.word || deriveWordFromBeats(...)`. The payload is the
+authority even when `sequence.word` is non-empty.
+
+### Repair path
+
+Extend `scripts/migrations/backfill-shortcode-words.ts`; do not add a parallel
+shortcode migration.
+
+The script must:
+
+- initialize Admin Firestore for both dry-run and apply
+- stop using the client query path whose
+  `db.collection(...).select is not a function` failure currently breaks the
+  default dry run
+- decode `encoded`, falling back to `sequenceData.steps`
+- derive `{ word, complete, missingStepIndexes, stepCount }` through the shared
+  strict API
+- compare the payload-derived word to `payloadWord`, `sequenceName`, and
+  `sequence`
+- classify historical payload versions separately from stale mutable labels
+- update labels only when derivation is complete
+- quarantine or report incomplete payloads without inventing a word
+- preserve scan counts, encoded payloads, ownership, print/deck attribution,
+  and timestamps
+
+`VOJT` and `Z3WC` receive their own payload-derived labels. They do not receive
+the current 12-beat public word. The four automatic-name records are updated
+only if their own payload becomes completely derivable after the canonical
+decoder runs.
+
+## Corpus repair migration
+
+Add
+`scripts/migrations/reconcile-sequence-public-projections.ts`.
+
+A new script is justified here because `rehash-content-v2.ts` repairs one hash
+basis and `audit-sequence-cruft.ts` is read-only. This migration must coordinate
+owner, public, and claim documents transactionally. It must reuse the normalizer,
+projection builder, Admin initialization, and existing migration CLI patterns.
+
+### Command behavior
+
+- dry-run by default
+- require `TKA_ADMIN=1` and `--apply` for writes
+- support `--limit`, `--after`, and one-sequence targeting
+- write a timestamped JSON manifest with every classification and proposed
+  field change
+- use deterministic ordering by owner id and sequence id
+- record source update time or `_version` during scan
+- skip and report any record that changed before apply
+- be idempotent; a second apply produces zero writes
+- never delete a duplicate public sequence automatically
+
+### Read and classification phase
+
+For every public document:
+
+1. Validate `sourceRef` shape.
+2. Load the owner source.
+3. Confirm owner id and public visibility.
+4. Hydrate and normalize the owner source.
+5. Build the expected public projection.
+6. Compare all source-owned public fields.
+7. Validate projection stamps and hash claim.
+8. Classify the result.
+
+Classifications:
+
+| Class | Action |
+| --- | --- |
+| `IN_SYNC` | No write. |
+| `SAFE_REPROJECT` | Transactionally normalize source, write public projection, and create or repair its claim. |
+| `EXPECTED_LOOP_REPRESENTATION` | Canonicalize to the expanded exact word only when all beats are complete; do not count the old prefix form as motion corruption. |
+| `ORPHAN_PUBLIC` | Report for review; do not guess an owner. |
+| `PRIVATE_SOURCE_WITH_PUBLIC_MIRROR` | Remove only after update-time recheck and manifest review. |
+| `DUPLICATE_HASH_CONFLICT` | Report every competing id; do not choose a winner automatically. |
+| `INCOMPLETE_CANONICAL_DATA` | Quarantine for manual repair; do not persist a partial word. |
+| `SOURCE_CHANGED_DURING_RUN` | Skip and retry in a later run. |
+
+### Apply phase
+
+Each safe record uses one Admin transaction to:
+
+- re-read the source, public document, and relevant claims
+- verify the scan precondition
+- write normalized source fields
+- preserve source fields outside normalization
+- preserve public engagement and original `publishedAt`
+- write the complete projection
+- create the new claim
+- delete an obsolete owned claim when required
+
+Use parallel reads and bounded concurrency for the scan. Use per-record
+transactions for parity and claims. Firestore's server `BulkWriter` is suitable
+only for unrelated cleanup writes that do not participate in the invariant.
+Do not place the whole corpus in one batch.
+
+### Known live repair targets
+
+The first dry run must explicitly account for:
+
+- seven incomplete public projections
+- three zero public sequence lengths
+- ten blank source words with automatic names
+- one source word that contradicts source steps
+- 37 public/source content-hash drifts
+- missing hash and projection-schema fields
+- public projections missing Browse-consumed fields that exist on their source
+- duplicate content-hash groups
+- stale or missing `gridMode` only where canonical derivation is conclusive
+
+Invalid start-position letters and the sentinel timestamp require a separate
+classification. Repair them only if the canonical sequence data proves the
+correct value. Otherwise report them as manual.
+
+After apply, a fresh dry run must report zero actionable parity drift.
+
+## Continuous audit
+
+Extend `scripts/diagnostics/audit-sequence-cruft.ts` or factor its comparison
+engine into a shared script module used by both the diagnostic and migration.
+Do not build a second scanner with different definitions.
+
+The audit must check:
+
+- owner/public existence and visibility parity
+- source path and owner parity
+- projection schema, revision, and digest parity
+- strict word completeness and exact-word parity
+- canonical sequence length
+- composition self-containment
+- content hash and hash version
+- hash-claim ownership and uniqueness
+- public field ownership violations, including reset counters or
+  `publishedAt`
+- required Browse/search fields such as `intendedWord`, `reversalPattern`, and
+  `componentDomains`
+- shortcode payload completeness and payload-label parity
+- public artifact index drift as a separate, non-blocking category
+
+Output:
+
+- human-readable summary
+- machine-readable JSON
+- non-zero exit only for actionable invariant violations
+- separate counts for expected LOOP representation and snapshot lag
+
+Run it after every migration and as a scheduled read-only Admin job. Alert on
+new actionable drift. Do not use a Firestore trigger as the primary projector.
+
+Firestore event triggers are delivered at least once and do not guarantee
+ordering. An idempotent trigger can be a repair backstop, but it cannot provide
+the same commit-level guarantee as the client transaction.
+
+## Test strategy
+
+The silent bugs here are plausible persisted data that looks valid until a
+specific reader combines fields. Tests must target those boundaries.
+
+### Unit tests
+
+Add or extend tests for:
+
+- 12 beats with one missing letter return `complete: false`, not an 11-token
+  success
+- the historical Fuse sequence derives `IIECCKIIECCK`, never `GI`
+- `stepPairings` are used when steps are absent
+- incomplete steps do not fall back to complete-looking `stepPairings`
+- `name` and automatic titles never become `word`
+- a custom display name survives normalization as display metadata
+- a composition-only source hydrates to the correct exact word, length,
+  composition, and V2 content hash
+- LOOP seed input persists the complete expanded word while display
+  simplification remains unchanged
+- public projection digest is deterministic
+- projection refresh preserves engagement counters and `publishedAt`
+- projection includes `gridMode`, start position, and all compositional fields
+- intended-word search, reversal-pattern filtering, and component-domain
+  display survive a public round trip
+- creator intent and start position reach hydrated public viewer data
+- legacy public documents may use the temporary source fallback, while an
+  invalid schema-2 document is reported and never hidden by fallback
+- shortcode label is derived from the encoded payload
+- editing a linked source does not relabel an existing shortcode
+- incomplete shortcode payloads cannot mint
+
+Use:
+
+- `src/lib/features/fuse/services/__tests__/fused-word-derivation.test.ts`
+- the existing canonical-JSON tests
+- existing content-hash V2 fixtures
+- existing shortcode transaction tests
+
+### Repository transaction tests
+
+Add focused `PublicSequencePersister` transaction tests and replace the current
+owner/profile-only repository assertion with tests proving:
+
+- public create writes owner, profile count, public projection, and claim in one
+  transaction
+- any transaction failure writes none of them
+- two publishers racing for the same hash produce one claim and one typed
+  duplicate
+- re-publishing the same sequence repairs its projection without a duplicate
+  error
+- public metadata edits refresh the mirror
+- notes-only edits do not increment projection revision
+- thumbnail completion patches owner and public together
+- unpublish removes mirror and claim with the visibility change
+- delete removes owner, mirror, and claim with the count decrement
+- batch visibility, tag, and delete operations use the same per-sequence
+  invariant and report mixed results by id
+- soft delete removes projection and claim; restore either republishes
+  atomically or restores private with the typed conflict result
+- conflict resolution cannot resave a public owner without its projection
+- retrying a committed operation is idempotent
+- transaction callback retries do not leak state or duplicate cache effects
+
+### Firestore rules emulator tests
+
+Extend
+`tests/integration/firestore-rules/firestore.rules.test.ts`, using the existing
+`npm run test:rules` harness.
+
+Prove the rules:
+
+- reject a public owner write without its mirror
+- reject a mirror write without its owner
+- reject mismatched owner id or `sourceRef`
+- reject revision, schema, digest, word, hash, length, or composition mismatch
+- reject a missing or hijacked hash claim
+- reject claim updates
+- accept one valid publish transaction
+- accept a notes-only owner update without a mirror write
+- accept valid thumbnail, unpublish, and delete transactions
+- stay within Firestore document-access limits for every accepted operation
+
+### Migration fixture tests
+
+Build a small fixture corpus containing every classification:
+
+- missing public composition
+- zero public length
+- missing source word
+- wrong source word
+- hash drift in each direction
+- LOOP seed/expanded equivalence
+- orphan and private-source mirror
+- duplicate hash conflict
+- source changed after scan
+- complete historical shortcode payload
+- stale shortcode label
+- incomplete shortcode payload
+
+Prove:
+
+- dry-run performs no writes
+- apply repairs only safe records
+- counters and publication time survive
+- conflicts and incomplete records remain untouched and reported
+- a second apply has zero changes
+- post-apply audit has zero actionable drift for repaired fixtures
+
+## Rollout
+
+### Phase 1: pure functions and schemas
+
+Land strict derivation, normalization, canonical public projection, digest,
+wire schema, and unit tests. Keep current runtime writes during this phase.
+Readers must tolerate both old and new public documents.
+
+### Phase 2: dual-compatible writer
+
+Land the transaction writer, hash claims, typed retry outcomes, and emulator
+tests. Deploy rules that allow legacy documents temporarily while enforcing the
+new transaction shape for documents carrying
+`publicProjectionSchemaVersion: 2`.
+
+New clients write schema 2. Old cached clients can still write legacy shape
+during the migration window.
+
+### Phase 3: dry-run and repair
+
+1. Export or otherwise retain a recoverable production snapshot.
+2. Run the sequence/public migration in dry-run mode.
+3. Review the JSON manifest, especially duplicate and incomplete classes.
+4. Apply only `SAFE_REPROJECT` records.
+5. Run the shortcode payload-label dry run.
+6. Apply complete shortcode label repairs.
+7. Run both dry runs again and retain the zero-actionable reports.
+8. Regenerate the committed static snapshots with
+   `scripts/export-static-snapshot.cjs`.
+9. Run or wait for the official R2 export and verify declared count, actual
+   count, export time, and repaired canary records against Firestore.
+
+Resolve every `DUPLICATE_HASH_CONFLICT` through explicit content review before
+phase 4. The migration does not choose which published record survives, but the
+strict claim rules cannot be enabled while two public documents still require
+the same claim.
+
+### Phase 4: tighten rules
+
+After the migrated corpus and new writer have remained clean through the audit
+window:
+
+- require projection schema 2 for public writes
+- require owner/public/claim transaction parity
+- remove the legacy public write allowance
+- leave legacy reads tolerant
+
+An old cached client will then fail a public cloud sync instead of creating
+drift. The UI must identify the client-version failure and require a reload.
+Private offline saves remain available.
+
+### Phase 5: scheduled audit
+
+Enable the read-only parity audit and alerting. Repair remains an explicit Admin
+operation with a manifest; the scheduled job does not mutate production.
+
+## Rollback
+
+- Projection schema 2 fields are additive. Old readers continue to use the
+  existing fields.
+- If new rules block valid traffic, restore the dual-compatible rules first.
+- Disable the transaction writer only after rules accept the old path.
+- Hash claims may remain during rollback; they are additive indexes.
+- Migration writes are recoverable from the pre-run snapshot and JSON manifest.
+- Do not roll back by deleting public documents or claims in bulk.
+- Shortcode payloads never change during label repair, so labels can be restored
+  from the manifest without changing scan behavior.
+
+## Rejected alternatives
+
+### Keep the two writes and add retries
+
+Retries reduce the duration of drift but do not remove the state. A permanent
+auth, validation, or client-shutdown failure still leaves one committed side.
+
+### Make a Firestore trigger the projector
+
+Firestore triggers have at-least-once delivery and no ordering guarantee.
+Correct idempotency can make a trigger converge eventually, but owner and
+public documents are still inconsistent between commits and may be processed
+out of order.
+
+### Copy shortcode labels from the current public sequence
+
+A shortcode is an immutable payload snapshot. Fourteen of the sixteen current
+label/public differences are historical payload versions. Relabeling by
+current sequence id would make their printed label disagree with their encoded
+motion.
+
+### Continue deduplication with a query
+
+A query followed by a write has a race. A content-addressed claim document
+turns uniqueness into transaction contention with one winner.
+
+### Persist shortened LOOP words
+
+That makes `word` depend on display policy and breaks exact beat-to-token
+validation. Persist the expanded exact word and simplify only in the view.
+
+### Repair the corpus with one large batch
+
+It would exceed practical write and rule-access limits, overwrite records that
+change during the run, and cannot safely resolve per-hash contention.
+
+## Implementation file map
+
+### Modify
+
+- `src/lib/shared/foundation/services/word-deriver.ts`
+- `src/lib/shared/foundation/domain/models/public-sequence-index.ts`
+- `src/lib/shared/foundation/utils/canonical-json.ts` or a neighboring shared
+  hash utility, to expose canonical digest support without another private
+  implementation
+- `src/lib/shared/library/services/library-repository.ts`
+- `src/lib/shared/library/services/library-batch-operations.ts`
+- `src/lib/shared/library/services/library-recycle-bin.ts`
+- `src/lib/features/library/services/library-save-service.ts`
+- `src/lib/features/library/services/library-sync-retry.ts`
+- `src/lib/shared/browse/services/public-sequences-loader.ts`
+- `src/lib/shared/library/services/collection-firestore-mapper.ts`
+- `src/lib/shared/qr/services/short-code-manager.ts`
+- `src/lib/shared/qr/services/types.ts`
+- `scripts/migrations/backfill-shortcode-words.ts`
+- `scripts/diagnostics/audit-sequence-cruft.ts`
+- `firestore.rules`
+- `tests/integration/firestore-rules/firestore.rules.test.ts`
+- `tests/unit/library/library-repository-save-atomic.test.ts`
+- affected unit and repository transaction tests
+- `docs/architecture/save-paths.md`
+
+`docs/architecture/save-paths.md` currently says the UI persists through
+`SequencePersister`; the live Library save path calls `LibraryRepository`.
+Update the document with the implemented transaction graph.
+
+### Add
+
+- `src/lib/shared/library/services/sequence-persistence-normalizer.ts`
+- `src/lib/shared/library/services/public-sequence-projection.ts`
+- `src/lib/shared/library/services/public-sequence-persister.ts`
+- `src/lib/features/library/services/public-projection-preparer.ts`
+- `src/lib/features/library/services/public-artifact-projector.ts`
+- `src/lib/shared/library/services/create-lazy-public-projection-dependencies.ts`
+  for preparer, artifact-projector, and post-commit Browse callbacks
+- a dedicated public projection wire schema beside the canonical public model
+- `scripts/migrations/reconcile-sequence-public-projections.ts`
+- focused unit, repository, rules, and migration tests
+
+### Delete after import proof
+
+- `src/lib/features/library/domain/models/public-sequence-index.ts`
+- `src/lib/features/library/services/public-index-syncer.ts`
+- `src/lib/features/library/services/library-batch-operations.ts`
+- `src/lib/features/library/services/library-recycle-bin.ts`
+- `src/lib/shared/library/services/IPublicIndexSyncer.ts`
+- `src/lib/shared/library/services/create-lazy-public-index-syncer.ts`
+
+## Acceptance criteria
+
+The repair is complete only when all of the following are proven:
+
+1. A public write cannot commit an owner sequence without its matching public
+   projection and hash claim.
+2. A public projection cannot commit without the matching public owner source.
+3. Unpublish and delete cannot leave a public projection or owned claim.
+4. A composition-only sequence publishes with complete composition, correct
+   length, exact word, and active-version content hash.
+5. A missing beat token blocks persistence and shortcode minting.
+6. `name` never becomes `word`.
+7. A public metadata or thumbnail update cannot leave a stale mirror.
+8. Projection refresh does not reset engagement or `publishedAt`.
+9. Concurrent duplicate publication produces one claim and no duplicate public
+   document.
+10. Every shortcode label agrees with its own immutable payload or is
+    explicitly classified as incomplete.
+11. The production repair's second dry run reports zero actionable
+    source/public/claim drift.
+12. `npm run test:rules` passes the new transaction-shape suite.
+13. Focused unit and repository transaction tests pass.
+14. A runtime canary proves publish, metadata edit, thumbnail completion,
+    unpublish, and delete parity by querying owner, public, and claim documents
+    after each operation.
+15. Batch visibility, batch tags, batch delete, conflict resolution, soft
+    delete, restore, purge, and empty-bin tests prove that no bypass can write a
+    public owner state without the matching projection state.
+16. Static and R2 snapshot verification shows the repaired public projection
+    data and expected shortcode payloads, with no unexplained count gap.
+
+## Review corrections (Opus 5, 2026-07-25)
+
+The seven questions raised for review, answered.
+
+1. **Keep `publicProjectionRevision` separate from `_version`.** Agreed as
+   proposed. `_version` is optimistic concurrency on the owner document;
+   revision is projection freshness. Merging them makes every notes-only edit
+   rewrite the Browse mirror and burn a projection write, for the price of one
+   saved field.
+2. **The direct-equality set is sufficient; the digest is correctly a
+   drift stamp.** Rules cannot recompute SHA-256, and the threat model here is
+   bugs rather than a malicious owner — an owner can already write arbitrary
+   public content about their own sequence today. What matters is that the
+   equality set covers the fields that actually broke: `word`, `contentHash`,
+   `contentHashVersion`, canonical length, compositional fields, start position.
+   It does.
+3. **One bypass was missing.** `LoopLabelsFirebaseRepository.deleteSequenceFromDatabase`
+   writes the collection with no owner-document change at all. Added to
+   section 7 along with `attachThumbnail`. The rest of the section 7 list
+   matches the live shared implementations exactly; the feature-layer copies of
+   `library-batch-operations.ts` and `library-recycle-bin.ts` are confirmed to
+   have zero importers.
+4. **The access-call budget is not a real risk.** The core transaction writes
+   at most four documents, and the mutually-referential `getAfter()` checks come
+   to roughly six calls against a limit of twenty for an atomic operation. Prove
+   it in the emulator as planned, but do not restructure the transaction in
+   anticipation of a limit it is nowhere near.
+5. **Source fallback becomes legacy-only, as proposed.** Keep `sourceRef` for
+   attribution and Admin diagnostics. Note that `loadFullSequenceData` also
+   backs deep-link resolution, so retire the fallback by document age, not by
+   deleting the code path.
+6. **Artifacts and profile fanout are correctly outside the core transaction.**
+   The artifact indexes are content-addressed, written with `merge: true`,
+   shared across sequences, and unbounded in count. Including them would make
+   the transaction size data-dependent for no consistency gain.
+7. **Confirmed as net-new work.** `library-sync-retry.ts` has no failure
+   classification at all today — it retries everything once per trigger. The
+   typed permanent-versus-transient split must be built, not adjusted.
+
+### Additional corrections folded into the body
+
+- `publishedAt` is unconditionally overwritten on every sync, not merely at
+  risk. See section 4.
+- `LibrarySequenceWriteData` does not exist. See section 2.
+- The field-consumer ledger found three further live defects
+  (`animatedSequenceUrl`, `gridMode`, and the admin `views`/`creatorName`/
+  `creatorId` trio) and the two-read-path trap. See the ledger section.
+
+### Sequencing note
+
+The transaction, claim, and rules work prevents future drift but repairs nothing
+a user can see today. The field-loss defects — dead Grid Mode and reversal
+filters, intended-word search, dropped `startPosition` and `creatorIntent`,
+mirrors that never refresh after an edit — are all fixable by pointing the
+existing `PublicIndexSyncer` at the phase 1 projection builder, well before the
+transaction work lands. Phase 1 already permits current runtime writes to stay,
+so this is compatible with the rollout as written and is the recommended order.
+
+## Primary references
+
+- [Firestore transactions and batched writes](https://firebase.google.com/docs/firestore/manage-data/transactions)
+- [Firestore security-rule conditions and `getAfter()`](https://firebase.google.com/docs/firestore/security/rules-conditions)
+- [Firestore trigger delivery and ordering](https://firebase.google.com/docs/functions/firestore-events)
+- [Firestore rules emulator setup](https://firebase.google.com/docs/rules/emulator-setup)
+- [Firestore rules unit testing](https://firebase.google.com/docs/firestore/security/test-rules-emulator)
+- [Firestore best practices for large writes](https://docs.cloud.google.com/firestore/native/docs/best-practices)
+- [Firestore retry and idempotency guidance](https://firebase.google.com/docs/functions/retries)
