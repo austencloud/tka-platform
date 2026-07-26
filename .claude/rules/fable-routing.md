@@ -47,6 +47,36 @@ boilerplate). Its leverage is holding the whole picture; spend it there.
    without evidence are rejected per `verification-protocol.md`.
 3. Commit with explicit pathspec per `commit-only-your-own-changes.md`.
 
+## Workflow Cost Discipline (ultracode included)
+
+Lessons from the 2026-07-25 Creators design run (2.8M subagent tokens + two
+aborted runs). These bind every Workflow invocation, including ultracode
+sessions — ultracode licenses orchestration, not waste.
+
+1. **Census before launch.** Any workflow whose plan depends on data state
+   (Firestore counts, file inventories, catalog sizes) runs the cheap query
+   FIRST, in the main loop. Both aborted runs died on wrong census
+   assumptions a 30-second query would have caught.
+2. **Shared context by file path, never by paste.** Write the recon
+   digest/spec once to disk; every downstream agent prompt says
+   `Read <path>` instead of embedding it. The 2.8M was mostly one digest
+   pasted into 8 prompts plus judges re-reading all 4 full concepts.
+   Downstream agents read the digest and ONLY the artifacts they judge —
+   never "all of the above" by default.
+3. **Explicit `model` + `effort` on every workflow `agent()` call** — same
+   rule as Agent dispatches above. `haiku`/`effort: low` for greps and
+   mechanical stages, `sonnet` for implementation, session model only for
+   the single hardest judge/synthesis stage. Spot-check one dispatch's
+   actual model before a large fan-out — subagent model routing has
+   resolved to the parent model in the wild
+   (anthropics/claude-code#43869).
+4. **Panels scale to the decision, not the pattern library.** Judge panels,
+   N-concept tournaments, and adversarial verify passes are for wide-open
+   design decisions only. Executing a written spec/design doc = one Sonnet
+   executor per phase, zero fan-out. Default sizes when a panel IS
+   warranted: 2 concepts and one judge pass, not 4 concepts × 3 lenses
+   each re-reading everything.
+
 ## Ledger Discipline
 
 Any multi-wave dispatch keeps a checkbox ledger (`- [ ]` per requirement) in the
