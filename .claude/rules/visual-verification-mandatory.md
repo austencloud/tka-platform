@@ -87,6 +87,39 @@ Expect Chrome's OWN UI (tabs, URL bar) to render at half physical size in that
 window — that is the flag working, not a bug, and it is worth saying so out loud
 if Austen sees the window, because it looks broken.
 
+## Which Browser Tool (settled 2026-07-26)
+
+**Verifying your own diff uses Chrome DevTools MCP. Always.** Claude in Chrome
+(`mcp__claude-in-chrome__*`) is not the tool for this job, and the difference is
+in the tool schemas, not in taste:
+
+| | Chrome DevTools MCP | Claude in Chrome |
+|---|---|---|
+| Screenshot cost | `format: "webp", quality: 70` — ~4x cheaper than PNG | `computer` screenshot takes **no format/quality params**. Full fidelity, every frame. |
+| Viewport | `resize_page(w, h)` sets the **page** dimensions — 3840×2160 is a real 3840 CSS viewport | `resize_window(w, h)` sizes the **OS window**; tab strip and URL bar eat the top, and it cannot exceed the physical screen |
+| Cheap measurement | `evaluate_script` returns JSON — ten element widths for a rounding error, no image | built around visual coordinates |
+| Session | your own instance, `--user-data-dir=C:\Users\Austen\.claude\chrome-profile` | drives Austen's signed-in Chrome |
+| Scoping | `uid` screenshots one element; `filePath` writes the image to disk instead of into context | full-viewport frames only |
+
+Claude in Chrome is for *acting* in Austen's live browser — external dashboards
+(Cloudflare, Firebase, Stripe, PayPal) where his signed-in session is the whole
+point, per global `CLAUDE.md` → Web Browsing. It stays there.
+
+**The canonical loop:**
+
+1. Launch own Chrome with `--force-device-scale-factor=1` (see the note above —
+   required to reach a real 3840 viewport).
+2. `resize_page` per viewport from the table above.
+3. `evaluate_script` returning measured numbers — control widths, column counts,
+   computed font sizes. Catches the 1765px-button class of bug precisely, for
+   near-zero tokens.
+4. `take_screenshot` `format: "webp", quality: 70` to judge composition, which
+   numbers cannot.
+5. Fix, reload, repeat until the frame is right.
+
+Measure to confirm arithmetic; screenshot to confirm composition. Neither
+replaces the other.
+
 ## What To Actually Look For
 
 Screenshotting and not reading the screenshot is the same as not screenshotting.
@@ -110,11 +143,10 @@ Every frame, check:
 
 ## Cost Is Not The Objection
 
-Use `take_screenshot` with `format: "webp", quality: 70`. Use
-`evaluate_script` returning measured numbers (element widths, column counts,
-computed font sizes) for cheap between-screenshot checks — a JSON of ten
-measurements costs a rounding error and catches width bugs precisely. Screenshot
-to confirm composition; measure to confirm arithmetic.
+The loop above is already the cheap one — webp/70 frames plus JSON measurement
+passes. Two more levers when a run gets frame-heavy: `uid` on `take_screenshot`
+to shoot one element instead of the page, and `filePath` on `take_screenshot` /
+`evaluate_script` to write output to disk instead of into context.
 
 One wrong-looking page costs Austen an hour and a round trip. A handful of webp
 frames costs less than the message asking whether to take them.
@@ -127,6 +159,11 @@ frames costs less than the message asking whether to take them.
 - Shipping any layout change without the 4K viewports (`4k-native-layout.md`).
 - Handing the user a screenshot request ("reload and send me a shot") in place of
   taking one — that is the exact loop this rule exists to end.
+- Using Claude in Chrome to verify your own diff, or driving Austen's
+  signed-in window for it. DevTools MCP, own instance.
+- Taking a screenshot without `format: "webp", quality: 70`.
+- A viewport sweep done with `resize_window` (OS window) instead of
+  `resize_page` (page dimensions) — the two are not the same size.
 - Delegating the visual judgment to a subagent or workflow that also cannot see
   the page. Design fan-outs produce documents, not pixels; build it yourself and
   look at it (`fable-routing.md` → Workflow Cost Discipline).
