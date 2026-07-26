@@ -32,7 +32,10 @@ export class MandalaOverlayCanvas {
 	private previousGuideCanvas: OffscreenCanvas | null = null;
 	private previousGuideCtx: OffscreenCanvasRenderingContext2D | null = null;
 	private hasPreviousGuideSnapshot = false;
-	private readonly guideFadeManager = new Canvas2DFadeManager(DURATION.emphasis);
+	// A whole mandala dissolving into the next one is a major transition, not a
+	// module switch — at `emphasis` the old shape was gone before the eye had
+	// followed it across.
+	private readonly guideFadeManager = new Canvas2DFadeManager(DURATION.dramatic);
 	private blueMaskCanvas: OffscreenCanvas | null = null;
 	private blueMaskCtx: OffscreenCanvasRenderingContext2D | null = null;
 	private redMaskCanvas: OffscreenCanvas | null = null;

@@ -35,10 +35,28 @@ export interface PropTipConfig {
 
 // ─── Staff Family ─────────────────────────────────────────────────────────────
 
+// Bilateral — two mirror-symmetric ends, each ~126 from the pivot (the 252.8
+// pictograph half-width), so the staff spans ~253 tip to tip.
 const STAFF_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: -135, dy: 0 },
-    { dx: 135, dy: 0 },
+    { dx: -126.4, dy: 0 },
+    { dx: 126.4, dy: 0 },
+  ],
+};
+
+// Bilateral. Sits slightly inside its viewBox edge, the same proportion it held
+// before the pictograph convergence.
+const SIMPLE_STAFF_TIP_POINTS: PropTipConfig = {
+  points: [
+    { dx: -113.76, dy: 0 },
+    { dx: 113.76, dy: 0 },
+  ],
+};
+
+const STAFF_V2_TIP_POINTS: PropTipConfig = {
+  points: [
+    { dx: -112.5, dy: 0 },
+    { dx: 112.5, dy: 0 },
   ],
 };
 
@@ -53,17 +71,18 @@ const BIGSTAFF_TIP_POINTS: PropTipConfig = {
 
 // The regular club is center-pivoted inside a 258.67-unit viewBox. Using its
 // exact half-width keeps the mandala and live trails on the resized visible tip.
+// This is the reach every other regular prop is tuned against.
 const CLUB_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 129.335, dy: 0 }],
 };
 
 // Big club is bilateral — two mirror-symmetric ends (Knob / Bulb). Prop width is
-// 300.5 (PROP_DIMENSIONS), so each end sits ~150 from center. Matches the
+// 252 (PROP_DIMENSIONS), so each end sits ~126 from center. Matches the
 // bigchicken pattern and the TWO_ENDED_PROPS set in prop-tip-ends.ts.
 const BIGCLUB_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: -150, dy: 0 },
-    { dx: 150, dy: 0 },
+    { dx: -125.79, dy: 0 },
+    { dx: 125.79, dy: 0 },
   ],
 };
 
@@ -71,14 +90,13 @@ const BIGCLUB_TIP_POINTS: PropTipConfig = {
 
 const FAN_TIP_POINTS: PropTipConfig = {
   points: [
-    // Measured from the 300 x 239.4 animated fan SVG's centered viewBox.
-    // These sit on the five visible outer-rim/rib intersections rather than
-    // the older inset mandala trace points.
-    { dx: 84, dy: -118 },
-    { dx: 115, dy: -67 },
-    { dx: 150, dy: 0 },
-    { dx: 115, dy: 67 },
-    { dx: 84, dy: 118 },
+    // The five visible outer-rim/rib intersections, on the 260 x 207
+    // pictograph fan. The outer rib lands at 130 — the club's reach.
+    { dx: 72.8, dy: -102.03 },
+    { dx: 99.67, dy: -57.93 },
+    { dx: 130, dy: 0 },
+    { dx: 99.67, dy: 57.93 },
+    { dx: 72.8, dy: 102.03 },
   ],
 };
 
@@ -96,9 +114,9 @@ const BIGFAN_TIP_POINTS: PropTipConfig = {
 
 const TRIAD_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 130, dy: 0 },
-    { dx: -65, dy: -113 },
-    { dx: -65, dy: 113 },
+    { dx: 107.8, dy: 0 },
+    { dx: -53.9, dy: -93.7 },
+    { dx: -53.9, dy: 93.7 },
   ],
 };
 
@@ -114,11 +132,11 @@ const BIGTRIAD_TIP_POINTS: PropTipConfig = {
 
 const MINIHOOP_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 40, dy: -80 },
-    { dx: 120, dy: -25 },
-    { dx: 120, dy: 25 },
-    { dx: 40, dy: 80 },
-    { dx: -30, dy: 0 },
+    { dx: 34.28, dy: -68.63 },
+    { dx: 102.85, dy: -21.45 },
+    { dx: 102.85, dy: 21.45 },
+    { dx: 34.28, dy: 68.63 },
+    { dx: -25.71, dy: 0 },
   ],
 };
 
@@ -136,12 +154,13 @@ const BIGHOOP_TIP_POINTS: PropTipConfig = {
 
 const BUUGENG_TIP_POINTS: PropTipConfig = {
   points: [
-    // The animated SVG is 300 x 155.26. Its two narrow terminals reach the
+    // The pictograph SVG is 262.6 x 135.9. Its two narrow terminals reach the
     // horizontal viewBox edges within four units of the centerline. Centered
     // edge anchors stay on those terminals under either chirality flip; the
-    // old diagonal offsets landed on the inner curves instead.
-    { dx: 150, dy: 0 },
-    { dx: -150, dy: 0 },
+    // old diagonal offsets landed on the inner curves instead. Bilateral, so
+    // ~131 each way — the club's reach mirrored, a 262 span.
+    { dx: 131.3, dy: 0 },
+    { dx: -131.3, dy: 0 },
   ],
 };
 
@@ -155,9 +174,9 @@ const BIGBUUGENG_TIP_POINTS: PropTipConfig = {
 
 const TRIGENG_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 130, dy: -60 },
+    { dx: 108.33, dy: -50.01 },
     { dx: 0, dy: 0 },
-    { dx: -130, dy: 60 },
+    { dx: -108.33, dy: 50.01 },
   ],
 };
 
@@ -171,6 +190,16 @@ const SWORD_TIP_POINTS: PropTipConfig = {
 
 const TRIQUETRA_TIP_POINTS: PropTipConfig = {
   points: [
+    { dx: 125.8, dy: 0 },
+    { dx: -62.9, dy: -109.34 },
+    { dx: -62.9, dy: 109.34 },
+  ],
+};
+
+// triquetra2 stays on the animated artwork (the pictograph file is a different
+// shape, not a rescale), so it keeps the original 300-box offsets.
+const TRIQUETRA2_TIP_POINTS: PropTipConfig = {
+  points: [
     { dx: 130, dy: 0 },
     { dx: -65, dy: -113 },
     { dx: -65, dy: 113 },
@@ -182,7 +211,7 @@ const TRIQUETRA_TIP_POINTS: PropTipConfig = {
 // Regular (small) chicken is single-ended — one weighted tip at the outer
 // (+dx) end, matching the club/sword single-tip convention.
 const CHICKEN_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 150, dy: 0 }],
+  points: [{ dx: 162.5, dy: 0 }],
 };
 
 // Big chicken is bilateral — two mirror-symmetric ends. (See the
@@ -190,15 +219,15 @@ const CHICKEN_TIP_POINTS: PropTipConfig = {
 // chicken is not.)
 const BIGCHICKEN_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: -150, dy: 0 },
-    { dx: 150, dy: 0 },
+    { dx: -126.4, dy: 0 },
+    { dx: 126.4, dy: 0 },
   ],
 };
 
 // ─── Guitar Family ────────────────────────────────────────────────────────────
 
 const GUITAR_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 290, dy: 0 }],
+  points: [{ dx: 290.78, dy: 0 }],
 };
 
 const UKULELE_TIP_POINTS: PropTipConfig = {
@@ -229,8 +258,8 @@ const BIGDOUBLESTAR_TIP_POINTS: PropTipConfig = {
 
 const EIGHTRINGS_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 75, dy: -65 },
-    { dx: -75, dy: -65 },
+    { dx: 64.33, dy: -55.75 },
+    { dx: -64.32, dy: -55.75 },
   ],
 };
 
@@ -245,10 +274,10 @@ const BIGEIGHTRINGS_TIP_POINTS: PropTipConfig = {
 
 const QUIAD_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 125, dy: 0 },
-    { dx: 0, dy: -125 },
-    { dx: -125, dy: 0 },
-    { dx: 0, dy: 125 },
+    { dx: 104.17, dy: 0 },
+    { dx: 0, dy: -104.17 },
+    { dx: -104.17, dy: 0 },
+    { dx: 0, dy: 104.17 },
   ],
 };
 
@@ -298,11 +327,12 @@ export function setTipPointOverrideProvider(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
-  // Staff family
+  // Staff family — one config each now: the three regular staves scaled onto
+  // the pictograph family by different factors, so they can't share a table.
   staff: STAFF_TIP_POINTS,
-  simple_staff: STAFF_TIP_POINTS,
+  simple_staff: SIMPLE_STAFF_TIP_POINTS,
   bigstaff: BIGSTAFF_TIP_POINTS,
-  staff_v2: STAFF_TIP_POINTS,
+  staff_v2: STAFF_V2_TIP_POINTS,
 
   // Club family
   club: CLUB_TIP_POINTS,
@@ -330,7 +360,7 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
 
   // Triquetra family
   triquetra: TRIQUETRA_TIP_POINTS,
-  triquetra2: TRIQUETRA_TIP_POINTS,
+  triquetra2: TRIQUETRA2_TIP_POINTS,
 
   // Sword
   sword: SWORD_TIP_POINTS,

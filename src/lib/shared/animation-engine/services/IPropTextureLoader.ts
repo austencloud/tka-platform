@@ -19,55 +19,64 @@ export interface PropDimensions {
 
 /**
  * Prop dimensions lookup by prop type
- * These are the exact viewBox dimensions from each prop SVG in /images/props/animated/
+ *
+ * The exact viewBox dimensions of the sprite the animation canvas actually
+ * fetches — /images/props/pictograph/ for everything except the animated-only
+ * carve-outs (torch, bigtorch, triquetra2, sword variants; see
+ * resolvePropSvgPath in svg-generator.ts).
+ *
  * Used to display correct dimensions before async texture loading completes.
+ * The loader overwrites these with the fetched viewBox once the texture lands,
+ * so a stale entry here shows up as a size pop on first paint.
  */
 export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // Staff family
-  staff: { width: 270, height: 83.1 },
-  simple_staff: { width: 270, height: 83.1 },
+  staff: { width: 252.8, height: 77.8 },
+  simple_staff: { width: 252.8, height: 77.8 },
   bigstaff: { width: 600, height: 54.5 },
-  staff_v2: { width: 300, height: 48.6 },
+  staff_v2: { width: 250, height: 40.5 },
 
   // Club family
   // The regular club stops short of the grid center so its visible end, trails,
   // and mandala all share the same ~130-unit reach.
   club: { width: 258.67, height: 34.17 },
-  bigclub: { width: 300.5, height: 77.2 },
+  bigclub: { width: 252, height: 65 },
 
   // Fan family
-  fan: { width: 300, height: 239.4 },
-  bigfan: { width: 600, height: 567.4 },
+  fan: { width: 260, height: 207 },
+  bigfan: { width: 600, height: 566.9 },
 
   // Triad family
-  triad: { width: 300, height: 264.22 },
+  triad: { width: 248.76, height: 219.09 },
   bigtriad: { width: 600, height: 523.5 },
 
   // Hoop family
-  minihoop: { width: 300.9, height: 161.1 },
+  minihoop: { width: 257.9, height: 138.2 },
   bighoop: { width: 600, height: 300 },
 
   // Buugeng family
-  buugeng: { width: 300, height: 155.26 },
+  buugeng: { width: 262.6, height: 135.9 },
   bigbuugeng: { width: 600, height: 293.1 },
-  trigeng: { width: 300, height: 284 }, // matches animated/trigeng.svg viewBox
+  trigeng: { width: 250, height: 236.7 },
 
   // Hand - matches animated/hand.svg viewBox (same as static version)
   hand: { width: 75, height: 100 },
 
   // Triquetra family
-  triquetra: { width: 300, height: 175.27 },
+  // triquetra2 is an animated-only carve-out — the pictograph file holds
+  // different artwork (170x170), not a rescale of this one.
+  triquetra: { width: 290.3, height: 169.6 },
   triquetra2: { width: 300, height: 175.32 },
 
   // Sword
-  sword: { width: 578.8, height: 64 },
+  sword: { width: 572.3, height: 64 },
 
   // Chicken family
-  chicken: { width: 300, height: 28 },
-  bigchicken: { width: 300, height: 52.7 },
+  chicken: { width: 325, height: 30.3 },
+  bigchicken: { width: 252.8, height: 44.4 },
 
   // Guitar family
-  guitar: { width: 593.4, height: 168 },
+  guitar: { width: 595, height: 170 },
   ukulele: { width: 350, height: 71.5 },
 
   // Doublestar family
@@ -75,11 +84,11 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigdoublestar: { width: 600, height: 300 },
 
   // Eightrings family
-  eightrings: { width: 300, height: 159.85 },
+  eightrings: { width: 257.3, height: 137.1 },
   bigeightrings: { width: 600, height: 309.5 },
 
   // Quiad
-  quiad: { width: 300, height: 300 },
+  quiad: { width: 250, height: 250 },
 
   // Contact ball family
   contactball: { width: 300, height: 150 },

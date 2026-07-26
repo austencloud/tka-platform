@@ -191,6 +191,42 @@ export function generateRedStaffSvg(): string {
 }
 
 /**
+ * Props that stay on the padded `animated/` artwork rather than the shared
+ * pictograph family (see resolvePropSvgPath).
+ *
+ * - torch / bigtorch: their animated viewBoxes are deliberately offset and
+ *   padded so the flame isn't clipped while the hand pivot stays put. The
+ *   pictograph versions crop to the shaft.
+ * - triquetra2: the two families hold different artwork here (300x175.3 vs
+ *   170x170), not a uniform rescale, so swapping would change the shape.
+ * - sword-* variants: no pictograph counterpart exists.
+ */
+function isAnimatedOnlyProp(propTypeLower: string): boolean {
+  return (
+    propTypeLower === "torch" ||
+    propTypeLower === "bigtorch" ||
+    propTypeLower === "triquetra2" ||
+    propTypeLower.startsWith("sword-")
+  );
+}
+
+/**
+ * Resolve the sprite the animation canvas draws.
+ *
+ * The animation canvas draws the SAME artwork the pictographs use. Both
+ * families hold identical paths at origin 0,0 — `animated/` is just each prop
+ * uniformly scaled up into a 300/600 box, which left every prop tracing a
+ * mandala at a different radius (mandala scale is fixed, not fit-to-content, so
+ * tip reach IS mandala radius). The club was converged onto the pictograph
+ * family first — its two files are byte-identical — and this brings the rest
+ * with it, landing regular props on a ~130 reach.
+ */
+function resolvePropSvgPath(propTypeLower: string): string {
+  const family = isAnimatedOnlyProp(propTypeLower) ? "animated" : "pictograph";
+  return `/images/props/${family}/${propTypeLower}.svg`;
+}
+
+/**
  * Generate prop SVG with custom color
  */
 export async function generatePropSvg(
@@ -198,9 +234,8 @@ export async function generatePropSvg(
   color: string,
   themeMode: ThemeMode = getCurrentThemeMode()
 ): Promise<PropSvgData> {
-  // Use the 300px scaled versions from animated directory for animation display
   const propTypeLower = propType.toLowerCase();
-  const path = `/images/props/animated/${propTypeLower}.svg`;
+  const path = resolvePropSvgPath(propTypeLower);
   const originalSvg = await fetchPropSvg(path);
   const coloredSvg = applyColorToPropSvg(originalSvg, color, propTypeLower);
   const contrastAdjustedSvg =

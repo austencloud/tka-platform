@@ -16,7 +16,10 @@ import type {
   StepLike,
 } from "$lib/shared/mandala/services/types";
 
+// Both derive from the prop's own pictograph viewBox half-width — the animation
+// canvas draws that artwork, so the traced tip sits on its visible end.
 const CLUB_TIP_REACH = 258.67 / 2;
+const STAFF_TIP_REACH = 252.8 / 2;
 
 afterEach(() => {
   setTrailPointOverrideProvider(null);
@@ -67,7 +70,10 @@ describe("animation mandala trail-point alignment", () => {
   it("keeps the animated club short of the grid center and aligned with its traced tip", () => {
     const dimensions = getPropDimensions("club");
     const clubSvg = readFileSync(
-      resolve(process.cwd(), "static/images/props/animated/club.svg"),
+      // The pictograph family is what the animation canvas fetches now
+      // (svg-generator's resolvePropSvgPath). The club's two files are
+      // byte-identical — it was the first prop converged onto this family.
+      resolve(process.cwd(), "static/images/props/pictograph/club.svg"),
       "utf8"
     );
     const viewBox = /viewBox=["']0 0 ([\d.]+) ([\d.]+)["']/.exec(clubSvg);
@@ -140,17 +146,19 @@ describe("animation mandala trail-point alignment", () => {
       { dx: CLUB_TIP_REACH, dy: 0 },
     ]);
     expect(resolveMandalaTipOffsets("staff", TrackingMode.LEFT_END)).toEqual([
-      { dx: -135, dy: 0 },
+      { dx: -STAFF_TIP_REACH, dy: 0 },
     ]);
     expect(resolveMandalaTipOffsets("staff", TrackingMode.RIGHT_END)).toEqual([
-      { dx: 135, dy: 0 },
+      { dx: STAFF_TIP_REACH, dy: 0 },
     ]);
     expect(resolveMandalaTipOffsets("staff", TrackingMode.BOTH_ENDS)).toEqual([
-      { dx: -135, dy: 0 },
-      { dx: 135, dy: 0 },
+      { dx: -STAFF_TIP_REACH, dy: 0 },
+      { dx: STAFF_TIP_REACH, dy: 0 },
     ]);
+    // The fan's outer rib lands on the club's reach — the whole point of the
+    // pictograph convergence.
     expect(resolveMandalaTipOffsets("fan", TrackingMode.RIGHT_END)).toEqual([
-      { dx: 150, dy: 0 },
+      { dx: 130, dy: 0 },
     ]);
     expect(resolveMandalaTipOffsets("staff", TrackingMode.HAND)).toEqual([
       { dx: 0, dy: 0 },

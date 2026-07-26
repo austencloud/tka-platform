@@ -33,6 +33,8 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { buildNotationCells, type NotationCell } from "$lib/shared/timeline/notation-cell";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import { trackDemoInteraction } from "$lib/shared/analytics/landing-events";
 
@@ -104,6 +106,12 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
       visibilityManager.setDarkMode(true);
       // Trails on by default
       effectsConfigState.setActiveEffect("trails");
+      // The mandala guide rides under the props, the same overlay the viewer's
+      // Display > Mandala toggle turns on. It crossfades itself whenever the
+      // prepared paths change — a sequence swap or a prop swap — so the shape
+      // dissolves toward the next one instead of cutting. The Display chip in
+      // the panel still lets a visitor turn it off.
+      visibilityManager.setVisibility("mandala", true);
 
       const browseLoader = getBrowseLoader();
       // Pass the scope's visibility manager so prop interpolation (path shape /
@@ -167,6 +175,39 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     }
   }
 
+  // ── The two peer controls ───────────────────────────────────────────────────
+  // Sequence and prop are independent: any sequence can be done with any prop.
+  // Two buttons that each change exactly one of them make that legible in a way
+  // a buried prop grid never did — click either one and only that thing moves.
+  const PROP_CYCLE: PropType[] = [
+    PropType.STAFF,
+    PropType.CLUB,
+    PropType.FAN,
+    PropType.BUUGENG,
+    PropType.MINIHOOP,
+    PropType.TRIAD,
+    PropType.POI,
+  ];
+
+  let isSwappingSequence = $state(false);
+
+  function nextSequence() {
+    if (!playback || isSwappingSequence) return;
+    isSwappingSequence = true;
+    trackDemoInteraction("try_another");
+    playback.skip();
+    // The swap is synchronous into the orchestrator but the mandala crossfade
+    // runs on the render loop; hold the button briefly so a double-click can't
+    // outrun the fade.
+    setTimeout(() => { isSwappingSequence = false; }, 400);
+  }
+
+  function nextProp() {
+    const at = PROP_CYCLE.indexOf(currentPropType);
+    const next = PROP_CYCLE[(at + 1) % PROP_CYCLE.length];
+    if (next) handlePropChange(next);
+  }
+
   // ── Play / Pause (AnimationPanel Effects section transport) ─────────────────
   // Three affordances funnel through here: tap-to-toggle on the canvas, the
   // sidebar transport, and the mobile ControlDock. One handler, one event.
@@ -188,6 +229,18 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   let notationCells = $derived<NotationCell[]>(
     buildNotationCells(playback?.animationState?.sequenceData)
   );
+
+  // ── Caption under the two buttons ─────────────────────────────────────────
+  // A repeating word always reads in its smallest form (FΨ, never FΨFΨFΨFΨ),
+  // and the endless spinner leans on LOOPs, so this is the common case.
+  let currentWord = $derived(
+    simplifyRepeatedWord(
+      playback?.animationState?.sequenceData?.intendedWord ??
+        playback?.animationState?.sequenceData?.word ??
+        ""
+    )
+  );
+  let currentPropLabel = $derived(getPropTypeDisplayInfo(currentPropType).label);
 
 </script>
 
@@ -253,6 +306,37 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
               <span>Initializing...</span>
             </div>
           {/if}
+        </div>
+
+        <!-- The two peer controls. Deliberately equals, side by side: the
+             sequence and the prop are independent, so each button moves exactly
+             one of them. Labels are static so the row can't reflow; the caption
+             below is centred and alone on its line, so its own width changes
+             move nothing else. -->
+        <div class="swap-controls">
+          <div class="swap-buttons">
+            <button
+              class="swap-btn"
+              onclick={nextSequence}
+              disabled={!animationReady || isSwappingSequence}
+            >
+              <i class="fas fa-shuffle" aria-hidden="true"></i>
+              <span>Next sequence</span>
+            </button>
+            <button
+              class="swap-btn"
+              onclick={nextProp}
+              disabled={!animationReady}
+            >
+              <i class="fas fa-rotate" aria-hidden="true"></i>
+              <span>Next prop</span>
+            </button>
+          </div>
+          <p class="swap-caption" aria-live="polite">
+            {#if currentWord}<span class="swap-word">{currentWord}</span>
+              <span class="swap-sep" aria-hidden="true">·</span>{/if}
+            <span class="swap-prop">{currentPropLabel}</span>
+          </p>
         </div>
 
         <!-- Mobile: strip under the canvas, then the ControlDock bottom bar -->
@@ -356,6 +440,145 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /* ── The two peer swap controls ─────────────────────────────────────────── */
+
+  .swap-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .swap-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Sized to its label, never stretched — two short labels must not span the
+     showcase. flex-basis stays auto and no width is set. */
+  .swap-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0.6875rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.07);
+    color: #e8e6f4;
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .swap-btn:hover:not(:disabled),
+  .swap-btn:focus-visible:not(:disabled) {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+    outline: none;
+  }
+
+  .swap-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .swap-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .swap-btn i {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+
+  /* Centred and alone on its row, so a longer word or prop name re-centres
+     without displacing anything. */
+  .swap-caption {
+    margin: 0;
+    min-height: 1.2em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--font-size-compact, 0.75rem);
+    letter-spacing: 0.02em;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .swap-word {
+    font-family: var(--font-tka, inherit);
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .swap-sep {
+    opacity: 0.4;
+  }
+
+  @media (min-width: 1680px) {
+    .swap-btn {
+      font-size: 1rem;
+      padding: 0.8125rem 1.5rem;
+    }
+
+    .swap-caption {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Phones: the canvas is the point, so the control block gives back every
+     pixel it can. Two equal halves on one row — wrapping to two rows cost the
+     spinner ~60px of height at 375. */
+  @media (max-width: 600px) {
+    .swap-controls {
+      padding: 0.5rem 0.75rem 0.375rem;
+      gap: 0.3125rem;
+    }
+
+    .swap-buttons {
+      width: 100%;
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+    }
+
+    .swap-btn {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 0.625rem 0.5rem;
+      font-size: 0.8125rem;
+    }
+  }
+
+  /* Below the iPhone SE width the icons stop earning their space. */
+  @media (max-width: 360px) {
+    .swap-btn i {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .swap-btn {
+      transition: none;
+    }
+
+    .swap-btn:hover:not(:disabled),
+    .swap-btn:focus-visible:not(:disabled) {
+      transform: none;
+    }
   }
 
   /* StepStrip renders at its fixed 124px viewportHeight; this box owns that
