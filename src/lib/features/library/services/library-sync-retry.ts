@@ -17,8 +17,51 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
+import { IncompleteWordError } from "$lib/shared/foundation/services/word-deriver";
+import { SequenceNormalizationError } from "$lib/shared/library/services/sequence-persistence-normalizer";
+import { PublicDuplicateError } from "$lib/shared/library/services/public-sequence-persister";
+import { ContentModerationError } from "$lib/features/moderation/errors/content-moderation-error";
 
 export type SequenceSyncStatus = "synced" | "pending" | "failed";
+
+/**
+ * A typed PERMANENT rejection: retrying cannot succeed until the user changes
+ * something, so it must never spin in the background queue (parity-repair
+ * spec, section 6). Transient failures (offline, contention) return null and
+ * keep the normal retry path.
+ */
+function permanentPublishRejection(
+  error: unknown
+): { code: string; message: string } | null {
+  if (error instanceof IncompleteWordError) {
+    return {
+      code: error.code,
+      message:
+        "A saved sequence has unresolved steps and can't publish. Open it to finish them.",
+    };
+  }
+  if (error instanceof SequenceNormalizationError) {
+    return {
+      code: error.code,
+      message:
+        "A saved sequence can't be published in its current form. Open it in your library for details.",
+    };
+  }
+  if (error instanceof PublicDuplicateError) {
+    return {
+      code: error.code,
+      message:
+        "This exact sequence is already in the community gallery. Your copy stays safe on this device.",
+    };
+  }
+  if (error instanceof ContentModerationError) {
+    return {
+      code: "CONTENT_MODERATION",
+      message: "A saved sequence was flagged by moderation and won't publish.",
+    };
+  }
+  return null;
+}
 
 /**
  * Update a single Dexie sequence's local-only syncStatus bookkeeping field.
@@ -61,7 +104,13 @@ export async function retryPendingSyncs(): Promise<void> {
 
   try {
     const stale = await db.sequences
-      .filter((s) => s.syncStatus === "pending" || s.syncStatus === "failed")
+      .filter(
+        (s) =>
+          (s.syncStatus === "pending" || s.syncStatus === "failed") &&
+          // A typed permanent rejection needs a user action, not another
+          // attempt — skip until the next explicit save clears the reason.
+          !s.pendingSyncMetadata?.blockedReason
+      )
       .toArray();
     if (stale.length === 0) return;
 
@@ -83,6 +132,33 @@ export async function retryPendingSyncs(): Promise<void> {
         if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
           // Already safe in Firestore under an existing doc - nothing lost.
           await markSequenceSyncStatus(sequence.id, "synced");
+          continue;
+        }
+
+        const permanent = permanentPublishRejection(error);
+        if (permanent) {
+          // Record the typed blocked reason so future passes skip this record,
+          // and tell the user ONCE what action is needed. The sequence stays
+          // safe in Dexie; nothing was published.
+          try {
+            await db.sequences.update(sequence.id, {
+              syncStatus: "failed",
+              pendingSyncMetadata: {
+                visibility: sequence.pendingSyncMetadata?.visibility ?? "public",
+                notes: sequence.pendingSyncMetadata?.notes ?? "",
+                blockedReason: permanent.code,
+              },
+            });
+          } catch (dexieError) {
+            console.warn(
+              "[LibrarySyncRetry] Failed to record blocked reason:",
+              dexieError
+            );
+          }
+          if (!hasShownFailureToast) {
+            hasShownFailureToast = true;
+            toast.info(permanent.message, 6000);
+          }
           continue;
         }
 

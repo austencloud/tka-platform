@@ -13,31 +13,25 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
-  deleteDoc,
   serverTimestamp,
   collection,
-  query,
-  where,
   getDocs,
-  limit as firestoreLimit,
   type DocumentData,
   type Firestore,
   type QuerySnapshot,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getPublicSequencePath, getPublicSequencesPath, getUserTagsPath } from "$lib/shared/library/data/firestore-paths";
+import { getUserTagsPath } from "$lib/shared/library/data/firestore-paths";
 import {
   normalizeSequenceForPersistence,
   type NormalizedSequenceWrite,
 } from "$lib/shared/library/services/sequence-persistence-normalizer";
+import type { ProjectionSourceSequence } from "$lib/shared/library/services/public-sequence-projection";
 import {
-  buildPublicSequenceProjection,
-  type ExistingPublicOwnedFields,
-  type ProjectionSourceSequence,
-  type PublicProjectionPriorState,
-  type PublicProjectionTimestamp,
-} from "$lib/shared/library/services/public-sequence-projection";
+  publishPublicSequence,
+  unpublishPublicSequence,
+  updatePublicThumbnails,
+} from "$lib/shared/library/services/public-sequence-persister";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
 
@@ -59,46 +53,6 @@ import { periodToNumber } from "$lib/shared/foundation/domain/models/generation/
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
-
-/**
- * Extract the public-owned fields of an existing `publicSequences/{id}`
- * document for the projection builder's prior state.
- *
- * Type-guarded rather than cast: a legacy document can carry anything, and a
- * malformed counter must read as "absent" (builder seeds it) rather than
- * poison the projection. Timestamps pass through as wire values — the builder
- * never inspects them, it only decides which field gets which value, and
- * writing a read Firestore `Timestamp` back is value-identical.
- */
-function readExistingPublicOwnedFields(
-  data: Record<string, unknown>
-): ExistingPublicOwnedFields {
-  const finiteNumber = (value: unknown): number | undefined =>
-    typeof value === "number" && Number.isFinite(value) ? value : undefined;
-
-  const forkCount = finiteNumber(data["forkCount"]);
-  const viewCount = finiteNumber(data["viewCount"]);
-  const starCount = finiteNumber(data["starCount"]);
-  const publicProjectionRevision = finiteNumber(data["publicProjectionRevision"]);
-  const publicProjectionDigest =
-    typeof data["publicProjectionDigest"] === "string"
-      ? data["publicProjectionDigest"]
-      : undefined;
-
-  return {
-    ...(data["publishedAt"] != null && {
-      publishedAt: data["publishedAt"] as PublicProjectionTimestamp,
-    }),
-    ...(data["updatedAt"] != null && {
-      updatedAt: data["updatedAt"] as PublicProjectionTimestamp,
-    }),
-    ...(forkCount !== undefined && { forkCount }),
-    ...(viewCount !== undefined && { viewCount }),
-    ...(starCount !== undefined && { starCount }),
-    ...(publicProjectionRevision !== undefined && { publicProjectionRevision }),
-    ...(publicProjectionDigest !== undefined && { publicProjectionDigest }),
-  };
-}
 
 export class PublicIndexSyncer {
 
@@ -172,46 +126,9 @@ export class PublicIndexSyncer {
     const firestore = await getFirestoreInstance();
 
     try {
-      const publicRef = doc(firestore, getPublicSequencePath(sequence.id));
-
-      // Prior state, read BEFORE building. A read FAILURE aborts the publish
-      // (this getDoc throws and nothing is written) — it must never be treated
-      // as "no document", because building a first-publication projection over
-      // an existing document re-stamps publishedAt and resets the engagement
-      // counters, the exact corpus-wide defect the projection builder ends.
-      const existingSnap = await getDoc(publicRef);
-      const prior: PublicProjectionPriorState = existingSnap.exists()
-        ? {
-            kind: "existing",
-            fields: readExistingPublicOwnedFields(
-              existingSnap.data() as Record<string, unknown>
-            ),
-          }
-        : { kind: "first-publication" };
-
       // Get user display info for denormalization
       const userDoc = await getDoc(doc(firestore, `users/${userId}`));
       const userData = userDoc.data() ?? {};
-
-      // Deduplicate by contentHash — reject if an identical sequence already
-      // exists in the public index from a different document (re-publishing
-      // the same doc is OK). Query-based and therefore racy under concurrency;
-      // the Phase 2 transaction + publicSequenceHashes claim replaces this.
-      // Uses the freshly computed hash — the stored one can be stale or absent.
-      const dupQuery = query(
-        collection(firestore, getPublicSequencesPath()),
-        where("contentHash", "==", normalized.contentHash),
-        firestoreLimit(1)
-      );
-      const dupSnapshot = await getDocs(dupQuery);
-      if (!dupSnapshot.empty) {
-        const existingDoc = dupSnapshot.docs[0]!;
-        if (existingDoc.id !== sequence.id) {
-          throw new Error(
-            `This exact sequence already exists in the gallery (published as "${existingDoc.data().word ?? existingDoc.id}")`
-          );
-        }
-      }
 
       // Detect circularity and LOOP type from the HYDRATED sequence: it always
       // carries steps, and its `word` is the derived word — so the curated
@@ -234,12 +151,15 @@ export class PublicIndexSyncer {
       // "the read failed".
       const tagNames = await this.resolveTagNames(firestore, userId, sequence);
 
-      const revision =
-        prior.kind === "existing"
-          ? (prior.fields.publicProjectionRevision ?? 0) + 1
-          : 1;
-
-      const projection = await buildPublicSequenceProjection(
+      // The atomic write: prior-state read, duplicate claim check, projection
+      // build, public setDoc, hash-claim create, stale-claim release, and
+      // owner projection stamps — one serializable transaction
+      // (public-sequence-persister). Two clients racing an identical
+      // publication can no longer both slip past a preflight query: the loser
+      // re-runs against the winner's committed claim and gets a typed
+      // PublicDuplicateError.
+      await publishPublicSequence(
+        firestore,
         normalized as NormalizedSequenceWrite<ProjectionSourceSequence>,
         {
           ownerId: userId,
@@ -270,16 +190,9 @@ export class PublicIndexSyncer {
             difficultyLevel: sequence.difficultyLevel,
           }),
           level,
-          now: serverTimestamp(),
         },
-        revision,
-        prior
+        userId
       );
-
-      // The builder guarantees no `undefined` at any depth (tested), so the
-      // projection goes to Firestore as-is — no cleanup pass that could mask a
-      // builder regression.
-      await setDoc(publicRef, projection as unknown as Record<string, unknown>);
 
       // Fire-and-forget: write decomposed artifacts to public collections so
       // hand paths and solo props are independently discoverable in the gallery.
@@ -352,7 +265,10 @@ export class PublicIndexSyncer {
 
   /**
    * Patch a completed background thumbnail without replaying a full public
-   * sequence snapshot that may already be stale.
+   * sequence snapshot that may already be stale. The persister's narrow
+   * transaction restamps the projection digest/revision on schema-2 documents
+   * (and mirrors them onto the owner doc) so the stamps keep describing the
+   * stored content.
    */
   async updateThumbnails(
     sequenceId: string,
@@ -361,10 +277,7 @@ export class PublicIndexSyncer {
     const firestore = await getFirestoreInstance();
     const publicThumbnails = thumbnails.slice(0, 3);
 
-    await updateDoc(doc(firestore, getPublicSequencePath(sequenceId)), {
-      thumbnails: publicThumbnails,
-      updatedAt: serverTimestamp(),
-    });
+    await updatePublicThumbnails(firestore, sequenceId, publicThumbnails);
     this.browseLoader?.updateThumbnailsInCache(
       sequenceId,
       publicThumbnails
@@ -372,24 +285,16 @@ export class PublicIndexSyncer {
   }
 
   /**
-   * Remove a sequence from the public index
+   * Remove a sequence from the public index. Atomic: public document, its
+   * owned hash claim, and the owner document's projection stamps go together
+   * (public-sequence-persister.unpublishPublicSequence). An absent mirror is
+   * success — out-of-sync visibility or a prior removal leaves nothing to do.
    */
   async removeFromPublicIndex(sequenceId: string): Promise<void> {
     const firestore = await getFirestoreInstance();
 
     try {
-      const ref = doc(firestore, getPublicSequencePath(sequenceId));
-      // If the public mirror is already gone (out-of-sync visibility, or a
-      // prior removal), there's nothing to delete. Deleting a non-existent doc
-      // trips the ownerId-based delete rule — `resource` is null, so the rule
-      // evaluates to false and Firestore reports "Missing or insufficient
-      // permissions". Treat an absent mirror as success.
-      const existing = await getDoc(ref);
-      if (!existing.exists()) {
-        this.browseLoader?.removeFromCache(sequenceId);
-        return;
-      }
-      await deleteDoc(ref);
+      await unpublishPublicSequence(firestore, sequenceId);
 
       // Remove from cache immediately so the gallery reflects the change.
       this.browseLoader?.removeFromCache(sequenceId);

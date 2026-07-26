@@ -32,6 +32,7 @@ import {
   hydrate,
   ensureComposition,
 } from "$lib/shared/foundation/services/sequence-hydrator";
+import { deriveWordStatus } from "$lib/shared/foundation/services/word-deriver";
 import {
   firestoreGet,
   firestoreList,
@@ -701,11 +702,23 @@ export class LibraryRepository {
       ? [metadata.thumbnailUrl, ...existingThumbnails]
       : existingThumbnails;
 
+    // `word` is derived notation, never a title. The old
+    // `sequence.word || metadata.name` fallback is how auto-titles like
+    // "Assemble Sequence" became stored WORDS (parity-repair spec, section 2).
+    // Strict derivation stamps the exact word when every content step resolved;
+    // an incomplete draft keeps whatever word it already carried (possibly
+    // empty) — display falls back to name/displayName, and the PUBLIC boundary
+    // (normalizeSequenceForPersistence in the publish path) refuses partial
+    // words outright.
+    const wordStatus = deriveWordStatus(sequence);
     const enrichedSequence: SequenceData = {
       ...sequence,
       name: metadata.name,
       displayName: metadata.displayName,
-      word: sequence.word || metadata.name,
+      word:
+        wordStatus.complete && wordStatus.word.length > 0
+          ? wordStatus.word
+          : (sequence.word ?? ""),
       thumbnails,
       tags: metadata.tags,
     };

@@ -85,9 +85,9 @@ export interface SequenceData {
   readonly loopType?: LOOPType | null;
   /**
    * @deprecated Use `period` instead. Kept during the period-migration window.
-   * Number of sequence repetitions needed to return to starting orientation (1, 2, or 4).
+   * Number of sequence repetitions needed to return to starting orientation.
    */
-  readonly orientationCycleCount?: 1 | 2 | 4;
+  readonly orientationCycleCount?: 1 | 2 | 4 | 8;
   /**
    * Integer count of passes required to return to identity in BOTH location
    * and orientation. 1 = non-LOOP / closed in one pass. 2 = halved.
@@ -224,6 +224,14 @@ export interface SequenceData {
   readonly pendingSyncMetadata?: {
     readonly visibility: "private" | "unlisted" | "public";
     readonly notes: string;
+    /**
+     * Set when a retried sync failed with a typed PERMANENT rejection
+     * (INCOMPLETE_WORD, BLANK_STEPS_UNSUPPORTED, PUBLIC_DUPLICATE,
+     * CONTENT_MODERATION, …). The retry pass skips records carrying one —
+     * a validation refusal must not spin in the background queue; it needs a
+     * user action. Cleared by the next explicit user save.
+     */
+    readonly blockedReason?: string;
   };
 }
 

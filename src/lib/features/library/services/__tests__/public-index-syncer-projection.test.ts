@@ -23,8 +23,14 @@ const mocks = vi.hoisted(() => ({
   getDoc: vi.fn(),
   getDocs: vi.fn(),
   setDoc: vi.fn(),
+  updateDoc: vi.fn(),
+  deleteDoc: vi.fn(),
 }));
 
+// The persister runs everything through runTransaction. The facade maps the
+// transaction surface onto the same spies, so assertions read identically for
+// direct and transactional writes — and a tx.get failure propagates exactly
+// like a getDoc failure, which is what the abort tests rely on.
 vi.mock("firebase/firestore", () => ({
   collection: vi.fn((_db: unknown, path: string) => ({ path })),
   doc: vi.fn((_db: unknown, ...segments: string[]) => ({
@@ -33,9 +39,22 @@ vi.mock("firebase/firestore", () => ({
   getDoc: mocks.getDoc,
   getDocs: mocks.getDocs,
   setDoc: mocks.setDoc,
-  updateDoc: vi.fn(),
-  deleteDoc: vi.fn(),
+  updateDoc: mocks.updateDoc,
+  deleteDoc: mocks.deleteDoc,
   serverTimestamp: vi.fn(() => SERVER_TS),
+  deleteField: vi.fn(() => ({ __deleteField: true })),
+  runTransaction: vi.fn(
+    async (
+      _db: unknown,
+      fn: (tx: unknown) => Promise<unknown>
+    ): Promise<unknown> =>
+      fn({
+        get: (ref: unknown) => mocks.getDoc(ref),
+        set: (ref: unknown, data: unknown) => void mocks.setDoc(ref, data),
+        update: (ref: unknown, data: unknown) => void mocks.updateDoc(ref, data),
+        delete: (ref: unknown) => void mocks.deleteDoc(ref),
+      })
+  ),
   query: vi.fn((target: { path?: string }) => ({ __query: true, target })),
   where: vi.fn(),
   limit: vi.fn(),
@@ -136,9 +155,10 @@ function makeSequence(word = "ABCD", overrides: Partial<LibrarySequence> = {}) {
   } as unknown as LibrarySequence;
 }
 
-/** Route getDoc by document path. */
+/** Route getDoc (and the transaction facade's tx.get) by document path. */
 function primeGetDoc(options: {
   publicDoc?: { exists: boolean; data?: Record<string, unknown> } | "fail";
+  claim?: Record<string, unknown>;
 }) {
   mocks.getDoc.mockImplementation(async (ref: { path: string }) => {
     if (ref.path.startsWith("publicSequences/")) {
@@ -150,6 +170,16 @@ function primeGetDoc(options: {
         exists: () => publicDoc.exists,
         data: () => publicDoc.data ?? {},
       };
+    }
+    if (ref.path.startsWith("publicSequenceHashes/")) {
+      return {
+        exists: () => options.claim !== undefined,
+        data: () => options.claim ?? {},
+      };
+    }
+    if (ref.path.includes("/sequences/")) {
+      // The owner document, read by the transaction for projection stamps.
+      return { exists: () => true, data: () => ({}) };
     }
     if (ref.path.startsWith("users/")) {
       return {
@@ -179,6 +209,19 @@ function publicWrite(): Record<string, unknown> {
   );
   expect(call).toBeDefined();
   return call![1] as Record<string, unknown>;
+}
+
+/** The hash-claim write, if any. */
+function claimWrite(): { path: string; data: Record<string, unknown> } | null {
+  const call = mocks.setDoc.mock.calls.find(([ref]) =>
+    (ref as { path: string }).path.startsWith("publicSequenceHashes/")
+  );
+  return call
+    ? {
+        path: (call[0] as { path: string }).path,
+        data: call[1] as Record<string, unknown>,
+      }
+    : null;
 }
 
 beforeEach(() => {
@@ -218,6 +261,62 @@ describe("syncToPublicIndex — first publication", () => {
     expect(written["redSoloProp"]).toBeTruthy();
     expect(written["stepPairings"]).toHaveLength(4);
     expect(written["startPosition"]).toBeTruthy();
+  });
+
+  it("claims the content hash and stamps the owner document in the same transaction", async () => {
+    primeGetDoc({ publicDoc: { exists: false } });
+
+    await new PublicIndexSyncer().syncToPublicIndex(makeSequence(), "owner-1");
+
+    const written = publicWrite();
+    const claim = claimWrite();
+    expect(claim).not.toBeNull();
+    expect(claim!.path).toBe(
+      `publicSequenceHashes/${written["contentHashVersion"]}_${written["contentHash"]}`
+    );
+    expect(claim!.data["sequenceId"]).toBe("seq-1");
+    expect(claim!.data["ownerId"]).toBe("owner-1");
+
+    // Owner projection stamps move with the mirror, so the two cannot disagree.
+    const ownerStamp = mocks.updateDoc.mock.calls.find(([ref]) =>
+      (ref as { path: string }).path.includes("/sequences/seq-1")
+    );
+    expect(ownerStamp).toBeDefined();
+    const stamped = ownerStamp![1] as Record<string, unknown>;
+    expect(stamped["publicProjectionDigest"]).toBe(
+      written["publicProjectionDigest"]
+    );
+    expect(stamped["publicProjectionRevision"]).toBe(1);
+    expect(stamped["word"]).toBe("ABCD");
+  });
+
+  it("rejects with a typed PublicDuplicateError when another sequence owns the claim", async () => {
+    primeGetDoc({
+      publicDoc: { exists: false },
+      claim: { sequenceId: "someone-elses-seq", ownerId: "owner-9" },
+    });
+
+    await expect(
+      new PublicIndexSyncer().syncToPublicIndex(makeSequence(), "owner-1")
+    ).rejects.toMatchObject({ code: "PUBLIC_DUPLICATE" });
+
+    // The transaction commits nothing on a duplicate.
+    expect(mocks.setDoc).not.toHaveBeenCalled();
+    expect(mocks.updateDoc).not.toHaveBeenCalled();
+  });
+
+  it("republishing the SAME sequence over its own claim is not a duplicate", async () => {
+    // First-writer-wins must not lock out the winner itself.
+    primeGetDoc({
+      publicDoc: { exists: false },
+      claim: { sequenceId: "seq-1", ownerId: "owner-1" },
+    });
+
+    await new PublicIndexSyncer().syncToPublicIndex(makeSequence(), "owner-1");
+
+    expect(publicWrite()["word"]).toBe("ABCD");
+    // The existing claim is kept, not rewritten.
+    expect(claimWrite()).toBeNull();
   });
 });
 
