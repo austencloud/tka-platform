@@ -69,6 +69,19 @@ The following packages are also MIT-licensed to enable community tooling:
 These provide platform-agnostic calculation and rendering primitives.
 
 
+2A. Developer Tooling (MIT License)
+------------------------------------
+
+The following developer tooling is licensed under the MIT License.
+See licenses/MIT.txt for the full text.
+
+  - @austencloud/agent-hub  (agent-hub/)
+
+This is a Windows launcher for AI coding agents. It contains no Kinetic
+Alphabet notation, domain logic, or platform code, and is published to
+npm for use with any repository.
+
+
 3. Flow Arts Composer Application (Elastic License 2.0)
 ---------------------------------------------------
 
