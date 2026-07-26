@@ -1,12 +1,12 @@
 ---
 status: active
 value: 5
-effort: M
-remaining: Full build — rename, gate, coming-soon/waitlist, admin Products editor
-depends_on: ""
+effort: XS
+remaining: "Frontmatter said 'full build' but the body records Phase A (rename, nav, gate, coming-soon, waitlist, redirects, webhook product-sync) shipped 2026-06-24 and checkout wired + verified 2026-06-26. 108 commits touched shop code since. Sole residual is registering webhook events in the Stripe Dashboard (B4) — dashboard action, not code."
+depends_on: "external: Stripe Dashboard webhook-event registration"
 supersedes_context: docs/superpowers/specs/backlog/2026-04-01-physical-merch-store-design.md
 tags: [revenue, shop, store, stripe]
-last_triaged: 2026-06-23
+last_triaged: 2026-07-25
 ---
 # Shop Spin-Up — Design Spec
 

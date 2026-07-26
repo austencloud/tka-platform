@@ -6,7 +6,7 @@ The codebase had filter bars hand-rolled as raw `<button class="chip">` rows in
 a dozen features — each reinventing toggle state, active styling, counts, and
 a11y, drifting visually and behaviorally. They were consolidated onto two shared
 primitives (2026-05-30, spec
-`docs/superpowers/specs/active/2026-05-30-chip-consolidation-design.md`). The
+`docs/superpowers/specs/shipped/2026-05-30-chip-consolidation-design.md`). The
 generic `never-hand-roll.md` did not prevent the drift on its own, so this rule
 names the canonical primitives and the routing decision explicitly.
 
@@ -95,4 +95,4 @@ can't express them. When you keep a bar, say why.
 ## Related
 
 - `never-hand-roll.md` (master rule), `primitive-discovery.md`, `no-checkboxes.md`
-- Spec: `docs/superpowers/specs/active/2026-05-30-chip-consolidation-design.md`
+- Spec: `docs/superpowers/specs/shipped/2026-05-30-chip-consolidation-design.md`

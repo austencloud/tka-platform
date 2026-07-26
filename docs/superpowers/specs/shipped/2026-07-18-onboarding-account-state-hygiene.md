@@ -60,7 +60,7 @@ treated as cloud-authoritative on identity change** — and one fix pattern.
 - [x] Superseded on 2026-07-22: the password requirement, state module, cloud sync, and tests were removed.
 - [x] `deleteAccount()` routes through `authState.signOut()` (grep proof; no raw `signOut` import in account-manager for this path). Evidence: `account-manager.ts` — `signOut` removed from the `firebase/auth` import; `await authState.signOut().catch(() => {})` replaces the raw call.
 - [~] Onboarded user on a second device: no onboarding modal (runtime or state-driven test). State-driven equivalent covered (missing-doc branch confirms `hasCompleted` stays/becomes correct pre-modal-render), but no live two-device runtime verification was run — that needs an authenticated Chrome DevTools session across two profiles, out of scope for a unit-test-only executor pass. Flagging for the orchestrator/Austen to runtime-verify if desired.
-- [ ] `npm run check` clean. Left for the orchestrator's machine-wide check gate per this task's instructions.
+- [x] `npm run check` clean. Left for the orchestrator's machine-wide check gate per this task's instructions. **Closed 2026-07-25:** `npm run check` run machine-wide → `svelte-check found 0 errors and 4 warnings in 3 files`; all 4 are pre-existing unused-CSS-selector warnings in unrelated landing files. Gate satisfied.
 
 ## Verification
 

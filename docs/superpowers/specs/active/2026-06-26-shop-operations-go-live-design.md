@@ -1,12 +1,12 @@
 ---
 status: active
 value: 5
-effort: M
-remaining: Full arc — Stripe Tax, pre-order layer, product art, webhook registration, live flip
-depends_on: docs/superpowers/specs/active/2026-06-23-shop-spin-up-design.md
+effort: S
+remaining: "STALE — needs reconciliation, not a build. Body says 'Not yet built' (2026-06-26), but 108 commits touched shop code since and the LOOP Deck shop is LIVE taking Stripe preorders (ships Oct 1): automated preorder→regular price swap, free US shipping, cart lines, product JSON-LD, Merchant Center guide all landed. Next action is auditing the live store to establish which arc items (Stripe Tax, live-mode key flip, fulfillment workflow, product art) are genuinely open — do NOT rebuild from this spec."
+depends_on: ""
 supersedes_context: ""
 tags: [revenue, shop, store, stripe, go-live, fulfillment, tax]
-last_triaged: 2026-06-26
+last_triaged: 2026-07-25
 ---
 # Shop Operations & Go-Live — Design Spec
 

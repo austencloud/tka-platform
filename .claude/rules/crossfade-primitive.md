@@ -111,4 +111,4 @@ box resizes to the current layer and shoves everything below it. The checklist:
 - `never-hand-roll.md` (master), `no-layout-shift.md`, `chip-primitives.md`
 - Memory: `feedback_crossfade_no_layout_shift`
 - ADR: `docs/architecture/crossfade-primitive.md`
-- Spec: `docs/superpowers/specs/active/2026-06-30-crossfade-consolidation-design.md`
+- Spec: `docs/superpowers/specs/shipped/2026-06-30-crossfade-consolidation-design.md`
