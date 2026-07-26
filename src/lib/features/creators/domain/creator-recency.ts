@@ -12,6 +12,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export type BandKey = "week" | "month" | "quarter" | "earlier";
 
 /**
+ * Lives here rather than in RosterBand because the panel decides whether a
+ * group is a recency band at all. A filtered view or a search result set is
+ * ONE group with no recency meaning, and labelling it from this map is how
+ * the Following view came to render 55 people — many last seen five months
+ * ago — under a header reading "This week".
+ */
+export const BAND_LABEL: Record<BandKey, string> = {
+  week: "This week",
+  month: "This month",
+  quarter: "Last 90 days",
+  earlier: "Earlier",
+};
+
+/**
  * A band as it lands in the roster: a recency bucket plus whoever belongs
  * to it. `mergeSmallBands` folds thin bands into this shape too, so the
  * caller always has full member lists to render, never just counts.

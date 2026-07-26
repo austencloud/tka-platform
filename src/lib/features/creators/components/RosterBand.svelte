@@ -1,12 +1,18 @@
 <!--
-  RosterBand — one recency band: a header, and its members at one density.
+  RosterBand — one group of the roster, at one density.
 
-  The band owns the column count, and it computes it rather than delegating to
-  `repeat(auto-fill, minmax(...))`. Auto-fill against a floor produces *more,
-  thinner* cells as the viewport grows and strands the last one in a row by
-  itself (4k-native-layout.md, "never a row of one"). `fitColumns` picks the
-  widest count up to the tier cap that does not leave exactly one item in the
-  final row — so a 7-person band at a 6-column cap renders 5 + 2, not 6 + 1.
+  The band does NOT decide its own geometry. Column count and cell width are
+  computed once for every band together in CreatorsPanel, because a band cannot
+  see its siblings and the two facts that make the page look composed are
+  cross-band: every band shares one cell size, and the busiest band fills the
+  row exactly so the rest can centre against the same edges. When each band
+  sized itself, three of them landed at three different widths with three
+  different insets under a full-width wall.
+
+  A group with a null `heading` is not a recency band at all — it is a filtered
+  view or a search result set. It renders as a plain grid with no header, and
+  its recency rings come from each person's own last-active date rather than
+  from the group.
 
   The header is deliberately not sticky. The page has a bottom and should feel
   finite; a stack of accumulating sticky headers on a 56-person directory
@@ -14,22 +20,19 @@
 -->
 <script lang="ts">
   import CreatorCell from "./CreatorCell.svelte";
-  import { fitColumns } from "../domain/fit-columns";
-  import type { BandKey } from "../domain/creator-recency";
+  import { bandOf, type BandKey } from "../domain/creator-recency";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
   interface Props {
     band: BandKey;
+    /** Header text, or null for a group that is not a recency band. */
+    heading: string | null;
     members: EnhancedUserProfile[];
-    /**
-     * Portrait density is a property of the BAND (people who are actually
-     * around get more pixels), but the short-landscape branch overrides every
-     * band to index — at ~400px tall there is no room for a stacked cell.
-     */
-    forceIndex?: boolean;
-    /** Column caps for the current tier, set by the panel's container query. */
-    portraitCap: number;
-    indexCap: number;
+    density: "portrait" | "index";
+    /** Column count, decided across all bands by the panel. */
+    columns: number;
+    /** Cell width in px, shared by every band of this density. */
+    cellPx: number;
     /** ids of creators who joined within 30 days */
     newCreatorIds: Set<string>;
     /** px-per-em from the panel ramp, so avatars scale with the type. */
@@ -44,10 +47,11 @@
 
   let {
     band,
+    heading,
     members,
-    forceIndex = false,
-    portraitCap,
-    indexCap,
+    density,
+    columns,
+    cellPx,
     newCreatorIds,
     unitPx,
     loading = "lazy",
@@ -56,47 +60,45 @@
     followPending,
   }: Props = $props();
 
-  const BAND_LABEL: Record<BandKey, string> = {
-    week: "This week",
-    month: "This month",
-    quarter: "Last 90 days",
-    earlier: "Earlier",
-  };
-
-  // "Earlier" is the long tail and always renders as an index, regardless of
-  // tier — it is 35 of 56 people and portrait cells would make it the whole
-  // page.
-  const density = $derived<"portrait" | "index">(
-    forceIndex || band === "earlier" ? "index" : "portrait"
+  /**
+   * `fitColumns` avoids stranding one person in the final row wherever a
+   * column count exists that can avoid it — but for some pairs none does
+   * (37 people at a 4-column cap: 37 % 4, % 3 and % 2 are all 1). Observed at
+   * 820, at 960x412, and at 375 with 7 people in 2 columns. When it is
+   * genuinely unavoidable the leftover is centred under the group instead of
+   * hugging the left edge, which reads as the end of a list rather than as a
+   * dropped cell.
+   */
+  const strandsOne = $derived(
+    columns > 1 && members.length > columns && members.length % columns === 1
   );
 
-  // Cap the column count at the member count FIRST. Without this a band of 8
-  // in a 10-column tier renders as 8 cells plus 2 empty tracks, and a band of
-  // 7 in a 6-column tier renders 5 + 2 with four tracks of nothing beside it —
-  // both read as an abandoned row rather than a designed one. Clamping first
-  // means any band that fits on one line gets exactly one full line, and
-  // `fitColumns` only does its orphan work on bands that genuinely wrap.
-  const cap = $derived(density === "portrait" ? portraitCap : indexCap);
-  const columns = $derived(
-    fitColumns(members.length, Math.min(cap, Math.max(1, members.length)))
-  );
+  const ringBandOf = (creator: EnhancedUserProfile): BandKey =>
+    heading === null ? bandOf(creator.lastActiveAt, Date.now()) : band;
 
   const headingId = $derived(`roster-band-${band}`);
 </script>
 
 {#if members.length > 0}
-  <section class="band" aria-labelledby={headingId}>
-    <header class="band-header">
-      <h3 class="band-name" id={headingId}>{BAND_LABEL[band]}</h3>
-      <span class="rule" aria-hidden="true"></span>
-      <span class="count">{members.length}</span>
-    </header>
+  <section class="band" aria-labelledby={heading ? headingId : undefined}>
+    {#if heading}
+      <header class="band-header">
+        <h3 class="band-name" id={headingId}>{heading}</h3>
+        <span class="rule" aria-hidden="true"></span>
+        <span class="count">{members.length}</span>
+      </header>
+    {/if}
 
-    <div class="cells {density}" style:--cols={columns}>
+    <div
+      class="cells {density}"
+      class:strands-one={strandsOne}
+      style:--cols={columns}
+      style:--cell-w="{cellPx}px"
+    >
       {#each members as creator (creator.id)}
         <CreatorCell
           {creator}
-          {band}
+          band={ringBandOf(creator)}
           {density}
           isNew={newCreatorIds.has(creator.id)}
           {unitPx}
@@ -151,34 +153,30 @@
 
   .cells {
     display: grid;
-    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-    /* Tracks fill the band, but only up to a sane cell width. Without the cap
-       a 6-person band on a 4K panel stretched its cells to 285px around a
-       93px face — a scatter of dots in a field of gutter. The cap is on the
-       GRID rather than the track (`minmax(0, 13em)`) because a fixed track max
-       cannot shrink below its max and would overflow at 375px; a max-width
-       simply stops binding once the container is narrower. */
-    max-width: calc(var(--cols) * var(--cell-max) + (var(--cols) - 1) * 0.5em);
-    /* Centred, not left-aligned. A band shorter than the row cannot fill it at
-       a sane cell size, so the leftover space exists either way — split evenly
-       it reads as breathing room around a centred group; all of it on one side
-       reads as an unfinished row. */
-    margin-inline: auto;
+    /* Fixed tracks, not `1fr`, and the grid spans the full band width: that
+       pair is what makes every band share one left edge AND one cell size.
+       `justify-content: center` then centres the track group, so the busiest
+       band (whose width the panel sized these tracks from) lands flush edge
+       to edge and shorter bands sit centred inside the same span. */
+    grid-template-columns: repeat(var(--cols), var(--cell-w));
+    justify-content: center;
+    width: 100%;
   }
 
   .cells.portrait {
-    /* The ceiling on how wide a cell may stretch, which is what decides how
-       much of the row a SHORT band covers. 12.5em left a six-person band at
-       1306px inside a 1755px content area; 14em closes most of that without
-       going back to the 285px cells that read as a scatter of dots. A band
-       shorter than the row simply cannot fill it at a sane cell size — the
-       wall above is what carries the full width. */
-    --cell-max: 14em;
     gap: 0.5em;
   }
 
   .cells.index {
-    --cell-max: 14em;
     gap: 0.125em 0.5em;
+  }
+
+  /* The unavoidable leftover, centred under the group rather than stranded at
+     its left edge. Keeps its own cell width so it stays the same object as
+     its neighbours, not a stretched one. */
+  .cells.strands-one > :global(:last-child) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: var(--cell-w);
   }
 </style>

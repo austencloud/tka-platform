@@ -47,7 +47,13 @@
     syncCreatorsViewFromURL,
   } from "../state/creators-routing.svelte";
   import { creatorsViewState } from "../state/creators-view-state.svelte";
-  import { bandOf, mergeSmallBands, type BandKey } from "../domain/creator-recency";
+  import {
+    BAND_LABEL,
+    bandOf,
+    mergeSmallBands,
+    type BandKey,
+  } from "../domain/creator-recency";
+  import { fitColumns } from "../domain/fit-columns";
   import { dealByOwner } from "$lib/features/browse/gallery-home/pick-representatives";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -119,12 +125,23 @@
     },
   ]);
 
-  // "New here" and "Following" are already a single coherent group — banding
-  // them by recency would slice an 8-person list into four bands of two.
-  // Only the full roster earns bands.
+  const isSearching = $derived(searchResults !== null);
+
+  // "New here", "Following" and any SEARCH RESULT are already a single
+  // coherent group. Banding them by recency would slice an 8-person list into
+  // four bands of two — and on a search it did something worse: `mergeSmallBands`
+  // folds any group under three people FORWARD, so a search returning one or
+  // two matches carried them all the way into "Earlier". Looking up someone
+  // last active four days ago filed them under the long tail, at index
+  // density, with no evidence line and no follow button — in the one flow
+  // where you most want to follow from the roster. A group with a null heading
+  // renders as a plain grid: no header, portrait density, honest per-person
+  // recency rings.
   const bands = $derived.by(() => {
-    if (view !== "active") {
-      return [{ key: "week" as BandKey, members: viewed, single: true }];
+    if (view !== "active" || isSearching) {
+      return [
+        { key: "week" as BandKey, members: viewed, heading: null as string | null },
+      ];
     }
     const now = Date.now();
     const byBand = new Map<BandKey, EnhancedUserProfile[]>();
@@ -134,7 +151,7 @@
     }
     return mergeSmallBands(
       BAND_ORDER.map((key) => ({ key, members: byBand.get(key)! }))
-    ).map((band) => ({ ...band, single: false }));
+    ).map((band) => ({ ...band, heading: BAND_LABEL[band.key] as string | null }));
   });
 
   // A wide, very short box (Z Fold 7 folded in landscape is ~960 x 412) has
@@ -176,14 +193,22 @@
   // and keeps the tail compact.
   const INDEX_CELL_EM = 11;
 
-  // The horizontal gutter, in JS, because the column maths needs the real
-  // content width. Mirrors `clamp(1rem, 2.2cqw, 3.5rem)` in the stylesheet —
-  // keep the two in step.
-  const gutterPx = $derived(
-    Math.min(56, Math.max(16, boxWidth * 0.022))
-  );
+  // MEASURED, not computed. Deriving it as `boxWidth - 2 * gutter` looks
+  // equivalent and is not: `.scroller` also carries `scrollbar-gutter: stable`,
+  // so the arithmetic ran ~9px wide and every band overflowed its own padding
+  // box by that much once the cells became fixed-width tracks. Binding the
+  // real content box removes the whole class of drift between this file's
+  // numbers and the stylesheet's.
+  //
+  // The arithmetic survives only as the pre-measurement fallback, which is
+  // what the skeleton renders against on the first frame.
+  let measuredContentWidth = $state(0);
 
-  const contentWidth = $derived(Math.max(0, boxWidth - 2 * gutterPx));
+  const gutterPx = $derived(Math.min(56, Math.max(16, boxWidth * 0.022)));
+
+  const contentWidth = $derived(
+    measuredContentWidth || Math.max(0, boxWidth - 2 * gutterPx)
+  );
 
   const portraitCap = $derived(
     isShortLandscape
@@ -256,6 +281,67 @@
           : undefined;
         return creator ? [{ sequence, creator }] : [];
       });
+  });
+
+  // ── band geometry ───────────────────────────────────────────────────────
+  // Column counts AND cell width are decided here, for every band at once,
+  // rather than by each band independently.
+  //
+  // Independently was the bug: `.cells` carried `margin-inline: auto` inside a
+  // column flex parent, which cancels `align-self: stretch`, so each grid sized
+  // to its own CONTENT. Three bands ended up three different widths with three
+  // different insets (measured at 2560: bands at x=402 / 521 / 499 under a wall
+  // at x=119), which reads as misalignment, not as centring.
+  //
+  // Now: one cell width shared by every band of a density, derived from the
+  // BUSIEST band so that band fills the row exactly, and every shorter band
+  // centres its identical cells inside the same full-width track. One left
+  // edge, one card size, leftover space only where a band genuinely has fewer
+  // people than the row holds.
+  const GAP_EM = 0.5;
+  // How wide a cell may stretch. A portrait card past ~14em is a small face
+  // marooned in a large box — the "scatter of dots" failure. An index row is a
+  // face plus a whole display name on one line, so its ceiling is generous
+  // enough that a one- or two-column phone layout fills the width instead of
+  // truncating names inside a 224px column in a 343px row.
+  const CELL_MAX_EM: Record<"portrait" | "index", number> = {
+    portrait: 14,
+    index: 22,
+  };
+
+  const bandLayout = $derived.by(() => {
+    const rows = bands.map((band) => {
+      const density: "portrait" | "index" =
+        isShortLandscape || band.key === "earlier" ? "index" : "portrait";
+      const cap = Math.max(1, density === "portrait" ? portraitCap : indexCap);
+      return {
+        ...band,
+        density,
+        columns: fitColumns(
+          band.members.length,
+          Math.min(cap, Math.max(1, band.members.length))
+        ),
+      };
+    });
+
+    const cellPxFor = (density: "portrait" | "index") => {
+      const widest = Math.max(
+        1,
+        ...rows.filter((row) => row.density === density).map((row) => row.columns)
+      );
+      const ceiling = CELL_MAX_EM[density] * unitPx;
+      if (contentWidth <= 0) return ceiling;
+      const fair = (contentWidth - (widest - 1) * GAP_EM * unitPx) / widest;
+      return Math.max(1, Math.min(ceiling, fair));
+    };
+
+    const portraitCell = cellPxFor("portrait");
+    const indexCell = cellPxFor("index");
+
+    return rows.map((row) => ({
+      ...row,
+      cellPx: row.density === "portrait" ? portraitCell : indexCell,
+    }));
   });
 
   function handleWorkSelect(sequence: SequenceData) {
@@ -501,14 +587,15 @@
               </div>
             {/if}
 
-            <div class="bands">
-              {#each bands as band, index (band.key)}
+            <div class="bands" bind:clientWidth={measuredContentWidth}>
+              {#each bandLayout as band, index (band.key)}
                 <RosterBand
                   band={band.key}
+                  heading={band.heading}
                   members={band.members}
-                  forceIndex={isShortLandscape}
-                  {portraitCap}
-                  {indexCap}
+                  density={band.density}
+                  columns={band.columns}
+                  cellPx={band.cellPx}
                   {newCreatorIds}
                   {unitPx}
                   loading={index === 0 ? "eager" : "lazy"}
@@ -569,6 +656,16 @@
        slope as the marketing ramp so the two surfaces feel like one product
        on the same monitor. */
     font-size: clamp(1rem, calc(1rem + (100cqw - 1616px) * 8 / 2160), 1.5rem);
+
+    /* Three shared primitives on this surface size themselves from these
+       tokens in REM, so they were frozen at 1080p while everything around
+       them ramped: at a 3840 viewport the title measured 33px and the band
+       headers 19.5px, while the search field sat at 14px and the view
+       switcher and every follow button at 12px. Redefining the tokens in `em`
+       hands them the panel ramp. The values are identical to the global rem
+       defaults at the 16px floor, so nothing changes below 1616. */
+    --font-size-sm: 0.875em;
+    --font-size-compact: 0.75em;
 
     display: flex;
     flex-direction: column;
@@ -639,14 +736,21 @@
 
   .search-slot {
     /* Grows, but only to a readable field width — a search box stretched
-       across a 4K panel is not more usable, just louder. */
-    flex: 1 1 auto;
+       across a 4K panel is not more usable, just louder. The basis is small
+       so the field never claims a whole flex line of its own on a phone; it
+       gets whatever the title and the wrapped switcher leave. */
+    flex: 1 1 6rem;
     min-width: 0;
     max-width: 26em;
-    /* PanelSearch carries its own 20px inset; cancel it so the field aligns
-       to the row's own rhythm rather than sitting 20px in from it. */
-    margin: 0 -20px;
   }
+
+  /* NO negative margin here. PanelSearch insets itself 20px, dropping to 16px
+     under a 640px VIEWPORT media query, while this panel is sized by its
+     CONTAINER (the module box is inset by the app sidebar) — so the two
+     disagree about when the inset changes. The old `margin: 0 -20px` that
+     cancelled it pushed the field 40px wider than the row at 375 and
+     overflowed the panel. The primitive keeps its own inset; a 20px offset
+     mid-row is invisible, and an overflowing search field is not. */
 
   /* ── scroller ─────────────────────────────────────────────────────────── */
   .scroller {
@@ -723,6 +827,37 @@
     height: 9.5em;
     border-radius: 0.75em;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  /* ── narrow: the chrome row wraps ─────────────────────────────────────── */
+  /* One row is right until the three things in it stop fitting. The title is
+     ~135px and the view switcher ~277px, so on a 375px phone they alone
+     overflowed the row by 45px — the switcher's "Following" count was clipped
+     off the edge by the panel's own `overflow: hidden` — and the search field,
+     the only flexible item, was squeezed to 0px. It was already unusable at
+     430 (16px) and thin at 600 (154px).
+
+     Below the seam the switcher takes its own full-width row. Three equal
+     segments across the phone is a better control than three crushed ones,
+     and the search field gets the whole remainder of row one. */
+  @container creators (max-width: 700px) {
+    .command-row {
+      flex-wrap: wrap;
+      row-gap: 0.6em;
+    }
+
+    .search-slot {
+      max-width: none;
+    }
+
+    .command-row :global(.segmented-control) {
+      /* Undoes the `width: auto` / `margin-left: auto` pair above: here the
+         control IS a layout region, and `flex-basis: 100%` is what forces the
+         wrap onto a second line. */
+      flex: 1 0 100%;
+      width: 100%;
+      margin-left: 0;
+    }
   }
 
   /* ── short landscape (Z Fold 7 folded, phone landscape) ───────────────── */
