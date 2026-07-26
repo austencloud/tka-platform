@@ -6,6 +6,7 @@ import {
   resolveScanPropConfig,
   type ScanPropConfig,
 } from "$lib/shared/qr/services/scan-prop-resolver";
+import { hydrateSequence as hydrateDecodedForRender } from "$lib/shared/navigation/services/sequence-hydrator";
 import { hydrateSequence } from "../services/sequence-render-hydrator";
 import type {
   IScanActivityWatcher,
@@ -373,8 +374,26 @@ export function createScanActivityState({
     decoded: SequenceData,
     entry: CodeEntry
   ): Promise<SequenceData> {
+    // A decoded QR payload is LETTERLESS by construction — decodeSequence
+    // stamps `letter: null` on every step because the wire format carries
+    // motions, not letters. A letterless pictograph drops out of the
+    // special-placement tier (it needs a letter to build a key) AND degrades
+    // the default-placement key: detectLayerInfo can't classify alpha/beta/
+    // gamma without the letter, so the lookup asks for `pro_to_layer1` and
+    // then bare `pro`, neither of which any default_*_placements.json
+    // defines. Both tiers miss, the adjustment comes back (0,0), and every
+    // arrow renders on its raw hand point.
+    //
+    // Every other decoded-shortcode surface (/q/[code], /sequence/[id], the
+    // viewer drawer, the scan-cell warmer) runs the canonical hydrator, which
+    // derives letters before render. Scan Activity was the one that didn't.
+    // The local render hydrator still runs after it to keep the step/motion
+    // placement shape this module's preview path expects.
+    const withLetters = await hydrateDecodedForRender(decoded, {
+      loopDetector: null,
+    });
     const renderReady = hydrateSequence(
-      decoded as unknown as Record<string, unknown>
+      withLetters as unknown as Record<string, unknown>
     );
     // The decoded steps are ground truth. Encoded-only codes have no embedded
     // steps at entry time, so entry.word is still the stored (possibly junk)
