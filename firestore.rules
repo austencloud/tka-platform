@@ -963,17 +963,108 @@ service cloud.firestore {
     // PUBLIC SEQUENCES INDEX
     // ============================================================================
 
+    // A schema-2 public projection must prove the publish-transaction shape:
+    // provenance pointing at the caller's own owner document, the identity
+    // pair, the projection stamps, and a hash claim that exists AFTER the
+    // transaction and names this sequence. Rules cannot recompute a SHA-256
+    // digest — equality of the stamps guards accidental drift; the shared
+    // builder and the parity audit guard the full projection
+    // (parity-repair spec, section 9).
+    // Every field access uses .get() with a failing default: a missing field
+    // must evaluate to FALSE (deny), never to an evaluation error — an error
+    // in any operand can poison the whole condition in the rules engine.
+    //
+    // DELIBERATELY ABSENT (phase 4): the getAfter() proof that the matching
+    // publicSequenceHashes claim exists after the transaction. The Firestore
+    // emulator (firebase-tools 14.23.0) fails ALL getAfter calls here with
+    // "Service call error. Function: [getAfter]" — even constant paths —
+    // denying every schema-2 publish (see firebase-tools issues #2983/#2067
+    // for the get/getAfter emulator defect class; bisect 2026-07-26). An
+    // unverifiable rule that gates every publish must not ship. The persister
+    // writes the claim in the same transaction client-side; the rules-level
+    // linkage is malicious-client hardening and lands with the phase 4 strict
+    // rules once it can be proven against the emulator or a canary.
+    function isValidSchemaTwoPublicWrite(sequenceId) {
+      let d = request.resource.data;
+      return d.get('sourceRef', '') == 'users/' + request.auth.uid + '/sequences/' + sequenceId
+        && d.get('contentHash', '') is string
+        && d.get('contentHash', '').size() == 64
+        && d.get('contentHashVersion', -1) is int
+        && d.get('contentHashVersion', -1) >= 0
+        && d.get('word', '') is string
+        && d.get('word', '').size() > 0
+        && d.get('sequenceLength', 0) is int
+        && d.get('sequenceLength', 0) > 0
+        && d.get('publicProjectionRevision', -1) is int
+        && d.get('publicProjectionDigest', '') is string
+        && d.get('publicProjectionDigest', '').size() > 0;
+    }
+
     // Public sequences - denormalized for Browse page browsing
     match /publicSequences/{sequenceId} {
       // ANYONE can read public sequences (no authentication required)
       // See documentation at top of file for security rationale
       allow read: if true;
 
-      // Only the owner can write (via sync from their private library)
-      allow create, update: if isFullUser()
-        && request.resource.data.ownerId == request.auth.uid;
+      // Only the owner can write (via sync from their private library).
+      // Dual-compatible during the parity-repair migration window (phase 2):
+      // a legacy-shape document (no schema-2 stamp) writes as before, so old
+      // cached clients keep working; a document claiming schema 2 must prove
+      // the full transaction shape. Phase 4 removes the legacy allowance.
+      allow create: if isFullUser()
+        && request.resource.data.get('ownerId', '') == request.auth.uid
+        && (
+          request.resource.data.get('publicProjectionSchemaVersion', 0) != 2
+          || isValidSchemaTwoPublicWrite(sequenceId)
+        );
+      // Update additionally requires owning the EXISTING document. Checking
+      // only the incoming ownerId let any full user hijack any public doc by
+      // overwriting it with their own uid — a hole the parity rules tests
+      // exposed in the original block (2026-07-26).
+      allow update: if isFullUser()
+        && resource.data.get('ownerId', '') == request.auth.uid
+        && request.resource.data.get('ownerId', '') == request.auth.uid
+        && (
+          request.resource.data.get('publicProjectionSchemaVersion', 0) != 2
+          || isValidSchemaTwoPublicWrite(sequenceId)
+        );
       allow delete: if isAuthenticated()
-        && resource.data.ownerId == request.auth.uid;
+        && resource.data.get('ownerId', '') == request.auth.uid;
+    }
+
+    // Content-addressed public-sequence identity claims: ONE claim per
+    // distinct movement, keyed {contentHashVersion}_{contentHash} so hash
+    // bases can never mix. Written atomically with the public projection
+    // inside the publish transaction (public-sequence-persister.ts) — the
+    // same first-writer-wins pattern as shortcodeHashes above, except a
+    // losing publisher cannot adopt another owner's sequence id, so it gets
+    // a typed PUBLIC_DUPLICATE instead of a code to reuse.
+    match /publicSequenceHashes/{claimId} {
+      // Public read: duplicate detection runs before publish UI decisions,
+      // and the mapping contains no PII.
+      allow read: if true;
+
+      allow create: if isFullUser()
+        && request.resource.data.keys().hasOnly(['sequenceId', 'ownerId', 'contentHash', 'contentHashVersion', 'createdAt'])
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.sequenceId is string
+        && request.resource.data.sequenceId.size() > 0
+        && request.resource.data.contentHash is string
+        && request.resource.data.contentHash.size() == 64
+        && request.resource.data.contentHashVersion is int
+        && claimId == string(request.resource.data.contentHashVersion) + '_' + request.resource.data.contentHash;
+
+      // The identity mapping is immutable — a claim moves only by delete +
+      // re-create inside a transaction that proves ownership.
+      allow update: if false;
+
+      // Released by its owner (unpublish, delete, or content-hash change,
+      // proven inside the transaction). Admin repair tooling uses the Admin
+      // SDK, which bypasses rules — no client-side admin allowance needed,
+      // and isAdmin()'s user-doc get() would error for users without a
+      // profile document.
+      allow delete: if isAuthenticated()
+        && resource.data.get('ownerId', '') == request.auth.uid;
     }
 
     // ============================================================================

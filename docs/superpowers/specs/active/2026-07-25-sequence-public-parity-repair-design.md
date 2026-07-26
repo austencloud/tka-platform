@@ -1127,6 +1127,56 @@ new transaction shape for documents carrying
 New clients write schema 2. Old cached clients can still write legacy shape
 during the migration window.
 
+**LANDED (2026-07-26).** What shipped, and the deltas from the section 6/8
+design:
+
+- `public-sequence-persister.ts` — `publishPublicSequence` (one transaction:
+  public doc + claim + stale-claim release + owner projection stamps, with the
+  duplicate check inside), `unpublishPublicSequence` (doc + owned claim +
+  owner stamp clearing; owner id read from the stored doc so recycle-bin and
+  batch callers keep their signatures), `updatePublicThumbnails` (narrow
+  patch; restamps digest/revision on schema-2 docs via
+  `computeStoredProjectionDigest` and self-heals a missing claim).
+  `PublicIndexSyncer` now delegates all three; context preparation,
+  moderation, artifacts, and cache stay outside the transaction (section 10).
+- `PublicDuplicateError` (typed, `code: "PUBLIC_DUPLICATE"`); the retry layer
+  (`library-sync-retry.ts`) classifies it, `IncompleteWordError`,
+  `SequenceNormalizationError`, and moderation failures as PERMANENT — the
+  record gains `pendingSyncMetadata.blockedReason`, is skipped by future
+  passes, and the user is told once. An explicit re-save clears the block
+  (`library-save-service.ts:209` writes a fresh metadata object).
+- `saveSequenceWithMetadata` no longer writes `word: sequence.word || name`;
+  strict derivation stamps the word when complete, otherwise the prior stored
+  word is preserved (never a title) and the public boundary refuses partials.
+- Rules: `publicSequenceHashes` block (immutable claims, owner-released;
+  Admin repair uses the Admin SDK which bypasses rules) and dual-compatible
+  `publicSequences` enforcement — schema-2 writes must prove sourceRef, the
+  identity pair, and the projection stamps; legacy-shape writes stay allowed
+  until phase 4. All field access uses `.get()` defaults so a missing field
+  denies instead of erroring. **The `getAfter()` claim-linkage proof is
+  deferred to phase 4**: firebase-tools 14.23.0's emulator fails EVERY
+  getAfter call ("Service call error", the #2983/#2067 defect class —
+  verified by bisect with constant, variable, and computed paths), so the
+  rule was unverifiable, and an unverifiable rule gating every publish must
+  not ship. The client persister writes the claim in the same transaction;
+  rules-level linkage is malicious-client hardening and needs an emulator
+  fix or canary proof first. Deployed 2026-07-26. Emulator harness notes:
+  rules test files must run in SEPARATE `emulators:exec` invocations
+  (`test:rules:core` / `test:rules:parity`) — co-running corrupts the shared
+  emulator's write stream ("RESOURCE_EXHAUSTED: message larger than max")
+  and later files' writes silently fail to land; batch `assertSucceeds` is
+  not proof of persistence, always read back.
+- **Security fix found by the new rules tests:** the original
+  `publicSequences` update rule checked only the INCOMING `ownerId`, so any
+  full user could hijack any public document by overwriting it with their own
+  uid. Update now also requires owning the existing document.
+- Not in this phase (still open for phase 2.5/3): rerouting
+  `LibraryBatchOperations` / `LibraryRecycleBin` / conflict-resolution /
+  `LoopLabelsFirebaseRepository.deleteSequenceFromDatabase` onto the
+  persister (section 7), the `LibrarySaveService` feedback-boundary rework,
+  profile-count mutation, and deleting the dead feature-layer batch/recycle
+  copies.
+
 ### Phase 3: dry-run and repair
 
 1. Export or otherwise retain a recoverable production snapshot.
