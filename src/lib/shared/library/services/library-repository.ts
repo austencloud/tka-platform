@@ -73,8 +73,14 @@ import {
   notifyLibrarySequenceAdded,
   notifyLibrarySequenceUpdated,
 } from "$lib/shared/library/library-events";
-import { LibraryRecycleBin } from "$lib/shared/library/services/library-recycle-bin";
-import { LibraryBatchOperations } from "$lib/shared/library/services/library-batch-operations";
+import {
+  LibraryRecycleBin,
+  type RestoreSequenceResult,
+} from "$lib/shared/library/services/library-recycle-bin";
+import {
+  LibraryBatchOperations,
+  type BatchSequenceResult,
+} from "$lib/shared/library/services/library-batch-operations";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
 import {
   isEmptySequence,
@@ -1323,13 +1329,35 @@ export class LibraryRepository {
             } as Record<string, unknown>)
           ),
         "library"
-      ).catch((error) => {
-        console.error(
-          "[LibraryRepository] Failed to re-save after conflict resolution:",
-          error
-        );
-        toast.error("Failed to save your version. Will retry when online.");
-      });
+      )
+        .then(() => {
+          // A public winning copy goes through normalization and the publish
+          // transaction (parity-repair spec section 7) — a bare owner setDoc
+          // would change the owner's content hash while the gallery mirror
+          // kept serving the losing version.
+          if (sequence.visibility !== "public" || !this.publicIndexSyncer) {
+            return;
+          }
+          return this.publicIndexSyncer
+            .syncToPublicIndex(sequence, userId)
+            .catch((syncError) => {
+              console.error(
+                "[LibraryRepository] Conflict re-save synced the owner but not the gallery:",
+                syncError
+              );
+              toast.warning(
+                "Your version was saved, but the community gallery copy will update on your next save.",
+                6000
+              );
+            });
+        })
+        .catch((error) => {
+          console.error(
+            "[LibraryRepository] Failed to re-save after conflict resolution:",
+            error
+          );
+          toast.error("Failed to save your version. Will retry when online.");
+        });
 
       this.conflictResolver?.trackLocalWrite(sequence.id, newVersion);
     } catch (error) {
@@ -1426,7 +1454,9 @@ export class LibraryRepository {
   // BATCH OPERATIONS (delegated to LibraryBatchOperations)
   // ============================================================
 
-  async deleteSequences(sequenceIds: string[]): Promise<void> {
+  async deleteSequences(
+    sequenceIds: string[]
+  ): Promise<BatchSequenceResult[]> {
     return this.batchOps.deleteSequences(sequenceIds);
   }
 
@@ -1447,7 +1477,7 @@ export class LibraryRepository {
   async setVisibilityBatch(
     sequenceIds: string[],
     visibility: SequenceVisibility
-  ): Promise<void> {
+  ): Promise<BatchSequenceResult[]> {
     return this.batchOps.setVisibilityBatch(sequenceIds, visibility);
   }
 
@@ -1459,7 +1489,7 @@ export class LibraryRepository {
     return this.recycleBin.softDeleteSequence(sequenceId);
   }
 
-  async restoreSequence(sequenceId: string): Promise<void> {
+  async restoreSequence(sequenceId: string): Promise<RestoreSequenceResult> {
     return this.recycleBin.restoreSequence(sequenceId);
   }
 

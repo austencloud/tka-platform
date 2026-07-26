@@ -20,7 +20,6 @@ import {
   getUserSequencesPath,
   getUserCollectionPath,
   getUserSequencePath,
-  getPublicSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
 import { notifyLibraryMutated } from "$lib/shared/library/library-events";
 import type {
@@ -28,6 +27,7 @@ import type {
   SequenceVisibility,
 } from "$lib/shared/library/domain/models/library-sequence";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
+import { deleteSequenceCompletely } from "$lib/shared/library/services/public-sequence-persister";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
 import {
   meetsCommunityMinimum,
@@ -35,6 +35,22 @@ import {
 } from "$lib/shared/library/domain/sequence-min-length";
 
 type MapDocFn = (doc: DocumentData, id: string) => LibrarySequence;
+
+/**
+ * Per-sequence outcome of a batch operation. Batch operations are atomic PER
+ * SEQUENCE, not across the selection (parity-repair spec section 7): one
+ * rejected sequence never rolls back — or hides — its committed neighbors.
+ * Retrying the failed subset is safe.
+ */
+export interface BatchSequenceResult {
+  readonly sequenceId: string;
+  readonly status: "ok" | "failed";
+  readonly error?: unknown;
+}
+
+/** Per-sequence transactions run this many at a time. Each touches distinct
+ *  documents, so the bound exists for connection pressure, not contention. */
+const SEQUENCE_CONCURRENCY = 4;
 
 export class LibraryBatchOperations {
   constructor(
@@ -50,6 +66,30 @@ export class LibraryBatchOperations {
       severity?: "error" | "warning"
     ) => void
   ) {}
+
+  private async loadExistingSequences(
+    firestore: Firestore,
+    userId: string,
+    sequenceIds: readonly string[]
+  ): Promise<Map<string, LibrarySequence>> {
+    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
+    const CHUNK = 30; // Firestore documentId() `in` limit
+    const existing = new Map<string, LibrarySequence>();
+
+    for (let i = 0; i < sequenceIds.length; i += CHUNK) {
+      const chunk = sequenceIds.slice(i, i + CHUNK);
+      const snapshot = await getDocs(
+        query(sequencesRef, where(documentId(), "in", chunk))
+      );
+      for (const docSnap of snapshot.docs) {
+        existing.set(
+          docSnap.id,
+          this.mapDocToLibrarySequence(docSnap.data(), docSnap.id)
+        );
+      }
+    }
+    return existing;
+  }
 
   private async touchCollections(
     firestore: Firestore,
@@ -85,80 +125,81 @@ export class LibraryBatchOperations {
     }
   }
 
-  async deleteSequences(sequenceIds: string[]): Promise<void> {
-    if (sequenceIds.length === 0) return;
+  async deleteSequences(sequenceIds: string[]): Promise<BatchSequenceResult[]> {
+    if (sequenceIds.length === 0) return [];
 
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
+    const existingSequences = await this.loadExistingSequences(
+      firestore,
+      userId,
+      sequenceIds
+    );
+    const idsToDelete = sequenceIds.filter((id) => existingSequences.has(id));
 
-    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
-    const BATCH_SIZE = 30;
-    const existingSequences = new Map<string, LibrarySequence>();
+    // One transaction per sequence: owner doc + public mirror + owned hash
+    // claims move together, so a mid-batch failure can never strand a public
+    // document whose owner is gone (the drift class the parity repair closes).
+    const results: BatchSequenceResult[] = [];
+    let ownerDeletedCount = 0;
 
-    for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
-      const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
-      const batchQuery = query(sequencesRef, where(documentId(), "in", chunk));
-      const batchSnapshot = await getDocs(batchQuery);
+    for (let i = 0; i < idsToDelete.length; i += SEQUENCE_CONCURRENCY) {
+      const chunk = idsToDelete.slice(i, i + SEQUENCE_CONCURRENCY);
+      const settled = await Promise.allSettled(
+        chunk.map((sequenceId) =>
+          trackWrite(
+            () => deleteSequenceCompletely(firestore, userId, sequenceId),
+            "library"
+          )
+        )
+      );
+      settled.forEach((outcome, index) => {
+        const sequenceId = chunk[index]!;
+        if (outcome.status === "fulfilled") {
+          if (outcome.value.ownerDeleted) ownerDeletedCount++;
+          results.push({ sequenceId, status: "ok" });
+          notifyLibraryMutated(sequenceId);
+        } else {
+          results.push({
+            sequenceId,
+            status: "failed",
+            error: outcome.reason,
+          });
+        }
+      });
+    }
 
-      for (const docSnap of batchSnapshot.docs) {
-        existingSequences.set(
-          docSnap.id,
-          this.mapDocToLibrarySequence(docSnap.data(), docSnap.id)
+    // The profile counter is a denormalized display value, not an invariant
+    // participant — one aggregate decrement for the deletes that actually
+    // committed, and a failure here must not mask them.
+    if (ownerDeletedCount > 0) {
+      try {
+        await updateDoc(doc(firestore, `users/${userId}`), {
+          sequenceCount: increment(-ownerDeletedCount),
+          lastActivityDate: serverTimestamp(),
+        });
+      } catch (error) {
+        this.reportError(
+          "Sequences deleted, but the profile count did not update.",
+          error,
+          "delete-sequences-profile-count",
+          { ownerDeletedCount },
+          "warning"
         );
       }
     }
 
-    // Chunk the delete writes so a large multi-select never exceeds Firestore's
-    // 500-op batch limit. Each public sequence costs 2 ops (user doc + public
-    // mirror), plus one profile-counter write, so 200 sequences per batch
-    // stays safely under 500.
-    const DELETE_BATCH_SIZE = 200;
-    const idsToDelete = sequenceIds.filter((id) => existingSequences.has(id));
-
-    const userDocRef =
-      idsToDelete.length > 0 ? doc(firestore, `users/${userId}`) : null;
-
-    try {
-      for (let i = 0; i < idsToDelete.length; i += DELETE_BATCH_SIZE) {
-        const chunk = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
-        const batch = writeBatch(firestore);
-        let chunkDeletedCount = 0;
-
-        for (const sequenceId of chunk) {
-          const existing = existingSequences.get(sequenceId);
-          if (!existing) continue;
-          if (existing.visibility === "public") {
-            batch.delete(doc(firestore, getPublicSequencePath(sequenceId)));
-          }
-          batch.delete(doc(firestore, getUserSequencePath(userId, sequenceId)));
-          chunkDeletedCount++;
-        }
-
-        if (userDocRef && chunkDeletedCount > 0) {
-          batch.set(
-            userDocRef,
-            {
-              sequenceCount: increment(-chunkDeletedCount),
-              lastActivityDate: serverTimestamp(),
-            },
-            { merge: true }
-          );
-        }
-
-        await trackWrite(() => batch.commit(), "library");
-      }
-
-      for (const sequenceId of idsToDelete) {
-        notifyLibraryMutated(sequenceId);
-      }
-    } catch (error) {
+    const failures = results.filter((r) => r.status === "failed");
+    if (failures.length > 0) {
       this.reportError(
-        "Failed to delete sequences. Please try again.",
-        error,
-        "delete-sequences-batch"
+        `Failed to delete ${failures.length} of ${idsToDelete.length} sequences. Please try again.`,
+        failures[0]!.error,
+        "delete-sequences-batch",
+        { failedIds: failures.map((f) => f.sequenceId) }
       );
       throw new LibraryError("Failed to delete sequences", "NETWORK");
     }
+    return results;
   }
 
   async moveToCollection(
@@ -193,13 +234,21 @@ export class LibraryBatchOperations {
     sequenceIds: string[],
     tagIds: string[]
   ): Promise<void> {
+    if (sequenceIds.length === 0 || tagIds.length === 0) return;
+
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
-    const batch = writeBatch(firestore);
+    const existingSequences = await this.loadExistingSequences(
+      firestore,
+      userId,
+      sequenceIds
+    );
 
-    for (const sequenceId of sequenceIds) {
-      const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-      batch.update(docRef, {
+    // Owner side: one offline-capable batch, scoped to sequences that exist so
+    // one stale id cannot fail the whole batch.
+    const batch = writeBatch(firestore);
+    for (const sequenceId of existingSequences.keys()) {
+      batch.update(doc(firestore, getUserSequencePath(userId, sequenceId)), {
         tagIds: arrayUnion(...tagIds),
         updatedAt: serverTimestamp(),
       });
@@ -212,96 +261,172 @@ export class LibraryBatchOperations {
       toast.error("Failed to add tags. Please try again.");
       throw new LibraryError("Failed to add tags to sequences", "NETWORK");
     }
+
+    // Public side: the public document stores RESOLVED tag names, so every
+    // public sequence must be reprojected through the publish transaction
+    // (spec section 7) — an owner-only tag write would leave the gallery's tag
+    // list stale forever.
+    const publicSequences = [...existingSequences.values()].filter(
+      (seq) => seq.visibility === "public" && !seq.isDeleted
+    );
+    const failures: BatchSequenceResult[] = [];
+
+    for (let i = 0; i < publicSequences.length; i += SEQUENCE_CONCURRENCY) {
+      const chunk = publicSequences.slice(i, i + SEQUENCE_CONCURRENCY);
+      const settled = await Promise.allSettled(
+        chunk.map((seq) =>
+          this.publicIndexSyncer.syncToPublicIndex(
+            {
+              ...seq,
+              tagIds: [...new Set([...(seq.tagIds ?? []), ...tagIds])],
+            },
+            userId
+          )
+        )
+      );
+      settled.forEach((outcome, index) => {
+        if (outcome.status === "rejected") {
+          failures.push({
+            sequenceId: chunk[index]!.id,
+            status: "failed",
+            error: outcome.reason,
+          });
+        }
+      });
+    }
+
+    if (failures.length > 0) {
+      this.reportError(
+        "Tags added, but the public gallery did not finish updating.",
+        failures[0]!.error,
+        "add-tags-public-reproject",
+        { failedIds: failures.map((f) => f.sequenceId) },
+        "warning"
+      );
+      throw new LibraryError("Failed to update the public gallery", "NETWORK");
+    }
   }
 
   async setVisibilityBatch(
     sequenceIds: string[],
     visibility: SequenceVisibility
-  ): Promise<void> {
-    if (sequenceIds.length === 0) return;
+  ): Promise<BatchSequenceResult[]> {
+    if (sequenceIds.length === 0) return [];
 
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
-    const batch = writeBatch(firestore);
-    const now = serverTimestamp();
+    const existingSequences = await this.loadExistingSequences(
+      firestore,
+      userId,
+      sequenceIds
+    );
 
-    const toPublish: LibrarySequence[] = [];
-    const toUnpublish: string[] = [];
     const collectionsToTouch = new Set<string>();
+    const results: BatchSequenceResult[] = [];
+    const ids = [...existingSequences.keys()];
 
-    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
-    const BATCH_SIZE = 30;
+    // Per sequence: owner visibility write + the matching publish/unpublish
+    // transaction, never an all-or-nothing owner batch followed by a
+    // Promise.all of mirror writes (spec section 7). A failed mirror sync
+    // reverts that sequence's owner visibility so owner and mirror cannot
+    // disagree about eligibility.
+    for (let i = 0; i < ids.length; i += SEQUENCE_CONCURRENCY) {
+      const chunk = ids.slice(i, i + SEQUENCE_CONCURRENCY);
+      const settled = await Promise.allSettled(
+        chunk.map(async (sequenceId) => {
+          const existing = existingSequences.get(sequenceId)!;
+          for (const collectionId of existing.collectionIds ?? []) {
+            collectionsToTouch.add(collectionId);
+          }
 
-    for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
-      const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
-      const batchQuery = query(sequencesRef, where(documentId(), "in", chunk));
-      const batchSnapshot = await getDocs(batchQuery);
+          if (visibility === "public" && !meetsCommunityMinimum(existing)) {
+            throw new LibraryError(
+              `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery.`,
+              "INVALID_DATA",
+              sequenceId
+            );
+          }
 
-      for (const docSnap of batchSnapshot.docs) {
-        const existing = this.mapDocToLibrarySequence(
-          docSnap.data(),
-          docSnap.id
-        );
-        for (const collectionId of existing.collectionIds ?? []) {
-          collectionsToTouch.add(collectionId);
-        }
-        const docRef = doc(firestore, getUserSequencePath(userId, docSnap.id));
-
-        batch.update(docRef, {
-          visibility,
-          visibilityChangedAt: now,
-          updatedAt: now,
-        });
-
-        if (visibility === "public" && !meetsCommunityMinimum(existing)) {
-          throw new LibraryError(
-            `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery.`,
-            "INVALID_DATA",
-            docSnap.id
+          const ownerRef = doc(
+            firestore,
+            getUserSequencePath(userId, sequenceId)
           );
-        }
+          await trackWrite(
+            () =>
+              updateDoc(ownerRef, {
+                visibility,
+                visibilityChangedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              }),
+            "library"
+          );
 
-        if (visibility === "public") {
-          const withComposition = ensureComposition(existing);
-          toPublish.push({ ...existing, ...withComposition, visibility });
-        } else if (existing.visibility === "public") {
-          toUnpublish.push(docSnap.id);
-        }
-      }
-    }
-
-    try {
-      await trackWrite(() => batch.commit(), "library");
-    } catch (error) {
-      console.error("[LibraryRepository] Failed to update visibility:", error);
-      toast.error("Failed to update visibility. Please try again.");
-      throw new LibraryError("Failed to update sequence visibility", "NETWORK");
-    }
-
-    try {
-      await Promise.all([
-        ...toPublish.map((seq) =>
-          this.publicIndexSyncer.syncToPublicIndex(seq, userId)
-        ),
-        ...toUnpublish.map((id) =>
-          this.publicIndexSyncer.removeFromPublicIndex(id)
-        ),
-      ]);
-      await this.touchCollections(
-        firestore,
-        userId,
-        [...collectionsToTouch]
+          try {
+            if (visibility === "public") {
+              const withComposition = ensureComposition(existing);
+              await this.publicIndexSyncer.syncToPublicIndex(
+                { ...existing, ...withComposition, visibility },
+                userId
+              );
+            } else if (existing.visibility === "public") {
+              await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
+            }
+          } catch (syncError) {
+            // Compensate: put the owner back the way it was. If even the
+            // revert fails the sequence is reported failed either way.
+            await updateDoc(ownerRef, {
+              visibility: existing.visibility,
+              visibilityChangedAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            }).catch(() => undefined);
+            throw syncError;
+          }
+        })
       );
+      settled.forEach((outcome, index) => {
+        const sequenceId = chunk[index]!;
+        results.push(
+          outcome.status === "fulfilled"
+            ? { sequenceId, status: "ok" }
+            : { sequenceId, status: "failed", error: outcome.reason }
+        );
+      });
+    }
+
+    try {
+      await this.touchCollections(firestore, userId, [...collectionsToTouch]);
     } catch (error) {
-      console.error("[LibraryRepository] Failed to sync public index:", error);
       this.reportError(
-        "Visibility changed, but the public gallery did not finish updating.",
+        "Visibility updated, but collection timestamps did not refresh.",
         error,
-        "visibility-public-index-sync",
-        { sequenceCount: sequenceIds.length },
+        "visibility-touch-collections",
+        {},
         "warning"
       );
-      throw new LibraryError("Failed to update the public gallery", "NETWORK");
     }
+
+    const failures = results.filter((r) => r.status === "failed");
+    if (failures.length > 0) {
+      // Surface the community-minimum rejection verbatim when present — it is
+      // an actionable user message, not a transport failure.
+      const gateFailure = failures
+        .map((f) => f.error)
+        .find(
+          (e) => e instanceof LibraryError && e.code === "INVALID_DATA"
+        ) as LibraryError | undefined;
+      this.reportError(
+        gateFailure
+          ? gateFailure.message
+          : "Failed to update visibility for some sequences. Please try again.",
+        failures[0]!.error,
+        "set-visibility-batch",
+        { failedIds: failures.map((f) => f.sequenceId) }
+      );
+      throw (
+        gateFailure ??
+        new LibraryError("Failed to update sequence visibility", "NETWORK")
+      );
+    }
+    return results;
   }
 }

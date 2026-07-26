@@ -241,6 +241,55 @@ describe("publicSequences: dual-compatible writes", () => {
   });
 });
 
+describe("admin unpublish allowance", () => {
+  const ADMIN_UID = "labeler-admin";
+  const PROFILED_UID = "profiled-regular";
+
+  function adminDb() {
+    return testEnv
+      .authenticatedContext(ADMIN_UID, {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+  }
+  function profiledDb() {
+    return testEnv
+      .authenticatedContext(PROFILED_UID, {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+  }
+
+  it("lets an admin delete another owner's public doc and claim; a profiled non-admin cannot", async () => {
+    // The loop-labeler runs unpublishPublicSequence client-side as an admin;
+    // owner-check-first ordering means profile-less users still deny via
+    // error absorption, and role:'user' profiles deny outright.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `users/${ADMIN_UID}`), { role: "admin" });
+      await setDoc(doc(db, `users/${PROFILED_UID}`), { role: "user" });
+    });
+
+    const denied = ids("admindeny");
+    await seedPublishedSequence(denied.seqId, denied.hash, denied.claimId);
+    await assertFails(
+      deleteDoc(doc(profiledDb(), `publicSequences/${denied.seqId}`))
+    );
+    await assertFails(
+      deleteDoc(doc(profiledDb(), `publicSequenceHashes/${denied.claimId}`))
+    );
+
+    const allowed = ids("adminok");
+    await seedPublishedSequence(allowed.seqId, allowed.hash, allowed.claimId);
+    await assertSucceeds(
+      deleteDoc(doc(adminDb(), `publicSequences/${allowed.seqId}`))
+    );
+    await assertSucceeds(
+      deleteDoc(doc(adminDb(), `publicSequenceHashes/${allowed.claimId}`))
+    );
+  });
+});
+
 describe("publicSequenceHashes: claim rules", () => {
   it("denies a claim whose id does not match its hash pair", async () => {
     const { seqId, hash } = ids("mismatch");

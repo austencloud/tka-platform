@@ -4,11 +4,12 @@ import {
   firestoreGet,
   firestoreList,
 } from "$lib/shared/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { unpublishPublicSequence } from "$lib/shared/library/services/public-sequence-persister";
 import { LabeledSequenceSchema } from "../domain/models/loop-label-schemas";
 import type { LabeledSequence } from "./types";
 
 const LOOP_LABELS_COLLECTION = "loop-labels";
-const PUBLIC_SEQUENCES_COLLECTION = "publicSequences";
 const LOCAL_STORAGE_KEY = "loop-labels";
 
 /**
@@ -204,14 +205,16 @@ export class LOOPLabelsFirebaseRepository {
     try {
       this.syncStatus = "syncing";
 
-      // Delete the sequence from publicSequences. deleteDoc is idempotent —
-      // it succeeds whether or not the document exists — so we delete directly.
-      // The previous implementation gated this on a firestoreGet validated
-      // against LabeledSequenceSchema, which a publicSequences doc never
-      // satisfies (it has no designations/isFreeform/labeledAt/notes). That
-      // read always returned null, so the delete never ran and every sequence
-      // was orphaned in publicSequences while the call still reported success.
-      await firestoreDelete(PUBLIC_SEQUENCES_COLLECTION, sequenceId);
+      // Route through the unpublish transaction, not a raw document delete
+      // (parity-repair spec section 7). A bare delete of publicSequences/{id}
+      // left the owner document stamped `visibility: "public"` with no mirror
+      // and left the hash claim behind — exactly the drift class the parity
+      // repair removes, and a state the phase-4 strict rules will reject.
+      // unpublishPublicSequence removes the mirror, releases the owned claim,
+      // and clears the owner's projection stamps in one transaction. Rules
+      // allow this for the sequence owner or an admin; for anyone else the
+      // transaction fails instead of half-deleting.
+      await unpublishPublicSequence(await getFirestoreInstance(), sequenceId);
 
       // Also delete the LOOP label if it exists
       const label = await firestoreGet(

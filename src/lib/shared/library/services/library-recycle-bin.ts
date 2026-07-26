@@ -2,8 +2,6 @@ import {
   doc,
   getDoc,
   updateDoc,
-  deleteDoc,
-  writeBatch,
   serverTimestamp,
   type Firestore,
   type DocumentData,
@@ -14,12 +12,31 @@ import { LibrarySequenceDocSchema } from "$lib/shared/library/domain/library-sch
 import {
   getUserSequencesPath,
   getUserSequencePath,
-  getPublicSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
 import { notifyLibraryMutated } from "$lib/shared/library/library-events";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
+import {
+  deleteSequenceCompletely,
+  softDeleteSequenceEverywhere,
+  PublicDuplicateError,
+} from "$lib/shared/library/services/public-sequence-persister";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
+
+/**
+ * Typed restore outcome (parity-repair spec section 7). A restore of a
+ * formerly public record reruns the full publish pipeline — normalization,
+ * moderation, claim check — and a duplicate claim restores the record as
+ * PRIVATE instead of failing the restore.
+ */
+export type RestoreSequenceResult =
+  | { readonly status: "RESTORED" }
+  | {
+      readonly status: "RESTORED_PRIVATE_PUBLIC_CONFLICT";
+      readonly claimedWord?: string;
+    }
+  /** Restored, but the public projection could not be rebuilt right now. */
+  | { readonly status: "RESTORED_PUBLIC_SYNC_PENDING" };
 
 export class LibraryRecycleBin {
   constructor(
@@ -39,38 +56,23 @@ export class LibraryRecycleBin {
   async softDeleteSequence(sequenceId: string): Promise<void> {
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
-    const existing = await this.getSequence(sequenceId);
 
-    if (!existing) {
-      throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
-    }
-
-    if (existing.visibility === "public" && this.publicIndexSyncer) {
-      try {
-        await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
-      } catch (error) {
-        this.reportError(
-          "Sequence moved to recycle bin, but it may still appear in the community gallery.",
-          error,
-          "soft-delete-public-index-remove",
-          { sequenceId },
-          "warning"
-        );
-      }
-    }
-
+    // One transaction (spec section 7): owner `isDeleted` mark, projection
+    // stamp clearing, mirror delete, and claim release move together — the old
+    // shape (mirror removal, THEN a separate owner update) could fail between
+    // the two and leave a marked-deleted owner still visible in the gallery,
+    // or a removed mirror whose owner never got marked.
     try {
-      await trackWrite(
-        () =>
-          updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
-            isDeleted: true,
-            deletedAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }),
+      const result = await trackWrite(
+        () => softDeleteSequenceEverywhere(firestore, userId, sequenceId),
         "library"
       );
+      if (result.status === "owner-missing") {
+        throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
+      }
       notifyLibraryMutated(sequenceId);
     } catch (error) {
+      if (error instanceof LibraryError) throw error;
       this.reportError(
         "Failed to move sequence to recycle bin.",
         error,
@@ -81,14 +83,21 @@ export class LibraryRecycleBin {
     }
   }
 
-  async restoreSequence(sequenceId: string): Promise<void> {
+  async restoreSequence(sequenceId: string): Promise<RestoreSequenceResult> {
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
+    // getSequence is a bare read — it returns soft-deleted docs too, which is
+    // exactly what a restore needs.
+    const existing = await this.getSequence(sequenceId);
+    if (!existing) {
+      throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
+    }
 
+    const ownerRef = doc(firestore, getUserSequencePath(userId, sequenceId));
     try {
       await trackWrite(
         () =>
-          updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
+          updateDoc(ownerRef, {
             isDeleted: false,
             deletedAt: null,
             updatedAt: serverTimestamp(),
@@ -104,6 +113,53 @@ export class LibraryRecycleBin {
         { sequenceId }
       );
       throw new LibraryError("Failed to restore sequence", "NETWORK", sequenceId);
+    }
+
+    // Soft delete removed the public projection, so a formerly public record
+    // re-earns its gallery entry through the full publish pipeline —
+    // normalization, moderation, and the hash-claim transaction (spec section
+    // 7). Another sequence may have claimed the identity while this one sat in
+    // the bin; that is a successful restore, just a private one.
+    if (existing.visibility !== "public") {
+      return { status: "RESTORED" };
+    }
+
+    try {
+      await this.publicIndexSyncer.syncToPublicIndex(
+        { ...existing, isDeleted: false },
+        userId
+      );
+      return { status: "RESTORED" };
+    } catch (error) {
+      if (error instanceof PublicDuplicateError) {
+        await updateDoc(ownerRef, {
+          visibility: "private",
+          visibilityChangedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }).catch(() => undefined);
+        notifyLibraryMutated(sequenceId);
+        this.reportError(
+          "Sequence restored as private — an identical sequence is already in the community gallery.",
+          error,
+          "restore-sequence-public-conflict",
+          { sequenceId, claimedBySequenceId: error.claimedBySequenceId },
+          "warning"
+        );
+        return {
+          status: "RESTORED_PRIVATE_PUBLIC_CONFLICT",
+          ...(error.claimedWord !== undefined && {
+            claimedWord: error.claimedWord,
+          }),
+        };
+      }
+      this.reportError(
+        "Sequence restored, but it could not be returned to the community gallery yet.",
+        error,
+        "restore-sequence-public-sync",
+        { sequenceId },
+        "warning"
+      );
+      return { status: "RESTORED_PUBLIC_SYNC_PENDING" };
     }
   }
 
@@ -132,8 +188,14 @@ export class LibraryRecycleBin {
       );
     }
 
+    // Soft delete already removed the mirror and claim, but a purge deletes
+    // any DEFENSIVE leftover in the same per-record transaction (spec section
+    // 7) — a pre-repair record can still carry both.
     try {
-      await trackWrite(() => deleteDoc(docRef), "library");
+      await trackWrite(
+        () => deleteSequenceCompletely(firestore, userId, sequenceId),
+        "library"
+      );
       notifyLibraryMutated(sequenceId);
     } catch (error) {
       this.reportError(
@@ -170,37 +232,41 @@ export class LibraryRecycleBin {
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
 
-    // Each public sequence costs 2 batch ops (user doc + public mirror), so a
-    // chunk of 250 stays within Firestore's 500-op batch limit even when every
-    // sequence in the chunk is public.
-    const CHUNK_SIZE = 250;
+    // Per-record transactions (owner + leftover mirror + owned claims), a few
+    // at a time. One failed record must not hide its committed neighbors —
+    // retrying the remainder is safe because each transaction is idempotent
+    // against already-deleted documents.
+    const CONCURRENCY = 4;
+    const failures: { sequenceId: string; error: unknown }[] = [];
 
-    for (let i = 0; i < deleted.length; i += CHUNK_SIZE) {
-      const chunk = deleted.slice(i, i + CHUNK_SIZE);
-      const batch = writeBatch(firestore);
-
-      for (const seq of chunk) {
-        batch.delete(doc(firestore, getUserSequencePath(userId, seq.id)));
-
-        if (seq.visibility === "public") {
-          batch.delete(doc(firestore, getPublicSequencePath(seq.id)));
+    for (let i = 0; i < deleted.length; i += CONCURRENCY) {
+      const chunk = deleted.slice(i, i + CONCURRENCY);
+      const settled = await Promise.allSettled(
+        chunk.map((seq) =>
+          trackWrite(
+            () => deleteSequenceCompletely(firestore, userId, seq.id),
+            "library"
+          )
+        )
+      );
+      settled.forEach((outcome, index) => {
+        const seq = chunk[index]!;
+        if (outcome.status === "fulfilled") {
+          notifyLibraryMutated(seq.id);
+        } else {
+          failures.push({ sequenceId: seq.id, error: outcome.reason });
         }
-      }
-
-      try {
-        await trackWrite(() => batch.commit(), "library");
-      } catch (error) {
-        this.reportError(
-          "Failed to empty recycle bin. Some sequences may remain.",
-          error,
-          "empty-recycle-bin"
-        );
-        throw new LibraryError("Failed to empty recycle bin", "NETWORK");
-      }
+      });
     }
 
-    for (const seq of deleted) {
-      notifyLibraryMutated(seq.id);
+    if (failures.length > 0) {
+      this.reportError(
+        `Failed to empty recycle bin — ${failures.length} of ${deleted.length} sequences remain.`,
+        failures[0]!.error,
+        "empty-recycle-bin",
+        { failedIds: failures.map((f) => f.sequenceId) }
+      );
+      throw new LibraryError("Failed to empty recycle bin", "NETWORK");
     }
   }
 }

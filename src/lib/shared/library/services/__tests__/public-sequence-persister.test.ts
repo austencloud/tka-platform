@@ -40,6 +40,8 @@ import {
   unpublishPublicSequence,
   updatePublicThumbnails,
   publicSequenceClaimId,
+  deleteSequenceCompletely,
+  softDeleteSequenceEverywhere,
 } from "../public-sequence-persister";
 import { computeStoredProjectionDigest } from "../public-sequence-projection";
 
@@ -213,5 +215,180 @@ describe("updatePublicThumbnails", () => {
     const result = await updatePublicThumbnails(FIRESTORE, "seq-gone", ["t.png"]);
     expect(result.status).toBe("absent");
     expect(mocks.updateDoc).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteSequenceCompletely", () => {
+  const HASH_A = "a".repeat(64);
+  const HASH_B = "b".repeat(64);
+
+  it("deletes owner, mirror, and claim in one transaction", async () => {
+    primeDocs({
+      "users/owner-1/sequences/seq-1": {
+        exists: true,
+        data: { contentHash: HASH_A, contentHashVersion: 2 },
+      },
+      "publicSequences/seq-1": {
+        exists: true,
+        data: { ownerId: "owner-1", contentHash: HASH_A, contentHashVersion: 2 },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
+        exists: true,
+        data: { sequenceId: "seq-1", ownerId: "owner-1" },
+      },
+    });
+
+    const result = await deleteSequenceCompletely(FIRESTORE, "owner-1", "seq-1");
+
+    expect(result).toEqual({
+      ownerDeleted: true,
+      publicDeleted: true,
+      claimsDeleted: 1,
+    });
+    const deleted = mocks.deleteDoc.mock.calls.map(
+      ([ref]) => (ref as { path: string }).path
+    );
+    expect(deleted).toContain("users/owner-1/sequences/seq-1");
+    expect(deleted).toContain("publicSequences/seq-1");
+    expect(deleted).toContain(
+      `publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`
+    );
+  });
+
+  it("releases BOTH owned claims when a stale mirror and the owner disagree on hash", async () => {
+    primeDocs({
+      "users/owner-1/sequences/seq-1": {
+        exists: true,
+        data: { contentHash: HASH_B, contentHashVersion: 2 },
+      },
+      "publicSequences/seq-1": {
+        exists: true,
+        data: { ownerId: "owner-1", contentHash: HASH_A, contentHashVersion: 2 },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
+        exists: true,
+        data: { sequenceId: "seq-1" },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_B)}`]: {
+        exists: true,
+        data: { sequenceId: "seq-1" },
+      },
+    });
+
+    const result = await deleteSequenceCompletely(FIRESTORE, "owner-1", "seq-1");
+
+    expect(result.claimsDeleted).toBe(2);
+  });
+
+  it("never releases a claim held by a different sequence", async () => {
+    primeDocs({
+      "users/owner-1/sequences/seq-loser": {
+        exists: true,
+        data: { contentHash: HASH_A, contentHashVersion: 2 },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
+        exists: true,
+        data: { sequenceId: "seq-winner", ownerId: "owner-2" },
+      },
+    });
+
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "seq-loser"
+    );
+
+    expect(result.claimsDeleted).toBe(0);
+    const deleted = mocks.deleteDoc.mock.calls.map(
+      ([ref]) => (ref as { path: string }).path
+    );
+    expect(deleted).toEqual(["users/owner-1/sequences/seq-loser"]);
+  });
+
+  it("reports an already-gone sequence without writing anything", async () => {
+    primeDocs({});
+    const result = await deleteSequenceCompletely(FIRESTORE, "owner-1", "seq-gone");
+    expect(result).toEqual({
+      ownerDeleted: false,
+      publicDeleted: false,
+      claimsDeleted: 0,
+    });
+    expect(mocks.deleteDoc).not.toHaveBeenCalled();
+  });
+});
+
+describe("softDeleteSequenceEverywhere", () => {
+  const HASH_A = "a".repeat(64);
+
+  it("marks the owner, clears its stamps, and removes mirror + claim atomically", async () => {
+    primeDocs({
+      "users/owner-1/sequences/seq-1": {
+        exists: true,
+        data: { contentHash: HASH_A, contentHashVersion: 2 },
+      },
+      "publicSequences/seq-1": {
+        exists: true,
+        data: { ownerId: "owner-1", contentHash: HASH_A, contentHashVersion: 2 },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
+        exists: true,
+        data: { sequenceId: "seq-1" },
+      },
+    });
+
+    const result = await softDeleteSequenceEverywhere(
+      FIRESTORE,
+      "owner-1",
+      "seq-1"
+    );
+
+    expect(result).toEqual({ status: "soft-deleted", publicRemoved: true });
+    const [ownerRef, mark] = mocks.updateDoc.mock.calls[0]!;
+    expect((ownerRef as { path: string }).path).toBe(
+      "users/owner-1/sequences/seq-1"
+    );
+    expect(mark).toEqual({
+      isDeleted: true,
+      deletedAt: SERVER_TS,
+      updatedAt: SERVER_TS,
+      publicProjectionRevision: DELETE_FIELD,
+      publicProjectionSchemaVersion: DELETE_FIELD,
+      publicProjectionDigest: DELETE_FIELD,
+    });
+    const deleted = mocks.deleteDoc.mock.calls.map(
+      ([ref]) => (ref as { path: string }).path
+    );
+    expect(deleted).toContain("publicSequences/seq-1");
+    expect(deleted).toContain(
+      `publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`
+    );
+  });
+
+  it("soft-deletes a private sequence with no public presence", async () => {
+    primeDocs({
+      "users/owner-1/sequences/seq-private": { exists: true, data: {} },
+    });
+
+    const result = await softDeleteSequenceEverywhere(
+      FIRESTORE,
+      "owner-1",
+      "seq-private"
+    );
+
+    expect(result).toEqual({ status: "soft-deleted", publicRemoved: false });
+    expect(mocks.deleteDoc).not.toHaveBeenCalled();
+    expect(mocks.updateDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a missing owner without writing", async () => {
+    primeDocs({});
+    const result = await softDeleteSequenceEverywhere(
+      FIRESTORE,
+      "owner-1",
+      "seq-gone"
+    );
+    expect(result).toEqual({ status: "owner-missing" });
+    expect(mocks.updateDoc).not.toHaveBeenCalled();
+    expect(mocks.deleteDoc).not.toHaveBeenCalled();
   });
 });

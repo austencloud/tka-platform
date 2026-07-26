@@ -335,29 +335,10 @@ export async function unpublishPublicSequence(
     }
     const data = publicSnap.data() as Record<string, unknown>;
 
-    // Locate this sequence's claim from the stored hash pair. Legacy documents
-    // (no contentHash) predate claims — nothing to release.
-    let claimRef: ReturnType<typeof doc> | null = null;
-    const hash = data["contentHash"];
-    const version = data["contentHashVersion"];
-    if (typeof hash === "string" && typeof version === "number") {
-      const candidateRef = doc(
-        firestore,
-        PUBLIC_SEQUENCE_HASH_COLLECTION,
-        publicSequenceClaimId(version, hash)
-      );
-      const claimSnap = await tx.get(candidateRef);
-      if (
-        claimSnap.exists() &&
-        (claimSnap.data() as PublicSequenceHashClaim).sequenceId === sequenceId
-      ) {
-        claimRef = candidateRef;
-      }
-    }
-
     // Owner stamps: cleared when the owner document still exists. It may not
     // (delete flows remove the owner first) — that is fine, not an error.
     let ownerRef: ReturnType<typeof doc> | null = null;
+    let ownerData: Record<string, unknown> | undefined;
     const ownerId = data["ownerId"];
     if (typeof ownerId === "string" && ownerId.length > 0) {
       const candidateRef = doc(
@@ -367,12 +348,21 @@ export async function unpublishPublicSequence(
       const ownerSnap = await tx.get(candidateRef);
       if (ownerSnap.exists()) {
         ownerRef = candidateRef;
+        ownerData = ownerSnap.data() as Record<string, unknown>;
       }
     }
 
+    // Release every claim proven owned by this sequence. A stale mirror can
+    // carry a DIFFERENT hash pair than the owner document, so both pairs are
+    // candidates; legacy documents (no contentHash) contribute none.
+    const ownedClaims = await collectOwnedClaimRefs(tx, firestore, sequenceId, [
+      data,
+      ownerData,
+    ]);
+
     // --- writes -------------------------------------------------------------
     tx.delete(publicRef);
-    if (claimRef) tx.delete(claimRef);
+    for (const claimRef of ownedClaims) tx.delete(claimRef);
     if (ownerRef) {
       tx.update(ownerRef, {
         publicProjectionRevision: deleteField(),
@@ -382,6 +372,158 @@ export async function unpublishPublicSequence(
     }
 
     return { status: "unpublished" as const };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Delete / soft delete (spec section 7)
+// ---------------------------------------------------------------------------
+
+type DocRef = ReturnType<typeof doc>;
+
+/**
+ * Collect claim refs PROVEN to belong to this sequence, from every candidate
+ * hash pair the stored documents carry. The public doc and the owner doc can
+ * disagree on the hash (a stale mirror), in which case BOTH claims may be owned
+ * by this sequence and both must be released. A claim whose `sequenceId` points
+ * elsewhere is never touched. Reads only — call before any write.
+ */
+async function collectOwnedClaimRefs(
+  tx: { get: (ref: DocRef) => Promise<{ exists(): boolean; data(): unknown }> },
+  firestore: Firestore,
+  sequenceId: string,
+  sources: ReadonlyArray<Record<string, unknown> | undefined>
+): Promise<DocRef[]> {
+  const candidateIds = new Set<string>();
+  for (const source of sources) {
+    const hash = source?.["contentHash"];
+    const version = source?.["contentHashVersion"];
+    if (typeof hash === "string" && typeof version === "number") {
+      candidateIds.add(publicSequenceClaimId(version, hash));
+    }
+  }
+
+  const owned: DocRef[] = [];
+  for (const claimId of candidateIds) {
+    const candidateRef = doc(firestore, PUBLIC_SEQUENCE_HASH_COLLECTION, claimId);
+    const claimSnap = await tx.get(candidateRef);
+    if (
+      claimSnap.exists() &&
+      (claimSnap.data() as PublicSequenceHashClaim).sequenceId === sequenceId
+    ) {
+      owned.push(candidateRef);
+    }
+  }
+  return owned;
+}
+
+export interface DeleteSequenceCompletelyResult {
+  readonly ownerDeleted: boolean;
+  readonly publicDeleted: boolean;
+  readonly claimsDeleted: number;
+}
+
+/**
+ * Hard-delete a sequence's entire persisted presence in one transaction:
+ * owner document, public mirror (if any — regardless of what the owner's
+ * `visibility` field claims, so existing drift gets cleaned rather than
+ * preserved), and every hash claim proven owned by this sequence.
+ *
+ * Callers own the profile `sequenceCount` decrement: that counter is a
+ * denormalized display value, not an invariant participant, and folding it
+ * into every per-sequence transaction would put N concurrent transactions in
+ * contention on the same `users/{uid}` document. Batch callers decrement once
+ * with the count of owner docs actually deleted.
+ */
+export async function deleteSequenceCompletely(
+  firestore: Firestore,
+  userId: string,
+  sequenceId: string
+): Promise<DeleteSequenceCompletelyResult> {
+  const ownerRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+  const publicRef = doc(firestore, getPublicSequencePath(sequenceId));
+
+  return runTransaction(firestore, async (tx) => {
+    const ownerSnap = await tx.get(ownerRef);
+    const publicSnap = await tx.get(publicRef);
+    const ownerData = ownerSnap.exists()
+      ? (ownerSnap.data() as Record<string, unknown>)
+      : undefined;
+    const publicData = publicSnap.exists()
+      ? (publicSnap.data() as Record<string, unknown>)
+      : undefined;
+
+    const ownedClaims = await collectOwnedClaimRefs(tx, firestore, sequenceId, [
+      publicData,
+      ownerData,
+    ]);
+
+    // --- writes -------------------------------------------------------------
+    if (ownerSnap.exists()) tx.delete(ownerRef);
+    if (publicSnap.exists()) tx.delete(publicRef);
+    for (const claimRef of ownedClaims) tx.delete(claimRef);
+
+    return {
+      ownerDeleted: ownerSnap.exists(),
+      publicDeleted: publicSnap.exists(),
+      claimsDeleted: ownedClaims.length,
+    };
+  });
+}
+
+export type SoftDeleteSequenceEverywhereResult =
+  | { readonly status: "soft-deleted"; readonly publicRemoved: boolean }
+  /** No owner document — nothing to mark; the caller decides how to report. */
+  | { readonly status: "owner-missing" };
+
+/**
+ * Soft delete in one transaction (spec section 7): mark the owner
+ * `isDeleted: true`, clear its public projection stamps, and remove the public
+ * mirror and owned claim. The owner's `visibility` field is deliberately left
+ * alone — a soft-deleted record is not publicly eligible regardless of stored
+ * visibility, and restore uses that field to know the record WAS public so it
+ * can rerun the full publish pipeline.
+ */
+export async function softDeleteSequenceEverywhere(
+  firestore: Firestore,
+  userId: string,
+  sequenceId: string
+): Promise<SoftDeleteSequenceEverywhereResult> {
+  const ownerRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+  const publicRef = doc(firestore, getPublicSequencePath(sequenceId));
+
+  return runTransaction(firestore, async (tx) => {
+    const ownerSnap = await tx.get(ownerRef);
+    if (!ownerSnap.exists()) {
+      return { status: "owner-missing" as const };
+    }
+    const ownerData = ownerSnap.data() as Record<string, unknown>;
+    const publicSnap = await tx.get(publicRef);
+    const publicData = publicSnap.exists()
+      ? (publicSnap.data() as Record<string, unknown>)
+      : undefined;
+
+    const ownedClaims = await collectOwnedClaimRefs(tx, firestore, sequenceId, [
+      publicData,
+      ownerData,
+    ]);
+
+    // --- writes -------------------------------------------------------------
+    tx.update(ownerRef, {
+      isDeleted: true,
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      publicProjectionRevision: deleteField(),
+      publicProjectionSchemaVersion: deleteField(),
+      publicProjectionDigest: deleteField(),
+    });
+    if (publicSnap.exists()) tx.delete(publicRef);
+    for (const claimRef of ownedClaims) tx.delete(claimRef);
+
+    return {
+      status: "soft-deleted" as const,
+      publicRemoved: publicSnap.exists(),
+    };
   });
 }
 

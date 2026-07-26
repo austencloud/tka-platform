@@ -1028,8 +1028,13 @@ service cloud.firestore {
           request.resource.data.get('publicProjectionSchemaVersion', 0) != 2
           || isValidSchemaTwoPublicWrite(sequenceId)
         );
-      allow delete: if isAuthenticated()
-        && resource.data.get('ownerId', '') == request.auth.uid;
+      // Owner, or an admin running the client-side labeler/repair tooling
+      // through the unpublish transaction. Owner check FIRST: `||`
+      // error-absorbs, so a profile-less user's isAdmin() get() error still
+      // denies instead of erroring the whole rule.
+      allow delete: if (isAuthenticated()
+        && resource.data.get('ownerId', '') == request.auth.uid)
+        || isAdmin();
     }
 
     // Content-addressed public-sequence identity claims: ONE claim per
@@ -1059,12 +1064,14 @@ service cloud.firestore {
       allow update: if false;
 
       // Released by its owner (unpublish, delete, or content-hash change,
-      // proven inside the transaction). Admin repair tooling uses the Admin
-      // SDK, which bypasses rules — no client-side admin allowance needed,
-      // and isAdmin()'s user-doc get() would error for users without a
-      // profile document.
-      allow delete: if isAuthenticated()
-        && resource.data.get('ownerId', '') == request.auth.uid;
+      // proven inside the transaction), or by an admin running the
+      // client-side labeler/repair tooling through the same transaction.
+      // Owner check FIRST so a profile-less user's isAdmin() get() error
+      // absorbs to deny rather than erroring the rule. Server-side repair
+      // uses the Admin SDK, which bypasses rules entirely.
+      allow delete: if (isAuthenticated()
+        && resource.data.get('ownerId', '') == request.auth.uid)
+        || isAdmin();
     }
 
     // ============================================================================

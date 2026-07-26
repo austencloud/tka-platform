@@ -1177,6 +1177,48 @@ design:
   profile-count mutation, and deleting the dead feature-layer batch/recycle
   copies.
 
+**Section 7 rerouting LANDED (2026-07-26, phase 2.5).** Deltas from the
+section 7 design:
+
+- Persister gained `deleteSequenceCompletely` (owner + mirror + owned claims
+  in one transaction; mirror deleted when it EXISTS, not when owner
+  visibility says so, so pre-repair drift gets cleaned) and
+  `softDeleteSequenceEverywhere` (owner `isDeleted` mark + stamp clearing +
+  mirror/claim removal atomically). Both — and `unpublishPublicSequence`,
+  refactored onto the same helper — release every claim proven owned via
+  BOTH stored hash pairs (public doc and owner doc can disagree after a
+  stale mirror; both owned claims must go).
+- `LibraryBatchOperations`: delete/visibility are per-sequence atomic with
+  bounded concurrency (4) and per-id `BatchSequenceResult`s; a failed
+  neighbor no longer hides committed work. Visibility publish failures
+  COMPENSATE by reverting that owner's visibility. Tag adds keep the
+  offline owner batch but reproject every public sequence through the
+  publish transaction (resolved tag names live in the projection).
+  **Deviation:** the profile `sequenceCount` decrement is ONE aggregate
+  write after the per-sequence transactions, not per-sequence — the counter
+  is a denormalized display value, not an invariant participant, and
+  folding it into N concurrent transactions serializes them all on
+  `users/{uid}` (same class as the section-10 "unrelated cleanup writes"
+  carve-out).
+- `LibraryRecycleBin`: soft delete is the single transaction above; restore
+  reruns the full publish pipeline and returns typed
+  `RESTORED` / `RESTORED_PRIVATE_PUBLIC_CONFLICT` (owner flipped private on
+  a duplicate claim) / `RESTORED_PUBLIC_SYNC_PENDING`; purge and empty-bin
+  run `deleteSequenceCompletely` per record (defensive leftover mirror +
+  claims included).
+- `resaveSequenceForConflict` sends a public winning copy through
+  `syncToPublicIndex` after the owner re-save.
+- Labeler `deleteSequenceFromDatabase` routes through
+  `unpublishPublicSequence`. To let the admin-run labeler unpublish records
+  it does not own, `publicSequences` and `publicSequenceHashes` `delete`
+  rules gained `|| isAdmin()` — owner check FIRST so a profile-less user's
+  `isAdmin()` get() error absorbs to deny (emulator-tested both ways).
+  Deployed 2026-07-26.
+- Dead feature-layer `library-batch-operations.ts` / `library-recycle-bin.ts`
+  copies deleted after a zero-import sweep.
+- Still open for a later slice: the `LibrarySaveService` single feedback
+  boundary and reader migration off bare casts.
+
 ### Phase 3: dry-run and repair
 
 1. Export or otherwise retain a recoverable production snapshot.
