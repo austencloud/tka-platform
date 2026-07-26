@@ -137,9 +137,13 @@
   // Stage fit — display only. The page's physical geometry, the planner, and
   // the PDF never see this; it decides how large the same sheet is drawn.
   type SheetFitMode = "page" | "width";
-  const fitOptions: { value: SheetFitMode; label: string; icon: string }[] = [
-    { value: "page", label: "Fit page", icon: "fa-solid fa-expand" },
-    { value: "width", label: "Fit width", icon: "fa-solid fa-arrows-left-right" },
+  // Labels, not icons: SegmentedControl renders an option's icon INSTEAD of its
+  // label, and an expand glyph next to a left-right arrow reads as a guess. The
+  // group is already named "Stage fit", so the visible word is the distinguishing
+  // half; the full label stays the accessible name.
+  const fitOptions: { value: SheetFitMode; label: string; shortLabel: string }[] = [
+    { value: "page", label: "Fit page", shortLabel: "Page" },
+    { value: "width", label: "Fit width", shortLabel: "Width" },
   ];
   type PictographSize = "large" | "standard" | "compact";
   const pictographSizeOptions: { value: PictographSize; label: string }[] = [
@@ -373,7 +377,7 @@
     if (errorIds.length === 0 || key === reportedErrorIds || builder.isHydrating) return;
     reportedErrorIds = key;
     getErrorHandler().showUserError({
-      message: `${errorIds.length} sequence${errorIds.length > 1 ? "s" : ""} didn't load — retry from the rail`,
+      message: `${errorIds.length} sequence${errorIds.length > 1 ? "s" : ""} didn't load — try again from the stage`,
       severity: "warning",
       context: { module: "choreo", tab: "sheet", action: "hydrate-roster" },
       technicalDetails: builder.roster
@@ -383,7 +387,44 @@
     });
   });
 
-  const errorRowCount = $derived(builder.roster.filter((r) => r.status === "error").length);
+  // Rows the sheet cannot draw. `missing` is the resolver's terminal verdict,
+  // `error` is a transient failure that outlived its retries — both leave a hole
+  // the planner refuses to paginate around.
+  const blockedRows = $derived(
+    builder.roster.filter((r) => r.status === "missing" || r.status === "error")
+  );
+  // Resolution has stopped moving: nothing is loading or retrying any more.
+  const rosterSettled = $derived(
+    builder.roster.every((r) => r.status !== "loading" && r.status !== "retrying")
+  );
+  // Settled with holes. The stage must say so — a shimmer here reads as "still
+  // loading" forever, which is exactly how an unresolvable row used to present.
+  const stageBlocked = $derived(
+    builder.roster.length > 0 && rosterSettled && !builder.rosterComplete
+  );
+
+  async function retryBlocked(): Promise<void> {
+    await Promise.all(blockedRows.map((r) => builder.retryHydration(r.id)));
+  }
+
+  function removeBlocked(): void {
+    for (const row of [...blockedRows]) builder.removeById(row.id);
+  }
+
+  // Header meta. The page count only exists once every row resolved (the planner
+  // input is complete-or-empty), so it joins the line then and not before.
+  const sheetMeta = $derived.by(() => {
+    const rows = builder.sequenceIds.length;
+    if (rows === 0) return null;
+    const parts = [`${rows} sequence${rows === 1 ? "" : "s"}`];
+    // Same split the page caption uses: Annotated paginates into bands, Study
+    // into plain pages. Reading the wrong one prints "2 pages" under "Page 1 of 3".
+    const pages =
+      builder.layout.packing === "aligned" ? builder.bandPages.length : builder.pages.length;
+    if (builder.rosterComplete && pages > 0) parts.push(`${pages} page${pages === 1 ? "" : "s"}`);
+    parts.push(builder.layout.orientation === "portrait" ? "Letter portrait" : "Letter landscape");
+    return parts.join(" · ");
+  });
 
   let exporting = $state(false);
   let exportPct = $state(0);
@@ -525,7 +566,10 @@
   const RAIL_COLLAPSED_KEY = "tka-choreo-rail-collapsed";
   const RAIL_MIN = 240;
   const RAIL_MAX = 360;
-  const RAIL_DEFAULT = 280;
+  // 320, not 280: a row carries a TKA word plus a step count, a status slot, and
+  // three 44px controls. At 280 the word got ~90px and the remove button sat on
+  // the rail's edge.
+  const RAIL_DEFAULT = 320;
   const RAIL_STRIP = 48;
 
   function loadRailWidth(): number {
@@ -655,80 +699,84 @@
           </span>
         </span>
       {/if}
+      <!-- What the sheet IS, in the space the title leaves. Supplementary, so it
+           drops out on a narrow workspace rather than pushing the actions. -->
+      {#if sheetMeta}
+        <span class="sheet-meta">{sheetMeta}</span>
+      {/if}
     </div>
 
-    <div class="tb-secondary">
-      <button
-        type="button"
-        class="btn btn-acts"
-        class:active={actsOpen}
-        onclick={toggleActs}
-        aria-label="Saved acts"
-        title="Saved acts"
-      >
-        <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
-        <span class="btn-text">Acts</span>
-      </button>
-      <button
-        type="button"
-        class="btn"
-        class:active={playerOpen}
-        onclick={togglePlayer}
-        disabled={!builder.rosterComplete || builder.roster.length === 0}
-        aria-label="Play act"
-        title={builder.rosterComplete ? "Play act" : "Waiting for sequences to load"}
-      >
-        <i class="fa-solid fa-play" aria-hidden="true"></i>
-        <span class="btn-text">Play act</span>
-      </button>
-      <SegmentedControl
-        options={fitOptions}
-        value={fitMode}
-        onchange={(v) => (fitMode = v)}
-        color="accent"
-        size="sm"
-        ariaLabel="Stage fit"
-      />
-    </div>
+    <!-- One right-anchored cluster: mode buttons, a hairline, then the actions.
+         Wrapping happens BETWEEN the two groups, never inside one — a group that
+         breaks across two lines is what made this toolbar 110px tall. -->
+    <div class="tb-actions">
+      <div class="tb-secondary">
+        <button
+          type="button"
+          class="btn btn-acts"
+          class:active={actsOpen}
+          onclick={toggleActs}
+          aria-label="Saved acts"
+          title="Saved acts"
+        >
+          <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
+          <span class="btn-text">Acts</span>
+        </button>
+        <button
+          type="button"
+          class="btn"
+          class:active={playerOpen}
+          onclick={togglePlayer}
+          disabled={!builder.rosterComplete || builder.roster.length === 0}
+          aria-label="Play act"
+          title={builder.rosterComplete ? "Play act" : "Waiting for sequences to load"}
+        >
+          <i class="fa-solid fa-play" aria-hidden="true"></i>
+          <span class="btn-text">Play act</span>
+        </button>
+      </div>
 
-    <div class="tb-primary">
-      <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
-        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-        Add sequences
-      </button>
-      <button
-        type="button"
-        class="btn btn-save"
-        class:success={saveFlash}
-        onclick={() => void save()}
-        disabled={saving || builder.sequenceIds.length === 0}
-        title={dirty ? "Unsaved changes" : undefined}
-      >
-        <Crossfade key={saveFlash}>
-          {#if saveFlash}
-            <i class="fa-solid fa-check" aria-hidden="true"></i>
-          {:else}
-            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-          {/if}
-        </Crossfade>
-        <span class="btn-label">
-          <span class="btn-label-sizer" aria-hidden="true">Saving…</span>
-          <span class="btn-label-live">
-            {saving ? "Saving…" : saveFlash ? "Saved" : "Save"}
+      <span class="tb-divider" aria-hidden="true"></span>
+
+      <div class="tb-primary">
+        <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          Add sequences
+        </button>
+        <button
+          type="button"
+          class="btn btn-save"
+          class:success={saveFlash}
+          onclick={() => void save()}
+          disabled={saving || builder.sequenceIds.length === 0}
+          title={dirty ? "Unsaved changes" : undefined}
+        >
+          <Crossfade key={saveFlash}>
+            {#if saveFlash}
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+            {:else}
+              <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+            {/if}
+          </Crossfade>
+          <span class="btn-label">
+            <span class="btn-label-sizer" aria-hidden="true">Saving…</span>
+            <span class="btn-label-live">
+              {saving ? "Saving…" : saveFlash ? "Saved" : "Save"}
+            </span>
           </span>
-        </span>
-        <span class="unsaved-dot" class:show={dirty} aria-hidden="true"></span>
-      </button>
-      <button
-        type="button"
-        class="btn btn-export"
-        onclick={exportPdf}
-        disabled={exporting || !builder.rosterComplete || builder.roster.length === 0}
-        title={builder.rosterComplete ? undefined : "Waiting for sequences to load"}
-      >
-        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
-        {exporting ? `Exporting ${exportPct}%` : "Export PDF"}
-      </button>
+          <span class="unsaved-dot" class:show={dirty} aria-hidden="true"></span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-export"
+          onclick={exportPdf}
+          disabled={exporting || !builder.rosterComplete || builder.roster.length === 0}
+          title={builder.rosterComplete ? undefined : "Waiting for sequences to load"}
+        >
+          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+          {exporting ? `Exporting ${exportPct}%` : "Export PDF"}
+        </button>
+      </div>
     </div>
   </header>
 
@@ -768,11 +816,11 @@
       <section class="rail-block">
         <div class="rail-head">
           <h2 class="rail-title">Sequences ({builder.sequenceIds.length})</h2>
-          {#if errorRowCount >= 2}
+          {#if blockedRows.length >= 2}
             <button
               type="button"
               class="retry-all"
-              onclick={() => void builder.retryHydration()}
+              onclick={() => void retryBlocked()}
             >
               <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
               Retry all
@@ -999,6 +1047,40 @@
 
     <!-- Preview -->
     <div class="preview-pane">
+      {#if stageBlocked}
+        <!-- Terminal, not transitional. The planner is complete-or-empty, so one
+             unresolvable row means there is no honest sheet to draw — say which
+             rows and offer the two ways out instead of shimmering forever. -->
+        <div class="stage-blocked" role="status">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <h3>
+            {blockedRows.length} of {builder.roster.length} sequence{builder.roster.length === 1
+              ? ""
+              : "s"} didn't load
+          </h3>
+          <p>
+            {blockedRows.length === 1 ? "It isn't" : "They aren't"} in your library or the gallery —
+            deleted, or saved under another account. The sheet stays blank until
+            {blockedRows.length === 1 ? "it's" : "they're"} resolved, so pages never renumber around
+            a hole.
+          </p>
+          <ul class="blocked-list">
+            {#each blockedRows as row (row.id)}
+              <li class="tka-font">{rowLabel(row)}</li>
+            {/each}
+          </ul>
+          <div class="blocked-actions">
+            <button type="button" class="btn" onclick={() => void retryBlocked()}>
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              Try again
+            </button>
+            <button type="button" class="btn btn-danger" onclick={removeBlocked}>
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              Remove {blockedRows.length} from sheet
+            </button>
+          </div>
+        </div>
+      {:else}
       <SheetPreviewPages
         {fitMode}
         placeholderRoster={builder.rosterComplete
@@ -1020,6 +1102,25 @@
         onRemoveNote={builder.removeNote}
         onSetHeader={builder.setHeader}
       />
+      {/if}
+
+      <!-- Stage fit belongs to the stage, not the toolbar: it scales the drawing,
+           it doesn't act on the act. Sticky, so it rides the bottom of the
+           scrollport instead of scrolling away with page 1. -->
+      {#if builder.roster.length > 0 && !stageBlocked}
+        <div class="stage-controls">
+          <div class="fit-dock">
+            <SegmentedControl
+              options={fitOptions}
+              value={fitMode}
+              onchange={(v) => (fitMode = v)}
+              color="accent"
+              size="sm"
+              ariaLabel="Stage fit"
+            />
+          </div>
+        </div>
+      {/if}
     </div>
 
     {#if browseOpen}
@@ -1158,33 +1259,62 @@
     );
   }
 
+  /* Sizes to its contents. It must NOT grow: a flex-1 identity zone turns the
+     name field into an 1000px invisible box and strands the loop badge in the
+     middle of the toolbar. */
   .tb-identity {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--spacing-sm);
     min-width: 0;
-    flex: 1 1 12rem;
+    flex: 0 1 auto;
   }
 
-  .tb-secondary {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    flex-wrap: wrap;
+  /* What the sheet is, set quietly beside its name. Tabular figures so the
+     counts can tick without the line reflowing. */
+  .sheet-meta {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
-  /* Primary actions anchor the right edge — the eye ends the sweep on Export. */
-  .tb-primary {
+  /* The right-hand cluster. Both groups are nowrap, so a squeeze breaks BETWEEN
+     them (mode buttons above actions) instead of splintering one group. */
+  .tb-actions {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
     margin-left: auto;
     flex-wrap: wrap;
   }
 
+  .tb-secondary,
+  .tb-primary {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-wrap: nowrap;
+  }
+
+  .tb-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+  }
+
   .name-input {
-    flex: 1;
-    min-width: 10rem;
+    /* Content-sized field (Chrome/Edge 123+, Firefox 134+): the box is the name,
+       not the leftover width. Bounded so a long title can't crowd the actions. */
+    field-sizing: content;
+    width: auto;
+    min-width: 8ch;
+    max-width: min(34ch, 38vw);
     min-height: var(--min-touch-target, 44px);
     padding: 0 var(--spacing-sm);
     background: transparent;
@@ -1206,9 +1336,24 @@
     outline-offset: 1px;
   }
 
-  /* Mid-range workspace: the secondary zone drops to icons (accessible names
-     stay on aria-label/title), so the primary zone keeps its full labels. */
-  @container choreo-workspace (max-width: 1400px) {
+  /* Without field-sizing the input has no intrinsic width, so pin a sane one
+     rather than letting it fall back to the browser's 20-character default. */
+  @supports not (field-sizing: content) {
+    .name-input {
+      width: 16ch;
+    }
+  }
+
+  /* Squeezed workspace: the meta line is the first thing to go (it repeats what
+     the page caption says), then the mode buttons drop to icons — their
+     accessible names stay on aria-label/title. */
+  @container choreo-workspace (max-width: 1240px) {
+    .sheet-meta {
+      display: none;
+    }
+  }
+
+  @container choreo-workspace (max-width: 1080px) {
     .tb-secondary .btn-text {
       display: none;
     }
@@ -1217,11 +1362,27 @@
     }
   }
 
+  /* Phone: the cluster has to wrap under the title. Left-aligned, because a lone
+     right-aligned row of two icons reads as a stray, and the hairline between
+     groups means nothing once they are on separate lines. */
+  @container choreo-workspace (max-width: 700px) {
+    .tb-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .tb-divider {
+      display: none;
+    }
+  }
+
   /* True big-screen tier: the sheet's name is the page's title, so it steps up
      with the workspace instead of staying a 1080p form field. */
   @container choreo-workspace (min-width: 2200px) {
     .name-input {
       font-size: var(--font-size-xl, 1.25rem);
+    }
+    .sheet-meta {
+      font-size: var(--font-size-sm, 0.875rem);
     }
     .sheet-toolbar .btn {
       min-height: 3rem;
@@ -1891,6 +2052,116 @@
     padding: var(--spacing-sm);
   }
 
+  /* Zero-height sticky strip: the dock rides the bottom of the scrollport but
+     contributes no layout height, so "Fit page" still means exactly one page
+     with no scrollbar. */
+  .stage-controls {
+    position: sticky;
+    bottom: var(--spacing-sm);
+    z-index: 2;
+    height: 0;
+    display: flex;
+    justify-content: flex-end;
+    /* NOT the default `stretch` — a stretched item in a 0-height row collapses
+       to its own padding. */
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  .fit-dock {
+    transform: translateY(-100%);
+    pointer-events: auto;
+    padding: 4px;
+    border-radius: 999px;
+    /* It floats over BOTH the dark stage and the white page, so the surface has
+       to be opaque enough to read on paper. */
+    background: color-mix(in srgb, var(--theme-panel-bg, #14141c) 94%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0.88;
+    transition: opacity var(--duration-fast, 0.12s) ease;
+  }
+
+  .fit-dock:hover,
+  .fit-dock:focus-within {
+    opacity: 1;
+  }
+
+  /* Settled-with-holes. Reads as a decision to make, not a load in progress. */
+  .stage-blocked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    max-width: 34rem;
+    margin: clamp(2rem, 12cqh, 8rem) auto;
+    padding: var(--spacing-lg, 1.5rem);
+    text-align: center;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid color-mix(in srgb, var(--theme-danger, #ef4444) 32%, transparent);
+    border-radius: 12px;
+  }
+
+  .stage-blocked > i {
+    font-size: 1.75rem;
+    color: var(--theme-danger, #ef4444);
+  }
+
+  .stage-blocked h3 {
+    margin: 0;
+    font-size: var(--font-size-lg, 1.125rem);
+    font-weight: 650;
+    color: var(--theme-text, #fff);
+  }
+
+  .stage-blocked p {
+    margin: 0;
+    font-size: var(--font-size-sm, 0.875rem);
+    line-height: 1.5;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+  }
+
+  .blocked-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blocked-list li {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--theme-danger, #ef4444) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-danger, #ef4444) 30%, transparent);
+    font-size: 1rem;
+    color: var(--theme-text, #fff);
+  }
+
+  .blocked-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+  }
+
+  /* The way out is destructive — it wears that, rather than borrowing the paper
+     swatch the export button uses. */
+  .btn-danger {
+    background: color-mix(in srgb, var(--theme-danger, #ef4444) 24%, transparent);
+    border-color: color-mix(in srgb, var(--theme-danger, #ef4444) 55%, transparent);
+    color: var(--theme-text, #fff);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-danger, #ef4444) 38%, transparent);
+  }
+
   /* Narrow WORKSPACE, not narrow viewport: a slim module pane on a 4K screen
      stacks, and a 2560px workspace with DevTools docked stays the wide desktop
      it is. Driven by the measured width (see the script's note on why this
@@ -1913,6 +2184,22 @@
   /* Stacked, there is no left/right divider to drag. */
   .choreo-sheet-view.is-narrow .rail-resize {
     display: none;
+  }
+
+  /* Stacked, the stage must claim its own height. `container-type: size` gives
+     the pane zero intrinsic contribution, so as a flex-1 row under a tall rail
+     (and above an open picker) it collapsed to 16px — the sheet vanished at
+     820×1180. A definite height also gives the fit formula its 100cqh. */
+  .choreo-sheet-view.is-narrow .preview-pane {
+    flex: 0 0 auto;
+    height: min(70vh, 40rem);
+  }
+
+  /* Stacked, the rail spans the whole band: a TKA word ends up a screen-width
+     from its step count, and a toggle from its label. Cap the whole block, not
+     each control, so rows, settings, and switches share one column. */
+  .choreo-sheet-view.is-narrow .rail-block {
+    max-width: 34rem;
   }
 
   .choreo-sheet-view.is-narrow .browse-dock {

@@ -107,6 +107,13 @@
   }
   .crossfade > .layer {
     grid-area: 1 / 1;
+    /* Grid items default to `min-width: auto`, so a layer whose content has a
+       wide min-content (a list row with fixed-width action buttons, a nowrap
+       label) sizes the track past the container and overflows it — the layer
+       stops being a pass-through box. Zero here makes the layer honour whatever
+       width its parent gives it, which is what every consumer assumes. */
+    min-width: 0;
+    min-height: 0;
   }
 
   /* Fill: layers stack absolutely inside a parent-sized box. Same zero-shift
