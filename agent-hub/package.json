@@ -1,0 +1,51 @@
+{
+  "name": "@austencloud/agent-hub",
+  "version": "1.0.0",
+  "description": "Windows taskbar popover that asks \"Claude or Codex?\" and opens the chosen agent in the project you clicked, in its own tinted Windows Terminal window.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "codex",
+    "agent",
+    "launcher",
+    "windows-terminal",
+    "taskbar",
+    "cli",
+    "windows"
+  ],
+  "license": "MIT",
+  "author": "Austen Cloud <austencloud@gmail.com>",
+  "homepage": "https://github.com/austencloud/tka-platform/tree/main/agent-hub#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/austencloud/tka-platform.git",
+    "directory": "agent-hub"
+  },
+  "bugs": {
+    "url": "https://github.com/austencloud/tka-platform/issues"
+  },
+  "type": "module",
+  "bin": {
+    "agent-hub": "./bin/agent-hub.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "icons",
+    "templates",
+    "install.ps1",
+    "uninstall.ps1",
+    "bootstrap.ps1",
+    "projects.json",
+    "KNOWN-ISSUES.md"
+  ],
+  "os": [
+    "win32"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
