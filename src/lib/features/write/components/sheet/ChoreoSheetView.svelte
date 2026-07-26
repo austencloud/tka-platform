@@ -578,6 +578,10 @@
   let railDragOrigin = 0;
   let railDragMoved = false;
   let railLastPressAt = 0;
+  // The width transition makes the collapse toggle glide, but it would make a
+  // drag rubber-band behind the pointer — so it's off for the duration of a
+  // drag (ViewerContentRail's convention).
+  let railDragging = $state(false);
 
   function onRailDragStart(): void {
     const now = Date.now();
@@ -589,6 +593,7 @@
     railLastPressAt = now;
     railDragOrigin = railWidth;
     railDragMoved = false;
+    railDragging = true;
   }
 
   function onRailDrag(delta: number): void {
@@ -600,6 +605,7 @@
   }
 
   function onRailDragEnd(): void {
+    railDragging = false;
     if (railDragMoved) persistRail();
   }
 
@@ -729,7 +735,12 @@
   <div class="sheet-body">
     <!-- Left rail: row list + layout settings. Resizable, and collapsible to an
          icon strip when the stage wants the room. -->
-    <aside class="rail" class:collapsed={railCollapsed} style:--rail-w="{railDisplayWidth}px">
+    <aside
+      class="rail"
+      class:collapsed={railCollapsed}
+      class:dragging={railDragging}
+      style:--rail-w="{railDisplayWidth}px"
+    >
       <div class="rail-bar">
         <button
           type="button"
@@ -1520,6 +1531,11 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
     transition: width var(--duration-normal, 0.2s) ease;
+  }
+
+  .rail.dragging {
+    transition: none;
+    user-select: none;
   }
 
   .rail.collapsed {
