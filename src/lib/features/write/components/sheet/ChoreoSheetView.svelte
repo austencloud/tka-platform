@@ -133,6 +133,13 @@
     { value: "landscape", label: "Landscape" },
     { value: "portrait", label: "Portrait" },
   ];
+  // Stage fit — display only. The page's physical geometry, the planner, and
+  // the PDF never see this; it decides how large the same sheet is drawn.
+  type SheetFitMode = "page" | "width";
+  const fitOptions: { value: SheetFitMode; label: string; icon: string }[] = [
+    { value: "page", label: "Fit page", icon: "fa-solid fa-expand" },
+    { value: "width", label: "Fit width", icon: "fa-solid fa-arrows-left-right" },
+  ];
   type PictographSize = "large" | "standard" | "compact";
   const pictographSizeOptions: { value: PictographSize; label: string }[] = [
     { value: "large", label: "Large" },
@@ -167,12 +174,15 @@
     open: boolean;
     playerOpen: boolean;
     actsOpen: boolean;
+    /** Stage fit: whole sheet in view, or full-width and scrolling. */
+    fitMode: SheetFitMode;
   }
   function loadPickerPrefs(): PickerPrefs {
     const fallback: PickerPrefs = {
       open: false,
       playerOpen: false,
       actsOpen: false,
+      fitMode: "page",
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -183,6 +193,7 @@
         open: !!p.open,
         playerOpen: !!p.playerOpen,
         actsOpen: !!p.actsOpen,
+        fitMode: p.fitMode === "width" ? "width" : "page",
       };
     } catch {
       return fallback;
@@ -210,6 +221,7 @@
   });
   let playerOpen = $state(initialPrefs.playerOpen);
   let actsOpen = $state(initialPrefs.actsOpen);
+  let fitMode = $state<SheetFitMode>(initialPrefs.fitMode);
 
   const browseEngine = createBrowseEngine({
     // Persists source/sort/filters/columns across reload; BrowsePanel persists its
@@ -247,6 +259,7 @@
       open: browseOpen,
       playerOpen,
       actsOpen,
+      fitMode,
     };
     if (typeof localStorage === "undefined") return;
     try {
@@ -517,6 +530,14 @@
         <i class="fa-solid fa-play" aria-hidden="true"></i>
         Play act
       </button>
+      <SegmentedControl
+        options={fitOptions}
+        value={fitMode}
+        onchange={(v) => (fitMode = v)}
+        color="accent"
+        size="sm"
+        ariaLabel="Stage fit"
+      />
       <button
         type="button"
         class="btn btn-save"
@@ -795,6 +816,7 @@
     <!-- Preview -->
     <div class="preview-pane">
       <SheetPreviewPages
+        {fitMode}
         placeholderRoster={builder.rosterComplete
           ? undefined
           : builder.roster.map((r) => ({ stepCount: r.meta?.stepCount ?? null }))}
@@ -1502,13 +1524,26 @@
     transform: translateX(18px);
   }
 
+  /* The stage. A named SIZE container so the sheet can fit itself to the box in
+     both axes (SheetPreviewPages' fit formula reads 100cqw/100cqh here), and a
+     deeper backdrop than the chrome panels so the composition reads
+     chrome | artifact | chrome instead of three equal dark columns. */
   .preview-pane {
     flex: 1;
     min-width: 0;
+    container-type: size;
+    container-name: sheet-stage;
     overflow-y: auto;
-    /* Same scrim treatment as the rail: cards cover this when populated, but
-       the empty-state copy and loading status sit directly on the background. */
-    background: color-mix(in srgb, var(--theme-panel-bg, #14141c) 45%, transparent);
+    /* Light table: a soft pool of light under the sheet over a faint plotting
+       grid, on a tone deeper than the rail's scrim. */
+    background:
+      radial-gradient(
+        ellipse 62% 55% at 50% 44%,
+        color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(circle, rgba(255, 255, 255, 0.028) 1px, transparent 1px) 0 0 / 26px 26px,
+      color-mix(in srgb, var(--theme-panel-bg, #14141c) 72%, #000);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 8px;

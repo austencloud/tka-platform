@@ -21,6 +21,13 @@
   shared IntersectionObserver, project pattern from PropAwareThumbnail). Off-screen
   pages keep their aspect-ratio frame and empty cell boxes, so toggling never
   shifts layout (no-layout-shift) while capping live-component count.
+
+  Stage fit: the page's on-screen size comes from the stage container
+  (`sheet-stage`, container-type: size on the host's preview pane) — fit-page
+  fills the stage's limiting dimension, fit-width fills its width and scrolls.
+  No magic max-width, so the sheet grows with the workspace at 4K instead of
+  freezing at a desktop cap. Physical geometry, the planner, and the PDF are
+  untouched: this only changes how LARGE the same page is drawn.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -58,6 +65,7 @@
     onRemoveNote,
     onSetHeader,
     placeholderRoster,
+    fitMode = "page",
   }: {
     pages: SheetPage[];
     geo: SheetPageGeometry;
@@ -86,6 +94,13 @@
      * the roster is complete — the planned pages take over.
      */
     placeholderRoster?: { stepCount: number | null }[];
+    /**
+     * How the page sizes itself against the stage. "page" fits the whole sheet
+     * into the stage's limiting dimension (the default — the sheet is the
+     * hero); "width" fills the stage width and scrolls vertically, which reads
+     * better for a long multi-page act.
+     */
+    fitMode?: "page" | "width";
   } = $props();
 
   // Whole-sequence selection scope (provided by ChoreoSheetView). Null on hosts
@@ -125,6 +140,58 @@
   const colGapPct = $derived((geo.gutterPt / gridWidthPt) * 100);
   const rowGapPct = $derived((geo.gutterPt / gridHeightPt) * 100);
   const pageAspect = $derived(`${geo.pageWidthPt} / ${geo.pageHeightPt}`);
+  // Same ratio as a bare number, for the fit math in calc() (aspect-ratio takes
+  // the `a / b` form; calc() multiplication wants the scalar).
+  const pageAspectRatio = $derived(geo.pageWidthPt / geo.pageHeightPt);
+
+  // ── Stage fit ───────────────────────────────────────────────────────────────
+  // The page's width is pure CSS off the stage container. The ONE thing CSS
+  // can't decide is whether two fit-height pages plus the gap clear the stage
+  // width, so that single question is measured. Two-up is a pinned composition
+  // decision — never `auto-fill`, never a row that happens to wrap.
+  //
+  // Reserves below mirror the CSS: 4.5rem horizontal (padding + scrollbar),
+  // 6rem vertical (padding + caption), 2rem inter-page gap.
+  const STAGE_PAD_X_REM = 4.5;
+  const STAGE_PAD_Y_REM = 6;
+  const PAGE_GAP_REM = 2;
+
+  let scrollEl = $state<HTMLElement | undefined>(undefined);
+  let stageWidth = $state(0);
+  let stageHeight = $state(0);
+  let remPx = 16;
+
+  $effect(() => {
+    // The scroll wrapper's parent IS the stage (the size container the fit
+    // formula queries), so measuring it keeps JS and CSS reading one box.
+    const stage = scrollEl?.parentElement;
+    if (!stage || typeof ResizeObserver === "undefined") return;
+    const parsed = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    if (Number.isFinite(parsed) && parsed > 0) remPx = parsed;
+    const read = (entry?: ResizeObserverEntry) => {
+      // contentBoxSize excludes padding — exactly what 100cqw/100cqh resolve to.
+      const box = entry?.contentBoxSize?.[0];
+      stageWidth = box ? box.inlineSize : stage.clientWidth;
+      stageHeight = box ? box.blockSize : stage.clientHeight;
+    };
+    const ro = new ResizeObserver((entries) => read(entries[0]));
+    ro.observe(stage);
+    read();
+    return () => ro.disconnect();
+  });
+
+  const pageCount = $derived(layout.packing === "aligned" ? bandPages.length : pages.length);
+
+  const twoUp = $derived.by(() => {
+    if (fitMode !== "page" || pageCount < 2 || stageWidth === 0 || stageHeight === 0) return false;
+    const fitHeightWidth = (stageHeight - STAGE_PAD_Y_REM * remPx) * pageAspectRatio;
+    return stageWidth - STAGE_PAD_X_REM * remPx > fitHeightWidth * 2 + PAGE_GAP_REM * remPx;
+  });
+
+  function pageCaption(index: number): string {
+    const paper = geo.orientation === "portrait" ? "Portrait" : "Landscape";
+    return `Page ${index + 1} of ${pageCount} · Letter · ${paper}`;
+  }
 
   // Pages near the viewport mount their cells; the rest hold an empty frame.
   let visiblePages = $state(new Set<number>());
@@ -213,8 +280,14 @@
 </script>
 
 {#if showPlaceholder}
-  <div class="pages-scroll">
-    <div class="page" style="aspect-ratio: {pageAspect};" aria-hidden="true">
+  <div
+    class="pages-scroll"
+    class:fit-width={fitMode === "width"}
+    bind:this={scrollEl}
+    style="--page-aspect: {pageAspectRatio};"
+  >
+    <figure class="pagefig">
+      <div class="page" style="aspect-ratio: {pageAspect};" aria-hidden="true">
       <div class="grid-area" style="inset: {marginYPct}% {marginXPct}%; row-gap: {rowGapPct}%;">
         {#each placeholderRows as row, ri (ri)}
           <div
@@ -238,16 +311,28 @@
           </div>
         {/each}
       </div>
-    </div>
+      </div>
+      <!-- Reserved, not shown: the real pages carry a caption, so holding its
+           box here means the swap out of the placeholder moves nothing. -->
+      <figcaption class="page-caption" aria-hidden="true" style="visibility: hidden;">
+        Page 1 of 1 · Letter · Landscape
+      </figcaption>
+    </figure>
   </div>
 {:else if layout.packing === "aligned"}
   {#if bandPages.length === 0}
     <p class="empty" transition:flyFade>No sequences yet.</p>
   {:else}
-    <div class="pages-scroll">
+    <div
+      class="pages-scroll"
+      class:fit-width={fitMode === "width"}
+      class:two-up={twoUp}
+      bind:this={scrollEl}
+      style="--page-aspect: {pageAspectRatio};"
+    >
       {#each bandPages as page (page.pageIndex)}
+        <figure class="pagefig" in:flyFade|global={{ y: 12, delay: Math.min(page.pageIndex * 60, 240) }}>
         <div
-          in:flyFade|global={{ y: 12, delay: Math.min(page.pageIndex * 60, 240) }}
           class="page annotated"
           class:no-rail={!layout.showCueRail}
           class:no-strip={!layout.showNoteStrips}
@@ -446,16 +531,24 @@
             </div>
           </div>
         </div>
+        <figcaption class="page-caption">{pageCaption(page.pageIndex)}</figcaption>
+        </figure>
       {/each}
     </div>
   {/if}
 {:else if pages.length === 0}
   <p class="empty" transition:flyFade>No sequences yet.</p>
 {:else}
-  <div class="pages-scroll">
+  <div
+    class="pages-scroll"
+    class:fit-width={fitMode === "width"}
+    class:two-up={twoUp}
+    bind:this={scrollEl}
+    style="--page-aspect: {pageAspectRatio};"
+  >
     {#each pages as page, pi (pi)}
+      <figure class="pagefig" in:flyFade|global={{ y: 12, delay: Math.min(pi * 60, 240) }}>
       <div
-        in:flyFade|global={{ y: 12, delay: Math.min(pi * 60, 240) }}
         class="page"
         use:observePage={pi}
         style="aspect-ratio: {pageAspect};"
@@ -527,17 +620,59 @@
           {/each}
         </div>
       </div>
+      <figcaption class="page-caption">{pageCaption(pi)}</figcaption>
+      </figure>
     {/each}
   </div>
 {/if}
 
 <style>
+  /* The stage is the hero: pages centre in the stage box and grow with it.
+     `safe center` so a sheet taller than the stage still scrolls to its top
+     edge instead of overflowing past it. */
   .pages-scroll {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 1.5rem;
     align-items: center;
-    padding-bottom: 24px;
+    justify-content: safe center;
+    min-height: 100%;
+    padding-bottom: 1.5rem;
+  }
+
+  /* Fit-width reads top-down like a document — no vertical centring. */
+  .pages-scroll.fit-width {
+    justify-content: flex-start;
+  }
+
+  /* Two-up spread: entered only when the measurement proves two fit-height
+     pages plus the gap clear the stage (SheetPreviewPages script). A pinned
+     composition decision, never `auto-fill`. */
+  .pages-scroll.two-up {
+    flex-flow: row wrap;
+    justify-content: center;
+    align-content: safe center;
+    gap: 2rem;
+  }
+
+  .pagefig {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    min-width: 0;
+  }
+
+  /* Small caps under the sheet, the way a plate is captioned. tabular-nums so
+     "Page 9 of 12" and "Page 10 of 12" occupy the same box. */
+  .page-caption {
+    font-size: var(--font-size-compact, 0.75rem);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .page {
@@ -548,12 +683,35 @@
     position: relative;
     background: var(--print-bg, #ffffff);
     border-radius: 4px;
-    box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.3));
-    width: 100%;
-    max-width: 1100px;
+    /* Layered lift: contact shadow, mid drop, deep ambient, and a cool halo —
+       the sheet reads as paper on a light table, not a white div. */
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 12px 28px rgba(0, 0, 0, 0.45),
+      0 34px 90px rgba(0, 0, 0, 0.5),
+      0 0 120px rgba(140, 160, 210, 0.07);
+    /* Fit-page: fill the stage's LIMITING dimension. No desktop-era cap — the
+       page grows with the workspace (4k-native-layout.md). max-width is only a
+       guard for hosts without a size container. */
+    width: min(calc(100cqw - 4.5rem), calc((100cqh - 6rem) * var(--page-aspect, 1.294)));
+    max-width: 100%;
+    flex: 0 0 auto;
     box-sizing: border-box;
     /* Clip any sub-pixel overflow from rounded cell sizes so rows never bleed. */
     overflow: hidden;
+  }
+
+  /* Fit-width: fill the stage width and scroll — better for reading a long act. */
+  .pages-scroll.fit-width .page {
+    width: calc(100cqw - 4.5rem);
+  }
+
+  /* Two-up: cap at half the stage so exactly two land per row. */
+  .pages-scroll.two-up .page {
+    width: min(
+      calc((100cqw - 4.5rem - 2rem) / 2),
+      calc((100cqh - 6rem) * var(--page-aspect, 1.294))
+    );
   }
 
   /* The usable grid area, centered on the page via the margin insets. Rows stack
