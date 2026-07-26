@@ -27,6 +27,7 @@
   import { flip } from "svelte/animate";
   import { flyFade, growFade, flipDuration } from "$lib/shared/transitions/motion";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import type { SheetPage, SheetCell, SheetBand, SheetBandPage } from "../../services/sheet-row-planner";
@@ -56,6 +57,7 @@
     onSetNote,
     onRemoveNote,
     onSetHeader,
+    placeholderRoster,
   }: {
     pages: SheetPage[];
     geo: SheetPageGeometry;
@@ -77,6 +79,13 @@
     onSetNote?: (id: string, patch: { text?: string }) => void;
     onRemoveNote?: (id: string) => void;
     onSetHeader?: (patch: Partial<SheetHeader>) => void;
+    /**
+     * One entry per roster row while the sheet is still hydrating. Drives the
+     * reserved skeleton page: the sheet's real geometry, filled with shimmer, so
+     * the moment the real cells arrive nothing moves. Omit (or pass empty) once
+     * the roster is complete — the planned pages take over.
+     */
+    placeholderRoster?: { stepCount: number | null }[];
   } = $props();
 
   // Whole-sequence selection scope (provided by ChoreoSheetView). Null on hosts
@@ -173,9 +182,65 @@
   function isSelected(sequenceId: string | null | undefined): boolean {
     return !!sequenceId && sequenceId === selectedSequenceId;
   }
+
+  // ── Hydrating placeholder ───────────────────────────────────────────────────
+  // While the roster is incomplete the planner returns nothing (the derived
+  // pipeline refuses to paginate a sheet with holes), so without this the user
+  // stares at "No sequences yet" on a sheet that plainly has sequences. Instead
+  // reserve the page: same frame, same grid, same square cells, shimmer inside.
+  // Real cells then swap in with zero layout shift.
+  const showPlaceholder = $derived(
+    pages.length === 0 && bandPages.length === 0 && (placeholderRoster?.length ?? 0) > 0,
+  );
+
+  // How many cells of each reserved row are "filled" (the rest read as blanks,
+  // exactly like a short last row on the real sheet). One row per `columns`
+  // steps; an unknown step count reserves a single full row. Capped at the
+  // page's row capacity — the placeholder is one page, never a paginated guess.
+  const placeholderRows = $derived.by<{ filled: number }[]>(() => {
+    const cols = Math.max(1, geo.columns);
+    const rows: { filled: number }[] = [];
+    for (const entry of placeholderRoster ?? []) {
+      const steps = entry.stepCount ?? cols;
+      const needed = Math.max(1, Math.ceil(steps / cols));
+      for (let i = 0; i < needed && rows.length < geo.rows; i++) {
+        rows.push({ filled: Math.min(cols, Math.max(1, steps - i * cols)) });
+      }
+      if (rows.length >= geo.rows) break;
+    }
+    return rows;
+  });
 </script>
 
-{#if layout.packing === "aligned"}
+{#if showPlaceholder}
+  <div class="pages-scroll">
+    <div class="page" style="aspect-ratio: {pageAspect};" aria-hidden="true">
+      <div class="grid-area" style="inset: {marginYPct}% {marginXPct}%; row-gap: {rowGapPct}%;">
+        {#each placeholderRows as row, ri (ri)}
+          <div
+            class="sheet-row"
+            style="grid-template-columns: repeat({geo.columns}, 1fr); column-gap: {colGapPct}%;"
+          >
+            {#each columnIndexes as ci (ci)}
+              <div class="cell" class:blank={ci >= row.filled}>
+                {#if ci < row.filled}
+                  <div class="cell-skeleton">
+                    <ShimmerBlock
+                      width="58%"
+                      height="58%"
+                      borderRadius="6px"
+                      delay={Math.min((ri * geo.columns + ci) * 40, 600)}
+                    />
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </div>
+    </div>
+  </div>
+{:else if layout.packing === "aligned"}
   {#if bandPages.length === 0}
     <p class="empty" transition:flyFade>No sequences yet.</p>
   {:else}
@@ -519,6 +584,16 @@
   .cell.blank {
     background: transparent;
     border-color: var(--print-border-faint, rgba(0, 0, 0, 0.06));
+  }
+
+  /* Shimmer sits inside the exact cell box a pictograph will occupy, so the
+     swap to real content moves nothing. */
+  .cell-skeleton {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Separator: a vertical divider on the left edge of a sequence-start cell —
