@@ -200,6 +200,38 @@ export const PROJECTION_DIGEST_EXCLUDED_KEYS = [
   "stepPairings",
 ] as const;
 
+/**
+ * Recompute the projection digest from a STORED schema-2 document.
+ *
+ * Digest parity with the builder holds because a schema-2 document is written
+ * by `buildPublicSequenceProjection` via a full `setDoc` — its keys are exactly
+ * the projection's keys, minus optionals that were absent (which the builder
+ * also omitted from its digest input). Every excluded key is dropped here the
+ * same way the builder never digested it, and every timestamp is excluded, so
+ * the Firestore `Timestamp`-serializes-to-`{}` trap (see `canonical-digest.ts`)
+ * cannot fire.
+ *
+ * NOT valid for legacy (pre-schema-2) documents: they carry hand-literal key
+ * sets that never matched the projection, so a digest over them describes
+ * nothing. Callers must check `publicProjectionSchemaVersion` first.
+ *
+ * Used by the narrow thumbnail transaction (patch a field, restamp the digest
+ * without re-normalizing the whole sequence) and by the parity audit (compare
+ * stored digest against recomputed digest to detect out-of-band edits).
+ */
+export async function computeStoredProjectionDigest(
+  document: Record<string, unknown>
+): Promise<string> {
+  const excluded = new Set<string>(PROJECTION_DIGEST_EXCLUDED_KEYS);
+  const digestable: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(document)) {
+    if (!excluded.has(key) && value !== undefined) {
+      digestable[key] = value;
+    }
+  }
+  return canonicalDigest(digestable);
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
