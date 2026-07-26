@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-18
 **Status:** Ready for Fable
-**Source audit:** [2026-07-18-onboarding-adversarial-audit.md](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-adversarial-audit.md)
+**Source audit:** [2026-07-18-onboarding-adversarial-audit.md](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-adversarial-audit.md)
 **Owner:** Austen
 
 ## What this is
@@ -27,13 +27,13 @@ security leaks (shared fix pattern), then a11y, then the polish/sweep.
 
 | # | Spec | Sev | Design surface | File |
 |---|---|---|---|---|
-| 1 | Analytics & funnel instrumentation | P0+P1 | event taxonomy — Fable defines catalog | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-analytics-instrumentation.md) |
-| 2 | Per-account state hygiene + cloud sync | P1 | mostly mechanical (copy first-run-state pattern) | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-account-state-hygiene.md) |
-| 3 | Firestore security hardening | P1+P2 | security-sensitive + needs deploy | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-firestore-security.md) |
-| 4 | Onboarding accessibility + component polish | P1+P2/P3 | primitive choice per overlay | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-accessibility.md) |
-| 5 | Silent work-loss elimination | P1+P2 | per-sequence sync-status UI | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-silent-work-loss.md) |
-| 6 | Nudge copy + export-gate consolidation | P1+P2/P3 | copy — owner voice | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-nudge-copy-export-gate.md) |
-| 7 | Dead-code & drift sweep | P2/P3 | verify-before-deleting | [spec](file:///E:/tka-platform/docs/superpowers/specs/active/2026-07-18-onboarding-dead-code-sweep.md) |
+| 1 | Analytics & funnel instrumentation | P0+P1 | event taxonomy — Fable defines catalog | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-analytics-instrumentation.md) |
+| 2 | Per-account state hygiene + cloud sync | P1 | mostly mechanical (copy first-run-state pattern) | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-account-state-hygiene.md) |
+| 3 | Firestore security hardening | P1+P2 | security-sensitive + needs deploy | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-firestore-security.md) |
+| 4 | Onboarding accessibility + component polish | P1+P2/P3 | primitive choice per overlay | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-accessibility.md) |
+| 5 | Silent work-loss elimination | P1+P2 | per-sequence sync-status UI | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-silent-work-loss.md) |
+| 6 | Nudge copy + export-gate consolidation | P1+P2/P3 | copy — owner voice | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-nudge-copy-export-gate.md) |
+| 7 | Dead-code & drift sweep | P2/P3 | verify-before-deleting | [spec](file:///E:/tka-platform/docs/superpowers/specs/shipped/2026-07-18-onboarding-dead-code-sweep.md) |
 
 ## Cross-cutting rules every spec inherits
 

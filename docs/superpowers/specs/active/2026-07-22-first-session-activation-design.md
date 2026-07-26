@@ -348,4 +348,4 @@ capability flag (off) · [ ] session re-arm consumed both ways · [ ] tests per 
   `no-layout-shift.md`, `clickables-look-like-buttons.md`, `no-checkboxes.md`,
   `simplified-word-display.md`, `fast-iteration-loop.md`, `resource-budget.md`
 - Superseded plan: `docs/superpowers/plans/2026-07-22-first-session-activation.md`
-- `docs/superpowers/specs/active/2026-07-18-onboarding-remediation-index.md`
+- `docs/superpowers/specs/shipped/2026-07-18-onboarding-remediation-index.md`
