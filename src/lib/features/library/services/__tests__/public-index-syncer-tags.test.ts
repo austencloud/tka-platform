@@ -4,8 +4,9 @@ import type { LibrarySequence } from "$lib/shared/library/domain/models/library-
 // resolveTagNames maps a sequence's applied tag IDs to human-readable names by
 // reading the owner's users/{userId}/tags collection. These tests pin the
 // resolution rules at the door: sequenceTags win over legacy tagIds, dangling
-// ids are dropped, and a read failure degrades to an empty list so publishing
-// never throws over tags.
+// ids are dropped, and a COLLECTION READ FAILURE fails the publish — on the
+// public projection an empty `tags` means "untagged", so degrading a failed
+// read to [] would store that lie as fact (parity-repair spec, section 5).
 
 const mocks = vi.hoisted(() => ({
   getDocs: vi.fn(),
@@ -122,14 +123,19 @@ describe("PublicIndexSyncer.resolveTagNames", () => {
     expect(mocks.getDocs).not.toHaveBeenCalled();
   });
 
-  it("degrades to an empty list when the tag read fails (publishing must not throw)", async () => {
+  it("fails the publish when the tag read fails — an empty list must mean untagged", async () => {
+    // Reversed from the pre-projection contract (degrade to []): the public
+    // document's `tags` is rebuilt from this value on every sync, so a failed
+    // read silently published "untagged" and the parity audit could not tell
+    // drift from truth. A since-deleted id is still dropped (by design); a
+    // failed READ is a different thing and stops the caller.
     mocks.getDocs.mockRejectedValue(new Error("offline"));
     const sequence = makeSequence({
       sequenceTags: [{ tagId: "t-fire", source: "user", addedAt: new Date() }],
     });
 
-    const names = await resolveTagNames({}, "owner-1", sequence);
-
-    expect(names).toEqual([]);
+    await expect(resolveTagNames({}, "owner-1", sequence)).rejects.toThrow(
+      /tag read failed/
+    );
   });
 });

@@ -1409,6 +1409,32 @@ existing `PublicIndexSyncer` at the phase 1 projection builder, well before the
 transaction work lands. Phase 1 already permits current runtime writes to stay,
 so this is compatible with the rollout as written and is the recommended order.
 
+**LANDED (2026-07-25).** `PublicIndexSyncer.syncToPublicIndex` now normalizes
+first, reads the prior public document, and writes what
+`buildPublicSequenceProjection` returns — the hand-built literal is gone.
+Behavioral deltas, all deliberate:
+
+- Publishes of incomplete/blank/empty sequences now REFUSE with the typed
+  normalizer errors, before any Firestore access.
+- Moderation checks the DERIVED word (the stored `word` could be an auto-title,
+  or empty — which previously skipped moderation entirely).
+- `publishedAt` and the engagement counters survive republish; a failed read of
+  the prior document aborts the publish rather than posing as a first
+  publication.
+- Tag-read and encoder-hash failures fail the publish (section 5) — the old
+  degrade-to-empty contract published "untagged"/unmatchable as fact.
+- Loop label lookup runs on the derived word, so a junk stored word can no
+  longer miss the curated label.
+- New sync writes are schema-2 (`publicProjectionSchemaVersion: 2` + revision +
+  digest); every republish self-repairs the six field-loss defects for that
+  document.
+
+Pinned by `public-index-syncer-projection.test.ts`. Still Phase 2+: the
+query-based dedup race (transaction + `publicSequenceHashes` claims), the
+owner-write normalizer wiring in `library-repository`, reader migration off the
+bare casts (including the loader-assignment gaps above), rules, corpus repair,
+audit.
+
 ## Primary references
 
 - [Firestore transactions and batched writes](https://firebase.google.com/docs/firestore/manage-data/transactions)

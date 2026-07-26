@@ -21,11 +21,23 @@ import {
   where,
   getDocs,
   limit as firestoreLimit,
+  type DocumentData,
   type Firestore,
+  type QuerySnapshot,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { stripUndefined } from "$lib/shared/firestore";
 import { getPublicSequencePath, getPublicSequencesPath, getUserTagsPath } from "$lib/shared/library/data/firestore-paths";
+import {
+  normalizeSequenceForPersistence,
+  type NormalizedSequenceWrite,
+} from "$lib/shared/library/services/sequence-persistence-normalizer";
+import {
+  buildPublicSequenceProjection,
+  type ExistingPublicOwnedFields,
+  type ProjectionSourceSequence,
+  type PublicProjectionPriorState,
+  type PublicProjectionTimestamp,
+} from "$lib/shared/library/services/public-sequence-projection";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
 
@@ -46,8 +58,47 @@ import { loopDetector } from "$lib/features/create/generate/circular/services/lo
 import { periodToNumber } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { meetsCommunityMinimum, MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
+import { MIN_COMMUNITY_STEPS } from "$lib/shared/library/domain/sequence-min-length";
 
+/**
+ * Extract the public-owned fields of an existing `publicSequences/{id}`
+ * document for the projection builder's prior state.
+ *
+ * Type-guarded rather than cast: a legacy document can carry anything, and a
+ * malformed counter must read as "absent" (builder seeds it) rather than
+ * poison the projection. Timestamps pass through as wire values — the builder
+ * never inspects them, it only decides which field gets which value, and
+ * writing a read Firestore `Timestamp` back is value-identical.
+ */
+function readExistingPublicOwnedFields(
+  data: Record<string, unknown>
+): ExistingPublicOwnedFields {
+  const finiteNumber = (value: unknown): number | undefined =>
+    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
+  const forkCount = finiteNumber(data["forkCount"]);
+  const viewCount = finiteNumber(data["viewCount"]);
+  const starCount = finiteNumber(data["starCount"]);
+  const publicProjectionRevision = finiteNumber(data["publicProjectionRevision"]);
+  const publicProjectionDigest =
+    typeof data["publicProjectionDigest"] === "string"
+      ? data["publicProjectionDigest"]
+      : undefined;
+
+  return {
+    ...(data["publishedAt"] != null && {
+      publishedAt: data["publishedAt"] as PublicProjectionTimestamp,
+    }),
+    ...(data["updatedAt"] != null && {
+      updatedAt: data["updatedAt"] as PublicProjectionTimestamp,
+    }),
+    ...(forkCount !== undefined && { forkCount }),
+    ...(viewCount !== undefined && { viewCount }),
+    ...(starCount !== undefined && { starCount }),
+    ...(publicProjectionRevision !== undefined && { publicProjectionRevision }),
+    ...(publicProjectionDigest !== undefined && { publicProjectionDigest }),
+  };
+}
 
 export class PublicIndexSyncer {
 
@@ -59,15 +110,36 @@ export class PublicIndexSyncer {
 
   /**
    * Sync a public sequence to the publicSequences collection.
-   * Throws ContentModerationError if content is flagged and not whitelisted.
+   *
+   * The document is produced by `buildPublicSequenceProjection` from a
+   * `normalizeSequenceForPersistence` result — never assembled by hand. That
+   * ends the field-loss class (a consumer-read field the literal forgot),
+   * the `publishedAt` re-stamp, the counter resets, `sequenceLength: 0`, and
+   * auto-titles stored as words.
+   *
+   * Throws ContentModerationError if content is flagged and not whitelisted;
+   * IncompleteWordError / SequenceNormalizationError when the sequence cannot
+   * be safely persisted (all thrown BEFORE any Firestore write).
    */
   async syncToPublicIndex(
     sequence: LibrarySequence,
     userId: string
   ): Promise<void> {
-    // Run content moderation check if moderator is available
-    if (this.contentModerator && sequence.word) {
-      const result = this.contentModerator.checkWord(sequence.word);
+    // Normalize FIRST: hydrate, strip legacy start entries, refuse
+    // empty/unhydratable/blank data, derive the exact word, canonical count,
+    // and V2 identity hash. Every value the public document carries comes from
+    // this result, never from the raw input's possibly-stale fields. Pure and
+    // local — refusals cost no Firestore reads and skip the generic error
+    // modal below (they are typed, caller-handled errors).
+    const normalized = await normalizeSequenceForPersistence(sequence);
+    const hydrated = normalized.hydrated;
+
+    // Moderate the DERIVED word. The stored `sequence.word` can be an
+    // auto-title (or empty, which previously skipped moderation entirely);
+    // what the gallery actually displays is the derived word, so that is what
+    // gets checked.
+    if (this.contentModerator) {
+      const result = this.contentModerator.checkWord(normalized.exactWord);
 
       if (!result.isAllowed) {
         // Check if this content has been whitelisted via appeal
@@ -79,7 +151,7 @@ export class PublicIndexSyncer {
           throw new ContentModerationError(
             "Content flagged by moderation",
             result.flaggedTerms,
-            sequence.word,
+            normalized.exactWord,
             sequence.id
           );
         }
@@ -88,9 +160,10 @@ export class PublicIndexSyncer {
 
     // Authoritative community gate: nothing under the minimum ever enters the
     // public mirror, regardless of which path called us (save with public
-    // visibility, fork-default-public, explicit publish). Upstream save paths
-    // degrade gracefully before reaching here; this is the invariant backstop.
-    if (!meetsCommunityMinimum(sequence)) {
+    // visibility, fork-default-public, explicit publish). Uses the canonical
+    // count — `meetsCommunityMinimum(sequence)` on the raw input could read a
+    // stale stored `sequenceLength`.
+    if (normalized.sequenceLength < MIN_COMMUNITY_STEPS) {
       throw new Error(
         `Needs at least ${MIN_COMMUNITY_STEPS} steps to post to the community gallery.`
       );
@@ -99,111 +172,114 @@ export class PublicIndexSyncer {
     const firestore = await getFirestoreInstance();
 
     try {
+      const publicRef = doc(firestore, getPublicSequencePath(sequence.id));
+
+      // Prior state, read BEFORE building. A read FAILURE aborts the publish
+      // (this getDoc throws and nothing is written) — it must never be treated
+      // as "no document", because building a first-publication projection over
+      // an existing document re-stamps publishedAt and resets the engagement
+      // counters, the exact corpus-wide defect the projection builder ends.
+      const existingSnap = await getDoc(publicRef);
+      const prior: PublicProjectionPriorState = existingSnap.exists()
+        ? {
+            kind: "existing",
+            fields: readExistingPublicOwnedFields(
+              existingSnap.data() as Record<string, unknown>
+            ),
+          }
+        : { kind: "first-publication" };
+
       // Get user display info for denormalization
       const userDoc = await getDoc(doc(firestore, `users/${userId}`));
       const userData = userDoc.data() ?? {};
 
-      // Deduplicate by contentHash - reject if an identical sequence already exists
-      // in the public index from a different document (re-publishing the same doc is OK)
-      if (sequence.contentHash) {
-        const dupQuery = query(
-          collection(firestore, getPublicSequencesPath()),
-          where("contentHash", "==", sequence.contentHash),
-          firestoreLimit(1)
-        );
-        const dupSnapshot = await getDocs(dupQuery);
-        if (!dupSnapshot.empty) {
-          const existingDoc = dupSnapshot.docs[0]!;
-          if (existingDoc.id !== sequence.id) {
-            throw new Error(
-              `This exact sequence already exists in the gallery (published as "${existingDoc.data().word ?? existingDoc.id}")`
-            );
-          }
+      // Deduplicate by contentHash — reject if an identical sequence already
+      // exists in the public index from a different document (re-publishing
+      // the same doc is OK). Query-based and therefore racy under concurrency;
+      // the Phase 2 transaction + publicSequenceHashes claim replaces this.
+      // Uses the freshly computed hash — the stored one can be stale or absent.
+      const dupQuery = query(
+        collection(firestore, getPublicSequencesPath()),
+        where("contentHash", "==", normalized.contentHash),
+        firestoreLimit(1)
+      );
+      const dupSnapshot = await getDocs(dupQuery);
+      if (!dupSnapshot.empty) {
+        const existingDoc = dupSnapshot.docs[0]!;
+        if (existingDoc.id !== sequence.id) {
+          throw new Error(
+            `This exact sequence already exists in the gallery (published as "${existingDoc.data().word ?? existingDoc.id}")`
+          );
         }
       }
 
-      // Detect circularity and LOOP type from step/motion data
-      const { isCircular, loopType, period, components } = await this.detectLoopInfo(firestore, sequence);
+      // Detect circularity and LOOP type from the HYDRATED sequence: it always
+      // carries steps, and its `word` is the derived word — so the curated
+      // loop-labels lookup can no longer miss on a junk stored word.
+      const { isCircular, loopType, period, components } =
+        await this.detectLoopInfo(firestore, hydrated);
 
-      // Calculate numeric level from steps if available
-      const level = sequence.steps?.length > 0
-        ? calculateSequenceDifficultyLevel([...sequence.steps])
-        : undefined;
+      // Hydrated steps are guaranteed non-empty past the normalizer.
+      const level = calculateSequenceDifficultyLevel([...hydrated.steps]);
 
-      // Compute encoder hash for URL-to-library matching.
-      // LibrarySequence has full steps, so encoding works directly.
-      let encoderHash: string | undefined;
-      try {
-        const matcher = getPublicSequenceHashMatcher();
-        encoderHash = await matcher.computeEncoderHash(sequence);
-      } catch {
-        // Non-critical - sequence will still publish, just won't be URL-matchable
-      }
+      // Encoder hash for URL-to-library matching. Fails CLOSED: the projection
+      // context requires it, and silently publishing without it is how URL
+      // matching went dormant corpus-wide. A failure here signals malformed
+      // motion data, which the normalizer should have refused — surface it.
+      const matcher = getPublicSequenceHashMatcher();
+      const encoderHash = await matcher.computeEncoderHash(hydrated);
 
-      // Resolve human-readable tag names from the sequence's tag ids. Degrades
-      // to whatever resolved on any read failure - publishing never blocks on
-      // tags (same graceful-degradation contract as encoderHash above).
+      // Resolve human-readable tag names. Also fails closed — see
+      // resolveTagNames for why an empty list must mean "untagged", never
+      // "the read failed".
       const tagNames = await this.resolveTagNames(firestore, userId, sequence);
 
-      const publicData = {
-        id: sequence.id,
-        sourceRef: `users/${userId}/sequences/${sequence.id}`,
-        ownerId: userId,
-        ownerDisplayName: userData["displayName"] ?? "Unknown",
-        ownerAvatarUrl: userData["photoURL"],
-        name: sequence.name,
-        displayName: sequence.displayName,
-        word: sequence.word,
-        thumbnails: sequence.thumbnails?.slice(0, 3) ?? [],
-        sequenceLength: sequence.steps?.length ?? 0,
-        difficultyLevel: sequence.difficultyLevel,
-        level,
-        isCircular,
-        loopType,
-        ...(period !== undefined && { period }),
-        ...(components && components.length > 0 && { components }),
-        forkCount: sequence.forkCount ?? 0,
-        viewCount: sequence.viewCount ?? 0,
-        starCount: sequence.starCount ?? 0,
-        tags: tagNames,
-        isForked: sequence.source === "forked",
-        originalCreatorId: sequence.forkAttribution?.originalCreatorId,
-        originalCreatorName: sequence.forkAttribution?.originalCreatorName,
-        // Preserve the original creation date so the browse gallery shows the real birthday
-        birthday: sequence.birthday ?? sequence.createdAt,
-        publishedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        // Full motion content hash for deduplication
-        contentHash: sequence.contentHash,
-        // Carry the hash basis so the public doc's (hash, version) pair never
-        // diverges from the library doc — keeps future public-tier version-aware
-        // logic correct. Only when present (a contentHash exists).
-        ...((sequence as { contentHashVersion?: number }).contentHashVersion != null
-          ? { contentHashVersion: (sequence as { contentHashVersion?: number }).contentHashVersion }
-          : {}),
-        encoderHash,
-        // Compositional fields - everything needed to render without sourceRef
-        blueSoloProp: sequence.blueSoloProp,
-        redSoloProp: sequence.redSoloProp,
-        stepPairings: sequence.stepPairings,
-        // Hash fields for cross-tier queries
-        bluePathHash: sequence.bluePathHash,
-        redPathHash: sequence.redPathHash,
-        blueSoloHash: sequence.blueSoloHash,
-        redSoloHash: sequence.redSoloHash,
-        ...(sequence.creatorIntent && { creatorIntent: sequence.creatorIntent }),
-        // Start position - not derivable from compositional fields, needed for
-        // correct 3D avatar orientation at beat 0.
-        ...(sequence.startPosition && { startPosition: sequence.startPosition }),
-      };
+      const revision =
+        prior.kind === "existing"
+          ? (prior.fields.publicProjectionRevision ?? 0) + 1
+          : 1;
 
-      // Recursively strip undefined fields - Firestore rejects them in setDoc
-      const filteredPublicData = stripUndefined(publicData as Record<string, unknown>);
-
-      await setDoc(
-        doc(firestore, getPublicSequencePath(sequence.id)),
-        filteredPublicData
+      const projection = await buildPublicSequenceProjection(
+        normalized as NormalizedSequenceWrite<ProjectionSourceSequence>,
+        {
+          ownerId: userId,
+          ownerDisplayName:
+            typeof userData["displayName"] === "string" &&
+            userData["displayName"].length > 0
+              ? userData["displayName"]
+              : "Unknown",
+          ...(typeof userData["photoURL"] === "string" && {
+            ownerAvatarUrl: userData["photoURL"],
+          }),
+          tagNames,
+          encoderHash,
+          loop: {
+            isCircular,
+            loopType,
+            ...(period !== undefined && { period }),
+            ...(components &&
+              components.length > 0 && {
+                components: components as SequenceData["components"],
+              }),
+            ...(hydrated.componentDomains && {
+              componentDomains: hydrated.componentDomains,
+            }),
+            ...(hydrated.loopSpec && { loopSpec: hydrated.loopSpec }),
+          },
+          ...(sequence.difficultyLevel !== undefined && {
+            difficultyLevel: sequence.difficultyLevel,
+          }),
+          level,
+          now: serverTimestamp(),
+        },
+        revision,
+        prior
       );
+
+      // The builder guarantees no `undefined` at any depth (tested), so the
+      // projection goes to Firestore as-is — no cleanup pass that could mask a
+      // builder regression.
+      await setDoc(publicRef, projection as unknown as Record<string, unknown>);
 
       // Fire-and-forget: write decomposed artifacts to public collections so
       // hand paths and solo props are independently discoverable in the gallery.
@@ -212,23 +288,25 @@ export class PublicIndexSyncer {
       );
 
       // Inject the newly published sequence into the browse gallery cache so it
-      // shows up immediately without a Firestore round-trip.
+      // shows up immediately without a Firestore round-trip. Sourced from the
+      // NORMALIZED result so the cache shows exactly what was stored — the raw
+      // input's word/steps/length are what used to leak stale values here.
       if (this.browseLoader) {
         const cachedEntry: SequenceData = {
           id: sequence.id,
           name: sequence.name,
           displayName: sequence.displayName,
-          word: sequence.word,
-          steps: sequence.steps ?? [],
+          word: normalized.exactWord,
+          steps: [...hydrated.steps],
           thumbnails: sequence.thumbnails?.slice(0, 3) ?? [],
-          blueSoloProp: sequence.blueSoloProp,
-          redSoloProp: sequence.redSoloProp,
-          stepPairings: sequence.stepPairings,
-          bluePathHash: sequence.bluePathHash,
-          redPathHash: sequence.redPathHash,
-          blueSoloHash: sequence.blueSoloHash,
-          redSoloHash: sequence.redSoloHash,
-          sequenceLength: sequence.steps?.length ?? 0,
+          blueSoloProp: normalized.ownerData.blueSoloProp,
+          redSoloProp: normalized.ownerData.redSoloProp,
+          stepPairings: normalized.ownerData.stepPairings,
+          bluePathHash: normalized.ownerData.bluePathHash,
+          redPathHash: normalized.ownerData.redPathHash,
+          blueSoloHash: normalized.ownerData.blueSoloHash,
+          redSoloHash: normalized.ownerData.redSoloHash,
+          sequenceLength: normalized.sequenceLength,
           difficultyLevel: sequence.difficultyLevel,
           level,
           isCircular,
@@ -414,9 +492,14 @@ export class PublicIndexSyncer {
    * the display name lives on the LibraryTag doc at users/{userId}/tags/{tagId}.
    * We read the owner's tag collection once and map each applied id to its name,
    * preferring the structured `sequenceTags` and falling back to legacy
-   * `tagIds`. Missing/unresolvable ids (e.g. a since-deleted tag) are dropped,
-   * and any read failure degrades to whatever resolved so publishing never
-   * blocks on tags.
+   * `tagIds`. Missing/unresolvable ids (e.g. a since-deleted tag) are dropped.
+   *
+   * A COLLECTION READ FAILURE fails the publish (parity-repair spec, section
+   * 5): on the projection, an empty `tags` means "untagged" — a failed read
+   * degrading to `[]` writes that lie into the public document, and the parity
+   * audit cannot tell the two apart. The old degrade-to-empty contract
+   * predates the projection builder; a dropped since-deleted id is still fine
+   * (the id resolves to nothing by design), a failed read is not.
    *
    * We read the collection directly here rather than via tag-manager: those
    * functions are scoped to the *authenticated* user (authState) and surface
@@ -435,34 +518,36 @@ export class PublicIndexSyncer {
 
     if (tagIds.length === 0) return [];
 
+    let snapshot: QuerySnapshot<DocumentData, DocumentData>;
     try {
-      const snapshot = await getDocs(collection(firestore, getUserTagsPath(userId)));
-      const nameById = new Map<string, string>();
-      snapshot.forEach((d) => {
-        const name = d.data()["name"];
-        if (typeof name === "string" && name.length > 0) {
-          nameById.set(d.id, name);
-        }
-      });
-
-      const names: string[] = [];
-      const seen = new Set<string>();
-      for (const id of tagIds) {
-        const name = nameById.get(id);
-        // Skip ids that no longer resolve to a tag doc; dedup by name.
-        if (name && !seen.has(name)) {
-          seen.add(name);
-          names.push(name);
-        }
-      }
-      return names;
+      snapshot = await getDocs(collection(firestore, getUserTagsPath(userId)));
     } catch (error) {
-      console.warn(
-        `[PublicIndexSyncer] Failed to resolve tag names for "${sequence.word}":`,
-        error
+      throw new Error(
+        `Couldn't resolve tag names for "${sequence.word}" — the tag read failed, ` +
+          "and publishing with an empty tag list would store 'untagged' as fact.",
+        { cause: error }
       );
-      return [];
     }
+
+    const nameById = new Map<string, string>();
+    snapshot.forEach((d) => {
+      const name = d.data()["name"];
+      if (typeof name === "string" && name.length > 0) {
+        nameById.set(d.id, name);
+      }
+    });
+
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (const id of tagIds) {
+      const name = nameById.get(id);
+      // Skip ids that no longer resolve to a tag doc; dedup by name.
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        names.push(name);
+      }
+    }
+    return names;
   }
 
   /**
