@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: XL
+remaining: "Body status: IN PROGRESS — 9 waves complete. Coverage **~129 scopes** audited"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Codebase-Quality Audit Operation — Rolling Spec / Resume Doc
 
 **Date:** 2026-06-16 (last wave 2026-06-19)

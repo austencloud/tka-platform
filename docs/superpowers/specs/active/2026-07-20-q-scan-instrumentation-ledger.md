@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # /q Scan Page — Analytics Instrumentation Ledger
 
 Generated 2026-07-20 from the qr-scan-telemetry-remediation workflow inventory pass.

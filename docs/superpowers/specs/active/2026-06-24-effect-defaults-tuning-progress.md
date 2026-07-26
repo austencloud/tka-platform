@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: 🟡 In progress — infrastructure complete, bloom substantially tuned, 15 effects pending"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Effect Defaults Tuning Campaign — IN PROGRESS
 
 **Date:** 2026-06-24

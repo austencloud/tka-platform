@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: BLOCKING INPUT for every adoption slice. A slice may not flip a `.motions` type"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Presence-as-Signal Register — StepData→Step Migration Gate
 
 **Date:** 2026-07-01 · **Source:** 4-agent adversarial sweep (110 unique sites, deduped)

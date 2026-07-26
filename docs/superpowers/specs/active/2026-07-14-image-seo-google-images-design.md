@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Google Images SEO — Bake the Notation Into Indexable Files
 
 **Status:** active

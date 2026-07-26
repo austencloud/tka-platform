@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Body status: Approved (Austen, \"go nuts\")"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Variation Picker Polish — Design
 
 Date: 2026-06-27

@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Design — awaiting review"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Deriver Collapse — Design
 
 > Collapse every orientation / motion-type deriver to ONE canonical copy in

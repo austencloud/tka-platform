@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Design (awaiting review)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Save to Library — Polish Design
 
 Date: 2026-06-30

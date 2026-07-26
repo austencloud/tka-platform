@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 3
+effort: M
+remaining: "Body status: Approved (autonomous mode)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Beta Offset Swap — Design Spec
 
 **Date:** 2026-05-12

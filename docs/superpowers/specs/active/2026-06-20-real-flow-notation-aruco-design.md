@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: L
+remaining: "Body status: REVISED — ArUco capture front-end retired; LED color-end capture adopted. See \"Revision 2026-06-21\" below."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Real Flow → TKA Sequence (LED Color-End Notation) — Design
 
 **Date:** 2026-06-20 (rev 2026-06-21)

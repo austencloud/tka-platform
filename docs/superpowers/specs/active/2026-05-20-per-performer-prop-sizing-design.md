@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: M
+remaining: "Body status: Draft"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Per-Performer Prop Sizing — Design Spec
 
 **Date:** 2026-05-20

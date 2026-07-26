@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 2
+effort: M
+remaining: "Body status: Design spec, not yet implemented"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Shareable Mandala Links — Phase 3 Design Spec
 
 **Date:** 2026-05-25

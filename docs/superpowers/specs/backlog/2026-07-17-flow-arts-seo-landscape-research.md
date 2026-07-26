@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 3
+effort: M
+remaining: "Body status: Research findings / strategy memo (no work scheduled yet)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Flow Arts Search Landscape — Research & SEO Verdict
 
 **Date:** 2026-07-17

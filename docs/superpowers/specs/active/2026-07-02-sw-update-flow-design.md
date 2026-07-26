@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Design (approved, pre-implementation)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Service Worker Update Flow — Design
 
 **Date:** 2026-07-02

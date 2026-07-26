@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Titanium Hardening Wave — 2026-06-28
 
 Fresh audit against **current `main`** (the 2026-06-19 wave-9 doc is 360 commits stale;

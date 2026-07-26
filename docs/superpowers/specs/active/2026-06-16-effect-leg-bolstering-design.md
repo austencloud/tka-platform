@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: In progress. Four legs upgraded and committed on `main`"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Effect Leg Bolstering — Design / Progress
 
 **Status:** In progress. Four legs upgraded and committed on `main`

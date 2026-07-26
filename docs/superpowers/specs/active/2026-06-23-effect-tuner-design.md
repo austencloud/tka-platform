@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Active (throwaway harness; the durable deliverable is updated `defaults.ts`)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Effect Tuner — pick sensible shipped defaults for all 16 effects
 
 **Date:** 2026-06-23

@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: S
+remaining: "Body status: Implemented and verified locally; application release pending"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # First-Session Exception Remediation
 
 **Date:** 2026-07-23  

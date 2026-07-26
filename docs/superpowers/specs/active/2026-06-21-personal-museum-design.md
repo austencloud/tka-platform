@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: L
+remaining: "Body status: Approved (design)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Personal Museum — Design Document
 
 **Date:** 2026-06-21

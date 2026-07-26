@@ -1,3 +1,13 @@
+---
+status: active
+value: 5
+effort: L
+remaining: "Body status: Revision 3 — full-scope (Austen, 2026-07-22), decomposed into three"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # First-Session Activation — Design
 
 **Date:** 2026-07-22

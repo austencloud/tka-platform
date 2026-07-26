@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: S
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Fable Spec — Mandala Signature Identity (THE FACELIFT)
 
 **Date:** 2026-07-03 · **Autonomy: FULL AUTO to build; CHECKPOINT on aesthetic direction** (present curated palette/composition options — taste is Austen's call) · Index: `2026-07-03-fable-dispatch-index.md`

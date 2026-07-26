@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Sectioned Virtual Gallery — Design
 
 **Date:** 2026-07-03

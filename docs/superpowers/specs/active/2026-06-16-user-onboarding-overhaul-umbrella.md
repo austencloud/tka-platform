@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Framing approved; slice B spec written, A/C/D pending their own brainstorm"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # User Onboarding Overhaul — Umbrella
 
 **Date:** 2026-06-16

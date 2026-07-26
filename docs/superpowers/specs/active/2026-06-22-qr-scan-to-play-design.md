@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # QR "Scan to Play" — Play-Button QR + Scan Tracking Fix
 
 Date: 2026-06-22

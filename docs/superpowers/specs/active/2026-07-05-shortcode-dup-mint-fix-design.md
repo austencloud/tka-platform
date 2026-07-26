@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Approved approach (C) — spec for implementation"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Shortcode Duplicate-Mint Fix — Design
 
 **Date:** 2026-07-05

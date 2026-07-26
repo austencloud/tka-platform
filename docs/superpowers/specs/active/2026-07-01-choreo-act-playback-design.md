@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: approved (design), implementing"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Choreo Sheet — Act Playback (design)
 
 **Date:** 2026-07-01

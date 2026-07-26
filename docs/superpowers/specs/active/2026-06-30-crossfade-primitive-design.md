@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: XS
+remaining: "Body status: Active — backlog (separate from the canvas hover-affordance work that"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Reusable Crossfade Primitive — Design (quick spec)
 
 **Date:** 2026-06-30

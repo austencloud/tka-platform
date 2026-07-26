@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 2
+effort: M
+remaining: "Body status: Draft"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Mandala Trails / Afterimage — Phase 2 Design Spec
 
 **Date:** 2026-05-25

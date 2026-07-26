@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Active (design approved, awaiting spec review)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Poi-Legal Option Filtering in the Composer — Design
 
 **Date:** 2026-07-17

@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: L
+remaining: "Body status: Approved for execution — handoff to the re-architecture agent"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Animation Engine Re-Architecture — Fused Design & Handoff Spec
 
 **Date:** 2026-05-28

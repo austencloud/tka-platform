@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Body status: Active (deferred implementation — immediate dupe-suppression shipped separately)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Create Tutorial — Coach-Mark the Real Start-Position Picker (Design)
 
 Date: 2026-06-21

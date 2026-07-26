@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Audit complete with verified evidence (static build analysis + in-browser runtime trace via Chrome DevTools MCP). Three fixes SHIPPED (committed, build-verified green). The headline win — three.js off the boot path — is diagnosed precisely but BLOCKED on a package change; the landing LCP win needs one design decision. This spec is the handoff: findings, what shipped, and the…"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Performance Audit (Boot JS + Landing LCP) — Design
 
 **Date:** 2026-06-16

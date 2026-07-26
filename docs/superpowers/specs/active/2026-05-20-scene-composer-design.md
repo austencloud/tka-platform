@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: XL
+remaining: "Body status: Draft"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Scene Composer — Design Spec
 
 **Date:** 2026-05-20

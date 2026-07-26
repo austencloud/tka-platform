@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Design approved, pending spec review → implementation plan"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Viewer / Scan Chrome Unification — Design
 
 **Date:** 2026-07-02

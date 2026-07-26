@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Fable Spec — Real-Flow Notation: Validate + Robust Perception Core (THE MOONSHOT)
 
 **Date:** 2026-07-03 · **Autonomy: FULL AUTO on code (tracker, harness, UI); CHECKPOINT for real-clip validation** (Austen must shoot/provide a ground-truth clip — physical dependency) · Index: `2026-07-03-fable-dispatch-index.md`

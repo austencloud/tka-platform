@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Design — pending review"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Unified Generation Vocabulary — Generate Panel · Deck Composer · Sequence Actions
 
 **Date:** 2026-05-31

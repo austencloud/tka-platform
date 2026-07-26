@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Content-Hash V2 — Checkpoint Package (Analysis/Proof Phase)
 
 **Date:** 2026-07-05 · **Author:** Fable 5 dispatch (Spec 3, `2026-07-03-fable-content-hash-v2-rollout-execution-design.md`) · **Prod writes in this session: ZERO** (all corpus access read-only, proven below)

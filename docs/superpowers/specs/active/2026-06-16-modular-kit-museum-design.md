@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: M
+remaining: "Body status: Design approved, pending spec review"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Modular Kit Museum — Vertical Slice
 
 **Date:** 2026-06-16

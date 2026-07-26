@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: XL
+remaining: "Body status: Approved (Austen: \"go nuts\")"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Gallery Drill — Content-Peek Visual Redesign
 
 **Date:** 2026-07-01

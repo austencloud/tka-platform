@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Fable Spec — Practice Judgment Loop (Learn-by-Doing)
 
 **Date:** 2026-07-03 · **Autonomy: FULL AUTO to build the loop + calibration; CHECKPOINT on game-feel/tuning** (taste + requires Austen to physically test with a camera) · Index: `2026-07-03-fable-dispatch-index.md`

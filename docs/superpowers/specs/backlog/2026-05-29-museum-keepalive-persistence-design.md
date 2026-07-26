@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 2
+effort: M
+remaining: "Body status: Approved (design), pending implementation plan"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Museum Keep-Alive Persistence — Design
 
 Date: 2026-05-29

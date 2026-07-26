@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 3
+effort: M
+remaining: "Body status: Draft"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Half-Step Midpoints
 
 **Date:** 2026-05-27

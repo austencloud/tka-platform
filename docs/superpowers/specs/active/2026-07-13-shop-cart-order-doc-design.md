@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Approved, ready for plan"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Shop Cart + Order-Doc Persistence — Design
 
 **Date:** 2026-07-13

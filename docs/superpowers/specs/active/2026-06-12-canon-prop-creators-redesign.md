@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Approved direction (brainstormed with Austen 2026-06-12), ready for implementation plan"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Canon Prop + Browse Creators Redesign — Design
 
 **Date:** 2026-06-12

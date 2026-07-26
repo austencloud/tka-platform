@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 2
+effort: M
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Stage Locomotion — Polish Backlog
 
 > Bleeding-edge additions identified during initial design. Each deserves its own spec after the core system works.

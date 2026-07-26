@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: S
+remaining: "Body status: Feature SHIPPED to main (`b90408a59b`). A follow-up bug is OPEN and"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Trail "Hand" tracking mode + thumb/pinky-renders-as-hand bug
 
 **Status:** Feature SHIPPED to main (`b90408a59b`). A follow-up bug is OPEN and

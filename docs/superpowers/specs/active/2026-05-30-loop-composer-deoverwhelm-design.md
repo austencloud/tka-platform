@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Body status: Design approved (visual, via harness). Implementation **deferred** until the in-flight deck-releaser print refactor (`ReviewStep` / `DeckReleaserTab`) commits — see Promotion Constraints."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # LOOP Catalog Composer — De-Overwhelm Redesign
 
 **Date:** 2026-05-30

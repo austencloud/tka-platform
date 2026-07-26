@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 3
+effort: M
+remaining: "Body status: Backlog"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Accessibility Fixes Design Spec
 
 Date: 2026-05-23

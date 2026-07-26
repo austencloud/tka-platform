@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Body status: Active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Creator Profile — Readability + Density Pass
 
 **Date:** 2026-06-30

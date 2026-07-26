@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Scan Handoff — Desktop to Phone (v1) — Design
 
 **Date:** 2026-07-03

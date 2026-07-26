@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 3
+effort: L
+remaining: "Body status: Draft. Awaiting content production (photos, video) before launch."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Kickstarter Campaign Design: TKA Choreo Cards
 
 **Date:** 2026-04-27

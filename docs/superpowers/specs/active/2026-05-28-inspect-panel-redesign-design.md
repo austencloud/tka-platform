@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Design approved, ready for planning"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Inspect Panel Redesign — Live Pictograph + Tier-Aware Adjustment Editing
 
 **Date:** 2026-05-28

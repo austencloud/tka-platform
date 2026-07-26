@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: XS
+remaining: "Body status: Implemented 2026-06-12. Presets are data-first (`patch`/`resolvePatch`), `applyPreset(effectType, presetId, patch)` is single-undo, `effects-preset.ts` deleted, one shared chip handler in EffectsPanel. Unit-verified (50 tests: state `applyPreset` incl. single-undo assertion + preset-data invariants); svelte-check clean for the touched files. In-browser checklist below still owed at…"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Effects Preset Data Consolidation — Design
 
 **Date:** 2026-06-04

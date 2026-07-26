@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Active — approved, ready to plan"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Gallery Front Door — Phase 1: Rows-of-Shelves Home (Design)
 
 **Date:** 2026-07-01

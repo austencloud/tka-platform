@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Specced, not started"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Turn + Reversal Pattern Glyphs in the Animation Header — Design
 
 **Date:** 2026-06-04

@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 2
+effort: M
+remaining: "Body status: Spec (layers 1-2 implemented, layers 3-4 pending)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Ocean Scene Cache Layers 3-4: Service Worker + Instance Matrix Cache
 
 **Date:** 2026-05-25

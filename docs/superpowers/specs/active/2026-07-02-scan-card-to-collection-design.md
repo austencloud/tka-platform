@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Approved (design dialogue 2026-07-02)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Scan a Physical Card into a Collection — Design
 
 **Date:** 2026-07-02

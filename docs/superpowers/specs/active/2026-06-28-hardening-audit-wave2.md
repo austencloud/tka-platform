@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Titanium Hardening — Audit Wave 2 (2026-06-28)
 
 Six adversarial auditors swept the pipelines the first wave didn't reach:

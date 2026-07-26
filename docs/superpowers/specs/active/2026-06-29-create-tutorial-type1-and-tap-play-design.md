@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Draft — awaiting user review"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Create Tutorial — Type-1 Options + Tap-to-Play Polish
 
 **Date:** 2026-06-29

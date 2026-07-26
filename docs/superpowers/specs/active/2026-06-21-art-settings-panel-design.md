@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Body status: Approved (verbal, 2026-06-21)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Art Settings Panel + Tunnel Export — Design
 
 **Date:** 2026-06-21

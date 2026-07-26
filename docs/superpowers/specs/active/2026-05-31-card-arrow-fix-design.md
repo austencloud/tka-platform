@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Approved (brainstorming complete, ready for plan)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Fix Arrows on Choreo Card — Design
 
 **Date:** 2026-05-31

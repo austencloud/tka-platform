@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Approved (brainstormed in-session; Austen: \"spec it all, achieve it all\")"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Library Home — Collections as the Home for Your Stuff
 
 **Date:** 2026-07-02

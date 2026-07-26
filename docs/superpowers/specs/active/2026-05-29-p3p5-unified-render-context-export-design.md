@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Design — pending implementation plan"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # P3+P5: Unified Render-Context Construction + Offscreen Export — Design
 
 **Date:** 2026-05-29

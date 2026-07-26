@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Fire-Switch Prewarm — Eliminate the WebGL-Effect Switch Freeze
 
 **Date:** 2026-06-29

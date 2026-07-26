@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: S
+remaining: "Body status: Approved (build now)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # QR Viewer — Minimal Parity with the Sequence Viewer
 
 **Date:** 2026-06-22

@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Design (approved-in-brainstorm; pending spec review)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Founding Smart Collections — Design
 
 **Date:** 2026-07-07

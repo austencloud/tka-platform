@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: "Body status: Approved (design)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Reversal-Pattern-Aware Smart Collections + Classic Book Variations
 
 **Date:** 2026-07-08

@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: "Body status: Design — approved direction (rebase-often, tiny batches)"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Ceremony Phase 5 + 3 + C — Stateless Conversion, Isolated-Clone Execution
 
 **Date:** 2026-05-31

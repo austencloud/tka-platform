@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: "Body status: Code-level findings. Items marked ⏳ need runtime confirmation (browser or DevTools drive)."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # First-Time User Audit — Multidimensional
 
 **Date:** 2026-06-18

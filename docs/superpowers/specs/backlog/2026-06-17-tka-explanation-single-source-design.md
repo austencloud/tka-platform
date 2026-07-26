@@ -1,3 +1,13 @@
+---
+status: backlog
+value: 3
+effort: M
+remaining: "Body status: Design — approved direction, pending spec review"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # TKA Letter-Explanation Single Source of Truth
 
 **Date:** 2026-06-17

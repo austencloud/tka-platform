@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: "Body status: Approved 2026-05-29."
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # 3D Trail Parity — Design
 
 **Goal:** Replace the three competing/dead 3D trail implementations with ONE gorgeous trail that visually matches the 2D WebGL2 GPU-accumulator trail (glow halo, decay fade, taper), and wire it into the live render path so it actually renders in the sequence viewer and the coven hub.

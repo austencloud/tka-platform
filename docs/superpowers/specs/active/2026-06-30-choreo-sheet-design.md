@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: L
+remaining: "Body status: Active"
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-07-25
+---
 # Choreo Sheet — Printable Landscape Roster — Design
 
 **Date:** 2026-06-30
