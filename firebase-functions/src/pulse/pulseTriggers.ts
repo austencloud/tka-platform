@@ -24,6 +24,12 @@ import {
   notifyAdminsScanDigest,
   isAdminData,
 } from "./notifyAdmins";
+import type { AuthIdentity } from "./pulseIdentity";
+import {
+  isGuestSession,
+  isGuestUpgrade,
+  resolveDisplayName,
+} from "./pulseIdentity";
 import { simplifyRepeatedWord } from "./wordSimplifier";
 
 const db = admin.firestore();
@@ -58,21 +64,20 @@ function toMillis(v: unknown): number | null {
   return null;
 }
 
-function displayNameOf(
-  d: FirebaseFirestore.DocumentData | undefined | null
-): string {
-  if (!d) return "Someone";
-  return (
-    (d.displayName as string) ||
-    (d.username as string) ||
-    (d.isAnonymous === true ? "A guest" : "Someone")
-  );
-}
-
-async function lookupEmail(userId: string): Promise<string | null> {
+/**
+ * The auth record behind a user doc, or null when the lookup fails. Auth is the
+ * authority on guest-ness because the doc's `isAnonymous` flag is only written
+ * by createOrUpdateUserDocument — other client paths mint the doc without it
+ * (see pulseIdentity.ts).
+ */
+async function lookupIdentity(userId: string): Promise<AuthIdentity | null> {
   try {
     const user = await admin.auth().getUser(userId);
-    return user.email ?? null;
+    return {
+      email: user.email ?? null,
+      displayName: user.displayName ?? null,
+      isAnonymous: user.providerData.length === 0 && !user.email,
+    };
   } catch {
     return null;
   }
@@ -90,12 +95,16 @@ export const pulseUserActivity = onDocumentWritten(
     const after = event.data?.after?.exists ? event.data.after.data() : null;
     if (!after) return; // deletion — not a Pulse event
 
-    const name = displayNameOf(after);
-
     // (a) New full-account doc = signup.
     if (!before) {
-      if (after.isAnonymous === true) return; // guest provisioning ≠ signup
-      const email = await lookupEmail(userId);
+      // Guest provisioning ≠ signup. Ask auth rather than the doc: a guest's
+      // first library save mints this doc with only sequenceCount +
+      // lastActivityDate, and that identity-less doc used to page an admin as
+      // "New user signed up: Someone".
+      const identity = await lookupIdentity(userId);
+      if (isGuestSession(identity, after)) return;
+      const name = resolveDisplayName(after, identity);
+      const email = identity?.email ?? null;
       await notifyAdmins({
         type: "admin-new-user-signup",
         message: email
@@ -113,8 +122,10 @@ export const pulseUserActivity = onDocumentWritten(
     }
 
     // (b) Guest → full account upgrade.
-    if (before.isAnonymous === true && after.isAnonymous === false) {
-      const email = await lookupEmail(userId);
+    if (isGuestUpgrade(before, after)) {
+      const identity = await lookupIdentity(userId);
+      const name = resolveDisplayName(after, identity);
+      const email = identity?.email ?? null;
       await notifyAdmins({
         type: "admin-new-user-signup",
         message: email
@@ -138,9 +149,22 @@ export const pulseUserActivity = onDocumentWritten(
     const afterTs = toMillis(after.lastActivityDate);
     if (!afterTs || afterTs === beforeTs) return; // not a session-start write
 
-    // Fresh accounts already pinged via (a)/(b).
-    const createdTs = toMillis(after.createdAt);
+    // Guests don't get "is back" pings. The doc check above catches every doc
+    // createOrUpdateUserDocument wrote; this catches the identity-less ones,
+    // whose every library save bumps lastActivityDate. One auth read per
+    // session-start write, not per write.
+    const identity = await lookupIdentity(userId);
+    if (isGuestSession(identity, after)) return;
+
+    // Fresh accounts already pinged via (a)/(b). An identity-less doc has no
+    // createdAt, so fall back to when Firestore created it.
+    const createdTs =
+      toMillis(after.createdAt) ??
+      event.data?.after?.createTime?.toMillis() ??
+      null;
     if (createdTs && afterTs - createdTs < RETURN_THROTTLE_MS) return;
+
+    const name = resolveDisplayName(after, identity);
 
     // Per-user throttle. State is set BEFORE notifying so a racing second
     // write sees the fresh timestamp; a rare duplicate ping is harmless.
@@ -186,10 +210,15 @@ export const pulseScanActivity = onDocumentCreated(
         .get();
       const sd = scanner.data();
       if (isAdminData(sd)) return; // own-scan — suppressed
+      // null stays meaningful here: it means unattributed, and the digest
+      // message reads differently for it. So resolve a name the identity-aware
+      // way but keep null when nothing identifies the scanner.
+      const identity = await lookupIdentity(scan.userId as string);
       scannerName =
         (sd?.displayName as string) ||
         (sd?.username as string) ||
-        (sd?.isAnonymous === true ? "A guest" : null);
+        identity?.displayName ||
+        (isGuestSession(identity, sd) ? "A guest" : null);
     }
 
     const parent = await db.collection("shortcodes").doc(code).get();
@@ -227,7 +256,10 @@ export const pulseSequenceCreated = onDocumentCreated(
     const o = owner.data();
     if (isAdminData(o)) return;
 
-    const name = displayNameOf(o);
+    // A guest saving a sequence is real news — just name them honestly. The
+    // owner doc may carry no identity at all (see pulseIdentity.ts), which is
+    // how this ping used to read "Someone saved ...".
+    const name = resolveDisplayName(o, await lookupIdentity(userId));
     const word =
       (seq.word as string) ||
       (seq.name as string) ||
@@ -258,7 +290,7 @@ export const pulseCollectionCreated = onDocumentCreated(
     const o = owner.data();
     if (isAdminData(o)) return;
 
-    const name = displayNameOf(o);
+    const name = resolveDisplayName(o, await lookupIdentity(userId));
     const colName =
       (col.name as string) || (col.title as string) || "a collection";
     const kind = col.kind === "smart" ? "smart collection" : "collection";
@@ -268,7 +300,11 @@ export const pulseCollectionCreated = onDocumentCreated(
       message: `${name} created ${kind} "${colName}"`,
       fromUserId: userId,
       fromUserName: name,
-      data: { contentType: "collection", collectionId, collectionName: colName },
+      data: {
+        contentType: "collection",
+        collectionId,
+        collectionName: colName,
+      },
     });
   }
 );

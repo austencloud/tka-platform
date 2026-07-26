@@ -24,7 +24,10 @@ import {
   type Unsubscribe,
   type DocumentData,
 } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import {
+  getAuthInstance,
+  getFirestoreInstance,
+} from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
@@ -204,6 +207,21 @@ export class LibraryRepository {
       throw new LibraryError("User not authenticated", "UNAUTHORIZED");
     }
     return userId;
+  }
+
+  /**
+   * `{ isAnonymous }` for the live auth user, or `{}` when there is no current
+   * user. Merged into every users/{uid} write this repository makes so a doc it
+   * mints is never identity-less (see the save-batch comment).
+   */
+  private async guestFlagPatch(): Promise<{ isAnonymous?: boolean }> {
+    try {
+      const auth = await getAuthInstance();
+      const user = auth.currentUser;
+      return user ? { isAnonymous: user.isAnonymous } : {};
+    } catch {
+      return {};
+    }
   }
 
   /**
@@ -565,12 +583,19 @@ export class LibraryRepository {
     saveBatch.set(sequenceDocRef, writeData);
     saveBatch.set(
       userDocRef,
-      isNewSequence
-        ? {
-            sequenceCount: increment(1),
-            lastActivityDate: serverTimestamp(),
-          }
-        : { lastActivityDate: serverTimestamp() },
+      {
+        ...(isNewSequence ? { sequenceCount: increment(1) } : {}),
+        lastActivityDate: serverTimestamp(),
+        // Carry the guest flag. This merge CREATES users/{uid} when
+        // createOrUpdateUserDocument hasn't (it deliberately skips anonymous
+        // sessions outside PROD), and a doc with a count but no identity reads
+        // as a brand-new full account — Pulse paged an admin "New user signed
+        // up: Someone" for every dev guest save. Read the live auth user, not
+        // an authState snapshot: an in-place anonymous upgrade mutates the User
+        // object without re-firing onAuthStateChanged. Omit the field entirely
+        // when there is no current user rather than guess `false`.
+        ...(await this.guestFlagPatch()),
+      },
       { merge: true }
     );
 
@@ -783,7 +808,8 @@ export class LibraryRepository {
     try {
       return await this.getSequenceStrict(sequenceId);
     } catch (error) {
-      if (error instanceof LibraryError && error.code === "UNAUTHORIZED") throw error;
+      if (error instanceof LibraryError && error.code === "UNAUTHORIZED")
+        throw error;
       return null;
     }
   }
@@ -1490,9 +1516,7 @@ export class LibraryRepository {
   // BATCH OPERATIONS (delegated to LibraryBatchOperations)
   // ============================================================
 
-  async deleteSequences(
-    sequenceIds: string[]
-  ): Promise<BatchSequenceResult[]> {
+  async deleteSequences(sequenceIds: string[]): Promise<BatchSequenceResult[]> {
     return this.batchOps.deleteSequences(sequenceIds);
   }
 
