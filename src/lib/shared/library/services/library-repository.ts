@@ -35,6 +35,7 @@ import {
 import { deriveWordStatus } from "$lib/shared/foundation/services/word-deriver";
 import {
   firestoreGet,
+  firestoreGetDetailed,
   firestoreList,
   stripUndefined,
 } from "$lib/shared/firestore";
@@ -772,20 +773,55 @@ export class LibraryRepository {
     }
   }
 
+  /**
+   * Lenient: null for absent, unreadable, or a read that never reached the
+   * server. Correct for callers whose next move is another source anyway.
+   * Callers that must not mistake "couldn't tell" for "deleted" — anything that
+   * reports the result to the user as gone — use {@link getSequenceStrict}.
+   */
   async getSequence(sequenceId: string): Promise<LibrarySequence | null> {
+    try {
+      return await this.getSequenceStrict(sequenceId);
+    } catch (error) {
+      if (error instanceof LibraryError && error.code === "UNAUTHORIZED") throw error;
+      return null;
+    }
+  }
+
+  /**
+   * null means the document is CONFIRMED absent — the server said so.
+   *
+   * A read that only reached the local cache, or a document that failed its
+   * schema, throws instead: callers were treating that null as "deleted", which
+   * is how a restored Choreo sheet declared six live sequences missing on a cold
+   * load and then found all six the moment the user retried.
+   */
+  async getSequenceStrict(sequenceId: string): Promise<LibrarySequence | null> {
     const userId = this.getUserId();
-    const validated = await firestoreGet(
+    const outcome = await firestoreGetDetailed(
       getUserSequencesPath(userId),
       sequenceId,
       LibrarySequenceDocSchema
     );
 
-    if (!validated) {
-      return null;
+    if (outcome.status === "absent") return null;
+    if (outcome.status === "unknown") {
+      throw new LibraryError(
+        "Sequence read did not reach the server",
+        "NETWORK",
+        sequenceId
+      );
+    }
+    if (outcome.status === "invalid") {
+      throw new LibraryError(
+        "Sequence document failed validation",
+        "INVALID_DATA",
+        sequenceId
+      );
     }
 
     const seq = this.mapDocToLibrarySequence(
-      validated as DocumentData,
+      outcome.data as DocumentData,
       sequenceId
     );
 

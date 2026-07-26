@@ -125,7 +125,26 @@ export class PublicSequencesLoader {
    * two sequences sharing the same word (e.g. two "FJ" variations by
    * different authors) resolve to the correct source document.
    */
+  /**
+   * Lenient: any failure reads as "not public". Callers that must not mistake a
+   * failed read for a deleted sequence use {@link loadFullSequenceDataStrict}.
+   */
   async loadFullSequenceData(sequenceName: string, sequenceId?: string): Promise<SequenceData | null> {
+    try {
+      return await this.loadFullSequenceDataStrict(sequenceName, sequenceId);
+    } catch (error) {
+      console.error(`[PublicSequencesLoader] Failed to load full sequence:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * null ONLY when the public index is authoritative that this sequence isn't
+   * public. A fetch that failed, or a read the server never answered (Firestore
+   * serves `get()` from an empty local cache before its connection is up), throws
+   * — the caller can retry instead of reporting the sequence as gone.
+   */
+  async loadFullSequenceDataStrict(sequenceName: string, sequenceId?: string): Promise<SequenceData | null> {
     // Ensure metadata is loaded first (populates sourceRef cache)
     if (!this.cachedSequences) {
       await this.loadSequenceMetadata();
@@ -159,19 +178,19 @@ export class PublicSequencesLoader {
 
     // Fetch full data from the source reference
     const firestore = await getFirestoreInstance();
-    try {
-      const fullDoc = await getDoc(doc(firestore, sourceRef));
-      if (!fullDoc.exists()) {
-        console.warn(`[PublicSequencesLoader] Source sequence not found: ${sourceRef}`);
-        return null;
+    const fullDoc = await getDoc(doc(firestore, sourceRef));
+    if (!fullDoc.exists()) {
+      if (fullDoc.metadata.fromCache) {
+        throw new Error(
+          `[PublicSequencesLoader] Read of ${sourceRef} never reached the server`
+        );
       }
-
-      const data = fullDoc.data();
-      return this.mapFirestoreToSequenceData(data, fullDoc.id);
-    } catch (error) {
-      console.error(`[PublicSequencesLoader] Failed to load full sequence:`, error);
+      console.warn(`[PublicSequencesLoader] Source sequence not found: ${sourceRef}`);
       return null;
     }
+
+    const data = fullDoc.data();
+    return this.mapFirestoreToSequenceData(data, fullDoc.id);
   }
 
   /**

@@ -75,8 +75,12 @@
   // classifies + auto-retries transient failures instead of presenting them as
   // deletions.
   const resolver = createSheetSequenceResolver({
-    loadPrivate: (id) => getLibraryRepository().getSequence(id),
-    loadPublic: (id) => getBrowseLoader().loadFullSequenceData(id, id),
+    // Strict on both tiers: null must mean "the server says it's gone", never
+    // "the read didn't get through" — the roster prints that difference.
+    loadPrivate: (id) => getLibraryRepository().getSequenceStrict(id),
+    // Strict: a public read that failed must reach the resolver as a failure it
+    // can retry, not as a null the roster would print as "not in the gallery".
+    loadPublic: (id) => getBrowseLoader().loadFullSequenceDataStrict(id, id),
     awaitAuthSettled,
   });
 
@@ -401,6 +405,17 @@
   // loading" forever, which is exactly how an unresolvable row used to present.
   const stageBlocked = $derived(
     builder.roster.length > 0 && rosterSettled && !builder.rosterComplete
+  );
+
+  // Two different stories, and telling the wrong one is how "your session
+  // wasn't ready" gets reported as "you deleted this". Only an all-`missing`
+  // set has actually been looked up and not found.
+  const blockedKind = $derived<"missing" | "unreadable" | "failed">(
+    blockedRows.every((r) => r.status === "missing")
+      ? "missing"
+      : blockedRows.some((r) => r.failure === "unreadable")
+        ? "unreadable"
+        : "failed"
   );
 
   async function retryBlocked(): Promise<void> {
@@ -1059,10 +1074,19 @@
               : "s"} didn't load
           </h3>
           <p>
-            {blockedRows.length === 1 ? "It isn't" : "They aren't"} in your library or the gallery —
-            deleted, or saved under another account. The sheet stays blank until
-            {blockedRows.length === 1 ? "it's" : "they're"} resolved, so pages never renumber around
-            a hole.
+            {#if blockedKind === "missing"}
+              {blockedRows.length === 1 ? "It isn't" : "They aren't"} in your library or the gallery
+              — deleted, or saved under another account.
+            {:else if blockedKind === "unreadable"}
+              {blockedRows.length === 1 ? "It's" : "They're"} in your library, but the saved data
+              didn't parse. Opening {blockedRows.length === 1 ? "it" : "them"} in Create and saving
+              again usually repairs {blockedRows.length === 1 ? "it" : "them"}.
+            {:else}
+              The read didn't get through — {blockedRows.length === 1 ? "it's" : "they're"} still in
+              your library. Try again.
+            {/if}
+            The sheet stays blank until {blockedRows.length === 1 ? "it's" : "they're"} resolved, so
+            pages never renumber around a hole.
           </p>
           <ul class="blocked-list">
             {#each blockedRows as row (row.id)}

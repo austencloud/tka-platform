@@ -9,7 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { LibraryError } from "$lib/shared/library/domain/library-error";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 
-export type ResolveFailure = "transient" | "permission" | "missing";
+export type ResolveFailure = "transient" | "permission" | "missing" | "unreadable";
 
 export interface ResolveOutcome {
   sequence: SequenceData | null;
@@ -29,12 +29,28 @@ export interface SheetSequenceResolverDeps {
 }
 
 /** Error classes: unauthorized = genuinely no identity (post-settle) → public-only,
- *  permission = never present as deleted, transient = retry. Unknowns fail open
- *  to transient — never toward "deleted". */
-export function classifyResolveError(error: unknown): "unauthorized" | "permission" | "transient" {
+ *  permission = never present as deleted, unreadable = the document is there and
+ *  broken (retrying cannot fix it), transient = retry. Unknowns fail open to
+ *  transient — never toward "deleted". */
+export function classifyResolveError(
+  error: unknown
+): "unauthorized" | "permission" | "unreadable" | "transient" {
   if (error instanceof LibraryError && error.code === "UNAUTHORIZED") return "unauthorized";
+  if (error instanceof LibraryError && error.code === "INVALID_DATA") return "unreadable";
   if (isPermissionDeniedError(error)) return "permission";
   return "transient";
+}
+
+/** The private tier could not be consulted at all. Thrown so the backoff ladder
+ *  runs: on a cold load this is the auth/Firestore connection still coming up,
+ *  and the next attempt succeeds. Only if the whole ladder is spent does it
+ *  become a reported failure — and never "missing", because nothing ever
+ *  actually looked. */
+class PrivateTierUnavailable extends Error {
+  constructor(readonly kind: "unauthorized" | "permission") {
+    super(`private tier unavailable (${kind})`);
+    this.name = "PrivateTierUnavailable";
+  }
 }
 
 const BACKOFF_MS = [500, 1500, 4000] as const;
@@ -75,21 +91,31 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
     id: string
   ): Promise<
     | { sequence: SequenceData; source: "private" | "public" }
-    | { terminal: "missing" | "permission" }
+    | { terminal: "missing" | "unreadable" }
   > {
-    let sawPermission = false;
+    // Whether the private tier gave an ANSWER. A read that threw — no identity
+    // yet, permission denied, network — answered nothing, and a sheet row must
+    // never be called missing on the strength of a question nobody asked.
+    let privateAnswered = false;
+    let blocked: "unauthorized" | "permission" | null = null;
     try {
       const own = await deps.loadPrivate(id);
+      privateAnswered = true;
       if (hasSteps(own)) return { sequence: own, source: "private" };
     } catch (error) {
       const cls = classifyResolveError(error);
       if (cls === "transient") throw error;
-      if (cls === "permission") sawPermission = true;
-      // "unauthorized": no identity — the public tier is all we have. Not a failure.
+      if (cls === "unreadable") return { terminal: "unreadable" };
+      blocked = cls;
     }
+
     const pub = await deps.loadPublic(id);
     if (hasSteps(pub)) return { sequence: pub, source: "public" };
-    return { terminal: sawPermission ? "permission" : "missing" };
+
+    // Public didn't have it either. Only now is "missing" honest — and only if
+    // the private tier actually looked.
+    if (privateAnswered) return { terminal: "missing" };
+    throw new PrivateTierUnavailable(blocked ?? "permission");
   }
 
   async function resolve(id: string, signal: AbortSignal): Promise<ResolveOutcome> {
@@ -112,7 +138,11 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
           if (signal.aborted) throw abortError();
           const backoff = BACKOFF_MS[attempts - 1];
           if (backoff === undefined) {
-            return { sequence: null, source: null, failure: "transient", attempts };
+            // Ladder spent. A private tier that never opened reports as a
+            // permission problem, not as a deleted sequence.
+            const failure: ResolveFailure =
+              error instanceof PrivateTierUnavailable ? "permission" : "transient";
+            return { sequence: null, source: null, failure, attempts };
           }
           await delay(jitter(backoff), signal);
         }
