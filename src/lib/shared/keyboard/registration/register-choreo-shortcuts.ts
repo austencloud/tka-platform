@@ -125,12 +125,16 @@ export function createChoreoShortcuts(
     ...rowJumps,
 
     // ── The act ─────────────────────────────────────────────────────────────
+    // Unshifted single keys, NOT Ctrl combos. Ctrl+E (omnibox search) and Ctrl+O
+    // (open file, and an OS binding on some Windows setups) are reserved by the
+    // browser — preventDefault never gets a say — and Ctrl+S is a coin flip.
+    // A shortcut that silently loses to the browser is worse than no shortcut,
+    // so the act's actions take the letters that match them instead.
     {
       id: "choreo.save",
       label: "Save sheet",
       description: "Save the act",
       key: "s",
-      modifiers: ["ctrl"],
       context: CTX,
       scope: "action",
       priority: "high",
@@ -141,7 +145,6 @@ export function createChoreoShortcuts(
       label: "Export PDF",
       description: "Export the sheet as a PDF",
       key: "e",
-      modifiers: ["ctrl"],
       context: CTX,
       scope: "action",
       priority: "high",
@@ -152,7 +155,6 @@ export function createChoreoShortcuts(
       label: "Saved acts",
       description: "Open or close the saved-acts drawer",
       key: "o",
-      modifiers: ["ctrl"],
       context: CTX,
       scope: "panel",
       priority: "high",
@@ -235,11 +237,13 @@ export function createChoreoShortcuts(
       scope: "view",
       action: handlers.pictographSizeUp,
     },
+    // `s` and `o` belong to Save and Open acts; the layout toggles they used to
+    // hold move to the next-best letters (stYle, Turn the page).
     {
       id: "choreo.toggle-packing",
       label: "Sheet style",
       description: "Switch between Study (dense) and Annotated",
-      key: "s",
+      key: "y",
       context: CTX,
       scope: "view",
       action: handlers.togglePacking,
@@ -248,7 +252,7 @@ export function createChoreoShortcuts(
       id: "choreo.toggle-orientation",
       label: "Orientation",
       description: "Switch between landscape and portrait",
-      key: "o",
+      key: "t",
       context: CTX,
       scope: "view",
       action: handlers.toggleOrientation,
