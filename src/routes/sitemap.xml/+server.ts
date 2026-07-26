@@ -49,7 +49,9 @@ const pages: SitemapEntry[] = [
   { url: "shop/choreography-cards" },
   // Pillar pages (SEO content roadmap)
   { url: "composer" },
-  { url: "notation" },
+  // "notation" is deliberately absent: the hub is gated behind
+  // UnderConstruction while it's rebuilt (2026-07-26) and carries noindex.
+  // Re-add it when the rebuilt page ships. Its sub-pages below are unaffected.
   // Per-prop notation pages (2026-07-16-per-prop-notation-pages-design.md)
   { url: "notation/staves" },
   { url: "notation/fans" },

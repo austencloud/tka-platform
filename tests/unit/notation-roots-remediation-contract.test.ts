@@ -5,7 +5,14 @@ import { describe, expect, it } from "vitest";
 const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
-const notationPage = readSource("src/routes/(public)/notation/+page.svelte");
+const notationRoute = readSource("src/routes/(public)/notation/+page.svelte");
+// The hub was gated on 2026-07-26 pending a rebuild: the route renders the
+// shared UnderConstruction note in production and the preserved draft in dev.
+// The copy contracts below still guard that draft — they're what the rebuilt
+// page has to keep faith with, not something the gate retired.
+const notationPage = readSource(
+  "src/routes/(public)/notation/_components/NotationHubDraft.svelte"
+);
 const notationCopy = notationPage.replace(/\s+/g, " ");
 const rootRedirect = readSource("src/routes/(public)/roots/+page.ts");
 const softwarePage = readSource(
@@ -26,6 +33,21 @@ const shapeMatrixDestination = readSource(
 );
 const sitemap = readSource("src/routes/sitemap.xml/+server.ts");
 const componentManifest = readSource("scripts/component-manifest.json");
+
+describe("notation hub gate", () => {
+  it("serves UnderConstruction in production and the draft only in dev", () => {
+    expect(notationRoute).toContain(
+      'import { dev } from "$app/environment"'
+    );
+    expect(notationRoute).toContain(
+      'import UnderConstruction from "$lib/shared/landing/components/UnderConstruction.svelte"'
+    );
+    expect(notationRoute).toMatch(/\{#if dev\}\s*<NotationHubDraft \/>/);
+    expect(notationRoute).toContain(
+      '<meta name="robots" content="noindex, follow" />'
+    );
+  });
+});
 
 describe("notation lineage remediation", () => {
   it("keeps TKA in peer framing and scopes comparisons to the displayed VTG model", () => {
@@ -148,7 +170,10 @@ describe("roots-to-notation route migration", () => {
   });
 
   it("keeps canonical sitemap and breadcrumb labels without a stale Roots page", () => {
-    expect(sitemap).toContain('{ url: "notation" }');
+    // "notation" is out of the sitemap while the hub is gated (it carries
+    // noindex). Its sub-pages stay listed. Re-add the hub when it un-gates.
+    expect(sitemap).not.toMatch(/\{ url: "notation" \}/);
+    expect(sitemap).toContain('{ url: "notation/letters" }');
     expect(sitemap).toContain('{ url: "roots/software" }');
     expect(sitemap).not.toMatch(/\{ url: "roots",/);
     expect(softwarePage).toMatch(
