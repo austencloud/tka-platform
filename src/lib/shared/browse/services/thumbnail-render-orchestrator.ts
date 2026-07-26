@@ -22,6 +22,7 @@ import {
 } from "./thumbnail-render-queue";
 import type { ThumbnailRenderer } from "$lib/shared/browse/services/thumbnail-renderer";
 import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
+import type { CloudThumbnailKey } from "$lib/shared/browse/services/cloud-thumbnail-cache";
 import type { ThumbnailLocalCache } from "./thumbnail-local-cache";
 import type { ThumbnailMetricsCollector } from "./thumbnail-metrics-collector";
 import { captureThumbnailRenderFailure } from "$lib/shared/analytics/thumbnail-analytics";
@@ -112,6 +113,15 @@ class MemoryUrlCache {
     this.map.set(hash, url);
   }
 
+  delete(hash: string): void {
+    const url = this.map.get(hash);
+    if (url === undefined) return;
+    this.map.delete(hash);
+    if (url.startsWith("blob:")) {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   clear(): void {
     for (const url of this.map.values()) {
       if (url.startsWith("blob:")) {
@@ -119,6 +129,33 @@ class MemoryUrlCache {
       }
     }
     this.map.clear();
+  }
+}
+
+/** Fetch a cloud thumbnail body and persist it locally — ONLY on HTTP OK.
+ *  fetch() resolves on 404 with an error body; writing that body poisoned
+ *  IndexedDB (the stale-404-flood bug). A confirmed 404 negative-caches the
+ *  cloud key instead (mirrors offline-cache-orchestrator.ts:314-321). Exported
+ *  for focused tests; the class method delegates. */
+export async function saveCloudBlobToLocal(
+  url: string,
+  hash: string,
+  cloudKey: CloudThumbnailKey,
+  localCache: { set(hash: string, blob: Blob): Promise<void> },
+  fetchImpl: typeof fetch = fetch,
+  markMissingFn: (key: CloudThumbnailKey) => void = cloudCacheModule.markMissing
+): Promise<void> {
+  try {
+    const response = await fetchImpl(url);
+    if (!response.ok) {
+      // Only a real "not found" is authoritative. 5xx/permission stay retryable.
+      if (response.status === 404) markMissingFn(cloudKey);
+      return;
+    }
+    const blob = await response.blob();
+    await localCache.set(hash, blob);
+  } catch {
+    // Non-fatal — cloud URL still renders; local tier just isn't warmed.
   }
 }
 
@@ -366,7 +403,7 @@ export class ThumbnailRenderOrchestrator {
         const cloudUrl = await cloudCacheModule.getUrl(cloudKey, request.priority);
         assertRequestActive();
         if (cloudUrl) {
-          this.saveCloudBlobToLocal(cloudUrl, key.hash);
+          void saveCloudBlobToLocal(cloudUrl, key.hash, cloudKey, this.localCache);
           this.memoryCache.set(key.hash, cloudUrl);
           this.renderedGenerations.set(key.hash, this.cacheGeneration);
           this.completedCount++;
@@ -587,15 +624,10 @@ export class ThumbnailRenderOrchestrator {
   }
 
   /**
-   * Fetch blob from cloud URL and save to local cache (async, non-blocking)
-   * This ensures cloud-cached images are also saved locally for offline/instant access
+   * Drop one hash from the in-memory URL cache so sibling mounts stop
+   * re-serving a known-bad entry (the flood mechanism).
    */
-  private saveCloudBlobToLocal(url: string, hash: string): void {
-    fetch(url)
-      .then((response) => response.blob())
-      .then((blob) => this.localCache.set(hash, blob))
-      .catch(() => {
-        // Non-fatal - cloud URL still works, just won't be cached locally
-      });
+  evictHash(hash: string): void {
+    this.memoryCache.delete(hash);
   }
 }

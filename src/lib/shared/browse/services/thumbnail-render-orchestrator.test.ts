@@ -11,6 +11,7 @@ vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
   upload: vi.fn(async () => {}),
   clearMemoryCache: () => {},
   invalidateUrl: () => {},
+  markMissing: vi.fn(),
 }));
 
 import { ThumbnailRenderOrchestrator } from "./thumbnail-render-orchestrator";

@@ -23,6 +23,7 @@ vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
   getUrl: vi.fn(),
   clearMemoryCache: vi.fn(),
   invalidateUrl: vi.fn(),
+  markMissing: vi.fn(),
 }));
 
 import { deriveKey } from "$lib/shared/browse/services/thumbnail-key-deriver";

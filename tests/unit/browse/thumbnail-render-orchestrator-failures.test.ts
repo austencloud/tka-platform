@@ -21,6 +21,7 @@ vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
   upload: vi.fn(async () => null),
   clearMemoryCache: () => {},
   invalidateUrl: () => {},
+  markMissing: vi.fn(),
 }));
 
 import { ThumbnailMetricsCollector } from "$lib/shared/browse/services/thumbnail-metrics-collector";

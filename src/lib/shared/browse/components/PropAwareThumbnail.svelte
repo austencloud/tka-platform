@@ -9,7 +9,8 @@
   Features:
   - Lazy loading via IntersectionObserver
   - Single hash comparison for change detection (replaces 13 prev* variables)
-  - Throttled rendering (max 3 concurrent via queue)
+  - Throttled rendering (queue caps concurrency at up to 8 when Web Workers
+    are available, 3 otherwise — see getThumbnailRenderQueue)
   - Cloud caching for instant subsequent loads
 -->
 <script lang="ts">
@@ -35,7 +36,7 @@
     buildGalleryRenderInput,
     galleryStepCount,
   } from "$lib/shared/browse/services/gallery-render-input";
-  import { invalidateUrl as invalidateCloudUrl } from "$lib/shared/browse/services/cloud-thumbnail-cache";
+  import { repairThumbnailCaches } from "$lib/shared/browse/services/thumbnail-repair";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
@@ -307,17 +308,16 @@
 
     const key = deriveKey(renderInput);
 
-    // Invalidate the stale cloud URL
-    if (key.usesDefaults) {
-      invalidateCloudUrl({
-        sequenceName: key.inputs.sequenceName,
-        sequenceId: key.inputs.sequenceId,
-        propType: key.propKey as PropType,
-        lightMode: key.inputs.lightMode,
-        variant: key.inputs.variant,
-        showQRCode: key.inputs.visibility?.showQRCode ?? false,
-      });
-    }
+    // Purge the tiers this failure actually condemns. A cloud URL that fails to
+    // decode is a confirmed dead object — it outranks the manifest and the
+    // persisted positive. A blob failure only proves the local bytes are bad.
+    void repairThumbnailCaches({
+      kind: urlType === "blob" ? "blob-decode" : "cloud-404",
+      hash: key.hash,
+      cloudKey: key.usesDefaults ? orchestrator.buildCloudKey(key) : null,
+      localCache,
+      evictHash: (h) => orchestrator?.evictHash(h),
+    });
 
     // Set flag to skip cache on next request (prevents infinite loop)
     skipCacheOnNextRequest = true;
@@ -511,20 +511,17 @@
 
     const key = deriveKey(renderInput);
 
-    // 1. Invalidate cloud URL cache (in-memory)
-    if (key.usesDefaults) {
-      invalidateCloudUrl({
-        sequenceName: key.inputs.sequenceName,
-        sequenceId: key.inputs.sequenceId,
-        propType: key.propKey as PropType,
-        lightMode: key.inputs.lightMode,
-        variant: key.inputs.variant,
-        showQRCode: key.inputs.visibility?.showQRCode ?? false,
-      });
-    }
-
-    // 2. Delete from local IndexedDB cache (fire-and-forget)
-    localCache?.delete(key.hash).catch(() => {});
+    // 1+2. Purge the local tiers through the shared repair path so the manual
+    // force and the image-error path can't drift again. A manual force is NOT a
+    // confirmed 404, so it uses blob-decode semantics — the cloud object keeps
+    // its benefit of the doubt.
+    void repairThumbnailCaches({
+      kind: "blob-decode",
+      hash: key.hash,
+      cloudKey: key.usesDefaults ? orchestrator.buildCloudKey(key) : null,
+      localCache,
+      evictHash: (h) => orchestrator?.evictHash(h),
+    });
 
     // 3. Force skip cache on next request
     skipCacheOnNextRequest = true;
