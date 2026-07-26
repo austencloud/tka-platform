@@ -8,12 +8,18 @@ description: Use when starting a session and needing to pick work, when asking w
 
 When invoked without arguments (`/queue`):
 
-1. Read frontmatter from every `.md` in `docs/superpowers/specs/backlog/` and `docs/superpowers/specs/active/` (typically ~57 files, ~3K tokens — not worth optimizing)
+1. Read frontmatter from every `.md` in `docs/superpowers/specs/backlog/` and `docs/superpowers/specs/active/` (~155 files, ~4K tokens — not worth optimizing)
 2. Compute score for each: `value × effort_multiplier` (see Scoring table)
 3. Skip any spec where `depends_on` names a spec that isn't shipped
 4. Pick the highest-scoring non-blocked spec. Break ties by effort (smaller wins)
-5. Tell the user in ONE sentence: "Top of queue: **[name]** (value [V] × [effort] = [score]) — [remaining]. Starting."
-6. Read the full spec and its `plan_path` (if set), then begin working
+5. **Drift-check the pick before acting on it** (see `/queue drift`). A spec that
+   misreports its own state is the one failure this queue cannot absorb: acting
+   on "not yet built" when the thing is already shipped means rebuilding live
+   code. Run the detector on the pick; if it comes back `DIVERGENT`,
+   `GHOST_PATHS`, or `LIKELY_DONE`, reconcile the spec against the repo FIRST and
+   tell the user what diverged instead of starting the work it describes.
+6. Tell the user in ONE sentence: "Top of queue: **[name]** (value [V] × [effort] = [score]) — [remaining]. Starting."
+7. Read the full spec and its `plan_path` (if set), then begin working
 
 **Do NOT list the full queue.** Do NOT present options. Do NOT ask the user to choose. The ranking already decided — just start.
 
@@ -37,6 +43,45 @@ Only when the user explicitly asks to see the queue (`/queue list`, "show me the
 2. Update frontmatter: value, effort, remaining, last_triaged (today's date)
 3. If all remaining work is done → `git mv` to `shipped/`, clear `remaining`
 4. If blocked → set `depends_on` to the blocking spec path or `external: <description>`
+
+## `/queue drift` — Detect Specs That Lie
+
+```bash
+node scripts/spec-drift-detector.cjs                      # full report
+node scripts/spec-drift-detector.cjs --quiet              # counts only
+node scripts/spec-drift-detector.cjs --verdict DIVERGENT   # one bucket
+node scripts/spec-drift-detector.cjs --json out.json       # machine-readable
+```
+
+Compares what each spec SAYS against what the repository DOES. Read-only; it
+never edits a spec. Exit 1 when actionable drift exists.
+
+| Verdict | Meaning | Action |
+|---|---|---|
+| `DIVERGENT` | claims not-built, but its own named files have heavy topical commit traffic since | **Rebuild hazard.** Reconcile before doing anything the spec says |
+| `PHANTOM_OPEN` | every box in its acceptance ledger is checked, still in `active/` | Free close-out → `shipped/` |
+| `LIKELY_DONE` | body declares implemented/shipped/superseded, still in `active/` | Verify, then move |
+| `GHOST_PATHS` | most named deliverables were **deleted** (existed once, gone now) | Spec is describing removed code — likely superseded |
+| `WATCH` | moderate topical traffic against a not-built claim | Inconclusive, glance at it |
+| `NO_STATE` | no status line and no ledger | State unknowable from the file; needs a read |
+
+**Adjudicate, don't auto-apply.** The detector shortlists; a human or agent
+decides. Two known false-positive modes:
+
+- **Homonyms.** Topic words match unrelated commits — `physical-merch-store`
+  matched "SvelteKit page *store* migration", `error-boundary` matched
+  "svelte-check *error*s". Check that the sample commit subjects are really
+  about the spec.
+- **Broad paths.** A spec naming `src/lib/features/` inherits traffic from the
+  whole repo. The `N topical of M touching its paths` ratio exposes this — a low
+  topical fraction with `0 on named files` is weak evidence.
+
+Why this exists: `shop-operations-go-live` claimed "Not yet built" about a store
+already taking Stripe payments, and seven onboarding specs sat "Ready for Fable"
+with 45/50 ledger items done and one uncommitted command between them and closed.
+Both were mechanically detectable. Hand-maintained `remaining` prose drifts
+silently, and the Remaining Refresh Trigger below relies on discipline that does
+not hold across many parallel agents — so detect it instead of trusting it.
 
 ## `/queue claim` — Parallel Agent Safety
 
