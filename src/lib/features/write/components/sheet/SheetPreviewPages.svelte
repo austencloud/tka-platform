@@ -185,7 +185,12 @@
   const twoUp = $derived.by(() => {
     if (fitMode !== "page" || pageCount < 2 || stageWidth === 0 || stageHeight === 0) return false;
     const fitHeightWidth = (stageHeight - STAGE_PAD_Y_REM * remPx) * pageAspectRatio;
-    return stageWidth - STAGE_PAD_X_REM * remPx > fitHeightWidth * 2 + PAGE_GAP_REM * remPx;
+    // Demanding literally two full fit-height pages side by side needs a ~2.7:1
+    // stage no real monitor has — verified dead at 3840×2160. Instead: spread
+    // when a single fit-height page would strand ≥35% of the stage as dead rail;
+    // the two-up width rule then splits the width (capped at fit-height), which
+    // shrinks each page but keeps the canvas full — the 4k-native-layout trade.
+    return stageWidth - STAGE_PAD_X_REM * remPx > fitHeightWidth * 1.35;
   });
 
   function pageCaption(index: number): string {
