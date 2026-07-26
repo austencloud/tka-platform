@@ -1,10 +1,11 @@
 // Opens one Claude or Codex session in its own Windows Terminal window.
 //
 // The outer process atomically claims a named color lease, launches Windows
-// Terminal with that tab color, and transfers the lease to a per-session copy
-// of this executable. The inner process holds the lease until the CLI exits.
-// Named kernel objects make release automatic even when the terminal is closed
-// forcefully, and they coordinate every Agent Hub process in the logon session.
+// Terminal with that session's dark background scheme, and transfers the lease
+// to a per-session copy of this executable. The inner process holds the lease
+// until the CLI exits. Named kernel objects make release automatic even when
+// the terminal is closed forcefully, and they coordinate every Agent Hub
+// process in the logon session.
 
 using System;
 using System.Collections.Generic;
@@ -19,18 +20,8 @@ class AgentTerminalLauncher
     const string LeasePrefix = "Local\\AgentHub.TerminalColor.v1.";
     const string ReadyPrefix = "Local\\AgentHub.TerminalColorReady.v1.";
     const int ReadyTimeoutMs = 10000;
+    const int SessionColorCount = 16;
     const string InitialTitle = "Starting Session";
-
-    // Generated with:
-    // glasbey.create_palette(16, grid_space="JCh", lightness_bounds=(42, 75),
-    //     chroma_bounds=(35, 85), optimize_palette=True)
-    // The bounds keep every color visible against Windows Terminal's dark chrome.
-    static readonly string[] Palette = new string[] {
-        "#f75f01", "#06970b", "#8c5dfe", "#04d3eb",
-        "#f4ae00", "#ffa4f1", "#05ee9f", "#9a7717",
-        "#b5b7fe", "#da0b9b", "#ffaa95", "#0885df",
-        "#ab79b1", "#a8de01", "#378e85", "#b36260"
-    };
 
     sealed class ColorLease : IDisposable
     {
@@ -96,7 +87,12 @@ class AgentTerminalLauncher
                     AddOptionalPair(inner, args, "Bat");
                     AddOptionalPair(inner, args, "Executable");
 
-                    List<string> terminalArgs = BuildTerminalArguments(project, title, Palette[lease.Index], inner);
+                    List<string> terminalArgs = BuildTerminalArguments(
+                        project,
+                        title,
+                        SessionSchemeName(lease.Index),
+                        inner
+                    );
 
                     var psi = new ProcessStartInfo(wt, JoinArguments(terminalArgs));
                     psi.WorkingDirectory = project;
@@ -124,7 +120,7 @@ class AgentTerminalLauncher
     static int RunInsideTerminal(Dictionary<string, string> args)
     {
         int colorIndex;
-        if (!int.TryParse(GetRequired(args, "HoldColor"), out colorIndex) || colorIndex < 0 || colorIndex >= Palette.Length)
+        if (!int.TryParse(GetRequired(args, "HoldColor"), out colorIndex) || colorIndex < 0 || colorIndex >= SessionColorCount)
             throw new ArgumentException("Invalid terminal color lease index.");
 
         string agent = NormalizeAgent(GetRequired(args, "Agent"));
@@ -134,7 +130,8 @@ class AgentTerminalLauncher
             using (EventWaitHandle ready = EventWaitHandle.OpenExisting(GetRequired(args, "ReadyEvent"))) ready.Set();
 
             Environment.SetEnvironmentVariable("TKA_AGENT_TERMINAL", "1");
-            Environment.SetEnvironmentVariable("TKA_AGENT_TAB_COLOR", Palette[colorIndex]);
+            Environment.SetEnvironmentVariable("TKA_AGENT_COLOR_SCHEME", SessionSchemeName(colorIndex));
+            ClearInheritedAgentSessionMarkers();
             try { Console.Title = InitialTitle; } catch { }
             return RunAgent(agent, project, args);
         }
@@ -180,6 +177,31 @@ class AgentTerminalLauncher
         );
     }
 
+    // The resident tray host can be started from inside an agent session and
+    // freezes that session's environment into every terminal it spawns. Claude
+    // Code treats an inherited CLAUDE_CODE_CHILD_SESSION as "I am a nested
+    // session" and silently disables transcript saving, so those sessions never
+    // show up in /resume. Every launch here is a real top-level session, so the
+    // markers are cleared before the agent starts.
+    static readonly string[] InheritedAgentSessionMarkers = {
+        "CLAUDE_CODE_CHILD_SESSION",
+        "CLAUDE_CODE_SESSION_ID",
+        "CLAUDE_CODE_BRIDGE_SESSION_ID",
+        "CLAUDE_CODE_ENTRYPOINT",
+        "CLAUDECODE",
+        "CLAUDE_PID",
+        "CODEX_SANDBOX",
+        "CODEX_SANDBOX_NETWORK_DISABLED"
+    };
+
+    static void ClearInheritedAgentSessionMarkers()
+    {
+        foreach (string name in InheritedAgentSessionMarkers)
+        {
+            try { Environment.SetEnvironmentVariable(name, null); } catch { }
+        }
+    }
+
     static int RunProcess(string fileName, string arguments, string workingDirectory)
     {
         var psi = new ProcessStartInfo(fileName, arguments);
@@ -198,14 +220,14 @@ class AgentTerminalLauncher
 
     static ColorLease ClaimColor(string prefix)
     {
-        for (int i = 0; i < Palette.Length; i++)
+        for (int i = 0; i < SessionColorCount; i++)
         {
             bool created;
             EventWaitHandle handle = new EventWaitHandle(false, EventResetMode.ManualReset, LeaseName(prefix, i), out created);
             if (created) return new ColorLease(i, handle);
             handle.Dispose();
         }
-        throw new InvalidOperationException("All " + Palette.Length + " agent terminal colors are already in use.");
+        throw new InvalidOperationException("All " + SessionColorCount + " agent terminal colors are already in use.");
     }
 
     static string LeaseName(int index)
@@ -216,6 +238,11 @@ class AgentTerminalLauncher
     static string LeaseName(string prefix, int index)
     {
         return prefix + index;
+    }
+
+    static string SessionSchemeName(int index)
+    {
+        return "Agent Hub Session " + (index + 1).ToString("00");
     }
 
     static string CreateSessionCopy()
@@ -329,7 +356,7 @@ class AgentTerminalLauncher
     static List<string> BuildTerminalArguments(
         string project,
         string title,
-        string color,
+        string colorScheme,
         IEnumerable<string> inner
     )
     {
@@ -338,7 +365,7 @@ class AgentTerminalLauncher
             "new-tab",
             "--startingDirectory", project,
             "--title", title,
-            "--tabColor", color,
+            "--colorScheme", colorScheme,
             "--useApplicationTitle",
             "--inheritEnvironment"
         };
@@ -412,7 +439,7 @@ class AgentTerminalLauncher
         try
         {
             var indexes = new HashSet<int>();
-            for (int i = 0; i < Palette.Length; i++)
+            for (int i = 0; i < SessionColorCount; i++)
             {
                 ColorLease lease = ClaimColor(testPrefix);
                 leases.Add(lease);
@@ -421,7 +448,7 @@ class AgentTerminalLauncher
             bool exhausted = false;
             try { ClaimColor(testPrefix).Dispose(); }
             catch (InvalidOperationException) { exhausted = true; }
-            if (!exhausted) throw new Exception("Palette exhaustion reused an active color.");
+            if (!exhausted) throw new Exception("Session tint exhaustion reused an active color.");
 
             int releasedIndex = leases[5].Index;
             leases[5].Dispose();
@@ -437,16 +464,17 @@ class AgentTerminalLauncher
             string terminalArgs = JoinArguments(BuildTerminalArguments(
                 "C:\\project with spaces",
                 InitialTitle,
-                Palette[0],
+                SessionSchemeName(0),
                 new string[] { "session.exe", "-Agent", "codex" }
             ));
             if (terminalArgs.IndexOf("-w new new-tab", StringComparison.Ordinal) < 0 ||
-                terminalArgs.IndexOf("--tabColor " + Palette[0], StringComparison.Ordinal) < 0 ||
+                terminalArgs.IndexOf("--tabColor", StringComparison.Ordinal) >= 0 ||
+                terminalArgs.IndexOf("--colorScheme \"Agent Hub Session 01\"", StringComparison.Ordinal) < 0 ||
                 terminalArgs.IndexOf("--useApplicationTitle", StringComparison.Ordinal) < 0)
-                throw new Exception("Windows Terminal arguments are missing the window, color, or live-title option.");
+                throw new Exception("Windows Terminal arguments are missing the window, background-matched tab, color scheme, or live-title option.");
 
-            Console.WriteLine("PASS: all " + Palette.Length + " colors were unique, exhaustion-safe, and reusable after release.");
-            Console.WriteLine("PASS: Windows Terminal window, color, live-title, and quoting arguments validated.");
+            Console.WriteLine("PASS: all " + SessionColorCount + " session colors were unique, exhaustion-safe, and reusable after release.");
+            Console.WriteLine("PASS: Windows Terminal window, background-matched tab, color scheme, live-title, and quoting arguments validated.");
         }
         finally
         {
