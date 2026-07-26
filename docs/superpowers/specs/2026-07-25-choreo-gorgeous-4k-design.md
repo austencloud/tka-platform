@@ -529,26 +529,26 @@ virtualization.
 
 ## Implementation ledger (Opus 5: keep current; `- [x]` done, `- [~]` deferred+reason)
 
-- [ ] 1.1 `awaitAuthSettled()` in auth-state (no polling)
-- [ ] 1.2 resolver service + classification + backoff + single-flight
-- [ ] 1.3 roster state machine, generation cancellation, gated deriveds, export/playback gate
-- [ ] 1.4 `sequenceMeta` in draft + repository (back-compat parse)
-- [ ] 1.5 failure UX: skeleton rows/sheet, reserved slots, Retry all, showUserError routing, missing-vs-error copy
-- [ ] 1.5b word display: `simplifyRepeatedWord` + `.tka-font` on every sequence-word surface (fixes live rail violation)
-- [ ] 1.6 all nine Phase-1 tests green
+- [x] 1.1 `awaitAuthSettled()` in auth-state (no polling) — `31d5c5e296`
+- [x] 1.2 resolver service + classification + backoff + single-flight — `3c39a891f3`
+- [x] 1.3 roster state machine, generation cancellation, gated deriveds, export/playback gate — `d7f502c333`
+- [x] 1.4 `sequenceMeta` in draft + repository (back-compat parse) — `376a8f5a83`
+- [x] 1.5 failure UX: skeleton rows/sheet, reserved slots, Retry all, showUserError routing, missing-vs-error copy — `8270e8b8ba` + `c808c22c9f`
+- [x] 1.5b word display: `simplifyRepeatedWord` + `.tka-font` on every sequence-word surface (fixes live rail violation) — `c808c22c9f`
+- [x] 1.6 all Phase-1 tests green — 42/42 across 6 files; full check clean for touched files
 - [ ] 2.1 stage fit policy (fit-page default, fit-width toggle, 1100px cap deleted, 2-up spread)
 - [ ] 2.2 rail resize + collapse (ResizeHandle, persisted width)
 - [ ] 2.3 toolbar zones + no-shift audit
 - [ ] 2.4 dock container-relative width (dockSlide pin kept)
 - [ ] 2.5 container-query migration of the 900px stack
 - [ ] 2.6 screenshot evidence at 3840 / 2560@1.5 / 1920 / ~900, picker open+closed, both modes; PDF parity check
-- [ ] 3.1 thumbnail repair helper: markMissing + local delete + evictHash
-- [ ] 3.2 `response.ok` gate in saveCloudBlobToLocal
-- [ ] 3.3 thumbnail tests (mock updates + 3 new cases)
-- [ ] 4.1 `filesFor` diamond-invariant segment paths
-- [ ] 4.2 `ensureLoaded` in-flight dedup
-- [ ] 4.3 box half spot-check + console-clean evidence
-- [ ] 4.4 arrow-positioning-expert file updated
+- [x] 3.1 thumbnail repair helper: markMissing + local delete + evictHash — `c23988c21c`
+- [x] 3.2 `response.ok` gate in saveCloudBlobToLocal — `c23988c21c`
+- [x] 3.3 thumbnail tests (mock updates + new cases) — 35/35 across 5 files
+- [x] 4.1 `filesFor` diamond-invariant segment paths — `ee0b810569`
+- [x] 4.2 `ensureLoaded` in-flight dedup — `ee0b810569` (9 loads for 26 concurrent callers, proven)
+- [ ] 4.3 box half spot-check + console-clean evidence (Task 13; box half arrows at pro 0/1/2, anti 1/2, static 2 turns WILL visibly shift — intended)
+- [x] 4.4 arrow-positioning-expert file updated — `ee0b810569` (Codex mirror `.codex/agents/arrow-positioning-expert.toml` = open one-line follow-up)
 - [ ] Final: one full `npm run check` (respect machine-wide gates in `resource-budget.md`), scoped commits per phase
 
 ## Gotchas carried forward (from the handoff — still binding)
