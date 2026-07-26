@@ -38,6 +38,7 @@
   } from "../../domain/types/choreo-sheet";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import ResizeHandle from "$lib/shared/panels/ResizeHandle.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
   import ActPlayer from "./ActPlayer.svelte";
@@ -483,6 +484,125 @@
     if (id === builder.sheet.id) lastSyncedAt = null;
   }
 
+  // ── Workspace sizing ────────────────────────────────────────────────────────
+  // The layout responds to the WORKSPACE, not the viewport — a 2560px window
+  // with DevTools docked is still a wide workspace, and a narrow module pane on
+  // a wide screen is still narrow.
+  //
+  // Deliberately measured rather than `container-type: inline-size` on the root:
+  // a size container applies LAYOUT CONTAINMENT, which makes it the containing
+  // block for `position: fixed` descendants. The picker docked inside this view
+  // renders both the filter Drawer (foundation/ui/drawer/Drawer.css:3) and every
+  // dropdown filter chip (browse/components/filter-chips/FilterChipBase.svelte:225)
+  // as fixed elements placed from getBoundingClientRect() viewport coordinates —
+  // containment would offset every one of them by this view's page position.
+  // The toolbar has no fixed descendants, so IT is a real query container below.
+  let workspaceEl = $state<HTMLElement | undefined>(undefined);
+  let workspaceWidth = $state(0);
+
+  $effect(() => {
+    const el = workspaceEl;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = (entry?: ResizeObserverEntry) => {
+      const box = entry?.contentBoxSize?.[0];
+      workspaceWidth = box ? box.inlineSize : el.clientWidth;
+    };
+    const ro = new ResizeObserver((entries) => read(entries[0]));
+    ro.observe(el);
+    read();
+    return () => ro.disconnect();
+  });
+
+  // Below this the rail, stage, and dock stack instead of sitting side by side.
+  const workspaceNarrow = $derived(workspaceWidth > 0 && workspaceWidth <= 900);
+
+  // ── Rail sizing ─────────────────────────────────────────────────────────────
+  // Same convention as the viewer's content rail: pointer-drag through the
+  // shared ResizeHandle primitive, width persisted, plus a collapse to an icon
+  // strip. Range is narrow on purpose — the rail is a list of short TKA words,
+  // not a content pane, so past ~360px it is just dead space the stage wants.
+  const RAIL_WIDTH_KEY = "tka-choreo-rail-width";
+  const RAIL_COLLAPSED_KEY = "tka-choreo-rail-collapsed";
+  const RAIL_MIN = 240;
+  const RAIL_MAX = 360;
+  const RAIL_DEFAULT = 280;
+  const RAIL_STRIP = 48;
+
+  function loadRailWidth(): number {
+    if (typeof localStorage === "undefined") return RAIL_DEFAULT;
+    try {
+      const raw = localStorage.getItem(RAIL_WIDTH_KEY);
+      if (raw) {
+        const n = parseInt(raw, 10);
+        if (Number.isFinite(n)) return Math.min(RAIL_MAX, Math.max(RAIL_MIN, n));
+      }
+    } catch {
+      /* private mode — fall through to the default */
+    }
+    return RAIL_DEFAULT;
+  }
+
+  function loadRailCollapsed(): boolean {
+    if (typeof localStorage === "undefined") return false;
+    try {
+      return localStorage.getItem(RAIL_COLLAPSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  let railWidth = $state(loadRailWidth());
+  let railCollapsed = $state(loadRailCollapsed());
+  const railDisplayWidth = $derived(railCollapsed ? RAIL_STRIP : railWidth);
+
+  function persistRail(): void {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(RAIL_WIDTH_KEY, String(railWidth));
+      localStorage.setItem(RAIL_COLLAPSED_KEY, railCollapsed ? "1" : "0");
+    } catch {
+      /* quota / private mode — non-fatal */
+    }
+  }
+
+  function toggleRailCollapse(): void {
+    railCollapsed = !railCollapsed;
+    persistRail();
+  }
+
+  // Double-click-to-collapse, derived from the handle's own drag callbacks:
+  // ResizeHandle preventDefaults `pointerdown`, which suppresses the browser's
+  // compatibility dblclick, so the gesture is recognised as two quick presses
+  // that never moved.
+  const RAIL_DOUBLE_PRESS_MS = 350;
+  let railDragOrigin = 0;
+  let railDragMoved = false;
+  let railLastPressAt = 0;
+
+  function onRailDragStart(): void {
+    const now = Date.now();
+    if (now - railLastPressAt < RAIL_DOUBLE_PRESS_MS && !railDragMoved) {
+      railLastPressAt = 0;
+      toggleRailCollapse();
+      return;
+    }
+    railLastPressAt = now;
+    railDragOrigin = railWidth;
+    railDragMoved = false;
+  }
+
+  function onRailDrag(delta: number): void {
+    if (Math.abs(delta) > 3) railDragMoved = true;
+    // A collapsed rail expands from the chevron or a double-click, not a drag —
+    // dragging a 48px strip has no meaningful origin width.
+    if (railCollapsed) return;
+    railWidth = Math.round(Math.min(RAIL_MAX, Math.max(RAIL_MIN, railDragOrigin + delta)));
+  }
+
+  function onRailDragEnd(): void {
+    if (railDragMoved) persistRail();
+  }
+
   // Leaving the view abandons any in-flight hydration: the resolver stops
   // mid-backoff instead of retrying against a builder nobody is watching.
   onDestroy(() => builder.cancelHydration());
@@ -494,30 +614,54 @@
   }}
 />
 
-<div class="choreo-sheet-view">
-  <!-- Toolbar: name + primary actions -->
+<div
+  class="choreo-sheet-view"
+  class:is-narrow={workspaceNarrow}
+  bind:this={workspaceEl}
+  style:--workspace-w={workspaceWidth > 0 ? `${workspaceWidth}px` : undefined}
+>
+  <!-- Toolbar: three zones — identity (what this is), secondary (where else to
+       go), primary (what to do with it). The zones are why the eye lands on
+       Export instead of scanning six equal buttons. -->
   <header class="sheet-toolbar">
-    <input
-      class="name-input"
-      type="text"
-      value={builder.sheet.name}
-      oninput={(e) => builder.setName(e.currentTarget.value)}
-      aria-label="Sheet name"
-      placeholder="Untitled Sheet"
-    />
-    <div class="toolbar-actions">
+    <div class="tb-identity">
+      <input
+        class="name-input"
+        type="text"
+        value={builder.sheet.name}
+        oninput={(e) => builder.setName(e.currentTarget.value)}
+        aria-label="Sheet name"
+        placeholder="Untitled Sheet"
+      />
+      {#if builder.sequenceIds.length > 0}
+        <span
+          transition:growFade={{ axis: "x" }}
+          class="loop-badge"
+          class:loops={builder.loopStatus === "loops"}
+          class:open={builder.loopStatus === "open"}
+          title={builder.loopStatus === "loops"
+            ? "The sheet ends where it began — it loops."
+            : "The sheet ends at a different state than it began."}
+        >
+          <span class="loop-sizer" aria-hidden="true">Loops ✓</span>
+          <span class="loop-live">
+            {#if builder.loopStatus === "loops"}Loops ✓{:else}Open{/if}
+          </span>
+        </span>
+      {/if}
+    </div>
+
+    <div class="tb-secondary">
       <button
         type="button"
         class="btn btn-acts"
         class:active={actsOpen}
         onclick={toggleActs}
+        aria-label="Saved acts"
+        title="Saved acts"
       >
         <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
-        Acts
-      </button>
-      <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
-        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-        Add sequences
+        <span class="btn-text">Acts</span>
       </button>
       <button
         type="button"
@@ -525,10 +669,11 @@
         class:active={playerOpen}
         onclick={togglePlayer}
         disabled={!builder.rosterComplete || builder.roster.length === 0}
-        title={builder.rosterComplete ? undefined : "Waiting for sequences to load"}
+        aria-label="Play act"
+        title={builder.rosterComplete ? "Play act" : "Waiting for sequences to load"}
       >
         <i class="fa-solid fa-play" aria-hidden="true"></i>
-        Play act
+        <span class="btn-text">Play act</span>
       </button>
       <SegmentedControl
         options={fitOptions}
@@ -538,6 +683,13 @@
         size="sm"
         ariaLabel="Stage fit"
       />
+    </div>
+
+    <div class="tb-primary">
+      <button type="button" class="btn" class:active={browseOpen} onclick={toggleBrowse}>
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        Add sequences
+      </button>
       <button
         type="button"
         class="btn btn-save"
@@ -563,7 +715,7 @@
       </button>
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-export"
         onclick={exportPdf}
         disabled={exporting || !builder.rosterComplete || builder.roster.length === 0}
         title={builder.rosterComplete ? undefined : "Waiting for sequences to load"}
@@ -572,27 +724,36 @@
         {exporting ? `Exporting ${exportPct}%` : "Export PDF"}
       </button>
     </div>
-    {#if builder.sequenceIds.length > 0}
-      <span
-        transition:growFade={{ axis: "x" }}
-        class="loop-badge"
-        class:loops={builder.loopStatus === "loops"}
-        class:open={builder.loopStatus === "open"}
-        title={builder.loopStatus === "loops"
-          ? "The sheet ends where it began — it loops."
-          : "The sheet ends at a different state than it began."}
-      >
-        <span class="loop-sizer" aria-hidden="true">Loops ✓</span>
-        <span class="loop-live">
-          {#if builder.loopStatus === "loops"}Loops ✓{:else}Open{/if}
-        </span>
-      </span>
-    {/if}
   </header>
 
   <div class="sheet-body">
-    <!-- Left rail: row list + layout settings -->
-    <aside class="rail">
+    <!-- Left rail: row list + layout settings. Resizable, and collapsible to an
+         icon strip when the stage wants the room. -->
+    <aside class="rail" class:collapsed={railCollapsed} style:--rail-w="{railDisplayWidth}px">
+      <div class="rail-bar">
+        <button
+          type="button"
+          class="icon-btn rail-toggle"
+          onclick={toggleRailCollapse}
+          aria-expanded={!railCollapsed}
+          aria-label={railCollapsed ? "Expand sequence rail" : "Collapse sequence rail"}
+          title={railCollapsed ? "Expand sequence rail" : "Collapse sequence rail"}
+        >
+          <i
+            class="fa-solid"
+            class:fa-chevron-left={!railCollapsed}
+            class:fa-chevron-right={railCollapsed}
+            aria-hidden="true"
+          ></i>
+        </button>
+        {#if railCollapsed}
+          <span class="rail-strip-count" title="{builder.sequenceIds.length} sequences on this sheet">
+            {builder.sequenceIds.length}
+          </span>
+        {/if}
+      </div>
+
+      <div class="rail-content">
       <section class="rail-block">
         <div class="rail-head">
           <h2 class="rail-title">Sequences ({builder.sequenceIds.length})</h2>
@@ -811,7 +972,19 @@
           {/if}
         {/if}
       </section>
+      </div>
     </aside>
+
+    <!-- Shared drag primitive, not a hand-rolled one. Double-press it (or hit
+         the chevron) to collapse. -->
+    <div class="rail-resize">
+      <ResizeHandle
+        direction="horizontal"
+        onDragStart={onRailDragStart}
+        onDrag={onRailDrag}
+        onDragEnd={onRailDragEnd}
+      />
+    </div>
 
     <!-- Preview -->
     <div class="preview-pane">
@@ -930,27 +1103,91 @@
     height: 100%;
     min-height: 0;
     gap: var(--spacing-sm);
+    /* Dock width, workspace-relative (the measured equivalent of 30cqi). Both
+       the dock and its width-pinned children read this one value, so the
+       dockSlide clip-reveal stays a pure width animation. */
+    --dock-w: clamp(400px, calc(var(--workspace-w, 1200px) * 0.3), 640px);
   }
 
+  /* The toolbar IS a query container (it holds no fixed-position descendants,
+     unlike the docked picker below it), so its zones respond to the workspace
+     width rather than the viewport. */
   .sheet-toolbar {
+    position: relative;
+    container-type: inline-size;
+    container-name: choreo-workspace;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding: var(--spacing-xs) var(--spacing-sm) calc(var(--spacing-xs) + 2px);
+    background: color-mix(in srgb, var(--theme-panel-bg, #14141c) 55%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+  }
+
+  /* TKA identity hairline: blue prop on the left, red prop on the right, the
+     two fading through the neutral stroke between them. The prop tokens are the
+     domain's own colours (--prop-*-text are the on-dark variants). */
+  .sheet-toolbar::after {
+    content: "";
+    position: absolute;
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+    bottom: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--prop-blue-text, #818cf8) 55%, transparent),
+      var(--theme-stroke, rgba(255, 255, 255, 0.08)) 30% 70%,
+      color-mix(in srgb, var(--prop-red-text, #f87171) 55%, transparent)
+    );
+  }
+
+  .tb-identity {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    min-width: 0;
+    flex: 1 1 12rem;
+  }
+
+  .tb-secondary {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
     flex-wrap: wrap;
-    flex-shrink: 0;
+  }
+
+  /* Primary actions anchor the right edge — the eye ends the sweep on Export. */
+  .tb-primary {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-left: auto;
+    flex-wrap: wrap;
   }
 
   .name-input {
     flex: 1;
-    min-width: 160px;
+    min-width: 10rem;
     min-height: var(--min-touch-target, 44px);
     padding: 0 var(--spacing-sm);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
     color: var(--theme-text, #fff);
-    font-size: var(--font-size-base, 1rem);
+    font-size: var(--font-size-lg, 1.125rem);
     font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: border-color var(--duration-fast, 0.12s) ease;
+  }
+
+  .name-input:hover {
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.16));
   }
 
   .name-input:focus-visible {
@@ -958,10 +1195,31 @@
     outline-offset: 1px;
   }
 
-  .toolbar-actions {
-    display: flex;
-    gap: var(--spacing-xs);
-    flex-wrap: wrap;
+  /* Mid-range workspace: the secondary zone drops to icons (accessible names
+     stay on aria-label/title), so the primary zone keeps its full labels. */
+  @container choreo-workspace (max-width: 1400px) {
+    .tb-secondary .btn-text {
+      display: none;
+    }
+    .tb-secondary .btn {
+      padding: 0 var(--spacing-sm);
+    }
+  }
+
+  /* True big-screen tier: the sheet's name is the page's title, so it steps up
+     with the workspace instead of staying a 1080p form field. */
+  @container choreo-workspace (min-width: 2200px) {
+    .name-input {
+      font-size: var(--font-size-xl, 1.25rem);
+    }
+    .sheet-toolbar .btn {
+      min-height: 3rem;
+      font-size: var(--font-size-base, 1rem);
+    }
+    .loop-badge {
+      font-size: var(--font-size-compact, 0.75rem);
+      padding: 4px 14px;
+    }
   }
 
   .btn {
@@ -997,10 +1255,21 @@
     transition: transform var(--duration-normal, 0.2s) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .btn-primary {
-    background: var(--theme-accent, #6366f1);
-    border-color: transparent;
-    color: var(--theme-text-on-accent, #fff);
+  /* The emphasised action wears the artifact's own colour: paper. Same
+     print-fixed surface token the sheet itself paints with, so the button reads
+     as a swatch of what it produces rather than one more accent chip. The
+     hairline border keeps it legible if the app theme ever goes light. */
+  .btn-export {
+    background: var(--print-bg, #fbfbfd);
+    border-color: rgba(0, 0, 0, 0.14);
+    color: #10111a;
+    font-weight: 700;
+    box-shadow: 0 2px 14px rgba(251, 251, 253, 0.13);
+  }
+
+  .btn-export:hover:not(:disabled) {
+    background: #fff;
+    box-shadow: 0 5px 22px rgba(251, 251, 253, 0.2);
   }
 
   .btn:disabled {
@@ -1089,7 +1358,7 @@
      stays visible (the preview just narrows). Not an overlay. */
   .browse-dock {
     flex-shrink: 0;
-    width: min(460px, 42vw);
+    width: var(--dock-w);
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -1101,9 +1370,10 @@
 
   /* dockSlide perf contract: pin children at the dock's final width so the
      width animation is a pure clip-reveal — without this, the virtualized
-     gallery re-measures itself every frame (traced at 180ms+ of reflow). */
+     gallery re-measures itself every frame (traced at 180ms+ of reflow). Both
+     rules read the SAME --dock-w, which is what keeps the pin exact. */
   .browse-dock > :global(*) {
-    width: min(460px, 42vw);
+    width: var(--dock-w);
   }
 
   .dock-skeleton {
@@ -1234,11 +1504,12 @@
 
   .rail {
     flex-shrink: 0;
-    width: 280px;
+    width: var(--rail-w, 280px);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-xs);
     overflow-y: auto;
+    overflow-x: hidden;
     /* Scrim: the live background bleeds through otherwise, so headings and the
        empty-state copy fight swimming fish. Backdrop-blur mutes that detail
        while keeping ambient color; the translucent panel lifts contrast. */
@@ -1248,6 +1519,60 @@
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
+    transition: width var(--duration-normal, 0.2s) ease;
+  }
+
+  .rail.collapsed {
+    padding: var(--spacing-xs) 2px;
+    align-items: center;
+  }
+
+  .rail-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
+  }
+
+  .rail.collapsed .rail-bar {
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  /* Collapsed, the rail is one number and one way back out. */
+  .rail.collapsed .rail-content {
+    display: none;
+  }
+
+  .rail-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    min-width: 0;
+  }
+
+  .rail-strip-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 9999px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The shared ResizeHandle needs a full-height slot between the two panes. */
+  .rail-resize {
+    flex-shrink: 0;
+    display: flex;
+    align-self: stretch;
   }
 
   .rail-title {
@@ -1550,20 +1875,37 @@
     padding: var(--spacing-sm);
   }
 
-  @media (max-width: 900px) {
-    .sheet-body {
-      flex-direction: column;
-    }
-    .rail {
-      width: 100%;
-    }
-    .browse-dock {
-      width: 100%;
-      max-height: 45vh;
-    }
-    .browse-dock > :global(*) {
-      width: auto;
-    }
+  /* Narrow WORKSPACE, not narrow viewport: a slim module pane on a 4K screen
+     stacks, and a 2560px workspace with DevTools docked stays the wide desktop
+     it is. Driven by the measured width (see the script's note on why this
+     isn't `@container` on the root). */
+  .choreo-sheet-view.is-narrow .sheet-body {
+    flex-direction: column;
+  }
+
+  .choreo-sheet-view.is-narrow .rail,
+  .choreo-sheet-view.is-narrow .rail.collapsed {
+    width: 100%;
+    padding: var(--spacing-sm);
+    align-items: stretch;
+  }
+
+  .choreo-sheet-view.is-narrow .rail.collapsed .rail-bar {
+    flex-direction: row;
+  }
+
+  /* Stacked, there is no left/right divider to drag. */
+  .choreo-sheet-view.is-narrow .rail-resize {
+    display: none;
+  }
+
+  .choreo-sheet-view.is-narrow .browse-dock {
+    width: 100%;
+    max-height: 45vh;
+  }
+
+  .choreo-sheet-view.is-narrow .browse-dock > :global(*) {
+    width: auto;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1571,7 +1913,9 @@
     .toggle-thumb,
     .btn,
     .btn i,
-    .unsaved-dot {
+    .unsaved-dot,
+    .rail,
+    .name-input {
       transition: none;
     }
 
