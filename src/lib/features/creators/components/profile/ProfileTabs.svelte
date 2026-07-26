@@ -8,6 +8,7 @@
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
@@ -76,7 +77,10 @@
   });
 
   function getDisplayName(sequence: LibrarySequence): string {
-    if (sequence.word) return sequence.word;
+    // A LOOP word repeats by construction, so the raw field is routinely
+    // FΨFΨFΨFΨ where the only correct display is FΨ
+    // (.claude/rules/simplified-word-display.md).
+    if (sequence.word) return simplifyRepeatedWord(sequence.word);
 
     if (sequence.name) {
       const cleaned = sequence.name

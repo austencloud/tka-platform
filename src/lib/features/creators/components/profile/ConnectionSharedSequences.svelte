@@ -7,6 +7,9 @@
    */
 
   import type { SharedSequenceSummary } from "$lib/shared/community/services/types";
+  // A LOOP word repeats by construction; the raw field is routinely FΨFΨFΨFΨ
+  // where the only correct display is FΨ (simplified-word-display.md).
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   interface Props {
     sharedSequences: SharedSequenceSummary[];
@@ -60,7 +63,9 @@
               {/if}
             </div>
             <div class="sequence-info">
-              <span class="sequence-word">{shared.mySequence.word}</span>
+              <span class="sequence-word"
+                >{simplifyRepeatedWord(shared.mySequence.word)}</span
+              >
               <span class="sequence-owner">Your version</span>
             </div>
           </div>
@@ -86,7 +91,9 @@
               {/if}
             </div>
             <div class="sequence-info">
-              <span class="sequence-word">{shared.theirSequence.word}</span>
+              <span class="sequence-word"
+                >{simplifyRepeatedWord(shared.theirSequence.word)}</span
+              >
               <span class="sequence-owner">Their version</span>
             </div>
           </div>
