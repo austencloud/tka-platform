@@ -190,6 +190,11 @@
     // when a single fit-height page would strand ≥35% of the stage as dead rail;
     // the two-up width rule then splits the width (capped at fit-height), which
     // shrinks each page but keeps the canvas full — the 4k-native-layout trade.
+    // Floor: a half-page under 640px is a thumbnail, not a readable Letter
+    // sheet (verified at 820×1180, where the short stacked stage passed the
+    // ratio test and rendered two illegible pages).
+    const halfWidth = (stageWidth - STAGE_PAD_X_REM * remPx - PAGE_GAP_REM * remPx) / 2;
+    if (halfWidth < 640) return false;
     return stageWidth - STAGE_PAD_X_REM * remPx > fitHeightWidth * 1.35;
   });
 

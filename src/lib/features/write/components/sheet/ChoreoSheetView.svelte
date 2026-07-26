@@ -1920,6 +1920,14 @@
     max-height: 45vh;
   }
 
+  /* Stacked, the layout controls otherwise stretch to the full band width —
+     three short labels spanning 800px reads as a progress bar, not a control
+     (visual-verification-mandatory.md failure #1, caught at 820×1180). Cap the
+     groups at label-ish width; the sequence rows stay full-bleed for touch. */
+  .choreo-sheet-view.is-narrow .setting-col :global(.segmented-control) {
+    max-width: 26rem;
+  }
+
   .choreo-sheet-view.is-narrow .browse-dock > :global(*) {
     width: auto;
   }
