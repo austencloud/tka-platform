@@ -23,11 +23,12 @@
   shifts layout (no-layout-shift) while capping live-component count.
 
   Stage fit: the page's on-screen size comes from the stage container
-  (`sheet-stage`, container-type: size on the host's preview pane) — fit-page
-  fills the stage's limiting dimension, fit-width fills its width and scrolls.
-  No magic max-width, so the sheet grows with the workspace at 4K instead of
-  freezing at a desktop cap. Physical geometry, the planner, and the PDF are
-  untouched: this only changes how LARGE the same page is drawn.
+  (`sheet-stage`, container-type: size on the host's preview pane). The base is
+  Fit — the page fills the stage's LIMITING dimension, so the whole sheet is
+  visible — and `zoom` scales up from there, scrolling the stage. No magic
+  max-width, so the sheet grows with the workspace at 4K instead of freezing at
+  a desktop cap. Physical geometry, the planner, and the PDF are untouched: this
+  only changes how LARGE the same page is drawn.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -65,7 +66,7 @@
     onRemoveNote,
     onSetHeader,
     placeholderRoster,
-    fitMode = "page",
+    zoom = 1,
   }: {
     pages: SheetPage[];
     geo: SheetPageGeometry;
@@ -95,12 +96,17 @@
      */
     placeholderRoster?: { stepCount: number | null }[];
     /**
-     * How the page sizes itself against the stage. "page" fits the whole sheet
-     * into the stage's limiting dimension (the default — the sheet is the
-     * hero); "width" fills the stage width and scrolls vertically, which reads
-     * better for a long multi-page act.
+     * Scale factor on the fitted page. 1 = Fit: the whole sheet sits in the
+     * stage's limiting dimension, which is the baseline the sheet is designed
+     * around. Above 1 the page grows past the stage and the stage scrolls — for
+     * reading Compact pictographs, not for composition.
+     *
+     * (This replaced a "page | width" toggle. Fit-width was `stage width` and
+     * fit-page was `min(stage width, stage height × aspect)`, so whenever width
+     * was the binding constraint — every landscape sheet on a normal workspace —
+     * the two produced an identical page and the control did nothing.)
      */
-    fitMode?: "page" | "width";
+    zoom?: number;
   } = $props();
 
   // Whole-sequence selection scope (provided by ChoreoSheetView). Null on hosts
@@ -183,7 +189,7 @@
   const pageCount = $derived(layout.packing === "aligned" ? bandPages.length : pages.length);
 
   const twoUp = $derived.by(() => {
-    if (fitMode !== "page" || pageCount < 2 || stageWidth === 0 || stageHeight === 0) return false;
+    if (zoom !== 1 || pageCount < 2 || stageWidth === 0 || stageHeight === 0) return false;
     const fitHeightWidth = (stageHeight - STAGE_PAD_Y_REM * remPx) * pageAspectRatio;
     // Demanding literally two full fit-height pages side by side needs a ~2.7:1
     // stage no real monitor has — verified dead at 3840×2160. Instead: spread
@@ -292,7 +298,7 @@
 {#if showPlaceholder}
   <div
     class="pages-scroll"
-    class:fit-width={fitMode === "width"}
+    class:zoomed={zoom !== 1} style:--zoom={zoom}
     bind:this={scrollEl}
     style="--page-aspect: {pageAspectRatio};"
   >
@@ -335,7 +341,7 @@
   {:else}
     <div
       class="pages-scroll"
-      class:fit-width={fitMode === "width"}
+      class:zoomed={zoom !== 1} style:--zoom={zoom}
       class:two-up={twoUp}
       bind:this={scrollEl}
       style="--page-aspect: {pageAspectRatio};"
@@ -433,16 +439,47 @@
                       {#each band.cells as cell, ci (ci)}
                         <div
                           class="cell"
+                          class:tka-seq-cell={!cell.isBlank && !!cell.sequenceId}
+                          class:is-hovered={cell.sequenceId
+                            ? selection?.isHovered(cell.sequenceId)
+                            : false}
+                          class:is-selected={cell.sequenceId
+                            ? selection?.isSelected(cell.sequenceId)
+                            : false}
                           class:break={isCellBreak(cell)}
                           class:separator={isCellSeparator(
                             cell,
                             page.pageIndex === 0 && bi === 0 && ci === 0,
                           )}
                         >
+                          <!-- Same selection primitive the Study branch uses. The
+                               annotated sheet shipped without it, so clicking a
+                               band's pictograph did nothing while the identical
+                               click in Study selected the whole sequence. -->
+                          {#if !cell.isBlank && cell.sequenceId && onSelectSequence}
+                            <SelectionHit
+                              groupId={cell.sequenceId}
+                              isGroupStart={cell.isSequenceStart}
+                              label="Select this sequence"
+                              onselect={(id) => onSelectSequence?.(id)}
+                            />
+                          {/if}
                           {#if isCellBreak(cell)}
                             <span class="cell-break-label">
                               <i class="fa-solid fa-link-slash" aria-hidden="true"></i> break
                             </span>
+                          {/if}
+                          {#if cell.isSequenceStart && isSelected(cell.sequenceId) && onRemoveSequence}
+                            <button
+                              type="button"
+                              class="block-remove"
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                onRemoveSequence?.(cell.sequenceId!);
+                              }}
+                            >
+                              <i class="fa-solid fa-trash" aria-hidden="true"></i> Remove
+                            </button>
                           {/if}
                           {#if cell.step && visiblePages.has(page.pageIndex)}
                             <PictographContainer
@@ -551,7 +588,7 @@
 {:else}
   <div
     class="pages-scroll"
-    class:fit-width={fitMode === "width"}
+    class:zoomed={zoom !== 1} style:--zoom={zoom}
     class:two-up={twoUp}
     bind:this={scrollEl}
     style="--page-aspect: {pageAspectRatio};"
@@ -650,9 +687,11 @@
     padding-bottom: 1.5rem;
   }
 
-  /* Fit-width reads top-down like a document — no vertical centring. */
-  .pages-scroll.fit-width {
+  /* Zoomed in, the sheet reads top-down like a document — no vertical centring,
+     and the stage scrolls in both axes to reach the corners. */
+  .pages-scroll.zoomed {
     justify-content: flex-start;
+    align-items: safe center;
   }
 
   /* Two-up spread: entered only when the measurement proves two fit-height
@@ -703,17 +742,15 @@
     /* Fit-page: fill the stage's LIMITING dimension. No desktop-era cap — the
        page grows with the workspace (4k-native-layout.md). max-width is only a
        guard for hosts without a size container. */
-    width: min(calc(100cqw - 4.5rem), calc((100cqh - 6rem) * var(--page-aspect, 1.294)));
-    max-width: 100%;
+    width: calc(
+      min(calc(100cqw - 4.5rem), calc((100cqh - 6rem) * var(--page-aspect, 1.294))) *
+        var(--zoom, 1)
+    );
+    max-width: none;
     flex: 0 0 auto;
     box-sizing: border-box;
     /* Clip any sub-pixel overflow from rounded cell sizes so rows never bleed. */
     overflow: hidden;
-  }
-
-  /* Fit-width: fill the stage width and scroll — better for reading a long act. */
-  .pages-scroll.fit-width .page {
-    width: calc(100cqw - 4.5rem);
   }
 
   /* Two-up: cap at half the stage so exactly two land per row. */

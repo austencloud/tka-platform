@@ -161,6 +161,33 @@ describe("createSheetSequenceResolver", () => {
     expect(out).toMatchObject({ source: "private", failure: null, attempts: 2 });
   });
 
+  it("a document that hydrated to zero steps is retried, then reported unreadable", async () => {
+    // The HMR case: the doc is right there, but the compositional hydrator's
+    // pictograph data was momentarily gone, so it produced no steps. Calling
+    // that "missing" told the user seven live sequences had been deleted.
+    const { delay, waits } = instantDelay();
+    const empty = { id: "a", word: "a", steps: [] } as unknown as SequenceData;
+    const loadPrivate = vi.fn().mockResolvedValueOnce(empty).mockResolvedValueOnce(seq("a"));
+    const resolver = createSheetSequenceResolver({
+      loadPrivate,
+      loadPublic: vi.fn(async () => null),
+      awaitAuthSettled: async () => {},
+      delay,
+    });
+    const out = await resolver.resolve("a", new AbortController().signal);
+    expect(out).toMatchObject({ source: "private", failure: null, attempts: 2 });
+    expect(waits.length).toBe(1);
+
+    const stuck = createSheetSequenceResolver({
+      loadPrivate: vi.fn(async () => empty),
+      loadPublic: vi.fn(async () => null),
+      awaitAuthSettled: async () => {},
+      delay: instantDelay().delay,
+    });
+    const spent = await stuck.resolve("a", new AbortController().signal);
+    expect(spent).toMatchObject({ failure: "unreadable", attempts: 4 });
+  });
+
   it("an unparseable document reports unreadable immediately — retrying can't fix it", async () => {
     const { waits } = instantDelay();
     const resolver = createSheetSequenceResolver({

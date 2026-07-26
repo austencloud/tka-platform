@@ -53,6 +53,16 @@ class PrivateTierUnavailable extends Error {
   }
 }
 
+/** The document was found but produced no steps. Retryable: hydration depends on
+ *  pictograph data that can be momentarily absent (an HMR remount drops it), and
+ *  the next attempt normally succeeds. Never "missing" — the row exists. */
+class StepsUnavailable extends Error {
+  constructor() {
+    super("sequence document has no steps");
+    this.name = "StepsUnavailable";
+  }
+}
+
 const BACKOFF_MS = [500, 1500, 4000] as const;
 
 function jitter(ms: number): number {
@@ -98,10 +108,16 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
     // never be called missing on the strength of a question nobody asked.
     let privateAnswered = false;
     let blocked: "unauthorized" | "permission" | null = null;
+    // The document came back, but with no steps. It EXISTS — hydration just
+    // didn't produce a sequence (the compositional hydrator needs pictograph
+    // data that an HMR remount momentarily drops). Absence is the one thing
+    // this cannot mean.
+    let foundEmpty = false;
     try {
       const own = await deps.loadPrivate(id);
       privateAnswered = true;
       if (hasSteps(own)) return { sequence: own, source: "private" };
+      if (own) foundEmpty = true;
     } catch (error) {
       const cls = classifyResolveError(error);
       if (cls === "transient") throw error;
@@ -111,6 +127,11 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
 
     const pub = await deps.loadPublic(id);
     if (hasSteps(pub)) return { sequence: pub, source: "public" };
+    if (pub) foundEmpty = true;
+
+    // A document that exists but yielded no steps is retried, not buried: the
+    // hydrator usually succeeds on the next pass once its data is back.
+    if (foundEmpty) throw new StepsUnavailable();
 
     // Public didn't have it either. Only now is "missing" honest — and only if
     // the private tier actually looked.
@@ -139,9 +160,14 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
           const backoff = BACKOFF_MS[attempts - 1];
           if (backoff === undefined) {
             // Ladder spent. A private tier that never opened reports as a
-            // permission problem, not as a deleted sequence.
+            // permission problem; a document that never yielded steps reports as
+            // unreadable. Neither is a deleted sequence.
             const failure: ResolveFailure =
-              error instanceof PrivateTierUnavailable ? "permission" : "transient";
+              error instanceof PrivateTierUnavailable
+                ? "permission"
+                : error instanceof StepsUnavailable
+                  ? "unreadable"
+                  : "transient";
             return { sequence: null, source: null, failure, attempts };
           }
           await delay(jitter(backoff), signal);

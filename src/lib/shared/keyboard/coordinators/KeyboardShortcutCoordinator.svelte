@@ -20,6 +20,7 @@
   import { registerCommandPaletteCommands } from "../registration/register-commands";
   import { registerCreateShortcuts } from "../registration/register-create-shortcuts";
   import { register3DViewerShortcuts } from "../registration/register-3d-viewer-shortcuts";
+  import { registerChoreoShortcuts } from "../registration/register-choreo-shortcuts";
 
   // Services
   let shortcutManager: KeyboardShortcutManager | null = null;
@@ -51,6 +52,9 @@
 
         // Register 3D Viewer shortcuts (static, handlers bound dynamically)
         register3DViewerShortcuts(manager);
+
+        // Register Choreo sheet shortcuts (static, handlers bound dynamically)
+        registerChoreoShortcuts(manager);
       } catch (error) {
         console.error("Failed to initialize keyboard shortcuts:", error);
       }

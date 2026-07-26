@@ -138,17 +138,16 @@
     { value: "landscape", label: "Landscape" },
     { value: "portrait", label: "Portrait" },
   ];
-  // Stage fit — display only. The page's physical geometry, the planner, and
+  // Stage zoom — display only. The page's physical geometry, the planner, and
   // the PDF never see this; it decides how large the same sheet is drawn.
-  type SheetFitMode = "page" | "width";
-  // Labels, not icons: SegmentedControl renders an option's icon INSTEAD of its
-  // label, and an expand glyph next to a left-right arrow reads as a guess. The
-  // group is already named "Stage fit", so the visible word is the distinguishing
-  // half; the full label stays the accessible name.
-  const fitOptions: { value: SheetFitMode; label: string; shortLabel: string }[] = [
-    { value: "page", label: "Fit page", shortLabel: "Page" },
-    { value: "width", label: "Fit width", shortLabel: "Width" },
-  ];
+  //
+  // 1 is Fit: the whole page in the stage's limiting dimension. The steps above
+  // it exist for reading Compact pictographs, where the printed cell is smaller
+  // than the screen can resolve. (The old page|width toggle is gone: fit-width
+  // was `stage width` and fit-page was `min(stage width, stage height × aspect)`,
+  // which are the SAME number on any stage taller than the page aspect — every
+  // landscape sheet on a normal workspace. Measured identical at 835×645.)
+  const ZOOM_STEPS = [1, 1.25, 1.5, 2, 3] as const;
   type PictographSize = "large" | "standard" | "compact";
   const pictographSizeOptions: { value: PictographSize; label: string }[] = [
     { value: "large", label: "Large" },
@@ -170,6 +169,13 @@
     builder.setLayout(geometry);
   }
 
+  /** Step the size by one, clamped — `[` shrinks the pictograph, `]` grows it. */
+  function stepPictographSize(delta: number): void {
+    const order: PictographSize[] = ["large", "standard", "compact"];
+    const next = order[Math.min(order.length - 1, Math.max(0, order.indexOf(pictographSize) + delta))];
+    if (next) setPictographSize(next);
+  }
+
   // ── Add-sequences picker (inline docked column) ─────────────────────────────
   // Reuses the full Browse experience (BrowsePanel + a browse engine): real
   // rendered pictograph cards, filter sheet, sort, virtualization. Sources are
@@ -183,26 +189,28 @@
     open: boolean;
     playerOpen: boolean;
     actsOpen: boolean;
-    /** Stage fit: whole sheet in view, or full-width and scrolling. */
-    fitMode: SheetFitMode;
+    /** Stage zoom. 1 = Fit (whole sheet visible); above that the stage scrolls. */
+    zoom: number;
   }
   function loadPickerPrefs(): PickerPrefs {
     const fallback: PickerPrefs = {
       open: false,
       playerOpen: false,
       actsOpen: false,
-      fitMode: "page",
+      zoom: 1,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
       const raw = localStorage.getItem(PICKER_PREFS_KEY);
       if (!raw) return fallback;
-      const p = JSON.parse(raw) as Partial<PickerPrefs>;
+      const p = JSON.parse(raw) as Partial<PickerPrefs> & { fitMode?: string };
       return {
         open: !!p.open,
         playerOpen: !!p.playerOpen,
         actsOpen: !!p.actsOpen,
-        fitMode: p.fitMode === "width" ? "width" : "page",
+        // Drafts saved under the old page|width toggle land on Fit — "width" was
+        // the same page as "page" on most stages anyway.
+        zoom: (ZOOM_STEPS as readonly number[]).includes(p.zoom ?? 1) ? (p.zoom as number) : 1,
       };
     } catch {
       return fallback;
@@ -230,7 +238,16 @@
   });
   let playerOpen = $state(initialPrefs.playerOpen);
   let actsOpen = $state(initialPrefs.actsOpen);
-  let fitMode = $state<SheetFitMode>(initialPrefs.fitMode);
+  let zoom = $state<number>(initialPrefs.zoom);
+  const zoomIndex = $derived(Math.max(0, ZOOM_STEPS.indexOf(zoom as (typeof ZOOM_STEPS)[number])));
+  const zoomLabel = $derived(zoom === 1 ? "Fit" : `${Math.round(zoom * 100)}%`);
+  function zoomBy(delta: number): void {
+    const next = ZOOM_STEPS[Math.min(ZOOM_STEPS.length - 1, Math.max(0, zoomIndex + delta))];
+    if (next !== undefined) zoom = next;
+  }
+  function zoomReset(): void {
+    zoom = 1;
+  }
 
   const browseEngine = createBrowseEngine({
     // Persists source/sort/filters/columns across reload; BrowsePanel persists its
@@ -268,7 +285,7 @@
       open: browseOpen,
       playerOpen,
       actsOpen,
-      fitMode,
+      zoom,
     };
     if (typeof localStorage === "undefined") return;
     try {
@@ -628,6 +645,108 @@
     railCollapsed = !railCollapsed;
     persistRail();
   }
+
+  // ── Keyboard ────────────────────────────────────────────────────────────────
+  // The app's shortcut manager owns key handling (capture-phase, context-scoped,
+  // rebindable in Settings, listed under `?`). The definitions are registered at
+  // boot with inert actions; this binds the live ones. Registering the same id
+  // again updates its action — the seam Keyboard3DCoordinator uses.
+  function selectByOffset(delta: number): void {
+    const ids = builder.sequenceIds;
+    if (ids.length === 0) return;
+    const current = builder.selectedSequenceId ? ids.indexOf(builder.selectedSequenceId) : -1;
+    // No selection yet: ArrowDown takes the first row, ArrowUp the last.
+    const next =
+      current === -1
+        ? delta > 0
+          ? 0
+          : ids.length - 1
+        : Math.min(ids.length - 1, Math.max(0, current + delta));
+    const id = ids[next];
+    if (id && id !== builder.selectedSequenceId) builder.toggleSequenceSelection(id);
+    else if (id && current === -1) builder.toggleSequenceSelection(id);
+  }
+
+  function moveSelected(delta: number): void {
+    const id = builder.selectedSequenceId;
+    if (!id) return;
+    const from = builder.sequenceIds.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= builder.sequenceIds.length) return;
+    builder.move(from, to);
+  }
+
+  function removeSelected(): void {
+    const id = builder.selectedSequenceId;
+    if (id) builder.removeById(id);
+  }
+
+  function cycleSeparator(): void {
+    const order: GroupSeparator[] = ["rule", "gap", "none"];
+    const next = order[(order.indexOf(builder.layout.groupSeparator) + 1) % order.length];
+    if (next) builder.setLayout({ groupSeparator: next });
+  }
+
+  $effect(() => {
+    let dispose = () => {};
+    void (async () => {
+      try {
+        const [{ getKeyboardShortcutManager }, { createChoreoShortcuts }] = await Promise.all([
+          import("$lib/shared/keyboard/get-keyboard-shortcut-manager"),
+          import("$lib/shared/keyboard/registration/register-choreo-shortcuts"),
+        ]);
+        const manager = getKeyboardShortcutManager();
+        for (const shortcut of createChoreoShortcuts({
+          selectPrevRow: () => selectByOffset(-1),
+          selectNextRow: () => selectByOffset(1),
+          selectRowAt: (i) => {
+            const id = builder.sequenceIds[i];
+            if (id && id !== builder.selectedSequenceId) builder.toggleSequenceSelection(id);
+          },
+          moveSelectedUp: () => moveSelected(-1),
+          moveSelectedDown: () => moveSelected(1),
+          removeSelected,
+          save: () => void save(),
+          exportPdf: () => void exportPdf(),
+          toggleActs,
+          togglePlayer: () => {
+            if (builder.rosterComplete && builder.roster.length > 0) togglePlayer();
+          },
+          toggleBrowse,
+          toggleRail: toggleRailCollapse,
+          zoomIn: () => zoomBy(1),
+          zoomOut: () => zoomBy(-1),
+          zoomReset,
+          pictographSizeDown: () => stepPictographSize(1),
+          pictographSizeUp: () => stepPictographSize(-1),
+          togglePacking: () =>
+            builder.setLayout({ packing: isAnnotated ? "flow" : "aligned" }),
+          toggleOrientation: () =>
+            builder.setLayout({
+              orientation: builder.layout.orientation === "portrait" ? "landscape" : "portrait",
+            }),
+          toggleStepNumbers: () =>
+            builder.setLayout({ showStepNumbers: !builder.layout.showStepNumbers }),
+          cycleSeparator,
+          toggleCueRail: () => builder.setLayout({ showCueRail: !builder.layout.showCueRail }),
+          toggleNoteStrips: () =>
+            builder.setLayout({ showNoteStrips: !builder.layout.showNoteStrips }),
+        })) {
+          manager.register(shortcut);
+        }
+        // Leave the definitions registered on unmount — they are the static set
+        // Settings and `?` read from. Only the live actions go inert again.
+        dispose = () => {
+          void import("$lib/shared/keyboard/registration/register-choreo-shortcuts").then((m) =>
+            m.registerChoreoShortcuts(manager)
+          );
+        };
+      } catch (error) {
+        console.warn("[ChoreoSheetView] Keyboard shortcuts unavailable:", error);
+      }
+    })();
+    return () => dispose();
+  });
 
   // Double-click-to-collapse, derived from the handle's own drag callbacks:
   // ResizeHandle preventDefaults `pointerdown`, which suppresses the browser's
@@ -1106,7 +1225,7 @@
         </div>
       {:else}
       <SheetPreviewPages
-        {fitMode}
+        {zoom}
         placeholderRoster={builder.rosterComplete
           ? undefined
           : builder.roster.map((r) => ({ stepCount: r.meta?.stepCount ?? null }))}
@@ -1128,20 +1247,44 @@
       />
       {/if}
 
-      <!-- Stage fit belongs to the stage, not the toolbar: it scales the drawing,
-           it doesn't act on the act. Sticky, so it rides the bottom of the
-           scrollport instead of scrolling away with page 1. -->
+      <!-- Zoom belongs to the stage, not the toolbar: it scales the drawing, it
+           doesn't act on the act. Sticky, so it rides the bottom of the
+           scrollport instead of scrolling away with page 1. The readout is the
+           point — you always know what changed. -->
       {#if builder.roster.length > 0 && !stageBlocked}
         <div class="stage-controls">
-          <div class="fit-dock">
-            <SegmentedControl
-              options={fitOptions}
-              value={fitMode}
-              onchange={(v) => (fitMode = v)}
-              color="accent"
-              size="sm"
-              ariaLabel="Stage fit"
-            />
+          <div class="fit-dock" role="group" aria-label="Stage zoom">
+            <button
+              type="button"
+              class="zoom-btn"
+              onclick={() => zoomBy(-1)}
+              disabled={zoomIndex === 0}
+              aria-label="Zoom out"
+              title="Zoom out (−)"
+            >
+              <i class="fa-solid fa-minus" aria-hidden="true"></i>
+            </button>
+            <button
+              type="button"
+              class="zoom-readout"
+              onclick={zoomReset}
+              disabled={zoom === 1}
+              aria-label="Reset zoom to fit"
+              title="Fit the whole page (0)"
+            >
+              <span class="zoom-sizer" aria-hidden="true">300%</span>
+              <span class="zoom-live">{zoomLabel}</span>
+            </button>
+            <button
+              type="button"
+              class="zoom-btn"
+              onclick={() => zoomBy(1)}
+              disabled={zoomIndex === ZOOM_STEPS.length - 1}
+              aria-label="Zoom in"
+              title="Zoom in (+)"
+            >
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            </button>
           </div>
         </div>
       {/if}
@@ -2095,6 +2238,9 @@
   .fit-dock {
     transform: translateY(-100%);
     pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
     padding: 4px;
     border-radius: 999px;
     /* It floats over BOTH the dark stage and the white page, so the surface has
@@ -2111,6 +2257,56 @@
   .fit-dock:hover,
   .fit-dock:focus-within {
     opacity: 1;
+  }
+
+  .zoom-btn,
+  .zoom-readout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--min-touch-target, 44px);
+    background: none;
+    border: none;
+    border-radius: 999px;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--duration-fast, 0.12s) ease;
+  }
+
+  .zoom-btn {
+    width: var(--min-touch-target, 44px);
+  }
+
+  /* Ghost-sizer: the readout swaps between "Fit" and "300%", and a content-sized
+     box would shuffle the two buttons every step (no-layout-shift). */
+  .zoom-readout {
+    display: inline-grid;
+    place-items: center;
+    padding: 0 var(--spacing-xs);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .zoom-sizer,
+  .zoom-live {
+    grid-area: 1 / 1;
+  }
+
+  .zoom-sizer {
+    visibility: hidden;
+  }
+
+  .zoom-btn:hover:not(:disabled),
+  .zoom-readout:hover:not(:disabled) {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
+  }
+
+  .zoom-btn:disabled,
+  .zoom-readout:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   /* Settled-with-holes. Reads as a decision to make, not a load in progress. */

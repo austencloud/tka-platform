@@ -22,6 +22,7 @@ export type ShortcutContext =
   | "learn" // Active in LEARN module
   | "collect" // Active in COLLECT module
   | "compose" // Active in COMPOSE module
+  | "choreo" // Active in CHOREO module (sheet builder)
   | "admin" // Active in ADMIN module
   | "realm" // Active in Realm module (Stage/Museum)
   | "edit-panel" // Active when Edit panel is open
