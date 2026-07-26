@@ -1,6 +1,6 @@
 /**
- * Creators View State (for Browse module)
- * Manages the current view state of the creators tab
+ * Creators View State
+ * Manages the current view state of the Creators module
  * Handles navigation between creators list and user profiles
  */
 

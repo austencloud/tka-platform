@@ -17,7 +17,7 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import ProfileAdminSection from "$lib/features/browse/creators/components/profile/ProfileAdminSection.svelte";
+  import ProfileAdminSection from "$lib/features/creators/components/profile/ProfileAdminSection.svelte";
   import UserActivityAnalytics from "./UserActivityAnalytics.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 

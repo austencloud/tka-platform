@@ -34,7 +34,8 @@ const IS_DEV =
  */
 const NAVIGATION_PATTERNS: Record<string, string[]> = {
   create: ["compose", "browse"],
-  browse: ["create"],
+  browse: ["create", "creators"],
+  creators: ["browse"],
   compose: ["create"],
   learn: ["create", "train"],
   train: ["create", "learn"],
@@ -54,6 +55,7 @@ const MODULE_PATHS: Record<string, string> = {
   // dashboard removed - Create is now the default landing module
   create: "/src/lib/features/create/shared/components/CreateModule.svelte",
   browse: "/src/lib/features/browse/shared/components/BrowseModule.svelte",
+  creators: "/src/lib/features/creators/CreatorsModule.svelte",
   compose: "/src/lib/features/compose/ComposeModule.svelte",
   learn: "/src/lib/features/learn/LearnTab.svelte",
   train: "/src/lib/features/train/components/TrainModule.svelte",

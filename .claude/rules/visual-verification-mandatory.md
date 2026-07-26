@@ -36,6 +36,34 @@ The loop ends when the picture is right, not when the code compiles.
 "I can't verify this visually" is only true if the browser genuinely will not
 start. It is never true because you didn't ask.
 
+## When It Fires (and when it does not)
+
+This is a proportionality rule, not a ritual. Booting Chrome to confirm a
+one-word copy change is its own kind of failure — Austen (2026-07-26): *"it's
+probably going to make the teensiest tiniest changes and insist that it has to
+open up the Chrome browser to look at it which maybe I don't want."*
+
+**Fires — screenshot required:**
+- A new surface, page, panel, or component you built
+- Anything that changes SIZE, POSITION, COUNT, or STRUCTURE: layout, grid or
+  column math, flex/grid properties, width/height/padding/gap, breakpoints,
+  responsive tiers, adding or removing an element
+- Any change to a shared primitive's box (it lands on every consumer)
+- Anything the user asked to be "pretty", "premium", "gorgeous", "4K-friendly"
+- Any change you are reporting as a fix for a visual defect
+
+**Does not fire — say what you changed and move on:**
+- Copy and label text (unless the new string is much longer — that is a size
+  change, see the ghost-sizer half of `no-layout-shift.md`)
+- Swapping one design token for another of the same kind (color, radius token)
+- Comments, types, prop plumbing, non-visual logic
+- A change already screenshotted this session whose frame would be identical
+
+**Batch it.** One verification pass over a finished piece of work beats a frame
+after every edit. Make the whole change, then look, then iterate on what the
+frames show. If the user says skip it, skip it — this rule loses to a direct
+instruction like every other.
+
 ## The Required Viewports (all of them, every visual change)
 
 | Name | Size | Why it is on the list |
@@ -50,6 +78,14 @@ start. It is never true because you didn't ask.
 
 Skipping a viewport is allowed only when the change provably cannot reach it
 (e.g. a desktop-only pane), and you say which you skipped and why.
+
+**Reaching a real 3840 viewport needs `--force-device-scale-factor=1`.** Windows
+runs Austen's 4K display at 200%, so a normally-launched Chrome maxes out at a
+1920 CSS viewport and `resize_page(3840, …)` cannot exceed the physical screen.
+The flag makes one physical pixel one CSS pixel, giving a genuine 3840 viewport.
+Expect Chrome's OWN UI (tabs, URL bar) to render at half physical size in that
+window — that is the flag working, not a bug, and it is worth saying so out loud
+if Austen sees the window, because it looks broken.
 
 ## What To Actually Look For
 

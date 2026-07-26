@@ -153,6 +153,7 @@
       import("../../features/create/shared/components/CreateModule.svelte"),
     browse: () =>
       import("../../features/browse/shared/components/BrowseModule.svelte"),
+    creators: () => import("../../features/creators/CreatorsModule.svelte"),
     // library module retired - backwards compat redirects to browse
     library: () =>
       import("../../features/browse/shared/components/BrowseModule.svelte"),
@@ -189,7 +190,7 @@
     arena: () => import("../../features/arena/ArenaModule.svelte"),
     // connect graduated to Social module (Mar 2026)
     connect: () => import("../../features/social/SocialModule.svelte"),
-    // Social module - Community + Connect (graduated from Lab Mar 2026)
+    // Social module - Community + Connect
     social: () => import("../../features/social/SocialModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),

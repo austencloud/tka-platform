@@ -30,7 +30,7 @@
   // ExportControlsSection removed - edit mode now uses inline action buttons
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { openCreatorProfile } from "$lib/features/browse/creators/state/creators-routing.svelte";
+  import { openCreatorProfile } from "$lib/features/creators/state/creators-routing.svelte";
 
   /**
    * Panel mode determines which features and actions are available
@@ -300,7 +300,7 @@
     if (!creatorInfo?.ownerId) return;
     hapticService?.trigger("selection");
     onClose?.();
-    // Creators moved to Social; jump there and open the profile.
+    // The profile owns its URL, so this return path survives refresh and Back.
     void openCreatorProfile(creatorInfo.ownerId, creatorInfo.displayName);
   }
 

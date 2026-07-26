@@ -7,7 +7,7 @@
  * exports to stub out disabled feature modules at resolve time.
  *
  * Tiers:
- *   core    — always enabled (create, browse, feedback)
+ *   core    — always enabled (create, browse, creators, feedback)
  *   shipped — enabled by default, can be disabled (none yet)
  *   dev     — enabled in dev mode, disabled in production builds
  *   off     — disabled in every build (dev + prod) until explicitly relit
@@ -46,6 +46,11 @@ export const FEATURES: FeatureDefinition[] = [
     id: "browse",
     tier: "core",
     modulePaths: ["features/browse/"],
+  },
+  {
+    id: "creators",
+    tier: "core",
+    modulePaths: ["features/creators/"],
   },
   {
     id: "feedback",
@@ -342,7 +347,8 @@ const SSR_STUBBED_SHARED_RENDER_PATHS: string[] = [
  * its known-good size AND reclaims the entire server-side compile of those
  * modules — the only legitimate build-time win available, since a module that
  * ships to users must still compile for the client. Core (create/browse/
- * feedback) stays real in SSR to match the prior proven-good server bundle.
+ * creators/feedback) stays real in SSR to match the prior proven-good server
+ * bundle and keep the public creator cards server-renderable.
  */
 export function getSsrStubbedModulePaths(): string[] {
   return [

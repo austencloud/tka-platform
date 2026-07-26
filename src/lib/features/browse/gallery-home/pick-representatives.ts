@@ -131,6 +131,100 @@ export function pickCreatorSamples(
   return byCreator;
 }
 
+/**
+ * The Creators module joins gallery work to user profiles by immutable owner
+ * ID. Display names are not unique and can change, so the name-keyed gallery
+ * drill helper above is deliberately not used for this join.
+ */
+export function pickCreatorSamplesByOwnerId(
+  pool: readonly SequenceData[],
+  n = 3,
+): Map<string, SequenceData[]> {
+  const byOwnerId = new Map<string, SequenceData[]>();
+  for (const seq of sortSequencesByKineticAlphabet([...pool])) {
+    const ownerId = seq.ownerId?.trim();
+    if (!ownerId) continue;
+    const bucket = byOwnerId.get(ownerId);
+    if (!bucket) byOwnerId.set(ownerId, [seq]);
+    else if (bucket.length < n) bucket.push(seq);
+  }
+  return byOwnerId;
+}
+
+/** Options for {@link dealByOwner}. */
+export interface DealByOwnerOptions {
+  /** Max pieces taken from any single owner. Default 4. */
+  readonly perOwner?: number;
+  /** Max total tiles returned across all owners. Default 25. */
+  readonly limit?: number;
+}
+
+/**
+ * `SequenceData` has no `publishedAt` field of its own. The public-sequences
+ * loader folds Firestore's `publishedAt` into `dateAdded`
+ * (`birthday ?? publishedAt`) and Firestore's `updatedAt` into `createdAt`
+ * (`public-sequences-loader.ts:328,330`). So "newest published" reads as
+ * `dateAdded` here, falling back to `createdAt` when `dateAdded` is absent.
+ * Returns `undefined`, never throws, when neither is set.
+ */
+function publishTimeMs(seq: SequenceData): number | undefined {
+  return seq.dateAdded?.getTime() ?? seq.createdAt?.getTime();
+}
+
+/**
+ * Orders sequences newest-published first. Ties (equal or both-missing
+ * publish time) break via the deterministic kinetic-alphabet sort, applied
+ * as a stable pre-sort so the date comparator never needs to inspect it
+ * directly. Pure - never mutates `seqs`.
+ */
+function sortNewestPublishedFirst(
+  seqs: readonly SequenceData[],
+): SequenceData[] {
+  return sortSequencesByKineticAlphabet([...seqs]).sort((a, b) => {
+    const timeA = publishTimeMs(a);
+    const timeB = publishTimeMs(b);
+    if (timeA !== undefined && timeB !== undefined) return timeB - timeA;
+    if (timeA !== undefined) return -1;
+    if (timeB !== undefined) return 1;
+    return 0; // Neither has a publish time - keep the kinetic-alphabet order.
+  });
+}
+
+/**
+ * The Wall's tile list: every owner's newest work, capped per owner so no
+ * single creator can dominate the room, merged back into one newest-first
+ * list. `pickCreatorSamplesByOwnerId` above buckets the same way but orders
+ * each bucket kinetic-alphabetically and never merges buckets back into a
+ * single ranked list - this is the publish-recency sibling that the Wall
+ * needs.
+ *
+ * Deterministic and pure: no `Date.now()`, no `Math.random()`. The same pool
+ * (in the same order) always produces the same output.
+ */
+export function dealByOwner(
+  pool: readonly SequenceData[],
+  opts: DealByOwnerOptions = {},
+): SequenceData[] {
+  const perOwner = opts.perOwner ?? 4;
+  const limit = opts.limit ?? 25;
+
+  const byOwnerId = new Map<string, SequenceData[]>();
+  for (const seq of pool) {
+    const ownerId = seq.ownerId?.trim();
+    if (!ownerId) continue;
+    const bucket = byOwnerId.get(ownerId);
+    if (bucket) bucket.push(seq);
+    else byOwnerId.set(ownerId, [seq]);
+  }
+
+  const takes: SequenceData[] = [];
+  for (const bucket of byOwnerId.values()) {
+    takes.push(...sortNewestPublishedFirst(bucket).slice(0, perOwner));
+  }
+
+  return sortNewestPublishedFirst(takes).slice(0, limit);
+}
+
 /** Distinct base letters present in the pool (incl. dash variants like "W-"),
  * in canonical kinetic-alphabet order. These are the letter screen's values —
  * derived from real words, so no letter is ever a dead end. */

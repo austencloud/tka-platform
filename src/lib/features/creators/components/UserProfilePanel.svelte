@@ -158,7 +158,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   function handleSequenceClick(sequence: LibrarySequence) {
     hapticService?.trigger("selection");
     openSequenceViewer(sequence, {
-      returnPath: `/social/creators/${userId}`,
+      returnPath: `/creators/${encodeURIComponent(userId)}`,
       returnLabel: userProfile?.displayName ?? "Creator",
     });
   }

@@ -13,7 +13,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { openCreatorProfile } from "$lib/features/browse/creators/state/creators-routing.svelte";
+  import { openCreatorProfile } from "$lib/features/creators/state/creators-routing.svelte";
   import {
     collectionsBrowseState,
     type CreatorContentTab,
@@ -93,8 +93,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   function handleViewProfile(creatorId: string) {
     hapticService?.trigger("selection");
-    // Creators now live in Social; this jumps modules to Social > Creators and
-    // opens the profile (self-contained creators routing).
+    // Open the creator's profile without making Collections own profile state.
     void openCreatorProfile(creatorId);
   }
 

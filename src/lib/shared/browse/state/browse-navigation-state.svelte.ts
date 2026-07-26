@@ -6,7 +6,7 @@
  * back/forward support and localStorage persistence.
  *
  * Creators relocated Browse -> Social (2026-07-08); its list<->profile routing
- * now lives in features/browse/creators/state/creators-routing.svelte.ts, so
+ * now lives in features/creators/state/creators-routing.svelte.ts, so
  * this state no longer knows about creator profiles.
  */
 

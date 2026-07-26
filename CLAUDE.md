@@ -79,12 +79,17 @@ Port 5173 is the user's VS Code dev server (hooks block `npm run dev`, `kill-por
 
 Playwright is gone. Chrome DevTools MCP is the only browser tool.
 
-**Standing permission, no asking: if you changed how something LOOKS, you open it
-and look at it.** Launching your own Chrome, navigating to a localhost route,
-resizing it, and screenshotting your own work is not "taking control of the
-browser" — it is the second half of the edit. Do it without a permission
-request, every time, before you say a visual change is done. Full protocol and
-the required viewport set: `.claude/rules/visual-verification-mandatory.md`.
+**Standing permission, no asking: if you changed SIZE, POSITION, COUNT or
+STRUCTURE — or built a new surface — you open it and look at it.** Launching
+your own Chrome, navigating to a localhost route, resizing it, and
+screenshotting your own work is not "taking control of the browser"; it is the
+second half of the edit. Do it without a permission request, before you say a
+visual change is done.
+
+Proportionality matters: a copy tweak or a token swap does not earn a browser
+launch, and one pass over finished work beats a frame after every edit. The
+trigger list and the required viewport set live in
+`.claude/rules/visual-verification-mandatory.md`.
 
 Launch your own instance; never drive the user's signed-in window:
 

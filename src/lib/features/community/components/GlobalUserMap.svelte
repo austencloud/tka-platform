@@ -8,7 +8,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { UserLocationWithProfile } from "../domain/models/user-location";
   import UserProfileMarker from "./UserProfileMarker.svelte";
-  import { goto } from "$app/navigation";
+  import { openCreatorProfile } from "$lib/features/creators/state/creators-routing.svelte";
   import { getGoogleMapsLibraryLoader } from "$lib/shared/maps/getGoogleMapsLibraryLoader";
 
   let {
@@ -157,7 +157,7 @@
   }
 
   function handleViewProfile(userId: string) {
-    void goto(`/browse/creators/${userId}`);
+    void openCreatorProfile(userId);
   }
 
   function closePopup() {

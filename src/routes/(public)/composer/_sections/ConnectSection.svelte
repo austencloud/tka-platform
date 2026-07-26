@@ -1,12 +1,12 @@
 <script lang="ts">
-  // WING 4 — Connect. A Featured-creators row built from the REAL CreatorCard
-  // primitive (src/lib/features/browse/creators/components/CreatorCard.svelte),
-  // which is pure-props: no auth, no Firestore, no context. On the live /composer
-  // this row binds to getFeaturedCreators(); here it renders static placeholder
-  // creators (clearly not real users) so the layout evaluates signed-out.
-  // currentUserId=undefined hides the follow button, so there is no live path.
+  // WING 4 — Connect. A Featured-creators row built from ConnectCreatorCard
+  // (./ConnectCreatorCard.svelte), a marketing-only trim of the removed
+  // creators-discovery CreatorCard: pure-props, no auth, no Firestore, no
+  // context, no follow button. On the live /composer this row binds to
+  // getFeaturedCreators(); here it renders static placeholder creators
+  // (clearly not real users) so the layout evaluates signed-out.
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
-  import CreatorCard from "$lib/features/browse/creators/components/CreatorCard.svelte";
+  import ConnectCreatorCard from "./ConnectCreatorCard.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
   const now = Date.now();
@@ -26,12 +26,7 @@
 <div class="creator-row">
   <PanelGrid columns={5} gap="20px">
     {#each creators as user (user.id)}
-      <CreatorCard
-        {user}
-        currentUserId={undefined}
-        onUserClick={() => {}}
-        onFollowToggle={() => {}}
-      />
+      <ConnectCreatorCard {user} onUserClick={() => {}} />
     {/each}
   </PanelGrid>
 </div>

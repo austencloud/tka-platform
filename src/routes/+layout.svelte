@@ -20,13 +20,14 @@
   import "$lib/shared/transitions/view-transitions.css";
 
   // View Transitions driver (2026 canonical SvelteKit pattern), scoped to route
-  // pairs that provide matching named participants: browse <-> sequence and the
-  // landing launchpad <-> its destinations. runNamedRouteMorph temporarily opts
-  // the document root out of capture, so persistent chrome and the cosmic WebGL
-  // canvas stay live while only the shared element is snapshotted. Every other
-  // route uses the regular Svelte content fade. Guards cover feature support,
-  // reduced motion, swipe-dismiss coordination, same-path query mutations, and
-  // the morph-pair allowlist. onNavigate never fires on a full-page F5.
+  // pairs that provide matching named participants: browse <-> sequence, the
+  // landing launchpad <-> its destinations, and the shop book <-> its product
+  // detail. runNamedRouteMorph temporarily opts the document root out of
+  // capture, so persistent chrome and the cosmic WebGL canvas stay live while
+  // only the shared element is snapshotted. Every other route uses the regular
+  // Svelte content fade. Guards cover feature support, reduced motion,
+  // swipe-dismiss coordination, same-path query mutations, and the morph-pair
+  // allowlist. onNavigate never fires on a full-page F5.
   /**
    * Morph instrumentation (DEV only). Times named-snapshot preparation and flags
    * long tasks during the animation window, printed under the `[morph]` prefix.
@@ -96,7 +97,7 @@
     if (reducedMotion()) return;
     if (consumeSkipNextViewTransition()) return;
     if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
-    if (!navigationMorphs(navigation.from?.url, navigation.to?.url)) return;
+    if (!navigationMorphs(navigation.from, navigation.to)) return;
 
     const probe = import.meta.env.DEV
       ? startMorphProbe(
@@ -474,7 +475,7 @@
       // Creators: purely speculative warming for the Creators tab. Skip it
       // entirely on a constrained connection — it loads when the tab is opened.
       if (!constrainedConnection) {
-        import("$lib/features/browse/creators/state/creators-data-state.svelte")
+        import("$lib/features/creators/state/creators-data-state.svelte")
           .then(({ creatorsDataState }) => {
             if (!creatorsDataState.isInitialized) {
               Promise.all([
