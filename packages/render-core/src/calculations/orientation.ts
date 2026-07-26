@@ -143,6 +143,33 @@ const RADIAL_CW_CYCLE: Orientation[] = [
   "out", "counterOut", "counter", "counterIn",
 ];
 
+const ORIENTATION_BY_LOWER: Record<string, Orientation> = (() => {
+  const map: Record<string, Orientation> = {};
+  for (const o of [...RADIAL_CW_CYCLE, ...CENTER_CW_CYCLE]) {
+    map[o.toLowerCase()] = o;
+  }
+  return map;
+})();
+
+/**
+ * Normalize any-case orientation input to its canonical camelCase form.
+ * Blanket .toLowerCase() breaks interradial (clockIn) / center (centerN)
+ * orientations because switchOrientation + the cycles are keyed camelCase — a
+ * lowercased key misses every lookup, so the turn silently no-ops and an
+ * invalid token ("centern") escapes into stored data and the rotation maps.
+ * An unrecognized non-empty value is a data-integrity problem upstream — warn
+ * rather than coerce it to "in" silently.
+ */
+export function canonicalOrientation(raw: string | undefined): Orientation {
+  if (!raw) return "in";
+  const canonical = ORIENTATION_BY_LOWER[raw.toLowerCase()];
+  if (!canonical) {
+    console.warn(`[orientation] Unknown orientation "${raw}", defaulting to "in"`);
+    return "in";
+  }
+  return canonical;
+}
+
 /**
  * Each 0.25 turn = 1 compass step (45 degrees). Each 0.5 turn = 2 steps (90 degrees).
  * Center rule: PRO/STATIC step SAME as rotation, ANTI/DASH step OPPOSITE.
@@ -271,8 +298,7 @@ export function calculateEndOrientation(input: OrientationInput): Orientation {
     startOrientation = "in",
   } = input;
 
-  // Normalize start orientation
-  const startOri = (startOrientation?.toLowerCase() as Orientation) || "in";
+  const startOri = canonicalOrientation(startOrientation);
   const type = motionType?.toLowerCase() || "static";
 
   // Normalize rotation direction (handle undefined, "noRotation", etc.)
@@ -316,8 +342,7 @@ export function calculateOrientations(input: OrientationInput): {
   startOrientation: Orientation;
   endOrientation: Orientation;
 } {
-  // Default start orientation is IN
-  const startOrientation = (input.startOrientation?.toLowerCase() as Orientation) || "in";
+  const startOrientation = canonicalOrientation(input.startOrientation);
 
   const endOrientation = calculateEndOrientation({
     ...input,
