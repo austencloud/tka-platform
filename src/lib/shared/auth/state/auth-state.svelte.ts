@@ -128,6 +128,29 @@ let hasIdentifiedToPostHog = hmrAuthData?.hasIdentifiedToPostHog ?? false;
 // which calls initializeAuthListener() during module evaluation.
 let authInitPromise: Promise<void> | null = null;
 
+// Resolvers parked until auth restoration settles. `awaitAuthSettled()` is the
+// one sanctioned readiness boundary for "don't read private data yet" — do not
+// add another 50ms poll loop (three legacy ones exist; they are the anti-pattern).
+let authSettledResolvers: Array<() => void> = [];
+
+function resolveAuthSettled(): void {
+  const resolvers = authSettledResolvers;
+  authSettledResolvers = [];
+  for (const resolve of resolvers) resolve();
+}
+
+/**
+ * Resolves once auth restoration has settled (authState.initialized === true) —
+ * signed-in, guest, or confirmed signed-out. Resolves immediately if already
+ * settled. Never rejects.
+ */
+export function awaitAuthSettled(): Promise<void> {
+  if (_state.initialized) return Promise.resolve();
+  return new Promise((resolve) => {
+    authSettledResolvers.push(resolve);
+  });
+}
+
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.authState = { ..._state };
@@ -406,6 +429,7 @@ async function doInitializeAuthListener(): Promise<void> {
       isAdmin: true,
       role: "admin",
     };
+    resolveAuthSettled();
   }
 
   cleanupAuthListener = onAuthStateChanged(
@@ -489,6 +513,7 @@ async function doInitializeAuthListener(): Promise<void> {
         isAdmin: desktopAdminFallback ? true : isAdmin,
         role: desktopAdminFallback ? "admin" : role,
       };
+      resolveAuthSettled();
 
       // ── Background work: none of this blocks the UI ──
       if (user) {
@@ -649,6 +674,7 @@ async function doInitializeAuthListener(): Promise<void> {
         isAdmin: false,
         role: "user",
       };
+      resolveAuthSettled();
     }
   );
 }
