@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Choreo 4K recomposition — sketch</title>
+<style>
+  :root {
+    --panel: #14141c;
+    --chrome: rgba(255, 255, 255, 0.06);
+    --stroke: rgba(255, 255, 255, 0.12);
+    --text: #fff;
+    --text-dim: rgba(255, 255, 255, 0.55);
+    --accent: #6ea8fe;
+    --danger: #ef4444;
+    --ok: #34d399;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #0b0b11; color: var(--text); font: 14px/1.4 system-ui, sans-serif; padding: 16px; }
+  @font-face {
+    font-family: "TKA Letters";
+    src: url("/fonts/tka/tka.woff2") format("woff2");
+    font-display: swap;
+  }
+  .tka-font { font-family: "TKA Letters"; font-feature-settings: "liga" 1, "dlig" 1; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .controls .group { display: flex; gap: 4px; background: var(--chrome); border: 1px solid var(--stroke); border-radius: 10px; padding: 4px; }
+  .controls button { background: transparent; color: var(--text-dim); border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  .controls button.on { background: var(--accent); color: #0b0b11; font-weight: 600; }
+  .controls .label { color: var(--text-dim); font-size: 12px; margin-left: 6px; }
+  #simlabel { color: var(--text-dim); font-size: 12px; margin-left: auto; }
+
+  /* ---- simulated monitor frame (layout px, visually scaled to fit) ---- */
+  #frame { transform-origin: top left; border: 1px solid var(--stroke); border-radius: 8px; overflow: hidden; background: #101018; }
+
+  /* ---- the workspace under test ---- */
+  .workspace { height: 100%; display: flex; flex-direction: column; container-type: inline-size; container-name: choreo-workspace; }
+
+  .toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 16px; padding: 10px 18px; border-bottom: 1px solid var(--stroke); background: var(--panel); }
+  .tb-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .tb-name { background: transparent; border: 1px solid transparent; border-radius: 8px; color: var(--text); font-size: 17px; font-weight: 600; padding: 6px 10px; width: 15ch; }
+  .tb-name:hover { border-color: var(--stroke); }
+  .loop-badge { display: inline-grid; }
+  .loop-badge > span { grid-area: 1 / 1; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--stroke); color: var(--ok); white-space: nowrap; }
+  .loop-badge .sizer { visibility: hidden; }
+  .tb-secondary { display: flex; gap: 8px; margin-left: 8px; }
+  .tb-primary { display: flex; gap: 10px; margin-left: auto; }
+  .btn { border: 1px solid var(--stroke); background: var(--chrome); color: var(--text); border-radius: 9px; padding: 8px 14px; font: inherit; cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--accent); border-color: transparent; color: #0b0b11; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--text-dim); }
+  @container choreo-workspace (min-width: 2200px) {
+    .tb-name { font-size: 20px; width: 18ch; }
+    .btn { padding: 10px 18px; font-size: 15px; }
+  }
+
+  .body { flex: 1; display: flex; min-height: 0; }
+
+  /* rail */
+  .rail { flex: 0 0 auto; width: var(--rail-w, 280px); border-right: 1px solid var(--stroke); background: var(--panel); padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; transition: width 160ms ease; }
+  .workspace.rail-collapsed .rail { width: 48px; padding: 14px 6px; }
+  .workspace.rail-collapsed .rail .row-item, .workspace.rail-collapsed .rail h3, .workspace.rail-collapsed .rail .layout-stub { display: none; }
+  .rail h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 4px 0 8px; }
+  .row-item { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: 9px; background: var(--chrome); border: 1px solid transparent; }
+  .row-item:hover { border-color: var(--stroke); }
+  .row-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
+  .row-item .count { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .row-item .slot { width: 22px; height: 22px; display: grid; place-items: center; }
+  .shimmer { background: linear-gradient(100deg, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.08) 70%); background-size: 200% 100%; animation: sh 1.2s linear infinite; border-radius: 6px; }
+  @keyframes sh { to { background-position: -200% 0; } }
+  .retry { color: var(--danger); visibility: hidden; }
+  .layout-stub { margin-top: auto; border-top: 1px solid var(--stroke); padding-top: 10px; color: var(--text-dim); font-size: 12px; display: grid; gap: 8px; }
+  .seg { display: flex; background: var(--chrome); border: 1px solid var(--stroke); border-radius: 8px; padding: 3px; }
+  .seg span { flex: 1; text-align: center; padding: 5px 0; border-radius: 6px; }
+  .seg .on { background: rgba(110, 168, 254, 0.25); color: var(--text); }
+  .collapse-btn { align-self: flex-start; background: transparent; border: 1px solid var(--stroke); color: var(--text-dim); border-radius: 7px; padding: 4px 8px; cursor: pointer; }
+
+  /* stage — the hero. container-type: size drives the fit math */
+  .stage { flex: 1; min-width: 0; container-type: size; background: radial-gradient(ellipse at 50% 42%, #14141e 0%, #0d0d14 68%); overflow-y: auto; }
+  .pages { min-height: 100%; display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: center; align-content: center; padding: 32px; }
+  .page { aspect-ratio: 792 / 612; background: #fff; border-radius: 3px; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4); flex: 0 0 auto;
+    /* fit-page: whole sheet fills the limiting stage dimension */
+    width: min(calc(100cqw - 64px), calc((100cqh - 64px) * (792 / 612)));
+    display: grid; grid-template-rows: repeat(6, 1fr); gap: 0.4%; padding: 2.2%;
+  }
+  .workspace.two-up .pages .page { width: min(calc((100cqw - 64px - 28px) / 2), calc((100cqh - 64px) * (792 / 612))); }
+  .workspace.fit-width .pages { align-content: flex-start; }
+  .workspace.fit-width .pages .page { width: calc(100cqw - 64px); }
+  .sheet-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4%; }
+  .cell { aspect-ratio: 1; border: 1px solid #d8d8de; border-radius: 2px; display: grid; place-items: center; color: #9a9aa4; font-size: clamp(8px, 1.1cqw, 22px); background: #fafafc; }
+  .cell.blank { background: #fff; border-color: #ececf1; color: transparent; }
+  .cell.skel { border-color: #ececf1; }
+  .cell.skel i { width: 60%; height: 60%; display: block; }
+  .rule-row { border-top: 1px solid #c9c9d2; margin: 0.3% 2% 0; }
+
+  /* dock */
+  .dock { flex: 0 0 auto; width: clamp(400px, 30cqi, 640px); border-left: 1px solid var(--stroke); background: var(--panel); padding: 14px; display: none; flex-direction: column; gap: 10px; overflow: hidden; }
+  .workspace.dock-open .dock { display: flex; }
+  .dock .search { height: 38px; border-radius: 9px; background: var(--chrome); border: 1px solid var(--stroke); }
+  .dock .thumbs { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; overflow-y: auto; }
+  .thumb { aspect-ratio: 1; border-radius: 10px; background: var(--chrome); border: 1px solid var(--stroke); display: grid; place-items: center; color: var(--text-dim); font-size: 15px; }
+  .thumb:hover { border-color: var(--accent); color: var(--text); }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <div class="group" id="presets">
+      <button data-w="3840" data-h="2160" class="on">4K full 3840</button>
+      <button data-w="2560" data-h="1249">4K + DevTools 2560×1249</button>
+      <button data-w="1920" data-h="1080">1920</button>
+    </div>
+    <div class="group">
+      <button id="t-dock">Picker</button>
+      <button id="t-rail">Collapse rail</button>
+      <button id="t-fit" class="on">Fit page</button>
+      <button id="t-pages">3 pages</button>
+      <button id="t-load">Loading state</button>
+    </div>
+    <span class="label">Gray tiles stand in for live pictograph cells — composition only.</span>
+    <span id="simlabel"></span>
+  </div>
+
+  <div id="frame">
+    <div class="workspace" id="ws">
+      <header class="toolbar">
+        <div class="tb-identity">
+          <input class="tb-name" value="Untitled Sheet" />
+          <span class="loop-badge"><span class="sizer">Open ○</span><span>Loops ✓</span></span>
+        </div>
+        <div class="tb-secondary">
+          <button class="btn ghost">Acts</button>
+          <button class="btn ghost">Play act</button>
+          <button class="btn ghost" id="fit-seg">Fit ▾</button>
+        </div>
+        <div class="tb-primary">
+          <button class="btn">Add sequences</button>
+          <button class="btn">Save</button>
+          <button class="btn primary">Export PDF</button>
+        </div>
+      </header>
+      <div class="body">
+        <aside class="rail">
+          <button class="collapse-btn" onclick="document.getElementById('t-rail').click()">⇤</button>
+          <h3>Sequences (6)</h3>
+          <div id="rows"></div>
+          <div class="layout-stub">
+            <div class="seg"><span class="on">Study</span><span>Annotated</span></div>
+            <div class="seg"><span>Large</span><span class="on">Standard</span><span>Compact</span></div>
+          </div>
+        </aside>
+        <main class="stage"><div class="pages" id="pages"></div></main>
+        <aside class="dock">
+          <div class="search"></div>
+          <div class="thumbs" id="thumbs"></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const SEQS = [
+    ["KECΦ-KECΦ-KECΦ-KECΦ-", 16], ["JΦJΦKΦJΦ", 8], ["AΘ-RWAΘ-RWAΘ-RWAΘ-RW", 16],
+    ["CΦ-CΦ-CΦ-CΦ-", 8], ["Ω-W-Ω-W-Ω-W-Ω-W-", 8], ["Φ-JΨ-DΦ-JΨ-D", 8],
+  ];
+  // Display port of simplifyRepeatedWord (word-simplifier.ts): smallest repeating unit.
+  function simplify(word) {
+    for (let i = 1; i <= Math.floor(word.length / 2); i++) {
+      const p = word.slice(0, i);
+      if (word.length % i === 0 && p.repeat(word.length / i) === word) return p;
+    }
+    return word;
+  }
+  const ws = document.getElementById("ws");
+  const frame = document.getElementById("frame");
+  let simW = 3840, simH = 2160, pageCount = 1, loading = false;
+
+  function rows() {
+    document.getElementById("rows").innerHTML = SEQS.map(([n, c]) => `
+      <div class="row-item">
+        <span class="name tka-font" title="${n}">${simplify(n)}</span>
+        ${loading ? '<i class="shimmer" style="width:34px;height:14px"></i>' : `<span class="count">${c}</span>`}
+        <span class="slot"><span class="retry">↻</span></span>
+      </div>`).join("");
+  }
+
+  function pages() {
+    let stepNo = 1;
+    const rowsHtml = [];
+    for (const [, count] of SEQS) {
+      const nRows = Math.ceil(count / 8);
+      for (let r = 0; r < nRows; r++) {
+        const cells = [];
+        for (let col = 0; col < 8; col++) {
+          const idx = r * 8 + col;
+          if (idx < count) cells.push(loading ? '<div class="cell skel"><i class="shimmer"></i></div>' : `<div class="cell">${stepNo++}</div>`);
+          else cells.push('<div class="cell blank"></div>');
+        }
+        rowsHtml.push(`<div class="sheet-row">${cells.join("")}</div>`);
+      }
+      rowsHtml.push('<div class="rule-row"></div>');
+    }
+    rowsHtml.pop();
+    const onePage = `<div class="page">${rowsHtml.slice(0, 11).join("")}</div>`;
+    document.getElementById("pages").innerHTML = onePage.repeat(pageCount);
+    // 2-up: only in fit-page mode, when two fit-height pages fit side by side
+    const stage = document.querySelector(".stage");
+    const fitPage = !ws.classList.contains("fit-width");
+    const fitHeightW = (stage.clientHeight - 64) * (792 / 612);
+    ws.classList.toggle("two-up", fitPage && pageCount > 1 && stage.clientWidth - 64 > fitHeightW * 2 + 28);
+  }
+
+  function layout() {
+    const scale = Math.min((innerWidth - 34) / simW, (innerHeight - 90) / simH);
+    frame.style.width = simW + "px";
+    frame.style.height = simH + "px";
+    frame.style.transform = `scale(${scale})`;
+    frame.parentElement === document.body && (document.body.style.height = simH * scale + 90 + "px");
+    document.getElementById("simlabel").textContent = `simulating ${simW}×${simH} @ ${Math.round(scale * 100)}%`;
+    pages();
+  }
+
+  document.getElementById("presets").addEventListener("click", (e) => {
+    if (!e.target.dataset.w) return;
+    [...e.target.parentElement.children].forEach((b) => b.classList.remove("on"));
+    e.target.classList.add("on");
+    simW = +e.target.dataset.w; simH = +e.target.dataset.h; layout();
+  });
+  const toggle = (id, fn) => document.getElementById(id).addEventListener("click", (e) => { e.target.classList.toggle("on"); fn(e.target.classList.contains("on")); layout(); });
+  toggle("t-dock", (on) => ws.classList.toggle("dock-open", on));
+  toggle("t-rail", (on) => ws.classList.toggle("rail-collapsed", on));
+  toggle("t-fit", (on) => { ws.classList.toggle("fit-width", !on); document.getElementById("t-fit").textContent = on ? "Fit page" : "Fit width"; });
+  toggle("t-pages", (on) => { pageCount = on ? 3 : 1; });
+  toggle("t-load", (on) => { loading = on; rows(); });
+
+  const POOL = ["AB", "CΦ-", "Ω-W-", "JΦ", "KECΦ-", "AΘ-RW", "Φ-JΨ-D", "STUV"];
+  document.getElementById("thumbs").innerHTML = Array.from({ length: 24 }, (_, i) =>
+    `<div class="thumb tka-font">${POOL[i % POOL.length]}</div>`).join("");
+  rows(); layout();
+  addEventListener("resize", layout);
+</script>
+</body>
+</html>

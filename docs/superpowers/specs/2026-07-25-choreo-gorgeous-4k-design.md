@@ -59,6 +59,14 @@ and four requests for box half-placement files that should never exist.
 - Draft persistence round-trips the whole `ChoreoSheet` but zero per-sequence
   metadata (`choreo-sheet-state.svelte.ts:80-111`) — a cold restore has ids
   only, so rows can say nothing but "Loading…"/"Failed to load".
+- Rail row labels violate `simplified-word-display.md` in the LIVE app:
+  `rowLabel()` returns raw `displayName ?? word ?? name`
+  (`ChoreoSheetView.svelte:121-125`) with no `simplifyRepeatedWord`, and the
+  handoff's DOM snapshot shows the full repeated words on screen
+  (`KECΦ-KECΦ-KECΦ-KECΦ-` where canon demands `KECΦ-`). Labels also render in
+  the system font, not the TKA Letters webfont (`src/styles/tka-font.css`,
+  class `.tka-font`, uppercase Greek only per
+  `reference_tka_font_uppercase_greek`).
 - Layout hard limits: rail `width: 280px` (`ChoreoSheetView.svelte:1187`),
   dock `min(460px, 42vw)` (`:1036`), page `max-width: 1100px`
   (`SheetPreviewPages.svelte:478-492`), single `@media (max-width: 900px)`
@@ -295,6 +303,14 @@ skeleton row reservation. Canonical steps always come from the library record
 - **Missing (confirmed not-found both tiers):** distinct presentation —
   "Not in your library or the gallery" + a remove affordance. Never shares
   copy with transient failure; permission errors never show as missing.
+- **Word display (fixes a live rule violation):** every sequence-word surface
+  in the module — rail row labels, `meta.name` display, tooltips, any future
+  caption — routes through `simplifyRepeatedWord`
+  (`src/lib/shared/foundation/utils/word-simplifier.ts`) and renders in the
+  TKA Letters webfont (`.tka-font`, sized ≥16px for glyph legibility; the
+  full word stays available as the tooltip/`title`). Stored data (`meta.name`,
+  `sequence.word`) stays raw — display-layer simplification only, per
+  `simplified-word-display.md`.
 
 ### 1.6 Phase 1 tests (the handoff's required list, mapped)
 
@@ -518,6 +534,7 @@ virtualization.
 - [ ] 1.3 roster state machine, generation cancellation, gated deriveds, export/playback gate
 - [ ] 1.4 `sequenceMeta` in draft + repository (back-compat parse)
 - [ ] 1.5 failure UX: skeleton rows/sheet, reserved slots, Retry all, showUserError routing, missing-vs-error copy
+- [ ] 1.5b word display: `simplifyRepeatedWord` + `.tka-font` on every sequence-word surface (fixes live rail violation)
 - [ ] 1.6 all nine Phase-1 tests green
 - [ ] 2.1 stage fit policy (fit-page default, fit-width toggle, 1100px cap deleted, 2-up spread)
 - [ ] 2.2 rail resize + collapse (ResizeHandle, persisted width)
