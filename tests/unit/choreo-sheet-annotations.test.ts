@@ -39,7 +39,12 @@ import { createChoreoSheetState } from "$lib/features/write/state/choreo-sheet-s
 
 function makeState() {
   return createChoreoSheetState({
-    loadSequence: async () => null,
+    resolveSequence: async () => ({
+      sequence: null,
+      source: null,
+      failure: "missing" as const,
+      attempts: 1,
+    }),
   });
 }
 

@@ -17,7 +17,7 @@
  */
 
 import { getContext, setContext } from "svelte";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { SvelteMap } from "svelte/reactivity";
 import {
   createEmptyAnnotations,
   createEmptyChoreoSheet,
@@ -41,24 +41,41 @@ import {
 } from "../services/sheet-continuity";
 import type { ActData } from "../domain/types/write";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ResolveFailure, ResolveOutcome } from "../services/sheet-sequence-resolver";
+
+/** Per-row hydration state. `retrying` is a re-attempt of a row that already
+ *  failed — visually identical to `loading`, so recovery never flashes red. */
+export type RowStatus = "loading" | "retrying" | "ready" | "missing" | "error";
+
+/** Display-only snapshot of a sequence, cached in the draft so a cold restore
+ *  can label its rows before any step data has arrived. Never authoritative —
+ *  the steps always come from the library/gallery record. */
+export interface SequenceMeta {
+  name: string;
+  stepCount: number;
+}
+
+export interface RosterRow {
+  id: string;
+  status: RowStatus;
+  sequence: SequenceData | null;
+  meta: SequenceMeta | null;
+  failure: ResolveFailure | null;
+  attempts: number;
+}
 
 export interface ChoreoSheetStateDeps {
-  /**
-   * Loads one sequence id into its full, step-populated `SequenceData`. Wire
-   * this to `getLibraryRepository().getSequence` at the builder root — that is
-   * the hydrating read path. Do NOT pass the gallery/metadata loaders: those
-   * return sequences with empty `steps`, which would draw blank rows.
-   */
-  loadSequence: (id: string) => Promise<SequenceData | null>;
+  /** Resolves one id to full step data (private→public, classified, retrying).
+   *  Wire to createSheetSequenceResolver(...).resolve at the builder root. */
+  resolveSequence: (id: string, signal: AbortSignal) => Promise<ResolveOutcome>;
   /** Optional seed sheet (e.g. a saved sheet being reopened). Defaults to a fresh empty sheet. */
   initialSheet?: ChoreoSheet;
   /**
    * localStorage key for an auto-saved draft. When set, the builder restores
    * from it on construction (unless `initialSheet` is passed) and re-saves on
    * every change, so a reload / HMR lands on the exact state the user left. The
-   * heavy step data is NOT persisted — only ids + layout + name; steps rehydrate
-   * via `loadSequence` on restore (so it must resolve both library and community
-   * ids).
+   * heavy step data is NOT persisted — only ids + layout + name + a display-meta
+   * snapshot; steps rehydrate via `resolveSequence` on restore.
    */
   persistKey?: string;
 }
@@ -102,9 +119,39 @@ export function loadDraft(key: string): ChoreoSheet | null {
   }
 }
 
-export function persistDraft(key: string, sheet: ChoreoSheet): void {
+/**
+ * Reads the draft's display-meta snapshot (row name + step count per id). Kept
+ * separate from `loadDraft` so the sheet shape stays exactly what it was —
+ * unknown JSON fields are ignored by that parser, so old drafts (no meta) and
+ * new ones both round-trip.
+ */
+export function loadDraftMeta(key: string): Record<string, SequenceMeta> {
   try {
-    localStorage.setItem(key, JSON.stringify(sheet));
+    const raw = localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as { sequenceMeta?: unknown };
+    const out: Record<string, SequenceMeta> = {};
+    if (parsed.sequenceMeta && typeof parsed.sequenceMeta === "object") {
+      for (const [id, m] of Object.entries(parsed.sequenceMeta as Record<string, unknown>)) {
+        const meta = m as Partial<SequenceMeta> | null;
+        if (meta && typeof meta.name === "string" && typeof meta.stepCount === "number") {
+          out[id] = { name: meta.name, stepCount: meta.stepCount };
+        }
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export function persistDraft(
+  key: string,
+  sheet: ChoreoSheet,
+  sequenceMeta?: Record<string, SequenceMeta>
+): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(sequenceMeta ? { ...sheet, sequenceMeta } : sheet));
   } catch {
     // ignore storage errors (quota, private mode)
   }
@@ -134,14 +181,26 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // sheet: re-adding it is then instant, and the cache is just keyed by id.
   const cache = new SvelteMap<string, SequenceData>();
 
-  // True while a hydration round-trip is in flight, so the UI can show a spinner
-  // on freshly-added rows instead of leaving them mysteriously blank.
-  let isHydrating = $state(false);
+  // Per-id hydration truth. Reactive maps (not one `isHydrating` boolean) so a
+  // row that is still loading, retrying, missing, or errored says so on its own
+  // row instead of the whole rail flipping to one global state.
+  const statusById = new SvelteMap<string, RowStatus>();
+  const failureById = new SvelteMap<string, ResolveFailure>();
+  const attemptsById = new SvelteMap<string, number>();
+  const metaById = new SvelteMap<string, SequenceMeta>();
+  if (deps.persistKey) {
+    for (const [id, meta] of Object.entries(loadDraftMeta(deps.persistKey))) metaById.set(id, meta);
+  }
 
-  // Ids whose hydration failed (fetch threw, or the loader returned null). A
-  // SvelteSet — the reactive sibling of the cache's SvelteMap — so the UI can
-  // put an error badge + retry on the affected rows instead of a silent blank.
-  const failedIds = new SvelteSet<string>();
+  // Generation token + live controllers: a sheet swap cancels the batch it
+  // replaced, and any completion carrying a stale generation is dropped rather
+  // than written into the maps of a roster it no longer belongs to.
+  let generation = 0;
+  const controllers = new Set<AbortController>();
+
+  function metaName(seq: SequenceData): string {
+    return seq.displayName ?? seq.word ?? seq.name ?? seq.id;
+  }
 
   // Which sequence block (by id) is selected in the preview / rail — powers
   // select-then-remove (click the whole sequence, see it highlighted, remove it).
@@ -156,13 +215,43 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       .filter((seq): seq is SequenceData => seq != null)
   );
 
+  // The roster: one row per sheet id, in sheet order, ALWAYS. Rows are never
+  // dropped, reordered, or collapsed by load state — a row that failed still
+  // holds its place, which is what makes retry-in-place possible without the
+  // list reflowing under the user's cursor.
+  const roster = $derived<RosterRow[]>(
+    sheet.sequenceIds.map((id) => {
+      const sequence = cache.get(id) ?? null;
+      return {
+        id,
+        status: sequence ? "ready" : (statusById.get(id) ?? "loading"),
+        sequence,
+        meta: sequence
+          ? { name: metaName(sequence), stepCount: sequence.steps?.length ?? 0 }
+          : (metaById.get(id) ?? null),
+        failure: sequence ? null : (failureById.get(id) ?? null),
+        attempts: attemptsById.get(id) ?? 0,
+      };
+    })
+  );
+  const rosterComplete = $derived(roster.every((r) => r.status === "ready"));
+
+  // While ANY row is unresolved the planner input is EMPTY — sequence N+1 is
+  // never normalized against N−1 across a hole, and no reduced sheet is ever
+  // paginated, played, or exported (spec §1.3).
+  const planRows = $derived<SequenceData[]>(
+    sheet.sequenceIds.length > 0 && sheet.sequenceIds.every((id) => cache.has(id))
+      ? sheet.sequenceIds.map((id) => cache.get(id)!)
+      : []
+  );
+
   // Each row (after the first) is normalized to start where the previous row's
   // normalized form ends — so "fill from collections" auto-connects. The fold is
   // order-dependent, so it lives here (not in the id-keyed cache).
   const normalizedRows = $derived.by<SequenceData[]>(() => {
     const out: SequenceData[] = [];
-    for (let i = 0; i < hydratedSequences.length; i++) {
-      const seq = hydratedSequences[i]!;
+    for (let i = 0; i < planRows.length; i++) {
+      const seq = planRows[i]!;
       if (i === 0) {
         out.push(seq);
         continue;
@@ -214,41 +303,76 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // when the normalized rows or the name change.
   const actSequence = $derived(buildActSequence(normalizedRows, sheet.name));
 
-  // Hydrate only the ids we don't already have, in parallel. A failed fetch for
-  // one id never blocks the others or throws — the id lands in `failedIds` so
-  // the row can show an error + retry instead of a mysterious blank.
+  // Hydrate only the ids we don't already have, in parallel. The resolver owns
+  // the auth gate, classification, and automatic retries; this coordinator owns
+  // per-row status and the generation check that keeps a cancelled batch from
+  // writing into the roster that replaced it.
   async function ensureHydrated(ids: readonly string[]): Promise<void> {
-    const missing = ids.filter((id) => !cache.has(id));
-    if (missing.length === 0) return;
-
-    isHydrating = true;
+    const targets = ids.filter((id) => !cache.has(id));
+    if (targets.length === 0) return;
+    const gen = generation;
+    const ctrl = new AbortController();
+    controllers.add(ctrl);
     try {
       await Promise.all(
-        missing.map(async (id) => {
-          failedIds.delete(id); // a retry attempt clears the stale error first
+        targets.map(async (id) => {
+          const prior = statusById.get(id);
+          statusById.set(id, prior === "error" || prior === "missing" ? "retrying" : "loading");
+          failureById.delete(id);
           try {
-            const data = await deps.loadSequence(id);
-            if (data) {
-              cache.set(id, data);
+            const outcome = await deps.resolveSequence(id, ctrl.signal);
+            if (gen !== generation) return; // stale batch — drop
+            attemptsById.set(id, outcome.attempts);
+            if (outcome.sequence) {
+              cache.set(id, outcome.sequence);
+              statusById.set(id, "ready");
+              metaById.set(id, {
+                name: metaName(outcome.sequence),
+                stepCount: outcome.sequence.steps?.length ?? 0,
+              });
             } else {
-              failedIds.add(id); // loader resolved but found nothing
+              statusById.set(id, outcome.failure === "missing" ? "missing" : "error");
+              failureById.set(id, outcome.failure ?? "transient");
             }
-          } catch (error) {
-            console.error(`[ChoreoSheetState] Failed to hydrate sequence ${id}:`, error);
-            failedIds.add(id);
+          } catch {
+            if (gen !== generation || ctrl.signal.aborted) return; // cancelled — not an error
+            statusById.set(id, "error");
+            failureById.set(id, "transient");
           }
         })
       );
     } finally {
-      isHydrating = false;
+      controllers.delete(ctrl);
+      persistMeta();
     }
   }
 
-  // Re-attempt hydration for one failed id, or all failed ids when none given.
+  // Re-attempt hydration for one failed id, or every errored row when none given.
   async function retryHydration(id?: string): Promise<void> {
-    const targets = id ? [id] : [...failedIds];
+    const targets = id ? [id] : roster.filter((r) => r.status === "error").map((r) => r.id);
     if (targets.length === 0) return;
     await ensureHydrated(targets);
+  }
+
+  // Abandon every in-flight batch: bump the generation (so late completions are
+  // dropped) and abort the controllers (so the resolver stops mid-backoff).
+  function cancelHydration(): void {
+    generation++;
+    for (const ctrl of controllers) ctrl.abort();
+    controllers.clear();
+  }
+
+  // Snapshot the display meta of the rows currently on the sheet into the draft.
+  // Cache fills don't reassign `sheet`, so the persist $effect never sees them —
+  // this is the write that keeps a cold restore able to label its rows.
+  function persistMeta(): void {
+    if (!deps.persistKey) return;
+    const meta: Record<string, SequenceMeta> = {};
+    for (const id of sheet.sequenceIds) {
+      const m = metaById.get(id);
+      if (m) meta[id] = m;
+    }
+    persistDraft(deps.persistKey, sheet, meta);
   }
 
   // Append sequences to the sheet (one block per sequence, so ids already on the
@@ -275,7 +399,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     for (const seq of seqs) {
       if (!seq?.id) continue;
       cache.set(seq.id, seq);
-      failedIds.delete(seq.id); // directly seeded — any earlier failure is moot
+      // directly seeded — any earlier failure is moot
+      statusById.delete(seq.id);
+      failureById.delete(seq.id);
+      metaById.set(seq.id, { name: metaName(seq), stepCount: seq.steps?.length ?? 0 });
       if (!sheet.sequenceIds.includes(seq.id) && !additions.includes(seq.id)) {
         additions.push(seq.id);
       }
@@ -287,6 +414,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
         updatedAt: new Date(),
       };
     }
+    persistMeta();
   }
 
   // Drop the row at `index`. The cached SequenceData is intentionally retained —
@@ -448,7 +576,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       const data = placement.sequenceData;
       if (!data?.id) continue;
       cache.set(data.id, data);
-      failedIds.delete(data.id); // directly seeded — any earlier failure is moot
+      // directly seeded — any earlier failure is moot
+      statusById.delete(data.id);
+      failureById.delete(data.id);
+      metaById.set(data.id, { name: metaName(data), stepCount: data.steps?.length ?? 0 });
       if (!ids.includes(data.id)) ids.push(data.id);
     }
     sheet = {
@@ -457,6 +588,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       sequenceIds: ids,
       updatedAt: new Date(),
     };
+    persistMeta();
   }
 
   // Load a saved sheet into the builder (the Acts dock's "open"). Replaces the
@@ -464,6 +596,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // hydrates whatever steps aren't cached yet. Selection is cleared because it
   // referenced the outgoing roster.
   function replaceSheet(next: ChoreoSheet): void {
+    cancelHydration(); // the outgoing roster's batch must never land on this one
     sheet = { ...next, sequenceIds: [...next.sequenceIds] };
     pristineSheet = sheet; // a freshly loaded sheet is clean
     selectedSequenceId = null;
@@ -473,6 +606,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // Start a fresh act. The hydration cache is retained on purpose (keyed by id —
   // re-adding a sequence must not refetch).
   function newSheet(): void {
+    cancelHydration();
     sheet = createEmptyChoreoSheet("");
     pristineSheet = sheet; // a freshly created sheet is clean
     selectedSequenceId = null;
@@ -488,10 +622,19 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // exact state the user left. Cache/hydration mutations don't reassign `sheet`,
   // so they don't trigger a redundant write.
   if (deps.persistKey) {
-    const key = deps.persistKey;
-    $effect(() => {
-      persistDraft(key, sheet);
-    });
+    // Constructed outside a component (unit tests read the factory directly),
+    // `$effect` has no owner and throws `effect_orphan`. Auto-save is a
+    // component-lifetime concern, so skip it there rather than forcing every
+    // test to stand up an effect root — explicit `persistMeta()` calls in the
+    // mutators still cover the writes that matter.
+    try {
+      $effect(() => {
+        void sheet;
+        persistMeta();
+      });
+    } catch {
+      // no component owner — no auto-save
+    }
   }
 
   return {
@@ -534,11 +677,19 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     get loopStatus() {
       return sheetLoopStatus;
     },
+    get roster() {
+      return roster;
+    },
+    get rosterComplete() {
+      return rosterComplete;
+    },
     get isHydrating() {
-      return isHydrating;
+      return roster.some((r) => r.status === "loading" || r.status === "retrying");
     },
     get failedSequenceIds(): ReadonlySet<string> {
-      return failedIds;
+      return new Set(
+        roster.filter((r) => r.status === "error" || r.status === "missing").map((r) => r.id)
+      );
     },
     get selectedSequenceId() {
       return selectedSequenceId;
@@ -546,6 +697,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
 
     addSequences,
     retryHydration,
+    cancelHydration,
     addHydratedSequences,
     replaceSheet,
     newSheet,
