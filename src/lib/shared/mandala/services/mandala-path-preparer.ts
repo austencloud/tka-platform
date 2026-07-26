@@ -24,7 +24,7 @@ import type {
 } from "./types";
 import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import {
 	resolveTrailPointConfig,
 	type TrailPointSource,
@@ -66,7 +66,12 @@ function sourceToOffset(
 ): MandalaTipOffset | null {
 	if (source.type === "none") return null;
 	if (source.type === "custom") return { dx: source.dx, dy: source.dy };
-	const point = getTipPointsBaseline(propType).points[source.index];
+	// Must read the SAME array resolveTrailPointConfig indexed into. It used to
+	// select the index from the override list and then look it up in the
+	// baseline list; the two order a prop's arms differently (triad's arms are
+	// 120 degrees apart between them, torch's are 180), so the mandala traced a
+	// different arm than the trail drew from.
+	const point = getTipPoints(propType).points[source.index];
 	return point ? { dx: point.dx, dy: point.dy } : null;
 }
 

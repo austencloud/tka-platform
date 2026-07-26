@@ -5,6 +5,7 @@ import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-ty
 import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
 import { setTrailPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/trail-point-types";
 import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import { resolveTrailPointConfig } from "$lib/shared/animation-engine/domain/types/trail-point-types";
 import { ENGINE_GRID_RADIUS } from "$lib/shared/mandala/domain/mandala-constants";
 import {
   computeEngineAlignedMandalaScale,
@@ -91,20 +92,46 @@ describe("animation mandala trail-point alignment", () => {
     expect(tracedTip.dx).toBe(CLUB_TIP_REACH);
   });
 
-  it("keeps effect-point overrides out of canonical mandala geometry", () => {
+  // The mandala traces the point the trail draws from. It used to read the
+  // baseline table while the trail read the override table, and the two order a
+  // prop's arms differently, so the mandala came out rotated off the trail.
+  it("traces the same point the trail system selected", () => {
     setTipPointOverrideProvider((propType) =>
       propType === "club" ? { points: [{ dx: 150, dy: 0 }] } : null
     );
 
     expect(resolveMandalaTipOffsets("club", TrackingMode.RIGHT_END)).toEqual([
-      { dx: CLUB_TIP_REACH, dy: 0 },
+      { dx: 150, dy: 0 },
     ]);
   });
 
-  it("keeps a zero-turn anti-spin club locus off center despite a stale effect point", () => {
+  it("follows an override that reorders a prop's arms instead of tracing a different arm", () => {
+    // Triad's saved points list the rear-upper arm first and the forward arm
+    // second; the code table lists them the other way round. The trail picks
+    // the index off the saved list, so the mandala has to resolve it there too.
+    const saved = [
+      { dx: -62.2, dy: -107.8 },
+      { dx: 124.4, dy: 0 },
+      { dx: -62.2, dy: 107.8 },
+    ];
     setTipPointOverrideProvider((propType) =>
-      propType === "club" ? { points: [{ dx: 150, dy: 0 }] } : null
+      propType === "triad" ? { points: saved } : null
     );
+
+    const [mandalaTip] = resolveMandalaTipOffsets(
+      "triad",
+      TrackingMode.RIGHT_END
+    );
+    const trail = resolveTrailPointConfig("triad");
+    const trailSource = trail.right;
+    expect(trailSource.type).toBe("tip");
+    const trailTip = saved[(trailSource as { index: number }).index]!;
+
+    expect(mandalaTip).toEqual({ dx: trailTip.dx, dy: trailTip.dy });
+    expect(mandalaTip).toEqual({ dx: 124.4, dy: 0 });
+  });
+
+  it("keeps a zero-turn anti-spin club locus off center", () => {
     const [resolvedClubTip] = resolveMandalaTipOffsets(
       "club",
       TrackingMode.RIGHT_END
