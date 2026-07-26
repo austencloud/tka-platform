@@ -820,6 +820,42 @@ This is a deliberate boundary, not a hidden follow-up write.
 
 ## Shortcode correction
 
+**LANDED (2026-07-26).** Mint path shipped as specced (strict
+`deriveWordStatusFromSteps` over the payload steps, `IncompleteWordError` on
+incomplete, `payloadWord`/`payloadStepCount`/`payloadSchemaVersion: 2`/
+`sourceSequenceId`/`sourceProjectionRevision`, aliases written from
+payloadWord; readers — `importedWord`, the /q SSR OG mask — prefer
+payloadWord). The repair path shipped with three findings the spec's
+assumptions didn't survive, all now encoded in
+`backfill-shortcode-words.ts`:
+
+1. **"Decode encoded first" is unsafe alone** — old deck blobs carried
+   content-only beats, so the modern decoder consumes the first content beat
+   as the start position and the word silently loses its head (proven on
+   09PB). The script derives BOTH sources and prefers the one with more
+   content beats; deck-embedded blobs also number content beats 0-BASED, so
+   a stepNumber-0 beat CARRYING a letter is renumbered as content, never
+   filtered as a start entry.
+2. **The decode+dataframe channel has a same-family letter bias** on old
+   blobs (Θ↔Ω, Σ↔Δ, R↔P, …: 67 records where the decoded word disagrees
+   with the mint-time embedded letters). A word-CHANGING repair therefore
+   requires two witnesses (both sources complete, equal count, equal word),
+   a seed→full-expansion relationship, a non-word-shaped label, or a payload
+   with MORE beats than the label has tokens (structural proof the label
+   never described the payload — the VOJT/Z3WC class, which repair exactly
+   as this section ordered). Everything else quarantines:
+   `TRUNCATED_PAYLOAD_AT_MINT` (53 — the payload physically lost its first
+   beat at mint; relabeling would enshrine the loss),
+   `LABEL_CONTRADICTS_PAYLOAD` (22), `PAYLOAD_SOURCES_CONFLICT` (67),
+   `PAYLOAD_INCOMPLETE` (110), `PAYLOAD_MISSING` (1) — 253 of 20,210 held
+   for review, manifests in `scripts/migrations/backups/`.
+3. **`scripts/create-shortcodes-batch.js` is a mint-path bypass** — it
+   writes shortcode records directly with `sequence: publicDoc.word`.
+   Post-corpus-repair that word is canonical so its labels are correct
+   going forward, but it does not stamp the payload fields; periodic
+   label-repair runs heal its mints. Folding it onto the strict mint path
+   is an open follow-up.
+
 ### Mint path
 
 Change the order in `ShortCodeManager.allocateCode`:

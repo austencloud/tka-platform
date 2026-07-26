@@ -130,44 +130,40 @@ function letterForBeat(step: AnyRec): string | null {
   return matchIn(DIAMOND_EDGES, blue, red) ?? matchIn(BOX_EDGES, blue, red);
 }
 
-/**
- * Derive the payload word for a shortcode doc through the shared strict API.
- *
- * Payload priority per the spec: decode `encoded` first (the immutable
- * authority), fall back to embedded `sequenceData.steps`. Beat letters are
- * filled by the dataframe match where the payload lacks them, then the
- * letter-filled steps run through `deriveWordStatusFromSteps` so completeness,
- * missing indexes, and the content-beat count come from the SAME strict code
- * the runtime uses — never a local reimplementation.
- */
-async function derivePayloadWord(data: AnyRec): Promise<{
+interface PayloadDerivation {
   word: string;
   complete: boolean;
   missingStepIndexes: readonly number[];
   stepCount: number;
-} | null> {
-  let steps: AnyRec[] | null = null;
+  source: "encoded" | "embedded";
+  /** Both payload sources derived complete, with the same beat count and the
+   *  same word — the strongest evidence a stored label is simply wrong. */
+  corroborated?: boolean;
+}
 
-  if (typeof data.encoded === "string" && data.encoded) {
-    const decoded = (await decodeSequenceFromQR(data.encoded)) as SequenceData;
-    const decodedSteps = (decoded.steps ?? []) as unknown as AnyRec[];
-    if (decodedSteps.length > 0) steps = decodedSteps;
-  }
-  if (!steps) {
-    const embedded = data.sequenceData as
-      | { steps?: unknown; beats?: unknown }
-      | undefined;
-    const embeddedSteps = embedded?.steps ?? embedded?.beats;
-    if (Array.isArray(embeddedSteps) && embeddedSteps.length > 0) {
-      steps = embeddedSteps as AnyRec[];
-    }
-  }
-  if (!steps || steps.length === 0) return null;
+function deriveFromSteps(
+  steps: AnyRec[],
+  source: PayloadDerivation["source"]
+): PayloadDerivation {
+  // Deck-minted embedded blobs number their CONTENT beats 0-based, so the
+  // strict API's `stepNumber !== 0` start-entry filter would eat beat 0 and
+  // the word would lose its first letter (proven on 09PB: embedded letters
+  // "OTWΔ…"×4, naive derivation "TWΔO…"). A TRUE legacy start entry is
+  // letterless by design; a stepNumber-0 beat CARRYING a letter is 0-based
+  // content. Drop only a genuine leading start entry, then renumber the
+  // content beats 1..N so the strict API sees them all.
+  const first = steps[0];
+  const hasTrueStartEntry =
+    first !== undefined &&
+    first.stepNumber === 0 &&
+    (first.letter ?? null) === null &&
+    steps.length > 1 &&
+    steps[1]!.stepNumber === 1;
+  const contentSteps = hasTrueStartEntry ? steps.slice(1) : steps;
 
-  const lettered = steps.map((step, index) => ({
+  const lettered = contentSteps.map((step, index) => ({
     ...(step as object),
-    stepNumber:
-      typeof step.stepNumber === "number" ? step.stepNumber : index + 1,
+    stepNumber: index + 1,
     letter: letterForBeat(step),
   }));
   const status = deriveWordStatusFromSteps(lettered as unknown as Step[]);
@@ -176,7 +172,78 @@ async function derivePayloadWord(data: AnyRec): Promise<{
     complete: status.complete,
     missingStepIndexes: status.missingStepIndexes,
     stepCount: status.stepCount,
+    source,
   };
+}
+
+/**
+ * Derive the payload word for a shortcode doc through the shared strict API
+ * (`deriveWordStatusFromSteps` → { word, complete, missingStepIndexes,
+ * stepCount }), so completeness and the content-beat count come from the SAME
+ * strict code the runtime uses — never a local reimplementation. Beat letters
+ * are filled by the dataframe match where the payload lacks them.
+ *
+ * BOTH payload sources are derived and the better one wins, because the
+ * decode of old deck-minted blobs is LOSSY: their wire format carried
+ * content-only beats, so the modern decoder consumes the first content beat
+ * as the start position and the word loses its first letter (proven on 09PB:
+ * embedded steps carry all 16 letters "OTWΔ…", the decode yields 15). A lossy
+ * decode can only LOSE beats, never invent them, so:
+ *
+ *   - only one source derivable → use it
+ *   - both complete → prefer MORE content beats; on equal counts the words
+ *     must agree, otherwise the record is quarantined as a source conflict
+ *   - both partial → report the one with fewer missing beats
+ */
+async function derivePayloadWord(data: AnyRec): Promise<
+  | PayloadDerivation
+  | { conflict: { encoded: PayloadDerivation; embedded: PayloadDerivation } }
+  | null
+> {
+  let fromEncoded: PayloadDerivation | null = null;
+  if (typeof data.encoded === "string" && data.encoded) {
+    try {
+      const decoded = (await decodeSequenceFromQR(data.encoded)) as SequenceData;
+      const decodedSteps = (decoded.steps ?? []) as unknown as AnyRec[];
+      if (decodedSteps.length > 0) {
+        fromEncoded = deriveFromSteps(decodedSteps, "encoded");
+      }
+    } catch {
+      // A decoder rejection ("invalid start/end positions") must not mask a
+      // healthy embedded payload.
+    }
+  }
+
+  let fromEmbedded: PayloadDerivation | null = null;
+  const embedded = data.sequenceData as
+    | { steps?: unknown; beats?: unknown }
+    | undefined;
+  const embeddedSteps = embedded?.steps ?? embedded?.beats;
+  if (Array.isArray(embeddedSteps) && embeddedSteps.length > 0) {
+    fromEmbedded = deriveFromSteps(embeddedSteps as AnyRec[], "embedded");
+  }
+
+  if (!fromEncoded && !fromEmbedded) return null;
+  if (!fromEncoded) return fromEmbedded;
+  if (!fromEmbedded) return fromEncoded;
+
+  if (fromEncoded.complete && fromEmbedded.complete) {
+    if (fromEncoded.stepCount !== fromEmbedded.stepCount) {
+      return fromEncoded.stepCount > fromEmbedded.stepCount
+        ? fromEncoded
+        : fromEmbedded;
+    }
+    if (fromEncoded.word === fromEmbedded.word) {
+      return { ...fromEncoded, corroborated: true };
+    }
+    return { conflict: { encoded: fromEncoded, embedded: fromEmbedded } };
+  }
+  if (fromEncoded.complete) return fromEncoded;
+  if (fromEmbedded.complete) return fromEmbedded;
+  return fromEncoded.missingStepIndexes.length <=
+    fromEmbedded.missingStepIndexes.length
+    ? fromEncoded
+    : fromEmbedded;
 }
 
 /** Matches the mint path's SHORTCODE_PAYLOAD_SCHEMA_VERSION in
@@ -189,6 +256,16 @@ type LabelClass =
   | "LEGACY_PAYLOAD_VERSION"
   | "PAYLOAD_INCOMPLETE"
   | "PAYLOAD_MISSING"
+  | "PAYLOAD_SOURCES_CONFLICT"
+  /** stored.slice(1) === derived: the old encoder consumed a 0-based first
+   *  CONTENT beat as the start position at mint, so the payload physically
+   *  lost that beat. Relabeling would enshrine the loss — quarantined. */
+  | "TRUNCATED_PAYLOAD_AT_MINT"
+  /** The derived word contradicts the stored label, is not a seed→expansion,
+   *  and only ONE payload source could vouch for it. The decode+dataframe
+   *  channel shows systematic same-family letter bias (Θ↔Ω, Σ↔Δ, R↔P …) on
+   *  old blobs, so an uncorroborated contradiction needs human review. */
+  | "LABEL_CONTRADICTS_PAYLOAD"
   | "DERIVATION_FAILED";
 
 async function main(): Promise<void> {
@@ -239,9 +316,9 @@ async function main(): Promise<void> {
     );
     const isLegacyVersion = data.payloadSchemaVersion !== PAYLOAD_SCHEMA_VERSION;
 
-    let derived: Awaited<ReturnType<typeof derivePayloadWord>>;
+    let raw: Awaited<ReturnType<typeof derivePayloadWord>>;
     try {
-      derived = await derivePayloadWord(data);
+      raw = await derivePayloadWord(data);
     } catch (e) {
       results.push({
         code,
@@ -252,10 +329,22 @@ async function main(): Promise<void> {
       continue;
     }
 
-    if (!derived) {
+    if (!raw) {
       results.push({ code, cls: "PAYLOAD_MISSING", storedLabel });
       continue;
     }
+    if ("conflict" in raw) {
+      // Encoded and embedded payloads are both complete, same beat count,
+      // DIFFERENT words — a human decides which payload is telling the truth.
+      results.push({
+        code,
+        cls: "PAYLOAD_SOURCES_CONFLICT",
+        storedLabel,
+        detail: `encoded says "${raw.conflict.encoded.word}", embedded says "${raw.conflict.embedded.word}"`,
+      });
+      continue;
+    }
+    const derived = raw;
     if (!derived.complete || derived.word.length === 0) {
       // Quarantine: never invent or truncate a word. Reported for manual
       // review with the exact unresolved beat indexes.
@@ -278,6 +367,60 @@ async function main(): Promise<void> {
     if (labelsCurrent) {
       results.push({ code, cls: "LABELS_CURRENT" });
       continue;
+    }
+
+    // Word-change safety gate. A complete derivation earns a WRITE only when
+    // the change is self-evidently safe:
+    //   - the label was never a notation word (auto-names, suffixed titles),
+    //   - or the derived word is the stored seed's full expansion,
+    //   - or BOTH payload sources corroborate the new word.
+    // Everything else quarantines: mint-truncated payloads must not have the
+    // loss enshrined, and the decode-only channel's letter bias must not
+    // overwrite a plausible word on one witness.
+    const WORD_SHAPE = /^[A-ZΑ-Ωα-ω-]+$/u;
+    const wordChanged = storedLabel !== derived.word;
+    const labelIsWordShaped =
+      storedLabel.length > 0 && WORD_SHAPE.test(storedLabel);
+    if (wordChanged && labelIsWordShaped) {
+      // One notation token = letter + optional dash suffix ("W-", "Σ-").
+      const storedTokens = storedLabel.match(/[A-ZΑ-Ωα-ω]-?/gu) ?? [];
+      const storedMinusFirstToken = storedTokens.slice(1).join("");
+
+      if (
+        storedMinusFirstToken === derived.word &&
+        storedTokens.length === derived.stepCount + 1
+      ) {
+        results.push({
+          code,
+          cls: "TRUNCATED_PAYLOAD_AT_MINT",
+          storedLabel,
+          derivedWord: derived.word,
+          detail: `payload lost its first beat at mint (0-based content beat consumed as start position); label kept`,
+        });
+        continue;
+      }
+      // A payload with MORE beats than the label has tokens is structural
+      // proof the label never described this payload ("GI" on a 7-beat blob —
+      // the VOJT/Z3WC class): every channel here can only LOSE beats, never
+      // invent them, so one witness suffices. Same-beat-count letter
+      // disagreements are the decode channel's known letter-family bias and
+      // stay quarantined unless both witnesses agree; a SHORTER payload on a
+      // single witness may itself be the loss and also quarantines.
+      const payloadOutgrowsLabel = derived.stepCount > storedTokens.length;
+      if (
+        !derived.word.startsWith(storedLabel) &&
+        !derived.corroborated &&
+        !payloadOutgrowsLabel
+      ) {
+        results.push({
+          code,
+          cls: "LABEL_CONTRADICTS_PAYLOAD",
+          storedLabel,
+          derivedWord: derived.word,
+          detail: `single-witness (${derived.source}) contradiction — review before relabeling`,
+        });
+        continue;
+      }
     }
 
     // Historical payload versions (no schema stamp yet) are counted
@@ -322,6 +465,9 @@ async function main(): Promise<void> {
     const isProblem =
       r.cls === "PAYLOAD_INCOMPLETE" ||
       r.cls === "PAYLOAD_MISSING" ||
+      r.cls === "PAYLOAD_SOURCES_CONFLICT" ||
+      r.cls === "TRUNCATED_PAYLOAD_AT_MINT" ||
+      r.cls === "LABEL_CONTRADICTS_PAYLOAD" ||
       r.cls === "DERIVATION_FAILED";
     printed[r.cls] = (printed[r.cls] ?? 0) + 1;
     if (!isProblem && printed[r.cls]! > PRINT_CAP_PER_CLASS) continue;
