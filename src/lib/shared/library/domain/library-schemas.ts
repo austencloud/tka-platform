@@ -11,7 +11,7 @@ import { z } from "zod";
 // Import from the leaf module, not the $lib/shared/firestore barrel: the barrel
 // pulls in the CRUD layer, creating an import cycle that leaves firestoreDate in
 // the temporal dead zone (undefined) when this module evaluates first.
-import { firestoreDate } from "$lib/shared/firestore/firestore-date";
+import { firestoreDate, firestoreDateLenient } from "$lib/shared/firestore/firestore-date";
 
 // --- Nested objects ---
 
@@ -79,12 +79,14 @@ export const LibrarySequenceDocSchema = z
     isDeleted: z.boolean().optional(),
     deletedAt: z.preprocess((v) => v ?? undefined, firestoreDate.optional()),
 
-    // Timestamps
-    birthday: firestoreDate.optional(),
-    createdAt: firestoreDate.optional(),
-    updatedAt: firestoreDate.optional(),
-    dateAdded: firestoreDate.optional(),
-    lastAccessedAt: firestoreDate.optional(),
+    // Timestamps. Lenient: real docs exist whose createdAt/updatedAt hold an
+    // unresolved serverTimestamp sentinel (see firestoreDateLenient) — a strict
+    // parse fails the whole doc and the sequence reads as deleted.
+    birthday: firestoreDateLenient,
+    createdAt: firestoreDateLenient,
+    updatedAt: firestoreDateLenient,
+    dateAdded: firestoreDateLenient,
+    lastAccessedAt: firestoreDateLenient,
 
     // Core sequence fields
     thumbnails: z.array(z.string()).default([]),

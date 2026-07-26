@@ -16,3 +16,20 @@ export const firestoreDate = z.preprocess((val) => {
   }
   return val;
 }, z.coerce.date());
+
+/**
+ * `firestoreDate.optional()` that additionally tolerates an UNRESOLVED
+ * serverTimestamp sentinel ({ _methodName: "serverTimestamp" }) persisted
+ * verbatim — a write-path bug observed on real library docs (2026-07-01,
+ * users/.../sequences/b231098b-...). Coercing the sentinel makes an Invalid
+ * Date and fails the WHOLE document parse, which firestoreGet reports as null —
+ * indistinguishable from not-found, so the sequence shows as "missing" while
+ * visibly existing. The sentinel guard sits OUTSIDE the optional wrap (zod
+ * checks the pre-preprocess input for undefined), mapping it to "absent".
+ * Required timestamp fields keep using `firestoreDate` and still fail loudly.
+ */
+export const firestoreDateLenient = z.preprocess(
+  (val) =>
+    val && typeof val === "object" && "_methodName" in val ? undefined : val,
+  firestoreDate.optional()
+);
