@@ -35,11 +35,16 @@ interface Slot {
 export const DEFAULT_BUDGETS: Record<Medium, number> = {
   sequence: 6,
   mandala: 8,
-  // 3D media stay at 0 until the scissored multi-viewport renderer exists.
-  // `Viewer3DCanvas` is single-viewer and there is no context pool, so N live
-  // 3D tiles is not a budget question yet — it is unbuilt infrastructure.
+  // A saved 3D scene has no live preview component yet — the collection module
+  // only ever shows its poster, and `Viewer3DCanvas` requires an ancestor to
+  // have called setViewer3DContext(). Until that sandbox exists, scene tiles
+  // are posters and this budget has nothing to grant.
   scene: 0,
-  tunnel: 0,
+  // Tunnels DO have one: TunnelDetailPreview mounts the real renderer behind a
+  // per-instance seam. Deliberately small — TunnelArtView can route trails
+  // through the WebGL2 overlay, so this is the budget most likely to need
+  // lowering once measured. Tune it with the on-page controls.
+  tunnel: 2,
 };
 
 export class LiveSlots {

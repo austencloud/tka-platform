@@ -29,6 +29,7 @@
     title,
     sequence = null,
     poster = null,
+    tunnel = null,
     mandala = null,
     lightMode = false,
     size = "md",
@@ -41,6 +42,8 @@
     sequence?: SequenceData | null;
     /** Scene / tunnel media: the stored WebP poster. */
     poster?: string | null;
+    /** Tunnel media: the saved entry, replayed live when the tile holds a token. */
+    tunnel?: unknown | null;
     /** Mandala media: everything CollectedMandala carries. */
     mandala?: {
       steps: unknown[];
@@ -130,6 +133,31 @@
           size={320}
         />
       </div>
+    {:else if medium === "tunnel" && tunnel}
+      <!-- TunnelDetailPreview mounts the real kaleidoscope renderer with a
+           fully per-instance seam (local controller, persist:false effects, and
+           capture/restore around the three globals TunnelArtView reads). That
+           sandbox is what makes it safe to mount N of them in a gallery — a
+           preview must never mutate the user's live viewer state.
+
+           The poster is the resting state, so the box is filled from first
+           paint and the token swap costs no layout (no-layout-shift.md). -->
+      <Crossfade key={live} fill duration={DURATION.normal}>
+        {#if live}
+          <LazyMount
+            loader={() =>
+              import(
+                "$lib/features/tunnel-collection/components/TunnelDetailPreview.svelte"
+              )}
+            active
+            props={{ tunnel }}
+          />
+        {:else if poster}
+          <img class="poster-img" src={poster} alt={label} loading="lazy" />
+        {:else}
+          <div class="poster empty">No preview</div>
+        {/if}
+      </Crossfade>
     {:else if poster}
       <img class="poster-img" src={poster} alt={label} loading="lazy" />
     {:else}

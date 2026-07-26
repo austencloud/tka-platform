@@ -92,6 +92,7 @@
       title: string;
       sequence?: SequenceData;
       poster?: string;
+      tunnel?: any;
       mandala?: any;
     }[] = [];
 
@@ -134,6 +135,7 @@
         medium: "tunnel",
         title: tunnel.name,
         poster: tunnel.poster,
+        tunnel,
       });
     }
 
@@ -281,6 +283,7 @@
                 title={pick.title}
                 sequence={pick.sequence ?? null}
                 poster={pick.poster ?? null}
+                tunnel={pick.tunnel ?? null}
                 mandala={pick.mandala ?? null}
                 size="lg"
               />
@@ -317,6 +320,7 @@
                     medium={group.id}
                     title={record.sourceWord || entry.name}
                     poster={record.poster ?? null}
+                    tunnel={group.id === "tunnel" ? entry : null}
                     mandala={group.id === "mandala"
                       ? {
                           steps: record.steps ?? [],
