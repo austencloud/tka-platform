@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Active — approved, ready to plan"
+remaining: "DRIFT 2026-07-25 — superseded by shipped work. Body says 'approved, ready to plan', but commit 'land gallery drill v7 — unified front door + content peek' shipped the front door, and gallery drill is the live front door per project memory. Verify what Phase 1 scope (if any) remains distinct from the shipped drill before planning."
 depends_on: ""
 plan_path: ""
 tags: []
@@ -13,6 +13,14 @@ last_triaged: 2026-07-25
 **Date:** 2026-07-01
 **Status:** Active — approved, ready to plan
 **Supersedes the entry behavior of:** `2026-06-30-gallery-two-front-doors-design.md` (taxonomy-first `StartHere` is demoted from the entry to a secondary lane; it is not deleted)
+
+> **DRIFT WARNING (2026-07-25) — this spec's status line is stale.**
+> The unified gallery front door **shipped** as gallery drill v7. Project memory
+> records the drill as THE live front door.
+>
+> **Establish what Phase 1 scope still differs from the shipped drill before
+> planning any of it.** See `2026-07-01-gallery-drill-content-peek-design.md`.
+
 
 ---
 

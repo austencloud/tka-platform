@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: L
-remaining: Resume Phase 2 Task 11 (DestinationBadge). 14 tasks across 3 phases
+remaining: "DRIFT 2026-07-25 — body contradicts its own frontmatter. The body status line says 'Spec — pending user approval' while this frontmatter has said since April that Phase 2 Task 11 (DestinationBadge) is the resume point of 14 tasks. 68 topical commits, 65 on its named files, landed since. The frontmatter is the accurate half; the body status line is 102 days stale. Re-establish the true resume point before continuing."
 depends_on: ""
 plan_path: plans/active/2026-04-15-sequence-viewer-redesign.md
 tags: []
@@ -13,6 +13,15 @@ last_triaged: 2026-04-26
 **Date:** 2026-04-15
 **Status:** Spec — pending user approval
 **Predecessors:** Earlier 3D viewer chrome work that introduced floating chip controls, orphaned `EffectsSettingsPanel`, and the chip-jump 2D/3D toggle problem.
+
+> **DRIFT WARNING (2026-07-25) — the status line below contradicts this file's
+> own frontmatter.** The body says 'pending user approval'; the frontmatter has
+> recorded Phase 2 Task 11 (DestinationBadge) as the resume point since April,
+> and 68 topical commits (65 on this spec's named files) landed since.
+>
+> **The frontmatter is the accurate half.** Re-establish the true resume point
+> against the code before continuing — do not restart from Phase 1.
+
 
 ---
 

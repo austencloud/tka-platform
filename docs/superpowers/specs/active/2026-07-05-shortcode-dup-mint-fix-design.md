@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Approved approach (C) — spec for implementation"
+remaining: "DRIFT 2026-07-25 — likely shipped. Body says 'Approved approach (C) — spec for implementation', but all 5 commits touching its named files are topical shortcode fixes, src/lib/shared/qr/services/short-code-manager.ts carries the content-hash logic, and the one-code-per-hash invariant is recorded in memory (reference_shortcode_dedup_invariant) as established. Confirm approach C specifically landed before implementing."
 depends_on: ""
 plan_path: ""
 tags: []
@@ -13,6 +13,15 @@ last_triaged: 2026-07-25
 **Date:** 2026-07-05
 **Status:** Approved approach (C) — spec for implementation
 **Problem owner:** Austen (reported: same sequence showed two different short codes in two browsers)
+
+> **DRIFT WARNING (2026-07-25) — this spec's status line may be stale.**
+> The one-code-per-hash invariant this spec proposes is recorded as established,
+> and `src/lib/shared/qr/services/short-code-manager.ts` carries content-hash
+> logic. Every commit touching this spec's named files is a topical shortcode fix.
+>
+> **Confirm whether approach (C) specifically landed before implementing it.**
+> Re-minting duplicate short codes is destructive to existing printed cards.
+
 
 ## Problem
 

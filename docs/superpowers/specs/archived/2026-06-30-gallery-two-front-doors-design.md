@@ -1,9 +1,24 @@
 ---
-status: active
+status: archived
 date: 2026-06-30
+value: 3
+effort: L
+remaining: ""
+depends_on: ""
+plan_path: ""
+tags: [browse, gallery, onboarding]
+superseded_by: docs/superpowers/specs/active/2026-07-01-gallery-drill-content-peek-design.md
+last_triaged: 2026-07-25
 ---
 
 # Gallery — Taxonomy-First Onboarding (TnD Base → LOOP) + Browse All
+
+> **ARCHIVED 2026-07-25 — superseded by gallery drill v7.** This spec's
+> two-front-doors framing was replaced by the unified drill front door that
+> shipped as `GalleryDrill.svelte`. Project memory records this approach as
+> superseded. Kept for the problem statement below, which is still the best
+> written account of the newcomer-overwhelm problem the drill solves.
+> Do not implement this design.
 
 ## The Problem
 

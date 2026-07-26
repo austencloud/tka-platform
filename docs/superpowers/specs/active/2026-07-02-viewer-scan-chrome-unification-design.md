@@ -2,7 +2,7 @@
 status: active
 value: 3
 effort: L
-remaining: "Body status: Design approved, pending spec review → implementation plan"
+remaining: "DRIFT 2026-07-25 — DO NOT BUILD FROM THIS SPEC AS WRITTEN. Its body says 'pending spec review → implementation plan', but the unification shipped: SequenceViewerShell.svelte exists, tests/unit/sequence-viewer-shell-contract.test.ts enforces the host contract in CI, and .claude/rules/sequence-viewer-shell.md is an ENFORCED rule forbidding hosts from rebuilding viewer chrome. Reconcile against the shipped shell; the only open work is the grandfathered /sequence/[id] migration named in that rule."
 depends_on: ""
 plan_path: ""
 tags: []
@@ -15,6 +15,17 @@ last_triaged: 2026-07-25
 **Topic:** Make the QR-scan viewer (`/q/[code]`) and the full sequence viewer
 (`SequenceViewerDrawerHost`) render their chrome from one shared schema so they
 stop drifting — while keeping the scan page lightweight and fast to first paint.
+
+> **DRIFT WARNING (2026-07-25) — this spec's status line is stale.**
+> The unification described here **shipped**. `SequenceViewerShell.svelte`
+> exists, `tests/unit/sequence-viewer-shell-contract.test.ts` enforces the host
+> contract in CI, and `.claude/rules/sequence-viewer-shell.md` is an ENFORCED
+> rule that forbids hosts from rebuilding viewer chrome.
+>
+> **Do not implement this spec as written — you would rebuild shipped, rule-
+> protected code.** Read the rule first. The remaining work it names is the
+> grandfathered `/sequence/[id]` migration, not a new unification.
+
 
 ---
 

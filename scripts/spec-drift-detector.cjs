@@ -284,6 +284,11 @@ function daysSince(dateStr) {
 // ---------------------------------------------------------------------------
 
 function verdictFor(s) {
+  // Drift someone has already documented in the spec is not a new alarm. Without
+  // this, every reconciled spec re-reports forever, the report stops being read,
+  // and the detector becomes noise — the failure mode it exists to prevent.
+  if (s.acked) return "DRIFT_ACKED";
+
   // Phantom-open is checked before the not-built signals: a fully-checked
   // ledger is the spec's own statement that it is finished, and it is the
   // cheapest thing to act on.
@@ -372,6 +377,7 @@ for (const dir of DIRS) {
       stateClass,
       ledger,
       topics,
+      acked: /DRIFT WARNING/.test(body),
       deliverables: dels.length,
       missingRatio: dels.length ? missing / dels.length : 0,
       deletedRatio: dels.length ? deleted / dels.length : 0,
@@ -393,7 +399,7 @@ for (const dir of DIRS) {
 
 const ORDER = [
   "DIVERGENT", "PHANTOM_OPEN", "LIKELY_DONE", "GHOST_PATHS",
-  "WATCH", "NO_STATE", "OK",
+  "WATCH", "DRIFT_ACKED", "NO_STATE", "OK",
 ];
 const ACTIONABLE = new Set(["DIVERGENT", "PHANTOM_OPEN", "LIKELY_DONE", "GHOST_PATHS"]);
 
@@ -407,6 +413,7 @@ const BLURB = {
   GHOST_PATHS: "most named deliverables no longer exist on disk.",
   WATCH: "moderate traffic against a not-built claim. Inconclusive.",
   NO_STATE: "no status line, no ledger. State unknowable from the file.",
+  DRIFT_ACKED: "drift already documented in-spec via a DRIFT WARNING banner. Not a new alarm.",
   OK: "nothing contradicts the spec.",
 };
 
