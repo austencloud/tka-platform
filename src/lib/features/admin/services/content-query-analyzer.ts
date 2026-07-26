@@ -29,7 +29,12 @@ function withTimeout<T>(
 }
 
 /**
- * Get top sequences by views from the publicSequences collection
+ * Get top sequences by view count from the publicSequences collection.
+ *
+ * Field names match what the public writer actually stores: `viewCount`,
+ * `ownerDisplayName`, `ownerId`. The previous `views` / `creatorName` /
+ * `creatorId` were ghost fields nothing ever wrote, so `orderBy("views")`
+ * returned an empty ordering and the panel showed no data.
  */
 export async function getTopSequences(limitCount: number): Promise<TopSequenceData[]> {
   try {
@@ -37,7 +42,7 @@ export async function getTopSequences(limitCount: number): Promise<TopSequenceDa
     const sequencesRef = collection(firestore, "publicSequences");
     const q = query(
       sequencesRef,
-      orderBy("views", "desc"),
+      orderBy("viewCount", "desc"),
       limit(limitCount)
     );
     const snapshot = await withTimeout(getDocs(q), QUERY_TIMEOUT_MS, null);
@@ -53,10 +58,10 @@ export async function getTopSequences(limitCount: number): Promise<TopSequenceDa
         id: docSnap.id,
         name: (data["name"] as string) ?? "Untitled",
         word: (data["word"] as string) ?? "",
-        views: (data["views"] as number) ?? 0,
+        views: (data["viewCount"] as number) ?? 0,
         creator:
-          (data["creatorName"] as string) ??
-          (data["creatorId"] as string) ??
+          (data["ownerDisplayName"] as string) ??
+          (data["ownerId"] as string) ??
           "Unknown",
       });
     });

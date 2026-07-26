@@ -240,7 +240,10 @@ export class SequenceMatcher {
         word: (data["word"] as string | undefined) || "",
         name: (data["name"] as string | undefined) || (data["word"] as string | undefined) || "Untitled",
         ownerId: (data["ownerId"] as string | undefined) || "",
-        ownerName: (data["author"] as string | undefined) || (data["ownerName"] as string | undefined) || "Unknown",
+        // `ownerDisplayName` is what the public projection writes; `author` and
+        // `ownerName` were ghost fields nothing ever wrote, so this line always
+        // rendered "Unknown".
+        ownerName: (data["ownerDisplayName"] as string | undefined) || "Unknown",
         thumbnail: (data["thumbnails"] as string[] | undefined)?.[0] ?? null,
         isPublic: true,
       });
