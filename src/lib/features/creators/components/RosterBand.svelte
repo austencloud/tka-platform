@@ -37,6 +37,9 @@
     /** Bands past the first defer avatar loading. */
     loading?: "lazy" | "eager";
     onselect: (creator: EnhancedUserProfile) => void;
+    onfollow: (creator: EnhancedUserProfile) => void;
+    /** Creator ids with a follow write in flight. */
+    followPending: Set<string>;
   }
 
   let {
@@ -49,6 +52,8 @@
     unitPx,
     loading = "lazy",
     onselect,
+    onfollow,
+    followPending,
   }: Props = $props();
 
   const BAND_LABEL: Record<BandKey, string> = {
@@ -97,6 +102,8 @@
           {unitPx}
           {loading}
           {onselect}
+          {onfollow}
+          followPending={followPending.has(creator.id)}
         />
       {/each}
     </div>
@@ -152,6 +159,11 @@
        cannot shrink below its max and would overflow at 375px; a max-width
        simply stops binding once the container is narrower. */
     max-width: calc(var(--cols) * var(--cell-max) + (var(--cols) - 1) * 0.5em);
+    /* Centred, not left-aligned. A band shorter than the row cannot fill it at
+       a sane cell size, so the leftover space exists either way — split evenly
+       it reads as breathing room around a centred group; all of it on one side
+       reads as an unfinished row. */
+    margin-inline: auto;
   }
 
   .cells.portrait {

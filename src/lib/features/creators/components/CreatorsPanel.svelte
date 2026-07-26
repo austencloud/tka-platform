@@ -30,6 +30,10 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import {
+    followUser,
+    unfollowUser,
+  } from "$lib/shared/community/services/user-repository";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
@@ -61,6 +65,8 @@
   let view = $state<RosterView>("active");
   let initError = $state<string | null>(null);
   let publicSequences = $state<SequenceData[]>([]);
+  // Reassigned wholesale rather than mutated, so a plain Set stays reactive.
+  let followPending = $state<Set<string>>(new Set());
   let hapticService: HapticFeedback | undefined;
 
   // Measured rather than media-queried: the module box is inset by the app
@@ -300,11 +306,9 @@
   onMount(async () => {
     hapticService = getHapticFeedback();
     try {
-      const creatorsRequest = !creatorsDataState.isInitialized
-        ? creatorsDataState.loadCreators(currentUserId)
-        : currentUserId && !creatorsDataState.hasFollowState
-          ? creatorsDataState.refreshCreators(currentUserId)
-          : Promise.resolve();
+      const creatorsRequest = creatorsDataState.isInitialized
+        ? Promise.resolve()
+        : creatorsDataState.loadCreators(currentUserId);
 
       // Not awaited together: the roster is the page, the work index is a
       // caption. Blocking the former on the latter would be backwards.
@@ -316,6 +320,32 @@
     }
   });
 
+  /**
+   * Follow state is topped up REACTIVELY, not in `onMount`.
+   *
+   * `currentUserId` comes from `authState`, which frequently resolves AFTER
+   * this component mounts. The old mount-time branch read it once, got
+   * `undefined`, loaded the roster without follow state, and never ran again —
+   * so an account following 54 people rendered 0 of 20 cards as Following.
+   * That was survivable when following required opening a profile; with a
+   * follow button on every card it means offering to re-follow people you
+   * already follow.
+   */
+  let followStateLoadedFor: string | null = null;
+  $effect(() => {
+    const viewerId = currentUserId;
+    if (!viewerId) return;
+    if (!creatorsDataState.isInitialized) return;
+    if (creatorsDataState.hasFollowState) return;
+    if (followStateLoadedFor === viewerId) return;
+
+    followStateLoadedFor = viewerId;
+    void creatorsDataState.refreshCreators(viewerId).catch((refreshError) => {
+      console.error("[CreatorsPanel] Follow state unavailable:", refreshError);
+      followStateLoadedFor = null;
+    });
+  });
+
   onDestroy(() => {
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
   });
@@ -323,6 +353,39 @@
   function handleSelect(creator: EnhancedUserProfile) {
     hapticService?.trigger("selection");
     void openCreatorProfile(creator.id, creator.displayName);
+  }
+
+  /**
+   * Follow without leaving the roster. The write is NOT optimistic: the state
+   * flips only after Firestore confirms, so a failed write cannot leave the
+   * card claiming a relationship that does not exist. `updateUserFollowStatus`
+   * patches the main list, the featured list and any live search result at
+   * once, which is what keeps the "Following" count in the view switcher
+   * honest — it derives from the same array.
+   */
+  async function handleFollow(creator: EnhancedUserProfile) {
+    const viewerId = currentUserId;
+    if (!viewerId || followPending.has(creator.id)) return;
+
+    hapticService?.trigger("selection");
+    followPending = new Set(followPending).add(creator.id);
+    const wasFollowing = creator.isFollowing;
+
+    try {
+      if (wasFollowing) await unfollowUser(viewerId, creator.id);
+      else await followUser(viewerId, creator.id);
+      creatorsDataState.updateUserFollowStatus(
+        creator.id,
+        !wasFollowing,
+        wasFollowing ? -1 : 1
+      );
+    } catch (followError) {
+      console.error("[CreatorsPanel] Follow toggle failed:", followError);
+    } finally {
+      const next = new Set(followPending);
+      next.delete(creator.id);
+      followPending = next;
+    }
   }
 
   function handleSearchInput(value: string) {
@@ -450,6 +513,8 @@
                   {unitPx}
                   loading={index === 0 ? "eager" : "lazy"}
                   onselect={handleSelect}
+                  onfollow={handleFollow}
+                  {followPending}
                 />
               {/each}
             </div>

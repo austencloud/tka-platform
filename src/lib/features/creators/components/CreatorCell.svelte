@@ -26,6 +26,7 @@
    * index rows ended in what looked like a "→" navigation arrow.
    */
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import FollowButton from "$lib/shared/community/components/FollowButton.svelte";
   import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
   import {
     getBasePropType,
@@ -47,6 +48,10 @@
     /** Joined within 30 days. The only badge on the entire page. */
     isNew?: boolean;
     onselect: (creator: EnhancedUserProfile) => void;
+    /** Follow/unfollow without leaving the roster. */
+    onfollow: (creator: EnhancedUserProfile) => void;
+    /** This creator's follow write is in flight. */
+    followPending?: boolean;
     /**
      * Cells below the fold defer their avatar fetch. The roster is ~56 faces;
      * firing every <img> on mount is the dominant cold-cache cost of a page
@@ -62,6 +67,8 @@
     unitPx,
     isNew = false,
     onselect,
+    onfollow,
+    followPending = false,
     loading = "lazy",
   }: Props = $props();
 
@@ -81,91 +88,122 @@
   const avatarSize = $derived(Math.round((isPortrait ? 5.5 : 2.5) * unitPx));
 </script>
 
-<button
-  class="cell {density}"
-  type="button"
-  onclick={() => onselect(creator)}
-  style:--ring-tone={ringTone}
->
+<!--
+  A container, not a button. FollowButton is itself a <button>, and a button
+  inside a button is invalid markup that strands the inner control for
+  keyboard and assistive tech. The card's open action and its follow action
+  are siblings; the card surface and hover live on this wrapper.
+-->
+<div class="cell {density}" style:--ring-tone={ringTone}>
   {#if isNew && isPortrait}
     <span class="badge">New</span>
   {/if}
 
-  <span class="face">
-    <RobustAvatar
-      src={creator.avatar}
-      name={creator.displayName}
-      alt=""
-      customSize={avatarSize}
-      ring
-      ringColor={ringTone}
-      {loading}
-    />
-  </span>
+  <button class="open" type="button" onclick={() => onselect(creator)}>
+    <span class="face">
+      <RobustAvatar
+        src={creator.avatar}
+        name={creator.displayName}
+        alt=""
+        customSize={avatarSize}
+        ring
+        ringColor={ringTone}
+        {loading}
+      />
+    </span>
 
-  <span class="text">
-    <span class="name">{creator.displayName}</span>
+    <span class="text">
+      <span class="name">{creator.displayName}</span>
 
-    {#if isPortrait}
-      <!-- ONE evidence line. Prop identity plus when they were last here —
-           the two facts that separate this person from the next one. -->
-      <span class="evidence">
-        {#if propLabel}
-          <span class="prop">{propLabel}</span>
-          <span class="dot" aria-hidden="true">·</span>
-        {/if}
-        <span class="when">{activity}</span>
-      </span>
-    {/if}
-    <!-- Index rows carry NO prop glyph. Unlabelled at ~16px the marks read as
-         punctuation rather than as props: the staff mark is a horizontal line
-         that scans as an em dash, and with the row's trailing space it reads
-         as "→", which falsely suggests a separate navigation affordance. The
-         band header already states the recency range, so there is no time
-         text here either. Face plus name is the whole row. -->
-  </span>
-</button>
+      {#if isPortrait}
+        <!-- ONE evidence line. Prop identity plus when they were last here —
+             the two facts that separate this person from the next one. -->
+        <span class="evidence">
+          {#if propLabel}
+            <span class="prop">{propLabel}</span>
+            <span class="dot" aria-hidden="true">·</span>
+          {/if}
+          <span class="when">{activity}</span>
+        </span>
+      {/if}
+      <!-- Index rows carry NO prop glyph. Unlabelled at ~16px the marks read
+           as punctuation rather than as props: the staff mark is a horizontal
+           line that scans as an em dash, and with the row's trailing space it
+           reads as "→", which falsely suggests a separate navigation
+           affordance. The band header already states the recency range, so
+           there is no time text here either. Face plus name is the whole
+           row. -->
+    </span>
+  </button>
+
+  <!--
+    Portrait only. FollowButton carries a "Following" label plus its
+    ghost-sizer, which is most of the width of a 178px index row — 37 of them
+    down the tail would be a wall of buttons over a list whose whole point is
+    that these people stopped showing up. Follow them from their profile.
+
+    The primitive renders NOTHING for a guest, an anonymous session, or your
+    own card; that gate lives inside it so no consumer can leak a follow
+    control to someone who cannot use it.
+  -->
+  {#if isPortrait}
+    <span class="follow">
+      <FollowButton
+        targetUserId={creator.id}
+        displayName={creator.displayName}
+        following={creator.isFollowing ?? false}
+        loading={followPending}
+        onToggle={() => onfollow(creator)}
+        weight="quiet"
+      />
+    </span>
+  {/if}
+</div>
 
 <style>
   .cell {
-    /* A real button, not a div with a click handler —
-       clickables-look-like-buttons.md. The hit area clears the 44px floor in
-       both densities. */
     position: relative; /* the "New" badge anchors to the card's corner */
     display: flex;
-    align-items: center;
-    min-height: var(--min-touch-target, 44px);
+    flex-direction: column;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 0.75em;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
     transition:
       background-color var(--duration-quick, 120ms) ease,
       border-color var(--duration-quick, 120ms) ease,
       transform var(--duration-quick, 120ms) ease;
   }
 
+  .open {
+    /* A real button — clickables-look-like-buttons.md. The hit area clears the
+       44px floor in both densities. */
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-height: var(--min-touch-target, 44px);
+    background: none;
+    border: none;
+    border-radius: inherit;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
   .cell:hover,
-  .cell:focus-visible {
+  .cell:focus-within {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
   }
 
-  .cell:focus-visible {
+  .open:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 
   /* ── portrait ─────────────────────────────────────────────────────────── */
   .portrait {
-    flex-direction: column;
-    align-items: center;
-    gap: 0.6em;
-    padding: 1.1em 0.6em 1.15em;
-    text-align: center;
+    padding: 1.1em 0.6em 0.9em;
     /* A real surface, not a transparent hit area. Without it the faces and
        names float directly on the animated background and the gaps between
        them read as void rather than as spacing between objects. */
@@ -173,8 +211,15 @@
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.07));
   }
 
+  .portrait .open {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6em;
+    text-align: center;
+  }
+
   .portrait:hover,
-  .portrait:focus-visible {
+  .portrait:focus-within {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.075);
   }
@@ -196,8 +241,15 @@
 
   /* ── index ────────────────────────────────────────────────────────────── */
   .index {
-    gap: 0.6em;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4em;
     padding: 0.4em 0.6em;
+  }
+
+  .index .open {
+    gap: 0.6em;
+    min-width: 0;
   }
 
   .index .text {
@@ -254,6 +306,20 @@
 
   .dot {
     opacity: 0.5;
+  }
+
+  .follow {
+    display: flex;
+    justify-content: center;
+  }
+
+  /* FollowButton renders NOTHING for a guest, an anonymous session, or your
+     own card, so the spacing hangs off whether a button actually exists —
+     `:has`, not `:not(:empty)`, because Svelte leaves whitespace text nodes
+     inside the slot and `:empty` would never match. Otherwise every gated
+     card carries a phantom gap. */
+  .follow:has(button) {
+    margin-top: 0.7em;
   }
 
   .badge {
