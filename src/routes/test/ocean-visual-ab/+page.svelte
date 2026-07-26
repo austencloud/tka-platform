@@ -151,7 +151,9 @@
 			window.removeEventListener('resize', resize);
 			window.removeEventListener('pointermove', onPointerMove);
 			window.removeEventListener('pointerleave', onPointerLeave);
-			setOceanVisualTuning(BASELINE_TUNING);
+			// Restore the shipping look — the harness leaves the module-level tuning
+			// wherever its last draw put it, and that global is shared app-wide.
+			setOceanVisualTuning(GRADED_TUNING);
 			sys.dispose?.();
 		};
 	});
