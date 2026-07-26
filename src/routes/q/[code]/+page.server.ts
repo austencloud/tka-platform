@@ -22,6 +22,7 @@ const LOOKUP_TIMEOUT_MS = 2500;
 // Only the fields the OG tags read. Keeps the response small: shortcode docs
 // also carry `encoded` and sometimes an inline `sequenceData` blob.
 const META_FIELD_PATHS = [
+  "payloadWord",
   "word",
   "sequenceName",
   "ownerDisplayName",
@@ -92,7 +93,12 @@ async function fetchShortCodeMeta(code: string): Promise<ShortCodeMeta> {
   const fields = doc.fields ?? {};
 
   return {
-    word: readString(fields, "word") ?? readString(fields, "sequenceName"),
+    // Strict payload-derived label first (parity-repair schema-2 mints),
+    // then the legacy fields.
+    word:
+      readString(fields, "payloadWord") ??
+      readString(fields, "word") ??
+      readString(fields, "sequenceName"),
     creator: readString(fields, "ownerDisplayName"),
     thumbnailUrl: readString(fields, "thumbnailUrl"),
     deckId: readString(fields, "deckId"),

@@ -1,36 +1,40 @@
 /**
- * Backfill the display word (`sequenceName` + `sequence`) on shortcode docs
- * that were minted with a junk auto-name.
+ * Repair every shortcode's payload-derived labels (parity-repair spec,
+ * "Shortcode correction → Repair path").
  *
- * Root cause: unnamed sequences get an auto-name — "Sequence 2:21:45 PM"
- * (Construct), "Assemble Sequence" (Assemble), "Rotation …" (RotationDirection)
- * — and the old shortcode mint stored `sequence.word || sequence.name`. When
- * `word` was empty at mint, the auto-name got baked in, so the admin scan feed,
- * the card thumbnail, and the /q SSR/OG meta all showed the auto-name instead of
- * the TKA word. The mint path is fixed going forward (short-code-manager
- * `allocateCode`); this repairs the docs already written.
+ * The payload is the authority: the `encoded` blob (falling back to embedded
+ * `sequenceData.steps`) is decoded, each beat's letter is matched against the
+ * pictograph dataframes (the same match `motion-query-handler` performs, done
+ * directly over `parseCsvEdges` because the app's CSV loader is browser-only),
+ * and the result runs through the shared STRICT word API
+ * (`deriveWordStatusFromSteps` → { word, complete, missingStepIndexes,
+ * stepCount }). Labels are updated only when derivation is COMPLETE — a
+ * partial word would misrepresent the payload, so those records are reported
+ * for manual review, never guessed.
  *
- * The encoded blob carries no word and no letters — only motion — so the real
- * word is re-derived from the motions by matching each beat against the
- * pictograph dataframe (the same match `motion-query-handler` performs, done
- * directly over `parseCsvEdges` because the app's CSV loader is browser-only).
+ * Every stale mutable label is repaired — not only the auto-name class the
+ * first version of this script targeted. `payloadWord`, `payloadStepCount`,
+ * and `payloadSchemaVersion: 2` are stamped alongside the `sequenceName` /
+ * `sequence` compatibility aliases (readers prefer payloadWord). Scan counts,
+ * encoded payloads, ownership, deck attribution, and timestamps are never
+ * touched. Historical payload versions (no payloadSchemaVersion) are counted
+ * separately from schema-2 records whose labels drifted.
  *
- * Only auto-named docs are touched — deliberately user-named sequences are left
- * alone. A doc is repaired only when EVERY step derives a letter (a partial word
- * would misrepresent the sequence, so those are logged and skipped for manual
- * review).
+ * Requires the Admin SDK in BOTH modes: the scan reads every full document
+ * (the old client-SDK `select()` projection path breaks under the compat
+ * client — "db.collection(...).select is not a function"), and writes are
+ * admin-only by rules regardless.
  *
- * Writes require the Admin SDK: the client rules allow updating only
- * scanCount/lastScannedAt/dailyScans on a shortcode.
- *
- *   npx tsx scripts/migrations/backfill-shortcode-words.ts                       # dry-run
- *   TKA_ADMIN=1 npx tsx scripts/migrations/backfill-shortcode-words.ts --apply   # write
+ *   TKA_ADMIN=1 npx tsx scripts/migrations/backfill-shortcode-words.ts             # dry-run
+ *   TKA_ADMIN=1 npx tsx scripts/migrations/backfill-shortcode-words.ts --apply     # write
  *   TKA_ADMIN=1 npx tsx scripts/migrations/backfill-shortcode-words.ts --apply --limit 5
  */
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { initFirestore } from "../lib/firestore-provider.js";
 import { decodeSequenceFromQR } from "../../src/lib/shared/navigation/services/sequence-encoder";
+import { deriveWordStatusFromSteps } from "../../src/lib/shared/foundation/services/word-deriver";
+import type { Step } from "@tka/tka-types";
 import {
   parseCsvEdges,
   type CsvEdge,
@@ -126,86 +130,102 @@ function letterForBeat(step: AnyRec): string | null {
   return matchIn(DIAMOND_EDGES, blue, red) ?? matchIn(BOX_EDGES, blue, red);
 }
 
-/** The auto-name generators, mirrored from the app: construct-tab-state
- *  (`Sequence <time>`), assemble-tab-state (`Assemble Sequence`),
- *  RotationDirectionView (`Rotation <time>`), and empty. Nothing else is
- *  touched, so a user's chosen name is never overwritten. */
-function isAutoName(name: unknown): boolean {
-  if (typeof name !== "string") return false;
-  const n = name.trim();
-  return (
-    n === "" ||
-    n === "Assemble Sequence" ||
-    /^Sequence \d/.test(n) ||
-    /^Rotation \d/.test(n)
-  );
-}
-
-/** Build the full TKA word for a shortcode doc. Embedded steps may already carry
- *  letters; encoded-only docs get theirs matched from motion. Returns the raw
- *  (unsimplified) word — the display layer simplifies — and whether every step
- *  contributed a letter. */
-async function wordForDoc(
-  data: AnyRec
-): Promise<{ word: string; complete: boolean } | null> {
+/**
+ * Derive the payload word for a shortcode doc through the shared strict API.
+ *
+ * Payload priority per the spec: decode `encoded` first (the immutable
+ * authority), fall back to embedded `sequenceData.steps`. Beat letters are
+ * filled by the dataframe match where the payload lacks them, then the
+ * letter-filled steps run through `deriveWordStatusFromSteps` so completeness,
+ * missing indexes, and the content-beat count come from the SAME strict code
+ * the runtime uses — never a local reimplementation.
+ */
+async function derivePayloadWord(data: AnyRec): Promise<{
+  word: string;
+  complete: boolean;
+  missingStepIndexes: readonly number[];
+  stepCount: number;
+} | null> {
   let steps: AnyRec[] | null = null;
 
-  const embedded = data.sequenceData as
-    | { steps?: unknown; beats?: unknown }
-    | undefined;
-  const embeddedSteps = embedded?.steps ?? embedded?.beats;
-  if (Array.isArray(embeddedSteps) && embeddedSteps.length > 0) {
-    steps = embeddedSteps as AnyRec[];
-  } else if (typeof data.encoded === "string" && data.encoded) {
+  if (typeof data.encoded === "string" && data.encoded) {
     const decoded = (await decodeSequenceFromQR(data.encoded)) as SequenceData;
-    steps = (decoded.steps ?? []) as unknown as AnyRec[];
+    const decodedSteps = (decoded.steps ?? []) as unknown as AnyRec[];
+    if (decodedSteps.length > 0) steps = decodedSteps;
+  }
+  if (!steps) {
+    const embedded = data.sequenceData as
+      | { steps?: unknown; beats?: unknown }
+      | undefined;
+    const embeddedSteps = embedded?.steps ?? embedded?.beats;
+    if (Array.isArray(embeddedSteps) && embeddedSteps.length > 0) {
+      steps = embeddedSteps as AnyRec[];
+    }
   }
   if (!steps || steps.length === 0) return null;
 
-  const letters = steps.map((step) => letterForBeat(step));
-  const complete = letters.every((l) => !!l);
-  const word = letters.map((l) => l ?? "").join("");
-  return { word, complete };
+  const lettered = steps.map((step, index) => ({
+    ...(step as object),
+    stepNumber:
+      typeof step.stepNumber === "number" ? step.stepNumber : index + 1,
+    letter: letterForBeat(step),
+  }));
+  const status = deriveWordStatusFromSteps(lettered as unknown as Step[]);
+  return {
+    word: status.word,
+    complete: status.complete,
+    missingStepIndexes: status.missingStepIndexes,
+    stepCount: status.stepCount,
+  };
 }
+
+/** Matches the mint path's SHORTCODE_PAYLOAD_SCHEMA_VERSION in
+ *  short-code-manager.ts: 2 = strict payload-derived labels. */
+const PAYLOAD_SCHEMA_VERSION = 2;
+
+type LabelClass =
+  | "LABELS_CURRENT"
+  | "STALE_MUTABLE_LABELS"
+  | "LEGACY_PAYLOAD_VERSION"
+  | "PAYLOAD_INCOMPLETE"
+  | "PAYLOAD_MISSING"
+  | "DERIVATION_FAILED";
 
 async function main(): Promise<void> {
   const { db, sdk, isAdmin } = (await initFirestore()) as AnyRec & {
     db: AnyRec;
+    sdk: string;
+    isAdmin: boolean;
   };
-  console.log(
-    `via ${sdk} (admin=${isAdmin}) — ${APPLY ? "APPLY" : "DRY-RUN"}` +
-      (LIMIT !== Infinity ? ` — limit ${LIMIT}` : "")
-  );
-  if (APPLY && !isAdmin) {
+  if (!isAdmin) {
     throw new Error(
-      "Writing sequenceName needs the Admin SDK — run with TKA_ADMIN=1."
+      "This repair reads every full shortcode document and writes label fields — run with TKA_ADMIN=1. (The client compat SDK also lacks select(), which broke the old dry-run path.)"
     );
   }
-
-  // Pass 1: cheap projection over every shortcode to find the junk-named ones.
-  const nameSnap = await (db.collection as (p: string) => AnyRec)("shortcodes")[
-    "select"
-  ]("sequenceName", "sequence")["get"]();
-  const junkCodes: string[] = [];
-  for (const d of nameSnap.docs as Array<{
-    id: string;
-    get: (f: string) => unknown;
-  }>) {
-    const name = d.get("sequenceName") ?? d.get("sequence");
-    if (isAutoName(name)) junkCodes.push(d.id);
-  }
   console.log(
-    `shortcodes scanned: ${nameSnap.size} | junk-named: ${junkCodes.length}`
+    `via ${sdk} — ${APPLY ? "APPLY" : "DRY-RUN"}` +
+      (LIMIT !== Infinity ? ` — limit ${LIMIT}` : "")
   );
 
-  // Pass 2: full doc per junk code → derive the real word → update.
-  let fixed = 0,
-    skippedPartial = 0,
-    skippedNoWord = 0,
-    failed = 0;
+  const snap = await (db.collection as (p: string) => AnyRec)("shortcodes")[
+    "get"
+  ]();
+  let docs = (snap.docs as Array<{ id: string; data: () => AnyRec }>).map(
+    (d) => ({ id: d.id, data: d.data() })
+  );
+  docs.sort((a, b) => (a.id < b.id ? -1 : 1));
+  if (LIMIT !== Infinity) docs = docs.slice(0, LIMIT);
+  console.log(`shortcodes scanned: ${docs.length}`);
+
+  const results: Array<{
+    code: string;
+    cls: LabelClass;
+    storedLabel?: string;
+    derivedWord?: string;
+    detail?: string;
+  }> = [];
   let batch = (db.batch as () => AnyRec)();
   let batchCount = 0;
-
   const commitBatch = async () => {
     if (batchCount === 0) return;
     await (batch.commit as () => Promise<unknown>)();
@@ -213,54 +233,133 @@ async function main(): Promise<void> {
     batchCount = 0;
   };
 
-  const targets =
-    LIMIT === Infinity ? junkCodes : junkCodes.slice(0, LIMIT);
-  for (const code of targets) {
-    const ref = (db.collection as (p: string) => AnyRec)("shortcodes")["doc"](
-      code
-    ) as AnyRec;
-    let derived: { word: string; complete: boolean } | null = null;
+  for (const { id: code, data } of docs) {
+    const storedLabel = String(
+      data.payloadWord ?? data.sequenceName ?? data.sequence ?? ""
+    );
+    const isLegacyVersion = data.payloadSchemaVersion !== PAYLOAD_SCHEMA_VERSION;
+
+    let derived: Awaited<ReturnType<typeof derivePayloadWord>>;
     try {
-      const snap = (await (ref.get as () => Promise<AnyRec>)()) as {
-        data: () => AnyRec;
-      };
-      derived = await wordForDoc(snap.data());
+      derived = await derivePayloadWord(data);
     } catch (e) {
-      failed++;
-      console.log(`  ❌ ${code} — ${e instanceof Error ? e.message : e}`);
+      results.push({
+        code,
+        cls: "DERIVATION_FAILED",
+        storedLabel,
+        detail: String(e instanceof Error ? e.message : e).slice(0, 200),
+      });
       continue;
     }
 
-    if (!derived || !derived.word.trim()) {
-      skippedNoWord++;
-      console.log(`  ⚠️  ${code} — no derivable word, skip`);
+    if (!derived) {
+      results.push({ code, cls: "PAYLOAD_MISSING", storedLabel });
       continue;
     }
-    if (!derived.complete) {
-      skippedPartial++;
-      console.log(`  ⚠️  ${code} — partial word "${derived.word}", skip (manual)`);
+    if (!derived.complete || derived.word.length === 0) {
+      // Quarantine: never invent or truncate a word. Reported for manual
+      // review with the exact unresolved beat indexes.
+      results.push({
+        code,
+        cls: "PAYLOAD_INCOMPLETE",
+        storedLabel,
+        derivedWord: derived.word,
+        detail: `missing beat indexes: ${derived.missingStepIndexes.join(", ")} (of ${derived.stepCount})`,
+      });
       continue;
     }
 
-    const word = derived.word;
+    const labelsCurrent =
+      data.payloadWord === derived.word &&
+      data.sequenceName === derived.word &&
+      data.sequence === derived.word &&
+      data.payloadStepCount === derived.stepCount &&
+      !isLegacyVersion;
+    if (labelsCurrent) {
+      results.push({ code, cls: "LABELS_CURRENT" });
+      continue;
+    }
+
+    // Historical payload versions (no schema stamp yet) are counted
+    // separately from schema-2 records whose mutable labels drifted — the
+    // same write, two different stories about how the record got here.
+    const cls: LabelClass = isLegacyVersion
+      ? "LEGACY_PAYLOAD_VERSION"
+      : "STALE_MUTABLE_LABELS";
+    results.push({ code, cls, storedLabel, derivedWord: derived.word });
+
     if (APPLY) {
+      const ref = (db.collection as (p: string) => AnyRec)("shortcodes")[
+        "doc"
+      ](code) as AnyRec;
+      // Label fields ONLY — scan counts, encoded payloads, ownership,
+      // deck/print attribution, and timestamps are never touched.
       (batch.update as (r: AnyRec, u: AnyRec) => void)(ref, {
-        sequenceName: word,
-        sequence: word,
+        payloadWord: derived.word,
+        payloadStepCount: derived.stepCount,
+        payloadSchemaVersion: PAYLOAD_SCHEMA_VERSION,
+        sequenceName: derived.word,
+        sequence: derived.word,
       });
       batchCount++;
       if (batchCount >= 400) await commitBatch();
     }
-    fixed++;
-    console.log(`  ${APPLY ? "✅" : "·"} ${code} → "${word}"`);
   }
   if (APPLY) await commitBatch();
 
-  console.log(
-    `\n${APPLY ? "fixed" : "would-fix"}=${fixed} ` +
-      `skipped(partial)=${skippedPartial} skipped(no-word)=${skippedNoWord} ` +
-      `failed=${failed}`
+  const counts: Record<string, number> = {};
+  for (const r of results) counts[r.cls] = (counts[r.cls] ?? 0) + 1;
+  console.log(`\n════ ${APPLY ? "APPLY" : "DRY-RUN"} SUMMARY ════`);
+  for (const [cls, count] of Object.entries(counts).sort()) {
+    console.log(`  ${count.toString().padStart(5)}  ${cls}`);
+  }
+  // Console lists problems in full and a sample of repairs; the manifest has
+  // every record. 20k+ deck codes would otherwise flood the terminal.
+  const PRINT_CAP_PER_CLASS = 40;
+  const printed: Record<string, number> = {};
+  for (const r of results) {
+    if (r.cls === "LABELS_CURRENT") continue;
+    const isProblem =
+      r.cls === "PAYLOAD_INCOMPLETE" ||
+      r.cls === "PAYLOAD_MISSING" ||
+      r.cls === "DERIVATION_FAILED";
+    printed[r.cls] = (printed[r.cls] ?? 0) + 1;
+    if (!isProblem && printed[r.cls]! > PRINT_CAP_PER_CLASS) continue;
+    const arrow =
+      r.derivedWord !== undefined
+        ? ` "${r.storedLabel}" → "${r.derivedWord}"`
+        : ` "${r.storedLabel ?? ""}"`;
+    console.log(
+      `  ${isProblem ? "⚠️ " : APPLY ? "✅" : "· "} ${r.code}${arrow}${r.detail ? ` — ${r.detail}` : ""}`
+    );
+  }
+  for (const [cls, n] of Object.entries(printed)) {
+    if (n > PRINT_CAP_PER_CLASS && cls !== "PAYLOAD_INCOMPLETE" && cls !== "PAYLOAD_MISSING" && cls !== "DERIVATION_FAILED") {
+      console.log(`  … ${n - PRINT_CAP_PER_CLASS} more ${cls} (see manifest)`);
+    }
+  }
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const outPath = join(
+    "scripts",
+    "migrations",
+    "backups",
+    `shortcode-labels-${APPLY ? "apply" : "dryrun"}-${stamp}.json`
   );
+  writeFileSync(
+    outPath,
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        mode: APPLY ? "apply" : "dry-run",
+        counts,
+        results,
+      },
+      null,
+      2
+    )
+  );
+  console.log(`\nmanifest: ${outPath}`);
   if (!APPLY) console.log("Re-run with TKA_ADMIN=1 … --apply to write.");
   process.exit(0);
 }

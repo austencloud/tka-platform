@@ -29,7 +29,10 @@ import {
   type SequenceData,
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
-import { deriveWordFromBeats } from "$lib/shared/foundation/services/word-deriver";
+import {
+  deriveWordStatusFromSteps,
+  IncompleteWordError,
+} from "$lib/shared/foundation/services/word-deriver";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import {
   encodeSequenceForQR,
@@ -48,6 +51,14 @@ const SHORTCODES_COLLECTION = "shortcodes";
  *  transactional invariant instead of a best-effort pre-check query. */
 const HASH_INDEX_COLLECTION = "shortcodeHashes";
 const MIN_CODE_LENGTH = 4;
+
+/**
+ * Shortcode payload/label schema. 2 = strict payload-derived labels
+ * (`payloadWord`/`payloadStepCount` present, mint rejected on incomplete
+ * derivation). Absent/1 = legacy records whose labels may be auto-names or
+ * stale words; readers may re-derive from the payload.
+ */
+const SHORTCODE_PAYLOAD_SCHEMA_VERSION = 2;
 
 /** Firestore `in` query operand cap. Batch reads chunk to this. */
 const FIRESTORE_IN_LIMIT = 30;
@@ -219,6 +230,18 @@ export interface ShortCodeData {
   /** The sequence's word as printed on the card. Newer records carry it;
    *  without it an imported copy would be nameless ("Shared Sequence"). */
   sequenceName?: string;
+  /** Strict payload-derived word (parity-repair spec). Authoritative label:
+   *  readers prefer it over the `sequenceName`/`sequence` aliases. */
+  payloadWord?: string;
+  /** Content-beat count of the payload at mint time. */
+  payloadStepCount?: number;
+  /** 2 = strict payload-derived labels; absent/1 = legacy label semantics. */
+  payloadSchemaVersion?: number;
+  /** First-class provenance of the library sequence this code was minted
+   *  from (aliases the legacy `sequenceId`). */
+  sourceSequenceId?: string;
+  /** The owner's public projection revision at mint time, when known. */
+  sourceProjectionRevision?: number;
   sequenceData?: Record<string, unknown>;
   /** Self-contained "s~..." blob from SequenceEncoder.encodeForQR.
    *  When present, the resolver can decode the sequence without any
@@ -259,13 +282,14 @@ export interface ShortCodeResolution {
 
 /**
  * The word to stamp on a sequence imported from this record's encoded blob.
- * Prefers the explicit sequenceName; older records stored the word in
- * `sequence` — but oldest records stored the ENCODED BLOB there, so anything
- * containing encoding separators ("|") or compression prefixes (":") is not a
- * word and yields "" (the import keeps its decoded placeholder name).
+ * Prefers the strict `payloadWord` (schema-2 mints), then the legacy
+ * `sequenceName`; oldest records stored the word — or even the ENCODED BLOB —
+ * in `sequence`, so anything containing encoding separators ("|") or
+ * compression prefixes (":") is not a word and yields "" (the import keeps its
+ * decoded placeholder name).
  */
 function importedWord(data: ShortCodeData): string {
-  const candidate = data.sequenceName || data.sequence || "";
+  const candidate = data.payloadWord || data.sequenceName || data.sequence || "";
   if (!candidate || candidate.includes("|") || candidate.includes(":")) return "";
   return candidate;
 }
@@ -584,23 +608,42 @@ export class ShortCodeManager {
 
     // Build the full record once. Encoding is expensive - don't redo it per
     // collision-retry attempt.
-    // The card's display word must be the TKA word, never the sequence's
-    // library `name`. Unnamed sequences get an auto-name — "Sequence 2:21:45 PM"
-    // (Construct) or "Assemble Sequence" (Assemble) — and the old
-    // `sequence.word || sequence.name` fallback baked that junk into the
-    // shortcode, so every surface that reads sequenceName (admin scan feed, card
-    // thumbnail, SSR OG meta) showed the auto-name instead of the letters. Every
-    // minted code carries steps (the durability invariant below requires encoded
-    // or sequenceData.steps), so the letters are always derivable here.
-    const resolvedWord = sequence.word || deriveWordFromBeats(sequence.steps ?? []);
+    //
+    // The label is derived from the PAYLOAD STEPS — the exact steps the encoded
+    // blob is produced from — through the strict word API, and an incomplete
+    // derivation REJECTS the mint (parity-repair spec, shortcode mint path).
+    // Never `sequence.word || deriveWordFromBeats(...)`: the stored word can be
+    // an auto-title ("Sequence 2:21:45 PM", "Assemble Sequence") or stale, and
+    // the payload is the authority even when `sequence.word` is non-empty. A
+    // partial fallback word would bake a wrong label into an immutable record.
+    const payloadSteps = sequence.steps ?? [];
+    const wordStatus = deriveWordStatusFromSteps(payloadSteps);
+    if (!wordStatus.complete || wordStatus.word.length === 0) {
+      throw new IncompleteWordError(wordStatus);
+    }
+    const payloadWord = wordStatus.word;
     const record: Record<string, unknown> = {
-      sequence: resolvedWord || fallbackId || "",
+      // Compatibility aliases during the reader migration — readers prefer
+      // payloadWord, then fall back to these.
+      sequence: payloadWord,
+      sequenceName: payloadWord,
+      payloadWord,
+      payloadStepCount: wordStatus.stepCount,
+      payloadSchemaVersion: SHORTCODE_PAYLOAD_SCHEMA_VERSION,
       createdAt: new Date().toISOString(),
       createdBy: "system",
       scanCount: 0,
-      sequenceName: resolvedWord || "",
     };
-    if (sequence.id) record.sequenceId = sequence.id;
+    if (sequence.id) {
+      record.sequenceId = sequence.id;
+      record.sourceSequenceId = sequence.id;
+    }
+    const sourceProjectionRevision = (
+      sequence as { publicProjectionRevision?: unknown }
+    ).publicProjectionRevision;
+    if (typeof sourceProjectionRevision === "number") {
+      record.sourceProjectionRevision = sourceProjectionRevision;
+    }
     if (sequence.ownerId) record.ownerId = sequence.ownerId;
     if (encoderHash) record.encoderHash = encoderHash;
     if (options?.deckId) record.deckId = options.deckId;

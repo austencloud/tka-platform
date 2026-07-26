@@ -102,11 +102,13 @@ import { addDoc } from "firebase/firestore";
 import { ShortCodeManager } from "../short-code-manager";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
+// Steps carry letters: the mint path runs STRICT payload-word derivation and
+// rejects a letterless payload (parity-repair spec, shortcode mint path).
 const SEQUENCE = {
   id: "seq-1",
   word: "TEST",
   ownerId: "user-1",
-  steps: [{ id: "step-1" }],
+  steps: [{ id: "step-1", stepNumber: 1, letter: "A" }],
 } as unknown as SequenceData;
 
 const hashMatcher = {
