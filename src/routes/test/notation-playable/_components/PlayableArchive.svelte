@@ -203,9 +203,12 @@
 	style:--artifact-accent={accent}
 	aria-label="Writing flow arts down: nine notation systems, 2009 to 2022"
 >
-	<!-- ROW 1: title, borrowed-ideas popover, discovery count -->
+	<!-- ROW 1: the masthead -->
 	<header class="room-header">
-		<h1 class="room-title">Writing flow arts down</h1>
+		<div class="masthead">
+			<p class="kicker">Nine systems &middot; 2009&ndash;2022</p>
+			<h1 class="room-title">Writing flow arts down</h1>
+		</div>
 		<div class="room-header-side">
 			<Popover.Root>
 				<Popover.Trigger class="loans-trigger">Two borrowed ideas</Popover.Trigger>
@@ -249,6 +252,7 @@
 				onSlideClick(i);
 			}}
 		>
+			<span class="ghost-year" aria-hidden="true">{entry.year}</span>
 			<span
 				class="artifact-stage"
 				style:view-transition-name={isActive && !archive.detailOpen
@@ -340,7 +344,6 @@
 				use:pressSpring
 				onclick={openDetailView}
 			>
-				<i class="fas fa-magnifying-glass" aria-hidden="true"></i>
 				Inspect
 			</button>
 			{#if primarySource}
@@ -350,13 +353,11 @@
 					target={primarySource.href.startsWith("/") ? undefined : "_blank"}
 					rel={primarySource.href.startsWith("/") ? undefined : "noopener"}
 				>
-					Read the source
-					<i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+					Read the source <span class="action-arrow" aria-hidden="true">&nearr;</span>
 				</a>
 			{/if}
 			{#if activeEntry.videos?.length}
 				<button type="button" class="action" onclick={openDetailView}>
-					<i class="fas fa-play" aria-hidden="true"></i>
 					Watch the series
 				</button>
 			{/if}
@@ -465,16 +466,34 @@
 	/* HEADER */
 	.room-header {
 		display: flex;
-		align-items: baseline;
+		align-items: flex-end;
 		justify-content: space-between;
 		gap: 1rem;
 	}
 
+	.masthead {
+		display: grid;
+		gap: 0.15rem;
+	}
+
+	.kicker {
+		margin: 0;
+		font-size: clamp(0.62rem, 0.55rem + 0.2vw, 0.8rem);
+		font-weight: 650;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+		color: oklch(0.58 0.03 270);
+	}
+
 	.room-title {
 		margin: 0;
-		font-size: clamp(1.15rem, 1rem + 1vw, 2.1rem);
-		letter-spacing: -0.01em;
-		color: oklch(0.94 0.02 270);
+		font-family: "Fraunces", Georgia, serif;
+		font-style: italic;
+		font-weight: 700;
+		font-size: clamp(1.5rem, 1.1rem + 1.6vw, 3.2rem);
+		line-height: 1.05;
+		letter-spacing: -0.015em;
+		color: oklch(0.95 0.015 270);
 	}
 
 	.room-header-side {
@@ -570,38 +589,30 @@
 		order: -1;
 	}
 
-	/* Bento tiles: every one a finished object — glass, an accent wash
-	   rising from the label edge, and a lit border. The cursor glow rides
-	   --glow-x/--glow-y from the shared action. */
+	/* Bento tiles: flat ink specimens. A faint accent breath at the plaque
+	   edge; the rule brightens on hover; the hero earns one deep shadow. */
 	.g-slide .artifact {
 		opacity: 1;
 		scale: 1;
-		position: relative;
 		overflow: hidden;
 		background:
 			radial-gradient(
-				140% 90% at 50% 108%,
-				color-mix(in oklch, var(--slide-accent, oklch(0.5 0.06 270)) 16%, transparent),
+				130% 70% at 50% 112%,
+				color-mix(in oklch, var(--slide-accent, oklch(0.5 0.06 270)) 8%, transparent),
 				transparent 55%
 			),
-			oklch(0.16 0.02 270 / 0.55);
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 26%, transparent);
+			oklch(0.145 0.012 270);
 		transition: border-color 240ms ease, box-shadow 240ms ease, translate 240ms ease;
 	}
 
 	.g-slide .artifact:hover {
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 60%, transparent);
-		box-shadow:
-			0 14px 40px oklch(0 0 0 / 0.4),
-			0 0 30px color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 20%, transparent);
+		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 55%, transparent);
 		translate: 0 -3px;
 	}
 
 	.g-slide.is-active .artifact {
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 70%, transparent);
-		box-shadow:
-			0 22px 60px oklch(0 0 0 / 0.45),
-			0 0 44px color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 24%, transparent);
+		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 28%, oklch(1 0 0 / 0.08));
+		box-shadow: 0 30px 70px oklch(0 0 0 / 0.5);
 	}
 
 	/* Small tiles: label pinned to the bottom edge like a plaque. */
@@ -639,22 +650,25 @@
 		display: grid;
 	}
 
+	/* Flat ink, hairline rule, no glass. The accent stays scarce: the ghost
+	   numeral, the plaque year, and the hover rule carry it. */
 	.artifact {
+		position: relative;
 		display: grid;
 		grid-template-rows: minmax(0, 1fr) auto;
 		gap: 0.55rem;
 		width: 100%;
 		height: 100%;
 		padding: clamp(0.6rem, 1.4vh, 1.1rem);
-		border-radius: 22px;
-		border: 1px solid color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 30%, transparent);
-		background: oklch(0.15 0.018 270 / 0.5);
-		backdrop-filter: blur(10px);
+		border-radius: 18px;
+		border: 1px solid oklch(1 0 0 / 0.07);
+		background: oklch(0.145 0.012 270);
 		cursor: pointer;
 		font: inherit;
 		color: inherit;
 		text-align: center;
 		box-sizing: border-box;
+		container-type: inline-size;
 		opacity: 0.42;
 		scale: 0.88;
 		transition:
@@ -662,6 +676,30 @@
 			scale 380ms cubic-bezier(0.3, 1.1, 0.4, 1),
 			border-color 380ms ease,
 			box-shadow 380ms ease;
+	}
+
+	/* The year as a graphic: oversized Fraunces numeral bleeding from the
+	   tile's top corner. Data as ornament — nothing invented. */
+	.ghost-year {
+		position: absolute;
+		top: -0.12em;
+		left: 0.06em;
+		z-index: 0;
+		font-family: "Fraunces", Georgia, serif;
+		font-style: italic;
+		font-weight: 700;
+		font-size: clamp(2.6rem, 26cqi, 7rem);
+		line-height: 1;
+		letter-spacing: -0.04em;
+		color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 55%, transparent);
+		opacity: 0.16;
+		pointer-events: none;
+		user-select: none;
+	}
+
+	.g-slide.is-active .ghost-year {
+		font-size: clamp(4rem, 18cqi, 10rem);
+		opacity: 0.13;
 	}
 
 	.slide.is-active .artifact {
@@ -679,25 +717,30 @@
 	}
 
 	.artifact-stage {
+		position: relative;
+		z-index: 1;
 		display: block;
 		min-height: 0;
 		container-type: size;
 	}
 
+	/* The plaque: left-set like a specimen label, year carrying the accent. */
 	.artifact-label {
+		position: relative;
+		z-index: 1;
 		display: flex;
-		align-items: baseline;
-		justify-content: center;
+		justify-content: flex-start;
 		gap: 0.6rem;
 		min-height: 44px;
 		align-items: center;
-		padding: 0;
+		padding: 0 0.45rem;
 		border: 0;
 		background: transparent;
 		font: inherit;
 		color: inherit;
 		cursor: pointer;
 		border-radius: 10px;
+		text-align: left;
 	}
 
 	.artifact-label:focus-visible {
@@ -754,33 +797,42 @@
 	.action {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.55rem;
+		gap: 0.45rem;
 		min-height: 44px;
-		padding: 0 1.25rem;
-		border-radius: 12px;
-		border: 1px solid oklch(0.5 0.05 270 / 0.4);
-		background: oklch(0.3 0.04 270 / 0.25);
-		color: oklch(0.9 0.02 270);
+		padding: 0 1.35rem;
+		border-radius: 999px;
+		border: 1px solid oklch(1 0 0 / 0.14);
+		background: transparent;
+		color: oklch(0.88 0.02 270);
 		font: inherit;
-		font-size: 0.95rem;
+		font-size: 0.85rem;
 		font-weight: 650;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
 		text-decoration: none;
 		cursor: pointer;
 		translate: var(--mag-x, 0px) var(--mag-y, 0px);
-		transition: background 160ms ease, border-color 160ms ease;
+		transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 	}
 
 	.action:hover {
-		background: oklch(0.34 0.05 270 / 0.4);
+		border-color: oklch(1 0 0 / 0.32);
 	}
 
+	.action-arrow {
+		font-size: 1.05em;
+		translate: 0 -1px;
+	}
+
+	/* The one filled control on the page: the active entry's accent, solid. */
 	.action.primary {
-		border-color: color-mix(in oklch, var(--artifact-accent) 70%, transparent);
-		background: color-mix(in oklch, var(--artifact-accent) 20%, transparent);
+		border-color: transparent;
+		background: var(--artifact-accent);
+		color: oklch(0.13 0.01 270);
 	}
 
 	.action.primary:hover {
-		background: color-mix(in oklch, var(--artifact-accent) 32%, transparent);
+		background: color-mix(in oklch, var(--artifact-accent) 86%, white);
 	}
 
 	/* TIMELINE */
@@ -792,10 +844,12 @@
 	}
 
 	.timeline-year {
+		font-family: "Fraunces", Georgia, serif;
+		font-style: italic;
 		font-variant-numeric: tabular-nums;
-		font-size: 0.85rem;
+		font-size: 0.95rem;
 		font-weight: 700;
-		color: oklch(0.6 0.03 270);
+		color: oklch(0.62 0.03 270);
 	}
 
 	.stops {
@@ -817,23 +871,24 @@
 		cursor: pointer;
 	}
 
+	/* Timeline stops as ticks: hairline marks that grow when chosen. */
 	.stop-dot {
-		width: 0.65rem;
-		height: 0.65rem;
-		border-radius: 50%;
-		background: oklch(0.45 0.03 270);
-		transition: background 260ms ease, scale 260ms ease, box-shadow 260ms ease;
+		width: 2px;
+		height: 0.85rem;
+		border-radius: 2px;
+		background: oklch(0.42 0.02 270);
+		transition: background 260ms ease, height 260ms ease, width 260ms ease;
 	}
 
 	.stop.seen .stop-dot {
-		background: color-mix(in oklch, var(--artifact-accent) 65%, oklch(0.6 0.03 270));
-		box-shadow: 0 0 10px color-mix(in oklch, var(--artifact-accent) 45%, transparent);
+		background: color-mix(in oklch, var(--artifact-accent) 70%, oklch(0.6 0.03 270));
 	}
 
 	.stop.on .stop-dot {
-		scale: 1.7;
+		width: 3px;
+		height: 1.5rem;
 		background: var(--artifact-accent);
-		box-shadow: 0 0 14px var(--artifact-accent);
+		box-shadow: 0 0 12px color-mix(in oklch, var(--artifact-accent) 60%, transparent);
 	}
 
 	.stop:focus-visible {

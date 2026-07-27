@@ -20,12 +20,22 @@
 
 <style>
 	.playable-viewport {
+		position: relative;
 		height: 100dvh;
 		overflow: hidden;
-		background:
-			radial-gradient(120% 90% at 50% 0%, oklch(0.2 0.04 280 / 0.6), transparent 60%),
-			oklch(0.11 0.015 270);
+		background: oklch(0.115 0.008 270);
 		color: oklch(0.9 0.02 270);
+	}
+
+	/* Grain: the whole room reads as printed matter, not a gradient app. */
+	.playable-viewport::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 100;
+		pointer-events: none;
+		opacity: 0.05;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 	}
 
 	:global(body:has(.playable-viewport)) {
