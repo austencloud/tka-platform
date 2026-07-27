@@ -10,11 +10,14 @@
   What this harness answers: does the three-band structure beat the wall, does
   content variety read well, and how does live-on-visible feel.
 
-  What it deliberately does NOT answer: live 3D. `Viewer3DCanvas` is a
-  single-viewer component and there is no WebGL context pool anywhere in
-  src/lib, so scene and tunnel tiles render their stored WebP posters and their
-  budgets start at 0. The scissored multi-viewport renderer is a spike, not a
-  test page.
+  Live 3D IS answered here now — Scene3DPreview seeds a per-instance viewer
+  (see viewer-3d-state's Viewer3DStateSeed), so scene tiles render the real
+  Viewer3DCanvas in their own environment and several can coexist. The scissored
+  multi-viewport renderer is a later question about COST, not capability.
+
+  The Collections band is one mixed grid rather than three type sections, and
+  the page carries its own container-query font ramp — both decided with Austen
+  on 2026-07-27; see the design doc for why.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -183,13 +186,115 @@
     return 2;
   }
 
-  const collectionBands = $derived([
-    { id: "scene" as Medium, name: "3D scenes", items: scenes },
-    { id: "tunnel" as Medium, name: "Tunnels", items: tunnels },
-    { id: "mandala" as Medium, name: "Mandalas", items: mandalas },
-  ]);
+  /**
+   * ONE mixed Collections grid, not three type-segregated subbands.
+   *
+   * Segregating by medium looked tidy and read badly: the counts are lopsided
+   * (1 scene, 4 tunnels, 41 mandalas), so at 3840 the scenes row was one tile
+   * beside seven empty tracks and the tunnels row four beside four. Interleaving
+   * by recency keeps every row full at every width AND puts the variety of media
+   * on show, which is the whole argument for the band. The filter below covers
+   * the "just show me my tunnels" case that sections were really serving.
+   */
+  type CollectionEntry = {
+    id: string;
+    medium: Medium;
+    title: string;
+    at: number;
+    poster: string | null;
+    scene: unknown | null;
+    tunnel: unknown | null;
+    mandala: ArtifactMandala | null;
+  };
 
-  const totalSaved = $derived(scenes.length + tunnels.length + mandalas.length);
+  type ArtifactMandala = {
+    steps: unknown[];
+    variant: "blue" | "red" | "both";
+    bluePropType?: string;
+    redPropType?: string;
+    pathShape?: "arc" | "linear" | "concave" | "hybrid";
+  };
+
+  function stamp(record: Record<string, any>): number {
+    return record.createdAt ?? record.updatedAt ?? 0;
+  }
+
+  const collectionEntries = $derived.by((): CollectionEntry[] => {
+    const out: CollectionEntry[] = [];
+
+    for (const entry of scenes) {
+      const r = entry as Record<string, any>;
+      out.push({
+        id: `scene-${entry.id}`,
+        medium: "scene",
+        title: r.sourceWord || entry.name,
+        at: stamp(r),
+        poster: r.poster ?? null,
+        scene: scene3DHasSteps(entry as any) ? entry : null,
+        tunnel: null,
+        mandala: null,
+      });
+    }
+    for (const entry of tunnels) {
+      const r = entry as Record<string, any>;
+      out.push({
+        id: `tunnel-${entry.id}`,
+        medium: "tunnel",
+        title: r.sourceWord || entry.name,
+        at: stamp(r),
+        poster: r.poster ?? null,
+        scene: null,
+        tunnel: entry,
+        mandala: null,
+      });
+    }
+    for (const entry of mandalas) {
+      const r = entry as Record<string, any>;
+      out.push({
+        id: `mandala-${entry.id}`,
+        medium: "mandala",
+        title: r.sourceWord || entry.name,
+        at: stamp(r),
+        poster: null,
+        scene: null,
+        tunnel: null,
+        mandala: {
+          steps: r.steps ?? [],
+          variant: r.variant ?? "both",
+          bluePropType: r.bluePropType,
+          redPropType: r.redPropType,
+          pathShape: r.pathShape,
+        },
+      });
+    }
+
+    return out.sort((a, b) => b.at - a.at);
+  });
+
+  const totalSaved = $derived(collectionEntries.length);
+
+  let collectionFilter = $state<"all" | Medium>("all");
+
+  const visibleCollection = $derived(
+    collectionFilter === "all"
+      ? collectionEntries
+      : collectionEntries.filter((e) => e.medium === collectionFilter)
+  );
+
+  /** Counts ride along on the chips, so the filter doubles as the census the
+   *  type sections used to provide. Media with nothing saved are omitted
+   *  rather than shown as a dead 0. */
+  const collectionFilterOptions = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const e of collectionEntries) counts[e.medium] = (counts[e.medium] ?? 0) + 1;
+    const opts: { value: string; label: string; count?: number }[] = [
+      { value: "all", label: "All", count: collectionEntries.length },
+    ];
+    if (counts.scene) opts.push({ value: "scene", label: "Scenes", count: counts.scene });
+    if (counts.tunnel) opts.push({ value: "tunnel", label: "Tunnels", count: counts.tunnel });
+    if (counts.mandala) opts.push({ value: "mandala", label: "Mandalas", count: counts.mandala });
+    return opts;
+  });
 
   function bump(medium: Medium, delta: number) {
     const next = Math.max(0, Math.min(24, slots.budgets[medium] + delta));
@@ -202,6 +307,7 @@
   <title>Profile as a stage — test</title>
 </svelte:head>
 
+<div class="stage-container">
 <div class="page">
   <header class="page-head">
     <div class="titles">
@@ -280,7 +386,10 @@
             Nothing saved yet — the showcase fills from your collections.
           </p>
         {:else}
-          <div class="grid" style:--cols={fitColumns(showcase.length, capFor("showcase"))}>
+          <div
+            class="grid showcase-grid"
+            style:--cols={fitColumns(showcase.length, capFor("showcase"))}
+          >
             {#each showcase as pick (pick.key)}
               <ArtifactTile
                 {slots}
@@ -309,42 +418,36 @@
           <p class="band-empty">
             No saved scenes, tunnels, or mandalas on this account yet.
           </p>
-        {/if}
-
-        {#each collectionBands as group (group.id)}
-          {#if group.items.length > 0}
-            <div class="subband">
-              <h3>{group.name} <span class="band-count">{group.items.length}</span></h3>
-              <div
-                class="grid"
-                style:--cols={fitColumns(group.items.length, capFor("collection"))}
-              >
-                {#each group.items as entry (entry.id)}
-                  {@const record = entry as Record<string, any>}
-                  <ArtifactTile
-                    {slots}
-                    medium={group.id}
-                    title={record.sourceWord || entry.name}
-                    poster={record.poster ?? null}
-                    tunnel={group.id === "tunnel" ? entry : null}
-                    scene={group.id === "scene" && scene3DHasSteps(entry as any)
-                      ? entry
-                      : null}
-                    mandala={group.id === "mandala"
-                      ? {
-                          steps: record.steps ?? [],
-                          variant: record.variant ?? "both",
-                          bluePropType: record.bluePropType,
-                          redPropType: record.redPropType,
-                          pathShape: record.pathShape,
-                        }
-                      : null}
-                  />
-                {/each}
-              </div>
+        {:else}
+          {#if collectionFilterOptions.length > 2}
+            <div class="filter">
+              <SegmentedControl
+                options={collectionFilterOptions}
+                value={collectionFilter}
+                onchange={(v) => (collectionFilter = v as "all" | Medium)}
+                size="sm"
+                ariaLabel="Filter collections by medium"
+              />
             </div>
           {/if}
-        {/each}
+
+          <div
+            class="grid"
+            style:--cols={fitColumns(visibleCollection.length, capFor("collection"))}
+          >
+            {#each visibleCollection as entry (entry.id)}
+              <ArtifactTile
+                {slots}
+                medium={entry.medium}
+                title={entry.title}
+                poster={entry.poster}
+                scene={entry.scene}
+                tunnel={entry.tunnel}
+                mandala={entry.mandala}
+              />
+            {/each}
+          </div>
+        {/if}
       </section>
     {/if}
 
@@ -373,18 +476,44 @@
     </section>
   {/if}
 </div>
+</div>
 
 <style>
-  .page {
-    /* One band for the whole page, fluid above its floor — never a hard cap
-       that leaves dead rail at 2560 and 3840 (4k-native-layout.md). */
+  /* Establishes the query container ONLY — an element cannot query itself, so
+     the ramp below has to sit on a child or `cqw` would resolve against the
+     next container up. Same split CreatorsPanel uses. */
+  .stage-container {
+    container-type: inline-size;
+    container-name: profile-stage;
     width: 100%;
-    max-width: var(--shell-w, min(1720px, 92vw));
-    margin-inline: auto;
-    padding: clamp(1rem, 2vw, 2.5rem) clamp(0.75rem, 2vw, 2rem) 6rem;
+  }
+
+  .page {
+    /* THE 4K RAMP. `app.css`'s root ramp is scoped to `html:has(.mkt-shell)`
+       and `.legal-container`, so it does not reach in-app modules — without
+       this the profile is frozen at 1080p proportions on a 4K display
+       (measured: 16px root at 3840). Identical floor, seam and slope to
+       CreatorsPanel's `.roster-view`, so the roster and the profile you reach
+       from it feel like one surface. Every descendant sizes in `em`. */
+    font-size: clamp(1rem, calc(1rem + (100cqw - 1616px) * 8 / 2160), 1.5rem);
+
+    /* Shared primitives on this surface size themselves from these tokens in
+       rem, which would strand them at 1080p while everything else ramps.
+       Redefining them in `em` hands them the ramp; the values match the global
+       rem defaults at the 16px floor, so nothing moves below the seam. */
+    --font-size-sm: 0.875em;
+    --font-size-compact: 0.75em;
+
+    /* NO max-width, deliberately. `--shell-w` ceilings at 2600px, which at a
+       3840 viewport left 620px of dead rail on each side — 32% of the screen,
+       measured — inside a box the app sidebar has already inset. That is the
+       exact failure 4k-native-layout.md forbids, and it is why CreatorsPanel
+       sizes its own band the same way: fluid padding above a floor, no cap. */
+    width: 100%;
+    padding: clamp(1em, 2.2cqw, 3.5em) clamp(1rem, 2.2cqw, 3.5rem) 6em;
     display: flex;
     flex-direction: column;
-    gap: clamp(1.5rem, 3vw, 3rem);
+    gap: clamp(1.5em, 3cqw, 3em);
   }
 
   .page-head {
@@ -514,27 +643,44 @@
     font-size: 0.9375rem;
   }
 
-  .subband {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .subband h3 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--theme-text);
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-  }
-
   .grid {
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-    gap: clamp(0.75rem, 1.2vw, 1.25rem);
+    gap: clamp(0.75em, 1.2cqw, 1.25em);
     align-items: start;
+  }
+
+  .filter {
+    /* SegmentedControl declares width: 100%, so a bare `flex: 0 0 auto` loses
+       (flex-basis: auto resolves to that width). Pin it or four short labels
+       stretch across the whole band (visual-verification-mandatory.md). */
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .filter :global(.segmented-control) {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  /* Short-landscape: a grid of 1:1 tiles can't fit even one row, so the
+     showcase becomes a horizontal strip you swipe. Grid everywhere else —
+     this is the one viewport where the band changes shape, not a mobile
+     pattern imposed on desktop. */
+  @media (max-height: 560px) {
+    .showcase-grid {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: clamp(0.75em, 1.2cqw, 1.25em);
+      padding-bottom: 0.5em;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .showcase-grid > :global(*) {
+      flex: 0 0 auto;
+      width: min(62vh, 70vw);
+      scroll-snap-align: start;
+    }
   }
 </style>

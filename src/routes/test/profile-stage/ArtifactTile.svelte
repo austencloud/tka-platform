@@ -202,10 +202,15 @@
 </div>
 
 <style>
+  /* Every measure here is `em`, not `rem`: the stage rides a container-query
+     font ramp (the same one CreatorsPanel's roster uses), so one declaration
+     on the ancestor scales type, gaps and radii together. A `rem` here would
+     freeze at 1080p proportions while its neighbours grew — the exact 4K
+     failure 4k-native-layout.md describes. */
   .tile {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.5em;
     min-width: 0;
   }
 
@@ -217,7 +222,7 @@
     padding: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
-    border-radius: 0.75rem;
+    border-radius: 0.75em;
     background: var(--theme-card-bg);
     cursor: pointer;
     transition:
@@ -249,19 +254,19 @@
 
   .poster.empty {
     color: var(--theme-text-dim);
-    font-size: 0.8125rem;
+    font-size: 0.8125em;
   }
 
   .meta {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.5em;
     min-width: 0;
   }
 
   .label {
-    font-size: 0.9375rem;
+    font-size: 0.9375em;
     font-weight: 600;
     color: var(--theme-text);
     white-space: nowrap;
@@ -270,7 +275,7 @@
   }
 
   .kind {
-    font-size: 0.6875rem;
+    font-size: 0.6875em;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--theme-text-dim);
@@ -285,7 +290,17 @@
   }
 
   .size-sm .stage {
-    border-radius: 0.5rem;
+    border-radius: 0.5em;
+  }
+
+  /* Short-landscape (Z Fold folded, 960x412): a 1:1 tile is taller than the
+     viewport, so one tile fills the screen and clips. Cap by viewport height
+     instead — the stage stays a stage, it just stops being square. */
+  @media (max-height: 560px) {
+    .stage {
+      aspect-ratio: auto;
+      height: 46vh;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
