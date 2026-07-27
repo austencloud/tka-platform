@@ -18,17 +18,48 @@
     /** Current step, 0-7. Frame index is step index. */
     step: number;
     alt: string;
+    /**
+     * Show the frames on their original white card instead of the set composed
+     * into the page. Both are the same drawing — see scripts/compose-qft-frames.mjs
+     * for exactly what the composed set changes and what it leaves alone.
+     */
+    asPublished?: boolean;
   }
 
-  let { stem, step, alt }: Props = $props();
+  let { stem, step, alt, asPublished = false }: Props = $props();
 
   const FRAMES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+  const variant = $derived(asPublished ? "" : "-ink");
+
+  const srcFor = (i: number) => `/qft-frames/${stem}/${i}${variant}.webp`;
+
+  let imgs = $state<Array<HTMLImageElement | null>>([]);
+
+  /**
+   * Put the right frames back after hydration.
+   *
+   * The session is restored from localStorage, which the server does not have,
+   * so SSR always renders the FIRST move while the client may be resuming any
+   * of the eight. Svelte resolves that disagreement by keeping the server's
+   * `src` and warning — which leaves the page showing one move's drawing under
+   * another move's title until something else happens to touch the attribute.
+   * Assigning it once on mount settles it, and costs nothing on the common path
+   * where the two already agree.
+   */
+  $effect(() => {
+    imgs.forEach((el, i) => {
+      const want = srcFor(i);
+      if (el && new URL(el.src, location.href).pathname !== want) el.src = want;
+    });
+  });
 </script>
 
-<div class="frames">
+<div class="frames" class:card={asPublished}>
   {#each FRAMES as i (i)}
     <img
-      src={`/qft-frames/${stem}/${i}.webp`}
+      bind:this={imgs[i]}
+      src={srcFor(i)}
       alt={i === 0 ? alt : ""}
       aria-hidden={i === 0 ? undefined : "true"}
       class:shown={i === step}
@@ -48,6 +79,14 @@
     place-items: center;
     width: 100%;
     height: 100%;
+  }
+
+  /*
+   * Only the published view wears the paper. Composed frames carry their own
+   * alpha, so a card behind them would put back the exact white rectangle the
+   * compositing exists to remove.
+   */
+  .frames.card {
     border-radius: 0.5rem;
     background: #fff;
     padding: 0.75rem;

@@ -57,20 +57,37 @@
     <caption class="sr-only">
       QfT notation rows for the current pattern, one row per eighth of a hand revolution
     </caption>
+    <colgroup><col class="c-step" /></colgroup>
+    <colgroup class="g-depart"><col /><col /><col /></colgroup>
+    <colgroup class="g-radius"><col /></colgroup>
+    <colgroup class="g-arrive"><col /><col /><col /></colgroup>
     <thead>
-      <tr>
-        <th scope="col">Prop<span>depart</span></th>
-        <th scope="col">Dir<span>depart</span></th>
-        <th scope="col">Hand<span>depart</span></th>
+      <!--
+        Two header rows because the seven columns are not seven peers: they are
+        a departure, a radius, and an arrival. Reading them as one flat run of
+        digits is what made this look like a spreadsheet.
+      -->
+      <tr class="groups">
+        <td></td>
+        <th scope="colgroup" colspan="3">Depart</th>
         <th scope="col">Radius</th>
-        <th scope="col">Hand<span>arrive</span></th>
-        <th scope="col">Dir<span>arrive</span></th>
-        <th scope="col">Prop<span>arrive</span></th>
+        <th scope="colgroup" colspan="3">Arrive</th>
+      </tr>
+      <tr class="fields">
+        <td><span class="sr-only">Step</span></td>
+        <th scope="col">Prop</th>
+        <th scope="col">Dir</th>
+        <th scope="col">Hand</th>
+        <th scope="col"><span class="sr-only">Radius</span></th>
+        <th scope="col">Hand</th>
+        <th scope="col">Dir</th>
+        <th scope="col">Prop</th>
       </tr>
     </thead>
     <tbody>
       {#each increments as row, i (i)}
         <tr class:active={i === activeStep}>
+          <th scope="row" class="step">{i + 1}</th>
           <td>{row.propDepart}</td>
           <td class:unresolved={row.propDirDepart === "n"}>{cell(row.propDirDepart)}</td>
           <td>{row.handDepart}</td>
@@ -134,36 +151,90 @@
 
   table {
     width: 100%;
+    /*
+     * Fixed, so the active row can change weight without any column resizing
+     * under it. With auto layout a bolder 8 is a wider 8, and the whole table
+     * would breathe once a second.
+     */
+    table-layout: fixed;
     border-collapse: collapse;
     font-variant-numeric: tabular-nums;
   }
 
-  th {
-    padding: 0.7rem 0.4rem 0.6rem;
-    font-size: 0.8rem;
+  .c-step {
+    width: 2.6rem;
+  }
+
+  /* The three groups read as three things. Rules, not boxes — boxes would make
+     it more of a spreadsheet, not less. */
+  .g-radius,
+  .g-arrive {
+    border-left: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.14));
+  }
+
+  .groups th {
+    padding: 0.65rem 0.4rem 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.42));
+  }
+
+  .fields th {
+    padding: 0 0.4rem 0.55rem;
+    font-size: 0.78rem;
     font-weight: 600;
     line-height: 1.15;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.62));
-    border-bottom: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
     white-space: nowrap;
   }
 
-  th span {
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 400;
-    opacity: 0.72;
+  thead {
+    border-bottom: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
   }
 
-  td {
-    padding: 0.55rem 0.4rem;
+  tbody td,
+  .step {
+    padding: 0.5rem 0.4rem;
     text-align: center;
     font-size: 1.05rem;
+    font-weight: 500;
     color: var(--semantic-text-primary, rgb(255 255 255 / 0.9));
   }
 
+  /*
+   * One row is the step on screen; the other seven are the context it sits in.
+   * Everything recedes except the row the stage is currently drawing.
+   */
+  tbody tr {
+    opacity: 0.38;
+    transition: opacity 220ms ease;
+  }
+
+  tbody tr.active {
+    opacity: 1;
+  }
+
+  .step {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.45));
+    /* Reserved so the accent marker cannot move the digits when it appears. */
+    border-left: 2px solid transparent;
+  }
+
+  tr.active .step {
+    border-left-color: var(--theme-accent, #8b5cf6);
+    color: var(--semantic-text-primary, rgb(255 255 255 / 0.9));
+  }
+
+  tr.active td {
+    font-weight: 700;
+  }
+
   td.radius {
-    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.55));
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.62));
     font-size: 0.92rem;
   }
 
@@ -172,12 +243,10 @@
     font-style: italic;
   }
 
-  tr.active {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 22%, transparent);
-  }
-
-  tr.active td {
-    font-weight: 700;
+  @media (prefers-reduced-motion: reduce) {
+    tbody tr {
+      transition: none;
+    }
   }
 
   .sr-only {

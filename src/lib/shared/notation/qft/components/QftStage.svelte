@@ -46,11 +46,75 @@
   const hand = $derived({ x: poses.hand.x * UNIT, y: poses.hand.y * UNIT });
   const head = $derived({ x: poses.head.x * UNIT, y: poses.head.y * UNIT });
 
+  const samples = $derived(pendulum ? tracePendulum() : tracePath(knobs));
+
   const trail = $derived(
-    (pendulum ? tracePendulum() : tracePath(knobs))
+    samples
       .map((p, i) => `${i === 0 ? "M" : "L"}${(p.x * UNIT).toFixed(2)},${(p.y * UNIT).toFixed(2)}`)
       .join(" ")
   );
+
+  /**
+   * The trail's recency.
+   *
+   * A single evenly-lit path says what shape the prop draws but nothing about
+   * where it is in drawing it. A spinner does not see that — they see a bright
+   * afterimage just behind the head falling away into the older part of the
+   * stroke. So the shape stays, dimly, and a short band of light rides the head.
+   *
+   * The band is placed by arc length rather than by cursor fraction. The head
+   * does not move at a constant speed along its own path — an antispin flower
+   * crawls through the petal tips and races the middles — so lighting
+   * `cursor / 8` of the way along the stroke would leave the highlight visibly
+   * detached from the prop exactly where the shape is most interesting.
+   */
+  const arc = $derived.by(() => {
+    const cum = [0];
+    let total = 0;
+    for (let i = 1; i < samples.length; i += 1) {
+      const a = samples[i - 1] as { x: number; y: number };
+      const b = samples[i] as { x: number; y: number };
+      total += Math.hypot(b.x - a.x, b.y - a.y) * UNIT;
+      cum.push(total);
+    }
+    return { cum, total };
+  });
+
+  /** Distance along the stroke that the head has reached, in user units. */
+  const headDistance = $derived.by(() => {
+    const { cum } = arc;
+    const spans = cum.length - 1;
+    if (spans < 1) return 0;
+    const t = ((cursor % 8) + 8) % 8;
+    const x = (t / 8) * spans;
+    const i = Math.min(spans - 1, Math.floor(x));
+    const a = cum[i] as number;
+    const b = cum[i + 1] as number;
+    return a + (b - a) * (x - i);
+  });
+
+  /*
+   * Five bands rather than a gradient: SVG cannot run a gradient along an
+   * arbitrary path, and per-segment opacity over 240 samples would rebuild 240
+   * nodes every frame. Five dashes with a period of exactly the path length wrap
+   * around the closed stroke on their own, which is the whole trick.
+   */
+  const BANDS = 5;
+  /** Share of the whole stroke the afterimage covers. */
+  const BAND_SPAN = 0.28;
+
+  const bands = $derived.by(() => {
+    const { total } = arc;
+    if (total <= 0) return [];
+    const band = (total * BAND_SPAN) / BANDS;
+    return Array.from({ length: BANDS }, (_, k) => ({
+      k,
+      dash: `${band} ${Math.max(0.01, total - band)}`,
+      offset: -(headDistance - (k + 1) * band),
+      opacity: 0.9 * (1 - k / BANDS) ** 1.6,
+      width: 5 + 2.5 * (1 - k / BANDS)
+    }));
+  });
 
   const labelPoint = (position: number) => {
     const p = pointAt(position, PROP_LENGTH * 1.28);
@@ -133,6 +197,16 @@
   {/if}
 
   <path class="trail" d={trail} />
+  {#each bands as b (b.k)}
+    <path
+      class="trail-recent"
+      d={trail}
+      stroke-dasharray={b.dash}
+      stroke-dashoffset={b.offset}
+      stroke-width={b.width}
+      opacity={b.opacity}
+    />
+  {/each}
 
   {#each HOME_BASE as position (position)}
     {@const p = labelPoint(position)}
@@ -219,13 +293,22 @@
     stroke-width: 2;
   }
 
+  /* The shape itself: always whole, always quiet. */
   .trail {
     fill: none;
     stroke: var(--theme-accent, #8b5cf6);
-    stroke-width: 5;
+    stroke-width: 4;
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.5;
+    opacity: 0.22;
+  }
+
+  /* The afterimage riding the head. Butt caps so the bands abut without pips. */
+  .trail-recent {
+    fill: none;
+    stroke: var(--theme-accent, #8b5cf6);
+    stroke-linecap: butt;
+    stroke-linejoin: round;
   }
 
   .point circle {

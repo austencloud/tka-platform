@@ -14,6 +14,7 @@
    * Sources: docs/reference/archive/qft-notation/README.md
    */
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     GUIDE_MOVES,
@@ -60,8 +61,22 @@
   let pendulum = $state(restored?.pendulum ?? false);
   let convention = $state<Convention>(restored?.convention ?? "drex");
 
+  /*
+   * Raw and unwrapped: a scrub backwards off zero runs negative for a few
+   * hundred milliseconds before it lands. Consumers get `pos`, normalised.
+   */
   let cursor = $state(restored?.cursor ?? 0);
   let playing = $state(restored?.playing ?? true);
+
+  const pos = $derived(((cursor % 8) + 8) % 8);
+
+  /*
+   * Composed by default: the restored drawings are keyed off their white card
+   * and re-inked so they sit in the page rather than on it. The published card
+   * stays one click away, because a page whose claim is faithful restoration
+   * cannot make a recoloured artifact the only version it offers.
+   */
+  let asPublished = $state(restored?.asPublished ?? false);
 
   /*
    * Indexing is possibly-undefined under strict index access, and the guide is
@@ -81,7 +96,7 @@
   );
   const increments = $derived(appMode === "guide" ? guideIncrements : instrumentIncrements);
 
-  const step = $derived(Math.floor(cursor) % 8);
+  const step = $derived(Math.floor(pos) % 8);
 
   const instrumentName = $derived(
     pendulum ? { label: "Pendulum", provenance: "sourced" as const } : nameFor(knobs)
@@ -99,12 +114,62 @@
   function selectMove(i: number) {
     moveIndex = i;
     cursor = 0;
+    scrubbing = false;
     appMode = "guide";
   }
 
+  /*
+   * Motion.
+   *
+   * A steady spin is genuinely constant-velocity — a prop mid-drill is not
+   * accelerating, and easing inside each increment would put a stutter into
+   * motion that does not have one, and would make the frame pairing look like a
+   * machine tick. So the steady state stays linear on purpose.
+   *
+   * What has no business being instant is every TRANSITION between states:
+   * pressing play, pressing pause, and scrubbing a step. Those were snaps. A
+   * prop with mass spools up, coasts down, and slides to the increment you asked
+   * for rather than teleporting there.
+   *
+   * Frame index stays locked to step index throughout, because none of this
+   * touches how the cursor maps to a step — only how fast it gets there.
+   */
+  const STEP_MS = 1100;
+  /** Time constant of the play/pause spool. Long enough to read as weight. */
+  const RAMP_MS = 380;
+  const SCRUB_MS = 340;
+
+  const easeOut = (t: number) => 1 - (1 - t) ** 3;
+
+  /* Non-reactive: written every frame, and nothing should re-render on them. */
+  let velocity = 0;
+  let scrubbing = false;
+  let scrubFrom = 0;
+  let scrubTo = 0;
+  let scrubStart = 0;
+
+  /** Drives the rAF loop's existence, so an idle page is not waking 60x/second. */
+  let animating = $state(false);
+
+  const reducedMotion = () =>
+    typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   const step8 = (delta: number) => {
     playing = false;
-    cursor = (Math.floor(cursor) + delta + 8) % 8;
+    velocity = 0;
+    const target = Math.round(scrubbing ? scrubTo : Math.floor(cursor)) + delta;
+
+    if (reducedMotion()) {
+      cursor = target;
+      scrubbing = false;
+      return;
+    }
+
+    scrubFrom = cursor;
+    scrubTo = target;
+    scrubStart = performance.now();
+    scrubbing = true;
+    animating = true;
   };
 
   /**
@@ -129,8 +194,10 @@
     phase,
     pendulum,
     convention,
-    cursor,
-    playing
+    /* Normalised: the raw cursor runs unbounded while playing and negative mid-scrub. */
+    cursor: pos,
+    playing,
+    asPublished
   });
 
   /*
@@ -139,7 +206,18 @@
    * throttle below and picked up from the same snapshot.
    */
   $effect(() => {
-    void [appMode, moveIndex, radius, downbeats, spin, phase, pendulum, convention, playing];
+    void [
+      appMode,
+      moveIndex,
+      radius,
+      downbeats,
+      spin,
+      phase,
+      pendulum,
+      convention,
+      playing,
+      asPublished
+    ];
     saveQftSession(snapshot());
   });
 
@@ -162,19 +240,52 @@
     };
   });
 
+  /* Play is a request for motion; the loop below decides when motion is over. */
   $effect(() => {
-    if (!playing) return;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (playing && reducedMotion()) {
       playing = false;
       return;
     }
+    if (playing) animating = true;
+  });
+
+  $effect(() => {
+    if (!animating) return;
+
     let raf = 0;
     let last = performance.now();
+
     const tick = (now: number) => {
-      cursor = (cursor + (now - last) / 1100) % 8;
+      /* Clamped so a backgrounded tab does not resume by lurching forward. */
+      const dt = Math.min(64, now - last);
       last = now;
+
+      if (scrubbing) {
+        const t = Math.min(1, (now - scrubStart) / SCRUB_MS);
+        cursor = scrubFrom + (scrubTo - scrubFrom) * easeOut(t);
+        if (t >= 1) {
+          cursor = scrubTo;
+          scrubbing = false;
+        }
+      } else {
+        const target = playing ? 1 : 0;
+        /*
+         * Exponential approach rather than a fixed ramp: the spool-up reads the
+         * same whether it starts from rest or from a half-slowed coast, which a
+         * timed ramp cannot do without tracking where it was interrupted.
+         */
+        velocity += (target - velocity) * Math.min(1, dt / RAMP_MS);
+        if (velocity < 0.001 && !playing) {
+          velocity = 0;
+          animating = false;
+          return;
+        }
+        cursor += (velocity * dt) / STEP_MS;
+      }
+
       raf = requestAnimationFrame(tick);
     };
+
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   });
@@ -205,23 +316,38 @@
 </svelte:head>
 
 <div class="app">
+  <!--
+    Toggles rather than a SegmentedControl: in instrument mode NO move is
+    selected, and a segmented indicator has nowhere to sit in that state
+    (.claude/rules/chip-primitives.md, the "at most one" case). Solid emphasis
+    because the selected move is a hard selection, not a filter that is merely
+    switched on.
+  -->
   <nav class="chips" aria-label="Moves">
     {#each GUIDE_MOVES as m, i (m.id)}
-      <button
-        type="button"
-        class="chip"
-        class:on={appMode === "guide" && i === moveIndex}
+      <FilterChipBase
+        label={m.title}
+        mode="toggle"
+        emphasis="solid"
+        size="sm"
+        active={appMode === "guide" && i === moveIndex}
         onclick={() => selectMove(i)}
-      >
-        {m.title}
-      </button>
+      />
     {/each}
   </nav>
 
   <main class="surface">
     <Crossfade key={appMode === "guide" ? move.id : "instrument"} fill>
       {#if appMode === "guide"}
-        <QftGuidePane {move} increments={guideIncrements} {cursor} {step} {compact} />
+        <QftGuidePane
+          {move}
+          increments={guideIncrements}
+          cursor={pos}
+          {step}
+          {compact}
+          {asPublished}
+          onRendering={(v) => (asPublished = v)}
+        />
       {:else}
         <div class="instrument">
           <header>
@@ -235,7 +361,7 @@
 
           <div class="instrument-body">
             <div class="stage-box">
-              <QftStage {knobs} increments={instrumentIncrements} {cursor} {pendulum} />
+              <QftStage {knobs} increments={instrumentIncrements} cursor={pos} {pendulum} />
             </div>
 
             <div class="knobs">
@@ -399,29 +525,6 @@
     gap: 0.5rem;
   }
 
-  .chip {
-    padding: 0.5rem 0.9rem;
-    min-height: 44px;
-    border-radius: 999px;
-    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.22));
-    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.24));
-    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.72));
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
-  }
-
-  .chip:hover {
-    color: var(--semantic-text-primary, #fff);
-    border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
-  }
-
-  .chip.on {
-    background: var(--theme-accent, #8b5cf6);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: #fff;
-  }
-
   .surface {
     position: relative;
     min-height: 0;
@@ -495,8 +598,57 @@
     align-self: flex-start;
   }
 
+  /*
+   * The one native control on the page, and it looked it — a default slider
+   * next to a row of segmented controls reads as a different decade. Track and
+   * thumb are drawn from the same tokens as everything else, and the width is
+   * capped so it stops spanning the whole panel for a 0–1.5 range.
+   */
   input[type="range"] {
-    width: 100%;
+    width: min(100%, 26rem);
+    height: 44px; /* touch-target floor; the visible track is the ::-thumb/track */
+    margin: 0;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 0.35rem;
+    border-radius: 999px;
+    background: var(--semantic-surface-raised, rgb(255 255 255 / 0.14));
+    border: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.14));
+  }
+
+  input[type="range"]::-moz-range-track {
+    height: 0.35rem;
+    border-radius: 999px;
+    background: var(--semantic-surface-raised, rgb(255 255 255 / 0.14));
+    border: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.14));
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-top: calc((0.35rem - 1.1rem) / 2);
+    border-radius: 50%;
+    background: var(--theme-accent, #8b5cf6);
+    border: 2px solid var(--semantic-text-primary, #fff);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    background: var(--theme-accent, #8b5cf6);
+    border: 2px solid var(--semantic-text-primary, #fff);
+  }
+
+  input[type="range"]:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 3px;
+    border-radius: 0.4rem;
   }
 
   .notation {
@@ -640,7 +792,7 @@
       scrollbar-width: none;
     }
 
-    .chip {
+    .chips :global(.filter-chip) {
       flex: none;
     }
   }
