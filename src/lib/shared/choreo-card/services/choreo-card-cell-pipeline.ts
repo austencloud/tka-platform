@@ -165,14 +165,11 @@ export function calculateGridPosition(
 /**
  * Detect whether the sequence has mixed (non-uniform) durations.
  * Returns false if all durations are 1.0 or undefined.
+ * Implementation lives in the leaf module `step-durations.ts` so the
+ * canonical cell warm can share it without this file's heavy imports;
+ * re-exported here for the existing UI callers.
  */
-export function detectMixedDurations(steps: readonly { duration?: number }[]): boolean {
-  for (const step of steps) {
-    const d = step.duration ?? 1;
-    if (Math.abs(d - 1.0) > 0.001) return true;
-  }
-  return false;
-}
+export { detectMixedDurations } from "./step-durations";
 
 /**
  * Build render options from component visibility/prop state.

@@ -16,6 +16,7 @@ import {
 } from "$lib/shared/render/services/cloud-cell-key";
 import * as pictographCloudCache from "$lib/shared/render/services/pictograph-cloud-cache";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
+import { detectMixedDurations } from "$lib/shared/choreo-card/services/step-durations";
 
 export interface WarmOptions {
   /** Scan cards render dark by default. */
@@ -144,27 +145,42 @@ export async function warmSequenceCells(
     uploadCanonical: true,
   };
 
-  const entries: { cell: "start" | number; data: PictographData }[] = [];
+  const entries: {
+    cell: "start" | number;
+    data: PictographData;
+    options: PreviewCellRenderOptions;
+  }[] = [];
   const start = startPositionDeriver.getOrDeriveStartPosition(sequence);
-  if (start) entries.push({ cell: "start", data: start });
+  if (start) entries.push({ cell: "start", data: start, options: renderOptions });
+  // Mixed-duration cards render held beats as WIDE cells with
+  // widthMultiplier = duration, and the multiplier is part of the cache key
+  // (`|wm2|`). The warm must derive the same per-cell options as ChoreoCard
+  // or wide cells are uploaded under keys no scanner ever asks for — the
+  // B2ZM class of permanently-unavailable cells.
+  const mixed = detectMixedDurations(sequence.steps);
   sequence.steps.forEach((step, index) => {
-    entries.push({ cell: index + 1, data: step });
+    const duration = (step as { duration?: number }).duration ?? 1;
+    const options =
+      mixed && duration !== 1
+        ? { ...renderOptions, widthMultiplier: duration }
+        : renderOptions;
+    entries.push({ cell: index + 1, data: step, options });
   });
 
   const outcomes = await Promise.all(
-    entries.map(async ({ cell, data }) => {
+    entries.map(async ({ cell, data, options }) => {
       try {
         const hash = await deriveCloudCellHash(
           data,
           opts.isDark ?? true,
-          renderOptions
+          options
         );
         if (opts.requireComplete) {
           await ensureVerifiedCanonicalCell(
             data,
             cell,
             opts.isDark ?? true,
-            renderOptions,
+            options,
             hash
           );
         } else {
@@ -172,7 +188,7 @@ export async function warmSequenceCells(
             data,
             cell,
             opts.isDark ?? true,
-            renderOptions,
+            options,
             hash,
             false
           );

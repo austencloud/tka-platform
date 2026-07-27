@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-07-27T06:44:02.494Z",
   "sourceManifest": "shortcode-labels-dryrun-2026-07-27T06-44-02-494Z.json",
-  "note": "Human-acknowledged quarantine baseline (parity-repair spec, phase 5). Regenerate after intentional relabels.",
+  "note": "Human-acknowledged quarantine baseline (parity-repair spec, phase 5). Regenerate after intentional relabels. 2026-07-27: 4AHBJl relabeled; B2ZM+PAI0 half-mirrored LOOP payloads repaired — all three removed after Austen review.",
   "quarantined": {
     "5247": "PAYLOAD_INCOMPLETE",
     "0KUH": "PAYLOAD_INCOMPLETE",
@@ -14,7 +14,6 @@
     "3CLR": "PAYLOAD_INCOMPLETE",
     "3T2Z": "PAYLOAD_INCOMPLETE",
     "3TGC": "PAYLOAD_INCOMPLETE",
-    "4AHBJl": "LABEL_CONTRADICTS_PAYLOAD",
     "545K": "PAYLOAD_INCOMPLETE",
     "5C3V": "LABEL_CONTRADICTS_PAYLOAD",
     "5P4P": "PAYLOAD_INCOMPLETE",
@@ -23,7 +22,6 @@
     "7FJ8": "PAYLOAD_INCOMPLETE",
     "A1q35G": "PAYLOAD_INCOMPLETE",
     "AFeUzI": "PAYLOAD_INCOMPLETE",
-    "B2ZM": "LABEL_CONTRADICTS_PAYLOAD",
     "BTJL": "PAYLOAD_INCOMPLETE",
     "C17U": "LABEL_CONTRADICTS_PAYLOAD",
     "CKW8": "PAYLOAD_INCOMPLETE",
@@ -50,7 +48,6 @@
     "MXEvc1": "PAYLOAD_INCOMPLETE",
     "Mo9xMv": "PAYLOAD_INCOMPLETE",
     "P9LY": "PAYLOAD_INCOMPLETE",
-    "PAI0": "PAYLOAD_INCOMPLETE",
     "PALW": "PAYLOAD_INCOMPLETE",
     "QUBjcO": "PAYLOAD_INCOMPLETE",
     "RmLaBb": "LABEL_CONTRADICTS_PAYLOAD",

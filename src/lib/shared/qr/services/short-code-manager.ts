@@ -42,6 +42,7 @@ import {
 import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/public-sequence-hash-matcher";
 import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions, ImportResolution } from "./types";
 import { ShortCodeCache, SHORT_CODE_CACHE_SCHEMA } from "./short-code-cache";
+import { graftPrefloatFromEmbedded } from "./prefloat-graft";
 import { assetFetch } from "$lib/shared/net/asset-fetch";
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
 
@@ -943,7 +944,10 @@ export class ShortCodeManager {
     // Self-contained fallbacks — data exists but no referenceable doc.
     if (data.encoded) {
       try {
-        const decoded = await decodeSequenceFromQR(data.encoded);
+        const decoded = graftPrefloatFromEmbedded(
+          await decodeSequenceFromQR(data.encoded),
+          data.sequenceData
+        );
         // The blob carries motion only — decoding names it "Shared Sequence"
         // with an empty word. The record knows what the card actually says
         // (sequenceName; older records put the word in `sequence`), so stamp
@@ -1166,10 +1170,17 @@ export class ShortCodeManager {
   private async hydrateFromRecord(code: string, data: ShortCodeData): Promise<SequenceData | null> {
     // Strategy 0: Self-contained encoded blob (zero Firestore dependency).
     // Preferred path - fastest, and the only strategy that survives a full
-    // Firestore outage when resolving from the static snapshot.
+    // Firestore outage when resolving from the static snapshot. The legacy
+    // wire format drops float prefloat data, so when the record also carries
+    // the embedded mint-time copy, graft those fields back onto the decoded
+    // steps — the blob stays the renderer's source (it is the normalized,
+    // orientation-correct shape; raw embedded steps are not renderable).
     if (data.encoded) {
       try {
-        const decoded = await decodeSequenceFromQR(data.encoded);
+        const decoded = graftPrefloatFromEmbedded(
+          await decodeSequenceFromQR(data.encoded),
+          data.sequenceData
+        );
         const word = importedWord(data);
         return {
           ...decoded,
