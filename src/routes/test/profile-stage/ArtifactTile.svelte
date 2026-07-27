@@ -409,10 +409,25 @@
     min-height: 0;
   }
 
+  /* The mandala and the animation depict the SAME motion, so they have to share
+     one box or the traced path cannot line up with the drawing beneath it.
+     SequenceMandala sizes its own element from its `size` prop (measured: 320px
+     square inside a 595x464 zone, while the player filled the zone), so the two
+     coordinate spaces mapped to different pixels-per-unit and the mandala read
+     as a different, larger orbit than the prop actually traces.
+
+     Stretching the canvas past `size` is supported by the component — it
+     re-reads its true on-screen box via getBoundingClientRect and re-resolves
+     the backing store, so this does not render soft. */
   .mandala-floor {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
+  }
+
+  .mandala-floor :global(.mandala-container),
+  .mandala-floor :global(canvas),
+  .mandala-floor :global(svg) {
+    width: 100% !important;
+    height: 100% !important;
   }
 
   .strip-zone {
