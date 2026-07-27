@@ -50,6 +50,12 @@
 
 <style>
   .wrap {
+    /*
+     * Never the thing that shrinks. As a flex child in a squeezed column this
+     * would otherwise collapse into a two-row sliver behind a scrollbar, which
+     * is the one element on the page that must stay whole — it is the notation.
+     */
+    flex: none;
     overflow-x: auto;
     border-radius: 0.75rem;
     border: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));

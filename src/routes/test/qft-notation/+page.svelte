@@ -168,7 +168,9 @@
 
   <div class="split">
     <section class="stage-pane" aria-label="Motion">
-      <QftStage {knobs} {increments} {cursor} />
+      <div class="stage-art">
+        <QftStage {knobs} {increments} {cursor} />
+      </div>
 
       <div class="transport">
         <button type="button" onclick={() => step8(-1)} aria-label="Previous increment">‹</button>
@@ -218,6 +220,7 @@
         /></div>
       </div>
 
+      <div class="knob-row">
       <div class="knob">
         <span class="knob-label" id="spin-label">Direction</span>
         <div class="fit"><SegmentedControl
@@ -241,25 +244,28 @@
           size="sm"
           ariaLabelledby="convention-label"
         /></div>
-        <p class="note">{CONVENTION_NOTE[convention]}</p>
+      </div>
       </div>
 
-      <QftTable {increments} activeStep={step} />
+      <p class="note">{CONVENTION_NOTE[convention]}</p>
 
-      <p class="legend">
-        The outer compass says where the <strong>hand</strong> is. The small compass riding
-        with the hand says where the <strong>prop</strong> is, because QfT measures prop
-        position from the hand rather than from the centre of the body. When the prop turns
-        more than once per hand circle its numbers skip — two rotations advance it two
-        positions for every one the hand moves.
-      </p>
-      <p class="legend">
-        <strong>sourced</strong> names are worked through in the 2011 written guide.
-        <strong>derived</strong> names follow the petal rule the guide's own examples confirm
-        but never states outright. QfT as published is single-plane, so this stays in-plane.
-      </p>
+      <QftTable {increments} activeStep={step} />
     </section>
   </div>
+
+  <footer class="legend-row">
+      <p class="legend">
+        The outer compass tracks the <strong>hand</strong>. The compass riding with the hand
+        tracks the <strong>prop</strong>, because QfT measures prop position from the hand,
+        not from the centre of the body. More than one prop rotation per hand circle makes
+        those numbers skip.
+      </p>
+      <p class="legend">
+        <strong>sourced</strong> names come from the 2011 written guide. <strong>derived</strong>
+        names follow the petal rule its examples confirm but never state. QfT as published is
+        single-plane, so this stays in-plane.
+      </p>
+  </footer>
 </div>
 
 <style>
@@ -332,9 +338,102 @@
     align-items: start;
   }
 
+  /**
+   * At two columns the whole instrument should sit on one screen — no page
+   * scroll, nothing below the fold. The page becomes exactly one viewport tall,
+   * the stage takes whatever height is left after the header, and the controls
+   * column scrolls inside itself rather than growing the document.
+   *
+   * Single column keeps normal document scrolling; stacking a stage and a table
+   * into one screen would leave both too small to read.
+   */
   @media (min-width: 60rem) {
     .split {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      /*
+       * minmax(0, 1fr), not the implicit auto. An auto row floors at its items'
+       * min-content contribution and refuses to shrink, so the stage and the
+       * table punch straight through the flex bound no matter how many
+       * min-height: 0 rules sit underneath.
+       */
+      grid-template-rows: minmax(0, 1fr);
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .page {
+      min-height: 100dvh;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 1.5rem;
+    }
+
+    .stage-pane {
+      position: static;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .stage-art {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .stage-art {
+      aspect-ratio: auto;
+    }
+
+    /*
+     * Tighter than the stacked layout, because all eight notation rows have to
+     * survive alongside the knobs in one viewport. A table showing two of eight
+     * rows behind a scrollbar is worse than a page that scrolls.
+     */
+    .controls {
+      min-height: 0;
+      gap: 0.85rem;
+      padding-right: 0.5rem;
+    }
+
+    .note,
+    .legend {
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .legend-row {
+      grid-template-columns: 1fr 1fr;
+      margin-top: 0.9rem;
+    }
+
+    /* The header earns less room once the whole page has to share one screen. */
+    header {
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    /* Two short controls share a row rather than each taking a full one. */
+    .knob-row {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 1.5rem;
+      align-items: end;
+    }
+
+    /* Denser rows so all eight survive the height budget. */
+    .controls :global(tbody td) {
+      padding-block: 0.3rem;
+    }
+
+    .controls :global(thead th) {
+      padding-block: 0.45rem 0.35rem;
     }
   }
 
@@ -343,11 +442,27 @@
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
       gap: 3rem;
     }
+
+    /*
+     * The stage centres itself in its column; without this the controls stack
+     * from the top and leave a dead band under the table at 4K, which reads as
+     * two unrelated halves rather than one instrument.
+     */
+    .controls {
+      justify-content: center;
+      gap: 1.25rem;
+    }
   }
 
   .stage-pane {
     position: sticky;
     top: 1.5rem;
+  }
+
+  /* Single column: the container supplies the square, since the SVG no longer does. */
+  .stage-art {
+    width: 100%;
+    aspect-ratio: 1;
   }
 
   .transport {
@@ -453,11 +568,19 @@
     cursor: pointer;
   }
 
-  .convention .note {
+  .note {
     margin: 0;
     font-size: 0.88rem;
     line-height: 1.45;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.62));
+  }
+
+  /* Explanatory text belongs under the whole instrument, not inside a column
+     that needs every pixel for the notation table. */
+  .legend-row {
+    display: grid;
+    gap: 0.6rem 2rem;
+    margin-top: 1.25rem;
   }
 
   .legend {

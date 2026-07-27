@@ -114,12 +114,16 @@
 </svg>
 
 <style>
+  /*
+   * The container owns the box; the SVG fills it and lets preserveAspectRatio
+   * letterbox the square viewBox inside. Sizing from width + aspect-ratio here
+   * instead would make the stage as tall as the column is wide, which blows
+   * through any height budget the page tries to give it.
+   */
   .stage {
     display: block;
     width: 100%;
-    height: auto;
-    aspect-ratio: 1;
-    overflow: visible;
+    height: 100%;
   }
 
   .ring {
