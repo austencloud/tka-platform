@@ -17,10 +17,8 @@
  * - Utilities: generate_random_word
  */
 
-import { createServer } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   registerDataTools,
   registerPreferenceTools,
@@ -34,8 +32,13 @@ import {
 } from "./src/tools/index.js";
 import { ensureTransitionGraphInitialized } from "./src/core/letter-transition-graph.js";
 import { loadKnowledgeBase } from "./src/shared/server-context.js";
+import { resolveAuthConfig, resolveHttpPort } from "./src/http/auth-config.js";
+import { createHttpApp } from "./src/http/create-http-app.js";
+import { createJwksVerifier } from "./src/http/jwks-verifier.js";
 
-const HTTP_PORT = parseInt(process.env.MCP_HTTP_PORT || "0", 10);
+// A malformed value throws rather than silently disabling HTTP: parseInt("abc")
+// is NaN, and NaN > 0 quietly skipped the whole branch on a typo.
+const HTTP_PORT = resolveHttpPort(process.env.MCP_HTTP_PORT);
 
 function createMcpServer() {
   const server = new McpServer({
@@ -72,73 +75,28 @@ async function main() {
   await stdioServer.connect(stdioTransport);
   console.error("[MCP] Stdio transport connected");
 
-  // HTTP transport (optional, for Claude.ai via remote MCP)
+  // HTTP transport (for Claude.ai via remote MCP). Authorization is mandatory:
+  // see docs/superpowers/specs/2026-07-27-choreo-mcp-act-surface-design.md.
+  // Enabling HTTP without auth config is a startup error, never a silent downgrade.
   if (HTTP_PORT > 0) {
-    // Track transports by session for stateful connections
-    const sessions = new Map<string, StreamableHTTPServerTransport>();
+    const authConfig = resolveAuthConfig(process.env);
 
-    const httpServer = createServer(async (req, res) => {
-      // CORS headers for remote MCP clients
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id");
-      res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
-
-      if (req.method === "OPTIONS") {
-        res.writeHead(204);
-        res.end();
-        return;
-      }
-
-      if (req.url !== "/mcp") {
-        res.writeHead(req.url === "/" ? 200 : 404, { "Content-Type": "text/plain" });
-        res.end(req.url === "/" ? "Flow Arts Knowledge MCP Server" : "Not found");
-        return;
-      }
-
-      // Check for existing session
-      const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      let transport: StreamableHTTPServerTransport;
-
-      if (sessionId && sessions.has(sessionId)) {
-        transport = sessions.get(sessionId)!;
-      } else if (!sessionId && req.method === "POST") {
-        // New session — create a new server + transport pair
-        const sessionServer = createMcpServer();
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => crypto.randomUUID(),
-        });
-
-        transport.onclose = () => {
-          if (transport.sessionId) {
-            sessions.delete(transport.sessionId);
-            console.error(`[MCP-HTTP] Session ${transport.sessionId} closed`);
-          }
-        };
-
-        await sessionServer.connect(transport);
-      } else if (sessionId) {
-        // Session ID provided but not found — may have expired
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Session not found" }));
-        return;
-      } else {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Bad request — missing session" }));
-        return;
-      }
-
-      await transport.handleRequest(req, res);
-
-      // Store session after handleRequest assigns the ID
-      if (transport.sessionId && !sessions.has(transport.sessionId)) {
-        sessions.set(transport.sessionId, transport);
-        console.error(`[MCP-HTTP] New session: ${transport.sessionId}`);
-      }
+    const { app } = createHttpApp({
+      config: authConfig,
+      verifier: createJwksVerifier({
+        issuer: authConfig.issuer,
+        audience: authConfig.audience,
+        resource: authConfig.resourceUrl,
+        jwksUri: authConfig.jwksUri,
+        onError: (error) => console.error("[MCP-HTTP] token rejected:", error),
+      }),
+      createMcpServer,
     });
 
-    httpServer.listen(HTTP_PORT, () => {
-      console.error(`[MCP-HTTP] Listening on http://localhost:${HTTP_PORT}/mcp`);
+    // Explicit 127.0.0.1: cloudflared resolves "localhost" to ::1 first, which
+    // an IPv4-only listener never answers.
+    app.listen(HTTP_PORT, "127.0.0.1", () => {
+      console.error(`[MCP-HTTP] Listening on 127.0.0.1:${HTTP_PORT}/mcp (authorization required)`);
     });
   }
 
