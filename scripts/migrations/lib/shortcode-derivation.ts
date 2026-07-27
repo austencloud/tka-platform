@@ -174,7 +174,7 @@ export interface PayloadDerivation {
 // letterless by design; a stepNumber-0 beat CARRYING a letter is 0-based
 // content. Drop only a genuine leading start entry, then renumber the
 // content beats 1..N so the strict API sees them all.
-function contentStepsOf(steps: AnyRec[]): AnyRec[] {
+export function contentStepsOf(steps: AnyRec[]): AnyRec[] {
   const first = steps[0];
   const hasTrueStartEntry =
     first !== undefined &&

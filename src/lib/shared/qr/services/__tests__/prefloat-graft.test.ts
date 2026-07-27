@@ -120,6 +120,72 @@ describe("graftPrefloatFromEmbedded", () => {
     expect(blueOf(out, 0).prefloatMotionType).toBeUndefined();
   });
 
+  it("grafts the mint letter onto a letterless decoded step when both channels' motion identity matches", () => {
+    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const embedded = {
+      steps: [
+        {
+          letter: "Z-",
+          motions: { blue: float("n", "w"), red: staticMotion("w") },
+        },
+      ],
+    };
+    const out = graftPrefloatFromEmbedded(decoded, embedded);
+    expect(
+      (out.steps as unknown as Array<{ letter?: unknown }>)[0]!.letter
+    ).toBe("Z-");
+  });
+
+  it("never overwrites a letter the decoded step already carries", () => {
+    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    (decoded.steps as unknown as Array<{ letter?: unknown }>)[0]!.letter = "Y-";
+    const embedded = {
+      steps: [
+        {
+          letter: "Z-",
+          motions: { blue: float("n", "w"), red: staticMotion("w") },
+        },
+      ],
+    };
+    const out = graftPrefloatFromEmbedded(decoded, embedded);
+    expect(
+      (out.steps as unknown as Array<{ letter?: unknown }>)[0]!.letter
+    ).toBe("Y-");
+  });
+
+  it("refuses the letter when any channel's motion identity disagrees", () => {
+    const decoded = seq([{ blue: float("n", "w"), red: staticMotion("w") }]);
+    const embedded = {
+      steps: [
+        {
+          letter: "Z-",
+          motions: { blue: float("n", "e"), red: staticMotion("w") },
+        },
+      ],
+    };
+    const out = graftPrefloatFromEmbedded(decoded, embedded);
+    expect(
+      (out.steps as unknown as Array<{ letter?: unknown }>)[0]!.letter
+    ).toBeUndefined();
+  });
+
+  it("ignores empty or non-string embedded letters", () => {
+    const decoded = seq([
+      { blue: float("n", "w"), red: staticMotion("w") },
+      { blue: float("w", "s"), red: staticMotion("w") },
+    ]);
+    const embedded = {
+      steps: [
+        { letter: "", motions: { blue: float("n", "w"), red: staticMotion("w") } },
+        { letter: 7, motions: { blue: float("w", "s"), red: staticMotion("w") } },
+      ],
+    };
+    const out = graftPrefloatFromEmbedded(decoded, embedded);
+    const steps = out.steps as unknown as Array<{ letter?: unknown }>;
+    expect(steps[0]!.letter).toBeUndefined();
+    expect(steps[1]!.letter).toBeUndefined();
+  });
+
   it("leaves non-float and already-prefloated motions untouched, and tolerates absent embedded data", () => {
     const decoded = seq([
       {

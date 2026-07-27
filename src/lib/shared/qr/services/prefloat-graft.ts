@@ -1,22 +1,31 @@
 /**
- * Graft float prefloat fields from a shortcode record's embedded mint-time
- * sequence data onto a blob-decoded sequence.
+ * Graft mint-time testimony from a shortcode record's embedded sequence data
+ * onto a blob-decoded sequence: float prefloat pairs, and beat letters the
+ * wire never carried.
  *
  * Why: the legacy wire formats physically dropped `prefloatMotionType` /
  * `prefloatRotationDirection` (the encoder wrote the float's own noRotation
  * into the rotation slot), so blob-decoded floats carry no prefloat pair and
- * derive no letter. Records minted in the durability-embed era carry the
- * full-fidelity copy in `sequenceData` — but that raw JSON is NOT renderable
- * (it skips the decoder's normalization, which breaks pictographs and
- * orientation continuity). The blob-decoded steps therefore stay the base and
- * ONLY the prefloat pair is copied over, motion by motion.
+ * derive no letter — and the wire carries no letter column at all, so the
+ * runtime lookup must re-derive every beat, which for prefloat-less floats
+ * degrades to a same-family guess (proven ~50% wrong against mint witnesses,
+ * parity-repair spec round 4). Records minted in the durability-embed era —
+ * and the quarantine-recovery restores of 2026-07-27 — carry the mint truth
+ * in `sequenceData`, but that raw JSON is NOT renderable (it skips the
+ * decoder's normalization, which breaks pictographs and orientation
+ * continuity). The blob-decoded steps therefore stay the base and ONLY the
+ * prefloat pair and the stored letter are copied over.
  *
- * Grafting is strictly conservative: a field pair is copied only when the
- * decoded motion is a prefloat-less float, the embedded motion at the same
- * content position is a float over the SAME start→end path, and the embedded
- * pair is real testimony (a rotation other than noRotation — the fabricated
- * pairs the legacy decoder used to manufacture are prefloat type + literal
- * noRotation, and must never propagate).
+ * Grafting is strictly conservative:
+ * - a prefloat pair is copied only when the decoded motion is a
+ *   prefloat-less float, the embedded motion at the same content position is
+ *   a float over the SAME start→end path, and the embedded pair is real
+ *   testimony (a rotation other than noRotation — the fabricated pairs the
+ *   legacy decoder used to manufacture are prefloat type + literal
+ *   noRotation, and must never propagate);
+ * - a letter is copied only when the decoded step has none, the embedded
+ *   step carries one, and BOTH channels' motion identity (type + start→end)
+ *   matches between the two steps.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
@@ -33,7 +42,10 @@ type LooseMotion = {
   prefloatRotationDirection?: unknown;
 };
 
-type LooseStep = { motions?: Partial<Record<MotionColor, LooseMotion>> };
+type LooseStep = {
+  letter?: unknown;
+  motions?: Partial<Record<MotionColor, LooseMotion>>;
+};
 
 function isRealPrefloat(motion: LooseMotion): boolean {
   return (
@@ -49,6 +61,24 @@ function isPrefloatlessFloat(motion: LooseMotion): boolean {
     motion.prefloatMotionType == null &&
     motion.prefloatRotationDirection == null
   );
+}
+
+/** Both channels agree on motion identity (type + start→end path) — the
+ *  step-level alignment proof required before trusting the embedded letter. */
+function stepMotionsMatch(dec: LooseStep, emb: LooseStep): boolean {
+  for (const color of [MotionColor.BLUE, MotionColor.RED]) {
+    const d = dec.motions?.[color];
+    const e = emb.motions?.[color];
+    if (!d && !e) continue;
+    if (!d || !e) return false;
+    if (
+      d.motionType !== e.motionType ||
+      d.startLocation !== e.startLocation ||
+      d.endLocation !== e.endLocation
+    )
+      return false;
+  }
+  return true;
 }
 
 /**
@@ -79,9 +109,10 @@ export function graftPrefloatFromEmbedded<T extends SequenceData>(
   for (let i = 0; i < tail; i++) {
     const dec = decodedSteps[decodedSteps.length - tail + i];
     const emb = embSteps[embSteps.length - tail + i];
+    if (!dec || !emb) continue;
     for (const color of [MotionColor.BLUE, MotionColor.RED]) {
-      const decMotion = dec?.motions?.[color];
-      const embMotion = emb?.motions?.[color];
+      const decMotion = dec.motions?.[color];
+      const embMotion = emb.motions?.[color];
       if (!decMotion || !embMotion) continue;
       if (!isPrefloatlessFloat(decMotion)) continue;
       if (embMotion.motionType !== MotionType.FLOAT) continue;
@@ -93,6 +124,17 @@ export function graftPrefloatFromEmbedded<T extends SequenceData>(
       if (!isRealPrefloat(embMotion)) continue;
       decMotion.prefloatMotionType = embMotion.prefloatMotionType;
       decMotion.prefloatRotationDirection = embMotion.prefloatRotationDirection;
+    }
+
+    const decLetter = dec.letter;
+    const embLetter = emb.letter;
+    if (
+      (typeof decLetter !== "string" || decLetter.length === 0) &&
+      typeof embLetter === "string" &&
+      embLetter.length > 0 &&
+      stepMotionsMatch(dec, emb)
+    ) {
+      dec.letter = embLetter;
     }
   }
   return decoded;

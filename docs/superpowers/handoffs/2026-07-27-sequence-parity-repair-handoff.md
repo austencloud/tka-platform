@@ -13,21 +13,48 @@ debug the system without re-deriving it.
 |---|---|
 | Public projections | 466/466 IN_SYNC (reconcile engine) |
 | Firestore rules | STRICT, deployed: schema-2 shape + transaction-proven owner parity (`getAfter`/`existsAfter`) + hash-claim linkage on every public write; strict mint shape on shortcodes. Legacy write allowance removed. |
-| Shortcode labels | LABEL_CONTRADICTS_PAYLOAD = **0** (13-code review complete). 62 acknowledged PAYLOAD_INCOMPLETE quarantines remain — see below. |
-| Scheduled audit | Windows task **"TKA Parity Audit"**, daily 04:30, `scripts/diagnostics/run-parity-audit.cmd` → `audit-sequence-public-parity.ts --alert`. Exit 0 clean / 2 drift / 1 failure; alerts = in-app admin notifications (pushed by deployed `onNewNotification`). Logs: `scripts/migrations/backups/parity-audit.log`. |
-| Audit baseline | `scripts/diagnostics/parity-audit-baseline.json` — 62 codes, all PAYLOAD_INCOMPLETE. The audit flags any non-current shortcode NOT matching its baselined class. **Regenerate after any intentional relabel/repair** (edit the JSON or rebuild from a fresh dry-run manifest). |
+| Shortcode labels | LABEL_CONTRADICTS_PAYLOAD = **0** (13-code review complete). PAYLOAD_INCOMPLETE = **1** (3CLR, permanently residual — see below). The other 61 were recovered 2026-07-27 (round 4, label-witnessed float restoration + the P9LY rotation repair). |
+| Scheduled audit | Windows task **"TKA Parity Audit"**, daily 04:30, `scripts/diagnostics/run-parity-audit.cmd` → `audit-sequence-public-parity.ts --alert`. Exit 0 clean / 2 drift / 1 failure; alerts = in-app admin notifications (pushed by deployed `onNewNotification`). First scheduled run completed 2026-07-27 at 04:30 with exit 0 and no actionable violations. Logs: `scripts/migrations/backups/parity-audit.log`. |
+| Audit baseline | `scripts/diagnostics/parity-audit-baseline.json` — 1 code (3CLR, PAYLOAD_INCOMPLETE). The audit flags any non-current shortcode NOT matching its baselined class. **Regenerate after any intentional relabel/repair** (edit the JSON or rebuild from a fresh dry-run manifest). |
 | Old-client UX | A stale client's rejected public sync surfaces as `CLIENT_VERSION_REJECTED` ("reload to update") via `library-sync-retry.ts`. |
+| New shortcode payloads | **LOCAL, NOT YET DEPLOYED:** `ShortCodeManager.allocateCode` decodes every candidate blob, re-derives its letters through the runtime motion lookup, and keeps it only when the exact strict source word and beat count survive. A lossy or unverifiable blob is omitted and the exact `sequenceData` embed is stored instead; its word always comes from strict source-step derivation. The embed-only + hash-claim write shape lands under current rules (26/26 parity rules tests). |
 
-## The 62 remaining quarantines — leave them alone
+## The former 62 quarantines — recovered 2026-07-27 (round 4)
 
-Blob-only mints (no embedded copy, no surviving owner/public/catalog source)
-whose float letters the **legacy wire format physically destroyed** (the
-encoder wrote the float's own noRotation into the prefloat slot; nothing to
-recover). They play correctly; only some letters are underivable. They are
-*acknowledged* in the baseline — the audit stays quiet about them and screams
-only if one CHANGES class. Do not delete them, do not guess their letters
-(three guard layers exist to prevent exactly that: legacy decode, runtime
-letter lookup, strict derivation lib).
+Blob-only mints whose float letters the **legacy wire format physically
+destroyed** (the encoder wrote the float's own noRotation into the prefloat
+slot). "Nothing to recover *from the payload*" stood — but the mint-time
+LABEL is a surviving projection of the destroyed letters, and for every
+word-labeled record the strict derivation spelled the label perfectly at
+every derivable beat. Round 4 (spec addendum "Round 4" is the authoritative
+detail) recovered 61 of 62:
+
+- **60 restored embeds** (`restore-quarantined-shortcode-payloads.ts`): the
+  embedded payload copy is reconstructed from the record's own blob decode;
+  float-gap letters come from the canonical alternatives lookup wherever it
+  matches the label witness (witness-validated: the lookup alone is only
+  ~50% right, so label agreement is the per-beat proof), else the label's
+  letter is stamped as stored mint testimony. Witness gates: full-label
+  positional corroboration / periodicity proof for truncated 6-char labels
+  (7FJ8, CKW8, JXZB) / sibling-signature proof (0XHN ≡ seed half of 5247).
+  Blobs, hashes, and claims untouched.
+- **P9LY** (`repair-p9ly-mirrored-rotations.ts`): not float damage — its
+  mirrored repeat-2 blue rotations were never flipped (half-applied family,
+  the B2ZM defect expressed as rotations). Unique label-corroborated fix
+  via the canonical matcher; blob re-encoded, claim moved, R2 refreshed.
+- **3CLR is the sole permanent residual**: an Assemble-lab export whose
+  beats exist in no pictograph dataframe. It has no word and never will —
+  baselined, do not delete, do not guess.
+
+The three guard layers (legacy decode, runtime letter lookup, strict
+derivation lib) still stand: the wire channel never guesses. The restored
+embeds are the sanctioned dual-source shape every source mint carries.
+
+`prefloat-graft.ts` additionally grafts embedded step LETTERS onto
+letterless decoded steps (same conservatism: tail alignment + both
+channels' motion identity), so /q displays the mint letter instead of the
+runtime's same-family guess and the scan-cell warm can finally render the
+float beats — all 60 restored codes were warmed 60/60 after the repair.
 
 ## Defect families discovered in the review (and their repair tools)
 
@@ -62,30 +89,35 @@ ones for review.
 ## Embed-only records (no `encoded` field) — deliberate
 
 ZLCD, HVJY, jyC3ji, ZaJWw6 carry `sequenceData` but NO blob: **neither wire
-format can carry their pro-prefloat floats** (flat drops prefloat TYPE and
-re-derives it from handpath+rotation, which flips these; the compositional
-encoder fails its own round-trip and falls back to flat). The honest state is
-embed + no blob — Firestore resolution serves them; the skinny R2 snapshot
+format can carry their pro-prefloat floats** (flat stores prefloat rotation,
+then re-derives prefloat type from path and rotation, which flips these).
+The recipe format uses that same flat representation for its seed and
+integrity hash, so byte agreement is not proof that the decoded motion kept
+the same letter. The honest state is embed + no blob. Firestore resolution
+serves them; the skinny R2 snapshot
 (`{_id, encoded}` only) omits them, so offline scan of those 4 codes fails
 rather than playing the wrong sequence. Do NOT "fix" this by re-adding old
 blobs.
 
 ## Open threads (ordered by leverage)
 
-1. **Engine-vs-app LOOP executor divergence (origin hypothesis).** The
-   compositional codec reconstructs LOOPs via the ENGINE executor set
-   (`packages/sequence-engine`), which diverges from the app executors on
-   mirrored-family transforms — its round-trip failure on the repaired
-   sequences is the observable. The same divergence likely GENERATED the
-   corrupt 2026-05-02 mints. Verify/fix the engine executors, then the 4
-   embed-only records could get compositional blobs (and offline scans back).
-2. **jyC3ji phase (cosmetic, only if asked).** Its repaired word is ΘYΘZ×4 —
-   the label's circle read from the stored start position; the old printed
+1. **A new wire version, only if offline restoration matters.** The live QR
+   codec resolves app executors through `compositional-utils.ts`; it does not
+   reconstruct through the engine executor set. Restoring offline scans for
+   the 4 embed-only records requires a versioned wire representation that
+   carries explicit prefloat type. Compound recipe tags such as
+   `mirrored_inverted` would also be needed for ZLCD/HVJY. Fixing an executor
+   alone cannot make the current flat seed lossless.
+2. **Engine detector classification.** The app detector delegates to
+   `packages/sequence-engine`. On the repaired ZLCD/HVJY payload it reports
+   strict `mirrored`, not stored `mirrored_inverted`. That makes the recipe
+   encoder attempt a plain mirrored reconstruction and fall back to flat.
+   This detector issue is real, but it does not explain the lossy prefloat
+   wire or prove what generated the 2026-05-02 corruption.
+3. **jyC3ji phase (cosmetic, only if asked).** Its repaired word is ΘYΘZ×4.
+   The label's circle reads from the stored start position; the old printed
    label read it from the Z beat. If a physical card's phase must match,
    rotate the beat order + start position (Austen knows the option exists).
-3. **The scheduled audit has not yet had a scheduled run** (registered
-   2026-07-27; first fire 04:30 next morning). Check
-   `parity-audit.log` / that Austen got no spurious alert.
 
 ## Gotchas that cost hours (don't rediscover them)
 
@@ -129,4 +161,5 @@ blobs.
 | Derivation lib (channel-aware floats) | `scripts/migrations/lib/shortcode-derivation.ts` |
 | Repair tools | `scripts/migrations/{relabel-reviewed-shortcode,repair-half-applied-loop-mints,repair-jyc3ji-rotated-loop,rebuild-truncated-shortcode-payloads,backfill-shortcode-words}.ts` |
 | Prefloat guards | `legacy-sequence-codec.ts` (decode), `motion-query-handler.ts` (runtime), derivation lib (strict) |
+| Mint-time blob fidelity | `src/lib/shared/qr/services/short-code-manager.ts` |
 | Scan-card fidelity | `src/lib/shared/qr/services/prefloat-graft.ts`, `src/lib/shared/render/services/warm-sequence-cells.ts` |

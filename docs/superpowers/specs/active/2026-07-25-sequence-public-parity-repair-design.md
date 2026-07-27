@@ -1571,6 +1571,54 @@ Baseline 71 → 62 (all PAYLOAD_INCOMPLETE):
   from the Z beat). Wire cannot carry the pro-floats — blobs dropped,
   embed-only, snapshot omits.
 
+**PICKUP AUDIT + LOCAL MINT ROUND-TRIP GATE (2026-07-27; NOT YET
+DEPLOYED).** A fresh production
+audit after round 3 reported **466 IN_SYNC / 20,174 LABELS_CURRENT / 62
+PAYLOAD_INCOMPLETE / zero actionable**. Both rules suites also passed:
+52 core tests and 26 parity tests. The parity suite now includes the local
+embed-only mint plus matching hash claim. The first scheduled 04:30 audit completed
+with exit 0.
+
+The pickup audit corrected the remaining codec hypothesis. The QR
+compositional codec resolves the APP executors in `compositional-utils.ts`;
+it does not reconstruct through the engine executor set. Its detector does
+delegate to `packages/sequence-engine`, and that detector classifies repaired
+ZLCD/HVJY as strict `mirrored` instead of their stored
+`mirrored_inverted`. The attempted plain-mirrored recipe mismatches and falls
+back to flat. That detector defect is real, but it does not prove the origin
+of the May 2 corrupt mints.
+
+The deeper wire limit affects all four embed-only records. Flat encoding
+stores prefloat rotation and re-derives prefloat type. For these motions that
+changes the derived letter. A rotated recipe for jyC3ji/ZaJWw6 can still pass
+its byte/hash check because both the recipe seed and comparison target use the
+same lossy flat basis; decoding changes Θ to Ω once per repeat. Byte equality
+was therefore not a semantic payload proof.
+
+The local `ShortCodeManager.allocateCode` change closes that mint-time gap.
+After encoding, it decodes the candidate blob, re-derives every letter through
+the runtime motion lookup, and runs strict word derivation. The blob is kept
+only when completeness, exact word, and beat count match the source payload. A
+mismatch or verification failure stores the exact `sequenceData` embed and
+omits `encoded`, matching the repair policy already used for the four records.
+The embedded `word` is stamped from strict source-step derivation, never the
+mutable source word.
+
+An exact runtime-derivation dry run supplied a positive and four negative
+controls. B2ZM's current mirrored recipe re-derived the exact source word and
+passed.
+ZLCD/HVJY fell back to flat and re-derived
+`Λ-γXΔγΛ-γWΣγ` instead of `Λ-γYΘγΛ-γZΩγ`; jyC3ji/ZaJWw6
+produced rotated recipes and re-derived `ΘYΩZ` ×4 instead of `ΘYΘZ` ×4.
+The mint gate accepted B2ZM and rejected all four lossy payloads. Focused QR
+and shortcode tests cover faithful blobs, word-changing blobs, decoder
+failures, incomplete re-derivation, and exact embed fallback: **6 files /
+65 tests passed**.
+
+Offline restoration for the four existing records is now a separate,
+versioned-codec project: carry explicit prefloat type and add compound recipe
+tags. Engine executor changes alone cannot make the current wire lossless.
+
 ## Rollback
 
 - Projection schema 2 fields are additive. Old readers continue to use the
@@ -1840,6 +1888,83 @@ query-based dedup race (transaction + `publicSequenceHashes` claims), the
 owner-write normalizer wiring in `library-repository`, reader migration off the
 bare casts (including the loader-assignment gaps above), rules, corpus repair,
 audit.
+
+## Round 4 — PAYLOAD_INCOMPLETE recovery (Fable 5, 2026-07-27)
+
+The 62 acknowledged PAYLOAD_INCOMPLETE quarantines (blob-only mints whose
+legacy wire slot destroyed the float beats' prefloat information) were
+reduced to **1** by treating the mint-time label as what it provably is for
+this class: a surviving projection of the destroyed letters.
+
+**The measurement that licensed the method** (read-only,
+`scripts/diagnostics/analyze-payload-incomplete-recovery.ts`): across all
+237 witness records carrying BOTH a prefloat-era embed and a legacy blob,
+the canonical alternatives lookup applied to the blob decode reproduced the
+mint-time letter on only **287 of 579** float beats (~50%, same-family bias
+— C→A, R→P, U→S — exactly the bias the review documented). So the lookup
+alone proves nothing; but for every word-labeled quarantined record, the
+strict derivation already spelled the stored label at every derivable beat,
+gaps landing exactly on the floats. Label agreement per beat is therefore
+the proof; the lookup is just the canonical mechanism.
+
+**The repair** (`scripts/migrations/restore-quarantined-shortcode-payloads.ts`,
+60 records): restore the record's embedded payload copy from its own blob
+decode — the dual-source shape every source mint carries — so the embedded
+channel's canonical semantics apply. Float-gap letters resolve through the
+alternatives lookup wherever it matches the label witness; where it
+disagrees, the label's letter is stamped as stored mint testimony
+(`step.letter`). No prefloat fields are invented (era-1 mints never had
+them, and wrong prefloat would alter float rendering via the graft — letters
+alter nothing at runtime). Blobs, `encoderHash`, and hash claims untouched;
+the R2 snapshot was unaffected by these 60. Witness gates, all mechanical:
+
+- *full-label*: token count equals beat count AND every derivable beat
+  matches its token positionally (56 records);
+- *periodic-label*: derivable letters strictly p-periodic and matching the
+  truncated 6-char-era label prefix (7FJ8, CKW8 — stamped L where the
+  lookup guessed J; JXZB needed no stamps and was relabeled to its full
+  expansion through the sanctioned payload-outgrows-label path);
+- *sibling-label*: 0XHN is beat-for-beat signature-identical to the seed
+  half of 5247, whose reviewed full-form label lends the letters; its
+  auto-name was replaced by the derived word.
+
+Records failing any gate are refused and reported RESIDUAL — the tool never
+stamps into a contradiction, a non-float gap, or an unwitnessed position.
+
+**P9LY** was not float damage: its mirrored repeat-2 blue shifts kept the
+seed's ccw rotation (beats 7/8 `pro n→e / e→s ccw` — a rotation/handpath
+combination in no dataframe), the half-applied-mirror family expressed as
+unflipped rotations. `scripts/migrations/repair-p9ly-mirrored-rotations.ts`
+brute-forces {pro,anti}×{cw,ccw} through the canonical matcher per beat,
+found exactly ONE candidate each (`pro/cw`, the mirror-flip of repeat 1's
+`pro/ccw` twins), recomputed the orientation chain (loop closes), and the
+fresh blob round-trips to the label. Blob replaced, claim moved
+559a54bbf942… → dd556e9ac1eb…, R2 snapshot republished.
+
+**Residual quarantine of one:** 3CLR, an Assemble-lab export ("Assemble
+Sequence") whose blue dash-chains over mixed cardinal/intercardinal
+locations against a parked red exist in no pictograph dataframe. It has no
+word and never will; it stays baselined.
+
+**End state, verified 2026-07-27:** backfill dry-run
+20,235 LABELS_CURRENT + 1 PAYLOAD_INCOMPLETE (3CLR); reconcile 466/466
+IN_SYNC; audit exit 0, zero actionable; baseline regenerated to the single
+residual. Every repair wrote a backup manifest
+(`restore-quarantined-payloads-*.json`, `repair-p9ly-*.json`) with the
+previous field values.
+
+**Runtime coda — the letter graft.** The restored letters were invisible to
+/q: the wire carries no letter column, so the runtime lookup re-derived
+float letters through the same ~50%-wrong alternatives guess (0KUH's Z-
+beats displayed as Y-), and the scan-cell warm refused those beats forever
+(`requireComplete`), leaving permanent "!" cells on every affected /q page.
+`prefloat-graft.ts` now also grafts the embedded step's LETTER onto a
+letterless decoded step — same conservative alignment rules as the prefloat
+pair (tail alignment, both channels' motion identity must match, never
+overwrites an existing letter; pinned by 4 new unit tests, 10/10 passing).
+After the graft, a scoped `startScanCellWarm` over the 60 restored codes
+completed 60/60 with 0 failures, and /q/0KUH renders all 16 cells with the
+mint-truth Z- (screenshot-verified, before/after).
 
 ## Primary references
 
