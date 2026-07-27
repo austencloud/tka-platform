@@ -1,0 +1,34 @@
+{
+	"antispindiranimated": {
+		"width": 350,
+		"height": 500
+	},
+	"cateyeanimated": {
+		"width": 500,
+		"height": 200
+	},
+	"extension": {
+		"width": 500,
+		"height": 300
+	},
+	"inspindiranimated": {
+		"width": 350,
+		"height": 500
+	},
+	"isolationanimated": {
+		"width": 500,
+		"height": 278
+	},
+	"pendulum": {
+		"width": 400,
+		"height": 200
+	},
+	"static2": {
+		"width": 480,
+		"height": 417
+	},
+	"triquetraanimated": {
+		"width": 500,
+		"height": 450
+	}
+}

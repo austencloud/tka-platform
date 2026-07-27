@@ -27,16 +27,6 @@ export interface QftSession {
 	/** Continuous position in the eight-step cycle. */
 	cursor: number;
 	playing: boolean;
-	/**
-	 * Show the restored frames on their original white card rather than composed
-	 * into the page.
-	 *
-	 * Additive, so the version stays at v1: a stored payload written before this
-	 * field existed restores with it absent, and absent falls back to the default
-	 * exactly as a fresh session would. Bumping would throw away a session that
-	 * is still entirely valid.
-	 */
-	asPublished: boolean;
 }
 
 const SPINS: Spin[] = ["inspin", "antispin"];
@@ -79,8 +69,7 @@ export function loadQftSession(moveCount: number): QftSession | null {
 			? (s.convention as Convention)
 			: "drex",
 		cursor: num(s.cursor, 0, 8, 0),
-		playing: s.playing !== false,
-		asPublished: s.asPublished === true
+		playing: s.playing !== false
 	};
 }
 

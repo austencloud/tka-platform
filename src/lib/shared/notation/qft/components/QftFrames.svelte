@@ -22,21 +22,19 @@
     /** Current step, 0-7. Frame index is step index. */
     step: number;
     alt: string;
-    /**
-     * Show the frames on their original white card instead of the set composed
-     * into the page. Both are the same drawing — see scripts/compose-qft-frames.mjs
-     * for exactly what the composed set changes and what it leaves alone.
-     */
-    asPublished?: boolean;
   }
 
-  let { stem, step, alt, asPublished = false }: Props = $props();
+  let { stem, step, alt }: Props = $props();
 
   const FRAMES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
-  const variant = $derived(asPublished ? "" : "-ink");
-
-  const srcFor = (i: number) => `/qft-frames/${stem}/${i}${variant}.webp`;
+  /*
+   * As published, on the paper they were printed on. These were briefly
+   * recoloured to sit on the dark page; that is gone. They are archival
+   * material and now live in an archive view, where the white card is the
+   * honest presentation rather than an eyesore in the middle of the app.
+   */
+  const srcFor = (i: number) => `/qft-frames/${stem}/${i}.webp`;
 
   let imgs = $state<Array<HTMLImageElement | null>>([]);
 
@@ -59,7 +57,7 @@
   });
 </script>
 
-<div class="frames" class:card={asPublished}>
+<div class="frames">
   {#each FRAMES as i (i)}
     <img
       bind:this={imgs[i]}
@@ -74,35 +72,18 @@
 
 <style>
   /*
-   * Grid-stacked so all nine occupy one cell. The box is sized by the frames
-   * themselves and never changes as the step advances, so nothing below it
-   * moves during playback.
-   */
-  /*
-   * Explicit single track, and items stretch rather than centre. With
-   * `place-items: center` the images are not stretched, so their `height: 100%`
-   * has no definite grid area to resolve against, falls back to the frame's
-   * natural size, and overflows any box smaller than the source image.
-   * `object-fit` does the centring anyway.
+   * Grid-stacked so all nine occupy one cell. Every frame of an animation is the
+   * same size, so the cell never changes as the step advances and nothing below
+   * it moves during playback.
+   *
+   * The card takes its height from the drawing rather than the other way round.
+   * The frames are whole and uncropped now and their proportions differ wildly —
+   * 500x200 through 350x500 — so forcing them all into one fixed box left most
+   * of them as a small drawing marooned in a wide white field.
    */
   .frames {
     display: grid;
-    /*
-     * minmax(0, 1fr), not 1fr: a grid track's automatic minimum is the item's
-     * min-content size, so a plain 1fr grows to the source image's natural
-     * height and the frame overflows any box smaller than the original file.
-     */
-    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     width: 100%;
-    height: 100%;
-  }
-
-  /*
-   * Only the published view wears the paper. Composed frames carry their own
-   * alpha, so a card behind them would put back the exact white rectangle the
-   * compositing exists to remove.
-   */
-  .frames.card {
     border-radius: 0.5rem;
     background: #fff;
     padding: 0.75rem;
@@ -111,20 +92,12 @@
   img {
     grid-area: 1 / 1;
     /*
-     * Fill the card rather than merely fit inside it. These are small source
-     * images — 421x265 at the largest — and capping them at their natural size
-     * leaves the drawing as a speck in a white field on a big screen.
+     * Fill the width the plate is given and take whatever height that implies.
+     * These are small source files — 500px at the widest — so capping them at
+     * natural size leaves the drawing as a speck on a big screen.
      */
     width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    /*
-     * The crops are truthful to the drawings rather than squared, so widths and
-     * heights vary per animation. object-fit lets the page give every one the
-     * same square box without distorting any of them.
-     */
-    object-fit: contain;
+    height: auto;
     opacity: 0;
   }
 

@@ -9,8 +9,12 @@
 All six dated items below were addressed. Read the rest for the reasoning; it
 still describes why each change was made. What changed against this document:
 
-1. **White card** — composed by default, `As published` toggle, per Austen's
-   call. Build step: `scripts/compose-qft-frames.mjs`.
+1. **White card** — resolved by removing the diagrams from the main flow
+   entirely rather than by recolouring them. They were briefly composed onto
+   the dark page behind a toggle; Austen's call was that they are archival
+   material and belong on their paper, whole. They now live in an archive view,
+   as published, uncropped, credited to Drex. `scripts/publish-qft-frames.mjs`
+   is the shipping path.
 2. **Linear motion** — corrected in framing. A steady spin IS constant
    velocity; easing each increment would invent a stutter. Play, pause and
    scrub were the snaps, and those now have weight.
@@ -24,11 +28,11 @@ its shell.
 
 - The marketing-shell fight, unchanged and still Austen's call (below).
 - Six of eight moves still have no quoted passage. Source work.
-- `antispindiranimated` ships with the source's own notation strip baked into
-  the crop, below the diagram like `triquetraanimated`. Composing made it more
-  legible, where it now competes with the page's live table. Left alone because
-  hard constraint 6 says leave the crops; adding a third explicit `BOTTOM_EDGE`
-  is the fix if Austen wants it gone.
+- Cropping is no longer used for anything that ships, which retires hard
+  constraint 6 for the shipping path: `publish-qft-frames.mjs` takes every frame
+  at full source size, panels and captions included, because an archive shows
+  the artifact as posted. `extract-qft-frames.mjs` and its documented edge cases
+  still feed the private archive — leave those alone.
 - Instrument mode got the slider and the new table but not the composition
   pass; it still centres a title over an off-centre stage.
 

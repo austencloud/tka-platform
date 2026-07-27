@@ -73,14 +73,6 @@
   const pos = $derived(((cursor % 8) + 8) % 8);
 
   /*
-   * Composed by default: the restored drawings are keyed off their white card
-   * and re-inked so they sit in the page rather than on it. The published card
-   * stays one click away, because a page whose claim is faithful restoration
-   * cannot make a recoloured artifact the only version it offers.
-   */
-  let asPublished = $state(restored?.asPublished ?? false);
-
-  /*
    * Indexing is possibly-undefined under strict index access, and the guide is
    * meaningless without a move, so the fallback is the first entry rather than
    * a nullable that every consumer then has to guard.
@@ -198,8 +190,7 @@
     convention,
     /* Normalised: the raw cursor runs unbounded while playing and negative mid-scrub. */
     cursor: pos,
-    playing,
-    asPublished
+    playing
   });
 
   /*
@@ -217,8 +208,7 @@
       phase,
       pendulum,
       convention,
-      playing,
-      asPublished
+      playing
     ];
     saveQftSession(snapshot());
   });
@@ -301,17 +291,6 @@
   const SPIN_OPTIONS: Array<{ value: Spin; label: string }> = [
     { value: "inspin", label: "Inspin" },
     { value: "antispin", label: "Antispin" }
-  ];
-
-  /*
-   * States what each option does to the artifact, and nothing about which is
-   * better. Composed is the default because that is how the frames sit in the
-   * page; the published card stays available because a page whose claim is
-   * restoration cannot make a recoloured artifact its only version.
-   */
-  const RENDERING = [
-    { value: "composed", label: "Composed" },
-    { value: "published", label: "As published" }
   ];
 
   const CONVENTION_OPTIONS: Array<{ value: Convention; label: string }> = [
@@ -486,24 +465,14 @@
       <div>
         <h2>The 2011 diagrams</h2>
         <p class="archive-note">
-          From Drex's <a
+          By Drex, from <a
             href="https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
             rel="noreferrer"
             target="_blank">A Beginner's Guide to Prop QFT Notation</a
-          >, where they are still served. The forum copy of the same post lost every image. The
-          article does not say who drew them.
+          >, where they are still served. The forum copy of the same post lost every image.
         </p>
       </div>
       <div class="archive-controls">
-        <div class="fit">
-          <SegmentedControl
-            options={RENDERING}
-            value={asPublished ? "published" : "composed"}
-            onchange={(v) => (asPublished = v === "published")}
-            size="sm"
-            ariaLabel="Rendering of the restored frames"
-          />
-        </div>
         <button type="button" class="close" onclick={() => (showArchive = false)}>Close</button>
       </div>
     </header>
@@ -512,12 +481,7 @@
       {#each GUIDE_MOVES as m (m.id)}
         <figure class:current={m.id === move.id}>
           <div class="archive-box" style={`--aspect: ${m.aspect}`}>
-            <QftFrames
-              stem={m.stem}
-              {step}
-              {asPublished}
-              alt={`${m.title}, as published in Drex's 2011 guide`}
-            />
+            <QftFrames stem={m.stem} {step} alt={`${m.title}, as published in Drex's 2011 guide`} />
           </div>
           <figcaption>{m.title}</figcaption>
         </figure>
@@ -822,9 +786,13 @@
     font-size: clamp(1.4rem, 1rem + 1vw, 2.4rem);
   }
 
+  /*
+   * No reading cap. A 46rem measure broke this two-sentence credit line mid
+   * phrase with most of the row still empty beside it
+   * (memory: feedback_no_text_max_width).
+   */
   .archive-note {
     margin: 0;
-    max-width: 46rem;
     font-size: 0.85rem;
     line-height: 1.55;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.68));
@@ -860,6 +828,8 @@
   .archive-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Plates are different heights now; they hang from a shared top edge. */
+    align-items: start;
     gap: clamp(1rem, 2vw, 2rem);
     max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
@@ -882,13 +852,12 @@
   }
 
   /*
-   * Block, not a centring grid. With `place-items: center` the frames child is
-   * not stretched, so its `height: 100%` had no definite box to resolve
-   * against and every drawing rendered at its natural size, overflowing the
-   * cell and colliding with its neighbours.
+   * No height: the plate is as tall as its drawing. These are archival
+   * materials of eight different shapes, and a single fixed box turned most of
+   * them into a small figure adrift in white.
    */
   .archive-box {
-    height: clamp(9rem, 22vh, 20rem);
+    display: block;
   }
 
   .archive-grid figcaption {
