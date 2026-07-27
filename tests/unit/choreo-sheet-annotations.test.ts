@@ -8,9 +8,13 @@ import {
 } from "$lib/features/write/domain/types/choreo-sheet";
 
 describe("choreo-sheet annotations model", () => {
-  it("bandKey composes sequenceId + rowInSequence", () => {
-    expect(bandKey("abc", 0)).toBe("abc:0");
-    expect(bandKey("abc", 2)).toBe("abc:2");
+  it("bandKey composes rosterIndex + sequenceId + rowInSequence", () => {
+    expect(bandKey(0, "abc", 0)).toBe("0:abc:0");
+    expect(bandKey(0, "abc", 2)).toBe("0:abc:2");
+  });
+
+  it("bandKey separates two roster rows holding the same sequence", () => {
+    expect(bandKey(0, "abc", 0)).not.toBe(bandKey(1, "abc", 0));
   });
 
   it("createEmptyAnnotations has empty cues/notes and a header with title block on", () => {
@@ -59,22 +63,30 @@ describe("annotation editing on the state factory", () => {
 
   it("addNote then setNote then removeNote round-trips", () => {
     const s = makeState();
-    const id = s.addNote("x:0", 5);
+    const id = s.addNote("x", 4, true);
     expect(s.sheet.annotations.notes).toHaveLength(1);
+    expect(s.sheet.annotations.notes[0]).toMatchObject({ sequenceId: "x", stepIndex: 4, pinned: true });
     s.setNote(id, { text: "pack bags" });
     expect(s.sheet.annotations.notes[0].text).toBe("pack bags");
     s.removeNote(id);
     expect(s.sheet.annotations.notes).toHaveLength(0);
   });
 
-  it("setCue upserts a cue by band key", () => {
+  it("setCue upserts by (sequence, step) — a second patch edits, not appends", () => {
     const s = makeState();
-    s.setCue("x:1", { timestamp: "0:08", text: "drop" });
+    s.setCue("x", 8, { timestamp: "0:08", text: "drop" });
     expect(s.sheet.annotations.cues).toHaveLength(1);
-    s.setCue("x:1", { text: "drop harder" });
+    s.setCue("x", 8, { text: "drop harder" });
     expect(s.sheet.annotations.cues).toHaveLength(1);
     expect(s.sheet.annotations.cues[0].text).toBe("drop harder");
     expect(s.sheet.annotations.cues[0].timestamp).toBe("0:08");
+  });
+
+  it("setCue keeps cues on different steps of the same sequence apart", () => {
+    const s = makeState();
+    s.setCue("x", 0, { text: "verse" });
+    s.setCue("x", 8, { text: "drop" });
+    expect(s.sheet.annotations.cues.map((c) => c.text)).toEqual(["verse", "drop"]);
   });
 });
 
@@ -110,5 +122,46 @@ describe("choreo-sheet persistence back-compat", () => {
     expect(sheet.annotations.cues[0].text).toBe("hi");
     expect(sheet.layout.packing).toBe("aligned");
     expect(sheet.bpm).toBe(120);
+  });
+
+  it("migrates band-relative annotations onto absolute steps using the SAVED columns", () => {
+    // The doc's own layout is the only surviving record of the width its
+    // annotations were written against, so the conversion happens on load.
+    const saved = {
+      id: "s3", name: "Legacy notes", ownerId: "u1", sequenceIds: ["a"],
+      layout: { columns: 4, rowsPerPage: 3, paperSize: "letter", orientation: "landscape", packing: "aligned", showStepNumbers: true, groupSeparator: "rule", keepBlocksTogether: true, showCueRail: true, showNoteStrips: true },
+      annotations: {
+        cues: [{ band: "a:2", timestamp: "0:16", text: "drop" }],
+        notes: [
+          { id: "n1", band: "a:1", count: 3, text: "left thumb roll" },
+          { id: "n2", band: "a:1", count: null, text: "breathe" },
+        ],
+        header: { showTitleBlock: true },
+      },
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    const sheet = parseChoreoSheet(saved);
+
+    // 4 columns: band 2 starts at step 8; band 1 count 3 is step 4+2 = 6.
+    expect(sheet.annotations.cues[0]).toMatchObject({ sequenceId: "a", stepIndex: 8, text: "drop" });
+    expect(sheet.annotations.notes[0]).toMatchObject({ sequenceId: "a", stepIndex: 6, pinned: true });
+    // A bullet had no column, so it anchors to its row's first step.
+    expect(sheet.annotations.notes[1]).toMatchObject({ stepIndex: 4, pinned: false });
+  });
+
+  it("leaves already-migrated annotations alone", () => {
+    const current = {
+      id: "s4", name: "Current", ownerId: "u1", sequenceIds: ["a"],
+      layout: { columns: 8, rowsPerPage: 6, paperSize: "letter", orientation: "landscape", packing: "aligned", showStepNumbers: true, groupSeparator: "rule", keepBlocksTogether: true, showCueRail: true, showNoteStrips: true },
+      annotations: {
+        cues: [{ sequenceId: "a", stepIndex: 3, timestamp: "0:03", text: "hit" }],
+        notes: [{ id: "n1", sequenceId: "a", stepIndex: 9, pinned: true, text: "roll" }],
+        header: { showTitleBlock: true },
+      },
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    const sheet = parseChoreoSheet(current);
+    expect(sheet.annotations.cues[0]).toMatchObject({ stepIndex: 3, text: "hit" });
+    expect(sheet.annotations.notes[0]).toMatchObject({ stepIndex: 9, pinned: true });
   });
 });

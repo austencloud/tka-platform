@@ -14,22 +14,46 @@ export type SheetOrientation = "landscape" | "portrait";
 export type SheetPacking = "flow" | "aligned";
 export type GroupSeparator = "rule" | "gap" | "none";
 
-/** Stable per-band anchor: which sequence, and which of its wrapped rows. */
+/**
+ * Per-band render identity: which roster row, which sequence, which wrapped row.
+ *
+ * DERIVED, never persisted on an annotation. `rowInSequence` is a function of
+ * `layout.columns`, so a band key means a different set of steps at every
+ * pictograph size. Annotations address steps absolutely (see below) and the
+ * planner derives the band at render time.
+ *
+ * `rosterIndex` leads because a roster may legitimately list the SAME sequence
+ * twice. Keying on `sequenceId:row` alone made those two occurrences collide,
+ * and the keyed `{#each}` over bands threw `each_key_duplicate` — which killed
+ * the reactive update and froze the preview mid-render.
+ */
 export type BandKey = string;
-export function bandKey(sequenceId: string, rowInSequence: number): BandKey {
-  return `${sequenceId}:${rowInSequence}`;
+export function bandKey(rosterIndex: number, sequenceId: string, rowInSequence: number): BandKey {
+  return `${rosterIndex}:${sequenceId}:${rowInSequence}`;
 }
 
+/**
+ * Annotations anchor to an ABSOLUTE step, never to a band.
+ *
+ * These were once keyed by `band` + `count`, which chunked at `layout.columns`.
+ * Changing the pictograph size re-chunked every band, so a note pinned to step
+ * 13 silently became a full-width bullet and a BPM-prefilled cue kept a
+ * timestamp computed for a different step. `stepIndex` is an index into the
+ * sequence's own steps, so it survives every layout change; `planBands` derives
+ * `(band, count)` from it at render time.
+ */
 export interface CueMark {
-  band: BandKey;
+  sequenceId: string;
+  stepIndex: number; // absolute index into the sequence's steps
   timestamp: string; // "0:42" — user-editable, BPM-prefilled
   text: string; // lyric / musical cue
 }
 
 export interface NoteMark {
   id: string; // stable id for edit/remove
-  band: BandKey;
-  count: number | null; // 1..columns to pin under a column; null = full-width bullet
+  sequenceId: string;
+  stepIndex: number; // absolute index into the sequence's steps
+  pinned: boolean; // true = under that step's column; false = full-width bullet
   text: string;
 }
 

@@ -38,13 +38,18 @@
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
-  import type { SheetPage, SheetCell, SheetBand, SheetBandPage } from "../../services/sheet-row-planner";
+  import type {
+    SheetPage,
+    SheetCell,
+    SheetBand,
+    SheetBandPage,
+    ResolvedNote,
+  } from "../../services/sheet-row-planner";
   import type { SheetPageGeometry } from "../../domain/sheet-page-layout";
   import type {
     ChoreoSheetLayout,
     ChoreoSheetAnnotations,
     SheetHeader,
-    NoteMark,
   } from "../../domain/types/choreo-sheet";
   import { SHEET_CELL_VISIBILITY } from "../../services/sheet-cell-config";
 
@@ -83,8 +88,12 @@
     annotations?: ChoreoSheetAnnotations;
     /** The act/sheet name, shown in the page-1 title block. */
     sheetName?: string;
-    onSetCue?: (band: string, patch: { timestamp?: string; text?: string }) => void;
-    onAddNote?: (band: string, count: number | null) => string;
+    onSetCue?: (
+      sequenceId: string,
+      stepIndex: number,
+      patch: { timestamp?: string; text?: string }
+    ) => void;
+    onAddNote?: (sequenceId: string, stepIndex: number, pinned: boolean) => string;
     onSetNote?: (id: string, patch: { text?: string }) => void;
     onRemoveNote?: (id: string) => void;
     onSetHeader?: (patch: Partial<SheetHeader>) => void;
@@ -118,15 +127,37 @@
   // Column indices for the note-strip's per-count add affordances.
   const columnIndexes = $derived(Array.from({ length: geo.columns }, (_, i) => i));
 
-  // A note pins under a column only when its count addresses an existing cell
-  // (1..cells.length); otherwise (null, < 1, or past a short last row) it reads as
-  // a full-width bullet. Predicate matches the PDF exporter's exactly so a note
-  // never classifies differently on screen vs paper.
-  function pinnedNotes(band: SheetBand): NoteMark[] {
-    return band.notes.filter((n) => n.count != null && n.count >= 1 && n.count <= band.cells.length);
+  // `count` is resolved by the planner from the note's absolute step index, so
+  // both branches read the same derived value the PDF exporter reads — a note
+  // can never classify differently on screen vs paper. A null count is a
+  // full-width bullet (unpinned, or anchored past a shortened sequence).
+  function pinnedNotes(band: SheetBand): ResolvedNote[] {
+    return band.notes.filter((n) => n.count != null);
   }
-  function bulletNotes(band: SheetBand): NoteMark[] {
-    return band.notes.filter((n) => n.count == null || n.count < 1 || n.count > band.cells.length);
+  function bulletNotes(band: SheetBand): ResolvedNote[] {
+    return band.notes.filter((n) => n.count == null);
+  }
+
+  /**
+   * The rail's editable slots for a band.
+   *
+   * Always at least one — anchored to the band's first step, so an un-cued band
+   * still offers somewhere to type. Widening the pictograph size merges two rows
+   * into one band, and each merged row's cue keeps its own slot rather than one
+   * of them silently vanishing; extras carry the count they sit on so it's
+   * obvious why the band has two.
+   */
+  function railSlots(band: SheetBand) {
+    const primary = band.cues.find((c) => c.stepIndex === band.firstStepIndex) ?? null;
+    const extras = band.cues.filter((c) => c.stepIndex !== band.firstStepIndex);
+    return [
+      { stepIndex: band.firstStepIndex, cue: primary, count: 0 },
+      ...extras.map((c) => ({
+        stepIndex: c.stepIndex,
+        cue: c,
+        count: c.stepIndex - band.firstStepIndex + 1,
+      })),
+    ];
   }
 
   // PictographContainer takes a boolean showHandPoints; the locked config carries
@@ -399,7 +430,7 @@
                     ? ` — ${header.songArtist}`
                     : ""}</span
                 >
-                <span class="ts">page starts {page.bands[0]?.cue?.timestamp || "—"}</span>
+                <span class="ts">page starts {page.bands[0]?.cues[0]?.timestamp || "—"}</span>
                 <span class="pageno">{page.pageIndex + 1}</span>
               </div>
             {/if}
@@ -414,21 +445,36 @@
                 >
                   {#if layout.showCueRail}
                     <div class="rail">
-                      <input
-                        class="ts-input"
-                        value={band.cue?.timestamp ?? ""}
-                        placeholder="0:00"
-                        aria-label="Cue timestamp"
-                        oninput={(e) => onSetCue?.(band.key, { timestamp: e.currentTarget.value })}
-                      />
-                      <textarea
-                        class="cue-input"
-                        rows="1"
-                        value={band.cue?.text ?? ""}
-                        placeholder="cue…"
-                        aria-label="Cue text"
-                        oninput={(e) => onSetCue?.(band.key, { text: e.currentTarget.value })}
-                      ></textarea>
+                      {#each railSlots(band) as slot (slot.stepIndex)}
+                        <div class="rail-slot">
+                          {#if slot.count > 0}
+                            <span class="rail-count" aria-hidden="true">·{slot.count}</span>
+                          {/if}
+                          <input
+                            class="ts-input"
+                            value={slot.cue?.timestamp ?? ""}
+                            placeholder="0:00"
+                            aria-label={slot.count > 0
+                              ? `Cue timestamp at count ${slot.count}`
+                              : "Cue timestamp"}
+                            oninput={(e) =>
+                              onSetCue?.(band.sequenceId, slot.stepIndex, {
+                                timestamp: e.currentTarget.value,
+                              })}
+                          />
+                          <textarea
+                            class="cue-input"
+                            rows="1"
+                            value={slot.cue?.text ?? ""}
+                            placeholder="cue…"
+                            aria-label={slot.count > 0 ? `Cue text at count ${slot.count}` : "Cue text"}
+                            oninput={(e) =>
+                              onSetCue?.(band.sequenceId, slot.stepIndex, {
+                                text: e.currentTarget.value,
+                              })}
+                          ></textarea>
+                        </div>
+                      {/each}
                     </div>
                   {/if}
                   <div class="band-body">
@@ -514,7 +560,7 @@
                               type="button"
                               class="add-col"
                               aria-label={`Add note under count ${ci + 1}`}
-                              onclick={() => onAddNote?.(band.key, ci + 1)}
+                              onclick={() => onAddNote?.(band.sequenceId, band.firstStepIndex + ci, true)}
                             ></button>
                           {/each}
                         </div>
@@ -565,7 +611,7 @@
                           <button
                             type="button"
                             class="add-note"
-                            onclick={() => onAddNote?.(band.key, null)}
+                            onclick={() => onAddNote?.(band.sequenceId, band.firstStepIndex, false)}
                           >
                             <i class="fa-solid fa-plus" aria-hidden="true"></i> note
                           </button>
@@ -1040,6 +1086,30 @@
     justify-content: center;
     padding-right: calc(6 * var(--pt));
     border-right: 1px solid var(--print-border-faint, rgba(0, 0, 0, 0.06));
+  }
+  /* One slot per cue. A band usually holds exactly one, so a lone slot is
+     visually identical to the single-cue rail it replaced; the gap and the
+     count marker only appear once a merged band actually stacks two. */
+  .rail-slot {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .rail-slot + .rail-slot {
+    margin-top: calc(5 * var(--pt));
+    padding-top: calc(5 * var(--pt));
+    border-top: 1px dashed var(--print-border-faint, rgba(0, 0, 0, 0.06));
+  }
+  .rail-count {
+    position: absolute;
+    top: calc(4 * var(--pt));
+    right: 0;
+    font-family: Georgia, serif;
+    font-size: calc(7.5 * var(--pt));
+    font-variant-numeric: tabular-nums;
+    color: var(--print-ink-soft);
+    opacity: 0.65;
+    pointer-events: none;
   }
   .ts-input {
     font-family: Georgia, serif;

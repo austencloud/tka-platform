@@ -78,14 +78,30 @@ export function planSheet(
   return pages;
 }
 
+/**
+ * A note with its column resolved against THIS layout. `count` is derived from
+ * the note's absolute `stepIndex`, never stored — see `choreo-sheet.ts`.
+ * `count: null` renders as a full-width bullet.
+ */
+export interface ResolvedNote extends NoteMark {
+  count: number | null;
+}
+
 export interface SheetBand {
   key: BandKey;
   sequenceId: string;
   rowInSequence: number;
   cells: SheetCell[]; // ≤ columns; short last row NOT cross-padded
-  cue: CueMark | null;
-  notes: NoteMark[];
+  /**
+   * Every cue anchored inside this band's step range, earliest first.
+   * Usually 0 or 1 — but widening the pictograph size merges two rows into one
+   * band, and both their cues are real. They stack in the rail rather than one
+   * of them silently disappearing.
+   */
+  cues: CueMark[];
+  notes: ResolvedNote[];
   isSequenceStart: boolean;
+  firstStepIndex: number; // index of this band's first step WITHIN its sequence
   firstBeatIndex: number; // running step index across the sheet, for BPM prefill
   heightPt: number;
 }
@@ -106,32 +122,85 @@ export interface BandPlanInput {
 // Base band height: pictograph row + note strip + inter-band gutter. Grows in
 // half-line steps when a strip holds a full-width bullet + pinned rows that would
 // exceed one line; kept simple here (bullets and pins each cost one line).
-function estimateBandHeight(geo: SheetPageGeometry, notes: NoteMark[]): number {
+// Extra stacked cues (a merged band) cost a line each in the rail, which is only
+// taller than the pictograph row once several pile up.
+function estimateBandHeight(
+  geo: SheetPageGeometry,
+  notes: readonly ResolvedNote[],
+  cueCount: number
+): number {
   const noteLines = notes.length === 0 ? 0 : Math.max(1, notes.length);
   const stripHeight = geo.stripBaseHeightPt > 0 ? Math.max(geo.stripBaseHeightPt, noteLines * geo.stripBaseHeightPt) : 0;
-  return geo.cellSizePt + stripHeight + geo.interBandGutterPt;
+  const railHeight = cueCount > 1 ? cueCount * geo.railLineHeightPt : 0;
+  return Math.max(geo.cellSizePt, railHeight) + stripHeight + geo.interBandGutterPt;
+}
+
+/**
+ * Which row of its sequence a given absolute step falls on, at this layout.
+ *
+ * A step past the end of the sequence (an annotation left behind when the
+ * sequence was shortened, or a legacy note whose column ran off a short last
+ * row) clamps to the final row instead of vanishing — the annotation stays
+ * visible as a bullet and the user can see it needs re-placing.
+ */
+function rowForStep(stepIndex: number, stepCount: number, columns: number): number {
+  const lastRow = Math.max(0, Math.ceil(stepCount / columns) - 1);
+  return Math.min(Math.floor(Math.max(0, stepIndex) / columns), lastRow);
 }
 
 export function planBands(input: BandPlanInput): SheetBandPage[] {
   const { sequences, geo, cues, notes } = input;
   const columns = geo.columns;
-  const cueByBand = new Map(cues.map((c) => [c.band, c]));
-  const notesByBand = new Map<BandKey, NoteMark[]>();
+
+  // Every annotation resolves from its absolute step against THIS layout.
+  // Nothing is stored band-relative, so changing `columns` simply re-derives the
+  // placement — a note keeps addressing the same step at every pictograph size.
+  const stepCounts = new Map(sequences.map((s) => [s.id, (s.steps ?? []).length]));
+
+  // Resolution is per SEQUENCE (an annotation belongs to the sequence), while
+  // band identity is per ROSTER ROW. A roster listing the same sequence twice
+  // therefore shows its annotations on both occurrences — they describe that
+  // sequence, so both are true — without the two rows sharing a render key.
+  const cuesBySequence = new Map<string, CueMark[]>();
+  for (const c of cues) {
+    if (!stepCounts.has(c.sequenceId)) continue; // cue for a sequence no longer on the sheet
+    const list = cuesBySequence.get(c.sequenceId) ?? [];
+    list.push(c);
+    cuesBySequence.set(c.sequenceId, list);
+  }
+
+  const notesBySequence = new Map<string, NoteMark[]>();
   for (const n of notes) {
-    const list = notesByBand.get(n.band) ?? [];
+    if (!stepCounts.has(n.sequenceId)) continue; // note for a sequence no longer on the sheet
+    const list = notesBySequence.get(n.sequenceId) ?? [];
     list.push(n);
-    notesByBand.set(n.band, list);
+    notesBySequence.set(n.sequenceId, list);
   }
 
   // 1. Row-aligned bands: each sequence chunked into rows of `columns`.
   const bands: SheetBand[] = [];
   let beatIndex = 0;
-  for (const seq of sequences) {
+  for (const [rosterIndex, seq] of sequences.entries()) {
     const steps = seq.steps ?? [];
+    const stepCount = steps.length;
+    const seqCues = cuesBySequence.get(seq.id) ?? [];
+    const seqNotes = notesBySequence.get(seq.id) ?? [];
+
     for (let row = 0, s = 0; s < steps.length; row++, s += columns) {
       const slice = steps.slice(s, s + columns);
-      const key = bandKey(seq.id, row);
-      const bandNotes = notesByBand.get(key) ?? [];
+      const key = bandKey(rosterIndex, seq.id, row);
+      const bandCues = seqCues
+        .filter((c) => rowForStep(c.stepIndex, stepCount, columns) === row)
+        .sort((a, b) => a.stepIndex - b.stepIndex);
+      const bandNotes = seqNotes
+        .filter((n) => rowForStep(n.stepIndex, stepCount, columns) === row)
+        .sort((a, b) => a.stepIndex - b.stepIndex)
+        .map((n) => {
+          // Pin under the step's column, but only while the step is real and
+          // pinning was asked for; anything else reads as a full-width bullet.
+          const inRange = n.stepIndex >= 0 && n.stepIndex < stepCount;
+          return { ...n, count: n.pinned && inRange ? n.stepIndex - row * columns + 1 : null };
+        });
       const cells: SheetCell[] = slice.map((step, i) => ({
         step,
         isBlank: false,
@@ -143,11 +212,12 @@ export function planBands(input: BandPlanInput): SheetBandPage[] {
         sequenceId: seq.id,
         rowInSequence: row,
         cells,
-        cue: cueByBand.get(key) ?? null,
+        cues: bandCues,
         notes: bandNotes,
         isSequenceStart: row === 0,
+        firstStepIndex: s,
         firstBeatIndex: beatIndex + s,
-        heightPt: estimateBandHeight(geo, bandNotes),
+        heightPt: estimateBandHeight(geo, bandNotes, bandCues.length),
       });
     }
     beatIndex += steps.length;

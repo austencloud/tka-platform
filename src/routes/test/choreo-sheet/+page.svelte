@@ -11,16 +11,19 @@
   metadata, then loadFullSequenceData per word for populated steps).
 -->
 <script lang="ts">
-  import { planSheet } from "$lib/features/write/services/sheet-row-planner";
+  import { planSheet, planBands } from "$lib/features/write/services/sheet-row-planner";
   import { getSheetPageLayout } from "$lib/features/write/domain/sheet-page-layout";
-  import { DEFAULT_SHEET_LAYOUT, createEmptyChoreoSheet } from "$lib/features/write/domain/types/choreo-sheet";
+  import {
+    DEFAULT_SHEET_LAYOUT,
+    createEmptyChoreoSheet,
+    createEmptyAnnotations,
+    type CueMark,
+    type NoteMark,
+  } from "$lib/features/write/domain/types/choreo-sheet";
   import { downloadChoreoSheetPDF } from "$lib/features/write/services/sheet-pdf-exporter";
   import SheetPreviewPages from "$lib/features/write/components/sheet/SheetPreviewPages.svelte";
   import { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-
-  const layout = DEFAULT_SHEET_LAYOUT;
-  const geo = getSheetPageLayout(layout);
 
   let sequences = $state<SequenceData[]>([]);
   let status = $state("Idle — click Load Sequences.");
@@ -28,7 +31,65 @@
   let isExporting = $state(false);
   let exportProgress = $state<{ done: number; total: number } | null>(null);
 
+  // ── Annotated-branch controls ──────────────────────────────────────────────
+  // Columns is the knob that used to break annotations: it re-chunks every band,
+  // so a note stored band-relative moved (or unpinned) when it changed. Notes and
+  // cues now address an absolute step, so flipping this must leave them on the
+  // same pictograph. Flip between 4/6/8 and watch them hold.
+  let annotated = $state(false);
+  let columns = $state(8);
+
+  const COLUMN_ROWS: Record<number, number> = { 4: 3, 6: 4, 8: 6 };
+
+  const layout = $derived({
+    ...DEFAULT_SHEET_LAYOUT,
+    columns,
+    rowsPerPage: COLUMN_ROWS[columns] ?? 6,
+    packing: annotated ? ("aligned" as const) : ("flow" as const),
+    showCueRail: annotated,
+    showNoteStrips: annotated,
+  });
+  const geo = $derived(getSheetPageLayout(layout));
+
+  let cues = $state<CueMark[]>([]);
+  let notes = $state<NoteMark[]>([]);
+
   const pages = $derived(planSheet(sequences, layout));
+  const bandPages = $derived(annotated ? planBands({ sequences, geo, cues, notes }) : []);
+  const annotations = $derived({ ...createEmptyAnnotations(), cues, notes });
+
+  // Seed annotations on the first loaded sequence at absolute steps, including
+  // two cues four steps apart — at 8 columns they share one band and the rail
+  // has to stack them rather than drop one.
+  function seedAnnotations() {
+    const first = sequences[0];
+    if (!first) return;
+    cues = [
+      { sequenceId: first.id, stepIndex: 0, timestamp: "0:00", text: "verse" },
+      { sequenceId: first.id, stepIndex: 4, timestamp: "0:04", text: "drop" },
+    ];
+    notes = [
+      { id: "n1", sequenceId: first.id, stepIndex: 4, pinned: true, text: "left thumb roll" },
+      { id: "n2", sequenceId: first.id, stepIndex: 6, pinned: true, text: "pass behind" },
+      { id: "n3", sequenceId: first.id, stepIndex: 0, pinned: false, text: "breathe here" },
+    ];
+    annotated = true;
+    status = "Seeded 2 cues + 3 notes on the first sequence. Flip columns — they stay on their steps.";
+  }
+
+  const setCue = (sequenceId: string, stepIndex: number, patch: Partial<CueMark>) => {
+    const i = cues.findIndex((c) => c.sequenceId === sequenceId && c.stepIndex === stepIndex);
+    if (i === -1) cues = [...cues, { sequenceId, stepIndex, timestamp: "", text: "", ...patch }];
+    else cues = cues.map((c, j) => (j === i ? { ...c, ...patch } : c));
+  };
+  const addNote = (sequenceId: string, stepIndex: number, pinned: boolean) => {
+    const id = crypto.randomUUID();
+    notes = [...notes, { id, sequenceId, stepIndex, pinned, text: "" }];
+    return id;
+  };
+  const setNote = (id: string, patch: { text?: string }) =>
+    (notes = notes.map((n) => (n.id === id ? { ...n, ...patch } : n)));
+  const removeNote = (id: string) => (notes = notes.filter((n) => n.id !== id));
 
   async function loadSequences() {
     if (isLoading) return;
@@ -106,6 +167,9 @@
     <p class="meta">
       {sequences.length} sequences → {pages.length} page(s) · cell {geo.cellSizePt.toFixed(1)}pt
       ({geo.columns}×{geo.rows} per page)
+      {#if sequences.length}
+        · ids: {sequences.map((s) => s.id ?? "∅").join(", ")}
+      {/if}
     </p>
     <div class="controls">
       <button onclick={loadSequences} disabled={isLoading}>
@@ -120,11 +184,39 @@
           Export PDF
         {/if}
       </button>
+      <button onclick={seedAnnotations} disabled={sequences.length === 0}>Seed annotations</button>
+      <button onclick={() => (annotated = !annotated)} disabled={sequences.length === 0}>
+        {annotated ? "Annotated" : "Study"} view
+      </button>
+      {#each [4, 6, 8] as c (c)}
+        <button
+          class:active={columns === c}
+          onclick={() => (columns = c)}
+          disabled={sequences.length === 0}
+        >
+          {c} cols
+        </button>
+      {/each}
     </div>
     <p class="status">{status}</p>
   </header>
 
-  <SheetPreviewPages {pages} {geo} {layout} />
+  {#if annotated}
+    <SheetPreviewPages
+      {pages}
+      {geo}
+      {layout}
+      {bandPages}
+      {annotations}
+      sheetName="Harness"
+      onSetCue={setCue}
+      onAddNote={addNote}
+      onSetNote={setNote}
+      onRemoveNote={removeNote}
+    />
+  {:else}
+    <SheetPreviewPages {pages} {geo} {layout} />
+  {/if}
 </div>
 
 <style>
@@ -175,6 +267,11 @@
   button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  button.active {
+    background: var(--theme-accent-bg-strong, rgba(100, 180, 255, 0.45));
+    border-color: var(--theme-accent, rgba(100, 180, 255, 0.8));
   }
 
   .status {

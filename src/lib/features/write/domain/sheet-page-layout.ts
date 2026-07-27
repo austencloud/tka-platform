@@ -19,6 +19,10 @@ const GUTTER_PT = 3;
 const RAIL_WIDTH_PT = 64; // ~0.9" left column for timestamp + cue
 const STRIP_FACTOR = 0.5; // note-strip base height as a fraction of a cell
 const INTER_BAND_GUTTER_PT = 6;
+// One cue's slot in the rail: timestamp line + a wrapped cue line. Only load-
+// bearing when a band holds several cues (widening the pictograph size merges
+// rows, and each merged row's cue keeps its own slot).
+const RAIL_LINE_HEIGHT_PT = 26;
 
 /**
  * Vertical space the page chrome takes off the grid, in points.
@@ -52,6 +56,7 @@ export interface SheetPageGeometry {
   marginXPt: number;
   marginYPt: number;
   railWidthPt: number; // 0 when cue rail hidden
+  railLineHeightPt: number; // vertical slot one cue occupies in the rail
   stripBaseHeightPt: number; // 0 when note strips hidden
   interBandGutterPt: number;
   usableWidthPt: number; // grid area width (page − margins − rail)
@@ -95,6 +100,7 @@ export function getSheetPageLayout(layout: GeometryInput): SheetPageGeometry {
     marginXPt: MARGIN_PT + railWidthPt, // grid starts right of the rail
     marginYPt: MARGIN_PT,
     railWidthPt,
+    railLineHeightPt: RAIL_LINE_HEIGHT_PT,
     stripBaseHeightPt,
     interBandGutterPt: INTER_BAND_GUTTER_PT,
     usableWidthPt: usableW,

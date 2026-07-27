@@ -29,6 +29,7 @@ import {
   DEFAULT_SHEET_LAYOUT,
   type ChoreoSheet,
 } from "../domain/types/choreo-sheet";
+import { migrateCues, migrateNotes } from "../domain/annotation-migration";
 
 // Per-user subcollection — the same shape LibraryRepository uses for its own
 // user-owned data (`users/{uid}/sequences`, `/acts`, `/tags`). Scopes a sheet to
@@ -69,17 +70,39 @@ const SheetLayoutSchema = z
 // Annotation layer (cue rail + note strips + page header). All read leniently:
 // a legacy doc has no `annotations` at all and hydrates to an empty set via the
 // top-level .catch, so opening a pre-annotation sheet never fails validation.
-const CueMarkSchema = z.object({
+// Two generations of annotation addressing. Current marks carry an absolute
+// `stepIndex`; pre-migration ones carry a band-relative `band` (+ `count`),
+// which meant a different set of steps at every pictograph size. Both parse —
+// `toSheet` converts the legacy ones using the layout the doc was SAVED with,
+// which is the only place the original `columns` is still known. Current shape
+// is listed first so a doc carrying both keys resolves as current.
+const CurrentCueSchema = z.object({
+  sequenceId: z.string(),
+  stepIndex: z.number().int().nonnegative(),
+  timestamp: z.string().catch(""),
+  text: z.string().catch(""),
+});
+const LegacyCueSchema = z.object({
   band: z.string(),
   timestamp: z.string().catch(""),
   text: z.string().catch(""),
 });
-const NoteMarkSchema = z.object({
+const CueMarkSchema = z.union([CurrentCueSchema, LegacyCueSchema]);
+
+const CurrentNoteSchema = z.object({
+  id: z.string(),
+  sequenceId: z.string(),
+  stepIndex: z.number().int().nonnegative(),
+  pinned: z.boolean().catch(false),
+  text: z.string().catch(""),
+});
+const LegacyNoteSchema = z.object({
   id: z.string(),
   band: z.string(),
   count: z.number().nullable().catch(null),
   text: z.string().catch(""),
 });
+const NoteMarkSchema = z.union([CurrentNoteSchema, LegacyNoteSchema]);
 const SheetHeaderSchema = z.object({
   songName: z.string().optional(),
   choreographer: z.string().optional(),
@@ -132,13 +155,21 @@ export type LoadedChoreoSheet = ChoreoSheet & {
 };
 
 function toSheet(doc: ChoreoSheetDoc): LoadedChoreoSheet {
+  // Legacy annotations resolve against the layout they were written against —
+  // `doc.layout.columns` is the saved chunk width, so band+count converts back
+  // to the exact step the user pointed at. Already-migrated marks pass through.
+  const savedColumns = doc.layout.columns;
   return {
     id: doc.id,
     name: doc.name,
     ownerId: doc.ownerId,
     sequenceIds: doc.sequenceIds,
     layout: doc.layout,
-    annotations: doc.annotations,
+    annotations: {
+      ...doc.annotations,
+      cues: migrateCues(doc.annotations.cues, savedColumns),
+      notes: migrateNotes(doc.annotations.notes, savedColumns),
+    },
     sequenceMeta: doc.sequenceMeta,
     bpm: doc.bpm,
     createdAt: doc.createdAt ?? new Date(),

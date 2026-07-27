@@ -503,12 +503,18 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     };
   }
 
-  // Upsert a cue by its band key: patch the existing cue for that band, or seed
-  // a fresh one (blank timestamp/text) with the patch applied.
-  function setCue(band: string, patch: Partial<Omit<CueMark, "band">>): void {
+  // Upsert a cue at an absolute step: patch the cue already anchored there, or
+  // seed a fresh one (blank timestamp/text) with the patch applied. Addressing
+  // the step rather than the band is what keeps a cue — and its BPM-prefilled
+  // timestamp — on the same music when the pictograph size changes.
+  function setCue(
+    sequenceId: string,
+    stepIndex: number,
+    patch: Partial<Omit<CueMark, "sequenceId" | "stepIndex">>
+  ): void {
     const cues = sheet.annotations.cues.slice();
-    const idx = cues.findIndex((c) => c.band === band);
-    if (idx === -1) cues.push({ band, timestamp: "", text: "", ...patch });
+    const idx = cues.findIndex((c) => c.sequenceId === sequenceId && c.stepIndex === stepIndex);
+    if (idx === -1) cues.push({ sequenceId, stepIndex, timestamp: "", text: "", ...patch });
     else cues[idx] = { ...cues[idx]!, ...patch };
     sheet = {
       ...sheet,
@@ -517,11 +523,12 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     };
   }
 
-  // Add a blank note pinned to `count` (a column index, or null for a full-width
-  // bullet) and return its stable id so the caller can immediately edit/remove it.
-  function addNote(band: string, count: number | null): string {
+  // Add a blank note at an absolute step — `pinned` puts it under that step's
+  // column, otherwise it reads as a full-width bullet on that step's row.
+  // Returns its stable id so the caller can immediately edit/remove it.
+  function addNote(sequenceId: string, stepIndex: number, pinned: boolean): string {
     const id = crypto.randomUUID();
-    const notes = [...sheet.annotations.notes, { id, band, count, text: "" }];
+    const notes = [...sheet.annotations.notes, { id, sequenceId, stepIndex, pinned, text: "" }];
     sheet = {
       ...sheet,
       annotations: { ...sheet.annotations, notes },
@@ -556,15 +563,22 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // sheet's BPM (1 step = 1 beat). Never overwrites a timestamp the user typed —
   // the pure helper only returns keys for blank bands; a no-op when BPM is unset.
   function prefillTimestamps(): void {
-    const bands = bandPages
-      .flatMap((p) => p.bands)
-      .map((b) => ({
-        key: b.key,
-        firstBeatIndex: b.firstBeatIndex,
-        timestamp: b.cue?.timestamp ?? "",
-      }));
+    // A band's prefill lands on its FIRST step — that is the step
+    // `firstBeatIndex` timed. Anchoring the write there (rather than on the band
+    // key) is what makes a prefilled timestamp survive a pictograph-size change:
+    // the cue stays on the step whose beat produced it.
+    const all = bandPages.flatMap((p) => p.bands);
+    const anchors = new Map(all.map((b) => [b.key, { sequenceId: b.sequenceId, stepIndex: b.firstStepIndex }]));
+    const bands = all.map((b) => ({
+      key: b.key,
+      firstBeatIndex: b.firstBeatIndex,
+      timestamp: b.cues.find((c) => c.stepIndex === b.firstStepIndex)?.timestamp ?? "",
+    }));
     const filled = computePrefill(bands, sheet.bpm);
-    for (const [band, timestamp] of Object.entries(filled)) setCue(band, { timestamp });
+    for (const [key, timestamp] of Object.entries(filled)) {
+      const anchor = anchors.get(key);
+      if (anchor) setCue(anchor.sequenceId, anchor.stepIndex, { timestamp });
+    }
   }
 
   // Turn an Act into a sheet roster ("Send to Sheet"). An Act already carries a

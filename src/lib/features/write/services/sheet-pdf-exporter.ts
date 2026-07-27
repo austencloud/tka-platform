@@ -270,7 +270,7 @@ export async function buildChoreoSheetPDF(
         drawTitleBlock(pdfPage, sheet, geo, { fontBold, font, fontOblique, ink, inkSoft });
         yUsed += TITLE_BLOCK_PT;
       } else if (page.pageIndex > 0) {
-        drawRunningHeader(pdfPage, sheet, page.pageIndex, page.bands[0]?.cue?.timestamp ?? "", geo, {
+        drawRunningHeader(pdfPage, sheet, page.pageIndex, page.bands[0]?.cues[0]?.timestamp ?? "", geo, {
           font,
           fontOblique,
           ink,
@@ -294,23 +294,29 @@ export async function buildChoreoSheetPDF(
             thickness: 0.75,
             color: railRule,
           });
-          const cue = band.cue;
-          if (cue && cue.timestamp) {
-            pdfPage.drawText(cue.timestamp, {
-              x: railLeftX,
-              y: cellTopY - tsSize,
-              size: tsSize,
-              font: fontOblique,
-              color: ink,
-            });
-          }
-          if (cue && cue.text) {
-            const lines = wrapText(cue.text, fontOblique, cueSize, railInnerW);
-            let ty = cellTopY - tsSize - cueSize - 3;
-            for (const line of lines) {
-              pdfPage.drawText(line, { x: railLeftX, y: ty, size: cueSize, font: fontOblique, color: inkSoft });
-              ty -= cueSize * 1.2;
+          // Every cue anchored in this band, stacked top-down — a band normally
+          // holds one, but widening the pictograph size merges two rows into one
+          // band and both their cues are real. Matches the preview's rail slots.
+          let cueY = cellTopY;
+          for (const cue of band.cues) {
+            if (cue.timestamp) {
+              pdfPage.drawText(cue.timestamp, {
+                x: railLeftX,
+                y: cueY - tsSize,
+                size: tsSize,
+                font: fontOblique,
+                color: ink,
+              });
             }
+            let ty = cueY - tsSize - cueSize - 3;
+            if (cue.text) {
+              const lines = wrapText(cue.text, fontOblique, cueSize, railInnerW);
+              for (const line of lines) {
+                pdfPage.drawText(line, { x: railLeftX, y: ty, size: cueSize, font: fontOblique, color: inkSoft });
+                ty -= cueSize * 1.2;
+              }
+            }
+            cueY = Math.min(ty, cueY - geo.railLineHeightPt);
           }
         }
 
@@ -326,8 +332,10 @@ export async function buildChoreoSheetPDF(
         if (sheet.layout.showNoteStrips && band.notes.length > 0) {
           let noteY = cellBottomY - 4 - noteSize;
           for (const note of band.notes) {
-            const pinned = note.count != null && note.count >= 1 && note.count <= band.cells.length;
-            if (pinned) {
+            // `count` is resolved by the planner from the note's absolute step
+            // index — the preview reads the identical value, so a note cannot
+            // pin on screen and bullet on paper.
+            if (note.count != null) {
               const x = geo.marginXPt + (note.count! - 1) * stride;
               pdfPage.drawText(note.text, { x, y: noteY, size: noteSize, font, color: ink });
             } else {
