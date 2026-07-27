@@ -8,7 +8,7 @@
   Features:
   - Toggles GLOBAL feature flag enabled state (same as Permission Matrix)
   - Module order is still per-user preference
-  - Core modules (create, browse, settings, admin) shown with lock icon, cannot be disabled
+  - Core modules (create, browse, creators, settings, admin) shown with lock icon, cannot be disabled
   - Uses svelte-dnd-action for drag-and-drop
 -->
 <script lang="ts">
@@ -41,7 +41,13 @@
   const FLIP_DURATION_MS = 200;
 
   // Core modules that cannot be toggled (always visible, shown but not clickable)
-  const CORE_MODULES: ModuleId[] = ["create", "browse", "settings", "admin"];
+  const CORE_MODULES: ModuleId[] = [
+    "create",
+    "browse",
+    "creators",
+    "settings",
+    "admin",
+  ];
 
   // Helper to check if a module is a core module
   function isCoreModule(moduleId: ModuleId): boolean {

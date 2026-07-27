@@ -100,7 +100,7 @@ export const LEARN_TABS: Section[] = [
   },
 ];
 
-// Browse tabs configuration (browsing sequences, creators, collections)
+// Browse tabs configuration (sequences, saved work, and shared collections)
 // Gallery = pure community discovery. Your saved work lives in Library.
 // Tab ids renamed 2026-07-10 so URLs match labels: "library" (label Library,
 // was id "collections") and "collections" (label Collections, was id
@@ -970,19 +970,6 @@ export const SOCIAL_TABS: Section[] = [
     description: "Sync with nearby spinners",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-  {
-    // Relocated from Browse → Social (2026-07-08): creator discovery is people
-    // discovery, the same category as Community/Connect. Legacy
-    // /browse/creators/[userId] links redirect here (navigation-coordinator).
-    id: "creators",
-    labelKey: "tab_social_creators",
-    descKey: "tab_desc_social_creators",
-    label: "Creators",
-    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
-    description: "Find creators and their work",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
 ];
 

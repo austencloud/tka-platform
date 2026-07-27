@@ -87,7 +87,12 @@ export type CreatorFilterType =
   | "most-followers"
   | "newest";
 
-export type CreatorSortCriteria = "lastActive" | "joinedDate" | "favoriteProp";
+export type CreatorSortCriteria =
+  | "lastActive"
+  | "joinedDate"
+  | "sequenceCount"
+  | "followerCount"
+  | "favoriteProp";
 
 export interface CreatorQueryOptions {
   filter?: CreatorFilterType;

@@ -14,6 +14,10 @@ describe("isModuleAccessible", () => {
     expect(isModuleAccessible("browse", "guest")).toBe(true);
   });
 
+  it("allows public creator profiles for guests", () => {
+    expect(isModuleAccessible("creators", "guest")).toBe(true);
+  });
+
   it("blocks learn for guests", () => {
     expect(isModuleAccessible("learn", "guest")).toBe(false);
   });
@@ -23,6 +27,7 @@ describe("isModuleAccessible", () => {
   });
 
   it("allows all modules for authenticated users", () => {
+    expect(isModuleAccessible("creators", "user")).toBe(true);
     expect(isModuleAccessible("learn", "user")).toBe(true);
     expect(isModuleAccessible("social", "user")).toBe(true);
     expect(isModuleAccessible("settings", "user")).toBe(true);
@@ -42,8 +47,8 @@ describe("isTabAccessible", () => {
     expect(isTabAccessible("browse", "collections", "guest")).toBe(false);
   });
 
-  it("blocks creators tab in browse for guests", () => {
-    expect(isTabAccessible("browse", "creators", "guest")).toBe(false);
+  it("does not invent sub-tabs for the Creators module", () => {
+    expect(isTabAccessible("creators", "creators", "guest")).toBe(false);
   });
 });
 
@@ -54,6 +59,10 @@ describe("getAccessibleTabs", () => {
       "construct",
       "generate",
     ]);
+  });
+
+  it("returns an empty tab list for the tabless Creators module", () => {
+    expect(getAccessibleTabs("creators", "guest")).toEqual([]);
   });
 
   it("returns null for authenticated users (no filtering)", () => {

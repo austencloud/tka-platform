@@ -33,6 +33,7 @@ import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
+import { parseCreatorPathname } from "../navigation/services/creator-routes";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -124,7 +125,7 @@ export function moduleSections() {
 
   // Guest tab gating: role-based canAccessTab() passes for the guest's implicit
   // "user" role, so the guest-config tier check is required to keep gated tabs
-  // (e.g. browse collections/creators/hall-of-shame) out of mobile + collapsed
+  // (e.g. browse collections/hall-of-shame) out of mobile + collapsed
   // navigation, mirroring the expanded desktop sidebar (ModuleGroup.svelte).
   // Only subtracts for guests; isTabAccessible returns true for user/premium.
   const accessTier = resolveAccessTier(
@@ -225,6 +226,7 @@ export function moduleSections() {
 const MODULE_ORDER = [
   "create",
   "browse",
+  "creators",
   "learn",
   "compose",
   "train",
@@ -367,7 +369,7 @@ const TAB_ORDERS: Record<string, string[]> = {
     "export",
   ],
   browse: ["gallery", "library", "collections", "hall-of-shame"],
-  social: ["community", "connect", "creators"],
+  social: ["community", "connect"],
   learn: ["concepts", "play"],
   compose: ["arrange", "browse"],
   realm: ["stage", "gallery", "worlds"],
@@ -514,7 +516,7 @@ export function getModuleDefinitions() {
     // This prevents layout shifts while waiting for auth
     if (!isAuthInitialized || !isFeatureFlagsInitialized) {
       // Only show these core modules before auth is ready
-      return ["create", "browse"].includes(module.id);
+      return ["create", "browse", "creators"].includes(module.id);
     }
 
     // Defense in depth: adminOnly modules require admin role regardless of feature flags.
@@ -562,7 +564,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   const canonical = buildPath(moduleId, sectionId);
   // Deep links carry more path than the canonical /module/tab —
   // /browse/library/{id}?scan=1 (the phone scan handoff) or
-  // /browse/creators/{userId}. This runs at boot BEFORE the lazy-loaded
+  // /creators/{userId}. This runs at boot BEFORE the lazy-loaded
   // module reads the URL, so flattening to the canonical path here would
   // eat those segments and strand the deep link on the tab's list view.
   // Keep the longer pathname whenever it sits under the canonical path.
@@ -610,10 +612,20 @@ function parsePathNavigation(): {
     let moduleId = parts[0] as ModuleId;
     // Section can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
     let sectionId = parts[1] || searchParams.get("section") || undefined;
+    const creatorPath = parseCreatorPathname(`/${parts.join("/")}`);
 
     // Redirect legacy module URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy URLs)
-    if (moduleId === ("library" as unknown)) {
+    if (creatorPath) {
+      moduleId = "creators";
+      sectionId = undefined;
+
+      if (creatorPath.isLegacy) {
+        const url = new URL(window.location.href);
+        url.pathname = creatorPath.canonicalPath;
+        svelteKitReplaceState(url, { moduleId: "creators" });
+      }
+    } else if (moduleId === ("library" as unknown)) {
       // Your library lives in Browse > Library (Collections module)
       moduleId = "browse" as ModuleId;
     } else if (moduleId === ("dashboard" as unknown)) {
@@ -652,18 +664,6 @@ function parsePathNavigation(): {
       const url = new URL(window.location.href);
       url.pathname = `/browse/library/${parts[2]}`;
       svelteKitReplaceState(url, { moduleId: "browse", sectionId: "library" });
-    } else if (moduleId === ("browse" as ModuleId) && parts[1] === "creators") {
-      // Creators moved Browse -> Social (2026-07-08). Redirect the module AND
-      // rewrite the address bar to /social/creators[/userId] so the deep
-      // [userId] segment survives the canonical-path flattening in
-      // replaceHistoryState (which runs right after this at boot) — otherwise a
-      // refreshed/shared /browse/creators/[id] link would lose the id and the
-      // panel could not restore the profile.
-      moduleId = "social" as ModuleId;
-      const rewritten = "/social/creators" + (parts[2] ? `/${parts[2]}` : "");
-      const url = new URL(window.location.href);
-      url.pathname = rewritten;
-      svelteKitReplaceState(url, { moduleId: "social", sectionId: "creators" });
     }
 
     // Validate module exists

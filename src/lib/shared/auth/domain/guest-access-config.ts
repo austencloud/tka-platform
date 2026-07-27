@@ -1,6 +1,7 @@
 // Guests (unauthenticated users) get a limited view of the app.
-// Create and Browse are open, but restricted to specific tabs.
-// Everything else - Learn, Social, Settings - requires signing in.
+// Create and Browse are open with restricted tabs. Creators is readable so a
+// visitor can follow an attribution link into a profile; account actions such
+// as Follow still enforce sign-in at the action boundary.
 
 import type { AccessTier } from "./access-tier";
 
@@ -16,6 +17,7 @@ export const GUEST_SAVE_CAP = 3;
 const GUEST_MODULE_ACCESS: Record<string, string[]> = {
   create: ["assemble", "construct", "generate"],
   browse: ["gallery", "library"],
+  creators: [],
 };
 
 export function isModuleAccessible(

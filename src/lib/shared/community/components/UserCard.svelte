@@ -7,6 +7,7 @@
 
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { ROLE_DISPLAY } from "$lib/shared/auth/domain/models/user-role";
+  import FollowButton from "./FollowButton.svelte";
 
   interface Props {
     user: UserProfile;
@@ -114,23 +115,14 @@
   <!-- Follow button -->
   {#if showFollowButton}
     <div class="user-actions">
-      <button
-        class="follow-button"
-        class:following={isFollowing}
-        class:loading={isFollowLoading}
-        disabled={isFollowLoading}
-        aria-busy={isFollowLoading}
-        onclick={(e) => {
-          e.stopPropagation();
-          onFollowToggle?.();
-        }}
-      >
-        {#if isFollowLoading}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {:else}
-          {isFollowing ? "Following" : "Follow"}
-        {/if}
-      </button>
+      <FollowButton
+        targetUserId={user.id}
+        displayName={user.displayName}
+        following={isFollowing}
+        loading={isFollowLoading}
+        accent={accentColor}
+        onToggle={() => onFollowToggle?.()}
+      />
     </div>
   {/if}
 </div>
@@ -296,41 +288,5 @@
   .user-actions {
     display: flex;
     margin-top: 4px;
-  }
-
-  .follow-button {
-    width: 100%;
-    padding: 6px 12px;
-    min-height: var(--min-touch-target); /* WCAG AA touch floor */
-    border: 1px solid var(--card-accent);
-    border-radius: 6px;
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-emphasis) ease;
-    background: var(--card-accent);
-    color: white;
-  }
-
-  .follow-button:hover {
-    filter: brightness(1.15);
-    box-shadow: 0 2px 8px var(--card-accent-glow);
-  }
-
-  .follow-button.following {
-    background: transparent;
-    border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
-    color: var(--theme-text-dim);
-  }
-
-  .follow-button.following:hover {
-    background: color-mix(in srgb, var(--card-accent) 10%, transparent);
-    border-color: color-mix(in srgb, var(--card-accent) 50%, transparent);
-    color: white;
-  }
-
-  .follow-button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
   }
 </style>

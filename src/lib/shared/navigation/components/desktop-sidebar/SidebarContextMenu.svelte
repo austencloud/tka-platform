@@ -43,7 +43,13 @@ import type { TabVisibilityInfo } from "../../services/types";
   const locale = $derived(getReactiveLocale());
 
   // Core modules that cannot be toggled
-  const CORE_MODULES: ModuleId[] = ["create", "browse", "settings", "admin"];
+  const CORE_MODULES: ModuleId[] = [
+    "create",
+    "browse",
+    "creators",
+    "settings",
+    "admin",
+  ];
 
   // All toggleable modules with their current enabled state
   const toggleableModules = $derived.by(() => {

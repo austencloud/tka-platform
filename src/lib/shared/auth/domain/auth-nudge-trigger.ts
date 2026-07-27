@@ -2,7 +2,7 @@ import { GUEST_SAVE_CAP } from "./guest-access-config";
 
 export type AuthNudgeTrigger =
   | "save"
-  | "beat-cap-guest"
+  | "step-cap-guest"
   | "export"
   | "module:learn"
   | "module:library"
@@ -21,8 +21,8 @@ export type AuthNudgeTrigger =
 // (2026-06-18 finding, closed 2026-07-18).
 export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   save: `Guests can save ${GUEST_SAVE_CAP} sequences. Create a free account to save more.`,
-  "beat-cap-guest":
-    "Guests can create sequences up to 8 beats. Create a free account for up to 64 beats.",
+  "step-cap-guest":
+    "Guests can create sequences up to 8 steps. Create a free account for up to 64 steps.",
   export: "Create a free account to export your sequences.",
   "module:learn": "Create a free account to start learning TKA notation.",
   "module:library":

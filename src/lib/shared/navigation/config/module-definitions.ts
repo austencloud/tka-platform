@@ -111,9 +111,20 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Browse",
     icon: '<i class="fas fa-compass" style="color: #a855f7;" aria-hidden="true"></i>',
     color: "#a855f7", // Purple - browsing
-    description: "Browse sequences and creators",
+    description: "Browse sequences and collections",
     isMain: true,
     sections: BROWSE_TABS,
+  },
+  {
+    id: "creators",
+    labelKey: "module_creators",
+    descKey: "module_desc_creators",
+    label: "Creators",
+    icon: '<i class="fas fa-users" style="color: #06b6d4;" aria-hidden="true"></i>',
+    color: "#06b6d4",
+    description: "Find creators and their work",
+    isMain: true,
+    sections: [],
   },
   {
     id: "social",
@@ -397,6 +408,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
 const FEATURE_ENABLED: Record<string, boolean> = {
   create: true,
   browse: true,
+  creators: true,
   feedback: true,
   social: typeof __FEATURE_SOCIAL__ !== "undefined" ? __FEATURE_SOCIAL__ : true,
   learn: typeof __FEATURE_LEARN__ !== "undefined" ? __FEATURE_LEARN__ : true,

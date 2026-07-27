@@ -1,7 +1,7 @@
 <!--
-  Profile redesign test variants — Browse > Creators creator profile.
+  Profile redesign test variants for the Creators module.
 
-  Design test only; the live profile at /browse/creators/[id] (UserProfilePanel)
+  Design test only; the live profile at /creators/[id] (UserProfilePanel)
   is untouched. Three fully-styled directions for evaluation, switchable up top:
     A — Portfolio-first   (the work leads; identity overlays a featured piece)
     B — Flow identity      (who they are leads; canon prop elevated, then work)

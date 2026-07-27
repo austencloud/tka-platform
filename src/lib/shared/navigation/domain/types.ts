@@ -54,6 +54,7 @@ export interface SectionGroup {
 export type ModuleId =
   | "create"
   | "browse"
+  | "creators" // Creator directory and public profiles
   | "learn"
   | "tika" // Tika AI tutor (TKA Intelligent Knowledge Assistant)
   | "premium"
@@ -75,7 +76,7 @@ export type ModuleId =
   | "levels" // Level progression labs: L4-L7 + Poi
   | "hand-paths" // Hand path explorer and builder (graduated from Lab Mar 2026)
   | "video" // Video analysis, trails, effects, notation extraction (graduated from Lab Mar 2026)
-  | "social" // Social module: community map + nearby spinner sync (graduated from Lab Mar 2026)
+  | "social" // Community map + nearby spinner sync
   | "lab" // Experimental features lab (all experiments consolidated here)
   | "stage" // Stage choreography - multi-performer formation locomotion
   | "mandala" // Mandala creation, collection, meditation, and export

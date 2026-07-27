@@ -38,6 +38,11 @@
     ringColor?: string;
     /** Additional CSS class */
     class?: string;
+    /** Native <img> loading strategy. Default "eager" preserves the
+        long-standing behavior (the <img> previously had no `loading`
+        attribute at all, so the browser default of "eager" applied). Pass
+        "lazy" for avatars that render far off-screen. */
+    loading?: "lazy" | "eager";
     /** Called when image successfully loads */
     onload?: (img: HTMLImageElement) => void;
     /** Called when all fallbacks exhausted */
@@ -54,6 +59,7 @@
     ring = false,
     ringColor,
     class: className = "",
+    loading = "eager",
     onload,
     onerror,
   }: Props = $props();
@@ -150,6 +156,7 @@
       height={dimension}
       crossorigin={displayUrl && !isGoogleAvatarUrl(displayUrl) && !displayUrl.startsWith("data:") ? "anonymous" : undefined}
       referrerpolicy="no-referrer"
+      {loading}
       onload={handleLoad}
       onerror={handleError}
     />

@@ -104,6 +104,8 @@ const USERS_COLLECTION = "users";
 const SORT_FIELD_MAP: Record<CreatorSortCriteria, string> = {
   lastActive: "lastActivityDate",
   joinedDate: "createdAt",
+  sequenceCount: "sequenceCount",
+  followerCount: "followerCount",
   favoriteProp: "favoriteProp",
 };
 
@@ -277,6 +279,10 @@ function applySorting(
       return sorted.sort(
         (a, b) => b.joinedDate.getTime() - a.joinedDate.getTime()
       );
+    case "sequenceCount":
+      return sorted.sort((a, b) => b.sequenceCount - a.sequenceCount);
+    case "followerCount":
+      return sorted.sort((a, b) => b.followerCount - a.followerCount);
     default:
       return sorted;
   }
