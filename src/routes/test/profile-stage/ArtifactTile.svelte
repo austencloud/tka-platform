@@ -20,6 +20,7 @@
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import type { LiveSlots, Medium } from "./live-slots.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -104,6 +105,43 @@
    */
   const showStrip = $derived(medium === "sequence" && size === "lg");
 
+  /**
+   * The overlay mandala traces THIS prop's real geometry, not the standardized
+   * radius.
+   *
+   * Saved mandalas are drawn at MANDALA_STANDARD_TIP_DX (120) on purpose, so
+   * that a mandala stays comparable across prop types — a deliberate product
+   * decision, and changing it would reshape every saved mandala and every
+   * printed card. But this overlay is a different job: it sits UNDER the
+   * animation of a specific prop, so a standardized orbit is visibly not the
+   * path the prop in front of it traces. Here, and only here, the real tip
+   * distance is the correct one.
+   *
+   * `tipDx` and the prop types are existing SequenceMandala props — the
+   * standalone collection tiles below simply don't pass them, so they keep the
+   * standard. Two contexts, two correct answers, no migration.
+   */
+  const seqPropTypes = $derived.by(() => {
+    const intent = (sequence as Record<string, any> | null)?.creatorIntent?.propConfig;
+    return {
+      blue: (intent?.bluePropType as string | undefined) ?? "staff",
+      red: (intent?.redPropType as string | undefined) ?? "staff",
+    };
+  });
+
+  /** Outermost tip distance for a prop, in the engine's prop-local units. */
+  function tipReach(propType: string): number {
+    const points = getTipPointsBaseline(propType).points;
+    return points.reduce((max, p) => Math.max(max, Math.abs(p.dx)), 0);
+  }
+
+  // One radius for both hands: SequenceMandala takes a single axial `tipDx`.
+  // Mixed-prop sequences are rare and the larger reach is the safer read — it
+  // never draws an orbit TIGHTER than something the props actually trace.
+  const overlayTipDx = $derived(
+    Math.max(tipReach(seqPropTypes.blue), tipReach(seqPropTypes.red))
+  );
+
   function onEnter() {
     liveAtEnter = live;
     hovered = true;
@@ -179,6 +217,9 @@
               pathShape="arc"
               animate={false}
               darkMode={!lightMode}
+              bluePropType={seqPropTypes.blue}
+              redPropType={seqPropTypes.red}
+              tipDx={overlayTipDx}
               size={320}
             />
           </div>
