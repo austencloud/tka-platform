@@ -421,7 +421,7 @@
 			></button>
 			<div class="detail-panel" style:view-transition-name={`stage-${activeEntry.id}`}>
 				<button type="button" class="close-btn" onclick={closeDetailView} use:pressSpring>
-					<i class="fas fa-xmark" aria-hidden="true"></i>
+					<span class="close-mark" aria-hidden="true">&times;</span>
 					Close
 				</button>
 				<ArtifactDetail entry={activeEntry} index={activeIndex} {count} />
@@ -953,20 +953,22 @@
 		position: absolute;
 		inset: 0;
 		border: 0;
-		background: oklch(0.08 0.01 270 / 0.72);
-		backdrop-filter: blur(6px);
+		background: oklch(0.05 0.005 270 / 0.82);
 		cursor: pointer;
 	}
 
+	/* Same surface language as the tiles: flat ink, hairline rule, accent
+	   only as a whisper in the border — the panel is a bigger tile, not a
+	   different material. */
 	.detail-panel {
 		position: relative;
 		width: min(100%, 92rem);
 		height: auto;
 		max-height: 100%;
 		padding: clamp(1.1rem, 2.4vh, 2.2rem);
-		border-radius: 24px;
-		border: 1px solid color-mix(in oklch, var(--artifact-accent) 45%, transparent);
-		background: oklch(0.14 0.018 270 / 0.97);
+		border-radius: 18px;
+		border: 1px solid color-mix(in oklch, var(--artifact-accent) 28%, oklch(1 0 0 / 0.08));
+		background: oklch(0.145 0.012 270);
 		box-shadow: 0 30px 90px oklch(0 0 0 / 0.6);
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
@@ -979,14 +981,28 @@
 		align-items: center;
 		gap: 0.5rem;
 		min-height: 44px;
-		padding: 0 1.1rem;
-		border-radius: 11px;
-		border: 1px solid oklch(0.5 0.05 270 / 0.4);
-		background: oklch(0.3 0.04 270 / 0.3);
-		color: oklch(0.9 0.02 270);
+		padding: 0 1.35rem;
+		border-radius: 999px;
+		border: 1px solid oklch(1 0 0 / 0.14);
+		background: transparent;
+		color: oklch(0.88 0.02 270);
 		font: inherit;
+		font-size: 0.85rem;
 		font-weight: 650;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
 		cursor: pointer;
+		transition: border-color 160ms ease;
+	}
+
+	.close-btn:hover {
+		border-color: oklch(1 0 0 / 0.32);
+	}
+
+	.close-mark {
+		font-size: 1.2em;
+		line-height: 1;
+		translate: 0 -1px;
 	}
 
 	.drawer-body {
@@ -1015,7 +1031,10 @@
 			--slide-w: 28vw;
 		}
 		.room-title {
-			font-size: 2.6rem;
+			font-size: 3.8rem;
+		}
+		.kicker {
+			font-size: 1rem;
 		}
 		.artifact-year,
 		.artifact-name {

@@ -34,7 +34,7 @@
 			<span class="detail-year">{entry.year}</span>
 			<span class="detail-count">{index + 1} of {count}</span>
 		</p>
-		<h2 class="detail-title">{entry.system}</h2>
+		<h2 class="detail-title"><em>{entry.system}</em></h2>
 		<p class="detail-people">{entry.people}</p>
 		<p class="detail-records">{entry.records}</p>
 
@@ -55,7 +55,7 @@
 					rel={source.href.startsWith("/") ? undefined : "noopener"}
 				>
 					<span>{source.label}</span>
-					<i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+					{#if !source.href.startsWith("/")}<span class="source-arrow" aria-hidden="true">&nearr;</span>{/if}
 				</a>
 			{/each}
 		</div>
@@ -101,20 +101,32 @@
 		padding-right: 0.4rem;
 	}
 
+	/* The kicker voice from the masthead: small caps, wide tracking. */
 	.detail-meta {
 		display: flex;
 		justify-content: space-between;
 		margin: 0;
 		font-variant-numeric: tabular-nums;
-		font-size: 0.9rem;
-		color: oklch(0.65 0.03 270);
+		font-size: 0.75rem;
+		font-weight: 650;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+		color: oklch(0.6 0.03 270);
 	}
 
+	/* The masthead's editorial voice, carried into the plate. */
 	.detail-title {
 		margin: 0;
-		font-size: clamp(1.4rem, 2.6cqi, 2.4rem);
-		line-height: 1.15;
+		font-family: "Fraunces", Georgia, serif;
+		font-weight: 700;
+		font-size: clamp(1.7rem, 3.4cqi, 3rem);
+		line-height: 1.08;
+		letter-spacing: -0.015em;
 		color: oklch(0.93 0.02 270);
+	}
+
+	.detail-title em {
+		font-style: italic;
 	}
 
 	.detail-people {
@@ -158,25 +170,33 @@
 		margin-top: 0.3rem;
 	}
 
+	/* Same pill grammar as the rail actions: quiet uppercase, hairline
+	   border, accent only on hover — the plate stays ink. */
 	.source-btn {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.55rem;
+		gap: 0.5rem;
 		min-height: 44px;
-		padding: 0 1.1rem;
-		border-radius: 11px;
-		border: 1px solid var(--artifact-accent, oklch(0.65 0.1 270)) ;
-		background: color-mix(in oklch, var(--artifact-accent, oklch(0.5 0.1 270)) 16%, transparent);
-		color: oklch(0.92 0.02 270);
+		padding: 0 1.35rem;
+		border-radius: 999px;
+		border: 1px solid oklch(1 0 0 / 0.14);
+		background: transparent;
+		color: oklch(0.88 0.02 270);
 		font-weight: 650;
-		font-size: 0.92rem;
+		font-size: 0.85rem;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
 		text-decoration: none;
-		transition: background 160ms ease, transform 160ms ease;
+		transition: border-color 160ms ease;
 	}
 
 	.source-btn:hover {
-		background: color-mix(in oklch, var(--artifact-accent, oklch(0.5 0.1 270)) 28%, transparent);
-		transform: translateY(-1px);
+		border-color: color-mix(in oklch, var(--artifact-accent, oklch(0.65 0.1 270)) 65%, transparent);
+	}
+
+	.source-arrow {
+		font-size: 1.05em;
+		translate: 0 -1px;
 	}
 
 	.detail-videos {

@@ -61,7 +61,9 @@
 	}
 
 	.poster-word {
-		font-size: clamp(2.4rem, 22cqi, 8rem);
+		/* cqh keeps the glyph growing in the tall 4K tiles, where a rem cap
+		   froze it small in a huge plate. */
+		font-size: clamp(2.4rem, min(30cqi, 34cqh), 15rem);
 		line-height: 1;
 		color: oklch(0.9 0.06 305);
 		text-shadow: 0 0 26px oklch(0.6 0.18 305 / 0.5);

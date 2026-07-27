@@ -28,6 +28,7 @@
 	});
 </script>
 
+<div class="cartridge-wrap">
 <div class="cartridge" role="img" aria-label="An example of PoiNotation syntax from the repository">
 	<div class="cartridge-top" aria-hidden="true">
 		<span class="dot"></span>
@@ -44,13 +45,22 @@
 		></pre>
 	<p class="caption">"Moves can be sequenced to create choreographies."</p>
 </div>
+</div>
 
 <style>
+	/* The stage is a plain block, so vertical auto margins collapse to zero —
+	   a real grid cell is what actually centers the cartridge in tall tiles. */
+	.cartridge-wrap {
+		width: 100%;
+		height: 100%;
+		display: grid;
+		place-items: center;
+		padding: clamp(0.6rem, 3cqi, 1.6rem);
+		box-sizing: border-box;
+	}
+
 	.cartridge {
-		width: min(92%, 54rem);
-		margin: auto;
-		height: fit-content;
-		align-self: center;
+		width: min(100%, 54rem);
 		border-radius: 14px;
 		overflow: hidden;
 		border: 1px solid oklch(0.6 0.12 150 / 0.35);
@@ -84,14 +94,15 @@
 	.code {
 		margin: 0;
 		padding: clamp(0.8rem, 3cqi, 1.4rem);
-		overflow-x: auto;
 		font-family: ui-monospace, "Cascadia Code", monospace;
-		font-size: clamp(0.62rem, 1.9cqi, 1.15rem);
+		font-size: clamp(0.75rem, 1.9cqi, 1.15rem);
 		line-height: 1.9;
 	}
 
 	.line {
 		display: block;
+		white-space: pre-wrap;
+		word-break: break-word;
 		color: oklch(0.78 0.1 150);
 		border-radius: 6px;
 		padding-inline: 0.4rem;
