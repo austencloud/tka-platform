@@ -21,6 +21,7 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { page } from "$app/state";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
@@ -42,6 +43,17 @@
 
   const slots = new LiveSlots();
   onDestroy(() => slots.destroy());
+
+  /**
+   * `?solo` — one sequence, big, nothing else. An isolation rig for the
+   * mandala/animation registration: no bands, no budgets, no scroll, so what
+   * you are looking at is only the composite and a change to it is immediately
+   * visible. Same ArtifactTile the stage uses, so it is the real thing.
+   */
+  const solo = $derived(
+    typeof window !== "undefined" &&
+      new URLSearchParams(page.url.search).has("solo")
+  );
 
   let sequences = $state<LibrarySequence[]>([]);
   let loading = $state(true);
@@ -321,6 +333,24 @@
   <title>Profile as a stage — test</title>
 </svelte:head>
 
+{#if solo}
+  <div class="solo-page">
+    {@const first = showcase[0]}
+    {#if first?.sequence}
+      <div class="solo-subject">
+        <ArtifactTile
+          {slots}
+          medium="sequence"
+          title={first.title}
+          sequence={first.sequence}
+          size="lg"
+        />
+      </div>
+    {:else}
+      <PanelState type="loading" message="Loading your library..." />
+    {/if}
+  </div>
+{:else}
 <div class="stage-container">
 <div class="page">
   <header class="page-head">
@@ -511,8 +541,22 @@
   {/if}
 </div>
 </div>
+{/if}
 
 <style>
+  .solo-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+  }
+
+  /* Big enough that a geometry difference is unmissable, capped so the strip
+     still fits a 1080-tall viewport. */
+  .solo-subject {
+    width: min(92vw, 78vh);
+  }
+
   /* Establishes the query container ONLY — an element cannot query itself, so
      the ramp below has to sit on a child or `cqw` would resolve against the
      next container up. Same split CreatorsPanel uses. */
