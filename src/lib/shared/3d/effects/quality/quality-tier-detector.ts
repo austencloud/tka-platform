@@ -51,21 +51,34 @@ export class QualityTierDetector {
 
   detectFromRenderer(renderer: unknown): QualityTier {
     const gl = renderer as {
+      isWebGPURenderer?: boolean;
       capabilities?: {
         maxTextures?: number;
         floatFragmentTextures?: boolean;
         isWebGPU?: boolean;
       };
+      extensions?: {
+        has?: (extensionName: string) => boolean;
+      };
+      getContext?: () => {
+        getExtension?: (extensionName: string) => unknown;
+      };
     };
     const caps = gl?.capabilities;
+    const supportsFloatColorBuffers =
+      caps?.floatFragmentTextures === true ||
+      gl.extensions?.has?.("EXT_color_buffer_float") === true ||
+      Boolean(gl.getContext?.().getExtension?.("EXT_color_buffer_float"));
+
     return this.detectFromCapabilities({
       maxTextureUnits: caps?.maxTextures ?? 8,
-      floatTextures: caps?.floatFragmentTextures ?? false,
+      floatTextures: supportsFloatColorBuffers,
       hardwareConcurrency:
         typeof navigator !== "undefined"
           ? (navigator.hardwareConcurrency ?? 4)
           : 4,
-      isWebGPU: caps?.isWebGPU ?? false,
+      isWebGPU:
+        gl.isWebGPURenderer === true || caps?.isWebGPU === true,
     });
   }
 

@@ -50,8 +50,10 @@ describe("QualityTierDetector", () => {
     const tier = detector.detectFromRenderer({
       capabilities: {
         maxTextures: 16,
-        floatFragmentTextures: true,
-        isWebGPU: false,
+      },
+      extensions: {
+        has: (extensionName: string) =>
+          extensionName === "EXT_color_buffer_float",
       },
     });
 
