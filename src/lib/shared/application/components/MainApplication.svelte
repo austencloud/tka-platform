@@ -32,7 +32,6 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import { getLastAuthMethod } from "../../auth/services/last-auth-method.svelte";
-  import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
   import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 
@@ -625,6 +624,12 @@ import type { SheetType } from "../../navigation/services/types";
       <mod.default />
     {/await}
 
+    <!-- Collections picker — app-level so it outlives the card that opened it
+         (unticking the collection you're browsing unmounts that card) -->
+    {#await import("$lib/features/library/components/collection-picker/CollectionPickerHost.svelte") then mod}
+      <mod.default />
+    {/await}
+
     <!-- Quick Feedback Panel (desktop hotkey: f) -->
     {#await import("$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte") then mod}
       <mod.default />
@@ -698,9 +703,6 @@ import type { SheetType } from "../../navigation/services/types";
     onConfirm={confirmAnonymousImport}
     onCancel={cancelAnonymousImport}
   />
-
-  <!-- Send Sequence Sheet (global overlay for "Send to..." actions) -->
-  <SendSequenceSheetHost />
 
   <!-- Sequence Viewer Drawer (mobile overlay) - outside auth gate so external links work -->
   {#await import("../../sequence-viewer/components/SequenceViewerDrawerHost.svelte") then mod}

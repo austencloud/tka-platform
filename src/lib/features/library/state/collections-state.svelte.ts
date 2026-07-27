@@ -2,7 +2,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
-import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { toast, showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
@@ -94,6 +94,10 @@ class CollectionsState {
 	 * Toggle membership with a live write. The manager surfaces its own error
 	 * toast; on failure latency compensation reverts the snapshot, so we only
 	 * swallow the thrown error here. Guards the per-collection cap up front.
+	 *
+	 * A removal offers an Undo: taking a sequence out makes its card disappear
+	 * from whatever grid you're looking at, which is disorienting enough to
+	 * deserve a way back. Adds are self-evident and stay silent.
 	 */
 	async toggle(sequenceId: string, collectionId: string): Promise<void> {
 		const c = this.collections.find((col) => col.id === collectionId);
@@ -112,6 +116,19 @@ class CollectionsState {
 		try {
 			if (isMember) {
 				await removeSequenceFromCollection(collectionId, sequenceId);
+				showToast({
+					message: `Removed from "${c.name}"`,
+					type: "info",
+					duration: 6000,
+					action: {
+						label: "Undo",
+						onClick: () => {
+							void addSequenceToCollection(collectionId, sequenceId).catch(() => {
+								// manager already toasted
+							});
+						},
+					},
+				});
 			} else {
 				await addSequenceToCollection(collectionId, sequenceId);
 			}

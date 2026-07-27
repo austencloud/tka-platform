@@ -1,12 +1,17 @@
 <!--
 CollectionPickerContent.svelte
 
-The add-to-collection picker body, with no sheet chrome so it can live inside
+The collections picker body, with no sheet chrome so it can live inside
 the Drawer-based CollectionPickerSheet (browse card menu) OR inline inside a
 save panel. Collections render as selectable tiles in a responsive grid that
 fills its container — a few tiles read as an intentional row on a wide desktop
 panel, and stack to a list on a narrow sheet. Tiles are aria-pressed buttons,
 never checkboxes. An "＋ New collection" tile creates and selects in one step.
+
+This is a membership editor, not a one-way add: a ticked tile means the
+sequence is in that collection, and unticking takes it out. Moving a sequence
+between collections is that pair of taps in one visit — there's no separate
+"move" verb to learn.
 
 Two modes:
   - live   → operates on a real, saved sequenceId; toggles write to Firestore
@@ -17,6 +22,7 @@ Two modes:
 <script lang="ts">
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+	import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
 	let {
@@ -25,6 +31,7 @@ Two modes:
 		selectedIds = $bindable<string[]>([]),
 		onChange,
 		sequenceLabel,
+		currentCollectionId = null,
 	}: {
 		mode?: "live" | "select";
 		/** Required in live mode: the saved sequence to file. */
@@ -35,7 +42,18 @@ Two modes:
 		onChange?: (ids: string[]) => void;
 		/** Optional name of the sequence being filed, shown in the header. */
 		sequenceLabel?: string;
+		/**
+		 * Set when the picker was opened from inside a collection. That tile is
+		 * marked "Currently here", so unticking it reads as taking the sequence
+		 * out of the folder you're looking at rather than an unexplained vanish.
+		 */
+		currentCollectionId?: string | null;
 	} = $props();
+
+	// A repeating word always displays in its smallest form (FΨFΨFΨFΨ → FΨ).
+	const displayLabel = $derived(
+		sequenceLabel ? simplifyRepeatedWord(sequenceLabel) : undefined,
+	);
 
 	$effect(() => {
 		collectionsState.ensureStarted();
@@ -110,8 +128,10 @@ Two modes:
 </script>
 
 <div class="collection-picker">
-	{#if sequenceLabel}
-		<p class="picker-subtitle">Filing <strong>{sequenceLabel}</strong></p>
+	{#if displayLabel}
+		<p class="picker-subtitle">
+			Tap to file <strong>{displayLabel}</strong>, tap again to take it out.
+		</p>
 	{/if}
 
 	{#if loading && collections.length === 0}
@@ -138,7 +158,11 @@ Two modes:
 					</span>
 					<span class="tile-text">
 						<span class="tile-name">{c.name}</span>
-						<span class="tile-count">{countLabel(c.sequenceCount)}</span>
+						{#if c.id === currentCollectionId}
+							<span class="tile-here">Currently here</span>
+						{:else}
+							<span class="tile-count">{countLabel(c.sequenceCount)}</span>
+						{/if}
 					</span>
 					<span class="tile-check" aria-hidden="true">
 						<i class="fas fa-check"></i>
@@ -283,6 +307,14 @@ Two modes:
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* Replaces the count on the collection you're browsing, so unticking that
+	   tile reads as "take it out of here" rather than an unexplained vanish. */
+	.tile-here {
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 600;
+		color: var(--tile-color);
 	}
 
 	/* Reserve the check slot so selecting doesn't shift the text width. */

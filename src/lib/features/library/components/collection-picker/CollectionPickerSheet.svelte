@@ -1,10 +1,13 @@
 <!--
 CollectionPickerSheet.svelte
 
-Drawer-hosted add-to-collection picker for a saved sequence. Bottom sheet on
+Drawer-hosted collections picker for a saved sequence. Bottom sheet on
 mobile, right-side drawer on desktop (matches PropSelectionSheet / the inbox
 drawer). The picker body and all membership writes live in
 CollectionPickerContent; this file is only the sheet chrome.
+
+Mounted once by CollectionPickerHost at app level, never by a card — see
+collection-picker-state for why.
 -->
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
@@ -14,13 +17,18 @@ CollectionPickerContent; this file is only the sheet chrome.
 	import CollectionPickerContent from "./CollectionPickerContent.svelte";
 
 	let {
-		isOpen = $bindable(false),
+		isOpen = false,
 		sequenceId,
 		sequenceLabel,
+		currentCollectionId = null,
+		onClose,
 	}: {
 		isOpen?: boolean;
 		sequenceId: string;
 		sequenceLabel?: string;
+		/** Collection being browsed, marked "Currently here" in the list. */
+		currentCollectionId?: string | null;
+		onClose: () => void;
 	} = $props();
 
 	// Desktop opens a full-height right drawer; mobile stays a bottom sheet.
@@ -41,7 +49,7 @@ CollectionPickerContent; this file is only the sheet chrome.
 
 	function handleClose(): void {
 		getHapticFeedback()?.trigger("selection");
-		isOpen = false;
+		onClose();
 	}
 </script>
 
@@ -52,10 +60,10 @@ CollectionPickerContent; this file is only the sheet chrome.
 	closeOnEscape={true}
 	dismissible={true}
 	showHandle={true}
-	ariaLabel="Add to collection"
+	ariaLabel="Collections"
 	class="collection-picker-drawer"
 	onOpenChange={(open) => {
-		if (!open) isOpen = false;
+		if (!open) onClose();
 	}}
 >
 	<div class="sheet-content">
@@ -68,10 +76,15 @@ CollectionPickerContent; this file is only the sheet chrome.
 			<i class="fas fa-times" aria-hidden="true"></i>
 		</button>
 
-		<h2 class="sheet-title">Add to collection</h2>
+		<h2 class="sheet-title">Collections</h2>
 
 		<div class="sheet-body">
-			<CollectionPickerContent mode="live" {sequenceId} {sequenceLabel} />
+			<CollectionPickerContent
+				mode="live"
+				{sequenceId}
+				{sequenceLabel}
+				{currentCollectionId}
+			/>
 		</div>
 	</div>
 </Drawer>

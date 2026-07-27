@@ -37,8 +37,7 @@ Variation support:
   import { adminDeleteSequence } from "$lib/shared/library/services/admin-sequence-actions";
   import { notifyLibraryMutated } from "$lib/shared/library/library-events";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
-  import CollectionPickerSheet from "$lib/features/library/components/collection-picker/CollectionPickerSheet.svelte";
-  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+  import { openCollectionPicker } from "$lib/features/library/state/collection-picker-state.svelte";
 
   let thumbnailRef = $state<ReturnType<typeof PropAwareThumbnail> | null>(null);
 
@@ -175,10 +174,9 @@ Variation support:
   let removeConfirmOpen = $state(false);
   let removeTarget = $state<SequenceData | null>(null);
 
-  // Add-to-collection picker. Target id is captured on open so cycling a
-  // variation while the sheet is open doesn't re-point it at a different card.
-  let collectionSheetOpen = $state(false);
-  let collectionTarget = $state<SequenceData | null>(null);
+  // The collections picker is hosted at app level (CollectionPickerHost), not
+  // here: unticking the collection being browsed unmounts this very card, and a
+  // sheet owned by the card would vanish with it. See collection-picker-state.
 
   async function performRemove() {
     const seq = removeTarget;
@@ -241,13 +239,15 @@ Variation support:
         { type: "separator" } as ContextMenuEntry,
         {
           id: "add-to-collection",
-          label: "Add to collection…",
+          label: "Collections…",
           icon: "fa-folder-plus",
           action() {
             closeContextMenu();
-            collectionTarget = seq;
-            collectionsState.ensureStarted();
-            collectionSheetOpen = true;
+            openCollectionPicker({
+              sequenceId: seq.id,
+              sequenceLabel: seq.name,
+              currentCollectionId: collectionContext?.id ?? null,
+            });
           },
         },
       );
@@ -354,14 +354,6 @@ Variation support:
   onConfirm={performRemove}
   onCancel={() => { removeConfirmOpen = false; removeTarget = null; }}
 />
-
-{#if collectionTarget}
-  <CollectionPickerSheet
-    bind:isOpen={collectionSheetOpen}
-    sequenceId={collectionTarget.id}
-    sequenceLabel={collectionTarget.name}
-  />
-{/if}
 
 <style>
   .choreo-card {
