@@ -1520,6 +1520,36 @@ by self-test). Scheduled via Windows Task Scheduler "TKA Parity Audit"
 0 actionable, exit 0. Regenerate the baseline after intentional relabels
 (e.g. the pending 13-contradiction review picks).
 
+**AUSTEN REVIEW ROUNDS (2026-07-27, same day).** Baseline 78 → 71:
+
+- Relabeled to the payload word after review (payload right, label was a
+  ×4 claim over a shorter payload): 4AHBJl, F0S0, H0M9 —
+  `scripts/migrations/relabel-reviewed-shortcode.ts` (re-derives from the
+  live doc; refuses on mismatch).
+- **Half-applied LOOP transform family** (the review's big find): 2026-05-02
+  system mints whose repeat 2 got a PARTIALLY applied mirrored-family
+  transform. B2ZM/PAI0 ("mirrored": red locations mirrored without rotation
+  flips, blue copied unmirrored → W/Σ where the label says Y/Θ). ZLCD/HVJY
+  ("mirrored_inverted": locations+rotations right, PRO↔ANTI inversion never
+  applied → W/Σ where the label says Z/Ω). Repaired by
+  `scripts/migrations/repair-half-applied-loop-mints.ts`: repeat 2
+  regenerated from repeat 1 through the app's canonical executor for the
+  embedded loopType; refuses unless the rebuild derives the exact label
+  (label-corroborated). ZLCD/HVJY's inverted floats cannot ride either wire
+  format (flat drops prefloat TYPE; the compositional encoder fails its
+  round-trip and falls back) — their defective blobs were DROPPED
+  (embed-only records; snapshot omits them). Each pair shares one hash
+  claim, moved to the new content hash with ownership preserved.
+- **Origin hypothesis (open):** the compositional decoder reconstructs
+  LOOPs via the ENGINE executor set (packages/sequence-engine), which
+  diverges from the app executors on these transforms — the same divergence
+  likely GENERATED the corrupt mints. Verify/fix the engine executors
+  before trusting compositional round-trips of mirrored-family LOOPs.
+- Wide-cell warm gap fixed in the same pass: `warmSequenceCells` now keys
+  duration>1 cells with the card's widthMultiplier (held-beat cards
+  previously could never warm their wide cells → permanent (!) placeholders
+  on scan cards).
+
 ## Rollback
 
 - Projection schema 2 fields are additive. Old readers continue to use the
