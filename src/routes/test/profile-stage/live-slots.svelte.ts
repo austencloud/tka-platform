@@ -28,7 +28,26 @@ interface Slot {
   visible: boolean;
   distance: number;
   live: boolean;
+  /** Pointer is over this tile: an explicit "show me THIS one" that outranks
+   *  the ambient budget entirely. */
+  hovered: boolean;
 }
+
+/**
+ * How long the page must be still before anything new is allowed to come
+ * alive. Mounting an animation stack competes with scrolling for the main
+ * thread, which is what made the grid stutter and what made tiles appear to
+ * start and then immediately stop. Nothing mounts while the user is moving.
+ */
+const REST_MS = 180;
+
+/**
+ * A tile that already holds a token counts as this much closer to the centre
+ * than it really is. Without the discount, ranking flips every frame for tiles
+ * near the budget boundary and the band flickers as you drift. An incumbent
+ * has to be beaten decisively, not by a pixel.
+ */
+const INCUMBENT_ADVANTAGE = 0.5;
 
 /** Starting budgets. Tunable live on the test page — these are guesses until
  *  measured, which is the whole point of the prototype. */
@@ -61,10 +80,25 @@ export class LiveSlots {
     tunnel: 0,
   });
 
+  /** True while the page is moving. Exposed so the UI can explain itself. */
+  scrolling = $state(false);
+
   #slots = new Map<Element, Slot>();
   #observer: IntersectionObserver | null = null;
   #frame = 0;
-  #onScroll = () => this.schedule();
+  #restTimer: ReturnType<typeof setTimeout> | null = null;
+
+  #onScroll = () => {
+    if (!this.scrolling) this.scrolling = true;
+    if (this.#restTimer) clearTimeout(this.#restTimer);
+    this.#restTimer = setTimeout(() => {
+      this.#restTimer = null;
+      this.scrolling = false;
+      this.schedule();
+    }, REST_MS);
+    // Still recompute mid-scroll, but #recompute only REVOKES while moving.
+    this.schedule();
+  };
 
   /** Svelte action: `<div use:slots.tile={{ medium, onChange }}>`. */
   tile = (
@@ -72,18 +106,46 @@ export class LiveSlots {
     params: { medium: Medium; onChange: (live: boolean) => void }
   ) => {
     this.#ensureObserver();
-    this.#slots.set(node, {
+    const slot: Slot = {
       medium: params.medium,
       onChange: params.onChange,
       visible: false,
       distance: Number.POSITIVE_INFINITY,
       live: false,
-    });
+      hovered: false,
+    };
+    this.#slots.set(node, slot);
     this.#observer?.observe(node);
+
+    // Hover is a deliberate request, so it bypasses both the budget and the
+    // rest gate — the one tile under the pointer animates at once. Only on
+    // devices that have a real hover state; on touch this never fires and the
+    // ambient budget is the whole story.
+    const canHover =
+      typeof window !== "undefined" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    const onEnter = () => {
+      slot.hovered = true;
+      this.#recompute();
+    };
+    const onLeave = () => {
+      slot.hovered = false;
+      this.schedule();
+    };
+    if (canHover) {
+      node.addEventListener("pointerenter", onEnter);
+      node.addEventListener("pointerleave", onLeave);
+    }
+
     this.schedule();
 
     return {
       destroy: () => {
+        if (canHover) {
+          node.removeEventListener("pointerenter", onEnter);
+          node.removeEventListener("pointerleave", onLeave);
+        }
         this.#observer?.unobserve(node);
         this.#slots.delete(node);
         this.schedule();
@@ -105,6 +167,8 @@ export class LiveSlots {
     this.#observer = null;
     if (this.#frame) cancelAnimationFrame(this.#frame);
     this.#frame = 0;
+    if (this.#restTimer) clearTimeout(this.#restTimer);
+    this.#restTimer = null;
     this.#slots.clear();
     window.removeEventListener("scroll", this.#onScroll);
     window.removeEventListener("resize", this.#onScroll);
@@ -132,6 +196,23 @@ export class LiveSlots {
   }
 
   #recompute() {
+    // WHILE MOVING: revoke what has genuinely left, grant nothing. Mounting an
+    // animation stack mid-scroll is what produced the stutter and the
+    // start-then-stop flicker; the reward for waiting ~180ms is that the whole
+    // visible band comes alive at once instead of in a ragged cascade.
+    if (this.scrolling) {
+      let changed = false;
+      for (const slot of this.#slots.values()) {
+        if (!slot.visible && slot.live && !slot.hovered) {
+          slot.live = false;
+          slot.onChange(false);
+          changed = true;
+        }
+      }
+      if (changed) this.#publishCounts();
+      return;
+    }
+
     const centre = window.innerHeight / 2;
     const ranked: Record<Medium, Slot[]> = {
       sequence: [],
@@ -150,21 +231,19 @@ export class LiveSlots {
       ranked[slot.medium].push(slot);
     }
 
-    const counts: Record<Medium, number> = {
-      sequence: 0,
-      mandala: 0,
-      scene: 0,
-      tunnel: 0,
-    };
-
     for (const medium of MEDIA) {
       const group = ranked[medium];
-      group.sort((a, b) => a.distance - b.distance);
+      // Incumbents rank as if they were closer, so a tile that is already
+      // playing is not evicted by a rival a few pixels nearer the centre.
+      group.sort(
+        (a, b) =>
+          a.distance * (a.live ? INCUMBENT_ADVANTAGE : 1) -
+          b.distance * (b.live ? INCUMBENT_ADVANTAGE : 1)
+      );
       const budget = this.budgets[medium];
 
       group.forEach((slot, index) => {
-        const live = index < budget;
-        if (live) counts[medium]++;
+        const live = slot.hovered || index < budget;
         if (slot.live !== live) {
           slot.live = live;
           slot.onChange(live);
@@ -174,12 +253,25 @@ export class LiveSlots {
 
     // Slots that scrolled out entirely still hold a stale token.
     for (const slot of this.#slots.values()) {
-      if (!slot.visible && slot.live) {
+      if (!slot.visible && slot.live && !slot.hovered) {
         slot.live = false;
         slot.onChange(false);
       }
     }
 
+    this.#publishCounts();
+  }
+
+  #publishCounts() {
+    const counts: Record<Medium, number> = {
+      sequence: 0,
+      mandala: 0,
+      scene: 0,
+      tunnel: 0,
+    };
+    for (const slot of this.#slots.values()) {
+      if (slot.live) counts[slot.medium]++;
+    }
     this.liveCount = counts;
   }
 }

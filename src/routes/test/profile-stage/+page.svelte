@@ -32,6 +32,9 @@
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+  import ProfileHeroSection from "$lib/features/creators/components/profile/ProfileHeroSection.svelte";
+  import { getUserProfile } from "$lib/shared/community/services/user-repository";
+  import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import ArtifactTile from "./ArtifactTile.svelte";
   import { LiveSlots, MEDIA, type Medium } from "./live-slots.svelte";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
@@ -50,6 +53,17 @@
   let layout = $state<"stage" | "wall">("stage");
 
   const uid = $derived(authState.user?.uid ?? null);
+
+  /** The real hero the live profile renders, so the bands are judged under the
+   *  chrome they will actually sit beneath — not floating on a bare page. */
+  let userProfile = $state<EnhancedUserProfile | null>(null);
+  $effect(() => {
+    const id = uid;
+    if (!id) return;
+    void getUserProfile(id)
+      .then((p) => (userProfile = p))
+      .catch(() => (userProfile = null));
+  });
 
   $effect(() => {
     const id = uid;
@@ -364,6 +378,26 @@
     </div>
   </section>
 
+  {#if userProfile}
+    <!-- Block wrapper, deliberately. ProfileHeroSection centres itself with
+         `margin-inline: auto` and declares `container-type: inline-size`. An
+         auto cross-axis margin on a FLEX item suppresses stretch, so as a
+         direct child of this flex column the hero sized to its own contents —
+         and containment makes that zero, collapsing it to 64px of padding.
+         Block layout is what the live panel gives it. Worth remembering when
+         the stage moves into UserProfilePanel: the band wrapper must not be a
+         flex column around this component. -->
+    <div class="hero-slot">
+      <ProfileHeroSection
+        {userProfile}
+        currentUserId={uid}
+        isOwnProfile={true}
+        followInProgress={false}
+        onFollowToggle={() => {}}
+      />
+    </div>
+  {/if}
+
   {#if !uid}
     <PanelState
       type="empty"
@@ -648,6 +682,11 @@
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: clamp(0.75em, 1.2cqw, 1.25em);
     align-items: start;
+  }
+
+  .hero-slot {
+    display: block;
+    width: 100%;
   }
 
   .filter {

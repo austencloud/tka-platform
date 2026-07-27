@@ -14,7 +14,7 @@
   keep running off screen and the budget would mean nothing.
 -->
 <script lang="ts">
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { fade } from "svelte/transition";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
@@ -95,8 +95,20 @@
 >
   <button class="stage" onclick={onopen} aria-label="Open {label}">
     {#if medium === "sequence" && sequence}
-      <Crossfade key={live} fill duration={DURATION.normal}>
-        {#if live}
+      <!-- The poster is a PERMANENT FLOOR, not the other half of a crossfade.
+           Swapping poster-out/live-in left the box empty while the player's
+           chunk loaded and painted, which is the black card that pulls the eye
+           harder than the content does. With the thumbnail always beneath, the
+           worst case is a still image — black is unreachable by construction.
+
+           A single enter/exit over a permanent floor is `transition:fade`, not
+           `<Crossfade>` (crossfade-primitive.md: a lone enter/exit is not a
+           crossfade, and a fake key would make the code lie about intent). -->
+      <div class="poster floor">
+        <PropAwareThumbnail {sequence} {lightMode} />
+      </div>
+      {#if live}
+        <div class="live-layer" transition:fade={{ duration: DURATION.normal }}>
           <LazyMount
             loader={() =>
               import(
@@ -115,12 +127,8 @@
               hideStepNumbers: true,
             }}
           />
-        {:else}
-          <div class="poster">
-            <PropAwareThumbnail {sequence} {lightMode} />
-          </div>
-        {/if}
-      </Crossfade>
+        </div>
+      {/if}
     {:else if medium === "mandala" && mandala}
       <!-- No stored poster on CollectedMandala — it always renders from steps.
            `animate` is the only thing the token gates, so there is nothing to
@@ -145,10 +153,15 @@
            sandbox is what makes it safe to mount N of them in a gallery — a
            preview must never mutate the user's live viewer state.
 
-           The poster is the resting state, so the box is filled from first
-           paint and the token swap costs no layout (no-layout-shift.md). -->
-      <Crossfade key={live} fill duration={DURATION.normal}>
-        {#if live}
+           The stored poster stays underneath for the whole tile lifetime (see
+           the sequence branch), so the renderer's mount is never a black box. -->
+      {#if poster}
+        <img class="poster-img floor" src={poster} alt={label} loading="lazy" />
+      {:else}
+        <div class="poster floor empty">No preview</div>
+      {/if}
+      {#if live}
+        <div class="live-layer" transition:fade={{ duration: DURATION.normal }}>
           <LazyMount
             loader={() =>
               import(
@@ -157,23 +170,26 @@
             active
             props={{ tunnel }}
           />
-        {:else if poster}
-          <img class="poster-img" src={poster} alt={label} loading="lazy" />
-        {:else}
-          <div class="poster empty">No preview</div>
-        {/if}
-      </Crossfade>
+        </div>
+      {/if}
     {:else if medium === "scene" && scene}
       <!-- Scene3DPreview mounts the real Viewer3DCanvas from a construction
            seed, so it reads and writes none of the user's global viewer state —
            the property that lets several of these coexist at all. Its camera
            orbits on its own, since a tile is watched rather than driven.
 
-           Same poster-resting / remount-on-revoke shape as the tunnel branch:
-           WebGL contexts are the most expensive thing on this page, so a
-           revoked token must genuinely tear the canvas down. -->
-      <Crossfade key={live} fill duration={DURATION.normal}>
-        {#if live}
+           Same permanent-floor shape as the tunnel branch, and it matters most
+           here: a WebGL context plus a GLB environment is the slowest thing on
+           the page to first paint, so this is the tile that would show black
+           longest. Revoking still tears the canvas down — the floor is an
+           image, not a retained renderer. -->
+      {#if poster}
+        <img class="poster-img floor" src={poster} alt={label} loading="lazy" />
+      {:else}
+        <div class="poster floor empty">No preview</div>
+      {/if}
+      {#if live}
+        <div class="live-layer" transition:fade={{ duration: DURATION.normal }}>
           <LazyMount
             loader={() =>
               import(
@@ -182,12 +198,8 @@
             active
             props={{ scene }}
           />
-        {:else if poster}
-          <img class="poster-img" src={poster} alt={label} loading="lazy" />
-        {:else}
-          <div class="poster empty">No preview</div>
-        {/if}
-      </Crossfade>
+        </div>
+      {/if}
     {:else if poster}
       <img class="poster-img" src={poster} alt={label} loading="lazy" />
     {:else}
@@ -246,6 +258,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* The floor fills the stage and never leaves. The live layer sits directly
+     on top of it, so there is no moment where the tile has nothing in it. */
+  .floor {
+    position: absolute;
+    inset: 0;
+  }
+
+  .live-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
   }
 
   .poster-img {
