@@ -38,18 +38,35 @@ a read/write path into the whole database for anyone who can reach the port.
 |---|---|---|
 | Package | `flow-arts-knowledge-mcp` 3.0.0 | `@austencloud/tka-domain-mcp` 2.3.0 |
 | Last commit | `c795328af1`, 2026-07-27 | `b45281a6bb`, 2026-07-18 |
-| Shape | plain source | `bin` + `files` + esbuild bundle — publishable |
-| Tools | includes `vtg-tools.ts` | **missing `vtg-tools.ts`** |
-| Launched by | the NSSM service | `.mcp.json` → `tka-domain-local` (stdio) |
+| Shape | plain source, workspace-integrated | `bin` + `files` + esbuild bundle — publishable |
+| Runtime deps | full `@tka/*` workspace + `canvas` | SDK, resvg, zod only — everything else bundled |
+| Transports | **stdio + HTTP** | **stdio only** |
+| Launched by | the NSSM service | `.mcp.json` → `tka-domain-local` |
 
-Both are tracked. Both carry a full copy of `src/tools/`. The only file-level
-difference is `vtg-tools.ts`, and `mcp-server-pkg`'s last commit message is
-*"chore: snapshot before consolidating to main."*
+**These are two divergent implementations, not a source and its copy.** Verified
+by content diff, not filenames:
 
-`mcp-server-pkg` is therefore not a second product. It is a hand-copied
-distribution snapshot that someone began consolidating and did not finish, and
-hand-copying is exactly why it is missing a tool file. Adding `act-tools.ts` to
-one of the two would deepen a split that is already causing loss.
+- 8 of 9 files in `src/tools/` differ in content (only `preference-tools.ts` matches).
+- Each tree has modules the other lacks. `mcp-server` alone has `beta-offset.ts`,
+  `dash-location.ts`, `grid-coordinates.ts`, `prop-placement.ts`,
+  `orientation-calculator.ts`, `engine-generation-adapter.ts`,
+  `sequence-builder-adapter.ts`, `MCPVariationProvider.ts`, `vtg-tools.ts`.
+  `mcp-server-pkg` alone has `core/loop/`, `core/constraints/`, and
+  `sequence-builder.ts`.
+- The architectures differ by intent: `mcp-server` delegates to the shared
+  monorepo packages; `mcp-server-pkg` carries self-contained implementations so
+  esbuild can bundle it into a single publishable file with three runtime deps.
+
+So `mcp-server-pkg` is a real second distribution — standalone and
+npm-publishable — whose domain code has fallen behind `mcp-server`'s. That is
+still a problem worth fixing, but it is a **reconciliation of two
+implementations**, not a delete. An earlier draft of this design called it a
+hand-copied snapshot and planned to delete `mcp-server-pkg/src/`; that was wrong
+and would have destroyed the loop and constraints modules.
+
+**Consequence for sequencing: the HTTP transport exists only in `mcp-server`, so
+the authorization work is entirely independent of this reconciliation.** Phase 1
+does not wait on Phase 0.
 
 ---
 
@@ -60,7 +77,7 @@ one of the two would deepen a split that is already causing loss.
 | Full capability: compose, edit, render/export, and variants groundwork | Austen, 2026-07-27 ("All of this") | No narrowing to one verb; the design covers the whole surface and sequences it |
 | Approach **C** — authenticate `/mcp` first, then full remote Firestore-backed tools | Austen, 2026-07-27 | Most capable end state. Chosen over stdio-only gating (A) and Firestore-now (B) with the "auth before feature" cost stated and accepted |
 | Delegate to a **managed authorization server** via the SDK's `proxyProvider` | Austen, 2026-07-27 (took the recommendation) | We write zero token-issuing code. The alternative — implementing our own AS — is the hand-rolled option and was declined |
-| One source, one build, zero copies | Austen, 2026-07-27 ("give me the 10-year plan") | Structural fix rather than a tactical pick; see Phase 0 |
+| One source, one build, zero copies — as the *target*, reached by reconciliation rather than deletion | Austen, 2026-07-27 ("give me the 10-year plan"); premise corrected 2026-07-27 during planning | Structural fix rather than a tactical pick. The route there changed once the two trees turned out to be divergent implementations; see Phase 0 |
 | Phase 1 specced deep, Phases 2–3 sketched | Austen, 2026-07-27 | One executable plan at a time; later phases depend on decisions only makeable once auth is real |
 | Robustness over speed | Austen, 2026-07-27 | Phase 1 delivers no user-visible act capability and that is accepted |
 
@@ -105,40 +122,44 @@ reached through the AS rather than instead of it.
 
 ---
 
-## Phase 0 — Consolidate to one source (prerequisite)
+## Phase 0 — Reconcile the two servers (independent, not a prerequisite)
 
-**Goal:** make tool drift structurally impossible before adding tools.
+**Status: not plannable to step level yet.** The content diff above shows two
+divergent implementations. Which one is canonical *per module* is an open
+question that needs answering with evidence before any convergence is designed,
+and a plan that guessed would delete working code.
 
-`mcp-server/` becomes the single source of truth. `mcp-server-pkg/` keeps only
-what makes it a *package* — `package.json`, `build.mjs`, `LICENSE`, `assets/`,
-`data/` — and its esbuild step bundles `../mcp-server/index.ts`.
-`mcp-server-pkg/src/` is deleted.
+**The 10-year target is unchanged:** one implementation, one build, zero
+hand-synced copies. `mcp-server-pkg` should end up as packaging only —
+`package.json`, `build.mjs`, `LICENSE`, `assets/`, `data/` — with its esbuild
+step bundling the single source. That is this repo's own anti-drift doctrine
+(*"agree by construction, not by inspection"*, per the 07-26 handoff and
+`sequence-viewer-shell.md`) applied one directory over.
 
-This is the repo's own anti-drift doctrine applied one directory over. The
-07-26 handoff put it as *"preview and PDF must agree by construction, not by
-inspection"*; `sequence-viewer-shell.md` and `crossfade-primitive.md` are the
-same rule for viewer chrome and transitions. Two hand-synced copies of a
-directory drift every time, and these already have.
+**What has to be established first, in order:**
 
-**Steps**
+1. Is `mcp-server`'s tool surface a behavioural **superset** of
+   `mcp-server-pkg`'s? Same tool names is not the same answer — the two have
+   different generation internals (`sequence-builder-adapter.ts` delegating to
+   `@tka/sequence-engine` vs `pkg`'s own `sequence-builder.ts` + `core/loop/` +
+   `core/constraints/`). Compare outputs for the same inputs, not source.
+2. Do `pkg`'s `core/loop/` and `core/constraints/` have equivalents in the
+   `@tka/*` packages `mcp-server` uses, or is that logic unique to `pkg`?
+   `project_dual_loop_executor_sets` and
+   `reference_dual_loop_executor_sets` in memory record a known app-vs-engine
+   LOOP executor split — check whether this is the same split before assuming
+   duplication.
+3. Can `mcp-server` even be bundled standalone? It depends on `canvas`, a native
+   module, which is plausibly *why* `pkg` was written self-contained. If it
+   cannot, the packaging strategy — not the source — is what needs rethinking.
 
-1. Repoint `mcp-server-pkg/build.mjs` at `../mcp-server/index.ts`.
-2. Reconcile the delta first — confirm `vtg-tools.ts` is the *only* real
-   difference by diffing file contents, not just names, and that nothing in
-   `mcp-server-pkg/src/` is uniquely newer. If anything is, port it to
-   `mcp-server/` before deleting.
-3. Delete `mcp-server-pkg/src/`.
-4. Rebuild; verify the bundle boots over stdio and now advertises `vtg-tools`.
-5. Verify `.mcp.json`'s `tka-domain-local` still resolves and lists tools.
+Only once those are answered can convergence be planned. **Do not delete
+`mcp-server-pkg/src/` before then.**
 
-**Done when:** one `src/` exists, the published bundle is generated from it, and
-the local stdio server exposes the same tool set as the service.
-
-**Licensing note:** both packages already declare `Elastic-2.0`, so consolidation
-does not change what ships under which license. Worth one confirmation pass with
-the `license` skill after the merge, since the published bundle will then be
-generated from a source tree it did not previously read — but this is a check,
-not a known problem.
+**Licensing note:** both declare `Elastic-2.0`, so convergence does not change
+what ships under which license. One confirmation pass with the `license` skill
+afterwards, since the published bundle would then be generated from a source
+tree it did not previously read.
 
 ---
 
@@ -256,7 +277,7 @@ spec.
 |---|---|
 | Express migration regresses the working HTTP transport | Integration test asserts a valid-token request still reaches the server; the stdio test proves the local path is untouched |
 | Managed-AS vendor choice not yet made | Phase 1 depends on the *role*, not the vendor. `proxyProvider` isolates the choice to configuration; picking the vendor is the plan's first task |
-| Consolidation loses work unique to `mcp-server-pkg/src/` | Step 2 diffs file contents before any deletion, and nothing is deleted until the delta is reconciled |
+| Consolidation loses work unique to `mcp-server-pkg/src/` | **This risk already fired during planning.** A content diff showed two divergent implementations, not a copy; Phase 0 was rewritten from "delete pkg/src" to an evidence-gathering phase and is no longer a prerequisite for anything |
 | Phase 1 ships no visible capability | Stated and accepted. Robustness over speed |
 
 ## Explicitly out of scope
