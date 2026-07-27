@@ -16,6 +16,7 @@
   "include": [
     "index.ts",
     "src/**/*.ts",
+    "tests/**/*.ts",
     "test-loop.ts"
   ],
   "exclude": ["node_modules"]
