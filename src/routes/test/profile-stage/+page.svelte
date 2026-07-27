@@ -424,6 +424,7 @@
         isOwnProfile={true}
         followInProgress={false}
         onFollowToggle={() => {}}
+        fill
       />
     </div>
   {/if}
@@ -604,15 +605,15 @@
 
   h1 {
     margin: 0;
-    font-size: clamp(1.5rem, 2.4vw, 2.25rem);
+    font-size: 1.75em;
     font-weight: 700;
     color: var(--theme-text);
   }
 
   .sub {
-    margin: 0.35rem 0 0;
+    margin: 0.35em 0 0;
     color: var(--theme-text-dim);
-    font-size: 0.9375rem;
+    font-size: 0.9375em;
   }
 
   .layout-switch {
@@ -684,18 +685,22 @@
   .band {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.85em;
   }
 
   .band-head {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
+    gap: 0.9em;
   }
 
+  /* Band chrome rides the same `em` ramp as the tiles it labels. In `rem` it
+     froze at 13px while tile labels ramped to ~20px at 3000px, so the headers
+     read as micro-labels over increasingly large rows — the page stopped
+     looking like one surface. */
   .band-head h2 {
     margin: 0;
-    font-size: 0.8125rem;
+    font-size: 0.9375em;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -710,7 +715,7 @@
   }
 
   .band-count {
-    font-size: 0.8125rem;
+    font-size: 0.9375em;
     color: var(--theme-text-dim);
     font-variant-numeric: tabular-nums;
   }
@@ -718,7 +723,7 @@
   .band-empty {
     margin: 0;
     color: var(--theme-text-dim);
-    font-size: 0.9375rem;
+    font-size: 0.9375em;
   }
 
   .grid {

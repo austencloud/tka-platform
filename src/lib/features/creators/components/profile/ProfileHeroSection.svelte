@@ -14,6 +14,7 @@
     onFollowToggle,
     onFollowersClick,
     onFollowingClick,
+    fill = false,
   }: {
     userProfile: EnhancedUserProfile;
     currentUserId?: string | null;
@@ -22,6 +23,17 @@
     onFollowToggle: () => void;
     onFollowersClick?: () => void;
     onFollowingClick?: () => void;
+    /**
+     * Fill the parent's width instead of capping at 900px and centring.
+     *
+     * The cap is right for a hero standing alone above a narrow column, which
+     * is what both existing consumers are. It is wrong when the hero is the
+     * first member of a band whose siblings run the full content width — there
+     * it strands ~2000px of rail at 4K and reads as a different page from the
+     * rows under it ("one width per page", 4k-native-layout.md). Opt-in so
+     * neither existing consumer moves.
+     */
+    fill?: boolean;
   } = $props();
 
   const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
@@ -41,6 +53,7 @@
 
 <div
   class="hero-section"
+  class:fill
   transition:fade={{ duration: 300 }}
   style:--profile-color={accentColor}
 >
@@ -176,6 +189,37 @@
     margin-bottom: 24px;
     max-width: 900px;
     margin-inline: auto;
+  }
+
+  /* Band member, not a standalone card: match the siblings' width. The inner
+     container query (hero-section) still drives the stacked/wide layouts, so
+     the hero recomposes on its own box exactly as before. */
+  .hero-section.fill {
+    max-width: none;
+  }
+
+  /* Removing the cap alone just moves the dead space inside: identity clusters
+     left and ~2000px of the card sits empty. Filling a wide box means USING it,
+     so the identity anchors the left edge and the stats anchor the right —
+     which is also what the rows below do (label left, count right). Above the
+     640px container query only; the stacked layout keeps its centred column. */
+  @container hero-section (min-width: 641px) {
+    .fill .info-block {
+      flex-direction: row;
+      align-items: center;
+      gap: clamp(24px, 4cqi, 64px);
+    }
+
+    /* `margin-left: auto` on the stats, not `space-between` on the parent:
+       space-between distributes EVERY child, which strands the bio and the
+       Instagram link alone in the middle of the card. Auto margin keeps the
+       identity as one left-anchored cluster and pushes only the stats right. */
+    .fill .stats-row {
+      flex: 0 0 auto;
+      margin-top: 0;
+      margin-left: auto;
+      gap: clamp(24px, 2.5cqi, 56px);
+    }
   }
 
   .hero-ambient {
