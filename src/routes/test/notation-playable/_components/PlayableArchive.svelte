@@ -253,11 +253,17 @@
 			}}
 		>
 			<span class="ghost-year" aria-hidden="true">{entry.year}</span>
+			<!-- The name is PERSISTENT on every stage so that during a select
+			     re-tile each stage pairs with itself and travels with its tile.
+			     Active-only naming left the names unpaired across the transition,
+			     so the new hero's visual entered at its final position while the
+			     tile was still morphing. Only the open detail hands its name off
+			     (to the panel), which is what powers the Inspect morph. -->
 			<span
 				class="artifact-stage"
-				style:view-transition-name={isActive && !archive.detailOpen
-					? `stage-${entry.id}`
-					: undefined}
+				style:view-transition-name={archive.detailOpen && isActive
+					? undefined
+					: `stage-${entry.id}`}
 			>
 				<ArtifactVisual {entry} active={isActive && !archive.detailOpen} />
 			</span>
