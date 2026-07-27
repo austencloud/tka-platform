@@ -41,6 +41,7 @@
   import ResizeHandle from "$lib/shared/panels/ResizeHandle.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SheetPreviewPages from "./SheetPreviewPages.svelte";
+  import SheetReadingView from "./SheetReadingView.svelte";
   import ActPlayer from "./ActPlayer.svelte";
   import ActsDock from "./ActsDock.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -154,6 +155,16 @@
     { value: "standard", label: "Standard" },
     { value: "compact", label: "Compact" },
   ];
+  // Page = the faithful print preview, sized from `--pt` off the paper width.
+  // Reading = the same act reflowed for a screen. See the view-mode block below
+  // (it needs `workspaceWidth`, which is measured further down).
+  type ViewMode = "reading" | "page";
+  const VIEW_MODE_KEY = "tka-choreo-view-mode";
+  const viewModeOptions: { value: ViewMode; label: string }[] = [
+    { value: "reading", label: "Reading" },
+    { value: "page", label: "Page" },
+  ];
+
   const isAnnotated = $derived(builder.layout.packing === "aligned");
   const pictographSize = $derived<PictographSize>(
     builder.layout.columns <= 4 ? "large" : builder.layout.columns <= 6 ? "standard" : "compact"
@@ -588,6 +599,37 @@
 
   // Below this the rail, stage, and dock stack instead of sitting side by side.
   const workspaceNarrow = $derived(workspaceWidth > 0 && workspaceWidth <= 900);
+
+  // ── View mode ───────────────────────────────────────────────────────────────
+  // A phone gets Reading by default: the page model sizes everything from
+  // `--pt: 100cqw / pageWidthPt`, so a landscape letter sheet at 375px renders
+  // 32px pictographs and 4px type. Uniform scaling IS the failure there, so the
+  // narrow view reflows instead of shrinking.
+  //
+  // This is a VIEWING preference — it lives in localStorage and never touches
+  // `sheet.layout`. That object is the print model; what prints must not depend
+  // on how wide the window happened to be.
+  //
+  // null = never chosen, so the width default applies and keeps applying.
+  let viewModeChoice = $state<ViewMode | null>(null);
+  $effect(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY);
+    if (saved === "reading" || saved === "page") viewModeChoice = saved;
+  });
+  const viewMode = $derived<ViewMode>(
+    viewModeChoice ?? (workspaceWidth > 0 && workspaceWidth <= 700 ? "reading" : "page")
+  );
+  function setViewMode(v: ViewMode) {
+    viewModeChoice = v;
+    localStorage.setItem(VIEW_MODE_KEY, v);
+  }
+  const isReading = $derived(viewMode === "reading");
+
+  // Reading columns follow the stage, and the bands rebuild to match — the grid
+  // renders exactly the count the bands were built with, so the two cannot drift.
+  $effect(() => {
+    builder.setReadingColumns(workspaceWidth > 0 && workspaceWidth >= 700 ? 8 : 4);
+  });
 
   // ── Rail sizing ─────────────────────────────────────────────────────────────
   // Same convention as the viewer's content rail: pointer-drag through the
@@ -1077,6 +1119,16 @@
           />
         </div>
         <div class="setting-col">
+          <span class="setting-label">View</span>
+          <SegmentedControl
+            options={viewModeOptions}
+            value={viewMode}
+            onchange={setViewMode}
+            color="accent"
+            size="sm"
+          />
+        </div>
+        <div class="setting-col">
           <span class="setting-label">Sheet style</span>
           <SegmentedControl
             options={packingOptions}
@@ -1224,6 +1276,22 @@
           </div>
         </div>
       {:else}
+      {#if isReading}
+      <div class="reading-stage">
+        <SheetReadingView
+          bands={builder.readingBands}
+          columns={builder.readingColumns}
+          layout={builder.layout}
+          sheetName={builder.sheet.name}
+          header={builder.sheet.annotations.header}
+          sequenceNames={builder.sequenceNames}
+          onSetCue={builder.setCue}
+          onAddNote={builder.addNote}
+          onSetNote={builder.setNote}
+          onRemoveNote={builder.removeNote}
+        />
+      </div>
+      {:else}
       <SheetPreviewPages
         {zoom}
         placeholderRoster={builder.rosterComplete
@@ -1245,6 +1313,7 @@
         onRemoveNote={builder.removeNote}
         onSetHeader={builder.setHeader}
       />
+      {/if}
       {/if}
 
       <!-- Zoom belongs to the stage, not the toolbar: it scales the drawing, it
@@ -2222,6 +2291,15 @@
   /* Zero-height sticky strip: the dock rides the bottom of the scrollport but
      contributes no layout height, so "Fit page" still means exactly one page
      with no scrollbar. */
+  /* The reading view's own query container. Named so its rules can never be
+     caught by the page preview's containers, and vice versa — the two sizing
+     models must not see each other. */
+  .reading-stage {
+    container-type: inline-size;
+    container-name: reading-stage;
+    width: 100%;
+  }
+
   .stage-controls {
     position: sticky;
     bottom: var(--spacing-sm);

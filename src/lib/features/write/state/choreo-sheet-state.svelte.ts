@@ -29,7 +29,14 @@ import {
   type NoteMark,
 } from "../domain/types/choreo-sheet";
 import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
-import { planBands, planSheet, type SheetBandPage, type SheetPage } from "../services/sheet-row-planner";
+import {
+  buildBands,
+  planBands,
+  planSheet,
+  type SheetBand,
+  type SheetBandPage,
+  type SheetPage,
+} from "../services/sheet-row-planner";
 import { prefillTimestamps as computePrefill } from "../services/timestamp-prefill";
 import { buildActSequence } from "../services/sheet-act-sequence";
 import {
@@ -298,6 +305,37 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
           showTitleBlock: sheet.annotations.header.showTitleBlock,
         })
       : []
+  );
+
+  // ── Reading view ────────────────────────────────────────────────────────────
+  // The phone view re-chunks at its OWN column count — 4 across is an 83px cell
+  // at 375px, which is legible, and 4/8/16-step sequences chunk without a ragged
+  // last row. Re-chunking is only safe because cues and notes address an
+  // absolute step index; when they were band-relative this would have scrambled
+  // every one of them.
+  //
+  // Same `buildBands` the printed sheet uses, so chunking and annotation
+  // placement have exactly one implementation. No pagination — reading scrolls.
+  // Set by the view from its measured width: 4 on a phone, 8 once there is room.
+  // Wider screens get MORE pictographs, never bigger ones — a 215px cell on a
+  // short landscape screen wastes the whole viewport on one band.
+  let readingColumns = $state(4);
+  function setReadingColumns(n: number): void {
+    if (n > 0 && n !== readingColumns) readingColumns = n;
+  }
+  const readingBands = $derived<SheetBand[]>(
+    buildBands({
+      sequences: normalizedRows,
+      geo: getSheetPageLayout({ ...sheet.layout, columns: readingColumns }),
+      cues: sheet.annotations.cues,
+      notes: sheet.annotations.notes,
+    })
+  );
+
+  // sequenceId → display word for the reading view's per-sequence heading. A
+  // repeated word always shows in its smallest form.
+  const sequenceNames = $derived<Record<string, string>>(
+    Object.fromEntries(normalizedRows.map((s) => [s.id, s.word ?? ""]))
   );
 
   // The whole sheet as ONE continuous sequence, for act playback. Recomputes only
@@ -673,6 +711,16 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     },
     get bandPages() {
       return bandPages;
+    },
+    get readingBands() {
+      return readingBands;
+    },
+    get readingColumns() {
+      return readingColumns;
+    },
+    setReadingColumns,
+    get sequenceNames() {
+      return sequenceNames;
     },
     get isDirty() {
       return sheet !== pristineSheet;

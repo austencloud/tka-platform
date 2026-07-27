@@ -48,7 +48,7 @@ describe("sheet geometry — orientation + annotation bands", () => {
   });
 });
 
-import { planBands, type BandPlanInput } from "$lib/features/write/services/sheet-row-planner";
+import { buildBands, planBands, type BandPlanInput } from "$lib/features/write/services/sheet-row-planner";
 import { bandKey } from "$lib/features/write/domain/types/choreo-sheet";
 
 function seq(id: string, n: number) {
@@ -187,6 +187,38 @@ describe("planBands (row-aligned)", () => {
     const notes = [{ id: "n1", sequenceId: "gone", stepIndex: 0, pinned: true, text: "stale" }];
     const bands = planBands({ sequences: [seq("x", 8)], geo, cues: [], notes }).flatMap((p) => p.bands);
     expect(bands.flatMap((b) => b.notes)).toHaveLength(0);
+  });
+
+  it("buildBands is exactly planBands minus pagination", () => {
+    // The extraction that lets the reading view re-chunk without a second
+    // implementation. If these ever diverge, the two surfaces have forked.
+    const input: BandPlanInput = {
+      sequences: [seq("x", 12), seq("y", 8)],
+      geo,
+      cues: [{ sequenceId: "x", stepIndex: 8, timestamp: "0:08", text: "drop" }],
+      notes: [{ id: "n1", sequenceId: "y", stepIndex: 3, pinned: true, text: "roll" }],
+    };
+    expect(buildBands(input)).toEqual(planBands(input).flatMap((p) => p.bands));
+  });
+
+  it("re-chunks at a reading column count without disturbing annotations", () => {
+    // What the phone view does: same bands, its own width. A note on step 6
+    // must land on the pictograph labelled 6 at every count.
+    const notes = [{ id: "n1", sequenceId: "x", stepIndex: 6, pinned: true, text: "pass behind" }];
+    const at = (columns: number) => {
+      const bands = buildBands({
+        sequences: [seq("x", 16)],
+        geo: getSheetPageLayout({ ...base, columns, showCueRail: true, showNoteStrips: true }),
+        cues: [],
+        notes,
+      });
+      const holder = bands.find((b) => b.notes.length > 0)!;
+      // Absolute step the badge resolves to, which must be stable.
+      return holder.firstStepIndex + (holder.notes[0].count! - 1);
+    };
+    expect(at(8)).toBe(6);
+    expect(at(4)).toBe(6);
+    expect(at(6)).toBe(6);
   });
 
   it("packs bands onto pages by height and overflows to a new page", () => {

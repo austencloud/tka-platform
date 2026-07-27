@@ -148,7 +148,18 @@ function rowForStep(stepIndex: number, stepCount: number, columns: number): numb
   return Math.min(Math.floor(Math.max(0, stepIndex) / columns), lastRow);
 }
 
-export function planBands(input: BandPlanInput): SheetBandPage[] {
+/**
+ * Build the ordered band list for a layout — chunking + annotation resolution,
+ * WITHOUT pagination.
+ *
+ * Split out from `planBands` so the mobile reading view can consume the exact
+ * same bands at its own column count without a second implementation of
+ * chunking or annotation placement. That is the whole point: the page-chrome
+ * bug in this module happened when a third surface grew its own layout math.
+ * Reading view re-chunks at 4 columns and gets correct annotations for free,
+ * because they address absolute steps rather than band-relative positions.
+ */
+export function buildBands(input: BandPlanInput): SheetBand[] {
   const { sequences, geo, cues, notes } = input;
   const columns = geo.columns;
 
@@ -222,6 +233,13 @@ export function planBands(input: BandPlanInput): SheetBandPage[] {
     }
     beatIndex += steps.length;
   }
+
+  return bands;
+}
+
+export function planBands(input: BandPlanInput): SheetBandPage[] {
+  const { geo } = input;
+  const bands = buildBands(input);
 
   // 2. Height-packed pagination. The budget is the grid area MINUS the chrome
   //    that page carries — the title block on page 1, the running header after.

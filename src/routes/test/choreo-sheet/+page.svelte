@@ -11,7 +11,8 @@
   metadata, then loadFullSequenceData per word for populated steps).
 -->
 <script lang="ts">
-  import { planSheet, planBands } from "$lib/features/write/services/sheet-row-planner";
+  import { planSheet, planBands, buildBands } from "$lib/features/write/services/sheet-row-planner";
+  import SheetReadingView from "$lib/features/write/components/sheet/SheetReadingView.svelte";
   import { getSheetPageLayout } from "$lib/features/write/domain/sheet-page-layout";
   import {
     DEFAULT_SHEET_LAYOUT,
@@ -57,6 +58,24 @@
   const pages = $derived(planSheet(sequences, layout));
   const bandPages = $derived(annotated ? planBands({ sequences, geo, cues, notes }) : []);
   const annotations = $derived({ ...createEmptyAnnotations(), cues, notes });
+
+  // Reading view: same buildBands, re-chunked at its own column count.
+  let reading = $state(false);
+  let stageWidth = $state(0);
+  // 4 on a phone, 8 once there is room — wider screens get more pictographs,
+  // never bigger ones. Mirrors ChoreoSheetView so the harness measures the app.
+  const readingColumns = $derived(stageWidth > 0 && stageWidth >= 700 ? 8 : 4);
+  const readingBands = $derived(
+    buildBands({
+      sequences,
+      geo: getSheetPageLayout({ ...layout, columns: readingColumns }),
+      cues,
+      notes,
+    })
+  );
+  const sequenceNames = $derived(
+    Object.fromEntries(sequences.map((s) => [s.id, s.word ?? ""]))
+  );
 
   // Seed annotations on the first loaded sequence at absolute steps, including
   // two cues four steps apart — at 8 columns they share one band and the rail
@@ -188,6 +207,13 @@
       <button onclick={() => (annotated = !annotated)} disabled={sequences.length === 0}>
         {annotated ? "Annotated" : "Study"} view
       </button>
+      <button
+        class:active={reading}
+        onclick={() => (reading = !reading)}
+        disabled={sequences.length === 0}
+      >
+        {reading ? "Reading" : "Page"} mode
+      </button>
       {#each [4, 6, 8] as c (c)}
         <button
           class:active={columns === c}
@@ -201,7 +227,22 @@
     <p class="status">{status}</p>
   </header>
 
-  {#if annotated}
+  {#if reading}
+    <div class="reading-stage" bind:clientWidth={stageWidth}>
+      <SheetReadingView
+        bands={readingBands}
+        columns={readingColumns}
+        {layout}
+        sheetName="Harness"
+        header={annotations.header}
+        {sequenceNames}
+        onSetCue={setCue}
+        onAddNote={addNote}
+        onSetNote={setNote}
+        onRemoveNote={removeNote}
+      />
+    </div>
+  {:else if annotated}
     <SheetPreviewPages
       {pages}
       {geo}
@@ -223,6 +264,11 @@
   .harness {
     min-height: 100vh;
     padding: 24px;
+    /* On a phone the harness must not add chrome the real stage doesn't have,
+       or the measured cell size lies about the app. */
+    @media (max-width: 700px) {
+      padding: 8px;
+    }
     background: var(--theme-bg, #14141f);
     color: var(--theme-text, #ffffff);
     font-family: system-ui, sans-serif;
@@ -272,6 +318,12 @@
   button.active {
     background: var(--theme-accent-bg-strong, rgba(100, 180, 255, 0.45));
     border-color: var(--theme-accent, rgba(100, 180, 255, 0.8));
+  }
+
+  .reading-stage {
+    container-type: inline-size;
+    container-name: reading-stage;
+    width: 100%;
   }
 
   .status {
