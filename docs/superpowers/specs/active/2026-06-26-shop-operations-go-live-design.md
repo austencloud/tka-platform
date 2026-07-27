@@ -2,19 +2,58 @@
 status: active
 value: 5
 effort: S
-remaining: "STALE — needs reconciliation, not a build. Body says 'Not yet built' (2026-06-26), but 108 commits touched shop code since and the LOOP Deck shop is LIVE taking Stripe preorders (ships Oct 1): automated preorder→regular price swap, free US shipping, cart lines, product JSON-LD, Merchant Center guide all landed. Next action is auditing the live store to establish which arc items (Stripe Tax, live-mode key flip, fulfillment workflow, product art) are genuinely open — do NOT rebuild from this spec."
-depends_on: ""
+remaining: "Reconciled 2026-07-27. Local working-tree remediation is verified but uncommitted and undeployed (7 suites, 44 tests; functions tsc clean): shared shipping tax policy, free US deck and sampler shipping, preorder cutoff parity, pending-order write ordering, and the pending-to-paid webhook transition. Resume only after the exposed credentials are rotated. Then clear the Stripe payout requirement and Tax registration, configure the orders.expiresAt TTL policy, deploy createCartCheckout/createMerchCheckout/handleMerchWebhook, run a paid checkout/refund with tax and order-archive proof, add shipBy metadata, decide whether Stripe product images are still needed, and remove the /shop gate."
+depends_on: "external: rotate exposed credentials, clear Stripe payout requirement, and complete Stripe Tax registration"
+plan_path: "plans/2026-06-26-shop-operations-go-live.md"
 supersedes_context: ""
 tags: [revenue, shop, store, stripe, go-live, fulfillment, tax]
-last_triaged: 2026-07-25
+last_triaged: 2026-07-27
 ---
 # Shop Operations & Go-Live — Design Spec
 
 **Date:** 2026-06-26
-**Status:** Design approved (brainstorm 2026-06-26). Not yet built. Continues the spin-up
-spec (`2026-06-23-shop-spin-up-design.md`), whose Phase A (visibility/gate/coming-soon) is
-shipped and whose checkout is wired + verified in **test mode** (restricted `rk_test` key,
-real $30 test product `B8dDCYkEPunFCFVKiaBr`, worldwide shipping + placeholder rate tiers).
+**Status:** Active but blocked. Local remediation is verified but not committed or deployed.
+Continues the spin-up spec (`2026-06-23-shop-spin-up-design.md`).
+
+## Reconciliation, 2026-07-27
+
+**Queue placement:** `active/`, classified under the queue's blocked bucket by
+`depends_on`. The implementation has started, so `backlog/` would be inaccurate.
+The production success criteria are still open, so `shipped/` would also be
+inaccurate.
+
+The June build instructions no longer describe the repository or production state. This
+table is the current resume point. It comes from source inspection, Firebase function
+metadata, public Firestore reads, production HTTP responses, and sanitized Stripe API
+queries performed on 2026-07-27.
+
+| Area | Verified state | Result |
+|---|---|---|
+| Account | Live charges enabled; payouts disabled; one requirement is currently and past due | Open |
+| Stripe Tax | Status `pending`; zero active registrations; no default shipping tax code | Open |
+| Product tax setup | Four live deck prices have `tax_behavior: unspecified`; both live Stripe products have no product tax code | Open |
+| Merch webhook | Live endpoint enabled for `checkout.session.completed`, `product.created/updated`, and `price.created/updated` | Done |
+| Catalog | Live LOOP Deck and Deck Architect prices exist; placeholder `B8dDCYkEPunFCFVKiaBr` is absent | Done |
+| Preorder data | Both purchasable products have preorder and cutoff fields; neither has `shipBy` | Partial |
+| Product art | Stripe products have zero images, but Firestore has 60 baked cover cards and sampled Storage URLs returned PNG bytes | Partial, storefront art exists through the newer cover-card path |
+| Functions | `createMerchCheckout` and `handleMerchWebhook` are active; `createCartCheckout` is absent | Open, current buy surfaces call the absent function |
+| Storefront | `/shop` still server-renders “Shop opening soon”; direct LOOP routes return 200 and advertise the live preorder range in JSON-LD | Partial |
+| Live orders | Twelve live Checkout sessions exist; none is paid and none has nonzero tax | Open, no paid smoke-test proof |
+
+The uncommitted local remediation on 2026-07-27:
+
+- moved both checkout paths onto one shipping-rate policy;
+- added Stripe shipping tax code `txcd_92010001` to every rate;
+- kept US shipping free when a cart contains a deck or sampler whose price includes it;
+- routed cart checkout through the same preorder cutoff resolver as legacy checkout;
+- added handler tests for write-before-Stripe ordering and the paid webhook transition;
+- verified 44 merch tests, a clean functions TypeScript pass, and a root
+  `npm run check` result of 0 errors with 4 warnings in files outside this change.
+
+No Firebase or Stripe state was changed by this remediation. Do not deploy the local
+function changes until the credentials exposed during this audit are rotated. After
+rotation, deploy only `createCartCheckout`, `createMerchCheckout`, and
+`handleMerchWebhook`, then prove the full paid-order path before opening `/shop`.
 
 ---
 

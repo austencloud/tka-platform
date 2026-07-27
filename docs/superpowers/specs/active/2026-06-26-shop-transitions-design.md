@@ -2,12 +2,13 @@
 status: active
 value: 4
 effort: S
-remaining: Re-enable global VT driver, name shop shared element, verify, optional grid stagger
-depends_on: ""
+remaining: "Native book-to-detail route morph is implemented, the inert Motion-FLIP bridge is removed, and static checks pass. Remaining: browser proof in a signed-in admin shop for forward/back navigation, refresh, reduced motion, and unsupported-browser fallback. Chrome control failed before connecting because the connector rejected the WSL-form workspace path."
+depends_on: "external: Chrome connector cannot initialize with sandboxCwd file:///mnt/e/tka-platform"
 supersedes_context: ""
 tags: [shop, transitions, view-transitions, polish, ux]
-last_triaged: 2026-06-26
+last_triaged: 2026-07-24
 ---
+
 # Shop Transitions — Design Spec
 
 **Date:** 2026-06-26
@@ -17,7 +18,7 @@ last_triaged: 2026-06-26
 
 Shop navigation is plain anchor swaps with no visual continuity: clicking a product card
 hard-cuts to the detail page, and "All Products" hard-cuts back. It should feel like the
-card's cover image *is* the detail view, growing and shrinking between the two.
+card's cover image _is_ the detail view, growing and shrinking between the two.
 
 ## Key finding (investigation, 2026-06-26)
 
@@ -54,12 +55,15 @@ Replace the commented block with the canonical pattern plus guards:
 
 ```js
 onNavigate((navigation) => {
-  if (!document.startViewTransition) return;                 // feature-detect → instant fallback
-  if (consumeSkipNextViewTransition()) return;               // swipe-dismiss already animated (exists)
-  if (navigation.willUnload) return;                         // real unload / back-gesture
+  if (!document.startViewTransition) return; // feature-detect → instant fallback
+  if (consumeSkipNextViewTransition()) return; // swipe-dismiss already animated (exists)
+  if (navigation.willUnload) return; // real unload / back-gesture
   if (navigation.from?.url.pathname === navigation.to?.url.pathname) return; // skip param-only nav
   return new Promise((resolve) => {
-    document.startViewTransition(async () => { resolve(); await navigation.complete; });
+    document.startViewTransition(async () => {
+      resolve();
+      await navigation.complete;
+    });
   });
 });
 ```
@@ -119,13 +123,13 @@ the proven `view-transition-name` shared-element pattern, `StaggeredAnimation` /
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| F5 / refresh deadlock recurs | async-mode absent + `onNavigate` doesn't fire on full-page nav + guards; **verify F5 + refresh before declaring done**. |
-| Re-enabling lights up the browse→sequence morph app-wide | Intended (it was dormant); verify browse→sequence still looks right, not just shop. |
-| Duplicate `view-transition-name` aborts the transition | One card per id visible; invariant holds (no variation picker in shop). |
-| Mobile jank | Target is a 2D image, not a 3D canvas; compositor-only (transform/opacity); cheap. |
-| Pre-launch the grid is admin-gated | Only admins see the grid→detail morph until the gate is removed; the detail page is ungated. Acceptable; full morph goes public at launch. |
+| Risk                                                     | Mitigation                                                                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| F5 / refresh deadlock recurs                             | async-mode absent + `onNavigate` doesn't fire on full-page nav + guards; **verify F5 + refresh before declaring done**.                    |
+| Re-enabling lights up the browse→sequence morph app-wide | Intended (it was dormant); verify browse→sequence still looks right, not just shop.                                                        |
+| Duplicate `view-transition-name` aborts the transition   | One card per id visible; invariant holds (no variation picker in shop).                                                                    |
+| Mobile jank                                              | Target is a 2D image, not a 3D canvas; compositor-only (transform/opacity); cheap.                                                         |
+| Pre-launch the grid is admin-gated                       | Only admins see the grid→detail morph until the gate is removed; the detail page is ungated. Acceptable; full morph goes public at launch. |
 
 ## Out of scope
 

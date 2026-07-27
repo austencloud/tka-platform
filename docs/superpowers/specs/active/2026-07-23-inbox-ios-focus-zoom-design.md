@@ -3,7 +3,7 @@ status: active
 value: 4
 effort: XS
 remaining: "Implementation is complete. Remaining: verify focus, keyboard, reply, and edit flows on the target iPhone without viewport zoom."
-depends_on: ""
+depends_on: "external: target iPhone device verification"
 plan_path: ""
 tags: ["inbox", "ios", "mobile", "accessibility", "css"]
 last_triaged: 2026-07-23

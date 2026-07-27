@@ -131,8 +131,9 @@ randomization (Phase D). Not claimed anywhere until true.
 - Chips colors/icons: `LOOP_COMPONENT_MAP` (`loop-constants.ts`).
 - Fan pattern: `/test/shop-covers` (derived from gallery `SequencePeek` fans).
 - Waitlist: `services/waitlist.ts` + `ShopComingSoon` form pattern.
-- Morph/view transitions: existing `shop-morph.ts` (kept; fan replaces mandala as
-  the morph content).
+- Morph/view transitions: the shared named-route driver in
+  `src/lib/shared/transitions/navigation-morphs.ts`, with `BookCoverArt` as the
+  live shop participant.
 - Card backs exist as components (`card-back/CardBack.svelte`) — optional later
   addition to the fan (one back among fronts); not required this pass.
 

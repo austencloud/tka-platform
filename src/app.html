@@ -943,24 +943,10 @@
     <!-- Playfair Display: serif voice for in-app hint headings (matches landing) -->
     <!-- Self-hosted (offline-safe) — replaces the Google Fonts CDN, which the SW
          can't cache cross-origin so headings fell back to system serif offline. -->
-    <link
-      rel="preload"
-      href="/fonts/playfair/playfair-display-500-latin.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
-    />
     <link rel="stylesheet" href="/fonts/css/playfair.css" />
 
-    <!-- Fraunces 700 italic: the brand wordmark voice. Loaded app-wide so the
+    <!-- Fraunces 700 italic: the brand wordmark voice. Available app-wide so the
          desktop-nav "TKA" wordmark matches the landing SiteHeader wordmark. -->
-    <link
-      rel="preload"
-      href="/fonts/fraunces/fraunces-700-italic-latin.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
-    />
     <link rel="stylesheet" href="/fonts/css/fraunces.css" />
 
     <!-- Google Identity Services (app mode only - landing doesn't need auth) -->

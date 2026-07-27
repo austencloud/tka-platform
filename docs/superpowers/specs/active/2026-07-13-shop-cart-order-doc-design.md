@@ -1,18 +1,51 @@
 ---
 status: active
-value: 4
-effort: M
-remaining: "Body status: Approved, ready for plan"
-depends_on: ""
-plan_path: ""
-tags: []
-last_triaged: 2026-07-25
+value: 5
+effort: S
+remaining: "The source implementation is in main. The 2026-07-27 working-tree remediation is verified but uncommitted and undeployed (7 suites, 44 tests; functions tsc clean), including tests for write-before-Stripe ordering and pending to paid. Production does not list createCartCheckout while every current buy surface calls it, and the remote index configuration has no TTL override for orders.expiresAt. After credential rotation and Stripe account setup: configure TTL, deploy the cart callable and updated merch functions, then run a live checkout/refund and verify pending to paid with tax."
+depends_on: "external: rotate exposed credentials, clear Stripe payout requirement, and complete Stripe Tax registration"
+plan_path: "plans/2026-07-13-shop-cart-order-doc.md"
+tags: [revenue, shop, cart, stripe, orders]
+last_triaged: 2026-07-27
 ---
 # Shop Cart + Order-Doc Persistence — Design
 
 **Date:** 2026-07-13
-**Status:** Approved, ready for plan
+**Status:** Active but blocked. Source implementation is in main; the local remediation is
+verified but not committed or deployed.
 **Related:** `project_shop_preview_phase` (approve/reject preview rides this spine), `project_loop_deck_shop_live` (live Stripe preorders), `project_physical_merch_store`
+
+## Reconciliation, 2026-07-27
+
+**Queue placement:** `active/`, classified under the queue's blocked bucket by
+`depends_on`. Production does not yet satisfy the rollout described below.
+
+The implementation landed in four July 13 and 14 commits, but the active spec still said
+“ready for plan.” Production and source now disagree in the opposite direction:
+
+- `single-buy-checkout-creator.ts` and `cart-checkout-creator.ts` send every purchase to
+  `createCartCheckout`;
+- `firebase functions:list` does not contain `createCartCheckout`;
+- the deployed `createMerchCheckout` and `handleMerchWebhook` remain active;
+- the remote Firestore field configuration has no TTL override for `orders.expiresAt`;
+- the merch suite originally had only pure builder and mapper tests, with no callable write
+  or webhook state-transition test.
+
+The local correction made during reconciliation keeps the cart cutover from changing price
+or shipping behavior when it is deployed:
+
+- cart checkout now uses the existing server cutoff resolver for both the Stripe price ID
+  and pending-order subtotal;
+- carts containing a deck or sampler receive the free US shipping already included in the
+  live product price;
+- carts without one keep the $5 US rate;
+- all US, Canada, and international rates carry Stripe shipping tax code
+  `txcd_92010001`.
+
+Focused verification of the uncommitted local remediation: 7 merch suites passed,
+44 tests total, `npx tsc --noEmit -p tsconfig.json` exited 0 in
+`firebase-functions`, and root `npm run check` finished with 0 errors and 4
+warnings in files outside this change.
 
 ## Problem
 
