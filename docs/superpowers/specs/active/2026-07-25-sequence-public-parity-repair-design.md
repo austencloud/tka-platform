@@ -934,6 +934,28 @@ R2 refreshed.** The three items left open above are done:
   contradicts) — every witness deleted, irreducible with current evidence.
   Final convergence: **20,155 LABELS_CURRENT / 78 quarantined / zero
   conflicts / zero repairable**.
+
+  *Why the 78 are permanently underivable from payload (root-caused
+  2026-07-27):* their blobs predate prefloat fields. The legacy encoder wrote
+  a float's own rotation — literally "noRotation" — into the wire slot, and
+  the legacy decoder FABRICATES `prefloatMotionType` from it
+  (`legacy-sequence-codec.ts` decode, `deriveMotionType(start, end,
+  "noRotation")`), so the blob's float "prefloat data" is manufactured, not
+  stored. A handpath-based rotation recovery was attempted and produced
+  confident same-family wrong letters — proven against embedded mint-time
+  witnesses (tgllYT/YOZG/kzkEp0: fabricated types flip pro↔anti arbitrarily)
+  — then reverted with a guard comment in the derivation lib. Float letters
+  never entered the legacy wire; only stored sources carry them, which is why
+  source-corroborated rebuild was the correct and only repair. Diagnostics:
+  `scripts/diagnostics/profile-underivable-beats.ts` (387 of the quarantine's
+  underivable beats are legacy floats; ~17 are skewed/odd signatures),
+  `scripts/diagnostics/probe-float-beat.ts` (embedded-vs-blob field
+  comparison). Latent app-side siblings of the same gap, flagged not fixed:
+  the legacy decoder's fabricated prefloat type, and
+  `motion-query-handler.ts:359`'s `prefloatRotationDirection ||
+  rotationDirection` fallback. The derivation lib now also loads
+  `SkewedPictographDataframe.csv` (correct coverage; inert on the current
+  corpus — zero classification changes).
 - **R2 refresh + verification.** New ops mirror
   `scripts/publish-r2-shortcode-snapshot.ts` (same skinny contract, envelope,
   gzip -9, key, and headers as the `snapshotShortCodes` function; only

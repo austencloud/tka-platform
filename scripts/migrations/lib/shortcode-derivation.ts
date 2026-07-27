@@ -28,9 +28,11 @@ export type AnyRec = Record<string, unknown>;
 
 const REPO_ROOT = "E:/tka-platform";
 
-// Both dataframes, parsed once. deriveGridMode is browser-coupled, so match
-// diamond first and fall back to box — a beat only lives in one, and the two
-// alphabets don't collide on the same motion signature.
+// All three dataframes, parsed once. deriveGridMode is browser-coupled, so
+// match diamond first, then box, then skewed — a beat only lives in one, and
+// the alphabets don't collide on the same motion signature. Skewed is the
+// mixed cardinal/intercardinal frame; without it, every skewed beat is
+// underivable by construction.
 const csvPath = (name: string) =>
   join(REPO_ROOT, "static", "data", "pictographs", name);
 const DIAMOND_EDGES = parseCsvEdges(
@@ -38,6 +40,9 @@ const DIAMOND_EDGES = parseCsvEdges(
 );
 const BOX_EDGES = parseCsvEdges(
   readFileSync(csvPath("BoxPictographDataframe.csv"), "utf8")
+);
+const SKEWED_EDGES = parseCsvEdges(
+  readFileSync(csvPath("SkewedPictographDataframe.csv"), "utf8")
 );
 
 const lc = (v: unknown): string => String(v ?? "").toLowerCase();
@@ -61,6 +66,22 @@ function searchType(m: Motion): string {
   return lc(m.motionType);
 }
 
+/** The rotation the letter lookup should match against.
+ *
+ *  DO NOT "recover" a float whose prefloatRotationDirection is the literal
+ *  "noRotation". That signature means the blob predates prefloat fields:
+ *  the legacy ENCODER wrote the float's own rotation ("noRotation") into the
+ *  wire slot, and the legacy DECODER then FABRICATES prefloatMotionType via
+ *  deriveMotionType(start, end, "noRotation") — an arbitrary value, not
+ *  stored data (legacy-sequence-codec.ts:289). A handpath-based rotation
+ *  recovery was tried here on 2026-07-27 and produced confident same-family
+ *  wrong letters (proven against embedded mint-time witnesses on tgllYT /
+ *  YOZG / kzkEp0: blob prefloat types flip pro↔anti arbitrarily). Such beats
+ *  are honestly underivable — the information never entered the wire. */
+function effectiveRotation(m: Motion): string {
+  return lc(m.prefloatRotationDirection || m.rotationDirection);
+}
+
 /** Match a beat's two motions against one dataframe. Replicates the criteria in
  *  motion-query-handler.findLetterByMotionConfiguration: motionType + start/end
  *  location + rotation (rotation ignored for static/dash/unresolved-float), with
@@ -72,8 +93,8 @@ function matchIn(edges: CsvEdge[], blue: Motion, red: Motion): string | null {
     blueFloat && searchType(blue) === "pro" ? ["pro", "anti"] : [searchType(blue)];
   const redTypes =
     redFloat && searchType(red) === "pro" ? ["pro", "anti"] : [searchType(red)];
-  const blueRot = lc(blue.prefloatRotationDirection || blue.rotationDirection);
-  const redRot = lc(red.prefloatRotationDirection || red.rotationDirection);
+  const blueRot = effectiveRotation(blue);
+  const redRot = effectiveRotation(red);
 
   for (const bt of blueTypes) {
     for (const rt of redTypes) {
@@ -104,7 +125,11 @@ export function letterForBeat(step: AnyRec): string | null {
   const blue = motions?.blue;
   const red = motions?.red;
   if (!blue || !red) return null;
-  return matchIn(DIAMOND_EDGES, blue, red) ?? matchIn(BOX_EDGES, blue, red);
+  return (
+    matchIn(DIAMOND_EDGES, blue, red) ??
+    matchIn(BOX_EDGES, blue, red) ??
+    matchIn(SKEWED_EDGES, blue, red)
+  );
 }
 
 export interface PayloadDerivation {
