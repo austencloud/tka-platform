@@ -83,16 +83,69 @@ design; everything else is implementation research.
 
 | Year | System | People | Status |
 |---|---|---|---|
-| 2009 | Vulcan Tech Gospel | Noel Yee, the Vulcan Lofts, Oakland | ✅ timing, direction, **and flower shapes** |
-| c. 2010 | 9-Square Theory | Charlie Cushing | ✅ spatial grid, one plane, 10-part series |
-| 2010 | Transition Theory | Noel Yee, Jordan Campbell | source needed |
+| 2009 | Continuous Assembly Patterns | Home of Poi forums; Nick Woolsey, Alien Jon | ✅ 2009 — see below |
+| 2010 | Vulcan Tech Gospel | Noel Yee, compiled with many | ✅ **2010, not 2009** — Yee's own site |
+| 2010 | Transition Theory | Jordan Campbell | ✅ Yee's own site credits Campbell, 2010 |
+| c. 2010 | 9-Square Theory | Charlie Cushing | ✅ spatial grid, one plane, 11-video playlist live |
 | 2011 | QFT Notation | Charlie Cushing | ✅ 8 positions + formula; **acronym not expanded** |
-| ? | Unit Circle Theory | ? | source needed; drop if none |
-| 2012– | Lorq Nichols' catalogs | Lorq Nichols, with Brian Thompson, David Cantor, Noel Yee | 144 Shape Matrix ✅ 2012; other works undated |
-| 2009 or 2013 | Continuous Assembly Patterns | Home of Poi forums; Nick Woolsey, Alien Jon | date conflict to resolve |
-| 2016 | PoiNotation | Tiffany Fong | on the old page, re-verify |
-| 2017 | Trigonometric model | Zaltymbunk, Ben Drexler | source needed |
-| c. 2022 | The Kinetic Alphabet | Austen Cloud | ✅ per wiki, corrected from ~2018 |
+| ? | Unit Circle Theory | Alien Jon | ✅ attribution found; **date still needed** |
+| 2012– | Lorq Nichols' catalogs | Lorq Nichols, with Brian Thompson, David Cantor, Noel Yee | ✅ 144 Shape Matrix 2012; sub-list corrected below |
+| 2016 | PoiNotation | Tiffany Fong | ✅ repository live |
+| 2017 | Trigonometric model | Zaltymbunk, Ben Drexler | **unverified — nothing found; drop unless sourced** |
+| c. 2022 | The Kinetic Alphabet | Austen Cloud | ✅ corrected from the wiki's ~2018 |
+
+### What the fact-check changed
+
+Verified against creators' own material and against 615 video transcripts in
+`E:\flow-arts-wiki\flow-arts-transcripts` (Noel Yee 86, DrexFactor 328,
+Leonardo Icaza 37, PlayPoi 113, SpinMorePoi 43, Charlie Cushing 4).
+
+1. **VTG is 2010, and the spine no longer starts with it.** noelyee.com dates
+   VTG 1 to 2010. CAPs are 2009, sourced to the Home of Poi thread with
+   Damien's original plots (already cited on our own `/notation/caps` page).
+   The catalog now opens with CAPs.
+2. **`Poi_notation.wiki`'s 2013 CAPs date is wrong**, as is its 2009 VTG date.
+   Both corrected against primaries.
+3. **VTG is much bigger than "timing and direction."** In Yee's own video, VTG
+   volume 1 covers the 1:1 case as ten minimal beat shapes with two hands —
+   four base shapes (isolation, extension, vertical antispin, horizontal
+   antispin) plus six hybrids. The VTG 3 app is a 6×6 grid of 36 patterns
+   crossing *hand* timing and direction against *prop* timing and direction.
+   The old page's single 2×2 was wrong on two counts: it collapsed both axes
+   into one and dropped the shape vocabulary entirely.
+4. **David "Tankboy" Cantor is one person.** The old collaborator list
+   effectively double-counted him. Yee's site also credits Mike Smith "Doodle"
+   (Fan VTG 1:1), Cassie McKenney and Maiki Nope (Hoop VTG 1:1), and Drex for
+   video explanations.
+5. **Transition Theory is Jordan Campbell's**, 2010, per Yee's own site. Yee
+   refers to his own video on it. Attribute to Campbell, not to Yee.
+6. **Unit Circle Theory is Alien Jon's** — "a method of categorizing a specific
+   set of hybrids," per Drex's Leo Icaza video. The entry survives; it still
+   needs a date, and drops if none is found.
+7. **Tech Tiles and the Book of P.H.A.T. are the same project**, published on
+   Lorq's own site as *Vulcan Tech Gospel Book of P.H.A.T. Volume 1* — a
+   VTG-branded collaboration with Thompson, Cantor, and Yee, not an independent
+   Lorq catalog. The sub-list collapses from four works to three.
+8. **The old page's chronology claim was backwards.** Drex, in the Leo Icaza
+   video: Cushing "became a celebrity in the tech poi scene for developing nine
+   square Theory and its successor QFT." 9-Square first, QFT after. The page
+   said the reverse. Recorded here for the record; **not stated on the page**,
+   per rule 6.
+9. **The trigonometric model has no support.** No transcript mentions
+   Zaltymbunk; the only "trigonometric" hit is unrelated. It is unsourced and
+   comes off the list unless a primary turns up.
+
+### Link liveness (checked 2026-07-26)
+
+| URL | Result |
+|---|---|
+| `youtube.com/playlist?list=PLDE05D5E593C54AED` | ✅ live, 11 videos, "Charlie's 9-square theory" |
+| `github.com/tiffanyfong/PoiNotation` | ✅ 200 |
+| `sirlorq.wordpress.com/324-patterns/` | ✅ 200 |
+| `sirlorq.wordpress.com/tech-tiles/` | ✅ live — the Book of P.H.A.T. page |
+| `noelyee.com/instruction/vulcan-tech-gospel` | ✅ live (406 to curl, fine in a browser) |
+| `homeofpoi.com/.../932537/...QFT-Notation` | 403 to bots; needs a browser check before shipping |
+| **`sirlorq.com`** | ❌ **does not resolve** — the old page links it in a figcaption. Use `sirlorq.wordpress.com`. |
 
 ### Lorq is one entry, not four
 
@@ -103,7 +156,18 @@ rule 4 on the first row that used it — and broke the chronology, running
 2012 → 2013 → 2014 → 2015 → 2013 once CAPs followed. It also printed "Lorq
 Nichols" four times consecutively, which reads as a stutter rather than as
 weight. One entry titled *Lorq Nichols' catalogs*, dated **2012–** (open-ended,
-no invented end), with the four works named in a sub-list.
+no invented end), with the works named in a sub-list.
+
+Post-fact-check the sub-list is **three**, not four:
+
+- **144 Shape Matrix** (2012) — twelve driving styles against twelve
+- **324 Patterns** — counted from arm paths and club shapes
+- **Tech Tiles / Book of P.H.A.T.** — published on Lorq's site as *Vulcan Tech
+  Gospel Book of P.H.A.T. Volume 1*, with Brian Thompson, David Cantor, and
+  Noel Yee. One project, not two.
+
+That last item is a VTG collaboration, so the entry line has to say so rather
+than presenting it as an independent Lorq catalog.
 
 ### Siteswap is not an entry
 
@@ -234,9 +298,20 @@ Delete `_components/NotationHubDraft.svelte` once the catalog ships.
 
 ## Open items
 
-1. Unit Circle Theory — find a primary or drop the entry.
-2. CAPs date — 2009 (Home of Poi forums, per the current CAPs page) vs 2013
-   (`Poi_notation.wiki`). Resolve at the forum thread.
-3. Transition Theory and the trigonometric model need primaries.
-4. Whether Cushing published an expansion of "QFT" anywhere.
-5. The 4K width problem above.
+Resolved during the fact-check: the CAPs date (2009), Transition Theory's
+author (Jordan Campbell, 2010), Unit Circle Theory's author (Alien Jon), VTG's
+year (2010) and its real scope, and the Lorq sub-list.
+
+Still open:
+
+1. **Unit Circle Theory has no date.** Attribution to Alien Jon is sourced; the
+   year is not. Entry ships undated or not at all — never with a guess.
+2. **The trigonometric model has no source at all.** Drops unless one turns up.
+3. **Whether Cushing ever expanded "QFT."** If not, the page never expands it.
+4. **The Home of Poi thread 403s to bots.** Load it in a browser before shipping
+   it as a source; if it is gone, find another primary for QFT and for the CAPs
+   origin, since both lean on that forum.
+5. **The 4K width problem** in the Layout section.
+6. **Austen's own year.** "c. 2022" comes from his wiki, which he has called
+   slop. Ask him directly rather than shipping a c-dated guess about the site's
+   own author.
