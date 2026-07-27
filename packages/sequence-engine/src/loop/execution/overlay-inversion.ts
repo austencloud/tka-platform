@@ -1,7 +1,7 @@
 /**
  * Overlay inversion — applies INVERTED in place over a completed sequence.
  *
- * Partition the letter beats into `period` equal blocks; on odd blocks flip
+ * Partition the letter steps into `period` equal blocks; on odd blocks flip
  * motionType pro<->anti and rotationDirection cw<->ccw (dash/static motions
  * are untouched by construction — their rotationDirection stays put too).
  * Hand locations are never touched, so positions and closure are preserved.
@@ -44,7 +44,7 @@ export function applyOverlayInversion(
   if (letterCount <= 0) return sequence;
   if (letterCount % period !== 0) {
     throw new Error(
-      `Overlay inversion requires the beat count (${letterCount}) to be divisible by the period (${period}).`,
+      `Overlay inversion requires the step count (${letterCount}) to be divisible by the period (${period}).`,
     );
   }
   const blockSize = letterCount / period;

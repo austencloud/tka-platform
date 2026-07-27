@@ -30,12 +30,70 @@ Animates forward in z-axis and expands to fill the container space
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LoopBlockTimeline from "$lib/shared/components/LoopBlockTimeline.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
   type RhythmValue = {
     rotationInterval: 2 | 4;
     inversionInterval: 2 | 4;
     inversionMode: "expand" | "overlay";
+    reflectionAxis: ReflectionAxis;
   };
+
+  const REFLECTION_AXIS_DETAILS = {
+    "north-south": {
+      axisLabel: "N–S",
+      name: "Mirrored",
+      description: "The vertical line stays fixed. East and west trade places.",
+      applyLabel: "Apply Mirrored",
+      line: { x1: 24, y1: 5, x2: 24, y2: 43 },
+    },
+    "east-west": {
+      axisLabel: "E–W",
+      name: "Flipped",
+      description:
+        "The horizontal line stays fixed. North and south trade places.",
+      applyLabel: "Apply Flipped",
+      line: { x1: 5, y1: 24, x2: 43, y2: 24 },
+    },
+    "northeast-southwest": {
+      axisLabel: "NE–SW",
+      name: "Diagonal",
+      description:
+        "NE and SW stay fixed. North trades with east; south trades with west.",
+      applyLabel: "Apply NE–SW Reflection",
+      line: { x1: 42, y1: 6, x2: 6, y2: 42 },
+    },
+    "northwest-southeast": {
+      axisLabel: "NW–SE",
+      name: "Diagonal",
+      description:
+        "NW and SE stay fixed. North trades with west; south trades with east.",
+      applyLabel: "Apply NW–SE Reflection",
+      line: { x1: 6, y1: 6, x2: 42, y2: 42 },
+    },
+  } satisfies Record<
+    ReflectionAxis,
+    {
+      axisLabel: string;
+      name: string;
+      description: string;
+      applyLabel: string;
+      line: { x1: number; y1: number; x2: number; y2: number };
+    }
+  >;
+
+  const REFLECTION_AXIS_OPTIONS = (
+    Object.entries(REFLECTION_AXIS_DETAILS) as Array<
+      [ReflectionAxis, (typeof REFLECTION_AXIS_DETAILS)[ReflectionAxis]]
+    >
+  ).map(([value, detail]) => ({
+    value,
+    label: `${detail.axisLabel} axis, ${detail.name}`,
+    ariaLabel: `${detail.axisLabel} axis, ${detail.name}. ${detail.description}`,
+    tone: "accent" as const,
+  }));
 
   let {
     currentType,
@@ -60,7 +118,7 @@ Animates forward in z-axis and expands to fill the container space
     rhythm?: RhythmValue;
     sequenceLength?: number;
     onRhythmChange?: (updates: Partial<RhythmValue>) => void;
-    /** Guest beat cap. Set (by guest-facing hosts) turns on guest LOOP gating;
+    /** Guest step cap. Set (by guest-facing hosts) turns on guest LOOP gating;
         absent = no gating (deck/store/admin hosts unaffected). */
     guestMaxLength?: number;
     /** Called with the lock reason when a guest taps a gated LOOP. */
@@ -69,30 +127,46 @@ Animates forward in z-axis and expands to fill the container space
 
   let hapticService: HapticFeedback | null = null;
   let overlayElement: HTMLDivElement;
+  let gridContainerElement: HTMLDivElement;
   let drawerHeightAnimation: Animation | null = null;
+  let componentRevealFrame: number | null = null;
   // A reopened multi-component combo lands on the Combo screen it was applied
   // from, not back on Single (the overlay remounts per open — props are nulled
   // on close — so mount-time init is the reopen path).
   let isMultiSelectMode = $state(selectedComponents.size > 1);
   let localSelectedComponents = $state(new Set<LOOPComponent>());
+  let mobileDetailComponent = $state<LOOPComponent | null>(null);
+
+  function normalizeReflectionSelection(
+    components: Set<LOOPComponent>
+  ): Set<LOOPComponent> {
+    const normalized = new Set(components);
+    if (normalized.delete(LOOPComponent.FLIPPED)) {
+      normalized.add(LOOPComponent.MIRRORED);
+    }
+    return normalized;
+  }
 
   // Sync local state with prop changes
   $effect(() => {
-    localSelectedComponents = new Set<LOOPComponent>(selectedComponents);
+    localSelectedComponents = normalizeReflectionSelection(
+      new Set<LOOPComponent>(selectedComponents)
+    );
     if (selectedComponents.size > 1) {
       isMultiSelectMode = true;
     }
   });
 
-  // Rhythm tier: LOCAL until Apply, synced from the prop the same way
-  // localSelectedComponents is. Defaults only matter when `rhythm` is absent
-  // (tier hidden — see `hasRhythmTier` below), so they're never shown.
+  // Transformation settings stay LOCAL until Apply, synced from the prop the
+  // same way localSelectedComponents is. Defaults only matter for legacy
+  // callers without settings plumbing; those callers never see configurators.
   let localRhythm = $state<RhythmValue>({
     rotationInterval: 2,
     inversionInterval: 2,
     inversionMode: "expand",
+    reflectionAxis:
+      currentType === LOOPType.FLIPPED ? "east-west" : "north-south",
   });
-  let isRhythmOpen = $state(false);
 
   $effect(() => {
     if (rhythm) {
@@ -102,10 +176,25 @@ Animates forward in z-axis and expands to fill the container space
 
   onMount(() => {
     hapticService = getHapticFeedback();
+    const initialComponents = normalizeReflectionSelection(
+      new Set(selectedComponents)
+    );
+    const lowestExpandedComponent = [
+      LOOPComponent.MIRRORED,
+      LOOPComponent.INVERTED,
+      LOOPComponent.ROTATED,
+    ].find((component) => initialComponents.has(component));
+    if (lowestExpandedComponent && !usesMobileDrawerPresentation()) {
+      void keepExpandedComponentVisible(lowestExpandedComponent);
+    }
 
     return () => {
       drawerHeightAnimation?.cancel();
       drawerHeightAnimation = null;
+      if (componentRevealFrame !== null) {
+        cancelAnimationFrame(componentRevealFrame);
+        componentRevealFrame = null;
+      }
     };
   });
 
@@ -139,35 +228,62 @@ Animates forward in z-axis and expands to fill the container space
 
   // Derive selection count
   const selectionCount = $derived(localSelectedComponents.size);
-
-  // ===== Rhythm tier (combo mode only; hidden entirely when `rhythm` is absent) =====
-  const hasRhythmTier = $derived(!!rhythm);
-
-  // 90° rotation slices only produce a genuine loop for PURE rotation. Every
-  // rotation+something combo (swap, invert, mirror) fails to close as a real
-  // quartered loop in the engine — only halved (180°) does. So the 180°/90°
-  // rotation choice is offered only when ROTATED is the sole component; any
-  // combo forces 180°. (Empirical: quartered-combo generation audit,
-  // 2026-07-13 — 0 genuine for every combo, 15/15 for pure rotated.)
-  // NB: "turns" is reserved for prop/body turns in TKA — never use it for the
-  // rotation slice; this is a 180°-vs-90° position rotation.
-  const rotationSupportsQuarter = $derived(
-    localSelectedComponents.size === 1 &&
-      localSelectedComponents.has(LOOPComponent.ROTATED)
+  const hasReflection = $derived(
+    localSelectedComponents.has(LOOPComponent.MIRRORED)
   );
-
-  const hasRhythmKnobs = $derived(
-    rotationSupportsQuarter ||
-      localSelectedComponents.has(LOOPComponent.INVERTED)
+  const hasInversion = $derived(
+    localSelectedComponents.has(LOOPComponent.INVERTED)
   );
+  const canConfigureReflection = $derived(
+    hasReflection && !!rhythm && !!onRhythmChange
+  );
+  const canConfigureInversion = $derived(
+    hasInversion && !!rhythm && !!onRhythmChange
+  );
+  const reflectionAxisDetail = $derived(
+    REFLECTION_AXIS_DETAILS[localRhythm.reflectionAxis]
+  );
+  const reflectionColor =
+    LOOP_COMPONENTS.find(
+      (component) => component.component === LOOPComponent.MIRRORED
+    )?.color ?? "#6f2da8";
+  const inversionColor =
+    LOOP_COMPONENTS.find(
+      (component) => component.component === LOOPComponent.INVERTED
+    )?.color ?? "#eb7d00";
+  const rotationColor =
+    LOOP_COMPONENTS.find(
+      (component) => component.component === LOOPComponent.ROTATED
+    )?.color ?? "#36c3ff";
 
-  // Guard: if the user set 90° slices then extended the combo, snap the
-  // rotation interval back to 180° so the spec stays buildable.
-  $effect(() => {
-    if (!rotationSupportsQuarter && localRhythm.rotationInterval === 4) {
-      localRhythm = { ...localRhythm, rotationInterval: 2 };
-    }
+  // Period belongs to the rotation component, including rotation-bearing
+  // combos. The generator's LOOP spec preserves a quartered rotation interval
+  // alongside independent inversion, swap, and reflection components.
+  const canConfigureRotation = $derived(
+    localSelectedComponents.has(LOOPComponent.ROTATED) &&
+      !!rhythm &&
+      !!onRhythmChange
+  );
+  const hasInlineConfigurator = $derived(
+    canConfigureReflection || canConfigureInversion || canConfigureRotation
+  );
+  const configurableComponents = $derived.by(() => {
+    const components = new Set<LOOPComponent>();
+    if (canConfigureRotation) components.add(LOOPComponent.ROTATED);
+    if (canConfigureInversion) components.add(LOOPComponent.INVERTED);
+    if (canConfigureReflection) components.add(LOOPComponent.MIRRORED);
+    return components;
   });
+  const mobileDetailInfo = $derived(
+    mobileDetailComponent
+      ? (LOOP_COMPONENTS.find(
+          (info) => info.component === mobileDetailComponent
+        ) ?? null)
+      : null
+  );
+  const mobileView = $derived(
+    mobileDetailInfo ? `detail-${mobileDetailInfo.component}` : "picker"
+  );
 
   // Wire-form spec for the CURRENT selection + rhythm — same helper the
   // generation orchestrator uses. Null when the combo isn't implemented
@@ -244,6 +360,9 @@ Animates forward in z-axis and expands to fill the container space
     if (selectionCount === 0) return "Select Components";
     if (!isImplemented) return "Combo Not Supported";
     if (guestLock.locked) return "Sign Up to Unlock";
+    if (selectionCount === 1 && canConfigureReflection) {
+      return reflectionAxisDetail.applyLabel;
+    }
     if (selectionCount === 1) {
       const component = Array.from(localSelectedComponents)[0] as LOOPComponent;
       const formatted = component.charAt(0) + component.slice(1).toLowerCase();
@@ -252,10 +371,26 @@ Animates forward in z-axis and expands to fill the container space
     return `Apply ${selectionCount}-Component Combo`;
   });
 
+  function usesMobileDrawerPresentation(): boolean {
+    const mobileStage =
+      overlayElement?.querySelector<HTMLElement>(".mobile-loop-stage");
+    if (mobileStage && getComputedStyle(mobileStage).display !== "none") {
+      return true;
+    }
+    const drawer = overlayElement?.closest<HTMLElement>(".loop-drawer-sheet");
+    if (drawer) return drawer.dataset.placement === "bottom";
+    return (
+      layout === "responsive" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 768px)").matches
+    );
+  }
+
   function handleToggle(component: LOOPComponent) {
     hapticService?.trigger("selection");
+    const isMobileDrawer = usesMobileDrawerPresentation();
 
-    // Single-select mode: Apply immediately
+    // Configurable transformations expand in place before Apply.
     if (!isMultiSelectMode) {
       // Guest-gated single pick routes to sign-up instead of applying.
       if (guestMaxLength !== undefined) {
@@ -270,18 +405,122 @@ Animates forward in z-axis and expands to fill the container space
         }
       }
       localSelectedComponents = new Set([component]);
+      if (
+        (component === LOOPComponent.ROTATED ||
+          component === LOOPComponent.MIRRORED ||
+          component === LOOPComponent.INVERTED) &&
+        rhythm &&
+        onRhythmChange
+      ) {
+        if (!isMobileDrawer) {
+          void keepExpandedComponentVisible(component);
+        }
+        return;
+      }
       applyAndClose();
       return;
     }
 
     // Multi-select mode: Toggle selection
     const newSet = new Set(localSelectedComponents);
-    if (newSet.has(component)) {
+    const isAdding = !newSet.has(component);
+    if (!isAdding) {
       newSet.delete(component);
     } else {
       newSet.add(component);
     }
     localSelectedComponents = newSet;
+    if (!isAdding && mobileDetailComponent === component) {
+      mobileDetailComponent = null;
+    }
+    if (
+      isAdding &&
+      !isMobileDrawer &&
+      (component === LOOPComponent.ROTATED ||
+        component === LOOPComponent.MIRRORED ||
+        component === LOOPComponent.INVERTED)
+    ) {
+      void keepExpandedComponentVisible(component);
+    }
+  }
+
+  async function openMobileConfigurator(component: LOOPComponent) {
+    if (!configurableComponents.has(component)) return;
+    hapticService?.trigger("selection");
+    mobileDetailComponent = component;
+    await tick();
+    overlayElement
+      ?.querySelector<HTMLButtonElement>(".mobile-detail-back")
+      ?.focus({ preventScroll: true });
+  }
+
+  async function closeMobileConfigurator() {
+    const previousComponent = mobileDetailComponent;
+    if (!previousComponent) return;
+    hapticService?.trigger("selection");
+    mobileDetailComponent = null;
+    await tick();
+    overlayElement
+      ?.querySelector<HTMLButtonElement>(
+        `[data-configure-component="${previousComponent}"]`
+      )
+      ?.focus({ preventScroll: true });
+  }
+
+  async function keepExpandedComponentVisible(component: LOOPComponent) {
+    await tick();
+
+    if (componentRevealFrame !== null) {
+      cancelAnimationFrame(componentRevealFrame);
+      componentRevealFrame = null;
+    }
+
+    const card = gridContainerElement?.querySelector<HTMLElement>(
+      `[data-component="${component}"]`
+    );
+    if (!card || !gridContainerElement?.isConnected) return;
+
+    let scrollViewport: HTMLElement | null = card.parentElement;
+    while (scrollViewport) {
+      const overflowY = getComputedStyle(scrollViewport).overflowY;
+      if (overflowY === "auto" || overflowY === "scroll") break;
+      scrollViewport = scrollViewport.parentElement;
+    }
+    scrollViewport ??= gridContainerElement;
+
+    const duration = motionDuration(DURATION.dramatic);
+    const startedAt = performance.now();
+    const edgePadding = 8;
+
+    // The last selected card can keep growing after its first rendered frame.
+    // Follow that growth for the same duration as the row animation so its
+    // controls never disappear underneath the sticky Apply area.
+    const followExpansion = (now: number) => {
+      if (!card.isConnected || !scrollViewport.isConnected) {
+        componentRevealFrame = null;
+        return;
+      }
+
+      const viewport = scrollViewport.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      const bottomOverflow =
+        cardBounds.bottom - (viewport.bottom - edgePadding);
+      const topOverflow = viewport.top + edgePadding - cardBounds.top;
+
+      if (bottomOverflow > 0) {
+        scrollViewport.scrollTop += bottomOverflow;
+      } else if (topOverflow > 0) {
+        scrollViewport.scrollTop -= topOverflow;
+      }
+
+      if (now - startedAt < duration + 32) {
+        componentRevealFrame = requestAnimationFrame(followExpansion);
+      } else {
+        componentRevealFrame = null;
+      }
+    };
+
+    componentRevealFrame = requestAnimationFrame(followExpansion);
   }
 
   async function handleModeChange(isMulti: boolean) {
@@ -293,7 +532,7 @@ Animates forward in z-axis and expands to fill the container space
     const animationDuration = motionDuration(DURATION.dramatic);
     const shouldAnimateDrawer =
       drawer !== null &&
-      window.matchMedia("(max-width: 767px)").matches &&
+      drawer.dataset.placement === "bottom" &&
       animationDuration > 0;
 
     // Single ends at its content while Combo fills the phone. Numeric
@@ -304,6 +543,7 @@ Animates forward in z-axis and expands to fill the container space
 
     drawerHeightAnimation?.cancel();
     drawerHeightAnimation = null;
+    mobileDetailComponent = null;
     isMultiSelectMode = isMulti;
 
     if (!shouldAnimateDrawer) return;
@@ -337,11 +577,6 @@ Animates forward in z-axis and expands to fill the container space
     localRhythm = { ...localRhythm, ...updates };
   }
 
-  function toggleRhythmOpen() {
-    hapticService?.trigger("selection");
-    isRhythmOpen = !isRhythmOpen;
-  }
-
   function applyAndClose() {
     if (selectionCount === 0) return;
 
@@ -361,6 +596,9 @@ Animates forward in z-axis and expands to fill the container space
       }
       if (localRhythm.inversionMode !== rhythm.inversionMode) {
         diff.inversionMode = localRhythm.inversionMode;
+      }
+      if (localRhythm.reflectionAxis !== rhythm.reflectionAxis) {
+        diff.reflectionAxis = localRhythm.reflectionAxis;
       }
       if (Object.keys(diff).length > 0) {
         onRhythmChange(diff);
@@ -398,7 +636,7 @@ Animates forward in z-axis and expands to fill the container space
 <div
   bind:this={overlayElement}
   class="loop-expanded-overlay"
-  class:combo-mode={isMultiSelectMode}
+  class:combo-mode={isMultiSelectMode || hasInlineConfigurator}
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
   <!-- Header with title, disable toggle, and close button -->
@@ -454,103 +692,276 @@ Animates forward in z-axis and expands to fill the container space
   />
 
   <!-- Component grid -->
-  <div class="grid-container">
+  {#snippet reflectionConfigurator(idPrefix = "loop")}
+    <div
+      class="reflection-axis-picker"
+      style="--reflection-color: {reflectionColor};"
+    >
+      <div class="axis-heading">
+        <span class="axis-title" id={`${idPrefix}-reflection-axis-label`}
+          >Reflect across</span
+        >
+        <span class="axis-selection">{reflectionAxisDetail.name}</span>
+      </div>
+
+      {#snippet axisOption(reflectionAxis: ReflectionAxis)}
+        {@const detail = REFLECTION_AXIS_DETAILS[reflectionAxis]}
+        <span class="axis-option">
+          <svg class="axis-diagram" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="axis-ring" cx="24" cy="24" r="18"></circle>
+            <circle class="axis-point" cx="24" cy="6" r="1.8"></circle>
+            <circle class="axis-point" cx="37" cy="11" r="1.8"></circle>
+            <circle class="axis-point" cx="42" cy="24" r="1.8"></circle>
+            <circle class="axis-point" cx="37" cy="37" r="1.8"></circle>
+            <circle class="axis-point" cx="24" cy="42" r="1.8"></circle>
+            <circle class="axis-point" cx="11" cy="37" r="1.8"></circle>
+            <circle class="axis-point" cx="6" cy="24" r="1.8"></circle>
+            <circle class="axis-point" cx="11" cy="11" r="1.8"></circle>
+            <line
+              class="axis-line"
+              x1={detail.line.x1}
+              y1={detail.line.y1}
+              x2={detail.line.x2}
+              y2={detail.line.y2}
+            ></line>
+          </svg>
+          <span class="axis-option-label">{detail.axisLabel}</span>
+          <span class="axis-option-name">{detail.name}</span>
+        </span>
+      {/snippet}
+
+      <SegmentedControl
+        options={REFLECTION_AXIS_OPTIONS}
+        value={localRhythm.reflectionAxis}
+        onchange={(reflectionAxis) => updateRhythm({ reflectionAxis })}
+        size="sm"
+        color="accent"
+        semantics="radiogroup"
+        ariaLabelledby={`${idPrefix}-reflection-axis-label`}
+        optionContent={axisOption}
+      />
+
+      <div class="axis-caption" aria-live="polite">
+        <span class="axis-caption-sizer" aria-hidden="true"
+          >NE and SW stay fixed. North trades with east; south trades with west.</span
+        >
+        <span class="axis-caption-live">{reflectionAxisDetail.description}</span
+        >
+      </div>
+    </div>
+  {/snippet}
+
+  {#snippet rotationConfigurator(idPrefix = "loop")}
+    <div
+      class="owned-configurator rotation-configurator"
+      style="--owner-color: {rotationColor};"
+    >
+      <div class="configurator-heading">
+        <span
+          class="configurator-title"
+          id={`${idPrefix}-rotation-period-label`}>Rotation period</span
+        >
+        <span class="configurator-selection">
+          {localRhythm.rotationInterval === 4 ? "Quartered" : "Halved"}
+        </span>
+      </div>
+      <SegmentedControl
+        options={[
+          { value: "2", label: "Halved" },
+          { value: "4", label: "Quartered" },
+        ]}
+        value={String(localRhythm.rotationInterval)}
+        onchange={(value) =>
+          updateRhythm({ rotationInterval: value === "4" ? 4 : 2 })}
+        size="sm"
+        color="accent"
+        semantics="radiogroup"
+        ariaLabelledby={`${idPrefix}-rotation-period-label`}
+      />
+      <div class="configurator-caption" aria-live="polite">
+        <span class="configurator-caption-sizer" aria-hidden="true"
+          >Positions rotate 90° at every quarter.</span
+        >
+        <span class="configurator-caption-live">
+          {localRhythm.rotationInterval === 4
+            ? "Positions rotate 90° at every quarter."
+            : "Positions rotate 180° at halfway."}
+        </span>
+      </div>
+    </div>
+  {/snippet}
+
+  {#snippet inversionConfigurator(idPrefix = "loop")}
+    <div
+      class="owned-configurator inversion-configurator"
+      style="--owner-color: {inversionColor};"
+    >
+      <div class="configurator-row">
+        <div class="configurator-heading">
+          <span
+            class="configurator-title"
+            id={`${idPrefix}-inversion-timing-label`}>Invert when</span
+          >
+          <span class="configurator-selection">
+            {localRhythm.inversionInterval === 4
+              ? "Every quarter"
+              : "At halfway"}
+          </span>
+        </div>
+        <SegmentedControl
+          options={[
+            { value: "2", label: "At halfway" },
+            { value: "4", label: "Every quarter" },
+          ]}
+          value={String(localRhythm.inversionInterval)}
+          onchange={(value) =>
+            updateRhythm({ inversionInterval: value === "4" ? 4 : 2 })}
+          size="sm"
+          color="accent"
+          semantics="radiogroup"
+          ariaLabelledby={`${idPrefix}-inversion-timing-label`}
+        />
+      </div>
+
+      <div class="configurator-row">
+        <span
+          class="configurator-title"
+          id={`${idPrefix}-inversion-length-label`}>Build the sequence</span
+        >
+        <SegmentedControl
+          options={[
+            { value: "expand", label: "Adds length" },
+            { value: "overlay", label: "On top" },
+          ]}
+          value={localRhythm.inversionMode}
+          onchange={(inversionMode) => updateRhythm({ inversionMode })}
+          size="sm"
+          color="accent"
+          semantics="radiogroup"
+          ariaLabelledby={`${idPrefix}-inversion-length-label`}
+        />
+      </div>
+
+      <div class="configurator-caption">
+        <span class="configurator-caption-sizer" aria-hidden="true"
+          >Same hand positions — props flip spin direction for the second half.</span
+        >
+        <span class="configurator-caption-live">{inversionCaption}</span>
+      </div>
+    </div>
+  {/snippet}
+
+  {#snippet desktopRotationConfigurator()}
+    {@render rotationConfigurator("desktop")}
+  {/snippet}
+
+  {#snippet desktopInversionConfigurator()}
+    {@render inversionConfigurator("desktop")}
+  {/snippet}
+
+  {#snippet desktopReflectionConfigurator()}
+    {@render reflectionConfigurator("desktop")}
+  {/snippet}
+
+  <!-- Desktop keeps the attached accordion. Phones show every transformation
+       first, then drill into the selected transformation's settings. -->
+  <div
+    class="grid-container desktop-loop-grid themed-scrollbar"
+    bind:this={gridContainerElement}
+  >
     <LOOPComponentGrid
       selectedComponents={localSelectedComponents}
       {disabledComponents}
       {lockedComponents}
       {isMultiSelectMode}
       {layout}
+      componentConfigurators={{
+        [LOOPComponent.ROTATED]:
+          rhythm && onRhythmChange ? desktopRotationConfigurator : undefined,
+        [LOOPComponent.INVERTED]:
+          rhythm && onRhythmChange ? desktopInversionConfigurator : undefined,
+        [LOOPComponent.MIRRORED]:
+          rhythm && onRhythmChange ? desktopReflectionConfigurator : undefined,
+      }}
+      expandedComponents={new Set([
+        ...(canConfigureRotation ? [LOOPComponent.ROTATED] : []),
+        ...(canConfigureInversion ? [LOOPComponent.INVERTED] : []),
+        ...(canConfigureReflection ? [LOOPComponent.MIRRORED] : []),
+      ])}
       onToggleComponent={handleToggle}
     />
   </div>
 
-  <!-- Explanation panel (combo mode only) -->
-  {#if isMultiSelectMode}
+  <div class="mobile-loop-stage">
+    <Crossfade key={mobileView} fill>
+      {#if mobileDetailInfo}
+        <section
+          class="mobile-loop-detail themed-scrollbar"
+          style="--component-color: {mobileDetailInfo.color};"
+          aria-label="{mobileDetailInfo.label} settings"
+        >
+          <div class="mobile-detail-header">
+            <button
+              type="button"
+              class="mobile-detail-back"
+              onclick={closeMobileConfigurator}
+              aria-label="Back to all LOOP types"
+            >
+              <FontAwesomeIcon icon="fas fa-arrow-left" size="1em" />
+            </button>
+            <div class="mobile-detail-identity">
+              <div class="mobile-detail-icon" aria-hidden="true">
+                <FontAwesomeIcon icon={mobileDetailInfo.icon} size="1em" />
+              </div>
+              <div class="mobile-detail-copy">
+                <strong>{mobileDetailInfo.label}</strong>
+                <span>{mobileDetailInfo.description}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mobile-detail-controls">
+            {#if mobileDetailComponent === LOOPComponent.ROTATED}
+              {@render rotationConfigurator("mobile")}
+            {:else if mobileDetailComponent === LOOPComponent.INVERTED}
+              {@render inversionConfigurator("mobile")}
+            {:else if mobileDetailComponent === LOOPComponent.MIRRORED}
+              {@render reflectionConfigurator("mobile")}
+            {/if}
+          </div>
+        </section>
+      {:else}
+        <div class="mobile-loop-picker">
+          <LOOPComponentGrid
+            selectedComponents={localSelectedComponents}
+            {disabledComponents}
+            {lockedComponents}
+            {isMultiSelectMode}
+            layout="grid"
+            {configurableComponents}
+            onConfigureComponent={openMobileConfigurator}
+            onToggleComponent={handleToggle}
+          />
+          <p class="mobile-picker-hint">
+            Tap a LOOP to select it. Use
+            <FontAwesomeIcon icon="fas fa-sliders" size="0.85em" />
+            to change its settings.
+          </p>
+        </div>
+      {/if}
+    </Crossfade>
+  </div>
+
+  <!-- Combos and configurable single LOOPs show generation details. -->
+  {#if isMultiSelectMode || hasInlineConfigurator}
     <div
-      class="combo-details themed-scrollbar"
+      class="combo-details desktop-combo-details themed-scrollbar"
       in:flyFade={{
         y: 8,
         delay: motionDuration(DURATION.instant),
         duration: DURATION.normal,
       }}
     >
-      <!-- Rhythm tier: collapsed disclosure for rotation/inversion interval + mode.
-           Hidden entirely when the caller didn't pass `rhythm` (legacy callers). -->
-      {#if hasRhythmTier && hasRhythmKnobs}
-        <div class="rhythm-tier">
-          <button
-            class="rhythm-disclosure"
-            type="button"
-            onclick={toggleRhythmOpen}
-            aria-expanded={isRhythmOpen}
-          >
-            <span>Rhythm</span>
-            <i
-              class="fas fa-chevron-{isRhythmOpen ? 'up' : 'down'}"
-              aria-hidden="true"
-            ></i>
-          </button>
-
-          {#if isRhythmOpen}
-            <div class="rhythm-rows">
-              {#if rotationSupportsQuarter}
-                <div class="rhythm-row">
-                  <span class="rhythm-label">Rotation</span>
-                  <SegmentedControl
-                    options={[
-                      { value: "2", label: "180°" },
-                      { value: "4", label: "90°" },
-                    ]}
-                    value={String(localRhythm.rotationInterval)}
-                    onchange={(v) =>
-                      updateRhythm({ rotationInterval: v === "4" ? 4 : 2 })}
-                    size="sm"
-                    color="accent"
-                  />
-                </div>
-              {/if}
-
-              {#if localSelectedComponents.has(LOOPComponent.INVERTED)}
-                <div class="rhythm-row">
-                  <span class="rhythm-label">Inversion</span>
-                  <SegmentedControl
-                    options={[
-                      { value: "2", label: "At the half" },
-                      { value: "4", label: "Every quarter" },
-                    ]}
-                    value={String(localRhythm.inversionInterval)}
-                    onchange={(v) =>
-                      updateRhythm({ inversionInterval: v === "4" ? 4 : 2 })}
-                    size="sm"
-                    color="accent"
-                  />
-                </div>
-                <div class="rhythm-row">
-                  <SegmentedControl
-                    options={[
-                      { value: "expand", label: "Adds length" },
-                      { value: "overlay", label: "On top" },
-                    ]}
-                    value={localRhythm.inversionMode}
-                    onchange={(v) => updateRhythm({ inversionMode: v })}
-                    size="sm"
-                    color="accent"
-                  />
-                </div>
-                <div class="rhythm-caption">
-                  <span class="caption-sizer" aria-hidden="true"
-                    >Same hand positions — props flip spin direction for the
-                    second half.</span
-                  >
-                  <span class="caption-live">{inversionCaption}</span>
-                </div>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/if}
-
       <!-- Word-math line: always visible in combo mode once a spec is buildable
            and the caller told us the target length. -->
       {#if wordMathText}
@@ -581,6 +992,18 @@ Animates forward in z-axis and expands to fill the container space
         {/if}
       </div>
     </div>
+
+    {#if !isImplemented && selectionCount > 0}
+      <div class="mobile-loop-status coming-soon-badge">
+        No LOOP type matches this exact combination. Add or remove a component.
+      </div>
+    {:else if guestLock.locked}
+      <div class="mobile-loop-status signup-badge">{guestLock.reason}</div>
+    {:else if rhythmGate && !rhythmGate.ok}
+      <div class="mobile-loop-status coming-soon-badge">
+        {rhythmGate.reason}
+      </div>
+    {/if}
 
     <!-- Apply remains sticky in the in-card and desktop presentations. The
          phone drawer turns this into a fixed flex footer while its optional
@@ -718,7 +1141,145 @@ Animates forward in z-axis and expands to fill the container space
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-anchor: none;
     overscroll-behavior: contain;
+  }
+
+  .mobile-loop-stage,
+  .mobile-loop-status {
+    display: none;
+  }
+
+  .mobile-loop-picker,
+  .mobile-loop-detail {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mobile-loop-picker {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  /* Six tracks preserve the three-card first row while giving the two-card
+     second row equal breathing room on both sides. Every card still spans the
+     same two tracks, so nothing changes size between rows. */
+  .mobile-loop-picker :global(.loop-component-grid) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .mobile-loop-picker :global(.loop-component-shell) {
+    grid-column: span 2;
+  }
+
+  .mobile-loop-picker :global(.loop-component-shell:nth-child(4)) {
+    grid-column: 2 / span 2;
+  }
+
+  .mobile-loop-picker :global(.loop-component-shell:nth-child(5)) {
+    grid-column: 4 / span 2;
+  }
+
+  .mobile-picker-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .mobile-loop-detail {
+    --theme-accent: var(--component-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 2px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .mobile-detail-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobile-detail-back {
+    display: flex;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid
+      color-mix(in srgb, var(--component-color) 55%, transparent);
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--component-color) 16%,
+      var(--theme-panel-bg, #18152a)
+    );
+    color: var(--theme-text, white);
+    cursor: pointer;
+  }
+
+  .mobile-detail-back:focus-visible {
+    outline: 2px solid var(--component-color);
+    outline-offset: 2px;
+  }
+
+  .mobile-detail-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .mobile-detail-icon {
+    display: flex;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--component-color) 28%, transparent);
+    color: var(--theme-text, white);
+    font-size: 1.15rem;
+  }
+
+  .mobile-detail-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .mobile-detail-copy strong {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .mobile-detail-copy span {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-detail-controls {
+    min-height: 0;
+    padding: 0 2px 2px;
   }
 
   .combo-details {
@@ -768,73 +1329,220 @@ Animates forward in z-axis and expands to fill the container space
     text-align: center;
   }
 
-  /* ===== Rhythm tier ===== */
+  /* Transformation settings inherit the color of the card that owns them.
+     SegmentedControl consumes these local theme tokens without a second card. */
+  .owned-configurator {
+    --theme-accent: var(--owner-color);
+    --theme-card-bg: color-mix(
+      in srgb,
+      var(--owner-color) 18%,
+      var(--theme-panel-bg, #18152a)
+    );
+    --theme-card-hover-bg: color-mix(
+      in srgb,
+      var(--owner-color) 25%,
+      var(--theme-panel-bg, #18152a)
+    );
+    --theme-stroke: color-mix(in srgb, var(--owner-color) 48%, transparent);
+    --theme-text-dim: color-mix(
+      in srgb,
+      var(--theme-text, white) 72%,
+      var(--owner-color)
+    );
 
-  .rhythm-tier {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .rhythm-disclosure {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 8px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 8px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .rhythm-disclosure:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-  }
-
-  .rhythm-rows {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 2px 2px 0;
+    padding-top: 10px;
+    border-top: 1px solid
+      color-mix(in srgb, var(--owner-color) 42%, transparent);
   }
 
-  .rhythm-row {
+  .configurator-row {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  .rhythm-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  .configurator-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
 
-  /* Ghost-sizer: ONE cell reserves the longest possible caption so switching
-     rhythm knobs never shifts the block timeline / apply button below it. */
-  .rhythm-caption {
-    display: grid;
+  .configurator-title {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 700;
+  }
+
+  .configurator-selection {
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--owner-color) 70%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--owner-color) 32%, transparent);
+    color: var(--theme-text, white);
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .configurator-caption {
+    display: grid;
+    padding: 8px 10px;
+    border-left: 3px solid var(--owner-color);
+    border-radius: 0 8px 8px 0;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #18152a) 36%,
+      transparent
+    );
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.4;
   }
 
-  .caption-sizer,
-  .caption-live {
+  .configurator-caption-sizer,
+  .configurator-caption-live {
     grid-area: 1 / 1;
   }
 
-  .caption-sizer {
+  .configurator-caption-sizer {
+    visibility: hidden;
+  }
+
+  .reflection-axis-picker {
+    --theme-accent: var(--reflection-color);
+    --theme-card-bg: color-mix(
+      in srgb,
+      var(--reflection-color) 18%,
+      var(--theme-panel-bg, #18152a)
+    );
+    --theme-card-hover-bg: color-mix(
+      in srgb,
+      var(--reflection-color) 24%,
+      var(--theme-panel-bg, #18152a)
+    );
+    --theme-stroke: color-mix(
+      in srgb,
+      var(--reflection-color) 48%,
+      transparent
+    );
+    --theme-text-dim: color-mix(
+      in srgb,
+      var(--theme-text, white) 72%,
+      var(--reflection-color)
+    );
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid
+      color-mix(in srgb, var(--reflection-color) 42%, transparent);
+  }
+
+  .axis-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .axis-title {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 700;
+  }
+
+  .axis-selection {
+    width: 8ch;
+    padding: 3px 8px;
+    border: 1px solid
+      color-mix(in srgb, var(--reflection-color) 70%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--reflection-color) 32%, transparent);
+    color: var(--theme-text, white);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .axis-option {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding-block: 3px;
+  }
+
+  .axis-diagram {
+    width: clamp(28px, 8cqw, 36px);
+    height: clamp(28px, 8cqw, 36px);
+    margin-bottom: 2px;
+    overflow: visible;
+  }
+
+  .axis-ring {
+    fill: color-mix(in srgb, currentColor 8%, transparent);
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.38;
+  }
+
+  .axis-point {
+    fill: currentColor;
+    opacity: 0.48;
+  }
+
+  .axis-line {
+    stroke: currentColor;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+
+  .axis-option-label {
+    color: currentColor;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .axis-option-name {
+    color: currentColor;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    opacity: 0.72;
+    white-space: nowrap;
+  }
+
+  .axis-caption {
+    display: grid;
+    padding: 8px 10px;
+    border-left: 3px solid var(--reflection-color);
+    border-radius: 0 8px 8px 0;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #18152a) 36%,
+      transparent
+    );
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.4;
+  }
+
+  .axis-caption-sizer,
+  .axis-caption-live {
+    grid-area: 1 / 1;
+  }
+
+  .axis-caption-sizer {
     visibility: hidden;
   }
 
@@ -879,11 +1587,134 @@ Animates forward in z-axis and expands to fill the container space
 
   /* Below the side-by-side breakpoint the bottom nav overlaps the sheet's
      foot (the drawer content reserves clearance for it) — stick above it. */
-  @media (max-width: 767px) {
+  @media (max-width: 768px) {
+    .desktop-loop-grid,
+    .desktop-combo-details {
+      display: none;
+    }
+
+    .mobile-loop-stage {
+      display: block;
+      width: 100%;
+      height: clamp(260px, 45dvh, 320px);
+      flex: 0 0 clamp(260px, 45dvh, 320px);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .mobile-loop-picker :global(.loop-component-grid) {
+      grid-auto-rows: 76px;
+      gap: 8px;
+    }
+
+    .mobile-loop-picker :global(.loop-component-shell),
+    .mobile-loop-picker :global(.loop-component-button) {
+      min-height: 76px;
+    }
+
+    .mobile-loop-status {
+      display: block;
+      flex: 0 0 auto;
+    }
+
     .apply-dock {
-      bottom: calc(
-        var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px)
-      );
+      bottom: 0;
+    }
+  }
+
+  /* Portrait tablets remain bottom sheets until the shared layout manager
+     actually chooses side-by-side mode. Match the Drawer's data-placement
+     decision instead of letting a raw width breakpoint expose the desktop
+     accordion inside a bottom sheet. */
+  @media (min-width: 769px) and (max-width: 1023px) {
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .desktop-loop-grid,
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .desktop-combo-details {
+      display: none;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .mobile-loop-stage {
+      display: block;
+      width: 100%;
+      height: clamp(260px, 45dvh, 320px);
+      flex: 0 0 clamp(260px, 45dvh, 320px);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .mobile-loop-picker
+      :global(.loop-component-grid) {
+      grid-auto-rows: 76px;
+      gap: 8px;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .mobile-loop-picker
+      :global(.loop-component-shell),
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .mobile-loop-picker
+      :global(.loop-component-button) {
+      min-height: 76px;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .mobile-loop-status {
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .apply-dock {
+      bottom: 0;
+    }
+  }
+
+  /* Landscape phones and short laptop panes may use a right-side drawer, but
+     they do not have the vertical room for three open desktop accordions. The
+     compact picker owns the remaining height and each settings screen scrolls
+     inside that stable stage. */
+  @media (min-width: 769px) and (max-height: 700px) {
+    :global(.loop-drawer-sheet[data-placement="right"]) .desktop-loop-grid,
+    :global(.loop-drawer-sheet[data-placement="right"]) .desktop-combo-details {
+      display: none;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"]) .mobile-loop-stage {
+      display: block;
+      width: 100%;
+      height: auto;
+      flex: 1 1 0;
+      min-height: 188px;
+      overflow: hidden;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .mobile-loop-picker
+      :global(.loop-component-grid) {
+      grid-auto-rows: 68px;
+      gap: 6px;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .mobile-loop-picker
+      :global(.loop-component-shell),
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .mobile-loop-picker
+      :global(.loop-component-button) {
+      min-height: 68px;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"]) .mobile-loop-status {
+      display: block;
+      flex: 0 0 auto;
+    }
+  }
+
+  /* On short phones the selected card's own caption already explains the
+     transformation. Dropping the repeated combo sentence keeps that card's
+     header and controls together without hiding lock or validation messages. */
+  @media (max-width: 768px) and (max-height: 700px) {
+    .explanation-text {
+      display: none;
     }
   }
 
@@ -930,7 +1761,7 @@ Animates forward in z-axis and expands to fill the container space
     .apply-button,
     .close-button,
     .disable-button,
-    .rhythm-disclosure {
+    .mobile-detail-back {
       transition: none;
     }
   }

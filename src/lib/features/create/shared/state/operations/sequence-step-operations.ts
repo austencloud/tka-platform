@@ -1,13 +1,13 @@
 /**
- * Sequence Beat Operations
+ * Sequence Step Operations
  *
- * Handles beat-level operations with animation support:
+ * Handles step-level operations with animation support:
  * - Adding/removing steps
  * - Updating step data
- * - Beat insertion
- * - Animated beat removal
+ * - Step insertion
+ * - Animated step removal
  *
- * RESPONSIBILITY: Beat operations coordinator, orchestrates state + services
+ * RESPONSIBILITY: Step operations coordinator, orchestrates state + services
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -31,7 +31,7 @@ export interface StepOperationsConfig {
   onSave?: () => Promise<void>;
 }
 
-export function createSequenceBeatOperations(config: StepOperationsConfig) {
+export function createSequenceStepOperations(config: StepOperationsConfig) {
   const {
     coreState,
     selectionState,
@@ -361,5 +361,5 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
 }
 
 export type SequenceStepOperations = ReturnType<
-  typeof createSequenceBeatOperations
+  typeof createSequenceStepOperations
 >;

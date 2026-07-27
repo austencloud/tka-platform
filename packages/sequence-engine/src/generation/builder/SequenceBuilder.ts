@@ -23,14 +23,22 @@ import type {
   IConstraint,
   IVariationConstraint,
 } from "../constraints/types.js";
-import type { SequenceStep, Motion, Orientation } from "../../core/types/sequence-engine-types.js";
+import type {
+  SequenceStep,
+  Motion,
+  Orientation,
+} from "../../core/types/sequence-engine-types.js";
 import {
   OrientationPropagator,
   OrientationCalculator as OrientationCalculatorImpl,
 } from "../../core/orientation/OrientationPropagator.js";
 import { LetterParser } from "../../core/letters/LetterParser.js";
 import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
-import { allocateTurns, type TurnAllocation } from "../turns/TurnAllocator.js";
+import {
+  allocateTurns,
+  type TurnAllocation,
+  type TurnAllocationOptions,
+} from "../turns/TurnAllocator.js";
 import { BeamSearch, type BeamSearchResult } from "./BeamSearch.js";
 import { Type6Constraint } from "../constraints/domain/Type6Constraint.js";
 import { PositionContinuityConstraint } from "../constraints/domain/PositionContinuityConstraint.js";
@@ -49,30 +57,75 @@ import {
   periodToNumber,
 } from "../../loop/loop-types.js";
 import type { LOOPSpec } from "../../loop/loop-spec.js";
-import { validateLOOPSpec } from "../../loop/loop-spec.js";
+import {
+  LOOPComponent,
+  allActiveComponents,
+  getReflectionAxis,
+  validateLOOPSpec,
+} from "../../loop/loop-spec.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
+import { closeOrientationCycle } from "../../loop/execution/orientation-cycle.js";
 import { findLetterByMotions } from "../../loop/LetterLookup.js";
-import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
+import {
+  hasRewoundStructure,
+  loopDetectorClass,
+} from "../../loop/detection/LOOPDetector.js";
+import { reduceToMinimalLoop } from "../../loop/reduction/minimal-loop-reducer.js";
+import {
+  determineEndPositionForSpec,
+  loopEndPositionSelector,
+} from "../../loop/targeting/LOOPEndPositionSelector.js";
 import {
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
 } from "../../loop/position-maps/circular-position-maps.js";
-import { VERTICAL_MIRROR_POSITION_MAP, SWAPPED_POSITION_MAP } from "../../loop/position-maps/strict-loop-position-maps.js";
-import { PositionReachabilityAnalyzer, type ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
+import {
+  DEFAULT_FLIPPED_AXIS,
+  DEFAULT_MIRRORED_AXIS,
+  SWAPPED_POSITION_MAP,
+} from "../../loop/position-maps/strict-loop-position-maps.js";
+import {
+  PositionReachabilityAnalyzer,
+  type ReachabilityResult,
+} from "../reachability/PositionReachabilityAnalyzer.js";
 
 /**
- * Decide whether to enforce period-4 turn parity for this LOOP request.
+ * Decide whether this request deliberately needs a four-repetition
+ * orientation cycle.
  *
- * Period 4 non-rotated LOOPs (mirrored/flipped/swapped/inverted at L3+) close
- * only when each hand's partial turn total is ≡ 1 or 3 (mod 4) wheel-quarters.
- * Rotated LOOPs don't need this — the quartered grid rotation provides the
- * 4-cycle on its own. Pure period-2 LOOPs are trivially closed.
+ * An odd wheel-quarter total makes the orientation pattern itself take four
+ * repetitions instead of closing after two. This shapes the candidate; the
+ * orientation-cycle module still calculates and proves final closure.
  */
-function shouldEnforcePeriod4Parity(loop: LoopOptions | undefined): boolean {
+function shouldForcePeriod4OrientationCycle(
+  loop: LoopOptions | undefined
+): boolean {
   if (!loop) return false;
   const periodNum = periodToNumber(loop.period);
   if (periodNum !== 4) return false;
   return !ROTATED_LOOP_TYPES.has(loop.type);
+}
+
+function resolveTurnAllocationOptions(
+  options: BuildOptions
+): TurnAllocationOptions {
+  const presetOptions = options.constraintPreset
+    ? getPresetOptions(options.constraintPreset)
+    : undefined;
+  const constraints = {
+    ...(presetOptions ?? {}),
+    ...(options.constraintOptions ?? {}),
+  };
+
+  return {
+    forcePeriod4OrientationCycle:
+      shouldForcePeriod4OrientationCycle(options.loop),
+    ...(typeof constraints.turns === "number"
+      ? { requiredTurns: constraints.turns }
+      : {}),
+    allowFloat:
+      constraints.motionType !== "pro" && constraints.motionType !== "anti",
+  };
 }
 
 /**
@@ -81,25 +134,29 @@ function shouldEnforcePeriod4Parity(loop: LoopOptions | undefined): boolean {
  * and needs a rotation direction for the renderer and orientation calculator.
  *
  * Behavior depends on the reversal preference:
- * - "maximize" (smooth): inherit the previous beat's rotation direction
- * - "force-reversals" (choppy): flip the previous beat's rotation direction
+ * - "maximize" (smooth): inherit the previous step's rotation direction
+ * - "force-reversals" (choppy): flip the previous step's rotation direction
  * - "allow-reversals" (mixed) or default: random choice
  */
 function resolveRotationDirection(
   original: string,
   turns?: number | "fl",
   previousRotation?: string,
-  propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
+  propContinuity?: "maximize" | "allow-reversals" | "force-reversals"
 ): string {
   const hasTurns = turns !== undefined && turns !== 0;
-  const isNoRotation = original === "noRotation" || original === "no_rot" || !original;
+  const isNoRotation =
+    original === "noRotation" || original === "no_rot" || !original;
 
   if (hasTurns && isNoRotation) {
-    const hasPrevious = previousRotation && previousRotation !== "noRotation" && previousRotation !== "no_rot";
+    const hasPrevious =
+      previousRotation &&
+      previousRotation !== "noRotation" &&
+      previousRotation !== "no_rot";
 
     if (hasPrevious) {
       if (propContinuity === "force-reversals") {
-        // Choppy: flip the direction every beat
+        // Choppy: flip the direction every step
         return previousRotation === "cw" ? "ccw" : "cw";
       }
       if (propContinuity === "maximize") {
@@ -122,7 +179,7 @@ export interface BuildOptions {
   /** The word to spell (e.g. "BOOK", "AΣ-B"). Either word or length must be provided. */
   word?: string;
 
-  /** Number of beats to generate (excluding start position). Either word or length must be provided. */
+  /** Number of steps to generate (excluding start position). Either word or length must be provided. */
   length?: number;
 
   /** Grid mode for position lookups */
@@ -155,7 +212,7 @@ export interface BuildOptions {
   /** LOOP extension options. When present, the seed sequence is extended. */
   loop?: LoopOptions;
 
-  /** Force a specific end position (e.g. "beta5"). The last beat must end here. */
+  /** Force a specific end position (e.g. "beta5"). The last step must end here. */
   endPosition?: string;
 
   /** Start positions to exclude from the random start pool. */
@@ -189,6 +246,15 @@ export interface LoopOptions {
 
   /** Compositional LOOPSpec. When present, preferred over type+period by new execution paths. */
   loopSpec?: LOOPSpec;
+
+  /** Exact total step count requested by a length-based caller. */
+  requestedTotalLength?: number;
+
+  /**
+   * Internal retry hint: preserve at least this many output passes per seed
+   * when an earlier attempt proved that orientation closure needs them.
+   */
+  minimumExpansionMultiplier?: number;
 }
 
 /**
@@ -242,11 +308,224 @@ export class SequenceBuilder {
       throw new Error("Either word or length must be provided");
     }
 
-    if (options.word) {
-      return this.buildByWord(options as BuildOptions & { word: string });
+    if (!options.loop) {
+      return options.word
+        ? this.buildByWord(options as BuildOptions & { word: string })
+        : this.buildByLength(options as BuildOptions & { length: number });
     }
 
-    return this.buildByLength(options as BuildOptions & { length: number });
+    // Some random seeds are structurally degenerate: a requested swap can be
+    // absorbed by hand symmetry, or a valid positional cycle can finish with
+    // an open prop orientation. Those are not valid results for a LOOP request.
+    // Validate the complete generated sequence at the public boundary and
+    // reroll the seed instead of returning a weaker or non-closing pattern.
+    const maxAttempts = 40;
+    let workingOptions = options;
+    let lastFailure = "no result";
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const result = workingOptions.word
+          ? this.buildByWord(workingOptions as BuildOptions & { word: string })
+          : this.buildByLength(
+              workingOptions as BuildOptions & { length: number }
+            );
+
+        const requestedTotalLength = workingOptions.loop?.requestedTotalLength;
+        if (
+          !workingOptions.word &&
+          requestedTotalLength !== undefined &&
+          result.sequence.length - 1 !== requestedTotalLength
+        ) {
+          const seedLength = workingOptions.length!;
+          const actualLength = result.sequence.length - 1;
+          const actualMultiplier = actualLength / seedLength;
+
+          if (
+            Number.isInteger(actualMultiplier) &&
+            actualMultiplier >= 1 &&
+            requestedTotalLength % actualMultiplier === 0
+          ) {
+            workingOptions = {
+              ...options,
+              length: requestedTotalLength / actualMultiplier,
+              loop: {
+                ...options.loop!,
+                minimumExpansionMultiplier: actualMultiplier,
+              },
+            };
+            lastFailure =
+              `orientation closure requires ${actualMultiplier} passes; ` +
+              `regenerating a ${workingOptions.length}-step seed`;
+            continue;
+          }
+
+          lastFailure =
+            `requested ${requestedTotalLength} steps, but orientation closure ` +
+            `requires a ${actualMultiplier}x seed expansion`;
+          continue;
+        }
+
+        const validationFailure = this.getLOOPValidationFailure(
+          result,
+          workingOptions.loop!
+        );
+        if (!validationFailure) return result;
+        lastFailure = validationFailure;
+      } catch (error) {
+        lastFailure = error instanceof Error ? error.message : String(error);
+      }
+    }
+
+    throw new Error(
+      `Unable to generate a valid ${options.loop.type} LOOP after ${maxAttempts} attempts ` +
+        `(last failure: ${lastFailure})`
+    );
+  }
+
+  private getLOOPValidationFailure(
+    result: BuildResult,
+    loop: LoopOptions
+  ): string | undefined {
+    const first = result.sequence[0];
+    const last = result.sequence[result.sequence.length - 1];
+    if (!first || !last) return "empty sequence";
+
+    if (first.startPosition !== last.endPosition) {
+      return `position did not close (${first.startPosition} -> ${last.endPosition})`;
+    }
+
+    const openOrientations: string[] = [];
+    for (const side of ["blue", "red"] as const) {
+      const startOrientation = first.motions[side].startOrientation;
+      const endOrientation = last.motions[side].endOrientation;
+      if (startOrientation !== endOrientation) {
+        openOrientations.push(
+          `${side} ${startOrientation} -> ${endOrientation}`
+        );
+      }
+    }
+    if (openOrientations.length > 0) {
+      return `orientation did not close (${openOrientations.join(", ")})`;
+    }
+
+    // Overlay transforms intentionally create a blockwise relationship rather
+    // than one uniform pair relation across the full sequence. The current
+    // detector describes only uniform/compound expand stages, so it cannot
+    // validate overlay identity without misclassifying a valid result.
+    const activeComponents = loop.loopSpec
+      ? allActiveComponents(loop.loopSpec)
+      : undefined;
+    if (
+      activeComponents &&
+      [...activeComponents.values()].some(
+        (componentSpec) => componentSpec.mode === "overlay"
+      )
+    ) {
+      return undefined;
+    }
+
+    const expectedRaw = loop.loopSpec
+      ? new Set([...activeComponents!.keys()].map(String))
+      : this.componentsFromLegacyType(loop.type);
+    const expected = this.normalizeReflectionComponents(expectedRaw);
+
+    if (expected.has("rewound")) {
+      return hasRewoundStructure(result.sequence)
+        ? undefined
+        : "identity mismatch (expected rewound, detected non-rewound)";
+    }
+
+    const detected = loopDetectorClass.detectLOOPType(result.sequence);
+    const actualRaw = new Set<string>();
+    for (const propSpec of [detected.spec?.blue, detected.spec?.red]) {
+      for (const component of propSpec?.components.keys() ?? []) {
+        actualRaw.add(String(component));
+      }
+    }
+    const actual = this.normalizeReflectionComponents(actualRaw);
+
+    if (
+      !detected.isCircular ||
+      actual.size !== expected.size ||
+      [...expected].some((component) => !actual.has(component))
+    ) {
+      const detectedLabel = detected.isCircular
+        ? [...actual].sort().join("+") || "circular-without-transform"
+        : "not-circular";
+      return (
+        `identity mismatch (expected ${[...expected].sort().join("+")}, ` +
+        `detected ${detectedLabel})`
+      );
+    }
+
+    const legacyType = String(loop.type);
+    const expectedReflectionAxis = loop.loopSpec
+      ? this.directReflectionAxisFromSpec(loop.loopSpec)
+      : legacyType.includes("rotated")
+        ? null
+        : legacyType.includes("mirrored")
+          ? DEFAULT_MIRRORED_AXIS
+          : legacyType.includes("flipped")
+            ? DEFAULT_FLIPPED_AXIS
+            : null;
+    if (
+      expectedReflectionAxis !== null &&
+      detected.reflectionAxis !== expectedReflectionAxis
+    ) {
+      return (
+        `identity mismatch (expected ${expectedReflectionAxis} reflection, ` +
+        `detected ${detected.reflectionAxis ?? "no reflection axis"})`
+      );
+    }
+
+    return undefined;
+  }
+
+  /**
+   * The detector's axis is directly comparable to the declared axis only when
+   * reflection is the location transform for that expansion. A sequential
+   * ROTATED + reflection spec contains an already-expanded inner block; its
+   * outer, path-transported wrapper is construction metadata rather than one
+   * global absolute reflection of the original seed.
+   */
+  private directReflectionAxisFromSpec(loopSpec: LOOPSpec) {
+    const components = allActiveComponents(loopSpec);
+    if (components.has(LOOPComponent.ROTATED)) return null;
+
+    for (const component of [
+      LOOPComponent.MIRRORED,
+      LOOPComponent.FLIPPED,
+    ]) {
+      const componentSpec = components.get(component);
+      if (componentSpec) return getReflectionAxis(component, componentSpec);
+    }
+    return null;
+  }
+
+  private componentsFromLegacyType(loopType: LOOPType): Set<string> {
+    const value = String(loopType);
+    if (value.includes("rewound")) return new Set(["rewound"]);
+
+    return new Set(
+      ["rotated", "mirrored", "flipped", "swapped", "inverted"].filter(
+        (component) => value.includes(component)
+      )
+    );
+  }
+
+  private normalizeReflectionComponents(
+    components: ReadonlySet<string>
+  ): Set<string> {
+    const normalized = new Set(components);
+    const hasReflection =
+      normalized.has(String(LOOPComponent.MIRRORED)) ||
+      normalized.has(String(LOOPComponent.FLIPPED));
+    if (hasReflection) {
+      normalized.delete(String(LOOPComponent.MIRRORED));
+      normalized.delete(String(LOOPComponent.FLIPPED));
+      normalized.add("reflection");
+    }
+    return normalized;
   }
 
   private buildByWord(options: BuildOptions & { word: string }): BuildResult {
@@ -265,22 +544,25 @@ export class SequenceBuilder {
       letters.length,
       options.level,
       options.maxTurnIntensity,
-      { enforcePeriod4Parity: shouldEnforcePeriod4Parity(options.loop) },
+      resolveTurnAllocationOptions(options)
     );
 
     // Stage 4: Beam search
     // When LOOP is requested, the last letter must end at a position
     // compatible with the LOOP type. Retry with different random
     // variations if the first attempt doesn't land at a valid position.
-    const needsLoopTargeting = options.loop?.useTargetedGeneration;
+    const needsLoopTargeting =
+      options.loop?.useTargetedGeneration &&
+      options.loop.type !== LOOPType.REWOUND;
 
-    // Constrain start position for LOOP types that need vertical axis
+    // Constrain only the legacy rotate+swap degeneracy. Reflection axes do not
+    // require fixed-point starts.
     let effectiveStartPosition = options.startPosition;
     if (needsLoopTargeting && options.loop) {
       const constrainedStart = this.constrainStartForLoopType(
         options.loop.type,
         effectiveStartPosition,
-        options.gridMode,
+        options.gridMode
       );
       if (constrainedStart) {
         effectiveStartPosition = constrainedStart;
@@ -290,7 +572,7 @@ export class SequenceBuilder {
     // Build the ordered list of (start, requiredEnds) targets to search toward.
     //
     // The closure constraint is enforced by handing the beam search the set of
-    // valid end positions for the FINAL letter (search() filters the last beat
+    // valid end positions for the FINAL letter (search() filters the last step
     // to those). That only works if we know the start position, because the
     // valid ends are a function of (start, loopType). When the caller pins a
     // start we compute a single target. When the start is random for a LOOP we
@@ -308,11 +590,11 @@ export class SequenceBuilder {
         letters[0]!,
         options.loop,
         options.gridMode,
-        options.blockedStartPositions,
+        options.blockedStartPositions
       );
       if (searchTargets.length === 0) {
         throw new Error(
-          `No closure-compatible start position exists for a ${options.loop.type} LOOP spelling "${options.word}"`,
+          `No closure-compatible start position exists for a ${options.loop.type} LOOP spelling "${options.word}"`
         );
       }
     } else {
@@ -322,9 +604,12 @@ export class SequenceBuilder {
           options.loop.type,
           effectiveStartPosition,
           options.loop.period,
+          options.loop.loopSpec
         );
       }
-      searchTargets = [{ start: effectiveStartPosition, requiredEnds: requiredEndPositions }];
+      searchTargets = [
+        { start: effectiveStartPosition, requiredEnds: requiredEndPositions },
+      ];
     }
 
     // Word-based LOOP needs more retries because the word constrains which
@@ -335,10 +620,12 @@ export class SequenceBuilder {
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
 
-    outer:
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+    outer: for (let attempt = 0; attempt < maxRetries; attempt++) {
       for (const target of searchTargets) {
-        const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+        const beamSearch = new BeamSearch(
+          this.variationProvider,
+          options.gridMode
+        );
         const propContinuity = this.resolveEffectivePropContinuity(options);
         const result = beamSearch.search(
           letters,
@@ -347,7 +634,7 @@ export class SequenceBuilder {
           options.beamWidth ?? 10,
           target.requiredEnds,
           turnAllocation,
-          propContinuity,
+          propContinuity
         );
 
         if (result.success || result.steps.length > 0) {
@@ -359,7 +646,8 @@ export class SequenceBuilder {
           // move on to the next candidate rather than handing the LOOP executor
           // a pair it will reject downstream.
           if (target.requiredEnds && target.requiredEnds.size > 0) {
-            const actualEnd = result.steps[result.steps.length - 1]?.endPosition;
+            const actualEnd =
+              result.steps[result.steps.length - 1]?.endPosition;
             if (!actualEnd || !target.requiredEnds.has(actualEnd)) {
               lastError = `Sequence for "${options.word}" could not close as a ${options.loop?.type} LOOP from ${target.start ?? "?"} (ended ${actualEnd ?? "?"})`;
               continue; // try the next start candidate
@@ -372,18 +660,27 @@ export class SequenceBuilder {
       }
     }
 
-    if (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) {
+    if (
+      !searchResult ||
+      (!searchResult.success && searchResult.steps.length === 0)
+    ) {
       throw new Error(
-        lastError ?? `No valid sequence found for "${options.word}"`,
+        lastError ?? `No valid sequence found for "${options.word}"`
       );
     }
 
     // Stage 5: Post-process (convert PictographData to SequenceStep)
     const propContinuity = this.resolveEffectivePropContinuity(options);
-    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity, {
-      blueStartOrientation: options.blueStartOrientation,
-      redStartOrientation: options.redStartOrientation,
-    });
+    const result = this.postProcess(
+      searchResult,
+      turnAllocation,
+      letters,
+      propContinuity,
+      {
+        blueStartOrientation: options.blueStartOrientation,
+        redStartOrientation: options.redStartOrientation,
+      }
+    );
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -396,7 +693,9 @@ export class SequenceBuilder {
   /**
    * constraint scoring. No bridges needed since every transition is direct.
    */
-  private buildByLength(options: BuildOptions & { length: number }): BuildResult {
+  private buildByLength(
+    options: BuildOptions & { length: number }
+  ): BuildResult {
     const { length } = options;
 
     // Stage 2: Assemble constraints
@@ -406,11 +705,12 @@ export class SequenceBuilder {
     // hard first (no reversals allowed). If the beam dies — which can happen
     // when all variations at a position reverse the established rotation —
     // fall back to soft continuity so the search still produces a result.
-    const effectivePropContinuity = this.resolveEffectivePropContinuity(options);
+    const effectivePropContinuity =
+      this.resolveEffectivePropContinuity(options);
     let promotedContinuity = false;
     if (effectivePropContinuity === "maximize") {
       constraintSet.soft = constraintSet.soft.filter(
-        (c) => c.type !== ConstraintType.CONTINUITY,
+        (c) => c.type !== ConstraintType.CONTINUITY
       );
       constraintSet.hard.push(new ContinuityConstraint("enforce"));
       promotedContinuity = true;
@@ -421,11 +721,11 @@ export class SequenceBuilder {
       length,
       options.level,
       options.maxTurnIntensity,
-      { enforcePeriod4Parity: shouldEnforcePeriod4Parity(options.loop) },
+      resolveTurnAllocationOptions(options)
     );
 
     // Stage 4: Beam search by length
-    // When generating a LOOP seed, the last beat must end at a specific
+    // When generating a LOOP seed, the last step must end at a specific
     // position determined by the LOOP type and start position. Each LOOP
     // type has its own requirement (rotated = 180°/90° away, inverted =
     // same position, mirrored = vertically mirrored, etc.).
@@ -433,18 +733,18 @@ export class SequenceBuilder {
     // LOOPEndPositionSelector handles all LOOP types correctly.
     // When no start position is specified, the beam search picks a random
     // one — we retry up to 10 times if the path fails.
-    const needsLoopTargeting = options.loop?.useTargetedGeneration;
+    const needsLoopTargeting =
+      options.loop?.useTargetedGeneration &&
+      options.loop.type !== LOOPType.REWOUND;
 
-    // Some LOOP types require the start position to be on the vertical axis
-    // (where vertical_mirror(pos) === pos). If no start position is specified,
-    // pick a random valid one. If the user specified an incompatible position,
-    // override it to a compatible one so the executor doesn't reject it.
+    // Reflection starts are handled by axis-specific seam targeting. The only
+    // start override left here avoids the legacy rotate+swap alpha degeneracy.
     let effectiveStartPosition = options.startPosition;
     if (needsLoopTargeting && options.loop) {
       const constrainedStart = this.constrainStartForLoopType(
         options.loop.type,
         effectiveStartPosition,
-        options.gridMode,
+        options.gridMode
       );
       if (constrainedStart) {
         effectiveStartPosition = constrainedStart;
@@ -467,22 +767,49 @@ export class SequenceBuilder {
     // Pre-filter variations by hard constraints for reachability analysis.
     // This only runs once (not per-retry) since hard constraints don't change.
     // Uses the same Type6 exclusion as BeamSearch (α, β, γ are start positions only).
-    const allVariationsForReach = this.variationProvider.getAllVariations(options.gridMode);
-    const TYPE_6_LETTERS = ["α", "β", "γ"];
-    let nonType6ForReachability = allVariationsForReach.filter(
-      (p) => !TYPE_6_LETTERS.includes(p.letter),
+    const allVariationsForReach = this.variationProvider.getAllVariations(
+      options.gridMode
     );
-    if (options.mustNotContainLetters && options.mustNotContainLetters.length > 0) {
+    let nonType6ForReachability = allVariationsForReach.filter(
+      (p) => !this.letterClassifier.isType6(p.letter)
+    );
+    if (
+      options.mustNotContainLetters &&
+      options.mustNotContainLetters.length > 0
+    ) {
       const excluded = new Set(options.mustNotContainLetters);
       nonType6ForReachability = nonType6ForReachability.filter(
-        (p) => !excluded.has(p.letter),
+        (p) => !excluded.has(p.letter)
       );
     }
     const hardConstraintFiltered = this.filterByHardConstraints(
-      nonType6ForReachability, constraintSet.hard,
+      nonType6ForReachability,
+      constraintSet.hard
     );
 
-    const maxRetries = needsLoopTargeting && !effectiveStartPosition ? 10 : 1;
+    // A LOOP's target depends on its start. Search each start→end relation as
+    // its own problem so backward reachability can keep soft preferences from
+    // filling a global beam with attractive paths that cannot close.
+    const lengthLoopTargets =
+      needsLoopTargeting && !effectiveStartPosition
+        ? Object.entries(
+            this.buildLoopPositionMap(options.loop!, options.gridMode)
+          )
+            .filter(
+              ([start]) => !searchOptions.blockedStartPositions?.has(start)
+            )
+            .map(([start, ends]) => ({
+              start,
+              requiredEnds: new Set(ends),
+            }))
+            .sort(() => Math.random() - 0.5)
+        : undefined;
+
+    // For freeform generation, a random start is part of the search space,
+    // not a commitment. Skewed in particular has starts whose outgoing
+    // variations can all be removed by a hard filter such as no-static.
+    const maxRetries =
+      lengthLoopTargets?.length ?? (effectiveStartPosition ? 1 : 10);
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
 
@@ -490,20 +817,28 @@ export class SequenceBuilder {
       // For LOOP generation, compute the required end position.
       // If startPosition is specified, compute upfront. If not,
       // the beam search picks a random start — we compute end position
-      // from the actual start after the first beat is selected.
+      // from the actual start after the first step is selected.
       let requiredEndPositions: Set<string> | undefined;
       let loopPositionMap: Record<string, string[]> | undefined;
+      const loopTarget = lengthLoopTargets?.[attempt];
+      const attemptStartPosition = loopTarget?.start ?? effectiveStartPosition;
 
-      if (needsLoopTargeting && effectiveStartPosition) {
+      if (loopTarget) {
+        requiredEndPositions = loopTarget.requiredEnds;
+      } else if (needsLoopTargeting && attemptStartPosition) {
         requiredEndPositions = this.getAllValidEndPositions(
           options.loop!.type,
-          effectiveStartPosition,
+          attemptStartPosition,
           options.loop!.period,
+          options.loop!.loopSpec
         );
       } else if (needsLoopTargeting) {
         // No start position specified — build a position map so the beam
         // search can compute the end position from the actual random start.
-        loopPositionMap = this.buildLoopPositionMap(options.loop!);
+        loopPositionMap = this.buildLoopPositionMap(
+          options.loop!,
+          options.gridMode
+        );
       }
 
       // User-specified end position (non-LOOP) merges into requiredEndPositions
@@ -511,34 +846,36 @@ export class SequenceBuilder {
         requiredEndPositions = new Set([options.endPosition]);
       }
 
-      // Backward reachability analysis: when we have a goal (LOOP endpoint)
-      // AND hard constraints that filter the variation space, pre-compute
-      // which positions at each beat can participate in a valid path to the
-      // goal. This prevents the beam search from wasting lanes on doomed paths
-      // and fails fast when constraints are provably impossible.
+      // Backward reachability analysis: whenever we have a concrete goal,
+      // pre-compute which positions can participate in a path to it. This is
+      // required for soft preferences too: scoring must not prune every lane
+      // that can still reach the seam.
       let reachability: ReachabilityResult | undefined;
-      if (requiredEndPositions && requiredEndPositions.size > 0 && constraintSet.hard.length > 0) {
+      if (requiredEndPositions && requiredEndPositions.size > 0) {
         const analyzer = new PositionReachabilityAnalyzer();
         reachability = analyzer.analyze(
           length,
           requiredEndPositions,
           hardConstraintFiltered,
-          searchOptions.blockedStartPositions,
+          searchOptions.blockedStartPositions
         );
 
         if (!reachability.feasible) {
           throw new Error(
-            `No valid ${length}-beat path exists: beat ${reachability.emptyStepIndex! + 1} ` +
-            `has no reachable positions given the current constraints`,
+            `No valid ${length}-step path exists: step ${reachability.emptyStepIndex! + 1} ` +
+              `has no reachable positions given the current constraints`
           );
         }
       }
 
-      const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+      const beamSearch = new BeamSearch(
+        this.variationProvider,
+        options.gridMode
+      );
       const propContinuity = this.resolveEffectivePropContinuity(options);
       const result = beamSearch.searchByLength(
         length,
-        effectiveStartPosition,
+        attemptStartPosition,
         constraintSet,
         options.beamWidth ?? 10,
         requiredEndPositions,
@@ -546,14 +883,34 @@ export class SequenceBuilder {
         searchOptions,
         turnAllocation,
         propContinuity,
-        reachability,
+        reachability
       );
 
       if (result.success || result.steps.length > 0) {
+        if (needsLoopTargeting) {
+          const closureError = this.getLengthLoopClosureError(
+            result,
+            options.loop!.type,
+            requiredEndPositions,
+            loopPositionMap
+          );
+          if (closureError) {
+            lastError = closureError;
+            continue;
+          }
+        }
+
         // Validate mustContainLetters if specified
-        if (searchOptions.mustContainLetters && searchOptions.mustContainLetters.size > 0) {
-          const presentLetters = new Set(result.steps.slice(1).map((s) => s.letter));
-          const missing = [...searchOptions.mustContainLetters].filter((l) => !presentLetters.has(l));
+        if (
+          searchOptions.mustContainLetters &&
+          searchOptions.mustContainLetters.size > 0
+        ) {
+          const presentLetters = new Set(
+            result.steps.slice(1).map((s) => s.letter)
+          );
+          const missing = [...searchOptions.mustContainLetters].filter(
+            (l) => !presentLetters.has(l)
+          );
           if (missing.length > 0) {
             lastError = `Required letters [${missing.join(", ")}] not present in generated sequence`;
             continue; // retry
@@ -570,31 +927,42 @@ export class SequenceBuilder {
     // Some positions only have variations that reverse the established rotation,
     // so enforcing continuity as a hard constraint is too strict.
     if (
-      (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) &&
+      (!searchResult ||
+        (!searchResult.success && searchResult.steps.length === 0)) &&
       promotedContinuity
     ) {
       constraintSet.hard = constraintSet.hard.filter(
-        (c) => c.type !== ConstraintType.CONTINUITY,
+        (c) => c.type !== ConstraintType.CONTINUITY
       );
       constraintSet.soft.push(new ContinuityConstraint("maximize"));
 
       // Recompute hard-constraint-filtered variations after removing continuity
       const demotedHardFiltered = this.filterByHardConstraints(
-        nonType6ForReachability, constraintSet.hard,
+        nonType6ForReachability,
+        constraintSet.hard
       );
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         let requiredEndPositions: Set<string> | undefined;
         let loopPositionMap: Record<string, string[]> | undefined;
+        const loopTarget = lengthLoopTargets?.[attempt];
+        const attemptStartPosition =
+          loopTarget?.start ?? effectiveStartPosition;
 
-        if (needsLoopTargeting && effectiveStartPosition) {
+        if (loopTarget) {
+          requiredEndPositions = loopTarget.requiredEnds;
+        } else if (needsLoopTargeting && attemptStartPosition) {
           requiredEndPositions = this.getAllValidEndPositions(
             options.loop!.type,
-            effectiveStartPosition,
+            attemptStartPosition,
             options.loop!.period,
+            options.loop!.loopSpec
           );
         } else if (needsLoopTargeting) {
-          loopPositionMap = this.buildLoopPositionMap(options.loop!);
+          loopPositionMap = this.buildLoopPositionMap(
+            options.loop!,
+            options.gridMode
+          );
         }
 
         if (options.endPosition && !needsLoopTargeting) {
@@ -603,28 +971,31 @@ export class SequenceBuilder {
 
         // Recompute reachability with the demoted constraint set
         let reachabilityRetry: ReachabilityResult | undefined;
-        if (requiredEndPositions && requiredEndPositions.size > 0 && constraintSet.hard.length > 0) {
+        if (requiredEndPositions && requiredEndPositions.size > 0) {
           const analyzer = new PositionReachabilityAnalyzer();
           reachabilityRetry = analyzer.analyze(
             length,
             requiredEndPositions,
             demotedHardFiltered,
-            searchOptions.blockedStartPositions,
+            searchOptions.blockedStartPositions
           );
 
           if (!reachabilityRetry.feasible) {
             throw new Error(
-              `No valid ${length}-beat path exists: beat ${reachabilityRetry.emptyStepIndex! + 1} ` +
-              `has no reachable positions given the current constraints`,
+              `No valid ${length}-step path exists: step ${reachabilityRetry.emptyStepIndex! + 1} ` +
+                `has no reachable positions given the current constraints`
             );
           }
         }
 
-        const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+        const beamSearch = new BeamSearch(
+          this.variationProvider,
+          options.gridMode
+        );
         const propContinuity = this.resolveEffectivePropContinuity(options);
         const result = beamSearch.searchByLength(
           length,
-          effectiveStartPosition,
+          attemptStartPosition,
           constraintSet,
           options.beamWidth ?? 10,
           requiredEndPositions,
@@ -632,13 +1003,33 @@ export class SequenceBuilder {
           searchOptions,
           turnAllocation,
           propContinuity,
-          reachabilityRetry,
+          reachabilityRetry
         );
 
         if (result.success || result.steps.length > 0) {
-          if (searchOptions.mustContainLetters && searchOptions.mustContainLetters.size > 0) {
-            const presentLetters = new Set(result.steps.slice(1).map((s) => s.letter));
-            const missing = [...searchOptions.mustContainLetters].filter((l) => !presentLetters.has(l));
+          if (needsLoopTargeting) {
+            const closureError = this.getLengthLoopClosureError(
+              result,
+              options.loop!.type,
+              requiredEndPositions,
+              loopPositionMap
+            );
+            if (closureError) {
+              lastError = closureError;
+              continue;
+            }
+          }
+
+          if (
+            searchOptions.mustContainLetters &&
+            searchOptions.mustContainLetters.size > 0
+          ) {
+            const presentLetters = new Set(
+              result.steps.slice(1).map((s) => s.letter)
+            );
+            const missing = [...searchOptions.mustContainLetters].filter(
+              (l) => !presentLetters.has(l)
+            );
             if (missing.length > 0) {
               lastError = `Required letters [${missing.join(", ")}] not present in generated sequence`;
               continue;
@@ -651,19 +1042,28 @@ export class SequenceBuilder {
       }
     }
 
-    if (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) {
+    if (
+      !searchResult ||
+      (!searchResult.success && searchResult.steps.length === 0)
+    ) {
       throw new Error(
-        lastError ?? "No valid sequence found for length-based generation",
+        lastError ?? "No valid sequence found for length-based generation"
       );
     }
 
     // Stage 5: Post-process
     const letters = searchResult.steps.slice(1).map((s) => s.letter);
     const propContinuity = this.resolveEffectivePropContinuity(options);
-    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity, {
-      blueStartOrientation: options.blueStartOrientation,
-      redStartOrientation: options.redStartOrientation,
-    });
+    const result = this.postProcess(
+      searchResult,
+      turnAllocation,
+      letters,
+      propContinuity,
+      {
+        blueStartOrientation: options.blueStartOrientation,
+        redStartOrientation: options.redStartOrientation,
+      }
+    );
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -671,6 +1071,46 @@ export class SequenceBuilder {
     }
 
     return result;
+  }
+
+  /**
+   * Verify the real seed seam before handing it to a LOOP executor.
+   *
+   * BeamSearch enforces this relation while expanding candidates. This guard
+   * keeps partial-result and future search paths from silently bypassing it.
+   */
+  private getLengthLoopClosureError(
+    result: BeamSearchResult,
+    loopType: LOOPType,
+    requiredEndPositions?: Set<string>,
+    loopPositionMap?: Record<string, string[]>
+  ): string | undefined {
+    const startPosition = result.steps[0]?.startPosition;
+    const endPosition = result.steps[result.steps.length - 1]?.endPosition;
+    const validEnds =
+      requiredEndPositions && requiredEndPositions.size > 0
+        ? [...requiredEndPositions]
+        : startPosition
+          ? loopPositionMap?.[startPosition]
+          : undefined;
+
+    if (
+      !startPosition ||
+      !endPosition ||
+      !validEnds ||
+      validEnds.length === 0
+    ) {
+      return `No valid seed seam exists for a ${loopType} LOOP from ${startPosition ?? "?"}`;
+    }
+
+    if (!validEnds.includes(endPosition)) {
+      return (
+        `Seed for ${loopType} LOOP from ${startPosition} ended at ${endPosition}; ` +
+        `expected one of [${validEnds.join(", ")}]`
+      );
+    }
+
+    return undefined;
   }
 
   /**
@@ -704,7 +1144,9 @@ export class SequenceBuilder {
       }
     } else if (options.constraints) {
       // NL parsing still goes through legacy path for now
-      const { constraintSet: parsedSet } = parseConstraintSet(options.constraints);
+      const { constraintSet: parsedSet } = parseConstraintSet(
+        options.constraints
+      );
       styleSet = parsedSet;
     }
 
@@ -725,7 +1167,7 @@ export class SequenceBuilder {
    * when the user selected "smooth".
    */
   private resolveEffectivePropContinuity(
-    options: BuildOptions,
+    options: BuildOptions
   ): "maximize" | "allow-reversals" | "force-reversals" | undefined {
     // Direct constraintOptions take highest priority
     if (options.constraintOptions?.propContinuity) {
@@ -745,14 +1187,17 @@ export class SequenceBuilder {
 
   /**
    * Stage 5: Convert beam search PictographData into SequenceStep format
-   * with beat indices, turn allocation, and bridge flags.
+   * with step indices, turn allocation, and bridge flags.
    */
   private postProcess(
     searchResult: BeamSearchResult,
     turnAllocation: TurnAllocation,
     letters: string[],
     propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
-    orientationOverrides?: { blueStartOrientation?: string; redStartOrientation?: string },
+    orientationOverrides?: {
+      blueStartOrientation?: string;
+      redStartOrientation?: string;
+    }
   ): BuildResult {
     const bridgeIndices = new Set(searchResult.bridgeStepIndices);
     const sequence: SequenceStep[] = [];
@@ -767,15 +1212,18 @@ export class SequenceBuilder {
       // Apply turn allocation. Index 0 = start position (no turns),
       // letter steps are 1-indexed in the turn allocation arrays.
       const stepTurnIndex = i > 0 ? i - 1 : -1;
-      const blueTurns = stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.blue.length
-        ? turnAllocation.blue[stepTurnIndex]
-        : undefined;
-      const redTurns = stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.red.length
-        ? turnAllocation.red[stepTurnIndex]
-        : undefined;
+      const blueTurns =
+        stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.blue.length
+          ? turnAllocation.blue[stepTurnIndex]
+          : undefined;
+      const redTurns =
+        stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.red.length
+          ? turnAllocation.red[stepTurnIndex]
+          : undefined;
 
       // Get the previous step's rotation directions for continuity
-      const prevStep = sequence.length > 0 ? sequence[sequence.length - 1] : undefined;
+      const prevStep =
+        sequence.length > 0 ? sequence[sequence.length - 1] : undefined;
       const prevBlueRot = prevStep?.motions.blue.rotationDirection;
       const prevRedRot = prevStep?.motions.red.rotationDirection;
 
@@ -788,18 +1236,29 @@ export class SequenceBuilder {
         pd.blueMotion.motionType === "pro" ||
         pd.blueMotion.motionType === "anti";
       const redIsShift =
-        pd.redMotion.motionType === "pro" ||
-        pd.redMotion.motionType === "anti";
+        pd.redMotion.motionType === "pro" || pd.redMotion.motionType === "anti";
       const blueIsFloat = blueTurns === "fl" && blueIsShift;
       const redIsFloat = redTurns === "fl" && redIsShift;
-      const blueMotionType = blueIsFloat ? "float" as const : pd.blueMotion.motionType;
-      const redMotionType = redIsFloat ? "float" as const : pd.redMotion.motionType;
+      const blueMotionType = blueIsFloat
+        ? ("float" as const)
+        : pd.blueMotion.motionType;
+      const redMotionType = redIsFloat
+        ? ("float" as const)
+        : pd.redMotion.motionType;
 
       // Compute effective turns: float keeps "fl", non-shift "fl" becomes 0,
       // everything else passes through. We need this BEFORE resolving direction
       // because 0-turn motions must always be "noRotation".
-      const effectiveBlueTurns = blueIsFloat ? blueTurns : (blueTurns === "fl" ? 0 : blueTurns);
-      const effectiveRedTurns = redIsFloat ? redTurns : (redTurns === "fl" ? 0 : redTurns);
+      const effectiveBlueTurns = blueIsFloat
+        ? blueTurns
+        : blueTurns === "fl"
+          ? 0
+          : blueTurns;
+      const effectiveRedTurns = redIsFloat
+        ? redTurns
+        : redTurns === "fl"
+          ? 0
+          : redTurns;
 
       // PictographData from the variation provider carries string-typed
       // motion fields (loaded from JSON). Cast at the boundary into the
@@ -810,14 +1269,22 @@ export class SequenceBuilder {
         endLocation: pd.blueMotion.endLocation as Motion["endLocation"],
         rotationDirection: (blueIsFloat
           ? "noRotation"
-          : resolveRotationDirection(pd.blueMotion.rotationDirection, effectiveBlueTurns, prevBlueRot, propContinuity)) as Motion["rotationDirection"],
-        startOrientation: pd.blueMotion.startOrientation as Motion["startOrientation"],
-        endOrientation: pd.blueMotion.endOrientation as Motion["endOrientation"],
+          : resolveRotationDirection(
+              pd.blueMotion.rotationDirection,
+              effectiveBlueTurns,
+              prevBlueRot,
+              propContinuity
+            )) as Motion["rotationDirection"],
+        startOrientation: pd.blueMotion
+          .startOrientation as Motion["startOrientation"],
+        endOrientation: pd.blueMotion
+          .endOrientation as Motion["endOrientation"],
         turns: effectiveBlueTurns as Motion["turns"],
         plane: "wall" as Motion["plane"],
         ...(blueIsFloat && {
           prefloatMotionType: pd.blueMotion.motionType as Motion["motionType"],
-          prefloatRotationDirection: pd.blueMotion.rotationDirection as Motion["rotationDirection"],
+          prefloatRotationDirection: pd.blueMotion
+            .rotationDirection as Motion["rotationDirection"],
         }),
       };
       const redMotion = {
@@ -826,14 +1293,21 @@ export class SequenceBuilder {
         endLocation: pd.redMotion.endLocation as Motion["endLocation"],
         rotationDirection: (redIsFloat
           ? "noRotation"
-          : resolveRotationDirection(pd.redMotion.rotationDirection, effectiveRedTurns, prevRedRot, propContinuity)) as Motion["rotationDirection"],
-        startOrientation: pd.redMotion.startOrientation as Motion["startOrientation"],
+          : resolveRotationDirection(
+              pd.redMotion.rotationDirection,
+              effectiveRedTurns,
+              prevRedRot,
+              propContinuity
+            )) as Motion["rotationDirection"],
+        startOrientation: pd.redMotion
+          .startOrientation as Motion["startOrientation"],
         endOrientation: pd.redMotion.endOrientation as Motion["endOrientation"],
         turns: effectiveRedTurns as Motion["turns"],
         plane: "wall" as Motion["plane"],
         ...(redIsFloat && {
           prefloatMotionType: pd.redMotion.motionType as Motion["motionType"],
-          prefloatRotationDirection: pd.redMotion.rotationDirection as Motion["rotationDirection"],
+          prefloatRotationDirection: pd.redMotion
+            .rotationDirection as Motion["rotationDirection"],
         }),
       };
       sequence.push({
@@ -850,38 +1324,62 @@ export class SequenceBuilder {
 
     // Propagate orientations through the sequence. The CSV data has
     // orientations for 0-turn variations. After applying non-zero turns,
-    // the end orientations must be recalculated: each beat's start
-    // orientation = previous beat's end orientation, and end orientation
+    // the end orientations must be recalculated: each step's start
+    // orientation = previous step's end orientation, and end orientation
     // is derived from motion type + turns + rotation direction.
-    const propagator = new OrientationPropagator(new OrientationCalculatorImpl());
-    const blueStartOrientation = (orientationOverrides?.blueStartOrientation || sequence[0]?.motions.blue.endOrientation || "in") as Orientation;
-    let propagated = propagator.propagateForColor(sequence, "blue", blueStartOrientation);
-    const redStartOrientation = (orientationOverrides?.redStartOrientation || sequence[0]?.motions.red.endOrientation || "in") as Orientation;
-    propagated = propagator.propagateForColor(propagated, "red", redStartOrientation);
+    const propagator = new OrientationPropagator(
+      new OrientationCalculatorImpl()
+    );
+    const blueStartOrientation = (orientationOverrides?.blueStartOrientation ||
+      sequence[0]?.motions.blue.endOrientation ||
+      "in") as Orientation;
+    let propagated = propagator.propagateForColor(
+      sequence,
+      "blue",
+      blueStartOrientation
+    );
+    const redStartOrientation = (orientationOverrides?.redStartOrientation ||
+      sequence[0]?.motions.red.endOrientation ||
+      "in") as Orientation;
+    propagated = propagator.propagateForColor(
+      propagated,
+      "red",
+      redStartOrientation
+    );
 
-    // Update beat 0 (start position) orientations when overrides are provided.
-    // The propagator starts at i=1, so beat 0 retains its original CSV orientations.
+    // Update step 0 (start position) orientations when overrides are provided.
+    // The propagator starts at i=1, so step 0 retains its original CSV orientations.
     // The start position is a static hold, so start and end orientation are the same.
     if (orientationOverrides && propagated[0]) {
       const sp = propagated[0];
       if (orientationOverrides.blueStartOrientation) {
-        const blueOri = orientationOverrides.blueStartOrientation as Motion["startOrientation"];
+        const blueOri =
+          orientationOverrides.blueStartOrientation as Motion["startOrientation"];
         propagated[0] = {
           ...sp,
           motions: {
-            blue: { ...sp.motions.blue, startOrientation: blueOri, endOrientation: blueOri },
+            blue: {
+              ...sp.motions.blue,
+              startOrientation: blueOri,
+              endOrientation: blueOri,
+            },
             red: sp.motions.red,
           },
         };
       }
       if (orientationOverrides.redStartOrientation) {
-        const redOri = orientationOverrides.redStartOrientation as Motion["startOrientation"];
+        const redOri =
+          orientationOverrides.redStartOrientation as Motion["startOrientation"];
         const sp2 = propagated[0]!;
         propagated[0] = {
           ...sp2,
           motions: {
             blue: sp2.motions.blue,
-            red: { ...sp2.motions.red, startOrientation: redOri, endOrientation: redOri },
+            red: {
+              ...sp2.motions.red,
+              startOrientation: redOri,
+              endOrientation: redOri,
+            },
           },
         };
       }
@@ -914,7 +1412,7 @@ export class SequenceBuilder {
   private extendWithLOOP(
     result: BuildResult,
     loopOptions: LoopOptions,
-    gridMode: string,
+    gridMode: string
   ): BuildResult {
     // Compositional path: options.loop.loopSpec (declared on LoopOptions,
     // populated today by the MCP adapter via loopSpecFromLegacy for every
@@ -927,7 +1425,7 @@ export class SequenceBuilder {
       const errors = validateLOOPSpec(loopSpec);
       if (errors.length > 0) {
         throw new Error(
-          `Invalid LOOPSpec: ${errors.map((e) => `${e.rule}: ${e.message}`).join("; ")}`,
+          `Invalid LOOPSpec: ${errors.map((e) => `${e.rule}: ${e.message}`).join("; ")}`
         );
       }
     }
@@ -943,27 +1441,38 @@ export class SequenceBuilder {
     const inputSteps = result.sequence.map((s) => ({ ...s }));
 
     // Execute the LOOP transformation. Both paths return the complete
-    // circular sequence (start position + seed beats + derived beats).
-    const extendedSteps = loopSpec
+    // circular sequence (start position + seed steps + derived steps).
+    const structurallyExtendedSteps = loopSpec
       ? loopExecutorSelector.executeSpec(inputSteps, loopSpec)
-      : loopExecutorSelector.getExecutor(loopOptions.type).executeLOOP(inputSteps, loopOptions.period);
+      : loopExecutorSelector
+          .getExecutor(loopOptions.type)
+          .executeLOOP(inputSteps, loopOptions.period);
 
-    // The executors carry the SOURCE beat's letter onto each derived beat
+    const orientationClosure = closeOrientationCycle(
+      structurallyExtendedSteps,
+      {
+        seedStepCount: Math.max(1, result.sequence.length - 1),
+        minimumExpansionMultiplier: loopOptions.minimumExpansionMultiplier,
+      }
+    );
+    const extendedSteps = orientationClosure.steps;
+
+    // The executors carry the SOURCE step's letter onto each derived step
     // (they spread `...sourceStep`). For rewound — and any executor whose
     // transform changes the motion configuration — the reversed motions map to
     // a DIFFERENT letter (e.g. reversing E's motions yields K), so the copied
-    // letter is wrong. Re-derive each derived beat's letter from its own
+    // letter is wrong. Re-derive each derived step's letter from its own
     // resulting motions against the pictograph data. This mirrors the app-side
     // SequenceExtender, which already re-derives letters after LOOP execution.
     //
-    // The spec path re-derives EVERY letter beat, not just beats beyond the
+    // The spec path re-derives EVERY letter step, not just steps beyond the
     // original seed: an overlay stage (e.g. inverted, mode "overlay") applies
     // in place over the FULLY EXPANDED sequence, partitioned into `period`
-    // equal blocks — which can flip beats that fall within what would
+    // equal blocks — which can flip steps that fall within what would
     // otherwise be the "seed" range whenever the overlay's period doesn't
-    // line up with the seed length. Re-deriving an unchanged beat's letter
+    // line up with the seed length. Re-deriving an unchanged step's letter
     // from its own (unchanged) motions is a no-op, so this is safe for the
-    // legacy path's beats too, but we keep the legacy path's original bounds
+    // legacy path's steps too, but we keep the legacy path's original bounds
     // untouched (zero-drift guarantee) and only widen the range on the spec
     // path where the overlay stage genuinely can reach into it.
     const seedStepCountForLetters = result.sequence.length;
@@ -974,9 +1483,14 @@ export class SequenceBuilder {
       const derivedLetter = findLetterByMotions(
         step.motions.blue,
         step.motions.red,
-        allPictographs,
+        allPictographs
       );
-      if (derivedLetter && derivedLetter !== step.letter) {
+      if (!derivedLetter) {
+        throw new Error(
+          `LOOP produced a motion pair with no ${gridMode} letter at step ${i}`
+        );
+      }
+      if (derivedLetter !== step.letter) {
         extendedSteps[i] = {
           ...step,
           letter: derivedLetter as SequenceStep["letter"],
@@ -984,17 +1498,24 @@ export class SequenceBuilder {
       }
     }
 
-    // Figure out which beats are derived (everything after the original seed).
+    // A transformed result can collapse into a literal copy of a shorter LOOP.
+    // Reduce it here, before exact-length validation, so the builder discards
+    // that candidate and generates a different seed instead of returning fewer
+    // steps than the caller requested.
+    const minimal = reduceToMinimalLoop(extendedSteps);
+    const completedSteps = minimal.steps;
+
+    // Figure out which steps are derived (everything after the original seed).
     // The original sequence had result.sequence.length steps (including start position).
-    // The seed beats occupy indices 1 through (result.sequence.length - 1).
-    // Derived beats start at index result.sequence.length.
+    // The seed steps occupy indices 1 through (result.sequence.length - 1).
+    // Derived steps start at index result.sequence.length.
     const seedStepCount = result.sequence.length;
     const derivedStepIndices: number[] = [];
     const derivedLetters: string[] = [];
 
-    for (let i = seedStepCount; i < extendedSteps.length; i++) {
+    for (let i = seedStepCount; i < completedSteps.length; i++) {
       derivedStepIndices.push(i);
-      derivedLetters.push(extendedSteps[i]!.letter ?? "");
+      derivedLetters.push(completedSteps[i]!.letter ?? "");
     }
 
     const derivedWord = derivedLetters.join("");
@@ -1009,11 +1530,8 @@ export class SequenceBuilder {
     // branch) — so derive it empirically from the actual expansion the
     // spec-executor just produced, which is correct by construction and
     // never drifts from whatever grouping/overlay rules spec-executor uses.
-    const orientationCycleMultiplier = loopSpec
-      ? Math.round((extendedSteps.length - 1) / Math.max(1, seedStepCount - 1))
-      : loopOptions.period === Period.QUARTERED
-        ? 4
-        : 2;
+    const orientationCycleMultiplier =
+      (completedSteps.length - 1) / Math.max(1, seedStepCount - 1);
 
     // Build the component labels (seed + derived segments)
     const components = [seedWord];
@@ -1023,8 +1541,8 @@ export class SequenceBuilder {
 
     return {
       ...result,
-      sequence: extendedSteps,
-      startPosition: extendedSteps[0]!,
+      sequence: completedSteps,
+      startPosition: completedSteps[0]!,
       loop: {
         seedWord,
         derivedWord,
@@ -1036,21 +1554,18 @@ export class SequenceBuilder {
   }
 
   /**
-   * sit on the vertical axis (where vertical_mirror(pos) === pos).
-   *
-   * If the current position is already on the axis, returns undefined (no change needed).
-   * If incompatible or unspecified, randomly picks a valid axis position.
+   * Avoid starts where rotate+swap collapses into the per-hand identity.
    */
   private constrainStartForLoopType(
     loopType: LOOPType,
     currentStartPosition?: string,
-    gridMode?: string,
+    gridMode?: string
   ): string | undefined {
     // Grid modes occupy disjoint grid points: diamond uses the cardinal
     // (odd-index) positions (beta1/3/5/7…), box uses the intercardinal
     // (even-index) ones (beta2/4/6/8…). A start pinned here MUST exist in the
     // active grid mode — otherwise the beam search has zero variations there
-    // and the reachability pass dies at beat 1 ("no reachable positions").
+    // and the reachability pass dies at step 1 ("no reachable positions").
     const isBox = (gridMode ?? "").toLowerCase() === "box";
 
     // Swap+rotate combos degenerate from alpha starts (rotate and swap cancel
@@ -1074,59 +1589,7 @@ export class SequenceBuilder {
       return betaPositions[Math.floor(Math.random() * betaPositions.length)];
     }
 
-    // Mirror+swap combos need starts that are fixed points of BOTH mirror and
-    // swap: beta1/beta5 only (domain fixed-point theorem; 25-run audits
-    // 2026-07-13). From alpha the vertical mirror manifests as a flip
-    // (flipped+inverted+swapped content — an unimplemented combo), from other
-    // betas likewise, from gamma nothing coherent survives.
-    if (
-      loopType === LOOPType.MIRRORED_SWAPPED_INVERTED ||
-      loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED
-    ) {
-      // beta1/beta5 are cardinal (vertical-axis) positions — they exist only in
-      // diamond. Box has no vertical-axis position, so these combos cannot form
-      // a LOOP there. Fail clearly instead of crashing in the reachability pass.
-      if (isBox) {
-        throw new Error(
-          `${loopType} LOOPs need a vertical-axis start (beta1/beta5), which box mode does not have. Switch to diamond mode for this LOOP type.`,
-        );
-      }
-      if (currentStartPosition === "beta1" || currentStartPosition === "beta5") {
-        return undefined;
-      }
-      return Math.random() < 0.5 ? "beta1" : "beta5";
-    }
-
-    const MIRRORED_ROTATED_TYPES = new Set([
-      LOOPType.MIRRORED_ROTATED,
-      LOOPType.MIRRORED_INVERTED_ROTATED,
-    ]);
-
-    if (!MIRRORED_ROTATED_TYPES.has(loopType)) return undefined;
-
-    // Vertical-mirror fixed points (alpha1/alpha5/beta1/beta5) are all cardinal —
-    // diamond-only. Box has none, so mirror+rotated combos can't loop there.
-    if (isBox) {
-      throw new Error(
-        `${loopType} LOOPs need a vertical-axis start, which box mode does not have. Switch to diamond mode for this LOOP type.`,
-      );
-    }
-
-    // If the user's position is already on the vertical axis, no override needed
-    if (currentStartPosition) {
-      const mirrored = VERTICAL_MIRROR_POSITION_MAP[currentStartPosition];
-      if (mirrored === currentStartPosition) return undefined;
-    }
-
-    // Position is incompatible or unspecified — pick a random axis position
-    const axisPositions = Object.entries(VERTICAL_MIRROR_POSITION_MAP)
-      .filter(([pos, mirrored]) => pos === mirrored)
-      .map(([pos]) => pos)
-      // Only include alpha/beta/gamma (not zeta/eta/tau which are higher levels)
-      .filter((pos) => pos.startsWith("alpha") || pos.startsWith("beta") || pos.startsWith("gamma"));
-
-    if (axisPositions.length === 0) return undefined;
-    return axisPositions[Math.floor(Math.random() * axisPositions.length)];
+    return undefined;
   }
 
   /**
@@ -1135,7 +1598,7 @@ export class SequenceBuilder {
    */
   private filterByHardConstraints(
     variations: PictographData[],
-    hardConstraints: IConstraint[],
+    hardConstraints: IConstraint[]
   ): PictographData[] {
     if (hardConstraints.length === 0) return variations;
 
@@ -1148,7 +1611,7 @@ export class SequenceBuilder {
         // Constraints without couldSatisfy (e.g. PositionContinuityConstraint)
         // can't pre-filter individual variations — assume they pass.
         return true;
-      }),
+      })
     );
   }
 
@@ -1160,6 +1623,7 @@ export class SequenceBuilder {
     loopType: LOOPType,
     startPosition: string,
     period: Period,
+    loopSpec?: LOOPSpec
   ): Set<string> {
     const positions = new Set<string>();
 
@@ -1170,16 +1634,6 @@ export class SequenceBuilder {
       (loopType === LOOPType.ROTATED_SWAPPED ||
         loopType === LOOPType.ROTATED_SWAPPED_INVERTED) &&
       startPosition.startsWith("alpha")
-    ) {
-      return positions;
-    }
-
-    // Mirror+swap combos: fixed points of both mirror and swap — beta1/beta5.
-    if (
-      (loopType === LOOPType.MIRRORED_SWAPPED_INVERTED ||
-        loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED) &&
-      startPosition !== "beta1" &&
-      startPosition !== "beta5"
     ) {
       return positions;
     }
@@ -1198,12 +1652,15 @@ export class SequenceBuilder {
       const ccwEnd = isSwapRotate && ccw ? SWAPPED_POSITION_MAP[ccw] : ccw;
       if (cwEnd) positions.add(cwEnd);
       if (ccwEnd) positions.add(ccwEnd);
+    } else if (loopSpec) {
+      const endPos = determineEndPositionForSpec(loopSpec, startPosition);
+      if (endPos) positions.add(endPos);
     } else {
       // For all other types, delegate to the standard selector
       const endPos = loopEndPositionSelector.determineEndPosition(
         loopType,
         startPosition,
-        period,
+        period
       );
       if (endPos) positions.add(endPos);
     }
@@ -1226,7 +1683,7 @@ export class SequenceBuilder {
     firstLetter: string,
     loop: LoopOptions,
     gridMode: string,
-    blockedStartPositions?: string[],
+    blockedStartPositions?: string[]
   ): Array<{ start: string; requiredEnds: Set<string> }> {
     const blocked = new Set(blockedStartPositions ?? []);
     const firstVariations = this.variationProvider
@@ -1237,7 +1694,12 @@ export class SequenceBuilder {
     const targets: Array<{ start: string; requiredEnds: Set<string> }> = [];
     for (const start of starts) {
       if (blocked.has(start)) continue;
-      const requiredEnds = this.getAllValidEndPositions(loop.type, start, loop.period);
+      const requiredEnds = this.getAllValidEndPositions(
+        loop.type,
+        start,
+        loop.period,
+        loop.loopSpec
+      );
       if (requiredEnds.size > 0) {
         targets.push({ start, requiredEnds });
       }
@@ -1259,18 +1721,27 @@ export class SequenceBuilder {
    * for the given LOOP type. For quartered rotated LOOPs, each start
    * maps to both CW and CCW targets.
    */
-  private buildLoopPositionMap(loopOptions: LoopOptions): Record<string, string[]> {
+  private buildLoopPositionMap(
+    loopOptions: LoopOptions,
+    gridMode: string
+  ): Record<string, string[]> {
     const map: Record<string, string[]> = {};
     const positions = [
-      ...Array.from({ length: 8 }, (_, i) => `alpha${i + 1}`),
-      ...Array.from({ length: 8 }, (_, i) => `beta${i + 1}`),
-      ...Array.from({ length: 16 }, (_, i) => `gamma${i + 1}`),
+      ...new Set(
+        this.variationProvider
+          .getAllVariations(gridMode)
+          .flatMap((variation) => [
+            variation.startPosition,
+            variation.endPosition,
+          ])
+      ),
     ];
     for (const pos of positions) {
       const endPositions = this.getAllValidEndPositions(
         loopOptions.type,
         pos,
         loopOptions.period,
+        loopOptions.loopSpec
       );
       if (endPositions.size > 0) {
         map[pos] = Array.from(endPositions);

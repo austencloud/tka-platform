@@ -35,7 +35,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import { getCardColors } from "../shared/domain/card-colors";
   import * as spellServiceLoader from "$lib/features/create/spell/services/spell-service-loader";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import { resolveAccessTier, getMaxSteps } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
@@ -48,7 +48,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
-  import PeriodCard from "./cards/PeriodCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
   import WordInputCard from "./cards/WordInputCard.svelte";
   import PresetCard from "./cards/PresetCard.svelte";
@@ -104,16 +103,16 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       : []
   );
 
-  // Beat cap nudge state
-  let showBeatCapNudge = $state(false);
+  // Step cap nudge state
+  let showStepCapNudge = $state(false);
   const accessTier = $derived(
     resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
-  const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
-  // Only guests get a beat-cap nudge now — a free-account pitch for the full
-  // 64-beat cap. Logged-in users are hard-capped at 64 with no upsell, so the
+  const stepCapNudgeTrigger: AuthNudgeTrigger = "step-cap-guest";
+  // Only guests get a step-cap nudge now — a free-account pitch for the full
+  // 64-step cap. Logged-in users are hard-capped at 64 with no upsell, so the
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
-  const beatCapNudgeAllowed = $derived(accessTier === "guest");
+  const stepCapNudgeAllowed = $derived(accessTier === "guest");
 
   // Get card colors based on current background (reactive to background changes)
   let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
@@ -189,17 +188,17 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       requiredBridgeCount = bridgeCount;
       naturalLength = originalLetters.length + bridgeCount;
 
-      // Helper to apply LOOP multiplication to a pre-LOOP beat count.
-      // Does NOT add +1 for a LOOP bridge beat - a bridge is only inserted
+      // Helper to apply LOOP multiplication to a pre-LOOP step count.
+      // Does NOT add +1 for a LOOP bridge step - a bridge is only inserted
       // when the sequence can't directly connect back to start, and we
       // can't know that until actual generation runs. The displayed count
       // should match the most common case (direct extension, no bridge).
-      function applyLoopMultiplier(beats: number): number {
-        if (!loopEnabled) return beats;
+      function applyLoopMultiplier(steps: number): number {
+        if (!loopEnabled) return steps;
         const multiplier = ROTATED_LOOP_TYPES.has(loopType as LOOPType)
           ? (period === Period.QUARTERED ? 4 : 2)
           : 2;
-        return beats * multiplier;
+        return steps * multiplier;
       }
 
       // Natural display length = LOOP-multiplied natural (the floor for the stepper)
@@ -275,16 +274,13 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       );
     }
 
-    // Coerce period back to halved when the new level no longer supports
-    // quartered for the current (non-rotated) loop type. Without this the
-    // Period card would hide while config still holds a stale quartered
-    // value, causing a runtime viability error at Generate time.
+    // Old presets may still carry a quartered value on a LOOP without
+    // rotation. Keep the config honest even though the engine also normalizes
+    // that legacy combination before generation.
     const currentType = config.loopType as LOOPType;
     const isRotated = ROTATED_LOOP_TYPES.has(currentType);
-    if (!isRotated && newLevelNum < 3) {
-      if (config.period === Period.QUARTERED) {
-        updates.period = Period.HALVED;
-      }
+    if (!isRotated && config.period === Period.QUARTERED) {
+      updates.period = Period.HALVED;
     }
 
     updateConfig(updates);
@@ -327,19 +323,14 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     // tap, so this is the enable seam: pick a loop → on; back out → stays off.
     const updates: Partial<UIGenerationConfig> = { loopType, loopEnabled: true };
 
-    // Coerce period back to halved when switching to a loop type that
-    // cannot support period 4 in the current context. Rewound is never
-    // quartered; non-rotated types need L3+ for half-turn closure.
-    const isRotated = ROTATED_LOOP_TYPES.has(loopType);
-    const isRewound = loopType === LOOPType.STRICT_REWOUND;
-    const levelNum = Number(config.level) || 1;
-    const supportsPeriodFour =
-      isRotated || (!isRewound && levelNum >= 3);
-
-    if (!supportsPeriodFour) {
-      if (config.period === Period.QUARTERED) {
-        updates.period = Period.HALVED;
-      }
+    // Rotation is the only transformation with a 90° option. Switching to a
+    // LOOP without rotation must clear any quartered value left by the prior
+    // selection.
+    if (
+      !ROTATED_LOOP_TYPES.has(loopType) &&
+      config.period === Period.QUARTERED
+    ) {
+      updates.period = Period.HALVED;
     }
 
     updateConfig(updates);
@@ -397,10 +388,12 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     if (!currentLevel) return [];
 
     // Explicit reads so Svelte registers these as reactive dependencies.
-    // The period card's visibility depends on both values.
+    // The LOOP card summary depends on both values.
     const loopEnabled = config.loopEnabled;
     const _loopType = config.loopType;
+    const _reflectionAxis = config.reflectionAxis;
     void _loopType;
+    void _reflectionAxis;
 
     return buildCardDescriptors(
       config,
@@ -414,7 +407,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
         handleGridModeChange: withFavoriteDeselect(handleGridModeChange),
         handleGenerationModeChange: () => {}, // No-op: mode is now derived from word presence
         handleLOOPTypeChange: withFavoriteDeselect(handleLOOPTypeChange),
-        handlePeriodChange: withFavoriteDeselect((period: Period) => updateConfig({ period })),
         handleConstraintPresetChange: withFavoriteDeselect(handleConstraintPresetChange),
         handleHandPathModeChange: withFavoriteDeselect(handleHandPathModeChange),
         handleMotionTypeFilterChange: withFavoriteDeselect(handleMotionTypeFilterChange),
@@ -470,7 +462,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
              were silently discarded under the `as any` spread. -->
         <LevelCard {...card.props as ComponentProps<typeof LevelCard>} />
       {:else if card.id === "length"}
-        <LengthCard {...card.props as ComponentProps<typeof LengthCard>} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onStepCapExceeded={() => { showBeatCapNudge = true; }} />
+        <LengthCard {...card.props as ComponentProps<typeof LengthCard>} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onStepCapExceeded={() => { showStepCapNudge = true; }} />
       {:else if card.id === "word-input"}
         <WordInputCard
           {...card.props as ComponentProps<typeof WordInputCard>}
@@ -488,8 +480,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
         <CustomizeCard {...card.props as ComponentProps<typeof CustomizeCard>} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
       {:else if card.id === "loop"}
         <ConsolidatedLOOPCard {...card.props as ComponentProps<typeof ConsolidatedLOOPCard>} />
-      {:else if card.id === "period"}
-        <PeriodCard {...card.props as ComponentProps<typeof PeriodCard>} color={cardColors.period.color} shadowColor={cardColors.period.shadowColor} />
       {:else if card.id === "preset"}
         <PresetCard
           {...card.props as ComponentProps<typeof PresetCard>}
@@ -503,16 +493,16 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   {/each}
 
   <BaseModal
-    open={showBeatCapNudge && beatCapNudgeAllowed}
+    open={showStepCapNudge && stepCapNudgeAllowed}
     size="fit"
     class="chromeless"
-    onclose={() => { showBeatCapNudge = false; }}
+    onclose={() => { showStepCapNudge = false; }}
   >
     <AuthNudge
-      trigger={beatCapNudgeTrigger}
-      onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
-      onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
-      onDismiss={() => { showBeatCapNudge = false; }}
+      trigger={stepCapNudgeTrigger}
+      onCreateAccount={() => { showStepCapNudge = false; authDrawerState.show("signup"); }}
+      onLogin={() => { showStepCapNudge = false; authDrawerState.show("signin"); }}
+      onDismiss={() => { showStepCapNudge = false; }}
     />
   </BaseModal>
 </div>

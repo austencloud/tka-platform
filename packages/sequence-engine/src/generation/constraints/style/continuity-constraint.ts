@@ -1,7 +1,7 @@
 /**
  * Continuity Constraint
  *
- * Maximizes or enforces continuity in rotation direction between consecutive beats.
+ * Maximizes or enforces continuity in rotation direction between consecutive steps.
  * Continuity means the rotation direction doesn't change (no reversal).
  *
  * Modes:
@@ -61,10 +61,10 @@ function findLastDirection(
 /**
  * the last real direction in previousSteps.
  *
- * Instead of only comparing adjacent beats (which gives 0-turn statics a
+ * Instead of only comparing adjacent steps (which gives 0-turn statics a
  * free pass), we look back through ALL previous steps to find the last
  * direction that was actually set. This way a reversal hidden behind one
- * or more noRotation beats is still penalized.
+ * or more noRotation steps is still penalized.
  */
 function scoreHandContinuity(
   previousSteps: PictographData[],

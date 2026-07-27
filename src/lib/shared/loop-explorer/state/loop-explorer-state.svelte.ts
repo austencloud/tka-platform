@@ -3,8 +3,8 @@
  *
  * Owns the picker selection, the current verified example, and the
  * bidirectional highlight link between the showcase grid and the
- * explanation pane (hover/click a relation sentence -> highlight its beat
- * pair; click a beat -> highlight its relations). One instance per
+ * explanation pane (hover/click a relation sentence -> highlight its step
+ * pair; click a step -> highlight its relations). One instance per
  * `LoopExplorer.svelte` mount, provided via context per the
  * state-management skill (factory returns a plain object with getter
  * accessors — no class, no module-level singleton).
@@ -38,8 +38,8 @@ export function createLoopExplorerState(deps: LoopExplorerDeps = defaultDeps) {
   let example = $state<VerifiedExample | null>(null);
   let explanation = $state<LoopExplanation | null>(null);
   let status = $state<ExplorerStatus>("idle");
-  /** 1-based beat index currently highlighted (from a beat click/hover OR a relation citation). */
-  let highlightedBeat = $state<number | null>(null);
+  /** 1-based step index currently highlighted (from a step click/hover OR a relation citation). */
+  let highlightedStep = $state<number | null>(null);
   /** Index into `explanation.citations`/`example.relations` currently highlighted. */
   let highlightedRelation = $state<number | null>(null);
   /** Race guard: a stale in-flight generation must not clobber a newer one. */
@@ -102,43 +102,43 @@ export function createLoopExplorerState(deps: LoopExplorerDeps = defaultDeps) {
 
   function hoverRelation(index: number | null): void {
     highlightedRelation = index;
-    highlightedBeat = null;
+    highlightedStep = null;
   }
 
   function selectRelation(index: number | null): void {
     highlightedRelation = index;
-    highlightedBeat = null;
+    highlightedStep = null;
   }
 
-  function hoverBeat(beatNumber: number | null): void {
-    highlightedBeat = beatNumber;
+  function hoverStep(stepNumber: number | null): void {
+    highlightedStep = stepNumber;
     highlightedRelation = null;
   }
 
-  function selectBeat(beatNumber: number | null): void {
-    highlightedBeat = beatNumber;
+  function selectStep(stepNumber: number | null): void {
+    highlightedStep = stepNumber;
     highlightedRelation = null;
   }
 
   function clearHighlight(): void {
-    highlightedBeat = null;
+    highlightedStep = null;
     highlightedRelation = null;
   }
 
-  /** Relation indices touching `beatNumber` (a beat can appear as beatA or beatB). */
-  function relationsForBeat(beatNumber: number): number[] {
+  /** Relation indices touching `stepNumber` (a step can appear as stepA or stepB). */
+  function relationsForStep(stepNumber: number): number[] {
     if (!example) return [];
     const indices: number[] = [];
     example.relations.forEach((r, i) => {
-      if (r.beatA === beatNumber || r.beatB === beatNumber) indices.push(i);
+      if (r.stepA === stepNumber || r.stepB === stepNumber) indices.push(i);
     });
     return indices;
   }
 
-  /** Beat numbers touched by the relation at `index` (empty when out of range). */
-  function beatsForRelation(index: number): number[] {
+  /** Step numbers touched by the relation at `index` (empty when out of range). */
+  function stepsForRelation(index: number): number[] {
     const r = example?.relations[index];
-    return r ? [r.beatA, r.beatB] : [];
+    return r ? [r.stepA, r.stepB] : [];
   }
 
   return {
@@ -160,8 +160,8 @@ export function createLoopExplorerState(deps: LoopExplorerDeps = defaultDeps) {
     get legality() {
       return legality;
     },
-    get highlightedBeat() {
-      return highlightedBeat;
+    get highlightedStep() {
+      return highlightedStep;
     },
     get highlightedRelation() {
       return highlightedRelation;
@@ -172,11 +172,11 @@ export function createLoopExplorerState(deps: LoopExplorerDeps = defaultDeps) {
     refresh,
     hoverRelation,
     selectRelation,
-    hoverBeat,
-    selectBeat,
+    hoverStep,
+    selectStep,
     clearHighlight,
-    relationsForBeat,
-    beatsForRelation,
+    relationsForStep,
+    stepsForRelation,
   };
 }
 

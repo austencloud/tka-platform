@@ -69,7 +69,7 @@ export class MirroredInvertedLOOPExecutor {
     let lastStep = sequence[sequence.length - 1]!;
     const nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two steps in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from step 2)
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
       const nextStep = this._createNewLOOPEntry(
@@ -97,7 +97,7 @@ export class MirroredInvertedLOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -120,7 +120,7 @@ export class MirroredInvertedLOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with MIRROR + INVERTED
+   * Create a new LOOP entry by transforming a previous step with MIRROR + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -128,7 +128,7 @@ export class MirroredInvertedLOOPExecutor {
     stepNumber: number,
     finalIntendedLength: number
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -137,7 +137,7 @@ export class MirroredInvertedLOOPExecutor {
 
     // Get the inverted letter (INVERTED effect)
     if (!previousMatchingStep.letter) {
-      throw new Error("Previous matching beat must have a letter");
+      throw new Error("Previous matching step must have a letter");
     }
     if (!this.loopParams) {
       throw new Error(
@@ -152,7 +152,7 @@ export class MirroredInvertedLOOPExecutor {
     // Get the mirrored end position (MIRRORED effect)
     const mirroredEndPosition = this._getMirroredPosition(previousMatchingStep);
 
-    // Create the new beat with mirrored-inverted attributes
+    // Create the new step with mirrored-inverted attributes
     // KEY: Motion type is flipped (INVERTED)
     //      Locations are mirrored (MIRRORED)
     //      Rotation direction STAYS THE SAME (both transformations flip, so they cancel)
@@ -189,7 +189,7 @@ export class MirroredInvertedLOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping (halved pattern)
+   * Get the previous matching step using index mapping (halved pattern)
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -240,7 +240,7 @@ export class MirroredInvertedLOOPExecutor {
     const endPos = previousMatchingStep.endPosition;
 
     if (!endPos) {
-      throw new Error("Previous matching beat must have an end position");
+      throw new Error("Previous matching step must have an end position");
     }
 
     const mirroredPosition =
@@ -250,7 +250,7 @@ export class MirroredInvertedLOOPExecutor {
   }
 
   /**
-   * Create mirrored-inverted motion data for the new beat
+   * Create mirrored-inverted motion data for the new step
    * Combines location mirroring with motion type flipping
    * **IMPORTANT**: Rotation direction stays the SAME (two flips cancel out)
    */

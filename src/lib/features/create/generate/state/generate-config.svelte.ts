@@ -17,6 +17,7 @@ import { getTemplateById } from "../../shared/domain/templates/duration-template
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -34,6 +35,9 @@ interface SerializedConfig {
   propContinuity: PropContinuity;
   period: Period;
   loopType: LOOPType;
+  inversionInterval?: 2 | 4;
+  inversionMode?: "expand" | "overlay";
+  reflectionAxis?: ReflectionAxis;
   timestamp: number;
   // 3-axis constraint system
   constraintPreset?: "smooth" | "mixed" | "choppy";
@@ -60,6 +64,9 @@ function saveConfig(config: UIGenerationConfig): void {
       propContinuity: config.propContinuity as PropContinuity,
       period: config.period as Period,
       loopType: config.loopType as LOOPType,
+      inversionInterval: config.inversionInterval,
+      inversionMode: config.inversionMode,
+      reflectionAxis: config.reflectionAxis,
       timestamp: Date.now(),
       constraintPreset: config.constraintPreset,
       handPathMode: config.handPathMode,
@@ -132,6 +139,15 @@ function loadConfig(): UIGenerationConfig | null {
       const migratedType = STRICT_MIGRATION[data.loopType] ?? data.loopType;
       result.loopType = migratedType as LOOPType;
     }
+    if (data.inversionInterval !== undefined) {
+      result.inversionInterval = data.inversionInterval;
+    }
+    if (data.inversionMode !== undefined) {
+      result.inversionMode = data.inversionMode;
+    }
+    if (data.reflectionAxis !== undefined) {
+      result.reflectionAxis = data.reflectionAxis;
+    }
     if (data.constraintPreset !== undefined) {
       // Migrate legacy "high-reversal" → "choppy"
       result.constraintPreset = data.constraintPreset === "high-reversal" as string
@@ -187,6 +203,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   propContinuity: PropContinuity.CONTINUOUS,
   period: Period.QUARTERED,
   loopType: LOOPType.ROTATED,
+  reflectionAxis: "north-south",
   constraintPreset: "smooth",
   handPathMode: "mixed",
   motionTypeFilter: null,

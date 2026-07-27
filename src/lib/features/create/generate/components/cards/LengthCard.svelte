@@ -11,7 +11,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import {
     resolveAccessTier,
-    getMaxBeats,
+    getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 
@@ -65,7 +65,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
       authState.isAnonymous,
       isPremiumOrAbove(authState.role)
     );
-    return getMaxBeats(accessTier);
+    return getMaxSteps(accessTier);
   });
 
   const MIN_LENGTH = $derived(minOverride ?? (loopEnabled ? 4 : 4));

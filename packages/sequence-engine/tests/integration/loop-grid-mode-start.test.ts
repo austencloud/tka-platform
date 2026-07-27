@@ -8,9 +8,9 @@
  * intercardinal (even-index) ones (beta2/4/6/8…). When the pin landed on a
  * parity absent from the active grid, the beam search had zero variations there
  * and the backward reachability pass threw
- *   "No valid N-beat path exists: beat 1 has no reachable positions …"
- * ~50% of the time in BOTH modes (reported in box). Mirror+swap combos pinned
- * beta1/beta5 (cardinal only) → 100% failure in box.
+ *   "No valid N-step path exists: step 1 has no reachable positions …"
+ * ~50% of the time in BOTH modes (reported in box). Mirror+swap combinations
+ * once pinned beta1/beta5 (cardinal only), which made them fail in box.
  *
  * Drives the REAL builder over the canonical Box/Diamond CSV datasets — same
  * pipeline as MCP `generate_sequence loopType=…` and the app's circular
@@ -25,6 +25,16 @@ import { SequenceBuilder } from "../../src/generation/builder/SequenceBuilder.js
 import type { IVariationProvider } from "../../src/generation/data/IVariationProvider.js";
 import type { PictographData } from "../../src/generation/constraints/types.js";
 import { LOOPType, Period } from "../../src/loop/loop-types.js";
+import {
+  LOOPComponent,
+  symmetricSpec,
+  type LOOPSpec,
+} from "../../src/loop/loop-spec.js";
+import { loopDetectorClass } from "../../src/loop/detection/LOOPDetector.js";
+import {
+  REFLECTION_AXES,
+  type ReflectionAxis,
+} from "../../src/loop/position-maps/strict-loop-position-maps.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const csvPath = (name: string) =>
@@ -32,25 +42,42 @@ const csvPath = (name: string) =>
 
 function loadCsv(name: string): PictographData[] {
   const lines = readFileSync(csvPath(name), "utf8").trim().split(/\r?\n/);
+  const headers = lines[0]!.split(",");
+  const column = (name: string) => headers.indexOf(name);
+  const value = (cells: string[], name: string) => cells[column(name)]!;
+
   return lines
     .slice(1)
     .map((l) => l.split(","))
-    .filter((c) => c.length >= 13 && c[5]) // drop blank/short lines
+    .filter(
+      (cells) =>
+        cells.length === headers.length && value(cells, "blueMotionType")
+    )
     .map((c) => ({
-      letter: c[0],
-      startPosition: c[1],
-      endPosition: c[2],
+      letter: value(c, "letter"),
+      startPosition: value(c, "startPosition"),
+      endPosition: value(c, "endPosition"),
       timing: "together",
       direction: "together",
       blueMotion: {
-        color: "blue", motionType: c[5], rotationDirection: c[6],
-        startLocation: c[7], endLocation: c[8],
-        startOrientation: "in", endOrientation: "in", turns: 0,
+        color: "blue",
+        motionType: value(c, "blueMotionType"),
+        rotationDirection: value(c, "blueRotationDirection"),
+        startLocation: value(c, "blueStartLocation"),
+        endLocation: value(c, "blueEndLocation"),
+        startOrientation: "in",
+        endOrientation: "in",
+        turns: 0,
       },
       redMotion: {
-        color: "red", motionType: c[9], rotationDirection: c[10],
-        startLocation: c[11], endLocation: c[12],
-        startOrientation: "in", endOrientation: "in", turns: 0,
+        color: "red",
+        motionType: value(c, "redMotionType"),
+        rotationDirection: value(c, "redRotationDirection"),
+        startLocation: value(c, "redStartLocation"),
+        endLocation: value(c, "redEndLocation"),
+        startOrientation: "in",
+        endOrientation: "in",
+        turns: 0,
       },
     }));
 }
@@ -73,12 +100,26 @@ class CsvVariationProvider implements IVariationProvider {
   }
 }
 
-const boxBuilder = new SequenceBuilder(new CsvVariationProvider(loadCsv("BoxPictographDataframe.csv")));
-const diamondBuilder = new SequenceBuilder(new CsvVariationProvider(loadCsv("DiamondPictographDataframe.csv")));
+const boxBuilder = new SequenceBuilder(
+  new CsvVariationProvider(loadCsv("BoxPictographDataframe.csv"))
+);
+const diamondBuilder = new SequenceBuilder(
+  new CsvVariationProvider(loadCsv("DiamondPictographDataframe.csv"))
+);
+const skewedBuilder = new SequenceBuilder(
+  new CsvVariationProvider(loadCsv("SkewedPictographDataframe.csv"))
+);
 
 const REACHABILITY_ERROR = /no reachable positions/;
 
-function buildLoop(builder: SequenceBuilder, gridMode: string, type: LOOPType, startPosition?: string) {
+function buildLoop(
+  builder: SequenceBuilder,
+  gridMode: string,
+  type: LOOPType,
+  startPosition?: string,
+  period = Period.HALVED,
+  loopSpec?: LOOPSpec
+) {
   return builder.build({
     length: 8, // seed for a halved length-16 loop
     gridMode,
@@ -86,8 +127,14 @@ function buildLoop(builder: SequenceBuilder, gridMode: string, type: LOOPType, s
     constraintPreset: "smooth",
     maxTurnIntensity: 1,
     startPosition,
-    loop: { type, period: Period.HALVED, useTargetedGeneration: true },
+    loop: { type, period, loopSpec, useTargetedGeneration: true },
   });
+}
+
+function reflectionSpec(reflectionAxis: ReflectionAxis): LOOPSpec {
+  return symmetricSpec(
+    new Map([[LOOPComponent.MIRRORED, { period: 2, reflectionAxis }]])
+  );
 }
 
 function parityOf(position: string | undefined): "even" | "odd" | "none" {
@@ -97,6 +144,7 @@ function parityOf(position: string | undefined): "even" | "odd" | "none" {
 }
 
 const TRIALS = 25;
+const REFLECTION_TRIALS = 10;
 
 describe("LOOP seed start respects grid mode", () => {
   it("box rotated_swapped_inverted never hits the reachability wall; starts stay intercardinal (even)", () => {
@@ -116,28 +164,92 @@ describe("LOOP seed start respects grid mode", () => {
 
   it("diamond rotated_swapped_inverted starts stay cardinal (odd)", () => {
     for (let i = 0; i < TRIALS; i++) {
-      const r = buildLoop(diamondBuilder, "diamond", LOOPType.ROTATED_SWAPPED_INVERTED);
+      const r = buildLoop(
+        diamondBuilder,
+        "diamond",
+        LOOPType.ROTATED_SWAPPED_INVERTED
+      );
       expect(parityOf(r.sequence[0]?.startPosition)).toBe("odd");
     }
   });
 
   it("forcing a cardinal start (beta1) in box reproduces the reachability wall", () => {
     // Documents the exact reported failure: a diamond position has zero box
-    // variations, so the backward reachability pass empties out at beat 1.
+    // variations, so the backward reachability pass empties out at step 1.
     expect(() =>
-      buildLoop(boxBuilder, "box", LOOPType.ROTATED_SWAPPED_INVERTED, "beta1"),
+      buildLoop(boxBuilder, "box", LOOPType.ROTATED_SWAPPED_INVERTED, "beta1")
     ).toThrow(REACHABILITY_ERROR);
   });
 
-  it("mirror+swap combos fail with a clear grid-mode message in box (not a cryptic crash)", () => {
-    expect(() =>
-      buildLoop(boxBuilder, "box", LOOPType.MIRRORED_SWAPPED_INVERTED),
-    ).toThrow(/vertical-axis start|box mode/i);
-    // And they must NOT surface as the low-level reachability wall.
-    try {
-      buildLoop(boxBuilder, "box", LOOPType.MIRRORED_SWAPPED_INVERTED);
-    } catch (e) {
-      expect((e as Error).message).not.toMatch(REACHABILITY_ERROR);
+  it("mirror+swap combinations use valid box starts instead of being rejected", () => {
+    for (let i = 0; i < TRIALS; i++) {
+      const result = buildLoop(
+        boxBuilder,
+        "box",
+        LOOPType.MIRRORED_SWAPPED_INVERTED
+      );
+      expect(parityOf(result.sequence[0]?.startPosition)).toBe("even");
     }
   });
+
+  it("mirror+rotation combinations close from valid Box starts", () => {
+    for (const type of [
+      LOOPType.MIRRORED_ROTATED,
+      LOOPType.MIRRORED_INVERTED_ROTATED,
+    ]) {
+      for (const period of [Period.HALVED, Period.QUARTERED]) {
+        for (let i = 0; i < 5; i++) {
+          const result = buildLoop(boxBuilder, "box", type, undefined, period);
+          const first = result.sequence[0]!;
+          const last = result.sequence[result.sequence.length - 1]!;
+          expect(parityOf(first.startPosition)).toBe("even");
+          expect(last.endPosition).toBe(first.startPosition);
+          expect(last.motions.blue.endOrientation).toBe(
+            first.motions.blue.startOrientation
+          );
+          expect(last.motions.red.endOrientation).toBe(
+            first.motions.red.startOrientation
+          );
+        }
+      }
+    }
+  });
+});
+
+describe("real builder supports every reflection axis in every grid mode", () => {
+  const gridCases = [
+    { gridMode: "diamond", builder: diamondBuilder },
+    { gridMode: "box", builder: boxBuilder },
+    { gridMode: "skewed", builder: skewedBuilder },
+  ] as const;
+
+  for (const { gridMode, builder } of gridCases) {
+    for (const reflectionAxis of REFLECTION_AXES) {
+      it(`${gridMode} generates and detects ${reflectionAxis} reflection`, () => {
+        for (let trial = 0; trial < REFLECTION_TRIALS; trial++) {
+          const result = buildLoop(
+            builder,
+            gridMode,
+            LOOPType.MIRRORED,
+            undefined,
+            Period.HALVED,
+            reflectionSpec(reflectionAxis)
+          );
+          const first = result.sequence[0]!;
+          const last = result.sequence[result.sequence.length - 1]!;
+          const detected = loopDetectorClass.detectLOOPType(result.sequence);
+
+          expect(last.endPosition).toBe(first.startPosition);
+          expect(last.motions.blue.endOrientation).toBe(
+            first.motions.blue.startOrientation
+          );
+          expect(last.motions.red.endOrientation).toBe(
+            first.motions.red.startOrientation
+          );
+          expect(detected.isCircular).toBe(true);
+          expect(detected.reflectionAxis).toBe(reflectionAxis);
+        }
+      });
+    }
+  }
 });

@@ -10,12 +10,12 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropContinuity } from "../domain/models/generate-models";
 
-// This module mutates generator-owned draft beats in place (legacy port
+// This module mutates generator-owned draft steps in place (legacy port
 // contract: void functions, callers rely on mutation). StepMotions is
 // readonly for everyone else; the drafts here are freshly built copies.
 type MutableStepMotions = { blue: MotionData; red: MotionData };
-const mutableMotions = (beat: StepData): MutableStepMotions =>
-  beat.motions as MutableStepMotions;
+const mutableMotions = (step: StepData): MutableStepMotions =>
+  step.motions as MutableStepMotions;
 
 const ROTATION_DIRS = {
   CLOCKWISE: RotationDirection.CLOCKWISE,
@@ -35,27 +35,27 @@ const MOTION_TYPES = {
  * Set turns — exact port from legacy set_turns().
  */
 export function setTurns(
-  beat: StepData,
+  step: StepData,
   turnBlue: number | "fl",
   turnRed: number | "fl"
 ): void {
-  if (!beat) return;
-  setTurnForColor(beat, "blue", turnBlue);
-  setTurnForColor(beat, "red", turnRed);
+  if (!step) return;
+  setTurnForColor(step, "blue", turnBlue);
+  setTurnForColor(step, "red", turnRed);
 }
 
 /**
  * Update dash/static prop rotation directions — exact port from legacy.
  */
 export function updateDashStaticRotationDirections(
-  beat: StepData,
+  step: StepData,
   propContinuity: PropContinuity,
   blueRotationDirection: string,
   redRotationDirection: string
 ): void {
-  if (!beat) return;
-  updateRotationForColor(beat, "blue", propContinuity, blueRotationDirection);
-  updateRotationForColor(beat, "red", propContinuity, redRotationDirection);
+  if (!step) return;
+  updateRotationForColor(step, "blue", propContinuity, blueRotationDirection);
+  updateRotationForColor(step, "red", propContinuity, redRotationDirection);
 }
 
 export function getRandomRotationDirection(): RotationDirection {
@@ -64,11 +64,11 @@ export function getRandomRotationDirection(): RotationDirection {
 }
 
 function setTurnForColor(
-  beat: StepData,
+  step: StepData,
   color: "blue" | "red",
   turn: number | "fl"
 ): void {
-  const motion = beat.motions[color];
+  const motion = step.motions[color];
   if (!motion) return;
 
   if (turn === "fl") {
@@ -76,7 +76,7 @@ function setTurnForColor(
       motion.motionType === MotionType.PRO ||
       motion.motionType === MotionType.ANTI
     ) {
-      mutableMotions(beat)[color] = {
+      mutableMotions(step)[color] = {
         ...motion,
         turns: "fl",
         prefloatMotionType: motion.motionType,
@@ -85,13 +85,13 @@ function setTurnForColor(
         rotationDirection: RotationDirection.NO_ROTATION,
       };
     } else {
-      mutableMotions(beat)[color] = {
+      mutableMotions(step)[color] = {
         ...motion,
         turns: 0,
       };
     }
   } else {
-    mutableMotions(beat)[color] = {
+    mutableMotions(step)[color] = {
       ...motion,
       turns: turn,
     };
@@ -99,12 +99,12 @@ function setTurnForColor(
 }
 
 function updateRotationForColor(
-  beat: StepData,
+  step: StepData,
   color: "blue" | "red",
   propContinuity: PropContinuity,
   rotationDirection: string
 ): void {
-  const motion = beat.motions[color];
+  const motion = step.motions[color];
   if (!motion) return;
 
   if (
@@ -132,7 +132,7 @@ function updateRotationForColor(
     newRotationDirection = getRandomRotationDirection();
   }
 
-  mutableMotions(beat)[color] = {
+  mutableMotions(step)[color] = {
     ...motion,
     rotationDirection: newRotationDirection,
   };

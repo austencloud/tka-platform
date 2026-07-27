@@ -79,7 +79,7 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
   import {
     resolveAccessTier,
-    getMaxBeats,
+    getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
@@ -147,7 +147,7 @@
   let showTransferConfirmation = $state(false);
   let showClearSequenceConfirm = $state(false);
 
-  // Auth/tier state for beat cap enforcement
+  // Auth/tier state for step cap enforcement
   const accessTier = $derived(
     resolveAccessTier(
       authState.isAuthenticated,
@@ -155,18 +155,18 @@
       isPremiumOrAbove(authState.role)
     )
   );
-  let showBeatCapNudge = $state(false);
-  const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
-  // Only guests get a beat-cap nudge now — a free-account pitch for the full
-  // 64-beat cap. Logged-in users are hard-capped at 64 with no upsell, so the
+  let showStepCapNudge = $state(false);
+  const stepCapNudgeTrigger: AuthNudgeTrigger = "step-cap-guest";
+  // Only guests get a step-cap nudge now — a free-account pitch for the full
+  // 64-step cap. Logged-in users are hard-capped at 64 with no upsell, so the
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
-  const beatCapNudgeAllowed = $derived(accessTier === "guest");
+  const stepCapNudgeAllowed = $derived(accessTier === "guest");
 
   // LOOP completion state
   let showLoopConfirm = $state(false);
   let pendingLoopType = $state<LOOPType | null>(null);
   let isApplyingLoop = $state(false);
-  let pendingLoopBeatCount = $state(0);
+  let pendingLoopStepCount = $state(0);
   let pendingLoopComponentName = $state("");
   let isMobile = $state(false);
   let sequenceToTransfer: PictographData[] | null = $state(null);
@@ -293,8 +293,8 @@
         setSideBySideLayout(layout);
       },
       getShouldUseSideBySideLayout: () => shouldUseSideBySideLayout,
-      setAnimatingStepNumber: (beat) => {
-        animatingStepNumber = beat;
+      setAnimatingStepNumber: (step) => {
+        animatingStepNumber = step;
       },
       onCurrentWordChange: (word: string) => {
         currentDisplayWord = word;
@@ -550,12 +550,12 @@
       return;
     }
 
-    // Enforce tier beat cap before adding a new beat to the sequence
+    // Enforce tier step cap before adding a new step to the sequence
     const currentSteps =
-      CreateModuleState?.sequenceState.getCurrentBeats().length ?? 0;
-    const maxSteps = getMaxBeats(accessTier);
+      CreateModuleState?.sequenceState.getCurrentSteps().length ?? 0;
+    const maxSteps = getMaxSteps(accessTier);
     if (currentSteps >= maxSteps) {
-      showBeatCapNudge = true;
+      showStepCapNudge = true;
       return;
     }
 
@@ -640,11 +640,11 @@
     const currentLen = sequence.steps?.length ?? 0;
     const extensionType = result.analysis.extensionType;
     if (extensionType === "half_rotation") {
-      pendingLoopBeatCount = currentLen;
+      pendingLoopStepCount = currentLen;
     } else if (extensionType === "quarter_rotation") {
-      pendingLoopBeatCount = currentLen * 3;
+      pendingLoopStepCount = currentLen * 3;
     } else {
-      pendingLoopBeatCount = currentLen;
+      pendingLoopStepCount = currentLen;
     }
 
     pendingLoopType = loopType;
@@ -843,7 +843,7 @@
     active={panelState.isSequenceActionsPanelOpen}
   />
 
-  <!-- Beat Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
+  <!-- Step Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
   <LazyMount
     loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
     active={panelState.isStepEditorPanelOpen}
@@ -868,29 +868,29 @@
     }}
   />
 
-  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit.
+  <!-- Step cap nudge - shown when user tries to exceed their tier's step limit.
        Backdrop click / Escape dismiss via BaseModal; the card itself never
        propagates to the backdrop. -->
   <BaseModal
-    open={showBeatCapNudge && beatCapNudgeAllowed}
+    open={showStepCapNudge && stepCapNudgeAllowed}
     size="fit"
     class="chromeless"
     onclose={() => {
-      showBeatCapNudge = false;
+      showStepCapNudge = false;
     }}
   >
     <AuthNudge
-      trigger={beatCapNudgeTrigger}
+      trigger={stepCapNudgeTrigger}
       onCreateAccount={() => {
-        showBeatCapNudge = false;
+        showStepCapNudge = false;
         authDrawerState.show("signup");
       }}
       onLogin={() => {
-        showBeatCapNudge = false;
+        showStepCapNudge = false;
         authDrawerState.show("signin");
       }}
       onDismiss={() => {
-        showBeatCapNudge = false;
+        showStepCapNudge = false;
       }}
     />
   </BaseModal>
@@ -921,7 +921,7 @@
   <ConfirmDialog
     bind:isOpen={showLoopConfirm}
     title="Apply {pendingLoopComponentName} LOOP?"
-    message="This will add {pendingLoopBeatCount} steps to your sequence."
+    message="This will add {pendingLoopStepCount} steps to your sequence."
     confirmText="Apply"
     cancelText="Cancel"
     variant="info"

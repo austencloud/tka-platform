@@ -110,7 +110,7 @@ export class RotatedInvertedLOOPExecutor {
   private _validateSequence(sequence: StepData[], period: Period): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -135,7 +135,7 @@ export class RotatedInvertedLOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with ROTATION + INVERTED
+   * Create a new LOOP entry by transforming a previous step with ROTATION + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -144,7 +144,7 @@ export class RotatedInvertedLOOPExecutor {
     finalIntendedLength: number,
     period: Period
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -154,7 +154,7 @@ export class RotatedInvertedLOOPExecutor {
 
     // Get the inverted letter (INVERTED effect)
     if (!previousMatchingStep.letter) {
-      throw new Error("Previous matching beat must have a letter");
+      throw new Error("Previous matching step must have a letter");
     }
     if (!this.loopParams) {
       throw new Error(
@@ -172,7 +172,7 @@ export class RotatedInvertedLOOPExecutor {
       previousMatchingStep
     );
 
-    // Create the new beat with rotated and inverted attributes
+    // Create the new step with rotated and inverted attributes
     // KEY: No color swapping - Blue stays Blue, Red stays Red
     //      Motion types are flipped (PRO ↔ ANTI)
     //      Prop rotations are flipped (CW ↔ CCW)
@@ -210,7 +210,7 @@ export class RotatedInvertedLOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping
+   * Get the previous matching step using index mapping
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -286,7 +286,7 @@ export class RotatedInvertedLOOPExecutor {
     previousStep: StepData,
     previousMatchingStep: StepData
   ): GridPosition | null {
-    // Get hand rotation directions from the matching beat (same color)
+    // Get hand rotation directions from the matching step (same color)
     const blueHandRotDir = getHandRotationDirection(
       previousMatchingStep.motions[MotionColor.BLUE]!
         .startLocation as GridLocation,
@@ -303,7 +303,7 @@ export class RotatedInvertedLOOPExecutor {
     const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
     const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
-    // Rotate the locations from the previous beat
+    // Rotate the locations from the previous step
     const newBlueEndLoc =
       blueLocationMap[
         previousStep.motions[MotionColor.BLUE]!.endLocation as GridLocation
@@ -324,7 +324,7 @@ export class RotatedInvertedLOOPExecutor {
   }
 
   /**
-   * Create rotated-inverted motion data for the new beat
+   * Create rotated-inverted motion data for the new step
    * Combines location rotation with motion type and prop rotation flipping
    */
   private _createRotatedInvertedMotion(

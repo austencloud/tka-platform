@@ -78,7 +78,7 @@ export class RotatedSwappedLOOPExecutor {
     let lastStep = sequence[sequence.length - 1]!;
     let nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two steps in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from step 2)
     const finalIntendedLength = sequenceLength + entriesToAdd;
     for (let i = 0; i < entriesToAdd; i++) {
       const nextStep = this._createNewLOOPEntry(
@@ -107,7 +107,7 @@ export class RotatedSwappedLOOPExecutor {
   private _validateSequence(sequence: StepData[], period: Period): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -137,7 +137,7 @@ export class RotatedSwappedLOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with SWAP + ROTATION
+   * Create a new LOOP entry by transforming a previous step with SWAP + ROTATION
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -146,7 +146,7 @@ export class RotatedSwappedLOOPExecutor {
     finalIntendedLength: number,
     period: Period
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -160,9 +160,9 @@ export class RotatedSwappedLOOPExecutor {
       previousMatchingStep
     );
 
-    // Create the new beat with swapped and rotated attributes
-    // KEY: Blue gets attributes from Red's matching beat (SWAP)
-    //      Red gets attributes from Blue's matching beat (SWAP)
+    // Create the new step with swapped and rotated attributes
+    // KEY: Blue gets attributes from Red's matching step (SWAP)
+    //      Red gets attributes from Blue's matching step (SWAP)
     //      Then locations are rotated based on handpath direction
     const newStep: StepData = {
       ...previousMatchingStep,
@@ -201,7 +201,7 @@ export class RotatedSwappedLOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping
+   * Get the previous matching step using index mapping
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -278,7 +278,7 @@ export class RotatedSwappedLOOPExecutor {
     previousStep: StepData,
     previousMatchingStep: StepData
   ): GridPosition | null {
-    // Get hand rotation directions from the matching beat (before swap)
+    // Get hand rotation directions from the matching step (before swap)
     // Blue will use Red's handpath (due to swap)
     // Red will use Blue's handpath (due to swap)
     const blueHandRotDir = getHandRotationDirection(
@@ -297,7 +297,7 @@ export class RotatedSwappedLOOPExecutor {
     const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
     const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
-    // Rotate the locations from the previous beat
+    // Rotate the locations from the previous step
     const newBlueEndLoc =
       blueLocationMap[
         previousStep.motions[MotionColor.BLUE]!.endLocation as GridLocation
@@ -318,7 +318,7 @@ export class RotatedSwappedLOOPExecutor {
   }
 
   /**
-   * Create rotated-swapped motion data for the new beat
+   * Create rotated-swapped motion data for the new step
    * Combines color swapping with location rotation
    */
   private _createRotatedSwappedMotion(
@@ -331,7 +331,7 @@ export class RotatedSwappedLOOPExecutor {
     const oppositeColor =
       color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
 
-    // For CONTINUITY: Always use same color from previous beat
+    // For CONTINUITY: Always use same color from previous step
     // (Blue continues from where Blue ended, Red continues from where Red ended)
     // The swap affects which PATTERN to follow, not where to continue from
     const previousMotion = previousStep.motions[color];

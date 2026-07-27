@@ -133,7 +133,7 @@ const maximizeDashesPattern: ConstraintPattern = {
 const requireDashesPattern: ConstraintPattern = {
   id: "require-dashes",
   type: ConstraintType.MOTION_TYPE,
-  description: "Require at least one dash motion per beat",
+  description: "Require at least one dash motion per step",
   matches(text: string): boolean {
     if (!containsConcept(text, "dash")) {
       return false;
@@ -349,7 +349,7 @@ function createRotationPattern(direction: string): ConstraintPattern {
  * Examples:
  * - "no handpath reversals" / "no hand path reversals"
  * - "maximize hand continuity" / "smooth hand paths"
- * - "hand reversal every beat"
+ * - "hand reversal every step"
  * - "allow handpath reversals but no prop reversals"
  */
 
@@ -400,14 +400,14 @@ const enforceHandPathContinuityPattern: ConstraintPattern = {
 };
 
 const handPathReversalEveryStepPattern: ConstraintPattern = {
-  id: "hand-path-reversal-every-beat",
+  id: "hand-path-reversal-every-step",
   type: ConstraintType.HAND_PATH,
-  description: "Hand path reversal every beat",
+  description: "Hand path reversal every step",
   matches(text: string): boolean {
     if (!containsConcept(text, "handpath")) {
       return false;
     }
-    // "hand reversal every beat", "maximize handpath reversals"
+    // "hand reversal every step", "maximize handpath reversals"
     return (
       text.toLowerCase().includes("every") ||
       (containsConcept(text, "maximize") && containsConcept(text, "reversal"))
@@ -462,14 +462,14 @@ const maximizePropContinuityPattern: ConstraintPattern = {
 
 
 const reversalEveryStepPattern: ConstraintPattern = {
-  id: "reversal-every-beat",
+  id: "reversal-every-step",
   type: ConstraintType.REVERSAL,
-  description: "Reversal every beat (maximum direction changes)",
+  description: "Reversal every step (maximum direction changes)",
   matches(text: string): boolean {
     if (!containsConcept(text, "reversal")) {
       return false;
     }
-    // "reversal every beat", "maximize reversals", "break every beat"
+    // "reversal every step", "maximize reversals", "break every step"
     return (
       text.toLowerCase().includes("every") ||
       containsConcept(text, "maximize")

@@ -36,15 +36,13 @@ import {
 import { loopViabilityService } from "$lib/features/create/generate/shared/services/loop-viability-service";
 import { guestLoopGate } from "$lib/shared/create/services/loop-guest-gate";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+import { resolveAccessTier, getMaxSteps } from "$lib/shared/auth/domain/access-tier";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
-import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
-import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
 
 import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/services/duration-pattern-manager";
 import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
@@ -108,7 +106,7 @@ export function createGenerationActionsState(
       }
 
       // Guest LOOP safety net: the selector gates most configs up front, but a
-      // guest can still push a rotated LOOP past their beat cap by switching
+      // guest can still push a rotated LOOP past their step cap by switching
       // Period to Quartered afterward. Catch it here with a sign-up toast
       // instead of the raw "seed too short / not divisible" engine error.
       if (options.loopType && options.mode === GenerationMode.CIRCULAR) {
@@ -121,7 +119,7 @@ export function createGenerationActionsState(
           const lock = guestLoopGate(
             options.loopType,
             options.loopSpecWire ?? null,
-            getMaxBeats("guest")
+            getMaxSteps("guest")
           );
           if (lock.locked) {
             generationError = lock.reason;
@@ -136,21 +134,8 @@ export function createGenerationActionsState(
         orchestrationService = generationOrchestrator;
       }
 
-      const exactResult = await generateCircularExactLength(options, {
-        generate: (o) => orchestrationService!.generateSequence(o),
-        extend: (s) => orientationCycleExtender.extendIfNeeded(s),
-      });
-      let generatedSequence = exactResult.sequence;
-      if (
-        exactResult.extendedPastRequest &&
-        options.mode === GenerationMode.CIRCULAR &&
-        !options.word
-      ) {
-        toast.info(
-          `Doubled to ${generatedSequence.steps.length} beats so the props return home.`,
-          5000
-        );
-      }
+      let generatedSequence =
+        await orchestrationService.generateSequence(options);
 
       // Apply duration rhythm template if configured
       const config = getConfig?.();
@@ -175,24 +160,24 @@ export function createGenerationActionsState(
         }
       }
 
-      // Enforce tier beat cap post-generation - handles words with bridge letters
+      // Enforce tier step cap post-generation - handles words with bridge letters
       // that push the sequence beyond what the user's tier allows.
       const tier = resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role));
-      const maxSteps = getMaxBeats(tier);
+      const maxSteps = getMaxSteps(tier);
       if (generatedSequence.steps.length > maxSteps) {
         generatedSequence = {
           ...generatedSequence,
           steps: generatedSequence.steps.slice(0, maxSteps),
         };
-        // Truncation lost beats the user's word implied. Guests get a
-        // free-account nudge for the full 64-beat cap; signed-in users are
+        // Truncation lost steps the user's word implied. Guests get a
+        // free-account nudge for the full 64-step cap; signed-in users are
         // already at the 64 ceiling, so it's a neutral note with no upsell.
         if (tier === "guest") {
           // Centralized copy (auth-nudge-trigger.ts) - same wording as the
-          // beat-cap nudge shown elsewhere, not a local duplicate.
-          toast.info(AUTH_NUDGE_TEXTS["beat-cap-guest"], 5000);
+          // step-cap nudge shown elsewhere, not a local duplicate.
+          toast.info(AUTH_NUDGE_TEXTS["step-cap-guest"], 5000);
         } else {
-          toast.info("Capped to 64 beats.", 5000);
+          toast.info("Capped to 64 steps.", 5000);
         }
       }
 
@@ -200,17 +185,6 @@ export function createGenerationActionsState(
       pushUndoSnapshot?.(UndoOp.GENERATE_SEQUENCE, {
         description: "Generate sequence",
       });
-
-      // Auto-close orientation cycle so the user never sees a "Complete
-      // Cycle" button. generateCircularExactLength already closes circular
-      // sequences above (re-rolling or extending the orientation-seeded
-      // half), so for circular mode this is now a no-op safety net. It stays
-      // load-bearing for freeform/spell paths, which don't go through the
-      // exact-length generator.
-      if ((generatedSequence.orientationCycleCount ?? 1) > 1) {
-        generatedSequence =
-          orientationCycleExtender.extendIfNeeded(generatedSequence);
-      }
 
       lastGeneratedSequence = generatedSequence;
       const currentConfig = getConfig?.();
@@ -372,7 +346,7 @@ export function createGenerationActionsState(
       // ── Unified generation path ────────────────────────────────────────────
       // Spell and freeform both route through generationOrchestrator →
       // SequenceBuilder → BeamSearch. The engine parses letters, allocates
-      // turns, resolves rotation directions for static/dash+turns beats,
+      // turns, resolves rotation directions for static/dash+turns steps,
       // applies LOOP extension, and runs orientation propagation - identical
       // to what MCP does. The spell-only pre-step is word parsing + target-
       // length bridge extension (finalLetters above); post-step is spellData
@@ -447,25 +421,25 @@ export function createGenerationActionsState(
         }
       }
 
-      // Enforce tier beat cap post-generation - spell sequences with bridge letters
+      // Enforce tier step cap post-generation - spell sequences with bridge letters
       // can exceed the user's allowed length.
       const spellTier = resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role));
-      const spellMaxBeats = getMaxBeats(spellTier);
-      if (loopedSequence.steps.length > spellMaxBeats) {
+      const spellMaxSteps = getMaxSteps(spellTier);
+      if (loopedSequence.steps.length > spellMaxSteps) {
         loopedSequence = {
           ...loopedSequence,
-          steps: loopedSequence.steps.slice(0, spellMaxBeats),
+          steps: loopedSequence.steps.slice(0, spellMaxSteps),
         };
-        // Truncation lost beats the spelled word implied. Guests get a
-        // free-account nudge for the full 64-beat cap; signed-in users are
+        // Truncation lost steps the spelled word implied. Guests get a
+        // free-account nudge for the full 64-step cap; signed-in users are
         // already at the 64 ceiling, so it's a neutral note with no upsell.
         // Mirrors the identical block in onGenerateClicked above.
         if (spellTier === "guest") {
           // Centralized copy (auth-nudge-trigger.ts) - same wording as the
-          // beat-cap nudge shown elsewhere, not a local duplicate.
-          toast.info(AUTH_NUDGE_TEXTS["beat-cap-guest"], 5000);
+          // step-cap nudge shown elsewhere, not a local duplicate.
+          toast.info(AUTH_NUDGE_TEXTS["step-cap-guest"], 5000);
         } else {
-          toast.info("Capped to 64 beats.", 5000);
+          toast.info("Capped to 64 steps.", 5000);
         }
       }
 
@@ -656,7 +630,7 @@ export function createGenerationActionsState(
       const sequenceState = getSequenceState?.();
       if (!sequenceState) return;
 
-      const hasExistingSequence = sequenceState.getCurrentBeats().length > 0;
+      const hasExistingSequence = sequenceState.getCurrentSteps().length > 0;
 
       if (hasExistingSequence) {
         window.dispatchEvent(new CustomEvent("clear-sequence-animation"));
@@ -705,7 +679,7 @@ export function createGenerationActionsState(
       isGenerating,
       hasLastGenerated: lastGeneratedSequence !== null,
       lastGeneratedName: lastGeneratedSequence?.name || null,
-      lastGeneratedBeats: lastGeneratedSequence?.steps.length || 0,
+      lastGeneratedSteps: lastGeneratedSequence?.steps.length || 0,
       hasError: generationError !== null,
       errorMessage: generationError,
     };

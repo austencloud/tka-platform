@@ -126,7 +126,7 @@ export function hydrateCuratedSequence(
   const firstStep = steps[0];
   if (!firstStep) throw new Error("seed has no hydrated steps");
 
-  const startPosition = startPositionDeriver.deriveFromFirstBeat(firstStep);
+  const startPosition = startPositionDeriver.deriveFromFirstStep(firstStep);
   const declaredStartPosition = convertToGridPosition(wire.startPosition);
   if (
     !declaredStartPosition ||

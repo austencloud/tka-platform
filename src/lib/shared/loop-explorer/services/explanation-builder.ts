@@ -3,7 +3,7 @@
  *
  * Structured explanation for the two-pane linked-explanation UI: an intro
  * sentence (built ON `loop-explanation-text-generator.ts`, not forked),
- * per-relation citation sentences (from `relation-extractor.ts`'s beat-pair
+ * per-relation citation sentences (from `relation-extractor.ts`'s step-pair
  * tuples), and a closing length-math line (`seed × multiplier = length`,
  * using the canonical `expanderMultiplier`).
  *
@@ -17,15 +17,15 @@ import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generat
 import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
 import { expanderMultiplier } from "$lib/shared/create/services/loop-type-utils";
 import type { LOOPSpecWire, PairComponentId, RotationAngle } from "@tka/sequence-engine/loop";
-import type { BeatPairRelation } from "./relation-extractor";
+import type { StepPairRelation } from "./relation-extractor";
 import type { LoopSlice } from "../domain/legality";
 
 export interface LoopExplanation {
   /** What the selection means, reused from `generateExplanationText`. */
   readonly intro: string;
-  /** One sentence per beat-pair relation, index-aligned with `relations`. */
+  /** One sentence per step-pair relation, index-aligned with `relations`. */
   readonly citations: readonly string[];
-  readonly relations: readonly BeatPairRelation[];
+  readonly relations: readonly StepPairRelation[];
   /** "seed × multiplier = length" line. */
   readonly lengthMath: string;
 }
@@ -41,7 +41,7 @@ const TRANSFORM_VERB: Partial<Record<PairComponentId, string>> = {
 export interface BuildExplanationParams {
   readonly components: Set<LOOPComponent>;
   readonly slice: LoopSlice;
-  readonly relations: readonly BeatPairRelation[];
+  readonly relations: readonly StepPairRelation[];
   readonly seedLength: number;
   readonly totalLength: number;
   readonly wire?: LOOPSpecWire;
@@ -56,14 +56,14 @@ export function buildExplanation(params: BuildExplanationParams): LoopExplanatio
     : params.seedLength > 0
       ? Math.round(params.totalLength / params.seedLength)
       : 1;
-  const lengthMath = `${params.seedLength} × ${multiplier} = ${params.totalLength} beats.`;
+  const lengthMath = `${params.seedLength} × ${multiplier} = ${params.totalLength} steps.`;
 
   return { intro, citations, relations: params.relations, lengthMath };
 }
 
-function citationSentence(relation: BeatPairRelation): string {
+function citationSentence(relation: StepPairRelation): string {
   if (relation.transform.length === 0) {
-    return `Beat ${relation.beatB} repeats beat ${relation.beatA}.`;
+    return `Step ${relation.stepB} repeats step ${relation.stepA}.`;
   }
 
   const verbs = relation.transform
@@ -71,11 +71,11 @@ function citationSentence(relation: BeatPairRelation): string {
     .filter((v): v is string => Boolean(v));
 
   if (verbs.length === 0) {
-    return `Beat ${relation.beatB} relates to beat ${relation.beatA}.`;
+    return `Step ${relation.stepB} relates to step ${relation.stepA}.`;
   }
 
   const rotationSuffix = relation.rotation ? ` ${rotationLabel(relation.rotation)}` : "";
-  return `Beat ${relation.beatB} = beat ${relation.beatA} ${joinVerbs(verbs)}${rotationSuffix}.`;
+  return `Step ${relation.stepB} = step ${relation.stepA} ${joinVerbs(verbs)}${rotationSuffix}.`;
 }
 
 function joinVerbs(verbs: readonly string[]): string {

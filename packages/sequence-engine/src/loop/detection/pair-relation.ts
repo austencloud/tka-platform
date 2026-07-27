@@ -1,6 +1,6 @@
 /**
  * Pair-relation algebra for LOOP detection — the single canonical way to
- * recover transformation components from a beat pair.
+ * recover transformation components from a step pair.
  *
  * Domain grounding (Flow Arts Knowledge MCP, "LOOP System and Compositional
  * Theory"): the LOOP algebra operates on a reduced space of grid positions
@@ -9,8 +9,8 @@
  * LOOP classification. Per transform:
  *
  *   ROTATED   moves locations (90°/180°), keeps motionType + hand identity
- *   MIRRORED  reflects locations across the vertical axis, keeps the rest
- *   FLIPPED   reflects locations across the horizontal axis, keeps the rest
+ *   MIRRORED  reflects locations; legacy default is the N-S axis
+ *   FLIPPED   legacy alias for E-W reflection
  *   SWAPPED   exchanges hand identity, keeps locations-as-a-set + motionType
  *   INVERTED  flips PRO ↔ ANTI, does not move locations
  *   REWOUND   plays the first half backward (temporal, checked separately)
@@ -29,6 +29,11 @@
  *   inverted             ← motionType flip along the matched correspondence
  */
 
+import {
+  REFLECTION_LOCATION_MAPS,
+  type ReflectionAxis,
+} from "../position-maps/strict-loop-position-maps.js";
+
 const ROTATE_180: Record<string, string> = {
   n: "s", s: "n", e: "w", w: "e",
   ne: "sw", sw: "ne", nw: "se", se: "nw",
@@ -42,16 +47,6 @@ const ROTATE_90_CW: Record<string, string> = {
 const ROTATE_90_CCW: Record<string, string> = {
   n: "w", w: "s", s: "e", e: "n",
   ne: "nw", nw: "sw", sw: "se", se: "ne",
-};
-
-const MIRROR_VERTICAL: Record<string, string> = {
-  n: "n", s: "s", e: "w", w: "e",
-  ne: "nw", nw: "ne", se: "sw", sw: "se",
-};
-
-const FLIP_HORIZONTAL: Record<string, string> = {
-  n: "s", s: "n", e: "e", w: "w",
-  ne: "se", se: "ne", nw: "sw", sw: "nw",
 };
 
 const IDENTITY: Record<string, string> = {
@@ -88,15 +83,18 @@ export interface PairRelation {
   key: string;
   /** Present when the location transform is a rotation. */
   rotation?: RotationAngle;
+  /** Present when the location transform is a reflection. */
+  reflectionAxis?: ReflectionAxis;
   /** Complexity rank — lower explains the pair with fewer moving parts. */
   priority: number;
 }
 
 interface LocationTransform {
   id: string;
-  map: Record<string, string>;
+  map: Readonly<Record<string, string>>;
   components: PairComponentId[];
   rotation?: RotationAngle;
+  reflectionAxis?: ReflectionAxis;
 }
 
 const LOCATION_TRANSFORMS: LocationTransform[] = [
@@ -104,8 +102,30 @@ const LOCATION_TRANSFORMS: LocationTransform[] = [
   { id: "rot180", map: ROTATE_180, components: ["rotated"], rotation: "180" },
   { id: "rot90cw", map: ROTATE_90_CW, components: ["rotated"], rotation: "90cw" },
   { id: "rot90ccw", map: ROTATE_90_CCW, components: ["rotated"], rotation: "90ccw" },
-  { id: "vmirror", map: MIRROR_VERTICAL, components: ["mirrored"] },
-  { id: "hflip", map: FLIP_HORIZONTAL, components: ["flipped"] },
+  {
+    id: "reflect-north-south",
+    map: REFLECTION_LOCATION_MAPS["north-south"],
+    components: ["mirrored"],
+    reflectionAxis: "north-south",
+  },
+  {
+    id: "reflect-east-west",
+    map: REFLECTION_LOCATION_MAPS["east-west"],
+    components: ["flipped"],
+    reflectionAxis: "east-west",
+  },
+  {
+    id: "reflect-northeast-southwest",
+    map: REFLECTION_LOCATION_MAPS["northeast-southwest"],
+    components: ["mirrored"],
+    reflectionAxis: "northeast-southwest",
+  },
+  {
+    id: "reflect-northwest-southeast",
+    map: REFLECTION_LOCATION_MAPS["northwest-southeast"],
+    components: ["mirrored"],
+    reflectionAxis: "northwest-southeast",
+  },
 ];
 
 type MotionAxis = "same" | "flipped" | "neutral" | "mismatch";
@@ -131,7 +151,7 @@ function motionAxis(t1: string, t2: string): MotionAxis {
 }
 
 function locationsMatch(
-  map: Record<string, string>,
+  map: Readonly<Record<string, string>>,
   source: PairMotion,
   target: PairMotion,
 ): boolean {
@@ -199,6 +219,7 @@ export function relationsForPair(a: PairMotions, b: PairMotions): PairRelation[]
           components,
           key: `${t.id}|${swapped ? "swapped" : "same"}|${inverted ? "inverted" : "plain"}`,
           rotation: t.rotation,
+          reflectionAxis: t.reflectionAxis,
           priority: components.length,
         });
       }
@@ -212,10 +233,11 @@ export interface UniformRelation {
   /** Sorted primitive ids; empty array means the halves literally repeat. */
   components: readonly PairComponentId[];
   rotation?: RotationAngle;
+  reflectionAxis?: ReflectionAxis;
 }
 
 /**
- * The simplest relation that UNANIMOUSLY explains every beat pair at the
+ * The simplest relation that UNANIMOUSLY explains every step pair at the
  * given interval. Pairs are (i, i+interval); `wrap` additionally closes the
  * cycle (used for quartered rotation scans).
  */
@@ -259,7 +281,11 @@ export function uniformRelationAtInterval(
   });
 
   const best = candidates[0]!;
-  return { components: best.components, rotation: best.rotation };
+  return {
+    components: best.components,
+    rotation: best.rotation,
+    reflectionAxis: best.reflectionAxis,
+  };
 }
 
 /**
@@ -274,8 +300,8 @@ export function uniformHalvedRelation(
 }
 
 /**
- * REWOUND: the second half plays the first half backward. Beat i corresponds
- * to beat n-1-i with start/end locations exchanged and motionType preserved
+ * REWOUND: the second half plays the first half backward. Step i corresponds
+ * to step n-1-i with start/end locations exchanged and motionType preserved
  * (reversing a motion in time reverses both hand path and prop rotation, so
  * the pro/anti relationship is unchanged).
  */
@@ -303,7 +329,7 @@ export function detectRewoundPattern(steps: readonly PairMotions[]): boolean {
 }
 
 /**
- * Multi-point inner-rotation scan: does a uniform 180° rotation relate beats
+ * Multi-point inner-rotation scan: does a uniform 180° rotation relate steps
  * one quarter apart WITHIN the first half? This is the nested structure the
  * generator produces for mirrored_rotated-family loops (rotation doubles the
  * seed, then the reflection doubles the rotated pair), where the halved

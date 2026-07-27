@@ -7,8 +7,6 @@ import { BuildResultTransformer } from "$lib/shared/create/services/build-result
 import { sequenceMetadataManager } from "$lib/shared/create/services/sequence-metadata-manager";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
-import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
-import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 import { GenerationMode } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -46,8 +44,7 @@ function makeProvider() {
   } as never;
 }
 
-// THE harness: drives the exact deck-card path (resolveLoopConfig + real
-// orchestrator + real reduce/cycle detection + exact-length wrapper).
+// THE harness: drives the exact deck-card path through the real orchestrator.
 function createHarness() {
   const orch = new GenerationOrchestrator(
     makeProvider(),
@@ -72,11 +69,8 @@ function createHarness() {
       constraintPreset: "smooth",
       turnIntensity: p.turnIntensity ?? 1,
     };
-    const exact = await generateCircularExactLength(options, {
-      generate: (o) => orch.generateSequence(o),
-      extend: (s) => orientationCycleExtender.extendIfNeeded(s),
-    });
-    return { steps: exact.sequence.steps.length, cycle: exact.sequence.orientationCycleCount ?? 1, coerced: resolved.period, extended: exact.extendedPastRequest };
+    const sequence = await orch.generateSequence(options);
+    return { steps: sequence.steps.length, cycle: sequence.orientationCycleCount ?? 1, coerced: resolved.period };
   };
 }
 
@@ -85,7 +79,7 @@ const IMPLEMENTED = ["rotated","mirrored","flipped","swapped","inverted","strict
 
 describe("deck length invariance (REAL pipeline)", () => {
   // Models DeckReleaserTab.generateLiveDeck exactly: draw through the real
-  // orchestrator + exact-length wrapper, REJECT any card that isn't exactly the
+  // orchestrator, REJECT any card that isn't exactly the
   // requested length, keep drawing within a budget. Asserts the two guarantees
   // Austen requires: (1) a deck NEVER ships an off-count card, and (2) every
   // offered combo can still fill a card at the requested length (not starved).
@@ -117,7 +111,7 @@ describe("deck length invariance (REAL pipeline)", () => {
       }
     }
     console.log("\n=== STARVED combos (produce cards but never exactly 16) ===");
-    console.log(starved.length ? starved.map((s) => "  " + s).join("\n") : "  (none) — every offered combo can fill a 16-beat card");
+    console.log(starved.length ? starved.map((s) => "  " + s).join("\n") : "  (none) — every offered combo can fill a 16-step card");
     // A starved combo is a real problem: it's offered but can't honor the length.
     expect(starved, "\n" + starved.join("\n")).toEqual([]);
   }, 240_000);

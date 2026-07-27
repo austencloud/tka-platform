@@ -3,7 +3,7 @@ import { executeSymmetricSpec } from "../../../src/loop/execution/spec-executor.
 import { LOOPComponent, type PropLOOPSpec } from "../../../src/loop/loop-spec.js";
 import type { SequenceStep } from "../../../src/core/types/sequence-engine-types.js";
 
-// Minimal 2-beat closed-under-mirror seed: startPos + 2 letter steps whose
+// Minimal 2-step closed-under-mirror seed: startPos + 2 letter steps whose
 // motions are pro/anti (so inversion is observable). Build hand-rolled steps
 // with the fields the executors touch (motions, positions, stepNumber, letter).
 // Copied verbatim from canonical-stage-order.test.ts — tests independently readable.
@@ -78,7 +78,7 @@ describe("overlay inversion", () => {
   it("throws when letter count is not divisible by the overlay period", () => {
     expect(() =>
       executeSymmetricSpec(makeSeed(), spec([
-        [LOOPComponent.MIRRORED, { period: 2 }], // 2 -> 4 beats
+        [LOOPComponent.MIRRORED, { period: 2 }], // 2 -> 4 steps
         [LOOPComponent.INVERTED, { period: 8, mode: "overlay" }], // 4 % 8 != 0
       ]))
     ).toThrow(/divisible/);

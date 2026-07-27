@@ -1,13 +1,14 @@
 import type { UIGenerationConfig } from "../../state/generate-config.svelte";
 import { DifficultyLevel } from "../domain/models/generate-models";
 import {
-  LOOPType,
-  ROTATED_LOOP_TYPES,
   Period,
   periodToNumber,
 } from "../../circular/domain/models/circular-models";
 import { minLength as minLengthEngine } from "@tka/sequence-engine/generation";
-import type { CardDescriptor, CardHandlers } from "$lib/shared/create/domain/generator-contract-types";
+import type {
+  CardDescriptor,
+  CardHandlers,
+} from "$lib/shared/create/domain/generator-contract-types";
 
 /**
  * Derive minimum sequence length for a LOOP configuration via the engine's
@@ -30,7 +31,9 @@ function deriveLoopMinOverride(
   // string-valued and share identical members. Cast through unknown so we can
   // bridge them without pulling the app enum into the engine package.
   const minimum = minLengthEngine({
-    loopType: loopType as unknown as Parameters<typeof minLengthEngine>[0]["loopType"],
+    loopType: loopType as unknown as Parameters<
+      typeof minLengthEngine
+    >[0]["loopType"],
     period,
     level,
     gridMode: config.gridMode,
@@ -46,8 +49,7 @@ function deriveLoopMinOverride(
  *   Row 1: Word(2) + Preset(2) + Length(2) = 6
  *   Row 2 (beginner): Level(3) + GridMode(3) = 6
  *   Row 2 (non-beginner): Level(2) + GridMode(2) + TurnIntensity(2) = 6
- *   Row 3 (no slice): Customize(3) + LOOP(3) = 6
- *   Row 3 (with slice): Customize(2) + LOOP(2) + Slice(2) = 6
+ *   Row 3: Customize(3) + LOOP(3) = 6
  *   Row 4: Generate(6)
  */
 export function buildCardDescriptors(
@@ -95,13 +97,15 @@ export function buildCardDescriptors(
   }
 
   // Length card - always interactive, with constrained bounds in spell mode
-  const hasWord = !!(handlers.wordInputValue?.trim());
+  const hasWord = !!handlers.wordInputValue?.trim();
   if (hasWord) {
-    const naturalDisplayLength = handlers.computedWordLength ?? handlers.wordInputValue!.trim().length;
+    const naturalDisplayLength =
+      handlers.computedWordLength ?? handlers.wordInputValue!.trim().length;
     const bridgeInfo = handlers.bridgeInfo;
-    const bridgeSubtitle = bridgeInfo && bridgeInfo.totalBridges > 0
-      ? `+${bridgeInfo.totalBridges} bridge${bridgeInfo.totalBridges !== 1 ? "s" : ""}`
-      : "";
+    const bridgeSubtitle =
+      bridgeInfo && bridgeInfo.totalBridges > 0
+        ? `+${bridgeInfo.totalBridges} bridge${bridgeInfo.totalBridges !== 1 ? "s" : ""}`
+        : "";
 
     cardList.push({
       id: "length",
@@ -109,7 +113,8 @@ export function buildCardDescriptors(
         currentLength: naturalDisplayLength,
         currentMode: config.mode,
         loopEnabled,
-        onLengthChange: handlers.handleSpellLengthChange ?? handlers.handleLengthChange,
+        onLengthChange:
+          handlers.handleSpellLengthChange ?? handlers.handleLengthChange,
         locked: false,
         // The length here is the word's own natural length; the handler can only
         // raise it via spellTargetLength, never shrink it below the tier cap.
@@ -176,20 +181,10 @@ export function buildCardDescriptors(
     });
   }
 
-  // ─── Customize + LOOP [+ Period] row ───
-  // Period card visibility mirrors the TurnIntensity pattern: only show
-  // when the current (loopType, level) combination can actually reach
-  // period 4. Rotated types: always. Non-rotated (except rewound): L3+
-  // where half turns unlock the orientation-wheel quarter-advance that
-  // produces genuine period-4 closure. Rewound is never quartered.
-  const levelNum = Number(config.level) || 1;
-  const currentLoopType = config.loopType as LOOPType;
-  const isRotatedType = ROTATED_LOOP_TYPES.has(currentLoopType);
-  const isRewound = currentLoopType === LOOPType.STRICT_REWOUND;
-  const supportsPeriodFour =
-    loopEnabled && (isRotatedType || (!isRewound && levelNum >= 3));
-  const showPeriodCard = supportsPeriodFour;
-  const customizeLoopSpan = showPeriodCard ? 2 : 3;
+  // ─── Customize + LOOP row ───
+  // Rotation owns its Halved/Quartered choice inside the LOOP drawer. A separate
+  // Period card here exposed the same config field through a second control.
+  const customizeLoopSpan = 3;
 
   // Customize card (absorbs Style + Start/End; Rhythm removed pending design)
   const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
@@ -220,29 +215,11 @@ export function buildCardDescriptors(
       props: {
         loopEnabled,
         currentLOOPType: config.loopType,
+        reflectionAxis: config.reflectionAxis,
         onLOOPTypeChange: handlers.handleLOOPTypeChange,
         cardIndex: cardIndex++,
       },
       gridColumnSpan: customizeLoopSpan,
-    });
-  }
-
-  // Period card (shown for all LOOP types - universal slice-awareness).
-  // Integer period values: 2 (halved), 4 (quartered).
-  if (showPeriodCard && handlers.handlePeriodChange) {
-    const currentPeriod = periodToNumber(config.period as Period | undefined);
-    cardList.push({
-      id: "period",
-      props: {
-        currentPeriod,
-        onPeriodChange: (periodNum: number) => {
-          const periodEnum =
-            periodNum === 4 ? Period.QUARTERED : Period.HALVED;
-          handlers.handlePeriodChange?.(periodEnum);
-        },
-        cardIndex: cardIndex++,
-      },
-      gridColumnSpan: 2,
     });
   }
 

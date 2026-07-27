@@ -536,7 +536,7 @@ function findStartPosition(
 }
 
 /**
- * Each beat's start orientation = previous beat's end orientation.
+ * Each step's start orientation = previous step's end orientation.
  */
 function propagateOrientations(steps: PictographData[]): PictographData[] {
   if (steps.length === 0) return steps;

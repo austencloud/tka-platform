@@ -132,16 +132,7 @@ export {
   type LOOPDomain,
 } from "./capacity/minimum-length-calculator.js";
 
-// Orientation reachability — future beam-search pruning
-export {
-  OrientationReachabilityAnalyzer,
-  orientationReachabilityAnalyzer,
-  type OrientationReachabilityArgs,
-  type OrientationReachabilityResult,
-} from "./reachability/OrientationReachabilityAnalyzer.js";
-
 // LOOP closure constraints
-export { TurnParityConstraint } from "./constraints/closure/turn-parity-constraint.js";
 export {
   MirroredClosureConstraint,
   FlippedClosureConstraint,

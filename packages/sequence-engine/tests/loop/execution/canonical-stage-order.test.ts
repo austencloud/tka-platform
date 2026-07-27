@@ -3,7 +3,7 @@ import { executeSymmetricSpec } from "../../../src/loop/execution/spec-executor.
 import { LOOPComponent, type PropLOOPSpec } from "../../../src/loop/loop-spec.js";
 import type { SequenceStep } from "../../../src/core/types/sequence-engine-types.js";
 
-// Minimal 2-beat closed-under-mirror seed: startPos + 2 letter steps whose
+// Minimal 2-step closed-under-mirror seed: startPos + 2 letter steps whose
 // motions are pro/anti (so inversion is observable). Build hand-rolled steps
 // with the fields the executors touch (motions, positions, stepNumber, letter).
 function step(n: number, letter: string, sp: string, ep: string, blue: any, red: any): SequenceStep {
@@ -32,13 +32,13 @@ describe("canonical stage order", () => {
       [LOOPComponent.MIRRORED, { period: 2 }],
       [LOOPComponent.INVERTED, { period: 4 }],
     ]));
-    const beats = result.slice(1);
-    expect(beats).toHaveLength(16);
+    const steps = result.slice(1);
+    expect(steps).toHaveLength(16);
     // Canonical: mirror first (2->4 = block X), then invert@4 alternates blocks
-    // of 4. Beats 5-8 must be the motionType-flip of beats 1-4.
+    // of 4. Steps 5-8 must be the motionType-flip of steps 1-4.
     for (let i = 0; i < 4; i++) {
-      const base = beats[i]!.motions.blue.motionType;
-      const inv = beats[i + 4]!.motions.blue.motionType;
+      const base = steps[i]!.motions.blue.motionType;
+      const inv = steps[i + 4]!.motions.blue.motionType;
       if (base === "pro") expect(inv).toBe("anti");
       if (base === "anti") expect(inv).toBe("pro");
     }
@@ -49,7 +49,7 @@ describe("canonical stage order", () => {
       [LOOPComponent.MIRRORED, { period: 2 }],
       [LOOPComponent.INVERTED, { period: 2 }],
     ]));
-    // One fused group => x2 only: 2 seed beats -> 4 beats.
+    // One fused group => x2 only: 2 seed steps -> 4 steps.
     expect(result.slice(1)).toHaveLength(4);
   });
 });

@@ -76,6 +76,7 @@ describe("GenerationOrchestrator — loopSpecWire seed solver + pass-through", (
     const callArg = buildMock.mock.calls[0]![0];
     expect(callArg.length).toBe(4); // 16 / 4
     expect(callArg.loop.loopSpec).toEqual(loopSpecFromWire(wire));
+    expect(callArg.loop.requestedTotalLength).toBe(16);
   });
 
   it("throws a /divisible/ error when length is not divisible by the expander multiplier", async () => {
@@ -96,7 +97,7 @@ describe("GenerationOrchestrator — loopSpecWire seed solver + pass-through", (
     // rot:2 + inv:2 (expand, default mode): the engine's fused-stage rule
     // absorbs rotation into the invert-only fused group at the same period,
     // so expanderMultiplier === 2 (Task 6 finding). length 2 -> seedLength 1,
-    // and INVERTED is expand-mode -> a 1-beat seed is dash-only, so the
+    // and INVERTED is expand-mode -> a 1-step seed is dash-only, so the
     // pro/anti flip inversion exists to show would be invisible.
     const wire = buildLoopSpec(
       new Set([LOOPComponent.ROTATED, LOOPComponent.INVERTED]),
@@ -120,5 +121,6 @@ describe("GenerationOrchestrator — loopSpecWire seed solver + pass-through", (
     const callArg = buildMock.mock.calls[0]![0];
     expect(callArg.length).toBe(4); // 16 / 4 (quartered)
     expect(callArg.loop.loopSpec).toBeUndefined();
+    expect(callArg.loop.requestedTotalLength).toBe(16);
   });
 });

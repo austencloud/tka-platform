@@ -17,6 +17,8 @@ interface MotionData {
   rotationDirection: string;
   startOrientation?: string;
   endOrientation?: string;
+  prefloatMotionType?: string;
+  prefloatRotationDirection?: string;
 }
 
 interface PictographData {
@@ -42,15 +44,31 @@ export function findLetterByMotions(
   allPictographs: PictographData[]
 ): string | null {
   // Normalize inputs to lowercase for matching
-  const blueType = blueMotion.motionType.toLowerCase();
+  const blueType = (
+    blueMotion.motionType === "float"
+      ? (blueMotion.prefloatMotionType ?? blueMotion.motionType)
+      : blueMotion.motionType
+  ).toLowerCase();
   const blueStart = blueMotion.startLocation.toLowerCase();
   const blueEnd = blueMotion.endLocation.toLowerCase();
-  const blueRot = blueMotion.rotationDirection.toLowerCase();
+  const blueRot = (
+    blueMotion.motionType === "float"
+      ? (blueMotion.prefloatRotationDirection ?? blueMotion.rotationDirection)
+      : blueMotion.rotationDirection
+  ).toLowerCase();
 
-  const redType = redMotion.motionType.toLowerCase();
+  const redType = (
+    redMotion.motionType === "float"
+      ? (redMotion.prefloatMotionType ?? redMotion.motionType)
+      : redMotion.motionType
+  ).toLowerCase();
   const redStart = redMotion.startLocation.toLowerCase();
   const redEnd = redMotion.endLocation.toLowerCase();
-  const redRot = redMotion.rotationDirection.toLowerCase();
+  const redRot = (
+    redMotion.motionType === "float"
+      ? (redMotion.prefloatRotationDirection ?? redMotion.rotationDirection)
+      : redMotion.rotationDirection
+  ).toLowerCase();
 
   // For static and dash motions, rotation direction doesn't matter
   // because the generator applies turns which changes rotation

@@ -1,9 +1,9 @@
 <!-- src/lib/shared/loop-explorer/components/ExplanationPane.svelte
   Renders explanation-builder's structured output: intro sentence, one
-  interactive citation per beat-pair relation, and the closing
+  interactive citation per step-pair relation, and the closing
   "seed x multiplier = length" line. Each citation is a real <button> (per
-  clickables-look-like-buttons) whose hover/click highlights its beat pair in
-  the showcase grid, mirroring the grid's own beat->relation highlight — both
+  clickables-look-like-buttons) whose hover/click highlights its step pair in
+  the showcase grid, mirroring the grid's own step->relation highlight — both
   directions read from the same loop-explorer-state. -->
 <script lang="ts">
   import { getLoopExplorerContext } from "../state/loop-explorer-state.svelte";

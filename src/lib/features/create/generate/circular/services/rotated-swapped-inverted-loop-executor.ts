@@ -113,7 +113,7 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -135,7 +135,7 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with ROTATE + SWAP + INVERTED
+   * Create a new LOOP entry by transforming a previous step with ROTATE + SWAP + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -150,7 +150,7 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     );
 
     if (!previousMatchingStep.letter) {
-      throw new Error("Previous matching beat must have a letter");
+      throw new Error("Previous matching step must have a letter");
     }
     const invertedLetter = this.loopParams.getInvertedLetter(
       previousMatchingStep.letter as string
@@ -161,8 +161,8 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
       previousMatchingStep
     );
 
-    // KEY: Blue gets attributes from Red's matching beat (SWAP)
-    //      Red gets attributes from Blue's matching beat (SWAP)
+    // KEY: Blue gets attributes from Red's matching step (SWAP)
+    //      Red gets attributes from Blue's matching step (SWAP)
     //      Motion types are flipped (INVERTED)
     //      Letters are flipped (INVERTED)
     //      Locations are rotated based on the swapped handpath (ROTATED)
@@ -193,7 +193,7 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     return finalStep;
   }
 
-  /** Get the previous matching beat using index mapping (halved pattern) */
+  /** Get the previous matching step using index mapping (halved pattern) */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
     stepNumber: number,
@@ -266,7 +266,7 @@ export class RotatedSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   }
 
   /**
-   * Create rotated-swapped-inverted motion data for the new beat
+   * Create rotated-swapped-inverted motion data for the new step
    * Combines color swapping, location rotation, inverted motion type, and a
    * single flip of the prop rotation direction (INVERTED is the only
    * flip-contributing transform in this combo — see file header).

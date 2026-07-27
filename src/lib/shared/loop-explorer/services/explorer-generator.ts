@@ -11,9 +11,8 @@
  * Canonical path (investigated, not invented — see
  * `generate-actions.svelte.ts` onGenerateClicked, the code the Generate
  * tab's button actually calls):
- *   resolveLoopConfig() → GenerationOptions → generateCircularExactLength()
- *   { generate: generationOrchestrator.generateSequence,
- *     extend: orientationCycleExtender.extendIfNeeded }
+ *   resolveLoopConfig() → GenerationOptions
+ *   → generationOrchestrator.generateSequence()
  *   → loopDetector.detectLOOPType() (delegates to @tka/sequence-engine)
  */
 
@@ -24,9 +23,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { DifficultyLevel, GenerationMode } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
 import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
-import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 import { loopDetector } from "$lib/shared/create/services/loop-detector";
 import type { LOOPDetectionResult } from "$lib/shared/create/services/ILOOPDetector";
 import {
@@ -37,7 +34,7 @@ import {
 } from "$lib/shared/create/services/loop-type-utils";
 import { evaluateSelection, resolveEffectiveSlice, type LoopSlice } from "$lib/shared/loop-explorer/domain/legality";
 import { findCuratedSeed } from "$lib/shared/loop-explorer/domain/curated-seeds";
-import { extractPairRelations, defaultInterval, type BeatPairRelation } from "./relation-extractor";
+import { extractPairRelations, defaultInterval, type StepPairRelation } from "./relation-extractor";
 
 export const MAX_ATTEMPTS = 3;
 
@@ -45,20 +42,18 @@ export interface VerifiedExample {
   readonly sequence: SequenceData;
   readonly loopType: LOOPType;
   readonly slice: LoopSlice;
-  readonly relations: readonly BeatPairRelation[];
+  readonly relations: readonly StepPairRelation[];
   readonly seedLength: number;
   readonly source: "generated" | "curated";
 }
 
 export interface ExplorerGeneratorDeps {
   generate: (options: GenerationOptions) => Promise<SequenceData>;
-  extend: (sequence: SequenceData) => SequenceData;
   detect: (sequence: SequenceData) => LOOPDetectionResult;
 }
 
 const defaultDeps: ExplorerGeneratorDeps = {
   generate: (options) => generationOrchestrator.generateSequence(options),
-  extend: (sequence) => orientationCycleExtender.extendIfNeeded(sequence),
   detect: (sequence) => loopDetector.detectLOOPType(sequence),
 };
 
@@ -101,11 +96,7 @@ export async function generateVerifiedExample(
         loopSpecWire: wire,
       };
 
-      const result = await generateCircularExactLength(options, {
-        generate: deps.generate,
-        extend: deps.extend,
-      });
-      const sequence = result.sequence;
+      const sequence = await deps.generate(options);
 
       const detection = deps.detect(sequence);
       if (

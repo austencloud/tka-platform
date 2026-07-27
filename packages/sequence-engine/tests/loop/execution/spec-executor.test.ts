@@ -10,6 +10,7 @@ import { describe, it, expect } from "vitest";
 import {
   executeLOOPSpec,
   executeSymmetricSpec,
+  getLOOPSpecExpansionMultiplier,
 } from "../../../src/loop/execution/spec-executor.js";
 import {
   LOOPComponent,
@@ -64,34 +65,34 @@ function makeStep(
   } as SequenceStep;
 }
 
-function makeStaticPositionSequence(beats = 1): SequenceStep[] {
-  const steps: SequenceStep[] = [
+function makeStaticPositionSequence(stepCount = 1): SequenceStep[] {
+  const sequence: SequenceStep[] = [
     makeStep(0, "alpha1", "alpha1",
       { startLocation: "s", endLocation: "s" },
       { startLocation: "n", endLocation: "n" }, null),
   ];
-  for (let i = 1; i <= beats; i++) {
-    steps.push(makeStep(i, "alpha1", "alpha1",
+  for (let i = 1; i <= stepCount; i++) {
+    sequence.push(makeStep(i, "alpha1", "alpha1",
       { startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" },
       { startLocation: "n", endLocation: "n", motionType: "pro", rotationDirection: "cw" },
     ));
   }
-  return steps;
+  return sequence;
 }
 
-function makeRotatableSequence(beats = 1): SequenceStep[] {
-  const steps: SequenceStep[] = [
+function makeRotatableSequence(stepCount = 1): SequenceStep[] {
+  const sequence: SequenceStep[] = [
     makeStep(0, "alpha1", "alpha1",
       { startLocation: "s", endLocation: "s" },
       { startLocation: "n", endLocation: "n" }, null),
   ];
-  for (let i = 1; i <= beats; i++) {
-    steps.push(makeStep(i, "alpha1", "alpha5",
+  for (let i = 1; i <= stepCount; i++) {
+    sequence.push(makeStep(i, "alpha1", "alpha5",
       { startLocation: "s", endLocation: "n", rotationDirection: "cw" },
       { startLocation: "n", endLocation: "s", rotationDirection: "cw" },
     ));
   }
-  return steps;
+  return sequence;
 }
 
 function deepClone(seq: SequenceStep[]): SequenceStep[] {
@@ -145,6 +146,42 @@ describe("executeLOOPSpec routing", () => {
   });
 });
 
+describe("getLOOPSpecExpansionMultiplier", () => {
+  it("counts ROTATED and the fused MIRRORED+SWAPPED stage separately", () => {
+    const prop: PropLOOPSpec = {
+      components: new Map<LOOPComponent, ComponentSpec>([
+        [LOOPComponent.ROTATED, { period: 2 }],
+        [LOOPComponent.MIRRORED, { period: 2 }],
+        [LOOPComponent.SWAPPED, { period: 2 }],
+      ]),
+    };
+
+    expect(getLOOPSpecExpansionMultiplier({ blue: prop, red: prop })).toBe(4);
+  });
+
+  it("counts ROTATED as absorbed by a same-period SWAPPED stage", () => {
+    const prop: PropLOOPSpec = {
+      components: new Map<LOOPComponent, ComponentSpec>([
+        [LOOPComponent.ROTATED, { period: 2 }],
+        [LOOPComponent.SWAPPED, { period: 2 }],
+      ]),
+    };
+
+    expect(getLOOPSpecExpansionMultiplier({ blue: prop, red: prop })).toBe(2);
+  });
+
+  it("does not count overlay inversion as an expansion", () => {
+    const prop: PropLOOPSpec = {
+      components: new Map<LOOPComponent, ComponentSpec>([
+        [LOOPComponent.MIRRORED, { period: 2 }],
+        [LOOPComponent.INVERTED, { period: 4, mode: "overlay" }],
+      ]),
+    };
+
+    expect(getLOOPSpecExpansionMultiplier({ blue: prop, red: prop })).toBe(2);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Structural invariants (one representative type — all fuseable share FusedExecutor)
 // ---------------------------------------------------------------------------
@@ -152,29 +189,29 @@ describe("executeLOOPSpec routing", () => {
 describe("executeSymmetricSpec structural invariants", () => {
   it("period 2: length, step numbers, position + location chaining", () => {
     const spec = singleComponent(LOOPComponent.MIRRORED, 2);
-    const beats = 3;
-    const seq = makeStaticPositionSequence(beats);
+    const steps = 3;
+    const seq = makeStaticPositionSequence(steps);
     const result = executeSymmetricSpec(seq, spec);
 
-    expect(result.length).toBe(beats * 2 + 1);
+    expect(result.length).toBe(steps * 2 + 1);
     expect(result[0]!.stepNumber).toBe(0);
     expect(result[0]!.letter).toBeNull();
     assertStructuralInvariants(result);
   });
 
-  it("period 4: length and invariants hold with multi-beat partial", () => {
+  it("period 4: length and invariants hold with multi-step partial", () => {
     const spec: PropLOOPSpec = {
       components: new Map([[LOOPComponent.MIRRORED, { period: 4 }]]),
     };
-    const beats = 3;
-    const seq = makeStaticPositionSequence(beats);
+    const steps = 3;
+    const seq = makeStaticPositionSequence(steps);
     const result = executeSymmetricSpec(seq, spec);
 
-    expect(result.length).toBe(beats * 4 + 1);
+    expect(result.length).toBe(steps * 4 + 1);
     assertStructuralInvariants(result);
   });
 
-  it("single-beat partial at period 2", () => {
+  it("single-step partial at period 2", () => {
     const spec = singleComponent(LOOPComponent.INVERTED, 2);
     const result = executeSymmetricSpec(makeStaticPositionSequence(1), spec);
     expect(result.length).toBe(3);
@@ -202,9 +239,53 @@ describe("executeSymmetricSpec ROTATED stage routing", () => {
       ]),
     };
     const result = executeSymmetricSpec(makeRotatableSequence(1), spec);
-    // ROTATED doubles → 2 beats, MIRRORED doubles → 4 beats + start = 5
+    // ROTATED doubles → 2 steps, MIRRORED doubles → 4 steps + start = 5
     expect(result.length).toBe(5);
     assertStructuralInvariants(result);
+  });
+
+  it("ROTATED + MIRRORED + SWAPPED preserves and swaps the seed turn tuples", () => {
+    const spec: PropLOOPSpec = {
+      components: new Map<LOOPComponent, ComponentSpec>([
+        [LOOPComponent.ROTATED, { period: 2 }],
+        [LOOPComponent.MIRRORED, { period: 2 }],
+        [LOOPComponent.SWAPPED, { period: 2 }],
+      ]),
+    };
+    const seq = makeRotatableSequence(4);
+    const seedTurns = [
+      { blue: 1, red: 0 },
+      { blue: 1, red: 1 },
+      { blue: 0, red: 1 },
+      { blue: 1, red: 0 },
+    ];
+
+    for (let index = 0; index < seedTurns.length; index++) {
+      const turns = seedTurns[index]!;
+      seq[index + 1]!.motions.blue.turns = turns.blue;
+      seq[index + 1]!.motions.red.turns = turns.red;
+    }
+
+    const result = executeSymmetricSpec(seq, spec);
+    expect(result).toHaveLength(17);
+
+    for (let step = 1; step <= 4; step++) {
+      expect(result[step + 4]!.motions.blue.turns).toBe(
+        result[step]!.motions.blue.turns,
+      );
+      expect(result[step + 4]!.motions.red.turns).toBe(
+        result[step]!.motions.red.turns,
+      );
+    }
+
+    for (let step = 1; step <= 8; step++) {
+      expect(result[step + 8]!.motions.blue.turns).toBe(
+        result[step]!.motions.red.turns,
+      );
+      expect(result[step + 8]!.motions.red.turns).toBe(
+        result[step]!.motions.blue.turns,
+      );
+    }
   });
 
   it("ROTATED + SWAP: stage skipped (implicit rotation in FusedExecutor)", () => {

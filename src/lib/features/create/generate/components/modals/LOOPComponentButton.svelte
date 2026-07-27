@@ -6,6 +6,7 @@ Shows description in Quick Apply mode, compact in Build Combo mode
 <script lang="ts">
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import type { LOOPComponentInfo } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import type { Snippet } from "svelte";
 
   let {
     componentInfo,
@@ -15,6 +16,11 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     isLocked = false,
     showDescription = false,
     compactOnMobile = false,
+    isExpanded = false,
+    expandedContent,
+    expandedContentId,
+    showConfigureAction = false,
+    onConfigure,
     onClick,
   } = $props<{
     componentInfo: LOOPComponentInfo;
@@ -26,6 +32,13 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     showDescription?: boolean;
     /** Keep list detail on desktop, then use the compact grid treatment on phones. */
     compactOnMobile?: boolean;
+    /** Keep component-specific controls visually attached to their card. */
+    isExpanded?: boolean;
+    expandedContent?: Snippet;
+    expandedContentId?: string;
+    /** Separate settings affordance for compact mobile picker tiles. */
+    showConfigureAction?: boolean;
+    onConfigure?: () => void;
     onClick: () => void;
   }>();
 
@@ -36,38 +49,46 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   const color = $derived(componentInfo.color);
 </script>
 
-<button
-  class="loop-component-button"
-  class:selected={isSelected}
-  class:multi-select={isMultiSelectMode}
-  class:with-description={showDescription}
-  class:compact-on-mobile={compactOnMobile}
-  class:locked={isLocked}
-  onclick={onClick}
-  disabled={isDisabled}
+<div
+  class="loop-component-shell"
+  class:expanded={isExpanded && !!expandedContent}
+  class:with-configure-action={showConfigureAction}
+  data-component={componentInfo.component}
+  data-expanded={isExpanded}
   style="--component-color: {color};"
-  aria-label="{label} - {description} - {isDisabled
-    ? 'not compatible with current selection'
-    : isLocked
-      ? 'locked, sign up to unlock'
-      : isSelected
-        ? 'selected'
-        : 'not selected'}"
 >
-  <div class="button-content">
-    <div class="loop-component-icon">
-      <FontAwesomeIcon {icon} size="1em" />
+  <button
+    class="loop-component-button"
+    class:selected={isSelected}
+    class:multi-select={isMultiSelectMode}
+    class:with-description={showDescription}
+    class:compact-on-mobile={compactOnMobile}
+    class:locked={isLocked}
+    onclick={onClick}
+    disabled={isDisabled}
+    aria-expanded={expandedContent ? isExpanded : undefined}
+    aria-controls={expandedContent ? expandedContentId : undefined}
+    aria-label="{label} - {description} - {isDisabled
+      ? 'not compatible with current selection'
+      : isLocked
+        ? 'locked, sign up to unlock'
+        : isSelected
+          ? 'selected'
+          : 'not selected'}"
+  >
+    <div class="button-content">
+      <div class="loop-component-icon">
+        <FontAwesomeIcon {icon} size="1em" />
+      </div>
+      <div class="text-content">
+        <span class="loop-component-label">{label}</span>
+        {#if showDescription}
+          <span class="loop-component-description">{description}</span>
+        {/if}
+      </div>
     </div>
-    <div class="text-content">
-      <span class="loop-component-label">{label}</span>
-      {#if showDescription}
-        <span class="loop-component-description">{description}</span>
-      {/if}
-    </div>
-  </div>
 
-  {#if isSelected}
-    <div class="check-badge">
+    <div class="check-badge" class:visible={isSelected} aria-hidden="true">
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -77,19 +98,75 @@ Shows description in Quick Apply mode, compact in Build Combo mode
         <polyline points="6,12 10,16 18,8"></polyline>
       </svg>
     </div>
-  {:else if isLocked}
-    <div class="lock-badge" aria-hidden="true">
-      <FontAwesomeIcon icon="fas fa-lock" size="0.7em" />
+
+    {#if isLocked && !isSelected}
+      <div class="lock-badge" aria-hidden="true">
+        <FontAwesomeIcon icon="fas fa-lock" size="0.7em" />
+      </div>
+    {/if}
+  </button>
+
+  {#if showConfigureAction && onConfigure}
+    <button
+      type="button"
+      class="configure-button"
+      data-configure-component={componentInfo.component}
+      onclick={onConfigure}
+      aria-label="Configure {label}"
+    >
+      <span class="configure-button-visual" aria-hidden="true">
+        <FontAwesomeIcon icon="fas fa-sliders" size="0.85em" />
+      </span>
+    </button>
+  {/if}
+
+  {#if expandedContent}
+    <div
+      class="component-expansion-clip"
+      class:open={isExpanded}
+      aria-hidden={!isExpanded}
+      inert={!isExpanded ? true : undefined}
+    >
+      <div class="component-expansion-crop">
+        <div class="component-expansion" id={expandedContentId}>
+          {@render expandedContent()}
+        </div>
+      </div>
     </div>
   {/if}
-</button>
+</div>
 
 <style>
+  .loop-component-shell {
+    --expansion-duration: var(
+      --loop-expansion-duration,
+      var(--duration-dramatic)
+    );
+    --expansion-easing: var(--loop-expansion-easing, var(--ease-out));
+
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    transition:
+      background var(--expansion-duration) var(--expansion-easing),
+      border-color var(--expansion-duration) var(--expansion-easing),
+      box-shadow var(--expansion-duration) var(--expansion-easing);
+    position: relative;
+  }
+
   .loop-component-button {
     position: relative;
     display: flex;
+    flex: 1 1 64px;
     align-items: center;
     justify-content: center;
+    min-height: 64px;
     padding: 12px;
 
     background: color-mix(
@@ -102,9 +179,83 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     border-radius: 12px;
     cursor: pointer;
     color: var(--theme-text, white);
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--expansion-duration) var(--expansion-easing),
+      border-color var(--expansion-duration) var(--expansion-easing),
+      border-radius var(--expansion-duration) var(--expansion-easing),
+      box-shadow var(--expansion-duration) var(--expansion-easing),
+      transform var(--duration-normal) var(--expansion-easing),
+      opacity var(--duration-normal) ease,
+      filter var(--duration-normal) ease;
     width: 100%;
-    height: 100%;
+    height: auto;
+  }
+
+  /* Component-specific choices belong to the component that owns them. The
+     outer shell keeps one continuous card while its button remains a valid
+     standalone control (interactive children never nest inside a button). */
+  .loop-component-shell.expanded {
+    background: color-mix(
+      in srgb,
+      var(--component-color) 38%,
+      var(--theme-panel-bg, rgba(30, 30, 50, 0.95))
+    );
+    border-color: var(--component-color);
+    box-shadow:
+      inset 0 0 0 2px
+        color-mix(in srgb, var(--component-color) 65%, transparent),
+      0 0 20px color-mix(in srgb, var(--component-color) 45%, transparent);
+  }
+
+  .loop-component-shell.expanded .loop-component-button {
+    background: transparent;
+    border-color: transparent;
+    border-radius: 10px 10px 0 0;
+    box-shadow: none;
+  }
+
+  .loop-component-shell.expanded .loop-component-button:hover {
+    background: color-mix(in srgb, var(--component-color) 16%, transparent);
+    border-color: transparent;
+    transform: none;
+  }
+
+  .loop-component-shell.expanded .loop-component-button:focus-visible {
+    outline-color: var(--component-color);
+    outline-offset: -3px;
+  }
+
+  .component-expansion {
+    padding: 0 10px 10px;
+  }
+
+  /* The controls stay mounted so opening and closing can share one smooth
+     height animation without dropping focus state or rebuilding snippets. */
+  .component-expansion-clip {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      grid-template-rows var(--expansion-duration) var(--expansion-easing),
+      opacity var(--duration-fast) ease,
+      visibility 0s linear var(--expansion-duration);
+  }
+
+  .component-expansion-clip.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transition:
+      grid-template-rows var(--expansion-duration) var(--expansion-easing),
+      opacity var(--duration-fast) ease var(--duration-instant),
+      visibility 0s;
+  }
+
+  .component-expansion-crop {
+    min-height: 0;
+    overflow: hidden;
   }
 
   .loop-component-button:hover {
@@ -253,6 +404,17 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transform: scale(0.72);
+    pointer-events: none;
+    transition:
+      opacity var(--duration-normal) var(--expansion-easing),
+      transform var(--expansion-duration) var(--expansion-easing);
+  }
+
+  .check-badge.visible {
+    opacity: 1;
+    transform: scale(1);
   }
 
   .check-badge svg {
@@ -261,7 +423,72 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     color: white;
   }
 
-  @media (max-width: 767px) {
+  /* The settings control is a sibling of the selection button, never an
+     interactive child inside it. Its 44px hit area surrounds a compact visual
+     badge so the tile stays readable on narrow phones. */
+  .configure-button {
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    right: 0;
+    display: none;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--component-color);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .configure-button-visual {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--component-color) 75%, white 25%);
+    border-radius: 50%;
+    background: color-mix(
+      in srgb,
+      var(--component-color) 28%,
+      var(--theme-panel-bg, #18152a)
+    );
+    box-shadow: 0 0 8px
+      color-mix(in srgb, var(--component-color) 55%, transparent);
+    transition:
+      transform var(--duration-fast) var(--ease-out),
+      background var(--duration-fast) ease;
+  }
+
+  .configure-button:hover .configure-button-visual,
+  .configure-button:focus-visible .configure-button-visual {
+    transform: scale(1.08);
+    background: color-mix(
+      in srgb,
+      var(--component-color) 46%,
+      var(--theme-panel-bg, #18152a)
+    );
+  }
+
+  .configure-button:focus-visible {
+    outline: 2px solid var(--component-color);
+    outline-offset: -4px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 768px) {
+    .configure-button {
+      display: flex;
+    }
+
+    .loop-component-shell.with-configure-action .check-badge {
+      display: none;
+    }
+
     .loop-component-button.compact-on-mobile .button-content {
       flex-direction: column;
       align-items: center;
@@ -285,9 +512,37 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     }
   }
 
+  @media (min-width: 769px) and (max-width: 1023px) {
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .configure-button {
+      display: flex;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .loop-component-shell.with-configure-action
+      .check-badge {
+      display: none;
+    }
+  }
+
+  @media (min-width: 769px) and (max-height: 700px) {
+    :global(.loop-drawer-sheet[data-placement="right"]) .configure-button {
+      display: flex;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .loop-component-shell.with-configure-action
+      .check-badge {
+      display: none;
+    }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .loop-component-button {
+    .loop-component-shell,
+    .loop-component-button,
+    .component-expansion-clip,
+    .component-expansion-clip.open,
+    .check-badge {
       transition: none;
     }
     .loop-component-button:hover,

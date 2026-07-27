@@ -19,6 +19,30 @@ import {
   QUARTER_POSITION_MAP_CCW,
 } from "./circular-position-maps.js";
 
+/**
+ * The four reflection axes of the eight-point grid.
+ *
+ * Grid mode decides which locations a sequence uses. It does not limit which
+ * reflection axes are available.
+ */
+export const REFLECTION_AXES = [
+  "north-south",
+  "east-west",
+  "northeast-southwest",
+  "northwest-southeast",
+] as const;
+
+export type ReflectionAxis = (typeof REFLECTION_AXES)[number];
+
+export const DEFAULT_MIRRORED_AXIS: ReflectionAxis = "north-south";
+export const DEFAULT_FLIPPED_AXIS: ReflectionAxis = "east-west";
+
+export function isReflectionAxis(value: unknown): value is ReflectionAxis {
+  return (
+    typeof value === "string" &&
+    (REFLECTION_AXES as readonly string[]).includes(value)
+  );
+}
 
 /**
  * Mirrors positions vertically across the center horizontal axis (flips east/west).
@@ -114,6 +138,48 @@ export const HORIZONTAL_MIRROR_LOCATION_MAP: Record<string, string> = {
   c: "c",
 };
 
+/**
+ * Reflects locations across the NE-SW diagonal.
+ */
+export const NORTHEAST_SOUTHWEST_REFLECTION_LOCATION_MAP: Record<
+  string,
+  string
+> = {
+  n: "e", e: "n", s: "w", w: "s",
+  ne: "ne", sw: "sw", nw: "se", se: "nw",
+  c: "c",
+};
+
+/**
+ * Reflects locations across the NW-SE diagonal.
+ */
+export const NORTHWEST_SOUTHEAST_REFLECTION_LOCATION_MAP: Record<
+  string,
+  string
+> = {
+  n: "w", w: "n", s: "e", e: "s",
+  nw: "nw", se: "se", ne: "sw", sw: "ne",
+  c: "c",
+};
+
+/**
+ * Canonical location maps for every reflection axis.
+ */
+export const REFLECTION_LOCATION_MAPS: Readonly<
+  Record<ReflectionAxis, Readonly<Record<string, string>>>
+> = {
+  "north-south": VERTICAL_MIRROR_LOCATION_MAP,
+  "east-west": HORIZONTAL_MIRROR_LOCATION_MAP,
+  "northeast-southwest": NORTHEAST_SOUTHWEST_REFLECTION_LOCATION_MAP,
+  "northwest-southeast": NORTHWEST_SOUTHEAST_REFLECTION_LOCATION_MAP,
+};
+
+export function reflectLocation(
+  location: string,
+  axis: ReflectionAxis
+): string | null {
+  return REFLECTION_LOCATION_MAPS[axis][location] ?? null;
+}
 
 /**
  * Maps positions to their color-swapped equivalents.

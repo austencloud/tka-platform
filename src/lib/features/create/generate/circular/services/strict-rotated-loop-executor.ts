@@ -3,7 +3,7 @@
  *
  * Executes the strict rotated LOOP (Linked Orbital Offset Pattern) by:
  * 1. Taking a partial sequence (first half or quarter)
- * 2. Applying rotational transformations to each beat
+ * 2. Applying rotational transformations to each step
  * 3. Generating the remaining steps to complete the circular pattern
  *
  * The rotation works by:
@@ -88,7 +88,7 @@ export class StrictRotatedLOOPExecutor {
   private _validateSequence(sequence: StepData[], period: Period): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -127,7 +127,7 @@ export class StrictRotatedLOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat
+   * Create a new LOOP entry by transforming a previous step
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -136,7 +136,7 @@ export class StrictRotatedLOOPExecutor {
     finalIntendedLength: number,
     period: Period
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -150,7 +150,7 @@ export class StrictRotatedLOOPExecutor {
       previousStep
     );
 
-    // Create the new beat with transformed attributes
+    // Create the new step with transformed attributes
     const newStep: StepData = {
       ...previousMatchingStep,
       id: `step-${stepNumber}`,
@@ -183,7 +183,7 @@ export class StrictRotatedLOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping
+   * Get the previous matching step using index mapping
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -265,7 +265,7 @@ export class StrictRotatedLOOPExecutor {
 
     if (!blueMotion || !redMotion) {
       throw new Error(
-        "Previous matching beat must have both blue and red motions"
+        "Previous matching step must have both blue and red motions"
       );
     }
 
@@ -302,7 +302,7 @@ export class StrictRotatedLOOPExecutor {
   }
 
   /**
-   * Create transformed motion data for the new beat
+   * Create transformed motion data for the new step
    */
   private _createTransformedMotion(
     color: MotionColor,

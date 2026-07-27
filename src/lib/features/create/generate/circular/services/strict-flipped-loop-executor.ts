@@ -4,13 +4,13 @@
  * Supports both halved (period 2) and quartered (period 4) flipped LOOPs.
  *
  * Period 2 (halved):
- *   Q1 (beats 1..N)     - partial
- *   Q2 (beats N+1..2N)  - horizontal flip (N↔S) of Q1
+ *   Q1 (steps 1..N)     - partial
+ *   Q2 (steps N+1..2N)  - horizontal flip (N↔S) of Q1
  *
  * Period 4 (quartered):
  *   Q1, Q2 as above, plus
- *   Q3 (beats 2N+1..3N) - copy of Q1 with new start orientation
- *   Q4 (beats 3N+1..4N) - horizontal flip of Q3
+ *   Q3 (steps 2N+1..3N) - copy of Q1 with new start orientation
+ *   Q4 (steps 3N+1..4N) - horizontal flip of Q3
  *
  * See StrictMirroredLOOPExecutor for a full explanation of the period-4
  * mechanism.
@@ -69,7 +69,7 @@ export class StrictFlippedLOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 

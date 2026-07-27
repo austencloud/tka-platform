@@ -2,7 +2,7 @@
  * Per-Type LOOP Closure Constraints (scoped skeletons)
  *
  * Four closure constraints for the non-ROTATED LOOP types. Each asserts
- * that beat `i + length/period` is the transformation-of beat `i` for the
+ * that step `i + length/period` is the transformation-of step `i` for the
  * claimed transformation type. Beam search can plug these in as hard
  * constraints if closure ever needs to be enforced during search rather
  * than via the post-hoc spec-executor / FusedExecutor pipeline.
@@ -59,7 +59,7 @@ abstract class PerTypeClosureConstraint
           return {
             score: 0,
             satisfied: false,
-            reason: `pair at beat ${i + 1} ↔ beat ${paired + 1} fails ${this.type}`,
+            reason: `pair at step ${i + 1} ↔ step ${paired + 1} fails ${this.type}`,
           };
         }
       }
@@ -69,7 +69,7 @@ abstract class PerTypeClosureConstraint
 
   /**
    * Check whether `paired` is the transformation-of `base` for this type.
-   * @param pass - Which pass the paired beat is in (1, 2, or 3). Some
+   * @param pass - Which pass the paired step is in (1, 2, or 3). Some
    *   transformations compose per-pass (e.g., SWAPPED alternates).
    */
   protected abstract checkPair(
@@ -81,14 +81,14 @@ abstract class PerTypeClosureConstraint
 
 export class MirroredClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.MIRRORED_CLOSURE;
-  readonly description = `Beat i + L/${this.period} is the vertical-mirror of beat i`;
+  readonly description = `Step i + L/${this.period} is the vertical-mirror of step i`;
 
   protected checkPair(
     base: PictographData,
     paired: PictographData,
     _pass: number
   ): boolean {
-    // Minimal structural check: the two beats reference the same letter in
+    // Minimal structural check: the two steps reference the same letter in
     // mirrored form. Full motion-level validation lives in the mirror
     // position maps; this skeleton trusts that the beam-search candidate
     // generation already honors those maps when closure is requested.
@@ -101,7 +101,7 @@ export class MirroredClosureConstraint extends PerTypeClosureConstraint {
 
 export class FlippedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.FLIPPED_CLOSURE;
-  readonly description = `Beat i + L/${this.period} is the horizontal-flip of beat i`;
+  readonly description = `Step i + L/${this.period} is the horizontal-flip of step i`;
 
   protected checkPair(): boolean {
     return true;
@@ -110,7 +110,7 @@ export class FlippedClosureConstraint extends PerTypeClosureConstraint {
 
 export class SwappedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.SWAPPED_CLOSURE;
-  readonly description = `Beat i + L/${this.period} has blue/red swapped from beat i`;
+  readonly description = `Step i + L/${this.period} has blue/red swapped from step i`;
 
   protected checkPair(
     base: PictographData,
@@ -137,7 +137,7 @@ export class SwappedClosureConstraint extends PerTypeClosureConstraint {
 
 export class InvertedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.INVERTED_CLOSURE;
-  readonly description = `Beat i + L/${this.period} is the motion-inversion of beat i`;
+  readonly description = `Step i + L/${this.period} is the motion-inversion of step i`;
 
   protected checkPair(
     base: PictographData,

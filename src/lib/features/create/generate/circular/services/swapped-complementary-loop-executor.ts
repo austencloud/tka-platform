@@ -63,7 +63,7 @@ export class SwappedInvertedLOOPExecutor {
     let lastStep = sequence[sequence.length - 1]!;
     const nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two steps in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from step 2)
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
       const nextStep = this._createNewLOOPEntry(
@@ -91,7 +91,7 @@ export class SwappedInvertedLOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -114,7 +114,7 @@ export class SwappedInvertedLOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with SWAP + INVERTED
+   * Create a new LOOP entry by transforming a previous step with SWAP + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -122,7 +122,7 @@ export class SwappedInvertedLOOPExecutor {
     stepNumber: number,
     finalIntendedLength: number
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -132,9 +132,9 @@ export class SwappedInvertedLOOPExecutor {
     // Get inverted letter
     const invertedLetter = this._getInvertedLetter(previousMatchingStep);
 
-    // Create the new beat with swapped and inverted attributes
-    // KEY: Blue gets attributes from Red's matching beat (SWAP)
-    //      Red gets attributes from Blue's matching beat (SWAP)
+    // Create the new step with swapped and inverted attributes
+    // KEY: Blue gets attributes from Red's matching step (SWAP)
+    //      Red gets attributes from Blue's matching step (SWAP)
     //      Then motion types and rotations are flipped (INVERTED)
     const newStep: StepData = {
       ...previousMatchingStep,
@@ -142,7 +142,7 @@ export class SwappedInvertedLOOPExecutor {
       stepNumber,
       letter: invertedLetter, // INVERTED
       startPosition: previousStep.endPosition ?? null,
-      endPosition: previousMatchingStep.endPosition ?? null, // Same as matching beat (returns to start), handle undefined
+      endPosition: previousMatchingStep.endPosition ?? null, // Same as matching step (returns to start), handle undefined
       motions: {
         // SWAP: Blue does what Red did, with inverted transformation
         [MotionColor.BLUE]: this._createSwappedInvertedMotion(
@@ -173,7 +173,7 @@ export class SwappedInvertedLOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping (halved pattern)
+   * Get the previous matching step using index mapping (halved pattern)
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -222,7 +222,7 @@ export class SwappedInvertedLOOPExecutor {
     const letter = previousMatchingStep.letter;
 
     if (!letter) {
-      throw new Error("Previous matching beat must have a letter");
+      throw new Error("Previous matching step must have a letter");
     }
 
     const invertedLetter = getInvertedLetter(letter as string) as Letter;
@@ -231,7 +231,7 @@ export class SwappedInvertedLOOPExecutor {
   }
 
   /**
-   * Create swapped-inverted motion data for the new beat
+   * Create swapped-inverted motion data for the new step
    * Combines color swapping with inverted transformations
    */
   private _createSwappedInvertedMotion(
@@ -244,7 +244,7 @@ export class SwappedInvertedLOOPExecutor {
     const oppositeColor =
       color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
 
-    // For CONTINUITY: Always use same color from previous beat
+    // For CONTINUITY: Always use same color from previous step
     // (Blue continues from where Blue ended, Red continues from where Red ended)
     // The swap affects which PATTERN to follow, not where to continue from
     const previousMotion = previousStep.motions[color];

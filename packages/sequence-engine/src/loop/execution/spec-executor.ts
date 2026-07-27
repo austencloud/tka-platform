@@ -99,6 +99,53 @@ export function executeLOOPSpec(
 }
 
 /**
+ * Return the number of output steps produced per seed step by a LOOPSpec.
+ *
+ * This follows the executor's real stage plan:
+ * - same-period fuseable components share one expansion;
+ * - ROTATED gets its own expansion only when it is not absorbed by a
+ *   same-period SWAPPED/INVERTED group;
+ * - overlay components do not change length.
+ */
+export function getLOOPSpecExpansionMultiplier(spec: LOOPSpec): number {
+  const blueSpec = spec.blue ?? EMPTY_PROP_SPEC;
+  const redSpec = spec.red ?? EMPTY_PROP_SPEC;
+
+  if (!specsAreEqual(blueSpec, redSpec)) {
+    throw new Error(
+      "Asymmetric LOOPSpec expansion is not yet implemented. " +
+        "A single seed-length multiplier requires symmetric execution.",
+    );
+  }
+
+  if (blueSpec.components.size === 0) return 1;
+
+  // RewoundExecutor appends one reversed copy. Its legacy period parameter is
+  // accepted for compatibility but does not alter the two-pass execution.
+  if (blueSpec.components.has(LOOPComponent.REWOUND)) return 2;
+
+  let multiplier = 1;
+  const rotated = blueSpec.components.get(LOOPComponent.ROTATED);
+  if (rotated) {
+    const fuseableAtSamePeriod = hasFuseableAtPeriod(blueSpec, rotated.period);
+    const mirrorOrFlipAtSamePeriod = hasMirrorOrFlipAtPeriod(
+      blueSpec,
+      rotated.period,
+    );
+
+    if (!fuseableAtSamePeriod || mirrorOrFlipAtSamePeriod) {
+      multiplier *= rotated.period === 4 ? 4 : 2;
+    }
+  }
+
+  for (const period of groupFuseableByPeriod(blueSpec).keys()) {
+    multiplier *= period;
+  }
+
+  return multiplier;
+}
+
+/**
  * True when at least one FUSEABLE component exists at the given period.
  * Overlay-mode components are excluded — they never join a fused-expand
  * group (they run as a separate in-place stage after everything else), so

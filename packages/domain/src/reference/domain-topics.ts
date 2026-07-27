@@ -383,35 +383,52 @@ A **LOOP** is a sequence that returns to its starting position (circular) and fo
 
 | Type | Definition |
 |------|------------|
-| **Strict LOOP** | Single transformation applies uniformly to ALL beat pairs |
+| **Strict LOOP** | Single transformation applies uniformly to ALL step pairs |
 | **Compound LOOP** | Different transformations at different intervals |
 | **Modular LOOP** | Multiple distinct patterns at the SAME interval |
 | **Freeform** | Circular but no recognizable pattern |
 
-### Six Transformation Components
+### Transformation Components
 
 | Component | What it does |
 |-----------|-------------|
 | **Rotated** | Positions continue rotating same direction (180 or 90 degree slices) |
-| **Mirrored** | Left-right swap across vertical axis |
-| **Flipped** | Top-bottom swap across horizontal axis |
+| **Reflection** | Reflects locations across one of four axes. Legacy **Mirrored** means N-S; legacy **Flipped** means E-W |
 | **Swapped** | Blue<->Red hand roles swap |
 | **Inverted** | Pro<->Anti motion types swap |
 | **Rewound** | Second half plays in reverse (temporal, not geometric) |
 
+### Four Reflection Axes
+
+Reflection axis and grid mode are independent choices. Diamond, Box, and Skewed sequences can use any of these axes:
+
+| Axis | Location mapping |
+|------|------------------|
+| **N-S** | E↔W, NE↔NW, SE↔SW; N and S stay fixed |
+| **E-W** | N↔S, NE↔SE, NW↔SW; E and W stay fixed |
+| **NE-SW** | N↔E, S↔W, NW↔SE; NE and SW stay fixed |
+| **NW-SE** | N↔W, S↔E, NE↔SW; NW and SE stay fixed |
+
+Every reflection is its own inverse. Applying the same axis twice returns every location home.
+
+Two familiar names remain useful in speech: **Mirrored** is N-S reflection and **Flipped** is E-W reflection. They are axis nicknames, not more legitimate operations than the two diagonal reflections.
+
+Cross-grid examples:
+- Box Gamma: Blue at SE and Red at SW reflects across E-W to Blue at NE and Red at NW.
+- Diamond Gamma: Blue at E and Red at S reflects across NE-SW to Blue at N and Red at W.
+
 ### Transformation Domains: Position vs Orientation
 
-A component is **orientation-domain** only if it is the identity on position space — it never moves any beat's grid position. By the fixed-point sets, exactly ONE qualifies:
+A component is **orientation-domain** only if it is the identity on position space — it never moves any step's grid position. By the fixed-point sets, exactly ONE qualifies:
 
-- **Inverted** — position-identity at ALL positions. \`applyOverlayInversion\` flips motionType (pro↔anti) and rotationDirection and leaves hand locations untouched on every beat, so an Inverted LOOP repeats its positions identically each pass; only the prop's orientation cycles. The unique **pure orientation-domain** transform (verified: inverted seeds through gamma/alpha still pin).
-- **Rotated / Mirrored / Flipped / Swapped** are all **position-moving**, each the identity only on a subset:
+- **Inverted** — position-identity at ALL positions. \`applyOverlayInversion\` flips motionType (pro↔anti) and rotationDirection and leaves hand locations untouched on every step, so an Inverted LOOP repeats its positions identically each pass; only the prop's orientation cycles. The unique **pure orientation-domain** transform (verified: inverted seeds through gamma/alpha still pin).
+- **Rotated / Reflection / Swapped** are all **position-moving**, each the identity only on a subset:
   - Rotated — no L1–L4 fixed point (always the inner layer).
-  - Mirrored — fixed at alpha1/alpha5/beta1/beta5.
-  - Flipped — fixed at alpha3/alpha7/beta3/beta7.
-  - Swapped — fixed at beta (+terra1); it reflects via hand identity (\`SWAPPED_POSITION_MAP\`: alpha7↔alpha3, gamma9↔gamma3), so it MOVES any non-beta beat.
+  - Reflection — fixed points depend on the selected axis.
+  - Swapped — fixed at beta (+terra1); it reflects via hand identity (\`SWAPPED_POSITION_MAP\`: alpha7↔alpha3, gamma9↔gamma3), so it MOVES any non-beta step.
 - **Rewound** — temporal (second half reversed), neither space.
 
-A LOOP is positionally PINNED (a "pure orientation LOOP", where the prop's orientation sweep IS the content) only when its transform is the identity on EVERY beat it touches: **always for Inverted**, and for Swapped ONLY when the entire seed stays within beta (e.g. \`GIGI\`, beta1↔beta7). A beta-STARTED swap loop that wanders to alpha/gamma is NOT pinned — swap moves those beats (\`DLDL\`: a beta1→alpha7 beat becomes beta1→alpha3 in the second pass). Pinning is per-beat, not per-start-position.
+A LOOP is positionally PINNED (a "pure orientation LOOP", where the prop's orientation sweep IS the content) only when its transform is the identity on EVERY step it touches: **always for Inverted**, and for Swapped ONLY when the entire seed stays within beta (e.g. \`GIGI\`, beta1↔beta7). A beta-STARTED swap loop that wanders to alpha/gamma is NOT pinned — swap moves those steps (\`DLDL\`: a beta1→alpha7 step becomes beta1→alpha3 in the second pass). Pinning is per-step, not per-start-position.
 
 ---
 
@@ -456,102 +473,40 @@ Example: \`SWAPPED + MIRRORED/INVERTED\`
 
 The flat label {MIRRORED, SWAPPED, INVERTED} doesn't tell you which transformation came first. The compositional notation preserves construction order.
 
-### The Fixed-Point Theorem
+### Direct Closure and Wrapped Blocks
 
-For the composition INNER + OUTER:
-- INNER produces a circular sub-pattern: starts at S, ends at S
-- OUTER takes that sub-pattern and applies a transformation to double it
-- The outer half must start at S (continuity) and end at S (circularity)
+Do not use a fixed-point test as a universal LOOP feasibility rule.
 
-**Therefore: T(S) = S for any outer transform T.** The starting position must be a **fixed point** of the outer transformation.
+For a direct reflection, a seed starts at S and ends at R(S). Appending the reflected seed starts at R(S) and ends at R(R(S)) = S. No fixed point is required. This is the construction used by both cross-grid Gamma examples above.
 
-### Computed Fixed Points
-
-From the actual position maps in the codebase:
-
-| Transform | Fixed-point positions (can be OUTER from these) |
-|---|---|
-| **MIRROR (vertical)** | alpha1, alpha5, beta1, beta5 |
-| **FLIP (horizontal)** | alpha3, alpha7, beta3, beta7 |
-| **SWAP** | all beta (beta1-beta8) |
-| **ROTATE 180deg** | terra1 only (L5) |
-| **INVERTED** | ALL positions (doesn't change positions) |
-
-Swap is identity on beta because swapping two hands at the same grid location changes nothing positionally. This is why beta enables the most compositions.
-
-### Compound Outer Fixed Points
-
-Intersect the individual fixed-point sets:
-
-| Compound Outer | Valid Starting Positions |
-|---|---|
-| MIRROR/INVERTED | alpha1, alpha5, beta1, beta5 |
-| FLIP/INVERTED | alpha3, alpha7, beta3, beta7 |
-| SWAP/INVERTED | all beta |
-| MIRROR/SWAP | beta1, beta5 only |
-| FLIP/SWAP | beta3, beta7 only |
-| MIRROR/FLIP | none (L1-4), terra1 (L5) |
-| MIRROR/SWAP/INVERTED | beta1, beta5 only |
-| FLIP/SWAP/INVERTED | beta3, beta7 only |
-
-### Rotation Is Always Inner
-
-**No standard L1-L4 grid position is a fixed point under 180deg rotation.**
-
-- alpha1 -> alpha5 (moves)
-- beta3 -> beta7 (moves)
-- gamma1 -> gamma5 (moves)
-- Only terra1 (both hands at center, L5) maps to itself
-
-ROTATE cannot be an outer transform from any standard position. It must be the innermost structural layer or standalone. This is a mathematical constraint, not a design choice.
-
-For ROTATE as INNER, the seed goes S -> ROTATE(S), which is always a different position, producing non-degenerate structure from any starting point.
-
-### Composability Matrix (from alpha1)
-
-| Composition | Inner valid? | Outer valid? | Overall |
-|---|---|---|---|
-| SWAP + MIRROR/INV | alpha1->alpha5 yes | MIRROR(alpha1)=alpha1 yes | **VALID** |
-| SWAP + FLIP/INV | alpha1->alpha5 yes | FLIP(alpha1)=alpha5 no | **BLOCKED** |
-| SWAP + INVERTED | alpha1->alpha5 yes | always yes | **VALID** |
-| ROTATE + SWAP | alpha1->alpha5 yes | SWAP(alpha1)=alpha5 no | **BLOCKED** |
-| ROTATE + MIRROR/INV | alpha1->alpha5 yes | MIRROR(alpha1)=alpha1 yes | **VALID** |
-| MIRROR/INV + SWAP | alpha1->alpha1 degenerate | SWAP(alpha1)=alpha5 no | **BLOCKED** |
-
-### Composability Matrix (from beta3)
-
-| Composition | Inner valid? | Outer valid? | Overall |
-|---|---|---|---|
-| SWAP + MIRROR/INV | beta3->beta3 degenerate | MIRROR(beta3)=beta7 no | **BLOCKED** |
-| ROTATE + SWAP | beta3->beta7 yes | SWAP(beta3)=beta3 yes | **VALID** |
-| ROTATE + FLIP/INV | beta3->beta7 yes | FLIP(beta3)=beta3 yes | **VALID** |
-| MIRROR/INV + SWAP | beta3->beta7 yes | SWAP(beta3)=beta3 yes | **VALID** |
+A fixed-point requirement applies only to a narrower construction: an already-closed block at S is copied through an absolute outer transform without translating its hand paths back onto the live seam. That literal wrapper needs T(S) = S. It does not prove that the same component combination is impossible under a direct or path-transported construction.
 
 ### Key Results
 
-1. **Order matters.** SWAP + MIRROR/INV (valid from alpha1) and MIRROR/INV + SWAP (valid from beta3, not alpha1) are different compositions. NOT interchangeable.
-2. **Beta is the universal connector.** All beta positions are SWAP fixed points. beta1/beta5 support MIRROR as outer. beta3/beta7 support FLIP as outer.
-3. **ROTATE is always the innermost layer.** Mathematical proof: no L1-L4 position is a 180deg rotation fixed point.
-4. **INVERTED is always free.** No positional constraint. Can be added to any outer transform via / without restricting valid starting positions.
-5. **Flat detection loses information.** The same component set can correspond to different compositional structures depending on starting position and construction order. Confirmed live: the flat loop type \`mirrored_swapped\` builds from BOTH beta1→beta1 (the MIRROR/SWAP simultaneous \`/\` composition) AND alpha1→alpha5 (the SWAP+MIRROR sequential \`+\` composition) — one label, two distinct constructions. Conversely, one built sequence can satisfy several component descriptions at once (a pure Rotated halved LOOP is also detectable as Rotated + Mirrored + Swapped, since 180° rotation ≡ mirror∘flip and, under hand symmetry, ≡ mirror+swap). The component labels are NOT orthogonal.`,
+1. **Grid mode and reflection axis are independent.** Never infer an axis from Diamond, Box, or Skewed mode.
+2. **Direct reflection closes by involution.** S→R(S), followed by its reflected copy, returns to S.
+3. **Order and construction matter.** Direct, simultaneous, sequential, and literal wrapped-block constructions are not interchangeable.
+4. **Inverted is position-free.** It adds no positional seam constraint.
+5. **Flat detection loses information.** The same net geometry can have different construction histories, and one sequence may satisfy several flat component descriptions. Store the reflection axis in the LOOPSpec instead of relabeling diagonal reflection as a rotated legacy mirror.`,
   },
 
   "caps-vs-loops": {
     title: "LOOP Transformation Algebra and CAPs vs LOOPs",
     content: `## LOOP Transformation Algebra
 
-LOOPs use six transformation components that operate on TKA words:
+LOOPs use composable transformations that operate on TKA words:
 
 | Transformation | What it does |
 |---------------|-------------|
 | **Rotated** | Positions continue rotating same direction (180 or 90 degree slices) |
-| **Mirrored** | Left-right swap across vertical axis |
-| **Flipped** | Top-bottom swap across horizontal axis |
+| **Reflection** | Reflects across N-S, E-W, NE-SW, or NW-SE. Legacy Mirrored means N-S; legacy Flipped means E-W |
 | **Swapped** | Blue<->Red hand roles swap |
 | **Inverted** | Pro<->Anti motion types swap |
 | **Rewound** | Second half plays in reverse |
 
-These are **composable** (apply mirror then flip = valid new transformation) and **invertible** (each is its own inverse -- mirror twice = original). This makes them a **finite transformation group** satisfying all four group axioms: closure, associativity, identity, and inverses.
+Reflection axis is independent of grid mode. Any Diamond, Box, or Skewed sequence can reflect across any of the four axes.
+
+These are **composable** and **invertible**. Every reflection is its own inverse: reflect twice across the same axis and every location returns home.
 
 "Algebraic" is the precise mathematical term. The LOOP transformations form a group action on the space of TKA words. Austen didn't study group theory; the structure emerged naturally from the design.
 
@@ -561,11 +516,11 @@ CAPs (Continuous Assembly Patterns) and LOOPs address the same need -- patterns 
 
 The deepest difference is the base unit:
 - **CAPs** compose per-hand trajectories (define left hand's path, define right hand's path, overlay them)
-- **LOOPs** compose per-beat snapshots (one letter = both hands simultaneously, combine letters into words)
+- **LOOPs** compose per-step snapshots (one letter = both hands simultaneously, combine letters into words)
 
 LOOPs are **speakable** -- say "DJ" and another person reproduces the movement. CAPs require describing each hand independently.
 
-The six LOOP transformations have no CAP equivalent. Charlie Cushing's 8-Step CAP is a positional exploration strategy. LOOP transformations are algebraic operations on words -- structurally different objects.
+The LOOP transformations have no CAP equivalent. Charlie Cushing's 8-Step CAP is a positional exploration strategy. LOOP transformations are algebraic operations on words -- structurally different objects.
 
 **Charlie's full system is not well enough understood** to make detailed comparative claims. His 10-part video series needs transcription before assuming limitations.
 
@@ -654,7 +609,7 @@ VTG **does** enumerate movement across three planes: **Wall** (W), **wHeel** (H)
 
 ### Lorq Nichols' Influence
 
-Lorq Nichols (Sir Lorq) created the Shape Matrix, Tech Tiles, 324 Patterns, 9 Flower Families, 144 Atomic Hybrids, the Book of P.H.A.T. (with Brian Thompson, David Cantor, and Noel Yee), and the 3 Planes System. His Shape Matrix -- a multiplication table cross-referencing left-hand and right-hand flower patterns -- is conceptually adjacent to TKA's per-beat encoding. Austen took Lorq's class in 2017.
+Lorq Nichols (Sir Lorq) created the Shape Matrix, Tech Tiles, 324 Patterns, 9 Flower Families, 144 Atomic Hybrids, the Book of P.H.A.T. (with Brian Thompson, David Cantor, and Noel Yee), and the 3 Planes System. His Shape Matrix -- a multiplication table cross-referencing left-hand and right-hand flower patterns -- is conceptually adjacent to TKA's per-step encoding. Austen took Lorq's class in 2017.
 
 ### The Downbeat Reference
 
@@ -695,9 +650,9 @@ Compound letters vary by variation:
 
 VTG starts with tog-same (G, H, I) because it feels grounded for beginners. TKA starts with split-same (A, B, C) because it's first in the systematic organization. Neither is "wrong."
 
-### Per-Hand vs Per-Beat Learning
+### Per-Hand vs Per-Step Learning
 
-VTG's per-hand decomposition (define left, then right, then combine) and TKA's per-beat unit (one letter = both hands) are different cognitive preferences. **Neither is "early" or "late," "beginner" or "advanced."** The Assembler tab bridges for per-hand thinkers.`,
+VTG's per-hand decomposition (define left, then right, then combine) and TKA's per-step unit (one letter = both hands) are different cognitive preferences. **Neither is "early" or "late," "beginner" or "advanced."** The Assembler tab bridges for per-hand thinkers.`,
   },
 
   "compound-letters": {
@@ -890,32 +845,32 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
 
 ### The Result
 
-Under the constraints Level 1 (0 turns), Diamond grid, Continuous rotation, Quartered Rotated LOOP, and starting from one of three canonical positions (alpha1, beta5, gamma11), there are exactly **64 valid 8-beat sequences per starting position** -- 192 total.
+Under the constraints Level 1 (0 turns), Diamond grid, Continuous rotation, Quartered Rotated LOOP, and starting from one of three canonical positions (alpha1, beta5, gamma11), there are exactly **64 valid 8-step sequences per starting position** -- 192 total.
 
 This is remarkable because:
-- Alpha has 13 available first-beat letters
-- Beta has 13 available first-beat letters
-- Gamma has 21 available first-beat letters
+- Alpha has 13 available first-step letters
+- Beta has 13 available first-step letters
+- Gamma has 21 available first-step letters
 
 Despite wildly different letter pools, the LOOP constraint produces **identical counts**. The three position families are combinatorially isomorphic.
 
 ### How Quartered Rotation Constrains
 
-A quartered rotated LOOP divides 8 beats into 4 quarters of 2 beats each:
-- **Q1 (beats 1-2):** Freely chosen seed
-- **Q2 (beats 3-4):** Q1 rotated 90° on the grid
-- **Q3 (beats 5-6):** Q1 rotated 180°
-- **Q4 (beats 7-8):** Q1 rotated 270°
+A quartered rotated LOOP divides 8 steps into 4 quarters of 2 steps each:
+- **Q1 (steps 1-2):** Freely chosen seed
+- **Q2 (steps 3-4):** Q1 rotated 90° on the grid
+- **Q3 (steps 5-6):** Q1 rotated 180°
+- **Q4 (steps 7-8):** Q1 rotated 270°
 
-90° rotation preserves the letter -- only grid positions and hand locations change. So the 8-beat word is the 2-beat seed repeated 4 times: seed AB becomes ABABABAB.
+90° rotation preserves the letter -- only grid positions and hand locations change. So the 8-step word is the 2-step seed repeated 4 times: seed AB becomes ABABABAB.
 
 For the LOOP to close, the seed's end position must equal rotatePos90(start). This is the key constraint that limits the space from billions of unconstrained paths down to 64.
 
 ### The 10 Hand-Path Families
 
-The 64 sequences decompose into 10 families based on the type pairing of beat 1 and beat 2:
+The 64 sequences decompose into 10 families based on the type pairing of step 1 and step 2:
 
-| Family | Beat 1 | Beat 2 | Count | Why |
+| Family | Step 1 | Step 2 | Count | Why |
 |--------|--------|--------|-------|-----|
 | Dual-Shift + Dash | Type 1 | Type 4 | 8 | 4 letter variants × 2 dash hand assignments |
 | Dual-Shift + Dual-Dash | Type 1 | Type 5 | 4 | 4 letter variants × 1 (symmetric) |
@@ -962,12 +917,12 @@ Groups of 3 vs 4 in the alphabet? Irrelevant at the LOOP level. Different positi
 
 ### Practical Application: The First Deck
 
-These 192 sequences (64 × 3 starting positions) form the complete **Level 1 Quartered Rotated LOOP Deck** -- the most accessible set of 8-beat circular sequences in TKA. Every sequence:
+These 192 sequences (64 × 3 starting positions) form the complete **Level 1 Quartered Rotated LOOP Deck** -- the most accessible set of 8-step circular sequences in TKA. Every sequence:
 - Uses 0 turns (Level 1)
 - Maintains continuous rotation (no reversals)
 - Has 4-fold rotational symmetry
 - Loops back to its starting position
-- Is fully determined by a 2-beat seed`,
+- Is fully determined by a 2-step seed`,
   },
 
   "symmetry-invariance": {
@@ -1041,7 +996,7 @@ In the codebase, PADS is not stored as an explicit priority list — the priorit
 
 ### Rotational Relationship: Same-Dot and Opp-Dot
 
-When **both** hands are rotating in a single beat (not just one), their rotation directions form either a **Same** or **Opp** relationship relative to each other. This is the **rotational relationship**, and the glyph notates it with a dot:
+When **both** hands are rotating in a single step (not just one), their rotation directions form either a **Same** or **Opp** relationship relative to each other. This is the **rotational relationship**, and the glyph notates it with a dot:
 
 - **Same-dot** (above the letter): both props rotate in the same direction — spoken "[Letter]-Same"
 - **Opp-dot** (below the letter): props rotate in opposite directions — spoken "[Letter]-Opp"

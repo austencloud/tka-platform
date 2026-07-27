@@ -3,7 +3,7 @@
  *
  * When propContinuity = "maximize", the beam search should never produce
  * a sequence where the rotation direction changes (cw→ccw or ccw→cw)
- * between consecutive non-noRotation beats.
+ * between consecutive non-noRotation steps.
  *
  * The old StepGenerationOrchestrator hard-filtered by rotation direction.
  * The new SequenceBuilder uses soft constraints + enrichment. This test

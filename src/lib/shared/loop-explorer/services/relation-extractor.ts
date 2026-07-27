@@ -3,8 +3,8 @@
  *
  * Exposes the engine's canonical pair-relation algebra
  * (`@tka/sequence-engine/loop` → `relationsForPair`) as
- * `{ beatA, beatB, transform }[]` for a generated sequence, so the
- * explanation pane can cite concrete beat pairs ("beat 9 = beat 1 rotated
+ * `{ stepA, stepB, transform }[]` for a generated sequence, so the
+ * explanation pane can cite concrete step pairs ("step 9 = step 1 rotated
  * 180°") without re-deriving the transform algebra app-side. Same detector
  * `LOOPDetector` (`shared/create/services/loop-detector.ts`) delegates to for
  * whole-sequence classification — this module surfaces its PER-PAIR
@@ -17,25 +17,25 @@ import { relationsForPair } from "@tka/sequence-engine/loop";
 import type { PairComponentId, PairMotion, PairMotions, PairRelation, RotationAngle } from "@tka/sequence-engine/loop";
 import type { LoopSlice } from "$lib/shared/loop-explorer/domain/legality";
 
-export interface BeatPairRelation {
-  /** 1-based beat index (first occurrence). */
-  readonly beatA: number;
-  /** 1-based beat index (the beat that restates beatA transformed). */
-  readonly beatB: number;
-  /** Sorted primitive ids; empty array means beatB literally repeats beatA. */
+export interface StepPairRelation {
+  /** 1-based step index (first occurrence). */
+  readonly stepA: number;
+  /** 1-based step index (the step that restates stepA transformed). */
+  readonly stepB: number;
+  /** Sorted primitive ids; empty array means stepB literally repeats stepA. */
   readonly transform: readonly PairComponentId[];
   /** Present when the transform includes a rotation. */
   readonly rotation?: RotationAngle;
 }
 
-/** Interval (in beats) between a citation pair, given the sequence length + slice. */
+/** Interval (in steps) between a citation pair, given the sequence length + slice. */
 export function defaultInterval(totalSteps: number, slice: LoopSlice): number {
   if (totalSteps < 2) return 0;
   return slice === "quartered" ? Math.floor(totalSteps / 4) : Math.floor(totalSteps / 2);
 }
 
 /**
- * Extract per-beat-pair relation citations at the given interval.
+ * Extract per-step-pair relation citations at the given interval.
  * Pairs (i, i+interval) for i in [0, interval) — the same window
  * `uniformRelationAtInterval` scans for the aggregate verdict, surfaced here
  * per-pair for citation text. Ambiguous pairs (multiple hypotheses tie) are
@@ -45,11 +45,11 @@ export function defaultInterval(totalSteps: number, slice: LoopSlice): number {
 export function extractPairRelations(
   steps: readonly StepLike[],
   interval: number
-): BeatPairRelation[] {
+): StepPairRelation[] {
   if (interval <= 0 || interval >= steps.length) return [];
 
   const motions = steps.map(toPairMotions);
-  const relations: BeatPairRelation[] = [];
+  const relations: StepPairRelation[] = [];
 
   for (let i = 0; i + interval < steps.length; i++) {
     const a = motions[i];
@@ -59,8 +59,8 @@ export function extractPairRelations(
     const candidates = relationsForPair(a, b);
     const best = pickSimplest(candidates);
     relations.push({
-      beatA: i + 1,
-      beatB: i + interval + 1,
+      stepA: i + 1,
+      stepB: i + interval + 1,
       transform: best?.components ?? [],
       rotation: best?.rotation,
     });

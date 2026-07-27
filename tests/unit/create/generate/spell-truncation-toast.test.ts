@@ -56,7 +56,7 @@ function makeConfig(overrides: Partial<UIGenerationConfig> = {}): UIGenerationCo
   };
 }
 
-/** 12 bare-bones steps - enough to exceed the guest 8-beat cap. */
+/** 12 bare-bones steps - enough to exceed the guest 8-step cap. */
 function makeSteps(count: number) {
   return Array.from({ length: count }, (_, i) => ({ letter: "A", stepNumber: i + 1 }));
 }
@@ -71,7 +71,7 @@ describe("onSpellGenerate — truncation toast (mirrors onGenerateClicked)", () 
     mockAuthState.role = "user";
   });
 
-  it("fires the guest-tier truncation toast when the spelled word's sequence exceeds the beat cap", async () => {
+  it("fires the guest-tier truncation toast when the spelled word's sequence exceeds the step cap", async () => {
     parseWordMock.mockResolvedValue({
       success: true,
       expandedLetters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"],
@@ -99,10 +99,10 @@ describe("onSpellGenerate — truncation toast (mirrors onGenerateClicked)", () 
     await actions.onSpellGenerate();
 
     // Centralized copy (auth-nudge-trigger.ts) — the hand-rolled "Capped to 8
-    // beats. Sign up free for up to 64." duplicate was consolidated onto
-    // AUTH_NUDGE_TEXTS["beat-cap-guest"] (2026-07-18 nudge-copy spec).
+    // steps. Sign up free for up to 64." duplicate was consolidated onto
+    // AUTH_NUDGE_TEXTS["step-cap-guest"] (2026-07-18 nudge-copy spec).
     expect(toastInfoSpy).toHaveBeenCalledWith(
-      AUTH_NUDGE_TEXTS["beat-cap-guest"],
+      AUTH_NUDGE_TEXTS["step-cap-guest"],
       5000,
     );
     expect(actions.lastGeneratedSequence?.steps.length).toBe(8);
@@ -110,7 +110,7 @@ describe("onSpellGenerate — truncation toast (mirrors onGenerateClicked)", () 
     toastInfoSpy.mockRestore();
   });
 
-  it("does NOT fire the truncation toast when the sequence is within the beat cap", async () => {
+  it("does NOT fire the truncation toast when the sequence is within the step cap", async () => {
     parseWordMock.mockResolvedValue({
       success: true,
       expandedLetters: ["A", "B", "C"],

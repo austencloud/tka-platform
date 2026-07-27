@@ -14,16 +14,19 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import CardHeader from "./shared/CardHeader.svelte";
+  import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
   let {
     loopEnabled,
     currentLOOPType,
+    reflectionAxis,
     onLOOPTypeChange,
     cardIndex = 0,
     headerFontSize = "9px",
   } = $props<{
     loopEnabled: boolean;
     currentLOOPType: LOOPType;
+    reflectionAxis?: ReflectionAxis;
     onLOOPTypeChange: (loopType: LOOPType) => void;
     cardIndex?: number;
     headerFontSize?: string;
@@ -46,6 +49,33 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   // Display value: "Off" or the LOOP type name
   const displayValue = $derived.by(() => {
     if (!loopEnabled) return "Off";
+    if (
+      selectedComponents.has(LOOPComponent.MIRRORED) ||
+      selectedComponents.has(LOOPComponent.FLIPPED)
+    ) {
+      const effectiveAxis: ReflectionAxis =
+        reflectionAxis ??
+        (selectedComponents.has(LOOPComponent.FLIPPED)
+          ? "east-west"
+          : "north-south");
+      const reflectionLabels: Record<ReflectionAxis, string> = {
+        "north-south": t("generator_loop_mirrored"),
+        "east-west": t("generator_loop_flipped"),
+        "northeast-southwest": "NE-SW Reflection",
+        "northwest-southeast": "NW-SE Reflection",
+      };
+      const parts = [reflectionLabels[effectiveAxis]];
+      if (selectedComponents.has(LOOPComponent.ROTATED)) {
+        parts.push(t("generator_loop_rotated"));
+      }
+      if (selectedComponents.has(LOOPComponent.SWAPPED)) {
+        parts.push(t("generator_loop_swapped"));
+      }
+      if (selectedComponents.has(LOOPComponent.INVERTED)) {
+        parts.push(t("generator_loop_inverted"));
+      }
+      return parts.join(" + ");
+    }
     const typeMap: Record<LOOPType, string> = {
       [LOOPType.ROTATED]: t("generator_loop_rotated"),
       [LOOPType.MIRRORED]: t("generator_loop_mirrored"),

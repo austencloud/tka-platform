@@ -32,7 +32,7 @@ describe("defaultInterval", () => {
 });
 
 describe("extractPairRelations", () => {
-  it("cites a 180° rotation between beat 1 and beat 9 in a 16-beat halved sequence", () => {
+  it("cites a 180° rotation between step 1 and step 9 in a 16-step halved sequence", () => {
     // ROTATE_180: n<->s, e<->w. Second half is the rotated image of the first.
     const first = step("n", "e", "s", "w");
     const second = step("s", "w", "n", "e");
@@ -43,7 +43,7 @@ describe("extractPairRelations", () => {
 
     const relations = extractPairRelations(steps, defaultInterval(16, "halved"));
     expect(relations).toHaveLength(8);
-    expect(relations[0]).toMatchObject({ beatA: 1, beatB: 9, rotation: "180" });
+    expect(relations[0]).toMatchObject({ stepA: 1, stepB: 9, rotation: "180" });
     expect(relations[0]!.transform).toContain("rotated");
   });
 

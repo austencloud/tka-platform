@@ -4,16 +4,16 @@
  * Supports both halved (period 2) and quartered (period 4) mirrored LOOPs.
  *
  * Period 2 (halved):
- *   Q1 (beats 1..N)       - partial (from input)
- *   Q2 (beats N+1..2N)    - vertical mirror of Q1
- *   Closes positionally + orientationally in 2N beats.
+ *   Q1 (steps 1..N)       - partial (from input)
+ *   Q2 (steps N+1..2N)    - vertical mirror of Q1
+ *   Closes positionally + orientationally in 2N steps.
  *
  * Period 4 (quartered):
- *   Q1 (beats 1..N)       - partial
- *   Q2 (beats N+1..2N)    - vertical mirror of Q1 (returns to start position)
- *   Q3 (beats 2N+1..3N)   - same positions/motions as Q1, new start orientation
- *   Q4 (beats 3N+1..4N)   - vertical mirror of Q3
- *   Closes in 4N beats when the partial's per-hand turn total is ≡ 1 or 3 (mod 4).
+ *   Q1 (steps 1..N)       - partial
+ *   Q2 (steps N+1..2N)    - vertical mirror of Q1 (returns to start position)
+ *   Q3 (steps 2N+1..3N)   - same positions/motions as Q1, new start orientation
+ *   Q4 (steps 3N+1..4N)   - vertical mirror of Q3
+ *   Closes in 4N steps when the partial's per-hand turn total is ≡ 1 or 3 (mod 4).
  *   L1/L2 partials have whole-turn totals (≡ 0 or 2) and close at period 2;
  *   L3+ partials with half turns can reach the period-4 parity.
  *
@@ -88,7 +88,7 @@ export class StrictMirroredLOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -112,7 +112,7 @@ export class StrictMirroredLOOPExecutor {
   }
 
   /**
-   * Create a beat that is the vertical mirror of a source beat.
+   * Create a step that is the vertical mirror of a source step.
    * Used for Q2 and Q4 in the period-4 structure (and Q2 in period-2).
    */
   private _createMirroredEntry(
@@ -150,7 +150,7 @@ export class StrictMirroredLOOPExecutor {
   }
 
   /**
-   * Create a beat that copies a source beat's positions/motions verbatim,
+   * Create a step that copies a source step's positions/motions verbatim,
    * with orientations propagated from the previous step.
    * Used for Q3 in the period-4 structure (same letters as Q1, new orientations).
    */

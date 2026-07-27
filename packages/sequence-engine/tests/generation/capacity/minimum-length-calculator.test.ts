@@ -23,19 +23,19 @@ describe("minLength", () => {
   });
 
   describe("level 1 (no turns)", () => {
-    it("ROTATED period 2 → 4 beats (2 × 2)", () => {
+    it("ROTATED period 2 → 4 steps (2 × 2)", () => {
       expect(
         minLength({ loopType: LOOPType.ROTATED, period: 2, level: 1 })
       ).toBe(4);
     });
 
-    it("ROTATED period 4 → 8 beats (2 × 4)", () => {
+    it("ROTATED period 4 → 8 steps (2 × 4)", () => {
       expect(
         minLength({ loopType: LOOPType.ROTATED, period: 4, level: 1 })
       ).toBe(8);
     });
 
-    it("MIRRORED period 2 → 4 beats", () => {
+    it("MIRRORED period 2 → 4 steps", () => {
       expect(
         minLength({ loopType: LOOPType.MIRRORED, period: 2, level: 1 })
       ).toBe(4);
@@ -47,7 +47,7 @@ describe("minLength", () => {
       ).toBe(Infinity);
     });
 
-    it("SWAPPED period 2 → 2 beats (base 1 × period 2)", () => {
+    it("SWAPPED period 2 → 2 steps (base 1 × period 2)", () => {
       expect(
         minLength({ loopType: LOOPType.SWAPPED, period: 2, level: 1 })
       ).toBe(2);
@@ -59,13 +59,13 @@ describe("minLength", () => {
       ).toBe(Infinity);
     });
 
-    it("REWOUND period 2 → 2 beats", () => {
+    it("REWOUND period 2 → 2 steps", () => {
       expect(
         minLength({ loopType: LOOPType.REWOUND, period: 2, level: 1 })
       ).toBe(2);
     });
 
-    it("INVERTED period 2 → 2 beats", () => {
+    it("INVERTED period 2 → 2 steps", () => {
       expect(
         minLength({ loopType: LOOPType.INVERTED, period: 2, level: 1 })
       ).toBe(2);

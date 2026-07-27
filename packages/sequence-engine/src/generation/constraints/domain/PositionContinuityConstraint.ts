@@ -3,7 +3,7 @@
  *
  * Sequences must be physically continuous — each step's start position
  * must match the previous step's end position. You can't teleport your
- * hands between beats. This is the most fundamental hard constraint
+ * hands between steps. This is the most fundamental hard constraint
  * in sequence generation.
  */
 

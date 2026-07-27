@@ -1,7 +1,7 @@
 /**
  * Strict word derivation — the persistence gate.
  *
- * Regression cover for the "GI" defect (2026-07-08): a 12-beat fused sequence
+ * Regression cover for the "GI" defect (2026-07-08): a 12-step fused sequence
  * whose word saved as "GI" because the permissive deriver silently dropped every
  * step that resolved no letter. The existing Fuse test proves the letters derive;
  * these prove a PARTIAL derivation can no longer reach storage.
@@ -9,7 +9,7 @@
  * Also pins the two corpus step-array shapes apart:
  *   - legacy raw `steps` with a `stepNumber === 0` start entry (letterless by design)
  *   - modern compositional steps with no start entry at all
- * Conflating either with an unresolved beat breaks publishing.
+ * Conflating either with an unresolved step breaks publishing.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -23,7 +23,7 @@ import {
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getPersistedStepCount } from "$lib/shared/library/domain/sequence-min-length";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import type { Step } from "@tka/tka-types";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StepPairingData } from "$lib/shared/foundation/domain/models/step-pairing-data";
 
 const motion = () =>
@@ -37,12 +37,12 @@ const motion = () =>
     endOrientation: "in" as const,
   });
 
-/** One content beat. `letter: null` models a step whose lookup never resolved. */
+/** One content step. `letter: null` models a step whose lookup never resolved. */
 function step(
   stepNumber: number,
   letter: string | null,
-  extra: Partial<Step> = {}
-): Step {
+  extra: Partial<StepData> = {}
+): StepData {
   return {
     id: `s${stepNumber}`,
     stepNumber,
@@ -55,7 +55,7 @@ function step(
     endPosition: null,
     motions: { blue: motion(), red: motion() },
     ...extra,
-  } as unknown as Step;
+  } as StepData;
 }
 
 /** The legacy start-position entry: stepNumber 0, letterless by design. */
@@ -74,7 +74,7 @@ function pairing(letter: string | null): StepPairingData {
 const lettersOf = (word: string) => word.split("");
 
 describe("deriveWordStatusFromSteps", () => {
-  it("reports every beat resolved for a complete sequence", () => {
+  it("reports every step resolved for a complete sequence", () => {
     const steps = lettersOf("IIECCKIIECCK").map((l, i) => step(i + 1, l));
     const status = deriveWordStatusFromSteps(steps);
 
@@ -86,7 +86,7 @@ describe("deriveWordStatusFromSteps", () => {
     expect(status.source).toBe("steps");
   });
 
-  it("12 beats with one missing letter is incomplete, not an 11-token success", () => {
+  it("12 steps with one missing letter is incomplete, not an 11-token success", () => {
     const steps = lettersOf("IIECCKIIECCK").map((l, i) =>
       step(i + 1, i === 3 ? null : l)
     );
@@ -99,7 +99,7 @@ describe("deriveWordStatusFromSteps", () => {
   });
 
   it("the historical GI case: 10 of 12 unresolved never yields a 2-token word", () => {
-    // The shape that produced "GI" — most beats unresolved, two survivors.
+    // The shape that produced "GI": most steps unresolved, two survivors.
     const steps = lettersOf("IIECCKIIECCK").map((l, i) =>
       step(i + 1, i === 0 ? "G" : i === 1 ? "I" : null)
     );
@@ -114,7 +114,7 @@ describe("deriveWordStatusFromSteps", () => {
     expect(status.missingStepIndexes).toHaveLength(10);
   });
 
-  it("drops a legacy stepNumber-0 start entry instead of calling it a missing beat", () => {
+  it("drops a legacy stepNumber-0 start entry instead of calling it a missing step", () => {
     const steps = [startStep(), ...lettersOf("ABC").map((l, i) => step(i + 1, l))];
     const status = deriveWordStatusFromSteps(steps);
 
@@ -130,8 +130,8 @@ describe("deriveWordStatusFromSteps", () => {
     expect(deriveWordStatusFromSteps(steps).complete).toBe(true);
   });
 
-  it("missing indexes are reported against content beats, not the raw array", () => {
-    // With a start entry present, a null at raw index 2 is content beat 1.
+  it("missing indexes are reported against content steps, not the raw array", () => {
+    // With a start entry present, a null at raw index 2 is content step 1.
     const steps = [startStep(), step(1, "A"), step(2, null), step(3, "C")];
     expect(deriveWordStatusFromSteps(steps).missingStepIndexes).toEqual([1]);
   });
@@ -178,9 +178,9 @@ describe("deriveWordStatusFromStepPairings", () => {
     expect(status.source).toBe("stepPairings");
   });
 
-  it("treats every pairing as a content beat — a leading null is a missing beat", () => {
+  it("treats every pairing as a content step: a leading null is a missing step", () => {
     // Never guess that a leading null is a start entry: the modern write path
-    // does not emit one, so guessing would swallow an unresolved first beat.
+    // does not emit one, so guessing would swallow an unresolved first step.
     const status = deriveWordStatusFromStepPairings([
       pairing(null),
       pairing("A"),
@@ -263,7 +263,7 @@ describe("requireCompleteWord", () => {
     expect(requireCompleteWord(sequence)).toBe("IIECCKIIECCK");
   });
 
-  it("throws a typed error carrying the unresolved beat indexes", () => {
+  it("throws a typed error carrying the unresolved step indexes", () => {
     const sequence = createSequenceData({
       id: "x",
       steps: [step(1, "A"), step(2, null), step(3, "C")],

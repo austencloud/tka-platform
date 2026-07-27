@@ -140,16 +140,16 @@ function generateConstraintDescription(
       const continuity = calculateContinuityPercentage(state);
       const reversals = countReversals(state);
       if (reversals === 0) {
-        return `Perfect continuity: no reversals in ${steps} beats`;
+        return `Perfect continuity: no reversals in ${steps} steps`;
       }
-      return `${continuity}% continuous (${reversals} reversals in ${steps} beats)`;
+      return `${continuity}% continuous (${reversals} reversals in ${steps} steps)`;
     }
 
     case ConstraintType.MOTION_TYPE: {
       if (score === 1) {
-        return `All motions match required type (${steps} beats)`;
+        return `All motions match required type (${steps} steps)`;
       } else if (score >= 0.75) {
-        return `Most motions match (${percentage}% of ${steps} beats)`;
+        return `Most motions match (${percentage}% of ${steps} steps)`;
       } else {
         return `${percentage}% of motions match required type`;
       }
@@ -164,7 +164,7 @@ function generateConstraintDescription(
 
     case ConstraintType.REVERSAL: {
       const reversals = countReversals(state);
-      return `${reversals} reversals in ${steps} beats`;
+      return `${reversals} reversals in ${steps} steps`;
     }
 
     case ConstraintType.POSITION_GROUP: {
@@ -176,7 +176,7 @@ function generateConstraintDescription(
 
     case ConstraintType.VTG_TIMING: {
       if (score === 1) {
-        return `All beats match required timing`;
+        return `All steps match required timing`;
       }
       return `${percentage}% match timing requirement`;
     }

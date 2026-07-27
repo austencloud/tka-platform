@@ -8,6 +8,13 @@
  * Nothing imports this file yet — pure type definitions and utilities.
  */
 
+import {
+  DEFAULT_FLIPPED_AXIS,
+  DEFAULT_MIRRORED_AXIS,
+  isReflectionAxis,
+  type ReflectionAxis,
+} from "./position-maps/strict-loop-position-maps.js";
+
 // ============================================================
 // DOMAIN
 // ============================================================
@@ -34,19 +41,19 @@ export type LOOPDomain = "location" | "orientation" | "both";
  */
 export enum LOOPComponent {
   // --- User-facing transformation primitives ---
-  ROTATED = "rotated",    // 180° or 90° position rotation
-  MIRRORED = "mirrored",  // Vertical reflection (left ↔ right)
-  FLIPPED = "flipped",    // Horizontal reflection (north ↔ south)
-  SWAPPED = "swapped",    // Blue/red hand exchange
-  INVERTED = "inverted",  // PRO ↔ ANTI motion direction flip
-  REWOUND = "rewound",    // Time reversal (plays backward)
+  ROTATED = "rotated", // 180° or 90° position rotation
+  MIRRORED = "mirrored", // Reflection; legacy default is the north-south axis
+  FLIPPED = "flipped", // Reflection; legacy default is the east-west axis
+  SWAPPED = "swapped", // Blue/red hand exchange
+  INVERTED = "inverted", // PRO ↔ ANTI motion direction flip
+  REWOUND = "rewound", // Time reversal (plays backward)
 
   // --- Reserved orientation primitives ---
   // Detected by the engine but NEVER surfaced to UI consumers.
   // Use RESERVED_ORIENTATION_PRIMITIVES to filter these out.
-  ZONE_HOLD_INVERT = "zone_hold_invert", // all beats stay in the same radial zone; orientations invert in-zone
-  ZONE_HOLD_FLIP = "zone_hold_flip",     // all beats stay in the same nonradial zone; orientations flip in-zone
-  ZONE_CROSS = "zone_cross",             // beats alternate radial/nonradial zones across the cycle
+  ZONE_HOLD_INVERT = "zone_hold_invert", // all steps stay in the same radial zone; orientations invert in-zone
+  ZONE_HOLD_FLIP = "zone_hold_flip", // all steps stay in the same nonradial zone; orientations flip in-zone
+  ZONE_CROSS = "zone_cross", // steps alternate radial/nonradial zones across the cycle
 }
 
 /**
@@ -79,6 +86,7 @@ export interface ComponentSpec {
   readonly period: number;
   readonly domain?: LOOPDomain;
   readonly mode?: ComponentMode;
+  readonly reflectionAxis?: ReflectionAxis;
 }
 
 /**
@@ -115,6 +123,7 @@ export interface ComponentSpecWire {
   period: number;
   domain?: LOOPDomain;
   mode?: ComponentMode;
+  reflectionAxis?: ReflectionAxis;
 }
 
 /**
@@ -147,6 +156,9 @@ function propSpecToWire(spec: PropLOOPSpec): PropLOOPSpecWire {
     if (value.mode !== undefined) {
       entry.mode = value.mode;
     }
+    if (value.reflectionAxis !== undefined) {
+      entry.reflectionAxis = value.reflectionAxis;
+    }
     wire[key] = entry;
   }
   return wire;
@@ -159,6 +171,9 @@ function propSpecFromWire(wire: PropLOOPSpecWire): PropLOOPSpec {
       period: value.period,
       ...(value.domain !== undefined ? { domain: value.domain } : {}),
       ...(value.mode !== undefined ? { mode: value.mode } : {}),
+      ...(value.reflectionAxis !== undefined
+        ? { reflectionAxis: value.reflectionAxis }
+        : {}),
     };
     components.set(key as LOOPComponent, spec);
   }
@@ -250,9 +265,8 @@ export function singleComponent(
   period: number,
   domain?: LOOPDomain
 ): PropLOOPSpec {
-  const spec: ComponentSpec = domain !== undefined
-    ? { period, domain }
-    : { period };
+  const spec: ComponentSpec =
+    domain !== undefined ? { period, domain } : { period };
   return { components: new Map([[component, spec]]) };
 }
 
@@ -260,7 +274,7 @@ export function singleComponent(
  * Build a symmetric LOOPSpec where blue and red share identical specs.
  */
 export function symmetricSpec(
-  components: ReadonlyMap<LOOPComponent, ComponentSpec>,
+  components: ReadonlyMap<LOOPComponent, ComponentSpec>
 ): LOOPSpec {
   const prop: PropLOOPSpec = { components };
   return { blue: prop, red: prop };
@@ -270,7 +284,7 @@ export function symmetricSpec(
  * Merge all active components across both props, keeping the max period per component.
  */
 export function allActiveComponents(
-  spec: LOOPSpec,
+  spec: LOOPSpec
 ): ReadonlyMap<LOOPComponent, ComponentSpec> {
   const result = new Map<LOOPComponent, ComponentSpec>();
   for (const prop of [spec.blue, spec.red]) {
@@ -300,7 +314,7 @@ export function isEmptySpec(spec: LOOPSpec): boolean {
  */
 export function specsAreEqual(
   a: PropLOOPSpec | undefined,
-  b: PropLOOPSpec | undefined,
+  b: PropLOOPSpec | undefined
 ): boolean {
   if (!a && !b) return true;
   if (!a || !b) return false;
@@ -310,8 +324,61 @@ export function specsAreEqual(
     if (!bSpec) return false;
     if (aSpec.period !== bSpec.period) return false;
     if (aSpec.domain !== bSpec.domain) return false;
+    if (aSpec.mode !== bSpec.mode) return false;
+    if (aSpec.reflectionAxis !== bSpec.reflectionAxis) return false;
   }
   return true;
+}
+
+/**
+ * Resolve the axis for a reflection component.
+ *
+ * Missing axes preserve existing serialized behavior: MIRRORED uses the
+ * north-south axis and FLIPPED uses the east-west axis.
+ */
+export function getReflectionAxis(
+  component: LOOPComponent,
+  componentSpec: ComponentSpec
+): ReflectionAxis | null {
+  if (component === LOOPComponent.MIRRORED) {
+    return componentSpec.reflectionAxis ?? DEFAULT_MIRRORED_AXIS;
+  }
+  if (component === LOOPComponent.FLIPPED) {
+    return componentSpec.reflectionAxis ?? DEFAULT_FLIPPED_AXIS;
+  }
+  return null;
+}
+
+/**
+ * Apply an explicit reflection axis to every reflection component in a spec.
+ */
+export function loopSpecWithReflectionAxis(
+  spec: LOOPSpec,
+  reflectionAxis: ReflectionAxis
+): LOOPSpec {
+  const updateProp = (
+    prop: PropLOOPSpec | undefined
+  ): PropLOOPSpec | undefined => {
+    if (!prop) return undefined;
+    const components = new Map(prop.components);
+    for (const component of [
+      LOOPComponent.MIRRORED,
+      LOOPComponent.FLIPPED,
+    ]) {
+      const componentSpec = components.get(component);
+      if (componentSpec) {
+        components.set(component, { ...componentSpec, reflectionAxis });
+      }
+    }
+    return { components };
+  };
+
+  const blue = updateProp(spec.blue);
+  const red = updateProp(spec.red);
+  return {
+    ...(blue ? { blue } : {}),
+    ...(red ? { red } : {}),
+  };
 }
 
 /**
@@ -361,6 +428,36 @@ export function loopSpecFromLegacy(loopType: string, period: number): LOOPSpec {
   return symmetricSpec(components);
 }
 
+/**
+ * Convert a legacy flat LOOPType + requested rotation rhythm to the canonical
+ * compositional spec used by sequence generation.
+ *
+ * Rotation is the only legacy component with a genuine period-4 orbit.
+ * Mirror, flip, swap, and inversion remain period-2 transforms even when the
+ * requested rhythm is quartered. Rewound is likewise always a two-pass cycle.
+ *
+ * `loopSpecFromLegacy` intentionally keeps its uniform-period compatibility
+ * behavior. New generation paths should use this converter instead.
+ */
+export function loopSpecFromLegacyRhythm(
+  loopType: string,
+  rotationPeriod: number
+): LOOPSpec {
+  const spec = loopSpecFromLegacy(loopType, 2);
+  const propSpec = spec.blue ?? spec.red;
+
+  if (
+    rotationPeriod === 2 ||
+    !propSpec?.components.has(LOOPComponent.ROTATED)
+  ) {
+    return spec;
+  }
+
+  const components = new Map(propSpec.components);
+  components.set(LOOPComponent.ROTATED, { period: rotationPeriod });
+  return symmetricSpec(components);
+}
+
 // ============================================================
 // VALIDATION
 // ============================================================
@@ -388,8 +485,13 @@ export function validateLOOPSpec(spec: LOOPSpec): LOOPSpecValidationError[] {
   const errors: LOOPSpecValidationError[] = [];
 
   const activePropEntries = (
-    [["blue", spec.blue], ["red", spec.red]] as Array<["blue" | "red", PropLOOPSpec | undefined]>
-  ).filter((entry): entry is ["blue" | "red", PropLOOPSpec] => entry[1] !== undefined);
+    [
+      ["blue", spec.blue],
+      ["red", spec.red],
+    ] as Array<["blue" | "red", PropLOOPSpec | undefined]>
+  ).filter(
+    (entry): entry is ["blue" | "red", PropLOOPSpec] => entry[1] !== undefined
+  );
 
   for (const [propName, propSpec] of activePropEntries) {
     for (const [comp, compSpec] of propSpec.components) {
@@ -406,9 +508,33 @@ export function validateLOOPSpec(spec: LOOPSpec): LOOPSpecValidationError[] {
           message: `${propName}.${comp}: overlay mode is only supported for INVERTED (location-preserving)`,
         });
       }
+
+      if (
+        compSpec.reflectionAxis !== undefined &&
+        comp !== LOOPComponent.MIRRORED &&
+        comp !== LOOPComponent.FLIPPED
+      ) {
+        errors.push({
+          rule: "reflection_axis_component",
+          message: `${propName}.${comp}: reflectionAxis is only valid for MIRRORED or FLIPPED`,
+        });
+      }
+
+      if (
+        compSpec.reflectionAxis !== undefined &&
+        !isReflectionAxis(compSpec.reflectionAxis)
+      ) {
+        errors.push({
+          rule: "reflection_axis_value",
+          message: `${propName}.${comp}: unknown reflection axis "${String(compSpec.reflectionAxis)}"`,
+        });
+      }
     }
 
-    if (propSpec.components.has(LOOPComponent.REWOUND) && propSpec.components.size > 1) {
+    if (
+      propSpec.components.has(LOOPComponent.REWOUND) &&
+      propSpec.components.size > 1
+    ) {
       errors.push({
         rule: "rewound_exclusivity",
         message: `${propName}: REWOUND cannot compose with other components`,

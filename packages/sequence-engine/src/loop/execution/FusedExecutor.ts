@@ -3,18 +3,9 @@ import type {
   MotionData,
 } from "../../core/types/sequence-engine-types.js";
 import {
-  VERTICAL_MIRROR_POSITION_MAP,
-  VERTICAL_MIRROR_LOCATION_MAP,
-  HORIZONTAL_MIRROR_POSITION_MAP,
-  HORIZONTAL_MIRROR_LOCATION_MAP,
-  SWAPPED_POSITION_MAP,
   getInvertedLetter,
 } from "../position-maps/strict-loop-position-maps.js";
-import {
-  getHandRotationDirection,
-  getLocationMapForHandRotation,
-  mirrorHandRotationDirection,
-} from "../position-maps/circular-position-maps.js";
+import { translateHandPath } from "../position-maps/circular-position-maps.js";
 import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
@@ -27,6 +18,7 @@ export interface FusedTransformFlags {
 
 export class FusedExecutor {
   private readonly flipCount: number;
+  private readonly spatialReflectionCount: number;
 
   constructor(private readonly flags: FusedTransformFlags) {
     let count = 0;
@@ -34,6 +26,8 @@ export class FusedExecutor {
     if (flags.flip) count++;
     if (flags.invert) count++;
     this.flipCount = count;
+    this.spatialReflectionCount =
+      Number(flags.mirror) + Number(flags.flip);
   }
 
   execute(sequence: SequenceStep[], period: number): SequenceStep[] {
@@ -69,7 +63,7 @@ export class FusedExecutor {
   private createTransformedStep(
     sourceStep: SequenceStep,
     previousStep: SequenceStep,
-    stepNumber: number,
+    stepNumber: number
   ): SequenceStep {
     const blueSource = this.flags.swap
       ? sourceStep.motions.red
@@ -80,16 +74,13 @@ export class FusedExecutor {
 
     const blueMotion = this.transformMotion(
       blueSource,
-      previousStep.motions.blue,
+      previousStep.motions.blue
     );
-    const redMotion = this.transformMotion(
-      redSource,
-      previousStep.motions.red,
-    );
+    const redMotion = this.transformMotion(redSource, previousStep.motions.red);
 
     const endPosition = gridPositionDeriver.getGridPositionFromLocations(
       blueMotion.endLocation,
-      redMotion.endLocation,
+      redMotion.endLocation
     );
 
     const letter = this.flags.invert
@@ -108,7 +99,7 @@ export class FusedExecutor {
 
   private transformMotion(
     matchingMotion: MotionData,
-    previousMotion: MotionData,
+    previousMotion: MotionData
   ): MotionData {
     const startLocation = previousMotion.endLocation;
     const endLocation = this.computeEndLocation(matchingMotion, startLocation);
@@ -133,49 +124,40 @@ export class FusedExecutor {
 
   private computeEndLocation(
     matchingMotion: MotionData,
-    startLocation: string,
+    startLocation: string
   ): string {
     if (matchingMotion.startLocation === matchingMotion.endLocation) {
       return startLocation;
     }
 
-    const seedHandDir = getHandRotationDirection(
+    return translateHandPath(
       matchingMotion.startLocation,
       matchingMotion.endLocation,
+      startLocation,
+      this.spatialReflectionCount % 2 === 1
     );
-
-    const needsMirror = this.flags.mirror || this.flags.flip;
-    const dir = needsMirror
-      ? mirrorHandRotationDirection(seedHandDir)
-      : seedHandDir;
-
-    const locationMap = getLocationMapForHandRotation(dir);
-    return locationMap[startLocation] || startLocation;
   }
 
   private createCopiedStep(
     sourceStep: SequenceStep,
     previousStep: SequenceStep,
-    stepNumber: number,
+    stepNumber: number
   ): SequenceStep {
     return {
       ...sourceStep,
       stepNumber,
-      startPosition:
-        previousStep.endPosition as SequenceStep["startPosition"],
+      startPosition: previousStep.endPosition as SequenceStep["startPosition"],
       endPosition: sourceStep.endPosition as SequenceStep["endPosition"],
       motions: {
         blue: {
           ...sourceStep.motions.blue,
-          startLocation:
-            previousStep.motions.blue
-              .endLocation as MotionData["startLocation"],
+          startLocation: previousStep.motions.blue
+            .endLocation as MotionData["startLocation"],
         },
         red: {
           ...sourceStep.motions.red,
-          startLocation:
-            previousStep.motions.red
-              .endLocation as MotionData["startLocation"],
+          startLocation: previousStep.motions.red
+            .endLocation as MotionData["startLocation"],
         },
       },
     };

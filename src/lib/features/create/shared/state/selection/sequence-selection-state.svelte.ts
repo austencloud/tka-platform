@@ -322,18 +322,18 @@ export function createSequenceSelectionState() {
       return { success: true };
     },
 
-    selectAllBeats(stepNumbers: number[]) {
+    selectAllSteps(stepNumbers: number[]) {
       if (state.mode !== "multi") {
         state.mode = "multi";
       }
 
       // Filter out start position if regular steps are included, and vice versa
       const hasStartPosition = stepNumbers.includes(0);
-      const regularBeats = stepNumbers.filter((n) => n > 0);
+      const regularSteps = stepNumbers.filter((n) => n > 0);
 
-      if (hasStartPosition && regularBeats.length > 0) {
+      if (hasStartPosition && regularSteps.length > 0) {
         // If both types, prefer regular steps (more common use case)
-        state.selectedStepNumbers = new Set(regularBeats);
+        state.selectedStepNumbers = new Set(regularSteps);
       } else {
         state.selectedStepNumbers = new Set(stepNumbers);
       }

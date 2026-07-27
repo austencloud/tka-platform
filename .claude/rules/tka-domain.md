@@ -90,3 +90,12 @@ When users use incorrect TKA terminology, **explicitly correct it** before answe
 - The per-hand learning model (VTG) is not "early learning" or "backwards" — it's a different cognitive preference.
 - The 6-Element Model maps VTG categories + gamma patterns to elements. Use `get_domain_topic("elemental-model")` for full details.
 - Same-direction elements (Earth, Water, Sun) are grid-mode invariant. Opposite-direction elements (Air, Fire, Moon) permute between diamond and box mode.
+
+## LOOP Reflection Guardrails
+
+- Reflection axis and grid mode are independent. Diamond, Box, and Skewed sequences can reflect across N-S, E-W, NE-SW, or NW-SE.
+- **Mirrored** is the familiar name for N-S reflection. **Flipped** is the familiar name for E-W reflection. The diagonal axes are equally valid and use their axis names.
+- A direct reflected LOOP does not require its start to lie on the axis. Its seed goes `S → R(S)` and the reflected copy goes `R(S) → S`.
+- Fixed-point checks apply only to a literal absolute transform wrapped around an already-closed block. Never use them as a universal generator feasibility rule.
+- Grid mode must never select or imply a reflection axis.
+- Use **step**, never **beat**, for sequence entries in TKA UI, docs, comments, and explanations.

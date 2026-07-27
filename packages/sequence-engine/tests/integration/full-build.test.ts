@@ -351,7 +351,7 @@ describe("SequenceBuilder integration", () => {
     expect(result.sequence[1]!.letter).toBe("C");
   });
 
-  it("each step has beat index and step number", () => {
+  it("each step has step index and step number", () => {
     const result = builder.build({
       word: "AB",
       gridMode: "diamond",

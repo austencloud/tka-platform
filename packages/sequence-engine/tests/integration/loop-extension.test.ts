@@ -210,7 +210,7 @@ describe("SequenceBuilder LOOP extension", () => {
   });
 
   it("Rewound LOOP doubles the sequence length", () => {
-    // Build "AB" (3 steps: start + A + B), then rewound doubles the beats
+    // Build "AB" (3 steps: start + A + B), then rewound doubles the steps
     const result = builder.build({
       word: "AB",
       gridMode: "diamond",
@@ -221,8 +221,8 @@ describe("SequenceBuilder LOOP extension", () => {
       },
     });
 
-    // Original: start + 2 beats = 3 steps
-    // Rewound appends 2 reversed beats = 5 total steps
+    // Original: start + 2 steps = 3 steps
+    // Rewound appends 2 reversed steps = 5 total steps
     expect(result.sequence.length).toBe(5);
   });
 
@@ -245,7 +245,7 @@ describe("SequenceBuilder LOOP extension", () => {
     expect(result.loop!.orientationCycleMultiplier).toBe(2);
   });
 
-  it("derived beat indices point to valid steps", () => {
+  it("derived step indices point to valid steps", () => {
     const result = builder.build({
       word: "AB",
       gridMode: "diamond",
@@ -281,18 +281,18 @@ describe("SequenceBuilder LOOP extension", () => {
     }
   });
 
-  it("Rewound derives each appended beat's letter from its reversed motions (not copied from source)", () => {
+  it("Rewound derives each appended step's letter from its reversed motions (not copied from source)", () => {
     // In this mock A and B are temporal inverses of each other:
     //   A: blue n→e, red s→w   (alpha1→beta3)
     //   B: blue e→n, red w→s   (beta3→alpha1)
     // Rewinding B (swap locations, flip rotation) yields A's motion signature,
     // and rewinding A yields B's. So the correct derived word is "AB" — the
-    // letter of each appended beat re-derived from its OWN reversed motions.
+    // letter of each appended step re-derived from its OWN reversed motions.
     //
     // The bug: RewoundExecutor spreads `...sourceStep`, copying the SOURCE
-    // beat's letter onto the reversed beat, producing the derived word "BA"
-    // (rev(B) mislabeled "B", rev(A) mislabeled "A"). This is the "beat 12
-    // labeled with beat 5's letter" defect reported for the generator.
+    // step's letter onto the reversed step, producing the derived word "BA"
+    // (rev(B) mislabeled "B", rev(A) mislabeled "A"). This is the "step 12
+    // labeled with step 5's letter" defect reported for the generator.
     const result = builder.build({
       word: "AB",
       gridMode: "diamond",

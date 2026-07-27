@@ -114,7 +114,7 @@ function deriveStartPositionFromSteps(
 	// deriving a start cell from a placeholder's default location would lie.
 	if (!isVisibleMotion(first?.motions?.blue) || !isVisibleMotion(first?.motions?.red)) return undefined;
 	try {
-		return startPositionDeriver.deriveFromFirstBeat(first) as SequenceData["startPosition"];
+    return startPositionDeriver.deriveFromFirstStep(first) as SequenceData["startPosition"];
 	} catch {
 		return undefined;
 	}

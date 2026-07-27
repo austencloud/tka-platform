@@ -18,7 +18,7 @@ const COMPONENT_VERB: Record<string, string> = {
   flipped: "flips north and south",
   swapped: "swaps blue and red",
   inverted: "swaps pro and anti",
-  rewound: "plays the beats in reverse order",
+  rewound: "plays the steps in reverse order",
 };
 
 function cycleText(cycleCount: number): string {
@@ -26,22 +26,22 @@ function cycleText(cycleCount: number): string {
   return `Play it ${cycleCount} times and you're back where you started.`;
 }
 
-function structureText(beatCount: number, word: string, period: number): string {
-  const half = beatCount / 2;
+function structureText(stepCount: number, word: string, period: number): string {
+  const half = stepCount / 2;
   if (period === 4) {
-    return `${beatCount} beats. ${word} repeats four times. `;
+    return `${stepCount} steps. ${word} repeats four times. `;
   }
-  return `${beatCount} beats. ${word} repeats twice: beats 1–${half} and ${half + 1}–${beatCount} use the same letters. `;
+  return `${stepCount} steps. ${word} repeats twice: steps 1–${half} and ${half + 1}–${stepCount} use the same letters. `;
 }
 
 function singleComponentCopy(
   component: LOOPComponent,
-  beatCount: number,
+  stepCount: number,
   word: string,
   period: number,
   cc: number,
 ): StructuralCopy {
-  const structure = structureText(beatCount, word, period);
+  const structure = structureText(stepCount, word, period);
 
   if (period === 4) {
     return quarteredSingleCopy(component, structure, cc);
@@ -162,12 +162,12 @@ function quarteredSingleCopy(
 
 function multiComponentCopy(
   components: LOOPComponent[],
-  beatCount: number,
+  stepCount: number,
   word: string,
   period: number,
   cc: number,
 ): StructuralCopy {
-  const structure = structureText(beatCount, word, period);
+  const structure = structureText(stepCount, word, period);
   const verbs = components
     .map((c) => COMPONENT_VERB[c])
     .filter(Boolean);
@@ -202,13 +202,13 @@ export function generateLoopStructuralCopy(
   activeComponents: Set<LOOPComponent>,
   period: number,
 ): StructuralCopy {
-  const beatCount = sequence.steps?.length ?? 0;
-  const fullWord = sequence.word || `${beatCount}-beat sequence`;
+  const stepCount = sequence.steps?.length ?? 0;
+  const fullWord = sequence.word || `${stepCount}-step sequence`;
   const word = extractRepeatingUnit(fullWord, period);
   const cc = sequence.orientationCycleCount ?? period;
   const components = [...activeComponents];
 
-  if (beatCount === 0 || components.length === 0) {
+  if (stepCount === 0 || components.length === 0) {
     return {
       lead: "This sequence loops ",
       parts: [{ text: "back to its starting position.", bold: false }],
@@ -218,14 +218,14 @@ export function generateLoopStructuralCopy(
   const modular = explainLOOP(sequence, activeComponents);
   if (modular.type === "modular" && modular.seeds.length > 1) {
     return {
-      lead: `${beatCount} beats. `,
+      lead: `${stepCount} steps. `,
       parts: [{ text: modular.summary, bold: false }],
     };
   }
 
   if (components.length === 1) {
-    return singleComponentCopy(components[0]!, beatCount, word, period, cc);
+    return singleComponentCopy(components[0]!, stepCount, word, period, cc);
   }
 
-  return multiComponentCopy(components, beatCount, word, period, cc);
+  return multiComponentCopy(components, stepCount, word, period, cc);
 }

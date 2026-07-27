@@ -26,6 +26,7 @@ import {
   getLOOPOptionsForPositionPair,
 } from "../validation/LOOPValidator.js";
 import { loopExecutorSelector, type LOOPExecutorSelector } from "../execution/LOOPExecutorSelector.js";
+import { closeOrientationCycle } from "../execution/orientation-cycle.js";
 
 
 /**
@@ -51,7 +52,7 @@ export interface ExtensionAnalysis {
 }
 
 /**
- * Options for generating extension beats.
+ * Options for generating extension steps.
  */
 export interface ExtensionOptions {
   loopType: LOOPType;
@@ -64,7 +65,7 @@ export class SequenceExtender {
 
   /**
    * Analyze a sequence to determine if it can be extended with LOOP patterns.
-   * @param steps - Full step array (step 0 = start position, rest = beats)
+   * @param steps - Full step array (step 0 = start position, rest = steps)
    * @returns Analysis of extension possibilities
    */
   analyzeSequence(steps: SequenceStep[]): ExtensionAnalysis {
@@ -155,7 +156,7 @@ export class SequenceExtender {
 
   /**
    * Generate extension steps for a sequence using a LOOP executor.
-   * @param steps - Full step array (step 0 = start position, rest = beats)
+   * @param steps - Full step array (step 0 = start position, rest = steps)
    * @param options - LOOP type and period for extension
    * @returns New steps to append after the original sequence
    */
@@ -179,32 +180,39 @@ export class SequenceExtender {
     // Get the executor for the selected LOOP type
     const executor = this.executorSelector.getExecutor(loopType);
 
-    // Get only the letter steps for the executor (exclude start position)
-    const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+    const letterSteps = steps.filter((step) => step.stepNumber > 0);
 
     if (letterSteps.length === 0) {
       throw new Error("No letter steps in sequence to extend");
     }
 
-    // Save original length BEFORE executing, since executor modifies array in place
     const originalLength = letterSteps.length;
+    const input = steps.map((step) => ({
+      ...step,
+      motions: {
+        blue: { ...step.motions.blue },
+        red: { ...step.motions.red },
+      },
+    }));
+    const structurallyCompleted = executor.executeLOOP(input, period);
+    const completed = closeOrientationCycle(structurallyCompleted, {
+      seedStepCount: originalLength,
+    });
 
-    // Execute the LOOP transformation
-    const completedSteps = executor.executeLOOP(letterSteps, period);
-
-    // Return only the new steps (after the original beats)
-    return completedSteps.slice(originalLength);
+    return completed.steps.filter(
+      (step) => step.stepNumber > originalLength
+    );
   }
 }
 
 
 function getStartPosition(steps: SequenceStep[]): string | null {
-  const startStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
+  const startStep = steps.find((step) => step.stepNumber === 0);
   return startStep?.startPosition ?? null;
 }
 
 function getCurrentEndPosition(steps: SequenceStep[]): string | null {
-  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+  const letterSteps = steps.filter((step) => step.stepNumber > 0);
   if (letterSteps.length === 0) return null;
   return letterSteps[letterSteps.length - 1]!.endPosition;
 }

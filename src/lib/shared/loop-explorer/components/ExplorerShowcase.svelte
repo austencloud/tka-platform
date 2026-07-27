@@ -4,7 +4,7 @@
   renders 4x4, 8-count renders 4x2 (the multiplier the selection resolved to
   determines which). Each cell is a `.tka-seq-cell` primitive wrapping the
   shared PictographContainer renderer; a transparent hit button drives the
-  bidirectional beat<->relation highlight owned by loop-explorer-state.
+  bidirectional step<->relation highlight owned by loop-explorer-state.
   Crossfade (fill mode) covers example swaps so a refresh/selection change
   never reflows the stage. Word display goes through simplifyRepeatedWord. -->
 <script lang="ts">
@@ -64,11 +64,11 @@
         {@const example = state.example}
         <div class="grid">
           {#each example.sequence.steps as step, i (step.id)}
-            {@const beatNumber = i + 1}
+            {@const stepNumber = i + 1}
             {@const isHighlighted =
-              state.highlightedBeat === beatNumber ||
+              state.highlightedStep === stepNumber ||
               (state.highlightedRelation != null &&
-                state.beatsForRelation(state.highlightedRelation).includes(beatNumber))}
+                state.stepsForRelation(state.highlightedRelation).includes(stepNumber))}
             <div
               class="cell tka-seq-cell"
               class:is-hovered={isHighlighted}
@@ -77,14 +77,14 @@
               <button
                 type="button"
                 class="tka-seq-hit"
-                aria-label={`Beat ${beatNumber}`}
-                aria-pressed={state.highlightedBeat === beatNumber}
-                onpointerenter={() => state.hoverBeat(beatNumber)}
-                onpointerleave={() => state.hoverBeat(null)}
+                aria-label={`Step ${stepNumber}`}
+                aria-pressed={state.highlightedStep === stepNumber}
+                onpointerenter={() => state.hoverStep(stepNumber)}
+                onpointerleave={() => state.hoverStep(null)}
                 onclick={() =>
-                  state.selectBeat(state.highlightedBeat === beatNumber ? null : beatNumber)}
+                  state.selectStep(state.highlightedStep === stepNumber ? null : stepNumber)}
               ></button>
-              <span class="beat-number">{beatNumber}</span>
+              <span class="step-number">{stepNumber}</span>
             </div>
           {/each}
         </div>
@@ -166,7 +166,7 @@
     height: 100%;
   }
 
-  .beat-number {
+  .step-number {
     position: absolute;
     top: 4px;
     left: 6px;

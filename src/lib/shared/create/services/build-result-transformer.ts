@@ -11,9 +11,9 @@
  * This transformer bridges that gap by:
  * 1. Mapping each SequenceStep's string fields back to the app's enum types
  * 2. Creating full MotionData with placement data via createMotionData()
- * 3. Wrapping steps in StepData with beat context
+ * 3. Wrapping steps in StepData with step context
  * 4. Extracting StartPositionData from step 0
- * 5. Delegating metadata, reversal detection, and cycle detection to existing services
+ * 5. Delegating metadata and reversal detection to existing services
  */
 
 import type { BuildResult } from "@tka/sequence-engine/generation";
@@ -28,8 +28,6 @@ import type { GenerationOptions } from "$lib/shared/foundation/domain/models/gen
 import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "$lib/shared/create/services/sequence-metadata-manager";
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
-import { reduceToMinimalLoop } from "@tka/sequence-engine/loop";
 import { PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -65,21 +63,7 @@ export class BuildResultTransformer {
     }
 
     const startPosition = this.mapStartPosition(startPositionStep);
-    let steps = this.mapSteps(result.sequence.slice(1), options);
-
-    // Safety net: collapse a redundant literal-repeat loop to its minimal
-    // closing form. A quartered LOOP whose seed already closes at period 2
-    // (zero-turn seeds) over-extends into a byte-identical repeat; the strict
-    // executors guard against emitting it, this catches any path that still
-    // does (the YΦΔ×4 defect, 2026-07-10). Only literal repeats collapse —
-    // genuine transforms and orientation cycles are preserved. Runs before
-    // word/metadata so the stored word reduces too.
-    if (isCircular) {
-      const reduction = reduceToMinimalLoop(steps);
-      if (reduction.reduced) {
-        steps = reduction.steps as StepData[];
-      }
-    }
+    const steps = this.mapSteps(result.sequence.slice(1), options);
 
     // Calculate word from the mapped steps
     const word = steps
@@ -122,31 +106,14 @@ export class BuildResultTransformer {
       difficultyLevel: options.difficulty,
       isFavorite: false,
       isCircular,
+      ...(isCircular ? { orientationCycleCount: 1 as const } : {}),
       ...(appLoopType && { loopType: appLoopType }),
       ...(isCircular && options.loopSpecWire ? { loopSpec: options.loopSpecWire } : {}),
       tags,
       metadata,
     });
 
-    // Apply reversal detection
-    const withReversals =
-      this.reversalDetector.processReversals(sequenceData);
-
-    // For circular sequences, detect orientation cycle count
-    if (isCircular) {
-      const cycleResult = detectOrientationCycle(withReversals);
-
-      if (cycleResult.cycleCount > 1) {
-        const { updateSequenceData } = await import(
-          "$lib/shared/foundation/domain/models/sequence-data"
-        );
-        return updateSequenceData(withReversals, {
-          orientationCycleCount: cycleResult.cycleCount as 1 | 2 | 4,
-        });
-      }
-    }
-
-    return withReversals;
+    return this.reversalDetector.processReversals(sequenceData);
   }
 
   /**

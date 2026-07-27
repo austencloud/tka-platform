@@ -76,7 +76,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     let lastStep = sequence[sequence.length - 1]!;
     const nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two steps in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from step 2)
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
       const nextStep = this._createNewLOOPEntry(
@@ -104,7 +104,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -127,7 +127,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with MIRROR + SWAP + INVERTED
+   * Create a new LOOP entry by transforming a previous step with MIRROR + SWAP + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -135,7 +135,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     stepNumber: number,
     finalIntendedLength: number
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -144,7 +144,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
 
     // Get the inverted letter (INVERTED effect)
     if (!previousMatchingStep.letter) {
-      throw new Error("Previous matching beat must have a letter");
+      throw new Error("Previous matching step must have a letter");
     }
     const invertedLetter = this.loopParams.getInvertedLetter(
       previousMatchingStep.letter as string
@@ -153,9 +153,9 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     // Get the mirrored end position (MIRRORED effect)
     const mirroredEndPosition = this._getMirroredPosition(previousMatchingStep);
 
-    // Create the new beat with swapped, mirrored, and inverted attributes
-    // KEY: Blue gets attributes from Red's matching beat (SWAP)
-    //      Red gets attributes from Blue's matching beat (SWAP)
+    // Create the new step with swapped, mirrored, and inverted attributes
+    // KEY: Blue gets attributes from Red's matching step (SWAP)
+    //      Red gets attributes from Blue's matching step (SWAP)
     //      Motion types are flipped (INVERTED)
     //      Letters are flipped (INVERTED)
     //      Locations and rotations are mirrored (MIRRORED)
@@ -197,7 +197,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping (halved pattern)
+   * Get the previous matching step using index mapping (halved pattern)
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -248,7 +248,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     const endPos = previousMatchingStep.endPosition;
 
     if (!endPos) {
-      throw new Error("Previous matching beat must have an end position");
+      throw new Error("Previous matching step must have an end position");
     }
 
     const mirroredPosition = VERTICAL_MIRROR_POSITION_MAP[endPos];
@@ -257,7 +257,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   }
 
   /**
-   * Create mirrored-swapped-inverted motion data for the new beat
+   * Create mirrored-swapped-inverted motion data for the new step
    * Combines color swapping with location mirroring, inverted motion types, and rotation flipping
    * **IMPORTANT**: Rotation direction is flipped (3 transformations = odd number of flips)
    */
@@ -271,7 +271,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     const oppositeColor =
       color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
 
-    // For CONTINUITY: Always use same color from previous beat
+    // For CONTINUITY: Always use same color from previous step
     // (Blue continues from where Blue ended, Red continues from where Red ended)
     // The swap affects which PATTERN to follow, not where to continue from
     const previousMotion = previousStep.motions[color];

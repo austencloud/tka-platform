@@ -170,7 +170,7 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
     if (!firstStep) return sequence;
 
     try {
-      const derivedStartPosition = startPositionDeriver.deriveFromFirstBeat(firstStep);
+    const derivedStartPosition = startPositionDeriver.deriveFromFirstStep(firstStep);
       return {
         ...sequence,
         startPosition: derivedStartPosition,

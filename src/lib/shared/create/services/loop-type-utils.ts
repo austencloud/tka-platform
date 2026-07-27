@@ -11,7 +11,13 @@
 
 import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { LOOPSpecWire, PropLOOPSpecWire } from "@tka/sequence-engine/loop";
+import {
+  getLOOPSpecExpansionMultiplier,
+  loopSpecFromWire,
+  type LOOPSpecWire,
+  type PropLOOPSpecWire,
+  type ReflectionAxis,
+} from "@tka/sequence-engine/loop";
 
 /**
  * Parse a LOOPType string into a Set of LOOPComponent values.
@@ -36,11 +42,11 @@ export function parseLoopComponents(loopType: LOOPType | string | null | undefin
  * generatable LOOP type behind them. Anything not in this table is not
  * offered by the combo builder and must never be silently coerced.
  *
- * Combos absent from this table are absent for a reason, not an oversight:
- * FLIPPED and REWOUND compose with nothing today (mirror+flip has no fixed
- * points at L1–L4 — it degenerates to a 180° rotation — and rewound combos
- * have no designed semantics yet). Every subset of {MIRRORED, ROTATED,
- * SWAPPED, INVERTED} is now implemented; ROTATED_SWAPPED_INVERTED (the
+ * The UI models spatial reflection as MIRRORED plus an explicit axis.
+ * FLIPPED remains here as a legacy single-component alias for east-west
+ * reflection; it is not a second independent reflection component in new
+ * combinations. REWOUND remains temporal and standalone. Every subset of
+ * {MIRRORED, ROTATED, SWAPPED, INVERTED} is implemented; ROTATED_SWAPPED_INVERTED (the
  * former sole gap) is valid per MCP compositional LOOP theory: ROTATE is
  * inner, SWAP/INVERT compose as outer, and all beta positions are swap
  * fixed points (inversion is position-free).
@@ -145,6 +151,7 @@ export interface LoopRhythm {
   rotationInterval?: 2 | 4; // default 2
   inversionInterval?: 2 | 4; // default 2
   inversionMode?: "expand" | "overlay"; // default "expand"
+  reflectionAxis?: ReflectionAxis; // default depends on the legacy LOOP type
 }
 
 /**
@@ -168,6 +175,16 @@ export function buildLoopSpec(
       prop.inverted = {
         period: rhythm.inversionInterval ?? 2,
         ...(rhythm.inversionMode === "overlay" ? { mode: "overlay" as const } : {}),
+      };
+    } else if (
+      comp === LOOPComponent.MIRRORED ||
+      comp === LOOPComponent.FLIPPED
+    ) {
+      prop[comp] = {
+        period: 2,
+        reflectionAxis:
+          rhythm.reflectionAxis ??
+          (comp === LOOPComponent.FLIPPED ? "east-west" : "north-south"),
       };
     } else {
       prop[comp] = { period: 2 };
@@ -202,13 +219,17 @@ export interface ResolvedLoopConfig {
  *     path (a requested 16 comes back 32).
  *
  * Even with both guards, a degenerate seed can still reduce below the requested
- * length occasionally (e.g. a 2-beat quartered-rotation seed); the exact-length
+ * length occasionally (e.g. a 2-step quartered-rotation seed); the exact-length
  * generator's step-count re-roll is the backstop for that residual.
  */
 export function resolveLoopConfig(
   loopType: LOOPType | string,
   requestedPeriod: string | undefined,
-  rhythmOpts?: { inversionInterval?: 2 | 4; inversionMode?: "expand" | "overlay" },
+  rhythmOpts?: {
+    inversionInterval?: 2 | 4;
+    inversionMode?: "expand" | "overlay";
+    reflectionAxis?: ReflectionAxis;
+  },
 ): ResolvedLoopConfig {
   const supportsQuartered = ROTATED_LOOP_TYPES.has(loopType as LOOPType);
   const period: "halved" | "quartered" =
@@ -217,6 +238,11 @@ export function resolveLoopConfig(
     rotationInterval: period === "quartered" ? 4 : 2,
     inversionInterval: rhythmOpts?.inversionInterval ?? 2,
     inversionMode: rhythmOpts?.inversionMode ?? "expand",
+    reflectionAxis:
+      rhythmOpts?.reflectionAxis ??
+      (String(loopType).includes("flipped")
+        ? "east-west"
+        : "north-south"),
   };
   const loopSpecWire =
     buildLoopSpec(parseLoopComponents(loopType), loopRhythm) ?? undefined;
@@ -238,37 +264,15 @@ export function resolveLoopConfig(
  *    (fuseableAtSamePeriod branch) — rotation contributes x1.
  */
 export function expanderMultiplier(wire: LOOPSpecWire): number {
-  const prop = wire.blue ?? wire.red;
-  if (!prop) return 1;
-
-  const FUSEABLE = ["mirrored", "flipped", "swapped", "inverted"] as const;
-  const groups = new Map<number, { hasMirrorOrFlip: boolean }>();
-  for (const comp of FUSEABLE) {
-    const cSpec = prop[comp];
-    if (!cSpec || cSpec.mode === "overlay") continue;
-    const group = groups.get(cSpec.period) ?? { hasMirrorOrFlip: false };
-    if (comp === "mirrored" || comp === "flipped") group.hasMirrorOrFlip = true;
-    groups.set(cSpec.period, group);
-  }
-
-  let mult = 1;
-  const rot = prop.rotated;
-  if (rot && rot.mode !== "overlay") {
-    const sharing = groups.get(rot.period);
-    if (!sharing || sharing.hasMirrorOrFlip) mult *= rot.period;
-    // else: rotation absorbed into the fused stage — x1
-  }
-  for (const period of groups.keys()) mult *= period;
-  if (prop.rewound) mult *= prop.rewound.period;
-  return mult;
+  return getLOOPSpecExpansionMultiplier(loopSpecFromWire(wire));
 }
 
 /**
  * True when the wire spec declares INVERTED in "expand" mode (mode absent or
  * "expand") rather than "overlay". Used by the orchestrator's degenerate-seed
  * guard: an expand-mode inversion multiplies length by its period, so a
- * 1-beat half-seed carries no visible pro/anti flip for it to invert (a
- * single beat is dash-only at the seed boundary). Overlay-mode inversion
+ * 1-step half-seed carries no visible pro/anti flip for it to invert (a
+ * single step is dash-only at the seed boundary). Overlay-mode inversion
  * applies in place over the fully-expanded sequence and has no such
  * constraint, so it does not trigger the guard.
  */

@@ -10,10 +10,10 @@
  * StrictMirroredLOOPExecutor.
  *
  * Period 4 structure:
- *   Q1 (beats 1..N)     - partial
- *   Q2 (beats N+1..2N)  - blue/red swapped version of Q1
- *   Q3 (beats 2N+1..3N) - copy of Q1 at advanced orientation
- *   Q4 (beats 3N+1..4N) - swapped version of Q3
+ *   Q1 (steps 1..N)     - partial
+ *   Q2 (steps N+1..2N)  - blue/red swapped version of Q1
+ *   Q3 (steps 2N+1..3N) - copy of Q1 at advanced orientation
+ *   Q4 (steps 3N+1..4N) - swapped version of Q3
  */
 
 import {
@@ -66,7 +66,7 @@ export class StrictSwappedLOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -97,7 +97,7 @@ export class StrictSwappedLOOPExecutor {
     const sourceRed = sourceStep.motions[MotionColor.RED];
 
     if (!sourceBlue || !sourceRed) {
-      throw new Error("Source beat is missing required motion data");
+      throw new Error("Source step is missing required motion data");
     }
 
     const blueMotion = this._createSwappedMotion(

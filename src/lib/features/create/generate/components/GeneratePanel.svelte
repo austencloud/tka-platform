@@ -38,13 +38,16 @@ Card-based architecture with integrated Generate button:
   } from "$lib/shared/create/state/generator-voice-ref.svelte";
   import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
   import type { GenerationOptions } from "../shared/domain/models/generate-models";
-  import { Period } from "../circular/domain/models/circular-models";
+  import {
+    LOOPType,
+    Period,
+  } from "../circular/domain/models/circular-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import { resolveAccessTier, getMaxSteps } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -78,13 +81,13 @@ Card-based architecture with integrated Generate button:
   const startEndState = createStartEndOptionsState();
   const favoriteState = createFavoriteState();
 
-  // Guest LOOP gating: guests only get rotated LOOPs + configs within their beat
+  // Guest LOOP gating: guests only get rotated LOOPs + configs within their step
   // cap; tapping a gated LOOP opens a sign-up nudge (the conversion channel).
   const accessTier = $derived(
     resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
   const guestLoopMaxLength = $derived(
-    accessTier === "guest" ? getMaxBeats("guest") : undefined
+    accessTier === "guest" ? getMaxSteps("guest") : undefined
   );
   let loopSignupReason = $state<string | null>(null);
 
@@ -150,6 +153,9 @@ Card-based architecture with integrated Generate button:
       cur.propContinuity !== last.propContinuity ||
       cur.loopType !== last.loopType ||
       cur.period !== last.period ||
+      cur.reflectionAxis !== last.reflectionAxis ||
+      cur.inversionInterval !== last.inversionInterval ||
+      cur.inversionMode !== last.inversionMode ||
       cur.constraintPreset !== last.constraintPreset ||
       cur.handPathMode !== last.handPathMode ||
       cur.motionTypeFilter !== last.motionTypeFilter
@@ -260,6 +266,11 @@ Card-based architecture with integrated Generate button:
       rotationInterval: configState.config.period === Period.QUARTERED ? 4 : 2,
       inversionInterval: configState.config.inversionInterval ?? 2,
       inversionMode: configState.config.inversionMode ?? "expand",
+      reflectionAxis:
+        configState.config.reflectionAxis ??
+        (configState.config.loopType === LOOPType.FLIPPED
+          ? "east-west"
+          : "north-south"),
     }}
     sequenceLength={configState.config.length}
     guestMaxLength={guestLoopMaxLength}
@@ -274,6 +285,7 @@ Card-based architecture with integrated Generate button:
           : {}),
         ...(u.inversionInterval ? { inversionInterval: u.inversionInterval } : {}),
         ...(u.inversionMode ? { inversionMode: u.inversionMode } : {}),
+        ...(u.reflectionAxis ? { reflectionAxis: u.reflectionAxis } : {}),
       })}
   />
 

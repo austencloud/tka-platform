@@ -40,7 +40,7 @@ export class OrientationCalculator implements IOrientationCalculator {
 
 /**
  * Propagates orientations through a sequence.
- * Each beat's start orientation = previous beat's end orientation.
+ * Each step's start orientation = previous step's end orientation.
  */
 export class OrientationPropagator implements IOrientationPropagator {
   constructor(private readonly calculator: IOrientationCalculator) {}

@@ -33,27 +33,27 @@ describe("PositionReachabilityAnalyzer", () => {
   const analyzer = new PositionReachabilityAnalyzer();
 
   describe("simple linear chain", () => {
-    // Graph: A→B, B→C. Goal: {C}. 3-beat seed.
-    // Beat 0 must start at A (only A can reach B, which can reach C).
-    // Beat 1 must start at B.
-    // Beat 2 must start at C... wait, no. The goal is the END position of
-    // the final beat, so beat 2 needs startPosition with a transition to C.
-    // That's B. So: beat 0 = {A}, beat 1 = {B}, beat 2 = {B}.
-    // Actually: A→B→C is only 2 hops. 3 beats = 3 hops needed.
-    // Let's use a 2-beat seed instead for the simple A→B→C chain.
+    // Graph: A→B, B→C. Goal: {C}. 3-step seed.
+    // Step 0 must start at A (only A can reach B, which can reach C).
+    // Step 1 must start at B.
+    // Step 2 must start at C... wait, no. The goal is the END position of
+    // the final step, so step 2 needs startPosition with a transition to C.
+    // That's B. So: step 0 = {A}, step 1 = {B}, step 2 = {B}.
+    // Actually: A→B→C is only 2 hops. 3 steps = 3 hops needed.
+    // Let's use a 2-step seed instead for the simple A→B→C chain.
 
     const variations = [
       variation("A", "B"),
       variation("B", "C"),
     ];
 
-    it("computes backward reachability for 2-beat chain", () => {
+    it("computes backward reachability for 2-step chain", () => {
       const result = analyzer.analyze(2, new Set(["C"]), variations);
 
       expect(result.feasible).toBe(true);
-      // Beat 0: must start at A (A→B, and B can reach C)
+      // Step 0: must start at A (A→B, and B can reach C)
       expect(result.reachableAt[0]).toEqual(new Set(["A"]));
-      // Beat 1: must start at B (B→C, and C is the goal)
+      // Step 1: must start at B (B→C, and C is the goal)
       expect(result.reachableAt[1]).toEqual(new Set(["B"]));
     });
   });
@@ -74,9 +74,9 @@ describe("PositionReachabilityAnalyzer", () => {
   });
 
   describe("blocked start positions", () => {
-    // Graph: A→B, B→C, X→B. Goal: {C}. 2-beat seed.
-    // Without blocking: beat 0 = {A, X}, beat 1 = {B}.
-    // Blocking A: beat 0 = {X}, beat 1 = {B}.
+    // Graph: A→B, B→C, X→B. Goal: {C}. 2-step seed.
+    // Without blocking: step 0 = {A, X}, step 1 = {B}.
+    // Blocking A: step 0 = {X}, step 1 = {B}.
     // Blocking both A and X: infeasible.
     const variations = [
       variation("A", "B"),
@@ -84,7 +84,7 @@ describe("PositionReachabilityAnalyzer", () => {
       variation("B", "C"),
     ];
 
-    it("filters blocked positions from beat 0", () => {
+    it("filters blocked positions from step 0", () => {
       const result = analyzer.analyze(2, new Set(["C"]), variations, new Set(["A"]));
 
       expect(result.feasible).toBe(true);
@@ -101,9 +101,9 @@ describe("PositionReachabilityAnalyzer", () => {
   });
 
   describe("multiple paths to goal", () => {
-    // Graph: A→B, A→C, B→D, C→D. Goal: {D}. 2-beat seed.
-    // Beat 0: {A} (only position that can reach B or C)
-    // Beat 1: {B, C} (both can reach D)
+    // Graph: A→B, A→C, B→D, C→D. Goal: {D}. 2-step seed.
+    // Step 0: {A} (only position that can reach B or C)
+    // Step 1: {B, C} (both can reach D)
     const variations = [
       variation("A", "B"),
       variation("A", "C"),
@@ -121,17 +121,17 @@ describe("PositionReachabilityAnalyzer", () => {
   });
 
   describe("forward cleanup pass", () => {
-    // Graph: A→B, B→C, C→D, X→C. Goal: {D}. 3-beat seed.
+    // Graph: A→B, B→C, C→D, X→C. Goal: {D}. 3-step seed.
     //
     // Backward pass:
-    //   beat 2: {C} (C→D)
-    //   beat 1: {B, X} (both can reach C)
-    //   beat 0: {A} (A→B, B is in beat 1's reachable set)
+    //   step 2: {C} (C→D)
+    //   step 1: {B, X} (both can reach C)
+    //   step 0: {A} (A→B, B is in step 1's reachable set)
     //
     // Forward cleanup:
-    //   beat 0: {A} (unchanged)
-    //   beat 1: {B} (X survives backward pass, but no path from A reaches X)
-    //   beat 2: {C} (unchanged — B can reach C)
+    //   step 0: {A} (unchanged)
+    //   step 1: {B} (X survives backward pass, but no path from A reaches X)
+    //   step 2: {C} (unchanged — B can reach C)
     const variations = [
       variation("A", "B"),
       variation("B", "C"),
@@ -150,8 +150,8 @@ describe("PositionReachabilityAnalyzer", () => {
     });
   });
 
-  describe("single-beat seed", () => {
-    // For a 1-beat seed, the only constraint is: startPosition has a
+  describe("single-step seed", () => {
+    // For a 1-step seed, the only constraint is: startPosition has a
     // transition directly to a required end position.
     const variations = [
       variation("A", "X"),
@@ -166,14 +166,14 @@ describe("PositionReachabilityAnalyzer", () => {
       expect(result.reachableAt[0]).toEqual(new Set(["A", "C"]));
     });
 
-    it("respects blocked starts for single-beat seed", () => {
+    it("respects blocked starts for single-step seed", () => {
       const result = analyzer.analyze(1, new Set(["X"]), variations, new Set(["A"]));
 
       expect(result.feasible).toBe(true);
       expect(result.reachableAt[0]).toEqual(new Set(["C"]));
     });
 
-    it("detects infeasibility for single-beat seed", () => {
+    it("detects infeasibility for single-step seed", () => {
       const result = analyzer.analyze(1, new Set(["Z"]), variations);
 
       expect(result.feasible).toBe(false);
@@ -181,7 +181,7 @@ describe("PositionReachabilityAnalyzer", () => {
     });
   });
 
-  describe("4-beat seed with branching (mirrors the original bug scenario)", () => {
+  describe("4-step seed with branching (mirrors the original bug scenario)", () => {
     // Simulates a constrained graph where only certain paths reach the goal.
     //
     // Positions: alpha1, alpha3, beta1, beta3, gamma1
@@ -195,15 +195,15 @@ describe("PositionReachabilityAnalyzer", () => {
     //   beta3  → alpha3   <-- only path to goal
     //   gamma1 → alpha1
     //
-    // 4-beat seed:
-    //   Beat 0: must eventually reach alpha3 in 4 hops
+    // 4-step seed:
+    //   Step 0: must eventually reach alpha3 in 4 hops
     //   One valid path: alpha1→beta3→alpha1→beta3→alpha3
     //   Another: alpha1→beta1→gamma1→alpha1→beta3... wait, that's 5 hops.
-    //   With 4 beats: alpha1→beta3, beta3→alpha1, alpha1→beta3, beta3→alpha3. Yes!
+    //   With 4 steps: alpha1→beta3, beta3→alpha1, alpha1→beta3, beta3→alpha3. Yes!
     //
-    // Dead path: alpha1→beta1→gamma1→alpha1 (at beat 3, alpha1 can reach
+    // Dead path: alpha1→beta1→gamma1→alpha1 (at step 3, alpha1 can reach
     //   beta1 or beta3, but only beta3→alpha3 satisfies the goal — so
-    //   alpha1 IS reachable at beat 3, and the search should still succeed).
+    //   alpha1 IS reachable at step 3, and the search should still succeed).
 
     const variations = [
       variation("alpha1", "beta1"),
@@ -214,33 +214,33 @@ describe("PositionReachabilityAnalyzer", () => {
       variation("gamma1", "alpha1"),
     ];
 
-    it("finds valid 4-beat path to goal", () => {
+    it("finds valid 4-step path to goal", () => {
       const result = analyzer.analyze(4, new Set(["alpha3"]), variations);
 
       expect(result.feasible).toBe(true);
-      // Beat 3 (final): must have a transition to alpha3 → only beta3
+      // Step 3 (final): must have a transition to alpha3 → only beta3
       expect(result.reachableAt[3]).toContain("beta3");
-      // Beat 0: alpha1 can start the path
+      // Step 0: alpha1 can start the path
       expect(result.reachableAt[0]).toContain("alpha1");
     });
 
-    it("prunes unreachable positions at each beat", () => {
+    it("prunes unreachable positions at each step", () => {
       const result = analyzer.analyze(4, new Set(["alpha3"]), variations);
 
-      // gamma1 has no path to alpha3 within 1 step, so at beat 3 it's out
+      // gamma1 has no path to alpha3 within 1 step, so at step 3 it's out
       expect(result.reachableAt[3]).not.toContain("gamma1");
       // beta1 can only go to gamma1, which can only go to alpha1, which
-      // can go to beta3 — so beta1 is viable at beat 1 (3 hops to goal)
-      // but not at beat 3 (needs 3 more hops, only has 1)
+      // can go to beta3 — so beta1 is viable at step 1 (3 hops to goal)
+      // but not at step 3 (needs 3 more hops, only has 1)
       expect(result.reachableAt[3]).not.toContain("beta1");
     });
 
     it("blocked starts narrow the feasible space", () => {
       // Block alpha1, beta1, and gamma1 — leaving only beta3 and alpha3.
-      // beta3→alpha1 is blocked at beat 1 forward cleanup (alpha1 can
-      // continue, but beta3 at beat 0 goes to alpha1 which leads back).
+      // beta3→alpha1 is blocked at step 1 forward cleanup (alpha1 can
+      // continue, but beta3 at step 0 goes to alpha1 which leads back).
       // Actually: block ALL positions except alpha3 (which has no outgoing
-      // transitions in this graph). That makes beat 0 empty.
+      // transitions in this graph). That makes step 0 empty.
       const result = analyzer.analyze(
         4,
         new Set(["alpha3"]),
@@ -287,7 +287,7 @@ describe("PositionReachabilityAnalyzer", () => {
 
   describe("fully connected graph", () => {
     // When no hard constraints filter variations, the graph is dense.
-    // Reachability should include all positions at every beat.
+    // Reachability should include all positions at every step.
     const positions = ["A", "B", "C"];
     const variations: PictographData[] = [];
     for (const s of positions) {
@@ -296,7 +296,7 @@ describe("PositionReachabilityAnalyzer", () => {
       }
     }
 
-    it("all positions reachable at every beat", () => {
+    it("all positions reachable at every step", () => {
       const result = analyzer.analyze(4, new Set(["C"]), variations);
 
       expect(result.feasible).toBe(true);

@@ -18,20 +18,24 @@
 import {
   SWAPPED_POSITION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
-  VERTICAL_MIRROR_LOCATION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
-  HORIZONTAL_MIRROR_LOCATION_MAP,
+  reflectLocation,
 } from "../position-maps/strict-loop-position-maps.js";
 import {
-  HALF_POSITION_MAP,
   QUARTER_POSITION_MAP_CW,
+  LOCATION_MAP_CLOCKWISE,
 } from "../position-maps/circular-position-maps.js";
 import { LOOPType, Period } from "../loop-types.js";
-import { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./RotatedEndPositionSelector.js";
+import {
+  RotatedEndPositionSelector,
+  rotatedEndPositionSelector,
+} from "./RotatedEndPositionSelector.js";
 import {
   LOOPComponent as CanonicalLOOPComponent,
   type LOOPSpec,
   type PropLOOPSpec,
+  getReflectionAxis,
+  specsAreEqual,
 } from "../loop-spec.js";
 import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
 
@@ -54,7 +58,10 @@ export class LOOPEndPositionSelector {
     switch (loopType) {
       // Strict LOOP types
       case LOOPType.ROTATED:
-        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
+        return this.rotatedSelector.determineRotatedEndPosition(
+          period,
+          startPosition
+        );
 
       case LOOPType.MIRRORED:
         return VERTICAL_MIRROR_POSITION_MAP[startPosition] ?? null;
@@ -86,18 +93,24 @@ export class LOOPEndPositionSelector {
         return SWAPPED_POSITION_MAP[rotatedEnd] ?? null;
       }
 
-      // All Four: mirror+swap need a start fixed under both — beta1/beta5 only
-      // (elsewhere the mirror degrades to a flip and detection finds
-      // flipped+inverted+rotated+swapped, an unimplemented combo).
+      // Rotation is the inner expansion stage. Once it closes, the outer
+      // mirror/swap stage expands that circular result from the same seam, so
+      // it does not require a vertical-axis fixed point.
+      case LOOPType.MIRRORED_ROTATED_SWAPPED:
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
-        if (startPosition !== "beta1" && startPosition !== "beta5") return null;
-        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
+        return this.rotatedSelector.determineRotatedEndPosition(
+          period,
+          startPosition
+        );
 
       // Combined LOOP types with ROTATED (rotation takes precedence)
       case LOOPType.ROTATED_INVERTED:
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
-        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
+        return this.rotatedSelector.determineRotatedEndPosition(
+          period,
+          startPosition
+        );
 
       // Combined LOOP types with MIRRORED
       case LOOPType.MIRRORED_INVERTED:
@@ -117,12 +130,15 @@ export class LOOPEndPositionSelector {
       case LOOPType.SWAPPED_INVERTED:
         return SWAPPED_POSITION_MAP[startPosition] ?? null;
 
-      // Mirrored + Swapped + Inverted: inverted takes precedence — return to
-      // start. Start must be a fixed point of both mirror and swap
-      // (beta1/beta5); elsewhere the mirror degrades to a flip.
-      case LOOPType.MIRRORED_SWAPPED_INVERTED:
-        if (startPosition !== "beta1" && startPosition !== "beta5") return null;
-        return startPosition;
+      // Inversion does not move either hand, so MSI has the same positional
+      // seam as mirror+swap: end = swap(verticalMirror(start)). Requiring the
+      // start itself to be fixed under both transforms incorrectly excludes
+      // every Box position.
+      case LOOPType.MIRRORED_SWAPPED_INVERTED: {
+        const mirroredPosition = VERTICAL_MIRROR_POSITION_MAP[startPosition];
+        if (!mirroredPosition) return null;
+        return SWAPPED_POSITION_MAP[mirroredPosition] ?? null;
+      }
 
       // Rewound has no position constraint — reversed steps return to start naturally
       case LOOPType.REWOUND:
@@ -136,50 +152,164 @@ export class LOOPEndPositionSelector {
   }
 }
 
-export const loopEndPositionSelector = new LOOPEndPositionSelector(rotatedEndPositionSelector);
+export const loopEndPositionSelector = new LOOPEndPositionSelector(
+  rotatedEndPositionSelector
+);
 
 export function determineEndPositionForSpec(
   spec: LOOPSpec,
-  startPosition: string,
+  startPosition: string
 ): string | null {
+  if (!specsAreEqual(spec.blue, spec.red)) return null;
+
   const [blueStart, redStart] =
     gridPositionDeriver.getGridLocationsFromPosition(startPosition);
+  const propSpec = spec.blue ?? spec.red;
+  if (!propSpec || propSpec.components.size === 0) return startPosition;
+  if (propSpec.components.has(CanonicalLOOPComponent.REWOUND)) return null;
 
-  const blueEnd = determinePropEndLocation(spec.blue, blueStart);
-  const redEnd = determinePropEndLocation(spec.red, redStart);
+  const rotation = propSpec.components.get(CanonicalLOOPComponent.ROTATED);
+  const fuseableAtRotationPeriod = rotation
+    ? hasFuseableAtPeriod(propSpec, rotation.period)
+    : false;
+  const reflectionAtRotationPeriod = rotation
+    ? hasReflectionAtPeriod(propSpec, rotation.period)
+    : false;
 
-  if (blueEnd === null && redEnd === null) return null;
+  // ROTATED executes as its own inner expansion unless a same-period
+  // swap/inversion group absorbs it. Later reflection stages receive the
+  // already-closed inner sequence, so they do not constrain the original
+  // seed seam.
+  if (
+    rotation &&
+    (!fuseableAtRotationPeriod || reflectionAtRotationPeriod)
+  ) {
+    return derivePosition(
+      rotateLocation(blueStart, rotation.period),
+      rotateLocation(redStart, rotation.period)
+    );
+  }
 
+  const firstPeriod = firstFuseablePeriod(propSpec);
+  if (firstPeriod === null) return startPosition;
+
+  let blueEnd: string | null = blueStart;
+  let redEnd: string | null = redStart;
+
+  if (rotation?.period === firstPeriod) {
+    blueEnd = rotateLocation(blueEnd, rotation.period);
+    redEnd = rotateLocation(redEnd, rotation.period);
+  }
+
+  for (const component of [
+    CanonicalLOOPComponent.MIRRORED,
+    CanonicalLOOPComponent.FLIPPED,
+  ]) {
+    const componentSpec = propSpec.components.get(component);
+    if (!componentSpec || componentSpec.period !== firstPeriod) continue;
+    const axis = getReflectionAxis(component, componentSpec);
+    if (!axis) continue;
+    blueEnd = blueEnd === null ? null : reflectLocation(blueEnd, axis);
+    redEnd = redEnd === null ? null : reflectLocation(redEnd, axis);
+  }
+
+  const swap = propSpec.components.get(CanonicalLOOPComponent.SWAPPED);
+  if (swap?.period === firstPeriod) {
+    [blueEnd, redEnd] = [redEnd, blueEnd];
+  }
+
+  return derivePosition(blueEnd, redEnd);
+}
+
+function derivePosition(
+  blueLocation: string | null,
+  redLocation: string | null
+): string | null {
+  if (blueLocation === null || redLocation === null) return null;
   return gridPositionDeriver.getGridPositionFromLocations(
-    blueEnd ?? blueStart,
-    redEnd ?? redStart,
+    blueLocation,
+    redLocation
   );
 }
 
-function determinePropEndLocation(
-  spec: PropLOOPSpec | undefined,
-  startLoc: string,
-): string | null {
-  if (!spec || spec.components.size === 0) return startLoc;
-
-  if (spec.components.has(CanonicalLOOPComponent.REWOUND)) return null;
-
-  if (spec.components.has(CanonicalLOOPComponent.ROTATED)) {
-    const period = spec.components.get(CanonicalLOOPComponent.ROTATED)!.period;
-    return rotateLocation(startLoc, period);
+function hasFuseableAtPeriod(
+  spec: PropLOOPSpec,
+  period: number
+): boolean {
+  for (const [component, componentSpec] of spec.components) {
+    if (componentSpec.mode === "overlay") continue;
+    if (
+      componentSpec.period === period &&
+      (component === CanonicalLOOPComponent.MIRRORED ||
+        component === CanonicalLOOPComponent.FLIPPED ||
+        component === CanonicalLOOPComponent.SWAPPED ||
+        component === CanonicalLOOPComponent.INVERTED)
+    ) {
+      return true;
+    }
   }
-  if (spec.components.has(CanonicalLOOPComponent.MIRRORED))
-    return VERTICAL_MIRROR_LOCATION_MAP[startLoc] ?? null;
-  if (spec.components.has(CanonicalLOOPComponent.FLIPPED))
-    return HORIZONTAL_MIRROR_LOCATION_MAP[startLoc] ?? null;
-  if (spec.components.has(CanonicalLOOPComponent.INVERTED)) return startLoc;
-  if (spec.components.has(CanonicalLOOPComponent.SWAPPED)) return startLoc;
+  return false;
+}
 
-  return startLoc;
+function hasReflectionAtPeriod(
+  spec: PropLOOPSpec,
+  period: number
+): boolean {
+  for (const component of [
+    CanonicalLOOPComponent.MIRRORED,
+    CanonicalLOOPComponent.FLIPPED,
+  ]) {
+    const componentSpec = spec.components.get(component);
+    if (
+      componentSpec?.mode !== "overlay" &&
+      componentSpec?.period === period
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function firstFuseablePeriod(spec: PropLOOPSpec): number | null {
+  const groups = new Map<
+    number,
+    { hasSpatialTransform: boolean; invertOnly: boolean }
+  >();
+
+  for (const [component, componentSpec] of spec.components) {
+    if (componentSpec.mode === "overlay") continue;
+    const fuseable =
+      component === CanonicalLOOPComponent.MIRRORED ||
+      component === CanonicalLOOPComponent.FLIPPED ||
+      component === CanonicalLOOPComponent.SWAPPED ||
+      component === CanonicalLOOPComponent.INVERTED;
+    if (!fuseable) continue;
+
+    const current = groups.get(componentSpec.period) ?? {
+      hasSpatialTransform: false,
+      invertOnly: true,
+    };
+    if (component !== CanonicalLOOPComponent.INVERTED) {
+      current.hasSpatialTransform = true;
+      current.invertOnly = false;
+    }
+    groups.set(componentSpec.period, current);
+  }
+
+  const ordered = [...groups.entries()].sort(([periodA, groupA], [periodB, groupB]) => {
+    const inversionRankA = groupA.invertOnly ? 1 : 0;
+    const inversionRankB = groupB.invertOnly ? 1 : 0;
+    if (inversionRankA !== inversionRankB) return inversionRankA - inversionRankB;
+    return periodA - periodB;
+  });
+  return ordered[0]?.[0] ?? null;
 }
 
 function rotateLocation(loc: string, period: number): string | null {
-  if (period === 2) return HALF_POSITION_MAP[loc] ?? null;
-  if (period === 4) return QUARTER_POSITION_MAP_CW[loc] ?? null;
+  if (period === 2) {
+    const quarterTurn = LOCATION_MAP_CLOCKWISE[loc];
+    return quarterTurn ? LOCATION_MAP_CLOCKWISE[quarterTurn] ?? null : null;
+  }
+  if (period === 4) return LOCATION_MAP_CLOCKWISE[loc] ?? null;
   return null;
 }

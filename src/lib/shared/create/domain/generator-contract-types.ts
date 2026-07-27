@@ -1,5 +1,9 @@
-import type { DifficultyLevel, GenerationMode, PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import type {
+  DifficultyLevel,
+  GenerationMode,
+  PropContinuity,
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import type { GeneratorCardId } from "$lib/shared/create/domain/card-registry";
@@ -30,13 +34,14 @@ export interface CardHandlers {
   /** @deprecated Mode is now derived from word presence. Kept for interface compat. */
   handleGenerationModeChange?: (mode: GenerationMode) => void;
   handleLOOPTypeChange: (loopType: LOOPType) => void;
-  handlePeriodChange: (period: Period) => void;
   handleStartEndChange?: (options: StartEndOptions) => void;
   handleGenerateClick?: () => Promise<void>;
   // Style card handlers
   handleConstraintPresetChange?: (v: "smooth" | "mixed" | "choppy") => void;
   handleHandPathModeChange?: (v: "smooth" | "mixed" | "choppy") => void;
-  handleMotionTypeFilterChange?: (v: "no-dash" | "mixed" | "prefer-dash") => void;
+  handleMotionTypeFilterChange?: (
+    v: "no-dash" | "mixed" | "prefer-dash"
+  ) => void;
   // Duration card handler
   handleDurationTemplateSelect?: (id: string | null) => void;
   // Word input handlers (spell mode)

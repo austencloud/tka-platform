@@ -27,6 +27,7 @@ import {
   type PropLOOPSpec,
   type ComponentSpec,
 } from "../loop-spec.js";
+import type { ReflectionAxis } from "../position-maps/strict-loop-position-maps.js";
 import {
   uniformHalvedRelation,
   uniformRelationAtInterval,
@@ -39,13 +40,20 @@ import {
 
 export { LOOPComponent };
 
-export type LOOPComponentId = "rotated" | "mirrored" | "flipped" | "swapped" | "inverted" | "rewound";
+export type LOOPComponentId =
+  | "rotated"
+  | "mirrored"
+  | "flipped"
+  | "swapped"
+  | "inverted"
+  | "rewound";
 
 export interface LOOPDetectionResult {
   isCircular: boolean;
   components: LOOPComponentId[];
   isFreeform: boolean;
   rotationDirection: "cw" | "ccw" | null;
+  reflectionAxis: ReflectionAxis | null;
   description: string;
 }
 
@@ -75,16 +83,18 @@ export interface RichLOOPDetectionResult {
   spec: LOOPSpec | null;
   loopType: LOOPType | null;
   period: Period | null;
+  reflectionAxis: ReflectionAxis | null;
   confidence: DetectionConfidence;
   compoundPattern?: CompoundPattern;
 }
-
 
 /**
  * Derive a backward-compatible LOOPType from detected components.
  * Returns null if the combination has no corresponding LOOPType.
  */
-function deriveLoopTypeFromComponents(components: Set<LOOPComponent>): LOOPType | null {
+function deriveLoopTypeFromComponents(
+  components: Set<LOOPComponent>
+): LOOPType | null {
   if (components.size === 0) return null;
   const has = (c: LOOPComponent) => components.has(c);
   const size = components.size;
@@ -98,35 +108,63 @@ function deriveLoopTypeFromComponents(components: Set<LOOPComponent>): LOOPType 
     if (has(LOOPComponent.REWOUND)) return LOOPType.REWOUND;
   }
   if (size === 2) {
-    if (has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED)) return LOOPType.SWAPPED_INVERTED;
-    if (has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED)) return LOOPType.ROTATED_INVERTED;
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.SWAPPED)) return LOOPType.MIRRORED_SWAPPED;
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.INVERTED)) return LOOPType.MIRRORED_INVERTED;
-    if (has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED)) return LOOPType.ROTATED_SWAPPED;
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED)) return LOOPType.MIRRORED_ROTATED;
+    if (has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED))
+      return LOOPType.SWAPPED_INVERTED;
+    if (has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED))
+      return LOOPType.ROTATED_INVERTED;
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.SWAPPED))
+      return LOOPType.MIRRORED_SWAPPED;
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.INVERTED))
+      return LOOPType.MIRRORED_INVERTED;
+    if (has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED))
+      return LOOPType.ROTATED_SWAPPED;
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED))
+      return LOOPType.MIRRORED_ROTATED;
   }
   if (size === 3) {
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.ROTATED))
+    if (
+      has(LOOPComponent.MIRRORED) &&
+      has(LOOPComponent.INVERTED) &&
+      has(LOOPComponent.ROTATED)
+    )
       return LOOPType.MIRRORED_INVERTED_ROTATED;
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED))
+    if (
+      has(LOOPComponent.MIRRORED) &&
+      has(LOOPComponent.ROTATED) &&
+      has(LOOPComponent.SWAPPED)
+    )
       return LOOPType.MIRRORED_ROTATED_SWAPPED;
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED))
+    if (
+      has(LOOPComponent.MIRRORED) &&
+      has(LOOPComponent.SWAPPED) &&
+      has(LOOPComponent.INVERTED)
+    )
       return LOOPType.MIRRORED_SWAPPED_INVERTED;
-    if (has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED))
+    if (
+      has(LOOPComponent.ROTATED) &&
+      has(LOOPComponent.SWAPPED) &&
+      has(LOOPComponent.INVERTED)
+    )
       return LOOPType.ROTATED_SWAPPED_INVERTED;
   }
   if (size === 4) {
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.SWAPPED))
+    if (
+      has(LOOPComponent.MIRRORED) &&
+      has(LOOPComponent.ROTATED) &&
+      has(LOOPComponent.INVERTED) &&
+      has(LOOPComponent.SWAPPED)
+    )
       return LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED;
   }
   return null;
 }
 
-
 export function isSequenceCircular(steps: SequenceStep[]): boolean {
   if (steps.length < 2) return false;
 
-  const startPositionStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
+  const startPositionStep = steps.find(
+    (s) => (s.stepNumber ?? s.stepNumber) === 0
+  );
   const lastStep = steps[steps.length - 1];
 
   if (!startPositionStep || !lastStep) return false;
@@ -134,7 +172,9 @@ export function isSequenceCircular(steps: SequenceStep[]): boolean {
   return startPositionStep.startPosition === lastStep.endPosition;
 }
 
-export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult {
+export function detectLOOPFromSteps(
+  steps: SequenceStep[]
+): LOOPDetectionResult {
   const circular = isSequenceCircular(steps);
 
   if (!circular) {
@@ -143,12 +183,15 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
       components: [],
       isFreeform: false,
       rotationDirection: null,
+      reflectionAxis: null,
       description: "Not a circular sequence",
     };
   }
 
   // Get letter steps only (exclude step 0 start position)
-  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+  const letterSteps = reduceRepeatedMotionSkeleton(
+    steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0)
+  );
 
   if (letterSteps.length < 2) {
     return {
@@ -156,6 +199,7 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
       components: [],
       isFreeform: true,
       rotationDirection: null,
+      reflectionAxis: null,
       description: "Circular but too short to detect pattern",
     };
   }
@@ -167,6 +211,7 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
       components: [],
       isFreeform: true,
       rotationDirection: null,
+      reflectionAxis: null,
       description: "Circular with odd number of steps (freeform)",
     };
   }
@@ -200,6 +245,7 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
       components: [],
       isFreeform: true,
       rotationDirection: null,
+      reflectionAxis: null,
       description: "Circular sequence with no detected pattern (freeform)",
     };
   }
@@ -221,8 +267,26 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
     components,
     isFreeform: false,
     rotationDirection: direction,
+    reflectionAxis: uniform?.reflectionAxis ?? null,
     description: `LOOP: ${components.join(" + ")}`,
   };
+}
+
+/**
+ * Check the temporal relationship directly.
+ *
+ * Rewound sequences can also happen to satisfy a spatial relation such as
+ * mirrored. The general detector picks one canonical label for display, so
+ * callers validating a rewound request must check the temporal structure
+ * itself instead of comparing that display label.
+ */
+export function hasRewoundStructure(
+  steps: readonly SequenceStep[]
+): boolean {
+  const letterSteps = reduceRepeatedMotionSkeleton(
+    steps.filter((step) => (step.stepNumber ?? 0) > 0)
+  );
+  return detectRewoundPattern(toPairMotions(letterSteps));
 }
 
 /**
@@ -244,6 +308,44 @@ function toPairMotions(steps: readonly SequenceStep[]): PairMotions[] {
   }));
 }
 
+/**
+ * Orientation closure may repeat an already-complete position/motion
+ * skeleton. LOOP classification is defined on that reduced signal space, so
+ * detect against the shortest exact motion cycle rather than mistaking two
+ * identical position cycles for a repeated/freeform LOOP.
+ */
+function reduceRepeatedMotionSkeleton(
+  steps: readonly SequenceStep[]
+): SequenceStep[] {
+  const length = steps.length;
+
+  for (
+    let candidateLength = 1;
+    candidateLength <= length / 2;
+    candidateLength++
+  ) {
+    if (length % candidateLength !== 0) continue;
+
+    const repeats = steps.every((step, index) =>
+      sameLOOPSignal(step, steps[index % candidateLength]!)
+    );
+    if (repeats) return steps.slice(0, candidateLength);
+  }
+
+  return [...steps];
+}
+
+function sameLOOPSignal(a: SequenceStep, b: SequenceStep): boolean {
+  return (["blue", "red"] as const).every((side) => {
+    const am = a.motions[side];
+    const bm = b.motions[side];
+    return (
+      am.startLocation === bm.startLocation &&
+      am.endLocation === bm.endLocation &&
+      am.motionType === bm.motionType
+    );
+  });
+}
 
 /**
  * Rich LOOP detector that supports quartered rotation, compound patterns,
@@ -269,7 +371,8 @@ export class LOOPDetectorClass {
   private buildLOOPSpec(
     components: Set<LOOPComponent>,
     period: Period | null,
-    compoundPattern?: CompoundPattern,
+    reflectionAxis?: ReflectionAxis,
+    compoundPattern?: CompoundPattern
   ): LOOPSpec | null {
     if (components.size === 0) return null;
 
@@ -278,7 +381,13 @@ export class LOOPDetectorClass {
 
     for (const comp of components) {
       const canonical = comp;
-      compMap.set(canonical, { period: periodNum });
+      const isReflection =
+        canonical === LOOPComponent.MIRRORED ||
+        canonical === LOOPComponent.FLIPPED;
+      compMap.set(canonical, {
+        period: periodNum,
+        ...(isReflection && reflectionAxis ? { reflectionAxis } : {}),
+      });
     }
 
     if (compoundPattern) {
@@ -310,21 +419,42 @@ export class LOOPDetectorClass {
     const circular = isSequenceCircular(steps);
 
     if (!circular) {
-      return { isCircular: false, spec: null, loopType: null, period: null, confidence: "accidental" };
+      return {
+        isCircular: false,
+        spec: null,
+        loopType: null,
+        period: null,
+        reflectionAxis: null,
+        confidence: "accidental",
+      };
     }
 
     // Get letter steps only (exclude start position)
-    const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+    const letterSteps = reduceRepeatedMotionSkeleton(
+      steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0)
+    );
 
     if (letterSteps.length < 2) {
-      return { isCircular: true, spec: null, loopType: null, period: null, confidence: "accidental" };
+      return {
+        isCircular: true,
+        spec: null,
+        loopType: null,
+        period: null,
+        reflectionAxis: null,
+        confidence: "accidental",
+      };
     }
 
     const pairMotions = toPairMotions(letterSteps);
 
     // Detect transformations at BOTH intervals independently
-    const quarteredTransformations = this.detectAtQuartered(letterSteps, pairMotions);
+    const quarteredTransformations = this.detectAtQuartered(
+      letterSteps,
+      pairMotions
+    );
     const halvedTransformations = this.detectAtHalved(pairMotions);
+    const reflectionAxis =
+      uniformHalvedRelation(pairMotions)?.reflectionAxis ?? null;
 
     // Check for compound pattern (transformations at different intervals)
     const compoundPattern = this.detectCompoundPattern(
@@ -339,9 +469,15 @@ export class LOOPDetectorClass {
     const detectedComponents = new Set<LOOPComponent>();
 
     if (compoundPattern) {
-      period = this.detectsQuarteredRotation(letterSteps) ? Period.QUARTERED : Period.HALVED;
-      compoundPattern.quarteredTransformations.forEach((c) => detectedComponents.add(c));
-      compoundPattern.halvedTransformations.forEach((c) => detectedComponents.add(c));
+      period = this.detectsQuarteredRotation(letterSteps)
+        ? Period.QUARTERED
+        : Period.HALVED;
+      compoundPattern.quarteredTransformations.forEach((c) =>
+        detectedComponents.add(c)
+      );
+      compoundPattern.halvedTransformations.forEach((c) =>
+        detectedComponents.add(c)
+      );
     } else {
       period = this.determinePeriod(letterSteps);
 
@@ -365,9 +501,15 @@ export class LOOPDetectorClass {
 
     return {
       isCircular: true,
-      spec: this.buildLOOPSpec(detectedComponents, period, compoundPattern ?? undefined),
+      spec: this.buildLOOPSpec(
+        detectedComponents,
+        period,
+        reflectionAxis ?? undefined,
+        compoundPattern ?? undefined
+      ),
       loopType,
       period: detectedComponents.has(LOOPComponent.ROTATED) ? period : null,
+      reflectionAxis,
       confidence,
       compoundPattern: compoundPattern ?? undefined,
     };
@@ -395,9 +537,15 @@ export class LOOPDetectorClass {
     const quarterLength = length / 4;
 
     const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
-    const q2Start = steps[quarterLength] ? this.deriveStartPosition(steps[quarterLength]!) : null;
-    const q3Start = steps[quarterLength * 2] ? this.deriveStartPosition(steps[quarterLength * 2]!) : null;
-    const q4Start = steps[quarterLength * 3] ? this.deriveStartPosition(steps[quarterLength * 3]!) : null;
+    const q2Start = steps[quarterLength]
+      ? this.deriveStartPosition(steps[quarterLength]!)
+      : null;
+    const q3Start = steps[quarterLength * 2]
+      ? this.deriveStartPosition(steps[quarterLength * 2]!)
+      : null;
+    const q4Start = steps[quarterLength * 3]
+      ? this.deriveStartPosition(steps[quarterLength * 3]!)
+      : null;
 
     if (!q1Start || !q2Start || !q3Start || !q4Start) return false;
 
@@ -425,14 +573,19 @@ export class LOOPDetectorClass {
 
     if (length < 4 || length % 4 !== 0) return components;
 
-    if (this.detectsQuarteredRotation(steps)) components.push(LOOPComponent.ROTATED);
+    if (this.detectsQuarteredRotation(steps))
+      components.push(LOOPComponent.ROTATED);
 
     // Swap/invert at the quarter interval, read through the pair-relation
     // algebra (hand-identity aware — see pair-relation.ts).
-    const rel = uniformRelationAtInterval(pairMotions, length / 4, { wrap: true });
+    const rel = uniformRelationAtInterval(pairMotions, length / 4, {
+      wrap: true,
+    });
     if (rel) {
-      if (rel.components.includes("swapped")) components.push(LOOPComponent.SWAPPED);
-      if (rel.components.includes("inverted")) components.push(LOOPComponent.INVERTED);
+      if (rel.components.includes("swapped"))
+        components.push(LOOPComponent.SWAPPED);
+      if (rel.components.includes("inverted"))
+        components.push(LOOPComponent.INVERTED);
     }
 
     return components;
@@ -467,15 +620,22 @@ export class LOOPDetectorClass {
     const length = steps.length;
     if (length < 8 || length % 4 !== 0) return null;
 
-    const hasQuarteredRotation = quarteredComponents.includes(LOOPComponent.ROTATED);
-    const hasQuarteredSwap = quarteredComponents.includes(LOOPComponent.SWAPPED);
+    const hasQuarteredRotation = quarteredComponents.includes(
+      LOOPComponent.ROTATED
+    );
+    const hasQuarteredSwap = quarteredComponents.includes(
+      LOOPComponent.SWAPPED
+    );
     const hasHalvedSwap = halvedComponents.includes(LOOPComponent.SWAPPED);
-    const hasHalvedInversion = halvedComponents.includes(LOOPComponent.INVERTED);
+    const hasHalvedInversion = halvedComponents.includes(
+      LOOPComponent.INVERTED
+    );
 
     // Compound: rotation at quartered + swap ONLY at halved
     if (hasQuarteredRotation && !hasQuarteredSwap && hasHalvedSwap) {
       const dir = this.getQuarteredRotationDirection(steps);
-      const rotDesc = dir === "ccw" ? "90 deg CCW Rotated" : "90 deg CW Rotated";
+      const rotDesc =
+        dir === "ccw" ? "90 deg CCW Rotated" : "90 deg CW Rotated";
       return {
         isCompound: true,
         quarteredTransformations: [LOOPComponent.ROTATED],
@@ -486,10 +646,13 @@ export class LOOPDetectorClass {
 
     // Compound: rotation at quartered + inversion ONLY at halved
     if (hasQuarteredRotation && hasHalvedInversion) {
-      const hasQuarteredInversion = quarteredComponents.includes(LOOPComponent.INVERTED);
+      const hasQuarteredInversion = quarteredComponents.includes(
+        LOOPComponent.INVERTED
+      );
       if (!hasQuarteredInversion) {
         const dir = this.getQuarteredRotationDirection(steps);
-        const rotDesc = dir === "ccw" ? "90 deg CCW Rotated" : "90 deg CW Rotated";
+        const rotDesc =
+          dir === "ccw" ? "90 deg CCW Rotated" : "90 deg CW Rotated";
         return {
           isCompound: true,
           quarteredTransformations: [LOOPComponent.ROTATED],
@@ -500,9 +663,15 @@ export class LOOPDetectorClass {
     }
 
     // Compound: rotation at quartered + swap + inversion at halved
-    if (hasQuarteredRotation && !hasQuarteredSwap && hasHalvedSwap && hasHalvedInversion) {
+    if (
+      hasQuarteredRotation &&
+      !hasQuarteredSwap &&
+      hasHalvedSwap &&
+      hasHalvedInversion
+    ) {
       const dir = this.getQuarteredRotationDirection(steps);
-      const rotDesc = dir === "ccw" ? "90 deg CCW Rotated" : "90 deg CW Rotated";
+      const rotDesc =
+        dir === "ccw" ? "90 deg CCW Rotated" : "90 deg CW Rotated";
       return {
         isCompound: true,
         quarteredTransformations: [LOOPComponent.ROTATED],
@@ -529,13 +698,17 @@ export class LOOPDetectorClass {
     return null;
   }
 
-  private getQuarteredRotationDirection(steps: readonly SequenceStep[]): "cw" | "ccw" | null {
+  private getQuarteredRotationDirection(
+    steps: readonly SequenceStep[]
+  ): "cw" | "ccw" | null {
     const length = steps.length;
     if (length < 4 || length % 4 !== 0) return null;
 
     const quarterLength = length / 4;
     const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
-    const q2Start = steps[quarterLength] ? this.deriveStartPosition(steps[quarterLength]!) : null;
+    const q2Start = steps[quarterLength]
+      ? this.deriveStartPosition(steps[quarterLength]!)
+      : null;
 
     if (!q1Start || !q2Start) return null;
     if (QUARTER_POSITION_MAP_CW[q1Start] === q2Start) return "cw";
@@ -543,6 +716,5 @@ export class LOOPDetectorClass {
     return null;
   }
 }
-
 
 export const loopDetectorClass = new LOOPDetectorClass();

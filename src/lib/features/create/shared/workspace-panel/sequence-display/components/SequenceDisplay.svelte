@@ -73,7 +73,7 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     sequenceState.getRemovingStepIndex()
   );
   const removingStepIndices = $derived.by(() =>
-    sequenceState.getRemovingBeatIndices()
+    sequenceState.getRemovingStepIndices()
   );
   const isClearing = $derived.by(() => sequenceState.getIsClearing());
   const isShiftStartMode = $derived(panelState.isShiftStartMode);

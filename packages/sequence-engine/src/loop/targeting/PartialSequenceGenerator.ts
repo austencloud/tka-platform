@@ -30,7 +30,7 @@ import type { Period } from "../loop-types.js";
  * Mirrors the subset of GenerationOptions the app uses.
  */
 export interface PartialSequenceOptions {
-  /** Target total beats for the full LOOP (before slicing) */
+  /** Target total steps for the full LOOP (before slicing) */
   length: number;
   /** Grid mode for position lookups */
   gridMode: "box" | "diamond";
@@ -47,9 +47,9 @@ export interface PartialSequenceOptions {
 /**
  * Interface for partial sequence generation.
  *
- * Implementations generate a sequence of beats that starts at startPos
+ * Implementations generate a sequence of steps that starts at startPos
  * and ends at endPos (or any position if endPos is null). The result
- * includes a start-position step (stepNumber 0) followed by the generated beats.
+ * includes a start-position step (stepNumber 0) followed by the generated steps.
  */
 export interface IPartialSequenceGenerator {
   generatePartialSequence(

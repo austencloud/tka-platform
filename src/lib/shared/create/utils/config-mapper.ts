@@ -19,6 +19,7 @@ import type {
 import { DifficultyLevel as DifficultyEnum, PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
+import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
 /**
  * Map difficulty level number to DifficultyLevel enum
@@ -73,6 +74,7 @@ export interface UIGenerationConfig {
   // behavior — rotation at `period`'s interval, inversion halved, expand mode).
   inversionInterval?: 2 | 4;
   inversionMode?: "expand" | "overlay";
+  reflectionAxis?: ReflectionAxis;
 
   // 3-axis constraint system (replaces binary propContinuity)
   constraintPreset: "smooth" | "mixed" | "choppy"; // Prop reversal frequency
@@ -112,6 +114,7 @@ export function uiConfigToGenerationOptions(
       ? resolveLoopConfig(uiConfig.loopType, uiConfig.period, {
           inversionInterval: uiConfig.inversionInterval,
           inversionMode: uiConfig.inversionMode,
+          reflectionAxis: uiConfig.reflectionAxis,
         })
       : undefined;
   const period = resolvedLoop?.period ?? uiConfig.period;
@@ -157,7 +160,7 @@ export function uiConfigToGenerationOptions(
     mustContainLetters: startEndOptions?.mustContainLetters ?? undefined,
     mustNotContainLetters: startEndOptions?.mustNotContainLetters ?? undefined,
 
-    // Start orientation overrides (engine seeds beat 0 + propagates). Orientation
+    // Start orientation overrides (engine seeds step 0 + propagates). Orientation
     // values are already engine strings ("in"/"clock"/"out"/"counter").
     blueStartOrientation: startEndOptions?.blueStartOrientation ?? undefined,
     redStartOrientation: startEndOptions?.redStartOrientation ?? undefined,
@@ -197,5 +200,6 @@ export function generationOptionsToUIConfig(
     spellTargetLength: null,
     inversionInterval: options.loopRhythm?.inversionInterval,
     inversionMode: options.loopRhythm?.inversionMode,
+    reflectionAxis: options.loopRhythm?.reflectionAxis,
   };
 }

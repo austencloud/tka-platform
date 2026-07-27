@@ -20,7 +20,7 @@ const ROTATION_DIRS = {
 } as const;
 
 /**
- * Filter by continuity — next beat's start position must match last beat's end position.
+ * Filter by continuity — next step's start position must match last step's end position.
  */
 export function filterByContinuity(
   options: PictographData[],

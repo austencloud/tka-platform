@@ -129,12 +129,12 @@ export class GenerationOrchestrator {
     const engineLoopType = this.mapLoopTypeToEngine(options.loopType);
     const period = this.mapPeriod(options.period);
 
-    // The UI's length is the TOTAL output length. The seed is a fraction —
+    // The UI's length is the total output length. The seed is a fraction.
     // the engine extends it back to the full length. Legacy path (no
     // loopSpecWire): halved = length / 2, quartered = length / 4. Spec path:
     // the fraction is the spec's expanderMultiplier (per-component periods,
-    // fused-stage rules — see loop-type-utils.expanderMultiplier). For
-    // word-based spell-LOOP, the word itself is the seed - no length
+    // fused-stage rules; see loop-type-utils.expanderMultiplier). For
+    // word-based spell-LOOP, the word itself is the seed. No length
     // division is applied because the user's word IS the pattern.
     const wire = options.loopSpecWire;
     const multiplier = wire
@@ -145,7 +145,7 @@ export class GenerationOrchestrator {
 
     if (!options.word && wire && options.length % multiplier !== 0) {
       throw new Error(
-        `A ${options.length}-beat sequence is not divisible by this combo's expansion (${multiplier}).`
+        `A ${options.length}-step sequence is not divisible by this combo's expansion (${multiplier}).`
       );
     }
 
@@ -153,7 +153,7 @@ export class GenerationOrchestrator {
 
     if (!options.word && wire && specHasExpandInversion(wire) && seedLength < 2) {
       throw new Error(
-        "Seed too short for an inversion combo — one-beat half seeds are dash-only, so inversion would be invisible."
+        "Seed too short for an inversion combo. One-step half seeds are dash-only, so inversion would be invisible."
       );
     }
 
@@ -175,6 +175,9 @@ export class GenerationOrchestrator {
         period,
         useTargetedGeneration: true,
         ...(wire ? { loopSpec: loopSpecFromWire(wire) } : {}),
+        ...(!options.word
+          ? { requestedTotalLength: options.length }
+          : {}),
       },
     });
 

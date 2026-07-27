@@ -15,7 +15,7 @@ import LengthCardClampHarness from "./__tests__/LengthCardClampHarness.svelte";
  * read as "the app crashed the instant I typed my name", and it repeated on
  * every panel open because the word is persisted to localStorage.
  *
- * Guest cap is 8 beats and the default generator config is a rotated+quartered
+ * Guest cap is 8 steps and the default generator config is a rotated+quartered
  * LOOP (x4), so any 3-letter word cleared the cap.
  */
 const flush = () => new Promise((resolve) => setTimeout(resolve, 250));

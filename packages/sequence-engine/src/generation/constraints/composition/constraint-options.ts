@@ -33,7 +33,7 @@ export interface ConstraintOptions {
   /** Soft preference for dash vs shift motions. Default: no preference.
    *  "maximize" strongly biases the beam toward candidates whose blue or red
    *  motion is a dash; "minimize" does the opposite. Closure and other hard
-   *  constraints can still force non-dash picks on specific beats — this is
+   *  constraints can still force non-dash picks on specific steps — this is
    *  a best-effort bias, not a hard minimum. */
   dashPreference?: "maximize" | "minimize";
 }

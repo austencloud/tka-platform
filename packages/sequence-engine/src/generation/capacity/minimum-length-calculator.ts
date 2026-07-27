@@ -19,9 +19,9 @@
  * pass of the LOOP can extend non-trivially.
  *
  * At level 1, `basePatternMinimum` is 2 for transformations that need
- * distinct beats to demonstrate the transformation (rotation, mirror, flip,
+ * distinct steps to demonstrate the transformation (rotation, mirror, flip,
  * swap) and 1 for stateless transformations (inverted). At level ≥ 2, float
- * motions allow period-4 closure within a single beat for some transforms.
+ * motions allow period-4 closure within a single step for some transforms.
  *
  * ## Level-specific capacity gates
  *
@@ -37,8 +37,8 @@
  * ## Domain
  *
  * When the caller knows the LOOP operates purely in orientation domain
- * (positions stay pinned), the minimum equals just `period` beats — one
- * beat per pass, since positions can hold while orientations advance.
+ * (positions stay pinned), the minimum equals just `period` steps — one
+ * step per pass, since positions can hold while orientations advance.
  */
 
 import { LOOPType } from "../../loop/loop-types.js";
@@ -143,15 +143,15 @@ export function minLengthForSpec(spec: LOOPSpec, level: number): number {
 }
 
 /**
- * Minimum beats for a single pass of the given loop type at the given level.
+ * Minimum steps for a single pass of the given loop type at the given level.
  *
  * Rules of thumb:
- * - Rotation needs 2 distinct beats to exhibit rotation (can't rotate a
- *   single static beat). So base = 2.
+ * - Rotation needs 2 distinct steps to exhibit rotation (can't rotate a
+ *   single static step). So base = 2.
  * - Mirror/flip similarly need 2 to distinguish the sides.
- * - Swap needs 1 (single beat can have swapped blue/red).
- * - Inverted needs 1 (single beat can have inverted motion).
- * - Rewound needs 1 (time reversal of 1 beat is still 1 beat).
+ * - Swap needs 1 (single step can have swapped blue/red).
+ * - Inverted needs 1 (single step can have inverted motion).
+ * - Rewound needs 1 (time reversal of 1 step is still 1 step).
  */
 function basePatternMinimum(loopType: LOOPType, _level: number): number {
   switch (loopType) {

@@ -17,7 +17,7 @@ const singleDescriptions: Partial<Record<LOOPComponent, string>> = {
   [LOOPComponent.ROTATED]:
     "Rotates the entire sequence 180° around the grid center. North becomes South, East becomes West. The sequence plays out in the opposite quadrants while maintaining the same motion patterns.",
   [LOOPComponent.MIRRORED]:
-    "Mirrors the sequence across the vertical axis. Left becomes Right and vice versa. Creates a reflection of your original movement pattern, like seeing it in a mirror.",
+    "Reflects every hand location across the selected axis. The grid mode stays the same.",
   [LOOPComponent.FLIPPED]:
     "Flips the sequence across the horizontal axis. Top becomes Bottom and vice versa. Creates a vertical reflection of your original movement pattern.",
   [LOOPComponent.SWAPPED]:
@@ -25,7 +25,7 @@ const singleDescriptions: Partial<Record<LOOPComponent, string>> = {
   [LOOPComponent.INVERTED]:
     "Inverts each motion's rotation relative to its path. Pro becomes anti, and anti becomes pro. Base motion types (static, dash) remain unchanged.",
   [LOOPComponent.REWOUND]:
-    "Reverses the sequence direction. The last beat becomes the first, playing backward to create a perfect loop back to the start position.",
+    "Reverses the sequence direction. The last step becomes the first, playing backward to create a perfect loop back to the start position.",
 };
 
 /**
@@ -35,15 +35,15 @@ const singleDescriptions: Partial<Record<LOOPComponent, string>> = {
 const twoComponentDescriptions: Record<string, string> = {
   // Mirrored + Inverted
   inverted_mirrored:
-    "Mirrors the sequence across the vertical axis and inverts motion types (Pro ↔ Anti). Rotation directions are preserved as the two flips cancel out.",
+    "Reflects the sequence across the selected axis and swaps Pro with Anti. The two direction reversals cancel.",
 
   // Mirrored + Rotated
   mirrored_rotated:
-    "Applies vertical mirroring and 180° rotation, resulting in a sequence that plays in the diagonally opposite quadrants.",
+    "Rotates the sequence 180°, then reflects the completed rotation across the selected axis.",
 
   // Mirrored + Swapped
   mirrored_swapped:
-    "Mirrors the sequence across the vertical axis and swaps hand roles (Blue ↔ Red). Each hand performs the other's mirrored movement.",
+    "Reflects the sequence across the selected axis and swaps the Blue and Red hand roles.",
 
   // Rotated + Inverted
   inverted_rotated:
@@ -64,15 +64,15 @@ const twoComponentDescriptions: Record<string, string> = {
 const threeComponentDescriptions: Record<string, string> = {
   // Mirrored + Rotated + Inverted
   inverted_mirrored_rotated:
-    "Applies vertical mirroring, 180° rotation, and inverts motion types (Pro ↔ Anti).",
+    "Combines the selected reflection axis, 180° rotation, and Pro/Anti inversion.",
 
   // Mirrored + Rotated + Swapped
   mirrored_rotated_swapped:
-    "Applies vertical mirroring, 180° rotation, and swaps hand roles (Blue ↔ Red).",
+    "Combines the selected reflection axis, 180° rotation, and a Blue/Red hand swap.",
 
   // Mirrored + Swapped + Inverted
   inverted_mirrored_swapped:
-    "Applies vertical mirroring, swaps hand roles (Blue ↔ Red), and inverts motion types (Pro ↔ Anti).",
+    "Combines the selected reflection axis, a Blue/Red hand swap, and Pro/Anti inversion.",
 
   // Rotated + Swapped + Inverted
   inverted_rotated_swapped:
@@ -83,7 +83,7 @@ const threeComponentDescriptions: Record<string, string> = {
  * Description for all four components.
  */
 const fourComponentDescription =
-  "The ultimate transformation: All four operations combined. Your sequence is rotated 180°, mirrored, hands swapped, AND motion inverted. Despite all these changes, the sequence still mathematically loops back to the start. This is the most complex LOOP type available.";
+  "Combines the selected reflection axis, 180° rotation, a Blue/Red hand swap, and Pro/Anti inversion.";
 
 /**
  * Generate a unique key for a set of components (sorted alphabetically).

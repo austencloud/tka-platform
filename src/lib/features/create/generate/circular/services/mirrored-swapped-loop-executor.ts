@@ -68,7 +68,7 @@ export class MirroredSwappedLOOPExecutor {
     let lastStep = sequence[sequence.length - 1]!;
     const nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two steps in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from step 2)
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
       const nextStep = this._createNewLOOPEntry(
@@ -96,7 +96,7 @@ export class MirroredSwappedLOOPExecutor {
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -119,7 +119,7 @@ export class MirroredSwappedLOOPExecutor {
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with SWAP + MIRROR
+   * Create a new LOOP entry by transforming a previous step with SWAP + MIRROR
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -127,7 +127,7 @@ export class MirroredSwappedLOOPExecutor {
     stepNumber: number,
     finalIntendedLength: number
   ): StepData {
-    // Get the corresponding beat from the first section using index mapping
+    // Get the corresponding step from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
@@ -139,7 +139,7 @@ export class MirroredSwappedLOOPExecutor {
     const mirroredSwappedEndPosition =
       this._getMirroredSwappedPosition(previousMatchingStep);
 
-    // Create the new beat with swapped and mirrored attributes
+    // Create the new step with swapped and mirrored attributes
     // KEY: Continuity is NORMAL (same color continues from where it was)
     //      But motion PATTERNS are swapped (blue does red's pattern, red does blue's)
     //      Then patterns are mirrored (cw↔ccw, e↔w)
@@ -180,7 +180,7 @@ export class MirroredSwappedLOOPExecutor {
   }
 
   /**
-   * Get the previous matching beat using index mapping (halved pattern)
+   * Get the previous matching step using index mapping (halved pattern)
    */
   private _getPreviousMatchingBeat(
     sequence: StepData[],
@@ -234,7 +234,7 @@ export class MirroredSwappedLOOPExecutor {
     const endPos = previousMatchingStep.endPosition;
 
     if (!endPos) {
-      throw new Error("Previous matching beat must have an end position");
+      throw new Error("Previous matching step must have an end position");
     }
 
     // First mirror, then swap (same order as LOOPEndPositionSelector)
@@ -246,7 +246,7 @@ export class MirroredSwappedLOOPExecutor {
   }
 
   /**
-   * Create mirrored-swapped motion data for the new beat
+   * Create mirrored-swapped motion data for the new step
    * Combines color swapping with location mirroring and rotation flipping
    *
    * KEY INSIGHT:
@@ -268,8 +268,8 @@ export class MirroredSwappedLOOPExecutor {
     // (Blue continues from Blue's previous end, Red continues from Red's previous end)
     const previousMotion = previousStep.motions[color];
 
-    // SWAPPED PATTERN: Get the pattern from the opposite color's matching beat
-    // (Blue follows Red's pattern from beat 1, Red follows Blue's pattern from beat 1)
+    // SWAPPED PATTERN: Get the pattern from the opposite color's matching step
+    // (Blue follows Red's pattern from step 1, Red follows Blue's pattern from step 1)
     const matchingMotion = previousMatchingStep.motions[oppositeColor];
 
     if (!previousMotion || !matchingMotion) {

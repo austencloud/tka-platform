@@ -148,6 +148,17 @@ const RADIAL_CW_CYCLE: Orientation[] = [
   "out", "counterOut", "counter", "counterIn",
 ];
 
+const ORIENTATION_BY_LOWERCASE = new Map<string, Orientation>(
+  [
+    ...RADIAL_CW_CYCLE,
+    ...CENTER_CW_CYCLE,
+  ].map((orientation) => [orientation.toLowerCase(), orientation])
+);
+
+function normalizeOrientation(orientation: string | undefined): Orientation {
+  return ORIENTATION_BY_LOWERCASE.get(orientation?.toLowerCase() ?? "") ?? "in";
+}
+
 /**
  * Each 0.25 turn = 1 compass step (45 degrees). Each 0.5 turn = 2 steps (90 degrees).
  * Center rule: PRO/STATIC step SAME as rotation, ANTI/DASH step OPPOSITE.
@@ -274,7 +285,7 @@ export function calculateEndOrientation(input: {
   } = input;
 
   // Normalize start orientation
-  const startOri = (startOrientation?.toLowerCase() as Orientation) || "in";
+  const startOri = normalizeOrientation(startOrientation);
   const type = motionType?.toLowerCase() || "static";
 
   // Normalize rotation direction (handle undefined, "noRotation", etc.)
@@ -326,7 +337,7 @@ export function calculateOrientations(input: {
   endOrientation: Orientation;
 } {
   // Default start orientation is IN
-  const startOrientation = (input.startOrientation?.toLowerCase() as Orientation) || "in";
+  const startOrientation = normalizeOrientation(input.startOrientation);
 
   const endOrientation = calculateEndOrientation({
     ...input,

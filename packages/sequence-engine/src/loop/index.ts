@@ -39,8 +39,11 @@ export {
   allActiveComponents,
   isEmptySpec,
   specsAreEqual,
+  getReflectionAxis,
   EMPTY_PROP_SPEC,
   loopSpecFromLegacy,
+  loopSpecFromLegacyRhythm,
+  loopSpecWithReflectionAxis,
   validateLOOPSpec,
   type LOOPSpecValidationError,
 } from "./loop-spec.js";
@@ -79,6 +82,15 @@ export {
 
 // Position maps - strict (mirror/swap/invert transformations)
 export {
+  REFLECTION_AXES,
+  DEFAULT_MIRRORED_AXIS,
+  DEFAULT_FLIPPED_AXIS,
+  REFLECTION_LOCATION_MAPS,
+  NORTHEAST_SOUTHWEST_REFLECTION_LOCATION_MAP,
+  NORTHWEST_SOUTHEAST_REFLECTION_LOCATION_MAP,
+  isReflectionAxis,
+  reflectLocation,
+  type ReflectionAxis,
   VERTICAL_MIRROR_POSITION_MAP,
   VERTICAL_MIRROR_LOCATION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
@@ -108,6 +120,7 @@ export {
 // Detection (analyzes sequence steps to identify LOOP patterns)
 export {
   detectLOOPFromSteps,
+  hasRewoundStructure,
   isSequenceCircular,
   LOOPDetectorClass,
   loopDetectorClass,
@@ -123,10 +136,19 @@ export {
   detectOrientationCycle,
   type OrientationCycleResult,
 } from "./detection/OrientationCycleDetector.js";
+export {
+  analyzeOrientationCycle,
+  closeOrientationCycle,
+  MAX_ORIENTATION_CYCLE_REPETITIONS,
+  type OrientationCycleAnalysis,
+  type OrientationCycleClosure,
+  type OrientationCycleCount,
+  type OrientationCycleOptions,
+} from "./execution/orientation-cycle.js";
 
-// Pair-relation algebra — the canonical per-beat-pair transform tuples.
+// Pair-relation algebra — the canonical per-step-pair transform tuples.
 // Additive export (2026-07-19, /notation/loops explorer): app-side consumers
-// (loop-explorer's relation-extractor) need the (beatA, beatB, transform)
+// (loop-explorer's relation-extractor) need the (stepA, stepB, transform)
 // data that already powers LOOPDetector internally, rather than re-deriving
 // the algebra app-side.
 export {
@@ -157,26 +179,52 @@ export type { ILOOPExecutor } from "./execution/ILOOPExecutor.js";
 export { updateStepOrientations } from "./execution/orientation-helpers.js";
 
 // Class-based LOOP executors (kept — spec-executor delegates to these)
-export { StrictRotatedExecutor, strictRotatedExecutor } from "./execution/StrictRotatedExecutor.js";
-export { RewoundExecutor, rewoundExecutor } from "./execution/RewoundExecutor.js";
+export {
+  StrictRotatedExecutor,
+  strictRotatedExecutor,
+} from "./execution/StrictRotatedExecutor.js";
+export {
+  RewoundExecutor,
+  rewoundExecutor,
+} from "./execution/RewoundExecutor.js";
 
 // Spec-based execution
-export { executeLOOPSpec, executeSymmetricSpec } from "./execution/spec-executor.js";
+export {
+  executeLOOPSpec,
+  executeSymmetricSpec,
+  getLOOPSpecExpansionMultiplier,
+} from "./execution/spec-executor.js";
 export { applyOverlayInversion } from "./execution/overlay-inversion.js";
-export { FusedExecutor, type FusedTransformFlags } from "./execution/FusedExecutor.js";
+export {
+  FusedExecutor,
+  type FusedTransformFlags,
+} from "./execution/FusedExecutor.js";
 
 // LOOP executor selector
-export { LOOPExecutorSelector, loopExecutorSelector } from "./execution/LOOPExecutorSelector.js";
+export {
+  LOOPExecutorSelector,
+  loopExecutorSelector,
+} from "./execution/LOOPExecutorSelector.js";
 
 // Grid position deriver
-export { GridPositionDeriver, gridPositionDeriver } from "../core/positions/GridPositionDeriver.js";
+export {
+  GridPositionDeriver,
+  gridPositionDeriver,
+} from "../core/positions/GridPositionDeriver.js";
 
 // Letter lookup
 export { findLetterByMotions } from "./LetterLookup.js";
 
 // Targeting (end position selection for LOOP generation)
-export { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./targeting/RotatedEndPositionSelector.js";
-export { LOOPEndPositionSelector, loopEndPositionSelector, determineEndPositionForSpec } from "./targeting/LOOPEndPositionSelector.js";
+export {
+  RotatedEndPositionSelector,
+  rotatedEndPositionSelector,
+} from "./targeting/RotatedEndPositionSelector.js";
+export {
+  LOOPEndPositionSelector,
+  loopEndPositionSelector,
+  determineEndPositionForSpec,
+} from "./targeting/LOOPEndPositionSelector.js";
 export {
   PartialSequenceGenerator,
   partialSequenceGenerator,

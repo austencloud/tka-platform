@@ -84,7 +84,7 @@ function makeStep(
  * ROTATED (halved): start→end must be in HALF_POSITION_MAP.
  * alpha1 (blue=s, red=n) → alpha5 (blue=n, red=s).
  * Both hands travel CW 90: blue s→e→n, red n→w→s (conceptually).
- * Minimal 2-beat partial: step 1 goes alpha1→alpha5.
+ * Minimal 2-step partial: step 1 goes alpha1→alpha5.
  */
 function makeRotatedSequence(): SequenceStep[] {
   return [

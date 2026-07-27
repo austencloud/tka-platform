@@ -8,7 +8,7 @@
  * the resulting sequence is dash-heavy relative to a neutral baseline — and
  * the reverse for "minimize".
  *
- * We can't hard-assert "75% of beats are dashes" because closure + variation
+ * We can't hard-assert "75% of steps are dashes" because closure + variation
  * pools can force non-dash picks. The bar is "maximize produces noticeably
  * more dashes than the baseline, aggregated over enough runs to average out
  * the random tiebreak in the variation scorer."
@@ -195,7 +195,7 @@ class MockTransitionGraph implements ITransitionGraph {
   }
 }
 
-function countDashBeats(steps: { motions: { blue: MotionData; red: MotionData } }[], skipStart = true): number {
+function countDashSteps(steps: { motions: { blue: MotionData; red: MotionData } }[], skipStart = true): number {
   let count = 0;
   const start = skipStart ? 1 : 0;
   for (let i = start; i < steps.length; i++) {
@@ -218,7 +218,7 @@ describe("dashPreference soft bias", () => {
     setLetterTransitionGraph(new MockTransitionGraph());
   });
 
-  it("maximize surfaces dramatically more dash beats than baseline", () => {
+  it("maximize surfaces dramatically more dash steps than baseline", () => {
     const provider = new MockVariationProvider();
     const runs = 30;
     const length = 8;
@@ -234,7 +234,7 @@ describe("dashPreference soft bias", () => {
         gridMode: "diamond",
         level: 1,
       });
-      baselineDashes += countDashBeats(baseline.sequence);
+      baselineDashes += countDashSteps(baseline.sequence);
       baselineTotal += totalSteps(baseline.sequence.length);
 
       const maximized = new SequenceBuilder(provider).build({
@@ -243,7 +243,7 @@ describe("dashPreference soft bias", () => {
         level: 1,
         constraintOptions: { dashPreference: "maximize" },
       });
-      maximizeDashes += countDashBeats(maximized.sequence);
+      maximizeDashes += countDashSteps(maximized.sequence);
       maximizeTotal += totalSteps(maximized.sequence.length);
     }
 
@@ -257,7 +257,7 @@ describe("dashPreference soft bias", () => {
     expect(maximizeRate).toBeGreaterThan(baselineRate + 0.2);
   });
 
-  it("minimize suppresses dash beats relative to baseline", () => {
+  it("minimize suppresses dash steps relative to baseline", () => {
     const provider = new MockVariationProvider();
     const runs = 30;
     const length = 8;
@@ -273,7 +273,7 @@ describe("dashPreference soft bias", () => {
         gridMode: "diamond",
         level: 1,
       });
-      baselineDashes += countDashBeats(baseline.sequence);
+      baselineDashes += countDashSteps(baseline.sequence);
       baselineTotal += totalSteps(baseline.sequence.length);
 
       const minimized = new SequenceBuilder(provider).build({
@@ -282,7 +282,7 @@ describe("dashPreference soft bias", () => {
         level: 1,
         constraintOptions: { dashPreference: "minimize" },
       });
-      minimizeDashes += countDashBeats(minimized.sequence);
+      minimizeDashes += countDashSteps(minimized.sequence);
       minimizeTotal += totalSteps(minimized.sequence.length);
     }
 

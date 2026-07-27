@@ -13,9 +13,9 @@
  * already closes in position AND orientation at period 2, so the extra passes
  * come out byte-for-byte identical — a redundant literal repeat.
  *
- * Concrete failure this fixes (2026-07-10): a `YΦΔYΦΔYΦΔYΦΔ` (12-beat) deck
- * card that is a 6-beat mirrored loop (`YΦΔ` seed → vertical mirror) copied a
- * second time. The 6-beat loop already closes; the outer doubling is noise.
+ * Concrete failure this fixes (2026-07-10): a `YΦΔYΦΔYΦΔYΦΔ` (12-step) deck
+ * card that is a 6-step mirrored loop (`YΦΔ` seed → vertical mirror) copied a
+ * second time. The 6-step loop already closes; the outer doubling is noise.
  * Canonical smallest form of a repeating word is its shortest form
  * (`simplified-word-display` rule) — the same principle at the STEP level.
  *
@@ -53,7 +53,7 @@ export interface MinimalLoopResult {
  * Reduce a sequence to its shortest literally-repeating closing loop.
  *
  * @param steps Full step array; index 0 is the start-position step
- *   (`stepNumber === 0`), the rest are letter beats.
+ *   (`stepNumber === 0`), the rest are letter steps.
  * @returns The reduced steps and a report. Idempotent — a sequence that is
  *   already minimal is returned unchanged (a new array, same content).
  */
@@ -100,7 +100,7 @@ function properDivisors(n: number): number[] {
 }
 
 /**
- * True when `steps` is `period`-periodic: every beat equals the beat one
+ * True when `steps` is `period`-periodic: every step equals the step one
  * period earlier, in all motion fields including orientation.
  */
 function isLiteralRepeat(steps: readonly Step[], period: number): boolean {
@@ -111,9 +111,9 @@ function isLiteralRepeat(steps: readonly Step[], period: number): boolean {
 }
 
 /**
- * True when the first `period` beats form a seamless loop on their own:
+ * True when the first `period` steps form a seamless loop on their own:
  * the loop returns to its start POSITION and start ORIENTATION after `period`
- * beats. (For a literal repeat this is implied, but we verify rather than
+ * steps. (For a literal repeat this is implied, but we verify rather than
  * assume — a sequence could be periodic without the whole thing being a valid
  * seamless loop, and we must never emit a broken shorter loop.)
  */
@@ -133,7 +133,7 @@ function prefixClosesSeamlessly(steps: readonly Step[], period: number): boolean
   return true;
 }
 
-/** Per-hand motion equality across the fields that define a beat's identity. */
+/** Per-hand motion equality across the fields that define a step's identity. */
 function stepMotionsEqual(a: Step, b: Step): boolean {
   for (const color of ["blue", "red"] as const) {
     const ma = a.motions[color];

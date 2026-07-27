@@ -1,7 +1,7 @@
 /**
  * Hand Path Reversal Constraint
  *
- * Tracks and constrains hand path direction changes between consecutive beats.
+ * Tracks and constrains hand path direction changes between consecutive steps.
  * Hand path direction is derived from startLocation → endLocation and represents
  * how the hand travels around the grid (clockwise, counter-clockwise, dash, or static).
  *
@@ -14,8 +14,8 @@
  * (by switching between pro and anti motion types).
  *
  * Example:
- * - Beat 1: Left hand S→W (clockwise path), pro cw = prop spins cw
- * - Beat 2: Left hand W→S (counter-clockwise path), anti cw = prop STILL spins cw
+ * - Step 1: Left hand S→W (clockwise path), pro cw = prop spins cw
+ * - Step 2: Left hand W→S (counter-clockwise path), anti cw = prop STILL spins cw
  * = Hand path reversed, but prop spin stayed consistent (softer disruption)
  */
 
@@ -191,7 +191,7 @@ export class HandPathReversalConstraint implements IVariationConstraint {
     this.handPathMode = handPathMode;
 
     // "enforce" is hard mode (must have no hand path reversals)
-    // "every" is hard mode (must have hand path reversal every beat)
+    // "every" is hard mode (must have hand path reversal every step)
     this.mode = handPathMode === "enforce" || handPathMode === "every" ? "hard" : "soft";
 
     switch (handPathMode) {
@@ -205,7 +205,7 @@ export class HandPathReversalConstraint implements IVariationConstraint {
         this.description = "No hand path preference";
         break;
       case "every":
-        this.description = "Hand path reversal every beat";
+        this.description = "Hand path reversal every step";
         break;
     }
   }

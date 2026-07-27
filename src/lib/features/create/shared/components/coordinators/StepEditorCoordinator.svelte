@@ -129,7 +129,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 
   // Animation state for deletion visualization
   const removingStepIndices = $derived.by(() =>
-    activeSequenceState.getRemovingBeatIndices()
+    activeSequenceState.getRemovingStepIndices()
   );
 
   // ---- Multi-select batch editing ----
@@ -297,7 +297,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     if (total === 0) return;
     const all: number[] = [];
     for (let n = 1; n <= total; n++) all.push(n);
-    activeSequenceState.selectAllBeats(all);
+    activeSequenceState.selectAllSteps(all);
   }
 
   function handleRotationChange(

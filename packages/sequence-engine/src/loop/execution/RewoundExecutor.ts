@@ -13,7 +13,7 @@ import type { Period } from "../loop-types.js";
 export class RewoundExecutor implements ILOOPExecutor {
   executeLOOP(sequence: SequenceStep[], _period: Period): SequenceStep[] {
     if (sequence.length < 2) {
-      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+      throw new Error("Sequence must have at least 2 steps (start position + 1 step)");
     }
 
     const startPosition = sequence.shift();

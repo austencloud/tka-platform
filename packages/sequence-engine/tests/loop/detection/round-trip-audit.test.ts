@@ -16,9 +16,9 @@
  *     confounds the audit; oscillation keeps net rotation at zero.
  *   - Both hands carry OPPOSITE motion types (blue=pro, red=anti) so SWAP is
  *     observable to the motion-type swap detector and MIRROR/FLIP move positions.
- *   - Partials are >= 4 beats so the loop has >= 8 letter steps → the functional
+ *   - Partials are >= 4 steps so the loop has >= 8 letter steps → the functional
  *     detector's floor(halfLength*0.75) threshold is a real threshold (3), not
- *     the degenerate 0 you get from a 1-beat partial.
+ *     the degenerate 0 you get from a 1-step partial.
  *   - Positions are DERIVED from hand locations so labelled positions and motion
  *     locations never disagree (the two detectors read positions differently).
  *
@@ -81,8 +81,8 @@ function makeStep(
 const derive = (blueLoc: string, redLoc: string) =>
   gridPositionDeriver.getGridPositionFromLocations(blueLoc, redLoc);
 
-/** A beat with positions DERIVED from hand locations (label/location consistent). */
-function beat(
+/** A step with positions DERIVED from hand locations (label/location consistent). */
+function step(
   n: number,
   bs: string, be: string,
   rs: string, re: string,
@@ -112,17 +112,17 @@ function startStep(bs: string, rs: string): SequenceStep {
 }
 
 // ---------------------------------------------------------------------------
-// Clean fixtures (see header). All are 4 beats, non-axis, blue=pro / red=anti.
+// Clean fixtures (see header). All are 4 steps, non-axis, blue=pro / red=anti.
 // ---------------------------------------------------------------------------
 
 /** Non-rotating diagonal oscillation alpha2 <-> alpha4 (fuse types + rewound). */
 function diagOsc(): SequenceStep[] {
   return [
     startStep("sw", "ne"),
-    beat(1, "sw", "nw", "ne", "se", "pro", "anti", "A"), // a2 -> a4
-    beat(2, "nw", "sw", "se", "ne", "pro", "anti", "A"), // a4 -> a2
-    beat(3, "sw", "nw", "ne", "se", "pro", "anti", "A"),
-    beat(4, "nw", "sw", "se", "ne", "pro", "anti", "A"),
+    step(1, "sw", "nw", "ne", "se", "pro", "anti", "A"), // a2 -> a4
+    step(2, "nw", "sw", "se", "ne", "pro", "anti", "A"), // a4 -> a2
+    step(3, "sw", "nw", "ne", "se", "pro", "anti", "A"),
+    step(4, "nw", "sw", "se", "ne", "pro", "anti", "A"),
   ];
 }
 
@@ -130,10 +130,10 @@ function diagOsc(): SequenceStep[] {
 function diagRot(): SequenceStep[] {
   return [
     startStep("sw", "ne"),
-    beat(1, "sw", "nw", "ne", "se", "pro", "anti", "A"), // a2 -> a4 cw
-    beat(2, "nw", "ne", "se", "sw", "pro", "anti", "A"), // a4 -> a6 cw
-    beat(3, "ne", "se", "sw", "nw", "pro", "anti", "A"), // a6 -> a8 cw
-    beat(4, "se", "ne", "nw", "sw", "pro", "anti", "A"), // a8 -> a6 ccw
+    step(1, "sw", "nw", "ne", "se", "pro", "anti", "A"), // a2 -> a4 cw
+    step(2, "nw", "ne", "se", "sw", "pro", "anti", "A"), // a4 -> a6 cw
+    step(3, "ne", "se", "sw", "nw", "pro", "anti", "A"), // a6 -> a8 cw
+    step(4, "se", "ne", "nw", "sw", "pro", "anti", "A"), // a8 -> a6 ccw
   ];
 }
 
@@ -141,10 +141,10 @@ function diagRot(): SequenceStep[] {
 function diagOscSameType(): SequenceStep[] {
   return [
     startStep("sw", "ne"),
-    beat(1, "sw", "nw", "ne", "se", "pro", "pro", "A"),
-    beat(2, "nw", "sw", "se", "ne", "pro", "pro", "A"),
-    beat(3, "sw", "nw", "ne", "se", "pro", "pro", "A"),
-    beat(4, "nw", "sw", "se", "ne", "pro", "pro", "A"),
+    step(1, "sw", "nw", "ne", "se", "pro", "pro", "A"),
+    step(2, "nw", "sw", "se", "ne", "pro", "pro", "A"),
+    step(3, "sw", "nw", "ne", "se", "pro", "pro", "A"),
+    step(4, "nw", "sw", "se", "ne", "pro", "pro", "A"),
   ];
 }
 
@@ -152,10 +152,10 @@ function diagOscSameType(): SequenceStep[] {
 function axisSweep(): SequenceStep[] {
   return [
     startStep("s", "n"),
-    beat(1, "s", "w", "n", "e", "pro", "anti", "A"), // a1 -> a3
-    beat(2, "w", "n", "e", "s", "pro", "anti", "A"), // a3 -> a5
-    beat(3, "n", "e", "s", "w", "pro", "anti", "A"), // a5 -> a7
-    beat(4, "e", "s", "w", "n", "pro", "anti", "A"), // a7 -> a1
+    step(1, "s", "w", "n", "e", "pro", "anti", "A"), // a1 -> a3
+    step(2, "w", "n", "e", "s", "pro", "anti", "A"), // a3 -> a5
+    step(3, "n", "e", "s", "w", "pro", "anti", "A"), // a5 -> a7
+    step(4, "e", "s", "w", "n", "pro", "anti", "A"), // a7 -> a1
   ];
 }
 

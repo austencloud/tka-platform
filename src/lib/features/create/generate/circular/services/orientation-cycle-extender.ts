@@ -1,59 +1,49 @@
 /**
- * Automatically invoked whenever a freshly generated LOOP has orientationCycleCount > 1.
- * Atomic closure ensures the user never sees an open-orientation sequence.
+ * SequenceData adapter for the sequence engine's orientation-cycle closure.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { closeOrientationCycle } from "@tka/sequence-engine/loop";
+import type {
+  Orientation as EngineOrientation,
+  SequenceStep,
+} from "@tka/sequence-engine";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
-import {
-  updateStartOrientations,
-  updateEndOrientations,
-} from "$lib/shared/pictograph/prop/services/orientation-calculator";
-import {
-  updateSequenceData,
-} from "$lib/shared/foundation/domain/models/sequence-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export class OrientationCycleExtender {
   extendIfNeeded(sequence: SequenceData): SequenceData {
-    const result = detectOrientationCycle(sequence);
+    const startPosition =
+      sequence.startPosition ?? sequence.startingPosition;
+    const blueStart =
+      startPosition?.motions?.blue?.startOrientation ??
+      sequence.steps[0]?.motions.blue?.startOrientation ??
+      "in";
+    const redStart =
+      startPosition?.motions?.red?.startOrientation ??
+      sequence.steps[0]?.motions.red?.startOrientation ??
+      "in";
 
-    if (result.cycleCount === 1) {
+    // SequenceData's StepData adds app-only reversal fields to the engine
+    // shape. The engine clones each source step, so those fields survive.
+    const result = closeOrientationCycle(
+      sequence.steps as unknown as readonly SequenceStep[],
+      {
+        startOrientations: {
+          blue: blueStart as EngineOrientation,
+          red: redStart as EngineOrientation,
+        },
+      }
+    );
+
+    if (result.orientationCycleCount === 1) {
       return updateSequenceData(sequence, { orientationCycleCount: 1 });
     }
 
-    const originalSteps = sequence.steps;
-    const extendedSteps: StepData[] = [...originalSteps];
-
-    let previousBeat: StepData = originalSteps[originalSteps.length - 1]!;
-
-    for (let pass = 1; pass < result.cycleCount; pass++) {
-      for (let i = 0; i < originalSteps.length; i++) {
-        const sourceStep = originalSteps[i]!;
-
-        let cloned: StepData = {
-          ...sourceStep,
-          stepNumber: extendedSteps.length + 1,
-        };
-
-        cloned = updateStartOrientations(
-          cloned,
-          previousBeat
-        );
-
-        cloned = updateEndOrientations(cloned);
-
-        extendedSteps.push(cloned);
-        previousBeat = cloned;
-      }
-    }
-
-    const extendedWord = sequence.word.repeat(result.cycleCount);
-
     return updateSequenceData(sequence, {
-      steps: extendedSteps,
-      word: extendedWord,
-      orientationCycleCount: result.cycleCount,
+      steps: result.steps as unknown as StepData[],
+      word: sequence.word.repeat(result.orientationCycleCount),
+      orientationCycleCount: result.orientationCycleCount,
     });
   }
 }

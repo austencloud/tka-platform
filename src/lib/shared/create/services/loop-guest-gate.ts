@@ -6,9 +6,9 @@
  *
  *  - CATEGORY: only rotated LOOP types (ROTATED_LOOP_TYPES) are free. Mirrored,
  *    flipped, swapped, inverted, and rewound LOOPs are a sign-up perk.
- *  - LENGTH: a config whose minimum buildable length exceeds the guest beat cap
+ *  - LENGTH: a config whose minimum buildable length exceeds the guest step cap
  *    can never generate for a guest (e.g. a quartered inversion combo needs 16
- *    beats; guests cap at 8). Lock it instead of surfacing a raw engine error.
+ *    steps; guests cap at 8). Lock it instead of surfacing a raw engine error.
  *
  * Pure + framework-free so it's testable and shared across every host.
  */
@@ -26,7 +26,7 @@ const UNLOCKED: GuestLoopLock = Object.freeze({ locked: false });
 /**
  * Smallest sequence length this spec can actually build. The engine expands a
  * seed by `expanderMultiplier`, and an expand-mode inversion needs a seed of at
- * least 2 beats (a one-beat seed is dash-only, nothing to flip). So the floor
+ * least 2 steps (a one-step seed is dash-only, nothing to flip). So the floor
  * is one seed (×1), or two seeds (×2) when an expand inversion is present.
  */
 export function minBuildableLength(wire: LOOPSpecWire): number {
@@ -34,8 +34,8 @@ export function minBuildableLength(wire: LOOPSpecWire): number {
 }
 
 /**
- * Whether a LOOP config is locked for a guest. `maxLength` is the guest beat cap
- * (getMaxBeats("guest")). Category is checked first so the copy points at the
+ * Whether a LOOP config is locked for a guest. `maxLength` is the guest step cap
+ * (getMaxSteps("guest")). Category is checked first so the copy points at the
  * cheaper unlock ("rotated is free") before the length ceiling.
  */
 export function guestLoopGate(
@@ -61,7 +61,7 @@ export function guestLoopGate(
       return {
         locked: true,
         kind: "length",
-        reason: `This LOOP needs at least ${min} beats. Guests cap at ${maxLength}. Create a free account for up to 64 beats.`,
+        reason: `This LOOP needs at least ${min} steps. Guests cap at ${maxLength}. Create a free account for up to 64 steps.`,
       };
     }
   }

@@ -42,7 +42,6 @@ describe("generateVerifiedExample", () => {
       "halved",
       {
         generate,
-        extend: (s) => s,
         detect: () => ({ isCircular: true, loopType: null, period: null, confidence: "strict" }),
       }
     );
@@ -54,7 +53,6 @@ describe("generateVerifiedExample", () => {
     const generate = vi.fn(async (options) => fakeSequence(options.length));
     const result = await generateVerifiedExample(new Set([LOOPComponent.ROTATED]), "halved", {
       generate,
-      extend: (s) => s,
       detect: () => ({
         isCircular: true,
         loopType: LOOPType.ROTATED,
@@ -66,9 +64,7 @@ describe("generateVerifiedExample", () => {
     expect(result).not.toBeNull();
     expect(result?.source).toBe("generated");
     expect(result?.loopType).toBe(LOOPType.ROTATED);
-    // generateCircularExactLength may probe an orientation-seed half-length
-    // attempt before the full-length call that actually succeeds.
-    expect(generate.mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(generate).toHaveBeenCalledTimes(1);
   });
 
   it("retries up to MAX_ATTEMPTS on a component mismatch, then falls back to null (empty curated pool)", async () => {
@@ -83,23 +79,18 @@ describe("generateVerifiedExample", () => {
 
     const result = await generateVerifiedExample(new Set([LOOPComponent.ROTATED]), "halved", {
       generate,
-      extend: (s) => s,
       detect,
     });
 
     expect(result).toBeNull();
-    // detect() runs exactly once per outer attempt; generate() may run 1-2
-    // times per attempt internally (generateCircularExactLength's own
-    // probabilistic orientation-seed path), so only detect's count is exact.
     expect(detect).toHaveBeenCalledTimes(MAX_ATTEMPTS);
-    expect(generate.mock.calls.length).toBeGreaterThanOrEqual(MAX_ATTEMPTS);
+    expect(generate).toHaveBeenCalledTimes(MAX_ATTEMPTS);
   });
 
   it("coerces a quartered request to halved for a non-rotation type before generating", async () => {
     const generate = vi.fn(async (options) => fakeSequence(options.length));
     const result = await generateVerifiedExample(new Set([LOOPComponent.MIRRORED]), "quartered", {
       generate,
-      extend: (s) => s,
       detect: () => ({
         isCircular: true,
         loopType: LOOPType.MIRRORED,

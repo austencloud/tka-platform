@@ -4,7 +4,7 @@
  * Controls the frequency of direction reversals in a sequence.
  *
  * Modes:
- * - "every": Reversal every beat (maximum breaks)
+ * - "every": Reversal every step (maximum breaks)
  * - "minimize": As few reversals as possible (same as maximize continuity)
  * - "count": Specific number of reversals
  */
@@ -117,7 +117,7 @@ export class ReversalConstraint implements IVariationConstraint {
           reason = blueReversal ? "Blue hand reversed" : "Red hand reversed";
         } else {
           score = 0;
-          reason = "No reversal (want reversal every beat)";
+          reason = "No reversal (want reversal every step)";
         }
         break;
 

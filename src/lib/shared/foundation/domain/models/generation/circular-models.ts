@@ -124,7 +124,7 @@ export function periodToNumber(period: Period | undefined): number {
  */
 export function periodFromLegacyFields(
   loopType: LOOPType | null | undefined,
-  orientationCycleCount: 1 | 2 | 4 | undefined
+  orientationCycleCount: 1 | 2 | 4 | 8 | undefined
 ): number {
   if (orientationCycleCount && orientationCycleCount > 1) {
     return orientationCycleCount;

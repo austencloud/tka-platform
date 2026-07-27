@@ -16,17 +16,29 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SequenceBuilder } from "../../src/generation/index.js";
+import {
+  BeamSearch,
+  SequenceBuilder,
+  emptyConstraintSet,
+} from "../../src/generation/index.js";
 import type { IVariationProvider } from "../../src/generation/data/IVariationProvider.js";
 import type { PictographData } from "../../src/generation/constraints/types.js";
 import { LOOPType, Period } from "../../src/loop/loop-types.js";
 import { LOOPComponent, type LOOPSpec } from "../../src/loop/loop-spec.js";
-import { isSequenceCircular } from "../../src/loop/detection/LOOPDetector.js";
+import {
+  detectLOOPFromSteps,
+  isSequenceCircular,
+  loopDetectorClass,
+} from "../../src/loop/detection/LOOPDetector.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CSV_PATH = path.resolve(
   __dirname,
-  "../../../../static/data/pictographs/DiamondPictographDataframe.csv",
+  "../../../../static/data/pictographs/DiamondPictographDataframe.csv"
+);
+const BOX_CSV_PATH = path.resolve(
+  __dirname,
+  "../../../../static/data/pictographs/BoxPictographDataframe.csv"
 );
 
 // ---------------------------------------------------------------------------
@@ -81,7 +93,11 @@ class CsvVariationProvider implements IVariationProvider {
     }
   }
 
-  getVariations(letter: string, position: string, _gridMode: string): PictographData[] {
+  getVariations(
+    letter: string,
+    position: string,
+    _gridMode: string
+  ): PictographData[] {
     return this.index.get(`${letter}:${position}`) ?? [];
   }
 
@@ -91,15 +107,163 @@ class CsvVariationProvider implements IVariationProvider {
 }
 
 function symmetric(
-  entries: Array<[LOOPComponent, { period: number; mode?: "expand" | "overlay" }]>,
+  entries: Array<
+    [LOOPComponent, { period: number; mode?: "expand" | "overlay" }]
+  >
 ): LOOPSpec {
   const map = new Map(entries);
   return { blue: { components: map }, red: { components: map } };
 }
 
 describe("SequenceBuilder loopSpec path", () => {
-  it("builds a rot:2+mir:2 loop with inv:4 overlaid — 16 beats, closed, block-inverted", () => {
-    const builder = new SequenceBuilder(new CsvVariationProvider(loadVariations(CSV_PATH)));
+  it("builds Box mirror+rotation on the grid-relative diagonal axis", () => {
+    const builder = new SequenceBuilder(
+      new CsvVariationProvider(loadVariations(BOX_CSV_PATH))
+    );
+    const spec = symmetric([
+      [LOOPComponent.ROTATED, { period: 2 }],
+      [LOOPComponent.MIRRORED, { period: 2 }],
+    ]);
+
+    const result = builder.build({
+      length: 8,
+      gridMode: "box",
+      level: 2,
+      constraintPreset: "smooth",
+      loop: {
+        type: LOOPType.MIRRORED_ROTATED,
+        period: Period.HALVED,
+        useTargetedGeneration: true,
+        loopSpec: spec,
+      },
+    });
+
+    expect(["alpha2", "alpha6", "beta2", "beta6"]).toContain(
+      result.sequence[0]?.startPosition
+    );
+    expect(isSequenceCircular(result.sequence)).toBe(true);
+    expect(detectLOOPFromSteps(result.sequence).components).toEqual(
+      expect.arrayContaining(["mirrored", "rotated"])
+    );
+  });
+
+  it("keeps a dash-preferred beam on a path that can reach its rotated seam", () => {
+    const builder = new SequenceBuilder(
+      new CsvVariationProvider(loadVariations(CSV_PATH))
+    );
+    const spec = symmetric([[LOOPComponent.ROTATED, { period: 2 }]]);
+
+    const result = builder.build({
+      length: 8,
+      gridMode: "diamond",
+      level: 1,
+      maxTurnIntensity: 0,
+      constraintOptions: {
+        dashPreference: "maximize",
+        handPathContinuity: "allow-reversals",
+      },
+      loop: {
+        type: LOOPType.ROTATED,
+        period: Period.HALVED,
+        useTargetedGeneration: true,
+        loopSpec: spec,
+      },
+    });
+
+    expect(result.sequence.slice(1)).toHaveLength(16);
+    expect(isSequenceCircular(result.sequence)).toBe(true);
+    expect(detectLOOPFromSteps(result.sequence).components).toContain(
+      "rotated"
+    );
+  });
+
+  it("builds every reported halved mirrored+rotated+swapped sample as the requested LOOP", () => {
+    const builder = new SequenceBuilder(
+      new CsvVariationProvider(loadVariations(CSV_PATH))
+    );
+    const spec = symmetric([
+      [LOOPComponent.ROTATED, { period: 2 }],
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.SWAPPED, { period: 2 }],
+    ]);
+    const expectedComponents = ["mirrored", "rotated", "swapped"];
+
+    for (let sample = 0; sample < 25; sample++) {
+      const result = builder.build({
+        length: 4,
+        gridMode: "diamond",
+        level: 2,
+        propType: "fan",
+        constraintOptions: {
+          propContinuity: "maximize",
+          handPathContinuity: "allow-reversals",
+        },
+        maxTurnIntensity: 1,
+        loop: {
+          type: LOOPType.MIRRORED_ROTATED_SWAPPED,
+          period: Period.HALVED,
+          useTargetedGeneration: true,
+          loopSpec: spec,
+        },
+      });
+
+      const functional = [...detectLOOPFromSteps(result.sequence).components]
+        .map(String)
+        .sort();
+      const rich = loopDetectorClass.detectLOOPType(result.sequence);
+      const classBased = rich.spec?.blue
+        ? [...rich.spec.blue.components.keys()].map(String).sort()
+        : [];
+      const diagnostic = JSON.stringify({
+        sample,
+        word: result.sequence
+          .slice(1)
+          .map((step) => step.letter)
+          .join(""),
+        positions: result.sequence.map(
+          (step) => `${step.startPosition}→${step.endPosition}`
+        ),
+        functional,
+        classBased,
+      });
+
+      expect(result.sequence.slice(1)).toHaveLength(16);
+      expect(isSequenceCircular(result.sequence)).toBe(true);
+      expect(functional, diagnostic).toEqual(expectedComponents);
+      expect(classBased, diagnostic).toEqual(expectedComponents);
+    }
+  });
+
+  it("keeps a random start paired with its own LOOP endpoint", () => {
+    const provider = new CsvVariationProvider(loadVariations(CSV_PATH));
+    const beamSearch = new BeamSearch(provider, "diamond");
+    const loopPositionMap: Record<string, string[]> = {
+      beta1: ["beta5"],
+      beta5: ["beta1"],
+    };
+
+    const result = beamSearch.searchByLength(
+      4,
+      undefined,
+      emptyConstraintSet(),
+      10,
+      undefined,
+      loopPositionMap
+    );
+    const start = result.steps[0]?.startPosition;
+    const end = result.steps[result.steps.length - 1]?.endPosition;
+
+    expect(result.success).toBe(true);
+    expect(start).toBeDefined();
+    expect(end).toBeDefined();
+    expect(Object.keys(loopPositionMap)).toContain(start);
+    expect(loopPositionMap[start!]).toContain(end);
+  });
+
+  it("builds a rot:2+mir:2 loop with inv:4 overlaid — 16 steps, closed, block-inverted", () => {
+    const builder = new SequenceBuilder(
+      new CsvVariationProvider(loadVariations(CSV_PATH))
+    );
     const spec = symmetric([
       [LOOPComponent.ROTATED, { period: 2 }],
       [LOOPComponent.MIRRORED, { period: 2 }],
@@ -111,6 +275,7 @@ describe("SequenceBuilder loopSpec path", () => {
     // 40 attempts means the seam-targeting contract is broken, not a flaky
     // assertion to loosen).
     let result: ReturnType<typeof builder.build> | null = null;
+    let lastFailure = "no attempt";
     for (let i = 0; i < 40 && !result; i++) {
       try {
         const r = builder.build({
@@ -125,25 +290,25 @@ describe("SequenceBuilder loopSpec path", () => {
           },
         });
         if (isSequenceCircular(r.sequence)) result = r;
-      } catch {
-        /* retry */
+      } catch (error) {
+        lastFailure = error instanceof Error ? error.message : String(error);
       }
     }
 
-    expect(result).not.toBeNull();
-    const beats = result!.sequence.slice(1);
-    expect(beats).toHaveLength(16); // 4 seed x2 rot x2 mir, overlay x1
+    if (!result) throw new Error(lastFailure);
+    const steps = result!.sequence.slice(1);
+    expect(steps).toHaveLength(16); // 4 seed x2 rot x2 mir, overlay x1
 
-    // Overlay signature: blocks of 4; beats 5-8 are the pro/anti flip of 1-4.
+    // Overlay signature: blocks of 4; steps 5-8 are the pro/anti flip of 1-4.
     for (let i = 0; i < 4; i++) {
-      const b = beats[i]!.motions.blue.motionType;
-      const o = beats[i + 4]!.motions.blue.motionType;
+      const b = steps[i]!.motions.blue.motionType;
+      const o = steps[i + 4]!.motions.blue.motionType;
       if (b === "pro") expect(o).toBe("anti");
       if (b === "anti") expect(o).toBe("pro");
     }
 
-    // Letters re-derived: every beat's letter is consistent with its motions
-    // (no beat keeps a stale/copied letter after rotation/mirror/overlay).
-    expect(beats.every((s) => !!s.letter)).toBe(true);
+    // Letters re-derived: every step's letter is consistent with its motions
+    // (no step keeps a stale/copied letter after rotation/mirror/overlay).
+    expect(steps.every((s) => !!s.letter)).toBe(true);
   });
 });

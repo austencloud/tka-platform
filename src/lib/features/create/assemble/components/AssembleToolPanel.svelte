@@ -16,7 +16,7 @@
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import {
     resolveAccessTier,
-    getMaxBeats,
+    getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
@@ -28,7 +28,7 @@
 
   const builderState = $derived(props.tabState.assembleBuilderState);
 
-  // Auth/tier state for beat cap enforcement
+  // Auth/tier state for step cap enforcement
   const accessTier = $derived(
     resolveAccessTier(
       authState.isAuthenticated,
@@ -36,31 +36,31 @@
       isPremiumOrAbove(authState.role)
     )
   );
-  let showBeatCapNudge = $state(false);
-  const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
+  let showStepCapNudge = $state(false);
+  const stepCapNudgeTrigger: AuthNudgeTrigger = "step-cap-guest";
   // Guests get the account nudge. Signed-in users get direct feedback instead
   // of a modal that advertises an unavailable upgrade.
-  const beatCapNudgeAllowed = $derived(accessTier === "guest");
+  const stepCapNudgeAllowed = $derived(accessTier === "guest");
 
   /**
    * Called by InteractiveGrid before adding a motion.
    * Returns true to block the action and show the nudge.
    *
-   * A completed beat = one paired step (one on each hand).
+   * A completed step = one paired step (one on each hand).
    * We cap when the current paired step count would reach the tier limit.
    */
-  function checkBeatCap(): boolean {
-    const maxSteps = getMaxBeats(accessTier);
-    // Completed beats = min of both hands' step counts (each pair = one beat)
-    const pairedBeats = Math.min(
+  function checkStepCap(): boolean {
+    const maxSteps = getMaxSteps(accessTier);
+    // Completed steps = min of both hands' step counts (each pair = one step)
+    const pairedSteps = Math.min(
       builderState.blueSteps.length,
       builderState.redSteps.length
     );
-    if (pairedBeats >= maxSteps) {
-      if (beatCapNudgeAllowed) {
-        showBeatCapNudge = true;
+    if (pairedSteps >= maxSteps) {
+      if (stepCapNudgeAllowed) {
+        showStepCapNudge = true;
       } else {
-        toast.info(`Assemble supports up to ${maxSteps} beats.`, 4000);
+        toast.info(`Assemble supports up to ${maxSteps} steps.`, 4000);
       }
       return true;
     }
@@ -71,12 +71,12 @@
   // shared dispatcher. Mounting is scoped to the active Assemble tab (the
   // {#key activeToolPanel} in CreationToolPanelSlot unmounts this on tab switch),
   // so the window listener never leaks into other Create tabs. Position adds go
-  // through checkBeatCap so the numpad respects the tier cap like mouse clicks.
+  // through checkStepCap so the numpad respects the tier cap like mouse clicks.
   $effect(() => {
     if (!builderState.keyboardMode) return;
     return attachAssembleKeyboard(builderState, {
-      onStepCapExceeded: checkBeatCap,
-      isModalOpen: () => showBeatCapNudge && beatCapNudgeAllowed,
+      onStepCapExceeded: checkStepCap,
+      isModalOpen: () => showStepCapNudge && stepCapNudgeAllowed,
     });
   });
 
@@ -136,34 +136,34 @@
   <div class="main-area">
     <div class="grid-slot">
       <div class="stage-slot">
-        <InteractiveGrid {builderState} onStepCapExceeded={checkBeatCap} />
+        <InteractiveGrid {builderState} onStepCapExceeded={checkStepCap} />
       </div>
       <BuilderControls {builderState} />
     </div>
   </div>
 
-  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit.
+  <!-- Step cap nudge - shown when user tries to exceed their tier's step limit.
        Backdrop click / Escape dismiss via BaseModal. -->
   <BaseModal
-    open={showBeatCapNudge && beatCapNudgeAllowed}
+    open={showStepCapNudge && stepCapNudgeAllowed}
     size="fit"
     class="chromeless"
     onclose={() => {
-      showBeatCapNudge = false;
+      showStepCapNudge = false;
     }}
   >
     <AuthNudge
-      trigger={beatCapNudgeTrigger}
+      trigger={stepCapNudgeTrigger}
       onCreateAccount={() => {
-        showBeatCapNudge = false;
+        showStepCapNudge = false;
         authDrawerState.show("signup");
       }}
       onLogin={() => {
-        showBeatCapNudge = false;
+        showStepCapNudge = false;
         authDrawerState.show("signin");
       }}
       onDismiss={() => {
-        showBeatCapNudge = false;
+        showStepCapNudge = false;
       }}
     />
   </BaseModal>

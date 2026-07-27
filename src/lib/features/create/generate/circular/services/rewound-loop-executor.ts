@@ -10,7 +10,7 @@
  * Rewound is a temporal transformation that plays the sequence backwards.
  *
  * Example: [1, 2, 3, 4] → [1, 2, 3, 4, 4', 3', 2', 1']
- * where each reversed beat has swapped start/end positions and reversed motion directions.
+ * where each reversed step has swapped start/end positions and reversed motion directions.
  *
  * IMPORTANT: Rewound works on ANY sequence regardless of position relationships.
  * No position validation is needed (unlike rotation-based LOOPs).
@@ -47,7 +47,7 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
 
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 steps (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 step)"
       );
     }
 
@@ -69,7 +69,7 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
       const sourceStep = beatsToReverse[i]!;
       const newStepNumber = originalLength + i + 1;
 
-      // Get the previous beat's end position for continuity
+      // Get the previous step's end position for continuity
       const previousStep =
         i === 0
           ? originalSteps[originalSteps.length - 1]!
@@ -94,7 +94,7 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
   }
 
   /**
-   * Create a rewound beat from a source beat
+   * Create a rewound step from a source step
    * Swaps start/end positions and reverses motion directions
    */
   private createRewoundBeat(

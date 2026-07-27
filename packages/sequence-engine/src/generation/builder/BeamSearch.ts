@@ -31,18 +31,24 @@ import { generateConstraintReport } from "../constraints/reporting/report-genera
 import { scoreBridgeOptions } from "./bridge-scorer.js";
 import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTransitionGraph.js";
 import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
-import type { Motion, Orientation } from "../../core/types/sequence-engine-types.js";
+import type {
+  Motion,
+  Orientation,
+} from "../../core/types/sequence-engine-types.js";
 import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
 import type { ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
 
 /**
  * PropContinuity mode for rotation direction resolution.
  */
-export type PropContinuityMode = "maximize" | "allow-reversals" | "force-reversals";
+export type PropContinuityMode =
+  | "maximize"
+  | "allow-reversals"
+  | "force-reversals";
 
 /**
  * directions. This makes static/dash motions that will get non-zero turns
- * visible to the constraint system on subsequent beats.
+ * visible to the constraint system on subsequent steps.
  *
  * Without this, the beam search sees statics as "noRotation" and can't
  * detect reversals that will appear after postProcess applies turns.
@@ -52,7 +58,7 @@ function enrichWithTurns(
   stepIndex: number,
   turnAllocation: TurnAllocation | undefined,
   previousSteps: PictographData[],
-  propContinuity: PropContinuityMode | undefined,
+  propContinuity: PropContinuityMode | undefined
 ): PictographData {
   if (!turnAllocation) return variation;
 
@@ -60,13 +66,24 @@ function enrichWithTurns(
   const redTurns = turnAllocation.red[stepIndex];
 
   const enrichedBlue = enrichMotionDirection(
-    variation.blueMotion, blueTurns, previousSteps, "blue", propContinuity,
+    variation.blueMotion,
+    blueTurns,
+    previousSteps,
+    "blue",
+    propContinuity
   );
   const enrichedRed = enrichMotionDirection(
-    variation.redMotion, redTurns, previousSteps, "red", propContinuity,
+    variation.redMotion,
+    redTurns,
+    previousSteps,
+    "red",
+    propContinuity
   );
 
-  if (enrichedBlue === variation.blueMotion && enrichedRed === variation.redMotion) {
+  if (
+    enrichedBlue === variation.blueMotion &&
+    enrichedRed === variation.redMotion
+  ) {
     return variation; // No changes needed
   }
 
@@ -87,13 +104,14 @@ function enrichMotionDirection(
   turns: number | "fl" | undefined,
   previousSteps: PictographData[],
   color: "blue" | "red",
-  propContinuity: PropContinuityMode | undefined,
+  propContinuity: PropContinuityMode | undefined
 ): PictographData["blueMotion"] {
   const hasTurns = turns !== undefined && turns !== 0 && turns !== "fl";
   // Runtime JSON may emit either "noRotation" (canonical) or legacy "no_rot".
   // Treat motion.rotationDirection as its wire string for the absence check.
   const motionDirWire = motion.rotationDirection as string | undefined;
-  const isNoRot = !motionDirWire ||
+  const isNoRot =
+    !motionDirWire ||
     motionDirWire === "noRotation" ||
     motionDirWire === "no_rot";
 
@@ -102,7 +120,10 @@ function enrichMotionDirection(
   // Find the last real direction from previous steps
   let prevDir: string | null = null;
   for (let i = previousSteps.length - 1; i >= 0; i--) {
-    const m = color === "blue" ? previousSteps[i]!.blueMotion : previousSteps[i]!.redMotion;
+    const m =
+      color === "blue"
+        ? previousSteps[i]!.blueMotion
+        : previousSteps[i]!.redMotion;
     const d = m.rotationDirection as string | undefined;
     if (d && d !== "noRotation" && d !== "no_rot") {
       prevDir = d;
@@ -123,13 +144,11 @@ function enrichMotionDirection(
     resolvedDir = Math.random() < 0.5 ? "cw" : "ccw";
   }
 
-  return { ...motion, rotationDirection: resolvedDir as Motion["rotationDirection"] };
+  return {
+    ...motion,
+    rotationDirection: resolvedDir as Motion["rotationDirection"],
+  };
 }
-
-/**
- * Type 6 static letters — valid for starting positions.
- */
-const TYPE_6_LETTERS = ["α", "β", "γ"];
 
 /**
  * Result of the beam search.
@@ -175,7 +194,7 @@ export class BeamSearch {
 
   constructor(
     private readonly variationProvider: IVariationProvider,
-    private readonly gridMode: string,
+    private readonly gridMode: string
   ) {}
 
   search(
@@ -185,7 +204,7 @@ export class BeamSearch {
     beamWidth?: number,
     requiredEndPositions?: Set<string>,
     turnAllocation?: TurnAllocation,
-    propContinuity?: PropContinuityMode,
+    propContinuity?: PropContinuityMode
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -200,11 +219,19 @@ export class BeamSearch {
 
     // Step 1: Find first letter variations
     const firstLetterVariations = startPosition
-      ? this.variationProvider.getVariations(firstLetter, startPosition, this.gridMode)
+      ? this.variationProvider.getVariations(
+          firstLetter,
+          startPosition,
+          this.gridMode
+        )
       : this.getAllVariationsForLetter(firstLetter);
 
     if (firstLetterVariations.length === 0) {
-      return this.failResult(`No variations found for letter "${firstLetter}"`, 0, 0);
+      return this.failResult(
+        `No variations found for letter "${firstLetter}"`,
+        0,
+        0
+      );
     }
 
     // Step 2: Score first letter variations
@@ -216,7 +243,7 @@ export class BeamSearch {
         previousSteps: [],
         letter: firstLetter,
       },
-      constraintSet,
+      constraintSet
     );
 
     // Initialize beam with top-scored first variations
@@ -227,13 +254,23 @@ export class BeamSearch {
     for (const scored of firstLetterScores.slice(0, config.beamWidth)) {
       if (!scored.hardConstraintsSatisfied) continue;
 
-      const startPictograph = this.findStartPosition(scored.variation.startPosition);
+      const startPictograph = this.findStartPosition(
+        scored.variation.startPosition,
+        scored.variation
+      );
       if (startPictograph) {
-        const initialState = createInitialState(startPictograph.variation, startPictograph.index);
-        // Enrich the first beat's static/dash motions with their allocated
+        const initialState = createInitialState(
+          startPictograph.variation,
+          startPictograph.index
+        );
+        // Enrich the first step's static/dash motions with their allocated
         // turns so the constraint system sees real rotation directions.
         const enriched = enrichWithTurns(
-          scored.variation, 0, turnAllocation, initialState.steps, propContinuity,
+          scored.variation,
+          0,
+          turnAllocation,
+          initialState.steps,
+          propContinuity
         );
         const state = extendState(initialState, enriched, scored);
         beam.push(state);
@@ -242,7 +279,11 @@ export class BeamSearch {
     }
 
     if (beam.length === 0) {
-      return this.failResult("No valid starting configurations found", statesExplored, beamPrunings);
+      return this.failResult(
+        "No valid starting configurations found",
+        statesExplored,
+        beamPrunings
+      );
     }
 
     // Get transition graph for bridge finding
@@ -258,15 +299,19 @@ export class BeamSearch {
         let validVariations = this.variationProvider.getVariations(
           letter,
           state.currentEndPosition,
-          this.gridMode,
+          this.gridMode
         );
 
         // On the final letter, if LOOP requires specific end positions,
         // only keep variations that land there.
         const isFinalLetter = i === letters.length - 1;
-        if (isFinalLetter && requiredEndPositions && requiredEndPositions.size > 0) {
-          validVariations = validVariations.filter(
-            (p) => requiredEndPositions.has(p.endPosition),
+        if (
+          isFinalLetter &&
+          requiredEndPositions &&
+          requiredEndPositions.size > 0
+        ) {
+          validVariations = validVariations.filter((p) =>
+            requiredEndPositions.has(p.endPosition)
           );
         }
 
@@ -283,7 +328,7 @@ export class BeamSearch {
             letters.length,
             constraintSet,
             config,
-            transitionGraph,
+            transitionGraph
           );
 
           statesExplored += bridgeResult.statesExplored;
@@ -298,15 +343,19 @@ export class BeamSearch {
               previousSteps: state.steps,
               letter,
             },
-            constraintSet,
+            constraintSet
           );
 
           for (const scored of scores.slice(0, config.beamWidth)) {
             if (!scored.hardConstraintsSatisfied) continue;
             // Enrich static/dash motions with their allocated turns so
-            // subsequent beats see real rotation directions, not noRotation.
+            // subsequent steps see real rotation directions, not noRotation.
             const enriched = enrichWithTurns(
-              scored.variation, i, turnAllocation, state.steps, propContinuity,
+              scored.variation,
+              i,
+              turnAllocation,
+              state.steps,
+              propContinuity
             );
             nextBeam.push(extendState(state, enriched, scored));
             statesExplored++;
@@ -324,7 +373,7 @@ export class BeamSearch {
         return this.failResult(
           `No valid path found after letter "${letter}" (position ${i + 1})`,
           statesExplored,
-          beamPrunings,
+          beamPrunings
         );
       }
     }
@@ -334,20 +383,34 @@ export class BeamSearch {
 
     if (!bestState) {
       if (config.allowPartial && beam.length > 0) {
-        const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
+        const partial = beam.sort(
+          (a, b) => b.cumulativeScore - a.cumulativeScore
+        )[0];
         if (partial) {
-          return this.buildResult(partial, constraintSet, statesExplored, beamPrunings, true);
+          return this.buildResult(
+            partial,
+            constraintSet,
+            statesExplored,
+            beamPrunings,
+            true
+          );
         }
       }
 
       return this.failResult(
         `No sequence met minimum score threshold (${config.minAcceptableScore})`,
         statesExplored,
-        beamPrunings,
+        beamPrunings
       );
     }
 
-    return this.buildResult(bestState, constraintSet, statesExplored, beamPrunings, false);
+    return this.buildResult(
+      bestState,
+      constraintSet,
+      statesExplored,
+      beamPrunings,
+      false
+    );
   }
 
   /**
@@ -370,7 +433,7 @@ export class BeamSearch {
     },
     turnAllocation?: TurnAllocation,
     propContinuity?: PropContinuityMode,
-    reachability?: ReachabilityResult,
+    reachability?: ReachabilityResult
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -381,50 +444,84 @@ export class BeamSearch {
       return this.failResult("Length must be greater than 0", 0, 0);
     }
 
-    // Step 1: Find all non-Type6 variations to seed the first beat
-    const allVariations = this.variationProvider.getAllVariations(this.gridMode);
-    let nonType6 = allVariations.filter((p) => !TYPE_6_LETTERS.includes(p.letter));
+    // Step 1: Find all non-Type6 variations to seed the first step
+    const allVariations = this.variationProvider.getAllVariations(
+      this.gridMode
+    );
+    let nonType6 = allVariations.filter(
+      (p) => !this.letterClassifier.isType6(p.letter)
+    );
 
     // Apply letter exclusion filter (mustNotContainLetters)
-    if (options?.mustNotContainLetters && options.mustNotContainLetters.size > 0) {
+    if (
+      options?.mustNotContainLetters &&
+      options.mustNotContainLetters.size > 0
+    ) {
       const excluded = options.mustNotContainLetters;
       nonType6 = nonType6.filter((p) => !excluded.has(p.letter));
     }
 
-    // blockedStartPositions only constrains which position the FIRST beat
-    // can start from. It must NOT filter the shared nonType6 pool — beats
+    // blockedStartPositions only constrains which position the FIRST step
+    // can start from. It must NOT filter the shared nonType6 pool — steps
     // 2+ need variations at every position the sequence may travel to.
-    // If we filtered nonType6 globally, beat 2 would find zero candidates
-    // whenever beat 1 transitioned to a position that was "blocked."
+    // If we filtered nonType6 globally, step 2 would find zero candidates
+    // whenever step 1 transitioned to a position that was "blocked."
     let firstStepCandidates: PictographData[];
     if (startPosition) {
-      firstStepCandidates = nonType6.filter((p) => p.startPosition === startPosition);
-    } else if (options?.blockedStartPositions && options.blockedStartPositions.size > 0) {
+      firstStepCandidates = nonType6.filter(
+        (p) => p.startPosition === startPosition
+      );
+    } else if (
+      options?.blockedStartPositions &&
+      options.blockedStartPositions.size > 0
+    ) {
       const blocked = options.blockedStartPositions;
-      firstStepCandidates = nonType6.filter((p) => !blocked.has(p.startPosition));
+      firstStepCandidates = nonType6.filter(
+        (p) => !blocked.has(p.startPosition)
+      );
     } else {
       firstStepCandidates = nonType6;
     }
 
-    if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
-      const endSet = requiredEndPositions;
-      firstStepCandidates = firstStepCandidates.filter(
-        (p) => endSet.has(p.endPosition),
+    const reachableStarts = reachability?.reachableAt[0];
+    if (reachableStarts) {
+      firstStepCandidates = firstStepCandidates.filter((p) =>
+        reachableStarts.has(p.startPosition)
       );
-    } else if (length === 1 && loopPositionMap && Object.keys(loopPositionMap).length > 0) {
-      // No explicit requiredEndPositions but we have a position map.
-      // Pre-filter to candidates whose endPosition is valid for their startPosition.
+    }
+
+    // A LOOP position map is a start→end relation, not merely a source of
+    // optional end hints. Remove starts that have no valid relation before
+    // scoring so an invalid top-ranked start cannot make the map disappear.
+    if (
+      (!requiredEndPositions || requiredEndPositions.size === 0) &&
+      loopPositionMap
+    ) {
       firstStepCandidates = firstStepCandidates.filter((p) => {
         const validEnds = loopPositionMap[p.startPosition];
-        return validEnds && validEnds.includes(p.endPosition);
+        return validEnds !== undefined && validEnds.length > 0;
+      });
+    }
+
+    if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
+      const endSet = requiredEndPositions;
+      firstStepCandidates = firstStepCandidates.filter((p) =>
+        endSet.has(p.endPosition)
+      );
+    } else if (length === 1 && loopPositionMap) {
+      // A single-step state never enters the expansion loop below, so enforce
+      // its start-specific endpoint directly on the first variation.
+      firstStepCandidates = firstStepCandidates.filter((p) => {
+        const validEnds = loopPositionMap[p.startPosition];
+        return validEnds?.includes(p.endPosition) ?? false;
       });
     }
 
     if (firstStepCandidates.length === 0) {
-      return this.failResult("No variations available for first beat", 0, 0);
+      return this.failResult("No variations available for first step", 0, 0);
     }
 
-    // Step 2: Score first beat candidates
+    // Step 2: Score first step candidates
     const firstScores = scoreAndRankVariations(
       firstStepCandidates,
       {
@@ -433,7 +530,7 @@ export class BeamSearch {
         previousSteps: [],
         letter: firstStepCandidates[0]!.letter,
       },
-      constraintSet,
+      constraintSet
     );
 
     // Initialize beam with top-scored first variations
@@ -444,11 +541,21 @@ export class BeamSearch {
     for (const scored of firstScores.slice(0, config.beamWidth)) {
       if (!scored.hardConstraintsSatisfied) continue;
 
-      const startPictograph = this.findStartPosition(scored.variation.startPosition);
+      const startPictograph = this.findStartPosition(
+        scored.variation.startPosition,
+        scored.variation
+      );
       if (startPictograph) {
-        const initialState = createInitialState(startPictograph.variation, startPictograph.index);
+        const initialState = createInitialState(
+          startPictograph.variation,
+          startPictograph.index
+        );
         const enriched = enrichWithTurns(
-          scored.variation, 0, turnAllocation, initialState.steps, propContinuity,
+          scored.variation,
+          0,
+          turnAllocation,
+          initialState.steps,
+          propContinuity
         );
         const state = extendState(initialState, enriched, scored);
         beam.push(state);
@@ -457,63 +564,45 @@ export class BeamSearch {
     }
 
     if (beam.length === 0) {
-      return this.failResult("No valid starting configurations found for length-based generation", statesExplored, beamPrunings);
-    }
-
-    // If a loopPositionMap is provided but no explicit requiredEndPositions,
-    // compute from the actual start position of the first beam state.
-    // This handles the case where startPosition was random.
-    if ((!requiredEndPositions || requiredEndPositions.size === 0) && loopPositionMap && beam.length > 0) {
-      const actualStartPosition = beam[0]!.steps[0]?.startPosition;
-      if (actualStartPosition) {
-        const endPositions = loopPositionMap[actualStartPosition];
-        if (endPositions && endPositions.length > 0) {
-          requiredEndPositions = new Set(endPositions);
-
-          // Filter beam to only keep states whose start position has a
-          // valid map entry. Different random starts may map to different
-          // end positions, so we pick the first start and filter to that.
-          beam = beam.filter(
-            (s) => s.steps[0]?.startPosition === actualStartPosition,
-          );
-        }
-      }
+      return this.failResult(
+        "No valid starting configurations found for length-based generation",
+        statesExplored,
+        beamPrunings
+      );
     }
 
     // When seed length is 1, the main loop below doesn't run (i starts at 1,
     // length is 1). The end-position filter inside the loop never fires, so we
-    // must enforce it here. Without this, single-beat seeds for quartered LOOPs
+    // must enforce it here. Without this, single-step seeds for quartered LOOPs
     // can end at any position, causing the executor to reject the sequence.
     if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
-      beam = beam.filter(
-        (s) => requiredEndPositions.has(s.currentEndPosition),
-      );
+      beam = beam.filter((s) => requiredEndPositions.has(s.currentEndPosition));
 
       if (beam.length === 0) {
         return this.failResult(
-          `No first-beat variation ends at required positions [${Array.from(requiredEndPositions).join(", ")}] for single-beat seed`,
+          `No first-step variation ends at required positions [${Array.from(requiredEndPositions).join(", ")}] for single-step seed`,
           statesExplored,
-          beamPrunings,
+          beamPrunings
         );
       }
     }
 
-    // Step 3: Beam search for remaining beats
+    // Step 3: Beam search for remaining steps
     for (let i = 1; i < length; i++) {
       const nextBeam: SearchState[] = [];
 
       for (const state of beam) {
         // Find all non-Type6 variations at the current end position
         let candidates = nonType6.filter(
-          (p) => p.startPosition === state.currentEndPosition,
+          (p) => p.startPosition === state.currentEndPosition
         );
 
         // Reachability-guided filtering: if we pre-computed which positions
-        // are viable at each beat, filter candidates so their endPosition
-        // lands in the reachable set for the NEXT beat. This prevents the
-        // beam from wasting lanes on paths that dead-end at a future beat.
+        // are viable at each step, filter candidates so their endPosition
+        // lands in the reachable set for the NEXT step. This prevents the
+        // beam from wasting lanes on paths that dead-end at a future step.
         //
-        // On the final beat, filter to the LOOP-required end positions
+        // On the final step, filter to the LOOP-required end positions
         // directly (the reachability backward pass already encodes this,
         // but we keep the explicit check as a fallback for when reachability
         // wasn't computed).
@@ -521,14 +610,25 @@ export class BeamSearch {
         if (reachability && !isFinalStep) {
           const nextReachable = reachability.reachableAt[i + 1];
           if (nextReachable) {
-            candidates = candidates.filter(
-              (p) => nextReachable.has(p.endPosition),
+            candidates = candidates.filter((p) =>
+              nextReachable.has(p.endPosition)
             );
           }
-        } else if (isFinalStep && requiredEndPositions && requiredEndPositions.size > 0) {
-          candidates = candidates.filter(
-            (p) => requiredEndPositions.has(p.endPosition),
-          );
+        } else if (isFinalStep) {
+          if (requiredEndPositions && requiredEndPositions.size > 0) {
+            candidates = candidates.filter((p) =>
+              requiredEndPositions.has(p.endPosition)
+            );
+          } else if (loopPositionMap) {
+            const sequenceStart = state.steps[0]?.startPosition;
+            const validEnds = sequenceStart
+              ? loopPositionMap[sequenceStart]
+              : undefined;
+            if (!validEnds || validEnds.length === 0) continue;
+            candidates = candidates.filter((p) =>
+              validEnds.includes(p.endPosition)
+            );
+          }
         }
 
         if (candidates.length === 0) continue;
@@ -542,13 +642,17 @@ export class BeamSearch {
             previousSteps: state.steps,
             letter: candidates[0]!.letter,
           },
-          constraintSet,
+          constraintSet
         );
 
         for (const scored of scores.slice(0, config.beamWidth)) {
           if (!scored.hardConstraintsSatisfied) continue;
           const enriched = enrichWithTurns(
-            scored.variation, i, turnAllocation, state.steps, propContinuity,
+            scored.variation,
+            i,
+            turnAllocation,
+            state.steps,
+            propContinuity
           );
           nextBeam.push(extendState(state, enriched, scored));
           statesExplored++;
@@ -563,9 +667,9 @@ export class BeamSearch {
 
       if (beam.length === 0) {
         return this.failResult(
-          `No valid path found at beat ${i + 1} of ${length}`,
+          `No valid path found at step ${i + 1} of ${length}`,
           statesExplored,
-          beamPrunings,
+          beamPrunings
         );
       }
     }
@@ -575,20 +679,34 @@ export class BeamSearch {
 
     if (!bestState) {
       if (config.allowPartial && beam.length > 0) {
-        const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
+        const partial = beam.sort(
+          (a, b) => b.cumulativeScore - a.cumulativeScore
+        )[0];
         if (partial) {
-          return this.buildResult(partial, constraintSet, statesExplored, beamPrunings, true);
+          return this.buildResult(
+            partial,
+            constraintSet,
+            statesExplored,
+            beamPrunings,
+            true
+          );
         }
       }
 
       return this.failResult(
         `No sequence met minimum score threshold (${config.minAcceptableScore})`,
         statesExplored,
-        beamPrunings,
+        beamPrunings
       );
     }
 
-    return this.buildResult(bestState, constraintSet, statesExplored, beamPrunings, false);
+    return this.buildResult(
+      bestState,
+      constraintSet,
+      statesExplored,
+      beamPrunings,
+      false
+    );
   }
 
   private tryBridges(
@@ -599,18 +717,27 @@ export class BeamSearch {
     totalLetters: number,
     constraintSet: ConstraintSet,
     config: BeamSearchConfig,
-    transitionGraph: ReturnType<typeof getLetterTransitionGraph>,
+    transitionGraph: ReturnType<typeof getLetterTransitionGraph>
   ): { newStates: SearchState[]; statesExplored: number } {
     const newStates: SearchState[] = [];
     let statesExplored = 0;
 
     // Try single-letter bridges first (can be scored for constraint optimization)
-    let bridgeOptions = transitionGraph.findAllBridgeOptions(fromLetter, toLetter);
+    let bridgeOptions = transitionGraph.findAllBridgeOptions(
+      fromLetter,
+      toLetter
+    );
 
     if (bridgeOptions.length > 0) {
       // Single-letter bridge: try all options in score order
-      const allPictographs = this.variationProvider.getAllVariations(this.gridMode);
-      const scoredBridges = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
+      const allPictographs = this.variationProvider.getAllVariations(
+        this.gridMode
+      );
+      const scoredBridges = scoreBridgeOptions(
+        bridgeOptions,
+        constraintSet,
+        allPictographs
+      );
 
       for (const bridgeOption of scoredBridges) {
         if (!bridgeOption) continue;
@@ -618,7 +745,7 @@ export class BeamSearch {
         const bridgeVariations = this.variationProvider.getVariations(
           bridgeOption.letter,
           state.currentEndPosition,
-          this.gridMode,
+          this.gridMode
         );
         if (bridgeVariations.length === 0) continue;
 
@@ -630,20 +757,26 @@ export class BeamSearch {
             previousSteps: state.steps,
             letter: bridgeOption.letter,
           },
-          constraintSet,
+          constraintSet
         );
 
         const bestBridgeScore = bridgeScores[0];
-        if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
+        if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied)
+          continue;
 
-        const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
+        const stateWithBridge = extendState(
+          state,
+          bestBridgeScore.variation,
+          bestBridgeScore,
+          true
+        );
         statesExplored++;
 
         // Find target letter from bridge's end position
         const targetVariations = this.variationProvider.getVariations(
           toLetter,
           stateWithBridge.currentEndPosition,
-          this.gridMode,
+          this.gridMode
         );
         if (targetVariations.length === 0) continue;
 
@@ -655,13 +788,15 @@ export class BeamSearch {
             previousSteps: stateWithBridge.steps,
             letter: toLetter,
           },
-          constraintSet,
+          constraintSet
         );
 
         let bridgeSucceeded = false;
         for (const scored of scores.slice(0, config.beamWidth)) {
           if (!scored.hardConstraintsSatisfied) continue;
-          newStates.push(extendState(stateWithBridge, scored.variation, scored));
+          newStates.push(
+            extendState(stateWithBridge, scored.variation, scored)
+          );
           statesExplored++;
           bridgeSucceeded = true;
         }
@@ -671,7 +806,10 @@ export class BeamSearch {
       }
     } else {
       // No single-letter bridge — fall back to BFS multi-letter path
-      const multiBridgePath = transitionGraph.findBridgeLetters(fromLetter, toLetter);
+      const multiBridgePath = transitionGraph.findBridgeLetters(
+        fromLetter,
+        toLetter
+      );
       if (multiBridgePath.length === 0) {
         return { newStates, statesExplored };
       }
@@ -683,7 +821,7 @@ export class BeamSearch {
         const bridgeVariations = this.variationProvider.getVariations(
           bridgeLetter,
           currentState.currentEndPosition,
-          this.gridMode,
+          this.gridMode
         );
         if (bridgeVariations.length === 0) {
           bridgeSuccess = false;
@@ -698,7 +836,7 @@ export class BeamSearch {
             previousSteps: currentState.steps,
             letter: bridgeLetter,
           },
-          constraintSet,
+          constraintSet
         );
 
         const bestBridgeScore = bridgeScores[0];
@@ -707,7 +845,12 @@ export class BeamSearch {
           break;
         }
 
-        currentState = extendState(currentState, bestBridgeScore.variation, bestBridgeScore, true);
+        currentState = extendState(
+          currentState,
+          bestBridgeScore.variation,
+          bestBridgeScore,
+          true
+        );
         statesExplored++;
       }
 
@@ -719,7 +862,7 @@ export class BeamSearch {
       const targetVariations = this.variationProvider.getVariations(
         toLetter,
         currentState.currentEndPosition,
-        this.gridMode,
+        this.gridMode
       );
       if (targetVariations.length === 0) {
         return { newStates, statesExplored };
@@ -733,7 +876,7 @@ export class BeamSearch {
           previousSteps: currentState.steps,
           letter: toLetter,
         },
-        constraintSet,
+        constraintSet
       );
 
       for (const scored of scores.slice(0, config.beamWidth)) {
@@ -754,16 +897,48 @@ export class BeamSearch {
 
   private findStartPosition(
     position: string,
+    firstVariation: PictographData
   ): { variation: PictographData; index: number } | null {
-    const allVariations = this.variationProvider.getAllVariations(this.gridMode);
+    const allVariations = this.variationProvider.getAllVariations(
+      this.gridMode
+    );
     const validStarts = allVariations.filter(
       (p) =>
-        TYPE_6_LETTERS.includes(p.letter) &&
+        this.letterClassifier.isType6(p.letter) &&
         p.startPosition === position &&
-        p.endPosition === position,
+        p.endPosition === position
     );
 
-    if (validStarts.length === 0) return null;
+    if (validStarts.length === 0) {
+      const startLetter = this.staticLetterForPosition(position);
+      if (!startLetter) return null;
+      return {
+        variation: {
+          letter: startLetter,
+          startPosition: position,
+          endPosition: position,
+          timing: "together",
+          direction: "same",
+          blueMotion: {
+            ...firstVariation.blueMotion,
+            endLocation: firstVariation.blueMotion.startLocation,
+            motionType: "static",
+            rotationDirection: "noRotation",
+            endOrientation: firstVariation.blueMotion.startOrientation,
+            turns: 0,
+          },
+          redMotion: {
+            ...firstVariation.redMotion,
+            endLocation: firstVariation.redMotion.startLocation,
+            motionType: "static",
+            rotationDirection: "noRotation",
+            endOrientation: firstVariation.redMotion.startOrientation,
+            turns: 0,
+          },
+        },
+        index: -1,
+      };
+    }
 
     const index = Math.floor(Math.random() * validStarts.length);
     const variation = validStarts[index];
@@ -772,8 +947,19 @@ export class BeamSearch {
     return { variation, index };
   }
 
+  private staticLetterForPosition(position: string): string | null {
+    if (position.startsWith("alpha")) return "α";
+    if (position.startsWith("beta")) return "β";
+    if (position.startsWith("gamma")) return "γ";
+    if (position.startsWith("zeta")) return "ζ";
+    if (position.startsWith("eta")) return "η";
+    if (position.startsWith("tau")) return "τ";
+    if (position.startsWith("terra")) return "⊕";
+    return null;
+  }
+
   /**
-   * Each beat's start orientation = previous beat's end orientation.
+   * Each step's start orientation = previous step's end orientation.
    */
   private propagateOrientations(steps: PictographData[]): PictographData[] {
     if (steps.length === 0) return steps;
@@ -782,8 +968,10 @@ export class BeamSearch {
     const startPosition = steps[0];
     if (!startPosition) return steps;
 
-    let blueOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
-    let redOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+    let blueOrientation = (startPosition.blueMotion.endOrientation ||
+      "in") as Orientation;
+    let redOrientation = (startPosition.redMotion.endOrientation ||
+      "in") as Orientation;
 
     result.push(startPosition);
 
@@ -835,7 +1023,7 @@ export class BeamSearch {
     constraintSet: ConstraintSet,
     statesExplored: number,
     beamPrunings: number,
-    isPartial: boolean,
+    isPartial: boolean
   ): BeamSearchResult {
     const report = generateConstraintReport(state, constraintSet);
     const stepsWithOrientations = this.propagateOrientations(state.steps);
@@ -860,7 +1048,7 @@ export class BeamSearch {
   private failResult(
     error: string,
     statesExplored: number,
-    beamPrunings: number,
+    beamPrunings: number
   ): BeamSearchResult {
     return {
       success: false,

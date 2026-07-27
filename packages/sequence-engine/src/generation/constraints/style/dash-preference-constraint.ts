@@ -36,7 +36,7 @@ export class DashPreferenceConstraint implements IVariationConstraint {
         this.description = "Maximize dash motions over shifts";
         break;
       case "require":
-        this.description = "Require at least one dash motion per beat";
+        this.description = "Require at least one dash motion per step";
         break;
       case "prefer":
         this.description = "Prefer dash motions when available";

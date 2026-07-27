@@ -6,13 +6,15 @@
  */
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
-import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
+import type {
+  SequenceStep,
+  MotionData,
+} from "../../core/types/sequence-engine-types.js";
 import { Period } from "../loop-types.js";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
-  getHandRotationDirection,
-  getLocationMapForHandRotation,
+  translateHandPath,
 } from "../position-maps/circular-position-maps.js";
 import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
@@ -42,7 +44,11 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
         period
       );
 
-      const newStep = this.createRotatedStep(matchingStep, lastStep, nextStepNumber);
+      const newStep = this.createRotatedStep(
+        matchingStep,
+        lastStep,
+        nextStepNumber
+      );
       const finalStep = updateStepOrientations(newStep, lastStep);
 
       sequence.push(finalStep);
@@ -56,7 +62,9 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
 
   private validateSequence(sequence: SequenceStep[], period: Period): void {
     if (sequence.length < 2) {
-      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+      throw new Error(
+        "Sequence must have at least 2 steps (start position + 1 step)"
+      );
     }
 
     const startPos = sequence[0]!.startPosition;
@@ -107,24 +115,16 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
-    const blueHandRotDir = getHandRotationDirection(
+    const newBlueEndLoc = translateHandPath(
       matchingStep.motions.blue.startLocation,
-      matchingStep.motions.blue.endLocation
+      matchingStep.motions.blue.endLocation,
+      previousStep.motions.blue.endLocation
     );
-    const redHandRotDir = getHandRotationDirection(
+    const newRedEndLoc = translateHandPath(
       matchingStep.motions.red.startLocation,
-      matchingStep.motions.red.endLocation
+      matchingStep.motions.red.endLocation,
+      previousStep.motions.red.endLocation
     );
-
-    const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
-    const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
-
-    const newBlueEndLoc =
-      blueLocationMap[previousStep.motions.blue.endLocation] ||
-      previousStep.motions.blue.endLocation;
-    const newRedEndLoc =
-      redLocationMap[previousStep.motions.red.endLocation] ||
-      previousStep.motions.red.endLocation;
 
     const newEndPosition = gridPositionDeriver.getGridPositionFromLocations(
       newBlueEndLoc,
@@ -134,19 +134,21 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     return {
       ...matchingStep,
       stepNumber,
-      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
-      endPosition: (newEndPosition) as SequenceStep["endPosition"],
+      startPosition: previousStep.endPosition as SequenceStep["startPosition"],
+      endPosition: newEndPosition as SequenceStep["endPosition"],
       motions: {
         blue: {
-        ...matchingStep.motions.blue,
-        startLocation: (previousStep.motions.blue.endLocation) as MotionData["startLocation"],
-        endLocation: (newBlueEndLoc) as MotionData["endLocation"],
-      },
+          ...matchingStep.motions.blue,
+          startLocation: previousStep.motions.blue
+            .endLocation as MotionData["startLocation"],
+          endLocation: newBlueEndLoc as MotionData["endLocation"],
+        },
         red: {
-        ...matchingStep.motions.red,
-        startLocation: (previousStep.motions.red.endLocation) as MotionData["startLocation"],
-        endLocation: (newRedEndLoc) as MotionData["endLocation"],
-      },
+          ...matchingStep.motions.red,
+          startLocation: previousStep.motions.red
+            .endLocation as MotionData["startLocation"],
+          endLocation: newRedEndLoc as MotionData["endLocation"],
+        },
       },
     };
   }

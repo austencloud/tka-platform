@@ -9,11 +9,13 @@
   import LOOPExpandedOverlay from "../cards/LOOPExpandedOverlay.svelte";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
   type RhythmValue = {
     rotationInterval: 2 | 4;
     inversionInterval: 2 | 4;
     inversionMode: "expand" | "overlay";
+    reflectionAxis: ReflectionAxis;
   };
 
   let {
@@ -39,7 +41,7 @@
     rhythm?: RhythmValue;
     sequenceLength?: number;
     onRhythmChange?: (updates: Partial<RhythmValue>) => void;
-    /** Guest gating — beat cap + sign-up callback (see LOOPExpandedOverlay). */
+    /** Guest gating — step cap + sign-up callback (see LOOPExpandedOverlay). */
     guestMaxLength?: number;
     onRequestSignup?: (reason: string) => void;
   } = $props();
@@ -165,14 +167,14 @@
   }
 
   /* ============================================================
-     MOBILE (< 768px = below the side-by-side breakpoint).
+     MOBILE (<= 768px = the bottom-sheet side of the layout breakpoint).
      The JS placement can get stuck on "right" (stale layout read at mount),
      leaving a narrow right-anchored drawer with a vertical side handle and a
      right-only backdrop. Below the breakpoint the panel MUST be a full-width
      bottom sheet — viewport width is the reliable signal — so pin that geometry
      here regardless of the (possibly wrong) data-placement.
      ============================================================ */
-  @media (max-width: 767px) {
+  @media (max-width: 768px) {
     :global(.drawer-content.loop-drawer-sheet) {
       --sheet-transition:
         transform var(--duration-dramatic, 350ms)
@@ -258,50 +260,59 @@
       overflow: visible !important;
     }
 
-    /* Combo mode has secondary controls plus a persistent Apply action. It is
-       the only phone state that needs a bounded, full-viewport composition. */
-    :global(
-      .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
-    ) {
-      height: 100dvh;
-      border-radius: 0 !important;
+    /* The mobile picker and every settings screen share one reserved stage,
+       so Combo no longer needs to stretch the sheet to the full viewport.
+       The sheet hugs that stable stage and leaves the sequence visible above. */
+    .loop-drawer-content :global(.apply-dock) {
+      position: static;
+      bottom: auto;
     }
+  }
 
-    :global(
-        .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
-      )
-      > :global(.drawer-inner) {
-      overflow: hidden;
-    }
-
-    :global(
-        .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
-      )
-      .loop-drawer-content {
-      height: 100% !important;
-      overflow: hidden;
-    }
-
-    :global(
-        .drawer-content.loop-drawer-sheet:has(.loop-expanded-overlay.combo-mode)
-      )
-      .loop-drawer-content
-      > :global(.loop-expanded-overlay) {
-      flex: 1 1 auto;
-      overflow: hidden !important;
-    }
-
-    .loop-drawer-content :global(.combo-details) {
-      flex: 1 1 auto;
+  /* The shared layout manager can keep portrait tablets stacked above the
+     phone breakpoint. When Drawer says "bottom", preserve the same compact
+     content-height composition instead of exposing the desktop accordion. */
+  @media (min-width: 769px) and (max-width: 1023px) {
+    :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"]) {
+      width: 100vw;
+      max-width: 100vw;
+      height: auto;
       min-height: 0;
-      overflow-y: auto;
+      max-height: 100dvh;
+      overflow: clip;
+      touch-action: pan-y;
       overscroll-behavior-y: contain;
     }
 
-    /* Apply is a real footer in the phone drawer. Keeping it in normal flow
-       prevents the nearest-scrollport rules for sticky positioning from
-       painting it over unfinished option rows. */
-    .loop-drawer-content :global(.apply-dock) {
+    :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"])
+      > :global(.drawer-inner) {
+      overflow-y: auto;
+    }
+
+    :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"])
+      .loop-drawer-content {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"])
+      .loop-drawer-content
+      > :global(.loop-expanded-overlay) {
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"])
+      .loop-drawer-content
+      :global(.grid-container) {
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"])
+      .loop-drawer-content
+      :global(.apply-dock) {
       position: static;
       bottom: auto;
     }

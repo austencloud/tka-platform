@@ -132,7 +132,10 @@ describe("buildLoopSpec", () => {
     const wire = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED, C.INVERTED]), { rotationInterval: 4 });
     expect(wire).not.toBeNull();
     expect(wire!.blue!.rotated).toEqual({ period: 4 });
-    expect(wire!.blue!.mirrored).toEqual({ period: 2 });
+    expect(wire!.blue!.mirrored).toEqual({
+      period: 2,
+      reflectionAxis: "north-south",
+    });
     expect(wire!.blue!.inverted).toEqual({ period: 2 });
     expect(wire!.red).toEqual(wire!.blue);
   });
@@ -143,6 +146,22 @@ describe("buildLoopSpec", () => {
       inversionMode: "overlay",
     });
     expect(wire!.blue!.inverted).toEqual({ period: 4, mode: "overlay" });
+  });
+
+  it("carries any reflection axis independently of the component alias", () => {
+    const diagonal = buildLoopSpec(new Set([C.MIRRORED]), {
+      reflectionAxis: "northwest-southeast",
+    });
+    expect(diagonal!.blue!.mirrored).toEqual({
+      period: 2,
+      reflectionAxis: "northwest-southeast",
+    });
+
+    const legacyFlipped = buildLoopSpec(new Set([C.FLIPPED]), {});
+    expect(legacyFlipped!.blue!.flipped).toEqual({
+      period: 2,
+      reflectionAxis: "east-west",
+    });
   });
 
   it("returns null for unmapped combos (same gate as generateLOOPType)", () => {
@@ -183,6 +202,22 @@ describe("buildLoopSpec", () => {
 });
 
 describe("resolveLoopConfig", () => {
+  it("keeps the reflection axis independent of grid and legacy naming", () => {
+    const diagonal = resolveLoopConfig("mirrored", "halved", {
+      reflectionAxis: "northeast-southwest",
+    });
+    expect(diagonal.loopRhythm.reflectionAxis).toBe(
+      "northeast-southwest"
+    );
+    expect(diagonal.loopSpecWire!.blue!.mirrored.reflectionAxis).toBe(
+      "northeast-southwest"
+    );
+
+    expect(
+      resolveLoopConfig("flipped", "halved").loopRhythm.reflectionAxis
+    ).toBe("east-west");
+  });
+
   it("coerces quartered→halved for non-rotation loop types (period-2 transforms have no genuine period-4)", () => {
     // A period-2 transform asked as quartered extends to a literal double that
     // reduceToMinimalLoop strips back to half length — the "asked for 16, got 8"

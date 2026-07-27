@@ -2,7 +2,7 @@
  * Integration tests for length-based sequence generation.
  *
  * Verifies that SequenceBuilder can generate sequences by length (picking
- * random letters per beat) instead of by word.
+ * random letters per step) instead of by word.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -224,14 +224,14 @@ describe("length-based generation", () => {
     builder = new SequenceBuilder(provider);
   });
 
-  it("generates a sequence of exactly N+1 steps (start + N beats)", () => {
+  it("generates a sequence of exactly N+1 steps (start + N steps)", () => {
     const result = builder.build({
       length: 4,
       gridMode: "diamond",
       level: 1,
     });
 
-    // 1 start position + 4 beats = 5 steps
+    // 1 start position + 4 steps = 5 steps
     expect(result.sequence.length).toBe(5);
   });
 
@@ -281,16 +281,16 @@ describe("length-based generation", () => {
     }
   });
 
-  it("does not include Type 6 letters in generated beats", () => {
+  it("does not include Type 6 letters in generated steps", () => {
     const result = builder.build({
       length: 4,
       gridMode: "diamond",
       level: 1,
     });
 
-    // Beats are steps 1..N (step 0 is start position)
-    const beats = result.sequence.slice(1);
-    for (const step of beats) {
+    // Steps are steps 1..N (step 0 is start position)
+    const steps = result.sequence.slice(1);
+    for (const step of steps) {
       expect(["α", "β", "γ"]).not.toContain(step.letter);
     }
   });

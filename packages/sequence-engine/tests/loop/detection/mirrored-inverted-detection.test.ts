@@ -2,7 +2,7 @@
  * Regression: a halved mirrored+inverted LOOP must be detected as
  * mirrored + inverted, NOT bare "mirrored".
  *
- * The fixture is a real 16-beat sequence (ΨΣ-YΦKΘUX- / ΨΔ-ZΦJΩVW-) that is a
+ * The fixture is a real 16-step sequence (ΨΣ-YΦKΘUX- / ΨΔ-ZΦJΩVW-) that is a
  * textbook halved mirrored-inverted LOOP:
  *   - positions mirror across the vertical axis (E↔W), and
  *   - motion types flip PRO↔ANTI, while
@@ -34,7 +34,7 @@ type MotionTuple = [
   rotationDirection: string,
 ];
 
-type BeatTuple = [
+type StepTuple = [
   stepNumber: number,
   letter: string | null,
   startPosition: string,
@@ -43,7 +43,12 @@ type BeatTuple = [
   red: MotionTuple,
 ];
 
-function motion([motionType, startLocation, endLocation, rotationDirection]: MotionTuple): MotionData {
+function motion([
+  motionType,
+  startLocation,
+  endLocation,
+  rotationDirection,
+]: MotionTuple): MotionData {
   return {
     motionType,
     startLocation,
@@ -55,7 +60,14 @@ function motion([motionType, startLocation, endLocation, rotationDirection]: Mot
   } as MotionData;
 }
 
-function step([stepNumber, letter, startPosition, endPosition, blue, red]: BeatTuple): SequenceStep {
+function step([
+  stepNumber,
+  letter,
+  startPosition,
+  endPosition,
+  blue,
+  red,
+]: StepTuple): SequenceStep {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
@@ -69,30 +81,159 @@ function step([stepNumber, letter, startPosition, endPosition, blue, red]: BeatT
 
 // The real reported sequence. Second half = vertical-mirror + pro/anti-invert of
 // the first half; prop rotation direction is preserved throughout.
-const BEATS: BeatTuple[] = [
-  [0, null, "alpha1", "alpha1", ["static", "s", "s", "noRotation"], ["static", "n", "n", "noRotation"]],
+const STEPS: StepTuple[] = [
+  [
+    0,
+    null,
+    "alpha1",
+    "alpha1",
+    ["static", "s", "s", "noRotation"],
+    ["static", "n", "n", "noRotation"],
+  ],
   // ---- Half 1 ----
-  [1, "Ψ", "alpha1", "beta5", ["static", "s", "s", "noRotation"], ["dash", "n", "s", "cw"]],
-  [2, "Σ-", "beta5", "gamma15", ["dash", "s", "n", "ccw"], ["pro", "s", "w", "cw"]],
-  [3, "Y", "gamma15", "beta7", ["pro", "n", "w", "ccw"], ["static", "w", "w", "cw"]],
-  [4, "Φ", "beta7", "alpha3", ["static", "w", "w", "ccw"], ["dash", "w", "e", "cw"]],
-  [5, "K", "alpha3", "beta1", ["anti", "w", "n", "ccw"], ["anti", "e", "n", "cw"]],
-  [6, "Θ", "beta1", "gamma3", ["static", "n", "n", "ccw"], ["pro", "n", "e", "cw"]],
-  [7, "U", "gamma3", "gamma5", ["anti", "n", "e", "ccw"], ["pro", "e", "s", "cw"]],
-  [8, "X-", "gamma5", "alpha1", ["anti", "e", "s", "ccw"], ["dash", "s", "n", "cw"]],
+  [
+    1,
+    "Ψ",
+    "alpha1",
+    "beta5",
+    ["static", "s", "s", "noRotation"],
+    ["dash", "n", "s", "cw"],
+  ],
+  [
+    2,
+    "Σ-",
+    "beta5",
+    "gamma15",
+    ["dash", "s", "n", "ccw"],
+    ["pro", "s", "w", "cw"],
+  ],
+  [
+    3,
+    "Y",
+    "gamma15",
+    "beta7",
+    ["pro", "n", "w", "ccw"],
+    ["static", "w", "w", "cw"],
+  ],
+  [
+    4,
+    "Φ",
+    "beta7",
+    "alpha3",
+    ["static", "w", "w", "ccw"],
+    ["dash", "w", "e", "cw"],
+  ],
+  [
+    5,
+    "K",
+    "alpha3",
+    "beta1",
+    ["anti", "w", "n", "ccw"],
+    ["anti", "e", "n", "cw"],
+  ],
+  [
+    6,
+    "Θ",
+    "beta1",
+    "gamma3",
+    ["static", "n", "n", "ccw"],
+    ["pro", "n", "e", "cw"],
+  ],
+  [
+    7,
+    "U",
+    "gamma3",
+    "gamma5",
+    ["anti", "n", "e", "ccw"],
+    ["pro", "e", "s", "cw"],
+  ],
+  [
+    8,
+    "X-",
+    "gamma5",
+    "alpha1",
+    ["anti", "e", "s", "ccw"],
+    ["dash", "s", "n", "cw"],
+  ],
   // ---- Half 2 = vertical-mirror + invert of Half 1 (rot dir preserved) ----
-  [9, "Ψ", "alpha1", "beta5", ["static", "s", "s", "noRotation"], ["dash", "n", "s", "cw"]],
-  [10, "Δ-", "beta5", "gamma3", ["dash", "s", "n", "ccw"], ["anti", "s", "e", "cw"]],
-  [11, "Z", "gamma3", "beta3", ["anti", "n", "e", "ccw"], ["static", "e", "e", "cw"]],
-  [12, "Φ", "beta3", "alpha7", ["static", "e", "e", "ccw"], ["dash", "e", "w", "cw"]],
-  [13, "J", "alpha7", "beta1", ["pro", "e", "n", "ccw"], ["pro", "w", "n", "cw"]],
-  [14, "Ω", "beta1", "gamma15", ["static", "n", "n", "ccw"], ["anti", "n", "w", "cw"]],
-  [15, "V", "gamma15", "gamma13", ["pro", "n", "w", "ccw"], ["anti", "w", "s", "cw"]],
-  [16, "W-", "gamma13", "alpha1", ["pro", "w", "s", "ccw"], ["dash", "s", "n", "cw"]],
+  [
+    9,
+    "Ψ",
+    "alpha1",
+    "beta5",
+    ["static", "s", "s", "noRotation"],
+    ["dash", "n", "s", "cw"],
+  ],
+  [
+    10,
+    "Δ-",
+    "beta5",
+    "gamma3",
+    ["dash", "s", "n", "ccw"],
+    ["anti", "s", "e", "cw"],
+  ],
+  [
+    11,
+    "Z",
+    "gamma3",
+    "beta3",
+    ["anti", "n", "e", "ccw"],
+    ["static", "e", "e", "cw"],
+  ],
+  [
+    12,
+    "Φ",
+    "beta3",
+    "alpha7",
+    ["static", "e", "e", "ccw"],
+    ["dash", "e", "w", "cw"],
+  ],
+  [
+    13,
+    "J",
+    "alpha7",
+    "beta1",
+    ["pro", "e", "n", "ccw"],
+    ["pro", "w", "n", "cw"],
+  ],
+  [
+    14,
+    "Ω",
+    "beta1",
+    "gamma15",
+    ["static", "n", "n", "ccw"],
+    ["anti", "n", "w", "cw"],
+  ],
+  [
+    15,
+    "V",
+    "gamma15",
+    "gamma13",
+    ["pro", "n", "w", "ccw"],
+    ["anti", "w", "s", "cw"],
+  ],
+  [
+    16,
+    "W-",
+    "gamma13",
+    "alpha1",
+    ["pro", "w", "s", "ccw"],
+    ["dash", "s", "n", "cw"],
+  ],
 ];
 
 function buildSequence(): SequenceStep[] {
-  return BEATS.map(step);
+  return STEPS.map(step);
+}
+
+function buildOrientationExtendedSequence(): SequenceStep[] {
+  const firstCycle = buildSequence();
+  const repeated = firstCycle.slice(1).map((source, index) => ({
+    ...source,
+    id: `step-${firstCycle.length + index}`,
+    stepNumber: firstCycle.length + index,
+  }));
+  return [...firstCycle, ...repeated] as SequenceStep[];
 }
 
 describe("mirrored+inverted LOOP detection", () => {
@@ -112,5 +253,17 @@ describe("mirrored+inverted LOOP detection", () => {
 
     expect(result.isCircular).toBe(true);
     expect(result.loopType).toBe(LOOPType.MIRRORED_INVERTED);
+  });
+
+  it("detects the fundamental LOOP when orientation closure repeats its motion skeleton", () => {
+    const sequence = buildOrientationExtendedSequence();
+
+    expect(detectLOOPFromSteps(sequence).components.sort()).toEqual([
+      "inverted",
+      "mirrored",
+    ]);
+    expect(loopDetectorClass.detectLOOPType(sequence).loopType).toBe(
+      LOOPType.MIRRORED_INVERTED
+    );
   });
 });

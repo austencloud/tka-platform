@@ -1,8 +1,8 @@
 /**
  * Minimal-Loop Reducer tests.
  *
- * Anchored on the real 2026-07-10 defect: a `YΦΔYΦΔYΦΔYΦΔ` (12-beat) deck card
- * that is a 6-beat mirrored loop copied a second time. The 6-beat loop already
+ * Anchored on the real 2026-07-10 defect: a `YΦΔYΦΔYΦΔYΦΔ` (12-step) deck card
+ * that is a 6-step mirrored loop copied a second time. The 6-step loop already
  * closes in position and orientation, so the outer doubling is a redundant
  * literal repeat that must collapse to 6 — while the inner mirror (halves are
  * transforms, not copies) must be preserved.
@@ -56,7 +56,7 @@ function step(
   } as Step;
 }
 
-/** The six distinct beats of the card: YΦΔ then its vertical mirror YΦΔ. */
+/** The six distinct steps of the card: YΦΔ then its vertical mirror YΦΔ. */
 function cardHalf(startNumber: number): Step[] {
   return [
     step(startNumber + 0, "Y", "gamma13", "beta5", m("pro", "ccw", "w", "s", "in", "in")),
@@ -70,13 +70,13 @@ function cardHalf(startNumber: number): Step[] {
 
 const START = step(0, null, "gamma13", "gamma13", m("static", "noRotation", "w", "w", "in", "in"));
 
-/** The full 12-beat card: two identical copies of the 6-beat mirrored loop. */
+/** The full 12-step card: two identical copies of the 6-step mirrored loop. */
 function card12(): Step[] {
   return [START, ...cardHalf(1), ...cardHalf(7)];
 }
 
 describe("reduceToMinimalLoop", () => {
-  it("collapses the 12-beat YΦΔ×4 card to its 6-beat mirrored loop", () => {
+  it("collapses the 12-step YΦΔ×4 card to its 6-step mirrored loop", () => {
     const result = reduceToMinimalLoop(card12());
 
     expect(result.reduced).toBe(true);
@@ -92,7 +92,7 @@ describe("reduceToMinimalLoop", () => {
     expect(result.steps[0]!.stepNumber).toBe(0);
   });
 
-  it("PRESERVES the 6-beat mirrored loop (halves are transforms, not copies)", () => {
+  it("PRESERVES the 6-step mirrored loop (halves are transforms, not copies)", () => {
     const mirrored6: Step[] = [START, ...cardHalf(1)];
     const result = reduceToMinimalLoop(mirrored6);
 
@@ -128,7 +128,7 @@ describe("reduceToMinimalLoop", () => {
   });
 
   it("collapses a 4× literal repeat all the way to the base unit", () => {
-    // YΦΔYΦΔ repeated 4× = 24 beats → collapses to the 6-beat base.
+    // YΦΔYΦΔ repeated 4× = 24 steps → collapses to the 6-step base.
     const card24: Step[] = [START, ...cardHalf(1), ...cardHalf(7), ...cardHalf(13), ...cardHalf(19)];
     const result = reduceToMinimalLoop(card24);
 
