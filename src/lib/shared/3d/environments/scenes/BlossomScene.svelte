@@ -112,7 +112,7 @@
 
   const qualityTier = $derived.by(
     () =>
-      adaptiveQuality?.tier ??
+      adaptiveQuality?.contentTier ??
       detectBlossomQuality({
         userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
         hardwareConcurrency:

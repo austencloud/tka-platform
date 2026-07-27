@@ -58,7 +58,7 @@
   const tier = $derived(
     autumnQualityOverride.tier !== "auto"
       ? autumnQualityOverride.tier
-      : (adaptiveQuality?.tier ?? detectAutumnQuality(renderer))
+      : (adaptiveQuality?.contentTier ?? detectAutumnQuality(renderer))
   );
   const quality = $derived(getAutumnQualityConfig(tier));
 

@@ -11,7 +11,6 @@ interface AdaptiveQualityLevel {
 
 interface AdaptiveQualityOptions {
   devicePixelRatio?: number;
-  userAgent?: string;
 }
 
 const QUALITY_LEVELS: readonly AdaptiveQualityLevel[] = [
@@ -47,10 +46,6 @@ const UPGRADE_VOTES = 21;
 const SEVERE_RECOVERY_DELAY_SECONDS = 60;
 const SUSTAINED_RECOVERY_DELAY_SECONDS = 15;
 
-function isMobileUserAgent(userAgent: string): boolean {
-  return /Mobi|Android|iPhone|iPad/i.test(userAgent);
-}
-
 export function createAdaptiveQualityState(
   detector: QualityTierDetector,
   options: AdaptiveQualityOptions = {}
@@ -60,15 +55,9 @@ export function createAdaptiveQualityState(
     options.devicePixelRatio ??
       (typeof window === "undefined" ? 1 : window.devicePixelRatio)
   );
-  const userAgent =
-    options.userAgent ??
-    (typeof navigator === "undefined" ? "" : navigator.userAgent);
 
-  const initialTier =
-    !detector.hasOverride && isMobileUserAgent(userAgent)
-      ? QualityTier.LOW
-      : detector.currentTier;
-
+  const initialTier = detector.currentTier;
+  let contentTier = $state(initialTier);
   let levelIndex = $state(INITIAL_LEVEL[initialTier]);
   let maximumLevel = $state(MAX_LEVEL[initialTier]);
   let fps = $state(0);
@@ -100,7 +89,10 @@ export function createAdaptiveQualityState(
   }
 
   function initialize(renderer: WebGLRenderer): void {
+    if (initialized) return;
+
     const detectedTier = detector.detectFromRenderer(renderer);
+    contentTier = detectedTier;
     levelIndex = INITIAL_LEVEL[detectedTier];
     maximumLevel = detector.hasOverride ? levelIndex : MAX_LEVEL[detectedTier];
     initialized = true;
@@ -208,6 +200,12 @@ export function createAdaptiveQualityState(
     },
     get tier(): QualityTier {
       return QUALITY_LEVELS[levelIndex]!.tier;
+    },
+    // Scene assets are chosen once after renderer detection. Live frame
+    // pressure may lower resolution and effect budgets, but it must not remove
+    // the environment or fauna while someone is using the viewer.
+    get contentTier(): QualityTier {
+      return contentTier;
     },
     get config(): QualityTierConfig {
       return TIER_CONFIGS[QUALITY_LEVELS[levelIndex]!.tier];

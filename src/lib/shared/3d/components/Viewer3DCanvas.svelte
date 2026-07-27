@@ -270,22 +270,24 @@
           adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
         />
         <Viewer3DCanvasRef />
-        <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
-        <ScenePostProcessing>
-          <Viewer3DCamera
-            cameraPlayerAvatar={cameraPlayer.avatarState}
-            cameraPlayerPhysics={cameraPlayer.physicsProvider}
-            {onSettingChange}
-          />
-          <Viewer3DScene
-            {sequenceData}
-            {currentStep}
-            {isPlaying}
-            {avatarState}
-            bluePropTypeOverride={bluePropType}
-            redPropTypeOverride={redPropType}
-          />
-        </ScenePostProcessing>
+        {#if adaptiveQuality.initialized}
+          <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
+          <ScenePostProcessing>
+            <Viewer3DCamera
+              cameraPlayerAvatar={cameraPlayer.avatarState}
+              cameraPlayerPhysics={cameraPlayer.physicsProvider}
+              {onSettingChange}
+            />
+            <Viewer3DScene
+              {sequenceData}
+              {currentStep}
+              {isPlaying}
+              {avatarState}
+              bluePropTypeOverride={bluePropType}
+              redPropTypeOverride={redPropType}
+            />
+          </ScenePostProcessing>
+        {/if}
       </Canvas>
     {/if}
     <SceneLoadingCurtain />

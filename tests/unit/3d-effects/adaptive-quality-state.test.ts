@@ -32,20 +32,19 @@ describe("adaptive 3D quality", () => {
     vi.unstubAllGlobals();
   });
 
-  it("starts a mobile session at a 1x LOW baseline", () => {
+  it("starts from the detector's capability tier", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.HIGH), {
       devicePixelRatio: 3,
-      userAgent: "Mozilla/5.0 (Linux; Android 16)",
     });
 
-    expect(state.tier).toBe(QualityTier.LOW);
-    expect(state.pixelRatio).toBe(1);
+    expect(state.tier).toBe(QualityTier.HIGH);
+    expect(state.contentTier).toBe(QualityTier.HIGH);
+    expect(state.pixelRatio).toBe(2);
   });
 
   it("ignores an isolated hitch instead of visibly changing quality", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.HIGH), {
       devicePixelRatio: 2,
-      userAgent: "desktop",
     });
 
     feedFps(state, 20, 0.25);
@@ -58,20 +57,19 @@ describe("adaptive 3D quality", () => {
   it("drops two levels after severe sustained frame pressure", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.HIGH), {
       devicePixelRatio: 2,
-      userAgent: "desktop",
     });
 
     feedFps(state, 30, 1.1);
 
     expect(state.level).toBe(2);
     expect(state.tier).toBe(QualityTier.MEDIUM);
+    expect(state.contentTier).toBe(QualityTier.HIGH);
     expect(state.pixelRatio).toBe(1.25);
   });
 
   it("reaches a sub-1x emergency floor when LOW still misses its budget", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.LOW), {
       devicePixelRatio: 3,
-      userAgent: "desktop",
     });
 
     feedFps(state, 30, 1.1);
@@ -84,7 +82,6 @@ describe("adaptive 3D quality", () => {
   it("does not immediately retry a quality level that caused severe pressure", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.LOW), {
       devicePixelRatio: 3,
-      userAgent: "desktop",
     });
 
     feedFps(state, 30, 1.1);
@@ -96,13 +93,13 @@ describe("adaptive 3D quality", () => {
   it("raises one level only after sustained 60 fps headroom", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.LOW), {
       devicePixelRatio: 3,
-      userAgent: "desktop",
     });
 
     feedFps(state, 60, 6.2);
 
     expect(state.level).toBe(2);
     expect(state.tier).toBe(QualityTier.MEDIUM);
+    expect(state.contentTier).toBe(QualityTier.LOW);
     expect(state.pixelRatio).toBe(1.25);
   });
 
@@ -116,7 +113,6 @@ describe("adaptive 3D quality", () => {
     detector.setOverride(QualityTier.HIGH);
     const state = createAdaptiveQualityState(detector, {
       devicePixelRatio: 2,
-      userAgent: "desktop",
     });
 
     feedFps(state, 20, 4);

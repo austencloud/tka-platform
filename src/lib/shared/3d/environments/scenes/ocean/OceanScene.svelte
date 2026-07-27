@@ -55,9 +55,9 @@
     oceanQualityOverride.tier !== "auto"
       ? oceanQualityOverride.tier
       : adaptiveQuality
-        ? adaptiveQuality.tier === "high"
+        ? adaptiveQuality.contentTier === "high"
           ? "ultra"
-          : adaptiveQuality.tier
+          : adaptiveQuality.contentTier
         : detectOceanQuality(renderer)
   );
   const quality = $derived(getOceanQualityConfig(qualityTier));

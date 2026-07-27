@@ -1,8 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { QualityTierDetector } from "$lib/shared/3d/effects/quality/quality-tier-detector";
 import { QualityTier } from "$lib/shared/3d/effects/types";
 
 describe("QualityTierDetector", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("returns HIGH for desktop-class capabilities", () => {
     const detector = new QualityTierDetector();
     const tier = detector.detectFromCapabilities({
@@ -36,16 +40,22 @@ describe("QualityTierDetector", () => {
     expect(tier).toBe(QualityTier.LOW);
   });
 
-  it("starts mobile hardware at LOW so runtime sampling can raise it safely", () => {
-    const detector = new QualityTierDetector();
-    const tier = detector.detectFromCapabilities({
-      maxTextureUnits: 32,
-      floatTextures: true,
-      hardwareConcurrency: 12,
-      isWebGPU: false,
-      isMobile: true,
+  it("uses renderer capabilities instead of blanket mobile downgrading", () => {
+    vi.stubGlobal("navigator", {
+      hardwareConcurrency: 8,
+      userAgent: "Mozilla/5.0 (Linux; Android 16) Mobile",
     });
-    expect(tier).toBe(QualityTier.LOW);
+
+    const detector = new QualityTierDetector();
+    const tier = detector.detectFromRenderer({
+      capabilities: {
+        maxTextures: 16,
+        floatFragmentTextures: true,
+        isWebGPU: false,
+      },
+    });
+
+    expect(tier).toBe(QualityTier.HIGH);
   });
 
   it("allows manual override", () => {
