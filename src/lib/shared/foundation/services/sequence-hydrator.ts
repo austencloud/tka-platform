@@ -12,6 +12,7 @@ import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/mot
 import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positioning/calculation/services/handpath-direction-calculator";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
+import { ensureStepPlacement } from "$lib/shared/pictograph/shared/services/motion-placement";
 
 // Legacy sequences saved before SoloPropStepData carried prefloatMotionType
 // will arrive here with derived float motions whose prefloat fields are
@@ -162,8 +163,12 @@ export function hydrate(sequence: SequenceData): SequenceData {
 
 			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
 
-			const startPosition =
-				sequence.startPosition ?? deriveStartPositionFromSteps(steps);
+			// A stored startPosition is kept as-is (the `??` only derives when it is
+			// absent), so an older document's start cell arrives with motions that
+			// predate arrow/propPlacementData — and the renderer drops props and
+			// arrows SILENTLY for exactly that shape. Backfill before returning.
+			const storedStart = sequence.startPosition ?? deriveStartPositionFromSteps(steps);
+			const startPosition = storedStart ? ensureStepPlacement(storedStart) : undefined;
 
 			const hydrated = { ...sequence, steps, ...(startPosition && { startPosition }) };
 			return hydrated.steps.length > 0
@@ -186,9 +191,20 @@ export function hydrate(sequence: SequenceData): SequenceData {
 			);
 		}
 
-	return sequence.steps.length > 0
-		? reversalDetector.processReversals(sequence)
-		: sequence;
+	// This branch returns STORED steps untouched (they are only rebuilt when the
+	// compositional fields are present, above), so they need the same guarantee
+	// the derived ones get for free from createMotionData.
+	const withPlacement = {
+		...sequence,
+		steps: sequence.steps.map(ensureStepPlacement),
+		...(sequence.startPosition && {
+			startPosition: ensureStepPlacement(sequence.startPosition),
+		}),
+	};
+
+	return withPlacement.steps.length > 0
+		? reversalDetector.processReversals(withPlacement)
+		: withPlacement;
 }
 
 export function ensureComposition(sequence: SequenceData): SequenceData {
@@ -204,8 +220,11 @@ export function ensureComposition(sequence: SequenceData): SequenceData {
 	// saved doc (and its public mirror) renders an empty start cell — exactly the
 	// bug the 2026-06 backfill repaired. Deriving here keeps every save/publish
 	// self-sufficient instead of relying on read-time hydrate().
-	const startPosition =
+	// Persist-time twin of the read-time backfill above: a doc saved from an
+	// already-lean startPosition would otherwise write the propless shape back.
+	const derivedStart =
 		sequence.startPosition ?? deriveStartPositionFromSteps(sequence.steps);
+	const startPosition = derivedStart ? ensureStepPlacement(derivedStart) : undefined;
 
 	return {
 		...sequence,

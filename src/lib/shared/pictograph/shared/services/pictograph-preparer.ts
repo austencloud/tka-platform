@@ -21,6 +21,21 @@ import { MotionType, HandPath, RotationDirection, Orientation } from "../domain/
 // prop types through options, so this default is only hit in edge cases.
 const DEFAULT_PROP_SETTINGS = { bluePropType: PropType.STAFF, redPropType: PropType.STAFF };
 
+/** One warning per session per colour — a propless grid would otherwise emit
+ *  hundreds of identical lines and bury the signal it exists to give. */
+let warnedMissingPropPlacement = false;
+function warnMissingPropPlacement(color: string): void {
+  if (warnedMissingPropPlacement) return;
+  warnedMissingPropPlacement = true;
+  console.warn(
+    `[PictographPreparer] Motion "${color}" has no propPlacementData — rendering ` +
+      `this cell without props. The data reached the renderer un-backfilled: run ` +
+      `its read path through ensureStepPlacement() ` +
+      `(pictograph/shared/services/motion-placement.ts). Further occurrences ` +
+      `this session are suppressed.`
+  );
+}
+
 export class PictographPreparer {
   private prepareCache = new Map<string, PreparedRenderData>();
   private pendingPrepares = new Map<string, Promise<PreparedRenderData>>();
@@ -254,7 +269,18 @@ export class PictographPreparer {
     await Promise.all(
       motions.map(async ([color, motion]) => {
         try {
-          if (!motion.propPlacementData) return;
+          if (!motion.propPlacementData) {
+            // Bailing here renders the cell as grid + label with no prop in it,
+            // and used to do so in total silence — which is how the same defect
+            // shipped twice and was found by eye months later, in a screenshot.
+            // Anything reaching the renderer should already have been through
+            // ensureStepPlacement (motion-placement.ts); if it has not, the
+            // stored data is lean and its READ PATH is what needs fixing, not
+            // this guard. Warn once per session so a broken path is loud
+            // without spamming a grid of hundreds of cells.
+            warnMissingPropPlacement(color);
+            return;
+          }
 
           const [renderData, placementData] = await Promise.all([
             this.propLoader.loadPropSvg(

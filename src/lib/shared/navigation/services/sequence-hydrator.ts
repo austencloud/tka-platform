@@ -21,7 +21,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { createMotionData, isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { ensureStepPlacement } from "$lib/shared/pictograph/shared/services/motion-placement";
 import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
@@ -30,47 +31,6 @@ import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/sta
 
 export interface SequenceHydratorDeps {
   loopDetector: ILOOPDetector | null;
-}
-
-/**
- * Guarantee a motion carries the render-required placement data.
- *
- * Shortcode / URL-resolved sequences are stored LEAN: their motions carry the
- * structural fields (motionType, locations, orientations, turns) but omit
- * `arrowPlacementData` / `propPlacementData` entirely (see
- * short-code-manager.resolveShortCode → createSequenceData, which passes the
- * stored steps through untouched). MotionData's contract declares both as
- * non-optional, and the render pipeline enforces it with hard guards:
- *   - ArrowLifecycleManager.loadArrowAssets throws on a missing
- *     `arrowPlacementData` (→ no arrow rendered)
- *   - PictographPreparer.calculateProps early-returns on a missing
- *     `propPlacementData` (→ no prop rendered)
- * With both absent, a scan cell renders GRID + LETTER only — no arrows, no
- * props. This only surfaced on the /q cloud-MISS local-render path (a
- * never-published, script-imported sequence viewed with a non-canonical prop
- * like ?bp=poi); canonical staff cells download pre-rendered from cloud and
- * hide the gap. Re-running the motion through createMotionData restores the
- * default placement objects (recomputed downstream by the placers anyway), so
- * the invariant a freshly-authored sequence satisfies holds here too.
- */
-function ensureMotionPlacement(motion: MotionData | undefined): MotionData | undefined {
-  if (!motion) return motion;
-  if (motion.arrowPlacementData && motion.propPlacementData) return motion;
-  return createMotionData(motion);
-}
-
-function ensureStepPlacement<
-  T extends { motions?: { blue?: MotionData; red?: MotionData } },
->(step: T): T {
-  if (!step.motions) return step;
-  return {
-    ...step,
-    motions: {
-      ...step.motions,
-      blue: ensureMotionPlacement(step.motions.blue),
-      red: ensureMotionPlacement(step.motions.red),
-    },
-  };
 }
 
 export async function hydrateSequence(
