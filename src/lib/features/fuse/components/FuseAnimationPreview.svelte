@@ -9,7 +9,12 @@
   import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    FUSE_PREVIEW_TIP_EFFECT_MAP,
+    resolveFusePreviewTrackingMode,
+  } from "$lib/features/fuse/services/fuse-preview-trail-config";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 
   let {
@@ -30,6 +35,16 @@
   // first paint, crossfading staff->saved a beat in. Passing the saved prop types
   // as explicit overrides makes the first frame render the correct prop, no fade.
   const settings = getSettings();
+  const previewTrailSettings = $derived({
+    ...animationSettings.trail,
+    // Fuse has no trail controls, so its preview follows the same prop contract
+    // as the Choreo Card: unilateral props trace one central tip; bilateral
+    // props trace both. The guide and live trail receive this same setting.
+    trackingMode: resolveFusePreviewTrackingMode(
+      settings.bluePropType,
+      settings.redPropType
+    ),
+  });
 
   let controller = $state<AnimationPlaybackController | null>(null);
   const animState = createAnimationPanelState({ ephemeral: true });
@@ -181,6 +196,8 @@
         redProp={redPropState}
         bluePropType={settings.bluePropType}
         redPropType={settings.redPropType}
+        trailSettings={previewTrailSettings}
+        tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
         gridVisible={true}
         {gridMode}
         letter={null}
