@@ -800,6 +800,11 @@
 		display: block;
 		min-height: 0;
 		container-type: size;
+		/* Safety net: at short viewports a content-sized visual could grow past
+		   its row and paint over the tile's own label. Visuals size themselves
+		   with cqh (this element is a size container, so cqh is valid here);
+		   this guarantees nothing ever escapes the stage even if one doesn't. */
+		overflow: hidden;
 	}
 
 	/* The plaque: left-set like a specimen label, year carrying the accent. */

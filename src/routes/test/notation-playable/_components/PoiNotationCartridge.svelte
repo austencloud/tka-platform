@@ -54,6 +54,7 @@
 		width: 100%;
 		height: 100%;
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		place-items: center;
 		padding: clamp(0.6rem, 3cqi, 1.6rem);
 		box-sizing: border-box;
@@ -61,6 +62,10 @@
 
 	.cartridge {
 		width: min(100%, 54rem);
+		/* Never taller than the stage: on short viewports the code block used
+		   to run past the tile and over its label. */
+		max-height: 100%;
+		overflow: hidden;
 		border-radius: 14px;
 		overflow: hidden;
 		border: 1px solid oklch(0.6 0.12 150 / 0.35);
@@ -95,8 +100,10 @@
 		margin: 0;
 		padding: clamp(0.8rem, 3cqi, 1.4rem);
 		font-family: ui-monospace, "Cascadia Code", monospace;
-		font-size: clamp(0.75rem, 1.9cqi, 1.15rem);
-		line-height: 1.9;
+		/* Height-aware: in a short stage the type steps down instead of the
+		   block growing past the tile. */
+		font-size: clamp(0.55rem, min(1.9cqi, 7cqh), 1.15rem);
+		line-height: 1.75;
 	}
 
 	.line {
@@ -120,6 +127,20 @@
 		font-size: clamp(0.65rem, 1.8cqi, 0.85rem);
 		font-style: italic;
 		color: oklch(0.62 0.03 160);
+	}
+
+	/* Short stages (small tiles on short viewports) cannot hold the chrome AND
+	   the syntax legibly. The syntax is the artifact, so the window bar and the
+	   caption stand down rather than the code being sliced mid-line. */
+	@container (max-height: 220px) {
+		.cartridge-top,
+		.caption {
+			display: none;
+		}
+		.code {
+			padding: 0.5rem 0.7rem;
+			line-height: 1.5;
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {

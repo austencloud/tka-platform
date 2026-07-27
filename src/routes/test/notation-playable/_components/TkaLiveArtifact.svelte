@@ -68,7 +68,13 @@
 	.poster {
 		width: 100%;
 		height: 100%;
+		max-height: 100%;
+		overflow: hidden;
 		display: grid;
+		/* Definite column track so the mandala's `min(100%, Ncqh)` has a
+		   percentage basis; an `auto` track lets the cqh arm win and overflow
+		   a narrow stage. */
+		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr) auto;
 		justify-items: center;
 		align-content: center;
@@ -80,6 +86,7 @@
 	/* The mandala fills the plate: it is the artifact, not a thumbnail. */
 	.mandala-frame {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		place-items: center;
 		width: 100%;
 		min-height: 0;
@@ -90,7 +97,10 @@
 	   box (and only the box) lets the artwork scale to whatever plate it is
 	   in. !important is required to beat the inline style. */
 	.mandala-frame :global(.mandala-container) {
-		width: min(100%, 92cqh) !important;
+		/* 78cqh, not 92: the caption row below shares the stage, so the square
+		   has to leave it room or the pair overflows on short viewports. */
+		width: min(100%, 78cqh) !important;
+		max-width: 100% !important;
 		height: auto !important;
 		aspect-ratio: 1;
 		filter: drop-shadow(0 0 26px oklch(0.6 0.18 305 / 0.3));
@@ -108,5 +118,16 @@
 		font-size: clamp(0.7rem, 2.2cqi, 0.95rem);
 		font-style: italic;
 		color: oklch(0.66 0.03 270);
+	}
+
+	/* Short stage: the mandala is the artifact, so the caption stands down and
+	   the square takes the whole plate rather than being cropped. */
+	@container (max-height: 220px) {
+		.poster-sub {
+			display: none;
+		}
+		.mandala-frame :global(.mandala-container) {
+			width: min(100%, 96cqh) !important;
+		}
 	}
 </style>

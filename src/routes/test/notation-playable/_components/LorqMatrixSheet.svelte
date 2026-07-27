@@ -113,7 +113,14 @@
 	.lorq-sheet {
 		width: 100%;
 		height: 100%;
+		max-height: 100%;
+		overflow: hidden;
 		display: grid;
+		/* Definite column track. With an `auto` track, the sheet's
+		   `min(100%, Ncqh)` has no resolvable percentage basis, so the cqh arm
+		   wins and the track grows to it — the sheet then overflows a narrow
+		   stage. Pinning the track to 1fr makes 100% mean the stage. */
+		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr) auto;
 		justify-items: center;
 		align-content: center;
@@ -143,7 +150,10 @@
 	.sheet {
 		display: grid;
 		place-items: center;
-		width: min(100%, 82cqh);
+		/* The caption row shares the stage; 74cqh leaves it room on short
+		   viewports instead of pushing the square past the tile. */
+		width: min(100%, 74cqh);
+		max-width: 100%;
 		aspect-ratio: 1;
 		padding: clamp(0.4rem, 2cqi, 1rem);
 		border-radius: 14px;
@@ -179,6 +189,17 @@
 	.sheet.lit .cell {
 		opacity: 1;
 		filter: brightness(1.75) saturate(1.3);
+	}
+
+	/* Short stage: the grid is the artifact; the caption stands down so the
+	   sheet keeps its square rather than being cropped. */
+	@container (max-height: 220px) {
+		.sheet-caption {
+			display: none;
+		}
+		.sheet {
+			width: min(100%, 96cqh);
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
