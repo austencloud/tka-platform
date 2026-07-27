@@ -69,6 +69,41 @@
     const p = pointAt(position, PROP_LENGTH);
     return { x: hand.x + p.x * UNIT, y: hand.y + p.y * UNIT };
   };
+
+  /**
+   * The direction dart.
+   *
+   * The direction column is the load-bearing half of QfT — it is the only thing
+   * separating an inspin flower from an antispin one — but it existed on this
+   * stage as a number in a table with nothing in the picture to attach it to.
+   * Charlie drew it as a flag off the prop, in separate diagrams, because drawn
+   * permanently it competes with the tether and the trail.
+   *
+   * So it fires rather than persists: a dart leaves the head at each step
+   * boundary, pointing along that step's direction value, and fades out over
+   * the increment. On Charlie's convention an out-of-resolution cell has no
+   * direction to fire, so the absence of a dart IS the `n` — visible rather
+   * than merely tabulated.
+   */
+  const DART_LENGTH = 0.55;
+
+  const dart = $derived.by(() => {
+    const current = row;
+    const value = current?.propDirDepart;
+    if (!current || value === undefined || value === "n") return null;
+
+    const from = handLocalPoint(current.propDepart);
+    const along = pointAt(value, DART_LENGTH);
+    return {
+      x1: from.x,
+      y1: from.y,
+      x2: from.x + along.x * UNIT,
+      y2: from.y + along.y * UNIT
+    };
+  });
+
+  /** 1 at the instant a step begins, falling to 0 across the increment. */
+  const dartLife = $derived(Math.max(0, 1 - (cursor - Math.floor(cursor)) * 2.2));
 </script>
 
 <svg
@@ -77,6 +112,20 @@
   role="img"
   aria-label={`QfT home base. The hand is at position ${row?.handDepart ?? 8} on the body compass, and the prop is at position ${row?.propDepart ?? 8} measured from the hand.`}
 >
+  <defs>
+    <marker
+      id="qft-dart-head"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="5"
+      markerHeight="5"
+      orient="auto-start-reverse"
+    >
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--semantic-warning, #fbbf24)" />
+    </marker>
+  </defs>
+
   <circle class="ring" cx="0" cy="0" r={RING} />
 
   {#if knobs.radius > 0.01}
@@ -104,7 +153,29 @@
     {/if}
   {/each}
 
+  <!--
+    The arm. One stroke from the centre to the hand, so the hand's compass
+    position reads at a glance and the radius is legible as a length rather than
+    an abstract slider value. Nothing to draw at radius 0 — the hand is the
+    centre.
+  -->
+  {#if knobs.radius > 0.01 && !pendulum}
+    <line class="arm" x1="0" y1="0" x2={hand.x} y2={hand.y} />
+  {/if}
+
   <line class="tether" x1={hand.x} y1={hand.y} x2={head.x} y2={head.y} />
+
+  {#if dart && dartLife > 0}
+    <line
+      class="dart"
+      x1={dart.x1}
+      y1={dart.y1}
+      x2={dart.x2}
+      y2={dart.y2}
+      opacity={dartLife}
+      marker-end="url(#qft-dart-head)"
+    />
+  {/if}
   <circle class="hand" cx={hand.x} cy={hand.y} r="13" />
   <circle class="head" cx={head.x} cy={head.y} r="22" />
 
@@ -210,8 +281,26 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /*
+   * Thinner and dimmer than the tether on purpose. The arm is orientation, not
+   * the subject — if it reads as strongly as the tether, the eye stops being
+   * able to tell which line is the prop.
+   */
+  .arm {
+    stroke: var(--semantic-text-secondary, rgb(255 255 255 / 0.32));
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 5 6;
+  }
+
   .tether {
     stroke: var(--semantic-text-primary, rgb(255 255 255 / 0.85));
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  .dart {
+    stroke: var(--semantic-warning, #fbbf24);
     stroke-width: 4;
     stroke-linecap: round;
   }

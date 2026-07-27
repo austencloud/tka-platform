@@ -71,6 +71,32 @@ export function pointAt(position: number, radius: number): { x: number; y: numbe
 
 const spinSign = (spin: Spin): 1 | -1 => (spin === "inspin" ? 1 : -1);
 
+/**
+ * A hand path this small is a hand that is not travelling.
+ *
+ * Below this the compass reading is meaningless, not merely imprecise: an
+ * eighth of a circle whose radius is a hundredth of a prop length is not a
+ * place the hand goes.
+ */
+const STATIONARY_RADIUS = 0.01;
+
+/**
+ * Hand position at step `u`.
+ *
+ * At radius 0 the hand sits at the centre and never leaves it, so it has no
+ * compass bearing at all. Reporting `8,1,2,3…` there describes a journey that
+ * does not happen — the numbers march while the hand stands still.
+ *
+ * QfT as published has no symbol for the centre; every position is a bearing,
+ * and the centre has none. The only radius-0 table in the source is the
+ * pendulum's, which writes 8 on every row. This follows that convention rather
+ * than inventing a ninth position, and the gap is recorded in the sourcing
+ * archive rather than papered over.
+ */
+function handPositionAt(knobs: QftKnobs, u: number): PositionValue {
+	return knobs.radius < STATIONARY_RADIUS ? 8 : norm(u);
+}
+
 /** Continuous prop index at hand-step `u`. Integer steps give the table rows. */
 function propIndexAt(knobs: QftKnobs, u: number): number {
 	return spinSign(knobs.spin) * knobs.downbeats * u + (knobs.phase ?? 0);
@@ -141,9 +167,9 @@ export function buildIncrements(knobs: QftKnobs, convention: Convention): QftInc
 		rows.push({
 			propDepart: norm(propIndexAt(knobs, i)),
 			propDirDepart: directionAt(knobs, i, convention),
-			handDepart: norm(i),
+			handDepart: handPositionAt(knobs, i),
 			radius: knobs.radius,
-			handArrive: norm(i + 1),
+			handArrive: handPositionAt(knobs, i + 1),
 			propDirArrive: directionAt(knobs, i + 1, convention),
 			propArrive: norm(propIndexAt(knobs, i + 1))
 		});

@@ -15,7 +15,12 @@
    */
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import { GUIDE_MOVES, SOURCES, TIMELINE } from "$lib/shared/notation/qft/qft-guide";
+  import {
+    GUIDE_MOVES,
+    SOURCES,
+    TIMELINE,
+    type GuideMove
+  } from "$lib/shared/notation/qft/qft-guide";
   import {
     buildIncrements,
     buildPendulum,
@@ -46,7 +51,13 @@
   let cursor = $state(0);
   let playing = $state(true);
 
-  const move = $derived(GUIDE_MOVES[moveIndex] ?? GUIDE_MOVES[0]);
+  /*
+   * Indexing is possibly-undefined under strict index access, and the guide is
+   * meaningless without a move, so the fallback is the first entry rather than
+   * a nullable that every consumer then has to guard.
+   */
+  const FIRST = GUIDE_MOVES[0] as GuideMove;
+  const move = $derived<GuideMove>(GUIDE_MOVES[moveIndex] ?? FIRST);
 
   const knobs = $derived<QftKnobs>({ radius, downbeats, spin, phase });
 

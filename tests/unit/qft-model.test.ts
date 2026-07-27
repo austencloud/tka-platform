@@ -12,11 +12,12 @@ import {
 	buildPendulum,
 	norm,
 	pendulumIndexAt,
+	posesAt,
 	type Convention,
 	type QftIncrement,
 	type QftKnobs
 } from "../../src/lib/shared/notation/qft/qft-model";
-import { nameFor, petalCount } from "../../src/lib/shared/notation/qft/qft-naming";
+import { isDegenerateLine, nameFor, petalCount } from "../../src/lib/shared/notation/qft/qft-naming";
 
 /** propDepart, propDirDepart, handDepart, handArrive, propDirArrive, propArrive */
 type Row = [number, number | "n", number, number, number | "n", number];
@@ -205,6 +206,64 @@ describe("inspin and antispin are indistinguishable by position alone", () => {
 		inspin.forEach((row, i) => {
 			expect(row.propDirDepart).not.toBe(antispin[i].propDirDepart);
 		});
+	});
+});
+
+describe("a hand that does not travel has no bearing", () => {
+	it("holds the hand column constant at radius 0", () => {
+		for (const spin of ["inspin", "antispin"] as const) {
+			const rows = buildIncrements({ radius: 0, downbeats: 1, spin }, "drex");
+			expect(rows.map((r) => r.handDepart)).toEqual([8, 8, 8, 8, 8, 8, 8, 8]);
+			expect(rows.map((r) => r.handArrive)).toEqual([8, 8, 8, 8, 8, 8, 8, 8]);
+		}
+	});
+
+	it("still distinguishes the two spin directions by the prop column", () => {
+		const inspin = buildIncrements({ radius: 0, downbeats: 1, spin: "inspin" }, "drex");
+		const antispin = buildIncrements({ radius: 0, downbeats: 1, spin: "antispin" }, "drex");
+		expect(inspin.map((r) => r.propDepart)).toEqual([8, 1, 2, 3, 4, 5, 6, 7]);
+		expect(antispin.map((r) => r.propDepart)).toEqual([8, 7, 6, 5, 4, 3, 2, 1]);
+	});
+
+	it("leaves the hand travelling once there is a hand path", () => {
+		const rows = buildIncrements({ radius: 0.5, downbeats: 1, spin: "inspin" }, "drex");
+		expect(rows.map((r) => r.handDepart)).toEqual([8, 1, 2, 3, 4, 5, 6, 7]);
+	});
+});
+
+describe("the petal count ignores radius, so naming must not", () => {
+	const oneRotationAntispin = (radius: number) =>
+		({ radius, downbeats: 1, spin: "antispin" }) as const;
+
+	it("collapses to a line where the hand path equals the prop length", () => {
+		const width = (radius: number) => {
+			const xs = Array.from(
+				{ length: 201 },
+				(_, i) => posesAt(oneRotationAntispin(radius), (i / 200) * 8).head.x
+			);
+			return Math.max(...xs) - Math.min(...xs);
+		};
+		expect(width(1)).toBeCloseTo(0, 6);
+		expect(width(0.9)).toBeCloseTo(0.2, 6);
+		expect(width(1.1)).toBeCloseTo(0.2, 6);
+	});
+
+	it("reverses through the boundary rather than rotating", () => {
+		const xAt = (radius: number) => posesAt(oneRotationAntispin(radius), 1).head.x;
+		expect(xAt(0.9)).toBeLessThan(0);
+		expect(xAt(1.1)).toBeGreaterThan(0);
+		expect(xAt(0.9)).toBeCloseTo(-xAt(1.1), 6);
+	});
+
+	it("names the degenerate case a line, not a flower", () => {
+		expect(nameFor(oneRotationAntispin(1)).label).toBe("Line");
+		expect(nameFor(oneRotationAntispin(0.9)).label).toBe("2-petal antispin flower");
+	});
+
+	it("only the one-rotation antispin case degenerates", () => {
+		expect(isDegenerateLine(oneRotationAntispin(1))).toBe(true);
+		expect(isDegenerateLine({ radius: 1, downbeats: 2, spin: "antispin" })).toBe(false);
+		expect(isDegenerateLine({ radius: 1, downbeats: 1, spin: "inspin" })).toBe(false);
 	});
 });
 
