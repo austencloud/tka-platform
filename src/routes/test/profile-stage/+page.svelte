@@ -334,8 +334,8 @@
 </svelte:head>
 
 {#if solo}
+  {@const first = showcase[0]}
   <div class="solo-page">
-    {@const first = showcase[0]}
     {#if first?.sequence}
       <div class="solo-subject">
         <ArtifactTile
