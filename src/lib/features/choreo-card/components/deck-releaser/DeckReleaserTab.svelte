@@ -41,8 +41,6 @@
   import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
   import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
-  import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
-  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -825,7 +823,7 @@
     // types (a period-2 transform asked as quartered collapses back to half the
     // requested length) plus the compositional wire spec so the orchestrator
     // divides length by the TRUE expander multiplier. Without this the deck
-    // shipped 8- and 32-beat cards for a requested 16.
+    // shipped 8- and 32-step cards for a requested 16.
     const resolvedLoop = resolveLoopConfig(
       loopType,
       rs.selectedSliceTypes.has("quartered") ? "quartered" : "halved",
@@ -836,7 +834,7 @@
     // Selected start positions (GridPosition strings). Empty ⇒ engine picks any.
     // Build the position pictographs for the active grid mode so each card can be
     // seeded from one of the chosen positions; orientation is passed explicitly
-    // (blue/redStartOrientation) so the engine bakes it into every beat 0.
+    // (blue/redStartOrientation) so the engine bakes it into every step 0.
     const startPosPics =
       rs.selectedStartPositionIds.size > 0
         ? startPositionManager
@@ -902,28 +900,16 @@
         }
         let s: SequenceData;
         try {
-          // Exact-length wrapper: re-rolls when a seed's transform degenerates
-          // and reduceToMinimalLoop would collapse the card below the requested
-          // beat count, so every card is exactly `length` beats.
-          const exact = await generateCircularExactLength(options, {
-            generate: (o) => generationOrchestrator.generateSequence(o),
-            extend: (seq) => orientationCycleExtender.extendIfNeeded(seq),
-          });
-          s = exact.sequence;
+          // The engine owns orientation closure, minimal-loop reduction, and
+          // exact-length retries. Every caller gets the same result.
+          s = await generationOrchestrator.generateSequence(options);
         } catch (e) {
           console.warn("Live deck: a generation attempt failed", e);
           continue;
         }
 
-        // Strict length gate for the DECK. The exact-length wrapper honors the
-        // request when a seamless seed exists, but for combos that only close
-        // seamlessly at 2x (e.g. mirrored_inverted, whose inversion flips
-        // orientation so a 16-beat pass ends "out" not "in") it deliberately
-        // extends to the honest doubled length — right for the single-generate
-        // panel (with a toast), wrong for a fixed-count deck. Reject any card
-        // that isn't exactly `length` and re-draw; combos that rarely make a
-        // seamless card at this length simply yield a smaller deck (handled
-        // below), never an off-count card.
+        // The deck keeps its own final invariant gate because a bad card must
+        // never enter a fixed-count print run.
         if (s.steps.length !== length) continue;
 
         const skeleton = hashSequenceSkeleton(s);

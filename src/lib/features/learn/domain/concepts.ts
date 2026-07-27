@@ -151,7 +151,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     estimatedMinutes: 8,
     concepts: [
       "Single dash motion",
-      "Creating multi-beat sequences",
+      "Creating multi-step sequences",
       "β→α and γ→γ dashes",
     ],
   },
@@ -463,7 +463,10 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     prerequisites: ["gamma-words"],
     estimatedMinutes: 20,
     concepts: [
-      "Mirrored LOOPs",
+      "Reflection across N-S, E-W, NE-SW, and NW-SE",
+      "Mirrored and Flipped as familiar axis names",
+      "Reflection axis is independent of grid mode",
+      "Direct reflection returns home without an axis fixed point",
       "Rotated LOOPs",
       "Swapped LOOPs",
       "Returning to home position",

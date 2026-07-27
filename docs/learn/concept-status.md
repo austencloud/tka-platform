@@ -53,7 +53,7 @@ Last updated: 2026-03-08
 | 22 | `words-alpha-beta` | Words: Alpha/Beta | BUILT | Multi-page with quizzes. Needs philosophy audit. |
 | 23 | `compound-words` | Compound Words | NOT STARTED | |
 | 24 | `gamma-words` | Gamma Words | NOT STARTED | |
-| 25 | `caps-intro` | LOOPs | NOT STARTED | |
+| 25 | `caps-intro` | LOOPs | NOT STARTED | Curriculum now specifies all four reflection axes, grid/axis independence, familiar Mirrored/Flipped names, and direct reflection closure. No lesson experience exists yet. |
 | 26 | `reversals` | Reversals | NOT STARTED | |
 | 27 | `advanced-caps` | Advanced LOOP Examples | NOT STARTED | |
 
