@@ -1,46 +1,62 @@
 <!--
-  /notation — GATED 2026-07-26.
+  /notation — a chronological catalog of systems for writing flow arts down.
 
-  The hub page is being rebuilt. Production shows the shared UnderConstruction
-  note; dev renders the old draft (_components/NotationHubDraft.svelte) so the
-  rebuild has something to work against. The sub-pages under /notation
-  (letters, per-prop, shape-matrix, loops, caps) are unaffected and stay live.
+  Rebuilt 2026-07-27, replacing the hub that was gated on 2026-07-26 for
+  explaining systems it did not own and getting them wrong. This page explains
+  nothing: it records who wrote flow arts down and links out to their own
+  material. Entry data and its sourcing rules live in
+  $lib/shared/notation/notation-catalog.ts.
 
-  To un-gate: delete the `dev` branch below, restore the SEO head from the draft
-  onto this file, and re-add `{ url: "notation" }` to src/routes/sitemap.xml.
+  Spec: docs/superpowers/specs/2026-07-26-notation-catalog-design.md
 -->
 <script lang="ts">
-  import { dev } from "$app/environment";
-  import UnderConstruction from "$lib/shared/landing/components/UnderConstruction.svelte";
-  import NotationHubDraft from "./_components/NotationHubDraft.svelte";
+  import Seo from "$lib/shared/components/Seo.svelte";
+  import NotationCatalog from "./_components/NotationCatalog.svelte";
+  import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
+  import "$lib/shared/landing/styles/public-editorial.css";
+
+  const TITLE = "Flow Arts Notation: Who Wrote It Down | The Kinetic Alphabet";
+  const DESCRIPTION =
+    "A chronological catalog of systems for writing flow arts down, from CAPs on the Home of Poi forums in 2009 to the Kinetic Alphabet. Each entry links to its creator's own material.";
+  const URL = "https://tkaflowarts.com/notation";
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        headline: "Writing flow arts down",
+        description: DESCRIPTION,
+        mainEntityOfPage: URL,
+        author: { "@type": "Person", name: "Austen Cloud" },
+        about: NOTATION_CATALOG.map((entry) => ({
+          "@type": "CreativeWork",
+          name: entry.system,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://tkaflowarts.com/",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Flow Arts Notation",
+            item: URL,
+          },
+        ],
+      },
+    ],
+  };
 </script>
 
-<!-- svelte:head has to sit at the top level of the component, so the gated
-     head is an {#if} inside it rather than a branch around it. The draft
-     carries its own full SEO head for the dev branch. -->
-<svelte:head>
-  {#if !dev}
-    <title>Flow Arts Notation | The Kinetic Alphabet</title>
-    <meta
-      name="description"
-      content="The Flow Arts Notation overview is being rebuilt. The letters, props, shape matrix, LOOP algebra, and CAP pages are all still here."
-    />
-    <!-- Gated: keep it out of search until the rebuilt page ships. -->
-    <meta name="robots" content="noindex, follow" />
-  {/if}
-</svelte:head>
+<Seo title={TITLE} description={DESCRIPTION} canonical={URL} ogType="article">
+  {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
+</Seo>
 
-{#if dev}
-  <NotationHubDraft />
-{:else}
-  <UnderConstruction
-    title="Flow Arts Notation"
-    note="This overview is being rebuilt from scratch. Everything it linked to is still here and still works."
-    destinations={[
-      { label: "The letter index", href: "/notation/letters", icon: "fa-language" },
-      { label: "Shape Matrix", href: "/notation/shape-matrix", icon: "fa-diagram-project" },
-      { label: "The LOOP algebra", href: "/notation/loops", icon: "fa-rotate" },
-      { label: "CAPs", href: "/notation/caps", icon: "fa-circle-nodes" },
-    ]}
-  />
-{/if}
+<NotationCatalog />

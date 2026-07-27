@@ -1,19 +1,22 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 
 const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
 const notationRoute = readSource("src/routes/(public)/notation/+page.svelte");
-// The hub was gated on 2026-07-26 pending a rebuild: the route renders the
-// shared UnderConstruction note in production and the preserved draft in dev.
-// The copy contracts below still guard that draft — they're what the rebuilt
-// page has to keep faith with, not something the gate retired.
-const notationPage = readSource(
-  "src/routes/(public)/notation/_components/NotationHubDraft.svelte"
+// The hub was gated on 2026-07-26 and rebuilt as a chronological catalog on
+// 2026-07-27 (2026-07-26-notation-catalog-design.md). NotationHubDraft.svelte
+// is deleted; the copy contracts that guarded it are replaced by contracts on
+// the catalog data, which is where the page's factual claims now live.
+const notationCatalogData = readSource(
+  "src/lib/shared/notation/notation-catalog.ts"
 );
-const notationCopy = notationPage.replace(/\s+/g, " ");
+const notationCatalogView = readSource(
+  "src/routes/(public)/notation/_components/NotationCatalog.svelte"
+);
 const rootRedirect = readSource("src/routes/(public)/roots/+page.ts");
 const softwarePage = readSource(
   "src/routes/(public)/roots/software/+page.svelte"
@@ -34,32 +37,52 @@ const shapeMatrixDestination = readSource(
 const sitemap = readSource("src/routes/sitemap.xml/+server.ts");
 const componentManifest = readSource("scripts/component-manifest.json");
 
-describe("notation hub gate", () => {
-  it("serves UnderConstruction in production and the draft only in dev", () => {
-    expect(notationRoute).toContain(
-      'import { dev } from "$app/environment"'
-    );
-    expect(notationRoute).toContain(
-      'import UnderConstruction from "$lib/shared/landing/components/UnderConstruction.svelte"'
-    );
-    expect(notationRoute).toMatch(/\{#if dev\}\s*<NotationHubDraft \/>/);
-    expect(notationRoute).toContain(
-      '<meta name="robots" content="noindex, follow" />'
-    );
+describe("notation catalog", () => {
+  it("is un-gated: no dev branch, no noindex, and back in the sitemap", () => {
+    expect(notationRoute).not.toContain('from "$app/environment"');
+    expect(notationRoute).not.toContain("UnderConstruction");
+    expect(notationRoute).not.toContain('content="noindex');
+    expect(sitemap).toMatch(/\{ url: "notation" \}/);
   });
-});
 
-describe("notation lineage remediation", () => {
-  it("keeps TKA in peer framing and scopes comparisons to the displayed VTG model", () => {
-    expect(notationCopy).toContain(
-      "The timing-and-direction quadrant shown above directly describes Type 1 dual-shifts such as A"
-    );
-    expect(notationCopy).toContain(
-      "another spinner who knows the conventions can read the page back"
-    );
-    expect(notationPage).not.toMatch(
-      /gap none|slot TKA|reaches past what VTG named|VTG leaves alone/i
-    );
+  it("gives every entry at least one source", () => {
+    expect(NOTATION_CATALOG.length).toBeGreaterThan(0);
+    for (const entry of NOTATION_CATALOG) {
+      expect(entry.sources.length, `${entry.id} has no source`).toBeGreaterThan(
+        0
+      );
+      for (const source of entry.sources) {
+        expect(source.href, `${entry.id} source href`).toMatch(/^(https:\/\/|\/)/);
+        expect(source.label.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("never ships an unsourced or invented date", () => {
+    // A year is either a real one, an explicit approximation, or open-ended.
+    // "?" and empty strings are the shapes a guess hides in.
+    for (const entry of NOTATION_CATALOG) {
+      expect(entry.year, `${entry.id} year`).toMatch(/^(c\. )?(19|20)\d{2}(–)?$/);
+      expect(Number.isFinite(entry.sortYear)).toBe(true);
+    }
+  });
+
+  it("stays a catalog: no embeds, and video strips are the creator's own", () => {
+    // The site CSP blocks frame-src for YouTube, and an inline player would make
+    // the page a viewer rather than a record.
+    expect(notationCatalogView).not.toMatch(/<iframe|frame-src|youtube\.com\/embed/);
+    for (const entry of NOTATION_CATALOG) {
+      for (const video of entry.videos ?? []) {
+        expect(video.id, `${entry.id} video id`).toMatch(/^[A-Za-z0-9_-]{11}$/);
+        expect(video.creator.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("does not expand an acronym the sources do not expand", () => {
+    // QFT's expansion IS in the archived 2011 primer, so it may be used in the
+    // source comment; what the page must not do is invent one for anything else.
+    expect(notationCatalogData).not.toMatch(/Continuous Assembly Patterns \(/);
   });
 
   it("moves the full 144 Shape Matrix to the /notation/shape-matrix destination", () => {
@@ -75,64 +98,37 @@ describe("notation lineage remediation", () => {
     );
   });
 
-  it("/notation shows a bounded live teaser plus a call to action to the destination", () => {
-    // Lorq Nichols' 2012 chart is demoted to a small reference figure, credited
-    // by name; the live teaser is the Small size (1:1, 16 tiles) engine grid;
-    // the call to action is a real button-styled link to the destination.
-    expect(notationPage).toContain(
-      '<figure class="matrix-figure lorq-figure">'
+  it("explains nothing and claims no relationship between systems", () => {
+    // The two failures that took the old hub down: teaching someone else's
+    // system in our own words, and inventing a lineage between systems. The
+    // catalog states what each one records and stops.
+    const prose = [
+      notationCatalogView,
+      ...NOTATION_CATALOG.map((entry) => entry.records),
+    ].join(" ");
+    expect(prose).not.toMatch(
+      /successor to|built on|evolved (from|into)|inspired by|precursor to|replaced by|improves on/i
     );
-    expect(notationPage).toContain(
-      "Lorq Nichols' 144 Shape Matrix, charted in 2012"
-    );
-    // The teaser is still on the page, but lazily (bbe2c89c6b): a static import
-    // pulled the 1.37MB seed corpus into the public bundle to show one grid, so
-    // it now loads through LazyMount when the slot nears the viewport. Assert
-    // the deferred wiring — the teaser must stay present AND stay off the
-    // critical path.
-    expect(notationPage).toContain(
-      'import("$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte")'
-    );
-    expect(notationPage).toContain("use:activateShapeMatrixWhenNear");
-    expect(notationPage).toContain("active={shapeMatrixActive}");
-    expect(notationPage).not.toContain(
-      'import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";'
-    );
-    expect(notationPage).toContain(
-      '<a href="/notation/shape-matrix" class="cta-button matrix-teaser-cta">'
-    );
-    expect(notationPage).toContain("Explore the full shape matrix");
-    // The full-matrix static duo and its Array.from(144) render are gone from
-    // this page now that the destination owns the live interactive version.
-    expect(notationPage).not.toContain("Array.from({ length: 144 })");
-    expect(notationPage).not.toContain("tka-144-shape-matrix.webp");
+    // No how-to register. A catalog says what a system records, never how to
+    // use it.
+    expect(prose).not.toMatch(/here's how|step 1|to do this|try it yourself/i);
   });
 
-  it("uses real PoiNotation operators and links the retained software lineage", () => {
-    expect(notationPage).toContain(
-      '<span class="section-kicker">Three notation languages, three views</span>'
+  it("links each entry out to its creator's own material", () => {
+    // Ben Drexler appears where he is genuinely the author, not as the standing
+    // citation beneath everyone else's work.
+    const drexCitations = NOTATION_CATALOG.filter((entry) =>
+      entry.sources.some((source) => /drexfactor/i.test(source.href))
     );
-    expect(notationPage).not.toContain("Three notation languages, one move");
-    expect(notationPage).toMatch(/<span class="tok-op">\*<\/span\s*>/);
-    expect(notationPage).toMatch(/<span class="tok-op">~<\/span\s*>/);
-    expect(notationPage).toContain("handleSpin: antispin");
-    expect(notationPage).not.toMatch(/\bhandle: antispin/);
-    expect(notationPage).toContain("siteswapHistory:");
-    expect(notationPage).not.toContain("wikipedia.org/wiki/Siteswap");
-    expect(notationPage).toContain('href="/roots/software"');
+    expect(drexCitations.length).toBeLessThanOrEqual(1);
+    // The TKA row points at this site because that is its creator's own
+    // material — the same rule as every other row, not a funnel.
+    const tka = NOTATION_CATALOG.find((entry) => entry.id === "tka");
+    expect(tka?.sources[0]?.href).toBe("/guide");
+    expect(notationCatalogView).not.toContain("cta-button");
   });
 
-  it("avoids universal and conqueror framing on both retained lineage pages", () => {
-    expect(notationCopy).toContain(
-      "Siteswap was built for juggling, so TKA treats it as an analogy"
-    );
-    expect(notationCopy).toContain(
-      "The demo places pictographs beside the animation"
-    );
-    expect(notationPage).not.toMatch(
-      /Everyone writes down a different thing|Siteswap only ever meant|No prop in hand|no phone at the jam|full lexicon.*every/i
-    );
-
+  it("avoids universal and conqueror framing on the retained software page", () => {
     expect(softwareCopy).toContain(
       "The surviving public repository ends with that course release"
     );
@@ -170,9 +166,8 @@ describe("roots-to-notation route migration", () => {
   });
 
   it("keeps canonical sitemap and breadcrumb labels without a stale Roots page", () => {
-    // "notation" is out of the sitemap while the hub is gated (it carries
-    // noindex). Its sub-pages stay listed. Re-add the hub when it un-gates.
-    expect(sitemap).not.toMatch(/\{ url: "notation" \}/);
+    // The hub is back in the sitemap now that the catalog has shipped
+    // (asserted in the catalog block above); its sub-pages stay listed.
     expect(sitemap).toContain('{ url: "notation/letters" }');
     expect(sitemap).toContain('{ url: "roots/software" }');
     expect(sitemap).not.toMatch(/\{ url: "roots",/);

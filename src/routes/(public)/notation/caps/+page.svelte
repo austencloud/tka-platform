@@ -1,7 +1,7 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import CapsHub from "./_components/CapsHub.svelte";
-  import CapsVideoCard from "./_components/CapsVideoCard.svelte";
+  import SourceVideoCard from "$lib/shared/components/SourceVideoCard.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "CAPs: Continuous Assembly Patterns | The Kinetic Alphabet";
@@ -387,7 +387,7 @@
       <h2 class="section-title">CAPs on video, 2009 to now</h2>
       <div class="cap-media-grid">
         {#each MODERN_MEDIA as m (m.id)}
-          <CapsVideoCard id={m.id} title={m.title} creator={m.creator} year={m.year} note={m.note} />
+          <SourceVideoCard id={m.id} title={m.title} creator={m.creator} year={m.year} note={m.note} />
         {/each}
       </div>
       <p class="prose cap-media-footnote">

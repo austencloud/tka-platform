@@ -1,23 +1,29 @@
 <!--
-  CapsVideoCard: a CSP-safe YouTube card. The site frame-src blocks YouTube
+  SourceVideoCard: a CSP-safe YouTube card. The site frame-src blocks YouTube
   embeds (hooks.server.ts), so we show the poster thumbnail (img-src https: is
   allowed) with a play affordance; clicking opens the video on YouTube in a new
   tab. Falls back to a labelled tile if the thumbnail 404s. Thumbnail technique
   mirrors festivals/portfolio/VideosSection.svelte.
+
+  Promoted from notation/caps/_components/CapsVideoCard.svelte so the notation
+  catalog and the CAPs page share one card (.claude/rules/never-hand-roll.md).
+  `year` and `note` are optional — a catalog strip often knows the creator and
+  the title but has no sourced year for an individual video, and per the
+  catalog's sourcing rules an unsourced year is not invented to fill the slot.
 -->
 <script lang="ts">
   let {
     id,
     title,
     creator,
-    year,
-    note,
+    year = "",
+    note = "",
   }: {
     id: string;
     title: string;
     creator: string;
-    year: string;
-    note: string;
+    year?: string;
+    note?: string;
   } = $props();
 
   let thumbFailed = $state(false);
@@ -46,8 +52,8 @@
   </a>
   <figcaption>
     <strong>{title}</strong>
-    <span>{creator} · {year}</span>
-    <span class="cap-media-note">{note}</span>
+    <span>{year ? `${creator} · ${year}` : creator}</span>
+    {#if note}<span class="cap-media-note">{note}</span>{/if}
   </figcaption>
 </figure>
 

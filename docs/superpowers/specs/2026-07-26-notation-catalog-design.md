@@ -1,7 +1,8 @@
 # /notation as a catalog — design
 
 **Date:** 2026-07-26
-**Status:** design, awaiting review
+**Status:** SHIPPED 2026-07-27. See "What shipped" at the end for the deltas
+between this design and the built page — three of them changed the entry list.
 **Supersedes:** the hub built by `2026-07-18-notation-shape-matrix-destination-design.md`, gated in `b4c870dfb7`
 
 ## Why
@@ -302,16 +303,64 @@ Resolved during the fact-check: the CAPs date (2009), Transition Theory's
 author (Jordan Campbell, 2010), Unit Circle Theory's author (Alien Jon), VTG's
 year (2010) and its real scope, and the Lorq sub-list.
 
-Still open:
+All six are now closed. How, in "What shipped" below.
 
-1. **Unit Circle Theory has no date.** Attribution to Alien Jon is sourced; the
-   year is not. Entry ships undated or not at all — never with a guess.
-2. **The trigonometric model has no source at all.** Drops unless one turns up.
-3. **Whether Cushing ever expanded "QFT."** If not, the page never expands it.
-4. **The Home of Poi thread 403s to bots.** Load it in a browser before shipping
-   it as a source; if it is gone, find another primary for QFT and for the CAPs
-   origin, since both lean on that forum.
-5. **The 4K width problem** in the Layout section.
-6. **Austen's own year.** "c. 2022" comes from his wiki, which he has called
-   slop. Ask him directly rather than shipping a c-dated guess about the site's
-   own author.
+## What shipped (2026-07-27)
+
+Nine entries, not ten. Three changes to the list, each forced by a source.
+
+1. **Unit Circle Theory ships, dated 2009.** Home of Poi thread 886966 has Alien
+   Jon defining "the poi unit circle" in his own words — diameter 1 rather than
+   the mathematician's radius 1, one poi length as the unit, in service of
+   "symmetry and proportion as applied to poi" — and explicitly marking it a
+   poi-specific term. Drex's *This is Not Tech Poi* names "unit circle Theory,
+   Vulcan Tech gospel and nine square Theory" together as the seminal tech
+   works, which is what establishes it as a named system rather than one man's
+   working note. **One inference remains:** that the 2009 concept and the later
+   "Unit Circle Theory" label name the same thing. No source states it. There
+   is no competing candidate, but it is an inference and it is written down here
+   rather than buried.
+2. **The trochoid model ships, dated 2009 and attributed to Zaltymbunk alone.**
+   Sourced from the CAPs thread, where he posts the full parametric system.
+   Ben Drexler is **not** a co-author — the design's "Zaltymbunk, Ben Drexler,
+   2017" was wrong on the year and on the second name. Danny_ of Brighton was
+   modelling the same problem independently, against the ground rather than the
+   arm; the entry says so.
+3. **Transition Theory does not ship.** The design credited it to Jordan
+   Campbell, 2010, on the strength of Yee's site. That could not be re-sourced:
+   noelyee.com's VTG page and instruction index carry neither the attribution
+   nor the date, and Yee's own VTG walkthrough treats Transition Theory as a
+   *chapter of the VTG* he has his own video on. Attributing it to Campbell
+   without a source read is the exact failure that took the old page down, so
+   the row came out rather than shipping a guess. It is worth another look — a
+   VTG chapter page probably has the answer.
+4. **QFT is expanded**, to Quantized Field Theory, because the archived 2011
+   primer expands it in its first paragraph: "Charlie's Quantized Field Theory
+   for poi and one of its applications: notation for props." Open item 3 is
+   answered — Cushing did not write the expansion, but Drexler's primer, the
+   canonical document, did. The expansion lives in a source comment in the data
+   file; the page itself writes "QFT Notation" and stops.
+5. **The Home of Poi threads are readable and archived.** All five relevant
+   threads are now verbatim in `E:\flow-arts-wiki\content\sources\homeofpoi\`.
+   Cloudflare blocks every automated client including a CDP-driven browser;
+   Austen cleared the challenge by hand. No homeofpoi.com forum topic has ever
+   been captured by the Wayback Machine, so those archives are the only copy
+   outside the live site.
+6. **The 4K width problem is solved by a third column.** Sources moved out of
+   the body into their own right-hand column, so a row spans the whole
+   `--shell-w` band. Verified at 3840×2160 (band 2600, root font ramped to 24px,
+   year 62px), 2560, 1920, 1440, 820, 960×412, and 375. Two defects were found
+   and fixed in that pass: a phantom videos grid track leaving 24px of dead
+   space under every row without a strip, and "c. 2010" wrapping to two lines in
+   the year rail.
+7. **TKA is 2022**, flat, per Austen directly. Not "c. 2022".
+
+Also shipped: `CapsVideoCard` promoted to
+`$lib/shared/components/SourceVideoCard.svelte` with `year` and `note` made
+optional, and the CAPs page switched to it. The only video strip is Charlie
+Cushing's own 9-Square series — four cards, every id confirmed live on his
+channel via oembed. No other entry has a creator video that was verified, and
+per the design no strip is padded with third-party coverage to fill a row.
+
+Deferred: the QFT instrument at `/test/qft-notation` stays where it is. Austen
+wants it promoted to its own page eventually, but not as part of this.
