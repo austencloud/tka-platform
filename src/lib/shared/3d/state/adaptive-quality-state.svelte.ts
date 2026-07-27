@@ -27,6 +27,12 @@ const INITIAL_LEVEL: Record<QualityTier, number> = {
   [QualityTier.HIGH]: 4,
 };
 
+const MINIMUM_LEVEL: Record<QualityTier, number> = {
+  [QualityTier.LOW]: 0,
+  [QualityTier.MEDIUM]: 1,
+  [QualityTier.HIGH]: 1,
+};
+
 const MAX_LEVEL: Record<QualityTier, number> = {
   [QualityTier.LOW]: 2,
   [QualityTier.MEDIUM]: 3,
@@ -59,6 +65,7 @@ export function createAdaptiveQualityState(
   const initialTier = detector.currentTier;
   let contentTier = $state(initialTier);
   let levelIndex = $state(INITIAL_LEVEL[initialTier]);
+  let minimumLevel = MINIMUM_LEVEL[initialTier];
   let maximumLevel = $state(MAX_LEVEL[initialTier]);
   let fps = $state(0);
   let initialized = $state(false);
@@ -76,7 +83,7 @@ export function createAdaptiveQualityState(
   }
 
   function setLevel(nextLevel: number, reason: string): void {
-    const clamped = Math.max(0, Math.min(maximumLevel, nextLevel));
+    const clamped = Math.max(minimumLevel, Math.min(maximumLevel, nextLevel));
     if (clamped === levelIndex) return;
 
     levelIndex = clamped;
@@ -94,6 +101,7 @@ export function createAdaptiveQualityState(
     const detectedTier = detector.detectFromRenderer(renderer);
     contentTier = detectedTier;
     levelIndex = INITIAL_LEVEL[detectedTier];
+    minimumLevel = MINIMUM_LEVEL[detectedTier];
     maximumLevel = detector.hasOverride ? levelIndex : MAX_LEVEL[detectedTier];
     initialized = true;
     baselineReported = false;

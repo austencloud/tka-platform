@@ -79,6 +79,21 @@ describe("adaptive 3D quality", () => {
     expect(state.pixelRatio).toBe(0.5);
   });
 
+  it.each([QualityTier.MEDIUM, QualityTier.HIGH])(
+    "keeps %s-capability devices at or above native CSS resolution",
+    (capabilityTier) => {
+      const state = createAdaptiveQualityState(detectorAt(capabilityTier), {
+        devicePixelRatio: 3,
+      });
+
+      feedFps(state, 30, 3);
+
+      expect(state.level).toBe(1);
+      expect(state.contentTier).toBe(capabilityTier);
+      expect(state.pixelRatio).toBe(1);
+    }
+  );
+
   it("does not immediately retry a quality level that caused severe pressure", () => {
     const state = createAdaptiveQualityState(detectorAt(QualityTier.LOW), {
       devicePixelRatio: 3,
