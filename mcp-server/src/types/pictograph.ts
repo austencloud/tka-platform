@@ -23,7 +23,7 @@ export interface MotionData {
 }
 
 /**
- * Complete pictograph data representing one beat of motion.
+ * Complete pictograph data representing one step of motion.
  */
 export interface PictographData {
   letter: string;

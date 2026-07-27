@@ -1,4 +1,10 @@
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums.ts";
+import {
+  STATIC_RADIAL_CLOCKWISE_MAP,
+  STATIC_RADIAL_COUNTER_CLOCKWISE_MAP,
+  STATIC_NON_RADIAL_CLOCKWISE_MAP,
+  STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP,
+} from "@tka/render-core";
 
 /**
  * Static arrow rotation maps for different orientation modes.
@@ -8,55 +14,18 @@ import { GridLocation } from "../../../../grid/domain/enums/grid-enums.ts";
  */
 
 // Static arrow rotation for RADIAL orientations (IN/OUT) - Diamond Mode
-export const staticRadialClockwiseMap: Record<GridLocation, number> = {
-  [GridLocation.NORTH]: 0,
-  [GridLocation.EAST]: 90,
-  [GridLocation.SOUTH]: 180,
-  [GridLocation.WEST]: 270,
-  [GridLocation.NORTHEAST]: 45,
-  [GridLocation.SOUTHEAST]: 135,
-  [GridLocation.SOUTHWEST]: 225,
-  [GridLocation.NORTHWEST]: 315,
-  [GridLocation.CENTER]: 0,
-};
+export const staticRadialClockwiseMap: Record<GridLocation, number> =
+  STATIC_RADIAL_CLOCKWISE_MAP;
 
-export const staticRadialCounterClockwiseMap: Record<GridLocation, number> = {
-  [GridLocation.NORTH]: 0,
-  [GridLocation.EAST]: 90,
-  [GridLocation.SOUTH]: 180,
-  [GridLocation.WEST]: 270,
-  [GridLocation.NORTHEAST]: 45,
-  [GridLocation.SOUTHEAST]: 135,
-  [GridLocation.SOUTHWEST]: 225,
-  [GridLocation.NORTHWEST]: 315,
-  [GridLocation.CENTER]: 0,
-};
+export const staticRadialCounterClockwiseMap: Record<GridLocation, number> =
+  STATIC_RADIAL_COUNTER_CLOCKWISE_MAP;
 
 // Static arrow rotation for NON-RADIAL orientations (CLOCK/COUNTER) - Box Mode
-export const staticNonRadialClockwiseMap: Record<GridLocation, number> = {
-  [GridLocation.NORTH]: 180,
-  [GridLocation.EAST]: 270,
-  [GridLocation.SOUTH]: 0,
-  [GridLocation.WEST]: 90,
-  [GridLocation.NORTHEAST]: 225,
-  [GridLocation.SOUTHEAST]: 315,
-  [GridLocation.SOUTHWEST]: 45,
-  [GridLocation.NORTHWEST]: 135,
-  [GridLocation.CENTER]: 0,
-};
+export const staticNonRadialClockwiseMap: Record<GridLocation, number> =
+  STATIC_NON_RADIAL_CLOCKWISE_MAP;
 
 export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> =
-  {
-    [GridLocation.NORTH]: 180,
-    [GridLocation.EAST]: 270,
-    [GridLocation.SOUTH]: 0,
-    [GridLocation.WEST]: 90,
-    [GridLocation.NORTHEAST]: 225,
-    [GridLocation.SOUTHEAST]: 315,
-    [GridLocation.SOUTHWEST]: 45,
-    [GridLocation.NORTHWEST]: 135,
-    [GridLocation.CENTER]: 0,
-  };
+  STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP;
 
 /**
  * ROTATION OVERRIDE MAPS

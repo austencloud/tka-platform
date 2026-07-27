@@ -23,7 +23,6 @@ import {
 import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
 import { generateViaEngine } from "../core/engine-generation-adapter.js";
 import {
-  allocateTurns,
   parseConstraintSet,
   parseConstraints,
   emptyConstraintSet,
@@ -154,12 +153,12 @@ export function registerSequenceTools(server: McpServer): void {
         : `${feasibility.propReversalBlockers.length} blocking transition(s)`;
       sections.push(`| No prop reversals | ${noPropStatus} | ${noPropDetails} |`);
 
-      // Hand reversal every beat
+      // Hand reversal every step
       const everyHandStatus = feasibility.canHaveHandReversalEveryStep ? "✅ Yes" : "❌ No";
       const everyHandDetails = feasibility.canHaveHandReversalEveryStep
         ? "All transitions can produce a hand reversal"
         : `${feasibility.noHandReversalPossible.length} transition(s) are always continuous`;
-      sections.push(`| Hand reversal every beat | ${everyHandStatus} | ${everyHandDetails} |`);
+      sections.push(`| Hand reversal every step | ${everyHandStatus} | ${everyHandDetails} |`);
 
       // Reversal range
       sections.push(`\n### Reversal Range\n`);
@@ -184,7 +183,7 @@ export function registerSequenceTools(server: McpServer): void {
       if (feasibility.noHandReversalPossible.length > 0 && !feasibility.canHaveHandReversalEveryStep) {
         sections.push(`\n### Transitions That Can NEVER Produce Hand Reversal\n`);
         sections.push(feasibility.noHandReversalPossible.map(t => `- ${t}`).join("\n"));
-        const explanation = explainConstraintImpossibility(feasibility, "hand-reversal-every-beat");
+        const explanation = explainConstraintImpossibility(feasibility, "hand-reversal-every-step");
         if (explanation) {
           sections.push(`\n*${explanation}*`);
         }
@@ -230,7 +229,7 @@ export function registerSequenceTools(server: McpServer): void {
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
       constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
-      constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "no-dash", "no-static", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
+      constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "no-dash", "no-static", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every step), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
       compact: z.boolean().optional().default(false).describe("Compact output - summary only without full step data (saves ~2000+ tokens for long sequences)"),
     },
     async ({ word, gridMode = "diamond", maxAttempts = 500, bridgeSelections, constraints, constraintPreset, compact = false }) => {
@@ -285,18 +284,18 @@ export function registerSequenceTools(server: McpServer): void {
             c => c.type === "handPath" && c.description.includes("continuous")
           );
 
-          // Warning for reversal preset if prop reversal every beat is impossible
+          // Warning for reversal preset if prop reversal every step is impossible
           if (hasReversalConstraint && !feasibility.canHavePropReversalEveryStep) {
             feasibilityWarnings.push(
-              `Prop reversal every beat is not achievable for "${word}". ` +
+              `Prop reversal every step is not achievable for "${word}". ` +
               `Maximum: ${feasibility.maxPropReversals}/${letters.length - 1} transitions.`
             );
           }
 
-          // Warning for hand path reversal every beat
+          // Warning for hand path reversal every step
           if (hasHandPathEveryConstraint && !feasibility.canHaveHandReversalEveryStep) {
             feasibilityWarnings.push(
-              `Hand path reversal every beat is not achievable for "${word}". ` +
+              `Hand path reversal every step is not achievable for "${word}". ` +
               `Maximum: ${feasibility.maxHandReversals}/${letters.length - 1} transitions.`
             );
           }
@@ -400,7 +399,7 @@ export function registerSequenceTools(server: McpServer): void {
           return {
             content: [{
               type: "text" as const,
-              text: `${result.word}: ${result.steps.length} beats | ${result.startPosition}→${result.endPosition} | Score: ${score.toFixed(2)} | Satisfied: ${satisfiedConstraints}${bridgeCount > 0 ? ` | Bridges: ${bridgeCount}` : ""}`,
+              text: `${result.word}: ${result.steps.length} steps | ${result.startPosition}→${result.endPosition} | Score: ${score.toFixed(2)} | Satisfied: ${satisfiedConstraints}${bridgeCount > 0 ? ` | Bridges: ${bridgeCount}` : ""}`,
             }],
           };
         }
@@ -439,7 +438,7 @@ export function registerSequenceTools(server: McpServer): void {
         return {
           content: [{
             type: "text" as const,
-            text: `${result.word}: ${result.steps.length} beats | ${result.startPosition}→${result.endPosition}${bridgeCount > 0 ? ` | Bridges: ${bridgeCount}` : ""}`,
+            text: `${result.word}: ${result.steps.length} steps | ${result.startPosition}→${result.endPosition}${bridgeCount > 0 ? ` | Bridges: ${bridgeCount}` : ""}`,
           }],
         };
       }
@@ -473,6 +472,7 @@ export function registerSequenceTools(server: McpServer): void {
     "rotated", "mirrored", "flipped", "swapped", "inverted",
     "swapped_inverted", "rotated_inverted", "mirrored_swapped", "mirrored_inverted", "rotated_swapped",
     "mirrored_rotated", "mirrored_inverted_rotated", "mirrored_swapped_inverted",
+    "mirrored_rotated_swapped",
     "rotated_swapped_inverted",
     "mirrored_rotated_inverted_swapped", "strict_rewound", "rewound",
   ] as const;
@@ -483,11 +483,17 @@ export function registerSequenceTools(server: McpServer): void {
     {
       // Content params
       word: z.string().optional().describe('The sequence word, e.g., "ABC". Provide word OR length (word wins if both given).'),
-      length: z.number().min(1).max(256).optional().describe("Number of beats for freeform generation (no word needed). For LOOP sequences, this is the TOTAL output length."),
+      length: z.number().min(1).max(256).optional().describe("Number of steps for freeform generation (no word needed). For LOOP sequences, this is the TOTAL output length."),
 
       // LOOP params
       loopType: z.enum(ALL_LOOP_TYPES).optional().describe("LOOP type for circular generation. Triggers engine builder with beam search and targeted end positions."),
       period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size for LOOP rotation: "halved" (180°, default) or "quartered" (90°). Only meaningful with loopType.'),
+      reflectionAxis: z.enum([
+        "north-south",
+        "east-west",
+        "northeast-southwest",
+        "northwest-southeast",
+      ]).optional().describe("Axis for mirrored or flipped LOOP generation. Grid mode does not limit the axis."),
 
       // Constraint params
       constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "no-dash", "no-static", "maximize-dash", "maximum-chaos"]).optional().describe("Predefined constraint preset"),
@@ -497,7 +503,7 @@ export function registerSequenceTools(server: McpServer): void {
 
       // Position targeting
       startPosition: z.string().optional().describe('Force a specific start position, e.g., "alpha1", "beta3", "gamma5"'),
-      endPosition: z.string().optional().describe('Force a specific end position for the last beat, e.g., "beta5"'),
+      endPosition: z.string().optional().describe('Force a specific end position for the last step, e.g., "beta5"'),
       blockedStartPositions: z.array(z.string()).optional().describe('Start positions to exclude from random selection, e.g., ["alpha1", "gamma5"]'),
 
       // Letter constraints
@@ -507,6 +513,7 @@ export function registerSequenceTools(server: McpServer): void {
       // Generation control
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+      propType: z.string().optional().describe('Prop used for both hands, e.g. "fan", "staff", or "club"'),
       turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3)."),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       bridgeSelections: z.record(z.string(), z.number()).optional().describe("Map of bridge transition index to preferred bridge option index."),
@@ -518,7 +525,7 @@ export function registerSequenceTools(server: McpServer): void {
       // Display params
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
-      showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers overlaid on each pictograph"),
+      showStepNumbers: z.boolean().optional().default(true).describe("Show step numbers overlaid on each pictograph"),
       showWord: z.boolean().optional().default(true).describe("Show word header at the top"),
       displayWord: z.string().optional().describe("Override the word shown in the header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
@@ -531,7 +538,7 @@ export function registerSequenceTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
     },
-    async ({ word, length, loopType, period = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, blueStartOrientation, redStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
+    async ({ word, length, loopType, period = "halved", reflectionAxis, constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, propType, turnIntensity, maxAttempts = 500, bridgeSelections, blueStartOrientation, redStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
       // Validation: must have word or length
       if (!word && !length) {
         return {
@@ -576,7 +583,7 @@ export function registerSequenceTools(server: McpServer): void {
       let result: SequenceResult;
       let engineLoopComponents: string[] | undefined;
       let engineSeedWord: string | undefined;
-      let engineDerivedBeatIndices: number[] | undefined;
+      let engineDerivedStepIndices: number[] | undefined;
 
       try {
         const engineResult = generateViaEngine({
@@ -584,6 +591,7 @@ export function registerSequenceTools(server: McpServer): void {
           length,
           gridMode,
           level,
+          propType,
           turnIntensity,
           constraintPreset,
           constraints,
@@ -596,6 +604,7 @@ export function registerSequenceTools(server: McpServer): void {
           mustContainLetters,
           loopType,
           period,
+          reflectionAxis,
           blueStartOrientation,
           redStartOrientation,
         }, allPictographs as any);
@@ -603,7 +612,7 @@ export function registerSequenceTools(server: McpServer): void {
         result = engineResult.result;
         engineLoopComponents = engineResult.loopComponents;
         engineSeedWord = engineResult.seedWord;
-        engineDerivedBeatIndices = engineResult.derivedBeatIndices;
+        engineDerivedStepIndices = engineResult.derivedStepIndices;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return {
@@ -618,11 +627,13 @@ export function registerSequenceTools(server: McpServer): void {
       try {
         const birthdayDate = birthday ? new Date(birthday) : undefined;
         const stepCount = result.steps.length - 1;
-        const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
         // Determine LOOP components for rendering: explicit > engine-derived > auto-detect
         let finalLoopComponents: LOOPComponent[] | undefined;
         let loopDetectionInfo = "";
+        const detectedLoop = detectLOOPFromSteps(
+          mcpStepsToEngineSteps(result.steps) as any,
+        );
 
         if (loopComponents && loopComponents.length > 0) {
           finalLoopComponents = loopComponents.map(c => {
@@ -636,17 +647,47 @@ export function registerSequenceTools(server: McpServer): void {
               default: return LOOPComponent.ROTATED;
             }
           });
-          loopDetectionInfo = `LOOP: ${loopComponents.join(", ")}`;
+          loopDetectionInfo =
+            `LOOP: ${loopComponents.join(", ")}` +
+            (reflectionAxis ? `; reflection axis: ${reflectionAxis}` : "");
         } else if (engineLoopComponents && engineLoopComponents.length > 0) {
           finalLoopComponents = convertLOOPComponentsToEnum(engineLoopComponents as LOOPComponentId[]);
-          loopDetectionInfo = `LOOP: ${engineLoopComponents.join(", ")}`;
+          const normalizeReflection = (component: string) =>
+            component === "mirrored" || component === "flipped"
+              ? "reflection"
+              : component;
+          const requested = [...engineLoopComponents]
+            .map(normalizeReflection)
+            .sort();
+          const detected = [...detectedLoop.components]
+            .map(String)
+            .map(normalizeReflection)
+            .sort();
+          const verified =
+            detectedLoop.isCircular &&
+            requested.length === detected.length &&
+            requested.every((component, index) => component === detected[index]);
+          loopDetectionInfo = verified
+            ? `LOOP verified: ${requested.join(", ")}${
+                detectedLoop.reflectionAxis
+                  ? `; reflection axis: ${detectedLoop.reflectionAxis}`
+                  : ""
+              }`
+            : `LOOP requested: ${requested.join(", ")}; detected: ${
+                detectedLoop.isCircular
+                  ? detected.join(", ") || "circular without a named transform"
+                  : "not circular"
+              }`;
         } else {
           // Auto-detect from steps (for legacy path)
-          const loopResult = detectLOOPFromSteps(mcpStepsToEngineSteps(result.steps) as any);
-          if (loopResult.isCircular && loopResult.components.length > 0) {
-            finalLoopComponents = convertLOOPComponentsToEnum(loopResult.components);
-            loopDetectionInfo = `LOOP detected: ${loopResult.components.join(" + ")}`;
-          } else if (loopResult.isCircular) {
+          if (detectedLoop.isCircular && detectedLoop.components.length > 0) {
+            finalLoopComponents = convertLOOPComponentsToEnum(detectedLoop.components);
+            loopDetectionInfo =
+              `LOOP detected: ${detectedLoop.components.join(" + ")}` +
+              (detectedLoop.reflectionAxis
+                ? `; reflection axis: ${detectedLoop.reflectionAxis}`
+                : "");
+          } else if (detectedLoop.isCircular) {
             loopDetectionInfo = "Circular (freeform)";
           }
         }
@@ -663,12 +704,13 @@ export function registerSequenceTools(server: McpServer): void {
           notes,
           birthday: birthdayDate,
           level,
-          turnAllocation,
           loopComponents: finalLoopComponents,
           period: finalLoopComponents?.length ? (period === "quartered" ? 4 : 2) : undefined,
           showReversals,
           seedWord: displayWord?.toUpperCase() ?? engineSeedWord,
-          derivedBeatIndices: engineDerivedBeatIndices,
+          derivedStepIndices: engineDerivedStepIndices,
+          bluePropType: propType,
+          redPropType: propType,
         });
 
         const headerWord = displayWord ?? result.word ?? word ?? "sequence";
@@ -682,11 +724,11 @@ export function registerSequenceTools(server: McpServer): void {
           const b = s.blueMotion;
           const r = s.redMotion;
           return {
-            beat: i,
+            step: i,
             letter: s.letter,
             pos: `${s.startPosition}→${s.endPosition}`,
-            blue: { type: b.motionType, dir: b.rotationDirection, turns: b.turns, ori: `${b.startOrientation}→${b.endOrientation}` },
-            red: { type: r.motionType, dir: r.rotationDirection, turns: r.turns, ori: `${r.startOrientation}→${r.endOrientation}` },
+            blue: { type: b.motionType, dir: b.rotationDirection, turns: b.turns, loc: `${b.startLocation}→${b.endLocation}`, ori: `${b.startOrientation}→${b.endOrientation}` },
+            red: { type: r.motionType, dir: r.rotationDirection, turns: r.turns, loc: `${r.startLocation}→${r.endLocation}`, ori: `${r.startOrientation}→${r.endOrientation}` },
             ...(s.blueReversal ? { blueRev: true } : {}),
             ...(s.redReversal ? { redRev: true } : {}),
           };
@@ -696,7 +738,7 @@ export function registerSequenceTools(server: McpServer): void {
           content: [
             {
               type: "text" as const,
-              text: `Opened sequence "${headerWord}" in system viewer.\n${stepCount} beats, ${layout} layout, ${cellSize}px cells${loopLine}\nFile: ${tempPath}`,
+              text: `Opened sequence "${headerWord}" in system viewer.\n${stepCount} steps, ${layout} layout, ${cellSize}px cells${loopLine}\nFile: ${tempPath}`,
             },
             {
               type: "text" as const,

@@ -1,5 +1,7 @@
 // @tka/render-composition — shared choreo card composition
 export * from "./types.js";
+export { tokenizeGlyphWord } from "./glyph-word.js";
+export { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize.js";
 export * from "./difficulty-config.js";
 export { drawSvgPath, drawPathCommands, parsePathData, type PathCommand } from "./svg-path-painter.js";
 export { renderLoopIconStrip, computeLoopIconStripWidth, LOOP_ICON_COLORS, type LoopRotationPeriod, type LoopInversionPeriod } from "./loop-icons.js";

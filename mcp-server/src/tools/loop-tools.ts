@@ -162,6 +162,7 @@ export function registerLoopTools(server: McpServer): void {
           components: detection.components,
           isFreeform: detection.isFreeform,
           rotationDirection: detection.rotationDirection,
+          reflectionAxis: detection.reflectionAxis,
           description: detection.description,
         },
       };
@@ -352,7 +353,7 @@ export function registerLoopTools(server: McpServer): void {
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
-      showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers"),
+      showStepNumbers: z.boolean().optional().default(true).describe("Show step numbers"),
       showWord: z.boolean().optional().default(true).describe("Show word header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
@@ -503,7 +504,7 @@ export function registerLoopTools(server: McpServer): void {
         const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
         // Render composite image
-        // Pass derivedBeatIndices so the renderer can dim the transformed beats
+        // Pass derivedStepIndices so the renderer can dim the transformed steps
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")
         const displayWord = simplifyRepeatedWord(loopResult.loopWord);
         const pngBuffer = await renderSequenceToImage(finalMcpSteps2, displayWord, {
@@ -521,7 +522,7 @@ export function registerLoopTools(server: McpServer): void {
           turnAllocation,
           loopComponents: parsedLoopComponents,
           period: period === "quartered" ? 4 : 2,
-          derivedBeatIndices: loopResult.derivedStepIndices,
+          derivedStepIndices: loopResult.derivedStepIndices,
           seedWord: loopResult.seedWord,
         });
 
@@ -535,7 +536,7 @@ export function registerLoopTools(server: McpServer): void {
           content: [
             {
               type: "text" as const,
-              text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Slice size:** ${period}\n**Beats:** ${stepCount}`,
+              text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Slice size:** ${period}\n**Steps:** ${stepCount}`,
             },
             {
               type: "image" as const,
@@ -568,7 +569,7 @@ export function registerLoopTools(server: McpServer): void {
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
-      showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers"),
+      showStepNumbers: z.boolean().optional().default(true).describe("Show step numbers"),
       showWord: z.boolean().optional().default(true).describe("Show word header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
@@ -718,7 +719,7 @@ export function registerLoopTools(server: McpServer): void {
         const stepCount = finalMcpSteps3.length - 1;
         const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
-        // Render composite image with derivedBeatIndices for proper dimming
+        // Render composite image with derivedStepIndices for proper dimming
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")
         const displayWord = simplifyRepeatedWord(loopResult.loopWord);
         const pngBuffer = await renderSequenceToImage(finalMcpSteps3, displayWord, {
@@ -736,7 +737,7 @@ export function registerLoopTools(server: McpServer): void {
           turnAllocation,
           loopComponents: parsedLoopComponents,
           period: period === "quartered" ? 4 : 2,
-          derivedBeatIndices: loopResult.derivedStepIndices,
+          derivedStepIndices: loopResult.derivedStepIndices,
           seedWord: loopResult.seedWord,
         });
 
@@ -749,7 +750,7 @@ export function registerLoopTools(server: McpServer): void {
           content: [
             {
               type: "text" as const,
-              text: `Opened LOOP sequence "${loopResult.loopWord}" in system viewer.\n${stepCount} beats, ${layout} layout, ${cellSize}px cells\nLOOP type: ${loopType}\nSeed word: ${loopResult.seedWord}\nDerived beats: ${loopResult.derivedStepIndices.join(", ")}${bridgeNote}`,
+              text: `Opened LOOP sequence "${loopResult.loopWord}" in system viewer.\n${stepCount} steps, ${layout} layout, ${cellSize}px cells\nLOOP type: ${loopType}\nSeed word: ${loopResult.seedWord}\nDerived steps: ${loopResult.derivedStepIndices.join(", ")}${bridgeNote}`,
             },
           ],
         };

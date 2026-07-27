@@ -14,7 +14,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 
 export class StartPositionDeriver {
 
-  deriveFromFirstBeat(firstStep: StepData): StartPositionData {
+  deriveFromFirstStep(firstStep: StepData): StartPositionData {
     const blueMotion = firstStep.motions?.[MotionColor.BLUE];
     const redMotion = firstStep.motions?.[MotionColor.RED];
 
@@ -107,7 +107,7 @@ export class StartPositionDeriver {
     const firstStep = sequence.steps?.[0];
     if (firstStep) {
       try {
-        return this.deriveFromFirstBeat(firstStep);
+    return this.deriveFromFirstStep(firstStep);
       } catch (error) {
         console.warn("Failed to derive start position from first beat:", error);
         return null;

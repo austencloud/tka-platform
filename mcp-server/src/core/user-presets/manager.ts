@@ -219,7 +219,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 		{
 			id: "preset-comfy-16",
 			name: "Comfy 16",
-			description: "Go-to comfortable sequence - 4 letters x quartered = 16 beats",
+			description: "Go-to comfortable sequence - 4 letters x quartered = 16 steps",
 			icon: "🎯",
 			config: {
 				loopType: "rotated",

@@ -3,20 +3,24 @@
   "version": "0.1.0",
   "description": "Pure TypeScript calculation module for TKA pictograph rendering. Shared between browser and Node.js.",
   "type": "module",
+  "svelte": "./src/index.ts",
   "main": "./dist/index.js",
   "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
+      "svelte": "./src/index.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
-    "build": "tsc",
-    "clean": "rimraf dist",
+    "build": "rimraf --glob \"src/**/*.js\" \"src/**/*.d.ts\" && tsc",
+    "clean": "rimraf --glob dist tsconfig.tsbuildinfo \"src/**/*.js\" \"src/**/*.d.ts\"",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "devDependencies": {

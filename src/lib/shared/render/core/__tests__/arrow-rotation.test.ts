@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateArrowRotation } from "$lib/shared/render/core/calculations/arrow-rotation";
+import { calculateArrowRotation as calculatePackagedArrowRotation } from "@tka/render-core";
 import type { GridLocation } from "$lib/shared/render/core/types";
 
 /**
@@ -21,7 +22,16 @@ import type { GridLocation } from "$lib/shared/render/core/types";
  * divergence between the two render-core copies.)
  */
 
-const ALL_LOCATIONS: GridLocation[] = ["n", "e", "s", "w", "ne", "se", "sw", "nw"];
+const ALL_LOCATIONS: GridLocation[] = [
+  "n",
+  "e",
+  "s",
+  "w",
+  "ne",
+  "se",
+  "sw",
+  "nw",
+];
 
 describe("calculateArrowRotation — ANTI is PRO with flipped direction", () => {
   it("anti CW equals pro CCW at every location", () => {
@@ -94,9 +104,65 @@ describe("calculateArrowRotation — straight (no-rotation) dash", () => {
 describe("calculateArrowRotation — static radial vs non-radial", () => {
   it("selects a different map based on the radial-orientation flag", () => {
     // STATIC radial and non-radial maps differ; the flag must route between them.
-    const radial = calculateArrowRotation("static", "n", "cw", undefined, undefined, true);
-    const nonRadial = calculateArrowRotation("static", "n", "cw", undefined, undefined, false);
+    const radial = calculateArrowRotation(
+      "static",
+      "n",
+      "cw",
+      undefined,
+      undefined,
+      true
+    );
+    const nonRadial = calculateArrowRotation(
+      "static",
+      "n",
+      "cw",
+      undefined,
+      undefined,
+      false
+    );
     expect(radial).not.toBe(nonRadial);
+  });
+
+  it("uses the normal location map for both directions, then leaves direction to mirroring", () => {
+    for (const location of ALL_LOCATIONS) {
+      for (const isRadial of [true, false]) {
+        const clockwise = calculateArrowRotation(
+          "static",
+          location,
+          "cw",
+          undefined,
+          undefined,
+          isRadial
+        );
+        const counterClockwise = calculateArrowRotation(
+          "static",
+          location,
+          "ccw",
+          undefined,
+          undefined,
+          isRadial
+        );
+
+        expect(counterClockwise).toBe(clockwise);
+        expect(
+          calculatePackagedArrowRotation(
+            "static",
+            location,
+            "ccw",
+            undefined,
+            undefined,
+            isRadial
+          )
+        ).toBe(clockwise);
+      }
+    }
+
+    expect(
+      calculateArrowRotation("static", "w", "ccw", undefined, undefined, true)
+    ).toBe(270);
+    expect(
+      calculateArrowRotation("static", "w", "ccw", undefined, undefined, false)
+    ).toBe(90);
   });
 });
 
@@ -105,7 +171,14 @@ describe("calculateArrowRotation — output range & normalization", () => {
     for (const type of ["pro", "anti", "static", "dash", "float"]) {
       for (const dir of ["cw", "ccw"]) {
         for (const loc of ALL_LOCATIONS) {
-          const a = calculateArrowRotation(type, loc, dir, undefined, undefined, true);
+          const a = calculateArrowRotation(
+            type,
+            loc,
+            dir,
+            undefined,
+            undefined,
+            true
+          );
           expect(a).toBeGreaterThanOrEqual(0);
           expect(a).toBeLessThan(360);
           expect(a % 45).toBe(0);

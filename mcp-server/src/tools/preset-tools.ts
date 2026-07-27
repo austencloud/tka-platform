@@ -296,7 +296,7 @@ export function registerPresetTools(server: McpServer): void {
         if (config.loopType) {
           // LOOP-aware sequence building
           // noBridges: only skip bridges when we generated the word (chainable sequence)
-          // If user specified a word, allow bridges - beat count will vary
+          // If user specified a word, allow bridges - step count will vary
           const loopConstraint: LoopConstraint = {
             loopType: config.loopType as "rewound" | "rotated",
             period: (config.period || "halved") as "halved" | "quartered",
@@ -443,7 +443,7 @@ export function registerPresetTools(server: McpServer): void {
 
           const textContent = {
             type: "text" as const,
-            text: `Generated LOOP sequence from preset "${p.name}":\n- Word: ${loopResult.loopWord}\n- Beats: ${loopResult.steps.length}\n- Type: ${config.loopType} (${config.period || "halved"})\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
+            text: `Generated LOOP sequence from preset "${p.name}":\n- Word: ${loopResult.loopWord}\n- Steps: ${loopResult.steps.length}\n- Type: ${config.loopType} (${config.period || "halved"})\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
           };
 
           // Only include base64 image if explicitly requested (saves 30-100k tokens)
@@ -482,7 +482,7 @@ export function registerPresetTools(server: McpServer): void {
 
         const textContent = {
           type: "text" as const,
-          text: `Generated sequence from preset "${p.name}":\n- Word: ${sequenceWord}\n- Beats: ${steps.length}\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
+          text: `Generated sequence from preset "${p.name}":\n- Word: ${sequenceWord}\n- Steps: ${steps.length}\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
         };
 
         // Only include base64 image if explicitly requested (saves 30-100k tokens)

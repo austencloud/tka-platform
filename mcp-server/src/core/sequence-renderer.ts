@@ -9,9 +9,19 @@
  * - Smart cell borders between occupied cells
  */
 
-import { createCanvas, type Canvas, type CanvasRenderingContext2D } from "canvas";
-import { getStandaloneRenderer, type RenderVisibilityOptions } from "./standalone-renderer.js";
-import { detectReversals, type SequenceStep } from "./sequence-builder-adapter.js";
+import {
+  createCanvas,
+  type Canvas,
+  type CanvasRenderingContext2D,
+} from "canvas";
+import {
+  getStandaloneRenderer,
+  type RenderVisibilityOptions,
+} from "./standalone-renderer.js";
+import {
+  detectReversals,
+  type SequenceStep,
+} from "./sequence-builder-adapter.js";
 import {
   renderWordHeader,
   renderUserInfo,
@@ -28,11 +38,16 @@ export { LOOPComponent };
 import { calculateDifficultyLevel } from "./difficulty-calculator.js";
 
 /**
- * Turn allocation per step (blue and red get independent values)
+ * Legacy fallback for callers whose steps do not yet carry turn data.
  */
 export interface TurnAllocation {
   blue: (number | "fl")[];
   red: (number | "fl")[];
+}
+
+export interface HeaderDisplay {
+  word: string;
+  letterStyles: LetterStyle[];
 }
 
 export interface SequenceRenderOptions {
@@ -49,8 +64,8 @@ export interface SequenceRenderOptions {
   birthday?: Date;
   // Difficulty level (for badge display and orientation calculation)
   level?: number;
-  // Turn allocations per step (indexed by step number - 1, since step 0 is start position)
-  // Each motion gets its own random turn value
+  // Legacy turn fallback, indexed by step number - 1. Canonical turn values on
+  // each motion always win so LOOP-derived steps keep the seed transformation.
   turnAllocation?: TurnAllocation;
   // LOOP components for the pie chart glyph (top-right corner)
   loopComponents?: LOOPComponent[];
@@ -58,11 +73,14 @@ export interface SequenceRenderOptions {
   period?: number;
   // Show reversal indicators (direction change dots on left edge)
   showReversals?: boolean;
-  // LOOP sequence info - which beats are derived (transformed) vs seed (original)
+  // LOOP sequence info - which steps are derived (transformed) vs seed (original)
   // Used for header text styling only - pictographs are not dimmed
-  derivedBeatIndices?: number[];
+  derivedStepIndices?: number[];
   // Original seed word for LOOP sequences (displayed prominently in header)
   seedWord?: string;
+  // Prop artwork for both hands. Null/undefined keeps the staff default.
+  bluePropType?: string | null;
+  redPropType?: string | null;
 }
 
 const DEFAULT_OPTIONS: SequenceRenderOptions = {
@@ -84,6 +102,70 @@ const DEFAULT_OPTIONS: SequenceRenderOptions = {
  */
 function getStartOrientationForLevel(level: number): string {
   return level === 3 ? "clock" : "in";
+}
+
+/**
+ * Resolve the exact turn tuple sent to the pictograph renderer.
+ *
+ * Generated sequence steps are authoritative. The optional allocation exists
+ * only for older callers that still provide steps without embedded turn data.
+ */
+export function resolveRenderedTurns(
+  step: SequenceStep,
+  turnAllocation?: TurnAllocation
+): { blue: number | "fl"; red: number | "fl" } {
+  if (step.stepNumber === 0) {
+    return { blue: 0, red: 0 };
+  }
+
+  const allocationIndex = step.stepNumber - 1;
+  return {
+    blue: step.blueMotion.turns ?? turnAllocation?.blue[allocationIndex] ?? 0,
+    red: step.redMotion.turns ?? turnAllocation?.red[allocationIndex] ?? 0,
+  };
+}
+
+/**
+ * Resolve the header from the steps that are actually rendered.
+ *
+ * A generated word can gain bridge steps, so the requested input is not a
+ * faithful label for the resulting sequence. LOOP cards are the exception:
+ * their explicit seed word remains the compact header contract.
+ */
+export function resolveHeaderDisplay(
+  steps: SequenceStep[],
+  requestedWord: string,
+  seedWord?: string,
+  derivedStepIndices: number[] = []
+): HeaderDisplay {
+  const stepSteps = steps.filter((step) => step.stepNumber > 0);
+
+  if (seedWord) {
+    const seedSteps = stepSteps.filter(
+      (step) => !step.isBridge && !derivedStepIndices.includes(step.stepNumber)
+    );
+
+    return {
+      word: seedWord,
+      letterStyles: seedSteps.map((step) => ({
+        letter: step.letter,
+        isBridge: false,
+        isDerived: false,
+      })),
+    };
+  }
+
+  return {
+    word:
+      stepSteps.length > 0
+        ? stepSteps.map((step) => step.letter).join("")
+        : requestedWord,
+    letterStyles: stepSteps.map((step) => ({
+      letter: step.letter,
+      isBridge: !!step.isBridge,
+      isDerived: false,
+    })),
+  };
 }
 
 /**
@@ -121,12 +203,15 @@ export async function renderSequenceToImage(
   const hasFooter = true;
 
   // Calculate layout dimensions
-  const { width, height, columns, rows, headerHeight, footerHeight, gridStartY } = calculateLayout(
-    letterSteps.length,
-    opts,
-    hasHeader,
-    hasFooter
-  );
+  const {
+    width,
+    height,
+    columns,
+    rows,
+    headerHeight,
+    footerHeight,
+    gridStartY,
+  } = calculateLayout(letterSteps.length, opts, hasHeader, hasFooter);
 
   // Create main canvas
   const canvas = createCanvas(width, height);
@@ -148,6 +233,8 @@ export async function renderSequenceToImage(
     showPositions: false,
     showReversals: opts.showReversals ?? false,
     showNonRadialPoints: false,
+    bluePropType: opts.bluePropType,
+    redPropType: opts.redPropType,
   };
 
   for (let i = 0; i < letterSteps.length; i++) {
@@ -159,13 +246,13 @@ export async function renderSequenceToImage(
     const x = col * opts.cellSize;
     const y = gridStartY + row * opts.cellSize;
 
-    // Convert step to pictograph input format
-    // Step 0 is start position (always 0 turns)
-    // Other steps get their turns from the allocation array (indexed by stepNumber - 1)
-    const stepNum = step.stepNumber ?? step.stepNumber;
-    const allocationIndex = stepNum - 1;
-    const blueTurns = stepNum === 0 ? 0 : (turnAllocation?.blue[allocationIndex] ?? 0);
-    const redTurns = stepNum === 0 ? 0 : (turnAllocation?.red[allocationIndex] ?? 0);
+    // Convert step to pictograph input format. LOOP-expanded steps already
+    // contain the transformed turn tuple; never replace it during rendering.
+    const stepNum = step.stepNumber;
+    const { blue: blueTurns, red: redTurns } = resolveRenderedTurns(
+      step,
+      turnAllocation
+    );
 
     const pictographInput = {
       letter: step.letter,
@@ -196,20 +283,30 @@ export async function renderSequenceToImage(
 
     try {
       // Render individual pictograph
-      const pngBuffer = await renderer.renderToPng(pictographInput, visibilityOptions);
+      const pngBuffer = await renderer.renderToPng(
+        pictographInput,
+        visibilityOptions
+      );
 
       // Load and draw onto composite canvas
       const { loadImage } = await import("canvas");
       const img = await loadImage(pngBuffer);
       ctx.drawImage(img, x, y, opts.cellSize, opts.cellSize);
 
-      // Note: Derived beats in LOOP sequences are distinguished in the header text
+      // Note: Derived steps in LOOP sequences are distinguished in the header text
       // (smaller font, secondary color) but the pictographs themselves are NOT dimmed
       // to maintain readability
 
       // Draw step number overlaid on pictograph (top-left corner)
       if (opts.showStepNumbers) {
-        renderStepNumber(ctx as unknown as globalThis.CanvasRenderingContext2D, stepNum, x, y, opts.cellSize, opts.darkMode);
+        renderStepNumber(
+          ctx as unknown as globalThis.CanvasRenderingContext2D,
+          stepNum,
+          x,
+          y,
+          opts.cellSize,
+          opts.darkMode
+        );
       }
     } catch (error) {
       // Draw error placeholder
@@ -223,42 +320,36 @@ export async function renderSequenceToImage(
   }
 
   // Draw smart cell borders between occupied cells
-  drawSmartCellBorders(ctx, columns, rows, opts.cellSize, letterSteps.length, gridStartY, opts.darkMode);
+  drawSmartCellBorders(
+    ctx,
+    columns,
+    rows,
+    opts.cellSize,
+    letterSteps.length,
+    gridStartY,
+    opts.darkMode
+  );
 
   // Draw word header if enabled
   if (hasHeader && headerHeight > 0) {
-    // For LOOP sequences, use the seedWord (original word) for the header display
-    // instead of the full loopWord (which includes derived/transformed letters)
-    const headerWord = opts.seedWord ?? word;
+    const headerDisplay = resolveHeaderDisplay(
+      letterSteps,
+      word,
+      opts.seedWord,
+      opts.derivedStepIndices
+    );
 
-    // Build letter styles from seed word only (for LOOP sequences)
-    // This shows ONLY the original letters, not the transformed portion
-    const seedLetters = opts.seedWord
-      ? letterSteps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber ?? s.stepNumber))
-      : letterSteps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
-
-    // Filter out bridge letters from styles since they aren't displayed in the header.
-    // Without this, bridge styles (dimmed) get applied to the wrong header characters
-    // because the styles array is longer than the displayed word.
-    const letterStyles: LetterStyle[] = opts.showWord
-      ? seedLetters
-          .filter((s) => !s.isBridge)
-          .map((s) => ({
-            letter: s.letter,
-            isBridge: false,
-            isDerived: false,
-          }))
-      : [];
-
-    renderWordHeader(
+    await renderWordHeader(
       ctx,
-      opts.showWord ? headerWord : "",
+      opts.showWord ? headerDisplay.word : "",
       width,
       headerHeight,
       difficultyLevel,
       opts.showDifficulty ?? true,
       opts.darkMode,
-      letterStyles.length > 0 ? letterStyles : undefined,
+      headerDisplay.letterStyles.length > 0
+        ? headerDisplay.letterStyles
+        : undefined,
       opts.loopComponents
     );
   }
@@ -299,19 +390,19 @@ function calculateStepPosition(
   }
 
   // Letter steps: account for start position taking column 0 of row 0
-  // beatColumns = totalColumns - 1 (columns available for beats per row after the start column)
-  const beatColumns = totalColumns - 1;
+  // stepColumns = totalColumns - 1 (columns available for steps per row after the start column)
+  const stepColumns = totalColumns - 1;
   const stepNumber = stepIndex - 1; // 0-based index among letter steps
 
-  if (stepNumber < beatColumns) {
+  if (stepNumber < stepColumns) {
     // First row: steps go after the start position
     return { row: 0, col: stepNumber + 1 };
   }
 
   // Subsequent rows: start at column 1 (column 0 is empty)
-  const adjustedIndex = stepNumber - beatColumns; // Index relative to row 2+
-  const row = Math.floor(adjustedIndex / beatColumns) + 1;
-  const col = (adjustedIndex % beatColumns) + 1;
+  const adjustedIndex = stepNumber - stepColumns; // Index relative to row 2+
+  const row = Math.floor(adjustedIndex / stepColumns) + 1;
+  const col = (adjustedIndex % stepColumns) + 1;
 
   return { row, col };
 }
@@ -340,33 +431,49 @@ function calculateLayout(
     const rows = 1;
     const width = columns * opts.cellSize;
     const height = headerHeight + opts.cellSize + footerHeight;
-    return { width, height, columns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
+    return {
+      width,
+      height,
+      columns,
+      rows,
+      headerHeight,
+      footerHeight,
+      gridStartY: headerHeight,
+    };
   }
 
   // Grid layout with start position offset
   // We need to figure out how many columns based on letter count
   const letterCount = stepCount - 1; // Exclude start position
 
-  // Calculate beat columns (columns after the start position)
-  // 32+ beats use 8 columns for wider, more readable layouts
-  const beatColumns =
+  // Calculate step columns (columns after the start position)
+  // 32+ steps use 8 columns for wider, more readable layouts
+  const stepColumns =
     letterCount >= 31 ? 8 : Math.max(1, Math.ceil(Math.sqrt(letterCount)));
-  const totalColumns = beatColumns + 1; // +1 for start position column
+  const totalColumns = stepColumns + 1; // +1 for start position column
 
   // Calculate rows needed
-  // Row 1 has beatColumns beats
-  // Subsequent rows each have beatColumns beats
-  const beatsInFirstRow = Math.min(letterCount, beatColumns);
-  const remainingBeats = letterCount - beatsInFirstRow;
-  const additionalRows = remainingBeats > 0 ? Math.ceil(remainingBeats / beatColumns) : 0;
+  // Row 1 has stepColumns steps
+  // Subsequent rows each have stepColumns steps
+  const stepsInFirstRow = Math.min(letterCount, stepColumns);
+  const remainingSteps = letterCount - stepsInFirstRow;
+  const additionalRows =
+    remainingSteps > 0 ? Math.ceil(remainingSteps / stepColumns) : 0;
   const rows = 1 + additionalRows;
 
   const width = totalColumns * opts.cellSize;
   const height = headerHeight + rows * opts.cellSize + footerHeight;
 
-  return { width, height, columns: totalColumns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
+  return {
+    width,
+    height,
+    columns: totalColumns,
+    rows,
+    headerHeight,
+    footerHeight,
+    gridStartY: headerHeight,
+  };
 }
-
 
 /**
  * Draw cell borders only between occupied cells
@@ -391,7 +498,8 @@ function drawSmartCellBorders(
     occupied.add(`${col},${row}`);
   }
 
-  const isOccupied = (col: number, row: number): boolean => occupied.has(`${col},${row}`);
+  const isOccupied = (col: number, row: number): boolean =>
+    occupied.has(`${col},${row}`);
 
   // Draw vertical lines between horizontally adjacent occupied cells
   for (let row = 0; row < rows; row++) {

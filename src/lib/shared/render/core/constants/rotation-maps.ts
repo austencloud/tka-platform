@@ -1,9 +1,18 @@
 import type { GridLocation, Orientation } from "../types.js";
+import {
+  STATIC_RADIAL_CLOCKWISE_MAP as SHARED_STATIC_RADIAL_CLOCKWISE_MAP,
+  STATIC_RADIAL_COUNTER_CLOCKWISE_MAP as SHARED_STATIC_RADIAL_COUNTER_CLOCKWISE_MAP,
+  STATIC_NON_RADIAL_CLOCKWISE_MAP as SHARED_STATIC_NON_RADIAL_CLOCKWISE_MAP,
+  STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP as SHARED_STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP,
+} from "@tka/render-core";
 
 /**
  * Diamond grid rotation angles by orientation and location
  */
-export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> = {
+export const DIAMOND_PROP_ANGLES: Record<
+  Orientation,
+  Record<GridLocation, number>
+> = {
   in: {
     n: 90,
     s: 270,
@@ -108,7 +117,10 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
 /**
  * Box grid rotation angles by orientation and location
  */
-export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> = {
+export const BOX_PROP_ANGLES: Record<
+  Orientation,
+  Record<GridLocation, number>
+> = {
   in: {
     ne: 135,
     nw: 45,
@@ -269,56 +281,22 @@ export const ANTI_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
 /**
  * STATIC rotation maps - radial (IN/OUT) orientations
  */
-export const STATIC_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
-  n: 0,
-  e: 90,
-  s: 180,
-  w: 270,
-  ne: 45,
-  se: 135,
-  sw: 225,
-  nw: 315,
-  c: 0,
-};
+export const STATIC_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> =
+  SHARED_STATIC_RADIAL_CLOCKWISE_MAP;
 
-export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
-  n: 180,
-  e: 270,
-  s: 0,
-  w: 90,
-  ne: 225,
-  se: 315,
-  sw: 45,
-  nw: 135,
-  c: 0,
-};
+export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> =
+  SHARED_STATIC_RADIAL_COUNTER_CLOCKWISE_MAP;
 
 /**
  * STATIC rotation maps - non-radial (CLOCK/COUNTER) orientations
  */
-export const STATIC_NON_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
-  n: 315,
-  e: 45,
-  s: 135,
-  w: 225,
-  ne: 0,
-  se: 90,
-  sw: 180,
-  nw: 270,
-  c: 0,
-};
+export const STATIC_NON_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> =
+  SHARED_STATIC_NON_RADIAL_CLOCKWISE_MAP;
 
-export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
-  n: 135,
-  e: 225,
-  s: 315,
-  w: 45,
-  ne: 180,
-  se: 270,
-  sw: 0,
-  nw: 90,
-  c: 0,
-};
+export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP: Record<
+  GridLocation,
+  number
+> = SHARED_STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP;
 
 /**
  * DASH rotation maps

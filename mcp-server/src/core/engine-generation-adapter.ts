@@ -18,10 +18,20 @@ import {
   getPresetOptions,
   type ConstraintOptions,
 } from "@tka/sequence-engine/generation";
-import { LOOPType, Period, loopSpecFromLegacy } from "@tka/sequence-engine/loop";
+import {
+  LOOPType,
+  Period,
+  getLOOPSpecExpansionMultiplier,
+  loopSpecFromLegacyRhythm,
+  loopSpecWithReflectionAxis,
+  type ReflectionAxis,
+} from "@tka/sequence-engine/loop";
 import { MCPVariationProvider } from "./MCPVariationProvider.js";
 import type { PictographData } from "@tka/sequence-engine/generation";
-import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js";
+import type {
+  SequenceStep,
+  SequenceResult,
+} from "./sequence-builder-adapter.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOOP type string → enum mapping
@@ -42,6 +52,7 @@ const LOOP_TYPE_MAP: Record<string, LOOPType> = {
   mirrored_inverted_rotated: LOOPType.MIRRORED_INVERTED_ROTATED,
   mirrored_swapped_inverted: LOOPType.MIRRORED_SWAPPED_INVERTED,
   rotated_swapped_inverted: LOOPType.ROTATED_SWAPPED_INVERTED,
+  mirrored_rotated_swapped: LOOPType.MIRRORED_ROTATED_SWAPPED,
   mirrored_rotated_inverted_swapped: LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
   strict_rewound: LOOPType.REWOUND,
   rewound: LOOPType.REWOUND,
@@ -66,7 +77,13 @@ const LOOP_TYPE_COMPONENTS: Record<string, string[]> = {
   mirrored_inverted_rotated: ["mirrored", "inverted", "rotated"],
   mirrored_swapped_inverted: ["mirrored", "swapped", "inverted"],
   rotated_swapped_inverted: ["rotated", "swapped", "inverted"],
-  mirrored_rotated_inverted_swapped: ["mirrored", "rotated", "inverted", "swapped"],
+  mirrored_rotated_swapped: ["mirrored", "rotated", "swapped"],
+  mirrored_rotated_inverted_swapped: [
+    "mirrored",
+    "rotated",
+    "inverted",
+    "swapped",
+  ],
   strict_rewound: ["rewound"],
   rewound: ["rewound"],
 };
@@ -78,10 +95,12 @@ const LOOP_TYPE_COMPONENTS: Record<string, string[]> = {
 export interface EngineGenerationParams {
   /** Word to spell (mutually exclusive routing with length, but word wins if both present) */
   word?: string;
-  /** Number of beats for freeform generation */
+  /** Number of steps for freeform generation */
   length?: number;
   /** Grid mode */
   gridMode: string;
+  /** Prop used for generation and rendering */
+  propType?: string;
   /** Difficulty level 1-3 */
   level: number;
   /** Maximum turn intensity 0-3 */
@@ -96,7 +115,7 @@ export interface EngineGenerationParams {
   motionTypeFilter?: "no-dash" | "prefer-dash";
   /** Force start position */
   startPosition?: string;
-  /** Force end position (last beat must end here) */
+  /** Force end position (last step must end here) */
   endPosition?: string;
   /** Start positions to exclude from random start pool */
   blockedStartPositions?: string[];
@@ -108,6 +127,8 @@ export interface EngineGenerationParams {
   loopType?: string;
   /** Slice size for LOOP rotation */
   period?: "halved" | "quartered";
+  /** Reflection axis, independent of grid mode */
+  reflectionAxis?: ReflectionAxis;
   /** Beam search width */
   beamWidth?: number;
   /** Override starting orientation for blue prop (e.g. "in", "out", "clock", "counter") */
@@ -121,7 +142,7 @@ export interface EngineGenerationResult {
   loopComponents?: string[];
   seedWord?: string;
   derivedWord?: string;
-  derivedBeatIndices?: number[];
+  derivedStepIndices?: number[];
 }
 
 /**
@@ -132,13 +153,22 @@ export interface EngineGenerationResult {
  */
 export function generateViaEngine(
   params: EngineGenerationParams,
-  allPictographs: PictographData[],
+  allPictographs: PictographData[]
 ): EngineGenerationResult {
   const provider = new MCPVariationProvider(allPictographs, params.gridMode);
   const builder = new SequenceBuilder(provider);
 
   const buildOptions = assembleBuildOptions(params);
   const buildResult = builder.build(buildOptions);
+
+  if (params.loopType && params.length && !params.word) {
+    const actualLength = buildResult.sequence.length - 1;
+    if (actualLength !== params.length) {
+      throw new Error(
+        `LOOP generation returned ${actualLength} steps; requested ${params.length}`
+      );
+    }
+  }
 
   const sequenceResult = convertToSequenceResult(buildResult, params);
   const loopComponents = params.loopType
@@ -150,7 +180,7 @@ export function generateViaEngine(
     loopComponents,
     seedWord: buildResult.loop?.seedWord,
     derivedWord: buildResult.loop?.derivedWord,
-    derivedBeatIndices: buildResult.loop?.derivedStepIndices,
+    derivedStepIndices: buildResult.loop?.derivedStepIndices,
   };
 }
 
@@ -162,6 +192,7 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
   const options: BuildOptions = {
     gridMode: params.gridMode,
     level: params.level,
+    propType: params.propType,
     startPosition: params.startPosition,
     endPosition: params.endPosition,
     maxTurnIntensity: params.turnIntensity,
@@ -181,14 +212,8 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
   // For LOOP generation, the user specifies total length. The seed is a fraction.
   if (params.loopType) {
     const totalLength = params.length ?? (params.word ? undefined : 8);
-    const period = params.period === "quartered"
-      ? Period.QUARTERED
-      : Period.HALVED;
-    const sliceMultiplier = period === Period.QUARTERED ? 4 : 2;
-
-    if (totalLength && !params.word) {
-      options.length = Math.max(1, Math.floor(totalLength / sliceMultiplier));
-    }
+    const period =
+      params.period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
     const engineLoopType = LOOP_TYPE_MAP[params.loopType];
     if (!engineLoopType) {
@@ -196,14 +221,41 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
     }
 
     const periodNum = period === Period.QUARTERED ? 4 : 2;
+    const baseLoopSpec = loopSpecFromLegacyRhythm(engineLoopType, periodNum);
+    const hasReflection =
+      String(engineLoopType).includes("mirrored") ||
+      String(engineLoopType).includes("flipped");
+    if (params.reflectionAxis && !hasReflection) {
+      throw new Error(
+        "reflectionAxis requires a mirrored or flipped LOOP type"
+      );
+    }
+    const loopSpec = params.reflectionAxis
+      ? loopSpecWithReflectionAxis(baseLoopSpec, params.reflectionAxis)
+      : baseLoopSpec;
+    const expansionMultiplier = getLOOPSpecExpansionMultiplier(loopSpec);
+
+    if (totalLength && !params.word) {
+      if (totalLength % expansionMultiplier !== 0) {
+        throw new Error(
+          `Requested LOOP length ${totalLength} must be divisible by its ` +
+            `${expansionMultiplier}x expansion multiplier`
+        );
+      }
+      options.length = totalLength / expansionMultiplier;
+    }
+
     options.loop = {
       type: engineLoopType,
       period,
       useTargetedGeneration: true,
-      loopSpec: loopSpecFromLegacy(engineLoopType, periodNum),
+      loopSpec,
+      ...(!params.word && totalLength !== undefined
+        ? { requestedTotalLength: totalLength }
+        : {}),
     };
   } else if (params.length && !params.word) {
-    // Freeform (no LOOP): length is the total beat count directly
+    // Freeform (no LOOP): length is the total step count directly
     options.length = params.length;
   }
 
@@ -219,7 +271,9 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
  * The preset provides a base, and the 3-axis params override specific dimensions.
  * This mirrors how the app's GenerationOrchestrator.mapConstraints() works.
  */
-function assembleConstraintOptions(params: EngineGenerationParams): ConstraintOptions {
+export function assembleConstraintOptions(
+  params: EngineGenerationParams
+): ConstraintOptions {
   // Start with preset options if provided
   let options: ConstraintOptions = {};
 
@@ -255,13 +309,30 @@ function assembleConstraintOptions(params: EngineGenerationParams): ConstraintOp
 
   // Axis 3: motionTypeFilter
   // no-dash = hard exclude; prefer-dash = soft maximize so non-dash letters
-  // (connectors, closure beats) remain available when needed. The previous
+  // (connectors, closure steps) remain available when needed. The previous
   // `include: ["dash"]` mapping was a hard filter that excluded all shift
   // and static motions, which broke generation as soon as bridges or
   // closure forced a non-dash pick.
   if (params.motionTypeFilter === "no-dash") {
-    options.motionFamily = { exclude: ["dash"] };
+    const include = options.motionFamily?.include?.filter(
+      (family) => family !== "dash"
+    );
+    const exclude = new Set(options.motionFamily?.exclude ?? []);
+    exclude.add("dash");
+    options.motionFamily = {
+      ...(include && include.length > 0 ? { include } : {}),
+      exclude: [...exclude],
+    };
   } else if (params.motionTypeFilter === "prefer-dash") {
+    const exclude = options.motionFamily?.exclude?.filter(
+      (family) => family !== "dash"
+    );
+    options.motionFamily = {
+      ...(options.motionFamily?.include
+        ? { include: options.motionFamily.include }
+        : {}),
+      ...(exclude && exclude.length > 0 ? { exclude } : {}),
+    };
     options.dashPreference = "maximize";
   }
 
@@ -272,17 +343,23 @@ function assembleConstraintOptions(params: EngineGenerationParams): ConstraintOp
 // Internal: convert engine BuildResult → MCP SequenceResult
 // ─────────────────────────────────────────────────────────────────────────────
 
-function convertToSequenceResult(
+export function convertToSequenceResult(
   buildResult: BuildResult,
-  params: EngineGenerationParams,
+  params: EngineGenerationParams
 ): SequenceResult {
   const steps: SequenceStep[] = buildResult.sequence.map((step, i) => ({
     letter: (step.letter ?? "") as string,
     variation: 0,
     startPosition: (step.startPosition ?? "") as string,
     endPosition: (step.endPosition ?? "") as string,
-    blueMotion: step.motions.blue as SequenceStep["blueMotion"],
-    redMotion: step.motions.red as SequenceStep["redMotion"],
+    blueMotion: {
+      ...step.motions.blue,
+      color: "blue",
+    } as SequenceStep["blueMotion"],
+    redMotion: {
+      ...step.motions.red,
+      color: "red",
+    } as SequenceStep["redMotion"],
     stepNumber: step.stepNumber ?? i,
     isBridge: step.isBridge ?? false,
   }));

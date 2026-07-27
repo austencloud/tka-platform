@@ -6,11 +6,13 @@
 
 import type { GridLocation, Orientation } from "../types.js";
 
-
 /**
  * Diamond grid rotation angles by orientation and location
  */
-export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> = {
+export const DIAMOND_PROP_ANGLES: Record<
+  Orientation,
+  Record<GridLocation, number>
+> = {
   in: {
     n: 90,
     s: 270,
@@ -115,7 +117,10 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
 /**
  * Box grid rotation angles by orientation and location
  */
-export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> = {
+export const BOX_PROP_ANGLES: Record<
+  Orientation,
+  Record<GridLocation, number>
+> = {
   in: {
     ne: 135,
     nw: 45,
@@ -217,7 +222,6 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
   centerNW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 225 },
 };
 
-
 /**
  * PRO rotation maps
  */
@@ -289,7 +293,14 @@ export const STATIC_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
   c: 0,
 };
 
-export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
+// The normal static rotation is location-based. Mirroring the SVG expresses
+// CW versus CCW, so changing direction must not rotate the asset again.
+export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP = STATIC_RADIAL_CLOCKWISE_MAP;
+
+/**
+ * STATIC rotation maps - non-radial (CLOCK/COUNTER) orientations
+ */
+export const STATIC_NON_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
   n: 180,
   e: 270,
   s: 0,
@@ -301,32 +312,8 @@ export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> =
   c: 0,
 };
 
-/**
- * STATIC rotation maps - non-radial (CLOCK/COUNTER) orientations
- */
-export const STATIC_NON_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
-  n: 315,
-  e: 45,
-  s: 135,
-  w: 225,
-  ne: 0,
-  se: 90,
-  sw: 180,
-  nw: 270,
-  c: 0,
-};
-
-export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
-  n: 135,
-  e: 225,
-  s: 315,
-  w: 45,
-  ne: 180,
-  se: 270,
-  sw: 0,
-  nw: 90,
-  c: 0,
-};
+export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP =
+  STATIC_NON_RADIAL_CLOCKWISE_MAP;
 
 /**
  * DASH rotation maps

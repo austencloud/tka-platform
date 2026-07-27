@@ -53,7 +53,7 @@ export function registerEducationalTools(server: McpServer): void {
 
 ## Overview
 
-TKA is a notation system for flow arts, built for double staves. Each staff has two visible ends -- a thumb reference and a pinky reference -- that never change with proper technique. This dual-end landmark system is the foundation of TKA's orientation framework. Other static props (fans, clubs, buugeng) work but staves are canonical. Each "pictograph" represents one beat of motion showing:
+TKA is a notation system for flow arts, built for double staves. Each staff has two visible ends -- a thumb reference and a pinky reference -- that never change with proper technique. This dual-end landmark system is the foundation of TKA's orientation framework. Other static props (fans, clubs, buugeng) work but staves are canonical. Each "pictograph" represents one step of motion showing:
 - Two props (blue and red) at specific grid positions
 - Motion arrows showing how each hand moves
 - Start and end positions
@@ -172,11 +172,18 @@ Three types of directional changes, indicated by colored dots on the left edge o
 
 Sequences that return home through transformations:
 - **Rotated**: Positions continue rotating same direction (180° or 90° slices)
-- **Mirrored**: Left-right swap across vertical axis
-- **Flipped**: Top-bottom swap across horizontal axis
+- **Reflection**: Reflect across N-S, E-W, NE-SW, or NW-SE
+- **Mirrored**: Familiar name for N-S reflection
+- **Flipped**: Familiar name for E-W reflection
 - **Swapped**: Blue↔Red hand roles swap
 - **Inverted**: Pro↔Anti motions swap
 - **Rewound**: Second half plays in reverse
+
+Reflection axis is independent of grid mode. Diamond, Box, and Skewed
+sequences can use any of the four axes. A direct reflected LOOP closes because
+reflection is its own inverse: S→R(S), then R(S)→S. Do not require S to lie on
+the axis unless an already-closed block is being wrapped by an absolute outer
+reflection.
 
 ## Letters on the 8-Point Grid (Skewed Positions)
 

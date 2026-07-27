@@ -43,7 +43,7 @@ export interface SequenceStep {
   endPosition: string;
   blueMotion: MotionData;
   redMotion: MotionData;
-  /** Beat index in the sequence (matches stepNumber for MCP adapter) */
+  /** Step index in the sequence (matches stepNumber for MCP adapter) */
   stepNumber: number;
   isBridge?: boolean;
   blueReversal?: boolean;

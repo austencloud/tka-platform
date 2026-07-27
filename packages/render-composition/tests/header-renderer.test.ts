@@ -73,6 +73,22 @@ describe("renderHeader", () => {
       expect(wordCall).toBeUndefined();
     });
 
+    it("does not apply a browser filter to pre-colored Node glyphs", () => {
+      const ctx = createMockCtx();
+      const glyphImages = new Map<string, GlyphImageData>([["A", makeGlyphImage()]]);
+      renderHeader(ctx, {
+        canvasWidth: 900,
+        headerHeight: 100,
+        word: "A",
+        darkMode: true,
+        glyphImages,
+        glyphImagesAreThemeColored: true,
+      });
+      expect(ctx.save).not.toHaveBeenCalled();
+      expect(ctx.restore).not.toHaveBeenCalled();
+      expect(ctx.drawImage).toHaveBeenCalledTimes(1);
+    });
+
     it("calls roundRect for dash letters", () => {
       const ctx = createMockCtx();
       const glyphImages = new Map<string, GlyphImageData>([

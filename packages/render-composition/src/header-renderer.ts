@@ -1,4 +1,5 @@
 import type { LOOPComponentId, LetterStyle, GlyphImageData, CompressedSegment } from "./types.js";
+import { tokenizeGlyphWord } from "./glyph-word.js";
 import {
   BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE, BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE,
@@ -36,6 +37,8 @@ export interface HeaderOptions {
   accentTintOpacity?: number;
   /** When present, word slot renders glyph images instead of Georgia text */
   glyphImages?: Map<string, GlyphImageData>;
+  /** Skip browser-only canvas filters when glyph bitmaps are already theme-colored */
+  glyphImagesAreThemeColored?: boolean;
   /** When present, renders compressed segments with bracket notation */
   compressedSegments?: CompressedSegment[];
 }
@@ -60,6 +63,7 @@ function renderGlyphWord(
   canvasWidth: number,
   headerHeight: number,
   darkMode: boolean,
+  glyphImagesAreThemeColored: boolean,
 ): void {
   if (!word?.trim()) return;
 
@@ -67,20 +71,7 @@ function renderGlyphWord(
   const letterGap = headerHeight * LETTER_GAP_RATIO;
   const verticalCenter = headerHeight / 2;
 
-  // Tokenize: group letter + optional trailing dash ("W-" is one token)
-  const tokens: string[] = [];
-  const chars = [...word];
-  let i = 0;
-  while (i < chars.length) {
-    const ch = chars[i]!;
-    if (chars[i + 1] === "-") {
-      tokens.push(ch + "-");
-      i += 2;
-    } else {
-      tokens.push(ch);
-      i += 1;
-    }
-  }
+  const tokens = tokenizeGlyphWord(word);
 
   // First pass: compute total row width for centering
   let totalWidth = 0;
@@ -111,12 +102,12 @@ function renderGlyphWord(
     const baseGlyphY = verticalCenter - availableH / 2;
     const glyphY = baseGlyphY + (isAlphaToken(token) ? availableH * ALPHA_BASELINE_SHIFT : 0);
 
-    if (darkMode) {
+    if (darkMode && !glyphImagesAreThemeColored) {
       ctx.save();
       ctx.filter = "invert(0.9)";
     }
     ctx.drawImage(data.image, cursorX, glyphY, glyphW, availableH);
-    if (darkMode) {
+    if (darkMode && !glyphImagesAreThemeColored) {
       ctx.restore();
     }
 
@@ -148,6 +139,7 @@ function renderCompressedGlyphWord(
   canvasWidth: number,
   headerHeight: number,
   darkMode: boolean,
+  glyphImagesAreThemeColored: boolean,
 ): void {
   const availableH = headerHeight * GLYPH_HEIGHT_RATIO;
   const letterGap = headerHeight * LETTER_GAP_RATIO;
@@ -204,12 +196,12 @@ function renderCompressedGlyphWord(
       const baseGlyphY = verticalCenter - availableH / 2;
       const glyphY = baseGlyphY + (isAlphaToken(token) ? availableH * ALPHA_BASELINE_SHIFT : 0);
 
-      if (darkMode) {
+      if (darkMode && !glyphImagesAreThemeColored) {
         ctx.save();
         ctx.filter = "invert(0.9)";
       }
       ctx.drawImage(data.image, cursorX, glyphY, glyphW, availableH);
-      if (darkMode) {
+      if (darkMode && !glyphImagesAreThemeColored) {
         ctx.restore();
       }
 
@@ -238,7 +230,8 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
     loopComponents, rotationPeriod, inversionPeriod, overlayComponents, darkMode = true, letterStyles,
-    backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages, compressedSegments,
+    backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages,
+    glyphImagesAreThemeColored = false, compressedSegments,
   } = options;
 
   const accent = !backgroundColor && !darkMode ? accentColor : undefined;
@@ -295,9 +288,25 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   if (word?.trim()) {
     const hasCompression = compressedSegments?.some(s => s.repeat > 1);
     if (hasCompression && glyphImages && glyphImages.size > 0) {
-      renderCompressedGlyphWord(ctx, compressedSegments!, glyphImages, canvasWidth, headerHeight, darkMode);
+      renderCompressedGlyphWord(
+        ctx,
+        compressedSegments!,
+        glyphImages,
+        canvasWidth,
+        headerHeight,
+        darkMode,
+        glyphImagesAreThemeColored,
+      );
     } else if (glyphImages && glyphImages.size > 0) {
-      renderGlyphWord(ctx, word, glyphImages, canvasWidth, headerHeight, darkMode);
+      renderGlyphWord(
+        ctx,
+        word,
+        glyphImages,
+        canvasWidth,
+        headerHeight,
+        darkMode,
+        glyphImagesAreThemeColored,
+      );
     } else if (letterStyles && letterStyles.length > 0) {
       // Per-letter with dimming for bridge/derived letters
       const totalWidth = ctx.measureText(word).width;

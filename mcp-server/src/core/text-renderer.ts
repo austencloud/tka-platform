@@ -22,6 +22,7 @@ import {
   type LOOPComponentId,
   type LetterStyle as SharedLetterStyle,
 } from "@tka/render-composition";
+import { loadTkaGlyphImages } from "./tka-glyph-image-loader.js";
 
 // Try to register Georgia font if available (Windows paths)
 const FONT_PATHS = [
@@ -83,7 +84,7 @@ export { LOOPComponent };
  *
  * Same signature as before — callers don't need to change.
  */
-export function renderWordHeader(
+export async function renderWordHeader(
   ctx: CanvasRenderingContext2D,
   word: string,
   canvasWidth: number,
@@ -93,8 +94,9 @@ export function renderWordHeader(
   darkMode: boolean = true,
   letterStyles?: LetterStyle[],
   loopComponents?: LOOPComponent[]
-): void {
+): Promise<void> {
   ensureFontsRegistered();
+  const glyphImages = await loadTkaGlyphImages(word, darkMode);
 
   // Convert MCP LetterStyle[] to shared package LetterStyle[]
   const sharedLetterStyles: SharedLetterStyle[] | undefined = letterStyles?.map((ls) => ({
@@ -117,6 +119,8 @@ export function renderWordHeader(
     loopComponents: loopSet,
     darkMode,
     letterStyles: sharedLetterStyles,
+    glyphImages,
+    glyphImagesAreThemeColored: !!glyphImages,
   };
 
   // Cast: node-canvas CanvasRenderingContext2D is structurally compatible

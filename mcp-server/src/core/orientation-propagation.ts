@@ -10,7 +10,7 @@ import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js
 
 /**
  * Propagate orientations for a single color through all steps.
- * Each beat's start orientation = previous beat's end orientation.
+ * Each step's start orientation = previous step's end orientation.
  *
  * @param steps - The sequence steps (including start position at index 0)
  * @param color - Which motion color to propagate ("blue" or "red")
@@ -33,7 +33,7 @@ export function propagateOrientationsForColor(
     const motion = color === "blue" ? step.blueMotion : step.redMotion;
     if (!motion) continue;
 
-    // Calculate new end orientation based on this beat's motion
+    // Calculate new end orientation based on this step's motion
     const newEndOrientation = mcpCalculateEndOrientation({
       motionType: motion.motionType,
       turns: 0, // CSV variations are all 0 turns

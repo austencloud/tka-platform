@@ -31,6 +31,8 @@ import {
   calculateDashLocation,
   type DashLocationInput,
   calculateReversalPositions,
+  applyColorToSvg,
+  SELECTIVE_COLOR_PROP_TYPES,
   BLUE_COLOR_DARK,
   BLUE_COLOR_LIGHT,
   RED_COLOR_DARK,
@@ -524,7 +526,7 @@ ${svgParts.join("\n")}
     const rotation = isHand ? 0 : placement.rotation;
 
     try {
-      let propSvg = readFileSync(propPath, "utf-8");
+      const propSvg = readFileSync(propPath, "utf-8");
 
       // Get viewBox dimensions
       const viewBoxMatch = propSvg.match(/viewBox\s*=\s*"([^"]+)"/i);
@@ -535,20 +537,26 @@ ${svgParts.join("\n")}
         height = parts[3] || 100;
       }
 
-      // Extract inner content
-      const innerMatch = propSvg.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
-      let innerContent = innerMatch ? innerMatch[1] : propSvg;
-
-      // Apply color - replace any existing fill colors with the prop color
-      // Staff SVG uses #2e3192 as its base color
       const color = motion.color === "blue"
         ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
         : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
+      const colorSuffix = motion.color === "blue" ? "blue" : "red";
+      const selectiveColorMode =
+        !!currentPropType &&
+        (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(
+          currentPropType.toLowerCase(),
+        );
 
-      innerContent = innerContent.replace(/#000000/gi, color);
-      innerContent = innerContent.replace(/black/gi, color);
-      innerContent = innerContent.replace(/#2e3192/gi, color); // Staff/arrow base color
-      innerContent = innerContent.replace(/#00f/gi, color); // Center point marker
+      // Use the same color transform as the browser renderer. Its class/ID
+      // suffixing is essential here: blue and red copies of props such as fan
+      // both define `.st0`, and an unsuffixed red rule recolors both copies.
+      const coloredPropSvg = applyColorToSvg(propSvg, color, {
+        makeClassNamesUnique: true,
+        colorSuffix,
+        selectiveColorMode,
+      });
+      const innerMatch = coloredPropSvg.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
+      const innerContent = innerMatch ? innerMatch[1] : coloredPropSvg;
 
       // The prop's center point is at the middle of its viewBox
       const centerX = width / 2;
@@ -574,8 +582,9 @@ ${svgParts.join("\n")}
   private renderArrow(pictograph: PictographInput, motion: MotionInput, gridMode: GridMode, darkMode: boolean, themeable: boolean = false): string {
     const motionType = motion.motionType.toLowerCase();
 
-    // Static motions don't have arrows
-    if (motionType === "static") {
+    // A zero-turn static prop stays still, so its canonical arrow is empty.
+    // Once turns are added, the prop spins in place and needs the static arrow.
+    if (motionType === "static" && (motion.turns ?? 0) === 0) {
       return "";
     }
 

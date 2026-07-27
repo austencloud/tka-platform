@@ -25,6 +25,23 @@ export type {
 
 export { CARDINAL_LOCATIONS, INTERCARDINAL_LOCATIONS, isCardinal } from "./types.js";
 
+// SVG color transforms
+export {
+  ACCENT_COLORS_TO_PRESERVE,
+  MOTION_COLOR_MAP,
+  SELECTIVE_COLOR_PROP_TYPES,
+  getMotionColor,
+  shouldPreserveColor,
+  applyColorToSvg,
+  applyMotionColorToSvg,
+} from "./svg-color.js";
+export type {
+  MotionColor as SvgMotionColor,
+  ThemeMode,
+  SvgColorOptions,
+  MotionSvgColorOptions,
+} from "./svg-color.js";
+
 
 // Viewbox constants
 export {
