@@ -583,28 +583,30 @@
                             ></button>
                           {/each}
                         </div>
-                        {#each pinnedNotes(band) as note (note.id)}
-                          <div
-                            class="pin"
-                            style="left: calc({(note.count ?? 1) - 1} * ({geo.cellSizePt} + {geo.gutterPt}) * var(--pt));"
-                          >
-                            <input
-                              class="pin-input"
-                              value={note.text}
-                              placeholder="note…"
-                              aria-label={`Note at count ${note.count}`}
-                              oninput={(e) => onSetNote?.(note.id, { text: e.currentTarget.value })}
-                            />
-                            <button
-                              type="button"
-                              class="note-remove"
-                              aria-label="Remove note"
-                              onclick={() => onRemoveNote?.(note.id)}
+                        <div class="pins">
+                          {#each pinnedNotes(band) as note (note.id)}
+                            <div
+                              class="pin"
+                              style="--pin-offset: calc({(note.count ?? 1) - 1} * ({geo.cellSizePt} + {geo.gutterPt}) * var(--pt));"
                             >
-                              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                            </button>
-                          </div>
-                        {/each}
+                              <input
+                                class="pin-input"
+                                value={note.text}
+                                placeholder="note…"
+                                aria-label={`Note at count ${note.count}`}
+                                oninput={(e) => onSetNote?.(note.id, { text: e.currentTarget.value })}
+                              />
+                              <button
+                                type="button"
+                                class="note-remove"
+                                aria-label="Remove note"
+                                onclick={() => onRemoveNote?.(note.id)}
+                              >
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                              </button>
+                            </div>
+                          {/each}
+                        </div>
                         <div class="bullets">
                           {#each bulletNotes(band) as note (note.id)}
                             <div class="bullet-row">
@@ -1241,22 +1243,35 @@
     color: var(--print-ink);
   }
 
-  .pin {
-    position: absolute;
-    top: calc(2 * var(--pt));
+  /* One line per pinned note, stacked — `estimateBandHeight` already reserves a
+     line for each, and the PDF draws them the same way. Overlaying them all at
+     one top made adjacent counts collide. */
+  .pins {
+    position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: calc(2 * var(--pt));
+  }
+  .pin {
     display: flex;
     align-items: center;
     gap: calc(2 * var(--pt));
+    margin-left: var(--pin-offset, 0px);
+    /* Never past the right edge of the grid, matching the PDF's truncation. */
+    max-width: calc(100% - var(--pin-offset, 0px));
     padding: 1px calc(3 * var(--pt));
     border-left: 1.5px solid var(--print-accent);
     background: var(--print-accent-bg);
     white-space: nowrap;
   }
   .pin-input {
+    min-width: 0;
     font-family: inherit;
     font-size: calc(9.5 * var(--pt));
     color: var(--print-ink-soft);
+    text-overflow: ellipsis;
   }
 
   /* Interactive chrome keeps a 44px touch floor even on the scaled sheet. */

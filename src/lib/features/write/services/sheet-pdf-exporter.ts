@@ -108,6 +108,18 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines;
 }
 
+// Notes get exactly one line each — `estimateBandHeight` budgets the strip at
+// one line per note, so wrapping a long one would spill into the band below.
+// Truncate to the space actually available instead.
+export function truncateToWidth(text: string, font: PDFFont, size: number, maxWidth: number): string {
+  if (maxWidth <= 0) return "";
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
+  const ellipsis = "…";
+  let cut = text.length;
+  while (cut > 0 && font.widthOfTextAtSize(text.slice(0, cut) + ellipsis, size) > maxWidth) cut--;
+  return cut > 0 ? text.slice(0, cut) + ellipsis : "";
+}
+
 export async function buildChoreoSheetPDF(
   sheet: ChoreoSheet,
   hydrated: readonly SequenceData[], // normalized rows, in order (see ChoreoSheetView)
@@ -331,16 +343,21 @@ export async function buildChoreoSheetPDF(
         // ---- Note strip (below the pictograph row) ----
         if (sheet.layout.showNoteStrips && band.notes.length > 0) {
           let noteY = cellBottomY - 4 - noteSize;
+          // Right edge of the last cell — a note may run to the end of the grid
+          // but never past it, on paper or on screen.
+          const gridRightX = geo.marginXPt + geo.columns * stride - geo.gutterPt;
           for (const note of band.notes) {
             // `count` is resolved by the planner from the note's absolute step
             // index — the preview reads the identical value, so a note cannot
             // pin on screen and bullet on paper.
             if (note.count != null) {
               const x = geo.marginXPt + (note.count! - 1) * stride;
-              pdfPage.drawText(note.text, { x, y: noteY, size: noteSize, font, color: ink });
+              const text = truncateToWidth(note.text, font, noteSize, gridRightX - x);
+              pdfPage.drawText(text, { x, y: noteY, size: noteSize, font, color: ink });
             } else {
               const bullet = `• ${note.text}`;
-              pdfPage.drawText(bullet, { x: geo.marginXPt, y: noteY, size: noteSize, font: fontOblique, color: ink });
+              const text = truncateToWidth(bullet, fontOblique, noteSize, gridRightX - geo.marginXPt);
+              pdfPage.drawText(text, { x: geo.marginXPt, y: noteY, size: noteSize, font: fontOblique, color: ink });
             }
             noteY -= noteSize * 1.35;
           }
