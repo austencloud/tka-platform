@@ -7,7 +7,13 @@ export const LAUNCHPAD_MORPH_PATHS: readonly string[] = Object.freeze(
 
 const launchpadMorphPaths = new Set(LAUNCHPAD_MORPH_PATHS);
 
-type RouteLocation = Pick<URL, "pathname">;
+type RouteLocation = {
+  url: Pick<URL, "pathname">;
+  route: { id: string | null };
+};
+
+const SHOP_INDEX_ROUTE_ID = "/(public)/shop";
+const SHOP_PRODUCT_ROUTE_ID = "/(public)/shop/[productId]";
 
 function isRouteWithin(pathname: string, root: string): boolean {
   return pathname === root || pathname.startsWith(`${root}/`);
@@ -21,13 +27,17 @@ export function navigationMorphs(
   from: RouteLocation | null | undefined,
   to: RouteLocation | null | undefined
 ): boolean {
-  if (!from || !to || from.pathname === to.pathname) return false;
+  if (!from || !to || from.url.pathname === to.url.pathname) return false;
 
-  const a = from.pathname;
-  const b = to.pathname;
+  const a = from.url.pathname;
+  const b = to.url.pathname;
   const sequencePair = (x: string, y: string): boolean =>
     isRouteWithin(x, "/browse") && isRouteWithin(y, "/sequence");
   if (sequencePair(a, b) || sequencePair(b, a)) return true;
+
+  const shopProductPair = (x: RouteLocation, y: RouteLocation): boolean =>
+    x.route.id === SHOP_INDEX_ROUTE_ID && y.route.id === SHOP_PRODUCT_ROUTE_ID;
+  if (shopProductPair(from, to) || shopProductPair(to, from)) return true;
 
   const launchpadPair = (x: string, y: string): boolean =>
     x === "/" && launchpadMorphPaths.has(y);

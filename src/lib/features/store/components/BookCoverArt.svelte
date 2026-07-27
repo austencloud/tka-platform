@@ -10,7 +10,13 @@
 <script lang="ts">
   import GuideCover from "../../../../routes/(public)/guide/level-1/_components/GuideCover.svelte";
 
-  let { width = "clamp(150px, 11vw, 210px)" }: { width?: string } = $props();
+  let {
+    width = "clamp(150px, 11vw, 210px)",
+    viewTransitionName,
+  }: {
+    width?: string;
+    viewTransitionName?: string;
+  } = $props();
 
   // Native render width the cover is laid out at before scaling down.
   const NATIVE_W = 480;
@@ -20,7 +26,13 @@
   const scale = $derived(boxW ? boxW / NATIVE_W : 0);
 </script>
 
-<div class="book" style:width bind:clientWidth={boxW} aria-hidden="true">
+<div
+  class="book"
+  style:width
+  style:view-transition-name={viewTransitionName}
+  bind:clientWidth={boxW}
+  aria-hidden="true"
+>
   {#if scale}
     <div
       class="native"

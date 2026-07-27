@@ -27,7 +27,10 @@ const routeSourceByPath: Record<string, string> = {
   "/glossary": "src/routes/(public)/glossary/+page.svelte",
 };
 
-const location = (pathname: string): Pick<URL, "pathname"> => ({ pathname });
+const location = (pathname: string, routeId = pathname) => ({
+  url: { pathname },
+  route: { id: routeId },
+});
 
 function deferred(): {
   promise: Promise<void>;
@@ -67,6 +70,23 @@ describe("landing route morph allowlist", () => {
     expect(
       navigationMorphs(location("/sequence/abc"), location("/browse"))
     ).toBe(true);
+  });
+
+  it("allows only the shop index and generic product-detail route", () => {
+    const shop = location("/shop", "/(public)/shop");
+    const product = location(
+      "/shop/level-1-guide",
+      "/(public)/shop/[productId]"
+    );
+
+    expect(navigationMorphs(shop, product)).toBe(true);
+    expect(navigationMorphs(product, shop)).toBe(true);
+    expect(
+      navigationMorphs(
+        shop,
+        location("/shop/loop-deck", "/(public)/shop/loop-deck")
+      )
+    ).toBe(false);
   });
 
   it("rejects same-page, unrelated, and destination-to-destination navigation", () => {
@@ -137,7 +157,7 @@ describe("landing shared-element contract", () => {
     const guards = [
       "if (!document.startViewTransition) return;",
       "if (reducedMotion()) return;",
-      "if (!navigationMorphs(navigation.from?.url, navigation.to?.url)) return;",
+      "if (!navigationMorphs(navigation.from, navigation.to)) return;",
     ];
 
     expect(runIndex).toBeGreaterThan(-1);
@@ -151,6 +171,24 @@ describe("landing shared-element contract", () => {
         `route-morph guard runs too late: ${guard}`
       ).toBeLessThan(runIndex);
     }
+  });
+
+  it("links the shop book listing and detail cover with one named participant", () => {
+    const listing = readSource("src/lib/features/store/StorePage.svelte");
+    const detail = readSource(
+      "src/lib/features/store/ProductDetailPage.svelte"
+    );
+    const cover = readSource(
+      "src/lib/features/store/components/BookCoverArt.svelte"
+    );
+    const css = readSource("src/lib/shared/transitions/view-transitions.css");
+
+    expect(listing).toContain(
+      '<BookCoverArt viewTransitionName="shop-book-cover" />'
+    );
+    expect(detail).toContain('viewTransitionName="shop-book-cover"');
+    expect(cover).toContain("style:view-transition-name={viewTransitionName}");
+    expect(css).toContain("::view-transition-group(shop-book-cover)");
   });
 
   it("suppresses the marketing fade only during an active named morph", () => {

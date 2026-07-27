@@ -15,7 +15,6 @@
   import { onMount } from "svelte";
   import { page } from "$app/state";
   import { fade } from "svelte/transition";
-  import ShopMorphLayer from "$lib/features/store/transitions/ShopMorphLayer.svelte";
   import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import SiteHeader from "./SiteHeader.svelte";
@@ -64,18 +63,10 @@
 
   const path = $derived(page.url.pathname);
 
-  // Shop keeps sole ownership of its persistent Motion-FLIP layer. Native
-  // launchpad/sequence morphs suppress the keyed content fade only while that
-  // exact allowlisted navigation is active; ordinary navigation between those
-  // same pages still gets the 200ms marketing fade.
-  const shopOwnsTransition = $derived(path.startsWith("/shop"));
-  const suppressContentFade = $derived(
-    shopOwnsTransition || isNamedRouteMorphActive()
-  );
-
-  // /shop keeps the live cosmos (Austen wants the space background there). The
-  // view-transition cover morph may hitch ~1 frame on open from the cosmos canvas
-  // readback; acceptable trade for the real backdrop over a static gradient.
+  // Named route morphs suppress the keyed content fade only while that exact
+  // allowlisted navigation is active. Ordinary marketing navigation keeps the
+  // 200ms fade.
+  const suppressContentFade = $derived(isNamedRouteMorphActive());
 </script>
 
 <svelte:head>
@@ -101,12 +92,6 @@
       <LiveBackground backgroundType={BG} />
     {/if}
   </div>
-
-  {#if shopOwnsTransition}
-    <!-- Shared-element morph overlay (Motion spring-FLIP). Persists across the
-         grid<->detail route swap so the ghost can bridge it. -->
-    <ShopMorphLayer />
-  {/if}
 
   <div class="mkt-layer">
     <SiteHeader />

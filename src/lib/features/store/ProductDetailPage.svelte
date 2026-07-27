@@ -1,8 +1,7 @@
 <!-- src/lib/features/store/ProductDetailPage.svelte -->
 <script lang="ts">
-
-import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
-import { getProductLoader } from "$lib/features/store/get-product-loader";
+  import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
+  import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
@@ -13,11 +12,17 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import LoopChips from "./components/LoopChips.svelte";
   import PropPicker from "./components/PropPicker.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
-  import { captureMorphSource } from "./transitions/shop-morph";
-  import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
+  import {
+    activePriceCents,
+    preorderWindowOpen,
+    formatUsd,
+  } from "./domain/preorder-pricing";
   import type { Product } from "./domain/models/product";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
-  import { trackProductViewed, trackPropSelected } from "./analytics/shop-funnel";
+  import {
+    trackProductViewed,
+    trackPropSelected,
+  } from "./analytics/shop-funnel";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
@@ -42,12 +47,16 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   // Read once at mount — the swap boundary is a fixed instant, no ticking needed.
   const now = Date.now();
   let formattedPrice = $derived(
-    store.selectedProduct ? formatUsd(activePriceCents(store.selectedProduct, now)) : ""
+    store.selectedProduct
+      ? formatUsd(activePriceCents(store.selectedProduct, now))
+      : ""
   );
 
   onMount(() => {
     // Already seeded by the route load(); only fetch if we arrived without it.
-    const ready = initialProduct ? Promise.resolve() : store.loadProduct(productId);
+    const ready = initialProduct
+      ? Promise.resolve()
+      : store.loadProduct(productId);
     // Funnel step 1, once per mount. Chained off the load rather than fired
     // immediately so the SKU properties are real on the un-seeded path;
     // loadProduct swallows its own errors, so this still fires if it fails
@@ -64,11 +73,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
       <div class="error">{store.error}</div>
     {:else if store.selectedProduct}
       {@const product = store.selectedProduct}
-      <a
-        href="/shop"
-        class="back-button"
-        onclick={() => captureMorphSource(product.id)}
-      >
+      <a href="/shop" class="back-button">
         <i class="fas fa-arrow-left" aria-hidden="true"></i> All Products
       </a>
 
@@ -78,13 +83,15 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
             <!-- The book has no card art; show its typographic cover instead of
                  an empty card-mockup box. -->
             <div class="book-preview">
-              <BookCoverArt width="clamp(200px, 22vw, 300px)" />
+              <BookCoverArt
+                width="clamp(200px, 22vw, 300px)"
+                viewTransitionName="shop-book-cover"
+              />
             </div>
           {:else}
             <CardMockupPreview
               coverImageUrl={product.coverImageUrl}
               productName={product.name}
-              morphId={product.id}
               coverSequence={product.coverSequence}
               coverCards={product.coverCards}
               deckId={product.deckId}
@@ -99,7 +106,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
             <LoopChips components={product.loopComponents} />
           {/if}
           {#if product.cardCount}
-            <p class="meta">{product.cardCount} cards, poker size (2.5" x 3.5")</p>
+            <p class="meta">
+              {product.cardCount} cards, poker size (2.5" x 3.5")
+            </p>
           {/if}
           <p class="description">{product.description}</p>
           <p class="price">{formattedPrice}</p>
@@ -108,7 +117,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           {/if}
           {#if product.preorder}
             <p class="preorder-note">
-              Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay now and it ships once printed.
+              Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay
+              now and it ships once printed.
             </p>
           {/if}
           {#if product.type === "physical-deck"}
@@ -262,7 +272,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     text-decoration: none;
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
-    transition: background 0.2s, border-color 0.2s;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
     /* Leads the cascade: surfaces just before the info children (120ms). */
     animation: item-rise 460ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -283,7 +295,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
     font-style: italic;
     font-weight: 700;
-    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
+    font-variation-settings:
+      "opsz" 144,
+      "wght" 700,
+      "SOFT" 0,
+      "WONK" 1;
     font-size: 1.75rem;
     margin: 0 0 8px;
   }
@@ -336,7 +352,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     color: var(--semantic-error, #ef4444);
   }
 
-  .loading, .error {
+  .loading,
+  .error {
     text-align: center;
     padding: 48px;
   }

@@ -29,10 +29,14 @@
   // Backing SKUs of the configurable listings. Each family surfaces as ONE tile
   // (a configurator entry), never as a wall of near-identical products.
   const deckSkus = $derived(
-    state.products.filter((p) => p.listing === "loop-deck" && p.status === "active")
+    state.products.filter(
+      (p) => p.listing === "loop-deck" && p.status === "active"
+    )
   );
   const tndSkus = $derived(
-    state.products.filter((p) => p.listing === "tnd-trilogy" && p.status === "active")
+    state.products.filter(
+      (p) => p.listing === "tnd-trilogy" && p.status === "active"
+    )
   );
   // Flat $30 lives on the single purchasable custom SKU (dial funnel v2).
   const loopCustomSku = $derived(
@@ -75,7 +79,9 @@
       (p) => p.listing === "starter-pack" && p.status === "active"
     ) ?? null
   );
-  const starterPrice = $derived(starterPack ? formatUsd(starterPack.price) : "");
+  const starterPrice = $derived(
+    starterPack ? formatUsd(starterPack.price) : ""
+  );
   // Deliberately half LOOP, half color-coded trilogy: the mix is the message.
   const starterCards = $derived([
     ...heroCards.slice(0, 3),
@@ -85,7 +91,8 @@
   // The companion book: the only non-deck product on offer. Everything the shop
   // sells sits above the fold (two deck lines + the book) — no catch-all grid.
   const book = $derived(
-    state.products.find((p) => p.type === "guide" && p.status === "active") ?? null
+    state.products.find((p) => p.type === "guide" && p.status === "active") ??
+      null
   );
   const bookPrice = $derived(book ? formatUsd(book.price) : "");
 
@@ -124,19 +131,27 @@
     <section class="hero">
       <div class="hero-fan" aria-hidden="true">
         {#if heroCards.length}
-          <DeckFanCover cards={heroCards} deckName="TKA Shop" cardWidth={148} maxCardWidth={250} />
+          <DeckFanCover
+            cards={heroCards}
+            deckName="TKA Shop"
+            cardWidth={148}
+            maxCardWidth={250}
+          />
         {:else if firstLoad}
           <div class="sk-hero-fan">
             {#each [0, 1, 2, 3, 4] as i (i)}
-              <div class="sk-hero-card" style:transform="rotate({-12 + 6 * i}deg)"></div>
+              <div
+                class="sk-hero-card"
+                style:transform="rotate({-12 + 6 * i}deg)"
+              ></div>
             {/each}
           </div>
         {/if}
       </div>
       <h1>Choreography you can shuffle</h1>
       <p class="hero-subtitle">
-        Real flow sequences, printed as playing cards. Every card holds a complete
-        eight-count LOOP: read it, drill it, run it forever.
+        Real flow sequences, printed as playing cards. Every card holds a
+        complete eight-count LOOP: read it, drill it, run it forever.
       </p>
       <div class="hero-actions">
         <a class="hero-cta" href="/shop/loop-deck">
@@ -184,7 +199,8 @@
               <div class="deck-buy-row">
                 <span class="deck-price">{starterPrice}</span>
                 <span class="deck-cta">
-                  Get the pack <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                  Get the pack <i class="fas fa-arrow-right" aria-hidden="true"
+                  ></i>
                 </span>
               </div>
             </div>
@@ -196,79 +212,86 @@
       {#if deckSkus.length > 0 || tndSkus.length > 0}
         <section class="deck-listing" id="deck">
           {#if deckSkus.length > 0}
-          <div class="tile-shell">
-            <a class="deck-tile" href="/shop/loop-deck">
-              <div class="deck-fan-box">
-                <DeckFanCover
-                  cards={tileCards}
-                  deckId={deckSkus[0]?.deckId}
-                  deckName="LOOP Deck"
-                  cardWidth={132}
-                  maxCardWidth={235}
-                />
-              </div>
-              <div class="deck-info">
-                <span class="eyebrow">The deck</span>
-                <h2>LOOP Deck</h2>
-                <p class="deck-meta">
-                  built to your dials · 54 cards · poker size
-                </p>
-                <LoopChips components={allComponents} />
-                <p class="deck-desc">
-                  Pick a level, a length, and a flavor, or let the Variety Pack
-                  blend them. Every sequence ends exactly where it began.
-                </p>
-                <div class="deck-buy-row">
-                  <span class="deck-price">{deckPrice}</span>
-                  <span class="deck-cta">
-                    Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                  </span>
+            <div class="tile-shell">
+              <a class="deck-tile" href="/shop/loop-deck">
+                <div class="deck-fan-box">
+                  <DeckFanCover
+                    cards={tileCards}
+                    deckId={deckSkus[0]?.deckId}
+                    deckName="LOOP Deck"
+                    cardWidth={132}
+                    maxCardWidth={235}
+                  />
                 </div>
-              </div>
-            </a>
-          </div>
+                <div class="deck-info">
+                  <span class="eyebrow">The deck</span>
+                  <h2>LOOP Deck</h2>
+                  <p class="deck-meta">
+                    built to your dials · 54 cards · poker size
+                  </p>
+                  <LoopChips components={allComponents} />
+                  <p class="deck-desc">
+                    Pick a level, a length, and a flavor, or let the Variety
+                    Pack blend them. Every sequence ends exactly where it began.
+                  </p>
+                  <div class="deck-buy-row">
+                    <span class="deck-price">{deckPrice}</span>
+                    <span class="deck-cta">
+                      Build your deck <i
+                        class="fas fa-arrow-right"
+                        aria-hidden="true"
+                      ></i>
+                    </span>
+                  </div>
+                </div>
+              </a>
+            </div>
           {/if}
 
           {#if tndSkus.length > 0}
-          <div class="tile-shell">
-            <a class="deck-tile" href="/shop/tnd-trilogy">
-              <div class="deck-fan-box">
-                <!-- Always all six element families in the fan. -->
-                <DeckFanCover
-                  cards={tndTileCards}
-                  deckName="Timing & Direction"
-                  cardWidth={110}
-                  maxCardWidth={235}
-                  exactCount={Math.min(6, tndTileCards.length)}
-                />
-              </div>
-              <div class="deck-info">
-                <span class="eyebrow">The trilogy</span>
-                <h2>Timing &amp; Direction</h2>
-                <p class="deck-meta">
-                  {tndSkus.length} volumes · color-coded by element · poker size
-                </p>
-                <span class="element-swatches" aria-hidden="true">
-                  {#each tndTileCards.slice(0, 6) as card (card.footerCenter ?? card.accentColor)}
-                    {#if card.accentColor}
-                      <span class="swatch" style:--c={card.accentColor}></span>
-                    {/if}
-                  {/each}
-                </span>
-                <p class="deck-desc">
-                  The teaching line: base motions, then one-turn, then half-turn
-                  variations. Every card wears its timing and direction family's
-                  element color.
-                </p>
-                <div class="deck-buy-row">
-                  <span class="deck-price">{tndPrice}</span>
-                  <span class="deck-cta">
-                    Pick a volume <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                  </span>
+            <div class="tile-shell">
+              <a class="deck-tile" href="/shop/tnd-trilogy">
+                <div class="deck-fan-box">
+                  <!-- Always all six element families in the fan. -->
+                  <DeckFanCover
+                    cards={tndTileCards}
+                    deckName="Timing & Direction"
+                    cardWidth={110}
+                    maxCardWidth={235}
+                    exactCount={Math.min(6, tndTileCards.length)}
+                  />
                 </div>
-              </div>
-            </a>
-          </div>
+                <div class="deck-info">
+                  <span class="eyebrow">The trilogy</span>
+                  <h2>Timing &amp; Direction</h2>
+                  <p class="deck-meta">
+                    {tndSkus.length} volumes · color-coded by element · poker size
+                  </p>
+                  <span class="element-swatches" aria-hidden="true">
+                    {#each tndTileCards.slice(0, 6) as card (card.footerCenter ?? card.accentColor)}
+                      {#if card.accentColor}
+                        <span class="swatch" style:--c={card.accentColor}
+                        ></span>
+                      {/if}
+                    {/each}
+                  </span>
+                  <p class="deck-desc">
+                    The teaching line: base motions, then one-turn, then
+                    half-turn variations. Every card wears its timing and
+                    direction family's element color.
+                  </p>
+                  <div class="deck-buy-row">
+                    <span class="deck-price">{tndPrice}</span>
+                    <span class="deck-cta">
+                      Pick a volume <i
+                        class="fas fa-arrow-right"
+                        aria-hidden="true"
+                      ></i>
+                    </span>
+                  </div>
+                </div>
+              </a>
+            </div>
           {/if}
         </section>
       {:else if firstLoad}
@@ -283,97 +306,124 @@
            into one dense grid (book+story row, how+box row) so a 4K viewport
            carries density instead of short strips with dead sides. -->
       <div class="bottom-zone">
-      <!-- ============ THE BOOK ============
+        <!-- ============ THE BOOK ============
            The one non-deck product: the printed guide, front and center with
            the deck lines. Typographic cover panel, no fake product photo. -->
-      {#if firstLoad}
-        <!-- Fills the ultrawide bottom-zone "book" grid-area during load so the
+        {#if firstLoad}
+          <!-- Fills the ultrawide bottom-zone "book" grid-area during load so the
              how/box/story bands don't recompose around an empty slot. -->
-        <section class="book-band">
-          <div class="sk-tile sk-tile--book">{@render skTile()}</div>
-        </section>
-      {/if}
-      {#if book}
-        <section class="book-band">
-          <a class="book-tile" href="/shop/{book.id}">
-            <div class="book-art" aria-hidden="true">
-              <BookCoverArt />
-            </div>
-            <div class="deck-info">
-              <span class="eyebrow">The guide</span>
-              <h2>{book.name}</h2>
-              {#if book.preorder}
-                <p class="deck-meta">
-                  Preorder{book.shipBy ? ` · ships ${book.shipBy}` : ""}
-                </p>
-              {/if}
-              <p class="deck-desc">{book.description}</p>
-              <p class="deck-desc">
-                The decks teach you sequences. The book teaches you the system
-                behind them, so you can write your own.
-              </p>
-              <div class="deck-buy-row">
-                <span class="deck-price">{bookPrice}</span>
-                <span class="deck-cta">
-                  Preorder the book <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                </span>
+          <section class="book-band">
+            <div class="sk-tile sk-tile--book">{@render skTile()}</div>
+          </section>
+        {/if}
+        {#if book}
+          <section class="book-band">
+            <a class="book-tile" href="/shop/{book.id}">
+              <div class="book-art" aria-hidden="true">
+                <BookCoverArt viewTransitionName="shop-book-cover" />
               </div>
-            </div>
-          </a>
-        </section>
-      {/if}
+              <div class="deck-info">
+                <span class="eyebrow">The guide</span>
+                <h2>{book.name}</h2>
+                {#if book.preorder}
+                  <p class="deck-meta">
+                    Preorder{book.shipBy ? ` · ships ${book.shipBy}` : ""}
+                  </p>
+                {/if}
+                <p class="deck-desc">{book.description}</p>
+                <p class="deck-desc">
+                  The decks teach you sequences. The book teaches you the system
+                  behind them, so you can write your own.
+                </p>
+                <div class="deck-buy-row">
+                  <span class="deck-price">{bookPrice}</span>
+                  <span class="deck-cta">
+                    Preorder the book <i
+                      class="fas fa-arrow-right"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
+                </div>
+              </div>
+            </a>
+          </section>
+        {/if}
 
-      <!-- ============ INFO BANDS ============
+        <!-- ============ INFO BANDS ============
            Stacked strips on normal screens; on ultrawide they compose into ONE
            side-by-side band (how / box / story), so the width carries density
            instead of stretched one-line cards. -->
-      <div class="info-bands">
-      <section class="band band-how">
-        <h2 class="section-title">How it works</h2>
-        <div class="steps-grid">
-          <div class="step">
-            <i class="fas fa-layer-group" aria-hidden="true"></i>
-            <h3>Draw a card</h3>
-            <p>Shuffle, draw, and you've got your next eight counts. 54 sequences per deck means practice never repeats itself.</p>
-          </div>
-          <div class="step">
-            <i class="fas fa-book-open" aria-hidden="true"></i>
-            <h3>Read the pattern</h3>
-            <p>Each card is TKA notation: a grid, two colors, one path per hand. Learn to read it once and every card opens up.</p>
-          </div>
-          <div class="step">
-            <i class="fas fa-play" aria-hidden="true"></i>
-            <h3>Watch it move</h3>
-            <p>The same decks live in the app's deck browser. Pull up any sequence and watch it animated before you drill it.</p>
-          </div>
-        </div>
-      </section>
+        <div class="info-bands">
+          <section class="band band-how">
+            <h2 class="section-title">How it works</h2>
+            <div class="steps-grid">
+              <div class="step">
+                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                <h3>Draw a card</h3>
+                <p>
+                  Shuffle, draw, and you've got your next eight counts. 54
+                  sequences per deck means practice never repeats itself.
+                </p>
+              </div>
+              <div class="step">
+                <i class="fas fa-book-open" aria-hidden="true"></i>
+                <h3>Read the pattern</h3>
+                <p>
+                  Each card is TKA notation: a grid, two colors, one path per
+                  hand. Learn to read it once and every card opens up.
+                </p>
+              </div>
+              <div class="step">
+                <i class="fas fa-play" aria-hidden="true"></i>
+                <h3>Watch it move</h3>
+                <p>
+                  The same decks live in the app's deck browser. Pull up any
+                  sequence and watch it animated before you drill it.
+                </p>
+              </div>
+            </div>
+          </section>
 
-      <!-- ============ WHAT'S IN THE BOX ============ -->
-      <section class="band band-box">
-        <h2 class="section-title">What's in the box</h2>
-        <ul class="box-list">
-          <li><i class="fas fa-clone" aria-hidden="true"></i> 54 sequence cards, poker size (2.5" × 3.5")</li>
-          <li><i class="fas fa-circle-info" aria-hidden="true"></i> 1 explainer card: what this deck is and where it sits in the full system</li>
-          <li><i class="fas fa-file-lines" aria-hidden="true"></i> Free laminated quick-reference sheet</li>
-          <li><i class="fas fa-box-open" aria-hidden="true"></i> Foldable deck box</li>
-          <li><i class="fas fa-gift" aria-hidden="true"></i> 59 cards in a 54-card box. We count generously.</li>
-        </ul>
-      </section>
+          <!-- ============ WHAT'S IN THE BOX ============ -->
+          <section class="band band-box">
+            <h2 class="section-title">What's in the box</h2>
+            <ul class="box-list">
+              <li>
+                <i class="fas fa-clone" aria-hidden="true"></i> 54 sequence cards,
+                poker size (2.5" × 3.5")
+              </li>
+              <li>
+                <i class="fas fa-circle-info" aria-hidden="true"></i> 1 explainer
+                card: what this deck is and where it sits in the full system
+              </li>
+              <li>
+                <i class="fas fa-file-lines" aria-hidden="true"></i> Free laminated
+                quick-reference sheet
+              </li>
+              <li>
+                <i class="fas fa-box-open" aria-hidden="true"></i> Foldable deck box
+              </li>
+              <li>
+                <i class="fas fa-gift" aria-hidden="true"></i> 59 cards in a 54-card
+                box. We count generously.
+              </li>
+            </ul>
+          </section>
 
-      <!-- ============ BETA RUN STORY ============ -->
-      <section class="band story band-story">
-        <h2 class="section-title">First run, made by hand</h2>
-        <div class="story-card">
-          <i class="fas fa-scissors" aria-hidden="true"></i>
-          <p>
-            Every beta deck is printed, guillotine-cut, and packed in Chicago by the
-            person who built the system. Small batches, shipped fast. When the beta
-            run sells through, the finished edition goes to professional printing.
-          </p>
+          <!-- ============ BETA RUN STORY ============ -->
+          <section class="band story band-story">
+            <h2 class="section-title">First run, made by hand</h2>
+            <div class="story-card">
+              <i class="fas fa-scissors" aria-hidden="true"></i>
+              <p>
+                Every beta deck is printed, guillotine-cut, and packed in
+                Chicago by the person who built the system. Small batches,
+                shipped fast. When the beta run sells through, the finished
+                edition goes to professional printing.
+              </p>
+            </div>
+          </section>
         </div>
-      </section>
-      </div>
       </div>
 
       {#if state.isLoading && state.products.length === 0}
@@ -423,7 +473,11 @@
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
     font-style: italic;
     font-weight: 700;
-    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
+    font-variation-settings:
+      "opsz" 144,
+      "wght" 700,
+      "SOFT" 0,
+      "WONK" 1;
     font-size: clamp(2.2rem, 3.2vw, 4.2rem);
     letter-spacing: -0.015em;
     margin: 0 0 14px;
@@ -449,7 +503,9 @@
     font-size: var(--font-size-md, 1rem);
     font-weight: 700;
     text-decoration: none;
-    transition: filter 0.18s ease, transform 0.18s ease;
+    transition:
+      filter 0.18s ease,
+      transform 0.18s ease;
   }
   .hero-cta:hover {
     filter: brightness(1.08);
@@ -491,16 +547,17 @@
     padding: clamp(20px, 3vw, 40px);
     border-radius: 24px;
     border: 1px solid rgba(139, 108, 255, 0.35);
-    background:
-      linear-gradient(
-        135deg,
-        rgba(139, 108, 255, 0.1),
-        rgba(111, 140, 255, 0.04) 55%,
-        rgba(255, 255, 255, 0.03)
-      );
+    background: linear-gradient(
+      135deg,
+      rgba(139, 108, 255, 0.1),
+      rgba(111, 140, 255, 0.04) 55%,
+      rgba(255, 255, 255, 0.03)
+    );
     color: inherit;
     text-decoration: none;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+    transition:
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.2s;
   }
   .starter-tile:hover {
     transform: translateY(-4px);
@@ -573,7 +630,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: inherit;
     text-decoration: none;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+    transition:
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.2s;
   }
   .deck-tile:hover {
     transform: translateY(-4px);
@@ -680,7 +739,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: inherit;
     text-decoration: none;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+    transition:
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.2s;
   }
   .book-tile:hover {
     transform: translateY(-4px);
@@ -845,7 +906,8 @@
     }
   }
 
-  .loading, .error {
+  .loading,
+  .error {
     text-align: center;
     padding: 48px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));

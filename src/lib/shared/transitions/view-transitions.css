@@ -41,12 +41,15 @@ html.named-route-morph::view-transition {
 }
 
 /* ============================================================================
-   SHOP PRODUCT COVER MORPH — retired.
-   The shop card->detail cover morph moved OFF the View Transitions API to a
-   Motion spring-FLIP (src/lib/features/store/transitions/ShopMorphLayer.svelte):
-   interruptible, velocity-aware, and works on Safari/Firefox where VT does not.
-   The old ::view-transition-group(.product-cover) rules were removed.
+   SHOP BOOK MORPH
+   The live shop has one generic product-detail journey: the guide book. Its
+   cover keeps this name on the listing and detail routes, so the browser carries
+   the same object between sizes while the persistent marketing chrome stays live.
    ============================================================================ */
+::view-transition-group(shop-book-cover) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 /* ============================================================================
    COMMUNITY PANEL TRANSITIONS
@@ -177,20 +180,24 @@ html.named-route-morph::view-transition {
 
 /* Sliding LEFT (navigating to a module further right in the nav order) */
 .module-slide-left::view-transition-old(module-content) {
-  animation: module-exit-left var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: module-exit-left var(--duration-emphasis)
+    cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .module-slide-left::view-transition-new(module-content) {
-  animation: module-enter-right var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: module-enter-right var(--duration-emphasis)
+    cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* Sliding RIGHT (navigating to a module further left in the nav order) */
 .module-slide-right::view-transition-old(module-content) {
-  animation: module-exit-right var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: module-exit-right var(--duration-emphasis)
+    cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .module-slide-right::view-transition-new(module-content) {
-  animation: module-enter-left var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: module-enter-left var(--duration-emphasis)
+    cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes module-exit-left {
@@ -397,12 +404,14 @@ html.named-route-morph::view-transition {
 
 .module-transition-view.entering {
   z-index: 2;
-  animation: fade-in-scale var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fade-in-scale var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1)
+    forwards;
 }
 
 .module-transition-view.exiting {
   z-index: 1;
-  animation: fade-out-scale var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fade-out-scale var(--duration-dramatic)
+    cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .module-transition-view.active {
@@ -423,13 +432,15 @@ html.named-route-morph::view-transition {
 
 /* ENTERING SETTINGS - Dive in (zoom from button) */
 .settings-portal-enter::view-transition-old(root) {
-  animation: settings-zoom-out var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: settings-zoom-out var(--duration-dramatic)
+    cubic-bezier(0.4, 0, 0.2, 1) forwards;
   transform-origin: var(--portal-origin-x) var(--portal-origin-y);
   z-index: 1;
 }
 
 .settings-portal-enter::view-transition-new(root) {
-  animation: settings-zoom-in var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: settings-zoom-in var(--duration-dramatic)
+    cubic-bezier(0.4, 0, 0.2, 1) forwards;
   transform-origin: var(--portal-origin-x) var(--portal-origin-y);
   z-index: 2;
 }
@@ -458,13 +469,15 @@ html.named-route-morph::view-transition {
 
 /* EXITING SETTINGS - Pull out (reverse zoom back to button) */
 .settings-portal-exit::view-transition-old(root) {
-  animation: settings-pull-out-old var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: settings-pull-out-old var(--duration-dramatic)
+    cubic-bezier(0.4, 0, 0.2, 1) forwards;
   transform-origin: var(--portal-origin-x) var(--portal-origin-y);
   z-index: 2;
 }
 
 .settings-portal-exit::view-transition-new(root) {
-  animation: settings-pull-out-new var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: settings-pull-out-new var(--duration-dramatic)
+    cubic-bezier(0.4, 0, 0.2, 1) forwards;
   transform-origin: var(--portal-origin-x) var(--portal-origin-y);
   z-index: 1;
 }

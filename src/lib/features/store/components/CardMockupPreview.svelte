@@ -1,11 +1,5 @@
 <!-- src/lib/features/store/components/CardMockupPreview.svelte -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import {
-    registerCover,
-    unregisterCover,
-    startMorphInto,
-  } from "../transitions/shop-morph";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import DeckFanCover from "./DeckFanCover.svelte";
   import type { CoverCard } from "../domain/models/product";
@@ -14,9 +8,6 @@
   interface Props {
     coverImageUrl?: string;
     productName: string;
-    /** Product id. When set, this cover joins the shared-element morph (grid card
-        <-> detail hero). Omitted for the morph ghost's own copy. */
-    morphId?: string;
     /** Representative deck sequence. When set (and no cover image), the card shows
         its tip-path mandala as a content-derived cover instead of a bare icon. */
     coverSequence?: { steps: unknown[] };
@@ -29,24 +20,20 @@
     propType?: PropType;
   }
 
-  let { coverImageUrl, productName, morphId, coverSequence, coverCards, deckId, propType }: Props = $props();
+  let {
+    coverImageUrl,
+    productName,
+    coverSequence,
+    coverCards,
+    deckId,
+    propType,
+  }: Props = $props();
 
-  let containerEl: HTMLDivElement | undefined = $state();
   // Drives the mandala's render size so it fills the card width responsively.
   let boxW = $state(0);
-
-  onMount(() => {
-    if (!morphId || !containerEl) return;
-    const el = containerEl;
-    const id = morphId;
-    registerCover(id, el, { coverImageUrl, productName });
-    // If we navigated INTO this cover, run the incoming ghost morph.
-    startMorphInto(id, el);
-    return () => unregisterCover(id, el);
-  });
 </script>
 
-<div class="mockup-container" bind:this={containerEl} bind:clientWidth={boxW}>
+<div class="mockup-container" bind:clientWidth={boxW}>
   {#if coverImageUrl}
     <img
       src={coverImageUrl}
@@ -97,8 +84,7 @@
     height: 100%;
     object-fit: cover;
     /* Ken-Burns zoom on hover. Transform only (compositor); .mockup-container's
-       overflow: hidden crops it. Applied to the inner content, NOT the
-       view-transition-named container, so the morph capture is never affected. */
+       overflow: hidden crops it while the outer card geometry stays stable. */
     transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
