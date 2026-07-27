@@ -230,6 +230,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
             {currentUserId}
             {isOwnProfile}
             {followInProgress}
+            fill
             onFollowToggle={handleFollowToggle}
             onFollowersClick={() => openFollowersModal("followers")}
             onFollowingClick={() => openFollowersModal("following")}
@@ -376,9 +377,13 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     box-shadow: var(--theme-shadow, 0 8px 32px rgba(0, 0, 0, 0.3));
   }
 
-  /* Hero fills its banner panel edge-to-edge (drop its own max-width/margins). */
+  /* Hero fills its banner panel edge-to-edge. The width half of this is now the
+     hero's own `fill` prop, which also spreads the content (identity left,
+     stats right) instead of only widening the box and leaving the surplus
+     empty. What stays here is panel-specific: the hero IS this panel's banner,
+     so it drops its own margins, padding and radius and lets the frosted panel
+     supply them. */
   .hero-area :global(.hero-section) {
-    max-width: none;
     margin: 0;
     padding: 0;
     border-radius: 0;
