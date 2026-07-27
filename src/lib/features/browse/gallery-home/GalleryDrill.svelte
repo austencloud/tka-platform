@@ -25,7 +25,7 @@
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
-  import SequencePeek from "./SequencePeek.svelte";
+  import SequencePeek from "$lib/shared/browse/components/SequencePeek.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";

@@ -40,7 +40,7 @@ describe("ThumbnailRenderer stage reporting", () => {
     );
     const renderer = new ThumbnailRenderer(
       { compose } as never,
-      { deriveFromFirstBeat: vi.fn() } as never,
+      { deriveFromFirstStep: vi.fn() } as never,
       null,
       { detectLOOPType: vi.fn() } as never
     );

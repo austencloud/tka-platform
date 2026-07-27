@@ -42,7 +42,7 @@ describe("getCollectionScanTargetFromURL", () => {
 	});
 
 	it("returns null on non-collection paths", () => {
-		setUrl("/browse/creators/user_1");
+		setUrl("/creators/user_1");
 		expect(getCollectionScanTargetFromURL()).toBeNull();
 		setUrl("/browse/library");
 		expect(getCollectionScanTargetFromURL()).toBeNull();

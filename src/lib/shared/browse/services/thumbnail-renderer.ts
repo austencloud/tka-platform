@@ -263,7 +263,7 @@ export class ThumbnailRenderer {
 
     try {
       const derivedStartPos =
-        this.startPositionDeriver.deriveFromFirstBeat(firstStep);
+        this.startPositionDeriver.deriveFromFirstStep(firstStep);
       return {
         ...sequence,
         startPosition: derivedStartPos,

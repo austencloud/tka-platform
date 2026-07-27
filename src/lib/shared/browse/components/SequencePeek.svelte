@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
+  import PropAwareThumbnail from "./PropAwareThumbnail.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
@@ -23,8 +23,21 @@
     /** Render the light (printed) card look instead of the dark gallery one.
         Default false keeps the front-door fans dark. */
     lightMode?: boolean;
+    /** Forwarded to PropAwareThumbnail's `eager` prop (skips its
+        IntersectionObserver and loads immediately). Default true preserves
+        the previous hardcoded behavior — every existing call site relied on
+        eager loading and passes nothing here. */
+    eager?: boolean;
   }
-  let { sequence, width, height, tilt = 0, overlay, lightMode = false }: Props = $props();
+  let {
+    sequence,
+    width,
+    height,
+    tilt = 0,
+    overlay,
+    lightMode = false,
+    eager = true,
+  }: Props = $props();
 </script>
 
 <div
@@ -38,7 +51,7 @@
          disallow it. No explicit visibility override: peeks share the gallery
          grid's default cache class (static/cloud hits) instead of forcing a
          custom-keyed local render per peek. -->
-    <PropAwareThumbnail {sequence} eager allowQR={false} {lightMode} />
+    <PropAwareThumbnail {sequence} {eager} allowQR={false} {lightMode} />
   {/if}
   {#if overlay}
     <span class="overlay">{@render overlay()}</span>
