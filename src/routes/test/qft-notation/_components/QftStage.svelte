@@ -6,9 +6,11 @@
    * original 2011 animations.
    */
   import {
+    pendulumPosesAt,
     pointAt,
     posesAt,
     tracePath,
+    tracePendulum,
     PROP_LENGTH,
     type QftIncrement,
     type QftKnobs
@@ -19,9 +21,16 @@
     increments: QftIncrement[];
     /** Continuous position in the eight-step cycle. */
     cursor: number;
+    /**
+     * A pendulum swings back along its own arc, which the three knobs cannot
+     * express. Drawing it from the knobs sends the head around a full circle
+     * while the notation oscillates, so the lit number lands nowhere near the
+     * prop it names.
+     */
+    pendulum?: boolean;
   }
 
-  let { knobs, increments, cursor }: Props = $props();
+  let { knobs, increments, cursor, pendulum = false }: Props = $props();
 
   /** Pixels per prop length. The head reaches radius + 1, so 2.5 at the widest. */
   const UNIT = 100;
@@ -33,12 +42,12 @@
   const step = $derived(Math.floor(cursor) % 8);
   const row = $derived(increments[step]);
 
-  const poses = $derived(posesAt(knobs, cursor));
+  const poses = $derived(pendulum ? pendulumPosesAt(cursor) : posesAt(knobs, cursor));
   const hand = $derived({ x: poses.hand.x * UNIT, y: poses.hand.y * UNIT });
   const head = $derived({ x: poses.head.x * UNIT, y: poses.head.y * UNIT });
 
   const trail = $derived(
-    tracePath(knobs)
+    (pendulum ? tracePendulum() : tracePath(knobs))
       .map((p, i) => `${i === 0 ? "M" : "L"}${(p.x * UNIT).toFixed(2)},${(p.y * UNIT).toFixed(2)}`)
       .join(" ")
   );

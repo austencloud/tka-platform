@@ -169,7 +169,7 @@
   <div class="split">
     <section class="stage-pane" aria-label="Motion">
       <div class="stage-art">
-        <QftStage {knobs} {increments} {cursor} />
+        <QftStage {knobs} {increments} {cursor} pendulum={mode === "pendulum"} />
       </div>
 
       <div class="transport">
@@ -247,7 +247,11 @@
       </div>
       </div>
 
-      <p class="note">{CONVENTION_NOTE[convention]}</p>
+      <p class="note">
+        {mode === "pendulum"
+          ? "A pendulum's arc is a circle about the hand, so both conventions agree on every cell and the toggle changes nothing here. Try Cateye or Triquetra to see them part ways."
+          : CONVENTION_NOTE[convention]}
+      </p>
 
       <QftTable {increments} activeStep={step} />
     </section>

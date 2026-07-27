@@ -11,6 +11,7 @@ import {
 	buildIncrements,
 	buildPendulum,
 	norm,
+	pendulumIndexAt,
 	type Convention,
 	type QftIncrement,
 	type QftKnobs
@@ -208,6 +209,17 @@ describe("inspin and antispin are indistinguishable by position alone", () => {
 });
 
 describe("pendulum", () => {
+	it("draws the prop where the notation says it is", () => {
+		buildPendulum().forEach((row, i) => {
+			expect(pendulumIndexAt(i)).toBe(row.propDepart);
+		});
+	});
+
+	it("swings back rather than rotating through", () => {
+		expect(pendulumIndexAt(4)).toBe(6);
+		expect(pendulumIndexAt(5)).toBeLessThan(6);
+	});
+
 	it("never reaches the upward positions", () => {
 		const touched = new Set(buildPendulum().flatMap((r) => [r.propDepart, r.propArrive]));
 		expect(touched.has(7)).toBe(false);

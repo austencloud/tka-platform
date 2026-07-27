@@ -159,8 +159,37 @@ export function buildIncrements(knobs: QftKnobs, convention: Convention): QftInc
  * touches 7, 8 or 1 because those point upward. It gets its own generator
  * rather than a fudged radius.
  */
+const PENDULUM_PATH = [2, 3, 4, 5, 6, 5, 4, 3, 2];
+
+/**
+ * Continuous prop index along the swing, so the drawn prop lands on the same
+ * position the notation row names. The rotational path can't express this —
+ * a pendulum reverses, and `propIndexAt` only ever advances.
+ */
+export function pendulumIndexAt(u: number): number {
+	const t = ((u % STEPS) + STEPS) % STEPS;
+	const i = Math.floor(t);
+	const frac = t - i;
+	const from = PENDULUM_PATH[i] as number;
+	const to = PENDULUM_PATH[i + 1] as number;
+	return from + (to - from) * frac;
+}
+
+/** Hand and prop-head positions for the pendulum. The hand never leaves centre. */
+export function pendulumPosesAt(u: number) {
+	const head = pointAt(pendulumIndexAt(u), PROP_LENGTH);
+	return { hand: { x: 0, y: 0 }, head };
+}
+
+/** Sample points of the swung arc, for drawing the trail. */
+export function tracePendulum(samples = 240): Array<{ x: number; y: number }> {
+	return Array.from({ length: samples + 1 }, (_, i) =>
+		pointAt(pendulumIndexAt((i / samples) * STEPS), PROP_LENGTH)
+	);
+}
+
 export function buildPendulum(): QftIncrement[] {
-	const path = [2, 3, 4, 5, 6, 5, 4, 3, 2];
+	const path = PENDULUM_PATH;
 	return Array.from({ length: STEPS }, (_, i) => {
 		const depart = path[i] as number;
 		const arrive = path[i + 1] as number;
