@@ -62,7 +62,43 @@
     onopen?: () => void;
   } = $props();
 
+  /** Ambient token from the coordinator (or a hover promotion). */
   let live = $state(false);
+
+  /**
+   * Hover shows you whatever you are NOT currently seeing.
+   *
+   * Autoplay is the default because motion is what distinguishes sequences that
+   * look alike as stills. But autoplay also TAKES the choreo card away, and
+   * once a tile was playing there was no route back to it — you could not look
+   * up a sequence's letters, turns or QR without leaving the page. Hover is
+   * that route: on a tile that is playing it holds the card up, and on a tile
+   * that is resting it plays the animation (LiveSlots grants the token).
+   *
+   * One rule, both directions, no extra chrome on the tile.
+   */
+  let hovered = $state(false);
+  let liveAtEnter = $state(false);
+
+  /**
+   * Hovering a PLAYING tile reveals its card. This never unmounts the player —
+   * it raises the poster floor above the live layer in CSS. Unmounting would
+   * tear down and rebuild the whole animation stack on every pointer pass,
+   * which is the churn the rest gate exists to prevent; a z-index flip costs
+   * nothing and the animation is still running when you move away.
+   */
+  const revealCard = $derived(hovered && liveAtEnter);
+
+  /** What the user is actually watching, for media with no poster to raise. */
+  const showLive = $derived(live && !revealCard);
+
+  function onEnter() {
+    liveAtEnter = live;
+    hovered = true;
+  }
+  function onLeave() {
+    hovered = false;
+  }
 
   // A LOOP word repeats by construction, so the raw field is routinely
   // FΨFΨFΨFΨ where the only correct display is FΨ
@@ -90,10 +126,22 @@
 
 <div
   class="tile size-{size}"
-  class:is-live={live}
+  class:is-live={showLive}
+  class:reveal-card={revealCard}
   use:slots.tile={{ medium, onChange: (next) => (live = next) }}
 >
-  <button class="stage" onclick={onopen} aria-label="Open {label}">
+  <!-- Pointer + focus handlers live on the button, not the tile wrapper: it is
+       the already-interactive element, so the gesture needs no invented ARIA
+       role, and keyboard users get the same reveal by tabbing to it. -->
+  <button
+    class="stage"
+    onclick={onopen}
+    onpointerenter={onEnter}
+    onpointerleave={onLeave}
+    onfocusin={onEnter}
+    onfocusout={onLeave}
+    aria-label="Open {label}"
+  >
     {#if medium === "sequence" && sequence}
       <!-- The poster is a PERMANENT FLOOR, not the other half of a crossfade.
            Swapping poster-out/live-in left the box empty while the player's
@@ -141,7 +189,7 @@
           bluePropType={mandala.bluePropType}
           redPropType={mandala.redPropType}
           pathShape={mandala.pathShape ?? "arc"}
-          animate={live}
+          animate={showLive}
           darkMode={!lightMode}
           size={320}
         />
@@ -271,6 +319,13 @@
     position: absolute;
     inset: 0;
     z-index: 1;
+  }
+
+  /* Hover on a playing tile lifts the card back over the animation. The player
+     keeps running underneath — no remount, and letting go returns you to the
+     motion mid-stride. */
+  .tile.reveal-card .floor {
+    z-index: 2;
   }
 
   .poster-img {
