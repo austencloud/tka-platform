@@ -18,8 +18,8 @@
     type Spin
   } from "$lib/shared/notation/qft/qft-model";
   import { nameFor } from "$lib/shared/notation/qft/qft-naming";
-  import QftStage from "./_components/QftStage.svelte";
-  import QftTable from "./_components/QftTable.svelte";
+  import QftStage from "$lib/shared/notation/qft/components/QftStage.svelte";
+  import QftTable from "$lib/shared/notation/qft/components/QftTable.svelte";
 
   type Mode = "rotational" | "pendulum";
 

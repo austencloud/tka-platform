@@ -46,7 +46,7 @@ const PAD = 12;
  * heuristic tuned until it happens to pass.
  */
 const RIGHT_EDGE = {
-	static2: 385,
+	static2: 345,
 	triquetraanimated: 430
 };
 
