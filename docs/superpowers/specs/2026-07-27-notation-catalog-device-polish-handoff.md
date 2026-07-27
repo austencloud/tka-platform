@@ -1,5 +1,11 @@
 # /notation catalog — device polish handoff (2026-07-27)
 
+> [!IMPORTANT]
+> This layout brief was superseded on 2026-07-27 after Austen rejected the
+> scrolling document model. Preserve its sourcing and verification evidence,
+> but do not execute the Agent A or Agent B layout assignments. Continue from
+> [`2026-07-27-notation-playable-archive-handoff.md`](./2026-07-27-notation-playable-archive-handoff.md).
+
 Two agents, in order. **Agent A makes it stunning at 4K. Agent B, after A lands,
 makes it stunning on an iPhone SE.** Austen's framing, 2026-07-27: these
 *"require completely unique approaches in order to optimally display information
