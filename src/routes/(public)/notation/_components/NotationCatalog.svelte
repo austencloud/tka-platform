@@ -18,6 +18,86 @@
 
   const entries = [...NOTATION_CATALOG].sort((a, b) => a.sortYear - b.sortYear);
   const isInternal = (href: string) => href.startsWith("/");
+
+  let expandedEntryId = $state<string | null>(null);
+  let activeEntryId = $state(entries[0]?.id ?? "");
+  let spineElement: HTMLOListElement | undefined = $state();
+
+  const activeEntryIndex = $derived(
+    Math.max(
+      0,
+      entries.findIndex((entry) => entry.id === activeEntryId)
+    )
+  );
+  const activeEntryYear = $derived(entries[activeEntryIndex]?.year ?? "");
+
+  function toggleEntry(entryId: string) {
+    expandedEntryId = expandedEntryId === entryId ? null : entryId;
+    activeEntryId = entryId;
+  }
+
+  $effect(() => {
+    if (!spineElement || typeof IntersectionObserver === "undefined") return;
+
+    const rows = Array.from(
+      spineElement.querySelectorAll<HTMLElement>("[data-entry-id]")
+    );
+    const visibleRows = new Set<HTMLElement>();
+
+    const reportActiveEntry = () => {
+      const nearest = [...visibleRows].sort(
+        (a, b) =>
+          Math.abs(a.getBoundingClientRect().top - 112) -
+          Math.abs(b.getBoundingClientRect().top - 112)
+      )[0];
+      const entryId = nearest?.dataset.entryId;
+      if (entryId) {
+        activeEntryId = entryId;
+        return;
+      }
+
+      const firstRow = rows[0];
+      const lastRow = rows[rows.length - 1];
+      if (firstRow && firstRow.getBoundingClientRect().top > 112) {
+        activeEntryId = firstRow.dataset.entryId ?? activeEntryId;
+      } else if (lastRow && lastRow.getBoundingClientRect().bottom < 112) {
+        activeEntryId = lastRow.dataset.entryId ?? activeEntryId;
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (observations) => {
+        for (const observation of observations) {
+          const row = observation.target as HTMLElement;
+          if (observation.isIntersecting) visibleRows.add(row);
+          else visibleRows.delete(row);
+        }
+        reportActiveEntry();
+      },
+      { rootMargin: "-112px 0px -64% 0px", threshold: 0 }
+    );
+
+    for (const row of rows) observer.observe(row);
+
+    let animationFrame = 0;
+    const checkBoundary = () => {
+      if (animationFrame || visibleRows.size > 0) return;
+      animationFrame = window.requestAnimationFrame(() => {
+        animationFrame = 0;
+        reportActiveEntry();
+      });
+    };
+    window.addEventListener("scroll", checkBoundary, { passive: true });
+    window.addEventListener("resize", checkBoundary);
+    checkBoundary();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", checkBoundary);
+      window.removeEventListener("resize", checkBoundary);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  });
 </script>
 
 <div class="editorial">
@@ -41,72 +121,128 @@
     starts where flow arts notation starts.
   </p>
 
-  <ol class="spine">
+  <div
+    class="chronology"
+    role="group"
+    aria-label={`Catalog position: ${activeEntryYear}, ${activeEntryIndex + 1} of ${entries.length}`}
+  >
+    <span class="chronology-year">{activeEntryYear}</span>
+    <span
+      class="chronology-track"
+      aria-hidden="true"
+      style={`--entry-count: ${entries.length}`}
+    >
+      {#each entries as entry, index (entry.id)}
+        <span
+          class="chronology-segment"
+          class:passed={index < activeEntryIndex}
+          class:current={index === activeEntryIndex}
+        ></span>
+      {/each}
+    </span>
+    <span class="chronology-count"
+      >{activeEntryIndex + 1} / {entries.length}</span
+    >
+  </div>
+
+  <ol class="spine" bind:this={spineElement}>
     {#each entries as entry (entry.id)}
-      <li class="row" class:has-videos={!!entry.videos?.length}>
+      <li
+        class="row"
+        class:has-videos={!!entry.videos?.length}
+        data-entry-id={entry.id}
+      >
         <div class="year" aria-hidden="true">{entry.year}</div>
 
-        <div class="body">
-          <div class="identity">
-            <h2 class="system">
-              <span class="year-inline">{entry.year}</span>
-              {entry.system}
-            </h2>
-            <p class="people">{entry.people}</p>
-          </div>
+        <h2 class="mobile-heading">
+          <button
+            type="button"
+            class="entry-summary"
+            aria-expanded={expandedEntryId === entry.id}
+            aria-controls={`catalog-entry-${entry.id}`}
+            onclick={() => toggleEntry(entry.id)}
+          >
+            <span class="summary-year">{entry.year}</span>
+            <span class="summary-copy">
+              <span class="summary-system">{entry.system}</span>
+              <span class="summary-people">{entry.people}</span>
+            </span>
+            <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"
+            ></i>
+          </button>
+        </h2>
 
-          <div class="record">
-            <p class="records">{entry.records}</p>
+        <div
+          class="entry-panel"
+          class:open={expandedEntryId === entry.id}
+          id={`catalog-entry-${entry.id}`}
+        >
+          <div class="entry-panel-inner">
+            <div class="body">
+              <div class="identity">
+                <h2 class="system">
+                  <span class="year-inline">{entry.year}</span>
+                  {entry.system}
+                </h2>
+                <p class="people">{entry.people}</p>
+              </div>
 
-            {#if entry.subWorks?.length}
-              <ul class="subworks">
-                {#each entry.subWorks as work (work.name)}
-                  <li><strong>{work.name}</strong>: {work.note}</li>
+              <div class="record">
+                <p class="records">{entry.records}</p>
+
+                {#if entry.subWorks?.length}
+                  <ul class="subworks">
+                    {#each entry.subWorks as work (work.name)}
+                      <li><strong>{work.name}</strong>: {work.note}</li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
+            </div>
+
+            <div class="sources">
+              <h3 class="sources-label">Read it there</h3>
+              <ul>
+                {#each entry.sources as source (source.href)}
+                  <li>
+                    {#if isInternal(source.href)}
+                      <a class="source-link" href={source.href}
+                        >{source.label}</a
+                      >
+                    {:else}
+                      <a
+                        class="source-link"
+                        href={source.href}
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        {source.label}
+                        <i
+                          class="fas fa-arrow-up-right-from-square"
+                          aria-hidden="true"
+                        ></i>
+                      </a>
+                    {/if}
+                  </li>
                 {/each}
               </ul>
+            </div>
+
+            {#if entry.videos?.length}
+              <div class="videos">
+                {#each entry.videos as video (video.id)}
+                  <SourceVideoCard
+                    id={video.id}
+                    title={video.title}
+                    creator={video.creator}
+                    year={video.year}
+                    note={video.note}
+                  />
+                {/each}
+              </div>
             {/if}
           </div>
         </div>
-
-        <div class="sources">
-          <h3 class="sources-label">Read it there</h3>
-          <ul>
-            {#each entry.sources as source (source.href)}
-              <li>
-                {#if isInternal(source.href)}
-                  <a class="source-link" href={source.href}>{source.label}</a>
-                {:else}
-                  <a
-                    class="source-link"
-                    href={source.href}
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    {source.label}
-                    <i
-                      class="fas fa-arrow-up-right-from-square"
-                      aria-hidden="true"
-                    ></i>
-                  </a>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        </div>
-
-        {#if entry.videos?.length}
-          <div class="videos">
-            {#each entry.videos as video (video.id)}
-              <SourceVideoCard
-                id={video.id}
-                title={video.title}
-                creator={video.creator}
-                year={video.year}
-                note={video.note}
-              />
-            {/each}
-          </div>
-        {/if}
       </li>
     {/each}
   </ol>
@@ -134,6 +270,11 @@
     padding: 0;
   }
 
+  .chronology,
+  .mobile-heading {
+    display: none;
+  }
+
   .row {
     display: grid;
     /* Year rail, what it is, where to read it — the third column is what keeps
@@ -157,6 +298,13 @@
   .row:first-child {
     border-top: none;
     padding-top: 0;
+  }
+
+  /* These wrappers become real layout boxes only for the phone disclosure.
+     Keeping them as contents preserves the desktop and tablet row grids. */
+  .entry-panel,
+  .entry-panel-inner {
+    display: contents;
   }
 
   .year {
@@ -343,33 +491,249 @@
 
   /* ── phone: stack, year inline with the system name ── */
   @media (max-width: 46rem) {
+    .chronology {
+      position: sticky;
+      top: 3.5rem;
+      z-index: 4;
+      display: grid;
+      grid-template-columns: 5.25rem minmax(0, 1fr) 3.25rem;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 3rem;
+      margin: 0 0 0.5rem;
+      padding: 0.6rem 0.75rem;
+      box-sizing: border-box;
+      border: 1px solid oklch(0.45 0.04 270 / 0.24);
+      border-radius: 10px;
+      background: oklch(0.16 0.025 270 / 0.9);
+      box-shadow: 0 8px 24px oklch(0.06 0.02 270 / 0.28);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .chronology-year,
+    .chronology-count {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .chronology-year {
+      font-size: 0.84rem;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      color: oklch(0.8 0.1 275);
+    }
+    .chronology-count {
+      text-align: right;
+      font-size: 0.72rem;
+      color: oklch(0.62 0.02 270);
+    }
+    .chronology-track {
+      display: grid;
+      grid-template-columns: repeat(var(--entry-count), minmax(0, 1fr));
+      gap: 0.18rem;
+    }
+    .chronology-segment {
+      height: 0.2rem;
+      border-radius: 999px;
+      background: oklch(0.42 0.025 270 / 0.46);
+      transition:
+        background 180ms ease,
+        scale 180ms ease;
+    }
+    .chronology-segment.passed {
+      background: oklch(0.59 0.09 275 / 0.62);
+    }
+    .chronology-segment.current {
+      background: oklch(0.76 0.14 275);
+      scale: 1 1.8;
+    }
+
     .row {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        "body"
-        "sources";
-      row-gap: 1.25rem;
+        "summary"
+        "details";
+      row-gap: 0;
+      padding: 0;
+      scroll-margin-top: 7.25rem;
     }
     .row.has-videos {
       grid-template-areas:
-        "body"
-        "sources"
-        "videos";
+        "summary"
+        "details";
+    }
+    .row:first-child {
+      padding-top: 0;
     }
     .year {
       display: none;
     }
+
+    .mobile-heading {
+      grid-area: summary;
+      display: block;
+      margin: 0;
+    }
+    .entry-summary {
+      display: grid;
+      grid-template-columns: 4.75rem minmax(0, 1fr) 1rem;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+      min-height: 5.5rem;
+      padding: 0.85rem 0.35rem;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition:
+        background 160ms ease,
+        border-color 160ms ease;
+    }
+    .entry-summary:hover {
+      border-color: oklch(0.45 0.04 270 / 0.18);
+      background: oklch(0.34 0.035 270 / 0.1);
+    }
+    .entry-summary:focus-visible {
+      outline: 2px solid oklch(0.72 0.13 275);
+      outline-offset: -2px;
+      background: oklch(0.34 0.035 270 / 0.14);
+    }
+    .summary-year {
+      align-self: start;
+      padding-top: 0.08rem;
+      font-size: 0.84rem;
+      font-weight: 650;
+      line-height: 1.3;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      color: oklch(0.74 0.11 275);
+    }
+    .summary-copy {
+      display: grid;
+      min-width: 0;
+      gap: 0.3rem;
+    }
+    .summary-system {
+      font-size: 1.05rem;
+      font-weight: 610;
+      line-height: 1.25;
+      color: oklch(0.95 0.01 270);
+    }
+    .summary-people {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.78rem;
+      font-weight: 400;
+      line-height: 1.35;
+      color: oklch(0.62 0.02 270);
+    }
+    .summary-chevron {
+      font-size: 0.68rem;
+      color: oklch(0.56 0.05 275);
+      transition:
+        color 180ms ease,
+        transform 220ms ease;
+    }
+    .entry-summary[aria-expanded="true"] .summary-chevron {
+      color: oklch(0.78 0.12 275);
+      transform: rotate(180deg);
+    }
+
+    .entry-panel {
+      grid-area: details;
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 240ms ease;
+    }
+    .entry-panel.open {
+      grid-template-rows: 1fr;
+    }
+    .entry-panel-inner {
+      display: grid;
+      gap: 1.15rem;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      visibility: hidden;
+      padding: 0;
+      transition:
+        padding 240ms ease,
+        visibility 0s linear 240ms;
+    }
+    .entry-panel.open .entry-panel-inner {
+      visibility: visible;
+      padding: 0.2rem 0 1.5rem;
+      transition-delay: 0s, 0s;
+    }
+    .body,
+    .record,
+    .sources,
+    .videos {
+      min-width: 0;
+    }
+    .body {
+      grid-area: auto;
+    }
+    .identity {
+      display: none;
+    }
     .year-inline {
-      display: inline;
-      margin-right: 0.4rem;
+      display: none;
+    }
+    .records {
+      line-height: 1.55;
+    }
+    .sources {
+      grid-area: auto;
+    }
+    .sources-label {
+      display: none;
     }
     .source-link {
       width: 100%;
     }
+    .videos {
+      grid-area: auto;
+      display: flex;
+      gap: 0.85rem;
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scroll-padding-inline: 0.1rem;
+      scroll-snap-type: x mandatory;
+      padding: 0.15rem 0.1rem 0.75rem;
+      scrollbar-width: thin;
+      scrollbar-color: oklch(0.48 0.04 275 / 0.42) transparent;
+    }
+    .videos :global(.cap-media) {
+      flex: 0 0 87%;
+      min-width: 0;
+      scroll-snap-align: start;
+    }
+    .videos :global(.cap-media:last-child) {
+      scroll-snap-align: end;
+    }
+    .videos :global(.cap-media figcaption) {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .source-link {
+    .source-link,
+    .chronology-segment,
+    .entry-summary,
+    .summary-chevron,
+    .entry-panel,
+    .entry-panel-inner {
       transition: none;
     }
   }
