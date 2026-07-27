@@ -472,7 +472,13 @@
 		>
 			<button class="overlay-backdrop" aria-label="Close detail" onclick={closeDetailView}
 			></button>
-			<div class="detail-panel" style:view-transition-name={`stage-${activeEntry.id}`}>
+			<!-- The PANEL does not carry the stage name. Naming it meant the whole
+			     wide panel — chrome, prose and all — morphed out of the tile's
+			     small square, stretching text across the flight. The name lives
+			     on the detail's own visual stage (ArtifactDetail), so the
+			     artifact travels tile → panel while the panel itself just
+			     arrives. -->
+			<div class="detail-panel">
 				<button type="button" class="close-btn" onclick={closeDetailView} use:pressSpring>
 					<span class="close-mark" aria-hidden="true">&times;</span>
 					Close

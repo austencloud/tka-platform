@@ -24,7 +24,10 @@
 
 <div class="detail" class:with-visual={showVisual}>
 	{#if showVisual}
-		<div class="detail-stage">
+		<!-- The travelling element: this stage pairs with the tile's stage of
+		     the same name, so the artifact itself flies from the tile into the
+		     panel while the panel's chrome simply arrives. -->
+		<div class="detail-stage" style:view-transition-name={`stage-${entry.id}`}>
 			<ArtifactVisual {entry} active={true} />
 		</div>
 	{/if}
@@ -84,6 +87,7 @@
 	}
 
 	.detail-stage {
+		view-transition-class: notation-archive;
 		container-type: size;
 		/* Firm height: the panel is content-sized, so a percentage here would
 		   resolve against nothing and let live visuals spill out of the panel. */
