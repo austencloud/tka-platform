@@ -154,9 +154,9 @@
         break;
       }
       case "user-followed": {
-        // Navigate to Social > Creators (relocated from Browse, 2026-07-08)
+        // Open the creator directory; the notification list has no profile ID.
         inboxState.close();
-        await handleModuleChange("social" as ModuleId, "creators");
+        await handleModuleChange("creators" as ModuleId);
         break;
       }
       case "achievement-unlocked": {

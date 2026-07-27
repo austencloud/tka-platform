@@ -123,6 +123,7 @@ export function isAutomatedBrowser(): boolean {
 export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   create: true,
   browse: true,
+  creators: true,
   feedback: true,
   premium: true, // Premium upsell shown to non-premium users
   // Unreleased modules

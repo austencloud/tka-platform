@@ -116,10 +116,9 @@ const ROUTES: RouteNode[] = [
     requiresAuth: true,
   },
   {
-    label: "browse--creators",
-    moduleId: "browse",
-    tabId: "creators",
-    requiresAuth: true,
+    label: "creators",
+    moduleId: "creators",
+    requiresAuth: false,
   },
   // Compose
   {

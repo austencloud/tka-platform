@@ -277,12 +277,11 @@ export const APP_MODULES: RouteConfig[] = [
     waitSelector: ".sequence-card, .browse-grid",
   },
   {
-    path: "/app",
-    label: "browse--creators",
-    requiresAuth: true,
+    path: "/creators",
+    label: "creators",
+    requiresAuth: false,
     isModule: true,
-    moduleId: "browse",
-    tabId: "creators",
+    moduleId: "creators",
     waitSelector: ".creators-panel",
   },
   {

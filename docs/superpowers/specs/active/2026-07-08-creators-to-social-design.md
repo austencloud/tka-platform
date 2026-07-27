@@ -1,8 +1,12 @@
 # Move Creators from Browse to Social
 
 **Date:** 2026-07-08
-**Status:** Approved (design)
+**Status:** Superseded 2026-07-25
 **Related:** `2026-07-08-collections-ia-mine-joint-others-design.md`
+
+Creators now has its own tabless module at `/creators`. Both routes introduced
+by this design, `/browse/creators/*` and `/social/creators/*`, redirect to the
+new canonical path. Social returns to Community and Connect only.
 
 ## Goal
 
