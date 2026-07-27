@@ -1,13 +1,16 @@
 /**
- * Parity-repair phase 2 rules: dual-compatible publicSequences writes and the
- * publicSequenceHashes claim collection.
+ * Parity-repair PHASE 4 STRICT rules: every publicSequences write must prove
+ * the full publish-transaction shape (schema-2 fields, owner parity after the
+ * transaction, hash claim after the transaction), claims are linkage-proven
+ * in both directions, owner-document projection stamps are persister-only,
+ * and shortcode mints are strict schema-2 with claim linkage.
  *
- * The write shapes under test mirror what public-sequence-persister.ts
- * produces inside its transaction. Schema-2 writes must satisfy the full
- * field-shape proof; legacy-shape writes stay allowed for old cached clients
- * until phase 4. The getAfter() claim-linkage proof is DEFERRED to phase 4 —
- * the emulator cannot evaluate getAfter at all (see the PHASE 4 DEFERRED test
- * below), and an unverifiable rule that gates every publish must not ship.
+ * The write shapes under test mirror what public-sequence-persister.ts and
+ * ShortCodeManager.allocateCode produce inside their transactions. The
+ * getAfter() proofs were DEFERRED while firebase-tools 14.23.0's emulator
+ * failed every getAfter call; firebase-tools 15.24.0 fixed that (proven by
+ * getafter-probe.rules.test.ts), so phase 4 flipped the deferred pins into
+ * live enforcement (2026-07-27).
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -20,6 +23,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   setDoc,
@@ -120,9 +124,39 @@ function claimDoc(
   };
 }
 
+/** The owner document in FULL PARITY with schemaTwoDoc — what the publish
+ *  transaction leaves behind on the owner side. */
+function ownerDocInParity(hash: string, overrides: Record<string, unknown> = {}) {
+  return {
+    visibility: "public",
+    word: "ABCD",
+    sequenceLength: 4,
+    contentHash: hash,
+    contentHashVersion: 2,
+    publicProjectionSchemaVersion: 2,
+    publicProjectionRevision: 1,
+    publicProjectionDigest: "d".repeat(64),
+    ...overrides,
+  };
+}
+
+async function seedOwnerDoc(
+  seqId: string,
+  fields: Record<string, unknown>
+): Promise<void> {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(
+      doc(ctx.firestore(), `users/${OWNER_UID}/sequences/${seqId}`),
+      fields
+    );
+  });
+}
+
 /** Seed a committed schema-2 publish the way production commits one: the
- *  owner's own batched doc+claim write, which the rules provably accept. */
+ *  owner doc in parity, then the owner's own batched public+claim write,
+ *  which the strict rules provably accept. */
 async function seedPublishedSequence(seqId: string, hash: string, claimId: string) {
+  await seedOwnerDoc(seqId, ownerDocInParity(hash));
   const db = ownerDb();
   const batch = writeBatch(db);
   batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
@@ -132,10 +166,12 @@ async function seedPublishedSequence(seqId: string, hash: string, claimId: strin
   if (!seeded.exists()) throw new Error(`SEED LOST: publicSequences/${seqId}`);
 }
 
-describe("publicSequences: dual-compatible writes", () => {
-  it("allows a legacy-shape write (no schema-2 stamp) from a full user", async () => {
+describe("publicSequences: phase-4 strict writes", () => {
+  it("PHASE 4: a legacy-shape write (no schema-2 stamp) is DENIED", async () => {
+    // Phase 2's dual-compat allowance is removed. An old cached client now
+    // fails its public cloud sync instead of creating drift.
     const db = ownerDb();
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(db, "publicSequences/seq-legacy-shape"), {
         ownerId: OWNER_UID,
         word: "AB",
@@ -144,11 +180,9 @@ describe("publicSequences: dual-compatible writes", () => {
     );
   });
 
-  it("allows a well-formed schema-2 publish batched with its claim, and it LANDS", async () => {
-    // assertSucceeds on a batch is not proof — a denied batch commit has been
-    // observed to resolve while the emulator logged PERMISSION_DENIED on the
-    // write stream. Read back.
+  it("allows the publish-transaction shape (owner in parity, doc + claim batched), and it LANDS", async () => {
     const { seqId, hash, claimId } = ids("batchok");
+    await seedOwnerDoc(seqId, ownerDocInParity(hash));
     const db = ownerDb();
     const batch = writeBatch(db);
     batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
@@ -161,19 +195,73 @@ describe("publicSequences: dual-compatible writes", () => {
     }
   });
 
-  it("PHASE 4 DEFERRED: claim linkage is not yet rules-enforced (emulator getAfter is broken)", async () => {
-    // The design wants a schema-2 write DENIED unless its claim exists after
-    // the transaction (getAfter). firebase-tools 14.23.0 fails every getAfter
-    // with "Service call error" (issues #2983/#2067 class), so that rule is
-    // unverifiable and is deferred to the phase 4 strict rules. Until then a
-    // claimless schema-2 write passes rules — the client persister is what
-    // guarantees the claim. This test pins the CURRENT contract so phase 4
-    // flips it deliberately.
-    const { seqId, hash } = ids("noclaim");
+  it("allows the FULL publish batch that also stamps the owner document", async () => {
+    // The exact publishPublicSequence shape: owner stamp update + public set
+    // + claim set in one atomic commit, starting from an unstamped owner doc
+    // (fresh save that has never been published).
+    const { seqId, hash, claimId } = ids("fullpub");
+    await seedOwnerDoc(seqId, {
+      visibility: "public",
+      word: "ABCD",
+      sequenceLength: 4,
+      contentHash: hash,
+      contentHashVersion: 2,
+    });
     const db = ownerDb();
-    await assertSucceeds(
+    const batch = writeBatch(db);
+    batch.update(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
+      publicProjectionRevision: 1,
+      publicProjectionSchemaVersion: 2,
+      publicProjectionDigest: "d".repeat(64),
+      word: "ABCD",
+      sequenceLength: 4,
+      contentHash: hash,
+      contentHashVersion: 2,
+    });
+    batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
+    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    await assertSucceeds(batch.commit());
+  });
+
+  it("PHASE 4 LIVE: a schema-2 write without its claim is DENIED (getAfter enforced)", async () => {
+    // The deliberate flip of the phase-2 "PHASE 4 DEFERRED" pin: the claim
+    // linkage is now rules-enforced, so a claimless schema-2 write fails even
+    // with the owner document in perfect parity.
+    const { seqId, hash } = ids("noclaim");
+    await seedOwnerDoc(seqId, ownerDocInParity(hash));
+    const db = ownerDb();
+    await assertFails(
       setDoc(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash))
     );
+  });
+
+  it("denies a publish whose owner document is missing", async () => {
+    const { seqId, hash, claimId } = ids("noowner");
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
+    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    await assertFails(batch.commit());
+  });
+
+  it("denies a publish whose owner document is not public", async () => {
+    const { seqId, hash, claimId } = ids("privowner");
+    await seedOwnerDoc(seqId, ownerDocInParity(hash, { visibility: "private" }));
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
+    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    await assertFails(batch.commit());
+  });
+
+  it("denies a publish whose owner parity disagrees on a core field", async () => {
+    const { seqId, hash, claimId } = ids("drift");
+    await seedOwnerDoc(seqId, ownerDocInParity(hash, { word: "WXYZ" }));
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
+    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    await assertFails(batch.commit());
   });
 
   it("denies a schema-2 write missing its identity fields", async () => {
@@ -195,6 +283,7 @@ describe("publicSequences: dual-compatible writes", () => {
 
   it("denies a schema-2 write whose sourceRef points at another user", async () => {
     const { seqId, hash, claimId } = ids("badsrc");
+    await seedOwnerDoc(seqId, ownerDocInParity(hash));
     const db = ownerDb();
     const batch = writeBatch(db);
     batch.set(
@@ -207,30 +296,39 @@ describe("publicSequences: dual-compatible writes", () => {
     await assertFails(batch.commit());
   });
 
-  it("allows a narrow update on a schema-2 doc when its claim already exists", async () => {
+  it("allows the thumbnail-restamp shape (paired public + owner update); denies it unpaired", async () => {
     const { seqId, hash, claimId } = ids("patch");
     await seedPublishedSequence(seqId, hash, claimId);
 
-    // The thumbnail-patch shape the persister transaction issues: partial
-    // update inside an atomic operation, claim untouched (getAfter sees the
-    // existing claim).
+    // Unpaired public-only patch: the owner's stamps would no longer match —
+    // denied. (updatePublicThumbnails always restamps the owner in the same
+    // transaction.)
     const db = ownerDb();
-    const patch = writeBatch(db);
-    patch.update(doc(db, `publicSequences/${seqId}`), {
+    await assertFails(
+      updateDoc(doc(db, `publicSequences/${seqId}`), {
+        thumbnails: ["t.png"],
+        publicProjectionRevision: 2,
+        publicProjectionDigest: "e".repeat(64),
+      })
+    );
+
+    const paired = writeBatch(db);
+    paired.update(doc(db, `publicSequences/${seqId}`), {
       thumbnails: ["t.png"],
       publicProjectionRevision: 2,
       publicProjectionDigest: "e".repeat(64),
     });
-    await assertSucceeds(patch.commit());
+    paired.update(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
+      publicProjectionRevision: 2,
+      publicProjectionDigest: "e".repeat(64),
+    });
+    await assertSucceeds(paired.commit());
   });
 
   it("denies a non-owner rewriting someone else's public doc", async () => {
     const { seqId, hash, claimId } = ids("hijack");
     await seedPublishedSequence(seqId, hash, claimId);
 
-    // The pre-fix rule checked only the INCOMING ownerId, so an attacker
-    // writing their own uid sailed through. Update now also requires owning
-    // the existing document.
     const db = otherDb();
     await assertFails(
       setDoc(doc(db, `publicSequences/${seqId}`), {
@@ -238,6 +336,78 @@ describe("publicSequences: dual-compatible writes", () => {
         word: "STOLEN",
       })
     );
+  });
+
+  it("allows the unpublish shape and denies its unpaired fragments", async () => {
+    const { seqId, hash, claimId } = ids("unpub");
+    await seedPublishedSequence(seqId, hash, claimId);
+    const db = ownerDb();
+
+    // Fragment 1: owner stamp clear while the mirror still exists — denied.
+    await assertFails(
+      updateDoc(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
+        publicProjectionRevision: deleteField(),
+        publicProjectionSchemaVersion: deleteField(),
+        publicProjectionDigest: deleteField(),
+      })
+    );
+    // Fragment 2: public delete stranding its own claim — denied.
+    await assertFails(deleteDoc(doc(db, `publicSequences/${seqId}`)));
+
+    // The full unpublishPublicSequence shape: doc + claim + stamp clear.
+    const batch = writeBatch(db);
+    batch.delete(doc(db, `publicSequences/${seqId}`));
+    batch.delete(doc(db, `publicSequenceHashes/${claimId}`));
+    batch.update(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
+      publicProjectionRevision: deleteField(),
+      publicProjectionSchemaVersion: deleteField(),
+      publicProjectionDigest: deleteField(),
+    });
+    await assertSucceeds(batch.commit());
+    const gone = await getDoc(doc(db, `publicSequences/${seqId}`));
+    if (gone.exists()) throw new Error("unpublish reported success but doc remains");
+  });
+
+  it("denies forging owner projection stamps without the mirror", async () => {
+    const { seqId, hash } = ids("forge");
+    await seedOwnerDoc(seqId, {
+      visibility: "public",
+      word: "ABCD",
+      sequenceLength: 4,
+      contentHash: hash,
+      contentHashVersion: 2,
+    });
+    const db = ownerDb();
+    await assertFails(
+      updateDoc(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
+        publicProjectionRevision: 1,
+        publicProjectionSchemaVersion: 2,
+        publicProjectionDigest: "d".repeat(64),
+      })
+    );
+  });
+
+  it("allows a content-hash change that republished + releases the stale claim", async () => {
+    const { seqId, hash, claimId } = ids("rehashx");
+    await seedPublishedSequence(seqId, hash, claimId);
+    const newHash = ("rehashnew" + "b".repeat(64)).slice(0, 64);
+    const newClaimId = `2_${newHash}`;
+
+    // The publish transaction on changed content: public doc rewritten with
+    // the new hash, new claim created, stale claim released, owner restamped.
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(
+      doc(db, `publicSequences/${seqId}`),
+      schemaTwoDoc(seqId, newHash, { publicProjectionRevision: 2 })
+    );
+    batch.set(doc(db, `publicSequenceHashes/${newClaimId}`), claimDoc(seqId, newHash));
+    batch.delete(doc(db, `publicSequenceHashes/${claimId}`));
+    batch.update(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
+      contentHash: newHash,
+      publicProjectionRevision: 2,
+    });
+    await assertSucceeds(batch.commit());
   });
 });
 
@@ -260,10 +430,7 @@ describe("admin unpublish allowance", () => {
       .firestore(SDK_SETTINGS);
   }
 
-  it("lets an admin delete another owner's public doc and claim; a profiled non-admin cannot", async () => {
-    // The loop-labeler runs unpublishPublicSequence client-side as an admin;
-    // owner-check-first ordering means profile-less users still deny via
-    // error absorption, and role:'user' profiles deny outright.
+  it("lets an admin run the full unpublish transaction on another owner's doc; a profiled non-admin cannot", async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
       await setDoc(doc(db, `users/${ADMIN_UID}`), { role: "admin" });
@@ -272,25 +439,44 @@ describe("admin unpublish allowance", () => {
 
     const denied = ids("admindeny");
     await seedPublishedSequence(denied.seqId, denied.hash, denied.claimId);
-    await assertFails(
-      deleteDoc(doc(profiledDb(), `publicSequences/${denied.seqId}`))
-    );
-    await assertFails(
-      deleteDoc(doc(profiledDb(), `publicSequenceHashes/${denied.claimId}`))
-    );
+    {
+      const db = profiledDb();
+      const batch = writeBatch(db);
+      batch.delete(doc(db, `publicSequences/${denied.seqId}`));
+      batch.delete(doc(db, `publicSequenceHashes/${denied.claimId}`));
+      await assertFails(batch.commit());
+    }
 
     const allowed = ids("adminok");
     await seedPublishedSequence(allowed.seqId, allowed.hash, allowed.claimId);
-    await assertSucceeds(
-      deleteDoc(doc(adminDb(), `publicSequences/${allowed.seqId}`))
-    );
-    await assertSucceeds(
-      deleteDoc(doc(adminDb(), `publicSequenceHashes/${allowed.claimId}`))
-    );
+    {
+      // The labeler's unpublishPublicSequence shape: public doc + claim +
+      // owner stamp clear, atomically, by an admin who is not the owner.
+      const db = adminDb();
+      const batch = writeBatch(db);
+      batch.delete(doc(db, `publicSequences/${allowed.seqId}`));
+      batch.delete(doc(db, `publicSequenceHashes/${allowed.claimId}`));
+      batch.update(doc(db, `users/${OWNER_UID}/sequences/${allowed.seqId}`), {
+        publicProjectionRevision: deleteField(),
+        publicProjectionSchemaVersion: deleteField(),
+        publicProjectionDigest: deleteField(),
+      });
+      await assertSucceeds(batch.commit());
+    }
   });
 });
 
-describe("publicSequenceHashes: claim rules", () => {
+describe("publicSequenceHashes: claim linkage", () => {
+  it("denies a standalone claim naming unpublished content", async () => {
+    // PHASE 4: a claim can only exist for a public doc that carries its hash
+    // pair after the transaction.
+    const { seqId, hash, claimId } = ids("orphanclaim");
+    const db = ownerDb();
+    await assertFails(
+      setDoc(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash))
+    );
+  });
+
   it("denies a claim whose id does not match its hash pair", async () => {
     const { seqId, hash } = ids("mismatch");
     const db = ownerDb();
@@ -312,8 +498,13 @@ describe("publicSequenceHashes: claim rules", () => {
 
   it("denies claim updates outright — the mapping is immutable", async () => {
     const { seqId, hash, claimId } = ids("immutable");
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `publicSequenceHashes/${claimId}`),
+        claimDoc(seqId, hash)
+      );
+    });
     const db = ownerDb();
-    await setDoc(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
     await assertFails(
       updateDoc(doc(db, `publicSequenceHashes/${claimId}`), {
         sequenceId: "hijacked",
@@ -321,21 +512,17 @@ describe("publicSequenceHashes: claim rules", () => {
     );
   });
 
-  it("lets the owner release their claim and denies everyone else", async () => {
-    const { seqId, hash, claimId } = ids("release");
-    const seedDb = ownerDb();
-    await setDoc(
-      doc(seedDb, `publicSequenceHashes/${claimId}`),
-      claimDoc(seqId, hash)
+  it("denies releasing a claim while its public doc still carries the hash", async () => {
+    // Release is proven inside unpublish / hash-change transactions (covered
+    // above). A bare delete that would orphan a LIVE published hash is denied
+    // even for the owner.
+    const { seqId, hash, claimId } = ids("liverel");
+    await seedPublishedSequence(seqId, hash, claimId);
+    await assertFails(
+      deleteDoc(doc(ownerDb(), `publicSequenceHashes/${claimId}`))
     );
-    const seeded = await getDoc(doc(seedDb, `publicSequenceHashes/${claimId}`));
-    if (!seeded.exists()) throw new Error("SEED LOST: claim");
-
     await assertFails(
       deleteDoc(doc(otherDb(), `publicSequenceHashes/${claimId}`))
-    );
-    await assertSucceeds(
-      deleteDoc(doc(ownerDb(), `publicSequenceHashes/${claimId}`))
     );
   });
 
@@ -351,6 +538,82 @@ describe("publicSequenceHashes: claim rules", () => {
         doc(db, `publicSequenceHashes/${claimId}`),
         claimDoc(seqId, hash, { ownerId: "anon-1" })
       )
+    );
+  });
+});
+
+describe("shortcodes: phase-4 strict mint", () => {
+  const MINT_HASH = ("mint" + "c".repeat(64)).slice(0, 64);
+
+  function mintDoc(overrides: Record<string, unknown> = {}) {
+    return {
+      encoded: "payload-blob",
+      payloadWord: "AB",
+      payloadStepCount: 2,
+      payloadSchemaVersion: 2,
+      sequence: "AB",
+      sequenceName: "AB",
+      encoderHash: MINT_HASH,
+      createdAt: new Date().toISOString(),
+      scanCount: 0,
+      ...overrides,
+    };
+  }
+
+  it("allows the allocateCode shape: code doc + hash claim in one transaction, and it LANDS", async () => {
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(doc(db, "shortcodes/MNT1"), mintDoc());
+    batch.set(doc(db, `shortcodeHashes/${MINT_HASH}`), {
+      code: "MNT1",
+      createdAt: new Date().toISOString(),
+    });
+    await assertSucceeds(batch.commit());
+    const landed = await getDoc(doc(db, "shortcodes/MNT1"));
+    if (!landed.exists()) throw new Error("mint reported success but did not land");
+  });
+
+  it("denies a mint without payload-derived label fields", async () => {
+    const db = ownerDb();
+    await assertFails(
+      setDoc(doc(db, "shortcodes/MNT2"), {
+        encoded: "payload-blob",
+        sequenceName: "Sequence 12:42:28 PM",
+      })
+    );
+  });
+
+  it("denies a hash-carrying mint that skips its claim", async () => {
+    const db = ownerDb();
+    await assertFails(setDoc(doc(db, "shortcodes/MNT3"), mintDoc()));
+  });
+
+  it("allows the resolution-time claim heal only for a matching code doc", async () => {
+    const healHash = ("heal" + "e".repeat(64)).slice(0, 64);
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "shortcodes/HEAL1"), {
+        encoded: "x",
+        payloadWord: "AB",
+        payloadStepCount: 2,
+        payloadSchemaVersion: 2,
+        encoderHash: healHash,
+      });
+    });
+    const db = ownerDb();
+    await assertSucceeds(
+      setDoc(doc(db, `shortcodeHashes/${healHash}`), {
+        code: "HEAL1",
+        createdAt: new Date().toISOString(),
+      })
+    );
+    // A claim naming a code whose doc carries a DIFFERENT hash (or none) is
+    // unverifiable and denied — never index an unproven mapping.
+    const wrongHash = ("wrong" + "f".repeat(64)).slice(0, 64);
+    await assertFails(
+      setDoc(doc(db, `shortcodeHashes/${wrongHash}`), {
+        code: "HEAL1",
+        createdAt: new Date().toISOString(),
+      })
     );
   });
 });

@@ -362,10 +362,35 @@ service cloud.firestore {
         // Public sequences can be read by anyone, private only by owner
         // Admins can read any user's library (for impersonation/preview mode)
         allow read: if resource.data.visibility == 'public' || isOwner(userId) || isAdmin();
-        // Owner can create/update, admins can update for data migrations
+        // Owner can create/update, admins can update for data migrations.
+        //
+        // PHASE 4 (parity-repair spec): the owner document's projection
+        // STAMPS are persister-transaction territory. Content fields (word,
+        // steps, contentHash, visibility, …) stay freely writable — owner
+        // saves are offline-first and must commit without a paired public
+        // write; content drift until sync is the retry layer's and the
+        // audit's domain. But a write that SETS the stamps must carry the
+        // matching public mirror in the same transaction, and a write that
+        // REMOVES them must remove the mirror with it. That is exactly what
+        // publishPublicSequence / updatePublicThumbnails /
+        // unpublishPublicSequence produce, and nothing else client-side
+        // writes these keys (verified 2026-07-27: only
+        // public-sequence-persister.ts).
         allow create: if isOwner(userId);
-        allow update: if isOwner(userId) || isAdmin();
-        allow delete: if isOwner(userId) || isAdmin();
+        allow update: if (isOwner(userId) || isAdmin())
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['publicProjectionRevision', 'publicProjectionSchemaVersion', 'publicProjectionDigest'])
+            || ownerStampWriteProven(userId, sequenceId)
+          );
+        // A stamped owner document (published mirror) may only be deleted
+        // when the mirror is gone after the same transaction
+        // (deleteSequenceCompletely). An unstamped document deletes freely.
+        allow delete: if (isOwner(userId) || isAdmin())
+          && (
+            !resource.data.keys().hasAny(['publicProjectionDigest'])
+            || !existsAfter(/databases/$(database)/documents/publicSequences/$(sequenceId))
+          );
       }
 
       // -------------------------------------------------------------------------
@@ -894,6 +919,14 @@ service cloud.firestore {
       // blob (self-contained payload) OR a non-empty `sequenceData.steps` array
       // (embedded inline). Without one of those, the doc is a zombie waiting
       // to happen — see docs/superpowers/specs/2026-04-18-shortcode-durability-roadmap.md.
+      //
+      // PHASE 4 STRICT MINT (parity-repair spec, 2026-07-27): the label must
+      // be payload-derived at mint — schema-2 fields are required, so a
+      // stale cached client minting label-less or title-labeled codes is
+      // denied instead of creating the drift class the label repair just
+      // cleaned. A mint that carries an encoderHash must also write its
+      // shortcodeHashes claim in the same transaction (allocateCode's shape);
+      // hash-less mints (encode failure fallback) carry no claim.
       allow create: if isFullUser()
         && (
           (
@@ -905,6 +938,19 @@ service cloud.firestore {
             request.resource.data.keys().hasAny(['sequenceData'])
             && request.resource.data.sequenceData.keys().hasAny(['steps'])
             && request.resource.data.sequenceData.steps.size() > 0
+          )
+        )
+        && request.resource.data.get('payloadSchemaVersion', 0) == 2
+        && request.resource.data.get('payloadWord', '') is string
+        && request.resource.data.get('payloadWord', '').size() > 0
+        && request.resource.data.get('payloadStepCount', 0) is int
+        && request.resource.data.get('payloadStepCount', 0) > 0
+        && (
+          !request.resource.data.keys().hasAny(['encoderHash'])
+          || (
+            request.resource.data.encoderHash is string
+            && request.resource.data.encoderHash.size() == 64
+            && getAfter(/databases/$(database)/documents/shortcodeHashes/$(request.resource.data.encoderHash)).data.get('code', '') == code
           )
         );
 
@@ -943,11 +989,20 @@ service cloud.firestore {
       // before auth resolves; the mapping contains no PII.
       allow read: if true;
 
+      // PHASE 4 (2026-07-27): a claim may only name a code whose document
+      // exists after the same transaction and carries THIS encoderHash — the
+      // allocateCode transaction's shape. The resolution-time heal path
+      // (healHashIndex) also satisfies this against an existing code doc; a
+      // legacy code doc without an encoderHash field is unverifiable, so its
+      // heal is denied and absorbed by the heal's try/catch, which is the
+      // honest outcome — never index an unproven mapping.
       allow create: if isFullUser()
         && request.resource.data.keys().hasOnly(['code', 'createdAt'])
         && request.resource.data.code is string
         && request.resource.data.code.size() >= 4
-        && request.resource.data.code.size() <= 6;
+        && request.resource.data.code.size() <= 6
+        && existsAfter(/databases/$(database)/documents/shortcodes/$(request.resource.data.code))
+        && getAfter(/databases/$(database)/documents/shortcodes/$(request.resource.data.code)).data.get('encoderHash', '') == hash;
 
       allow update, delete: if isAdmin();
     }
@@ -974,16 +1029,17 @@ service cloud.firestore {
     // must evaluate to FALSE (deny), never to an evaluation error — an error
     // in any operand can poison the whole condition in the rules engine.
     //
-    // DELIBERATELY ABSENT (phase 4): the getAfter() proof that the matching
-    // publicSequenceHashes claim exists after the transaction. The Firestore
-    // emulator (firebase-tools 14.23.0) fails ALL getAfter calls here with
-    // "Service call error. Function: [getAfter]" — even constant paths —
-    // denying every schema-2 publish (see firebase-tools issues #2983/#2067
-    // for the get/getAfter emulator defect class; bisect 2026-07-26). An
-    // unverifiable rule that gates every publish must not ship. The persister
-    // writes the claim in the same transaction client-side; the rules-level
-    // linkage is malicious-client hardening and lands with the phase 4 strict
-    // rules once it can be proven against the emulator or a canary.
+    // PHASE 4 (2026-07-27): the getAfter() linkage proofs are LIVE. The
+    // emulator defect that deferred them (firebase-tools 14.23.0 failed ALL
+    // getAfter calls — issues #2983/#2067 class, bisect 2026-07-26) is fixed
+    // in firebase-tools 15.24.0, proven by
+    // tests/integration/firestore-rules/getafter-probe.rules.test.ts. Every
+    // public write now requires the full publish-transaction shape: schema-2
+    // fields, the owner document in parity AFTER the transaction, and the
+    // content-hash claim naming this sequence AFTER the transaction. The
+    // legacy-shape allowance is removed — an old cached client fails its
+    // public cloud sync (typed as a client-version failure app-side) instead
+    // of creating drift. Reads stay tolerant.
     function isValidSchemaTwoPublicWrite(sequenceId) {
       let d = request.resource.data;
       return d.get('sourceRef', '') == 'users/' + request.auth.uid + '/sequences/' + sequenceId
@@ -1000,6 +1056,76 @@ service cloud.firestore {
         && d.get('publicProjectionDigest', '').size() > 0;
     }
 
+    // The public document's owner source must exist after the transaction,
+    // still be published, and agree on every core field rules can compare
+    // directly (section 9). The publish and thumbnail transactions stamp the
+    // owner document in the same commit, so honest writes always satisfy
+    // this; a public write with no paired owner write only passes when the
+    // stored owner document already matches.
+    function publicOwnerParityAfter(sequenceId) {
+      let d = request.resource.data;
+      let ownerPath = /databases/$(database)/documents/users/$(request.auth.uid)/sequences/$(sequenceId);
+      return existsAfter(ownerPath)
+        && getAfter(ownerPath).data.get('visibility', '') == 'public'
+        && getAfter(ownerPath).data.get('publicProjectionRevision', -1) == d.get('publicProjectionRevision', -2)
+        && getAfter(ownerPath).data.get('publicProjectionSchemaVersion', -1) == d.get('publicProjectionSchemaVersion', -2)
+        && getAfter(ownerPath).data.get('publicProjectionDigest', '') == d.get('publicProjectionDigest', '?')
+        && getAfter(ownerPath).data.get('word', '') == d.get('word', '?')
+        && getAfter(ownerPath).data.get('contentHash', '') == d.get('contentHash', '?')
+        && getAfter(ownerPath).data.get('contentHashVersion', -1) == d.get('contentHashVersion', -2)
+        && getAfter(ownerPath).data.get('sequenceLength', -1) == d.get('sequenceLength', -2);
+    }
+
+    // The content-hash claim for the written document's hash pair must exist
+    // after the transaction and name this sequence and caller — either
+    // pre-existing (republish of unchanged content) or written in the same
+    // commit (first publication, claim self-heal).
+    function publicClaimAfter(sequenceId) {
+      let d = request.resource.data;
+      let claimPath = /databases/$(database)/documents/publicSequenceHashes/$(string(d.get('contentHashVersion', -1)) + '_' + d.get('contentHash', ''));
+      return existsAfter(claimPath)
+        && getAfter(claimPath).data.get('sequenceId', '') == sequenceId
+        && getAfter(claimPath).data.get('ownerId', '') == request.auth.uid;
+    }
+
+    // An owner-document write that touches the projection stamps proves the
+    // paired transaction: stamps present after the write → the public mirror
+    // exists after the transaction in full parity; stamps removed → the
+    // mirror is gone with them (unpublish shape).
+    function ownerStampWriteProven(userId, sequenceId) {
+      return request.resource.data.keys().hasAny(['publicProjectionDigest'])
+        ? ownerStampParityAfter(userId, sequenceId)
+        : !existsAfter(/databases/$(database)/documents/publicSequences/$(sequenceId));
+    }
+
+    function ownerStampParityAfter(userId, sequenceId) {
+      let d = request.resource.data;
+      let pubPath = /databases/$(database)/documents/publicSequences/$(sequenceId);
+      return existsAfter(pubPath)
+        && getAfter(pubPath).data.get('ownerId', '') == userId
+        && getAfter(pubPath).data.get('sourceRef', '') == 'users/' + userId + '/sequences/' + sequenceId
+        && getAfter(pubPath).data.get('publicProjectionRevision', -1) == d.get('publicProjectionRevision', -2)
+        && getAfter(pubPath).data.get('publicProjectionSchemaVersion', -1) == d.get('publicProjectionSchemaVersion', -2)
+        && getAfter(pubPath).data.get('publicProjectionDigest', '') == d.get('publicProjectionDigest', '?')
+        && getAfter(pubPath).data.get('word', '') == d.get('word', '?')
+        && getAfter(pubPath).data.get('contentHash', '') == d.get('contentHash', '?')
+        && getAfter(pubPath).data.get('contentHashVersion', -1) == d.get('contentHashVersion', -2)
+        && getAfter(pubPath).data.get('sequenceLength', -1) == d.get('sequenceLength', -2);
+    }
+
+    // A deleted public document must not leave its own claim behind: the
+    // stored hash pair's claim is gone after the transaction, or it belongs
+    // to a different sequence (a stale mirror's claim is not this document's
+    // to remove). Legacy documents without a hash pair carry no claim.
+    function publicClaimReleasedAfterDelete(sequenceId) {
+      let hash = resource.data.get('contentHash', '');
+      let version = resource.data.get('contentHashVersion', -1);
+      let claimPath = /databases/$(database)/documents/publicSequenceHashes/$(string(version) + '_' + hash);
+      return hash == ''
+        || !existsAfter(claimPath)
+        || getAfter(claimPath).data.get('sequenceId', '') != sequenceId;
+    }
+
     // Public sequences - denormalized for Browse page browsing
     match /publicSequences/{sequenceId} {
       // ANYONE can read public sequences (no authentication required)
@@ -1007,16 +1133,17 @@ service cloud.firestore {
       allow read: if true;
 
       // Only the owner can write (via sync from their private library).
-      // Dual-compatible during the parity-repair migration window (phase 2):
-      // a legacy-shape document (no schema-2 stamp) writes as before, so old
-      // cached clients keep working; a document claiming schema 2 must prove
-      // the full transaction shape. Phase 4 removes the legacy allowance.
+      // PHASE 4 STRICT (2026-07-27): the legacy-shape allowance is removed.
+      // Every write must be schema 2 and prove the full publish-transaction
+      // shape — field shape, owner parity after the transaction, and the
+      // hash claim after the transaction. An old cached client now fails its
+      // public cloud sync instead of creating drift.
       allow create: if isFullUser()
         && request.resource.data.get('ownerId', '') == request.auth.uid
-        && (
-          request.resource.data.get('publicProjectionSchemaVersion', 0) != 2
-          || isValidSchemaTwoPublicWrite(sequenceId)
-        );
+        && request.resource.data.get('publicProjectionSchemaVersion', 0) == 2
+        && isValidSchemaTwoPublicWrite(sequenceId)
+        && publicOwnerParityAfter(sequenceId)
+        && publicClaimAfter(sequenceId);
       // Update additionally requires owning the EXISTING document. Checking
       // only the incoming ownerId let any full user hijack any public doc by
       // overwriting it with their own uid — a hole the parity rules tests
@@ -1024,17 +1151,19 @@ service cloud.firestore {
       allow update: if isFullUser()
         && resource.data.get('ownerId', '') == request.auth.uid
         && request.resource.data.get('ownerId', '') == request.auth.uid
-        && (
-          request.resource.data.get('publicProjectionSchemaVersion', 0) != 2
-          || isValidSchemaTwoPublicWrite(sequenceId)
-        );
+        && request.resource.data.get('publicProjectionSchemaVersion', 0) == 2
+        && isValidSchemaTwoPublicWrite(sequenceId)
+        && publicOwnerParityAfter(sequenceId)
+        && publicClaimAfter(sequenceId);
       // Owner, or an admin running the client-side labeler/repair tooling
       // through the unpublish transaction. Owner check FIRST: `||`
       // error-absorbs, so a profile-less user's isAdmin() get() error still
-      // denies instead of erroring the whole rule.
-      allow delete: if (isAuthenticated()
+      // denies instead of erroring the whole rule. Phase 4: the delete must
+      // not strand the document's own hash claim (unpublish shape).
+      allow delete: if ((isAuthenticated()
         && resource.data.get('ownerId', '') == request.auth.uid)
-        || isAdmin();
+        || isAdmin())
+        && publicClaimReleasedAfterDelete(sequenceId);
     }
 
     // Content-addressed public-sequence identity claims: ONE claim per
@@ -1049,6 +1178,11 @@ service cloud.firestore {
       // and the mapping contains no PII.
       allow read: if true;
 
+      // PHASE 4 (2026-07-27): a claim may only be created when the public
+      // document it names exists after the same transaction and carries this
+      // exact hash pair — the publish transaction's shape (and the thumbnail
+      // path's claim self-heal). A standalone claim naming content that is
+      // not actually published is unwritable.
       allow create: if isFullUser()
         && request.resource.data.keys().hasOnly(['sequenceId', 'ownerId', 'contentHash', 'contentHashVersion', 'createdAt'])
         && request.resource.data.ownerId == request.auth.uid
@@ -1057,7 +1191,11 @@ service cloud.firestore {
         && request.resource.data.contentHash is string
         && request.resource.data.contentHash.size() == 64
         && request.resource.data.contentHashVersion is int
-        && claimId == string(request.resource.data.contentHashVersion) + '_' + request.resource.data.contentHash;
+        && claimId == string(request.resource.data.contentHashVersion) + '_' + request.resource.data.contentHash
+        && existsAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId))
+        && getAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId)).data.get('contentHash', '') == request.resource.data.contentHash
+        && getAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId)).data.get('contentHashVersion', -1) == request.resource.data.contentHashVersion
+        && getAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId)).data.get('ownerId', '') == request.resource.data.ownerId;
 
       // The identity mapping is immutable — a claim moves only by delete +
       // re-create inside a transaction that proves ownership.
@@ -1069,9 +1207,17 @@ service cloud.firestore {
       // Owner check FIRST so a profile-less user's isAdmin() get() error
       // absorbs to deny rather than erroring the rule. Server-side repair
       // uses the Admin SDK, which bypasses rules entirely.
-      allow delete: if (isAuthenticated()
+      // PHASE 4: the release must be PROVEN — after the transaction the
+      // named public document is gone (unpublish/delete) or carries a
+      // DIFFERENT hash pair (content-hash change releasing the stale claim).
+      allow delete: if ((isAuthenticated()
         && resource.data.get('ownerId', '') == request.auth.uid)
-        || isAdmin();
+        || isAdmin())
+        && (
+          !existsAfter(/databases/$(database)/documents/publicSequences/$(resource.data.get('sequenceId', '')))
+          || getAfter(/databases/$(database)/documents/publicSequences/$(resource.data.get('sequenceId', ''))).data.get('contentHash', '') != resource.data.get('contentHash', '')
+          || getAfter(/databases/$(database)/documents/publicSequences/$(resource.data.get('sequenceId', ''))).data.get('contentHashVersion', -1) != resource.data.get('contentHashVersion', -1)
+        );
     }
 
     // ============================================================================

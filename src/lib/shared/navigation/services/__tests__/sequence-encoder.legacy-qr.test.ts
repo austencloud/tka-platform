@@ -129,3 +129,51 @@ describe("legacy QR payload compatibility", () => {
     }
   );
 });
+
+describe("legacy float decode: prefloat is data, never fabricated", () => {
+  // Pre-prefloat-era blobs wrote the float's own rotation — NO_ROTATION —
+  // into the wire slot, so they carry no prefloat information at all. The
+  // decoder used to MANUFACTURE a prefloatMotionType from that empty slot
+  // (deriveMotionType over "noRotation" → an arbitrary same-family type),
+  // which produced confident wrong letters downstream (parity-repair spec,
+  // root-caused 2026-07-27 against embedded mint-time witnesses). Unknown
+  // must decode as ABSENT.
+  async function floatSequence(prefloat: {
+    prefloatMotionType?: MotionType;
+    prefloatRotationDirection?: RotationDirection;
+  }) {
+    const source = await decodeSequenceFromQR(PRODUCTION_FLAT_QR);
+    const mutated = JSON.parse(JSON.stringify(source)) as typeof source;
+    const blue = mutated.steps[0]!.motions.blue;
+    Object.assign(blue, {
+      motionType: MotionType.FLOAT,
+      turns: "fl",
+      rotationDirection: RotationDirection.NO_ROTATION,
+      prefloatMotionType: undefined,
+      prefloatRotationDirection: undefined,
+      ...prefloat,
+    });
+    return mutated;
+  }
+
+  it("decodes a prefloat-less float with NO prefloat fields (nothing manufactured)", async () => {
+    const mutated = await floatSequence({});
+    const decoded = decodeLegacySequence(encodeLegacySequence(mutated, 2));
+    const blue = decoded.steps[0]!.motions.blue;
+    expect(blue.motionType).toBe(MotionType.FLOAT);
+    expect(blue.prefloatMotionType).toBeUndefined();
+    expect(blue.prefloatRotationDirection).toBeUndefined();
+  });
+
+  it("round-trips a REAL prefloat rotation through the wire slot", async () => {
+    const mutated = await floatSequence({
+      prefloatMotionType: MotionType.PRO,
+      prefloatRotationDirection: RotationDirection.CLOCKWISE,
+    });
+    const decoded = decodeLegacySequence(encodeLegacySequence(mutated, 2));
+    const blue = decoded.steps[0]!.motions.blue;
+    expect(blue.motionType).toBe(MotionType.FLOAT);
+    expect(blue.prefloatRotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(blue.prefloatMotionType).toBeDefined();
+  });
+});

@@ -183,6 +183,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-check-file": "^3.3.1",
     "eslint-plugin-svelte": "^3.13.1",
+    "firebase-tools": "15.24.0",
     "globals": "^17.6.0",
     "jsdom": "^27.4.0",
     "knip": "^5.82.1",

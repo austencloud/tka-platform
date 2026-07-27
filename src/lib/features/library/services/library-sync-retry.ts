@@ -12,6 +12,7 @@
  * - no retry loop, no polling timer, no unbounded recursion.
  */
 
+import { FirebaseError } from "firebase/app";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
@@ -58,6 +59,19 @@ function permanentPublishRejection(
     return {
       code: "CONTENT_MODERATION",
       message: "A saved sequence was flagged by moderation and won't publish.",
+    };
+  }
+  // Phase-4 strict rules reject any publish that does not prove the full
+  // transaction shape. The current client always produces that shape, so a
+  // rules denial on publish means this BUNDLE predates the contract (an old
+  // cached SPA) — retrying the same code cannot succeed. The spec's required
+  // UX: identify the client-version failure and ask for a reload. Local
+  // saves are untouched; an explicit re-save after reload clears the block.
+  if (error instanceof FirebaseError && error.code === "permission-denied") {
+    return {
+      code: "CLIENT_VERSION_REJECTED",
+      message:
+        "Cloud sync was rejected — this app version is out of date. Reload the page to update; your work is safe on this device.",
     };
   }
   return null;

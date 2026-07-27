@@ -82,13 +82,33 @@ function effectiveRotation(m: Motion): string {
   return lc(m.prefloatRotationDirection || m.rotationDirection);
 }
 
-/** Match a beat's two motions against one dataframe. Replicates the criteria in
- *  motion-query-handler.findLetterByMotionConfiguration: motionType + start/end
- *  location + rotation (rotation ignored for static/dash/unresolved-float), with
- *  the float→pro/anti alternative expansion. */
-function matchIn(edges: CsvEdge[], blue: Motion, red: Motion): string | null {
+/** Match a beat's two motions against one dataframe. Replicates the criteria
+ *  in motion-query-handler.findLetterByMotionConfiguration — motionType +
+ *  start/end location + rotation (rotation ignored for static/dash) — with
+ *  CHANNEL-AWARE float handling. A float with no prefloat testimony expands
+ *  to pro/anti alternatives with rotation ignored ONLY when
+ *  `floatAlternatives` is set:
+ *
+ *  - EMBEDDED (mint/store-time) steps: allowed. An era of the app saved
+ *    floats with no prefloat fields at all, and their letters — and the
+ *    labels minted from them — were DEFINED by exactly this lookup at
+ *    creation time (proven: qCE8jd-class records). The alternatives are the
+ *    canonical semantics for that data, not a guess.
+ *  - ENCODED (wire-decoded) steps: never. The legacy wire format DROPPED
+ *    prefloat data the original sequence did have (proven: tgllYT's
+ *    embedded carries pf pro/cw where its blob carries nothing), so
+ *    alternatives-matching a decode guesses against lost information —
+ *    same-family wrong letters with confidence. Those beats stay
+ *    underivable and quarantine. */
+function matchIn(
+  edges: CsvEdge[],
+  blue: Motion,
+  red: Motion,
+  floatAlternatives: boolean
+): string | null {
   const blueFloat = lc(blue.motionType) === "float" && !blue.prefloatMotionType;
   const redFloat = lc(red.motionType) === "float" && !red.prefloatMotionType;
+  if ((blueFloat || redFloat) && !floatAlternatives) return null;
   const blueTypes =
     blueFloat && searchType(blue) === "pro" ? ["pro", "anti"] : [searchType(blue)];
   const redTypes =
@@ -119,16 +139,20 @@ function matchIn(edges: CsvEdge[], blue: Motion, red: Motion): string | null {
   return null;
 }
 
-export function letterForBeat(step: AnyRec): string | null {
+export function letterForBeat(
+  step: AnyRec,
+  options?: { floatAlternatives?: boolean }
+): string | null {
   if (typeof step.letter === "string" && step.letter) return step.letter;
   const motions = step.motions as { blue?: Motion; red?: Motion } | undefined;
   const blue = motions?.blue;
   const red = motions?.red;
   if (!blue || !red) return null;
+  const floatAlternatives = options?.floatAlternatives ?? false;
   return (
-    matchIn(DIAMOND_EDGES, blue, red) ??
-    matchIn(BOX_EDGES, blue, red) ??
-    matchIn(SKEWED_EDGES, blue, red)
+    matchIn(DIAMOND_EDGES, blue, red, floatAlternatives) ??
+    matchIn(BOX_EDGES, blue, red, floatAlternatives) ??
+    matchIn(SKEWED_EDGES, blue, red, floatAlternatives)
   );
 }
 
@@ -164,9 +188,14 @@ function contentStepsOf(steps: AnyRec[]): AnyRec[] {
 /** One entry per CONTENT beat (start-entry rule applied), each the beat's
  *  stored letter or dataframe match, null where neither resolves. This is the
  *  positional form deriveFromSteps collapses into a word — exposed so repairs
- *  can compare two payloads beat-by-beat instead of word-by-word. */
-export function contentLetters(steps: AnyRec[]): (string | null)[] {
-  return contentStepsOf(steps).map((step) => letterForBeat(step));
+ *  can compare two payloads beat-by-beat instead of word-by-word. Defaults to
+ *  the STRICT (no float alternatives) reading — evidence gates should never
+ *  accept a guessed letter as agreement. */
+export function contentLetters(
+  steps: AnyRec[],
+  options?: { floatAlternatives?: boolean }
+): (string | null)[] {
+  return contentStepsOf(steps).map((step) => letterForBeat(step, options));
 }
 
 export function deriveFromSteps(
@@ -175,10 +204,15 @@ export function deriveFromSteps(
 ): PayloadDerivation {
   const contentSteps = contentStepsOf(steps);
 
+  // Channel-aware float semantics (see matchIn): mint-time embedded steps
+  // may resolve prefloat-less floats through the app's canonical
+  // alternatives lookup; wire decodes must not guess against information
+  // the legacy format dropped.
+  const floatAlternatives = source === "embedded";
   const lettered = contentSteps.map((step, index) => ({
     ...(step as object),
     stepNumber: index + 1,
-    letter: letterForBeat(step),
+    letter: letterForBeat(step, { floatAlternatives }),
   }));
   const status = deriveWordStatusFromSteps(lettered as unknown as Step[]);
   return {

@@ -340,13 +340,27 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       csvRows = this.parsedData[GridMode.DIAMOND] || [];
     }
 
+    // A float carrying a prefloat TYPE next to a "noRotation" prefloat
+    // ROTATION is the legacy blob decoder's FABRICATED pair — the old wire
+    // format carried no prefloat data, and the decoder manufactured a type
+    // from the empty rotation slot (parity-repair spec, root-caused
+    // 2026-07-27 against embedded mint-time witnesses: the manufactured
+    // types flip pro↔anti arbitrarily). Matching CSV rows against that pair
+    // produces confident same-family WRONG letters. Treat the whole pair as
+    // absent; the decoder no longer emits it, but persisted copies of old
+    // decodes can still carry it.
+    const isFabricatedPrefloat = (motion: MotionData): boolean =>
+      !!motion.prefloatMotionType &&
+      String(motion.prefloatRotationDirection ?? "").toLowerCase() ===
+        "norotation";
+
     const getSearchMotionType = (motion: MotionData): string => {
-      if (motion.prefloatMotionType) {
+      if (motion.prefloatMotionType && !isFabricatedPrefloat(motion)) {
         return motion.prefloatMotionType;
       }
       if (motion.motionType.toLowerCase() === "float") {
         if (motion.startLocation !== motion.endLocation) {
-          return "pro"; 
+          return "pro";
         }
       }
       return motion.motionType;
@@ -355,22 +369,24 @@ export class MotionQueryHandler implements IMotionQueryHandler {
     const blueSearchMotion = {
       ...blueMotion,
       motionType: getSearchMotionType(blueMotion),
-      rotationDirection:
-        blueMotion.prefloatRotationDirection || blueMotion.rotationDirection,
+      rotationDirection: isFabricatedPrefloat(blueMotion)
+        ? blueMotion.rotationDirection
+        : blueMotion.prefloatRotationDirection || blueMotion.rotationDirection,
     };
     const redSearchMotion = {
       ...redMotion,
       motionType: getSearchMotionType(redMotion),
-      rotationDirection:
-        redMotion.prefloatRotationDirection || redMotion.rotationDirection,
+      rotationDirection: isFabricatedPrefloat(redMotion)
+        ? redMotion.rotationDirection
+        : redMotion.prefloatRotationDirection || redMotion.rotationDirection,
     };
 
     const blueIsFloatWithoutPrefloat =
       blueMotion.motionType.toLowerCase() === "float" &&
-      !blueMotion.prefloatMotionType;
+      (!blueMotion.prefloatMotionType || isFabricatedPrefloat(blueMotion));
     const redIsFloatWithoutPrefloat =
       redMotion.motionType.toLowerCase() === "float" &&
-      !redMotion.prefloatMotionType;
+      (!redMotion.prefloatMotionType || isFabricatedPrefloat(redMotion));
     const blueAlternativeTypes =
       blueIsFloatWithoutPrefloat && blueSearchMotion.motionType === "pro"
         ? ["pro", "anti"]

@@ -181,9 +181,13 @@ describe("full users: community write paths succeed", () => {
       setDoc(doc(db, `feedback/f1`), { userId: FULL_UID, text: "x" })
     );
   });
-  it("can publish to publicSequences", async () => {
+  it("can no longer publish a legacy-shape doc to publicSequences (phase 4)", async () => {
+    // The full publish-transaction shape (schema 2 + owner parity + claim,
+    // all getAfter-proven) lives in public-sequence-parity.rules.test.ts.
+    // Here: the phase-2 legacy allowance is gone — a bare write is denied
+    // even for a full user.
     const db = fullCtx().firestore(SDK_SETTINGS);
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(db, `publicSequences/seq1`), { ownerId: FULL_UID, steps: [] })
     );
   });
@@ -193,10 +197,23 @@ describe("full users: community write paths succeed", () => {
       setDoc(doc(db, `usernames/cooldude`), { userId: FULL_UID })
     );
   });
-  it("can create a shortcode", async () => {
+  it("can create a shortcode with the strict mint shape (phase 4)", async () => {
+    // Payload-derived label fields are required at mint; a hash-less mint
+    // carries no claim. The claim-linked mint shape is covered in
+    // public-sequence-parity.rules.test.ts.
     const db = fullCtx().firestore(SDK_SETTINGS);
     await assertSucceeds(
-      setDoc(doc(db, `shortcodes/abc123`), { encoded: "abc" })
+      setDoc(doc(db, `shortcodes/abc123`), {
+        encoded: "abc",
+        payloadWord: "AB",
+        payloadStepCount: 2,
+        payloadSchemaVersion: 2,
+      })
+    );
+    // The pre-phase-4 label-less mint is the drift class the label repair
+    // cleaned — denied.
+    await assertFails(
+      setDoc(doc(db, `shortcodes/abc124`), { encoded: "abc" })
     );
   });
   it("can create a userReport", async () => {

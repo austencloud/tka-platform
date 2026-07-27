@@ -286,7 +286,18 @@ function decodeLegacyMotion(
 
   const isFloat = motionType === MotionType.FLOAT;
   const handPath = getHandpathDirection(startLocation, endLocation);
-  const prefloatMotionType = isFloat
+  // A float's wire rotation slot carries prefloatRotationDirection when the
+  // encoder knew it (modern saves). Blobs minted before prefloat fields
+  // existed wrote the float's own rotation — literally NO_ROTATION — so
+  // their wire carries NO prefloat information at all. Deriving a
+  // prefloatMotionType from NO_ROTATION FABRICATES data (deriveMotionType
+  // returns an arbitrary same-family type), which produced confident wrong
+  // letters downstream — proven against embedded mint-time witnesses,
+  // parity-repair spec 2026-07-27. Unknown decodes as ABSENT, never
+  // manufactured.
+  const hasRealPrefloatRotation =
+    isFloat && legacyRotation !== RotationDirection.NO_ROTATION;
+  const prefloatMotionType = hasRealPrefloatRotation
     ? (deriveMotionType(
         startLocation,
         endLocation,
@@ -309,7 +320,7 @@ function decodeLegacyMotion(
     handPath: handPath as MotionData["handPath"],
     gridMode: inferGridMode(startLocation, endLocation),
     arrowLocation: startLocation,
-    ...(isFloat && {
+    ...(hasRealPrefloatRotation && {
       prefloatMotionType,
       prefloatRotationDirection: legacyRotation,
     }),
