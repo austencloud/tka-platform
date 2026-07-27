@@ -24,18 +24,21 @@
   <header class="editorial-header">
     <h1 class="page-title">Writing flow arts down</h1>
     <p class="page-subtitle">
-      People have been trying to notate this since 2009. Here is who, and where to read them.
+      People have been trying to notate this since 2009. Here is who, and where
+      to read them.
     </p>
   </header>
 
   <p class="loans">
-    Two ideas came in from outside. Cutting a continuous flow into beats and giving each
-    one a symbol is
-    <a href="https://jugglinglab.org/html/ssnotation.html" target="_blank" rel="noopener"
-      >siteswap</a
-    >, from juggling. Writing a performance as a compact score at all is music notation.
-    Neither was built for props, and neither is on this list. It starts where flow arts
-    notation starts.
+    Two ideas came in from outside. Cutting a continuous flow into beats and
+    giving each one a symbol is
+    <a
+      href="https://jugglinglab.org/html/ssnotation.html"
+      target="_blank"
+      rel="noopener">siteswap</a
+    >, from juggling. Writing a performance as a compact score at all is music
+    notation. Neither was built for props, and neither is on this list. It
+    starts where flow arts notation starts.
   </p>
 
   <ol class="spine">
@@ -44,20 +47,25 @@
         <div class="year" aria-hidden="true">{entry.year}</div>
 
         <div class="body">
-          <h2 class="system">
-            <span class="year-inline">{entry.year}</span>
-            {entry.system}
-          </h2>
-          <p class="people">{entry.people}</p>
-          <p class="records">{entry.records}</p>
+          <div class="identity">
+            <h2 class="system">
+              <span class="year-inline">{entry.year}</span>
+              {entry.system}
+            </h2>
+            <p class="people">{entry.people}</p>
+          </div>
 
-          {#if entry.subWorks?.length}
-            <ul class="subworks">
-              {#each entry.subWorks as work (work.name)}
-                <li><strong>{work.name}</strong>: {work.note}</li>
-              {/each}
-            </ul>
-          {/if}
+          <div class="record">
+            <p class="records">{entry.records}</p>
+
+            {#if entry.subWorks?.length}
+              <ul class="subworks">
+                {#each entry.subWorks as work (work.name)}
+                  <li><strong>{work.name}</strong>: {work.note}</li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
         </div>
 
         <div class="sources">
@@ -75,7 +83,10 @@
                     rel="noopener"
                   >
                     {source.label}
-                    <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    <i
+                      class="fas fa-arrow-up-right-from-square"
+                      aria-hidden="true"
+                    ></i>
                   </a>
                 {/if}
               </li>
@@ -270,6 +281,45 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: clamp(0.9rem, 0.6rem + 0.6vw, 1.6rem);
     color: oklch(0.78 0.01 270);
+  }
+
+  /* ── room-scale: turn the wide shell into a composed archival spread ── */
+  @media (min-width: 105rem) {
+    .row {
+      min-height: 23rem;
+      box-sizing: border-box;
+      align-items: stretch;
+    }
+    .row:first-child {
+      padding-top: clamp(2rem, 1.2rem + 1.4vw, 3.5rem);
+    }
+    .year {
+      align-self: center;
+      font-size: 3.1rem;
+    }
+    .body {
+      display: grid;
+      grid-template-columns: minmax(14rem, 0.9fr) minmax(20rem, 1.25fr);
+      gap: clamp(2rem, 1.2rem + 1.2vw, 4rem);
+      align-items: center;
+    }
+    .records {
+      font-size: 1.35rem;
+      line-height: 1.55;
+    }
+    .sources {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding-left: clamp(1.5rem, 0.8rem + 1vw, 2.75rem);
+      border-left: 1px solid oklch(0.6 0.02 270 / 0.14);
+    }
+    .sources-label {
+      margin-top: auto;
+    }
+    .sources ul {
+      margin-bottom: auto;
+    }
   }
 
   /* ── tablet: sources drop under the body, still beside the year rail ── */
