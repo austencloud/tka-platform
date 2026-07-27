@@ -16,8 +16,7 @@
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
-  import ProfileShowcase from "./profile/ProfileShowcase.svelte";
-  import ProfileTabs from "./profile/ProfileTabs.svelte";
+  import ProfileStage from "./profile/stage/ProfileStage.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
@@ -237,16 +236,13 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
           />
         </div>
 
+        <!-- Three bands, each artifact in its own medium — replaces the pinned
+             showcase strip plus the single wall of choreo-card fronts that
+             ProfileShowcase and ProfileTabs rendered. The stage loads its own
+             library and collections from the userId, so nothing upstream needs
+             to fetch on its behalf. -->
         <div class="profile-main">
-          <ProfileShowcase
-            pinnedItems={userProfile.pinnedItems ?? []}
-            {isOwnProfile}
-          />
-
-          <ProfileTabs
-            {userSequences}
-            onSequenceClick={handleSequenceClick}
-          />
+          <ProfileStage {userId} />
         </div>
 
         {#if showAside}
