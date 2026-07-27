@@ -92,6 +92,18 @@
   /** What the user is actually watching, for media with no poster to raise. */
   const showLive = $derived(live && !revealCard);
 
+  /** Live playback position, fed to the step strip so its active cell rings in
+   *  time with the animation. Rests at 1 when nothing is playing. */
+  let playbackStep = $state(1);
+
+  /**
+   * The strip is only legible when the tile is big enough to give each
+   * pictograph real estate. On archive tiles a 16-step strip would be 15px
+   * cells — texture, not notation — and 120 of them is a rendering bill for
+   * something nobody can read. Showcase-size tiles get it.
+   */
+  const showStrip = $derived(medium === "sequence" && size === "lg");
+
   function onEnter() {
     liveAtEnter = live;
     hovered = true;
@@ -143,38 +155,90 @@
     aria-label="Open {label}"
   >
     {#if medium === "sequence" && sequence}
-      <!-- The poster is a PERMANENT FLOOR, not the other half of a crossfade.
-           Swapping poster-out/live-in left the box empty while the player's
-           chunk loaded and painted, which is the black card that pulls the eye
-           harder than the content does. With the thumbnail always beneath, the
-           worst case is a still image — black is unreachable by construction.
+      <!-- THE SEQUENCE PRESENTER — one composition, modelled on the landing
+           hero (SequenceHeroDemo): mandala underneath, animation over it, step
+           strip below.
 
-           A single enter/exit over a permanent floor is `transition:fade`, not
-           `<Crossfade>` (crossfade-primitive.md: a lone enter/exit is not a
-           crossfade, and a fake key would make the code lie about intent). -->
-      <div class="poster floor">
-        <PropAwareThumbnail {sequence} {lightMode} />
+           The mandala is the STILL layer, and that is what makes this work. It
+           renders straight from steps with no cache and no warming, so a tile
+           that holds no token is already identifiable — where a card-style
+           thumbnail had to be rendered on demand and showed a word on black
+           until it arrived. Resting and playing are now the same frame; the
+           only difference is whether it moves. Nothing swaps.
+
+           backgroundAlpha={0} makes the player request an alpha context so the
+           mandala shows through — the same mechanism ShapeMatrixDrill uses to
+           keep its mandala visible under the props. -->
+      <div class="composite">
+        <div class="canvas-zone">
+          <div class="mandala-floor floor">
+            <SequenceMandala
+              sequence={{ steps: (sequence.steps ?? []) as unknown[] }}
+              mode="gallery"
+              show="both"
+              pathShape="arc"
+              animate={false}
+              darkMode={!lightMode}
+              size={320}
+            />
+          </div>
+          {#if live}
+            <div class="live-layer" transition:fade={{ duration: DURATION.normal }}>
+              <LazyMount
+                loader={() =>
+                  import(
+                    "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+                  )}
+                active
+                props={{
+                  sequence,
+                  autoPlay: true,
+                  showControls: false,
+                  chrome: "minimal",
+                  fill: true,
+                  interactive: false,
+                  disableContextMenu: true,
+                  beatIndicators: false,
+                  hideStepNumbers: true,
+                  backgroundAlpha: 0,
+                  onStepChange: (step: number) => (playbackStep = step),
+                }}
+              />
+            </div>
+          {/if}
+        </div>
+
+        {#if showStrip}
+          <!-- The same StepStrip the landing hero and focused practice use.
+               `currentStep` follows the player's onStepChange, so the active
+               cell rings in time with the animation; at rest it sits on step 1
+               and simply reads as the sequence's notation. -->
+          <div class="strip-zone">
+            <LazyMount
+              loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
+              active
+              props={{
+                sequence,
+                currentStep: playbackStep,
+                bpm: 60,
+                density: "compact",
+                fillHeight: true,
+                anchor: "center",
+                orientation: "horizontal",
+                loop: false,
+                stepPulse: false,
+              }}
+            />
+          </div>
+        {/if}
       </div>
-      {#if live}
-        <div class="live-layer" transition:fade={{ duration: DURATION.normal }}>
-          <LazyMount
-            loader={() =>
-              import(
-                "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-              )}
-            active
-            props={{
-              sequence,
-              autoPlay: true,
-              showControls: false,
-              chrome: "minimal",
-              fill: true,
-              interactive: false,
-              disableContextMenu: true,
-              beatIndicators: false,
-              hideStepNumbers: true,
-            }}
-          />
+
+      <!-- Hover holds the choreo card up for analysis. It is the print
+           artifact — QR, full step grid, turns — meant to be read deliberately,
+           so it is a request, never the resting state. -->
+      {#if hovered}
+        <div class="card-overlay" transition:fade={{ duration: DURATION.fast }}>
+          <PropAwareThumbnail {sequence} {lightMode} />
         </div>
       {/if}
     {:else if medium === "mandala" && mandala}
@@ -326,6 +390,50 @@
      motion mid-stride. */
   .tile.reveal-card .floor {
     z-index: 2;
+  }
+
+  /* The presenter: canvas takes the room, strip takes what it needs. Both are
+     inside the stage's fixed box, so adding or removing the strip cannot
+     change the tile's height (no-layout-shift.md). */
+  .composite {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .canvas-zone {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .mandala-floor {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .strip-zone {
+    flex: 0 0 auto;
+    height: 22%;
+    min-height: 2.5em;
+    padding: 0.25em;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    overflow: hidden;
+  }
+
+  /* The card is an overlay on request, not a layer in the composition — it
+     covers the whole stage so it can be read as the artifact it is. */
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: var(--theme-card-bg, #000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .poster-img {
