@@ -71,6 +71,7 @@
     onRemoveNote,
     onSetHeader,
     placeholderRoster,
+    actStepIndex = null,
     zoom = 1,
   }: {
     pages: SheetPage[];
@@ -97,6 +98,12 @@
     onSetNote?: (id: string, patch: { text?: string }) => void;
     onRemoveNote?: (id: string) => void;
     onSetHeader?: (patch: Partial<SheetHeader>) => void;
+    /**
+     * The act's current step while it plays, 0-based into the concatenated act
+     * sequence. The cell whose `actStepIndex` matches lights up; earlier cells
+     * dim as played. null when not playing — nothing is highlighted.
+     */
+    actStepIndex?: number | null;
     /**
      * One entry per roster row while the sheet is still hydrating. Drives the
      * reserved skeleton page: the sheet's real geometry, filled with shimmer, so
@@ -136,6 +143,16 @@
   }
   function bulletNotes(band: SheetBand): ResolvedNote[] {
     return band.notes.filter((n) => n.count == null);
+  }
+
+  // Act playback highlight. The planner stamps every cell with its position in
+  // the act — the same numbering `buildActSequence` produces — so matching the
+  // player's reported step is a direct comparison, no per-surface mapping.
+  function isActCurrent(cell: SheetCell): boolean {
+    return actStepIndex !== null && cell.actStepIndex === actStepIndex;
+  }
+  function isActPlayed(cell: SheetCell): boolean {
+    return actStepIndex !== null && cell.actStepIndex !== null && cell.actStepIndex < actStepIndex;
   }
 
   /**
@@ -486,6 +503,8 @@
                         <div
                           class="cell"
                           class:tka-seq-cell={!cell.isBlank && !!cell.sequenceId}
+                          class:act-current={isActCurrent(cell)}
+                          class:act-played={isActPlayed(cell)}
                           class:is-hovered={cell.sequenceId
                             ? selection?.isHovered(cell.sequenceId)
                             : false}
@@ -659,6 +678,8 @@
                 <div
                   class="cell"
                   class:tka-seq-cell={!cell.isBlank && !!cell.sequenceId}
+                  class:act-current={isActCurrent(cell)}
+                  class:act-played={isActPlayed(cell)}
                   class:blank={cell.isBlank}
                   class:is-hovered={cell.sequenceId ? selection?.isHovered(cell.sequenceId) : false}
                   class:is-selected={cell.sequenceId ? selection?.isSelected(cell.sequenceId) : false}
@@ -835,6 +856,38 @@
   .cell.blank {
     background: transparent;
     border-color: var(--print-border-faint, rgba(0, 0, 0, 0.06));
+  }
+
+  /* Act playback highlight. Same amber language as the viewer's own playback
+     cell (sequence-viewer/components/PictographCell.svelte) so the sheet reads
+     as the same system. `overflow: hidden` on .cell would clip an outer glow,
+     so the ring is drawn inside via an inset shadow plus a thin outline, and
+     the cell lifts rather than scaling — a print grid is dense and a scaled
+     cell would sit on top of its neighbours' borders.
+     Screen only: the PDF exporter never reads these classes. */
+  .cell.act-current {
+    z-index: 10;
+    outline: 2px solid rgba(251, 191, 36, 0.95);
+    outline-offset: -1px;
+    box-shadow:
+      inset 0 0 0 1px rgba(251, 191, 36, 0.55),
+      0 0 10px 2px rgba(251, 191, 36, 0.45);
+    transition:
+      box-shadow 0.16s ease-out,
+      outline-color 0.16s ease-out;
+  }
+
+  /* Played cells recede so the eye lands on the live one. */
+  .cell.act-played {
+    opacity: 0.55;
+    transition: opacity 0.2s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell.act-current,
+    .cell.act-played {
+      transition: none;
+    }
   }
 
   /* Shimmer sits inside the exact cell box a pictograph will occupy, so the

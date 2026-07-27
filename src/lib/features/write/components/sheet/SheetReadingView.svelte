@@ -31,6 +31,7 @@
     sheetName = "",
     header,
     sequenceNames = {},
+    actStepIndex = null,
     onSetCue,
     onAddNote,
     onSetNote,
@@ -49,6 +50,12 @@
     header?: SheetHeader;
     /** sequenceId → display word, for the per-sequence heading. */
     sequenceNames?: Record<string, string>;
+    /**
+     * The act's current step while it plays, 0-based into the concatenated act
+     * sequence. The matching pictograph lights up and earlier ones dim, so you
+     * can follow the act on a phone. null when not playing.
+     */
+    actStepIndex?: number | null;
     onSetCue?: (
       sequenceId: string,
       stepIndex: number,
@@ -60,6 +67,13 @@
   } = $props();
 
   const showHandPoints = SHEET_CELL_VISIBILITY.handPointVisibility !== "none";
+
+  // Act playback highlight — the planner stamps each cell with its position in
+  // the act, so this is a direct comparison against the player's reported step.
+  const isActCurrent = (cell: { actStepIndex: number | null }) =>
+    actStepIndex !== null && cell.actStepIndex === actStepIndex;
+  const isActPlayed = (cell: { actStepIndex: number | null }) =>
+    actStepIndex !== null && cell.actStepIndex !== null && cell.actStepIndex < actStepIndex;
 
   // A repeated word always displays in its smallest form.
   const title = $derived(simplifyRepeatedWord(header?.songName || sheetName || "Untitled"));
@@ -158,6 +172,8 @@
           <button
             type="button"
             class="rb-cell"
+            class:act-current={isActCurrent(cell)}
+            class:act-played={isActPlayed(cell)}
             disabled={!onAddNote || !cell.step}
             aria-label={`Add a note on count ${band.firstStepIndex + ci + 1}`}
             onclick={() => addPinnedNote(band, ci)}
@@ -320,6 +336,35 @@
   .rb-cell:focus-visible {
     outline: 2px solid var(--theme-accent, #64b4ff);
     outline-offset: 2px;
+  }
+
+  /* Act playback highlight — same amber language as the viewer's playback cell
+     and the page preview, so all three read as one system. Cells here are
+     spaced, so this one can afford the viewer's lift. */
+  .rb-cell.act-current {
+    z-index: 2;
+    border-color: rgba(251, 191, 36, 0.95);
+    transform: scale(1.04);
+    box-shadow:
+      0 0 0 2px rgba(251, 191, 36, 0.9),
+      0 0 14px 2px rgba(251, 191, 36, 0.45);
+    transition:
+      transform 0.16s ease-out,
+      box-shadow 0.16s ease-out;
+  }
+  .rb-cell.act-played {
+    opacity: 0.5;
+    transition: opacity 0.2s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rb-cell.act-current {
+      transform: none;
+      transition: none;
+    }
+    .rb-cell.act-played {
+      transition: none;
+    }
   }
 
   .rb-notes {

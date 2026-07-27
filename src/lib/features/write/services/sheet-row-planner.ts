@@ -27,6 +27,14 @@ export interface SheetCell {
   sequenceId: string | null;
   /** True for the first cell of a sequence's run in the flow. */
   isSequenceStart: boolean;
+  /**
+   * This cell's 0-based index in the ACT — the whole sheet played as one
+   * sequence. `buildActSequence` is a literal in-order concatenation of every
+   * row's steps, so this is exactly the index the act player reports while it
+   * plays, and the sheet can highlight the pictograph being animated by
+   * comparing the two. null for a blank pad cell.
+   */
+  actStepIndex: number | null;
 }
 export interface SheetRow {
   cells: SheetCell[];
@@ -41,7 +49,9 @@ export function planSheet(
 ): SheetPage[] {
   const { columns, rowsPerPage } = layout;
 
-  // 1. Flatten every sequence's steps into one continuous cell stream.
+  // 1. Flatten every sequence's steps into one continuous cell stream. The
+  //    stream order IS the act's step order, so the running index doubles as
+  //    each cell's act position.
   const cells: SheetCell[] = [];
   for (const seq of seqs) {
     seq.steps.forEach((step, i) => {
@@ -50,6 +60,7 @@ export function planSheet(
         isBlank: false,
         sequenceId: seq.id,
         isSequenceStart: i === 0,
+        actStepIndex: cells.length,
       });
     });
   }
@@ -60,7 +71,13 @@ export function planSheet(
   const remainder = cells.length % columns;
   if (remainder !== 0) {
     for (let i = remainder; i < columns; i++) {
-      cells.push({ step: null, isBlank: true, sequenceId: null, isSequenceStart: false });
+      cells.push({
+        step: null,
+        isBlank: true,
+        sequenceId: null,
+        isSequenceStart: false,
+        actStepIndex: null,
+      });
     }
   }
 
@@ -217,6 +234,9 @@ export function buildBands(input: BandPlanInput): SheetBand[] {
         isBlank: false,
         sequenceId: seq.id,
         isSequenceStart: row === 0 && i === 0,
+        // `firstBeatIndex` is already the running step index across the sheet,
+        // which is exactly the act's step numbering.
+        actStepIndex: beatIndex + s + i,
       }));
       bands.push({
         key,

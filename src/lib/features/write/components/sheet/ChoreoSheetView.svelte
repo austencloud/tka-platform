@@ -625,6 +625,11 @@
   }
   const isReading = $derived(viewMode === "reading");
 
+  // The act's current step while it plays, 0-based into the concatenated act
+  // sequence — matched against each cell's `actStepIndex` to light the
+  // pictograph being animated. null when not playing.
+  let actStepIndex = $state<number | null>(null);
+
   // Reading columns follow the stage, and the bands rebuild to match — the grid
   // renders exactly the count the bands were built with, so the two cannot drift.
   $effect(() => {
@@ -1285,6 +1290,7 @@
           sheetName={builder.sheet.name}
           header={builder.sheet.annotations.header}
           sequenceNames={builder.sequenceNames}
+          {actStepIndex}
           onSetCue={builder.setCue}
           onAddNote={builder.addNote}
           onSetNote={builder.setNote}
@@ -1307,6 +1313,7 @@
         bandPages={builder.bandPages}
         annotations={builder.sheet.annotations}
         sheetName={builder.sheet.name}
+        {actStepIndex}
         onSetCue={builder.setCue}
         onAddNote={builder.addNote}
         onSetNote={builder.setNote}
@@ -1439,7 +1446,20 @@
     {/if}
 
     {#if playerOpen}
-      <ActPlayer sequence={builder.actSequence} onClose={() => (playerOpen = false)} />
+      <ActPlayer
+        sequence={builder.actSequence}
+        onClose={() => {
+          playerOpen = false;
+          actStepIndex = null;
+        }}
+        onStepChange={(stepIndex) => {
+          // Forwarded as-is, including while paused — the viewer keeps its
+          // playback highlight lit when you pause mid-sequence, so the sheet
+          // does too. AnimationPlayer already reports null once playback is
+          // back before the first beat, which is what clears it on stop.
+          actStepIndex = stepIndex;
+        }}
+      />
     {/if}
   </div>
 </div>

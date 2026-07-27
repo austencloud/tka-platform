@@ -48,7 +48,13 @@ describe("sheet geometry — orientation + annotation bands", () => {
   });
 });
 
-import { buildBands, planBands, type BandPlanInput } from "$lib/features/write/services/sheet-row-planner";
+import {
+  buildBands,
+  planBands,
+  planSheet,
+  type BandPlanInput,
+} from "$lib/features/write/services/sheet-row-planner";
+import { buildActSequence } from "$lib/features/write/services/sheet-act-sequence";
 import { bandKey } from "$lib/features/write/domain/types/choreo-sheet";
 
 function seq(id: string, n: number) {
@@ -219,6 +225,36 @@ describe("planBands (row-aligned)", () => {
     expect(at(8)).toBe(6);
     expect(at(4)).toBe(6);
     expect(at(6)).toBe(6);
+  });
+
+  it("stamps every cell with its position in the ACT, matching buildActSequence", () => {
+    // The playback highlight compares the act player's reported step directly
+    // against cell.actStepIndex, so the two numberings must agree exactly. If
+    // buildActSequence's concatenation order ever changes, this fails.
+    const rows = [seq("x", 12), seq("y", 4), seq("z", 8)];
+    const act = buildActSequence(rows, "act")!;
+
+    const bandCells = buildBands({ sequences: rows, geo, cues: [], notes: [] })
+      .flatMap((b) => b.cells)
+      .filter((c) => !c.isBlank);
+    expect(bandCells.map((c) => c.actStepIndex)).toEqual(act.steps.map((_, i) => i));
+
+    // The flow branch lays the same stream out differently but must agree.
+    const flowCells = planSheet(rows, { ...base, columns: 8 })
+      .flatMap((p) => p.rows)
+      .flatMap((r) => r.cells)
+      .filter((c) => !c.isBlank);
+    expect(flowCells.map((c) => c.actStepIndex)).toEqual(act.steps.map((_, i) => i));
+  });
+
+  it("leaves pad cells with no act position", () => {
+    // A trailing blank is not a step and must never match the playhead.
+    const pads = planSheet([seq("x", 5)], { ...base, columns: 8 })
+      .flatMap((p) => p.rows)
+      .flatMap((r) => r.cells)
+      .filter((c) => c.isBlank);
+    expect(pads.length).toBeGreaterThan(0);
+    expect(pads.every((c) => c.actStepIndex === null)).toBe(true);
   });
 
   it("packs bands onto pages by height and overflows to a new page", () => {

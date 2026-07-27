@@ -19,7 +19,21 @@
     type MusicPlayerState,
   } from "../../domain/types/write";
 
-  let { sequence, onClose }: { sequence: SequenceData | null; onClose?: () => void } = $props();
+  let {
+    sequence,
+    onClose,
+    onStepChange,
+  }: {
+    sequence: SequenceData | null;
+    onClose?: () => void;
+    /**
+     * The act's current step as it animates, 0-based into the concatenated act
+     * sequence (null at the start position). The sheet uses it to highlight the
+     * pictograph being played — AnimationPlayer already reports this for exactly
+     * this purpose, so it is forwarded rather than re-derived from the clock.
+     */
+    onStepChange?: (stepIndex: number | null, isPlaying: boolean) => void;
+  } = $props();
 
   const music = getMusicPlayer();
   let musicState = $state<MusicPlayerState>(createDefaultMusicPlayerState());
@@ -91,6 +105,7 @@
     <div class="player-host">
       <AnimationPlayer
         {sequence}
+        {onStepChange}
         autoPlay={false}
         showControls={true}
         controlsLevel="full"
