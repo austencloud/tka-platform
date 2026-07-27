@@ -1550,6 +1550,27 @@ by self-test). Scheduled via Windows Task Scheduler "TKA Parity Audit"
   previously could never warm their wide cells → permanent (!) placeholders
   on scan cards).
 
+**REVIEW COMPLETE (2026-07-27, round 3). LABEL_CONTRADICTS_PAYLOAD = 0.**
+Baseline 71 → 62 (all PAYLOAD_INCOMPLETE):
+
+- Austen ratified "payload correct" for every remaining count/letter
+  dispute: RmLaBb, TSYH, LVGB, 5C3V, C17U, D4LT, WVGE relabeled to their
+  payload words.
+- jyC3ji/ZaJWw6 (rotated quartered LOOP, ×4): the one case where the
+  PAYLOAD was wrong. Aligned cyclically the label and payload disagreed on
+  ONE beat per repeat (Θ played as Ω). A chain-constrained brute force over
+  the canonical matcher + orientation calculator proved the flip is blue's
+  pro↔anti attribute on that beat — the same inversion defect family, baked
+  into the seed. `scripts/migrations/repair-jyc3ji-rotated-loop.ts` fixes
+  the seed beat (float pf:pro/ccw, the hand-alternating realization
+  matching the sequence's other Θ), recomputes the seed orientation chain,
+  rebuilds via StrictRotatedLOOPExecutor (QUARTERED), and gates on
+  derivation == ΘYΘZ×4. The rebuilt loop also CLOSES in orientation, which
+  the stored data did not. Labels stamped to the derived word (the stored
+  start position's phase of the same circle; the old label read the circle
+  from the Z beat). Wire cannot carry the pro-floats — blobs dropped,
+  embed-only, snapshot omits.
+
 ## Rollback
 
 - Projection schema 2 fields are additive. Old readers continue to use the
