@@ -46,6 +46,13 @@ export interface CatalogEntry {
   subWorks?: CatalogSubWork[];
   sources: CatalogSource[];
   videos?: CatalogVideo[];
+  /**
+   * A page on this site where the system can actually be run, as opposed to
+   * read about. Distinct from `sources`, which is headed "Read it there" and
+   * points outward at primaries — this points inward at something interactive,
+   * and only exists for entries that have one built.
+   */
+  explore?: CatalogSource;
 }
 
 const HOP_CAPS =
@@ -181,7 +188,14 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
       "A circle cut into eight positions, and movement written as where the prop leaves, where it arrives, and which way it is travelling at each end. The full formula is a,b(h(±x±y±z)h'){Class}a',b'.",
     sources: [
       { label: "The primer, on the Home of Poi forums", href: HOP_QFT },
+      // The same primer on Drex's own blog. Listed because it is the copy whose
+      // diagrams still load — the forum's images are all dead placeholders now.
+      {
+        label: "The same primer on Drex's blog, diagrams intact",
+        href: "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation",
+      },
     ],
+    explore: { label: "Run the notation", href: "/notation/qft" },
   },
   {
     id: "lorq",

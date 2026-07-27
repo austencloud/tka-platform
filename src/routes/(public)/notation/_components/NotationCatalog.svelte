@@ -201,6 +201,19 @@
             </div>
 
             <div class="sources">
+              {#if entry.explore}
+                <!--
+                  A button, not a source link: this one is something you do, not
+                  something you read (.claude/rules/clickables-look-like-buttons.md).
+                  It leads the column because a system you can run on this site
+                  beats a link off to a forum thread.
+                -->
+                <a class="explore-link" href={entry.explore.href}>
+                  {entry.explore.label}
+                  <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+              {/if}
+
               <h3 class="sources-label">Read it there</h3>
               <ul>
                 {#each entry.sources as source (source.href)}
@@ -389,6 +402,35 @@
     display: grid;
     gap: 0.5rem;
   }
+  /*
+   * The same control as a source link, filled rather than outlined — it is the
+   * one thing in an entry that leads somewhere on this site, and it should not
+   * read as one more link in a list of forum threads.
+   */
+  .explore-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: start;
+    white-space: nowrap;
+    margin-bottom: 1rem;
+    padding: 0.6rem 1.1rem;
+    min-height: 2.75rem;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid var(--theme-accent, oklch(0.68 0.17 295));
+    background: color-mix(in srgb, var(--theme-accent, oklch(0.68 0.17 295)) 20%, transparent);
+    color: var(--semantic-text-primary, #fff);
+    font-size: clamp(0.88rem, 0.84rem + 0.12vw, 0.98rem);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 140ms ease;
+  }
+
+  .explore-link:hover {
+    background: color-mix(in srgb, var(--theme-accent, oklch(0.68 0.17 295)) 34%, transparent);
+  }
+
   .source-link {
     display: inline-flex;
     align-items: baseline;
