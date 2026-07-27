@@ -431,29 +431,19 @@
     color: oklch(0.78 0.01 270);
   }
 
-  /* ── room-scale: turn the wide shell into a composed archival spread ── */
+  /* ── wide ledger: use the width without turning every entry into a slide ── */
   @media (min-width: 105rem) {
-    .row {
-      min-height: 23rem;
-      box-sizing: border-box;
-      align-items: stretch;
+    .editorial-header {
+      margin-block: 1.4rem 1.6rem;
     }
-    .row:first-child {
-      padding-top: clamp(2rem, 1.2rem + 1.4vw, 3.5rem);
-    }
-    .year {
-      align-self: center;
-      font-size: 3.1rem;
+    .loans {
+      margin-bottom: 2rem;
     }
     .body {
       display: grid;
       grid-template-columns: minmax(14rem, 0.9fr) minmax(20rem, 1.25fr);
       gap: clamp(2rem, 1.2rem + 1.2vw, 4rem);
-      align-items: center;
-    }
-    .records {
-      font-size: 1.35rem;
-      line-height: 1.55;
+      align-items: start;
     }
     .sources {
       display: flex;
