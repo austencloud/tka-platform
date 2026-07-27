@@ -1,0 +1,204 @@
+<!--
+  The focused detail for one entry: the sourced prose, revealed because the
+  visitor asked for it. Rendered inside the desktop overlay and inside the
+  mobile Drawer — one content component, two hosts. Copy is the catalog's,
+  verbatim; nothing is added.
+-->
+<script lang="ts">
+	import type { CatalogEntry } from "$lib/shared/notation/notation-catalog";
+	import SourceVideoCard from "$lib/shared/components/SourceVideoCard.svelte";
+	import ArtifactVisual from "./ArtifactVisual.svelte";
+
+	let {
+		entry,
+		index,
+		count,
+		showVisual = true,
+	}: {
+		entry: CatalogEntry;
+		index: number;
+		count: number;
+		showVisual?: boolean;
+	} = $props();
+</script>
+
+<div class="detail" class:with-visual={showVisual}>
+	{#if showVisual}
+		<div class="detail-stage">
+			<ArtifactVisual {entry} active={true} />
+		</div>
+	{/if}
+
+	<div class="detail-copy">
+		<p class="detail-meta">
+			<span class="detail-year">{entry.year}</span>
+			<span class="detail-count">{index + 1} of {count}</span>
+		</p>
+		<h2 class="detail-title">{entry.system}</h2>
+		<p class="detail-people">{entry.people}</p>
+		<p class="detail-records">{entry.records}</p>
+
+		{#if entry.subWorks?.length}
+			<ul class="subworks">
+				{#each entry.subWorks as work (work.name)}
+					<li><strong>{work.name}</strong> <span>{work.note}</span></li>
+				{/each}
+			</ul>
+		{/if}
+
+		<div class="detail-sources">
+			{#each entry.sources as source (source.href)}
+				<a
+					class="source-btn"
+					href={source.href}
+					target={source.href.startsWith("/") ? undefined : "_blank"}
+					rel={source.href.startsWith("/") ? undefined : "noopener"}
+				>
+					<span>{source.label}</span>
+					<i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+				</a>
+			{/each}
+		</div>
+
+		{#if entry.videos?.length}
+			<div class="detail-videos">
+				{#each entry.videos as video (video.id)}
+					<SourceVideoCard {...video} />
+				{/each}
+			</div>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.detail {
+		display: grid;
+		gap: clamp(1rem, 3cqi, 2.4rem);
+		height: 100%;
+		min-height: 0;
+	}
+
+	.detail.with-visual {
+		grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+		align-items: center;
+	}
+
+	.detail-stage {
+		container-type: size;
+		height: min(100%, 34rem);
+		min-height: 14rem;
+	}
+
+	.detail-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+		min-width: 0;
+		max-height: 100%;
+		overflow-y: auto;
+		padding-right: 0.4rem;
+	}
+
+	.detail-meta {
+		display: flex;
+		justify-content: space-between;
+		margin: 0;
+		font-variant-numeric: tabular-nums;
+		font-size: 0.9rem;
+		color: oklch(0.65 0.03 270);
+	}
+
+	.detail-title {
+		margin: 0;
+		font-size: clamp(1.4rem, 2.6cqi, 2.4rem);
+		line-height: 1.15;
+		color: oklch(0.93 0.02 270);
+	}
+
+	.detail-people {
+		margin: 0;
+		font-size: clamp(0.9rem, 1.4cqi, 1.05rem);
+		color: oklch(0.72 0.03 270);
+	}
+
+	.detail-records {
+		margin: 0;
+		font-size: clamp(0.95rem, 1.5cqi, 1.15rem);
+		line-height: 1.6;
+		color: oklch(0.85 0.02 270);
+	}
+
+	.subworks {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.subworks li {
+		display: flex;
+		gap: 0.55rem;
+		align-items: baseline;
+		font-size: 0.95rem;
+		color: oklch(0.78 0.02 270);
+	}
+
+	.subworks strong {
+		color: oklch(0.88 0.03 270);
+		white-space: nowrap;
+	}
+
+	.detail-sources {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+		margin-top: 0.3rem;
+	}
+
+	.source-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		min-height: 44px;
+		padding: 0 1.1rem;
+		border-radius: 11px;
+		border: 1px solid var(--artifact-accent, oklch(0.65 0.1 270)) ;
+		background: color-mix(in oklch, var(--artifact-accent, oklch(0.5 0.1 270)) 16%, transparent);
+		color: oklch(0.92 0.02 270);
+		font-weight: 650;
+		font-size: 0.92rem;
+		text-decoration: none;
+		transition: background 160ms ease, transform 160ms ease;
+	}
+
+	.source-btn:hover {
+		background: color-mix(in oklch, var(--artifact-accent, oklch(0.5 0.1 270)) 28%, transparent);
+		transform: translateY(-1px);
+	}
+
+	.detail-videos {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+		gap: 0.8rem;
+		margin-top: 0.4rem;
+	}
+
+	@media (max-width: 760px) {
+		.detail.with-visual {
+			grid-template-columns: 1fr;
+		}
+		.detail-stage {
+			height: 13rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.source-btn {
+			transition: none;
+		}
+		.source-btn:hover {
+			transform: none;
+		}
+	}
+</style>
