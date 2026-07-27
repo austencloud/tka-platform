@@ -1,0 +1,156 @@
+[
+	{
+		"name": "antispinanimated",
+		"frames": 9,
+		"source": {
+			"width": 350,
+			"height": 520
+		},
+		"crop": {
+			"left": 2,
+			"top": 3,
+			"width": 348,
+			"height": 514
+		}
+	},
+	{
+		"name": "antispindiranimated",
+		"frames": 9,
+		"source": {
+			"width": 350,
+			"height": 500
+		},
+		"crop": {
+			"left": 0,
+			"top": 2,
+			"width": 350,
+			"height": 488
+		}
+	},
+	{
+		"name": "cateyeanimated",
+		"frames": 9,
+		"source": {
+			"width": 500,
+			"height": 200
+		},
+		"crop": {
+			"left": 0,
+			"top": 0,
+			"width": 124,
+			"height": 200
+		}
+	},
+	{
+		"name": "extension",
+		"frames": 9,
+		"source": {
+			"width": 500,
+			"height": 300
+		},
+		"crop": {
+			"left": 2,
+			"top": 0,
+			"width": 296,
+			"height": 298
+		}
+	},
+	{
+		"name": "extensiondiranimated",
+		"frames": 9,
+		"source": {
+			"width": 350,
+			"height": 450
+		},
+		"crop": {
+			"left": 0,
+			"top": 2,
+			"width": 350,
+			"height": 439
+		}
+	},
+	{
+		"name": "inspinanimated",
+		"frames": 9,
+		"source": {
+			"width": 520,
+			"height": 350
+		},
+		"crop": {
+			"left": 0,
+			"top": 0,
+			"width": 462,
+			"height": 349
+		}
+	},
+	{
+		"name": "inspindiranimated",
+		"frames": 9,
+		"source": {
+			"width": 350,
+			"height": 500
+		},
+		"crop": {
+			"left": 0,
+			"top": 5,
+			"width": 350,
+			"height": 486
+		}
+	},
+	{
+		"name": "isolationanimated",
+		"frames": 9,
+		"source": {
+			"width": 500,
+			"height": 278
+		},
+		"crop": {
+			"left": 0,
+			"top": 3,
+			"width": 191,
+			"height": 219
+		}
+	},
+	{
+		"name": "pendulum",
+		"frames": 9,
+		"source": {
+			"width": 400,
+			"height": 200
+		},
+		"crop": {
+			"left": 0,
+			"top": 6,
+			"width": 196,
+			"height": 189
+		}
+	},
+	{
+		"name": "static2",
+		"frames": 9,
+		"source": {
+			"width": 480,
+			"height": 417
+		},
+		"crop": {
+			"left": 14,
+			"top": 10,
+			"width": 384,
+			"height": 389
+		}
+	},
+	{
+		"name": "triquetraanimated",
+		"frames": 9,
+		"source": {
+			"width": 500,
+			"height": 450
+		},
+		"crop": {
+			"left": 22,
+			"top": 3,
+			"width": 421,
+			"height": 265
+		}
+	}
+]
