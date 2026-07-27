@@ -365,6 +365,7 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
             if (outcome.sequence) {
               cache.set(id, outcome.sequence);
               statusById.set(id, "ready");
+              resetDevAutoRetries();
               metaById.set(id, {
                 name: metaName(outcome.sequence),
                 stepCount: outcome.sequence.steps?.length ?? 0,
@@ -383,6 +384,9 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     } finally {
       controllers.delete(ctrl);
       persistMeta();
+      // Any row that came out of this batch stuck gets another go on its own,
+      // so a hot reload repairs itself instead of parking behind Try again.
+      scheduleDevAutoRetry();
     }
   }
 
@@ -391,6 +395,56 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     const targets = id ? [id] : roster.filter((r) => r.status === "error").map((r) => r.id);
     if (targets.length === 0) return;
     await ensureHydrated(targets);
+  }
+
+  /**
+   * Dev only: a transient failure must not be terminal.
+   *
+   * The resolver's ladder is three attempts over ~6s. A hot module replacement
+   * can tear down the Firestore connection or the auth module for longer than
+   * that, and every row that is still failing when the ladder runs out sticks
+   * in `error`. Because `planRows` is complete-or-empty, ONE such row leaves the
+   * whole sheet blank behind the "couldn't load these" panel until someone
+   * clicks Try again — which is the "I hot-reloaded and it stopped loading"
+   * report, and it lands in the middle of the edit loop this module is worked in.
+   *
+   * Retrying on the `vite:afterUpdate` event does NOT fix it: when the swap
+   * remounts this view the rows are still `loading` at that moment and only
+   * fail seconds later. So the trigger is the failure itself, not the swap.
+   *
+   * Only `error` (the transient class) is retried — never `missing`, which is
+   * the server answering that the document is gone. Bounded, so a genuinely
+   * dead row cannot spin forever.
+   */
+  const DEV_AUTO_RETRY_LIMIT = 5;
+  const DEV_AUTO_RETRY_DELAY_MS = 2500;
+  let devAutoRetries = 0;
+  let devAutoRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleDevAutoRetry(): void {
+    if (!import.meta.env.DEV) return;
+    if (devAutoRetryTimer !== null) return;
+    if (devAutoRetries >= DEV_AUTO_RETRY_LIMIT) return;
+
+    const stuck = roster.filter((r) => r.status === "error").map((r) => r.id);
+    if (stuck.length === 0) return;
+
+    devAutoRetryTimer = setTimeout(() => {
+      devAutoRetryTimer = null;
+      const still = roster.filter((r) => r.status === "error").map((r) => r.id);
+      if (still.length === 0) return;
+      devAutoRetries++;
+      console.info(
+        `[choreo] dev auto-retry ${devAutoRetries}/${DEV_AUTO_RETRY_LIMIT} for ${still.length} stuck row(s)`
+      );
+      void ensureHydrated(still);
+    }, DEV_AUTO_RETRY_DELAY_MS);
+  }
+
+  // A successful resolve means the connection is back — let the budget refill so
+  // a later hot reload gets its own full allowance.
+  function resetDevAutoRetries(): void {
+    devAutoRetries = 0;
   }
 
   // Abandon every in-flight batch: bump the generation (so late completions are

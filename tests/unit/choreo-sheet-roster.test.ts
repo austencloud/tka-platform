@@ -112,6 +112,72 @@ describe("roster state machine", () => {
     expect(s.rosterComplete).toBe(true);
   });
 
+  // Dev auto-retry: a hot module replacement can outlast the resolver's ~6s
+  // ladder, and because planRows is complete-or-empty ONE stuck row blanks the
+  // whole sheet until someone clicks Try again. These lock the recovery.
+  describe("dev auto-retry for stuck rows", () => {
+    it("retries a transient row on its own and recovers without a manual click", async () => {
+      vi.useFakeTimers();
+      try {
+        let call = 0;
+        const resolveSequence = async (id: string) => (++call === 1 ? transient() : ok(id));
+        const s = createChoreoSheetState({ resolveSequence });
+        s.replaceSheet(sheetWith(["a"]));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(s.roster[0]!.status).toBe("error");
+
+        // The scheduled retry fires and the row comes back on its own.
+        await vi.advanceTimersByTimeAsync(3000);
+        expect(s.roster[0]!.status).toBe("ready");
+        expect(s.rosterComplete).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("never auto-retries a missing row — that is the server's answer", async () => {
+      vi.useFakeTimers();
+      try {
+        let calls = 0;
+        const resolveSequence = async () => {
+          calls++;
+          return missing();
+        };
+        const s = createChoreoSheetState({ resolveSequence });
+        s.replaceSheet(sheetWith(["gone"]));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(s.roster[0]!.status).toBe("missing");
+
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(calls).toBe(1);
+        expect(s.roster[0]!.status).toBe("missing");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("gives up after a bounded number of attempts", async () => {
+      vi.useFakeTimers();
+      try {
+        let calls = 0;
+        const resolveSequence = async () => {
+          calls++;
+          return transient();
+        };
+        const s = createChoreoSheetState({ resolveSequence });
+        s.replaceSheet(sheetWith(["dead"]));
+        await vi.advanceTimersByTimeAsync(0);
+
+        await vi.advanceTimersByTimeAsync(120_000);
+        // 1 initial + at most the retry budget; never an unbounded spin.
+        expect(calls).toBeLessThanOrEqual(6);
+        expect(s.roster[0]!.status).toBe("error");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   it("meta from the draft labels loading rows before data arrives", () => {
     const { resolveSequence } = deferredMap();
     localStorage.setItem(

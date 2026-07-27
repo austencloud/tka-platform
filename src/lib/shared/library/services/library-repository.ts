@@ -851,10 +851,20 @@ export class LibraryRepository {
       sequenceId
     );
 
-    // Hydrate: derive steps from compositional fields if present
+    // Hydrate: derive steps from compositional fields if present.
+    //
+    // A failure here returns the un-hydrated document, which has NO steps — and
+    // downstream that is indistinguishable from a genuinely empty sequence. The
+    // Choreo resolver then retries three times and reports every row as
+    // unreadable, which is how a whole act goes blocked at once. Swallowing this
+    // silently made that impossible to diagnose, so it is always reported.
     try {
       return hydrate(seq) as LibrarySequence;
-    } catch {
+    } catch (error) {
+      console.error(
+        `[LibraryRepository] hydrate() failed for ${sequenceId} — returning a stepless document:`,
+        error
+      );
       return seq;
     }
   }
