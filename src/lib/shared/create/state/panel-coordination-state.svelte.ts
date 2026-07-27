@@ -149,6 +149,8 @@ export interface CustomizeOverlayProps {
   onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
+  /** "Reset all" — every persisted generation setting back to first-run. */
+  onResetAll: (() => void) | null;
 }
 
 export interface PanelCoordinationState {

@@ -60,6 +60,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { buildStartEndOptions } from "./customize-start-end-options";
+  import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
   type AccordionSection = "style" | "startEnd";
 
@@ -74,6 +76,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     onHandPathModeChange,
     onMotionTypeFilterChange,
     onStartEndChange,
+    onResetAll = null,
     onClose,
   } = $props<{
     constraintPreset: "smooth" | "mixed" | "choppy";
@@ -86,6 +89,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
     onStartEndChange: ((options: StartEndOptions) => void) | null;
+    onResetAll?: (() => void) | null;
     onClose: () => void;
   }>();
 
@@ -168,17 +172,40 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   });
 
   // ─── Style summary ───
+  // Measured against the real starting config, not a hardcoded smooth/smooth:
+  // with the latter, "Reset all" left the summary reading "Custom" immediately
+  // after a reset, because the default hand path is Mixed.
   const styleSummary = $derived.by(() => {
     const isDefault =
-      localConstraintPreset === "smooth" &&
-      localHandPathMode === "smooth" &&
-      (localMotionTypeFilter === null || localMotionTypeFilter === "no-dash");
+      localConstraintPreset === GENERATE_DEFAULT_CONFIG.constraintPreset &&
+      localHandPathMode === GENERATE_DEFAULT_CONFIG.handPathMode &&
+      localMotionTypeFilter === GENERATE_DEFAULT_CONFIG.motionTypeFilter;
     return isDefault ? "Default" : "Custom";
   });
 
   function handleClose() {
     hapticService?.trigger("selection");
     onClose();
+  }
+
+  // Reset every persisted generation setting. Confirmed first because there's
+  // no undo: this overlay's props are a snapshot frozen at open time, so a
+  // restore could reach the config but not the local mirrors below, and the
+  // panel would sit there reading "Default" over restored values.
+  let resetConfirmOpen = $state(false);
+
+  function performResetAll() {
+    resetConfirmOpen = false;
+    if (!onResetAll) return;
+    hapticService?.trigger("selection");
+    onResetAll();
+    localConstraintPreset = GENERATE_DEFAULT_CONFIG.constraintPreset;
+    localHandPathMode = GENERATE_DEFAULT_CONFIG.handPathMode;
+    localMotionTypeFilter = GENERATE_DEFAULT_CONFIG.motionTypeFilter;
+    localBlockedPositions = [];
+    localEndPosition = null;
+    localBlueOri = Orientation.IN;
+    localRedOri = Orientation.IN;
   }
 
   // Emit a COMPLETE, internally-consistent options object built from the
@@ -257,6 +284,18 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   <!-- Header -->
   <div class="overlay-header">
     <h3 class="overlay-title">Customize</h3>
+    {#if onResetAll}
+      <button
+        class="reset-button"
+        onclick={() => {
+          hapticService?.trigger("selection");
+          resetConfirmOpen = true;
+        }}
+        aria-label="Reset all generation settings to their defaults"
+      >
+        Reset all
+      </button>
+    {/if}
     <button
       class="close-button"
       onclick={handleClose}
@@ -268,6 +307,10 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       </svg>
     </button>
   </div>
+
+  <!-- These settings persist across sessions, which is what made a saved
+       Choppy props value look like a broken generator. Say so up front. -->
+  <p class="overlay-note">These settings stick until you change them again.</p>
 
   <!-- Scrollable accordion content -->
   <div class="overlay-content themed-scrollbar">
@@ -391,6 +434,17 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   </div>
 </div>
 
+<ConfirmDialog
+  bind:isOpen={resetConfirmOpen}
+  title="Reset all settings?"
+  message="Style, start positions, level, length and LOOP settings all go back to their defaults. This can't be undone."
+  confirmText="Reset"
+  cancelText="Keep"
+  variant="danger"
+  onConfirm={performResetAll}
+  onCancel={() => (resetConfirmOpen = false)}
+/>
+
 <style>
   .customize-expanded-overlay {
     position: absolute;
@@ -416,16 +470,56 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   .overlay-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
     flex-shrink: 0;
   }
 
   .overlay-title {
     margin: 0;
+    /* Takes the slack so Reset all and Close stay pinned right, and neither
+       moves when the title or note changes. */
+    flex: 1;
+    min-width: 0;
     font-size: var(--font-size-lg, 18px);
     font-weight: 700;
     color: var(--theme-text, white);
     letter-spacing: 0.3px;
+  }
+
+  /* A real button, not a text link — it's a standalone action. */
+  .reset-button {
+    flex-shrink: 0;
+    min-height: var(--min-touch-target);
+    padding: 0 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-family: inherit;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease;
+  }
+
+  .reset-button:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+  }
+
+  .reset-button:focus-visible {
+    outline: 2px solid var(--customize-accent);
+    outline-offset: 2px;
+  }
+
+  .overlay-note {
+    margin: 0;
+    flex-shrink: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.55);
   }
 
   .close-button {
@@ -587,6 +681,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   @media (prefers-reduced-motion: reduce) {
     .accordion-header,
     .close-button,
+    .reset-button,
     .accordion-chevron {
       transition: none;
     }

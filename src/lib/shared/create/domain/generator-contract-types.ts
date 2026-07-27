@@ -42,6 +42,8 @@ export interface CardHandlers {
   handleMotionTypeFilterChange?: (
     v: "no-dash" | "mixed" | "prefer-dash"
   ) => void;
+  /** Restore every persisted generation setting to its first-run value. */
+  handleResetAll?: () => void;
   // Duration card handler
   handleDurationTemplateSelect?: (id: string | null) => void;
   // Word input handlers (spell mode)

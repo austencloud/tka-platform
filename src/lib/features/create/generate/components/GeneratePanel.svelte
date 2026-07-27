@@ -225,6 +225,7 @@ Card-based architecture with integrated Generate button:
       config={configState.config}
       isFreeformMode={!hasWord}
       updateConfig={configState.updateConfig}
+      resetConfig={configState.resetConfig}
       isGenerating={actionsState.isGenerating}
       onGenerateClicked={handleGenerate}
       {startEndState}

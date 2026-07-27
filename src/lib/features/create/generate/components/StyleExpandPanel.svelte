@@ -42,6 +42,22 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     { value: "prefer-dash", label: "High" },
   ] as const;
 
+  // What the selected value actually asks the builder for. Choppy pushes for a
+  // reversal on every step, which is a narrow target — worth saying so, because
+  // "the generator keeps giving me the same thing" is what it looks like from
+  // the outside. Mirrors createConstraintSet in constraint-presets.ts.
+  const REVERSAL_HINTS: Record<"smooth" | "mixed" | "choppy", string> = {
+    smooth: "Reversals kept to a minimum.",
+    mixed: "Reversals allowed where they fit.",
+    choppy: "A reversal on every step — a narrow target, so results repeat more.",
+  };
+
+  const DASH_HINTS: Record<"no-dash" | "mixed" | "prefer-dash", string> = {
+    "no-dash": "Dashes avoided.",
+    mixed: "Dashes allowed where they fit.",
+    "prefer-dash": "Dashes favored.",
+  };
+
   let currentDashValue = $derived.by(() => {
     if (motionTypeFilter === "no-dash") return "no-dash";
     if (motionTypeFilter === "prefer-dash") return "prefer-dash";
@@ -65,41 +81,73 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
 </script>
 
 <div class="style-panel">
-  <div class="style-axis">
-    <span class="style-axis-label">Props</span>
-    <div class="style-axis-options">
+  <div class="style-axis-group">
+    <div class="style-axis">
+      <span class="style-axis-label">Props</span>
+      <div class="style-axis-options">
+        {#each propsOptions as opt}
+          <button
+            class="option-btn"
+            class:selected={constraintPreset === opt.value}
+            onclick={() => handleProps(opt.value)}
+          >{opt.label}</button>
+        {/each}
+      </div>
+    </div>
+    <!-- Every variant is stacked in one grid cell so the hint box is always as
+         tall as its longest line — switching options can't shove the axes
+         below it around. -->
+    <span class="style-hint">
       {#each propsOptions as opt}
-        <button
-          class="option-btn"
-          class:selected={constraintPreset === opt.value}
-          onclick={() => handleProps(opt.value)}
-        >{opt.label}</button>
+        <span class="hint-layer" class:live={constraintPreset === opt.value}
+          >{REVERSAL_HINTS[opt.value]}</span
+        >
       {/each}
-    </div>
+    </span>
   </div>
-  <div class="style-axis">
-    <span class="style-axis-label">Hands</span>
-    <div class="style-axis-options">
+
+  <div class="style-axis-group">
+    <div class="style-axis">
+      <span class="style-axis-label">Hands</span>
+      <div class="style-axis-options">
+        {#each handsOptions as opt}
+          <button
+            class="option-btn"
+            class:selected={handPathMode === opt.value}
+            onclick={() => handleHands(opt.value)}
+          >{opt.label}</button>
+        {/each}
+      </div>
+    </div>
+    <span class="style-hint">
       {#each handsOptions as opt}
-        <button
-          class="option-btn"
-          class:selected={handPathMode === opt.value}
-          onclick={() => handleHands(opt.value)}
-        >{opt.label}</button>
+        <span class="hint-layer" class:live={handPathMode === opt.value}
+          >{REVERSAL_HINTS[opt.value]}</span
+        >
       {/each}
-    </div>
+    </span>
   </div>
-  <div class="style-axis">
-    <span class="style-axis-label">Dashes</span>
-    <div class="style-axis-options">
-      {#each dashOptions as opt}
-        <button
-          class="option-btn"
-          class:selected={currentDashValue === opt.value}
-          onclick={() => handleDashes(opt.value)}
-        >{opt.label}</button>
-      {/each}
+
+  <div class="style-axis-group">
+    <div class="style-axis">
+      <span class="style-axis-label">Dashes</span>
+      <div class="style-axis-options">
+        {#each dashOptions as opt}
+          <button
+            class="option-btn"
+            class:selected={currentDashValue === opt.value}
+            onclick={() => handleDashes(opt.value)}
+          >{opt.label}</button>
+        {/each}
+      </div>
     </div>
+    <span class="style-hint">
+      {#each dashOptions as opt}
+        <span class="hint-layer" class:live={currentDashValue === opt.value}
+          >{DASH_HINTS[opt.value]}</span
+        >
+      {/each}
+    </span>
   </div>
 </div>
 
@@ -113,10 +161,35 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     justify-content: center;
   }
 
+  .style-axis-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
   .style-axis {
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  /* Ghost-sizer stack: all variants share one cell, so the box is sized to the
+     tallest and only the live one is painted. */
+  .style-hint {
+    display: grid;
+    padding-left: 64px;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .hint-layer {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+
+  .hint-layer.live {
+    visibility: visible;
   }
 
   .style-axis-label {

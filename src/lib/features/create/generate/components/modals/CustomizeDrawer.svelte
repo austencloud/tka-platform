@@ -46,6 +46,7 @@
           onHandPathModeChange={overlayProps.onHandPathModeChange}
           onMotionTypeFilterChange={overlayProps.onMotionTypeFilterChange}
           onStartEndChange={overlayProps.onStartEndChange}
+          onResetAll={overlayProps.onResetAll}
           onClose={onClose}
         />
       {/if}

@@ -17,6 +17,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
   } from "../../shared/domain/start-position-presets";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
 
   let {
     constraintPreset,
@@ -29,6 +30,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     onHandPathModeChange,
     onMotionTypeFilterChange,
     onStartEndChange,
+    onResetAll = null,
     color = "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
     shadowColor = "190deg 75% 50%",
     cardIndex = 0,
@@ -44,6 +46,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
     onStartEndChange?: (options: StartEndOptions) => void;
+    onResetAll?: (() => void) | null;
     color?: string;
     shadowColor?: string;
     cardIndex?: number;
@@ -57,12 +60,14 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     hapticService = getHapticFeedback();
   });
 
-  // Determine if everything is default
+  // Determine if everything is default. Measured against the real starting
+  // config so "Reset all" leaves this card reading Default (it used to hardcode
+  // smooth/smooth, but the default hand path is Mixed).
   const isAllDefault = $derived.by(() => {
     const isDefaultStyle =
-      constraintPreset === "smooth" &&
-      handPathMode === "smooth" &&
-      (motionTypeFilter === null || motionTypeFilter === "no-dash");
+      constraintPreset === GENERATE_DEFAULT_CONFIG.constraintPreset &&
+      handPathMode === GENERATE_DEFAULT_CONFIG.handPathMode &&
+      motionTypeFilter === GENERATE_DEFAULT_CONFIG.motionTypeFilter;
     const isDefaultOri =
       (startEndOptions?.blueStartOrientation ?? Orientation.IN) === Orientation.IN &&
       (startEndOptions?.redStartOrientation ?? Orientation.IN) === Orientation.IN;
@@ -120,6 +125,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
       onHandPathModeChange,
       onMotionTypeFilterChange,
       onStartEndChange: onStartEndChange ?? null,
+      onResetAll: onResetAll ?? null,
     });
   }
 

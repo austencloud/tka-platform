@@ -211,6 +211,14 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   spellTargetLength: null,
 };
 
+/**
+ * The starting state, exported so "Reset all" in the Customize panel can put
+ * every persisted knob back where a first-run user finds it. Settings persist
+ * across sessions by design — this is the way out when a saved combination
+ * (e.g. Choppy props) quietly narrows what the generator can produce.
+ */
+export const GENERATE_DEFAULT_CONFIG: Readonly<UIGenerationConfig> = DEFAULT_CONFIG;
+
 // Signed-out visitors additionally start at level 1 (beginner). The loop
 // settings now come from DEFAULT_CONFIG, so only the level delta lives here.
 const GUEST_DEFAULT_OVERRIDES: Partial<UIGenerationConfig> = {
@@ -300,6 +308,24 @@ export function createGenerationConfigState(
     saveConfig(config);
   }
 
+  /**
+   * Put every persisted knob back to its first-run value. The tier is resolved
+   * fresh rather than reused from construction, so a guest who signs in mid
+   * session doesn't get reset back to the guest level.
+   */
+  function resetConfig() {
+    const guestNow =
+      resolveAccessTier(
+        authState.isAuthenticated,
+        authState.isAnonymous,
+        isPremiumOrAbove(authState.role)
+      ) === "guest";
+    updateConfig({
+      ...DEFAULT_CONFIG,
+      ...(guestNow ? GUEST_DEFAULT_OVERRIDES : {}),
+    });
+  }
+
   // Event handlers (matching your updated signatures)
   function onLevelChanged(event: CustomEvent) {
     const newLevel = event.detail.value;
@@ -368,6 +394,7 @@ export function createGenerationConfigState(
 
     // Actions
     updateConfig,
+    resetConfig,
     clearSavedConfig: clearConfig,
 
     // Event handlers

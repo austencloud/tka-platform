@@ -202,6 +202,7 @@ export function buildCardDescriptors(
         onHandPathModeChange: handlers.handleHandPathModeChange,
         onMotionTypeFilterChange: handlers.handleMotionTypeFilterChange,
         onStartEndChange: hasStartEnd ? handlers.handleStartEndChange : null,
+        onResetAll: handlers.handleResetAll ?? null,
         cardIndex: cardIndex++,
       },
       gridColumnSpan: customizeLoopSpan,

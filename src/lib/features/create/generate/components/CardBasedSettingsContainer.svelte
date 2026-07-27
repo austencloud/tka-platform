@@ -57,6 +57,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     config,
     isFreeformMode,
     updateConfig,
+    resetConfig,
     isGenerating,
     onGenerateClicked,
     startEndState,
@@ -71,6 +72,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     config: UIGenerationConfig;
     isFreeformMode: boolean;
     updateConfig: (updates: Partial<UIGenerationConfig>) => void;
+    resetConfig: () => void;
     isGenerating: boolean;
     onGenerateClicked: (options: GenerationOptions) => Promise<void>;
     startEndState?: StartEndOptionsState;
@@ -364,6 +366,22 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     startEndState?.setOptions(options);
   }
 
+  // "Reset all" from the Customize panel. Generation settings persist across
+  // sessions, so a saved combination can quietly narrow what comes out (Choppy
+  // props is the one that bit a user); this is the escape hatch. Both stores
+  // are cleared — the config knobs and the start/end constraints — because a
+  // partial reset would still leave the generator constrained.
+  //
+  // No undo here, deliberately: the Customize overlay's props are a snapshot
+  // frozen when it opens, so a restore can reach the config but not the
+  // overlay's own mirrors — the panel would sit there reading "Default" over
+  // restored values. The overlay confirms before calling this instead.
+  function handleResetAll() {
+    resetConfig();
+    startEndState?.resetOptions();
+    positionsResetTrigger++;
+  }
+
   // Preset: open drawer via panel state (drawer rendered in GeneratePanel)
   function handleOpenPresetDrawer() {
     panelState.openPresetDrawer();
@@ -427,6 +445,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
         handleStartEndChange: startEndState
           ? withFavoriteDeselect(handleStartEndChange)
           : undefined,
+        handleResetAll: withFavoriteDeselect(handleResetAll),
         startEndOptions: startEndState?.options,
         positionsResetTrigger,
         currentGridMode: config.gridMode,
