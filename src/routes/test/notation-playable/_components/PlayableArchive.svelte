@@ -819,8 +819,11 @@
 	/* 4K at 100%: five objects in frame, and scale steps up — nothing else
 	   is scaling for us at 3840 (4k-native-layout.md). */
 	@media (min-width: 2600px) {
+		/* 28vw: the active object plus two full neighbors plus real outer hints.
+		   Wider cards also mean square visuals fill the vertical instead of
+		   floating in a portrait void. */
 		.slide {
-			--slide-w: 24vw;
+			--slide-w: 28vw;
 		}
 		.room-title {
 			font-size: 2.6rem;
@@ -831,6 +834,13 @@
 		}
 		.stage-people {
 			font-size: 1.3rem;
+			/* Room to spare at 4K: show the full credit line, no ellipsis.
+			   Two reserved lines so long credits (VTG) never truncate or shift. */
+			white-space: normal;
+			height: auto;
+			min-height: 1.5em;
+			max-height: 3.1em;
+			text-align: center;
 		}
 		.action {
 			min-height: 56px;
@@ -848,8 +858,13 @@
 			font-size: 1.1rem;
 		}
 		.stop-dot {
-			width: 0.9rem;
-			height: 0.9rem;
+			width: 1.1rem;
+			height: 1.1rem;
+		}
+		.stop {
+			width: 56px;
+			height: 56px;
+			flex-basis: 56px;
 		}
 		.stepper {
 			width: 56px;

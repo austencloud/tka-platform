@@ -47,7 +47,7 @@
 
 <style>
 	.cartridge {
-		width: min(92%, 44rem);
+		width: min(92%, 54rem);
 		margin: auto;
 		height: fit-content;
 		align-self: center;
@@ -86,7 +86,7 @@
 		padding: clamp(0.8rem, 3cqi, 1.4rem);
 		overflow-x: auto;
 		font-family: ui-monospace, "Cascadia Code", monospace;
-		font-size: clamp(0.62rem, 1.9cqi, 0.95rem);
+		font-size: clamp(0.62rem, 1.9cqi, 1.15rem);
 		line-height: 1.9;
 	}
 

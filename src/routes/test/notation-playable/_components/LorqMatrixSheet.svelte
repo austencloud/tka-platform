@@ -38,14 +38,16 @@
 	onpointermove={track}
 	onpointerleave={leave}
 >
-	<div class="matrix">
-		{#each Array.from({ length: 144 }) as _, i (i)}
-			<span
-				class="cell"
-				class:diag={i % 12 === Math.floor(i / 12)}
-				style={`--g: ${glow(i).toFixed(3)}`}
-			></span>
-		{/each}
+	<div class="sheet">
+		<div class="matrix">
+			{#each Array.from({ length: 144 }) as _, i (i)}
+				<span
+					class="cell"
+					class:diag={i % 12 === Math.floor(i / 12)}
+					style={`--g: ${glow(i).toFixed(3)}`}
+				></span>
+			{/each}
+		</div>
 	</div>
 </div>
 
@@ -58,17 +60,27 @@
 		padding: clamp(0.8rem, 4cqi, 2rem);
 	}
 
-	.matrix {
-		width: min(100%, 100cqh);
-		aspect-ratio: 1;
+	/* The physical sheet: fills whatever stage it hangs in (portrait on the
+	   4K rail card, square-ish elsewhere), with the enumeration centered on
+	   the paper — no dead void around a floating grid. */
+	.sheet {
 		display: grid;
-		grid-template-columns: repeat(12, minmax(0, 1fr));
-		gap: 2px;
-		padding: clamp(0.5rem, 2cqi, 1rem);
+		place-items: center;
+		width: 100%;
+		height: 100%;
+		padding: clamp(0.5rem, 2cqi, 1.2rem);
 		border-radius: 14px;
 		background: oklch(0.16 0.02 80 / 0.6);
 		border: 1px solid oklch(0.75 0.12 80 / 0.3);
 		box-shadow: 0 0 40px oklch(0.75 0.14 80 / 0.12);
+	}
+
+	.matrix {
+		width: min(100%, 94cqh);
+		aspect-ratio: 1;
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: 2px;
 	}
 
 	.cell {

@@ -53,7 +53,7 @@
 	.film img {
 		display: block;
 		max-width: 100%;
-		max-height: min(58cqh, 30rem);
+		max-height: min(76cqh, 48rem);
 		object-fit: contain;
 	}
 

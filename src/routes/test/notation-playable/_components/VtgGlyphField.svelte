@@ -38,8 +38,19 @@
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		align-content: center;
-		gap: clamp(0.5rem, 2.5cqi, 1.2rem);
+		justify-content: center;
+		gap: clamp(0.5rem, 2.5cqi, 1.4rem);
 		padding: clamp(0.8rem, 4cqi, 2rem);
+	}
+
+	/* Tall stage (the 4K rail card): 2×3 uses the vertical instead of leaving
+	   a squat 3×2 strip floating in dead space. */
+	@container (aspect-ratio < 0.85) {
+		.vtg-field {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			max-width: min(100%, 64cqh);
+			margin-inline: auto;
+		}
 	}
 
 	.glyph {
