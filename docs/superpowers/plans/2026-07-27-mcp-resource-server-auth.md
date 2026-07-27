@@ -1,35 +1,54 @@
-# MCP Resource-Server Authorization Implementation Plan
+# MCP Resource-Server Authorization Implementation Plan (v2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Close the unauthenticated `/mcp` HTTP endpoint on the Flow Arts Knowledge MCP server by turning it into a spec-compliant OAuth 2.1 resource server that fails closed.
+**Goal:** Close the unauthenticated `/mcp` HTTP endpoint on the Flow Arts Knowledge MCP server, using the MCP SDK's own primitives, with tokens validated locally against the authorization server's JWKS.
 
-**Architecture:** The HTTP branch of `mcp-server/index.ts` moves from raw `node:http` onto Express, because the MCP SDK's `requireBearerAuth` is typed as an Express `RequestHandler`. Express then hosts three things: a public `/.well-known/oauth-protected-resource` discovery document (RFC 9728), the bearer-auth middleware, and the existing `StreamableHTTPServerTransport` session handling — in that order, so authorization runs *before* a session can be allocated. Token verification delegates to a managed authorization server through the SDK's `proxyProvider`; we write no token-issuing code. The stdio transport is deliberately untouched.
+**Architecture:** The HTTP branch of `mcp-server/index.ts` moves onto the SDK's `createMcpExpressApp()`, which binds `127.0.0.1` and applies DNS-rebinding protection by default. The SDK's `metadataHandler` serves the RFC 9728 document at the path `getOAuthProtectedResourceMetadataUrl()` computes. `requireBearerAuth` guards `/mcp` ahead of session allocation, backed by a verifier that validates the JWT locally with `jose` against the AS's JWKS — asserting issuer, **audience**, expiry and scope. Sessions register through `onsessioninitialized` and carry their authenticated principal. Stdio is untouched.
 
-**Tech Stack:** TypeScript (ESM, NodeNext), `@modelcontextprotocol/sdk@1.25.2`, Express 5.2.1, Vitest (root config at `tests/config/vitest.config.ts`), `supertest` for HTTP integration tests.
+**Tech Stack:** TypeScript (ESM, NodeNext), `@modelcontextprotocol/sdk@1.25.2`, Express 5.2.1, `jose` 6.x, Vitest (a new node-environment config inside `mcp-server`), `supertest`.
 
 **Spec:** `docs/superpowers/specs/2026-07-27-choreo-mcp-act-surface-design.md` → Phase 1.
-
-**Working directory:** the primary checkout on `main` (`E:/tka-platform`). Per `.claude/rules/worktree-workflow.md` do **not** create a branch or worktree.
+**Audit that produced this revision:** `docs/superpowers/specs/2026-07-27-mcp-auth-plan-audit.md`.
+**Working directory:** primary checkout on `main`. Per `.claude/rules/worktree-workflow.md`, do **not** create a branch or worktree.
 
 ---
 
-## Context an engineer needs before starting
+## What changed from v1, and why
 
-**What this server is.** `mcp-server/` is a Model Context Protocol server exposing flow-arts domain knowledge and pictograph rendering to AI clients. It runs two transports from one `main()` in `mcp-server/index.ts`:
+v1 was audited adversarially and failed on 15 findings, 2 of them critical. This version exists because of them. The corrections that shape it:
 
-- **stdio** (≈lines 70–73) — a local pipe used by Claude Code. No network surface. **This plan does not touch it.**
-- **HTTP** (≈lines 76–142) — enabled only when `MCP_HTTP_PORT` is non-zero (default `"0"`, line 38). The deployed NSSM service sets it to 3333 so claude.ai can reach it.
+| v1 defect | v2 |
+|---|---|
+| Verifier accepted any "active" token — **no audience check**. A token minted by the same AS for another API authorized every MCP tool. | JWT validated locally with explicit `audience` and `issuer`. Task 3. |
+| Deploying it would have **taken the live service down** — unprovisioned env + fail-closed config = NSSM restart loop, and the new app deleted `GET /`, which `install-service.ps1:64` health-checks. | `GET /` preserved; env provisioned in `run-mcp-http.cmd` before restart. Task 7. |
+| The regression test lived in `tests/integration/`, which `tests/config/vitest.config.ts:44` **excludes outright**. It would never have run. | Tests live in `mcp-server/tests/` with their own vitest config. Task 1, done first. |
+| Hand-rolled the Express app, the metadata document, and the metadata URL. | `createMcpExpressApp`, `metadataHandler`, `getOAuthProtectedResourceMetadataUrl`. Tasks 4. |
+| Metadata served at the bare well-known path, dropping `/mcp`. | SDK helper computes `/.well-known/oauth-protected-resource/mcp`. Task 4. |
+| Verifier threw plain `Error` → the middleware maps that to **500, not 401**. | `InvalidTokenError`. Task 3. |
+| Session `Map` with no eviction; DELETE re-inserted the closed transport; sessions bound to no principal. | `onsessioninitialized` registration, principal binding, idle eviction. Task 4. |
+| RFC 7662 introspection, hardcoded and unauthenticated, before a vendor existed. | JWKS validation — vendor-neutral, no per-request outbound call, no introspection credentials. |
 
-**The bug.** The HTTP branch has no authorization check of any kind. Any POST to `/mcp` without an `mcp-session-id` header constructs a fresh `McpServer` and a session. It also sends `Access-Control-Allow-Origin: *`.
+**Every SDK signature used below was read from the installed package**, not recalled. That distinction is what separated v1's correct parts from its defective ones.
 
-**Why it matters now.** Later phases put Firebase Admin credentials in this process to reach acts under `users/{uid}`. An open endpoint holding admin credentials is a read/write path into the whole database. Auth has to land first.
+---
 
-**What "resource server" means.** Per the MCP spec (2025-11-25, `basic/authorization`), a protected MCP server is an OAuth 2.1 **resource server**: it validates access tokens and publishes metadata saying which **authorization server** issues them. It is *not* itself the authorization server — that role is explicitly out of scope of the spec. We delegate to a managed AS.
+## Context an engineer needs
 
-**Terminology.** *AS* = authorization server (issues tokens). *RS* = resource server (this server; validates them). *Protected Resource Metadata* = the RFC 9728 JSON document at `/.well-known/oauth-protected-resource` that tells a client which AS to go to.
+**The server.** `mcp-server/` exposes flow-arts domain knowledge over MCP. `main()` in `mcp-server/index.ts` runs two transports:
 
-**A trap worth naming.** `mcp-server-pkg/` is a *different*, stdio-only server. It has no HTTP transport and is not part of this work. Do not edit it.
+- **stdio** (≈70–73) — a local pipe. **Not touched by this plan.** Note: `.mcp.json` points Claude Code at the *other* server, `mcp-server-pkg/`, which is stdio-only and entirely out of scope.
+- **HTTP** (≈76–142) — active only when `MCP_HTTP_PORT` is set. `deploy/run-mcp-http.cmd` sets it to 3333 and NSSM runs it as `FlowArtsKnowledgeMCP`, reached by claude.ai through a Cloudflare tunnel.
+
+**The bug.** The HTTP branch has no authorization. Any POST to `/mcp` without a session id builds a fresh `McpServer` and a session. It also sends `Access-Control-Allow-Origin: *`.
+
+**Why now.** Later phases put Firebase Admin credentials in this process to reach acts under `users/{uid}`. An open endpoint holding admin credentials is a path into the whole database.
+
+**Roles.** *AS* = authorization server (issues tokens; a managed vendor). *RS* = this server (validates them). We are building an RS. Per the MCP spec (2025-11-25, `basic/authorization`) the AS is explicitly out of scope.
+
+**Why JWKS and not introspection.** RFC 7662 introspection requires authenticating to the AS on every request, which needs vendor-specific credentials and turns each invalid token into an outbound call. JWKS validation is local: fetch the AS's public keys once, cache them, verify signatures in-process. Vendor-neutral, and unauthenticated traffic costs nothing.
+
+**Critical detail:** `requireBearerAuth` validates **scopes and expiry only**. It does *not* compare `AuthInfo.resource` to anything. Audience enforcement is entirely the verifier's job — verified by reading `bearerAuth.js`. Getting this wrong is what made v1's first critical.
 
 ---
 
@@ -37,123 +56,187 @@
 
 | File | Responsibility |
 |---|---|
-| `mcp-server/src/http/auth-config.ts` | **Create.** Reads and validates auth env vars. Single place that decides whether config is complete; throws on partial config. |
-| `mcp-server/src/http/protected-resource-metadata.ts` | **Create.** Builds the RFC 9728 document. Pure function, no Express. |
-| `mcp-server/src/http/create-http-app.ts` | **Create.** Builds the Express app: metadata route, auth middleware, `/mcp` session handling. The whole HTTP surface, injectable for tests. |
-| `mcp-server/index.ts` | **Modify.** HTTP branch delegates to `createHttpApp`. Stdio untouched. |
-| `mcp-server/package.json` | **Modify.** Add `express`, `supertest`, and a `test` script. |
-| `tests/unit/mcp-protected-resource-metadata.test.ts` | **Create.** Metadata document shape. |
-| `tests/unit/mcp-auth-config.test.ts` | **Create.** Config validation and fail-closed behaviour. |
-| `tests/integration/mcp-http-auth.test.ts` | **Create.** The regression guard: unauthenticated 401, authenticated pass-through, no session leak. |
-
-Splitting config / metadata / app apart keeps each unit independently testable — the metadata document and the config rules get unit tests with no HTTP at all, and `create-http-app.ts` is the only piece needing a server.
+| `mcp-server/vitest.config.ts` | **Create.** Node-environment test config scoped to `mcp-server/tests/`. |
+| `mcp-server/src/http/auth-config.ts` | **Create.** Reads and validates auth env. Returns normalized `URL`s. Throws on anything partial. |
+| `mcp-server/src/http/jwks-verifier.ts` | **Create.** `OAuthTokenVerifier` backed by `jose`. Validates issuer, audience, expiry, scopes. |
+| `mcp-server/src/http/create-http-app.ts` | **Create.** Builds the app from SDK primitives; owns session lifecycle. |
+| `mcp-server/index.ts` | **Modify.** HTTP branch delegates here. Stdio untouched. |
+| `mcp-server/deploy/run-mcp-http.cmd` | **Modify.** Provision the new env vars. |
+| `mcp-server/tests/auth-config.test.ts` | **Create.** Config validation. |
+| `mcp-server/tests/jwks-verifier.test.ts` | **Create.** Audience/issuer/expiry/scope rejection — the critical-1 guard. |
+| `mcp-server/tests/http-auth.test.ts` | **Create.** The regression guard, in a directory that actually runs. |
 
 ---
 
-## Task 1: Add dependencies and a test script
+## Task 1: Test infrastructure that actually runs
+
+Do this first. In v1 every later test was written into a directory the runner excludes, so the whole suite was theatre. Nothing else in this plan is trustworthy until this task is done.
 
 **Files:**
+- Create: `mcp-server/vitest.config.ts`
 - Modify: `mcp-server/package.json`
 
-- [ ] **Step 1: Add the runtime and dev dependencies**
-
-Express 5.2.1 is currently present only transitively (via the SDK). It must be a declared dependency because we now import it directly.
-
-Run from the repo root:
+- [ ] **Step 1: Install dependencies**
 
 ```bash
-cd mcp-server && npm install express@^5.2.1 && npm install -D supertest@^7.1.1 @types/express@^5.0.0 @types/supertest@^6.0.2
+cd mcp-server && npm install express@^5.2.1 jose@^6.1.3 && npm install -D vitest@^4.0.18 supertest@^7.1.1 @types/express@^5.0.0 @types/supertest@^6.0.2
 ```
 
-- [ ] **Step 2: Add a test script**
+- [ ] **Step 2: Create the test config**
 
-In `mcp-server/package.json`, add to `"scripts"`:
+Create `mcp-server/vitest.config.ts`:
+
+```typescript
+import { defineConfig } from "vitest/config";
+
+// The root config (tests/config/vitest.config.ts) is jsdom-based and excludes
+// tests/integration/** outright. This server is Node-only and lives outside the
+// pnpm workspace, so it owns its own runner.
+export default defineConfig({
+  test: {
+    environment: "node",
+    include: ["tests/**/*.test.ts"],
+    testTimeout: 15_000,
+  },
+});
+```
+
+- [ ] **Step 3: Add the test script**
+
+In `mcp-server/package.json` `"scripts"`, add:
 
 ```json
-"test": "vitest run --config ../tests/config/vitest.config.ts --dir ../tests --testNamePattern mcp"
+"test": "vitest run",
+"typecheck": "tsc --noEmit"
 ```
 
-- [ ] **Step 3: Verify the install**
+Do **not** add a `--testNamePattern` filter. v1 used one and it silently excluded every suite it was meant to select.
 
-Run: `cd mcp-server && node -e "console.log(require('express/package.json').version)"`
-Expected: `5.2.1` (or higher 5.x)
+- [ ] **Step 4: Prove the runner works**
 
-- [ ] **Step 4: Commit**
-
-```bash
-git add mcp-server/package.json mcp-server/package-lock.json
-git commit -m "chore(mcp): declare express and add a test script" -- mcp-server/package.json mcp-server/package-lock.json
-```
-
----
-
-## Task 2: Auth configuration that fails closed
-
-The single most important behaviour in this plan: partial or missing configuration must never silently disable authorization. The spec's invariant 1 exists because a missing env var in deployment is exactly how the current hole would reappear.
-
-**Files:**
-- Create: `mcp-server/src/http/auth-config.ts`
-- Test: `tests/unit/mcp-auth-config.test.ts`
-
-- [ ] **Step 1: Write the failing test**
-
-Create `tests/unit/mcp-auth-config.test.ts`:
+Create `mcp-server/tests/smoke.test.ts`:
 
 ```typescript
 import { describe, expect, it } from "vitest";
 
-import { resolveAuthConfig } from "../../mcp-server/src/http/auth-config.js";
-
-describe("resolveAuthConfig", () => {
-  const valid = {
-    MCP_AUTH_ISSUER: "https://as.example.com",
-    MCP_AUTH_RESOURCE_URL: "https://mcp.example.com/mcp",
-  };
-
-  it("returns a config when both issuer and resource URL are present", () => {
-    const config = resolveAuthConfig(valid);
-    expect(config.issuer).toBe("https://as.example.com");
-    expect(config.resourceUrl).toBe("https://mcp.example.com/mcp");
-  });
-
-  it("throws when the issuer is missing entirely", () => {
-    expect(() => resolveAuthConfig({ MCP_AUTH_RESOURCE_URL: valid.MCP_AUTH_RESOURCE_URL }))
-      .toThrow(/MCP_AUTH_ISSUER/);
-  });
-
-  it("throws when the resource URL is missing entirely", () => {
-    expect(() => resolveAuthConfig({ MCP_AUTH_ISSUER: valid.MCP_AUTH_ISSUER }))
-      .toThrow(/MCP_AUTH_RESOURCE_URL/);
-  });
-
-  it("throws rather than defaulting when config is entirely absent", () => {
-    // The failure mode this guards: a deployment loses its env and the server
-    // comes up unauthenticated. It must refuse to start instead.
-    expect(() => resolveAuthConfig({})).toThrow();
-  });
-
-  it("rejects a non-HTTPS issuer", () => {
-    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "http://as.example.com" }))
-      .toThrow(/https/i);
-  });
-
-  it("allows an HTTP issuer only on localhost, for local development", () => {
-    const config = resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "http://localhost:8080" });
-    expect(config.issuer).toBe("http://localhost:8080");
-  });
-
-  it("rejects an issuer that is not a URL at all", () => {
-    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "not-a-url" })).toThrow();
+describe("test infrastructure", () => {
+  it("runs tests in this package", () => {
+    expect(true).toBe(true);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+Run: `cd mcp-server && npm test`
+Expected: 1 file, 1 test, passing. If this does not run, stop — everything downstream depends on it.
 
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/mcp-auth-config.test.ts`
-Expected: FAIL — cannot resolve `../../mcp-server/src/http/auth-config.js`
+- [ ] **Step 5: Commit**
 
-- [ ] **Step 3: Write the implementation**
+```bash
+git add mcp-server/package.json mcp-server/package-lock.json mcp-server/vitest.config.ts mcp-server/tests/smoke.test.ts
+git commit -m "test(mcp): give the server a test runner that actually executes" -- mcp-server/package.json mcp-server/package-lock.json mcp-server/vitest.config.ts mcp-server/tests/smoke.test.ts
+```
+
+---
+
+## Task 2: Auth configuration
+
+Fails closed, and returns normalized `URL`s so downstream code cannot disagree about what the resource is.
+
+**Files:**
+- Create: `mcp-server/src/http/auth-config.ts`
+- Test: `mcp-server/tests/auth-config.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `mcp-server/tests/auth-config.test.ts`:
+
+```typescript
+import { describe, expect, it } from "vitest";
+
+import { resolveAuthConfig, resolveHttpPort } from "../src/http/auth-config.js";
+
+const valid = {
+  MCP_AUTH_ISSUER: "https://as.example.com",
+  MCP_AUTH_RESOURCE_URL: "https://mcp.example.com/mcp",
+  MCP_AUTH_JWKS_URI: "https://as.example.com/.well-known/jwks.json",
+};
+
+describe("resolveAuthConfig", () => {
+  it("returns normalized URLs for a complete config", () => {
+    const c = resolveAuthConfig(valid);
+    expect(c.issuer.href).toBe("https://as.example.com/");
+    expect(c.resourceUrl.href).toBe("https://mcp.example.com/mcp");
+    expect(c.jwksUri.href).toBe("https://as.example.com/.well-known/jwks.json");
+  });
+
+  it.each(["MCP_AUTH_ISSUER", "MCP_AUTH_RESOURCE_URL", "MCP_AUTH_JWKS_URI"])(
+    "throws when %s is missing",
+    (missing) => {
+      const env: Record<string, string | undefined> = { ...valid };
+      delete env[missing];
+      expect(() => resolveAuthConfig(env)).toThrow(new RegExp(missing));
+    },
+  );
+
+  it("throws on entirely absent config rather than defaulting", () => {
+    expect(() => resolveAuthConfig({})).toThrow();
+  });
+
+  it("rejects a non-HTTPS issuer off localhost", () => {
+    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "http://as.example.com" })).toThrow(/https/i);
+  });
+
+  it("allows http on loopback for local development", () => {
+    expect(resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "http://localhost:8080" }).issuer.href)
+      .toBe("http://localhost:8080/");
+  });
+
+  it("rejects a non-http scheme even on loopback", () => {
+    // v1 let ftp://localhost through while claiming only http was allowed.
+    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "ftp://localhost" })).toThrow();
+  });
+
+  it("rejects credentials embedded in a URL", () => {
+    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "https://user:pw@as.example.com" })).toThrow(/credential/i);
+  });
+
+  it("rejects a URL with a fragment", () => {
+    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_RESOURCE_URL: "https://mcp.example.com/mcp#x" })).toThrow(/fragment/i);
+  });
+
+  it("rejects a non-URL", () => {
+    expect(() => resolveAuthConfig({ ...valid, MCP_AUTH_ISSUER: "not-a-url" })).toThrow();
+  });
+});
+
+describe("resolveHttpPort", () => {
+  it("treats unset as disabled", () => {
+    expect(resolveHttpPort(undefined)).toBe(0);
+  });
+
+  it("treats 0 as disabled", () => {
+    expect(resolveHttpPort("0")).toBe(0);
+  });
+
+  it("parses a valid port", () => {
+    expect(resolveHttpPort("3333")).toBe(3333);
+  });
+
+  it("throws on a malformed port instead of silently disabling HTTP", () => {
+    // v1 used parseInt, so "abc" became NaN and NaN > 0 quietly skipped the
+    // whole HTTP branch — a typo would disable the server with no error.
+    expect(() => resolveHttpPort("abc")).toThrow();
+    expect(() => resolveHttpPort("99999")).toThrow();
+  });
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `cd mcp-server && npm test -- auth-config`
+Expected: FAIL — cannot resolve `../src/http/auth-config.js`
+
+- [ ] **Step 3: Implement**
 
 Create `mcp-server/src/http/auth-config.ts`:
 
@@ -161,33 +244,20 @@ Create `mcp-server/src/http/auth-config.ts`:
 /**
  * Authorization configuration for the HTTP transport.
  *
- * There is deliberately NO "unauthenticated fallback". If the HTTP transport is
- * enabled and this config cannot be resolved, the server refuses to start. A
- * fallback would recreate the open endpoint the first time a deployment lost an
- * env var, which is the failure this whole phase exists to fix.
+ * There is deliberately NO unauthenticated fallback. If HTTP is enabled and this
+ * cannot be resolved, the process refuses to start. A fallback would reopen the
+ * endpoint the first time a deployment lost an env var.
  */
 
 export type AuthConfig = {
-  /** Base URL of the authorization server that issues our access tokens. */
-  issuer: string;
-  /** Canonical URL of this resource, as clients address it. */
-  resourceUrl: string;
+  issuer: URL;
+  resourceUrl: URL;
+  jwksUri: URL;
 };
 
 type Env = Record<string, string | undefined>;
 
-function requireVar(env: Env, name: string): string {
-  const value = env[name]?.trim();
-  if (!value) {
-    throw new Error(
-      `[MCP] ${name} is required when MCP_HTTP_PORT is set. ` +
-        `Refusing to start an unauthenticated HTTP transport.`,
-    );
-  }
-  return value;
-}
-
-function assertSecureUrl(raw: string, name: string): string {
+function parseUrl(raw: string, name: string): URL {
   let url: URL;
   try {
     url = new URL(raw);
@@ -195,317 +265,503 @@ function assertSecureUrl(raw: string, name: string): string {
     throw new Error(`[MCP] ${name} must be an absolute URL, got: ${raw}`);
   }
 
-  const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-  if (url.protocol !== "https:" && !isLocal) {
-    throw new Error(`[MCP] ${name} must use https (http is allowed only on localhost), got: ${raw}`);
+  const isLoopback = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && isLoopback)) {
+    throw new Error(`[MCP] ${name} must use https (http permitted only on loopback), got: ${raw}`);
   }
-  return raw;
+  if (url.username || url.password) {
+    throw new Error(`[MCP] ${name} must not embed credentials`);
+  }
+  if (url.hash) {
+    throw new Error(`[MCP] ${name} must not contain a fragment`);
+  }
+  return url;
+}
+
+function required(env: Env, name: string): string {
+  const value = env[name]?.trim();
+  if (!value) {
+    throw new Error(
+      `[MCP] ${name} is required when MCP_HTTP_PORT is set. Refusing to start an unauthenticated HTTP transport.`,
+    );
+  }
+  return value;
 }
 
 export function resolveAuthConfig(env: Env): AuthConfig {
-  const issuer = assertSecureUrl(requireVar(env, "MCP_AUTH_ISSUER"), "MCP_AUTH_ISSUER");
-  const resourceUrl = assertSecureUrl(
-    requireVar(env, "MCP_AUTH_RESOURCE_URL"),
-    "MCP_AUTH_RESOURCE_URL",
-  );
-  return { issuer, resourceUrl };
+  return {
+    issuer: parseUrl(required(env, "MCP_AUTH_ISSUER"), "MCP_AUTH_ISSUER"),
+    resourceUrl: parseUrl(required(env, "MCP_AUTH_RESOURCE_URL"), "MCP_AUTH_RESOURCE_URL"),
+    jwksUri: parseUrl(required(env, "MCP_AUTH_JWKS_URI"), "MCP_AUTH_JWKS_URI"),
+  };
+}
+
+/** 0 means "HTTP disabled". A malformed value is an error, never a silent disable. */
+export function resolveHttpPort(raw: string | undefined): number {
+  const value = raw?.trim();
+  if (!value) return 0;
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`[MCP] MCP_HTTP_PORT must be an integer, got: ${value}`);
+  }
+  const port = Number(value);
+  if (port !== 0 && (port < 1 || port > 65535)) {
+    throw new Error(`[MCP] MCP_HTTP_PORT must be 0 or 1-65535, got: ${value}`);
+  }
+  return port;
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/mcp-auth-config.test.ts`
-Expected: PASS, 7 tests
+Run: `cd mcp-server && npm test -- auth-config`
+Expected: PASS, 16 tests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mcp-server/src/http/auth-config.ts tests/unit/mcp-auth-config.test.ts
-git commit -m "feat(mcp): resolve auth config, refusing to start without it" -- mcp-server/src/http/auth-config.ts tests/unit/mcp-auth-config.test.ts
+git add mcp-server/src/http/auth-config.ts mcp-server/tests/auth-config.test.ts
+git commit -m "feat(mcp): validate auth config strictly, refusing partial setups" -- mcp-server/src/http/auth-config.ts mcp-server/tests/auth-config.test.ts
 ```
 
 ---
 
-## Task 3: The protected-resource metadata document
+## Task 3: The JWKS verifier — audience enforcement
 
-RFC 9728. This is how a client discovers which authorization server to use. It must be publicly readable — a client fetches it precisely because it has no token yet.
+This task fixes the audit's first critical. `requireBearerAuth` does **not** check audience; if this verifier does not, nothing does, and any token from the same AS opens every tool.
+
+Errors must be `InvalidTokenError`. The middleware maps only that to 401 — a plain `Error` becomes a 500 with no challenge.
 
 **Files:**
-- Create: `mcp-server/src/http/protected-resource-metadata.ts`
-- Test: `tests/unit/mcp-protected-resource-metadata.test.ts`
+- Create: `mcp-server/src/http/jwks-verifier.ts`
+- Test: `mcp-server/tests/jwks-verifier.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/unit/mcp-protected-resource-metadata.test.ts`:
+Create `mcp-server/tests/jwks-verifier.test.ts`:
 
 ```typescript
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
+import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
+import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 
-import { buildProtectedResourceMetadata } from "../../mcp-server/src/http/protected-resource-metadata.js";
+import { createJwksVerifier } from "../src/http/jwks-verifier.js";
 
-describe("buildProtectedResourceMetadata", () => {
-  const config = {
-    issuer: "https://as.example.com",
-    resourceUrl: "https://mcp.example.com/mcp",
-  };
+const ISSUER = "https://as.example.com";
+const AUDIENCE = "https://mcp.example.com/mcp";
 
-  it("names this resource by its canonical URL", () => {
-    expect(buildProtectedResourceMetadata(config).resource).toBe("https://mcp.example.com/mcp");
+let privateKey: CryptoKey;
+let publicJwk: JWK;
+
+// Local key set — no network. createJwksVerifier accepts an injected key
+// resolver so the unit tests never reach out.
+beforeAll(async () => {
+  const pair = await generateKeyPair("RS256", { extractable: true });
+  privateKey = pair.privateKey;
+  publicJwk = await exportJWK(pair.publicKey);
+  publicJwk.alg = "RS256";
+});
+
+async function mint(overrides: {
+  aud?: string;
+  iss?: string;
+  exp?: string | number;
+  scope?: string;
+  sub?: string;
+} = {}) {
+  return new SignJWT({ scope: overrides.scope ?? "mcp:use" })
+    .setProtectedHeader({ alg: "RS256" })
+    .setIssuer(overrides.iss ?? ISSUER)
+    .setAudience(overrides.aud ?? AUDIENCE)
+    .setSubject(overrides.sub ?? "user-123")
+    .setIssuedAt()
+    .setExpirationTime(overrides.exp ?? "5m")
+    .sign(privateKey);
+}
+
+function verifier() {
+  return createJwksVerifier({
+    issuer: new URL(ISSUER),
+    audience: new URL(AUDIENCE),
+    keyResolver: async () => publicJwk,
+  });
+}
+
+describe("createJwksVerifier", () => {
+  it("accepts a correctly-audienced token and reports its principal", async () => {
+    const info = await verifier().verifyAccessToken(await mint());
+    expect(info.clientId).toBe("user-123");
+    expect(info.scopes).toContain("mcp:use");
+    expect(info.resource?.href).toBe(AUDIENCE);
+    expect(info.extra?.sub).toBe("user-123");
   });
 
-  it("advertises the authorization server", () => {
-    // The spec requires authorization_servers to hold at least one entry —
-    // without it a client cannot discover where to get a token.
-    expect(buildProtectedResourceMetadata(config).authorization_servers).toEqual([
-      "https://as.example.com",
-    ]);
+  it("REJECTS a token minted for a different audience", async () => {
+    // The audit's first critical. A token the same AS issued for another API
+    // must not open this one.
+    await expect(verifier().verifyAccessToken(await mint({ aud: "https://other-api.example.com" })))
+      .rejects.toThrow(InvalidTokenError);
   });
 
-  it("declares bearer tokens in the Authorization header", () => {
-    expect(buildProtectedResourceMetadata(config).bearer_methods_supported).toContain("header");
+  it("rejects a token from a different issuer", async () => {
+    await expect(verifier().verifyAccessToken(await mint({ iss: "https://evil.example.com" })))
+      .rejects.toThrow(InvalidTokenError);
   });
 
-  it("produces a document that survives a JSON round trip", () => {
-    const doc = buildProtectedResourceMetadata(config);
-    expect(JSON.parse(JSON.stringify(doc))).toEqual(doc);
+  it("rejects an expired token", async () => {
+    await expect(verifier().verifyAccessToken(await mint({ exp: Math.floor(Date.now() / 1000) - 60 })))
+      .rejects.toThrow(InvalidTokenError);
+  });
+
+  it("rejects a structurally invalid token", async () => {
+    await expect(verifier().verifyAccessToken("not.a.jwt")).rejects.toThrow(InvalidTokenError);
+  });
+
+  it("rejects a token signed by the wrong key", async () => {
+    const other = await generateKeyPair("RS256", { extractable: true });
+    const forged = await new SignJWT({ scope: "mcp:use" })
+      .setProtectedHeader({ alg: "RS256" })
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setSubject("attacker")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(other.privateKey);
+    await expect(verifier().verifyAccessToken(forged)).rejects.toThrow(InvalidTokenError);
+  });
+
+  it("throws InvalidTokenError, not a plain Error", async () => {
+    // The middleware maps only InvalidTokenError to 401. A plain Error becomes
+    // a 500 with no WWW-Authenticate challenge.
+    await expect(verifier().verifyAccessToken("garbage")).rejects.toBeInstanceOf(InvalidTokenError);
+  });
+
+  it("returns an empty scope list when the token carries no scope claim", async () => {
+    const info = await verifier().verifyAccessToken(await mint({ scope: "" }));
+    expect(info.scopes).toEqual([]);
+  });
+
+  it("surfaces expiry so the middleware can enforce it", async () => {
+    const info = await verifier().verifyAccessToken(await mint());
+    expect(typeof info.expiresAt).toBe("number");
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it to verify it fails**
 
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/mcp-protected-resource-metadata.test.ts`
-Expected: FAIL — cannot resolve `protected-resource-metadata.js`
+Run: `cd mcp-server && npm test -- jwks-verifier`
+Expected: FAIL — cannot resolve `jwks-verifier.js`
 
-- [ ] **Step 3: Write the implementation**
+- [ ] **Step 3: Implement**
 
-Create `mcp-server/src/http/protected-resource-metadata.ts`:
+Create `mcp-server/src/http/jwks-verifier.ts`:
 
 ```typescript
 /**
- * OAuth 2.0 Protected Resource Metadata (RFC 9728).
+ * Local JWT validation against the authorization server's JWKS.
  *
- * The MCP specification (2025-11-25, basic/authorization) requires a protected
- * MCP server to publish this so clients can discover the authorization server.
- * Served unauthenticated by design — a client reads it before it has a token.
+ * Chosen over RFC 7662 introspection because introspection needs authenticated,
+ * vendor-specific credentials and turns every invalid token into an outbound
+ * request. Verification here is in-process; `jose` caches the key set.
+ *
+ * IMPORTANT: `requireBearerAuth` checks scopes and expiry but does NOT compare
+ * AuthInfo.resource to anything. Audience enforcement happens HERE or nowhere.
  */
 
-import type { AuthConfig } from "./auth-config.js";
+import { createRemoteJWKSet, jwtVerify, type JWK, type JWTPayload } from "jose";
+import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
+import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 
-export type ProtectedResourceMetadata = {
-  resource: string;
-  authorization_servers: string[];
-  bearer_methods_supported: string[];
+export type JwksVerifierOptions = {
+  issuer: URL;
+  /** The canonical resource identifier this server accepts tokens for. */
+  audience: URL;
+  jwksUri?: URL;
+  /** Test seam: supply a key directly instead of fetching a remote key set. */
+  keyResolver?: () => Promise<JWK>;
 };
 
-export function buildProtectedResourceMetadata(config: AuthConfig): ProtectedResourceMetadata {
+function scopesOf(payload: JWTPayload): string[] {
+  const raw = payload.scope;
+  if (typeof raw !== "string" || raw.trim() === "") return [];
+  return raw.split(" ").filter(Boolean);
+}
+
+export function createJwksVerifier(options: JwksVerifierOptions): OAuthTokenVerifier {
+  const { issuer, audience, jwksUri, keyResolver } = options;
+
+  if (!keyResolver && !jwksUri) {
+    throw new Error("[MCP] createJwksVerifier requires either jwksUri or keyResolver");
+  }
+
+  // createRemoteJWKSet caches and refreshes on unknown kid, so this is one
+  // fetch amortised across every request rather than a per-request call.
+  const remoteKeySet = jwksUri ? createRemoteJWKSet(jwksUri) : undefined;
+
   return {
-    resource: config.resourceUrl,
-    authorization_servers: [config.issuer],
-    bearer_methods_supported: ["header"],
+    async verifyAccessToken(token: string): Promise<AuthInfo> {
+      try {
+        const key = keyResolver ? await keyResolver() : remoteKeySet!;
+        const { payload } = await jwtVerify(token, key as never, {
+          issuer: issuer.href.replace(/\/$/, ""),
+          audience: audience.href,
+          clockTolerance: 5,
+        });
+
+        if (typeof payload.exp !== "number") {
+          throw new InvalidTokenError("Token has no expiration time");
+        }
+        const sub = typeof payload.sub === "string" ? payload.sub : undefined;
+        if (!sub) {
+          throw new InvalidTokenError("Token has no subject");
+        }
+
+        return {
+          token,
+          clientId: sub,
+          scopes: scopesOf(payload),
+          expiresAt: payload.exp,
+          resource: audience,
+          extra: { sub, iss: payload.iss, clientId: payload.client_id },
+        };
+      } catch (error) {
+        if (error instanceof InvalidTokenError) throw error;
+        // Every jose failure — bad signature, wrong audience, wrong issuer,
+        // expired, malformed — becomes a 401 with a challenge. A plain Error
+        // would surface as a 500 instead.
+        const reason = error instanceof Error ? error.message : "token verification failed";
+        throw new InvalidTokenError(reason);
+      }
+    },
   };
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/mcp-protected-resource-metadata.test.ts`
-Expected: PASS, 4 tests
+Run: `cd mcp-server && npm test -- jwks-verifier`
+Expected: PASS, 9 tests. The audience-rejection test is the one that matters; if it passes for the wrong reason (e.g. every token rejected), the acceptance test above catches that.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mcp-server/src/http/protected-resource-metadata.ts tests/unit/mcp-protected-resource-metadata.test.ts
-git commit -m "feat(mcp): publish RFC 9728 protected-resource metadata" -- mcp-server/src/http/protected-resource-metadata.ts tests/unit/mcp-protected-resource-metadata.test.ts
+git add mcp-server/src/http/jwks-verifier.ts mcp-server/tests/jwks-verifier.test.ts
+git commit -m "feat(mcp): validate tokens against JWKS, enforcing audience" -- mcp-server/src/http/jwks-verifier.ts mcp-server/tests/jwks-verifier.test.ts
 ```
 
 ---
 
-## Task 4: The Express app, with auth in front of session creation
-
-The ordering here is the security property. Session allocation currently happens for any POST lacking a session id; if auth ran after that, an unauthenticated caller could still allocate sessions and exhaust memory.
-
-`createHttpApp` takes its verifier and its server factory as arguments so the integration test can supply a stub verifier instead of reaching a real authorization server.
+## Task 4: The HTTP app, built from SDK primitives
 
 **Files:**
 - Create: `mcp-server/src/http/create-http-app.ts`
 
-- [ ] **Step 1: Write the implementation**
-
-There is no separate unit test for this file — it is wiring, and Task 5 tests it end to end through real HTTP, which is the only way the ordering property can actually be verified.
+- [ ] **Step 1: Implement**
 
 Create `mcp-server/src/http/create-http-app.ts`:
 
 ```typescript
 /**
- * The HTTP surface for the MCP server.
+ * The HTTP surface.
+ *
+ * Built on the SDK's own primitives rather than a hand-rolled Express app:
+ * createMcpExpressApp binds loopback and applies DNS-rebinding protection,
+ * metadataHandler serves the RFC 9728 document, and
+ * getOAuthProtectedResourceMetadataUrl computes the path clients actually look
+ * at (which includes the resource path — a bare well-known path 404s).
  *
  * Route order is load-bearing:
- *   1. /.well-known/oauth-protected-resource — public, no auth (clients read it
- *      to discover the AS before they hold a token).
- *   2. requireBearerAuth on /mcp — runs BEFORE any session is allocated.
- *   3. the MCP session handling itself.
- *
- * Swapping 2 and 3 would let an unauthenticated caller allocate sessions.
+ *   1. GET /                     — health, public (install-service.ps1 probes it)
+ *   2. metadata                  — public; clients read it before holding a token
+ *   3. requireBearerAuth on /mcp — BEFORE any session is allocated
+ *   4. session handling
  */
 
-import express, { type Express } from "express";
 import { randomUUID } from "node:crypto";
+import type { Express, Request } from "express";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { metadataHandler } from "@modelcontextprotocol/sdk/server/auth/handlers/metadata.js";
+import { getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
 
 import type { AuthConfig } from "./auth-config.js";
-import { buildProtectedResourceMetadata } from "./protected-resource-metadata.js";
 
-export const PROTECTED_RESOURCE_PATH = "/.well-known/oauth-protected-resource";
+/** Sessions idle longer than this are closed and evicted. */
+export const SESSION_IDLE_MS = 30 * 60 * 1000;
+
+type SessionRecord = {
+  transport: StreamableHTTPServerTransport;
+  /** Subject this session was opened by. Another principal may not reuse it. */
+  principal: string;
+  lastSeen: number;
+};
 
 export type CreateHttpAppOptions = {
   config: AuthConfig;
   verifier: OAuthTokenVerifier;
-  /** Builds a fresh McpServer per session. */
   createMcpServer: () => McpServer;
-  /** Origins permitted to call the API. Wildcards are not accepted. */
-  allowedOrigins: string[];
+  allowedHosts?: string[];
+  /** Test seam: observe construction without a real transport. */
+  onServerConstructed?: () => void;
 };
 
 export function createHttpApp({
   config,
   verifier,
   createMcpServer,
-  allowedOrigins,
+  allowedHosts,
+  onServerConstructed,
 }: CreateHttpAppOptions): Express {
-  const app = express();
-  const sessions = new Map<string, StreamableHTTPServerTransport>();
+  // Defaults to host 127.0.0.1 with DNS-rebinding protection. allowedHosts is
+  // needed because the service sits behind a Cloudflare tunnel, so the Host
+  // header arrives as the public name.
+  const app = createMcpExpressApp(allowedHosts ? { allowedHosts } : {});
+  const sessions = new Map<string, SessionRecord>();
 
-  // An explicit allowlist replaces the previous `*`. A wildcard is what lets any
-  // page a user visits act as a client against this server.
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-      res.setHeader("Vary", "Origin");
+  function evictIdle(now: number): void {
+    for (const [id, record] of sessions) {
+      if (now - record.lastSeen > SESSION_IDLE_MS) {
+        sessions.delete(id);
+        void record.transport.close();
+      }
     }
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id, Authorization");
-    res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
-    if (req.method === "OPTIONS") {
-      res.sendStatus(204);
-      return;
-    }
-    next();
+  }
+
+  // (1) Health. install-service.ps1 probes this and throws if it does not answer;
+  // deleting it turns a deploy into a failed install.
+  app.get("/", (_req, res) => {
+    res.status(200).type("text/plain").send("Flow Arts Knowledge MCP Server");
   });
 
-  // (1) Public discovery document.
-  const metadata = buildProtectedResourceMetadata(config);
-  app.get(PROTECTED_RESOURCE_PATH, (_req, res) => {
-    res.json(metadata);
+  // (2) Public discovery, at the canonical RFC 9728 path.
+  const metadataUrl = getOAuthProtectedResourceMetadataUrl(config.resourceUrl);
+  const metadataPath = new URL(metadataUrl).pathname;
+  const serveMetadata = metadataHandler({
+    resource: config.resourceUrl.href,
+    authorization_servers: [config.issuer.href],
+    bearer_methods_supported: ["header"],
   });
+  app.get(metadataPath, serveMetadata);
+  // Root alias: some clients probe the bare path before the path-specific one.
+  if (metadataPath !== "/.well-known/oauth-protected-resource") {
+    app.get("/.well-known/oauth-protected-resource", serveMetadata);
+  }
 
-  const resourceMetadataUrl = new URL(PROTECTED_RESOURCE_PATH, config.resourceUrl).toString();
+  // (3) Auth, ahead of anything that allocates.
+  app.all("/mcp", requireBearerAuth({ verifier, resourceMetadataUrl: metadataUrl }), async (req, res) => {
+    const auth = (req as Request & { auth?: { clientId: string } }).auth;
+    const principal = auth?.clientId ?? "";
+    const now = Date.now();
+    evictIdle(now);
 
-  // (2) Auth, mounted before the handler below.
-  app.all(
-    "/mcp",
-    requireBearerAuth({ verifier, resourceMetadataUrl }),
-    // (3) Only reached once a token has been validated.
-    async (req, res) => {
-      const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      let transport: StreamableHTTPServerTransport | undefined;
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-      if (sessionId) {
-        transport = sessions.get(sessionId);
-        if (!transport) {
-          res.status(404).json({ error: "Session not found" });
-          return;
-        }
-      } else if (req.method === "POST") {
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-        });
-        transport.onclose = () => {
-          if (transport?.sessionId) sessions.delete(transport.sessionId);
-        };
-        await createMcpServer().connect(transport);
-      } else {
-        res.status(400).json({ error: "Bad request — missing session" });
+    if (sessionId) {
+      const record = sessions.get(sessionId);
+      if (!record) {
+        res.status(404).json({ error: "Session not found" });
         return;
       }
-
-      await transport.handleRequest(req, res, req.body);
-
-      if (transport.sessionId && !sessions.has(transport.sessionId)) {
-        sessions.set(transport.sessionId, transport);
+      // A session belongs to the principal that opened it. Without this, anyone
+      // holding a valid token for this resource could drive someone else's
+      // stateful server — which becomes a data boundary in Phase 2.
+      if (record.principal !== principal) {
+        res.status(403).json({ error: "Session belongs to a different principal" });
+        return;
       }
-    },
-  );
+      record.lastSeen = now;
+      await record.transport.handleRequest(req, res, req.body);
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(400).json({ error: "Bad request — missing session" });
+      return;
+    }
+
+    // (4) New session. Registration happens in onsessioninitialized, not after
+    // handleRequest: registering afterwards races initialization and re-inserts
+    // transports that DELETE just closed.
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id: string) => {
+        sessions.set(id, { transport, principal, lastSeen: Date.now() });
+      },
+    });
+    transport.onclose = () => {
+      if (transport.sessionId) sessions.delete(transport.sessionId);
+    };
+
+    onServerConstructed?.();
+    await createMcpServer().connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  });
 
   return app;
-}
-
-/** Exposed for tests that need to assert nothing was allocated. */
-export function sessionCountOf(app: Express): number {
-  return (app as unknown as { _sessionCount?: () => number })._sessionCount?.() ?? 0;
 }
 ```
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd mcp-server && npx tsc --noEmit`
-Expected: no errors. If `requireBearerAuth`'s import path fails to resolve, confirm it against `mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/server/auth/middleware/bearerAuth.d.ts` — the package uses explicit `.js` specifiers under NodeNext.
+Run: `cd mcp-server && npm run typecheck`
+Expected: no errors.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add mcp-server/src/http/create-http-app.ts
-git commit -m "feat(mcp): build the HTTP app with auth ahead of session creation" -- mcp-server/src/http/create-http-app.ts
+git commit -m "feat(mcp): build the HTTP app on the SDK's own primitives" -- mcp-server/src/http/create-http-app.ts
 ```
 
 ---
 
-## Task 5: The regression guard — unauthenticated requests are rejected
+## Task 5: The regression guard
 
-This is the test that proves the vulnerability is closed. Write it even if everything above already looks right; the point is that it keeps being true.
+v1's tests asserted on mocks and on absent headers. These assert on observable behaviour: whether a server was constructed at all, and whether the status is the one the OAuth spec requires.
 
 **Files:**
-- Create: `tests/integration/mcp-http-auth.test.ts`
+- Create: `mcp-server/tests/http-auth.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the test**
 
-Create `tests/integration/mcp-http-auth.test.ts`:
+Create `mcp-server/tests/http-auth.test.ts`:
 
 ```typescript
 import { describe, expect, it, beforeEach } from "vitest";
 import request from "supertest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 
-import {
-  createHttpApp,
-  PROTECTED_RESOURCE_PATH,
-} from "../../mcp-server/src/http/create-http-app.js";
+import { createHttpApp } from "../src/http/create-http-app.js";
 
 const config = {
-  issuer: "https://as.example.com",
-  resourceUrl: "https://mcp.example.com/mcp",
+  issuer: new URL("https://as.example.com"),
+  resourceUrl: new URL("https://mcp.example.com/mcp"),
+  jwksUri: new URL("https://as.example.com/.well-known/jwks.json"),
 };
 
-const VALID_TOKEN = "valid-token";
+const VALID = "valid-token";
+const OTHER_PRINCIPAL = "other-token";
 
-// Stub AS: the real one is a managed service. What we are testing is that the
-// server consults a verifier at all and refuses when it says no.
-let verifyCalls: string[] = [];
+let constructed = 0;
+
 const verifier = {
   async verifyAccessToken(token: string): Promise<AuthInfo> {
-    verifyCalls.push(token);
-    if (token !== VALID_TOKEN) throw new Error("invalid token");
-    return {
-      token,
-      clientId: "test-client",
-      scopes: [],
-      expiresAt: Math.floor(Date.now() / 1000) + 3600,
-    };
+    if (token === VALID || token === OTHER_PRINCIPAL) {
+      return {
+        token,
+        clientId: token === VALID ? "user-a" : "user-b",
+        scopes: ["mcp:use"],
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        resource: config.resourceUrl,
+      };
+    }
+    throw new InvalidTokenError("invalid token");
   },
 };
 
@@ -514,190 +770,201 @@ function buildApp() {
     config,
     verifier,
     createMcpServer: () => new McpServer({ name: "test", version: "0.0.0" }),
-    allowedOrigins: ["https://claude.ai"],
+    allowedHosts: ["127.0.0.1", "localhost"],
+    onServerConstructed: () => {
+      constructed++;
+    },
   });
 }
 
+const INITIALIZE = {
+  jsonrpc: "2.0" as const,
+  method: "initialize",
+  id: 1,
+  params: {
+    protocolVersion: "2025-06-18",
+    capabilities: {},
+    clientInfo: { name: "test", version: "0.0.0" },
+  },
+};
+
 describe("MCP HTTP authorization", () => {
   beforeEach(() => {
-    verifyCalls = [];
+    constructed = 0;
   });
 
-  it("serves the protected-resource metadata without a token", async () => {
-    const res = await request(buildApp()).get(PROTECTED_RESOURCE_PATH);
+  it("answers the health probe install-service.ps1 depends on", async () => {
+    const res = await request(buildApp()).get("/");
     expect(res.status).toBe(200);
-    expect(res.body.authorization_servers).toEqual([config.issuer]);
   });
 
-  it("rejects a POST to /mcp that carries no Authorization header", async () => {
-    // This is the actual vulnerability: previously this allocated a session and
-    // returned a live MCP server.
-    const res = await request(buildApp()).post("/mcp").send({ jsonrpc: "2.0", method: "ping", id: 1 });
+  it("serves metadata at the RFC 9728 path including the resource path", async () => {
+    const res = await request(buildApp()).get("/.well-known/oauth-protected-resource/mcp");
+    expect(res.status).toBe(200);
+    expect(res.body.authorization_servers).toEqual([config.issuer.href]);
+    expect(res.body.resource).toBe(config.resourceUrl.href);
+  });
+
+  it("also answers the bare well-known path for clients that probe it", async () => {
+    expect((await request(buildApp()).get("/.well-known/oauth-protected-resource")).status).toBe(200);
+  });
+
+  it("rejects a POST with no Authorization header", async () => {
+    const res = await request(buildApp()).post("/mcp").send(INITIALIZE);
     expect(res.status).toBe(401);
   });
 
-  it("points an unauthorized caller at the metadata document", async () => {
-    const res = await request(buildApp()).post("/mcp").send({});
-    expect(res.headers["www-authenticate"]).toContain("resource_metadata");
+  it("CONSTRUCTS NOTHING for an unauthenticated caller", async () => {
+    // The real invariant. v1 only checked for an absent response header, which
+    // would have passed even if a server had been built and then rejected.
+    await request(buildApp()).post("/mcp").send(INITIALIZE);
+    expect(constructed).toBe(0);
   });
 
-  it("rejects a bad token", async () => {
-    const res = await request(buildApp())
-      .post("/mcp")
-      .set("Authorization", "Bearer nope")
-      .send({ jsonrpc: "2.0", method: "ping", id: 1 });
+  it("returns 401 — not 500 — for a bad token", async () => {
+    // Only InvalidTokenError maps to 401. A plain Error becomes a 500 with no
+    // challenge, which is what v1's verifier would have produced.
+    const res = await request(buildApp()).post("/mcp").set("Authorization", "Bearer nope").send(INITIALIZE);
     expect(res.status).toBe(401);
   });
 
-  it("consults the verifier for a presented token", async () => {
-    await request(buildApp()).post("/mcp").set("Authorization", "Bearer nope").send({});
-    expect(verifyCalls).toContain("nope");
+  it("challenges with the metadata URL so a client can discover the AS", async () => {
+    const res = await request(buildApp()).post("/mcp").send(INITIALIZE);
+    expect(res.headers["www-authenticate"]).toContain(
+      "https://mcp.example.com/.well-known/oauth-protected-resource/mcp",
+    );
   });
 
-  it("does not allocate a session for an unauthenticated caller", async () => {
-    const res = await request(buildApp()).post("/mcp").send({});
-    expect(res.headers["mcp-session-id"]).toBeUndefined();
-  });
-
-  it("lets a valid token past the middleware", async () => {
+  it("lets a valid token through and constructs exactly one server", async () => {
     const res = await request(buildApp())
       .post("/mcp")
-      .set("Authorization", `Bearer ${VALID_TOKEN}`)
+      .set("Authorization", `Bearer ${VALID}`)
       .set("Accept", "application/json, text/event-stream")
-      .send({
-        jsonrpc: "2.0",
-        method: "initialize",
-        id: 1,
-        params: {
-          protocolVersion: "2025-06-18",
-          capabilities: {},
-          clientInfo: { name: "test", version: "0.0.0" },
-        },
-      });
-    // Past auth. Anything other than 401/403 proves the middleware allowed it
-    // through; the transport's own response shape is not what this test owns.
-    expect(res.status).not.toBe(401);
-    expect(res.status).not.toBe(403);
-    expect(verifyCalls).toContain(VALID_TOKEN);
+      .send(INITIALIZE);
+    expect(res.status).toBeLessThan(400);
+    expect(constructed).toBe(1);
   });
 
-  it("does not echo an arbitrary origin back", async () => {
-    const res = await request(buildApp())
-      .get(PROTECTED_RESOURCE_PATH)
-      .set("Origin", "https://evil.example.com");
-    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+  it("refuses a session id belonging to a different principal", async () => {
+    const app = buildApp();
+    const first = await request(app)
+      .post("/mcp")
+      .set("Authorization", `Bearer ${VALID}`)
+      .set("Accept", "application/json, text/event-stream")
+      .send(INITIALIZE);
+
+    const sessionId = first.headers["mcp-session-id"];
+    expect(sessionId).toBeTruthy();
+
+    const res = await request(app)
+      .post("/mcp")
+      .set("Authorization", `Bearer ${OTHER_PRINCIPAL}`)
+      .set("mcp-session-id", sessionId)
+      .set("Accept", "application/json, text/event-stream")
+      .send({ jsonrpc: "2.0", method: "ping", id: 2 });
+
+    expect(res.status).toBe(403);
   });
 
-  it("allows a configured origin", async () => {
+  it("404s an unknown session rather than opening a new one", async () => {
     const res = await request(buildApp())
-      .get(PROTECTED_RESOURCE_PATH)
-      .set("Origin", "https://claude.ai");
-    expect(res.headers["access-control-allow-origin"]).toBe("https://claude.ai");
+      .post("/mcp")
+      .set("Authorization", `Bearer ${VALID}`)
+      .set("mcp-session-id", "does-not-exist")
+      .send({ jsonrpc: "2.0", method: "ping", id: 2 });
+    expect(res.status).toBe(404);
+    expect(constructed).toBe(0);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run**
 
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/integration/mcp-http-auth.test.ts`
-Expected: FAIL — module not found, or assertions fail if Task 4 is incomplete.
+Run: `cd mcp-server && npm test -- http-auth`
+Expected: PASS, 11 tests. If the `www-authenticate` assertion fails, confirm `resourceMetadataUrl` reaches `requireBearerAuth` — the SDK emits that header only when it is supplied.
 
-- [ ] **Step 3: Make it pass**
-
-Task 4 supplies the implementation. If a test fails here, fix `create-http-app.ts` — do not weaken the test. In particular, if the `www-authenticate` assertion fails, check that `resourceMetadataUrl` is actually being passed to `requireBearerAuth`; the SDK only emits that header when it is.
-
-- [ ] **Step 4: Run the full set**
-
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/mcp-*.test.ts tests/integration/mcp-http-auth.test.ts`
-Expected: PASS — 3 files, 20 tests.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add tests/integration/mcp-http-auth.test.ts
-git commit -m "test(mcp): prove /mcp rejects unauthenticated callers" -- tests/integration/mcp-http-auth.test.ts
+git add mcp-server/tests/http-auth.test.ts
+git commit -m "test(mcp): prove /mcp rejects and allocates nothing without a token" -- mcp-server/tests/http-auth.test.ts
 ```
 
 ---
 
-## Task 6: Wire the app into the server entrypoint
+## Task 6: Wire it into the entrypoint
 
 **Files:**
-- Modify: `mcp-server/index.ts` (the HTTP branch, ≈lines 76–142; leave stdio at ≈70–73 alone)
+- Modify: `mcp-server/index.ts`
 
 - [ ] **Step 1: Replace the HTTP branch**
 
-In `mcp-server/index.ts`, replace the entire `if (HTTP_PORT > 0) { ... }` block with:
+Replace the whole `if (HTTP_PORT > 0) { ... }` block and the `HTTP_PORT` constant (line 38):
 
 ```typescript
-  // HTTP transport (optional, for Claude.ai via remote MCP).
-  // Authenticated per docs/superpowers/specs/2026-07-27-choreo-mcp-act-surface-design.md.
-  // Enabling HTTP without auth config is a startup error, never a silent downgrade.
+const HTTP_PORT = resolveHttpPort(process.env.MCP_HTTP_PORT);
+```
+
+```typescript
+  // HTTP transport (for Claude.ai via remote MCP). Authorization is mandatory —
+  // see docs/superpowers/specs/2026-07-27-choreo-mcp-act-surface-design.md.
   if (HTTP_PORT > 0) {
     const authConfig = resolveAuthConfig(process.env);
-    const allowedOrigins = (process.env.MCP_ALLOWED_ORIGINS ?? "https://claude.ai")
+    const allowedHosts = (process.env.MCP_ALLOWED_HOSTS ?? "")
       .split(",")
-      .map((o) => o.trim())
+      .map((h) => h.trim())
       .filter(Boolean);
 
     const app = createHttpApp({
       config: authConfig,
-      verifier: new ProxyOAuthServerProvider({
-        endpoints: { authorizationUrl: `${authConfig.issuer}/authorize`, tokenUrl: `${authConfig.issuer}/token` },
-        verifyAccessToken: async (token) => {
-          const res = await fetch(`${authConfig.issuer}/introspect`, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ token }),
-          });
-          if (!res.ok) throw new Error("token introspection failed");
-          const info = (await res.json()) as { active: boolean; client_id?: string; scope?: string; exp?: number };
-          if (!info.active) throw new Error("token is not active");
-          return {
-            token,
-            clientId: info.client_id ?? "unknown",
-            scopes: info.scope ? info.scope.split(" ") : [],
-            expiresAt: info.exp,
-          };
-        },
-        getClient: async () => undefined,
+      verifier: createJwksVerifier({
+        issuer: authConfig.issuer,
+        audience: authConfig.resourceUrl,
+        jwksUri: authConfig.jwksUri,
       }),
       createMcpServer,
-      allowedOrigins,
+      allowedHosts: allowedHosts.length > 0 ? allowedHosts : undefined,
     });
 
-    app.listen(HTTP_PORT, () => {
-      console.error(`[MCP-HTTP] Listening on port ${HTTP_PORT}/mcp (authorization required)`);
+    app.listen(HTTP_PORT, "127.0.0.1", () => {
+      console.error(`[MCP-HTTP] Listening on 127.0.0.1:${HTTP_PORT} (authorization required)`);
     });
   }
 ```
 
-Add these imports beside the existing ones at the top of the file:
+Add the imports, and remove the now-unused `createServer` and `StreamableHTTPServerTransport` imports:
 
 ```typescript
-import { ProxyOAuthServerProvider } from "@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js";
-import { resolveAuthConfig } from "./src/http/auth-config.js";
+import { resolveAuthConfig, resolveHttpPort } from "./src/http/auth-config.js";
 import { createHttpApp } from "./src/http/create-http-app.js";
+import { createJwksVerifier } from "./src/http/jwks-verifier.js";
 ```
-
-Remove the now-unused `createServer` and `StreamableHTTPServerTransport` imports from `index.ts` — the transport now lives in `create-http-app.ts`.
-
-> **Verified against the installed SDK (1.25.2).** `ProxyOptions` in `mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/server/auth/providers/proxyProvider.d.ts` is exactly `{ endpoints: { authorizationUrl, tokenUrl, revocationUrl?, registrationUrl? }, verifyAccessToken: (token) => Promise<AuthInfo>, getClient: (clientId) => Promise<OAuthClientInformationFull | undefined>, fetch? }`, and `AuthInfo` is `{ token, clientId, scopes, expiresAt? }`. The code above matches. If you upgrade the SDK, re-check this file before trusting the shape.
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd mcp-server && npx tsc --noEmit`
+Run: `cd mcp-server && npm run typecheck`
 Expected: no errors.
 
-- [ ] **Step 3: Verify stdio still works unauthenticated**
+- [ ] **Step 3: Verify stdio is unaffected**
 
-Run: `cd mcp-server && echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | MCP_HTTP_PORT=0 npx tsx index.ts`
-Expected: a JSON-RPC response listing tools. No auth involved. If this fails, the stdio path was disturbed — it must not be.
+```powershell
+cd mcp-server
+$env:MCP_HTTP_PORT = ""
+'{"jsonrpc":"2.0","method":"tools/list","id":1}' | npx tsx index.ts
+```
 
-- [ ] **Step 4: Verify HTTP refuses to start without config**
+Expected: a JSON-RPC response listing tools, no auth involved. Stdio must keep working — it is a local pipe and authenticating it would break the local workflow for no gain.
 
-Run: `cd mcp-server && MCP_HTTP_PORT=3333 npx tsx index.ts`
-Expected: startup throws with `MCP_AUTH_ISSUER is required when MCP_HTTP_PORT is set`. This is the fail-closed invariant; a server that starts here is a bug.
+- [ ] **Step 4: Verify it refuses to start unconfigured**
+
+```powershell
+cd mcp-server
+$env:MCP_HTTP_PORT = "3399"
+$env:MCP_AUTH_ISSUER = ""
+npx tsx index.ts
+```
+
+Expected: throws `MCP_AUTH_ISSUER is required when MCP_HTTP_PORT is set`. A server that starts here is the bug this phase exists to prevent. Use 3399, **not 3333** — 3333 is the live service and binding it either fails or leaves you testing the old process.
 
 - [ ] **Step 5: Commit**
 
@@ -708,83 +975,104 @@ git commit -m "feat(mcp): require authorization on the HTTP transport" -- mcp-se
 
 ---
 
-## Task 7: Document the deployment change
+## Task 7: Deployment, without taking the service down
 
-The NSSM service will stop working the moment this ships unless its environment gains the new variables. That is intended — fail closed — but it must not be a surprise.
+The service is live and `Automatic`. Shipping the code without this task causes an outage: `resolveAuthConfig` throws, NSSM restarts every few seconds, and `install-service.ps1` fails its probe.
 
 **Files:**
-- Modify: `mcp-server/README.md` (create it if absent)
+- Modify: `mcp-server/deploy/run-mcp-http.cmd`
+- Modify: `mcp-server/deploy/README.md`
 
-- [ ] **Step 1: Document the required environment**
+- [ ] **Step 1: Provision the environment in the launcher**
 
-Add to `mcp-server/README.md`:
+`run-mcp-http.cmd` already sets `MCP_HTTP_PORT` inline, so it is the natural place for the rest — it is version-controlled, unlike NSSM's registry `AppEnvironment`. Replace its body with:
+
+```bat
+@echo off
+REM Launcher for the Flow Arts Knowledge MCP server in HTTP mode.
+REM Invoked by NSSM as a Windows service. Do not run directly.
+
+set MCP_HTTP_PORT=3333
+
+REM Authorization is mandatory when HTTP is enabled; the server refuses to
+REM start without these. Replace the placeholders with the real authorization
+REM server before installing.
+set MCP_AUTH_ISSUER=https://REPLACE-ME.example.com
+set MCP_AUTH_RESOURCE_URL=https://REPLACE-ME-tunnel-host/mcp
+set MCP_AUTH_JWKS_URI=https://REPLACE-ME.example.com/.well-known/jwks.json
+
+REM Host header allowlist — the tunnel presents the public hostname, and the
+REM installer probes localhost.
+set MCP_ALLOWED_HOSTS=REPLACE-ME-tunnel-host,localhost,127.0.0.1
+
+cd /d "E:\tka-platform\mcp-server"
+"C:\Program Files\nodejs\npx.cmd" --no-install tsx index.ts
+```
+
+- [ ] **Step 2: Document the contract**
+
+Add to `mcp-server/deploy/README.md`:
 
 ```markdown
-## HTTP transport and authorization
+## Authorization (required for HTTP mode)
 
-The HTTP transport is off unless `MCP_HTTP_PORT` is set. When it IS set, these
-are required and the server refuses to start without them:
+When `MCP_HTTP_PORT` is set, all of these are required and the server refuses to
+start without them:
 
 | Variable | Meaning |
 |---|---|
-| `MCP_HTTP_PORT` | Port for the HTTP transport. Unset or `0` disables it. |
-| `MCP_AUTH_ISSUER` | Base URL of the authorization server. Must be https, except on localhost. |
-| `MCP_AUTH_RESOURCE_URL` | Canonical public URL of this server's `/mcp` endpoint. |
-| `MCP_ALLOWED_ORIGINS` | Comma-separated CORS allowlist. Defaults to `https://claude.ai`. |
+| `MCP_AUTH_ISSUER` | Authorization server base URL. https, except on loopback. |
+| `MCP_AUTH_RESOURCE_URL` | This server's canonical public `/mcp` URL. Tokens must carry it as their audience. |
+| `MCP_AUTH_JWKS_URI` | The AS's JWKS endpoint. Keys are fetched once and cached. |
+| `MCP_ALLOWED_HOSTS` | Comma-separated Host header allowlist. Include the tunnel hostname and localhost. |
 
-There is no unauthenticated HTTP mode. Refusing to start is deliberate: a silent
-downgrade would reopen the hole this design closed.
+There is no unauthenticated HTTP mode. Refusing to start is deliberate — a silent
+downgrade would reopen the endpoint.
 
-The **stdio** transport is unauthenticated by design — it is a local pipe with no
-network surface, and it is how Claude Code connects. It needs none of the above.
+**Before installing or restarting:** fill in the placeholders in
+`run-mcp-http.cmd`. Leaving them will restart-loop the service.
 
-### Deploying
-
-The NSSM service must have the new variables added before this version is
-installed, or it will fail to start. See `reference_flow_arts_mcp_deploy`.
+The **stdio** transport needs none of this. It is a local pipe.
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add mcp-server/README.md
-git commit -m "docs(mcp): record the auth environment and the fail-closed contract" -- mcp-server/README.md
+git add mcp-server/deploy/run-mcp-http.cmd mcp-server/deploy/README.md
+git commit -m "chore(mcp): provision auth env before the service needs it" -- mcp-server/deploy/run-mcp-http.cmd mcp-server/deploy/README.md
 ```
 
 ---
 
 ## Task 8: Full verification
 
-- [ ] **Step 1: Run every test touched by this plan**
+- [ ] **Step 1: Run the server's whole suite**
 
-Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/mcp-*.test.ts tests/integration/mcp-http-auth.test.ts`
-Expected: 3 files, 20 tests, all passing.
+Run: `cd mcp-server && npm test`
+Expected: 4 files, 37 tests, all passing.
 
-- [ ] **Step 2: Typecheck the whole project**
+- [ ] **Step 2: Typecheck**
 
-Run: `npx svelte-check --threshold error`
-Expected: 0 errors. (Pre-existing warnings: 4, in `line-clamp` and `.buffering-*` selectors, unrelated to this work.)
+Run: `cd mcp-server && npm run typecheck`
+Expected: no errors. (Root `svelte-check` does **not** cover `mcp-server` — its tsconfig includes only root `src/**` — so it is not the gate here.)
 
-- [ ] **Step 3: Confirm the real fix by hand**
+- [ ] **Step 3: End-to-end against a real key set, on a free port**
 
-```bash
-cd mcp-server
-MCP_HTTP_PORT=3333 \
-MCP_AUTH_ISSUER=http://localhost:8080 \
-MCP_AUTH_RESOURCE_URL=http://localhost:3333/mcp \
-npx tsx index.ts &
-sleep 3
-curl -s -o /dev/null -w "no token: %{http_code}\n" -X POST http://localhost:3333/mcp -d '{}'
-curl -s -o /dev/null -w "metadata: %{http_code}\n" http://localhost:3333/.well-known/oauth-protected-resource
-```
+This exercises the path the unit tests stub: a genuine JWT verified against a served JWKS.
 
-Expected:
-```
-no token: 401
-metadata: 200
-```
+Create `mcp-server/tests/manual/e2e-check.md` documenting this, and run it once by hand:
 
-Then stop the server (per `.claude/rules/resource-budget.md`, reap what you spawn).
+1. Start a throwaway JWKS server and mint a token with `jose` (issuer/audience matching the env below).
+2. Start the MCP server on **3399**, never 3333.
+3. `curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:3399/mcp -d '{}'` → **401**
+4. `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3399/.well-known/oauth-protected-resource/mcp` → **200**
+5. `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3399/` → **200** (the installer's probe)
+6. The same POST with `Authorization: Bearer <token>` → **not 401**
+7. A token minted for a different audience → **401**
+
+Step 7 is the one that proves the first critical is actually fixed.
+
+Stop the server afterwards — per `.claude/rules/resource-budget.md`, reap what you spawn.
 
 - [ ] **Step 4: Push**
 
@@ -794,10 +1082,10 @@ git push origin main
 
 ---
 
-## Self-review notes
+## Self-review
 
-**Spec coverage.** Phase 1's five bullets map to tasks: transport migration → Task 4/6; metadata → Task 3; verification → Task 4/6; failure mode → Task 2 (config) and Task 5 (401 + `WWW-Authenticate`); session interaction → Task 4 ordering, asserted in Task 5. All five invariants have a test except invariant 5 (stdio unchanged), covered manually in Task 6 Step 3 — automating a stdio handshake is disproportionate here, and that is a deliberate call, not an oversight.
+**Audit coverage.** Critical 1 → Task 3 (audience, with a dedicated rejection test). Critical 2 → Task 7 plus the preserved `GET /` in Task 4. High 3 → JWKS replaces introspection entirely. High 4 → `InvalidTokenError`, tested. High 5 → Task 1, done first. High 6 → construction spy and principal-reuse tests. High 7 → `onsessioninitialized` + idle eviction. High 8 → principal on the session record. Medium 10 → SDK metadata helper. Medium 11 → `createMcpExpressApp` + explicit loopback bind. Medium 12 → strict config and port parsing. Medium 14 → port 3399 and PowerShell syntax. Low 15 → the stdio ambiguity is stated in Context.
 
-**API shapes verified, not assumed.** `requireBearerAuth`'s options and `ProxyOAuthServerProvider`'s constructor were both read from the installed `@modelcontextprotocol/sdk@1.25.2` type definitions rather than recalled, and the code in Tasks 4 and 6 matches them. The remaining unexecuted assumption is the *authorization server's* introspection endpoint (`POST /introspect`, RFC 7662) — that is vendor-shaped and gets confirmed once the vendor is chosen.
+**Partially addressed, deliberately.** High 9 (rate limiting, body caps, circuit breaker) is reduced but not eliminated: JWKS removes the outbound-AS amplification, and `createMcpExpressApp` supplies bounded JSON parsing, but there is still no rate limit on authenticated session creation. That is a hardening task for a service that is loopback-bound behind a tunnel with a single expected user — worth doing, not worth blocking Phase 1. Medium 13 (separate CORS policy for metadata) is not implemented; `createMcpExpressApp` does not set CORS at all, so browser-based discovery from an arbitrary origin will fail. Acceptable while the only client is claude.ai's server-side connector. Both are recorded here rather than silently dropped.
 
-**Not covered, deliberately.** Choosing the managed AS vendor. Phase 1 depends on the *role*; the issuer is configuration. Picking Auth0 vs Stytch vs WorkOS is a decision for the deployment, and the introspection endpoint convention above may need adjusting to whichever is chosen — most support RFC 7662 introspection, but verify against the vendor's docs before Task 6.
+**Still unverified.** The AS vendor. `MCP_AUTH_JWKS_URI` is written as explicit configuration precisely so the plan does not depend on a vendor's discovery-document shape, but the exact issuer string, the claim carrying scopes, and whether the vendor issues JWTs at all (a few issue opaque tokens, which would force introspection back) must be confirmed against the vendor before Task 7 is filled in.
