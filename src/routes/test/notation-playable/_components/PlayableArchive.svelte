@@ -54,6 +54,9 @@
 
 	const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 	const isMobile = new MediaQuery("(max-width: 760px)");
+	/* The site-wide big-screen seam: above it all nine artifacts fit at once,
+	   so the rail becomes a no-scroll accordion instead of a carousel. */
+	const wideRail = new MediaQuery("(min-width: 1680px)");
 
 	let emblaApi = $state<EmblaCarouselType | null>(null);
 	let flourish = $state(false);
@@ -80,7 +83,11 @@
 			getHapticFeedback().trigger("success");
 			setTimeout(() => (flourish = false), 1600);
 		}
-		if (emblaApi && emblaApi.selectedScrollSnap() !== archive.activeIndex) {
+		if (
+			!wideRail.current &&
+			emblaApi &&
+			emblaApi.selectedScrollSnap() !== archive.activeIndex
+		) {
 			emblaApi.scrollTo(archive.activeIndex, reduceMotion.current);
 		}
 	}
@@ -206,72 +213,99 @@
 		</div>
 	</header>
 
+	{#snippet slideCard(entry: (typeof entries)[number], i: number)}
+		{@const isActive = i === activeIndex}
+		<!-- The card div is a pointer convenience; the accessible path is the
+		     label button below (roving tabindex) and the Inspect action. Live
+		     artifacts own their pointer surface, so the card only opens detail
+		     when the click was not on an interactive child. -->
+		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+		<div
+			class="artifact"
+			style:--slide-accent={ACCENTS[entry.id]}
+			use:tilt={{ maxDegrees: isActive ? 4 : 0 }}
+			onclick={(e) => {
+				if ((e.target as HTMLElement).closest("button, a")) return;
+				onSlideClick(i);
+			}}
+		>
+			<span
+				class="artifact-stage"
+				style:view-transition-name={isActive && !archive.detailOpen
+					? "notation-artifact"
+					: undefined}
+			>
+				<ArtifactVisual {entry} active={isActive && !archive.detailOpen} />
+			</span>
+			<button
+				bind:this={slideButtons[i]}
+				type="button"
+				class="artifact-label"
+				tabindex={isActive ? 0 : -1}
+				aria-label={isActive
+					? `${entry.system}, ${entry.year}. Open detail`
+					: `Select ${entry.system}, ${entry.year}`}
+				aria-current={isActive ? "true" : undefined}
+				use:pressSpring
+				onclick={() => onSlideClick(i)}
+			>
+				<span class="artifact-year">{entry.year}</span>
+				<span class="artifact-name">{entry.system}</span>
+			</button>
+		</div>
+	{/snippet}
+
 	<!-- ROW 2: the artifact rail. The keydown here is the roving-tabindex
 	     pattern: focus lives on the artifact buttons; the container routes
-	     arrow keys so navigation works from any of them. -->
+	     arrow keys so navigation works from any of them.
+
+	     Above the 1680 seam every artifact fits on screen at once, so nothing
+	     scrolls: the row is a focus-and-context accordion — all nine objects
+	     visible and pickable, the selected one expands in place. Below the
+	     seam the Embla carousel takes over and scrolling earns its keep. -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="rail"
 		role="group"
-		aria-roledescription="carousel"
+		aria-roledescription={wideRail.current ? undefined : "carousel"}
 		aria-label="Notation systems in chronological order"
 		bind:this={railRegion}
 		onkeydown={onRailKeydown}
 	>
-		<div
-			class="rail-viewport"
-			use:emblaCarouselSvelte={{
-				options: { align: "center", skipSnaps: false, containScroll: false },
-				plugins: [],
-			}}
-			onemblaInit={onEmblaInit}
-		>
-			<ol class="rail-track">
+		{#if wideRail.current}
+			<ol class="gallery-row">
 				{#each entries as entry, i (entry.id)}
-					{@const isActive = i === activeIndex}
-					<li class="slide" class:is-active={isActive} class:visited={archive.visited.has(i)}>
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-						<!-- The card div is a pointer convenience; the accessible path is the
-						     label button below (roving tabindex) and the Inspect action. Live
-						     artifacts own their pointer surface, so the card only opens detail
-						     when the click was not on an interactive child. -->
-						<div
-							class="artifact"
-							style:--slide-accent={ACCENTS[entry.id]}
-							use:tilt={{ maxDegrees: isActive ? 4 : 0 }}
-							onclick={(e) => {
-								if ((e.target as HTMLElement).closest("button, a")) return;
-								onSlideClick(i);
-							}}
-						>
-							<span
-								class="artifact-stage"
-								style:view-transition-name={isActive && !archive.detailOpen
-									? "notation-artifact"
-									: undefined}
-							>
-								<ArtifactVisual {entry} active={isActive && !archive.detailOpen} />
-							</span>
-							<button
-								bind:this={slideButtons[i]}
-								type="button"
-								class="artifact-label"
-								tabindex={isActive ? 0 : -1}
-								aria-label={isActive
-									? `${entry.system}, ${entry.year}. Open detail`
-									: `Select ${entry.system}, ${entry.year}`}
-								aria-current={isActive ? "true" : undefined}
-								use:pressSpring
-								onclick={() => onSlideClick(i)}
-							>
-								<span class="artifact-year">{entry.year}</span>
-								<span class="artifact-name">{entry.system}</span>
-							</button>
-						</div>
+					<li
+						class="g-slide"
+						class:is-active={i === activeIndex}
+						class:visited={archive.visited.has(i)}
+					>
+						{@render slideCard(entry, i)}
 					</li>
 				{/each}
 			</ol>
-		</div>
+		{:else}
+			<div
+				class="rail-viewport"
+				use:emblaCarouselSvelte={{
+					options: { align: "center", skipSnaps: false, containScroll: false },
+					plugins: [],
+				}}
+				onemblaInit={onEmblaInit}
+			>
+				<ol class="rail-track">
+					{#each entries as entry, i (entry.id)}
+						<li
+							class="slide"
+							class:is-active={i === activeIndex}
+							class:visited={archive.visited.has(i)}
+						>
+							{@render slideCard(entry, i)}
+						</li>
+					{/each}
+				</ol>
+			</div>
+		{/if}
 	</div>
 
 	<!-- ROW 3: actions for the active artifact (reserved boxes, no shift) -->
@@ -482,6 +516,57 @@
 	/* RAIL */
 	.rail {
 		min-height: 0;
+	}
+
+	/* WIDE MODE: the no-scroll accordion. Every object stays visible and
+	   legible — this is a shelf to pick from, not a carousel feeding one item
+	   at a time. The active slide grows in place; neighbors compress but
+	   never vanish or dim into unreadability. */
+	.gallery-row {
+		display: flex;
+		align-items: stretch;
+		gap: clamp(0.6rem, 0.9vw, 1.4rem);
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.g-slide {
+		flex: 1 1 0;
+		min-width: 0;
+		display: grid;
+		transition: flex-grow 480ms cubic-bezier(0.3, 1, 0.4, 1);
+	}
+
+	.g-slide.is-active {
+		flex-grow: 3.2;
+	}
+
+	.g-slide .artifact {
+		opacity: 0.66;
+		scale: 1;
+	}
+
+	.g-slide:hover .artifact {
+		opacity: 0.92;
+		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 50%, transparent);
+	}
+
+	.g-slide.is-active .artifact {
+		opacity: 1;
+	}
+
+	/* Compressed neighbors: keep the year as the readable handle; the full
+	   name returns as the card grows. */
+	.g-slide:not(.is-active) .artifact-name {
+		font-size: clamp(0.75rem, 0.55rem + 0.3vw, 1rem);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.g-slide {
+			transition: none;
+		}
 	}
 
 	.rail-viewport {
