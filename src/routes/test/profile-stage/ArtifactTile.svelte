@@ -30,6 +30,7 @@
     sequence = null,
     poster = null,
     tunnel = null,
+    scene = null,
     mandala = null,
     lightMode = false,
     size = "md",
@@ -44,6 +45,10 @@
     poster?: string | null;
     /** Tunnel media: the saved entry, replayed live when the tile holds a token. */
     tunnel?: unknown | null;
+    /** Scene media: the saved entry, rendered live when the tile holds a token.
+     *  Only set when the scene carries a performance — a look-only save has no
+     *  steps to animate, so it stays a poster (see scene3DHasSteps). */
+    scene?: unknown | null;
     /** Mandala media: everything CollectedMandala carries. */
     mandala?: {
       steps: unknown[];
@@ -151,6 +156,31 @@
               )}
             active
             props={{ tunnel }}
+          />
+        {:else if poster}
+          <img class="poster-img" src={poster} alt={label} loading="lazy" />
+        {:else}
+          <div class="poster empty">No preview</div>
+        {/if}
+      </Crossfade>
+    {:else if medium === "scene" && scene}
+      <!-- Scene3DPreview mounts the real Viewer3DCanvas from a construction
+           seed, so it reads and writes none of the user's global viewer state —
+           the property that lets several of these coexist at all. Its camera
+           orbits on its own, since a tile is watched rather than driven.
+
+           Same poster-resting / remount-on-revoke shape as the tunnel branch:
+           WebGL contexts are the most expensive thing on this page, so a
+           revoked token must genuinely tear the canvas down. -->
+      <Crossfade key={live} fill duration={DURATION.normal}>
+        {#if live}
+          <LazyMount
+            loader={() =>
+              import(
+                "$lib/features/scene-3d-collection/components/Scene3DPreview.svelte"
+              )}
+            active
+            props={{ scene }}
           />
         {:else if poster}
           <img class="poster-img" src={poster} alt={label} loading="lazy" />

@@ -371,6 +371,8 @@
     maxDistance={25}
     maxPolarAngle={Math.PI / 2}
     paused={viewer3DState.isExporting}
+    autoRotate={viewer3DState.seededAutoOrbit}
+    autoRotateSpeed={viewer3DState.seededAutoOrbitSpeed}
     oncreate={(c) => {
       controlsInstance = c;
       const live = viewer3DState.persistedCamera;

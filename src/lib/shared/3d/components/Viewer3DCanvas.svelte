@@ -116,7 +116,13 @@
         : undefined
     )
   );
-  const sceneFeatureState = createSceneFeatureState();
+  // A seeded viewer (a saved-scene preview) carries its own feature set and is
+  // isolated from the shared `tka-scene-features` key; an ordinary viewer reads
+  // and writes that key as before.
+  const seededFeatures = viewer3DState.seededSceneFeatures;
+  const sceneFeatureState = createSceneFeatureState(seededFeatures ?? undefined, {
+    isolated: seededFeatures !== null,
+  });
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas

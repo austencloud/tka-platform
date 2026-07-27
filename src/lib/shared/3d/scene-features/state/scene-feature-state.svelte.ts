@@ -16,12 +16,26 @@ function persistToggles(toggles: Record<string, boolean>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toggles));
 }
 
+export interface SceneFeatureStateOptions {
+  /**
+   * Ignore the shared `tka-scene-features` key entirely, in both directions:
+   * `overrides` become authoritative, and `toggle` stops writing. A saved-scene
+   * preview owns its own feature set — it must show the features the scene was
+   * saved with, not whatever the user last toggled in the real viewer, and it
+   * must not write its choices back over them.
+   */
+  isolated?: boolean;
+}
+
 export function createSceneFeatureState(
-  overrides?: Partial<Record<string, boolean>>
+  overrides?: Partial<Record<string, boolean>>,
+  options?: SceneFeatureStateOptions
 ) {
-  const persisted = loadPersistedToggles();
+  const isolated = options?.isolated ?? false;
+  const persisted = isolated ? {} : loadPersistedToggles();
 
   // Three-tier precedence: localStorage > overrides > registry default
+  // (isolated: overrides > registry default — localStorage is not consulted)
   const initialToggles: Record<string, boolean> = {};
   for (const feature of SCENE_FEATURES) {
     if (feature.key in persisted) {
@@ -62,6 +76,7 @@ export function createSceneFeatureState(
   function toggle(key: string): void {
     const current = enabledMap[key] ?? false;
     enabledMap = { ...enabledMap, [key]: !current };
+    if (isolated) return;
 
     const stored = loadPersistedToggles();
     stored[key] = !current;
@@ -81,8 +96,16 @@ export function createSceneFeatureState(
   }
 
   function reportReady(key: string): void {
-    const { [key]: _, ...remainingErrors } = errorMap;
-    errorMap = remainingErrors;
+    // Idempotent by necessity: reporters call this from an $effect that reruns
+    // whenever their asset stores settle (see ForestScene's per-GLB progress
+    // effect). Rebuilding errorMap unconditionally handed that effect a brand
+    // new object every run, so it invalidated itself forever —
+    // effect_update_depth_exceeded. Only touch the maps when something actually
+    // changes, and this becomes a no-op once the feature is ready.
+    if (key in errorMap) {
+      const { [key]: _, ...remainingErrors } = errorMap;
+      errorMap = remainingErrors;
+    }
     if (readySet.has(key)) return;
     console.debug(`[SceneFeature] ${key} READY`);
     readySet = new Set([...readySet, key]);

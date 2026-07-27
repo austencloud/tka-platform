@@ -35,11 +35,13 @@ interface Slot {
 export const DEFAULT_BUDGETS: Record<Medium, number> = {
   sequence: 6,
   mandala: 8,
-  // A saved 3D scene has no live preview component yet — the collection module
-  // only ever shows its poster, and `Viewer3DCanvas` requires an ancestor to
-  // have called setViewer3DContext(). Until that sandbox exists, scene tiles
-  // are posters and this budget has nothing to grant.
-  scene: 0,
+  // Scene3DPreview provides the sandbox: a seeded viewer-3d context per tile,
+  // reading and writing no global state, so tiles can coexist. Each live tile
+  // is a full WebGL context with its own environment — by far the most
+  // expensive thing on this page — so this starts at 2, the smallest budget
+  // that can actually prove concurrency works. Tune it with the on-page
+  // controls; this is the number most likely to move once measured on a real GPU.
+  scene: 2,
   // Tunnels DO have one: TunnelDetailPreview mounts the real renderer behind a
   // per-instance seam. Deliberately small — TunnelArtView can route trails
   // through the WebGL2 overlay, so this is the budget most likely to need

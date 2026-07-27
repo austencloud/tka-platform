@@ -21,6 +21,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
+  import { scene3DHasSteps } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import { fitColumns } from "$lib/features/creators/domain/fit-columns";
@@ -93,6 +94,7 @@
       sequence?: SequenceData;
       poster?: string;
       tunnel?: any;
+      scene?: any;
       mandala?: any;
     }[] = [];
 
@@ -115,6 +117,9 @@
         medium: "scene",
         title: scene.sourceWord || scene.name,
         poster: scene.poster,
+        // Only a scene saved WITH a performance can animate; a look-only save
+        // has no steps for the puppet loop to position anyone to.
+        scene: scene3DHasSteps(scene) ? scene : null,
       });
     }
 
@@ -284,6 +289,7 @@
                 sequence={pick.sequence ?? null}
                 poster={pick.poster ?? null}
                 tunnel={pick.tunnel ?? null}
+                scene={pick.scene ?? null}
                 mandala={pick.mandala ?? null}
                 size="lg"
               />
@@ -321,6 +327,9 @@
                     title={record.sourceWord || entry.name}
                     poster={record.poster ?? null}
                     tunnel={group.id === "tunnel" ? entry : null}
+                    scene={group.id === "scene" && scene3DHasSteps(entry as any)
+                      ? entry
+                      : null}
                     mandala={group.id === "mandala"
                       ? {
                           steps: record.steps ?? [],

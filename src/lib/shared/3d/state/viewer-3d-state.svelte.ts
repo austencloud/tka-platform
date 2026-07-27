@@ -324,6 +324,24 @@ function persistEffectToggles(toggles: Record<string, boolean>): void {
 // ============================================
 
 /**
+ * The module-level writers, captured so a seeded instance can shadow each name
+ * with a no-op inside the factory without self-referencing (a local
+ * `const persistCamera = persistCamera` would be a TDZ error). Call sites stay
+ * untouched and route through whichever binding their instance installed.
+ */
+const WRITERS = {
+  navMode: persistNavMode,
+  defaultProp: persistDefaultProp,
+  mode: persistMode,
+  camera: persistCamera,
+  planes: persistPlanes,
+  performers: persistPerformers,
+  activeFormation: persistActiveFormation,
+  selectedIndex: persistSelectedIndex,
+  effectToggles: persistEffectToggles,
+} as const;
+
+/**
  * Optional construction seed. Every field present here is used INSTEAD OF the
  * matching localStorage key, and nothing is written back — so a seeded viewer
  * is fully self-contained.
@@ -347,6 +365,27 @@ export interface Viewer3DStateSeed extends Partial<Viewer3DPersistConfig> {
   /** Environment to render INSIDE this viewer. Unseeded, the scene falls back
    *  to the global settingsService value (the shared-viewer behaviour). */
   backgroundType?: string;
+  /**
+   * Orbit the camera around its target continuously, for as long as the viewer
+   * is mounted. A gallery tile is watched, not driven, so it wants motion that
+   * never ends and never depends on playback.
+   *
+   * This is deliberately NOT the `auto-orbit` camera preset. That preset is a
+   * choreography shot: it targets the primary performer, runs exactly one
+   * revolution across the sequence duration, and only advances while the
+   * choreography driver is ticking — so a tile showing a saved LOOK with no
+   * performance would never move at all.
+   */
+  autoOrbit?: boolean;
+  /** Revolution speed when `autoOrbit` is on. Three.js OrbitControls units:
+   *  ~6deg/sec per unit. Default 2.0 (a full turn in ~30s). */
+  autoOrbitSpeed?: number;
+  /**
+   * Scene-feature toggles (ocean flora, torches, …) for THIS viewer. Unseeded,
+   * Viewer3DCanvas builds its feature state from the shared
+   * `tka-scene-features` key. Seeded, that key is ignored in both directions.
+   */
+  sceneFeatures?: Record<string, boolean>;
 }
 
 export function createViewer3DState(seed?: Viewer3DStateSeed) {
@@ -355,6 +394,35 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   /** A seeded field wins over storage; `undefined` means "not seeded". */
   const seeded = <T>(value: T | undefined, fromStorage: () => T): T =>
     value !== undefined ? value : fromStorage();
+
+  /**
+   * A seeded viewer is a self-contained preview, so it reads its own config and
+   * writes NOTHING back. Without this, mounting a saved-scene tile would stomp
+   * the real viewer's keys: `enter3D` persists mode, and an orbit gesture (or
+   * `snapCameraTo`) persists the camera — exactly the destructiveness the seed
+   * argument exists to remove. Each writer below shadows its module-level
+   * namesake for this instance only; call sites are unchanged.
+   */
+  const persistent = seed === undefined;
+  const noop = () => {};
+  const persistNavMode = persistent ? WRITERS.navMode : noop;
+  const persistDefaultProp = persistent ? WRITERS.defaultProp : noop;
+  const persistMode = persistent ? WRITERS.mode : noop;
+  const persistCamera = persistent ? WRITERS.camera : noop;
+  const persistPlanes = persistent ? WRITERS.planes : noop;
+  const persistPerformers = persistent ? WRITERS.performers : noop;
+  const persistActiveFormation = persistent ? WRITERS.activeFormation : noop;
+  const persistSelectedIndex = persistent ? WRITERS.selectedIndex : noop;
+  const persistEffectToggles = persistent ? WRITERS.effectToggles : noop;
+  /** The four keys written inline rather than through a `persist*` helper. */
+  const writeKey = (key: string, value: string) => {
+    if (!persistent) return;
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Quota exceeded or unavailable.
+    }
+  };
   // Start in 2D on viewports too small to host 3D even if '3d' was persisted from
   // a larger screen — avoids briefly mounting the 3D overlay before the
   // orchestrator's fits3D guard corrects it. Non-mutating: storage keeps '3d', so
@@ -1182,9 +1250,23 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     get seededBackgroundType(): string | null {
       return seed?.backgroundType ?? null;
     },
+    /**
+     * Whether this viewer orbits its camera on its own, and how fast. Unseeded
+     * viewers never do — the real viewer's camera belongs to the user.
+     */
+    get seededAutoOrbit(): boolean {
+      return seed?.autoOrbit ?? false;
+    },
+    get seededAutoOrbitSpeed(): number {
+      return seed?.autoOrbitSpeed ?? 2.0;
+    },
+    /** Scene-feature toggles this viewer owns; `null` = use the shared key. */
+    get seededSceneFeatures(): Record<string, boolean> | null {
+      return seed?.sceneFeatures ?? null;
+    },
     setOceanVariant(v: OceanVariant) {
       oceanVariant = v;
-      try { localStorage.setItem(STORAGE_KEY_OCEAN_VARIANT, v); } catch {}
+      writeKey(STORAGE_KEY_OCEAN_VARIANT, v);
     },
     get activePopover() {
       return _activePopover;
@@ -1264,7 +1346,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     toggleGridLabels() {
       sceneUndo.captureState("toggle-grid-labels", "Toggle grid labels");
       showGridLabels = !showGridLabels;
-      try { localStorage.setItem(STORAGE_KEY_GRID_LABELS, String(showGridLabels)); } catch {}
+      writeKey(STORAGE_KEY_GRID_LABELS, String(showGridLabels));
       sceneUndo.commitState();
     },
     get activePreset() {
@@ -1272,14 +1354,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     },
     setActivePreset(id: string | null) {
       activePreset = id;
-      try { localStorage.setItem(STORAGE_KEY_PRESET, id ?? ""); } catch { /* ignore */ }
+      writeKey(STORAGE_KEY_PRESET, id ?? "");
     },
     get activeCameraPreset() {
       return activeCameraPreset;
     },
     setActiveCameraPreset(id: string) {
       activeCameraPreset = id;
-      try { localStorage.setItem(STORAGE_KEY_CAM_PRESET, id); } catch { /* ignore */ }
+      writeKey(STORAGE_KEY_CAM_PRESET, id);
     },
     /**
      * Toggle a single grid plane on or off.
