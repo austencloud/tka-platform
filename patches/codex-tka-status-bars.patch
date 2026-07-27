@@ -141,7 +141,7 @@ index 0000000000..b22b71439e
 +use serde_json::json;
 +
 +const THREAD_NAME_DEVELOPER_INSTRUCTIONS: &str = "You name an existing coding conversation. Do not call tools, change files, or continue the work. Return only the required JSON object.";
-+const THREAD_NAME_PROMPT: &str = "Choose an accurate two- or three-word Title Case name for the main topic of this conversation. Name the major workstream, feature, or outcome. Never name a transient action such as running tests, reading files, or checking status.";
++const THREAD_NAME_PROMPT: &str = "Choose an accurate two- to four-word Title Case name for the main topic of this conversation. If several topics compete, choose the title that best represents the chat as a whole. Never name a transient action such as running tests, reading files, or checking status.";
 +
 +#[derive(Debug)]
 +pub(super) struct PendingThreadNameGeneration {
@@ -358,7 +358,7 @@ index 0000000000..b22b71439e
 +        "properties": {
 +            "name": {
 +                "type": "string",
-+                "description": "An accurate two- or three-word Title Case conversation name"
++                "description": "An accurate two- to four-word Title Case conversation name"
 +            }
 +        },
 +        "required": ["name"]
@@ -387,8 +387,8 @@ index 0000000000..b22b71439e
 +        .filter(|word| !word.is_empty())
 +        .collect::<Vec<_>>();
 +
-+    if !(2..=3).contains(&words.len()) {
-+        return Err("the generated name was not two or three words".to_string());
++    if !(2..=4).contains(&words.len()) {
++        return Err("the generated name was not two to four words".to_string());
 +    }
 +
 +    Ok(words.join(" "))
@@ -418,14 +418,14 @@ index 0000000000..82965f2e63
 +use pretty_assertions::assert_eq;
 +
 +#[test]
-+fn generated_thread_name_accepts_two_or_three_words() {
++fn generated_thread_name_accepts_two_to_four_words() {
 +    assert_eq!(
 +        normalize_generated_thread_name("Terminal Naming").as_deref(),
 +        Ok("Terminal Naming")
 +    );
 +    assert_eq!(
-+        normalize_generated_thread_name("Codex Rename Flow").as_deref(),
-+        Ok("Codex Rename Flow")
++        normalize_generated_thread_name("Codex Session Rename Flow").as_deref(),
++        Ok("Codex Session Rename Flow")
 +    );
 +}
 +
@@ -444,7 +444,7 @@ index 0000000000..82965f2e63
 +#[test]
 +fn generated_thread_name_rejects_the_wrong_word_count() {
 +    assert!(normalize_generated_thread_name("Rename").is_err());
-+    assert!(normalize_generated_thread_name("One Two Three Four").is_err());
++    assert!(normalize_generated_thread_name("One Two Three Four Five").is_err());
 +    assert!(normalize_generated_thread_name("   ").is_err());
 +}
 +
@@ -802,13 +802,71 @@ index c821ddce93..9f7280e8cb 100644
  
    monthly 65% left | weekly 50% left
    Press space to toggle; ←/→ to move; enter to confirm and close; esc to close
+diff --git a/codex-rs/tui/src/chatwidget/protocol.rs b/codex-rs/tui/src/chatwidget/protocol.rs
+index 9586f5fd7d..ad5643f17d 100644
+--- a/codex-rs/tui/src/chatwidget/protocol.rs
++++ b/codex-rs/tui/src/chatwidget/protocol.rs
+@@ -230,3 +230,7 @@ impl ChatWidget {
+             | ServerNotification::AccountLoginCompleted(_) => {}
+-            ServerNotification::ContextCompacted(_) => {}
++            ServerNotification::ContextCompacted(_) => {
++                if !from_replay {
++                    self.reassert_terminal_title();
++                }
++            }
+         }
+@@ -243,2 +247,4 @@ impl ChatWidget {
+         self.last_rendered_user_message_display = None;
++        let should_reassert_terminal_title =
++            replay_kind.is_none() && !matches!(&notification.turn.status, TurnStatus::InProgress);
+         match notification.turn.status {
+@@ -282,2 +288,5 @@ impl ChatWidget {
+         }
++        if should_reassert_terminal_title {
++            self.reassert_terminal_title();
++        }
+     }
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index 7120462330..86a80f129a 100644
+index 7120462330..baa0e06fb8 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-@@ -813,9 +813,15 @@ impl ChatWidget {
-             )),
-             TerminalTitleItem::Spinner => self.terminal_title_spinner_text_at(now),
+@@ -225,3 +225,7 @@ impl ChatWidget {
+     /// schedules the next frame so the title animation keeps advancing.
+-    fn refresh_terminal_title_from_selections(&mut self, selections: &StatusSurfaceSelections) {
++    fn refresh_terminal_title_from_selections(
++        &mut self,
++        selections: &StatusSurfaceSelections,
++        force: bool,
++    ) {
+         self.last_terminal_title_requires_action =
+@@ -238,3 +242,3 @@ impl ChatWidget {
+         let animation_interval = self.terminal_title_animation_interval_with_selections(selections);
+-        if self.last_terminal_title == title {
++        if !force && self.last_terminal_title == title {
+             if let Some(interval) = animation_interval {
+@@ -282,3 +286,3 @@ impl ChatWidget {
+         self.refresh_status_line_from_selections(&selections);
+-        self.refresh_terminal_title_from_selections(&selections);
++        self.refresh_terminal_title_from_selections(&selections, /*force*/ false);
+     }
+@@ -290,3 +294,15 @@ impl ChatWidget {
+         self.sync_status_surface_shared_state(&selections);
+-        self.refresh_terminal_title_from_selections(&selections);
++        self.refresh_terminal_title_from_selections(&selections, /*force*/ false);
++    }
++
++    /// Re-emits the configured terminal title even when its rendered value has not changed.
++    ///
++    /// Shells and child processes can overwrite the visible title without updating Codex's
++    /// last-written cache. Reasserting at stable lifecycle boundaries restores the persisted
++    /// thread name without turning every TUI draw into an OSC write.
++    pub(crate) fn reassert_terminal_title(&mut self) {
++        let selections = self.status_surface_selections();
++        self.warn_invalid_terminal_title_items_once(&selections.invalid_terminal_title_items);
++        self.sync_status_surface_shared_state(&selections);
++        self.refresh_terminal_title_from_selections(&selections, /*force*/ true);
+     }
+@@ -815,5 +831,11 @@ impl ChatWidget {
              TerminalTitleItem::Status => Some(self.run_state_status_text()),
 -            TerminalTitleItem::Thread => self
 -                .status_line_value_for_item(StatusLineItem::ThreadTitle)
@@ -823,8 +881,6 @@ index 7120462330..86a80f129a 100644
 +                /*max_chars*/ 48,
 +            )),
              TerminalTitleItem::GitBranch => self.status_line_branch.as_ref().map(|branch| {
-                 Self::truncate_terminal_title_part(branch.clone(), /*max_chars*/ 32)
-             }),
 diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 index d683aa3fbf..838a0cd760 100644
 --- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
@@ -915,10 +971,10 @@ index d683aa3fbf..838a0cd760 100644
  
  #[tokio::test]
 diff --git a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
-index 7445162759..b7150841f8 100644
+index 7445162759..0c7d03e611 100644
 --- a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
-@@ -3,6 +3,46 @@
+@@ -3,6 +3,91 @@
  use super::*;
  use pretty_assertions::assert_eq;
  
@@ -960,6 +1016,51 @@ index 7445162759..b7150841f8 100644
 +    });
 +    chat.refresh_terminal_title();
 +    assert_eq!(chat.last_terminal_title.as_deref(), Some("Session Rename"));
++}
++
++#[tokio::test]
++async fn terminal_title_reassertion_preserves_the_persisted_thread_name() {
++    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
++    chat.config.tui_terminal_title = Some(vec!["thread-title".to_string()]);
++    chat.thread_name = Some("Persistent Rename".to_string());
++    chat.refresh_terminal_title();
++
++    // This is the blind spot: the terminal may have accepted another OSC title
++    // while Codex's cache still contains the desired value.
++    assert_eq!(
++        chat.last_terminal_title.as_deref(),
++        Some("Persistent Rename")
++    );
++    chat.reassert_terminal_title();
++
++    assert_eq!(chat.thread_name.as_deref(), Some("Persistent Rename"));
++    assert_eq!(
++        chat.last_terminal_title.as_deref(),
++        Some("Persistent Rename")
++    );
++}
++
++#[tokio::test]
++async fn compaction_reasserts_the_persisted_terminal_title() {
++    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
++    let thread_id = ThreadId::new();
++    chat.thread_id = Some(thread_id);
++    chat.config.tui_terminal_title = Some(vec!["thread-title".to_string()]);
++    chat.thread_name = Some("Compaction Safe".to_string());
++    chat.last_terminal_title = None;
++
++    chat.handle_server_notification(
++        ServerNotification::ContextCompacted(
++            codex_app_server_protocol::ContextCompactedNotification {
++                thread_id: thread_id.to_string(),
++                turn_id: "compact-turn".to_string(),
++            },
++        ),
++        /*replay_kind*/ None,
++    );
++
++    assert_eq!(chat.thread_name.as_deref(), Some("Compaction Safe"));
++    assert_eq!(chat.last_terminal_title.as_deref(), Some("Compaction Safe"));
 +}
 +
  #[tokio::test]

@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
   Removes agent-hub: stops the host, deletes the install folder, shortcuts, and
-  the logon entry.
+  the Windows Terminal color fragment and the logon entry.
 
 .DESCRIPTION
   Project launchers (each repo's launchers\start-*.bat) are left alone - they are
@@ -20,12 +20,13 @@ $InstallDir  = Join-Path $env:LOCALAPPDATA 'AgentHub'
 $ShortcutDir = Join-Path $env:USERPROFILE 'AgentHub'
 $StartMenu   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Agent Hub'
 $StartupLnk  = Join-Path ([Environment]::GetFolderPath('Startup')) 'Agent Hub Host.lnk'
+$TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 
 Get-Process AgentChooserHost -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 300
 Write-Host "stopped host"
 
-foreach ($p in @($StartupLnk, $StartMenu, $ShortcutDir)) {
+foreach ($p in @($StartupLnk, $StartMenu, $ShortcutDir, $TerminalFragmentDir)) {
     if (Test-Path $p) { Remove-Item $p -Recurse -Force; Write-Host "removed $p" }
 }
 

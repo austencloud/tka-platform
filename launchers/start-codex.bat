@@ -41,9 +41,10 @@ if errorlevel 1 echo Warning: Codex status line setup failed; launching anyway.
 
 set "TKA_CODEX=%LOCALAPPDATA%\TKA\codex-tka\bin\codex-tka.exe"
 if not exist "%TKA_CODEX%" (
-    echo Building the TKA Codex status meters. This one-time build can take several minutes.
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\launchers\install-codex-tka.ps1"
+    echo Preparing the TKA Codex executable. A first local fallback can take several minutes.
 )
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\launchers\install-codex-tka.ps1"
+if errorlevel 1 echo Warning: Codex TKA update check failed; launching the installed executable if available.
 
 if exist "%TKA_CODEX%" (
     "%TKA_CODEX%" --dangerously-bypass-approvals-and-sandbox

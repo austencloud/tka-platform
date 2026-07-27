@@ -8,12 +8,14 @@
 param(
     [switch]$Force,
     [switch]$SourceBuild,
-    [switch]$SkipTests
+    [switch]$DevelopmentBuild,
+    [switch]$SkipTests,
+    [switch]$InstallBuiltArtifact
 )
 
 $ErrorActionPreference = 'Stop'
-$CodexVersion = '0.144.6'
-$UpstreamCommit = '5d1fbf26c43abc65a203928b2e31561cb039e06d'
+$CodexVersion = '0.145.0'
+$UpstreamCommit = '25af12f7e61572b0bc18ddb1008be543b91519b0'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $PatchPath = Join-Path $RepoRoot 'patches\codex-tka-status-bars.patch'
 $TkaRoot = Join-Path $env:LOCALAPPDATA 'TKA\codex-tka'
@@ -24,6 +26,19 @@ $InstalledExe = Join-Path $BinRoot 'codex-tka.exe'
 $MetadataPath = Join-Path $BinRoot 'codex-tka.json'
 $ReleaseTag = "codex-tka-v$CodexVersion"
 $ReleaseBaseUrl = "https://github.com/austencloud/tka-platform/releases/download/$ReleaseTag"
+$BuildProfile = if ($DevelopmentBuild) { 'dev' } else { 'release' }
+$BuiltExeRelativePath = if ($DevelopmentBuild) { 'debug\codex.exe' } else { 'release\codex.exe' }
+
+# Agent Hub can inherit a PATH captured before rustup was installed. Rustup's
+# standard per-user bin directory remains authoritative in that case.
+$CargoBin = Join-Path $env:USERPROFILE '.cargo\bin'
+if (
+    (Test-Path -LiteralPath (Join-Path $CargoBin 'rustup.exe')) -and
+    (Test-Path -LiteralPath (Join-Path $CargoBin 'cargo.exe')) -and
+    (($env:PATH -split ';') -notcontains $CargoBin)
+) {
+    $env:PATH = "$CargoBin;$env:PATH"
+}
 
 function Assert-Command([string]$Name, [string]$InstallHint) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -86,27 +101,73 @@ function Install-CodexExecutable([string]$SourcePath, [string]$DestinationPath) 
     }
 }
 
+function Install-BuiltCodexExecutable([string]$BuiltExePath) {
+    if (-not (Test-Path -LiteralPath $BuiltExePath)) {
+        throw "Build completed without producing $BuiltExePath"
+    }
+    Install-CodexExecutable $BuiltExePath $InstalledExe
+
+    $metadata = [ordered]@{
+        codexVersion = $CodexVersion
+        upstreamCommit = $UpstreamCommit
+        patchSha256 = $patchHash
+        buildProfile = $BuildProfile
+        executableSha256 = (Get-FileHash -LiteralPath $InstalledExe -Algorithm SHA256).Hash
+        installedAt = [DateTimeOffset]::Now.ToString('o')
+    }
+    $metadata | ConvertTo-Json | Set-Content -LiteralPath $MetadataPath -Encoding utf8
+
+    Invoke-Native { & $InstalledExe --version } 'Installed Codex TKA smoke test'
+    Write-Host "Installed: $InstalledExe"
+}
+
 if (-not (Test-Path -LiteralPath $PatchPath)) {
     throw "Missing renderer patch: $PatchPath"
 }
 
 $patchHash = (Get-FileHash -LiteralPath $PatchPath -Algorithm SHA256).Hash
+$currentDevelopmentBuild = $false
 if (-not $Force -and (Test-Path -LiteralPath $InstalledExe) -and (Test-Path -LiteralPath $MetadataPath)) {
     $metadata = Get-Content -Raw -LiteralPath $MetadataPath | ConvertFrom-Json
     $installedHash = (Get-FileHash -LiteralPath $InstalledExe -Algorithm SHA256).Hash
+    $installedProfile = if ($metadata.PSObject.Properties.Name -contains 'buildProfile') {
+        $metadata.buildProfile
+    } else {
+        'release'
+    }
+    $requestedProfileMatches = (
+        (-not $SourceBuild -and -not $DevelopmentBuild -and -not $InstallBuiltArtifact) -or
+        $installedProfile -eq $BuildProfile
+    )
     if (
         $metadata.upstreamCommit -eq $UpstreamCommit -and
         $metadata.patchSha256 -eq $patchHash -and
-        $metadata.executableSha256 -eq $installedHash
+        $metadata.executableSha256 -eq $installedHash -and
+        $requestedProfileMatches
     ) {
-        Write-Host "Codex TKA $CodexVersion is current: $InstalledExe"
-        return
+        if (
+            $installedProfile -eq 'dev' -and
+            -not $SourceBuild -and
+            -not $DevelopmentBuild -and
+            -not $InstallBuiltArtifact
+        ) {
+            $currentDevelopmentBuild = $true
+            Write-Host "Codex TKA $CodexVersion is current (dev); checking for the production asset..."
+        } else {
+            Write-Host "Codex TKA $CodexVersion is current ($installedProfile): $InstalledExe"
+            return
+        }
     }
 }
 
 New-Item -ItemType Directory -Force -Path $BinRoot | Out-Null
 
-if (-not $SourceBuild) {
+if ($InstallBuiltArtifact) {
+    Install-BuiltCodexExecutable (Join-Path $TargetRoot $BuiltExeRelativePath)
+    return
+}
+
+if (-not $SourceBuild -and -not $DevelopmentBuild) {
     $downloadRoot = Join-Path ([IO.Path]::GetTempPath()) ("codex-tka-" + [guid]::NewGuid().ToString('N'))
     try {
         New-Item -ItemType Directory -Path $downloadRoot | Out-Null
@@ -139,7 +200,14 @@ if (-not $SourceBuild) {
         Write-Host "Installed GitHub release: $InstalledExe"
         return
     } catch {
-        Write-Warning "No usable $ReleaseTag asset was found; building from pinned source. $($_.Exception.Message)"
+        if ($currentDevelopmentBuild) {
+            Write-Warning "The $ReleaseTag production asset is not available yet; keeping the current development build. $($_.Exception.Message)"
+            return
+        }
+        Write-Warning "No usable $ReleaseTag asset was found; building the incremental development executable locally. $($_.Exception.Message)"
+        $DevelopmentBuild = $true
+        $BuildProfile = 'dev'
+        $BuiltExeRelativePath = 'debug\codex.exe'
     } finally {
         $resolvedTemp = [IO.Path]::GetFullPath($downloadRoot)
         if ($resolvedTemp.StartsWith([IO.Path]::GetFullPath([IO.Path]::GetTempPath()), [StringComparison]::OrdinalIgnoreCase)) {
@@ -201,24 +269,16 @@ try {
         Invoke-Native { cargo test -p codex-tui rename } 'Rename interaction tests'
     }
 
-    Write-Host 'Building codex-tka.exe...'
-    Invoke-Native { cargo build --release -p codex-cli --bin codex } 'Codex TKA release build'
+    if ($DevelopmentBuild) {
+        Write-Host 'Building the incremental Codex TKA development executable...'
+        Invoke-Native { cargo build -p codex-cli --bin codex } 'Codex TKA development build'
+    } else {
+        Write-Host 'Building the production Codex TKA executable...'
+        Invoke-Native { cargo build --release -p codex-cli --bin codex } 'Codex TKA release build'
+    }
 } finally {
     Pop-Location
 }
 
-$builtExe = Join-Path $TargetRoot 'release\codex.exe'
-if (-not (Test-Path -LiteralPath $builtExe)) { throw "Build completed without producing $builtExe" }
-Install-CodexExecutable $builtExe $InstalledExe
-
-$metadata = [ordered]@{
-    codexVersion = $CodexVersion
-    upstreamCommit = $UpstreamCommit
-    patchSha256 = $patchHash
-    executableSha256 = (Get-FileHash -LiteralPath $InstalledExe -Algorithm SHA256).Hash
-    installedAt = [DateTimeOffset]::Now.ToString('o')
-}
-$metadata | ConvertTo-Json | Set-Content -LiteralPath $MetadataPath -Encoding utf8
-
-Invoke-Native { & $InstalledExe --version } 'Installed Codex TKA smoke test'
-Write-Host "Installed: $InstalledExe"
+$builtExe = Join-Path $TargetRoot $BuiltExeRelativePath
+Install-BuiltCodexExecutable $builtExe

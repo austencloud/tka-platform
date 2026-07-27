@@ -3,9 +3,10 @@
 A taskbar popover that asks **Claude or Codex?** and opens the chosen agent in the
 project you clicked.
 
-Every Agent Hub launch opens its own Windows Terminal window. Claude and Codex
-draw from one 16-color palette, so no two live Agent Hub sessions share a tab
-color. Closing a session releases its color automatically.
+Every Agent Hub launch opens its own Windows Terminal window. Agent Hub keeps 16
+dark background tints available, so no two live Claude or Codex sessions share
+one. Each tab uses the same tint as its terminal background. Closing a session
+releases its tint automatically.
 
 The terminal title starts as `Starting Session`. Bare `/rename` lets Claude or
 Codex choose an accurate two- or three-word name from the conversation. Use
@@ -26,7 +27,21 @@ Esc      cancel
 
 ## Install
 
-On a fresh machine, after cloning this repo:
+From npm, in the folder that holds your checkouts:
+
+```powershell
+npx @austencloud/agent-hub
+```
+
+Windows only. Nothing to build first: the package carries the C# sources and the
+installer compiles them with the .NET Framework compiler already on the machine.
+Run it from inside a repo and the sibling folder becomes the project root; run it
+from a folder full of repos and that folder does. Name it yourself with
+`npx @austencloud/agent-hub -ProjectsRoot C:\code`.
+
+`npx @austencloud/agent-hub uninstall` reverses it, `-Purge` included.
+
+Or from a clone of this repo:
 
 ```powershell
 cd <repo>\agent-hub
@@ -49,13 +64,15 @@ project's existing `launchers\start-*.bat`.
 ### What it does
 
 1. Verifies Claude's guarded two/three-word bare `/rename` prompt patch.
-2. Compiles four small executables with the .NET Framework compiler that ships
+2. Installs 16 perceptually spaced dark Windows Terminal background schemes
+   for the current user and signals any running Terminal instance to reload them.
+3. Compiles four small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
-3. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
-4. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
-5. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
+4. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
+5. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
+6. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
    lacks them, so a bare repo still launches.
-6. Registers the host to start at logon and starts it now.
+7. Registers the host to start at logon and starts it now.
 
 ### Options
 
@@ -96,10 +113,10 @@ Four executables split the popover and terminal lifecycles:
   off-screen, warms the fonts and layout, then waits on the pipe. On a ping it
   positions the pre-built card at your cursor and shows it. Selection hides the
   window rather than closing it, so the second click is as fast as the first.
-- **AgentTerminalLauncher.exe** claims the first free color, then opens a new
-  Windows Terminal window with that tab color.
+- **AgentTerminalLauncher.exe** claims the first free tint, then opens a new
+  Windows Terminal window with that background scheme.
 - **AgentTerminalSession.exe** runs inside the new window and holds the named
-  color lease until the agent exits. Windows releases the lease if the terminal
+  tint lease until the agent exits. Windows releases the lease if the terminal
   is closed forcefully.
 
 If the host isn't running when you click, the stub cold-starts it and passes the
@@ -112,6 +129,10 @@ State lives in `%LOCALAPPDATA%\AgentHub`:
 | `last.ini` | Per-project last agent, used for the Enter shortcut and the default highlight. |
 | `debug.flag` | Create this empty file to turn on verbose logging to `host.log`. |
 | `launch-errors.log` | Terminal startup failures, written only when a launch fails. |
+
+The Windows Terminal schemes live in
+`%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\AgentHub`. The uninstaller
+removes that fragment with the rest of Agent Hub.
 
 Launching an agent opens `wt.exe -w new` and runs
 `<project>\launchers\start-<agent>.bat` inside it. Each repo owns that file, so a
@@ -142,9 +163,10 @@ feature in Windows Features and re-run.
 the popover is already open: the click's mousedown hides it, then the same
 click's ping reopens it. See `KNOWN-ISSUES.md`.
 
-**The agent window does not open or has no tab color.** Re-run the installer and
-confirm that all four executables exist in `%LOCALAPPDATA%\AgentHub\bin`. Then
-check `%LOCALAPPDATA%\AgentHub\launch-errors.log`.
+**The agent window does not open or has no distinct background.** Re-run the
+installer, then open a new Agent Hub session. Confirm that all four executables
+exist in `%LOCALAPPDATA%\AgentHub\bin`, then check
+`%LOCALAPPDATA%\AgentHub\launch-errors.log`.
 
 ## Source layout
 
@@ -152,12 +174,18 @@ check `%LOCALAPPDATA%\AgentHub\launch-errors.log`.
 agent-hub/
   install.ps1        build + install + shortcuts + logon entry
   uninstall.ps1
+  bootstrap.ps1      download this folder from GitHub, then install
+  package.json       published as @austencloud/agent-hub
+  bin/agent-hub.js   npm entry point; resolves ProjectsRoot, calls install.ps1
   projects.json      project list (path, display name, icon)
   src/               C# sources for the four executables
   icons/             project icons
   templates/         start-claude.bat / start-codex.bat written into bare repos
   KNOWN-ISSUES.md
 ```
+
+Publishing: `cd agent-hub && npm publish`. `files` in package.json is the
+allowlist, so `diag/` and `hooks/` stay out of the tarball.
 
 The C# targets the .NET Framework compiler, which means **C# 5 only**: no `?.`,
 no string interpolation, no local functions, no expression-bodied members. The

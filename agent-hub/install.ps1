@@ -67,6 +67,72 @@ $IconDir     = Join-Path $InstallDir 'icons'
 $ShortcutDir = Join-Path $env:USERPROFILE 'AgentHub'
 $StartMenu   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Agent Hub'
 $StartupDir  = [Environment]::GetFolderPath('Startup')
+$TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
+$TerminalFragmentPath = Join-Path $TerminalFragmentDir 'session-backgrounds.json'
+$TerminalSettingsPaths = @(
+    (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
+    (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json'),
+    (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\settings.json')
+)
+
+# OKLCH-derived colors use two perceptual-lightness rings. The first eight
+# leases take maximally separated hues; the second eight fill the gaps at a
+# lighter level. The ANSI black slot follows the background so explicit black
+# cells in terminal UIs do not punch holes through the tint.
+$SessionBackgrounds = @(
+    '#002A2C', '#440C12', '#251A49', '#262600',
+    '#002641', '#371D00', '#3B1034', '#002D15',
+    '#003645', '#521E06', '#3F214F', '#1F3901',
+    '#1D2D5B', '#3E2E00', '#501A30', '#003A30'
+)
+$SessionForeground = '#CCCCCC'
+$SessionSecondaryForeground = '#9A9A9A'
+
+function Convert-HexChannelToLinear([string]$hex, [int]$offset) {
+    $channel = [Convert]::ToInt32($hex.Substring($offset, 2), 16) / 255.0
+    if ($channel -le 0.04045) { return $channel / 12.92 }
+    return [Math]::Pow(($channel + 0.055) / 1.055, 2.4)
+}
+
+function Get-RelativeLuminance([string]$hex) {
+    $r = Convert-HexChannelToLinear $hex 1
+    $g = Convert-HexChannelToLinear $hex 3
+    $b = Convert-HexChannelToLinear $hex 5
+    return (0.2126 * $r) + (0.7152 * $g) + (0.0722 * $b)
+}
+
+function Get-ContrastRatio([string]$first, [string]$second) {
+    $firstLuminance = Get-RelativeLuminance $first
+    $secondLuminance = Get-RelativeLuminance $second
+    $lighter = [Math]::Max($firstLuminance, $secondLuminance)
+    $darker = [Math]::Min($firstLuminance, $secondLuminance)
+    return ($lighter + 0.05) / ($darker + 0.05)
+}
+
+function Convert-HexToOklab([string]$hex) {
+    $r = Convert-HexChannelToLinear $hex 1
+    $g = Convert-HexChannelToLinear $hex 3
+    $b = Convert-HexChannelToLinear $hex 5
+
+    $l = [Math]::Pow((0.4122214708 * $r) + (0.5363325363 * $g) + (0.0514459929 * $b), 1.0 / 3.0)
+    $m = [Math]::Pow((0.2119034982 * $r) + (0.6806995451 * $g) + (0.1073969566 * $b), 1.0 / 3.0)
+    $s = [Math]::Pow((0.0883024619 * $r) + (0.2817188376 * $g) + (0.6299787005 * $b), 1.0 / 3.0)
+
+    $lightness = (0.2104542553 * $l) + (0.7936177850 * $m) - (0.0040720468 * $s)
+    $a = (1.9779984951 * $l) - (2.4285922050 * $m) + (0.4505937099 * $s)
+    $labB = (0.0259040371 * $l) + (0.7827717662 * $m) - (0.8086757660 * $s)
+    return @($lightness, $a, $labB)
+}
+
+function Get-OklabDistance([string]$first, [string]$second) {
+    $firstLab = @(Convert-HexToOklab $first)
+    $secondLab = @(Convert-HexToOklab $second)
+    return [Math]::Sqrt(
+        [Math]::Pow($firstLab[0] - $secondLab[0], 2) +
+        [Math]::Pow($firstLab[1] - $secondLab[1], 2) +
+        [Math]::Pow($firstLab[2] - $secondLab[2], 2)
+    )
+}
 
 function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor DarkGray }
@@ -78,6 +144,109 @@ Write-Host "  repo         $RepoRoot"
 Write-Host "  projects in  $ProjectsRoot"
 Write-Host "  install to   $InstallDir"
 Write-Host ""
+
+# ------------------------------------------------------ terminal color schemes
+Write-Step "Installing per-session terminal backgrounds"
+$schemes = @(
+    for ($i = 0; $i -lt $SessionBackgrounds.Count; $i++) {
+        $background = $SessionBackgrounds[$i]
+        [ordered]@{
+            name = 'Agent Hub Session {0:D2}' -f ($i + 1)
+            background = $background
+            foreground = $SessionForeground
+            cursorColor = '#FFFFFF'
+            selectionBackground = '#264F78'
+            black = $background
+            red = '#C50F1F'
+            green = '#13A10E'
+            yellow = '#C19C00'
+            blue = '#0037DA'
+            purple = '#881798'
+            cyan = '#3A96DD'
+            white = '#CCCCCC'
+            brightBlack = $SessionSecondaryForeground
+            brightRed = '#E74856'
+            brightGreen = '#16C60C'
+            brightYellow = '#F9F1A5'
+            brightBlue = '#3B78FF'
+            brightPurple = '#B4009E'
+            brightCyan = '#61D6D6'
+            brightWhite = '#F2F2F2'
+        }
+    }
+)
+$terminalFragment = [ordered]@{ schemes = $schemes }
+$terminalFragmentJson = $terminalFragment | ConvertTo-Json -Depth 4
+New-Item -ItemType Directory -Force $TerminalFragmentDir | Out-Null
+[IO.File]::WriteAllText(
+    $TerminalFragmentPath,
+    $terminalFragmentJson,
+    [Text.UTF8Encoding]::new($false)
+)
+
+$installedFragment = Get-Content -Raw -LiteralPath $TerminalFragmentPath | ConvertFrom-Json
+$installedSchemes = @($installedFragment.schemes)
+$fragmentIsValid = $installedSchemes.Count -eq $SessionBackgrounds.Count
+$minimumForegroundContrast = [double]::MaxValue
+$minimumSecondaryContrast = [double]::MaxValue
+$minimumPaletteDistance = [double]::MaxValue
+for ($i = 0; $fragmentIsValid -and $i -lt $SessionBackgrounds.Count; $i++) {
+    $minimumForegroundContrast = [Math]::Min(
+        $minimumForegroundContrast,
+        (Get-ContrastRatio $SessionBackgrounds[$i] $SessionForeground)
+    )
+    $minimumSecondaryContrast = [Math]::Min(
+        $minimumSecondaryContrast,
+        (Get-ContrastRatio $SessionBackgrounds[$i] $SessionSecondaryForeground)
+    )
+    $fragmentIsValid = (
+        $installedSchemes[$i].name -eq ('Agent Hub Session {0:D2}' -f ($i + 1)) -and
+        $installedSchemes[$i].background -eq $SessionBackgrounds[$i] -and
+        $installedSchemes[$i].black -eq $SessionBackgrounds[$i] -and
+        $installedSchemes[$i].foreground -eq $SessionForeground -and
+        $installedSchemes[$i].brightBlack -eq $SessionSecondaryForeground
+    )
+}
+for ($i = 0; $i -lt $SessionBackgrounds.Count; $i++) {
+    for ($j = $i + 1; $j -lt $SessionBackgrounds.Count; $j++) {
+        $minimumPaletteDistance = [Math]::Min(
+            $minimumPaletteDistance,
+            (Get-OklabDistance $SessionBackgrounds[$i] $SessionBackgrounds[$j])
+        )
+    }
+}
+if (-not $fragmentIsValid) {
+    throw "Windows Terminal session background fragment failed validation: $TerminalFragmentPath"
+}
+if (
+    $minimumForegroundContrast -lt 7.0 -or
+    $minimumSecondaryContrast -lt 4.5 -or
+    $minimumPaletteDistance -lt 0.04
+) {
+    throw "Windows Terminal session backgrounds failed contrast or separation validation."
+}
+Write-Ok (
+    "installed {0} session backgrounds (contrast {1:N2}:1; secondary {2:N2}:1; separation {3:N3})" -f
+    $SessionBackgrounds.Count,
+    $minimumForegroundContrast,
+    $minimumSecondaryContrast,
+    $minimumPaletteDistance
+)
+
+# Terminal watches its own settings directory, not the external fragment
+# directory. Nudge each installed distribution's settings file so a running
+# Terminal reloads the fragment before Agent Hub opens another session.
+$reloadedTerminalSettings = 0
+foreach ($settingsPath in $TerminalSettingsPaths | Select-Object -Unique) {
+    if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) { continue }
+    [IO.File]::SetLastWriteTimeUtc($settingsPath, [DateTime]::UtcNow)
+    $reloadedTerminalSettings++
+}
+if ($reloadedTerminalSettings -gt 0) {
+    Write-Ok "signaled $reloadedTerminalSettings Windows Terminal settings installation(s) to reload"
+} else {
+    Write-Warn2 "Windows Terminal has not created settings.json yet; backgrounds will load on its next start"
+}
 
 # Keep bare /rename consistent before Agent Hub launches Claude through any
 # project-specific start script. The installer is guarded and idempotent.

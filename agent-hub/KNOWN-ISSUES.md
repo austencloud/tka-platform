@@ -80,9 +80,9 @@ in `HideIt`. This has not been tried.
 
 The host now launches `wt.exe -w new` explicitly through
 `AgentTerminalLauncher.exe`. It no longer depends on the system's default
-console host. The same launcher assigns one unused tab color across Claude and
-Codex, and `AgentTerminalSession.exe` holds that color lease for the life of the
-session.
+console host. The same launcher assigns one unused background tint across
+Claude and Codex, and `AgentTerminalSession.exe` holds that tint lease for the
+life of the session.
 
 ### Retired: hidden terminal pre-warming
 
