@@ -6,15 +6,15 @@
 
   Spec: docs/superpowers/specs/2026-07-27-notation-playable-archive-design.md
   Movement engine: Embla. Feedback: existing tilt / pressSpring / magnetic /
-  haptic primitives. Detail morph: motion's animateView over the native View
-  Transition API, with reduced-motion and no-support fallbacks.
+  haptic primitives. Select re-tiles and the detail morph run on the native
+  View Transition API (CSS-timed), with reduced-motion and no-support
+  fallbacks.
 -->
 <script lang="ts">
 	import { tick } from "svelte";
 	import { MediaQuery } from "svelte/reactivity";
 	import type { EmblaCarouselType } from "embla-carousel";
 	import emblaCarouselSvelte from "embla-carousel-svelte";
-	import { animateView } from "motion";
 	import { Popover } from "bits-ui";
 	import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 	import { tilt } from "$lib/actions/tilt";
@@ -93,19 +93,24 @@
 				emblaApi.scrollTo(archive.activeIndex, reduceMotion.current);
 			}
 		};
-		/* In bento mode a selection re-tiles the grid; animateView morphs every
-		   tile to its new cell (each tile keeps its OWN transition name, so no
-		   system's visual ever morphs into another's — canon guardrail). */
+		/* In bento mode a selection re-tiles the grid; the NATIVE View Transition
+		   morphs every tile to its new cell (each tile keeps its OWN transition
+		   name, so no system's visual ever morphs into another's — canon
+		   guardrail). Timing lives in CSS on the pseudo-groups. motion's
+		   animateView is deliberately NOT used: its WAAPI takeover arrived
+		   ~300ms late behind the artifact mounts, after the browser's default
+		   animation had already finished — the tile visibly snapped back and
+		   replayed the journey (instrumented 2026-07-27). */
 		if (
 			wideRail.current &&
 			!reduceMotion.current &&
 			typeof document !== "undefined" &&
 			"startViewTransition" in document
 		) {
-			animateView(async () => {
+			document.startViewTransition(async () => {
 				commit();
 				await tick();
-			}, { duration: 0.5 });
+			});
 		} else {
 			commit();
 		}
@@ -122,10 +127,9 @@
 	/**
 	 * The detail must visibly originate from the active artifact. The stage and
 	 * the detail hero swap one view-transition-name inside the update, so the
-	 * native shared-element morph carries the object across; animateView adds
-	 * spring + interruption handling and degrades to a plain state change where
-	 * the API is unsupported, on mobile (the Drawer owns that motion), and under
-	 * reduced motion (opacity only, per contract).
+	 * native shared-element morph carries the object across. Degrades to a
+	 * plain state change where the API is unsupported, on mobile (the Drawer
+	 * owns that motion), and under reduced motion (per contract).
 	 */
 	function openDetailView() {
 		const update = async () => {
@@ -135,7 +139,7 @@
 		if (isMobile.current || reduceMotion.current || typeof document === "undefined" || !("startViewTransition" in document)) {
 			void update();
 		} else {
-			animateView(update, { duration: 0.42 });
+			document.startViewTransition(update);
 		}
 	}
 
@@ -148,7 +152,7 @@
 		if (isMobile.current || reduceMotion.current || typeof document === "undefined" || !("startViewTransition" in document)) {
 			void update().then(finish);
 		} else {
-			animateView(update, { duration: 0.38 });
+			document.startViewTransition(update);
 			setTimeout(finish, 60);
 		}
 	}
@@ -469,6 +473,25 @@
 		max-width: 100%;
 	}
 
+	/* VIEW-TRANSITION TIMING — declared in CSS so it drives the morph from
+	   frame one. Scoped by view-transition-class to this archive's groups
+	   only; the pseudo-elements live on :root, hence :global. */
+	.g-slide,
+	.artifact-stage,
+	.detail-panel {
+		view-transition-class: notation-archive;
+	}
+
+	:global(::view-transition-group(.notation-archive)) {
+		animation-duration: 0.45s;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	:global(::view-transition-old(.notation-archive)),
+	:global(::view-transition-new(.notation-archive)) {
+		animation-duration: 0.45s;
+	}
+
 	/* HEADER */
 	.room-header {
 		display: flex;
@@ -566,8 +589,8 @@
 
 	/* WIDE MODE: the bento. A 6×2 grid fills the canvas — the active entry is
 	   a 2×2 hero tile, the other eight are full tiles whose visuals fill
-	   their cells. Selecting re-tiles the grid through animateView; every
-	   tile morphs to its new cell under its own transition name. */
+	   their cells. Selecting re-tiles the grid through a native View
+	   Transition; every tile morphs to its new cell under its own name. */
 	.gallery-row {
 		display: grid;
 		grid-template-columns: repeat(6, minmax(0, 1fr));
