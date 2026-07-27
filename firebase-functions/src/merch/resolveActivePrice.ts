@@ -18,6 +18,11 @@ export interface PriceGateProduct {
   readonly preorderPriceCutoff?: string;
 }
 
+export interface PriceGateProductWithAmounts extends PriceGateProduct {
+  readonly price: number;
+  readonly regularPrice?: number;
+}
+
 export function resolveActivePriceId(product: PriceGateProduct, nowMs: number): string {
   const { stripePriceId, regularStripePriceId, preorderPriceCutoff } = product;
   if (!preorderPriceCutoff) return stripePriceId; // evergreen — no swap window
@@ -25,6 +30,20 @@ export function resolveActivePriceId(product: PriceGateProduct, nowMs: number): 
   if (Number.isNaN(cutoffMs)) return stripePriceId; // bad date → fail safe to preorder
   if (nowMs >= cutoffMs && regularStripePriceId) return regularStripePriceId;
   return stripePriceId;
+}
+
+export function resolveActivePriceCents(
+  product: PriceGateProductWithAmounts,
+  nowMs: number
+): number {
+  const activePriceId = resolveActivePriceId(product, nowMs);
+  if (
+    activePriceId === product.regularStripePriceId &&
+    product.regularPrice !== undefined
+  ) {
+    return product.regularPrice;
+  }
+  return product.price;
 }
 
 /** True only when the product IS past its cutoff yet has no regular price to

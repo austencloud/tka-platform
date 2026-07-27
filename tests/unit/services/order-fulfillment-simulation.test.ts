@@ -11,8 +11,6 @@ import {
   parseLoopComponents,
   generateLOOPType,
 } from "$lib/shared/create/services/loop-type-utils";
-import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
-import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 import { GenerationMode, DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
@@ -183,7 +181,7 @@ describe("shop order → deck fulfillment simulation (REAL decode + REAL pipelin
   });
 
   // Models DeckReleaserTab.generateLiveDeck per slice: draw through the real
-  // orchestrator + exact-length wrapper, REJECT off-length cards, keep drawing
+  // orchestrator, REJECT off-length cards, keep drawing
   // within a budget. A slice that never yields an exact-length card means the
   // shop sold a deck fulfillment cannot produce — the one failure that matters.
   it("every slice of every order shape live-generates at its exact length", async () => {
@@ -220,11 +218,8 @@ describe("shop order → deck fulfillment simulation (REAL decode + REAL pipelin
         while (accepted < WANT && attempts < BUDGET) {
           attempts++;
           try {
-            const exact = await generateCircularExactLength(options, {
-              generate: (o) => orch.generateSequence(o),
-              extend: (seq) => orientationCycleExtender.extendIfNeeded(seq),
-            });
-            if (exact.sequence.steps.length === d.length) accepted++;
+            const sequence = await orch.generateSequence(options);
+            if (sequence.steps.length === d.length) accepted++;
           } catch {
             continue; // releaser skips failed attempts the same way
           }

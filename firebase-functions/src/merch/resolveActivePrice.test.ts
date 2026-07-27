@@ -1,4 +1,8 @@
-import { resolveActivePriceId, isMisauthoredPastCutoff } from "./resolveActivePrice";
+import {
+  resolveActivePriceCents,
+  resolveActivePriceId,
+  isMisauthoredPastCutoff,
+} from "./resolveActivePrice";
 
 const CUTOFF = "2026-09-30T23:59:59-05:00";
 const CUTOFF_MS = Date.parse(CUTOFF);
@@ -7,7 +11,9 @@ const AFTER = CUTOFF_MS + 1;
 
 const full = {
   stripePriceId: "price_preorder",
+  price: 3500,
   regularStripePriceId: "price_regular",
+  regularPrice: 4500,
   preorderPriceCutoff: CUTOFF,
 };
 
@@ -35,6 +41,18 @@ describe("resolveActivePriceId", () => {
   it("fails safe to preorder on an unparseable cutoff", () => {
     const badDate = { ...full, preorderPriceCutoff: "not-a-date" };
     expect(resolveActivePriceId(badDate, AFTER)).toBe("price_preorder");
+  });
+});
+
+describe("resolveActivePriceCents", () => {
+  it("keeps the pending-order subtotal on the same side of the cutoff as Stripe", () => {
+    expect(resolveActivePriceCents(full, BEFORE)).toBe(3500);
+    expect(resolveActivePriceCents(full, CUTOFF_MS)).toBe(4500);
+  });
+
+  it("falls back to the preorder amount when the regular amount is missing", () => {
+    const { regularPrice: _regularPrice, ...missingRegularAmount } = full;
+    expect(resolveActivePriceCents(missingRegularAmount, AFTER)).toBe(3500);
   });
 });
 

@@ -8,6 +8,7 @@ describe("buildCartCheckoutParams", () => {
       { stripePriceId: "price_deck", quantity: 1 },
       { stripePriceId: "price_poster", quantity: 3 },
     ],
+    freeUsShipping: true,
   };
 
   it("emits one Stripe line item per cart line, preserving quantity", () => {
@@ -29,12 +30,29 @@ describe("buildCartCheckoutParams", () => {
     expect(p.payment_method_types).toEqual(["card"]);
   });
 
-  it("collects worldwide shipping with tax_behavior on every rate", () => {
+  it("collects worldwide shipping with tax behavior and the shipping tax code", () => {
     const p = buildCartCheckoutParams(base);
     expect((p.shipping_address_collection?.allowed_countries ?? []).length).toBeGreaterThan(100);
     for (const o of p.shipping_options ?? []) {
       expect(o.shipping_rate_data?.tax_behavior).toBe("exclusive");
+      expect(o.shipping_rate_data?.tax_code).toBe("txcd_92010001");
     }
+  });
+
+  it("keeps US shipping free when a deck price already includes it", () => {
+    const p = buildCartCheckoutParams(base);
+    const us = (p.shipping_options ?? []).find(
+      (option) => option.shipping_rate_data?.display_name === "Free US shipping"
+    );
+    expect(us?.shipping_rate_data?.fixed_amount?.amount).toBe(0);
+  });
+
+  it("charges US shipping for carts without a shipping-inclusive product", () => {
+    const p = buildCartCheckoutParams({ ...base, freeUsShipping: false });
+    const us = (p.shipping_options ?? []).find(
+      (option) => option.shipping_rate_data?.display_name === "US shipping"
+    );
+    expect(us?.shipping_rate_data?.fixed_amount?.amount).toBe(500);
   });
 
   it("builds success + cancel urls from baseUrl (cancel returns to cart)", () => {

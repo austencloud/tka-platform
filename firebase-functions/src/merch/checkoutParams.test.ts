@@ -28,11 +28,12 @@ describe("buildMerchCheckoutParams", () => {
     expect(countries.length).toBeGreaterThan(100);
   });
 
-  it("offers shipping rates that all declare a tax_behavior (required by automatic_tax)", () => {
+  it("offers shipping rates with Stripe's shipping tax code and exclusive tax behavior", () => {
     const opts = params.shipping_options ?? [];
     expect(opts.length).toBeGreaterThanOrEqual(3);
     for (const o of opts) {
       expect(o.shipping_rate_data?.tax_behavior).toBe("exclusive");
+      expect(o.shipping_rate_data?.tax_code).toBe("txcd_92010001");
     }
   });
 
