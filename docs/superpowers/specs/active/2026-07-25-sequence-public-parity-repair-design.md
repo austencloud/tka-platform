@@ -965,6 +965,74 @@ R2 refreshed.** The three items left open above are done:
   Firestore; dropped-blob record `20GW` correctly absent. The next scheduled
   function run overwrites it with identical content.
 
+**PHASE 4 STRICT RULES LANDED + DEPLOYED (2026-07-27).** The deferred
+getAfter linkage is LIVE: firebase-tools 15.24.0 (pinned as an exact
+devDependency; needs JDK 21 — portable Temurin at
+`C:\Users\Austen\jdks\jdk-21.0.11+10`) fixed the emulator defect that made
+every getAfter call fail, proven by the new
+`getafter-probe.rules.test.ts` (inline-rules capability probe). What
+shipped, and the deltas from the section 9 design:
+
+- `publicSequences` create/update: schema 2 REQUIRED (legacy allowance
+  removed), full field-shape proof, `publicOwnerParityAfter` (owner doc
+  exists after the transaction, `visibility == 'public'`, stamps + core
+  fields equal), and `publicClaimAfter` (the hash pair's claim exists after
+  the transaction naming this sequence and caller). Delete requires
+  `publicClaimReleasedAfterDelete` (own claim gone or provably another
+  sequence's).
+- `publicSequenceHashes` create: getAfter linkage — the named public doc
+  must exist after the transaction with THIS hash pair and owner. Delete
+  requires a proven release: the named public doc is gone or carries a
+  different hash pair. Update stays `false`.
+- **Owner-document scoping (deliberate deviation from section 9's full
+  design):** owner saves are OFFLINE-FIRST — content fields (word, steps,
+  contentHash, visibility) must stay writable without a paired public
+  transaction, so the rules gate the projection STAMP keys only
+  (`publicProjectionRevision/SchemaVersion/Digest`, via
+  `diff().affectedKeys()`): setting them demands full mirror parity after
+  the transaction; removing them demands the mirror be gone. Only the
+  persister writes those keys (verified: no other src writer). A stamped
+  owner doc can no longer be deleted while its mirror survives. Content
+  drift between owner and mirror remains the retry layer's and the audit's
+  domain — by design, not omission.
+- `shortcodes` create: strict mint — `payloadSchemaVersion == 2`, non-empty
+  `payloadWord`, positive `payloadStepCount`, and a hash-carrying mint must
+  write its `shortcodeHashes` claim in the same transaction.
+  `shortcodeHashes` create requires the code doc after the transaction to
+  carry this exact hash (the `healHashIndex` self-heal passes only for
+  verifiable code docs; unverifiable heals deny into its try/catch).
+- Client-version UX (spec phase 4 requirement): `library-sync-retry.ts` now
+  classifies a Firestore `permission-denied` on publish as PERMANENT
+  (`CLIENT_VERSION_REJECTED`) with a reload message — an old cached bundle
+  stops retrying and tells the user; local saves stay safe.
+- Tests: the phase-2 "PHASE 4 DEFERRED" pin is flipped
+  (`public-sequence-parity.rules.test.ts`, rewritten — 25 tests covering the
+  publish/unpublish/thumbnail/hash-change/admin-unpublish transaction shapes
+  and denying every unpaired fragment and forgery; core suite updated for
+  the two strict-world contracts). 79 rules tests green. Deployed to
+  production 2026-07-27.
+
+**FABRICATED-PREFLOAT GUARDS LANDED (2026-07-27, same pass).**
+`legacy-sequence-codec.ts` decode no longer manufactures a prefloat pair
+from a NO_ROTATION wire slot — pre-prefloat-era floats decode with the
+fields ABSENT (guard tests in `sequence-encoder.legacy-qr.test.ts`; the
+real-rotation slot still round-trips). `motion-query-handler.ts` treats a
+persisted fabricated pair (prefloat type + literal "noRotation" rotation) as
+absent instead of matching rows against it. The shared derivation lib's
+float handling is CHANNEL-AWARE (`floatAlternatives` option on
+`letterForBeat`/`contentLetters`): EMBEDDED (mint-time) steps may resolve a
+prefloat-less float via the app's canonical pro/anti-alternatives lookup —
+an app era saved floats bare, and their labels were DEFINED by that lookup
+at creation (proven on qCE8jd) — while ENCODED (wire-decoded) steps never
+guess, because the legacy wire physically dropped the information.
+`deriveFromSteps` passes the flag for `source === "embedded"` only. A
+strict-everywhere first cut flipped 7 LABELS_CURRENT records to
+PAYLOAD_INCOMPLETE; the channel-aware version restores full classification
+stability (dry-run 2026-07-27T06-44: zero deltas vs the T02-23 reference
+across all 20,233 codes; sole addition the new mint M85R). Visual note:
+scanned legacy floats now render with absent prefloat instead of arbitrary
+fabricated values.
+
 ### Mint path
 
 Change the order in `ShortCodeManager.allocateCode`:
@@ -1433,6 +1501,24 @@ Private offline saves remain available.
 
 Enable the read-only parity audit and alerting. Repair remains an explicit Admin
 operation with a manifest; the scheduled job does not mutate production.
+
+**PHASE 5 LANDED (2026-07-27).**
+`scripts/diagnostics/audit-sequence-public-parity.ts` wraps BOTH existing
+engines (reconcile + shortcode backfill, always dry-run — never a second
+scanner) and compares against
+`scripts/diagnostics/parity-audit-baseline.json`, the human-acknowledged
+quarantine set (78 codes: 65 PAYLOAD_INCOMPLETE + 13
+LABEL_CONTRADICTS_PAYLOAD, generated from the 2026-07-27T06-44 manifest).
+Actionable = any reconcile record not IN_SYNC, or any shortcode whose class
+is neither LABELS_CURRENT nor its baselined class. Exit 0 clean / 2 drift /
+1 audit failure; `--alert` writes `users/{uid}/notifications` docs to every
+admin (the deployed `onNewNotification` function pushes them — path proven
+by self-test). Scheduled via Windows Task Scheduler "TKA Parity Audit"
+(daily 04:30, `scripts/diagnostics/run-parity-audit.cmd`, logs to
+`scripts/migrations/backups/parity-audit.log`). First live run
+2026-07-27T06-53: reconcile 466/466 IN_SYNC, shortcodes 20,156/65/13,
+0 actionable, exit 0. Regenerate the baseline after intentional relabels
+(e.g. the pending 13-contradiction review picks).
 
 ## Rollback
 
