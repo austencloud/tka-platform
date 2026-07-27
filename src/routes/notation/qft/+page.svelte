@@ -29,27 +29,39 @@
     type Spin
   } from "$lib/shared/notation/qft/qft-model";
   import { nameFor } from "$lib/shared/notation/qft/qft-naming";
+  import {
+    loadQftSession,
+    saveQftSession,
+    type QftSession
+  } from "$lib/shared/notation/qft/qft-session";
   import QftGuidePane from "$lib/shared/notation/qft/components/QftGuidePane.svelte";
   import QftStage from "$lib/shared/notation/qft/components/QftStage.svelte";
   import QftTable from "$lib/shared/notation/qft/components/QftTable.svelte";
 
   type AppMode = "guide" | "instrument";
 
-  let appMode = $state<AppMode>("guide");
-  let moveIndex = $state(0);
+  /*
+   * Restored synchronously at init rather than in an effect, so the first paint
+   * is already the right shape. Restoring afterwards would show the default
+   * move for a frame and then jump, which is exactly the seam this removes.
+   */
+  const restored = loadQftSession(GUIDE_MOVES.length);
+
+  let appMode = $state<AppMode>(restored?.appMode ?? "guide");
+  let moveIndex = $state(restored?.moveIndex ?? 0);
   let showInfo = $state(false);
 
   /* Instrument state. Seeded from the move on screen when the mode switches, so
      the knobs open on whatever the reader was just looking at. */
-  let radius = $state(1);
-  let downbeats = $state(3);
-  let spin = $state<Spin>("antispin");
-  let phase = $state(0);
-  let pendulum = $state(false);
-  let convention = $state<Convention>("drex");
+  let radius = $state(restored?.radius ?? 1);
+  let downbeats = $state(restored?.downbeats ?? 3);
+  let spin = $state<Spin>(restored?.spin ?? "antispin");
+  let phase = $state(restored?.phase ?? 0);
+  let pendulum = $state(restored?.pendulum ?? false);
+  let convention = $state<Convention>(restored?.convention ?? "drex");
 
-  let cursor = $state(0);
-  let playing = $state(true);
+  let cursor = $state(restored?.cursor ?? 0);
+  let playing = $state(restored?.playing ?? true);
 
   /*
    * Indexing is possibly-undefined under strict index access, and the guide is
@@ -106,6 +118,48 @@
     sync();
     q.addEventListener("change", sync);
     return () => q.removeEventListener("change", sync);
+  });
+
+  const snapshot = (): QftSession => ({
+    appMode,
+    moveIndex,
+    radius,
+    downbeats,
+    spin,
+    phase,
+    pendulum,
+    convention,
+    cursor,
+    playing
+  });
+
+  /*
+   * Discrete state saves the moment it changes. Reading `cursor` here as well
+   * would re-run this every animation frame, so the cursor is left to the
+   * throttle below and picked up from the same snapshot.
+   */
+  $effect(() => {
+    void [appMode, moveIndex, radius, downbeats, spin, phase, pendulum, convention, playing];
+    saveQftSession(snapshot());
+  });
+
+  /*
+   * The cursor moves 60 times a second, which is far too often to write. Twice
+   * a second is close enough that a reload lands within a few degrees of where
+   * you left off, and a final write on hide catches the common case of closing
+   * or navigating away mid-cycle.
+   */
+  $effect(() => {
+    const id = setInterval(() => saveQftSession(snapshot()), 500);
+    const flush = () => saveQftSession(snapshot());
+    addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => {
+      clearInterval(id);
+      removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flush);
+      flush();
+    };
   });
 
   $effect(() => {
