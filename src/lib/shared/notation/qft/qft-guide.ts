@@ -107,15 +107,20 @@ export const SOURCES = [
 		href: "https://www.homeofpoi.com/en/community/forums/topics/932537/A-Beginner-s-Guide-to-Prop-QFT-Notation"
 	},
 	{
-		label: "the same guide, mirrored",
+		/* Named as the image source because it is: these frames were pulled from
+		   here, and this is the copy that still serves them. */
+		label: "Drex — the same guide on his blog, images intact",
 		href: "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
 	}
 ];
 
 export const TIMELINE = [
 	{ when: "2011", what: "Charlie Cushing devises QfT. Drex writes up the notation." },
-	{ when: "May 2011", what: "The guide is posted to Home of Poi." },
+	{ when: "May 2011", what: "The guide is posted to Home of Poi and to Drex's blog." },
 	{ when: "Nov 2011", what: "Charlie publishes ten video chapters covering the full formula." },
 	{ when: "2022", what: "A forum question about horizontal-plane moves goes unanswered." },
-	{ when: "since", what: "No further published work. The forum's images stop loading." }
+	{
+		when: "since",
+		what: "No further published work. The forum's images stop loading; the blog's still serve."
+	}
 ];

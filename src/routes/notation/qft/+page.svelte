@@ -35,6 +35,7 @@
     saveQftSession,
     type QftSession
   } from "$lib/shared/notation/qft/qft-session";
+  import QftFrames from "$lib/shared/notation/qft/components/QftFrames.svelte";
   import QftGuidePane from "$lib/shared/notation/qft/components/QftGuidePane.svelte";
   import QftStage from "$lib/shared/notation/qft/components/QftStage.svelte";
   import QftTable from "$lib/shared/notation/qft/components/QftTable.svelte";
@@ -51,6 +52,7 @@
   let appMode = $state<AppMode>(restored?.appMode ?? "guide");
   let moveIndex = $state(restored?.moveIndex ?? 0);
   let showInfo = $state(false);
+  let showArchive = $state(false);
 
   /* Instrument state. Seeded from the move on screen when the mode switches, so
      the knobs open on whatever the reader was just looking at. */
@@ -301,6 +303,17 @@
     { value: "antispin", label: "Antispin" }
   ];
 
+  /*
+   * States what each option does to the artifact, and nothing about which is
+   * better. Composed is the default because that is how the frames sit in the
+   * page; the published card stays available because a page whose claim is
+   * restoration cannot make a recoloured artifact its only version.
+   */
+  const RENDERING = [
+    { value: "composed", label: "Composed" },
+    { value: "published", label: "As published" }
+  ];
+
   const CONVENTION_OPTIONS: Array<{ value: Convention; label: string }> = [
     { value: "charlie", label: "Charlie" },
     { value: "drex", label: "Drex" }
@@ -311,7 +324,7 @@
   <title>QfT Notation — Flow Arts Composer</title>
   <meta
     name="description"
-    content="Charlie Cushing's 2011 poi notation, with the lost diagrams restored and running beside a model that computes the same moves."
+    content="Charlie Cushing's 2011 poi notation, written up by Drex, running beside a model that computes the same moves from the published rules."
   />
 </svelte:head>
 
@@ -343,10 +356,8 @@
           {move}
           increments={guideIncrements}
           cursor={pos}
-          {step}
           {compact}
-          {asPublished}
-          onRendering={(v) => (asPublished = v)}
+          onShowArchive={() => (showArchive = true)}
         />
       {:else}
         <div class="instrument">
@@ -454,6 +465,67 @@
   </div>
 </div>
 
+{#if showArchive}
+  <!--
+    The archive view. All eight animations as published, running off the same
+    step as the stage behind it, with the rendering toggle and the source.
+    They are not the page's subject any more, but they are still restored, still
+    sourced, and still one click away — which is the whole reason this page
+    exists.
+  -->
+  <div
+    class="scrim"
+    role="button"
+    tabindex="0"
+    aria-label="Close"
+    onclick={() => (showArchive = false)}
+    onkeydown={(e) => e.key === "Escape" && (showArchive = false)}
+  ></div>
+  <aside class="archive-panel" aria-label="The 2011 diagrams">
+    <header class="archive-head">
+      <div>
+        <h2>The 2011 diagrams</h2>
+        <p class="archive-note">
+          From Drex's <a
+            href="https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
+            rel="noreferrer"
+            target="_blank">A Beginner's Guide to Prop QFT Notation</a
+          >, where they are still served. The forum copy of the same post lost every image. The
+          article does not say who drew them.
+        </p>
+      </div>
+      <div class="archive-controls">
+        <div class="fit">
+          <SegmentedControl
+            options={RENDERING}
+            value={asPublished ? "published" : "composed"}
+            onchange={(v) => (asPublished = v === "published")}
+            size="sm"
+            ariaLabel="Rendering of the restored frames"
+          />
+        </div>
+        <button type="button" class="close" onclick={() => (showArchive = false)}>Close</button>
+      </div>
+    </header>
+
+    <div class="archive-grid">
+      {#each GUIDE_MOVES as m (m.id)}
+        <figure class:current={m.id === move.id}>
+          <div class="archive-box" style={`--aspect: ${m.aspect}`}>
+            <QftFrames
+              stem={m.stem}
+              {step}
+              {asPublished}
+              alt={`${m.title}, as published in Drex's 2011 guide`}
+            />
+          </div>
+          <figcaption>{m.title}</figcaption>
+        </figure>
+      {/each}
+    </div>
+  </aside>
+{/if}
+
 {#if showInfo}
   <div
     class="scrim"
@@ -467,8 +539,13 @@
     <h2>QfT Notation</h2>
     <p>
       A poi notation devised by Charlie Cushing and written up by Ben "DrexFactor" Drexler in 2011.
-      The diagrams no longer load on the forum where they were posted. They are restored here, each
-      running beside a model that computes the same move from the published rules.
+      The guide was posted to the Home of Poi forum and to Drex's blog. The forum's copy has since
+      lost every image; the blog still serves them. Each move here runs against a model that computes
+      the same move from the published rules.
+    </p>
+    <p class="note">
+      The article credits Charlie with devising the system and does not say who drew the diagrams, so
+      they are attributed to the guide rather than to a person.
     </p>
 
     <h3>Sources</h3>
@@ -712,6 +789,119 @@
     background: rgb(0 0 0 / 0.55);
     border: 0;
     z-index: 40;
+  }
+
+  /*
+   * A sheet rather than the About panel's side drawer: eleven drawings of very
+   * different proportions need the width, and at 4K a 34rem rail would show
+   * them as thumbnails in a column.
+   */
+  .archive-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 41;
+    overflow-y: auto;
+    /* Clears the fixed site header, which paints above this panel. */
+    padding: calc(65px + clamp(1.25rem, 3vh, 2.5rem)) clamp(1.25rem, 4vw, 4rem)
+      clamp(1.25rem, 3vh, 2.5rem);
+    background: var(--semantic-surface, #14162b);
+  }
+
+  .archive-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    max-width: var(--shell-w, min(1720px, 92vw));
+    margin: 0 auto 1.75rem;
+  }
+
+  .archive-head h2 {
+    margin: 0 0 0.4rem;
+    font-size: clamp(1.4rem, 1rem + 1vw, 2.4rem);
+  }
+
+  .archive-note {
+    margin: 0;
+    max-width: 46rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.68));
+  }
+
+  .archive-note a {
+    color: var(--theme-accent, #8b5cf6);
+  }
+
+  .archive-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .archive-controls .close {
+    margin-top: 0;
+  }
+
+  .fit {
+    display: inline-flex;
+  }
+
+  .fit :global(button) {
+    white-space: nowrap;
+  }
+
+  /*
+   * A pinned count per tier rather than auto-fill, so the last row is never a
+   * single orphan (.claude/rules/4k-native-layout.md). Eight items: 2 and 4
+   * divide evenly, 3 leaves two on the last row, which is fine — never one.
+   */
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 2vw, 2rem);
+    max-width: var(--shell-w, min(1720px, 92vw));
+    margin: 0 auto;
+  }
+
+  @media (min-width: 48rem) {
+    .archive-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .archive-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .archive-grid figure {
+    margin: 0;
+  }
+
+  /*
+   * Block, not a centring grid. With `place-items: center` the frames child is
+   * not stretched, so its `height: 100%` had no definite box to resolve
+   * against and every drawing rendered at its natural size, overflowing the
+   * cell and colliding with its neighbours.
+   */
+  .archive-box {
+    height: clamp(9rem, 22vh, 20rem);
+  }
+
+  .archive-grid figcaption {
+    margin-top: 0.6rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.6));
+  }
+
+  /* The move the stage behind this is showing. */
+  .archive-grid figure.current figcaption {
+    color: var(--theme-accent, #8b5cf6);
+    font-weight: 600;
   }
 
   .info-panel {

@@ -1,17 +1,14 @@
 <script lang="ts">
   /**
-   * One canonical move: the restored animation beside the computed stage.
+   * One canonical move: the computed stage, its notation, and its source quote.
    *
-   * Both halves run off the same `step`, so they cannot drift. A browser gives
-   * no control over GIF playback, which is why the original is rendered frame by
-   * frame rather than left to its own clock.
+   * The 2011 diagrams used to run beside this. They now live in the archive
+   * view, reachable from here — see the comment on the figure below for why.
    *
    * No narration. The only prose is quoted from the source.
    */
   import type { QftIncrement } from "../qft-model";
   import type { GuideMove } from "../qft-guide";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import QftFrames from "./QftFrames.svelte";
   import QftStage from "./QftStage.svelte";
   import QftTable from "./QftTable.svelte";
 
@@ -19,24 +16,11 @@
     move: GuideMove;
     increments: QftIncrement[];
     cursor: number;
-    step: number;
     compact: boolean;
-    asPublished: boolean;
-    onRendering: (asPublished: boolean) => void;
+    onShowArchive: () => void;
   }
 
-  let { move, increments, cursor, step, compact, asPublished, onRendering }: Props = $props();
-
-  /*
-   * States what each option does to the artifact, and nothing about which is
-   * better. The page composes by default because that is how it reads as one
-   * thing; the published card is one click away because the page's claim is
-   * restoration and a recoloured artifact cannot be the only version on offer.
-   */
-  const RENDERING = [
-    { value: "composed", label: "Composed" },
-    { value: "published", label: "As published" }
-  ];
+  let { move, increments, cursor, compact, onShowArchive }: Props = $props();
 </script>
 
 <div class="guide">
@@ -45,40 +29,31 @@
     <p class="spec">{move.spec}</p>
   </header>
 
+  <!--
+    One stage, computed. The 2011 diagrams used to sit beside this and drive the
+    layout of every move, but they are not one visual language: two of them fill
+    the swept sector, the rest accumulate a marker at every position passed, and
+    one carries its own notation table baked into the crop. The stage says the
+    same thing consistently for all eight, and now draws the swept sector the
+    best of those diagrams used. The originals are still here, one click away and
+    still sourced — they are just no longer the thing the page is built around.
+  -->
   <div class="pair">
-    <figure>
-      <div class="box original" style={`--aspect: ${move.aspect}`}>
-        <QftFrames
-          stem={move.stem}
-          {step}
-          {asPublished}
-          alt={`${move.title}, as published in 2011`}
-        />
-      </div>
-      <figcaption>
-        <span>Home of Poi, 2011</span>
-        <div class="fit">
-          <SegmentedControl
-            options={RENDERING}
-            value={asPublished ? "published" : "composed"}
-            onchange={(v) => onRendering(v === "published")}
-            size="sm"
-            ariaLabel="Rendering of the restored frames"
-          />
-        </div>
-      </figcaption>
-    </figure>
-
     <figure>
       <div class="box stage">
         <QftStage knobs={move.knobs} {increments} {cursor} pendulum={move.pendulum ?? false} />
       </div>
-      <figcaption>computed from the same rules</figcaption>
+      <figcaption>
+        <span>computed from the published rules</span>
+        <button type="button" class="archive-link" onclick={onShowArchive}>
+          See the 2011 diagram
+        </button>
+      </figcaption>
     </figure>
   </div>
 
   <div class="notation">
-    <QftTable {increments} activeStep={step} {compact} />
+    <QftTable {increments} activeStep={Math.floor(cursor) % 8} {compact} />
   </div>
 
   {#if move.quote}
@@ -132,30 +107,17 @@
    */
   .pair {
     display: grid;
-    grid-template-columns: repeat(2, auto);
     justify-content: center;
-    align-items: start;
-    gap: clamp(0.75rem, 2.5vw, 2.5rem);
   }
 
   figure {
     margin: 0;
   }
 
+  /* One subject now, so it takes the whole measure the layout gives it. */
   .box {
     height: var(--box-h);
     aspect-ratio: 1;
-  }
-
-  /*
-   * Both boxes are exactly --box-h tall, so the two drawings share a top and a
-   * bottom edge whatever shape the original turns out to be. Width follows the
-   * frame's real proportions — the crops are deliberately not squared — capped
-   * so a wide drawing cannot balloon across the row and crowd the notation.
-   */
-  .box.original {
-    aspect-ratio: auto;
-    width: calc(var(--box-h) * min(var(--aspect), 1.15));
   }
 
   .stage {
@@ -168,23 +130,29 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.5rem;
     text-align: center;
     font-size: 0.75rem;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.5));
   }
 
-  /*
-   * SegmentedControl is width: 100% internally, which would stretch two short
-   * labels across the whole figure. Shrink-wrap it to its own content.
-   */
-  .fit {
-    display: inline-flex;
+  /* A button, because it is a thing you click
+     (.claude/rules/clickables-look-like-buttons.md). */
+  .archive-link {
+    min-height: 44px;
+    padding-inline: 0.9rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.22));
+    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.24));
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.78));
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 140ms ease, color 140ms ease;
   }
 
-  /* Two short labels, one line each. "As published" was wrapping mid-phrase. */
-  .fit :global(button) {
-    white-space: nowrap;
+  .archive-link:hover {
+    border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
+    color: var(--semantic-text-primary, #fff);
   }
 
   .notation {
@@ -353,10 +321,11 @@
 
   @media (max-width: 30rem) {
     .guide {
-      --box-h: clamp(6rem, 30vw, 10rem);
+      /* Sized for one subject. This was 30vw when two figures shared the row. */
+      --box-h: clamp(8rem, 33vw, 15rem);
       /* Tighter than the fluid default, which overran the app box by a few
          pixels once the caption under the left figure gained its control. */
-      gap: 0.6rem;
+      gap: 0.4rem;
     }
   }
 </style>

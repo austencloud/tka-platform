@@ -97,8 +97,16 @@ function handPositionAt(knobs: QftKnobs, u: number): PositionValue {
 	return knobs.radius < STATIONARY_RADIUS ? 8 : norm(u);
 }
 
-/** Continuous prop index at hand-step `u`. Integer steps give the table rows. */
-function propIndexAt(knobs: QftKnobs, u: number): number {
+/**
+ * Continuous prop index at hand-step `u`. Integer steps give the table rows.
+ *
+ * Exported so the stage can draw the sector the prop sweeps across an
+ * increment. That has to come from the model rather than from the drawn
+ * angles: at 8 rotations per hand rotation the prop turns a full circle in one
+ * increment, and a sector derived from `atan2` of the head position cannot tell
+ * that from no rotation at all.
+ */
+export function propIndexAt(knobs: QftKnobs, u: number): number {
 	return spinSign(knobs.spin) * knobs.downbeats * u + (knobs.phase ?? 0);
 }
 

@@ -6,9 +6,11 @@
    * original 2011 animations.
    */
   import {
+    pendulumIndexAt,
     pendulumPosesAt,
     pointAt,
     posesAt,
+    propIndexAt,
     tracePath,
     tracePendulum,
     PROP_LENGTH,
@@ -168,6 +170,74 @@
 
   /** 1 at the instant a step begins, falling to 0 across the increment. */
   const dartLife = $derived(Math.max(0, 1 - (cursor - Math.floor(cursor)) * 2.2));
+
+  /**
+   * The swept sector.
+   *
+   * The 2011 guide's clearest diagrams — static spin, pendulum — fill the wedge
+   * the prop crosses between its departure and its arrival. It is the same idea
+   * as a pictograph's arrow: it says the prop went from HERE to THERE, rather
+   * than leaving you to infer it from two marks. The rest of the published
+   * diagrams do not do this; they instead accumulate a marker at every position
+   * passed, which reads as clutter rather than as a move.
+   *
+   * So the stage draws it for every move, growing from the departure angle to
+   * wherever the prop is now. At the end of an increment it is exactly the wedge
+   * the guide drew; part way through, it is the sweep in progress.
+   *
+   * The angle comes from the model's continuous index, not from the drawn head
+   * position — at 8 rotations per hand rotation the prop turns a full circle in
+   * one increment, which no angle measured off screen coordinates can express.
+   */
+  const indexAt = (u: number) => (pendulum ? pendulumIndexAt(u) : propIndexAt(knobs, u));
+
+  const RADIANS_PER_POSITION = Math.PI / 4;
+
+  function wedge(startIndex: number, span: number) {
+    if (Math.abs(span) < 0.0005) return null;
+
+    /* A full turn or more is the whole disc; beyond that the wedge is meaningless. */
+    const clamped = Math.max(-8, Math.min(8, span));
+    const r = PROP_LENGTH * UNIT;
+
+    const a0 = startIndex * RADIANS_PER_POSITION;
+    const a1 = (startIndex + clamped) * RADIANS_PER_POSITION;
+    const p0 = { x: hand.x + r * Math.sin(a0), y: hand.y - r * Math.cos(a0) };
+    const p1 = { x: hand.x + r * Math.sin(a1), y: hand.y - r * Math.cos(a1) };
+
+    /*
+     * Screen y grows downward, so sweep-flag follows the sign of travel rather
+     * than a fixed value — otherwise a reversing pendulum fills the complement
+     * of its own swing.
+     */
+    const largeArc = Math.abs(clamped) > 4 ? 1 : 0;
+    const sweepFlag = clamped > 0 ? 1 : 0;
+
+    return `M${hand.x.toFixed(2)},${hand.y.toFixed(2)} L${p0.x.toFixed(2)},${p0.y.toFixed(2)} A${r},${r} 0 ${largeArc} ${sweepFlag} ${p1.x.toFixed(2)},${p1.y.toFixed(2)} Z`;
+  }
+
+  /*
+   * Two wedges, because they answer different questions and the page needs both.
+   *
+   * The pale one is the whole increment the current row describes, depart to
+   * arrive. It is there whether or not anything is moving, so a paused stage
+   * reads exactly like the guide's still: this row is THIS wedge.
+   *
+   * The bright one is how far the prop has actually got through it, and it is
+   * empty at rest. Together they read as a snapshot filling in, rather than as
+   * marks accumulating.
+   */
+  const sectorFull = $derived.by(() => {
+    const from = Math.floor(cursor);
+    const start = indexAt(from);
+    return wedge(start, indexAt(from + 1) - start);
+  });
+
+  const sectorProgress = $derived.by(() => {
+    const from = Math.floor(cursor);
+    const start = indexAt(from);
+    return wedge(start, indexAt(cursor) - start);
+  });
 </script>
 
 <svg
@@ -194,6 +264,14 @@
 
   {#if knobs.radius > 0.01}
     <circle class="hand-path" cx="0" cy="0" r={knobs.radius * UNIT} />
+  {/if}
+
+  <!-- Under the trail and the tether: this is ground, not a mark. -->
+  {#if sectorFull}
+    <path class="sector" d={sectorFull} />
+  {/if}
+  {#if sectorProgress}
+    <path class="sector-progress" d={sectorProgress} />
   {/if}
 
   <path class="trail" d={trail} />
@@ -291,6 +369,16 @@
     fill: none;
     stroke: var(--semantic-border, rgb(255 255 255 / 0.3));
     stroke-width: 2;
+  }
+
+  .sector {
+    fill: color-mix(in srgb, var(--theme-accent, #8b5cf6) 24%, transparent);
+    stroke: none;
+  }
+
+  .sector-progress {
+    fill: color-mix(in srgb, var(--theme-accent, #8b5cf6) 34%, transparent);
+    stroke: none;
   }
 
   /* The shape itself: always whole, always quiet. */

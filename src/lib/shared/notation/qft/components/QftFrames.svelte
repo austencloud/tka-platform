@@ -1,6 +1,10 @@
 <script lang="ts">
   /**
-   * Charlie's animation, driven by the model's step rather than by the browser.
+   * The 2011 animation, driven by the model's step rather than by the browser.
+   *
+   * Attribution note: the guide is Drex's write-up of Charlie's system and does
+   * not credit whoever drew the diagrams. Do not attribute them to Charlie —
+   * earlier code and docs here did, and it is not supported by the source.
    *
    * A GIF in an <img> plays on its own clock — no seek, no pause, no frame
    * access — so it drifts out of phase with the computed stage beside it within
@@ -74,9 +78,21 @@
    * themselves and never changes as the step advances, so nothing below it
    * moves during playback.
    */
+  /*
+   * Explicit single track, and items stretch rather than centre. With
+   * `place-items: center` the images are not stretched, so their `height: 100%`
+   * has no definite grid area to resolve against, falls back to the frame's
+   * natural size, and overflows any box smaller than the source image.
+   * `object-fit` does the centring anyway.
+   */
   .frames {
     display: grid;
-    place-items: center;
+    /*
+     * minmax(0, 1fr), not 1fr: a grid track's automatic minimum is the item's
+     * min-content size, so a plain 1fr grows to the source image's natural
+     * height and the frame overflows any box smaller than the original file.
+     */
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     width: 100%;
     height: 100%;
   }
@@ -101,6 +117,8 @@
      */
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
     /*
      * The crops are truthful to the drawings rather than squared, so widths and
      * heights vary per animation. object-fit lets the page give every one the

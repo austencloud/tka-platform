@@ -1,5 +1,5 @@
 /**
- * Lift Charlie's frames off their white card so they can be drawn INTO the page.
+ * Lift the 2011 frames off their white card so they can be drawn INTO the page.
  *
  * The restored frames are line art printed on flat white. On a dark page that
  * white becomes a hard rectangle, and the drawing reads as a screenshot glued
@@ -15,7 +15,7 @@
  *      White paper goes to alpha 0 and drops out; ink keeps its own hue.
  *   2. Re-ink by chroma. Neutral pixels — the linework, the numerals, their
  *      antialiasing — are the drawing's "black", so they become the page's ink
- *      colour. Saturated pixels are Charlie's actual colour decisions (the red
+ *      colour. Saturated pixels are the drawing's actual colour decisions (the red
  *      head, the blue hand) and keep their hue, normalised and lifted so they
  *      still read against a dark field.
  *   3. Curve the alpha. Light tints carry little ink by construction, so a
@@ -40,7 +40,7 @@ const INK = [232, 236, 255];
 
 /**
  * Chroma below this is the drawing's linework rather than a colour choice.
- * Charlie's reds and blues sit far above it; JPEG-ish fringing sits below.
+ * The drawing's reds and blues sit far above it; JPEG-ish fringing sits below.
  */
 const CHROMA_FLOOR = 26;
 
