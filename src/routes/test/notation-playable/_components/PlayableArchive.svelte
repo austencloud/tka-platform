@@ -130,31 +130,61 @@
 	 * native shared-element morph carries the object across. Degrades to a
 	 * plain state change where the API is unsupported, on mobile (the Drawer
 	 * owns that motion), and under reduced motion (per contract).
+	 *
+	 * `soloMorph` narrows the cast first. Every tile and stage normally carries
+	 * a name (they must, so a select re-tile pairs each with itself). But a name
+	 * present in BOTH states still gets captured and cross-faded, so opening the
+	 * detail was animating all eighteen groups — the whole board shimmered while
+	 * one object flew. Stripping the other names BEFORE the transition starts
+	 * means old and new agree there is nothing there to animate, so exactly one
+	 * group moves. Tiles drop their names outright for this transition — the
+	 * grid does not re-tile when the detail opens, so a tile group could only
+	 * cross-fade in place. Measured: 55 pseudo-animations down to 3.
 	 */
-	function openDetailView() {
-		const update = async () => {
-			archive = openDetail(archive);
-			await tick();
-		};
-		if (isMobile.current || reduceMotion.current || typeof document === "undefined" || !("startViewTransition" in document)) {
-			void update();
-		} else {
-			document.startViewTransition(update);
+	let soloMorph = $state(false);
+
+	function canMorph() {
+		return (
+			!isMobile.current &&
+			!reduceMotion.current &&
+			typeof document !== "undefined" &&
+			"startViewTransition" in document
+		);
+	}
+
+	/** Run `update` as a solo morph: only the active entry keeps a name. */
+	async function morphDetail(update: () => Promise<void>, after?: () => void) {
+		if (!canMorph()) {
+			await update();
+			after?.();
+			return;
+		}
+		soloMorph = true;
+		await tick(); // names are off the other tiles before the snapshot
+		const vt = document.startViewTransition(update);
+		after?.();
+		try {
+			await vt.finished;
+		} finally {
+			soloMorph = false;
 		}
 	}
 
-	function closeDetailView() {
-		const update = async () => {
-			archive = closeDetail(archive);
+	function openDetailView() {
+		void morphDetail(async () => {
+			archive = openDetail(archive);
 			await tick();
-		};
-		const finish = () => slideButtons[archive.activeIndex]?.focus();
-		if (isMobile.current || reduceMotion.current || typeof document === "undefined" || !("startViewTransition" in document)) {
-			void update().then(finish);
-		} else {
-			document.startViewTransition(update);
-			setTimeout(finish, 60);
-		}
+		});
+	}
+
+	function closeDetailView() {
+		void morphDetail(
+			async () => {
+				archive = closeDetail(archive);
+				await tick();
+			},
+			() => setTimeout(() => slideButtons[archive.activeIndex]?.focus(), 60),
+		);
 	}
 
 	function onRailKeydown(event: KeyboardEvent) {
@@ -265,7 +295,8 @@
 			     (to the panel), which is what powers the Inspect morph. -->
 			<span
 				class="artifact-stage"
-				style:view-transition-name={archive.detailOpen && isActive
+				style:view-transition-name={(archive.detailOpen && isActive) ||
+				(soloMorph && !isActive)
 					? undefined
 					: `stage-${entry.id}`}
 			>
@@ -356,7 +387,9 @@
 						class="g-slide"
 						class:is-active={i === activeIndex}
 						class:visited={archive.visited.has(i)}
-						style:view-transition-name={`tile-${entry.id}`}
+						style:view-transition-name={soloMorph
+							? undefined
+							: `tile-${entry.id}`}
 					>
 						{@render slideCard(entry, i)}
 					</li>
@@ -539,6 +572,18 @@
 	:global(::view-transition-old(.notation-archive)),
 	:global(::view-transition-new(.notation-archive)) {
 		animation-duration: 0.45s;
+	}
+
+	/* The modal's chrome — panel, backdrop, prose, close — rides the ROOT
+	   snapshot, which defaults to 250ms. Against a 450ms artifact morph the
+	   modal was fully present a fifth of a second before the object landed in
+	   it, which is what read as the animation not belonging to the modal.
+	   Same duration, same curve: they arrive together. */
+	:global(::view-transition-group(root)),
+	:global(::view-transition-old(root)),
+	:global(::view-transition-new(root)) {
+		animation-duration: 0.45s;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	/* HEADER */

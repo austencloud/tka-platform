@@ -30,7 +30,9 @@ describe("playable archive: transition-name pairing", () => {
   it("names every stage, not only the active one", () => {
     // The name must be present whenever the tile is NOT the open detail's
     // source. An `isActive ? name : undefined` shape is the regression.
-    expect(source).toMatch(/view-transition-name=\{archive\.detailOpen && isActive\s*\?\s*undefined/);
+    // The only reasons a stage goes unnamed: it is handing its name to the
+    // open detail, or a solo detail morph is narrowing the cast.
+    expect(source).toMatch(/\(archive\.detailOpen && isActive\)/);
     expect(source).not.toMatch(/view-transition-name=\{isActive && !archive\.detailOpen\s*\?/);
   });
 
@@ -41,6 +43,28 @@ describe("playable archive: transition-name pairing", () => {
     expect(source).toMatch(/`stage-\$\{entry\.id\}`/);
     expect(source).toMatch(/`tile-\$\{entry\.id\}`/);
     expect(source).not.toMatch(/view-transition-name:\s*(stage|tile)\b/);
+  });
+
+  it("narrows the cast to one object when the detail morphs", () => {
+    // Names present in BOTH states still get captured and cross-faded, so
+    // opening the detail animated all eighteen groups and the whole board
+    // shimmered while one object flew. The flag must be set before the
+    // transition starts, or the old snapshot still holds every name.
+    expect(source).toContain("soloMorph");
+    expect(source).toMatch(/soloMorph = true;\s*\n\s*await tick\(\);/);
+    // Tiles drop names outright; stages keep only the active one.
+    expect(source).toMatch(/style:view-transition-name=\{soloMorph\s*\n?\s*\?\s*undefined/);
+    expect(source).toMatch(/soloMorph && !isActive/);
+    // And the flag must be cleared, or every later select would be a solo morph.
+    expect(source).toMatch(/finally\s*\{\s*soloMorph = false;/);
+  });
+
+  it("runs the modal chrome on the same clock as the artifact", () => {
+    // The root snapshot carries the panel, backdrop and prose. Its 250ms
+    // default against a 450ms morph put the modal on screen a fifth of a
+    // second before the object landed in it.
+    const root = source.slice(source.indexOf("::view-transition-group(root)"));
+    expect(root.slice(0, 400)).toContain("animation-duration: 0.45s");
   });
 
   it("drives morphs natively rather than through a late WAAPI takeover", () => {
