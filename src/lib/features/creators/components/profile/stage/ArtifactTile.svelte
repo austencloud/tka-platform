@@ -22,6 +22,7 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import { engineAlignScale } from "$lib/shared/mandala/services/engine-align";
+  import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
   import type { LiveSlots, Medium } from "./live-slots.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -176,6 +177,17 @@
       .join("") || "Untitled"
   );
 
+  /**
+   * WordHeader renders a TKA word as GLYPHS, so it must be fed a word and not
+   * a decorated title. Saved scenes carry names like "FΨ — 3D scene"; handing
+   * that in whole makes the header try to glyph " 3D scene" too, which both
+   * mangles the head and makes it taller than its neighbours in the row.
+   *
+   * Take the part before an em/en dash. The trailing half is only ever the
+   * medium restated, which the kind tag beside the header already says.
+   */
+  const headerWord = $derived(label.split(/\s[—–-]\s/)[0]?.trim() || label);
+
   const mediumLabel: Record<Medium, string> = {
     sequence: "Sequence",
     mandala: "Mandala",
@@ -190,6 +202,18 @@
   class:reveal-card={revealCard}
   use:slots.tile={{ medium, onChange: (next) => (live = next) }}
 >
+  <!-- One header, every medium, above the work — not a caption below it.
+       The animation canvas already owned this treatment (AnimatorCanvas ->
+       WordHeader); a mandala, a 3D scene and a tunnel had nothing, so the word
+       fell to a footer caption and the sequence carried it twice. Lifting the
+       SAME WordHeader out of the canvas and onto the tile gives all four media
+       one identical head, and turns the tile portrait: header, then the work.
+       (never-hand-roll.md — this is the existing component, not a new one.) -->
+  <header class="tile-head">
+    <WordHeader word={headerWord} visible darkMode={!lightMode} />
+    <span class="kind" class:live={showLive}>{mediumLabel[medium]}</span>
+  </header>
+
   <!-- Pointer + focus handlers live on the button, not the tile wrapper: it is
        the already-interactive element, so the gesture needs no invented ARIA
        role, and keyboard users get the same reveal by tabbing to it. -->
@@ -370,10 +394,6 @@
     {/if}
   </button>
 
-  <footer class="meta">
-    <span class="label">{label}</span>
-    <span class="kind" class:live>{mediumLabel[medium]}</span>
-  </footer>
 </div>
 
 <style>
@@ -517,21 +537,23 @@
     font-size: 0.8125em;
   }
 
-  .meta {
+  /* Header sits ON the tile, above the work. Reserved height (not intrinsic)
+     so a one-glyph word and a long one give every tile in a row the same head
+     and the grid baseline never jitters (no-layout-shift.md). */
+  .tile-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 0.5em;
     min-width: 0;
+    height: 2.75em;
+    overflow: hidden;
   }
 
-  .label {
-    font-size: 0.9375em;
-    font-weight: 600;
-    color: var(--theme-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .tile-head :global(.word-header),
+  .tile-head > :global(:first-child) {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .kind {
