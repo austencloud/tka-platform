@@ -286,6 +286,49 @@
 				<span class="artifact-year">{entry.year}</span>
 				<span class="artifact-name">{entry.system}</span>
 			</button>
+
+			<!-- THE RECORD. Every entry's sourced prose and every citation link
+			     live here unconditionally, in every state, for all nine systems —
+			     the overlay is presentation, not the content's only existence.
+			     Clipped visually (the room is one screen by design), never
+			     display:none, never aria-hidden: crawlers index it and screen
+			     readers read the real catalog in chronological order instead of
+			     nine bare labels. The open overlay is aria-modal, so the
+			     background is out of the a11y tree and nothing is read twice. -->
+			<section class="tile-record">
+				<h2>
+					<span class="record-system">{entry.system}</span>,
+					<span class="record-year">{entry.year}</span>
+				</h2>
+				<p class="record-people">{entry.people}</p>
+				<p class="record-records">{entry.records}</p>
+				{#if entry.subWorks?.length}
+					<ul>
+						{#each entry.subWorks as work (work.name)}
+							<li><strong>{work.name}</strong> {work.note}</li>
+						{/each}
+					</ul>
+				{/if}
+				<ul class="record-sources">
+					{#each entry.sources as source (source.href)}
+						<li>
+							<a
+								href={source.href}
+								tabindex="-1"
+								target={source.href.startsWith("/") ? undefined : "_blank"}
+								rel={source.href.startsWith("/") ? undefined : "noopener"}
+							>{source.label}</a>
+						</li>
+					{/each}
+				</ul>
+				{#if entry.videos?.length}
+					<ul class="record-videos">
+						{#each entry.videos as video (video.id)}
+							<li>{video.title} — {video.creator}, {video.year}. {video.note}</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
 		</div>
 	{/snippet}
 
@@ -1048,6 +1091,21 @@
 		white-space: nowrap;
 	}
 
+	/* Clipped, not removed: real content in the DOM for crawlers and screen
+	   readers. The links keep tabindex="-1" in markup so the visual room's
+	   focus order stays the rail's roving pattern. */
+	.tile-record {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+		border: 0;
+	}
+
 	/* RESPONSIVE COMPOSITION */
 
 	/* 4K at 100%: five objects in frame, and scale steps up — nothing else
@@ -1129,14 +1187,25 @@
 			--slide-w: 84vw;
 		}
 		.room-title {
-			font-size: 1.05rem;
+			font-size: 1.35rem;
+			line-height: 1.05;
 		}
+		/* Stacked: side by side, the title wrapped to three lines against a
+		   three-line pill. The masthead gets the full width and the meta row
+		   sits under it. */
 		.room-header {
-			align-items: center;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.4rem;
+		}
+		.room-header-side {
+			width: 100%;
+			justify-content: space-between;
 		}
 		:global(.loans-trigger) {
 			padding: 0 0.7rem;
 			font-size: 0.8rem;
+			white-space: nowrap;
 		}
 		.stage-people {
 			display: none;
@@ -1155,14 +1224,28 @@
 	@media (max-height: 520px) and (min-width: 700px) {
 		.room {
 			grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-			grid-template-rows: minmax(0, 1fr) auto;
+			grid-template-rows: auto minmax(0, 1fr) auto;
 			grid-template-areas:
+				"rail head"
 				"rail meta"
 				"timeline timeline";
 			column-gap: 1rem;
 		}
+		/* The masthead moves into the right column rather than disappearing:
+		   hiding it took the page's only h1 out of the render tree and left
+		   the reader with no idea what they were looking at. It also fills
+		   the dead space that sat above the credit line. */
 		.room-header {
-			display: none;
+			grid-area: head;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.4rem;
+		}
+		.room-title {
+			font-size: 1.45rem;
+		}
+		.room-header-side {
+			gap: 0.6rem;
 		}
 		.rail {
 			grid-area: rail;
@@ -1187,8 +1270,10 @@
 		.slide {
 			--slide-w: 52vw;
 		}
+		/* Compact, not hidden — the object still has to say what it is. */
 		.artifact-label {
-			display: none;
+			padding: 0.3rem 0.55rem;
+			font-size: 0.8rem;
 		}
 	}
 
