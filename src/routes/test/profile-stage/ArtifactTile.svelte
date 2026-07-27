@@ -21,6 +21,7 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+  import { engineAlignScale } from "$lib/shared/mandala/services/engine-align";
   import type { LiveSlots, Medium } from "./live-slots.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -142,6 +143,15 @@
     Math.max(tipReach(seqPropTypes.blue), tipReach(seqPropTypes.red))
   );
 
+  /**
+   * Sharing one box is necessary but NOT sufficient: the two renderers map that
+   * box to different scales. SequenceMandala fits its own extent to the box, so
+   * its hand circle floats with tipDx; the engine pins the hand orbit at a fixed
+   * 150/950 of its viewBox. Left alone the overlay reads ~1.6x too wide for a
+   * staff. Same correction the VTG lab's export overlay already applies.
+   */
+  const overlayAlign = $derived(engineAlignScale(overlayTipDx));
+
   function onEnter() {
     liveAtEnter = live;
     hovered = true;
@@ -209,7 +219,7 @@
            keep its mandala visible under the props. -->
       <div class="composite">
         <div class="canvas-zone">
-          <div class="mandala-floor floor">
+          <div class="mandala-floor floor" style="--engine-align: {overlayAlign}">
             <SequenceMandala
               sequence={{ steps: (sequence.steps ?? []) as unknown[] }}
               mode="gallery"
@@ -460,8 +470,14 @@
      Stretching the canvas past `size` is supported by the component — it
      re-reads its true on-screen box via getBoundingClientRect and re-resolves
      the backing store, so this does not render soft. */
+  /* --engine-align cancels SequenceMandala's self-fitting so its hand circle
+     sits on the engine's hand orbit. Transform, not a smaller `size`: size feeds
+     the backing-store resolution, so shrinking it would render the mandala soft
+     as well as small. Scaling about the centre keeps both origins coincident. */
   .mandala-floor {
     display: block;
+    transform: scale(var(--engine-align, 1));
+    transform-origin: center center;
   }
 
   .mandala-floor :global(.mandala-container),

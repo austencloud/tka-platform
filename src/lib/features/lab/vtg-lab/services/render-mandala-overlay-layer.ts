@@ -1,6 +1,6 @@
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
-import { MANDALA_GRID_RADIUS, ENGINE_GRID_RADIUS } from "$lib/shared/mandala/domain/mandala-constants";
+import { engineAlignScale } from "$lib/shared/mandala/services/engine-align";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
@@ -23,19 +23,6 @@ const DARK_PALETTE: MandalaPalette = {
   purpleStroke: DARK_MOTION_PURPLE_STROKE,
   purpleFill: DARK_MOTION_PURPLE_FILL,
 };
-
-// Same engine-alignment factor MandalaClubCell used: scale the mandala's hand
-// circle to match the engine hand orbit (150/950), which lands the tip at
-// grid-radius 150 + clubTipDx — identical to the baked trail. dx cancels.
-function alignScale(clubTipDx: number): number {
-  const GRID_HALFWAY = 150;
-  const VIEWBOX = 950;
-  const tipReach = (clubTipDx * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
-  const maxExtent = MANDALA_GRID_RADIUS + tipReach;
-  const mandalaHandFrac = MANDALA_GRID_RADIUS / (2 * maxExtent * 1.05);
-  const engineHandFrac = GRID_HALFWAY / VIEWBOX;
-  return engineHandFrac / mandalaHandFrac;
-}
 
 function pathOptionsFor(shape: MandalaPathShape): MandalaPathOptions {
   const base: MandalaPathOptions = { tipEnds: 1 };
@@ -62,7 +49,7 @@ export function buildMandalaOverlayDraw(
     pathOptionsFor(pathShape),
     tip,
   );
-  const totalAlign = alignScale(clubTipDx) * scale;
+  const totalAlign = engineAlignScale(clubTipDx) * scale;
 
   let cache: { sizePx: number; canvas: HTMLCanvasElement } | null = null;
 
