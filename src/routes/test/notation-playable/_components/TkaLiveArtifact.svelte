@@ -9,12 +9,15 @@
 	import demoJson from "$lib/shared/landing/data/demo-sequence.json";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
+	import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+
 	let { active = false }: { active?: boolean } = $props();
 
 	const demoSequence = demoJson as unknown as SequenceData;
 
-	// The alphabet's own published letter cards, as the resting word strip.
-	const POSTER_LETTERS = ["a", "b", "c", "d"];
+	// The resting poster is the sequence's own word in the TKA letters font —
+	// no image assets, so it can't 404 out from under the tile.
+	const posterWord = simplifyRepeatedWord(demoSequence.word);
 </script>
 
 <div class="tka-artifact">
@@ -23,14 +26,9 @@
 			<SequenceHeroDemo sequence={demoSequence} note="the demo sequence" />
 		</div>
 	{:else}
-		<div class="poster" role="img" aria-label="Kinetic Alphabet letter cards">
-			{#each POSTER_LETTERS as letter (letter)}
-				<img
-					src={`/notation/letters/kinetic-alphabet-letter-${letter}-small.webp`}
-					alt=""
-					loading="lazy"
-				/>
-			{/each}
+		<div class="poster" role="img" aria-label={`The word ${posterWord}, written in Kinetic Alphabet letters`}>
+			<span class="tka-font poster-word">{posterWord}</span>
+			<span class="poster-sub">a sequence, read as a word</span>
 		</div>
 	{/if}
 </div>
@@ -58,17 +56,20 @@
 
 	.poster {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: clamp(0.5rem, 2cqi, 1rem);
-		width: min(76%, 26rem);
+		justify-items: center;
+		gap: 0.5rem;
 	}
 
-	.poster img {
-		width: 100%;
-		aspect-ratio: 1;
-		object-fit: cover;
-		border-radius: 12px;
-		border: 1px solid oklch(0.55 0.08 300 / 0.35);
-		box-shadow: 0 10px 24px oklch(0 0 0 / 0.4);
+	.poster-word {
+		font-size: clamp(2.4rem, 22cqi, 8rem);
+		line-height: 1;
+		color: oklch(0.9 0.06 305);
+		text-shadow: 0 0 26px oklch(0.6 0.18 305 / 0.5);
+	}
+
+	.poster-sub {
+		font-size: clamp(0.7rem, 2.4cqi, 0.95rem);
+		font-style: italic;
+		color: oklch(0.66 0.03 270);
 	}
 </style>

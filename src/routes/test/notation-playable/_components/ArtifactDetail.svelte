@@ -85,7 +85,9 @@
 
 	.detail-stage {
 		container-type: size;
-		height: min(100%, 34rem);
+		/* Firm height: the panel is content-sized, so a percentage here would
+		   resolve against nothing and let live visuals spill out of the panel. */
+		height: min(56vh, 34rem);
 		min-height: 14rem;
 	}
 

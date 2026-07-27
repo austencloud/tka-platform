@@ -18,6 +18,7 @@
 	import { Popover } from "bits-ui";
 	import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 	import { tilt } from "$lib/actions/tilt";
+	import { cursorGlow } from "$lib/actions/cursor-glow";
 	import { pressSpring } from "$lib/actions/press-spring";
 	import { magnetic } from "$lib/actions/magnetic";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -73,22 +74,40 @@
 	}
 
 	function applySelect(index: number) {
-		const result = select(archive, index, count);
-		archive = result.state;
-		const entry = entries[archive.activeIndex]!;
-		announcement = `${entry.year}, ${entry.system}, ${archive.activeIndex + 1} of ${count}`;
-		if (result.firstVisit) getHapticFeedback().trigger("selection");
-		if (result.justCompleted) {
-			flourish = true;
-			getHapticFeedback().trigger("success");
-			setTimeout(() => (flourish = false), 1600);
-		}
+		const commit = () => {
+			const result = select(archive, index, count);
+			archive = result.state;
+			const entry = entries[archive.activeIndex]!;
+			announcement = `${entry.year}, ${entry.system}, ${archive.activeIndex + 1} of ${count}`;
+			if (result.firstVisit) getHapticFeedback().trigger("selection");
+			if (result.justCompleted) {
+				flourish = true;
+				getHapticFeedback().trigger("success");
+				setTimeout(() => (flourish = false), 1600);
+			}
+			if (
+				!wideRail.current &&
+				emblaApi &&
+				emblaApi.selectedScrollSnap() !== archive.activeIndex
+			) {
+				emblaApi.scrollTo(archive.activeIndex, reduceMotion.current);
+			}
+		};
+		/* In bento mode a selection re-tiles the grid; animateView morphs every
+		   tile to its new cell (each tile keeps its OWN transition name, so no
+		   system's visual ever morphs into another's — canon guardrail). */
 		if (
-			!wideRail.current &&
-			emblaApi &&
-			emblaApi.selectedScrollSnap() !== archive.activeIndex
+			wideRail.current &&
+			!reduceMotion.current &&
+			typeof document !== "undefined" &&
+			"startViewTransition" in document
 		) {
-			emblaApi.scrollTo(archive.activeIndex, reduceMotion.current);
+			animateView(async () => {
+				commit();
+				await tick();
+			}, { duration: 0.5 });
+		} else {
+			commit();
 		}
 	}
 
@@ -223,7 +242,8 @@
 		<div
 			class="artifact"
 			style:--slide-accent={ACCENTS[entry.id]}
-			use:tilt={{ maxDegrees: isActive ? 4 : 0 }}
+			use:tilt={{ maxDegrees: isActive ? 3 : 2 }}
+			use:cursorGlow
 			onclick={(e) => {
 				if ((e.target as HTMLElement).closest("button, a")) return;
 				onSlideClick(i);
@@ -232,7 +252,7 @@
 			<span
 				class="artifact-stage"
 				style:view-transition-name={isActive && !archive.detailOpen
-					? "notation-artifact"
+					? `stage-${entry.id}`
 					: undefined}
 			>
 				<ArtifactVisual {entry} active={isActive && !archive.detailOpen} />
@@ -279,6 +299,7 @@
 						class="g-slide"
 						class:is-active={i === activeIndex}
 						class:visited={archive.visited.has(i)}
+						style:view-transition-name={`tile-${entry.id}`}
 					>
 						{@render slideCard(entry, i)}
 					</li>
@@ -397,7 +418,7 @@
 		>
 			<button class="overlay-backdrop" aria-label="Close detail" onclick={closeDetailView}
 			></button>
-			<div class="detail-panel" style="view-transition-name: notation-artifact">
+			<div class="detail-panel" style:view-transition-name={`stage-${activeEntry.id}`}>
 				<button type="button" class="close-btn" onclick={closeDetailView} use:pressSpring>
 					<i class="fas fa-xmark" aria-hidden="true"></i>
 					Close
@@ -518,14 +539,16 @@
 		min-height: 0;
 	}
 
-	/* WIDE MODE: the no-scroll accordion. Every object stays visible and
-	   legible — this is a shelf to pick from, not a carousel feeding one item
-	   at a time. The active slide grows in place; neighbors compress but
-	   never vanish or dim into unreadability. */
+	/* WIDE MODE: the bento. A 6×2 grid fills the canvas — the active entry is
+	   a 2×2 hero tile, the other eight are full tiles whose visuals fill
+	   their cells. Selecting re-tiles the grid through animateView; every
+	   tile morphs to its new cell under its own transition name. */
 	.gallery-row {
-		display: flex;
-		align-items: stretch;
-		gap: clamp(0.6rem, 0.9vw, 1.4rem);
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		grid-template-rows: repeat(2, minmax(0, 1fr));
+		grid-auto-flow: dense;
+		gap: clamp(0.7rem, 0.9vw, 1.3rem);
 		height: 100%;
 		margin: 0;
 		padding: 0;
@@ -533,39 +556,65 @@
 	}
 
 	.g-slide {
-		flex: 1 1 0;
 		min-width: 0;
+		min-height: 0;
 		display: grid;
-		transition: flex-grow 480ms cubic-bezier(0.3, 1, 0.4, 1);
 	}
 
+	/* The hero anchors top-left (visual order only — DOM stays chronological
+	   for reading and tab order). With the 2×2 placed first, the eight
+	   singles always fill the remaining 8 cells exactly: no trailing holes. */
 	.g-slide.is-active {
-		flex-grow: 3.2;
+		grid-column: span 2;
+		grid-row: span 2;
+		order: -1;
 	}
 
+	/* Bento tiles: every one a finished object — glass, an accent wash
+	   rising from the label edge, and a lit border. The cursor glow rides
+	   --glow-x/--glow-y from the shared action. */
 	.g-slide .artifact {
-		opacity: 0.66;
+		opacity: 1;
 		scale: 1;
+		position: relative;
+		overflow: hidden;
+		background:
+			radial-gradient(
+				140% 90% at 50% 108%,
+				color-mix(in oklch, var(--slide-accent, oklch(0.5 0.06 270)) 16%, transparent),
+				transparent 55%
+			),
+			oklch(0.16 0.02 270 / 0.55);
+		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 26%, transparent);
+		transition: border-color 240ms ease, box-shadow 240ms ease, translate 240ms ease;
 	}
 
-	.g-slide:hover .artifact {
-		opacity: 0.92;
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 50%, transparent);
+	.g-slide .artifact:hover {
+		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 60%, transparent);
+		box-shadow:
+			0 14px 40px oklch(0 0 0 / 0.4),
+			0 0 30px color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 20%, transparent);
+		translate: 0 -3px;
 	}
 
 	.g-slide.is-active .artifact {
-		opacity: 1;
+		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 70%, transparent);
+		box-shadow:
+			0 22px 60px oklch(0 0 0 / 0.45),
+			0 0 44px color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 24%, transparent);
 	}
 
-	/* Compressed neighbors: keep the year as the readable handle; the full
-	   name returns as the card grows. */
+	/* Small tiles: label pinned to the bottom edge like a plaque. */
 	.g-slide:not(.is-active) .artifact-name {
-		font-size: clamp(0.75rem, 0.55rem + 0.3vw, 1rem);
+		font-size: clamp(0.78rem, 0.6rem + 0.28vw, 1.05rem);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.g-slide {
+		.g-slide .artifact {
 			transition: none;
+		}
+		.g-slide .artifact:hover {
+			translate: none;
 		}
 	}
 
