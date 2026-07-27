@@ -4,6 +4,34 @@
 **For:** a fresh agent picking this up
 **Route:** `/notation/qft` · **Design:** `2026-07-27-qft-archive-app-design.md`
 
+## Status — picked up and done (2026-07-27, commit `13933245f6`)
+
+All six dated items below were addressed. Read the rest for the reasoning; it
+still describes why each change was made. What changed against this document:
+
+1. **White card** — composed by default, `As published` toggle, per Austen's
+   call. Build step: `scripts/compose-qft-frames.mjs`.
+2. **Linear motion** — corrected in framing. A steady spin IS constant
+   velocity; easing each increment would invent a stutter. Play, pause and
+   scrub were the snaps, and those now have weight.
+3–6. Trail recency, hierarchy, notation grouping, chrome — all done.
+
+Two bugs fixed on the way: hydration kept the server's frame `src` (SSR renders
+move 0, the client restores another), and the wide-and-short tier overflowed
+its shell.
+
+**Still open, in priority order:**
+
+- The marketing-shell fight, unchanged and still Austen's call (below).
+- Six of eight moves still have no quoted passage. Source work.
+- `antispindiranimated` ships with the source's own notation strip baked into
+  the crop, below the diagram like `triquetraanimated`. Composing made it more
+  legible, where it now competes with the page's live table. Left alone because
+  hard constraint 6 says leave the crops; adding a third explicit `BOTTOM_EDGE`
+  is the fix if Austen wants it gone.
+- Instrument mode got the slider and the new table but not the composition
+  pass; it still centres a title over an off-centre stage.
+
 ## Read this first
 
 The app works. It is clear, navigable, correct, and tested. **Your job is not to
