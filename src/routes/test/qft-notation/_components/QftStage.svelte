@@ -47,13 +47,26 @@
     const p = pointAt(position, PROP_LENGTH * 1.28);
     return { x: p.x * UNIT, y: p.y * UNIT };
   };
+
+  /**
+   * Prop position is measured from the hand, not from the centre of the body.
+   * That is the single most misread part of the system — it is why the 4-petal
+   * corners read 5, 7, 1, 3 rather than anything intuitive. So the prop gets its
+   * own compass, riding along with the hand, and the outer ring is left to say
+   * where the hand is. Lighting a hand-relative number on the body-centred ring
+   * puts it nowhere near the prop it describes.
+   */
+  const handLocalPoint = (position: number) => {
+    const p = pointAt(position, PROP_LENGTH);
+    return { x: hand.x + p.x * UNIT, y: hand.y + p.y * UNIT };
+  };
 </script>
 
 <svg
   class="stage"
   viewBox={`${-EXTENT} ${-EXTENT} ${EXTENT * 2} ${EXTENT * 2}`}
   role="img"
-  aria-label={`QfT home base with the prop at position ${row?.propDepart ?? 8} and the hand at position ${row?.handDepart ?? 8}`}
+  aria-label={`QfT home base. The hand is at position ${row?.handDepart ?? 8} on the body compass, and the prop is at position ${row?.propDepart ?? 8} measured from the hand.`}
 >
   <circle class="ring" cx="0" cy="0" r={RING} />
 
@@ -65,17 +78,39 @@
 
   {#each HOME_BASE as position (position)}
     {@const p = labelPoint(position)}
-    {@const isOrigin = row?.propDepart === position}
-    {@const isArrival = row?.propArrive === position}
+    {@const isOrigin = row?.handDepart === position}
+    {@const isArrival = row?.handArrive === position}
     <g class="point" class:origin={isOrigin} class:arrival={isArrival}>
       <circle cx={p.x} cy={p.y} r="26" />
       <text x={p.x} y={p.y} dy="9">{position}</text>
     </g>
   {/each}
 
+  <!-- The prop's own compass, projected from the hand. -->
+  <circle class="hand-ring" cx={hand.x} cy={hand.y} r={PROP_LENGTH * UNIT} />
+  {#each HOME_BASE as position (position)}
+    {#if row?.propDepart !== position}
+      {@const p = handLocalPoint(position)}
+      <circle class="prop-tick" cx={p.x} cy={p.y} r="4" />
+    {/if}
+  {/each}
+
   <line class="tether" x1={hand.x} y1={hand.y} x2={head.x} y2={head.y} />
   <circle class="hand" cx={hand.x} cy={hand.y} r="13" />
   <circle class="head" cx={head.x} cy={head.y} r="22" />
+
+  <!--
+    Drawn last. At an integer step this marker and the head coincide exactly,
+    which is the whole point — the lit number IS where the prop is. Drawing it
+    before the head would bury the label underneath it.
+  -->
+  {#if row}
+    {@const p = handLocalPoint(row.propDepart)}
+    <g class="prop-point">
+      <circle cx={p.x} cy={p.y} r="21" />
+      <text x={p.x} y={p.y} dy="7">{row.propDepart}</text>
+    </g>
+  {/if}
 </svg>
 
 <style>
@@ -124,17 +159,42 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* The body compass says where the HAND is, so it wears the hand's colour. */
   .point.arrival circle {
-    stroke: var(--theme-accent, #8b5cf6);
+    stroke: var(--semantic-text-primary, rgb(255 255 255 / 0.85));
   }
 
   .point.origin circle {
-    fill: var(--theme-accent, #8b5cf6);
-    stroke: var(--theme-accent, #8b5cf6);
+    fill: var(--semantic-text-primary, rgb(255 255 255 / 0.85));
+    stroke: #fff;
   }
 
   .point.origin text {
+    fill: #0b1020;
+  }
+
+  .hand-ring {
+    fill: none;
+    stroke: var(--semantic-border-subtle, rgb(255 255 255 / 0.1));
+    stroke-width: 2;
+  }
+
+  .prop-tick {
+    fill: var(--semantic-border, rgb(255 255 255 / 0.26));
+  }
+
+  .prop-point circle {
+    fill: var(--theme-accent, #8b5cf6);
+    stroke: #fff;
+    stroke-width: 2;
+  }
+
+  .prop-point text {
     fill: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-anchor: middle;
+    font-variant-numeric: tabular-nums;
   }
 
   .tether {

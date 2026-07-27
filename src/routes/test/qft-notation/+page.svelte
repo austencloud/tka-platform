@@ -247,6 +247,13 @@
       <QftTable {increments} activeStep={step} />
 
       <p class="legend">
+        The outer compass says where the <strong>hand</strong> is. The small compass riding
+        with the hand says where the <strong>prop</strong> is, because QfT measures prop
+        position from the hand rather than from the centre of the body. When the prop turns
+        more than once per hand circle its numbers skip — two rotations advance it two
+        positions for every one the hand moves.
+      </p>
+      <p class="legend">
         <strong>sourced</strong> names are worked through in the 2011 written guide.
         <strong>derived</strong> names follow the petal rule the guide's own examples confirm
         but never states outright. QfT as published is single-plane, so this stays in-plane.
