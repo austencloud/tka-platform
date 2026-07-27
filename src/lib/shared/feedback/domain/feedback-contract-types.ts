@@ -15,9 +15,9 @@ export type ClaimHealth =
 /**
  * Effective status derived from stored status + claim state
  *
- * The key insight: "in-progress" should be derived from claim state,
- * not stored as a status. An item is "in-progress" if and only if
- * it has an active, non-stale claim.
+ * The stored status records the lifecycle transition. Claim health determines
+ * whether an in-progress item still has a live owner and may temporarily change
+ * how stale or orphaned work is grouped.
  */
 export interface EffectiveStatus {
   /** The status to display/use for grouping */

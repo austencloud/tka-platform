@@ -29,10 +29,14 @@ import roles from "../config/developer-roles.js";
 import cfClient from "./lib/cloud-functions-client.js";
 import cliAuth from "./lib/cli-auth.js";
 import notifier from "./lib/feedback-notifier.js";
+import {
+  chooseSpecificClaimAction,
+  resolveFeedbackSessionId,
+} from "./lib/feedback-claim-session.js";
 
-// Generate a unique session ID for this script invocation
-// This allows us to distinguish between different agents/sessions
-const SESSION_ID = randomUUID();
+// Each command runs in a new Node process. Reuse the parent agent thread ID so
+// a later heartbeat or post-approval claim still belongs to the same worker.
+const SESSION_ID = resolveFeedbackSessionId();
 
 // Resolved developer identity — set in main() after auth, used by all write operations.
 // Module-level so functions outside main() can reference the authenticated user.
@@ -67,13 +71,12 @@ const {
 async function registerSession() {
   try {
     const hostname = process.env.COMPUTERNAME || process.env.HOSTNAME || "unknown";
-
-    await db.collection("agentSessions").doc(SESSION_ID).set({
+    const sessionRef = db.collection("agentSessions").doc(SESSION_ID);
+    const existingSession = await sessionRef.get();
+    const registration = {
       sessionId: SESSION_ID,
       agentType: "claude-cli",
-      registeredAt: FieldValue.serverTimestamp(),
       lastActivity: FieldValue.serverTimestamp(),
-      activeClaims: [],
       userId: identity.uid,
       metadata: {
         hostname,
@@ -81,7 +84,15 @@ async function registerSession() {
         cwd: process.cwd(),
         nodeVersion: process.version,
       },
-    });
+      ...(existingSession.exists
+        ? {}
+        : {
+            registeredAt: FieldValue.serverTimestamp(),
+            activeClaims: [],
+          }),
+    };
+
+    await sessionRef.set(registration, { merge: true });
 
     console.log(`  📡 Session registered: ${SESSION_ID.substring(0, 8)}...`);
     return true;
@@ -1108,7 +1119,7 @@ async function claimNextFeedback(priorityFilter = null) {
               `\n  ✨ No ${priorityFilter.toUpperCase()} priority items in queue!\n`
             );
             console.log(
-              "  Run `node scripts/fetch-feedback.js.js list` to see all items."
+              "  Run `node scripts/fetch-feedback.js list` to see all items."
             );
             console.log("\n" + "=".repeat(70) + "\n");
             return null;
@@ -1180,7 +1191,7 @@ async function claimNextFeedback(priorityFilter = null) {
         "\n  ✨ QUEUE EMPTY - No unclaimed or in-progress feedback items!\n"
       );
       console.log(
-        "  Run `node scripts/fetch-feedback.js.js list` to see all items."
+        "  Run `node scripts/fetch-feedback.js list` to see all items."
       );
       console.log("\n" + "=".repeat(70) + "\n");
       return null;
@@ -1294,7 +1305,7 @@ async function claimNextFeedback(priorityFilter = null) {
 
     console.log("\n" + "=".repeat(70));
     console.log(
-      `\n  To resolve: node scripts/fetch-feedback.js.js ${itemToClaim.id} in-review "Your notes here"\n`
+      `\n  To resolve: node scripts/fetch-feedback.js ${itemToClaim.id} in-review "Your notes here"\n`
     );
 
     return itemToClaim;
@@ -2390,13 +2401,13 @@ WORKFLOW
 
 EXAMPLES
 ──────────────────────────────────────────────────────────────────────────────
-  node scripts/fetch-feedback.js.js                     # Claim next item
-  node scripts/fetch-feedback.js.js high                # Claim next high-priority
-  node scripts/fetch-feedback.js.js abc123              # View item abc123
-  node scripts/fetch-feedback.js.js abc123 in-review "Fixed overflow bug"
-  node scripts/fetch-feedback.js.js search "button"     # Find feedback about buttons
-  node scripts/fetch-feedback.js.js stats               # See queue overview
-  node scripts/fetch-feedback.js.js add --title "Fix X" --description "Details" --type bug
+  node scripts/fetch-feedback.js                     # Claim next item
+  node scripts/fetch-feedback.js high                # Claim next high-priority
+  node scripts/fetch-feedback.js abc123              # View item abc123
+  node scripts/fetch-feedback.js abc123 in-review "Fixed overflow bug"
+  node scripts/fetch-feedback.js search "button"     # Find feedback about buttons
+  node scripts/fetch-feedback.js stats               # See queue overview
+  node scripts/fetch-feedback.js add --title "Fix X" --description "Details" --type bug
 `);
 }
 
@@ -2949,22 +2960,35 @@ async function claimSpecificFeedback(docId) {
 
     const item = doc.data();
 
-    // Check if already claimed
-    if (item.status === "in-progress") {
+    const staleness =
+      item.status === "in-progress"
+        ? checkClaimStaleness(item)
+        : { isStale: false };
+    const claimAction = chooseSpecificClaimAction(
+      item,
+      SESSION_ID,
+      staleness.isStale
+    );
+
+    if (claimAction === "blocked") {
       const claimedAt = item.claimedAt?.toDate?.()
         ? item.claimedAt.toDate().toLocaleString()
         : "Unknown";
       const claimToken = item.claimToken?.substring(0, 8) || "unknown";
       console.log(`\n  ⚠️  Item already in-progress (claimed: ${claimedAt}, token: [${claimToken}])`);
       console.log(
-        `  Use 'unclaim ${docId}' first if you want to reclaim it.\n`
+        `  The active claim belongs to another agent session.\n`
       );
       return null;
     }
 
     // Secondary check: If there's a recent claimToken (within 5 seconds), block
     // This catches the race condition where status update hasn't propagated
-    if (item.claimToken && item.claimedAt) {
+    if (
+      claimAction !== "refresh" &&
+      item.claimToken &&
+      item.claimedAt
+    ) {
       const claimAge = item.claimedAt?.toDate?.()
         ? Date.now() - item.claimedAt.toDate().getTime()
         : Infinity;
@@ -2984,8 +3008,24 @@ async function claimSpecificFeedback(docId) {
       return null;
     }
 
-    // Use atomicClaim for race-safe claiming
-    const claimedItem = await atomicClaim(docId, false);
+    let claimedItem;
+    if (claimAction === "refresh") {
+      const refreshed = await sendHeartbeat(
+        docId,
+        "Claim confirmed after approval"
+      );
+      if (!refreshed) {
+        console.log(`\n  ❌ Failed to refresh the existing claim\n`);
+        return null;
+      }
+      const refreshedDoc = await docRef.get();
+      claimedItem = refreshedDoc.data();
+      console.log(`  ✅ Existing claim refreshed for this agent session`);
+    } else {
+      // Reclaim expired leases through the same atomic server transaction used
+      // for a new claim. A live claim owned by another session never reaches it.
+      claimedItem = await atomicClaim(docId, claimAction === "reclaim");
+    }
 
     if (!claimedItem) {
       console.log(`\n  ❌ Failed to claim item (another agent may have claimed it first)\n`);
@@ -3257,7 +3297,7 @@ async function addFeedback(args) {
   if (!flags.title) {
     console.log("\n  ❌ Missing required --title\n");
     console.log(
-      '  Usage: node scripts/fetch-feedback.js.js add --title "Title" --description "Desc" [options]'
+      '  Usage: node scripts/fetch-feedback.js add --title "Title" --description "Desc" [options]'
     );
     console.log(
       "  Options: --type, --priority, --module, --tab, --internal-only, --user\n"
@@ -3599,10 +3639,10 @@ async function main() {
     // Search: search <query>
     if (!args[1]) {
       console.log(
-        "\n  Usage: node scripts/fetch-feedback.js.js search <query>\n"
+        "\n  Usage: node scripts/fetch-feedback.js search <query>\n"
       );
       console.log(
-        '  Example: node scripts/fetch-feedback.js.js search "button"\n'
+        '  Example: node scripts/fetch-feedback.js search "button"\n'
       );
       return;
     }

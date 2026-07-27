@@ -66,15 +66,13 @@ export class ClaimStatusDeriver {
     if (claimHealth === "active") {
       // Active claim → always show as in-progress
       displayStatus = "in-progress";
-    } else if (claimHealth === "stale") {
-      // Stale claim → revert to "new" so another agent can pick it up
-      // Only revert if stored status was new or in-progress
-      if (storedStatus === "new" || storedStatus === "in-progress") {
-        displayStatus = "new";
-      }
+    } else if (
+      (claimHealth === "stale" || claimHealth === "orphaned") &&
+      (storedStatus === "new" || storedStatus === "in-progress")
+    ) {
+      // Work with no live owner belongs back in the available queue.
+      displayStatus = "new";
     }
-    // Orphaned (in-progress with no claim) → respect stored status as-is
-    // For "none" claim health with non-in-progress status, just pass through
 
     return {
       displayStatus,

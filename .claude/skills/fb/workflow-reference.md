@@ -80,6 +80,18 @@ node scripts/fetch-feedback.js touch <id> "src/path/to/file.svelte"
 node scripts/fetch-feedback.js journal <id>
 ```
 
+### Approval boundary
+
+User confirmation may arrive after the original claim expires. Before editing,
+always run:
+
+```bash
+node scripts/fetch-feedback.js claim <id>
+```
+
+For the same agent session, this refreshes a live claim. It also reclaims an
+expired lease. A live claim owned by another session remains protected.
+
 ---
 
 ## Delegating to Subagents

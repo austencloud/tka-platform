@@ -44,7 +44,17 @@ Assess complexity:
 
 Announce triage: complexity, model routing, reasoning. Ask for confirmation before implementing.
 
-After approval: `/rename FB: [short title]`
+After approval:
+
+1. `/rename FB: [short title]`
+2. Reconfirm the claim before editing:
+   ```bash
+   node scripts/fetch-feedback.js claim <id>
+   ```
+
+This command is required even when the item was just claimed. It refreshes the
+same agent session or reclaims an expired lease after a long approval delay. If
+another live session owns the item, stop and report the conflict.
 
 ### Step 3: Implement
 
