@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Notation catalog — Lorq as one row vs four</title>
+    <link rel="stylesheet" href="/fonts/css/fraunces.css" />
+    <link rel="stylesheet" href="/fonts/css/inter.css" />
+    <style>
+      :root {
+        --ink: oklch(0.96 0.01 270);
+        --dim: oklch(0.72 0.012 270);
+        --dimmer: oklch(0.58 0.015 270);
+        --rule: oklch(0.6 0.02 270 / 0.14);
+        --link: oklch(0.82 0.12 275);
+        font-size: 16px;
+      }
+      @media (min-width: 1680px) {
+        /* Mirrors the lockstep root ramp in src/app.css (16px→24px, 1680→3840). */
+        :root { font-size: calc(16px + 8 * ((100vw - 1680px) / 2160)); }
+      }
+      @media (min-width: 3840px) { :root { font-size: 24px; } }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(120% 80% at 50% 0%, oklch(0.22 0.04 275 / 0.5), transparent 60%),
+          linear-gradient(180deg, #0b0f1a 0%, #0a1220 55%, #0c1a2e 100%);
+        color: var(--ink);
+        font-family: "Inter", system-ui, sans-serif;
+        min-height: 100vh;
+      }
+      .shell {
+        max-width: min(1720px, 92vw);
+        margin: 0 auto;
+        padding: 4rem 1.5rem 6rem;
+      }
+
+      h1.page-title {
+        font-family: "Fraunces", Georgia, serif;
+        font-style: italic;
+        font-weight: 700;
+        font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
+        font-size: clamp(2.6rem, 1.9rem + 2.4vw, 4.2rem);
+        letter-spacing: -0.015em;
+        line-height: 1.05;
+        margin: 0 0 0.5rem;
+      }
+      .page-subtitle {
+        font-size: clamp(1.1rem, 0.95rem + 0.2vw, 1.3rem);
+        color: var(--dimmer);
+        margin: 0 0 3.5rem;
+      }
+
+      .variant-label {
+        display: inline-block;
+        margin: 0 0 1.6rem;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.8rem;
+        font-weight: 640;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: oklch(0.82 0.11 75);
+        background: oklch(0.7 0.13 75 / 0.1);
+        border: 1px solid oklch(0.7 0.13 75 / 0.28);
+        border-radius: 999px;
+      }
+      .variant + .variant { margin-top: 5rem; }
+      .variant > p.note {
+        color: var(--dimmer);
+        font-size: 0.95rem;
+        margin: -0.9rem 0 2.2rem;
+      }
+
+      /* ── the spine ── */
+      .entry {
+        display: grid;
+        grid-template-columns: 9rem 1fr;
+        gap: 0 2.5rem;
+        padding: 1.6rem 0;
+        border-top: 1px solid var(--rule);
+        align-items: start;
+      }
+      .entry:last-child { border-bottom: 1px solid var(--rule); }
+
+      .year {
+        font-family: "Fraunces", Georgia, serif;
+        font-variation-settings: "opsz" 144, "wght" 600, "SOFT" 0, "WONK" 0;
+        font-size: 1.6rem;
+        line-height: 1.2;
+        color: oklch(0.78 0.02 270);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        padding-top: 0.15rem;
+      }
+      .year .approx { color: var(--dimmer); font-size: 0.72em; }
+
+      .system {
+        font-size: 1.35rem;
+        font-weight: 640;
+        letter-spacing: -0.005em;
+        margin: 0 0 0.25rem;
+      }
+      .people {
+        font-size: 0.95rem;
+        color: var(--dim);
+        margin: 0 0 0.5rem;
+      }
+      .records {
+        font-size: 1.02rem;
+        line-height: 1.55;
+        color: oklch(0.68 0.012 270);
+        margin: 0 0 0.75rem;
+        max-width: 52rem;
+      }
+      .sources { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; }
+      .sources a {
+        font-size: 0.9rem;
+        color: var(--link);
+        text-decoration: none;
+        border-bottom: 1px solid oklch(0.82 0.12 275 / 0.35);
+        padding-bottom: 1px;
+      }
+      .sources a:hover { border-bottom-color: var(--link); }
+
+      /* Variant A only: the sub-works folded inside one row. */
+      .subworks {
+        margin: 0.15rem 0 0.75rem;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.3rem;
+        max-width: 52rem;
+      }
+      .subworks li {
+        font-size: 0.95rem;
+        color: var(--dim);
+        padding-left: 1rem;
+        position: relative;
+      }
+      .subworks li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.62em;
+        width: 0.4rem;
+        height: 1px;
+        background: oklch(0.6 0.02 270 / 0.5);
+      }
+      .subworks strong { color: oklch(0.86 0.02 270); font-weight: 620; }
+
+      .lorq { background: oklch(0.7 0.13 75 / 0.045); }
+
+      @media (max-width: 46rem) {
+        .entry { grid-template-columns: 1fr; gap: 0.4rem; }
+        .year { font-size: 1.15rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <h1 class="page-title">Flow Arts Notation</h1>
+      <p class="page-subtitle">
+        People have been trying to write this down for forty years. Here they are.
+      </p>
+
+      <!-- ══════════ VARIANT A ══════════ -->
+      <section class="variant">
+        <span class="variant-label">Variant A · Lorq as one row</span>
+        <p class="note">
+          Eleven entries. Even spine. Lorq's four works fold into his single row as
+          a sub-list.
+        </p>
+
+        <div class="entry">
+          <div class="year">1981<span class="approx">–</span>85</div>
+          <div>
+            <p class="system">Siteswap</p>
+            <p class="people">Paul Klimek · Bruce Tiemann &amp; Bengt Magnusson · Colin Wright</p>
+            <p class="records">One value per beat, scheduling when each object is next thrown.</p>
+            <div class="sources"><a href="#">Juggling Lab</a><a href="#">Knutson FAQ</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2009</div>
+          <div>
+            <p class="system">Vulcan Tech Gospel</p>
+            <p class="people">Noel Yee · the Vulcan Lofts, Oakland</p>
+            <p class="records">Timing, direction, and the shapes made by spinning flowers.</p>
+            <div class="sources"><a href="#">noelyee.com</a><a href="#">DrexFactor</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year"><span class="approx">c.</span>2010</div>
+          <div>
+            <p class="system">9-Square Theory</p>
+            <p class="people">Charlie Cushing</p>
+            <p class="records">Quantizes the space around the spinner into a grid, within one plane.</p>
+            <div class="sources"><a href="#">Spin More Poi</a><a href="#">DrexFactor</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2010</div>
+          <div>
+            <p class="system">Transition Theory</p>
+            <p class="people">Noel Yee · Jordan Campbell</p>
+            <p class="records">Transition types between VTG states.</p>
+            <div class="sources"><a href="#">source pending</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2011</div>
+          <div>
+            <p class="system">QFT Notation</p>
+            <p class="people">Charlie Cushing · documented by Ben Drexler</p>
+            <p class="records">Eight numbered positions and a formula for one beat of movement.</p>
+            <div class="sources"><a href="#">DrexFactor</a><a href="#">Home of Poi</a></div>
+          </div>
+        </div>
+
+        <div class="entry lorq">
+          <div class="year">2012<span class="approx">–</span></div>
+          <div>
+            <p class="system">Lorq Nichols' catalogs</p>
+            <p class="people">Lorq Nichols · with Brian Thompson, David Cantor, Noel Yee</p>
+            <p class="records">Enumerations of the hybrid space, charted on paper.</p>
+            <ul class="subworks">
+              <li><strong>144 Shape Matrix</strong> — twelve driving styles against twelve</li>
+              <li><strong>324 Patterns</strong> — counted from arm paths and club shapes</li>
+              <li><strong>Tech Tiles</strong> — tile-based visual notation</li>
+              <li><strong>Book of P.H.A.T.</strong> — patterns, hybrids, and transitions</li>
+            </ul>
+            <div class="sources"><a href="#">sirlorq.com</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2013</div>
+          <div>
+            <p class="system">Continuous Assembly Patterns</p>
+            <p class="people">Home of Poi forums · Nick Woolsey, Alien Jon</p>
+            <p class="records">Cyclic curves assembled from fragments.</p>
+            <div class="sources"><a href="#">Home of Poi</a><a href="#">PlayPoi</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2016</div>
+          <div>
+            <p class="system">PoiNotation</p>
+            <p class="people">Tiffany Fong</p>
+            <p class="records">A move as a set of properties; a sequence as moves joined by operators.</p>
+            <div class="sources"><a href="#">GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2017</div>
+          <div>
+            <p class="system">Trigonometric model</p>
+            <p class="people">Zaltymbunk · Ben Drexler</p>
+            <p class="records">Parametric equations for poi paths.</p>
+            <div class="sources"><a href="#">DrexFactor</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year"><span class="approx">c.</span>2022</div>
+          <div>
+            <p class="system">The Kinetic Alphabet</p>
+            <p class="people">Austen Cloud</p>
+            <p class="records">A pictograph per beat, strung into a word you can say.</p>
+            <div class="sources"><a href="#">tkaflowarts.com</a></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ VARIANT B ══════════ -->
+      <section class="variant">
+        <span class="variant-label">Variant B · Lorq as four rows</span>
+        <p class="note">
+          Fourteen entries. Lorq occupies four consecutive years of the spine, which
+          is roughly the weight he has in this history.
+        </p>
+
+        <div class="entry">
+          <div class="year">1981<span class="approx">–</span>85</div>
+          <div>
+            <p class="system">Siteswap</p>
+            <p class="people">Paul Klimek · Bruce Tiemann &amp; Bengt Magnusson · Colin Wright</p>
+            <p class="records">One value per beat, scheduling when each object is next thrown.</p>
+            <div class="sources"><a href="#">Juggling Lab</a><a href="#">Knutson FAQ</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2009</div>
+          <div>
+            <p class="system">Vulcan Tech Gospel</p>
+            <p class="people">Noel Yee · the Vulcan Lofts, Oakland</p>
+            <p class="records">Timing, direction, and the shapes made by spinning flowers.</p>
+            <div class="sources"><a href="#">noelyee.com</a><a href="#">DrexFactor</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year"><span class="approx">c.</span>2010</div>
+          <div>
+            <p class="system">9-Square Theory</p>
+            <p class="people">Charlie Cushing</p>
+            <p class="records">Quantizes the space around the spinner into a grid, within one plane.</p>
+            <div class="sources"><a href="#">Spin More Poi</a><a href="#">DrexFactor</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2010</div>
+          <div>
+            <p class="system">Transition Theory</p>
+            <p class="people">Noel Yee · Jordan Campbell</p>
+            <p class="records">Transition types between VTG states.</p>
+            <div class="sources"><a href="#">source pending</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2011</div>
+          <div>
+            <p class="system">QFT Notation</p>
+            <p class="people">Charlie Cushing · documented by Ben Drexler</p>
+            <p class="records">Eight numbered positions and a formula for one beat of movement.</p>
+            <div class="sources"><a href="#">DrexFactor</a><a href="#">Home of Poi</a></div>
+          </div>
+        </div>
+
+        <div class="entry lorq">
+          <div class="year">2012</div>
+          <div>
+            <p class="system">144 Shape Matrix</p>
+            <p class="people">Lorq Nichols</p>
+            <p class="records">Twelve left-hand driving styles against twelve right-hand ones.</p>
+            <div class="sources"><a href="#">sirlorq.com</a></div>
+          </div>
+        </div>
+
+        <div class="entry lorq">
+          <div class="year">2013</div>
+          <div>
+            <p class="system">Tech Tiles</p>
+            <p class="people">Lorq Nichols</p>
+            <p class="records">Tile-based visual notation.</p>
+            <div class="sources"><a href="#">sirlorq.com</a></div>
+          </div>
+        </div>
+
+        <div class="entry lorq">
+          <div class="year">2014</div>
+          <div>
+            <p class="system">324 Patterns</p>
+            <p class="people">Lorq Nichols</p>
+            <p class="records">Counted a different way, from arm paths and club shapes.</p>
+            <div class="sources"><a href="#">sirlorq.com</a></div>
+          </div>
+        </div>
+
+        <div class="entry lorq">
+          <div class="year">2015</div>
+          <div>
+            <p class="system">Book of P.H.A.T.</p>
+            <p class="people">Lorq Nichols · Brian Thompson · David Cantor · Noel Yee</p>
+            <p class="records">Patterns, hybrids, and transitions.</p>
+            <div class="sources"><a href="#">sirlorq.com</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2013</div>
+          <div>
+            <p class="system">Continuous Assembly Patterns</p>
+            <p class="people">Home of Poi forums · Nick Woolsey, Alien Jon</p>
+            <p class="records">Cyclic curves assembled from fragments.</p>
+            <div class="sources"><a href="#">Home of Poi</a><a href="#">PlayPoi</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2016</div>
+          <div>
+            <p class="system">PoiNotation</p>
+            <p class="people">Tiffany Fong</p>
+            <p class="records">A move as a set of properties; a sequence as moves joined by operators.</p>
+            <div class="sources"><a href="#">GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year">2017</div>
+          <div>
+            <p class="system">Trigonometric model</p>
+            <p class="people">Zaltymbunk · Ben Drexler</p>
+            <p class="records">Parametric equations for poi paths.</p>
+            <div class="sources"><a href="#">DrexFactor</a></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="year"><span class="approx">c.</span>2022</div>
+          <div>
+            <p class="system">The Kinetic Alphabet</p>
+            <p class="people">Austen Cloud</p>
+            <p class="records">A pictograph per beat, strung into a word you can say.</p>
+            <div class="sources"><a href="#">tkaflowarts.com</a></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
