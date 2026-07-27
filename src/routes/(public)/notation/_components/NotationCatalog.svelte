@@ -54,7 +54,7 @@
           {#if entry.subWorks?.length}
             <ul class="subworks">
               {#each entry.subWorks as work (work.name)}
-                <li><strong>{work.name}</strong> — {work.note}</li>
+                <li><strong>{work.name}</strong>: {work.note}</li>
               {/each}
             </ul>
           {/if}

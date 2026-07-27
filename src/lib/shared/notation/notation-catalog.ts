@@ -81,7 +81,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     // Verbatim from the archived thread: "The patterns will be defined in the
     // following way : Theta1 Theta2 ; Rho1 Rho2", plus the later division term.
     records:
-      "A pattern written as two numbers of turns and two radii — Theta1 Theta2 ; Rho1 Rho2 — with a division term added to take a fraction of the cycle. It carries a wrap table, a cycloid condition, and rules for which patterns are physically possible.",
+      "A pattern written as two numbers of turns and two radii: Theta1 Theta2 ; Rho1 Rho2. A division term takes a fraction of the cycle instead of all of it. It carries a wrap table and a cycloid condition, plus rules for which patterns are physically possible.",
     sources: [
       { label: "The model, posted in full", href: HOP_CAPS },
       { label: "Pattern sheets generated from it", href: HOP_FLOWERS },
@@ -129,10 +129,10 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     system: "9-Square Theory",
     people: "Charlie Cushing",
     records:
-      "Poi length, planes, and a nine-point grid, taught across an eleven-part series that runs from direction and timing through modes, stalls, and footwork.",
+      "A nine-point grid, plus the poi length and planes it assumes. The series runs eleven parts, from direction and timing out to stalls and footwork.",
     sources: [
       {
-        label: "Charlie's 9-square theory — the full series",
+        label: "Charlie's 9-square theory, all eleven parts",
         href: "https://www.youtube.com/playlist?list=PLDE05D5E593C54AED",
       },
     ],
@@ -190,13 +190,13 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     system: "Lorq Nichols' catalogs",
     people: "Lorq Nichols",
     records:
-      "Patterns enumerated rather than described — driving styles crossed against each other, and arm paths crossed against club shapes, until the grid is full.",
+      "Patterns enumerated rather than described. Driving styles crossed against each other, arm paths crossed against club shapes, until the grid is full.",
     subWorks: [
-      { name: "144 Shape Matrix", note: "Twelve driving styles against twelve." },
-      { name: "324 Patterns", note: "Counted from arm paths and club shapes." },
+      { name: "144 Shape Matrix", note: "twelve driving styles against twelve" },
+      { name: "324 Patterns", note: "counted from arm paths and club shapes" },
       {
         name: "Tech Tiles / Book of P.H.A.T.",
-        note: "Published as Vulcan Tech Gospel Book of P.H.A.T. Volume 1, with Brian Thompson, David Cantor, and Noel Yee.",
+        note: "published as Vulcan Tech Gospel Book of P.H.A.T. Volume 1, with Brian Thompson, David Cantor, and Noel Yee",
       },
     ],
     sources: [
@@ -231,7 +231,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     system: "The Kinetic Alphabet",
     people: "Austen Cloud",
     records:
-      "Each pair of positions given a letter, so a sequence can be read, written, and searched as a word.",
+      "Each pair of positions given a letter, so a sequence can be read back and searched as a word.",
     sources: [{ label: "The guide", href: "/guide" }],
   },
 ];

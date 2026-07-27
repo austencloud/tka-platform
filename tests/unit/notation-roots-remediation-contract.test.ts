@@ -85,6 +85,28 @@ describe("notation catalog", () => {
     expect(notationCatalogData).not.toMatch(/Continuous Assembly Patterns \(/);
   });
 
+  it("carries no em dashes in anything the reader sees", () => {
+    // CLAUDE.md bans them in shipped copy and the ai-bust skill rates them a
+    // dead giveaway. The en dash in an open-ended year ("2012–") is a date
+    // range and stays.
+    const rendered = NOTATION_CATALOG.flatMap((entry) => [
+      entry.system,
+      entry.people,
+      entry.records,
+      ...entry.sources.map((source) => source.label),
+      ...(entry.subWorks ?? []).flatMap((work) => [work.name, work.note]),
+      ...(entry.videos ?? []).flatMap((video) => [video.title, video.note]),
+    ]);
+    for (const line of rendered) {
+      expect(line, `em dash in: ${line}`).not.toContain("—");
+    }
+    // The view's own copy and separators, minus its comments and CSS.
+    const markup = notationCatalogView
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<style[\s\S]*$/, "");
+    expect(markup).not.toContain("—");
+  });
+
   it("moves the full 144 Shape Matrix to the /notation/shape-matrix destination", () => {
     // Phase 4 (docs/superpowers/specs/2026-07-18-notation-shape-matrix-destination-design.md):
     // the full interactive matrix (all three size presets, up to 144 cells)
