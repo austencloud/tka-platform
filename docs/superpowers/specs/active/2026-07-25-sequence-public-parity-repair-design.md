@@ -892,6 +892,57 @@ pass).** The two payload-defect quarantine classes are now EMPTY:
   Verified against a fake-Firestore harness: schema-2 record shape, both
   refusal paths, and import compatibility for show-sequence.mjs.
 
+**CLOSEOUT PASS LANDED (2026-07-27): duplicate resolved, quarantine 199→78,
+R2 refreshed.** The three items left open above are done:
+
+- **Duplicate pick.** Survivor: `seq_1766471163932_0hh8pf3sg` (modern id,
+  word already the canonical expansion, correct gridMode). Loser: the 2024
+  legacy projection `QΛ` (seed-form word, stale box gridMode, 9 drifted keys,
+  zero engagement fields, zero shortcodes referencing either id). New script
+  `scripts/migrations/resolve-duplicate-public-projection.ts` proves the pair
+  is a TRUE duplicate before writing (both owner sources must normalize to
+  the SAME claim id — verified `2_7a9afafe…`), refuses cross-owner pairs,
+  backs up all four docs, deletes the loser projection, and flips the
+  loser's owner source to `visibility: "private"` so no future sync can
+  resurrect the duplicate (the content stays in the owner's library).
+  Survivor then reprojected via `--sequence` reconcile. Post-resolution
+  corpus convergence: **466/466 IN_SYNC, zero conflicts** — the phase-4
+  duplicate gate is fully clear.
+- **Quarantine resolution.** `rebuild-truncated-shortcode-payloads.ts` now
+  covers all five defect classes with per-class evidence gates:
+  INCOMPLETE requires equal beat count + letter agreement at every derivable
+  position (new shared `contentLetters` positional API in the derivation
+  lib); CONFLICT requires the live source to side with one of the two
+  payload witnesses (own embedded accepted when the label corroborates it —
+  two mint-time witnesses against the biased legacy blob channel);
+  CONTRADICTS requires the source to side with the label (payload restored)
+  or the payload (rebuild makes it corroborated; the backfill's reviewed
+  policy relabels). Every accepted rebuild passes a CONVERGENCE SIMULATION —
+  the post-write doc re-derived through the shared derivation must yield a
+  complete, un-conflicted word — so a half-repair can never just move a
+  record between quarantine classes. Blob verification gained two tiers
+  below strict word round-trip: "motions" (equal count, zero letter clashes
+  with the source at derivable positions — the wire format can drop letters
+  the dataframes cannot re-derive) and blob-DROP (19 records whose defective
+  blob could not be re-encoded at all: embed written, blob deleted, old blob
+  retained in the manifest — Firestore serves the corrected payload and the
+  skinny R2 fallback omits the code instead of playing the WRONG sequence
+  offline). Embeds now stamp the VERIFIED word, not the source doc's mutable
+  `word` field (AK0E's owner doc carried a stale word next to correct
+  letters; 5 records re-aligned). Result: **121/199 repaired** (96 REBUILT +
+  19 blob-dropped + 6 blob-kept), 78 SOURCE_NOT_FOUND (65 incomplete + 13
+  contradicts) — every witness deleted, irreducible with current evidence.
+  Final convergence: **20,155 LABELS_CURRENT / 78 quarantined / zero
+  conflicts / zero repairable**.
+- **R2 refresh + verification.** New ops mirror
+  `scripts/publish-r2-shortcode-snapshot.ts` (same skinny contract, envelope,
+  gzip -9, key, and headers as the `snapshotShortCodes` function; only
+  `_meta.source` differs) built and published on demand — the daily 03:00 UTC
+  run predated every repair. Verified from the public URL: declared = actual
+  = 20,210; canary blobs `8N3I`/`2DQU`/`0017`/`VOJT`/`AK0E` byte-identical to
+  Firestore; dropped-blob record `20GW` correctly absent. The next scheduled
+  function run overwrites it with identical content.
+
 ### Mint path
 
 Change the order in `ShortCodeManager.allocateCode`:

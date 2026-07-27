@@ -118,17 +118,14 @@ export interface PayloadDerivation {
   corroborated?: boolean;
 }
 
-export function deriveFromSteps(
-  steps: AnyRec[],
-  source: PayloadDerivation["source"]
-): PayloadDerivation {
-  // Deck-minted embedded blobs number their CONTENT beats 0-based, so the
-  // strict API's `stepNumber !== 0` start-entry filter would eat beat 0 and
-  // the word would lose its first letter (proven on 09PB: embedded letters
-  // "OTWΔ…"×4, naive derivation "TWΔO…"). A TRUE legacy start entry is
-  // letterless by design; a stepNumber-0 beat CARRYING a letter is 0-based
-  // content. Drop only a genuine leading start entry, then renumber the
-  // content beats 1..N so the strict API sees them all.
+// Deck-minted embedded blobs number their CONTENT beats 0-based, so the
+// strict API's `stepNumber !== 0` start-entry filter would eat beat 0 and
+// the word would lose its first letter (proven on 09PB: embedded letters
+// "OTWΔ…"×4, naive derivation "TWΔO…"). A TRUE legacy start entry is
+// letterless by design; a stepNumber-0 beat CARRYING a letter is 0-based
+// content. Drop only a genuine leading start entry, then renumber the
+// content beats 1..N so the strict API sees them all.
+function contentStepsOf(steps: AnyRec[]): AnyRec[] {
   const first = steps[0];
   const hasTrueStartEntry =
     first !== undefined &&
@@ -136,7 +133,22 @@ export function deriveFromSteps(
     (first.letter ?? null) === null &&
     steps.length > 1 &&
     steps[1]!.stepNumber === 1;
-  const contentSteps = hasTrueStartEntry ? steps.slice(1) : steps;
+  return hasTrueStartEntry ? steps.slice(1) : steps;
+}
+
+/** One entry per CONTENT beat (start-entry rule applied), each the beat's
+ *  stored letter or dataframe match, null where neither resolves. This is the
+ *  positional form deriveFromSteps collapses into a word — exposed so repairs
+ *  can compare two payloads beat-by-beat instead of word-by-word. */
+export function contentLetters(steps: AnyRec[]): (string | null)[] {
+  return contentStepsOf(steps).map((step) => letterForBeat(step));
+}
+
+export function deriveFromSteps(
+  steps: AnyRec[],
+  source: PayloadDerivation["source"]
+): PayloadDerivation {
+  const contentSteps = contentStepsOf(steps);
 
   const lettered = contentSteps.map((step, index) => ({
     ...(step as object),
