@@ -25,11 +25,10 @@
   import { fitColumns } from "$lib/features/creators/domain/fit-columns";
   import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ArtifactTile from "./ArtifactTile.svelte";
   import BandDoorway from "./BandDoorway.svelte";
-  import { shouldUseDoorway } from "./doorway-policy";
+  import { stripColumns } from "./doorway-policy";
   import { LiveSlots, type Medium } from "./live-slots.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setPendingBrowseIntent } from "$lib/features/browse/state/pending-browse-intent.svelte";
@@ -350,101 +349,42 @@
 
   const totalSaved = $derived(collectionEntries.length);
 
-  let collectionFilter = $state<"all" | Medium>("all");
-
-  const visibleCollection = $derived(
-    collectionFilter === "all"
-      ? collectionEntries
-      : collectionEntries.filter((e) => e.medium === collectionFilter)
-  );
-
-  /** Counts ride along on the chips, so the filter doubles as the census the
-   *  type sections used to provide. Media with nothing saved are omitted
-   *  rather than shown as a dead 0. */
-  const collectionFilterOptions = $derived.by(() => {
-    const counts: Record<string, number> = {};
-    for (const e of collectionEntries) counts[e.medium] = (counts[e.medium] ?? 0) + 1;
-    const opts: { value: string; label: string; count?: number }[] = [
-      { value: "all", label: "All", count: collectionEntries.length },
-    ];
-    if (counts.scene) opts.push({ value: "scene", label: "Scenes", count: counts.scene });
-    if (counts.tunnel) opts.push({ value: "tunnel", label: "Tunnels", count: counts.tunnel });
-    if (counts.mandala)
-      opts.push({ value: "mandala", label: "Mandalas", count: counts.mandala });
-    return opts;
-  });
-
-  /** The medium the handoff opens when the filter says "All": whichever the
-   *  user has most of, which is the one they most likely meant. Under a real
-   *  filter the handoff continues the narrowing they already did instead of
-   *  resetting it. */
-  function dominantMedium(): Medium {
-    const counts: Record<string, number> = {};
-    for (const e of collectionEntries) counts[e.medium] = (counts[e.medium] ?? 0) + 1;
-    let best: Medium = "mandala";
-    let bestCount = -1;
-    for (const [medium, n] of Object.entries(counts)) {
-      if (n > bestCount) {
-        best = medium as Medium;
-        bestCount = n;
-      }
-    }
-    return best;
-  }
-
   /** Library > Art shelf ids, which are how the three collection galleries are
    *  addressed (`MyCollectionsPanel.svelte` ART_DETAIL). There is no route —
    *  they mount inside the Library detail pane. */
-  const ART_SHELF: Partial<Record<Medium, { id: string; label: string }>> = {
-    scene: { id: "art_scenes", label: "3D Scenes" },
-    tunnel: { id: "art_tunnels", label: "Tunnels" },
-    mandala: { id: "art_mandala", label: "Mandalas" },
-  };
+  const ART_SHELF: { medium: Medium; id: string; label: string }[] = [
+    { medium: "mandala", id: "art_mandala", label: "Mandalas" },
+    { medium: "tunnel", id: "art_tunnels", label: "Tunnels" },
+    { medium: "scene", id: "art_scenes", label: "3D Scenes" },
+  ];
 
   /**
-   * What the Collections doorway opens, and therefore what it may claim.
+   * One strip per medium instead of one mixed grid with a filter above it.
    *
-   * The destination is ONE Art shelf — there is no "all media" shelf to land
-   * on. So under the All filter the button cannot advertise the mixed total:
-   * it would say 46 and open a shelf holding 41. It names the shelf it will
-   * actually open, and counts that shelf. Under a medium filter the two are
-   * already the same number.
+   * The mixed grid was the whole band: 46 tiles, and at 41 mandalas that is a
+   * wall of near-identical circles you have to scroll past. Austen, on it
+   * (2026-07-28): "I just frankly should not see a giant ass grid of stuff."
+   * The filter chips could narrow it, but narrowing is work the page can do
+   * for you — a strip per medium IS the filter, already applied, and each one
+   * carries its own way in to that medium's gallery.
+   *
+   * Ordered by count, so the medium you actually have leads and a lone scene
+   * never opens the band. Media with nothing saved are omitted rather than
+   * shown as a dead 0 — same rule the chips used.
    */
-  const collectionsTarget = $derived.by(() => {
-    const medium = collectionFilter === "all" ? dominantMedium() : collectionFilter;
-    const shelf = ART_SHELF[medium];
-    if (!shelf) return null;
-    return {
+  const collectionStrips = $derived.by(() =>
+    ART_SHELF.map((shelf) => ({
       ...shelf,
-      medium,
-      count: collectionEntries.filter((e) => e.medium === medium).length,
-    };
-  });
+      items: collectionEntries.filter((e) => e.medium === shelf.medium),
+    }))
+      .filter((strip) => strip.items.length > 0)
+      .sort((a, b) => b.items.length - a.items.length)
+  );
 
-  function enterCollections(): void {
-    if (!collectionsTarget) return;
-    setPendingBrowseIntent({
-      kind: "art-shelf",
-      shelfId: collectionsTarget.id,
-      label: collectionsTarget.label,
-    });
+  function enterShelf(shelfId: string, label: string): void {
+    setPendingBrowseIntent({ kind: "art-shelf", shelfId, label });
     void handleModuleChange("browse", "library");
   }
-
-  /**
-   * Collections converts past its threshold — but only on your own profile.
-   *
-   * The Library's Art shelves read the three collection singletons for the
-   * SIGNED-IN user, so there is no surface that shows someone else's saved
-   * scenes, tunnels or mandalas. A doorway into a destination that would show
-   * the wrong person's work is worse than a long band, so a visitor keeps the
-   * inline grid until such a surface exists.
-   */
-  const collectionsAreDoorway = $derived(
-    isOwnProfile &&
-      !!collectionsTarget &&
-      shouldUseDoorway("collections", visibleCollection.length)
-  );
 </script>
 
 <div class="stage">
@@ -502,54 +442,28 @@
           No saved scenes, tunnels, or mandalas on this account yet.
         </p>
       {:else}
-        {#if collectionFilterOptions.length > 2}
-          <div class="filter">
-            <SegmentedControl
-              options={collectionFilterOptions}
-              value={collectionFilter}
-              onchange={(v) => (collectionFilter = v as "all" | Medium)}
-              size="sm"
-              ariaLabel="Filter collections by medium"
-            />
-          </div>
-        {/if}
-
-        {#if collectionsAreDoorway}
+        {#each collectionStrips as strip (strip.id)}
           <BandDoorway
             {slots}
             size="md"
-            total={collectionsTarget?.count ?? 0}
-            columns={capFor("collection")}
-            actionLabel="Browse all {collectionsTarget?.label.toLowerCase()}"
-            onenter={enterCollections}
-            items={visibleCollection.slice(0, capFor("collection")).map((e) => ({
-              key: e.id,
-              medium: e.medium,
-              title: e.title,
-              poster: e.poster,
-              scene: e.scene,
-              tunnel: e.tunnel,
-              mandala: e.mandala,
-            }))}
+            label={strip.label}
+            total={strip.items.length}
+            columns={stripColumns(capFor("collection"))}
+            actionLabel="See all"
+            onenter={() => enterShelf(strip.id, strip.label)}
+            items={strip.items
+              .slice(0, stripColumns(capFor("collection")))
+              .map((e) => ({
+                key: e.id,
+                medium: e.medium,
+                title: e.title,
+                poster: e.poster,
+                scene: e.scene,
+                tunnel: e.tunnel,
+                mandala: e.mandala,
+              }))}
           />
-        {:else}
-          <div
-            class="grid"
-            style:--cols={fitColumns(visibleCollection.length, capFor("collection"))}
-          >
-            {#each visibleCollection as entry (entry.id)}
-              <ArtifactTile
-                {slots}
-                medium={entry.medium}
-                title={entry.title}
-                poster={entry.poster}
-                scene={entry.scene}
-                tunnel={entry.tunnel}
-                mandala={entry.mandala}
-              />
-            {/each}
-          </div>
-        {/if}
+        {/each}
       {/if}
     </section>
     {/if}
@@ -569,7 +483,7 @@
             ? "No sequences saved on this account yet."
             : "No published sequences yet."}
         </p>
-      {:else if shouldUseDoorway("archive", sequences.length)}
+      {:else}
         <!-- Always a doorway, never a grid. A band that is browsable at 40 and
              a doorway at 400 teaches two interactions for one thing. -->
         <BandDoorway
@@ -658,19 +572,6 @@
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: clamp(0.75em, 1.2cqw, 1.25em);
     align-items: start;
-  }
-
-  .filter {
-    /* SegmentedControl declares width: 100%, so a bare `flex: 0 0 auto` loses
-       (flex-basis: auto resolves to that width). Pin it or four short labels
-       stretch across the whole band (visual-verification-mandatory.md). */
-    width: max-content;
-    max-width: 100%;
-  }
-
-  .filter :global(.segmented-control) {
-    width: max-content;
-    max-width: 100%;
   }
 
   /* Short-landscape: a grid of 1:1 tiles can't fit even one row, so the

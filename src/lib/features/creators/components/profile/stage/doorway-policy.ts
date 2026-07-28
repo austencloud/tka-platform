@@ -1,35 +1,34 @@
 /**
  * When a band stops being a wall and becomes a way in.
  *
- * Split out of the component so the boundary is testable without mounting
- * anything — the threshold is the kind of off-by-one that hides well in CSS.
+ * Split out of the component so the row math is testable without mounting
+ * anything — this is the kind of off-by-one that hides well in CSS.
+ *
+ * There is no longer a "does this band convert" question to answer. The
+ * Archive is always a doorway, and Collections is always one strip per medium
+ * (2026-07-28) — the threshold that used to flip Collections between a grid
+ * and a doorway is gone with the grid.
  */
-
-export type DoorwayBand = "archive" | "collections";
 
 /**
- * Collections stays inline while it is browsable and flips to a doorway once it
- * is a scroll. 60 is a judgement, not a measurement: two full rows at the widest
- * tier (8 columns) is 16, and roughly four screens of scrolling at typical tile
- * sizes lands near 60. Austen's account sits at 46 today, so the band stays
- * inline for him now and converts as he saves more.
+ * A strip shows a taste, not a page. Six is the ceiling however wide the screen
+ * gets: past that a strip starts reading as the grid it replaced, which is the
+ * whole thing it exists to avoid.
  */
-export const COLLECTIONS_DOORWAY_THRESHOLD = 60;
+export const STRIP_SAMPLE_CAP = 6;
 
 /**
- * The archive is ALWAYS a doorway, including when it is small. A band that is a
- * grid at 40 items and a doorway at 400 teaches two different interactions for
- * the same thing, and the empty/small case is exactly when a consistent way in
- * matters most.
+ * How many columns a medium strip may use at this tier. The band's own column
+ * count is the other bound — six tiles must never be forced onto a screen that
+ * fits two.
  */
-export function shouldUseDoorway(band: DoorwayBand, count: number): boolean {
-  if (band === "archive") return true;
-  return count > COLLECTIONS_DOORWAY_THRESHOLD;
+export function stripColumns(bandColumns: number): number {
+  return Math.max(1, Math.min(STRIP_SAMPLE_CAP, bandColumns));
 }
 
 /**
- * How many tiles the doorway shows. Capped at the column count so the sample is
- * exactly one row at every breakpoint — it is a taste of the work, not a grid.
+ * How many tiles a sample row shows. Capped at the column count so the sample
+ * is exactly one row at every breakpoint — a taste of the work, not a grid.
  */
 export function sampleCount(total: number, columns: number): number {
   if (total <= 0 || columns <= 0) return 0;

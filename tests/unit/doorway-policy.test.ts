@@ -1,28 +1,25 @@
 import { describe, it, expect } from "vitest";
 import {
-  shouldUseDoorway,
-  COLLECTIONS_DOORWAY_THRESHOLD,
+  STRIP_SAMPLE_CAP,
+  stripColumns,
   sampleCount,
 } from "$lib/features/creators/components/profile/stage/doorway-policy";
 
-describe("shouldUseDoorway", () => {
-  it("always returns true for the archive, even when tiny", () => {
-    expect(shouldUseDoorway("archive", 0)).toBe(true);
-    expect(shouldUseDoorway("archive", 3)).toBe(true);
-    expect(shouldUseDoorway("archive", 505)).toBe(true);
+describe("stripColumns", () => {
+  it("caps a strip at six however wide the band gets", () => {
+    expect(STRIP_SAMPLE_CAP).toBe(6);
+    expect(stripColumns(8)).toBe(6);
+    expect(stripColumns(10)).toBe(6);
   });
 
-  it("keeps collections inline at and below the threshold", () => {
-    expect(shouldUseDoorway("collections", COLLECTIONS_DOORWAY_THRESHOLD)).toBe(false);
-    expect(shouldUseDoorway("collections", COLLECTIONS_DOORWAY_THRESHOLD - 1)).toBe(false);
+  it("yields to the band when the band is narrower than the cap", () => {
+    expect(stripColumns(4)).toBe(4);
+    expect(stripColumns(2)).toBe(2);
   });
 
-  it("flips collections to a doorway strictly above the threshold", () => {
-    expect(shouldUseDoorway("collections", COLLECTIONS_DOORWAY_THRESHOLD + 1)).toBe(true);
-  });
-
-  it("uses 60 as the collections threshold", () => {
-    expect(COLLECTIONS_DOORWAY_THRESHOLD).toBe(60);
+  it("never returns a column count below one", () => {
+    expect(stripColumns(0)).toBe(1);
+    expect(stripColumns(-3)).toBe(1);
   });
 });
 

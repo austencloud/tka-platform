@@ -42,6 +42,7 @@
     actionLabel,
     onenter,
     size = "sm",
+    label,
   }: {
     slots: LiveSlots;
     /** Newest-first. Only the first row is rendered. */
@@ -54,14 +55,43 @@
     actionLabel: string;
     onenter: () => void;
     size?: "sm" | "md" | "lg";
+    /**
+     * Names this shelf, which also moves the way in.
+     *
+     * Unlabeled, the doorway IS the band — one row with the action centred
+     * under it (the Archive). Labeled, it is one shelf among several inside a
+     * band, so it grows its own head and the action sits there on the right;
+     * three centred buttons stacked down a band reads as three dead ends
+     * rather than three shelves. Same component either way: a sample row and a
+     * way in.
+     */
+    label?: string;
   } = $props();
 
   const shown = $derived(items.slice(0, sampleCount(items.length, columns)));
 </script>
 
-<div class="doorway">
+<div class="doorway" class:shelf={label}>
+  {#if label}
+    <header class="shelf-head">
+      <h3>{label}</h3>
+      <span class="shelf-count">{total.toLocaleString()}</span>
+      <span class="shelf-rule" aria-hidden="true"></span>
+      <button class="enter shelf-enter" type="button" onclick={onenter}>
+        {actionLabel}
+      </button>
+    </header>
+  {/if}
+
+  <!-- Tracks come from the COLUMN count, not the item count. Sizing to the
+       items stretches a short row across the whole band — a 4-tunnel shelf
+       rendering at nearly twice the size of the 6-mandala shelf above it, and
+       a lone 3D scene ballooning to the full width. Empty tracks at the end of
+       a short shelf are the right trade: every tile is the same size in every
+       shelf, and a shelf with one thing in it looks like a shelf with one
+       thing in it. -->
   {#if shown.length > 0}
-    <div class="sample" style:--cols={shown.length}>
+    <div class="sample" style:--cols={Math.max(1, columns)}>
       {#each shown as item (item.key)}
         <ArtifactTile
           {slots}
@@ -78,12 +108,14 @@
     </div>
   {/if}
 
-  <!-- A button, not a text link: this is a standalone action
-       (clickables-look-like-buttons.md). -->
-  <button class="enter" type="button" onclick={onenter}>
-    <span class="enter-label">{actionLabel}</span>
-    <span class="enter-count">{total.toLocaleString()}</span>
-  </button>
+  {#if !label}
+    <!-- A button, not a text link: this is a standalone action
+         (clickables-look-like-buttons.md). -->
+    <button class="enter" type="button" onclick={onenter}>
+      <span class="enter-label">{actionLabel}</span>
+      <span class="enter-count">{total.toLocaleString()}</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -94,6 +126,50 @@
     display: flex;
     flex-direction: column;
     gap: 0.85em;
+  }
+
+  /* A shelf sits closer to its own head than bands sit to each other, so the
+     name reads as belonging to the row under it rather than floating between
+     two rows. */
+  .shelf {
+    gap: 0.5em;
+  }
+
+  .shelf-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+  }
+
+  .shelf-head h3 {
+    margin: 0;
+    font-size: 0.875em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    white-space: nowrap;
+  }
+
+  .shelf-count {
+    font-size: 0.875em;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+
+  .shelf-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  /* Sized to its label, never stretched: `flex: 1` on the rule beside it is
+     what keeps this honest (visual-verification-mandatory.md). */
+  .shelf-enter {
+    flex: 0 0 auto;
+    align-self: auto;
+    padding: 0.4em 1em;
+    font-size: 0.8125em;
   }
 
   /* Exactly the rendered count, so the sample is always one full row with no
