@@ -6,6 +6,12 @@
 
 **Architecture:** One `share-intake` module owns a normalized payload and all routing. A thin native adapter converts `@capgo/capacitor-share-target`'s URI descriptors into `File` objects and hands them over. Records persist to IndexedDB before any auth check so a share survives sign-in. The PWA adapter is deliberately **out of scope** — see Scope.
 
+**Read the Lifecycle traces section before any task.** This plan failed
+whole-picture review three times for the same reason: units were specified in
+isolation and the wiring between them was implied rather than written. The
+traces are the spine. Every task below names the trace step it closes. A module
+whose trace step cannot be named does not belong here.
+
 **Tech Stack:** Capacitor 8.4.2, `@capgo/capacitor-share-target` v8.0.44, Svelte 5 runes, IndexedDB, vitest.
 
 **Spec:** [`../specs/2026-07-28-share-target-intake-design.md`](../specs/2026-07-28-share-target-intake-design.md)
@@ -35,36 +41,176 @@ index is shared with other agent sessions
 
 ---
 
-## File Structure
+## Lifecycle traces
 
-| File | Responsibility | Task |
-|---|---|---|
-| `src/lib/shared/share-intake/domain/share-intake-models.ts` | Types: `SharedIntake`, `IntakeItem`, `IntakeProblem` | 2, 3, 7 |
-| `src/lib/shared/share-intake/domain/derive-receipt-id.ts` | Content-derived dedup key | 2 |
-| `src/lib/shared/inbox/domain/image-attachment-limits.ts` | The single source of the 10 MB / JPEG-PNG-WebP limits | 3 |
-| `src/lib/shared/share-intake/services/intake-validator.ts` | Pre-bridge descriptor screen + post-bridge file gate | 3 |
-| `src/lib/shared/qr/services/tka-qr-detector.ts` | Widened to `ImageBitmapSource` so a `File` decodes directly | 4 |
-| `src/lib/shared/share-intake/services/shared-file-bridge.ts` | `SharedFile` URI → `File` (**highest-risk unit**) | 5 |
-| `src/lib/shared/share-intake/services/intake-store.ts` | IndexedDB durable record (bytes, not `File`) + reaping + quota | 6 |
-| `src/lib/shared/share-intake/services/intake-classifier.ts` | Per-item card / image / duplicate classification | 7 |
-| `src/lib/shared/inbox/domain/pending-message-attachment.ts` | Sequence arm widened to `SequenceSharePayload` | 8 |
-| `src/lib/shared/inbox/state/inbox-state.svelte.ts` | `send-sequence` → `send-attachment` | 8 |
-| `src/lib/shared/inbox/state/send-sequence-state.svelte.ts` | `openSendAttachmentSheet` alongside `openSendSequenceSheet` | 8 |
-| `src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte` | Renamed sheet; sends an image OR a sequence | 8 |
-| `src/lib/shared/share-intake/services/intake-router.ts` | Classification → cards filed / picker opened | 9 |
-| `src/lib/shared/share-intake/services/share-intake-runner.ts` | **The consumer.** Loads, classifies, routes, advances, deletes | 10 |
-| `src/lib/shared/share-intake/services/native-share-adapter.ts` | Plugin listener → persisted intake; registration barrier | 11 |
-| `src/lib/shared/share-intake/get-share-intake.ts` | Idempotent registration getter | 11 |
-| `android/app/src/main/AndroidManifest.xml` | `ACTION_SEND` / `ACTION_SEND_MULTIPLE` filters | 1 ✅ |
-| `src/lib/shared/platform/services/native-initializer.ts` | Boot barrier so a share doesn't race `/create` | 11 |
+Three paths. Each hop names the file and the function. If a hop below has no
+implementation, the task that supplies it is named in the right-hand column.
+Nothing else in this plan is allowed to exist.
 
-**Tasks 0, 1 and 2 are DONE and committed** (`4c3924953e`, `134fa444f1`,
-`61a8c52307`). Their steps below are no-ops kept for the record. Start at
-Task 3.
+Two structural facts make all three traces work, and both are corrections to
+the previous revision:
+
+1. **The native shell always boots into the app shell.** `NativeInitializer`
+   calls `bootIntoApp()` → `goto("/create")` on every share-less AND
+   share-carrying cold start. `/create` falls through
+   `src/routes/[...appPath]/+page.svelte` → `src/routes/app/AppShellLoader.svelte`
+   → `MainApplication.svelte`, which is the only place `InboxDrawer` and
+   `SequenceViewerDrawerHost` are ever mounted (`MainApplication.svelte:623-625`
+   and `:708-710`). The previous revision suppressed `bootIntoApp()` when a
+   share was pending and commented "the share routes itself." It does not — the
+   native shell loads `/`, which is `src/routes/+page.svelte`, the marketing
+   landing (`HomeHero` + `LaunchpadGrid`). Opening the picker from there sets
+   state that nothing renders.
+2. **Routing is triggered from inside the shell, never from the adapter.** A new
+   `ShareIntakeHost.svelte` mounts as a sibling of the inbox drawer and the
+   viewer host. It is the sole caller of `scheduleIntakeRun()`. The adapter only
+   persists bytes and bumps a signal. Because the host cannot run before its
+   siblings exist, "the drawer is mounted before the picker opens" is true by
+   construction rather than by timing. This also deletes the 300 ms registration
+   grace the previous revision charged to every share-less cold boot.
+
+### Trace 1 — Cold launch, one image carrying a TKA card QR
+
+| # | Hop | Where | Task |
+|---|---|---|---|
+| 1.1 | Android delivers `ACTION_SEND` | `android/app/src/main/AndroidManifest.xml` intent filter | 1 ✅ |
+| 1.2 | Plugin copies bytes to `cacheDir/shared_files/<name>` and fires `shareReceived` (retained; fires twice on cold launch — `load()` **and** `handleOnNewIntent`) | `CapacitorShareTargetPlugin.java:29,35,89` | — |
+| 1.3 | Listener claims the delivery synchronously, drops the twin | `native-share-adapter.ts` → `deriveDeliveryKey` + `inFlight` Set | 13 |
+| 1.4 | Descriptors screened for mime + count before a byte is read | `intake-validator.ts` → `screenDescriptors` | 3 |
+| 1.5 | URIs become real `File`s, four at a time | `shared-file-bridge.ts` → `sharedFilesToFiles` | 5 |
+| 1.6 | Bytes + problems persist; durable id derived from post-bridge sizes | `intake-store.ts` → `putIntake`, `derive-receipt-id.ts` → `deriveReceiptId` | 6, 2 ✅ |
+| 1.7 | Adapter bumps the signal and returns. It never routes | `share-intake-signal.svelte.ts` → `bumpIntakeSignal` | 12 |
+| 1.8 | In parallel, `bootIntoApp()` → `/create` → `MainApplication` mounts | `native-initializer.ts` → `bootIntoApp` | 13 |
+| 1.9 | `ShareIntakeHost` mounts beside the drawers and calls the runner | `ShareIntakeHost.svelte` → `onMount` + `$effect` on the signal | 12 |
+| 1.10 | Runner loads the record and classifies it | `share-intake-runner.ts` → `runPendingIntakes`, `intake-classifier.ts` → `classifyIntake` | 11, 7 |
+| 1.11 | QR decoded straight off the `File` (no canvas round trip) | `tka-qr-detector.ts` → `detect(ImageBitmapSource)` | 4 |
+| 1.12 | Code resolved; a printed card is saved to My Library first | `intake-router.ts` → `routeIntake` → `fileCard` | 10 |
+| 1.13 | **The viewer opens on the sequence** | `open-filed-card.ts` → `openFiledCard` → `openSequenceOverlay` | 8 |
+| 1.14 | Record deleted; nothing is left behind | `share-intake-runner.ts` → `deleteIntake` | 11 |
+
+**Terminal state:** the sequence viewer overlay is open on the shared card, over
+`/create`. From there the viewer's own chrome supplies Add-to-collection and
+Send — the three affordances the spec asks for (spec:295-297).
+**Bytes:** consumed. The record is deleted only at 1.14, after the viewer has
+the hydrated sequence. A crash anywhere in 1.10–1.13 leaves the bytes in
+IndexedDB and 1.9 replays on the next launch.
+
+### Trace 2 — Warm launch, three images
+
+| # | Hop | Where | Task |
+|---|---|---|---|
+| 2.1 | App is backgrounded; Android delivers `ACTION_SEND_MULTIPLE` to the running activity | `handleOnNewIntent` → `notifyListeners` (fires **once** — no `load()` twin) | — |
+| 2.2–2.7 | Same as 1.3–1.8, minus the boot: the shell is already mounted | — | 13, 3, 5, 6, 12 |
+| 2.8 | `ShareIntakeHost`'s signal `$effect` fires; runner starts | `ShareIntakeHost.svelte` | 12 |
+| 2.9 | Classification yields three `image` items | `intake-classifier.ts` → `classifyIntake` | 7 |
+| 2.10 | **Auth gate.** Images need a full account (`MessageImageSender.ts:31-33` throws for `!user \|\| user.isAnonymous`). Signed in → continue | `share-intake-runner.ts` → `requiresFullAccount` | 11 |
+| 2.11 | Router opens the picker on image #1, carrying the intake's `receiptId`, and reports #2 and #3 as `queued` + `send-dropped` | `intake-router.ts` → `routeIntake` → `openSendAttachmentSheet` | 10, 9 |
+| 2.12 | Runner sets status `ready` and **keeps the record**. It does not delete on picker-open | `share-intake-runner.ts` | 11 |
+| 2.13 | User picks a conversation, hits Send; the sheet uploads via `getMessageImageSender().send(...)` | `SendAttachmentSheet.svelte` → `send()` | 9 |
+| 2.14 | `onSent` → drawer resolves the intake: two files still queued → status `partially-sent`, record kept, problems visible | `InboxDrawer.svelte` → `handleSequenceSent` → `completeShareIntake` | 9, 11 |
+
+**Terminal state:** image #1 is in the conversation; the record survives as
+`partially-sent` carrying two `send-dropped` problems for #2 and #3, and the
+sheet's error surface has already told the user. Re-opening the app replays
+2.8 for the remaining files.
+**Bytes:** all three survive until the user has seen what happened to each.
+Cancelling the picker, reloading, or force-stopping mid-flow leaves the record
+`ready` with every byte intact — the previous revision deleted the record when
+the picker **opened**, leaving the only copy in an in-memory `File` on
+`inboxState`.
+
+### Trace 3 — Signed out, share an image, sign in with a magic link
+
+| # | Hop | Where | Task |
+|---|---|---|---|
+| 3.1–3.9 | Identical to trace 2 through classification | — | 13, 3, 5, 6, 12, 7 |
+| 3.10 | **Auth gate fires.** `authState.isFullAccount` is false and the classification contains an `image` item | `share-intake-runner.ts` → `requiresFullAccount` | 11 |
+| 3.11 | Status → `needs-auth`. Nothing is routed. The record is exempt from the 1 h TTL and from quota eviction | `intake-store.ts` → `NEEDS_AUTH_TTL_MS`, `makeRoomFor` | 6 |
+| 3.12 | **Visible prompt**: the auth drawer opens on sign-in with share-specific copy, plus a toast | `authDrawerState.show("signin", "share-image-signin")` | 11 |
+| 3.13 | User taps the emailed link. Best case it deep-links into the running app and `EmailLinkConfirmModal` completes in place (`AppShellLoader.svelte:35-37`); worst case the process was killed and this is a fresh cold start. Both are covered because the bytes are in IndexedDB, not in memory | `email-link-completion.ts` → `completeEmailLinkSignIn` | — |
+| 3.14 | `onAuthStateChanged` updates `authState` (`auth-state.svelte.ts:400`) | — | — |
+| 3.15 | **The resume point.** `ShareIntakeHost`'s `$effect` on `authState.isFullAccount` re-fires and calls the runner. On a cold start its `onMount` does the same | `ShareIntakeHost.svelte` | 12 |
+| 3.16 | Gate now passes; trace 2 resumes at 2.11 | — | 10, 11 |
+
+**Terminal state:** the conversation picker is open on the shared image, with
+the user signed in and the send able to succeed.
+**Bytes:** survive. They were written to IndexedDB at 3.6 — before any auth
+check — and `needs-auth` is the one status exempt from both the TTL and quota
+eviction, so nothing can reap them during the round trip.
+
+**Correction worth recording:** completing a magic link is **not** a full page
+reload. `email-link-completion.ts:249-253` uses `window.history.replaceState`
+to strip the consumed Firebase params and stays on the same route; there is no
+`window.location` assignment, no `reload()`, no `goto()`. The durability
+requirement stands anyway — the round trip leaves the app for an email client,
+and the process can be killed while it is gone — but no step here may assume a
+reload happens or that one is needed to re-trigger anything.
 
 ---
 
-### Task 0: Fix the pre-existing `clients.claim()` bug — DONE (`4c3924953e` lineage)
+## Trace closure
+
+Tasks run in dependency order. Each closes the trace steps named in its heading.
+A trace is walkable end to end after the task in the right-hand column.
+
+| Trace | Walkable after |
+|---|---|
+| 1 — cold launch, card | **Task 13** |
+| 2 — warm launch, three images | **Task 13** |
+| 3 — signed out → magic link → resume | **Task 13** |
+
+All three land together because they share one arrival path and one host. Tasks
+3–12 build the hops; Task 13 attaches the spine to the native shell. Task 14 is
+verification only.
+
+---
+
+## File Structure
+
+Every row names the trace step it exists to serve. A file that cannot name one
+is not in this plan.
+
+| File | Trace step | Task |
+|---|---|---|
+| `src/lib/shared/share-intake/domain/share-intake-models.ts` | shared vocabulary for every hop | 2 ✅, 3, 7 |
+| `src/lib/shared/share-intake/domain/derive-receipt-id.ts` | 1.6 durable id | 2 ✅ |
+| `src/lib/shared/inbox/domain/image-attachment-limits.ts` | 1.4 the one copy of the limits | 3 |
+| `src/lib/shared/share-intake/services/intake-validator.ts` | 1.4 pre-bridge screen, post-bridge gate | 3 |
+| `src/lib/shared/qr/services/tka-qr-detector.ts` | 1.11 decode a `File` directly | 4 |
+| `src/lib/shared/share-intake/services/shared-file-bridge.ts` | 1.5 URI → `File` (**highest-risk unit**) | 5 |
+| `src/lib/shared/share-intake/services/intake-store.ts` | 1.6 / 2.12 / 3.11 durability | 6 |
+| `src/lib/shared/share-intake/services/intake-classifier.ts` | 1.10 / 2.9 per-item classification | 7 |
+| `src/lib/shared/share-intake/services/open-filed-card.ts` | **1.13 the card's destination** | 8 |
+| `src/lib/shared/auth/domain/auth-nudge-trigger.ts` | 3.12 the sign-in prompt's copy | 8 |
+| `src/lib/shared/inbox/domain/pending-message-attachment.ts` | 2.11 sequence arm widened | 9 |
+| `src/lib/shared/inbox/state/inbox-state.svelte.ts` | 2.11 `send-sequence` → `send-attachment`, `+receiptId` | 9 |
+| `src/lib/shared/inbox/state/send-sequence-state.svelte.ts` | 2.11 `openSendAttachmentSheet` — the router's entry point | 9 |
+| `src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte` | 2.13 actually sends the image | 9 |
+| `src/lib/shared/inbox/components/InboxDrawer.svelte` | 2.14 send completion resolves the intake | 9 |
+| `src/lib/shared/share-intake/services/intake-router.ts` | 1.12 / 2.11 destinations | 10 |
+| `src/lib/shared/share-intake/services/share-intake-runner.ts` | 1.10 / 1.14 / 2.10 / 2.12 / 3.10 lifecycle | 11 |
+| `src/lib/shared/share-intake/state/share-intake-signal.svelte.ts` | 1.7 adapter → host handoff | 12 |
+| `src/lib/shared/share-intake/components/ShareIntakeHost.svelte` | **1.9 / 2.8 / 3.15 the only caller of the runner** | 12 |
+| `src/lib/shared/application/components/MainApplication.svelte` | 1.9 mounts the host beside the drawers | 12 |
+| `src/lib/shared/share-intake/services/native-share-adapter.ts` | 1.3–1.7 arrival | 13 |
+| `src/lib/shared/share-intake/get-share-intake.ts` | 1.3 idempotent registration | 13 |
+| `src/lib/shared/platform/services/native-initializer.ts` | 1.8 always boot into the shell | 13 |
+| `android/app/src/main/AndroidManifest.xml` | 1.1 intent filters | 1 ✅ |
+
+**Tasks 0, 1 and 2 are DONE and committed** (`d412cfa4e7`, `6f1e7c1c3d`,
+`6153163cd6` + `134fa444f1` — hashes verified against `git log`, not carried over
+from an earlier revision). Their steps below are no-ops kept for the record,
+and their contracts — `deriveReceiptId(ReceiptInput): string` and the
+`SharedIntake` / `ShareIntakeStatus` shapes — do not change. Start at Task 3.
+
+**One deliberate reuse worth flagging up front:** `ShareIntakeStatus` already
+carries an unused `"ready"` member (`share-intake-models.ts:7`). Trace 2.12 uses
+it for "bytes staged, picker open, waiting on the user." No new status is added,
+so the committed contract is untouched.
+
+---
+
+### Task 0: Fix the pre-existing `clients.claim()` bug — DONE (`d412cfa4e7`)
 
 Independent of this feature — found while investigating. `self.clients.claim()`
 sits outside the `event.waitUntil()` block, so activation can complete before
@@ -115,7 +261,7 @@ git commit -m "fix(sw): claim clients inside the activate waitUntil" -- static/s
 
 ### Task 1: Install the plugin and declare the intent filters — DONE
 
-No test — this is native config. Verified by Task 8's device check.
+No test — this is native config. Verified by the device checklist at the end.
 
 **Files:**
 - Modify: `package.json`
@@ -169,7 +315,7 @@ git commit -m "feat(share-intake): register the Android share target" -- package
 
 ---
 
-### Task 2: Domain types and `deriveReceiptId` — DONE (`61a8c52307`)
+### Task 2: Domain types and `deriveReceiptId` — DONE (`6153163cd6`, amended by `134fa444f1`)
 
 `BridgeActivity.java:51` calls `onNewIntent(getIntent())` right after `load()`,
 and the plugin handles the intent in **both**. A cold-launch share therefore
@@ -421,6 +567,9 @@ git commit -m "feat(share-intake): content-derived receipt id for cold-launch de
 ---
 
 ### Task 3: Shared image limits, the problem record, and the validation gate
+
+**Closes trace step 1.4** (and its twin in traces 2 and 3): every arriving
+descriptor is screened before a byte is read, and every drop leaves a record.
 
 Three things that have to land together:
 
@@ -687,15 +836,20 @@ describe("validateIntake", () => {
     expect(reasons(result)).toEqual(["title-truncated"]);
   });
 
-  it("leaves a short title alone and reports nothing", () => {
-    const result = validateIntake({ files: [], title: "Pho\u0007tos" });
-    expect(result.title).toBe("Photos");
+  it("leaves a short clean title alone and reports nothing", () => {
+    // A DIFFERENT input from the control-character test below, on purpose.
+    // An earlier revision shipped both tests with the same input, so one of
+    // the two asserted nothing the other did not.
+    const result = validateIntake({ files: [], title: "Shared photos" });
+    expect(result.title).toBe("Shared photos");
     expect(result.problems).toHaveLength(0);
   });
 
-  it("strips control characters out of the title", () => {
+  it("strips control characters out of the title without flagging a problem", () => {
     const result = validateIntake({ files: [], title: "Pho\u0007tos" });
     expect(result.title).toBe("Photos");
+    // Sanitizing is not worth reporting to the user; only truncation is.
+    expect(result.problems).toHaveLength(0);
   });
 });
 ```
@@ -899,6 +1053,9 @@ git commit -m "feat(share-intake): shared image limits, problem records, two-sta
 
 ### Task 4: Widen the shared QR detector to `ImageBitmapSource`
 
+**Closes trace step 1.11.** Without this the classifier cannot read a QR out of
+a shared `File` without a hand-rolled canvas round trip.
+
 `TkaQrDetector.detect` is typed `(frame: ImageData)` — narrower than what it
 actually wraps. Verified in
 `node_modules/barcode-detector/dist/es/core.d.ts`:
@@ -975,6 +1132,9 @@ git commit -m "refactor(qr): accept any ImageBitmapSource in the shared detector
 ---
 
 ### Task 5: The `SharedFile` → `File` bridge
+
+**Closes trace step 1.5** (and 2.x / 3.x, which share it). This is the hop that
+turns the plugin's cache paths into bytes the rest of the trace can carry.
 
 **This is the highest-risk unit in the design.** The plugin returns
 `getAbsolutePath()` — a raw filesystem path, not a `file://` URI and not
@@ -1345,7 +1505,7 @@ export async function sharedFileToFile(
   const file = new File([bytes], name, { type: descriptor.mimeType });
 
   // The plugin's SharedFile has no size field, so the descriptor's size is
-  // undefined until right here. Task 11 derives the durable receiptId from
+  // undefined until right here. Task 13 derives the durable receiptId from
   // THIS descriptor, which is what stops two same-named screenshots colliding.
   return { ok: true, file, descriptor: { ...descriptor, name, size: file.size } };
 }
@@ -1400,7 +1560,7 @@ export async function sharedFilesToFiles(
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/shared-file-bridge.test.ts`
-Expected: PASS, 12 tests.
+Expected: PASS, 13 tests (3 toFetchableUrl + 8 sharedFileToFile + 2 sharedFilesToFiles — an earlier revision miscounted this suite as 12).
 
 - [ ] **Step 5: Commit**
 
@@ -1411,11 +1571,18 @@ git commit -m "feat(share-intake): bridge plugin URIs to Files with encoding, si
 ---
 ### Task 6: Durable intake store
 
+**Closes trace steps 1.6, 2.12 and 3.11.** This is the only reason any of the
+three traces can survive a reload, a crash, or a trip to an email client.
+
 Replaces read-and-delete, which contradicted "survives an auth redirect". A
 reload, crash, or rejected route must not lose the only copy.
 
-Six defects the first draft shipped, all fixed here:
+Seven defects earlier revisions shipped, all fixed here:
 
+- **`makeRoomFor` and the subsequent `put` ran in separate transactions.** A
+  write landing between them could push the store back over the cap and the
+  `put` would still commit. Both now run on one store handle inside one
+  `readwrite` transaction; so does `reapExpired`, which previously opened N+1.
 - **`File` was persisted directly.** jsdom's `structuredClone` of a `File`
   returns a plain object with no `name`, `size`, or bytes, so the round-trip
   test could never pass. Records store `{ bytes: ArrayBuffer, name, type }` and
@@ -1424,7 +1591,7 @@ Six defects the first draft shipped, all fixed here:
   error. There is now a single cached connection, closed by nothing but
   `versionchange`.
 - **`openDb()` had no `onblocked` and no timeout**, so an upgrade held open by
-  another tab left the promise pending forever and hung the boot barrier.
+  another tab left the promise pending forever and hung every caller.
 - **A new connection per operation** — `reapExpired` opened N+1 of them. The
   repo's own pattern is a cached `dbPromise`
   (`thumbnail-local-cache.ts:47-53`); follow it.
@@ -1723,8 +1890,9 @@ function openDb(): Promise<IDBDatabase> {
 
     // Both of these are load-bearing. An upgrade held open by another tab
     // fires neither onsuccess nor onerror, so without them every caller awaits
-    // a promise that never settles - and the boot barrier in Task 11 awaits
-    // exactly this, which would hang the app at the splash screen.
+    // a promise that never settles. ShareIntakeHost awaits this on mount, so
+    // without them a blocked upgrade would hang the share pipeline silently
+    // for the rest of the session.
     const timer = setTimeout(
       () => reject(new Error("share-intake: IndexedDB open timed out")),
       OPEN_TIMEOUT_MS
@@ -1865,23 +2033,41 @@ async function listStored(): Promise<StoredIntake[]> {
   );
 }
 
-async function makeRoomFor(incoming: number, replacing: string): Promise<void> {
-  const others = (await listStored()).filter((r) => r.receiptId !== replacing);
+/**
+ * Evict oldest-first inside the CALLER'S transaction, never a `needs-auth`
+ * record.
+ *
+ * Takes an open `IDBObjectStore` rather than opening its own: an earlier
+ * revision ran the eviction sweep and the subsequent `put` in two separate
+ * transactions, so a concurrent write between them could push the store back
+ * over the cap and the `put` would land anyway. Everything below runs on one
+ * store handle, and `awaitRequest` resolves inside each request's own success
+ * callback, which keeps that transaction alive.
+ */
+async function makeRoomFor(
+  store: IDBObjectStore,
+  incoming: number,
+  replacing: string
+): Promise<void> {
+  const all = await awaitRequest<StoredIntake[]>(store.getAll());
+  const others = all.filter((record) => record.receiptId !== replacing);
   let used = others.reduce((sum, record) => sum + storedBytes(record), 0);
   if (used + incoming <= MAX_INTAKE_STORE_BYTES) return;
 
-  // Oldest first, and NEVER a needs-auth record.
+  // Oldest first, and NEVER a needs-auth record: trace 3 parks the only copy
+  // of the user's bytes there while they are away at their email client.
   const evictable = others
     .filter((record) => record.status !== "needs-auth")
     .sort((a, b) => a.receivedAt - b.receivedAt);
 
   for (const victim of evictable) {
     if (used + incoming <= MAX_INTAKE_STORE_BYTES) break;
-    await deleteIntake(victim.receiptId);
+    await awaitRequest(store.delete(victim.receiptId));
     used -= storedBytes(victim);
   }
 
   if (used + incoming > MAX_INTAKE_STORE_BYTES) {
+    // Aborts the transaction via withStore, so no partial eviction survives.
     throw new Error(
       "share-intake: store is full of pending sign-in shares; refusing the write"
     );
@@ -1891,6 +2077,9 @@ async function makeRoomFor(incoming: number, replacing: string): Promise<void> {
 export async function putIntake(record: SharedIntake): Promise<void> {
   if (!browser) return;
 
+  // File.arrayBuffer() is a macrotask await, so it MUST finish before the
+  // transaction opens - awaiting it inside one auto-commits the transaction
+  // out from under the eviction sweep.
   const stored = await toStored(record);
   const incoming = storedBytes(stored);
 
@@ -1900,8 +2089,10 @@ export async function putIntake(record: SharedIntake): Promise<void> {
     );
   }
 
-  await makeRoomFor(incoming, record.receiptId);
-  await withStore("readwrite", (store) => awaitRequest(store.put(stored)));
+  await withStore("readwrite", async (store) => {
+    await makeRoomFor(store, incoming, stored.receiptId);
+    await awaitRequest(store.put(stored));
+  });
 }
 
 export async function getIntake(receiptId: string): Promise<SharedIntake | null> {
@@ -1963,11 +2154,18 @@ export async function deleteIntake(receiptId: string): Promise<void> {
 export async function reapExpired(now = Date.now()): Promise<number> {
   if (!browser) return 0;
 
-  const stale = (await listStored()).filter(
-    (record) => now - record.receivedAt > ttlFor(record.status)
-  );
-  for (const record of stale) await deleteIntake(record.receiptId);
-  return stale.length;
+  // One transaction, same reason as putIntake: an earlier revision opened
+  // N+1 of them, one per stale record.
+  return withStore("readwrite", async (store) => {
+    const all = await awaitRequest<StoredIntake[]>(store.getAll());
+    const stale = all.filter(
+      (record) => now - record.receivedAt > ttlFor(record.status)
+    );
+    for (const record of stale) {
+      await awaitRequest(store.delete(record.receiptId));
+    }
+    return stale.length;
+  });
 }
 ```
 
@@ -1985,6 +2183,9 @@ git commit -m "feat(share-intake): durable byte-backed IndexedDB store with quot
 ---
 
 ### Task 7: Per-item classification
+
+**Closes trace steps 1.10 and 2.9.** This is the hop that decides, per file,
+whether trace 1 (card → viewer) or trace 2 (image → picker) applies.
 
 Routes through the **existing** scan path — `extractScanCode`
 (`src/lib/shared/qr/services/extract-scan-code.ts:16`), which is what
@@ -2400,7 +2601,260 @@ git commit -m "feat(share-intake): per-item classification with duplicate detect
 ```
 
 ---
-### Task 8: Generalize the inbox share view so it can actually send an image
+### Task 8: Give the card path a destination
+
+**Closes trace step 1.13 — the terminal state of trace 1.** Until this exists,
+trace 1 dead-ends: `routeIntake` returns `result.cards` and the runner reads
+only `unresolved` / `queued` / `problems`, discards `cards`, and deletes the
+record. For a `docBacked` card **nothing observable happens at all** — the user
+shares a photo of a card, the app opens, and the screen shows `/create`.
+
+The spec asks for View / Add to collection / Send (spec:295-297). Opening the
+sequence viewer overlay delivers all three: `SequenceViewerShell` already
+carries add-to-collection and send-to in its own chrome, so a bespoke
+three-button sheet would be a hand-rolled duplicate of a surface that exists
+(`.claude/rules/never-hand-roll.md`, `.claude/rules/sequence-viewer-shell.md`).
+
+**Reuse evidence.** Greps run before writing anything here:
+`openSequenceOverlay` (5 existing call sites, all taking an already-resolved
+`SequenceData`), `hydrateSequence`, `resolveShortCode`. The canonical
+resolve→hydrate→open pipeline is
+`SequenceViewerDrawerHost.svelte:68-103`'s `bootstrapFromUrl()`. This task
+reuses that pipeline verbatim, minus the `?v=` URL read — the router already
+holds the resolved `SequenceData` from `resolveForImport`, so re-resolving
+would be a second network read for data we have.
+
+The second half of this task adds the auth-nudge copy trace 3.12 needs. It is
+here rather than in Task 11 because it is a one-line domain addition with its
+own exhaustive `Record` and nothing else in Task 11 touches that file.
+
+**Files:**
+- Create: `src/lib/shared/share-intake/services/open-filed-card.ts`
+- Modify: `src/lib/shared/auth/domain/auth-nudge-trigger.ts`
+- Test: `tests/unit/share-intake/open-filed-card.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/unit/share-intake/open-filed-card.test.ts`:
+
+```ts
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const openSequenceOverlay = vi.fn();
+vi.mock(
+  "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte",
+  () => ({ openSequenceOverlay })
+);
+
+const hydrateSequence = vi.fn();
+vi.mock("$lib/shared/navigation/services/sequence-hydrator", () => ({
+  hydrateSequence: (...args: unknown[]) => hydrateSequence(...args),
+}));
+
+const loopDetector = { detect: vi.fn() };
+vi.mock("$lib/shared/create/get-loop-detector", () => ({
+  getLoopDetector: () => loopDetector,
+}));
+
+const toast = { info: vi.fn(), error: vi.fn() };
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({ toast }));
+
+import { openFiledCard } from "$lib/shared/share-intake/services/open-filed-card";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+
+function sequence(overrides: Partial<SequenceData> = {}): SequenceData {
+  return { id: "s1", name: "Practice", word: "ABAB" } as SequenceData;
+}
+
+describe("openFiledCard", () => {
+  beforeEach(() => {
+    openSequenceOverlay.mockReset();
+    hydrateSequence.mockReset();
+    hydrateSequence.mockImplementation(async (seq: SequenceData) => seq);
+    toast.info.mockReset();
+    toast.error.mockReset();
+  });
+
+  it("hydrates the resolved sequence before opening the viewer", async () => {
+    const seq = sequence();
+
+    await openFiledCard({ code: "AB12", sequence: seq, extraCards: 0 });
+
+    expect(hydrateSequence).toHaveBeenCalledWith(seq, {
+      loopDetector,
+    });
+    expect(openSequenceOverlay).toHaveBeenCalledWith(
+      seq,
+      expect.objectContaining({ shortCode: "AB12" })
+    );
+  });
+
+  it("does NOT skip the history push, so back closes the viewer", async () => {
+    // SequenceViewerDrawerHost passes skipHistoryPush because the ?v= URL is
+    // already the history entry. A shared card has no such entry: skipping the
+    // push would make Android back exit the app from the viewer.
+    await openFiledCard({ code: "AB12", sequence: sequence(), extraCards: 0 });
+
+    const options = openSequenceOverlay.mock.calls[0][1];
+    expect(options.skipHistoryPush).toBeUndefined();
+  });
+
+  it("mentions the other cards rather than silently opening only the first", async () => {
+    await openFiledCard({ code: "AB12", sequence: sequence(), extraCards: 2 });
+
+    expect(toast.info).toHaveBeenCalledWith(
+      "2 more cards were saved to your library."
+    );
+  });
+
+  it("says nothing extra when there is only one card", async () => {
+    await openFiledCard({ code: "AB12", sequence: sequence(), extraCards: 0 });
+    expect(toast.info).not.toHaveBeenCalled();
+  });
+
+  it("reports a hydration failure instead of leaving a dead screen", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    hydrateSequence.mockRejectedValue(new Error("deriver blew up"));
+
+    await expect(
+      openFiledCard({ code: "AB12", sequence: sequence(), extraCards: 0 })
+    ).rejects.toThrow("deriver blew up");
+
+    // The router records this as route-failed and the runner keeps the record.
+    expect(openSequenceOverlay).not.toHaveBeenCalled();
+  });
+
+  it("uses the simplified word in the toast copy", async () => {
+    await openFiledCard({
+      code: "AB12",
+      sequence: sequence(),
+      extraCards: 1,
+      // A LOOP word repeats by construction; the user never sees the expansion.
+      word: "ABABABAB",
+    });
+
+    expect(toast.info).toHaveBeenCalledWith(
+      '1 more card ("AB") was saved to your library.'
+    );
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/open-filed-card.test.ts`
+Expected: FAIL — `Failed to resolve import ".../open-filed-card"`.
+
+- [ ] **Step 3: Write the destination**
+
+Create `src/lib/shared/share-intake/services/open-filed-card.ts`:
+
+```ts
+import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
+import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+
+/**
+ * Trace 1's terminal state: the user looking at the sequence they shared.
+ *
+ * The pipeline is the one SequenceViewerDrawerHost.bootstrapFromUrl() already
+ * runs (resolve -> hydrate -> openSequenceOverlay), minus the resolve: the
+ * router hands us the SequenceData that resolveForImport already returned, so
+ * re-resolving would be a second network read for data we hold.
+ *
+ * hydrateSequence is NOT optional here. It is what fills in letter-per-step,
+ * start/end position, word, isCircular, loopType and gridMode. Skipping it
+ * opens a viewer with empty card footers and a null loop type - the exact
+ * regression that helper was written to end (sequence-hydrator.ts header).
+ *
+ * The overlay renders inside SequenceViewerDrawerHost, which MainApplication
+ * mounts at :708-710. That is why nothing in this pipeline may run before the
+ * app shell is up - see Task 12.
+ */
+export async function openFiledCard(input: {
+  code: string;
+  sequence: SequenceData;
+  /** How many further cards this share carried, already saved but not opened. */
+  extraCards: number;
+  /** Display word for the copy. Defaults to the sequence's own word. */
+  word?: string;
+}): Promise<void> {
+  const hydrated = await hydrateSequence(input.sequence, {
+    loopDetector: getLoopDetector(),
+  });
+
+  // No skipHistoryPush: unlike the ?v= bootstrap, a shared card has no history
+  // entry of its own, so the overlay needs to push one or Android's back
+  // button exits the app straight out of the viewer.
+  openSequenceOverlay(hydrated, {
+    shortCode: input.code,
+    returnLabel: "Shared card",
+  });
+
+  if (input.extraCards <= 0) return;
+
+  // Opening N viewers would have them fight each other, so the rest are filed
+  // and NAMED. Saying nothing is how the previous revision lost them.
+  const word = simplifyRepeatedWord(
+    input.word || hydrated.word || input.sequence.word || ""
+  );
+  toast.info(
+    input.extraCards === 1
+      ? `1 more card${word ? ` ("${word}")` : ""} was saved to your library.`
+      : `${input.extraCards} more cards were saved to your library.`
+  );
+}
+```
+
+- [ ] **Step 4: Add the sign-in copy trace 3.12 needs**
+
+In `src/lib/shared/auth/domain/auth-nudge-trigger.ts`, add the member to the
+union (after `"guest-first-save"`):
+
+```ts
+  | "guest-first-save"
+  | "share-image-signin";
+```
+
+and the matching entry to `AUTH_NUDGE_TEXTS` (the `Record` is exhaustive, so
+omitting it is a type error, which is the point):
+
+```ts
+  // Share intake, trace 3: the user shared an image while signed out.
+  // MessageImageSender.ts:31-33 rejects anonymous/guest uploads outright, so
+  // this is a hard requirement, not a nudge. Phrased as the ask rather than
+  // the refusal - the bytes are already safe in IndexedDB and the send resumes
+  // by itself once they are in.
+  "share-image-signin":
+    "Create a free account to send the image you shared. It's saved until you do.",
+```
+
+- [ ] **Step 5: Run it and watch it pass**
+
+Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/open-filed-card.test.ts`
+Expected: PASS, 6 tests.
+
+- [ ] **Step 6: Prove the nudge Record stayed exhaustive**
+
+Run: `npx svelte-check --tsconfig ./tsconfig.json --threshold error --output human 2>&1 | grep -iE "auth-nudge-trigger|AUTH_NUDGE_TEXTS" | head -10`
+Expected: no output.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git commit -m "feat(share-intake): open the viewer on a filed card, and the share sign-in copy" -- src/lib/shared/share-intake/services/open-filed-card.ts src/lib/shared/auth/domain/auth-nudge-trigger.ts tests/unit/share-intake/open-filed-card.test.ts
+```
+
+---
+
+### Task 9: Generalize the inbox share view so it can actually send an image
+
+**Closes trace steps 2.11, 2.13 and 2.14.** This is the picker the image lands
+in, the code that actually uploads it, and the completion hook that tells the
+runner the bytes are finally consumed.
 
 The first draft called this "genuinely small" and it was not. What it missed:
 
@@ -2504,6 +2958,25 @@ describe("inbox attachment share", () => {
 
     expect(inboxState.shareAttachment).toBeNull();
     expect(inboxState.shareAttachmentNote).toBeNull();
+  });
+
+  it("carries the intake receiptId so the send can resolve the record", () => {
+    // Trace 2.14. Without this the drawer has no way to know WHICH intake the
+    // bytes it just sent belonged to, and the record can only be deleted at
+    // picker-open time - which is exactly the data-loss bug this replaces.
+    inboxState.openAttachmentShare(imageAttachment(), { receiptId: "si_abc" });
+    expect(inboxState.shareAttachmentReceiptId).toBe("si_abc");
+  });
+
+  it("leaves the receiptId null for an ordinary in-app sequence share", () => {
+    inboxState.openSequenceShare(sequencePayload());
+    expect(inboxState.shareAttachmentReceiptId).toBeNull();
+  });
+
+  it("clears the receiptId on completion", () => {
+    inboxState.openAttachmentShare(imageAttachment(), { receiptId: "si_abc" });
+    inboxState.completeAttachmentShare("conversation-1");
+    expect(inboxState.shareAttachmentReceiptId).toBeNull();
   });
 });
 ```
@@ -2628,15 +3101,27 @@ Replace the `shareSequencePayload` declaration (line 63) with:
    */
   shareAttachment = $state<PendingMessageAttachment | null>(null);
 
-  /** Prefilled note — shared text that was not a TKA code (Task 9). */
+  /** Prefilled note — shared text that was not a TKA code (Task 10). */
   shareAttachmentNote = $state<string | null>(null);
+
+  /**
+   * The share-intake record these bytes came from, or null for an ordinary
+   * in-app share.
+   *
+   * Trace 2.14 needs it: the intake is resolved when the image is SENT, not
+   * when the picker opens. Held as a plain id rather than a callback so a
+   * reload cannot strand a closure - the id is re-derivable from the store,
+   * a closure is not.
+   */
+  shareAttachmentReceiptId = $state<string | null>(null);
 ```
 
-Replace every remaining `this.shareSequencePayload = null;` with **two** lines:
+Replace every remaining `this.shareSequencePayload = null;` with **three** lines:
 
 ```ts
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
 ```
 
 There are eleven such sites: lines 95 (`open`), 106 (`close`), 122 (`setTab`),
@@ -2650,13 +3135,14 @@ Replace `openSequenceShare` (lines 210-225) with the generalized trio:
   /** Open the picker for any attachment the domain models. */
   openAttachmentShare(
     attachment: PendingMessageAttachment,
-    options: { note?: string } = {}
+    options: { note?: string; receiptId?: string } = {}
   ) {
     this.isOpen = true;
     this.activeTab = "messages";
     this.currentView = "send-attachment";
     this.shareAttachment = attachment;
     this.shareAttachmentNote = options.note ?? null;
+    this.shareAttachmentReceiptId = options.receiptId ?? null;
     this.pendingConversationId = null;
     this.pendingNotificationId = null;
     this.selectedConversation = null;
@@ -2677,9 +3163,17 @@ Replace `openSequenceShare` (lines 210-225) with the generalized trio:
   completeAttachmentShare(conversationId: string) {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.openToConversationById(conversationId);
   }
 
+  /**
+   * Cancel is NOT a data-loss path any more. It clears the view; the intake
+   * record and its bytes stay in IndexedDB as `ready` until the TTL, so the
+   * share can be resumed. The previous revision deleted the record when the
+   * picker OPENED, which made cancel, reload, crash and the sign-in round trip
+   * all destroy the only copy.
+   */
   cancelAttachmentShare() {
     this.close();
   }
@@ -2707,12 +3201,18 @@ existing `openSendSequenceSheet` (line 23):
 import type { PendingMessageAttachment } from "../domain/pending-message-attachment";
 
 /**
- * The share-intake entry point. openSendSequenceSheet stays as the
- * sequence-shaped convenience its four call sites already use.
+ * The share-intake entry point, called by intake-router.ts (Task 10).
+ * openSendSequenceSheet stays as the sequence-shaped convenience its four
+ * existing call sites already use.
+ *
+ * The router goes through this function rather than poking `inboxState`
+ * directly so both share paths - in-app and share-sheet - enter the picker the
+ * same way. An earlier revision added this function and then never called it
+ * from anywhere, which is a dead export, not an entry point.
  */
 export function openSendAttachmentSheet(
   attachment: PendingMessageAttachment,
-  options: { note?: string } = {}
+  options: { note?: string; receiptId?: string } = {}
 ): void {
   inboxState.openAttachmentShare(attachment, options);
 }
@@ -2771,6 +3271,12 @@ Lines 600-604 — the render:
           />
         {/if}
 ```
+
+`handleSequenceSent` (line 245) is left alone in this task. Trace step 2.14 —
+resolving the intake record when the image is actually SENT — needs
+`completeShareIntake`, which lands in Task 11, so the drawer hook is wired
+there. Wiring it here would leave this task's `npm run check` red on a symbol
+that does not exist yet.
 
 - [ ] **Step 10: Rework the sheet's script**
 
@@ -3075,15 +3581,27 @@ can send an image at all:
 - [ ] **Step 13: Run both suites**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/inbox-attachment-share.test.ts`
-Expected: PASS, 5 tests.
+Expected: PASS, 8 tests.
 
 Run: `npx vitest run --config tests/config/vitest.components.config.ts src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte.test.ts`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 14: Prove no stale reference survived the rename**
 
-Run: `grep -rn "SendSequenceSheet\|shareSequencePayload\|\"send-sequence\"" src/ | wc -l`
+Run: `grep -rn "SendSequenceSheet\.svelte\|shareSequencePayload\|\"send-sequence\"" src/ | wc -l`
 Expected: `0`.
+
+The pattern is `SendSequenceSheet\.svelte`, not `SendSequenceSheet`. An earlier
+revision used the bare name and could never pass: `openSendSequenceSheet` — the
+identifier this task **deliberately keeps**, plus its four call sites — contains
+`SendSequenceSheet` as a substring, so "Expected: 0" contradicted the task's own
+design. Anchoring on `.svelte` matches the import and the file name and nothing
+else. Sanity-check the distinction:
+
+Run: `grep -rc "openSendSequenceSheet" src/ --include=*.svelte --include=*.ts | grep -v ":0" | wc -l`
+Expected: `5` — the definition plus the four call sites (`ChoreoCardTab.svelte`,
+`ChoreoCardThumbnail.svelte`, `SequenceViewerShell.svelte`,
+`SequenceViewerPage.svelte`). If this is `0`, the rename went too far.
 
 - [ ] **Step 15: Typecheck (capture once, grep many)**
 
@@ -3094,36 +3612,75 @@ Do **not** re-run `check` to re-filter (`.claude/rules/fast-iteration-loop.md`).
 - [ ] **Step 16: Commit**
 
 ```bash
-git commit -m "refactor(inbox): generalize the share sheet to send an image or a sequence" -- src/lib/shared/inbox/ tests/unit/share-intake/inbox-attachment-share.test.ts
+git commit -m "refactor(inbox): generalize the share sheet to send an image or a sequence" -- \
+  src/lib/shared/inbox/domain/pending-message-attachment.ts \
+  src/lib/shared/inbox/state/inbox-state.svelte.ts \
+  src/lib/shared/inbox/state/send-sequence-state.svelte.ts \
+  src/lib/shared/inbox/components/InboxDrawer.svelte \
+  src/lib/shared/inbox/components/messages/MessageComposer.svelte \
+  src/lib/shared/inbox/components/messages/MessageAttachmentPicker.svelte \
+  src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte \
+  src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte.test.ts \
+  tests/unit/share-intake/inbox-attachment-share.test.ts
 ```
+
+Explicit paths, not `-- src/lib/shared/inbox/`. A directory pathspec is a sweep:
+the index is shared with other agent sessions, so any file another session has
+touched anywhere under `inbox/` would be swept into this commit
+(`.claude/rules/commit-only-your-own-changes.md`). The two `git mv`'d paths are
+covered because git records the rename from the new path.
 
 ---
 
-### Task 9: Route a classified intake to its destination
+### Task 10: Route a classified intake to its destination
 
-Six defects in the first draft:
+**Closes trace steps 1.12, 1.13's hand-off, and 2.11.** This is where a
+classification becomes something the user can see: a card opens the viewer, an
+image opens the picker.
 
+Seven defects earlier revisions shipped:
+
+- **The card path had no destination at all.** `routeIntake` returned
+  `result.cards` and nothing consumed it — the runner read `unresolved`,
+  `queued` and `problems`, discarded `cards`, and deleted the record. For a
+  `docBacked` card the entire feature was a no-op. It now calls
+  `openFiledCard` (Task 8).
 - **The comment promised a queue and the code took `images[0]`**, discarding the
-  rest with no trace. Batch send is out of scope per the spec, so the truncation
-  is now **surfaced** — the extras come back as `queued` with a `send-dropped`
-  problem each, and the runner (Task 10) holds the record open instead of
-  deleting it.
+  rest with no trace. The extras now come back as `queued` with a
+  `send-dropped` problem each, and the runner holds the record open.
 - **`resolveForImport` is a network read that can reject**, and one rejection
   killed routing for every other item. Each await is wrapped.
-- **Nothing was actually filed.** `ScanCardSheet.svelte:172-200` shows that a
-  card with `docBacked: false` (a printed deck card) has no referenceable doc
-  and must be saved to My Library first. `ResolvedCard.sequence` was typed
-  `unknown`, discarding the very type needed to do it.
+- **`ResolvedCard.sequence` was typed `unknown`**, discarding the very type
+  needed to file a printed (non-`docBacked`) card the way
+  `ScanCardSheet.svelte:172-200` does.
 - **`residualText` was documented as prefilled message text and never read.**
 - **Codes were not deduped across the image/text merge** — the same card
   photographed *and* linked resolved twice.
 - **`.filter()` does not narrow a union**, so the draft cast with
   `as { code: string }`. Type predicates instead.
 
+Two things this revision fixes that unit review could not see:
+
+- **A code that failed to resolve was reported twice.** The router pushed a
+  `resolve-failed` problem AND left the code in `unresolved`; the runner then
+  mapped every `unresolved` entry to a second `resolve-failed`. The router is
+  now the single author of those problems — it pushes one for every unresolved
+  code including the "resolved to null" case — and the runner synthesizes none.
+- **The router poked `inboxState` directly**, bypassing
+  `openSendAttachmentSheet`, which is why that function ended up a dead export.
+  It goes through the entry point like every other caller.
+
+**Design decision — cards win a mixed share.** If a share carries both a
+resolvable card and loose images, the viewer opens for the card and the images
+come back as `queued` + `send-dropped`. Opening the viewer overlay and the inbox
+picker simultaneously would put two overlays on screen fighting for the same
+back gesture. A card-plus-unrelated-photos share is rare; a card share that
+silently opens a conversation picker instead is confusing every time.
+
 `getShortCodeManager()` **throws** unless `configureShortCodeManager()` has run
-(`get-short-code-manager.ts:20-22`). The runner is invoked from the native
-initializer, which runs after DI; the throw is caught and recorded rather than
-assumed away, and there is a test for it.
+(`get-short-code-manager.ts:20-22`). The runner is invoked from
+`ShareIntakeHost` inside the app shell, which is after DI; the throw is caught
+and recorded rather than assumed away, and there is a test for it.
 
 **Files:**
 - Create: `src/lib/shared/share-intake/services/intake-router.ts`
@@ -3136,9 +3693,15 @@ Create `tests/unit/share-intake/intake-router.test.ts`:
 ```ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const openAttachmentShare = vi.fn();
-vi.mock("$lib/shared/inbox/state/inbox-state.svelte", () => ({
-  inboxState: { openAttachmentShare },
+const openSendAttachmentSheet = vi.fn();
+vi.mock("$lib/shared/inbox/state/send-sequence-state.svelte", () => ({
+  openSendAttachmentSheet: (...args: unknown[]) =>
+    openSendAttachmentSheet(...args),
+}));
+
+const openFiledCard = vi.fn();
+vi.mock("$lib/shared/share-intake/services/open-filed-card", () => ({
+  openFiledCard: (...args: unknown[]) => openFiledCard(...args),
 }));
 
 const resolveForImport = vi.fn();
@@ -3171,9 +3734,13 @@ function classification(
   };
 }
 
+const CONTEXT = { receiptId: "si_1" };
+
 describe("routeIntake", () => {
   beforeEach(() => {
-    openAttachmentShare.mockReset();
+    openSendAttachmentSheet.mockReset();
+    openFiledCard.mockReset();
+    openFiledCard.mockResolvedValue(undefined);
     resolveForImport.mockReset();
     saveSequence.mockReset();
     getShortCodeManager.mockReset();
@@ -3183,12 +3750,39 @@ describe("routeIntake", () => {
   it("opens the conversation picker for a plain image", async () => {
     const result = await routeIntake(
       classification({ items: [{ kind: "image", file: png("a.png") }] }),
-      null
+      null,
+      CONTEXT
     );
 
-    expect(openAttachmentShare).toHaveBeenCalledTimes(1);
-    expect(openAttachmentShare.mock.calls[0][0].type).toBe("image");
+    expect(openSendAttachmentSheet).toHaveBeenCalledTimes(1);
+    expect(openSendAttachmentSheet.mock.calls[0][0].type).toBe("image");
     expect(result.cards).toHaveLength(0);
+    expect(result.opened).toBe("picker");
+  });
+
+  it("hands the picker the intake receiptId so the send can resolve it", async () => {
+    // Trace 2.14. Without this the drawer cannot tell WHICH record the bytes
+    // it just sent belonged to.
+    await routeIntake(
+      classification({ items: [{ kind: "image", file: png("a.png") }] }),
+      null,
+      CONTEXT
+    );
+
+    expect(openSendAttachmentSheet.mock.calls[0][1]).toMatchObject({
+      receiptId: "si_1",
+    });
+  });
+
+  it("goes through openSendAttachmentSheet, not inboxState directly", async () => {
+    // Named as its own test because an earlier revision poked inboxState and
+    // left openSendAttachmentSheet a dead export.
+    await routeIntake(
+      classification({ items: [{ kind: "image", file: png("a.png") }] }),
+      null,
+      CONTEXT
+    );
+    expect(openSendAttachmentSheet).toHaveBeenCalled();
   });
 
   it("passes residual text through as the prefilled note", async () => {
@@ -3197,10 +3791,13 @@ describe("routeIntake", () => {
         items: [{ kind: "image", file: png("a.png") }],
         residualText: "look at this",
       }),
-      null
+      null,
+      CONTEXT
     );
 
-    expect(openAttachmentShare.mock.calls[0][1]).toEqual({ note: "look at this" });
+    expect(openSendAttachmentSheet.mock.calls[0][1]).toMatchObject({
+      note: "look at this",
+    });
   });
 
   it("resolves a doc-backed card without touching the library", async () => {
@@ -3211,13 +3808,57 @@ describe("routeIntake", () => {
 
     const result = await routeIntake(
       classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
-      "user-1"
+      "user-1",
+      CONTEXT
     );
 
     expect(resolveForImport).toHaveBeenCalledWith("AB12", "user-1");
     expect(result.cards[0]).toMatchObject({ code: "AB12", docBacked: true, targetId: "s1" });
     expect(saveSequence).not.toHaveBeenCalled();
-    expect(openAttachmentShare).not.toHaveBeenCalled();
+    expect(openSendAttachmentSheet).not.toHaveBeenCalled();
+  });
+
+  it("OPENS THE VIEWER on the filed card - trace 1.13", async () => {
+    // The headline gap in every previous revision: cards were computed and
+    // then thrown away, so a shared card produced nothing on screen.
+    resolveForImport.mockResolvedValue({
+      sequence: { id: "s1", word: "ABC" },
+      docBacked: true,
+    });
+
+    const result = await routeIntake(
+      classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
+      "user-1",
+      CONTEXT
+    );
+
+    expect(openFiledCard).toHaveBeenCalledWith({
+      code: "AB12",
+      sequence: { id: "s1", word: "ABC" },
+      extraCards: 0,
+      word: "ABC",
+    });
+    expect(result.opened).toBe("card");
+  });
+
+  it("opens one viewer and reports the rest when a share carries several cards", async () => {
+    resolveForImport
+      .mockResolvedValueOnce({ sequence: { id: "s1", word: "A" }, docBacked: true })
+      .mockResolvedValueOnce({ sequence: { id: "s2", word: "B" }, docBacked: true });
+
+    await routeIntake(
+      classification({
+        items: [
+          { kind: "card", code: "AA11", file: png("a.png") },
+          { kind: "card", code: "BB22", file: png("b.png") },
+        ],
+      }),
+      null,
+      CONTEXT
+    );
+
+    expect(openFiledCard).toHaveBeenCalledTimes(1);
+    expect(openFiledCard.mock.calls[0][0].extraCards).toBe(1);
   });
 
   it("saves a printed (non-doc-backed) card to the library before filing it", async () => {
@@ -3231,7 +3872,8 @@ describe("routeIntake", () => {
 
     const result = await routeIntake(
       classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
-      "user-1"
+      "user-1",
+      CONTEXT
     );
 
     expect(saveSequence).toHaveBeenCalledWith(
@@ -3241,16 +3883,51 @@ describe("routeIntake", () => {
     expect(result.cards[0].targetId).toBe("lib-9");
   });
 
-  it("reports an unresolvable code as retryable instead of throwing", async () => {
+  it("queues the images and does not open the picker when a card also resolved", async () => {
+    // Design decision: two overlays fighting for the back gesture is worse
+    // than one reported deferral.
+    resolveForImport.mockResolvedValue({
+      sequence: { id: "s1", word: "A" },
+      docBacked: true,
+    });
+
+    const result = await routeIntake(
+      classification({
+        items: [
+          { kind: "card", code: "AB12", file: png("c.png") },
+          { kind: "image", file: png("photo.png") },
+        ],
+      }),
+      null,
+      CONTEXT
+    );
+
+    expect(openFiledCard).toHaveBeenCalledTimes(1);
+    expect(openSendAttachmentSheet).not.toHaveBeenCalled();
+    expect(result.queued.map((f) => f.name)).toEqual(["photo.png"]);
+    expect(result.problems).toContainEqual(
+      expect.objectContaining({ name: "photo.png", reason: "send-dropped" })
+    );
+  });
+
+  it("reports an unresolvable code ONCE, as both unresolved and one problem", async () => {
+    // The router is the single author of resolve-failed problems. An earlier
+    // revision pushed one here AND let the runner synthesize a second from
+    // `unresolved`, so one bad code produced two identical entries.
     resolveForImport.mockResolvedValue(null);
 
     const result = await routeIntake(
       classification({ items: [{ kind: "card", code: "BAD1", file: png("c.png") }] }),
-      null
+      null,
+      CONTEXT
     );
 
     expect(result.cards).toHaveLength(0);
     expect(result.unresolved).toEqual(["BAD1"]);
+    expect(
+      result.problems.filter((p) => p.reason === "resolve-failed")
+    ).toHaveLength(1);
+    expect(result.opened).toBeNull();
   });
 
   it("keeps routing the other codes when one resolve rejects", async () => {
@@ -3266,7 +3943,8 @@ describe("routeIntake", () => {
           { kind: "card", code: "BB22", file: png("b.png") },
         ],
       }),
-      null
+      null,
+      CONTEXT
     );
 
     expect(result.unresolved).toEqual(["AA11"]);
@@ -3284,7 +3962,8 @@ describe("routeIntake", () => {
 
     const result = await routeIntake(
       classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
-      null
+      null,
+      CONTEXT
     );
 
     expect(result.unresolved).toEqual(["AB12"]);
@@ -3294,7 +3973,11 @@ describe("routeIntake", () => {
   it("resolves a code found in shared text", async () => {
     resolveForImport.mockResolvedValue({ sequence: { id: "s2", word: "B" }, docBacked: true });
 
-    const result = await routeIntake(classification({ textCode: "XY99" }), null);
+    const result = await routeIntake(
+      classification({ textCode: "XY99" }),
+      null,
+      CONTEXT
+    );
 
     expect(result.cards).toHaveLength(1);
     expect(result.cards[0].code).toBe("XY99");
@@ -3308,7 +3991,8 @@ describe("routeIntake", () => {
         items: [{ kind: "card", code: "AB12", file: png("c.png") }],
         textCode: "AB12",
       }),
-      null
+      null,
+      CONTEXT
     );
 
     expect(resolveForImport).toHaveBeenCalledTimes(1);
@@ -3320,10 +4004,12 @@ describe("routeIntake", () => {
       classification({
         items: [{ kind: "duplicate", code: "AB12", file: png("b.png") }],
       }),
-      null
+      null,
+      CONTEXT
     );
 
-    expect(openAttachmentShare).not.toHaveBeenCalled();
+    expect(openSendAttachmentSheet).not.toHaveBeenCalled();
+    expect(openFiledCard).not.toHaveBeenCalled();
     expect(result.cards).toHaveLength(0);
     expect(result.queued).toHaveLength(0);
   });
@@ -3337,15 +4023,21 @@ describe("routeIntake", () => {
           { kind: "image", file: png("c.png") },
         ],
       }),
-      null
+      null,
+      CONTEXT
     );
 
-    expect(openAttachmentShare).toHaveBeenCalledTimes(1);
+    expect(openSendAttachmentSheet).toHaveBeenCalledTimes(1);
     expect(result.queued.map((f) => f.name)).toEqual(["b.png", "c.png"]);
     expect(result.problems.map((p) => p.reason)).toEqual([
       "send-dropped",
       "send-dropped",
     ]);
+  });
+
+  it("reports nothing opened for an empty classification", async () => {
+    const result = await routeIntake(classification(), null, CONTEXT);
+    expect(result.opened).toBeNull();
   });
 });
 ```
@@ -3361,7 +4053,7 @@ Create `src/lib/shared/share-intake/services/intake-router.ts`:
 
 ```ts
 import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
-import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
+import { openSendAttachmentSheet } from "$lib/shared/inbox/state/send-sequence-state.svelte";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
@@ -3369,6 +4061,7 @@ import type {
   IntakeItem,
   IntakeProblem,
 } from "../domain/share-intake-models";
+import { openFiledCard } from "./open-filed-card";
 
 type CardItem = Extract<IntakeItem, { kind: "card" }>;
 type ImageItem = Extract<IntakeItem, { kind: "image" }>;
@@ -3392,30 +4085,40 @@ export interface FiledCard {
 
 export interface RouteResult {
   cards: FiledCard[];
-  /** Codes that did not resolve. Retryable read failures, not errors. */
+  /**
+   * Codes that did not resolve. Every entry here ALSO has exactly one
+   * `resolve-failed` problem in `problems` - this array is the retry list, the
+   * problem is the user-facing record. The runner must not synthesize a second
+   * problem from this array.
+   */
   unresolved: string[];
   /**
-   * Images the picker could not take in this pass. The picker sends one at a
-   * time and sequential batch orchestration is out of scope (see the spec), so
-   * these are REPORTED rather than discarded, and their intake stays in the
-   * store as partially-sent.
+   * Files that did not reach a destination in this pass: images past the
+   * first, and every image in a share where a card won. Sequential batch send
+   * with per-item progress and partial-success retry is a cut WE made to keep
+   * this plan shippable - see Known accepted limitations. They are REPORTED
+   * rather than discarded, and their intake stays as partially-sent.
    */
   queued: File[];
   problems: IntakeProblem[];
+  /** What the user is now looking at. Null means nothing reached a screen. */
+  opened: "card" | "picker" | null;
 }
 
 /**
- * Send a classified intake to its destination.
+ * Send a classified intake to its destination - the hop that makes a share
+ * visible.
  *
- * Cards resolve through the existing import path and are filed the same way
- * ScanCardSheet files them. Images open the inbox conversation picker.
- * `duplicate` items are ignored entirely - they are second photos of a card
- * already handled, and sending one as an image would put a picture of a card
- * into a conversation.
+ * Cards resolve through the existing import path, are filed the same way
+ * ScanCardSheet files them, and the first one OPENS THE VIEWER. Images open
+ * the inbox conversation picker. `duplicate` items are ignored entirely: they
+ * are second photos of a card already handled, and sending one as an image
+ * would put a picture of a card into a conversation.
  */
 export async function routeIntake(
   classification: IntakeClassification,
-  userId: string | null
+  userId: string | null,
+  context: { receiptId: string }
 ): Promise<RouteResult> {
   const cards: FiledCard[] = [];
   const unresolved: string[] = [];
@@ -3441,6 +4144,12 @@ export async function routeIntake(
       const resolution = await getShortCodeManager().resolveForImport(code, userId);
       if (!resolution) {
         unresolved.push(code);
+        // ONE problem per unresolved code, authored here. The runner adds none.
+        problems.push({
+          name: code,
+          reason: "resolve-failed",
+          detail: "no sequence behind this code",
+        });
         continue;
       }
       cards.push(await fileCard(code, resolution));
@@ -3454,17 +4163,54 @@ export async function routeIntake(
 
   const images = classification.items.filter(isImage);
   const queued: File[] = [];
+  let opened: "card" | "picker" | null = null;
+
+  if (cards.length > 0) {
+    // Trace 1.13. Throws on a hydration failure; the runner catches it and
+    // keeps the record, which is why this is awaited rather than fired off.
+    const first = cards[0];
+    opened = "card";
+    await openFiledCard({
+      code: first.code,
+      sequence: first.sequence,
+      extraCards: cards.length - 1,
+      word: first.sequence.word || first.sequence.name || "",
+    });
+
+    // Cards win a mixed share: the viewer overlay and the inbox picker would
+    // otherwise both be on screen fighting for the same back gesture.
+    for (const item of images) {
+      queued.push(item.file);
+      problems.push({
+        name: item.file.name,
+        reason: "send-dropped",
+        detail: "a card in the same share opened the viewer",
+      });
+    }
+
+    return { cards, unresolved, queued, problems, opened };
+  }
 
   if (images.length > 0) {
     const [first, ...rest] = images;
-    inboxState.openAttachmentShare(
+    opened = "picker";
+    openSendAttachmentSheet(
       {
         type: "image",
         file: first.file,
+        // Same id shape MessageComposer.selectImage uses, and the same shape
+        // the Storage staging path in MessageImageSender.ts:37-39 expects.
         messageId: crypto.randomUUID(),
         attachmentId: crypto.randomUUID(),
       },
-      classification.residualText ? { note: classification.residualText } : {}
+      {
+        // The picker carries the intake id so the SEND - not the open - is
+        // what resolves the record (trace 2.14).
+        receiptId: context.receiptId,
+        ...(classification.residualText
+          ? { note: classification.residualText }
+          : {}),
+      }
     );
 
     for (const item of rest) {
@@ -3473,7 +4219,7 @@ export async function routeIntake(
     }
   }
 
-  return { cards, unresolved, queued, problems };
+  return { cards, unresolved, queued, problems, opened };
 }
 
 async function fileCard(
@@ -3512,39 +4258,80 @@ async function fileCard(
 - [ ] **Step 4: Run it and watch it pass**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/intake-router.test.ts`
-Expected: PASS, 11 tests.
+Expected: PASS, 17 tests.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Prove no destination was left dangling**
+
+Run: `grep -c "openFiledCard" src/lib/shared/share-intake/services/intake-router.ts && grep -c "openSendAttachmentSheet" src/lib/shared/share-intake/services/intake-router.ts`
+Expected: `2` and `2` (import + call site for each). A `1` means one of the two
+destinations is imported and never invoked — the exact shape of the bug this
+task exists to fix.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git commit -m "feat(share-intake): route classified intakes, filing printed cards to the library" -- src/lib/shared/share-intake/services/intake-router.ts tests/unit/share-intake/intake-router.test.ts
+git commit -m "feat(share-intake): route classified intakes to a viewer or a conversation picker" -- src/lib/shared/share-intake/services/intake-router.ts tests/unit/share-intake/intake-router.test.ts
 ```
 
 ---
 
-### Task 10: The consumer — `share-intake-runner`
+### Task 11: The consumer — `share-intake-runner`
 
-**Everything built so far is unreachable.** `classifyIntake` and `routeIntake`
-are called by nothing but their own tests; a persisted intake would sit in
-IndexedDB forever. This task is the missing half of the feature.
+**Closes trace steps 1.10, 1.14, 2.10, 2.12, 2.14 and 3.10–3.12.** This is the
+lifecycle: what gets classified, what has to wait for a sign-in, when a record
+is kept, and — critically — when it is finally deleted.
 
-The runner is also where `hasPendingShare` belongs, because the runner is what
-defines "unconsumed": `received` and `needs-auth`. A `failed` or `expired`
-record must NOT hold the boot barrier open.
+**Everything built so far is unreachable without it.** `classifyIntake` and
+`routeIntake` are called by nothing but their own tests; a persisted intake
+would sit in IndexedDB forever.
+
+Four things this revision changes, all of them whole-picture defects rather
+than unit defects:
+
+- **`hasPendingShare` is deleted, not rewritten.** It existed for one caller:
+  a boot barrier in `native-initializer.ts` that suppressed `bootIntoApp()`
+  when a share was pending. That barrier is gone (Task 13) because suppressing
+  `bootIntoApp()` stranded the user on the marketing landing, where nothing
+  that renders a share exists. With the barrier gone, `hasPendingShare` has no
+  caller and no trace step, so it does not belong in this plan.
+- **The signed-out lifecycle now exists.** No production path ever wrote
+  `status: "needs-auth"`, which made `NEEDS_AUTH_TTL_MS`, the store's TTL
+  exemption, its eviction refusal, and the `needs-auth` arm of `UNCONSUMED`
+  reachable only from their own tests — four pieces of machinery guarding a
+  state nothing could enter. The gate below is what enters it, and Task 12's
+  auth `$effect` is what leaves it.
+- **The record is no longer deleted when the picker OPENS.** It advances to
+  `ready` and is deleted by `completeShareIntake` when the image is actually
+  SENT. Previously the bytes lived only in an in-memory `File` on `inboxState`
+  from picker-open onward, so cancel, reload, crash, or the magic-link round
+  trip destroyed the only copy.
+- **`unresolved` no longer produces a second problem.** Task 10's router is the
+  single author of `resolve-failed`; this runner appends none.
 
 Lifecycle, explicitly:
 
 | Outcome | Status | Record |
 |---|---|---|
-| Everything routed | — | deleted |
-| A code did not resolve, or images were queued | `partially-sent` | kept, problems appended |
-| Routing threw | `failed` | kept until the TTL reaps it, problems appended, not retried |
+| Card opened the viewer, nothing left over | — | deleted |
+| Picker opened for an image | `ready` | **kept** until `completeShareIntake` |
+| Image share, no full account | `needs-auth` | kept, TTL-exempt, user prompted |
+| A code did not resolve, or files were queued with nothing on screen | `partially-sent` | kept, problems appended |
+| Routing threw | `failed` | kept until the TTL reaps it, not retried |
 
-Reads never delete, so a crash between classify and route leaves the bytes
-recoverable — deletion happens only after every item reached a destination.
+**The auth gate is whole-intake, and that is a decision.** It fires when the
+classification contains at least one `image` item, because
+`MessageImageSender.ts:31-33` throws `"Sign in with an account to send images."`
+for `!user || user.isAnonymous`. A mixed card+image share therefore waits for
+sign-in even though the card alone would not need it. The alternative — route
+the cards now, hold the images — means the next run after sign-in must know
+which cards it already filed, which is per-item progress state on the record.
+Gating whole-intake has no double-file failure mode. A **cards-only** share is
+never gated: `resolveForImport` takes `userId: string | null`, and
+`ScanCardSheet` files printed cards for guests today.
 
 **Files:**
 - Create: `src/lib/shared/share-intake/services/share-intake-runner.ts`
+- Modify: `src/lib/shared/inbox/components/InboxDrawer.svelte:245` (`handleSequenceSent`)
 - Test: `tests/unit/share-intake/share-intake-runner.test.ts`
 
 - [ ] **Step 1: Write the failing test**
@@ -3557,9 +4344,31 @@ import "fake-indexeddb/auto";
 
 vi.mock("$app/environment", () => ({ browser: true }));
 
+const auth = { effectiveUserId: "user-1", isFullAccount: true, loading: false };
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-  authState: { effectiveUserId: "user-1" },
+  authState: {
+    get effectiveUserId() {
+      return auth.effectiveUserId;
+    },
+    get isFullAccount() {
+      return auth.isFullAccount;
+    },
+    get loading() {
+      return auth.loading;
+    },
+  },
 }));
+
+const showAuthDrawer = vi.fn();
+vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
+  authDrawerState: { show: showAuthDrawer },
+}));
+
+const toast = { info: vi.fn(), error: vi.fn() };
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({ toast }));
+
+const inboxState = { shareAttachmentReceiptId: null as string | null };
+vi.mock("$lib/shared/inbox/state/inbox-state.svelte", () => ({ inboxState }));
 
 const classifyIntake = vi.fn();
 vi.mock("$lib/shared/share-intake/services/intake-classifier", () => ({
@@ -3572,9 +4381,9 @@ vi.mock("$lib/shared/share-intake/services/intake-router", () => ({
 }));
 
 import {
-  hasPendingShare,
   runPendingIntakes,
   scheduleIntakeRun,
+  completeShareIntake,
 } from "$lib/shared/share-intake/services/share-intake-runner";
 import {
   putIntake,
@@ -3603,11 +4412,36 @@ const emptyClassification = {
   problems: [],
 };
 
-const cleanRoute = { cards: [], unresolved: [], queued: [], problems: [] };
+function imageClassification() {
+  return {
+    ...emptyClassification,
+    items: [
+      {
+        kind: "image" as const,
+        file: new File([new Uint8Array([1])], "a.png", { type: "image/png" }),
+      },
+    ],
+  };
+}
+
+const cleanRoute = {
+  cards: [],
+  unresolved: [],
+  queued: [],
+  problems: [],
+  opened: null,
+};
 
 describe("share-intake-runner", () => {
   beforeEach(async () => {
     for (const record of await listIntakes()) await deleteIntake(record.receiptId);
+    auth.effectiveUserId = "user-1";
+    auth.isFullAccount = true;
+    auth.loading = false;
+    inboxState.shareAttachmentReceiptId = null;
+    showAuthDrawer.mockReset();
+    toast.info.mockReset();
+    toast.error.mockReset();
     classifyIntake.mockReset();
     classifyIntake.mockResolvedValue(emptyClassification);
     routeIntake.mockReset();
@@ -3616,57 +4450,139 @@ describe("share-intake-runner", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("reports no pending share on a clean store", async () => {
-    expect(await hasPendingShare()).toBe(false);
-  });
-
-  it("reports a pending share for received and for needs-auth", async () => {
-    await putIntake(intake({ receiptId: "si_a", status: "received" }));
-    expect(await hasPendingShare()).toBe(true);
-
-    await deleteIntake("si_a");
-    await putIntake(intake({ receiptId: "si_b", status: "needs-auth" }));
-    expect(await hasPendingShare()).toBe(true);
-  });
-
-  it("does not hold the boot barrier open for a failed record", async () => {
-    await putIntake(intake({ receiptId: "si_dead", status: "failed" }));
-    expect(await hasPendingShare()).toBe(false);
-  });
-
-  it("routes a pending intake and deletes it on completion", async () => {
+  it("routes a pending intake and deletes it once nothing is left over", async () => {
     await putIntake(intake());
 
     await runPendingIntakes();
 
     expect(classifyIntake).toHaveBeenCalledTimes(1);
-    expect(routeIntake).toHaveBeenCalledWith(emptyClassification, "user-1");
+    expect(routeIntake).toHaveBeenCalledWith(emptyClassification, "user-1", {
+      receiptId: "si_1",
+    });
     expect(await getIntake("si_1")).toBeNull();
   });
 
+  it("KEEPS the record as ready when the picker opened - trace 2.12", async () => {
+    // The data-loss fix. The bytes must outlive picker-open: cancel, reload,
+    // crash and the sign-in round trip all happen after this point.
+    routeIntake.mockResolvedValue({ ...cleanRoute, opened: "picker" });
+    await putIntake(intake());
+
+    await runPendingIntakes();
+
+    const record = await getIntake("si_1");
+    expect(record?.status).toBe("ready");
+    expect(record?.files[0].size).toBe(1);
+  });
+
+  it("does not re-open the picker for the record it is already open on", async () => {
+    routeIntake.mockResolvedValue({ ...cleanRoute, opened: "picker" });
+    await putIntake(intake());
+    await runPendingIntakes();
+
+    inboxState.shareAttachmentReceiptId = "si_1";
+    routeIntake.mockClear();
+    await runPendingIntakes();
+
+    expect(routeIntake).not.toHaveBeenCalled();
+  });
+
+  it("re-opens the picker for a ready record after a reload", async () => {
+    // Same record, but nothing is on screen any more (fresh boot). This is the
+    // recovery path that makes cancel/reload survivable rather than terminal.
+    routeIntake.mockResolvedValue({ ...cleanRoute, opened: "picker" });
+    await putIntake(intake({ status: "ready" }));
+
+    await runPendingIntakes();
+
+    expect(routeIntake).toHaveBeenCalledTimes(1);
+  });
+
+  it("parks an image share as needs-auth and PROMPTS when there is no full account", async () => {
+    auth.isFullAccount = false;
+    auth.effectiveUserId = null;
+    classifyIntake.mockResolvedValue(imageClassification());
+    await putIntake(intake());
+
+    await runPendingIntakes();
+
+    expect(routeIntake).not.toHaveBeenCalled();
+    expect((await getIntake("si_1"))?.status).toBe("needs-auth");
+    expect(showAuthDrawer).toHaveBeenCalledWith("signin", "share-image-signin");
+    expect(toast.info).toHaveBeenCalled();
+  });
+
+  it("prompts once per record, not once per run", async () => {
+    auth.isFullAccount = false;
+    classifyIntake.mockResolvedValue(imageClassification());
+    await putIntake(intake());
+
+    await runPendingIntakes();
+    await runPendingIntakes();
+
+    expect(showAuthDrawer).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT gate a cards-only share behind sign-in", async () => {
+    // resolveForImport takes `userId: string | null` and ScanCardSheet files
+    // printed cards for guests today. Gating this would be a regression.
+    auth.isFullAccount = false;
+    auth.effectiveUserId = null;
+    classifyIntake.mockResolvedValue({
+      ...emptyClassification,
+      items: [
+        {
+          kind: "card" as const,
+          code: "AB12",
+          file: new File([new Uint8Array([1])], "c.png", { type: "image/png" }),
+        },
+      ],
+    });
+    await putIntake(intake());
+
+    await runPendingIntakes();
+
+    expect(routeIntake).toHaveBeenCalledWith(expect.anything(), null, {
+      receiptId: "si_1",
+    });
+    expect(showAuthDrawer).not.toHaveBeenCalled();
+  });
+
+  it("resumes a needs-auth record once the account is full - trace 3.16", async () => {
+    auth.isFullAccount = false;
+    classifyIntake.mockResolvedValue(imageClassification());
+    await putIntake(intake());
+    await runPendingIntakes();
+    expect((await getIntake("si_1"))?.status).toBe("needs-auth");
+
+    auth.isFullAccount = true;
+    auth.effectiveUserId = "user-1";
+    routeIntake.mockResolvedValue({ ...cleanRoute, opened: "picker" });
+    await runPendingIntakes();
+
+    expect(routeIntake).toHaveBeenCalledTimes(1);
+    expect((await getIntake("si_1"))?.status).toBe("ready");
+    // The bytes crossed the whole round trip.
+    expect((await getIntake("si_1"))?.files[0].size).toBe(1);
+  });
+
   it("keeps a record as partially-sent when a code did not resolve", async () => {
-    routeIntake.mockResolvedValue({ ...cleanRoute, unresolved: ["AB12"] });
+    routeIntake.mockResolvedValue({
+      ...cleanRoute,
+      unresolved: ["AB12"],
+      problems: [{ name: "AB12", reason: "resolve-failed" as const }],
+    });
     await putIntake(intake());
 
     await runPendingIntakes();
 
     const record = await getIntake("si_1");
     expect(record?.status).toBe("partially-sent");
-    expect(record?.problems).toContainEqual(
-      expect.objectContaining({ name: "AB12", reason: "resolve-failed" })
-    );
-  });
-
-  it("keeps a record when images were queued", async () => {
-    routeIntake.mockResolvedValue({
-      ...cleanRoute,
-      queued: [new File([new Uint8Array([1])], "b.png", { type: "image/png" })],
-    });
-    await putIntake(intake());
-
-    await runPendingIntakes();
-
-    expect((await getIntake("si_1"))?.status).toBe("partially-sent");
+    // Exactly ONE resolve-failed. An earlier revision had the router push one
+    // and the runner synthesize a second from the same `unresolved` entry.
+    expect(
+      record?.problems.filter((p) => p.reason === "resolve-failed")
+    ).toHaveLength(1);
   });
 
   it("marks a record failed when routing throws, and does not retry it", async () => {
@@ -3689,9 +4605,41 @@ describe("share-intake-runner", () => {
 
     await Promise.all([scheduleIntakeRun(), scheduleIntakeRun(), scheduleIntakeRun()]);
 
-    // Three callers, one record, one classify. The boot barrier and a warm
-    // delivery both call this and must not race over the same rows.
+    // Three callers, one record, one classify. The host's mount effect, its
+    // signal effect and its auth effect can all fire in the same flush.
     expect(classifyIntake).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("completeShareIntake", () => {
+  beforeEach(async () => {
+    for (const record of await listIntakes()) await deleteIntake(record.receiptId);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  it("deletes the record once the image has actually been sent", async () => {
+    await putIntake(intake({ status: "ready" }));
+
+    await completeShareIntake("si_1");
+
+    expect(await getIntake("si_1")).toBeNull();
+  });
+
+  it("holds the record as partially-sent when files were queued behind it", async () => {
+    await putIntake(
+      intake({
+        status: "ready",
+        problems: [{ name: "b.png", reason: "send-dropped" }],
+      })
+    );
+
+    await completeShareIntake("si_1");
+
+    expect((await getIntake("si_1"))?.status).toBe("partially-sent");
+  });
+
+  it("is a no-op for a record that is already gone", async () => {
+    await expect(completeShareIntake("si_missing")).resolves.toBeUndefined();
   });
 });
 ```
@@ -3706,8 +4654,12 @@ Expected: FAIL — `Failed to resolve import ".../share-intake-runner"`.
 Create `src/lib/shared/share-intake/services/share-intake-runner.ts`:
 
 ```ts
+import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type {
+  IntakeClassification,
   IntakeProblem,
   ShareIntakeStatus,
 } from "../domain/share-intake-models";
@@ -3715,6 +4667,7 @@ import { classifyIntake } from "./intake-classifier";
 import { routeIntake } from "./intake-router";
 import {
   deleteIntake,
+  getIntake,
   listIntakes,
   reapExpired,
   updateStatus,
@@ -3723,26 +4676,41 @@ import {
 /**
  * The consumer. Without this the whole pipeline is write-only: intakes land in
  * IndexedDB and nothing ever reads them back out.
+ *
+ * It is called from exactly one place - ShareIntakeHost.svelte (Task 12) -
+ * because routing needs the app shell mounted. Everything it can open (the
+ * inbox picker, the sequence viewer overlay) renders inside MainApplication;
+ * calling this from the native initializer, as an earlier revision did,
+ * routes into a page that does not exist yet.
  */
 
 /**
- * A record in one of these states still has somewhere to go. `failed` and
- * `expired` deliberately do NOT count - a failed record must not hold the boot
- * barrier open forever; the TTL reaps it.
+ * A record in one of these states still has somewhere to go.
+ *
+ * `ready` is in the set deliberately: it means "picker open, bytes staged, not
+ * sent yet". On a fresh boot nothing is on screen, so a `ready` record has to
+ * re-open its picker or the share is silently stranded. Within a session the
+ * in-picker guard below stops it re-opening on top of itself.
+ *
+ * `failed` and `expired` are NOT in the set: a failed record must not be
+ * retried in a loop. The TTL reaps it.
  */
-const UNCONSUMED: readonly ShareIntakeStatus[] = ["received", "needs-auth"];
+const UNCONSUMED: readonly ShareIntakeStatus[] = ["received", "needs-auth", "ready"];
 
-export async function hasPendingShare(): Promise<boolean> {
-  return (await listIntakes()).some((record) => UNCONSUMED.includes(record.status));
-}
+/**
+ * Records this session has already prompted for. Without it, every host effect
+ * that fires while the user is signed out re-opens the auth drawer on top of
+ * whatever they were doing.
+ */
+const prompted = new Set<string>();
 
 let running: Promise<void> | null = null;
 let rerunRequested = false;
 
 /**
- * Coalesced entry point. Both the boot barrier and a warm-launch delivery call
- * this; the guard means a share arriving mid-run gets one extra pass instead of
- * a second concurrent run over the same rows.
+ * Coalesced entry point. The host's mount, signal and auth effects can all
+ * fire in one flush; the guard means an intake arriving mid-run gets one extra
+ * pass instead of a second concurrent run over the same rows.
  */
 export function scheduleIntakeRun(): Promise<void> {
   if (running) {
@@ -3764,6 +4732,15 @@ export function scheduleIntakeRun(): Promise<void> {
   return running;
 }
 
+/**
+ * An image cannot be sent without a full account: MessageImageSender.ts:31-33
+ * throws for `!user || user.isAnonymous`. Cards can - resolveForImport takes
+ * `userId: string | null` and ScanCardSheet files printed cards for guests.
+ */
+function requiresFullAccount(classification: IntakeClassification): boolean {
+  return classification.items.some((item) => item.kind === "image");
+}
+
 export async function runPendingIntakes(): Promise<void> {
   await reapExpired();
 
@@ -3772,28 +4749,55 @@ export async function runPendingIntakes(): Promise<void> {
     .sort((a, b) => a.receivedAt - b.receivedAt);
 
   for (const record of pending) {
+    // The picker is open on this very record right now. Routing it again would
+    // replace the user's in-progress selection with a fresh sheet.
+    if (
+      record.status === "ready" &&
+      inboxState.shareAttachmentReceiptId === record.receiptId
+    ) {
+      continue;
+    }
+
     try {
       const classification = await classifyIntake({
         files: record.files,
         text: record.text,
       });
+
+      // Trace 3.10. Park BEFORE routing, not after: the store is the only copy
+      // of the bytes and needs-auth is the one status exempt from the TTL and
+      // from quota eviction.
+      if (requiresFullAccount(classification) && !authState.isFullAccount) {
+        await updateStatus(record.receiptId, "needs-auth", classification.problems);
+        promptForSignIn(record.receiptId);
+        continue;
+      }
+
       const result = await routeIntake(
         classification,
-        authState.effectiveUserId ?? null
+        authState.effectiveUserId ?? null,
+        { receiptId: record.receiptId }
       );
 
+      // The router authors every resolve-failed itself; synthesizing more from
+      // `result.unresolved` here produced one duplicate per bad code.
       const problems: IntakeProblem[] = [
         ...classification.problems,
         ...result.problems,
-        ...result.unresolved.map((code) => ({
-          name: code,
-          reason: "resolve-failed" as const,
-        })),
       ];
 
+      if (result.opened === "picker") {
+        // Trace 2.12. The bytes are staged in a picker the user has not
+        // submitted. completeShareIntake (below), called from the drawer's
+        // onSent, is what finally consumes them.
+        await updateStatus(record.receiptId, "ready", problems);
+        continue;
+      }
+
       if (result.unresolved.length > 0 || result.queued.length > 0) {
-        // Something this share carried has not reached a destination. Keeping
-        // the record is the point: the bytes are still there to retry with.
+        // Something this share carried never reached a destination and nothing
+        // is on screen to finish it. Keeping the record is the point: the
+        // bytes are still there to retry with.
         await updateStatus(record.receiptId, "partially-sent", problems);
         console.warn(
           `[ShareIntake] ${record.receiptId} kept: ${result.unresolved.length} unresolved, ${result.queued.length} queued`
@@ -3811,68 +4815,484 @@ export async function runPendingIntakes(): Promise<void> {
     } catch (caught) {
       const detail = caught instanceof Error ? caught.message : String(caught);
       console.error(`[ShareIntake] Routing ${record.receiptId} failed:`, detail);
-      // "failed" leaves the state UNCONSUMED set, so this is not retried in a
-      // loop. It stays visible until the TTL reaps it.
+      // "failed" leaves the UNCONSUMED set, so this is not retried in a loop.
+      // It stays visible until the TTL reaps it.
       await updateStatus(record.receiptId, "failed", [
         { name: "", reason: "route-failed", detail },
       ]);
     }
   }
 }
+
+/** Trace 3.12: a VISIBLE prompt, once per record per session. */
+function promptForSignIn(receiptId: string): void {
+  if (prompted.has(receiptId)) return;
+  prompted.add(receiptId);
+
+  authDrawerState.show("signin", "share-image-signin");
+  toast.info("Sign in to send the image you shared — it's saved until you do.");
+}
+
+/**
+ * Trace 2.14. Called by InboxDrawer when the image has actually been SENT,
+ * which is the only moment the bytes are genuinely consumed.
+ *
+ * A record carrying send-dropped problems still has files the user has not
+ * dealt with, so it is held as partially-sent rather than deleted.
+ */
+export async function completeShareIntake(receiptId: string): Promise<void> {
+  const record = await getIntake(receiptId);
+  if (!record) return;
+
+  const leftovers = record.problems.some(
+    (problem) => problem.reason === "send-dropped"
+  );
+
+  if (leftovers) {
+    await updateStatus(receiptId, "partially-sent");
+    console.warn(
+      `[ShareIntake] ${receiptId} sent one file; ${record.files.length - 1} still queued`
+    );
+    return;
+  }
+
+  await deleteIntake(receiptId);
+}
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [ ] **Step 4: Wire the send completion — trace step 2.14**
+
+In `src/lib/shared/inbox/components/InboxDrawer.svelte`, replace
+`handleSequenceSent` (line 245):
+
+```ts
+  async function handleSequenceSent(conversationId: string) {
+    // Read the id BEFORE completing — completeAttachmentShare clears it.
+    const receiptId = inboxState.shareAttachmentReceiptId;
+    inboxState.completeAttachmentShare(conversationId);
+
+    // Null for an ordinary in-app share; there is no intake record behind it.
+    if (!receiptId) return;
+    const { completeShareIntake } = await import(
+      "$lib/shared/share-intake/services/share-intake-runner"
+    );
+    await completeShareIntake(receiptId);
+  }
+```
+
+The dynamic import is deliberate. `InboxDrawer` is loaded on every app boot
+(`MainApplication.svelte:623-625`); a static import would pull the share-intake
+pipeline, the classifier and the IndexedDB store into that chunk for every user
+who never shares anything into the app.
+
+- [ ] **Step 5: Run it and watch it pass**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/share-intake-runner.test.ts`
-Expected: PASS, 8 tests.
+Expected: PASS, 14 tests (11 `share-intake-runner` + 3 `completeShareIntake`).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Prove the dead barrier function did not come back**
+
+Run: `grep -rn "hasPendingShare" src/ | wc -l`
+Expected: `0`. It existed only to serve a boot barrier that Task 13 deletes; a
+hit here means the barrier came back with it.
+
+- [ ] **Step 7: Prove the runner has exactly one entry point later**
+
+Run: `grep -rln "scheduleIntakeRun" src/ | sort`
+Expected, after Task 12 and Task 13 land, exactly two files: the runner itself
+and `ShareIntakeHost.svelte`. At this point in the plan the only hit is the
+runner. Record the output; Task 14 re-checks it.
+
+- [ ] **Step 8: Commit**
 
 ```bash
-git commit -m "feat(share-intake): consume persisted intakes and advance their lifecycle" -- src/lib/shared/share-intake/services/share-intake-runner.ts tests/unit/share-intake/share-intake-runner.test.ts
+git commit -m "feat(share-intake): consume intakes, gate on auth, keep bytes until the send lands" -- src/lib/shared/share-intake/services/share-intake-runner.ts src/lib/shared/inbox/components/InboxDrawer.svelte tests/unit/share-intake/share-intake-runner.test.ts
 ```
 
 ---
 
-### Task 11: Native adapter, dedup, and the boot barrier
+### Task 12: Mount the runner inside the app shell
 
-Two races, one task.
+**Closes trace steps 1.7, 1.9, 2.8 and 3.15 — the wiring whose absence is the
+reason this plan failed review three times.**
 
-**Race 1 — the cold-launch double fire.** `BridgeActivity.java:51` calls
-`onNewIntent(getIntent())` right after `load()` and the plugin handles the
-intent in both, so a cold-launch share arrives twice, milliseconds apart. The
-first draft deduped by reading IndexedDB for the derived `receiptId` — an
-`await` — so both deliveries passed the check before either wrote. Worse, the
-plugin's `SharedFile` is `{ uri, name, mimeType }` with **no size** (verified in
-`node_modules/@capgo/capacitor-share-target/dist/esm/definitions.d.ts`), so the
-key degraded to name + mimeType and two different screenshots named
-`Screenshot_20260728.png` collided — the second silently swallowed.
+Everything up to here is reachable only if something calls
+`scheduleIntakeRun()`, and that something has to be inside the app shell. The
+previous revision called it from `native-initializer.ts` and suppressed
+`bootIntoApp()`, which put the app on `src/routes/+page.svelte` — `HomeHero` +
+`LaunchpadGrid`, the marketing landing. `InboxDrawer` mounts at
+`MainApplication.svelte:623-625` and `SequenceViewerDrawerHost` at `:708-710`,
+both under the app shell only. Opening the picker from the landing set state
+that nothing rendered.
 
-The fix is two keys from the same function:
+This task inverts it. A component mounted as a sibling of those two drawers is
+the only caller of the runner. It cannot possibly run before they exist, so
+"the drawer is mounted before the picker opens" stops being a timing race and
+becomes a structural fact. It also supplies trace 3's resume point: `authState`
+has **no callback subscription API** — it is a plain object of getters over a
+`$state` rune (`auth-state.svelte.ts:1014-1043`), so the only way to observe a
+sign-in is a `$effect` in a component.
 
-- **In-flight key**, derived synchronously from the raw descriptors and held in
-  a module-level `Set`. Nothing awaits between deriving it and adding it, so the
-  second delivery cannot slip past.
-- **Durable `receiptId`**, derived *after* bridging from descriptors that now
-  carry the real `blob.size`. Same `deriveReceiptId` as committed in Task 2,
-  called with a populated `size`.
+**Files:**
+- Create: `src/lib/shared/share-intake/state/share-intake-signal.svelte.ts`
+- Create: `src/lib/shared/share-intake/components/ShareIntakeHost.svelte`
+- Modify: `src/lib/shared/application/components/MainApplication.svelte:622-625`
+- Test: `tests/unit/share-intake/share-intake-host-contract.test.ts`
+- Test: `src/lib/shared/share-intake/components/ShareIntakeHost.svelte.test.ts`
 
-**Race 2 — the initial route.** `native-initializer.ts:70` runs `bootIntoApp()`
-→ `goto("/create")` when there is no launch URL, and an `ACTION_SEND` has none.
-The first draft's barrier could not work: `ensureShareTargetRegistered()`
-resolved as soon as `addListener` resolved, but the retained event arrives
-asynchronously *after* that and the handler was fire-and-forget — so
-`hasPendingShare()` read an empty store and `bootIntoApp()` navigated away
-anyway. Registration now resolves on **first-event-handled OR a short grace**,
-whichever comes first.
+- [ ] **Step 1: Write the failing contract test**
+
+This is a static contract test in the shape of
+`tests/unit/sequence-viewer-shell-contract.test.ts` — it reads source text and
+asserts the wiring, so the invariant cannot rot silently between sessions.
+
+Create `tests/unit/share-intake/share-intake-host-contract.test.ts`:
+
+```ts
+import { describe, it, expect } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+
+const read = (path: string) => readFileSync(path, "utf8");
+
+/** Every source file, with forward slashes on every platform. */
+function sourceFiles(): string[] {
+  return readdirSync("src", { recursive: true, encoding: "utf8" })
+    .map((entry) => `src/${entry.split("\\").join("/")}`)
+    .filter((path) => path.endsWith(".ts") || path.endsWith(".svelte"));
+}
+
+const MAIN_APPLICATION =
+  "src/lib/shared/application/components/MainApplication.svelte";
+const HOST = "src/lib/shared/share-intake/components/ShareIntakeHost.svelte";
+
+describe("share-intake host contract", () => {
+  it("MainApplication mounts the host", () => {
+    expect(read(MAIN_APPLICATION)).toContain(
+      "share-intake/components/ShareIntakeHost.svelte"
+    );
+  });
+
+  it("the host is mounted beside the inbox drawer, not above the auth gate", () => {
+    const source = read(MAIN_APPLICATION);
+    const drawer = source.indexOf("inbox/components/InboxDrawer.svelte");
+    const host = source.indexOf("share-intake/components/ShareIntakeHost.svelte");
+    const viewer = source.indexOf(
+      "sequence-viewer/components/SequenceViewerDrawerHost.svelte"
+    );
+    expect(drawer).toBeGreaterThan(-1);
+    expect(viewer).toBeGreaterThan(-1);
+    // Same block as the drawer it depends on. If the host drifts above the
+    // auth gate it can run before InboxDrawer exists, which is the exact
+    // failure this whole task exists to make impossible.
+    expect(host).toBeGreaterThan(drawer);
+    expect(host).toBeLessThan(viewer);
+  });
+
+  it("the runner has exactly one caller in the app", () => {
+    // The single-entry-point invariant. Two callers means someone re-added a
+    // route trigger outside the component tree, which is how the share ended
+    // up opening a picker on the marketing landing.
+    const callers = sourceFiles()
+      .filter((file) => !file.endsWith("share-intake-runner.ts"))
+      .filter((file) => read(file).includes("scheduleIntakeRun"));
+    expect(callers).toEqual([HOST]);
+  });
+
+  it("the host watches the auth state so trace 3 can resume", () => {
+    const source = read(HOST);
+    expect(source).toContain("authState.isFullAccount");
+    expect(source).toContain("scheduleIntakeRun");
+  });
+
+  it("the native initializer never routes a share itself", () => {
+    const source = read("src/lib/shared/platform/services/native-initializer.ts");
+    expect(source).not.toContain("scheduleIntakeRun");
+    expect(source).not.toContain("hasPendingShare");
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/share-intake-host-contract.test.ts`
+Expected: FAIL — `MainApplication mounts the host` fails first.
+
+- [ ] **Step 3: Write the signal**
+
+The adapter runs outside the component tree and must not import the runner —
+that is what let an earlier revision route from the native initializer. It bumps
+a counter instead; the host owns the reaction.
+
+Create `src/lib/shared/share-intake/state/share-intake-signal.svelte.ts`:
+
+```ts
+/**
+ * A share arrived. That is the whole message.
+ *
+ * The native adapter cannot call the runner directly: routing opens the inbox
+ * picker and the sequence viewer overlay, both of which live inside
+ * MainApplication, and the adapter runs during native boot when that tree may
+ * not exist. So the adapter bumps this counter and ShareIntakeHost - a
+ * component, mounted beside those drawers - reacts.
+ *
+ * A counter rather than a boolean: two shares in a row must produce two
+ * reactions, and a boolean that is already true produces none.
+ */
+let _tick = $state(0);
+
+export const shareIntakeSignal = {
+  get tick(): number {
+    return _tick;
+  },
+};
+
+export function bumpIntakeSignal(): void {
+  _tick += 1;
+}
+```
+
+- [ ] **Step 4: Write the host**
+
+Create `src/lib/shared/share-intake/components/ShareIntakeHost.svelte`:
+
+```svelte
+<script lang="ts">
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { scheduleIntakeRun } from "../services/share-intake-runner";
+  import { shareIntakeSignal } from "../state/share-intake-signal.svelte";
+
+  /**
+   * The only caller of the share-intake runner.
+   *
+   * Renders nothing. It exists to be a COMPONENT, because two things this
+   * feature needs are only available inside the component tree:
+   *
+   * 1. A guarantee that the app shell is mounted. This sits beside InboxDrawer
+   *    and SequenceViewerDrawerHost in MainApplication, so by the time this
+   *    effect runs both of the surfaces routing can open already exist. The
+   *    previous revision ran the runner from native-initializer.ts, where
+   *    neither did.
+   * 2. Reactivity over authState. It is a plain object of getters over a
+   *    $state rune (auth-state.svelte.ts:1014-1043) with no subscribe() and no
+   *    event emitter, so a $effect is the only way to notice a sign-in - which
+   *    is trace 3's resume point.
+   *
+   * scheduleIntakeRun() coalesces, so the three reasons this effect re-runs
+   * (mount, a new share, a sign-in) collapse into one pass over the store.
+   */
+  $effect(() => {
+    // Tracked reads. Each one is a reason to (re)run.
+    const tick = shareIntakeSignal.tick;
+    const fullAccount = authState.isFullAccount;
+    const loading = authState.loading;
+    void tick;
+    void fullAccount;
+
+    // Routing asks authState whether an image share may proceed. Running
+    // before Firebase has reported in would park a signed-in user's share as
+    // needs-auth and prompt them to sign in twice.
+    if (loading) return;
+
+    void scheduleIntakeRun();
+  });
+</script>
+```
+
+- [ ] **Step 5: Mount it in the app shell**
+
+In `src/lib/shared/application/components/MainApplication.svelte`, immediately
+after the inbox drawer block (currently lines 622-625), add:
+
+```svelte
+    <!-- Share intake (Android share sheet). Mounted HERE, beside the drawers
+         it routes into, so a share can never open a picker before the picker
+         exists. This is the only caller of the share-intake runner. -->
+    {#await import("../../share-intake/components/ShareIntakeHost.svelte") then mod}
+      <mod.default />
+    {/await}
+```
+
+- [ ] **Step 6: Write the component test**
+
+One component test, and only one. It locks the behaviour whose absence was
+blocking defect B3 — the sign-in resume — which is exactly the "test-on-fix"
+case `.claude/rules/component-test-discipline.md` blesses. It does not widen
+the browser-test surface beyond that.
+
+Create `src/lib/shared/share-intake/components/ShareIntakeHost.svelte.test.ts`:
+
+```ts
+import { render } from "vitest-browser-svelte";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  scheduleIntakeRun: vi.fn(),
+  auth: { isFullAccount: false, loading: true },
+}));
+
+vi.mock("$lib/shared/share-intake/services/share-intake-runner", () => ({
+  scheduleIntakeRun: mocks.scheduleIntakeRun,
+}));
+
+vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
+  authState: {
+    get isFullAccount() {
+      return mocks.auth.isFullAccount;
+    },
+    get loading() {
+      return mocks.auth.loading;
+    },
+  },
+}));
+
+import ShareIntakeHost from "./ShareIntakeHost.svelte";
+import { bumpIntakeSignal } from "../state/share-intake-signal.svelte";
+
+describe("ShareIntakeHost", () => {
+  beforeEach(() => {
+    mocks.scheduleIntakeRun.mockReset();
+    mocks.scheduleIntakeRun.mockResolvedValue(undefined);
+    mocks.auth.isFullAccount = false;
+    mocks.auth.loading = true;
+  });
+
+  it("waits for auth to settle before running", async () => {
+    render(ShareIntakeHost);
+
+    // loading = true. Running now would park a signed-in user's image share as
+    // needs-auth and prompt them for a sign-in they already have.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(mocks.scheduleIntakeRun).not.toHaveBeenCalled();
+  });
+
+  it("runs again when a share arrives while the app is open", async () => {
+    mocks.auth.loading = false;
+    render(ShareIntakeHost);
+
+    await vi.waitFor(() => {
+      expect(mocks.scheduleIntakeRun).toHaveBeenCalledTimes(1);
+    });
+
+    bumpIntakeSignal();
+
+    await vi.waitFor(() => {
+      expect(mocks.scheduleIntakeRun).toHaveBeenCalledTimes(2);
+    });
+  });
+});
+```
+
+- [ ] **Step 7: Run both suites**
+
+Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/share-intake-host-contract.test.ts`
+Expected: PASS, 5 tests.
+
+Run: `npx vitest run --config tests/config/vitest.components.config.ts src/lib/shared/share-intake/components/ShareIntakeHost.svelte.test.ts`
+Expected: PASS, 2 tests.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git commit -m "feat(share-intake): run intakes from inside the app shell, and resume after sign-in" -- src/lib/shared/share-intake/state/share-intake-signal.svelte.ts src/lib/shared/share-intake/components/ShareIntakeHost.svelte src/lib/shared/share-intake/components/ShareIntakeHost.svelte.test.ts src/lib/shared/application/components/MainApplication.svelte tests/unit/share-intake/share-intake-host-contract.test.ts
+```
+
+---
+
+### Task 13: Native adapter, and always boot into the app shell
+
+**Closes trace steps 1.1–1.8 and 2.1–2.7 — the arrival half of every trace.**
+After this task all three traces are walkable end to end.
+
+Three problems, one task.
+
+**Problem 1 — the cold-launch double fire.** `CapacitorShareTargetPlugin.java`
+handles the intent in `load()` (line 29) *and* in `handleOnNewIntent` (line 35),
+and Capacitor's `BridgeActivity` calls `onNewIntent(getIntent())` right after
+`load()`. Both calls hit `notifyListeners("shareReceived", shareData, true)`
+(line 89) with `retainUntilConsumed = true`, so a cold-launch share is retained
+twice and replayed back to back the moment JS registers. An earlier revision
+deduped by reading IndexedDB for the derived `receiptId` — an `await` — so both
+deliveries passed the check before either wrote.
+
+**Problem 2 — the false rationale, and the real one.** The committed
+`derive-receipt-id.ts` comment says the uri is excluded because "the plugin can
+write the same share to a different cache path on the second delivery."
+**That is not true.** `copyFileToCache` (Java line 170) writes to
+`new File(cacheDir, fileName)` — a deterministic path with no uniquifier — so
+the second delivery replays the *same* uri, and a second share of a
+same-named file simply overwrites the first. The correct reasons to keep the
+uri out of the durable id are that `getFileData` falls back to
+`uri.toString()` when the copy fails (Java line 114), which is a `content://`
+uri that genuinely does vary between deliveries, and that a `data:` uri would
+make the id enormous. That comment is corrected in this task.
+
+Separately, `SharedFile` is `{ uri, name, mimeType }` with **no size** (verified
+in `node_modules/@capgo/capacitor-share-target/dist/esm/definitions.d.ts`), so a
+descriptor-only key degrades to name + mimeType and two different screenshots
+Android named identically collide — the second silently swallowed.
+
+The fix is two keys from two functions:
+
+- **In-flight key** (`deriveDeliveryKey`), derived synchronously from the raw
+  descriptors **including the uri**, held in a module-level `Set`. Nothing
+  awaits between deriving it and adding it, so the twin cannot slip past. Adding
+  the uri also separates the `content://`-fallback case above, which a
+  name+mime key merges.
+- **Durable `receiptId`** (`deriveReceiptId`, committed in Task 2), derived
+  *after* bridging from descriptors that now carry the real `blob.size`.
+
+**Problem 3 — the boot barrier, deleted.** The previous revision made
+`ensureShareTargetRegistered()` resolve on "first event handled OR a 300 ms
+grace", then suppressed `bootIntoApp()` when `hasPendingShare()` was true. Two
+things were wrong with that:
+
+- Suppressing `bootIntoApp()` leaves the native shell on `/`, which is
+  `src/routes/+page.svelte` — the marketing landing. `routeIntake` never
+  navigates; its only UI action opens a picker that renders inside
+  `MainApplication`, which the landing does not mount. The share opened as
+  state nothing displayed.
+- Every share-**less** cold boot paid the full 300 ms, because with no share the
+  delivery arm of the race never settles and only the timer can.
+
+Both go away together. `bootIntoApp()` now runs unconditionally, exactly as it
+did before this feature existed, and the share routes itself **inside** the
+shell via `ShareIntakeHost` (Task 12). Registration still happens first — the
+retained event needs a listener to be replayed to — but nothing awaits a grace
+period, so a share-less boot costs one `addListener` round trip and nothing
+else.
 
 **Files:**
 - Create: `src/lib/shared/share-intake/services/native-share-adapter.ts`
 - Create: `src/lib/shared/share-intake/get-share-intake.ts`
-- Modify: `src/lib/shared/platform/services/native-initializer.ts:57-75`
+- Modify: `src/lib/shared/share-intake/domain/derive-receipt-id.ts` (the false comment)
+- Modify: `src/lib/shared/platform/services/native-initializer.ts:58-64`
 - Test: `tests/unit/share-intake/native-share-adapter.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Correct the false comment on the committed receipt id**
+
+In `src/lib/shared/share-intake/domain/derive-receipt-id.ts`, replace the
+sentence beginning "The uri is deliberately EXCLUDED":
+
+```ts
+ * Files are sorted so two deliveries that enumerate in a different order still
+ * collapse to one id. The uri is deliberately EXCLUDED - but NOT because the
+ * plugin writes a different cache path each time. It does not:
+ * copyFileToCache writes to new File(cacheDir, fileName), a deterministic
+ * path (CapacitorShareTargetPlugin.java:170). The real reasons are that
+ * getFileData falls back to uri.toString() when that copy fails (Java line
+ * 114), which yields a content:// uri that genuinely does vary between
+ * deliveries, and that a data: uri would drag the whole payload into the id.
+```
+
+Nothing else in that file changes, and `deriveReceiptId`'s behaviour and
+signature are unchanged — the committed test suite must still pass untouched.
+
+- [ ] **Step 2: Re-run the committed Task 2 suite to prove the comment edit changed nothing**
+
+Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/derive-receipt-id.test.ts`
+Expected: PASS, 10 tests.
+
+- [ ] **Step 3: Write the failing adapter test**
 
 Create `tests/unit/share-intake/native-share-adapter.test.ts`:
 
@@ -3900,12 +5320,15 @@ vi.mock("@capacitor/core", () => ({
   },
 }));
 
-const scheduleIntakeRun = vi.fn(() => Promise.resolve());
-vi.mock("$lib/shared/share-intake/services/share-intake-runner", () => ({
-  scheduleIntakeRun: () => scheduleIntakeRun(),
+const bumpIntakeSignal = vi.fn();
+vi.mock("$lib/shared/share-intake/state/share-intake-signal.svelte", () => ({
+  bumpIntakeSignal: () => bumpIntakeSignal(),
 }));
 
-import { registerNativeShareTarget } from "$lib/shared/share-intake/services/native-share-adapter";
+import {
+  registerNativeShareTarget,
+  whenIdle,
+} from "$lib/shared/share-intake/services/native-share-adapter";
 import {
   listIntakes,
   deleteIntake,
@@ -3926,38 +5349,63 @@ function bodyOf(bytes: number) {
   };
 }
 
+/**
+ * Deliver an event and wait for it to be FULLY handled.
+ *
+ * `await listeners.shareReceived(EVENT)` is not that: the listener is
+ * fire-and-forget (`void handleShareReceived(...)`), so awaiting it yields one
+ * microtask while the real work spans a fetch chain plus fake-indexeddb
+ * macrotask round trips. Every assertion after it raced. whenIdle() awaits the
+ * handler's own promise.
+ */
+async function deliver(event: unknown): Promise<void> {
+  listeners.shareReceived(event);
+  await whenIdle();
+}
+
 describe("native share adapter", () => {
   beforeEach(async () => {
     for (const record of await listIntakes()) await deleteIntake(record.receiptId);
-    scheduleIntakeRun.mockClear();
+    bumpIntakeSignal.mockClear();
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal("fetch", vi.fn(async () => bodyOf(3)));
+    await registerNativeShareTarget();
   });
 
-  it("persists a received share and kicks the runner", async () => {
-    await registerNativeShareTarget({ graceMs: 5 });
-    await listeners.shareReceived(EVENT);
+  it("persists a received share and signals the host", async () => {
+    await deliver(EVENT);
 
     const all = await listIntakes();
     expect(all).toHaveLength(1);
     expect(all[0].files[0].name).toBe("a.png");
     expect(all[0].status).toBe("received");
-    expect(scheduleIntakeRun).toHaveBeenCalled();
+    // The adapter signals; it never routes. Routing needs the app shell.
+    expect(bumpIntakeSignal).toHaveBeenCalledTimes(1);
+  });
+
+  it("never imports the runner", async () => {
+    // Structural, not behavioural: importing the runner here is what let an
+    // earlier revision route a share from the native boot path.
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync(
+      "src/lib/shared/share-intake/services/native-share-adapter.ts",
+      "utf8"
+    );
+    expect(source).not.toContain("share-intake-runner");
   });
 
   it("collapses the cold-launch double delivery into one record", async () => {
-    await registerNativeShareTarget({ graceMs: 5 });
-    await listeners.shareReceived(EVENT);
-    await listeners.shareReceived({ ...EVENT });
+    await deliver(EVENT);
+    await deliver({ ...EVENT });
 
     expect(await listIntakes()).toHaveLength(1);
   });
 
   it("collapses it even when both deliveries land before the first bridge resolves", async () => {
-    // This is the real cold-launch shape: onNewIntent(getIntent()) fires
-    // milliseconds after load(), long before any fetch settles. An
-    // await-then-check dedup lets BOTH through.
+    // The real cold-launch shape: Capacitor replays both retained events back
+    // to back, long before any fetch settles. An await-then-check dedup lets
+    // BOTH through.
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -3967,41 +5415,63 @@ describe("native share adapter", () => {
       return bodyOf(3);
     }));
 
-    await registerNativeShareTarget({ graceMs: 5 });
     listeners.shareReceived(EVENT);
     listeners.shareReceived({ ...EVENT });
     release();
-    await vi.waitFor(async () => {
-      expect(await listIntakes()).toHaveLength(1);
-    });
+    await whenIdle();
 
     expect(await listIntakes()).toHaveLength(1);
   });
 
   it("keeps two same-named screenshots apart via the bridged byte size", async () => {
     // The plugin's SharedFile has no size field, so a descriptor-only key makes
-    // these two identical and silently swallows the second.
+    // these two identical and silently swallows the second. They also share a
+    // cache path, because copyFileToCache overwrites - which is why the SIZE,
+    // not the uri, is what separates them.
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(bodyOf(11))
       .mockResolvedValueOnce(bodyOf(22));
     vi.stubGlobal("fetch", fetchMock);
 
-    await registerNativeShareTarget({ graceMs: 5 });
     const shot = {
       title: "",
       texts: [],
       files: [
-        { uri: "/cache/1/Screenshot.png", name: "Screenshot.png", mimeType: "image/png" },
+        { uri: "/cache/shared_files/Screenshot.png", name: "Screenshot.png", mimeType: "image/png" },
       ],
     };
-    await listeners.shareReceived(shot);
-    await listeners.shareReceived({
-      ...shot,
-      files: [{ ...shot.files[0], uri: "/cache/2/Screenshot.png" }],
-    });
+    await deliver(shot);
+    await deliver({ ...shot });
 
     expect(await listIntakes()).toHaveLength(2);
+  });
+
+  it("keeps two simultaneous content:// deliveries apart via the in-flight uri", async () => {
+    // getFileData falls back to uri.toString() when copyFileToCache returns
+    // null (CapacitorShareTargetPlugin.java:114). Those content:// uris DO
+    // differ per share. Two arriving at once with the same display name would
+    // produce the SAME name+mime key, so a uri-less in-flight key drops the
+    // second at the door - before the bridge can discover their sizes differ.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(bodyOf(11)).mockResolvedValueOnce(bodyOf(22))
+    );
+
+    listeners.shareReceived({
+      title: "",
+      texts: [],
+      files: [{ uri: "content://media/1", name: "IMG.png", mimeType: "image/png" }],
+    });
+    listeners.shareReceived({
+      title: "",
+      texts: [],
+      files: [{ uri: "content://media/2", name: "IMG.png", mimeType: "image/png" }],
+    });
+    await whenIdle();
+
+    expect(await listIntakes()).toHaveLength(2);
+    expect(bumpIntakeSignal).toHaveBeenCalledTimes(2);
   });
 
   it("records a bridge failure on the intake instead of dropping the file", async () => {
@@ -4012,8 +5482,7 @@ describe("native share adapter", () => {
       arrayBuffer: async () => new ArrayBuffer(0),
     })));
 
-    await registerNativeShareTarget({ graceMs: 5 });
-    await listeners.shareReceived(EVENT);
+    await deliver(EVENT);
 
     const [record] = await listIntakes();
     expect(record.problems).toContainEqual(
@@ -4022,58 +5491,31 @@ describe("native share adapter", () => {
   });
 
   it("records a ClipData-style empty share as failed rather than returning silently", async () => {
-    await registerNativeShareTarget({ graceMs: 5 });
-    await listeners.shareReceived({ title: "Share", texts: [], files: [] });
+    await deliver({ title: "Share", texts: [], files: [] });
 
     const [record] = await listIntakes();
     // "TKA opens but receives nothing" is the exact symptom the device matrix
     // is hunting. A bare return makes it invisible.
     expect(record.status).toBe("failed");
-    expect(scheduleIntakeRun).not.toHaveBeenCalled();
+    expect(bumpIntakeSignal).not.toHaveBeenCalled();
   });
 
-  it("does not resolve registration before the first delivery is handled", async () => {
-    let release: () => void = () => {};
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      await gate;
-      return bodyOf(3);
-    }));
-
-    let resolved = false;
-    // A long grace: the ONLY thing that can settle this is the delivery.
-    const registration = registerNativeShareTarget({ graceMs: 60_000 }).then(() => {
-      resolved = true;
-    });
-
-    await Promise.resolve();
-    listeners.shareReceived(EVENT);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(resolved).toBe(false);
-
-    release();
-    await registration;
-    expect(resolved).toBe(true);
-    expect(await listIntakes()).toHaveLength(1);
-  });
-
-  it("resolves after the grace period when no share arrives", async () => {
+  it("registration does not wait on a grace period", async () => {
+    // Every share-LESS cold boot used to pay 300 ms here, because with no
+    // share only the timer could settle the race.
     const started = Date.now();
-    await registerNativeShareTarget({ graceMs: 20 });
-    expect(Date.now() - started).toBeGreaterThanOrEqual(15);
-    expect(await listIntakes()).toHaveLength(0);
+    await registerNativeShareTarget();
+    expect(Date.now() - started).toBeLessThan(50);
   });
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [ ] **Step 4: Run it and watch it fail**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/native-share-adapter.test.ts`
 Expected: FAIL — `Failed to resolve import ".../native-share-adapter"`.
 
-- [ ] **Step 3: Write the adapter**
+- [ ] **Step 5: Write the adapter**
 
 Create `src/lib/shared/share-intake/services/native-share-adapter.ts`:
 
@@ -4084,10 +5526,19 @@ import type {
   SharedFileDescriptor,
   SharedIntake,
 } from "../domain/share-intake-models";
+import { bumpIntakeSignal } from "../state/share-intake-signal.svelte";
 import { getIntake, putIntake } from "./intake-store";
 import { screenDescriptors, validateIntake } from "./intake-validator";
 import { sharedFilesToFiles } from "./shared-file-bridge";
-import { scheduleIntakeRun } from "./share-intake-runner";
+
+/**
+ * Arrival only. This module persists bytes and raises a flag; it does NOT
+ * route, and it must never import share-intake-runner.
+ *
+ * Routing opens the inbox picker and the sequence viewer overlay, both of
+ * which render inside MainApplication. This code runs during native boot, when
+ * that tree may not exist yet. ShareIntakeHost owns the reaction (Task 12).
+ */
 
 /**
  * The plugin's event shape, read from
@@ -4102,69 +5553,71 @@ export interface ShareReceivedEvent {
 }
 
 /**
- * How long registration waits for a retained cold-launch intent before
- * concluding this launch carried no share. Long enough for the bridge to
- * replay an intent it already holds, short enough to be invisible at boot.
- */
-const FIRST_DELIVERY_GRACE_MS = 300;
-
-/**
- * Deliveries currently being processed, keyed by their descriptor-derived id.
- * Held in memory rather than in IndexedDB because the check has to be
- * SYNCHRONOUS - see the comment in the listener.
+ * Deliveries currently being processed. Held in memory rather than in
+ * IndexedDB because the check has to be SYNCHRONOUS - see the listener.
  */
 const inFlight = new Set<string>();
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** Handlers not yet settled. Exists so tests can await real completion. */
+const handling = new Set<Promise<void>>();
+
+/**
+ * The in-flight dedup key, derived with NO I/O so it can be claimed before any
+ * await.
+ *
+ * Unlike the durable receiptId this DOES include the uri. Capacitor replays
+ * both retained cold-launch events with the identical uri, so including it
+ * still collapses the twin; and when copyFileToCache fails, getFileData falls
+ * back to uri.toString() (CapacitorShareTargetPlugin.java:114), giving two
+ * simultaneous shares of same-named files distinct content:// uris that a
+ * name+mime key would wrongly merge.
+ */
+export function deriveDeliveryKey(event: ShareReceivedEvent): string {
+  const files = event.files ?? [];
+  const base = deriveReceiptId({ files, texts: event.texts ?? [] });
+  // Length-prefixed for the same reason deriveReceiptId prefixes its fields:
+  // a uri is sender-influenced and must not be able to shift a boundary.
+  const uris = files.map((file) => `${file.uri.length}:${file.uri}`).join("");
+  return `${base}|${uris}`;
+}
+
+/** Resolves when every delivery received so far has been fully handled. */
+export function whenIdle(): Promise<void> {
+  return Promise.all([...handling]).then(() => undefined);
 }
 
 /**
  * Bridge the plugin's events into a persisted, normalized intake.
  *
- * Resolves when the first retained event has been fully handled, or after a
- * short grace if none arrives. That is load-bearing: addListener resolving
- * proves only that the bridge registered the listener, while the cold-launch
- * intent is replayed asynchronously afterwards. Returning early let the boot
- * barrier read an empty store and navigate to /create anyway.
+ * Resolves as soon as the listener is attached. It deliberately does NOT wait
+ * for a first delivery or a grace period: nothing downstream needs the store
+ * to be populated before boot continues, because ShareIntakeHost reacts to the
+ * signal whenever it arrives. An earlier revision raced a 300 ms timer here and
+ * charged it to every share-less cold start.
  */
-export async function registerNativeShareTarget(
-  options: { graceMs?: number } = {}
-): Promise<void> {
-  let settleFirstDelivery: () => void = () => {};
-  const firstDelivery = new Promise<void>((resolve) => {
-    settleFirstDelivery = resolve;
-  });
-
+export async function registerNativeShareTarget(): Promise<void> {
   await CapacitorShareTarget.addListener(
     "shareReceived",
     (event: ShareReceivedEvent) => {
-      // SYNCHRONOUS claim, before any await. BridgeActivity delivers a cold
-      // launch twice milliseconds apart; an await-then-check against IndexedDB
-      // lets both deliveries pass the check before either one writes. The
-      // descriptor-derived key is computable right here with no I/O.
-      const deliveryKey = deriveReceiptId({
-        files: event.files ?? [],
-        texts: event.texts ?? [],
-      });
+      // SYNCHRONOUS claim, before any await. Capacitor replays both retained
+      // cold-launch events back to back; an await-then-check against IndexedDB
+      // lets both pass the check before either one writes.
+      const deliveryKey = deriveDeliveryKey(event);
       if (inFlight.has(deliveryKey)) return;
       inFlight.add(deliveryKey);
 
-      void handleShareReceived(event)
+      const settled = handleShareReceived(event)
         .catch((caught: unknown) => {
           console.error("[ShareIntake] Handling a share failed:", caught);
         })
         .finally(() => {
           inFlight.delete(deliveryKey);
-          settleFirstDelivery();
+          handling.delete(settled);
         });
+
+      handling.add(settled);
     }
   );
-
-  await Promise.race([
-    firstDelivery,
-    delay(options.graceMs ?? FIRST_DELIVERY_GRACE_MS),
-  ]);
 }
 
 async function handleShareReceived(event: ShareReceivedEvent): Promise<void> {
@@ -4217,17 +5670,18 @@ async function handleShareReceived(event: ShareReceivedEvent): Promise<void> {
   try {
     await putIntake(record);
   } catch (caught) {
-    // Quota or a blocked upgrade. Loud rather than silent, per the store's
-    // own honesty note.
+    // Quota, a blocked upgrade, or a store full of pending sign-in shares.
+    // Loud rather than silent, per the store's own honesty note.
     console.error("[ShareIntake] Could not persist the share:", caught);
     return;
   }
 
-  if (!empty) void scheduleIntakeRun();
+  // Raise the flag. ShareIntakeHost, inside the app shell, does the rest.
+  if (!empty) bumpIntakeSignal();
 }
 ```
 
-- [ ] **Step 4: Add the idempotent registration getter**
+- [ ] **Step 6: Add the idempotent registration getter**
 
 Create `src/lib/shared/share-intake/get-share-intake.ts`:
 
@@ -4238,118 +5692,160 @@ let registration: Promise<void> | null = null;
 
 /**
  * Idempotent registration - safe to call from more than one boot path, and
- * every caller awaits the SAME promise so they all see the barrier satisfied.
+ * every caller awaits the SAME promise.
  */
-export function ensureShareTargetRegistered(options?: {
-  graceMs?: number;
-}): Promise<void> {
-  registration ??= registerNativeShareTarget(options);
+export function ensureShareTargetRegistered(): Promise<void> {
+  registration ??= registerNativeShareTarget();
   return registration;
 }
 ```
 
-- [ ] **Step 5: Wire the boot barrier**
+- [ ] **Step 7: Register early, then boot into the shell unconditionally**
 
-In `src/lib/shared/platform/services/native-initializer.ts`, replace lines
-57-75 (from the `// Handle deep links` comment through the `appUrlOpen`
-listener) inside `initAppLifecycle`:
+In `src/lib/shared/platform/services/native-initializer.ts`, inside
+`initAppLifecycle`, insert the registration immediately above the existing
+"Handle deep links" comment (currently line 58) and leave everything below it —
+including `bootIntoApp()` — exactly as it is:
 
 ```ts
-		// Register the share target BEFORE deciding the initial route. An
-		// ACTION_SEND intent carries no launch URL, so without this the
-		// bootIntoApp() below would race the share listener's own navigation and
-		// the last goto() would win, nondeterministically.
+		// Register the share target BEFORE the first await that could yield, so
+		// the plugin's retained ACTION_SEND event has a listener to be replayed
+		// to. Nothing here is awaited for a grace period and nothing routes:
+		// the adapter persists the bytes and bumps a signal, and
+		// ShareIntakeHost - mounted inside MainApplication, beside the drawers a
+		// share actually opens - runs the pipeline.
 		//
-		// ensureShareTargetRegistered() does not resolve until the first retained
-		// event has been handled (or a 300 ms grace has elapsed with none), so the
-		// hasPendingShare() read below sees a written store rather than an empty
-		// one. That ordering is the entire point of the barrier.
+		// bootIntoApp() below stays UNCONDITIONAL. An earlier revision skipped it
+		// when a share was pending, which left the app on "/" - the marketing
+		// landing (src/routes/+page.svelte) - where InboxDrawer and
+		// SequenceViewerDrawerHost do not exist, so the share opened as state
+		// nothing rendered.
 		const { ensureShareTargetRegistered } = await import(
 			"$lib/shared/share-intake/get-share-intake"
 		);
-		const { hasPendingShare, scheduleIntakeRun } = await import(
-			"$lib/shared/share-intake/services/share-intake-runner"
-		);
 		await ensureShareTargetRegistered();
-
-		// Handle deep links from both cold start and warm resume.
-		// Cold start: getLaunchUrl() returns the URL that opened the app.
-		// Warm resume: appUrlOpen fires when a new URL arrives while running.
-		const launchUrl = await App.getLaunchUrl();
-		const openedViaDeepLink = launchUrl?.url
-			? await this.handleDeepLink(launchUrl.url)
-			: false;
-
-		// One owner for the initial route, always.
-		if (!openedViaDeepLink) {
-			if (await hasPendingShare()) {
-				// The share routes itself; bootIntoApp() would fight it.
-				void scheduleIntakeRun();
-			} else {
-				// Normal cold start (tapped the app icon): the native shell loads
-				// "/", which is the marketing landing. This is a standalone app, so
-				// boot straight into the Composer instead.
-				await this.bootIntoApp();
-			}
-		}
-
-		await App.addListener("appUrlOpen", async ({ url }) => {
-			await this.handleDeepLink(url);
-		});
 ```
 
-- [ ] **Step 6: Run the adapter suite**
+Nothing else in this file changes. `bootIntoApp()` keeps its existing
+`if (!openedViaDeepLink)` guard and its `replaceState: true`.
+
+- [ ] **Step 8: Prove the initializer stayed out of the routing business**
+
+Run: `grep -n "bootIntoApp\|hasPendingShare\|scheduleIntakeRun" src/lib/shared/platform/services/native-initializer.ts`
+
+Expected exactly two lines — the `bootIntoApp()` call and its definition. Any
+`hasPendingShare` or `scheduleIntakeRun` here means the barrier came back.
+
+- [ ] **Step 9: Run the adapter suite**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/native-share-adapter.test.ts`
-Expected: PASS, 8 tests.
+Expected: PASS, 9 tests.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git commit -m "feat(share-intake): native adapter with synchronous dedup and a real boot barrier" -- src/lib/shared/share-intake/services/native-share-adapter.ts src/lib/shared/share-intake/get-share-intake.ts src/lib/shared/platform/services/native-initializer.ts tests/unit/share-intake/native-share-adapter.test.ts
+git commit -m "feat(share-intake): native adapter with synchronous dedup, and always boot into the app shell" -- src/lib/shared/share-intake/services/native-share-adapter.ts src/lib/shared/share-intake/get-share-intake.ts src/lib/shared/share-intake/domain/derive-receipt-id.ts src/lib/shared/platform/services/native-initializer.ts tests/unit/share-intake/native-share-adapter.test.ts
 ```
 
 ---
 
-### Task 12: Full verification
+### Task 14: Full verification
 
 - [ ] **Step 1: Run the whole share-intake unit suite**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/`
 
-Expected: PASS — **9 files, 101 tests**:
+Expected: PASS — **11 files, 129 tests** (10 + 18 + 13 + 13 + 16 + 6 + 8 + 17 + 14 + 5 + 9):
 
 | File | Tests | Task |
 |---|---|---|
-| `derive-receipt-id.test.ts` | 10 | 2 (already green) |
+| `derive-receipt-id.test.ts` | 10 | 2 ✅ (comment-only edit in 13) |
 | `intake-validator.test.ts` | 18 | 3 |
-| `shared-file-bridge.test.ts` | 12 | 5 |
+| `shared-file-bridge.test.ts` | 13 | 5 |
 | `intake-store.test.ts` | 13 | 6 |
 | `intake-classifier.test.ts` | 16 | 7 |
-| `inbox-attachment-share.test.ts` | 5 | 8 |
-| `intake-router.test.ts` | 11 | 9 |
-| `share-intake-runner.test.ts` | 8 | 10 |
-| `native-share-adapter.test.ts` | 8 | 11 |
+| `open-filed-card.test.ts` | 6 | 8 |
+| `inbox-attachment-share.test.ts` | 8 | 9 |
+| `intake-router.test.ts` | 17 | 10 |
+| `share-intake-runner.test.ts` | 14 | 11 |
+| `share-intake-host-contract.test.ts` | 5 | 12 |
+| `native-share-adapter.test.ts` | 9 | 13 |
 
-(The first draft's "39 tests" predated the Task 2 rewrite, which alone ships 10.)
+Earlier revisions reported 101 and, before that, 39. The 101 undercounted the
+bridge suite (13, not 12) and predated Tasks 8 and 12 existing at all.
 
-- [ ] **Step 2: Run the component test**
+- [ ] **Step 2: Run the component tests**
 
 Run: `npx vitest run --config tests/config/vitest.components.config.ts src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte.test.ts`
 Expected: PASS, 4 tests.
 
-- [ ] **Step 3: Full typecheck (one cold run, then grep the log)**
+Run: `npx vitest run --config tests/config/vitest.components.config.ts src/lib/shared/share-intake/components/ShareIntakeHost.svelte.test.ts`
+Expected: PASS, 2 tests.
+
+- [ ] **Step 3: Walk trace 1 statically**
+
+Every hop in trace 1 must resolve to code that exists. Run each and confirm a
+non-empty result:
+
+```bash
+grep -c "shareReceived" src/lib/shared/share-intake/services/native-share-adapter.ts
+grep -c "bumpIntakeSignal" src/lib/shared/share-intake/services/native-share-adapter.ts
+grep -c "shareIntakeSignal.tick" src/lib/shared/share-intake/components/ShareIntakeHost.svelte
+grep -c "scheduleIntakeRun" src/lib/shared/share-intake/components/ShareIntakeHost.svelte
+grep -c "openFiledCard" src/lib/shared/share-intake/services/intake-router.ts
+grep -c "openSequenceOverlay" src/lib/shared/share-intake/services/open-filed-card.ts
+grep -c "ShareIntakeHost" src/lib/shared/application/components/MainApplication.svelte
+```
+
+Expected: every line ≥ 1. A `0` anywhere is a severed trace — which is the
+class of defect that survived three unit-level reviews of this plan.
+
+- [ ] **Step 4: Walk trace 2 and trace 3 statically**
+
+```bash
+grep -c "receiptId" src/lib/shared/share-intake/services/intake-router.ts
+grep -c "shareAttachmentReceiptId" src/lib/shared/inbox/state/inbox-state.svelte.ts
+grep -c "completeShareIntake" src/lib/shared/inbox/components/InboxDrawer.svelte
+grep -c "\"ready\"" src/lib/shared/share-intake/services/share-intake-runner.ts
+grep -c "needs-auth" src/lib/shared/share-intake/services/share-intake-runner.ts
+grep -c "share-image-signin" src/lib/shared/share-intake/services/share-intake-runner.ts
+grep -c "authState.isFullAccount" src/lib/shared/share-intake/components/ShareIntakeHost.svelte
+```
+
+Expected: every line ≥ 1. `needs-auth` appearing only in the store and its own
+tests — never in the runner — was blocking defect B3: four pieces of machinery
+guarding a state no production path could enter.
+
+- [ ] **Step 5: Prove the runner still has exactly one caller**
+
+Run: `grep -rl "scheduleIntakeRun" src/ | sort`
+Expected exactly two paths:
+```
+src/lib/shared/share-intake/components/ShareIntakeHost.svelte
+src/lib/shared/share-intake/services/share-intake-runner.ts
+```
+
+- [ ] **Step 6: Prove no canvas dance and no boot barrier came back**
+
+```bash
+grep -rn "getImageData\|createImageBitmap" src/lib/shared/share-intake/ | wc -l
+grep -rn "hasPendingShare" src/ | wc -l
+grep -rn "SendSequenceSheet\.svelte\|shareSequencePayload\|\"send-sequence\"" src/ | wc -l
+```
+Expected: `0`, `0`, `0`.
+
+- [ ] **Step 7: Full typecheck (one cold run, then grep the log)**
 
 Run: `npm run check > /tmp/check.log 2>&1; grep -ciE "^Error|: error" /tmp/check.log`
 Expected: `0`. If non-zero: `grep -iE "error" /tmp/check.log | head -20` and fix.
 Do not re-run `check` to re-filter (`.claude/rules/fast-iteration-loop.md`).
 
-- [ ] **Step 4: Build**
+- [ ] **Step 8: Build**
 
 Run: `npm run build`
 Expected: completes with no errors.
 
-- [ ] **Step 5: Prove the ZXing WASM reaches the Capacitor web assets**
+- [ ] **Step 9: Prove the ZXing WASM reaches the Capacitor web assets**
 
 Run: `ls -l .svelte-kit/cloudflare/zxing/zxing_reader.wasm`
 Expected: the file exists.
@@ -4358,15 +5854,15 @@ Why this is a step and not an assumption: `capacitor.config.ts` sets
 `webDir: '.svelte-kit/cloudflare'`, and the detector loads the binary from
 `/zxing/` (`tka-qr-detector.ts:36-38`). If it is missing from the native
 bundle the fetch 404s, `classifyIntake` records one `decode-failed`, and
-**every shared card silently becomes a photo** — the exact failure Task 7's
-logging exists to make visible, and one no unit test can see.
+**every shared card silently becomes a photo** — trace 1 collapses into trace 2
+for every user, and no unit test can see it.
 
-- [ ] **Step 6: Sync the Android project**
+- [ ] **Step 10: Sync the Android project**
 
 Run: `npx cap sync android`
 Expected: completes; `@capgo/capacitor-share-target` listed in the plugin output.
 
-- [ ] **Step 7: Commit any fixes**
+- [ ] **Step 11: Commit any fixes**
 
 ```bash
 git commit -m "fix(share-intake): resolve verification findings" -- <the paths you actually changed>
@@ -4377,23 +5873,65 @@ git commit -m "fix(share-intake): resolve verification findings" -- <the paths y
 ## Device verification — REQUIRED before this ships
 
 Unit tests cannot see any of these. `.claude/rules/verification-protocol.md`
-requires evidence, and for this feature the evidence is a device.
+requires evidence, and for this feature the evidence is a device. The list is
+organised by trace, so a failure names the hop it broke.
+
+**Trace 1 — cold launch, card**
 
 - [ ] Build and install a debug APK on the Android device
-- [ ] **Cold launch:** share one image from Photos with the app fully killed. Confirm **exactly one** sheet appears — this proves the in-flight `Set` suppresses the confirmed double fire
-- [ ] **Cold launch, two identical filenames:** share two different screenshots that Android named identically. Confirm **two** records — this proves the post-bridge `blob.size` in the receipt id
-- [ ] **Boot barrier:** cold-launch share and confirm the app does **not** flash `/create` first
-- [ ] **Warm launch:** share with the app already open in the background
-- [ ] **Process death:** share, force-stop mid-flow, reopen — the record should still be there and the runner should pick it up
-- [ ] **Card scan:** share a screenshot of a printed choreo card; confirm it resolves, saves to My Library (non-`docBacked`), and offers the sequence
-- [ ] **Non-TKA QR:** share a photo containing an unrelated QR; confirm it is treated as an image, not an error
-- [ ] **Two shots of the same card:** confirm one card and **no photo attachment** — this is the `duplicate` arm
-- [ ] **Text with an embedded link:** share `"check this out https://tka.run/XXXX"` from a browser; confirm the code resolves AND `"check this out"` prefills the note
-- [ ] **Batch:** share 3 images at once via `SEND_MULTIPLE`. Confirm one picker plus a visible report of the two queued — not a silent drop
-- [ ] **Signed out:** sign out, share, confirm the flow resumes with the file intact after sign-in, and that the record survives past one hour as `needs-auth`
-- [ ] **Odd filename:** share a file named `photo#2.png` (rename one first). It must arrive, not 404 — this is the URL-encoding fix
-- [ ] **`ClipData` hunt:** share from Chrome, Photos, and a messaging app. The plugin ignores `ClipData` and handles only `EXTRA_STREAM`, so a sender using `ClipData` presents as "TKA opens but receives nothing." With this plan that now leaves a `failed` record and a console warning — check `chrome://inspect` for `[ShareIntake]` lines. Record which senders work
-- [ ] **Cache growth:** after ~10 shares, measure `cacheDir/shared_files` via `adb shell run-as com.tkaflowarts.composer du -sh cache/shared_files`. **Nothing cleans this yet** (see limitations) — the point is to record the real growth rate
+- [ ] Share one image from Photos with the app fully killed. Confirm **exactly one**
+      of everything — this proves the in-flight `Set` suppresses the confirmed double fire
+- [ ] Confirm the app lands in the Composer, **not** on the marketing landing, and that
+      the sequence viewer opens on the shared card. Landing on the marketing page is
+      blocking defect B1 returning
+- [ ] Share a screenshot of a **printed** choreo card; confirm it resolves, saves to My
+      Library (non-`docBacked`), and the viewer opens on it
+- [ ] Share two shots of the **same** card: one viewer, **no** photo attachment — the
+      `duplicate` arm
+- [ ] Share a photo containing a **non-TKA** QR: treated as an image, not an error
+- [ ] Cold-launch with two different screenshots Android named identically: **two**
+      records — this proves the post-bridge `blob.size` in the receipt id
+- [ ] Text with an embedded link: share `"check this out https://tka.run/XXXX"` from a
+      browser. The code resolves AND `"check this out"` survives as the note
+
+**Trace 2 — warm launch, batch, and the data-loss fix**
+
+- [ ] Share with the app already open in the background
+- [ ] Share 3 images at once via `SEND_MULTIPLE`: one picker plus a visible report of
+      the two queued — not a silent drop
+- [ ] **Cancel the picker**, then relaunch. The share must still be there and the picker
+      must re-open. This is blocking defect B4: the previous revision deleted the record
+      when the picker opened, so cancel destroyed the only copy
+- [ ] **Force-stop mid-picker**, reopen: same expectation
+- [ ] Odd filename: share a file renamed `photo#2.png`. It must arrive, not 404 — the
+      URL-encoding fix
+
+**Trace 3 — signed out**
+
+- [ ] Sign out. Share an image. Confirm a **visible** sign-in prompt appears (auth drawer
+      with the share copy plus a toast) — not silence
+- [ ] Complete an **email magic-link** sign-in and confirm the picker opens by itself
+      with the image intact. This is the full round trip that blocking defect B3 left
+      unimplemented
+- [ ] Repeat, but force-stop the app while reading the email. The share must survive the
+      cold start
+- [ ] Leave a signed-out share for **over an hour**, then sign in: it must still be there
+      (`needs-auth` is TTL-exempt)
+- [ ] Sign out and share a **card only** (no loose images). It must route immediately with
+      no sign-in prompt — guests file printed cards today and gating that is a regression
+
+**Environment**
+
+- [ ] `ClipData` hunt: share from Chrome, Photos, and a messaging app. The plugin ignores
+      `ClipData` and handles only `EXTRA_STREAM`, so a sender using `ClipData` presents as
+      "TKA opens but receives nothing." With this plan that leaves a `failed` record and a
+      console warning — check `chrome://inspect` for `[ShareIntake]` lines. Record which
+      senders work
+- [ ] Boot the app normally (tap the icon, no share) and confirm no added delay before the
+      Composer appears — the 300 ms registration grace is gone
+- [ ] Cache growth: after ~10 shares, measure
+      `adb shell run-as com.tkaflowarts.composer du -sh cache/shared_files`. **Nothing
+      cleans this yet** (see limitations) — the point is to record the real growth rate
 
 ---
 
@@ -4407,21 +5945,38 @@ Recorded so nobody rediscovers them as bugs. Full detail in the spec's Spike res
   cannot stop them reaching disk.
 - No filename sanitization in its Java. We normalize on read; a `../` name still
   lands in its cache dir first.
-- **`cacheDir/shared_files` is never cleaned.** The spec called for the adapter
-  to sweep it, but deleting native files needs `@capacitor/filesystem`, which is
-  **not a dependency of this repo**, so no task here implements it. The device
-  check measures the growth rate instead. Fix it as its own change, with the
-  growth data in hand, rather than adding a Capacitor plugin on speculation.
-  Android does reclaim `cacheDir` under storage pressure, so this is untidy
-  rather than unbounded.
-- **No `ClipData`.** Some share sources will deliver nothing. With this plan
-  that is a `failed` record plus a console warning rather than silence.
-- **Batch send is one attachment plus a reported queue.** The picker sends one
-  image at a time; sequential orchestration with per-item progress, cancel, and
-  partial-success retry is named out of scope in the spec. The extras are
-  surfaced (`queued` + `send-dropped`) and the record is held open, so nothing
-  is lost — but the user must re-open to send them.
+- **`cacheDir/shared_files` is never cleaned. This is OUR deviation from the
+  spec, not something the spec permits.** The spec calls for the adapter to
+  delete the copies from `cacheDir/shared_files`. Deleting native files needs
+  `@capacitor/filesystem`, which is not a dependency of this repo (verified:
+  no `@capacitor/filesystem` entry in `package.json`), so no task here
+  implements it. We chose to measure the growth rate on-device first rather
+  than add a Capacitor plugin on speculation. Android reclaims `cacheDir` under
+  storage pressure, so this is untidy rather than unbounded — but it is a cut
+  we made, and the spec should be updated or this fixed as its own change.
+- **Batch send is one attachment plus a reported queue. This is OUR cut, not a
+  spec exclusion.** The spec DOES specify batch send — "separate sequential
+  messages with a single confirmation." The picker sends one image at a time,
+  and sequential orchestration with per-item progress, cancel, and
+  partial-success retry is a feature in its own right. We deferred it. The
+  extras are surfaced (`queued` + `send-dropped`), the record is held open, and
+  nothing is lost — but the user must re-open to send them, which is less than
+  the spec asks for. Two earlier revisions of this plan attributed the cut to
+  the spec; that was wrong both times.
+- **Cards win a mixed share.** A share carrying both a card and loose images
+  opens the viewer and reports the images as queued. Two overlays competing for
+  the same back gesture is worse than one reported deferral. Our decision, not
+  the spec's.
+- **The auth gate is whole-intake.** A mixed card+image share from a signed-out
+  user waits for sign-in even though the card alone would not need to. The
+  alternative needs per-item progress state on the record; see Task 11.
+- **A `ready` record re-opens its picker on the next launch** until the one-hour
+  TTL reaps it. That is deliberate — it is what makes cancel, reload and crash
+  recoverable — but it does mean an abandoned share nags once per launch for up
+  to an hour.
 - **Two genuinely different files that agree on name, mimeType AND byte size
   still hash to one receipt id.** That is the accepted cost of excluding the
   uri without hashing content, and it is bounded by the store's TTL.
+- **No `ClipData`.** Some share sources will deliver nothing. With this plan
+  that is a `failed` record plus a console warning rather than silence.
 - The PWA half is not built. Installed-PWA users get no share target yet.
