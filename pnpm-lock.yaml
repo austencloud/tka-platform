@@ -392,6 +392,9 @@ importers:
       eslint-plugin-svelte:
         specifier: ^3.13.1
         version: 3.14.0(eslint@9.39.2(jiti@2.6.1))(svelte@5.49.2)
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       firebase-tools:
         specifier: 15.24.0
         version: 15.24.0(@types/node@25.2.0)(encoding@0.1.13)
@@ -4750,6 +4753,10 @@ packages:
   fabric@7.4.0:
     resolution: {integrity: sha512-NalYDc3eifTl1C33zryQwpH6+XA/2ClxQrH9vkASkZw3tbkRmorpikhYMmxhUTmi7O3e9ODz0vOT8qfaCh9IVA==}
     engines: {node: '>=20.0.0'}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   farmhash-modern@1.1.0:
     resolution: {integrity: sha512-6ypT4XfgqJk/F3Yuv4SX26I3doUjt0GTG4a+JgWxXQpxXzTBq8fPUeGHfcYMMDPHJHm3yPOSjaeBwBGAHWXCdA==}
@@ -12787,6 +12794,8 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  fake-indexeddb@6.2.5: {}
 
   farmhash-modern@1.1.0: {}
 
