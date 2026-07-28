@@ -1800,37 +1800,6 @@
     min-height: 40px;
     gap: 6px;
   }
-  /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
-     compression (:global): 6-column picker puts all 16 effects (3 rows at the
-     44px touch floor) inside the capped tray with no scrolling. */
-  .dock-dense :global(.mep) {
-    gap: 6px;
-  }
-  .dock-dense :global(.drill-view) {
-    gap: 6px;
-  }
-  .dock-dense :global(.fx-picker) {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
-  }
-  .dock-dense :global(.fx-tile) {
-    height: 44px;
-  }
-  .dock-dense :global(.fx-picker .fx-tile) {
-    gap: 1px;
-    padding: 0 2px;
-  }
-  .dock-dense :global(.fx-picker .fx-tile i) {
-    font-size: 12px;
-  }
-  .dock-dense :global(.fx-picker .fx-tile > span) {
-    font-size: 9px;
-    letter-spacing: 0.01em;
-  }
-  .dock-dense :global(.slider-row) {
-    padding: 6px 10px;
-    gap: 8px;
-  }
   /* Playback: label-left rows + side-by-side mode buttons (mirrors
      AnimationPanel). Dock only — the sidebar keeps the vertical stack. */
   .dock-dense .playback-rows {

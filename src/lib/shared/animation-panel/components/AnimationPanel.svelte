@@ -1002,33 +1002,6 @@
     gap: 8px;
     padding: 4px 12px 10px;
   }
-  /* EffectsPanel drill-down: recolumn the picker 4 -> 6 so 16 tiles land in 3
-     rows at the 44px touch floor — the whole palette (plus Off) fits inside the
-     capped tray with NO scrolling, per "show all the options in one screen". */
-  .dock-dense :global(.mep) {
-    gap: 6px;
-  }
-  .dock-dense :global(.drill-view) {
-    gap: 6px;
-  }
-  .dock-dense :global(.fx-picker) {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
-  }
-  .dock-dense :global(.fx-tile) {
-    height: 44px;
-  }
-  .dock-dense :global(.fx-picker .fx-tile) {
-    gap: 1px;
-    padding: 0 2px;
-  }
-  .dock-dense :global(.fx-picker .fx-tile i) {
-    font-size: 12px;
-  }
-  .dock-dense :global(.fx-picker .fx-tile > span) {
-    font-size: 9px;
-    letter-spacing: 0.01em;
-  }
   /* Visibility: icons add no meaning at chip size and force 96px columns
      (3 ragged rows). Label-only chips pack the 8 toggles into a clean 4×2.
      Dock only — the sidebar keeps the roomier iconed grid. */
@@ -1077,10 +1050,6 @@
   .dock-dense .playback-rows :global(.mode-toggle .mode-btn) {
     flex: 1;
     min-width: 0;
-  }
-  .dock-dense :global(.slider-row) {
-    padding: 6px 10px;
-    gap: 8px;
   }
   /* BentoPropGrid */
   .dock-dense :global(.grid-scroll) {

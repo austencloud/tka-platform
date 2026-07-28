@@ -458,7 +458,7 @@
   <!-- Mobile drill-down: picker grid (all 16 + Off, no h-scroll) ⇄ per-effect
        detail screen ⇄ deep tuning. Tap a tile = apply live + stay; tap the
        active tile = drill into its detail. -->
-  <div class="mep">
+  <div class="mep strip-layout">
     <Crossfade key={stripView}>
       {#if stripView === "customize" && CustomizeComponent}
         <div class="drill-view">
@@ -627,38 +627,20 @@
               >
             </button>
           </div>
-          <div class="fx-picker" role="radiogroup" aria-label="Select effect">
-            {#each EFFECTS as e (e.id)}
-              {@const isActive = activeEffect === e.id}
-              <button
-                type="button"
-                class="fx-tile"
-                class:active={isActive}
-                role="radio"
-                aria-checked={isActive}
-                aria-label={isActive ? `Tune ${e.label}` : e.label}
-                style:--fx={e.color}
-                onpointerenter={() => handleEffectPrewarm(e.id)}
-                onpointerdown={() => handleEffectPrewarm(e.id)}
-                onclick={() => handleTileTap(e.id)}
-              >
-                <i class="fas {e.icon}" aria-hidden="true"></i>
-                <span>{e.label}</span>
-                {#if isActive}
-                  <span class="tune-badge" aria-hidden="true"
-                    ><i class="fas fa-sliders"></i></span
-                  >
-                {/if}
-              </button>
-            {/each}
-          </div>
+          <EffectSelector
+            {activeEffect}
+            onSelect={handleTileTap}
+            onPrewarm={handleEffectPrewarm}
+            layout="tray"
+            activeAction="tune"
+          />
         </div>
       {/if}
     </Crossfade>
   </div>
 {:else if layout === "grid"}
   <!-- Desktop popover layout (3D controls): everything on one surface. -->
-  <div class="mep">
+  <div class="mep grid-layout">
     {#if customizeOpen && CustomizeComponent}
       <button
         type="button"
@@ -677,27 +659,11 @@
       {@render customizeAnchors()}
       <CustomizeComponent onBack={handleCustomizeClose} />
     {:else}
-      <div class="fx-strip grid" role="radiogroup" aria-label="Select effect">
-        {#each EFFECTS as e (e.id)}
-          {@const isActive = activeEffect === e.id}
-          <button
-            type="button"
-            class="fx-tile"
-            class:active={isActive}
-            role="radio"
-            aria-checked={isActive}
-            aria-label={e.label}
-            style:--fx={e.color}
-            onpointerenter={() => handleEffectPrewarm(e.id)}
-            onpointerdown={() => handleEffectPrewarm(e.id)}
-            onclick={() => handleEffectSelect(e.id)}
-          >
-            <i class="fas {e.icon}" aria-hidden="true"></i>
-            <span>{e.label}</span>
-            {#if isActive}<span class="dot" aria-hidden="true"></span>{/if}
-          </button>
-        {/each}
-      </div>
+      <EffectSelector
+        {activeEffect}
+        onSelect={handleEffectSelect}
+        onPrewarm={handleEffectPrewarm}
+      />
 
       {#if activeEffect !== "none" && registration}
         <div
@@ -900,7 +866,6 @@
     gap: 10px;
   }
 
-  .fx-strip,
   .preset-strip {
     display: flex;
     gap: 8px;
@@ -908,16 +873,19 @@
     scrollbar-width: none;
     padding-bottom: 2px;
   }
-  .fx-strip::-webkit-scrollbar,
   .preset-strip::-webkit-scrollbar {
     display: none;
   }
 
   /* ── Mobile drill-down (strip layout) ── */
+  .mep.strip-layout,
+  .drill-view {
+    gap: 6px;
+  }
+
   .drill-view {
     display: flex;
     flex-direction: column;
-    gap: 10px;
     min-width: 0;
   }
 
@@ -956,53 +924,6 @@
     );
     border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
     color: var(--fx-accent-text);
-  }
-
-  /* Picker: every effect visible at once — no horizontal scroll, no hidden
-     tail. 4 columns; tiles stretch to the cell so the grid owns sizing. */
-  .fx-picker {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-  }
-  /* 46px: just above the 44px touch floor. At 16 tiles / 4 cols that's 4 rows,
-     so every px shaved here is 4px off the tray — the effect picker was eating
-     ~46% of an iPhone SE; this pulls the media hero back. Icon+label still fit
-     (icon 16 + gap + 10px label). */
-  .fx-picker .fx-tile {
-    width: 100%;
-    height: 46px;
-    gap: 2px;
-  }
-  .fx-picker .fx-tile i {
-    font-size: 15px;
-  }
-  .fx-picker .fx-tile > span {
-    font-size: 10px;
-  }
-
-  /* Tap-again affordance on the active tile: a sliders badge signals the
-     second tap opens that effect's tuning screen. */
-  .tune-badge {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(
-      in srgb,
-      var(--fx) 30%,
-      var(--theme-panel-bg, rgba(20, 22, 32, 0.9))
-    );
-    box-shadow: 0 0 6px color-mix(in srgb, var(--fx) 60%, transparent);
-  }
-  .fx-tile .tune-badge i {
-    font-size: 9px;
-    color: var(--fx);
   }
 
   .detail-head {
@@ -1045,74 +966,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-  }
-
-  /* Desktop grid variant - wraps tiles into rows that auto-fit the host width.
-     16 tiles + 8px gaps fit a 420px popover at multiple rows. */
-  .fx-strip.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-    gap: 8px;
-    overflow: visible;
-  }
-  .fx-strip.grid .fx-tile {
-    width: 100%;
-  }
-
-  .fx-tile {
-    flex-shrink: 0;
-    width: 64px;
-    height: 64px;
-    border-radius: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 0 2px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    cursor: pointer;
-    position: relative;
-    -webkit-tap-highlight-color: transparent;
-    transition: all 150ms ease;
-  }
-  /* Guard: 7-char labels (Sparkle, Bubbles) at the 12px floor are borderline
-     in a 64px tile - clip instead of pushing the tile wider. */
-  .fx-tile > span {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .fx-tile i {
-    font-size: 18px;
-    line-height: 1;
-  }
-  .fx-tile.active {
-    background: color-mix(
-      in srgb,
-      var(--fx) 22%,
-      var(--theme-panel-bg, rgba(20, 22, 32, 0.6))
-    );
-    border-color: color-mix(in srgb, var(--fx) 55%, transparent);
-    color: var(--fx);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--fx) 30%, transparent);
-  }
-  .fx-tile .dot {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--fx);
-    box-shadow: 0 0 6px var(--fx);
   }
 
   .preset-chip {
@@ -1182,6 +1035,10 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
+  }
+  .strip-layout .slider-row {
+    gap: 8px;
+    padding: 6px 10px;
   }
   .slider-label {
     font-size: var(--font-size-compact, 12px);
@@ -1379,7 +1236,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .fx-tile,
     .preset-chip,
     .more-btn,
     .back-row,
