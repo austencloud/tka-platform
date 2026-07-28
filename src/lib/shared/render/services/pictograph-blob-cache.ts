@@ -3,10 +3,9 @@ import type { PictographBlobCacheStats } from "./types";
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";
-// v9: cell key format lsp10→lsp11 (reversal flags + betaSwapped added) — wipe
-// so poisoned lsp10 blobs (reversal dots baked under dot-free keys) don't
-// linger as unreachable orphans in an unpruned store.
-const DB_VERSION = 9;
+// v10 adds lsp12 only for invisible-placeholder cells. Fully-visible cells
+// deliberately keep their lsp11 keys, so upgrading from v9 must preserve them.
+const DB_VERSION = 10;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -41,7 +40,7 @@ export class PictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < DB_VERSION) {
+        } else if (oldVersion < 9) {
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }

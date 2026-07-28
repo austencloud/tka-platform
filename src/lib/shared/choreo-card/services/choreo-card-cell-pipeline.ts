@@ -52,7 +52,7 @@ export function getPreviewCacheKey(
   const motionFingerprint = seq.steps?.map(s => {
     const b = s.motions?.blue;
     const r = s.motions?.red;
-    return `${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
+    return `${!b || b.isVisible === false ? "b0" : "b1"}${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${!r || r.isVisible === false ? "r0" : "r1"}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
   }).join("") ?? "";
   const vm = opts.browseViewMode;
   const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.color}` : "default";

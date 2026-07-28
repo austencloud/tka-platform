@@ -106,6 +106,32 @@ describe("warmSequenceCells", () => {
     expect(renderCell).not.toHaveBeenCalled();
   });
 
+  it("warms the participating hand only for solo choreography", async () => {
+    const soloSequence = {
+      ...sequence,
+      steps: [
+        {
+          letter: null,
+          motions: {
+            blue: { isVisible: true },
+            red: { isVisible: false },
+          },
+        },
+      ],
+    } as unknown as SequenceData;
+
+    await warmSequenceCells(soloSequence);
+
+    const options = renderCell.mock.calls[0]![3] as {
+      showBlueMotion: boolean;
+      showRedMotion: boolean;
+    };
+    expect(options).toMatchObject({
+      showBlueMotion: true,
+      showRedMotion: false,
+    });
+  });
+
   it("reports individual failures in best-effort mode", async () => {
     renderCell.mockRejectedValueOnce(new Error("boom"));
     const result = await warmSequenceCells(sequence);

@@ -17,6 +17,7 @@ import {
 import * as pictographCloudCache from "$lib/shared/render/services/pictograph-cloud-cache";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import { detectMixedDurations } from "$lib/shared/choreo-card/services/step-durations";
+import { getSequenceMotionVisibility } from "$lib/shared/foundation/services/sequence-motion-profile";
 
 export interface WarmOptions {
   /** Scan cards render dark by default. */
@@ -24,6 +25,9 @@ export interface WarmOptions {
   bluePropType?: PropType;
   redPropType?: PropType;
   catDogMode?: boolean;
+  /** Participating-hand visibility. Defaults to the sequence's motion profile. */
+  showBlueMotion?: boolean;
+  showRedMotion?: boolean;
   /** Throw unless every canonical object can be downloaded after warming. */
   requireComplete?: boolean;
 }
@@ -134,6 +138,7 @@ export async function warmSequenceCells(
   opts: WarmOptions = {}
 ): Promise<WarmSequenceCellsResult> {
   const blueProp = opts.bluePropType;
+  const motionVisibility = getSequenceMotionVisibility(sequence);
   const renderOptions: PreviewCellRenderOptions = {
     ...CANONICAL_CARD_VISIBILITY,
     size: CANONICAL_CELL_SIZE,
@@ -141,6 +146,8 @@ export async function warmSequenceCells(
     bluePropType: blueProp,
     redPropType: opts.catDogMode ? (opts.redPropType ?? blueProp) : blueProp,
     catDogModeEnabled: opts.catDogMode ?? false,
+    showBlueMotion: opts.showBlueMotion ?? motionVisibility.showBlueMotion,
+    showRedMotion: opts.showRedMotion ?? motionVisibility.showRedMotion,
     probeCloud: true,
     uploadCanonical: true,
   };
@@ -151,7 +158,8 @@ export async function warmSequenceCells(
     options: PreviewCellRenderOptions;
   }[] = [];
   const start = startPositionDeriver.getOrDeriveStartPosition(sequence);
-  if (start) entries.push({ cell: "start", data: start, options: renderOptions });
+  if (start)
+    entries.push({ cell: "start", data: start, options: renderOptions });
   // Mixed-duration cards render held beats as WIDE cells with
   // widthMultiplier = duration, and the multiplier is part of the cache key
   // (`|wm2|`). The warm must derive the same per-cell options as ChoreoCard

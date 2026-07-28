@@ -65,4 +65,14 @@ describe("getPreviewCacheKey — includeStartPosition", () => {
       getPreviewCacheKey(seq, opts, null, false, "row", true)
     );
   });
+
+  it("separates visible and invisible placeholder motions", () => {
+    const visible = makeSequence();
+    const hidden = makeSequence();
+    (hidden.steps[0]!.motions.red as { isVisible?: boolean }).isVisible = false;
+
+    expect(getPreviewCacheKey(visible, makeOptions(), null, false)).not.toBe(
+      getPreviewCacheKey(hidden, makeOptions(), null, false)
+    );
+  });
 });

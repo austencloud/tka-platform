@@ -42,11 +42,15 @@ export const CANONICAL_CARD_VISIBILITY = {
 export function canonicalCellKeyString(
   pictographData: PictographData,
   isDark: boolean,
-  options: PreviewCellRenderOptions,
+  options: PreviewCellRenderOptions
 ): string {
   return deriveCacheKey(pictographData, undefined, isDark, {
     ...options,
     ...CANONICAL_CARD_VISIBILITY,
+    // Solo cards have their own canonical visibility. Preserve only the
+    // participating-hand decision while pinning every other display option.
+    showBlueMotion: options.showBlueMotion ?? true,
+    showRedMotion: options.showRedMotion ?? true,
     size: CANONICAL_CELL_SIZE,
     showStepNumbers: false,
   });
@@ -59,7 +63,7 @@ export function canonicalCellKeyString(
 export async function deriveCloudCellHash(
   pictographData: PictographData,
   isDark: boolean,
-  options: PreviewCellRenderOptions,
+  options: PreviewCellRenderOptions
 ): Promise<string> {
   const keyString = canonicalCellKeyString(pictographData, isDark, options);
   const bytes = new TextEncoder().encode(keyString);

@@ -47,6 +47,9 @@
  *   poisoned the cache for an identical-motion step withOUT them) and
  *   betaSwapped (changes prepared prop geometry; PictographPreparer already
  *   keyed it, the blob key didn't).
+ * - lsp12-: Added per-motion isVisible only when a pictograph contains an
+ *   invisible placeholder. Fully-visible pictographs intentionally retain
+ *   their exact lsp11 identity so the established cloud corpus stays usable.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -68,53 +71,65 @@ export function deriveCacheKey(
   // locations, turns, orientations, rotationDirection, propType, gridMode),
   // and all visibility settings (showTKA, darkMode, bluePropType, etc.).
   const visibility = mapToVisibility(options, isDark);
-  const pictographHash = pictographKeyHasher.deriveKey(pictographData, visibility);
+  const pictographHash = pictographKeyHasher.deriveKey(
+    pictographData,
+    visibility
+  );
 
-    // Append cell-specific dimensions that PictographKeyHasher intentionally
-    // excludes (size, step number, browseViewMode affect presentation, not
-    // the pictograph image itself).
-    const cellParts = [
-      options.showStepNumbers ? (stepNumber ?? "none") : "nonum",
-      options.size,
-      options.widthMultiplier && options.widthMultiplier !== 1 ? `wm${options.widthMultiplier}` : "",
-      options.browseViewMode ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}` : "",
-    ];
+  // Append cell-specific dimensions that PictographKeyHasher intentionally
+  // excludes (size, step number, browseViewMode affect presentation, not
+  // the pictograph image itself).
+  const cellParts = [
+    options.showStepNumbers ? (stepNumber ?? "none") : "nonum",
+    options.size,
+    options.widthMultiplier && options.widthMultiplier !== 1
+      ? `wm${options.widthMultiplier}`
+      : "",
+    options.browseViewMode
+      ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}`
+      : "",
+  ];
 
-    return `lsp11-${pictographHash}:${cellParts.join("|")}`;
-  }
+  const hasInvisiblePlaceholder =
+    pictographData.motions?.blue?.isVisible === false ||
+    pictographData.motions?.red?.isVisible === false;
+  const version = hasInvisiblePlaceholder ? "lsp12" : "lsp11";
 
-  /**
-   * Maps PreviewCellRenderOptions + isDark to PictographVisibilityOptions.
-   *
-   * Resolves catDogMode (the hasher receives an already-resolved redPropType).
-   * VTG/elemental/positions flow from the export visibility toggles (sourced
-   * from VisibilityStateManager in ChoreoCard) rather than being hardcoded.
-   * printMode is always false (preview cells are never print mode).
-   *
-   * Note: PreviewCellRenderOptions.handPointVisibility is narrowed to "all" | "active".
-   * The value "none" only exists in PictographVisibilityOptions and never appears here.
-   */
+  return `${version}-${pictographHash}:${cellParts.join("|")}`;
+}
+
+/**
+ * Maps PreviewCellRenderOptions + isDark to PictographVisibilityOptions.
+ *
+ * Resolves catDogMode (the hasher receives an already-resolved redPropType).
+ * VTG/elemental/positions flow from the export visibility toggles (sourced
+ * from VisibilityStateManager in ChoreoCard) rather than being hardcoded.
+ * printMode is always false (preview cells are never print mode).
+ *
+ * Note: PreviewCellRenderOptions.handPointVisibility is narrowed to "all" | "active".
+ * The value "none" only exists in PictographVisibilityOptions and never appears here.
+ */
 function mapToVisibility(
   options: PreviewCellRenderOptions,
   isDark: boolean
 ): PictographVisibilityOptions {
-    return {
-      showTKA: options.showTKA ?? true,
-      showTnD: options.showTnD ?? false,
-      showElemental: options.showElemental ?? false,
-      showPositions: options.showPositions ?? false,
-      showReversals: options.showReversals ?? true,
-      showNonRadialPoints: options.showNonRadialPoints ?? true,
-      showGrid: options.showGrid ?? true,
-      darkMode: isDark,
-      bluePropType: options.bluePropType,
-      redPropType: options.catDogModeEnabled
-        ? options.redPropType
-        : options.bluePropType,
-      handPointVisibility: options.handPointVisibility,
-      handPathMode: options.handPathMode,
-      printMode: false,
-      showBlueMotion: options.showBlueMotion,
-      showRedMotion: options.showRedMotion,
-    };
-  }
+  return {
+    showTKA: options.showTKA ?? true,
+    showTnD: options.showTnD ?? false,
+    showElemental: options.showElemental ?? false,
+    showPositions: options.showPositions ?? false,
+    showReversals: options.showReversals ?? true,
+    showNonRadialPoints: options.showNonRadialPoints ?? true,
+    showGrid: options.showGrid ?? true,
+    darkMode: isDark,
+    bluePropType: options.bluePropType,
+    redPropType: options.catDogModeEnabled
+      ? options.redPropType
+      : options.bluePropType,
+    handPointVisibility: options.handPointVisibility,
+    handPathMode: options.handPathMode,
+    printMode: false,
+    showBlueMotion: options.showBlueMotion,
+    showRedMotion: options.showRedMotion,
+  };
+}

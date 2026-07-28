@@ -2,10 +2,14 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
-import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridLocation,
+  GridMode,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 // getSettings loaded dynamically to avoid pulling $app/environment into worker bundle
 
 interface MotionKeyData {
+  isVisible?: boolean;
   motionType: string;
   startLocation: string;
   endLocation: string;
@@ -70,6 +74,8 @@ export class PictographKeyHasher {
     // $app/environment into the worker bundle via the static import chain.
     const resolvedBlueProp = visibility.bluePropType ?? "staff";
     const resolvedRedProp = visibility.redPropType ?? "staff";
+    const includeMotionVisibility =
+      motions.blue?.isVisible === false || motions.red?.isVisible === false;
 
     // Flags only affect the image when the reversal layer actually draws;
     // neutralize them when showReversals is off so a flagged and unflagged
@@ -79,8 +85,8 @@ export class PictographKeyHasher {
 
     return {
       letter: data.letter ?? undefined,
-      blue: this.extractMotionKey(motions.blue),
-      red: this.extractMotionKey(motions.red),
+      blue: this.extractMotionKey(motions.blue, includeMotionVisibility),
+      red: this.extractMotionKey(motions.red, includeMotionVisibility),
       blueReversal: reversalsVisible ? (step.blueReversal ?? false) : false,
       redReversal: reversalsVisible ? (step.redReversal ?? false) : false,
       betaSwapped: data.betaSwapped ?? false,
@@ -104,7 +110,10 @@ export class PictographKeyHasher {
     };
   }
 
-  private extractMotionKey(motion: MotionData | undefined): MotionKeyData | null {
+  private extractMotionKey(
+    motion: MotionData | undefined,
+    includeVisibility: boolean
+  ): MotionKeyData | null {
     if (!motion) return null;
 
     const derivedGridMode = this.deriveGridModeFromLocations(
@@ -113,6 +122,10 @@ export class PictographKeyHasher {
     );
 
     return {
+      // Keep fully-visible pictographs byte-identical to the lsp11 key corpus.
+      // Once either hand is an invisible placeholder, both values enter the
+      // lsp12 identity so visible and hidden versions cannot share a blob.
+      ...(includeVisibility && { isVisible: motion.isVisible !== false }),
       motionType: motion.motionType ?? "",
       startLocation: motion.startLocation ?? "",
       endLocation: motion.endLocation ?? "",

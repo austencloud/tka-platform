@@ -15,8 +15,15 @@ import { deriveCacheKey } from "$lib/shared/sequence-viewer/services/cell-cache-
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/preview-cell-renderer";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { MotionType, MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  MotionColor,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridLocation,
+  GridMode,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // The class-with-injected-hasher collapsed into a standalone function
 // (the hasher is now imported directly inside the module). Bind it to an
@@ -66,7 +73,9 @@ function makeStartPosition(overrides?: {
   } as PictographData;
 }
 
-function makeOptions(overrides?: Partial<PreviewCellRenderOptions>): PreviewCellRenderOptions {
+function makeOptions(
+  overrides?: Partial<PreviewCellRenderOptions>
+): PreviewCellRenderOptions {
   return {
     size: 240,
     bluePropType: PropType.STAFF,
@@ -79,34 +88,97 @@ function makeOptions(overrides?: Partial<PreviewCellRenderOptions>): PreviewCell
   };
 }
 
-describe("CellCacheKeyDeriver (lsp8 composition)", () => {
-  it("produces keys starting with lsp11-", () => {
-    const key = deriver.deriveCacheKey(makeStartPosition(), undefined, false, makeOptions());
+describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
+  it("preserves lsp11 keys for fully-visible pictographs", () => {
+    const key = deriver.deriveCacheKey(
+      makeStartPosition(),
+      undefined,
+      false,
+      makeOptions()
+    );
     expect(key).toMatch(/^lsp11-/);
+    expect(key).not.toContain("isVisible");
+  });
+
+  it("separates invisible placeholders from visible static motions", () => {
+    const visible = makeStartPosition();
+    const hidden = makeStartPosition();
+    (hidden.motions.red as { isVisible: boolean }).isVisible = false;
+
+    const visibleKey = deriver.deriveCacheKey(
+      visible,
+      undefined,
+      false,
+      makeOptions()
+    );
+    const hiddenKey = deriver.deriveCacheKey(
+      hidden,
+      undefined,
+      false,
+      makeOptions()
+    );
+
+    expect(visibleKey).toMatch(/^lsp11-/);
+    expect(hiddenKey).toMatch(/^lsp12-/);
+    expect(hiddenKey).toContain('\\"isVisible\\":true');
+    expect(hiddenKey).toContain('\\"isVisible\\":false');
+    expect(visibleKey).not.toBe(hiddenKey);
   });
 
   describe("motion-intrinsic propType differentiation (the original bug)", () => {
     it("HAND vs STAFF motion propType produces different keys even with same settings propType", () => {
-      const staffStart = makeStartPosition({ bluePropType: PropType.STAFF, redPropType: PropType.STAFF });
-      const handStart = makeStartPosition({ bluePropType: PropType.HAND, redPropType: PropType.HAND });
+      const staffStart = makeStartPosition({
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.STAFF,
+      });
+      const handStart = makeStartPosition({
+        bluePropType: PropType.HAND,
+        redPropType: PropType.HAND,
+      });
 
       // Both rendered with the same settings prop type
       const options = makeOptions({ bluePropType: PropType.STAFF });
 
-      const staffKey = deriver.deriveCacheKey(staffStart, undefined, false, options);
-      const handKey = deriver.deriveCacheKey(handStart, undefined, false, options);
+      const staffKey = deriver.deriveCacheKey(
+        staffStart,
+        undefined,
+        false,
+        options
+      );
+      const handKey = deriver.deriveCacheKey(
+        handStart,
+        undefined,
+        false,
+        options
+      );
 
       expect(staffKey).not.toBe(handKey);
     });
 
     it("FAN vs STAFF motion propType produces different keys", () => {
-      const staffStart = makeStartPosition({ bluePropType: PropType.STAFF, redPropType: PropType.STAFF });
-      const fanStart = makeStartPosition({ bluePropType: PropType.FAN, redPropType: PropType.FAN });
+      const staffStart = makeStartPosition({
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.STAFF,
+      });
+      const fanStart = makeStartPosition({
+        bluePropType: PropType.FAN,
+        redPropType: PropType.FAN,
+      });
 
       const options = makeOptions({ bluePropType: PropType.STAFF });
 
-      const staffKey = deriver.deriveCacheKey(staffStart, undefined, false, options);
-      const fanKey = deriver.deriveCacheKey(fanStart, undefined, false, options);
+      const staffKey = deriver.deriveCacheKey(
+        staffStart,
+        undefined,
+        false,
+        options
+      );
+      const fanKey = deriver.deriveCacheKey(
+        fanStart,
+        undefined,
+        false,
+        options
+      );
 
       expect(staffKey).not.toBe(fanKey);
     });
@@ -118,8 +190,18 @@ describe("CellCacheKeyDeriver (lsp8 composition)", () => {
       const normalOptions = makeOptions({ handPathMode: false });
       const handPathOptions = makeOptions({ handPathMode: true });
 
-      const normalKey = deriver.deriveCacheKey(data, undefined, false, normalOptions);
-      const handPathKey = deriver.deriveCacheKey(data, undefined, false, handPathOptions);
+      const normalKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        false,
+        normalOptions
+      );
+      const handPathKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        false,
+        handPathOptions
+      );
 
       expect(normalKey).not.toBe(handPathKey);
     });
@@ -132,7 +214,12 @@ describe("CellCacheKeyDeriver (lsp8 composition)", () => {
       const activeOptions = makeOptions({ handPointVisibility: "active" });
 
       const allKey = deriver.deriveCacheKey(data, undefined, false, allOptions);
-      const activeKey = deriver.deriveCacheKey(data, undefined, false, activeOptions);
+      const activeKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        false,
+        activeOptions
+      );
 
       expect(allKey).not.toBe(activeKey);
     });
@@ -153,8 +240,18 @@ describe("CellCacheKeyDeriver (lsp8 composition)", () => {
 
       const options = makeOptions();
 
-      const diamondKey = deriver.deriveCacheKey(diamondStart, undefined, false, options);
-      const boxKey = deriver.deriveCacheKey(boxStart, undefined, false, options);
+      const diamondKey = deriver.deriveCacheKey(
+        diamondStart,
+        undefined,
+        false,
+        options
+      );
+      const boxKey = deriver.deriveCacheKey(
+        boxStart,
+        undefined,
+        false,
+        options
+      );
 
       expect(diamondKey).not.toBe(boxKey);
     });
@@ -196,33 +293,58 @@ describe("CellCacheKeyDeriver (lsp8 composition)", () => {
   describe("reversal flags differentiation (lsp11)", () => {
     it("blueReversal true vs false produces different keys when showReversals is on", () => {
       const plain = makeStartPosition();
-      const reversed = { ...makeStartPosition(), blueReversal: true } as PictographData;
+      const reversed = {
+        ...makeStartPosition(),
+        blueReversal: true,
+      } as PictographData;
       const options = makeOptions({ showReversals: true });
 
       const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
-      const reversedKey = deriver.deriveCacheKey(reversed, undefined, false, options);
+      const reversedKey = deriver.deriveCacheKey(
+        reversed,
+        undefined,
+        false,
+        options
+      );
 
       expect(plainKey).not.toBe(reversedKey);
     });
 
     it("redReversal true vs false produces different keys when showReversals is on", () => {
       const plain = makeStartPosition();
-      const reversed = { ...makeStartPosition(), redReversal: true } as PictographData;
+      const reversed = {
+        ...makeStartPosition(),
+        redReversal: true,
+      } as PictographData;
       const options = makeOptions({ showReversals: true });
 
       const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
-      const reversedKey = deriver.deriveCacheKey(reversed, undefined, false, options);
+      const reversedKey = deriver.deriveCacheKey(
+        reversed,
+        undefined,
+        false,
+        options
+      );
 
       expect(plainKey).not.toBe(reversedKey);
     });
 
     it("reversal flags are neutralized when showReversals is off (no pointless cache split)", () => {
       const plain = makeStartPosition();
-      const reversed = { ...makeStartPosition(), blueReversal: true, redReversal: true } as PictographData;
+      const reversed = {
+        ...makeStartPosition(),
+        blueReversal: true,
+        redReversal: true,
+      } as PictographData;
       const options = makeOptions({ showReversals: false });
 
       const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
-      const reversedKey = deriver.deriveCacheKey(reversed, undefined, false, options);
+      const reversedKey = deriver.deriveCacheKey(
+        reversed,
+        undefined,
+        false,
+        options
+      );
 
       expect(plainKey).toBe(reversedKey);
     });
@@ -231,11 +353,19 @@ describe("CellCacheKeyDeriver (lsp8 composition)", () => {
   describe("betaSwapped differentiation (lsp11)", () => {
     it("betaSwapped true vs false produces different keys", () => {
       const plain = makeStartPosition();
-      const swapped = { ...makeStartPosition(), betaSwapped: true } as PictographData;
+      const swapped = {
+        ...makeStartPosition(),
+        betaSwapped: true,
+      } as PictographData;
       const options = makeOptions();
 
       const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
-      const swappedKey = deriver.deriveCacheKey(swapped, undefined, false, options);
+      const swappedKey = deriver.deriveCacheKey(
+        swapped,
+        undefined,
+        false,
+        options
+      );
 
       expect(plainKey).not.toBe(swappedKey);
     });
