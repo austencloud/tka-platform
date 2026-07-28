@@ -148,20 +148,37 @@ This is a verification criterion, not a new mechanism.
   above). Prefer routing it through the URL so the destination is linkable and
   survives refresh; today nothing in this path is URL-addressable.
 
-  **HARD PREREQUISITE — verify before building.** `GalleryDrill` filters over a
-  `pool` its host supplies; every host passes `engine.allSequences`
-  (`BrowseModule.svelte:502` and the three sheets). **If that pool does not
-  contain the sequences of the creator whose profile you came from, the Archive
-  handoff silently lands on an empty or wrong result and the entire design
-  fails.** The drill's own header calls it "the community pool"
-  (`GalleryDrill.svelte:18`).
+  **RESOLVED 2026-07-28 — and it partly breaks decision #1.**
 
-  Two cases must be checked separately, because they are not the same pool
-  question: your OWN profile (is your private library in `allSequences`?) and
-  ANOTHER creator's profile (are their public sequences?). Unresolved. This is
-  step one of the plan, not a detail — if it fails, decision #2 has to be
-  revisited and an in-place mount over a profile-supplied pool becomes the
-  likely answer, which the `variant="sheet"` precedent already supports.
+  `allSequences` is fed by two mutually exclusive loaders, chosen by a `source`
+  switch (`create-browse-engine.svelte.ts:164`, dispatched at `:721` and `:727`):
+
+  | `source` | Loader | Contents |
+  |---|---|---|
+  | `"community"` | `loadCommunitySequences()` (`:449`) | The published/public pool |
+  | `"my-library"` | `loadLibrarySequences()` | The signed-in user's own library |
+
+  Meanwhile the Archive's count comes from
+  `getLibraryRepository().getUserSequences(id)` (`ProfileStage.svelte:67`) —
+  the **private library**. So the two profile cases need DIFFERENT handoffs:
+
+  - **Another creator's profile** → `source: "community"` + `author` filter.
+    Correct, and it shows their published work, which is all a visitor should
+    see anyway.
+  - **Your own profile** → must be `source: "my-library"`. Sending it to the
+    community pool filtered by author would show only your PUBLISHED sequences,
+    while the doorway above it advertises 505. **The doorway would lie about
+    its own count**, and the gap is silent — no error, just a smaller grid.
+
+  This does not undo decision #1 (the doorway looks and behaves the same for
+  everyone, no owner-only wall), but it does mean the handoff cannot be one
+  code path. The branch is in the plumbing — which `source` the destination
+  opens in — not in the UI. Say so in the plan rather than discovering it in a
+  browser.
+
+  Whichever source is used, the doorway's count MUST be derived from the same
+  pool the handoff lands in. A count from one source over a doorway into
+  another is the defect this whole finding is about.
 - **Collections (past threshold) → `CollectionGalleryDetail`**, scoped to this
   user, opened on the medium that was showing when the handoff was taken (the
   filter chips already track this).
