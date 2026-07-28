@@ -76,52 +76,11 @@ function strokeTrails(
 	}
 }
 
-/** First on-curve point of a path set — where that hand's trail starts. */
-function startPoint(pathData: readonly SVGPathData[]): { x: number; y: number } | null {
-	for (const { d } of pathData) {
-		const nums = d.match(/-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?/g)?.map(Number) ?? [];
-		if (nums.length >= 2) return { x: nums[0]!, y: nums[1]! };
-	}
-	return null;
-}
-
-/** Solid dot marking where a hand begins, drawn over the glow (not added to it). */
-function markStart(
-	ctx: CanvasRenderingContext2D,
-	pathData: readonly SVGPathData[],
-	color: string,
-	radius: number
-): void {
-	const p = startPoint(pathData);
-	if (!p) return;
-	ctx.save();
-	ctx.globalCompositeOperation = "source-over";
-	ctx.globalAlpha = 1;
-	ctx.beginPath();
-	ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-	ctx.fillStyle = color;
-	ctx.fill();
-	ctx.lineWidth = radius * 0.45;
-	ctx.strokeStyle = "rgba(255,255,255,0.9)";
-	ctx.stroke();
-	ctx.restore();
-}
-
-export interface PoiPaintOptions {
-	/**
-	 * Mark where each hand starts. Two loops can trace the identical path set
-	 * and differ only in the hands' phase — split versus together timing is
-	 * exactly that — so the start points are the only static tell.
-	 */
-	startMarkers?: boolean;
-}
-
 function paint(
 	paths: MandalaPaths,
 	show: "blue" | "red" | "both",
 	sizePx: number,
-	tipDx: number,
-	opts?: PoiPaintOptions
+	tipDx: number
 ): string {
 	const canvas = document.createElement("canvas");
 	canvas.width = sizePx;
@@ -142,12 +101,6 @@ function paint(
 	const coreWidth = 2.2 / fitScale(sizePx, tipDx);
 	if (show === "blue" || show === "both") strokeTrails(ctx, paths.blue, HAND_STOPS.blue, coreWidth);
 	if (show === "red" || show === "both") strokeTrails(ctx, paths.red, HAND_STOPS.red, coreWidth);
-
-	if (opts?.startMarkers) {
-		const dot = coreWidth * 2.6;
-		if (show === "blue" || show === "both") markStart(ctx, paths.blue, HAND_STOPS.blue[0], dot);
-		if (show === "red" || show === "both") markStart(ctx, paths.red, HAND_STOPS.red[0], dot);
-	}
 	ctx.restore();
 
 	return canvas.toDataURL("image/png");
@@ -158,11 +111,10 @@ export function renderPoiCell(
 	blue: MandalaPaths,
 	red: MandalaPaths,
 	sizePx: number,
-	tipDx: number,
-	opts?: PoiPaintOptions
+	tipDx: number
 ): string {
 	const merged: MandalaPaths = { blue: blue.blue, red: red.red, purple: [] };
-	return paint(merged, "both", sizePx, tipDx, opts);
+	return paint(merged, "both", sizePx, tipDx);
 }
 
 /** A single poi-trail axis-header flower. */
