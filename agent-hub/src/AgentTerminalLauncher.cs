@@ -12,16 +12,113 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 class AgentTerminalLauncher
 {
     const string LeasePrefix = "Local\\AgentHub.TerminalColor.v1.";
     const string ReadyPrefix = "Local\\AgentHub.TerminalColorReady.v1.";
+    const string ManualAssignmentPrefix = "Local\\AgentHub.TerminalColorAssignment.v1.";
+    const string ManualAssignmentLockPrefix = "Local\\AgentHub.TerminalColorAssignmentLock.v1.";
     const int ReadyTimeoutMs = 10000;
     const int SessionColorCount = 16;
     const string InitialTitle = "Starting Session";
+    const uint Th32csSnapProcess = 0x00000002;
+    const uint GenericWrite = 0x40000000;
+    const uint FileShareRead = 0x00000001;
+    const uint FileShareWrite = 0x00000002;
+    const uint OpenExisting = 3;
+    const uint EnableVirtualTerminalProcessing = 0x00000004;
+    const int MaxPath = 260;
+    static readonly IntPtr InvalidHandleValue = new IntPtr(-1);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    struct ProcessEntry32
+    {
+        public uint Size;
+        public uint Usage;
+        public uint ProcessId;
+        public IntPtr DefaultHeapId;
+        public uint ModuleId;
+        public uint Threads;
+        public uint ParentProcessId;
+        public int BasePriority;
+        public uint Flags;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MaxPath)]
+        public string ExeFile;
+    }
+
+    sealed class ProcessEntry
+    {
+        public readonly int ParentProcessId;
+        public readonly string ExeFile;
+
+        public ProcessEntry(int parentProcessId, string exeFile)
+        {
+            ParentProcessId = parentProcessId;
+            ExeFile = exeFile;
+        }
+    }
+
+    sealed class ProcessContext
+    {
+        public readonly int OwnerProcessId;
+        public readonly int ConsoleProcessId;
+
+        public ProcessContext(int ownerProcessId, int consoleProcessId)
+        {
+            OwnerProcessId = ownerProcessId;
+            ConsoleProcessId = consoleProcessId;
+        }
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint processId);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    static extern bool Process32First(IntPtr snapshot, ref ProcessEntry32 entry);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    static extern bool Process32Next(IntPtr snapshot, ref ProcessEntry32 entry);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool FreeConsole();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool AttachConsole(uint processId);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    static extern IntPtr CreateFile(
+        string fileName,
+        uint desiredAccess,
+        uint shareMode,
+        IntPtr securityAttributes,
+        uint creationDisposition,
+        uint flagsAndAttributes,
+        IntPtr templateFile
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool GetConsoleMode(IntPtr handle, out uint mode);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool SetConsoleMode(IntPtr handle, uint mode);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool WriteFile(
+        IntPtr handle,
+        byte[] buffer,
+        uint bytesToWrite,
+        out uint bytesWritten,
+        IntPtr overlapped
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool CloseHandle(IntPtr handle);
 
     sealed class ColorLease : IDisposable
     {
@@ -47,6 +144,8 @@ class AgentTerminalLauncher
             Dictionary<string, string> args = ParseArgs(argv);
             if (args.ContainsKey("SelfTest")) return SelfTest();
             if (args.ContainsKey("SelfTestLeaseChild")) return SelfTestLeaseChild(args);
+            if (args.ContainsKey("ApplyCurrentColor")) return ApplyCurrentColor();
+            if (args.ContainsKey("HoldManualColor")) return HoldManualColor(args);
             if (args.ContainsKey("HoldColor")) return RunInsideTerminal(args);
             return LaunchTerminal(args);
         }
@@ -131,10 +230,376 @@ class AgentTerminalLauncher
 
             Environment.SetEnvironmentVariable("TKA_AGENT_TERMINAL", "1");
             Environment.SetEnvironmentVariable("TKA_AGENT_COLOR_SCHEME", SessionSchemeName(colorIndex));
+            Environment.SetEnvironmentVariable(
+                "TKA_AGENT_TERMINAL_SESSION_PID",
+                Process.GetCurrentProcess().Id.ToString()
+            );
             ClearInheritedAgentSessionMarkers();
             try { Console.Title = InitialTitle; } catch { }
             return RunAgent(agent, project, args);
         }
+    }
+
+    static int ApplyCurrentColor()
+    {
+        TextWriter report = Console.Out;
+        ProcessContext context = FindProcessContext();
+
+        int colorIndex;
+        string source;
+        if (TryGetInheritedColor(out colorIndex))
+        {
+            source = "existing lease";
+        }
+        else
+        {
+            colorIndex = GetOrClaimManualColor(context.OwnerProcessId);
+            source = "new lease";
+        }
+
+        string background = ReadSessionBackground(colorIndex);
+        WriteTerminalBackground(context.ConsoleProcessId, background);
+        report.WriteLine(
+            "Applied {0} ({1}) to this terminal using its {2}.",
+            SessionSchemeName(colorIndex),
+            background,
+            source
+        );
+        report.Flush();
+        return 0;
+    }
+
+    static bool TryGetInheritedColor(out int colorIndex)
+    {
+        string value = Environment.GetEnvironmentVariable("TKA_AGENT_COLOR_SCHEME") ?? "";
+        return TryParseSessionScheme(value, out colorIndex);
+    }
+
+    static bool TryParseSessionScheme(string value, out int colorIndex)
+    {
+        colorIndex = -1;
+        Match match = Regex.Match(
+            (value ?? "").Trim(),
+            "^Agent Hub Session ([0-9]{2})$",
+            RegexOptions.CultureInvariant
+        );
+        int number;
+        if (!match.Success || !int.TryParse(match.Groups[1].Value, out number)) return false;
+        colorIndex = number - 1;
+        return colorIndex >= 0 && colorIndex < SessionColorCount;
+    }
+
+    static int GetOrClaimManualColor(int ownerProcessId)
+    {
+        string sessionKey = CurrentTerminalSessionKey(ownerProcessId);
+        string lockName = ManualAssignmentLockPrefix + sessionKey;
+        bool lockCreated;
+        using (var assignmentLock = new Mutex(false, lockName, out lockCreated))
+        {
+            bool lockTaken = false;
+            try
+            {
+                try { lockTaken = assignmentLock.WaitOne(ReadyTimeoutMs); }
+                catch (AbandonedMutexException) { lockTaken = true; }
+                if (!lockTaken) throw new TimeoutException("Timed out while assigning this terminal a color.");
+
+                int existingIndex;
+                if (TryFindManualAssignment(sessionKey, out existingIndex)) return existingIndex;
+                return StartManualColorHolder(sessionKey, ownerProcessId);
+            }
+            finally
+            {
+                if (lockTaken) assignmentLock.ReleaseMutex();
+            }
+        }
+    }
+
+    static bool TryFindManualAssignment(string sessionKey, out int colorIndex)
+    {
+        colorIndex = -1;
+        for (int i = 0; i < SessionColorCount; i++)
+        {
+            try
+            {
+                using (EventWaitHandle assignment = EventWaitHandle.OpenExisting(ManualAssignmentName(sessionKey, i)))
+                {
+                    colorIndex = i;
+                    return true;
+                }
+            }
+            catch (WaitHandleCannotBeOpenedException) { }
+        }
+        return false;
+    }
+
+    static int StartManualColorHolder(string sessionKey, int ownerProcessId)
+    {
+        using (ColorLease lease = ClaimColor())
+        {
+            string assignmentName = ManualAssignmentName(sessionKey, lease.Index);
+            bool assignmentCreated;
+            using (var assignment = new EventWaitHandle(
+                false,
+                EventResetMode.ManualReset,
+                assignmentName,
+                out assignmentCreated
+            ))
+            {
+                if (!assignmentCreated) throw new InvalidOperationException("This terminal already has a color assignment.");
+
+                string readyName = ReadyPrefix + Guid.NewGuid().ToString("N");
+                bool readyCreated;
+                using (var ready = new EventWaitHandle(false, EventResetMode.ManualReset, readyName, out readyCreated))
+                {
+                    if (!readyCreated) throw new InvalidOperationException("Could not create the manual color handshake.");
+
+                    string holderPath = CreateSessionCopy();
+                    Process holder = null;
+                    try
+                    {
+                        var psi = new ProcessStartInfo(
+                            holderPath,
+                            JoinArguments(new string[] {
+                                "-HoldManualColor",
+                                "-ColorIndex", lease.Index.ToString(),
+                                "-AssignmentEvent", assignmentName,
+                                "-ReadyEvent", readyName,
+                                "-OwnerPid", ownerProcessId.ToString()
+                            })
+                        );
+                        psi.UseShellExecute = false;
+                        psi.CreateNoWindow = true;
+                        holder = Process.Start(psi);
+                        if (holder == null) throw new InvalidOperationException("Manual color lease holder did not start.");
+                        if (!ready.WaitOne(ReadyTimeoutMs))
+                        {
+                            try { holder.Kill(); } catch { }
+                            throw new TimeoutException("The manual color lease holder did not initialize within 10 seconds.");
+                        }
+                        return lease.Index;
+                    }
+                    catch
+                    {
+                        TryDelete(holderPath);
+                        throw;
+                    }
+                }
+            }
+        }
+    }
+
+    static int HoldManualColor(Dictionary<string, string> args)
+    {
+        int colorIndex;
+        int ownerProcessId;
+        if (!int.TryParse(GetRequired(args, "ColorIndex"), out colorIndex) ||
+            colorIndex < 0 ||
+            colorIndex >= SessionColorCount)
+            throw new ArgumentException("Invalid manual terminal color lease index.");
+        if (!int.TryParse(GetRequired(args, "OwnerPid"), out ownerProcessId) || ownerProcessId <= 0)
+            throw new ArgumentException("Invalid manual terminal color owner process.");
+
+        using (EventWaitHandle lease = EventWaitHandle.OpenExisting(LeaseName(colorIndex)))
+        using (EventWaitHandle assignment = EventWaitHandle.OpenExisting(GetRequired(args, "AssignmentEvent")))
+        {
+            using (EventWaitHandle ready = EventWaitHandle.OpenExisting(GetRequired(args, "ReadyEvent"))) ready.Set();
+            try
+            {
+                using (Process owner = Process.GetProcessById(ownerProcessId)) owner.WaitForExit();
+            }
+            catch (ArgumentException) { }
+        }
+        return 0;
+    }
+
+    static string ManualAssignmentName(string sessionKey, int colorIndex)
+    {
+        return ManualAssignmentPrefix + sessionKey + "." + colorIndex;
+    }
+
+    static string CurrentTerminalSessionKey(int ownerProcessId)
+    {
+        string raw = Environment.GetEnvironmentVariable("WT_SESSION") ?? "";
+        var safe = new StringBuilder();
+        foreach (char ch in raw)
+        {
+            if (char.IsLetterOrDigit(ch)) safe.Append(char.ToLowerInvariant(ch));
+        }
+        if (safe.Length == 0) safe.Append("pid").Append(ownerProcessId);
+        if (safe.Length > 80) safe.Length = 80;
+        return safe.ToString();
+    }
+
+    static ProcessContext FindProcessContext()
+    {
+        Dictionary<int, ProcessEntry> processes = SnapshotProcesses();
+        int self = Process.GetCurrentProcess().Id;
+        ProcessEntry selfEntry;
+        if (!processes.TryGetValue(self, out selfEntry))
+            throw new InvalidOperationException("Could not inspect the color helper's process tree.");
+
+        int ownerProcessId = 0;
+        int consoleProcessId = 0;
+        int childBelowTerminalSession = 0;
+        int current = selfEntry.ParentProcessId;
+        for (int depth = 0; current > 0 && depth < 64; depth++)
+        {
+            ProcessEntry entry;
+            if (!processes.TryGetValue(current, out entry)) break;
+            if (ownerProcessId == 0 && IsAgentProcess(entry.ExeFile)) ownerProcessId = current;
+            if (IsTerminalSessionProcess(entry.ExeFile))
+            {
+                consoleProcessId = current;
+                if (ownerProcessId == 0) ownerProcessId = childBelowTerminalSession;
+                break;
+            }
+            childBelowTerminalSession = current;
+            current = entry.ParentProcessId;
+        }
+
+        int inheritedSessionProcessId;
+        if (TryGetPositiveEnvironmentInteger("TKA_AGENT_TERMINAL_SESSION_PID", out inheritedSessionProcessId) &&
+            processes.ContainsKey(inheritedSessionProcessId))
+            consoleProcessId = inheritedSessionProcessId;
+
+        if (ownerProcessId <= 0)
+            throw new InvalidOperationException("Could not identify the current Claude or Codex process.");
+        if (consoleProcessId <= 0) consoleProcessId = ownerProcessId;
+        return new ProcessContext(ownerProcessId, consoleProcessId);
+    }
+
+    static Dictionary<int, ProcessEntry> SnapshotProcesses()
+    {
+        var result = new Dictionary<int, ProcessEntry>();
+        IntPtr snapshot = CreateToolhelp32Snapshot(Th32csSnapProcess, 0);
+        if (snapshot == InvalidHandleValue)
+            throw new InvalidOperationException("Could not inspect running agent processes.");
+        try
+        {
+            var entry = new ProcessEntry32();
+            entry.Size = (uint)Marshal.SizeOf(typeof(ProcessEntry32));
+            if (!Process32First(snapshot, ref entry)) return result;
+            do
+            {
+                result[(int)entry.ProcessId] = new ProcessEntry(
+                    (int)entry.ParentProcessId,
+                    entry.ExeFile ?? ""
+                );
+            }
+            while (Process32Next(snapshot, ref entry));
+            return result;
+        }
+        finally
+        {
+            CloseHandle(snapshot);
+        }
+    }
+
+    static bool IsAgentProcess(string fileName)
+    {
+        string name = Path.GetFileNameWithoutExtension(fileName ?? "").ToLowerInvariant();
+        return name.StartsWith("claude", StringComparison.Ordinal) ||
+               name.StartsWith("codex", StringComparison.Ordinal);
+    }
+
+    static bool IsTerminalSessionProcess(string fileName)
+    {
+        string name = Path.GetFileNameWithoutExtension(fileName ?? "");
+        return name.StartsWith("AgentTerminalSession-", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static bool TryGetPositiveEnvironmentInteger(string name, out int value)
+    {
+        value = 0;
+        string raw = Environment.GetEnvironmentVariable(name);
+        return int.TryParse(raw, out value) && value > 0;
+    }
+
+    static string ReadSessionBackground(int colorIndex)
+    {
+        string fragmentPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Microsoft",
+            "Windows Terminal",
+            "Fragments",
+            "AgentHub",
+            "session-backgrounds.json"
+        );
+        if (!File.Exists(fragmentPath))
+            throw new FileNotFoundException("Agent Hub's Windows Terminal color fragment is missing.", fragmentPath);
+
+        string json = File.ReadAllText(fragmentPath);
+        Match scheme = Regex.Match(
+            json,
+            "\"name\"\\s*:\\s*\"" + Regex.Escape(SessionSchemeName(colorIndex)) + "\"",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+        );
+        if (!scheme.Success) throw new InvalidDataException("The assigned Agent Hub color scheme is missing.");
+        int objectEnd = json.IndexOf('}', scheme.Index);
+        if (objectEnd < 0) throw new InvalidDataException("The Agent Hub color fragment is malformed.");
+        string schemeObject = json.Substring(scheme.Index, objectEnd - scheme.Index);
+        Match background = Regex.Match(
+            schemeObject,
+            "\"background\"\\s*:\\s*\"(#[0-9a-fA-F]{6})\"",
+            RegexOptions.CultureInvariant
+        );
+        if (!background.Success) throw new InvalidDataException("The assigned Agent Hub background is missing.");
+        return background.Groups[1].Value.ToUpperInvariant();
+    }
+
+    static void WriteTerminalBackground(int consoleProcessId, string background)
+    {
+        FreeConsole();
+        if (!AttachConsole((uint)consoleProcessId))
+            throw new InvalidOperationException(
+                "Could not attach to this terminal (Windows error " + Marshal.GetLastWin32Error() + ")."
+            );
+
+        IntPtr output = CreateFile(
+            "CONOUT$",
+            GenericWrite,
+            FileShareRead | FileShareWrite,
+            IntPtr.Zero,
+            OpenExisting,
+            0,
+            IntPtr.Zero
+        );
+        if (output == IntPtr.Zero || output == InvalidHandleValue)
+            throw new InvalidOperationException(
+                "Could not open this terminal's output channel (Windows error " + Marshal.GetLastWin32Error() + ")."
+            );
+
+        uint originalMode;
+        bool haveMode = GetConsoleMode(output, out originalMode);
+        bool changedMode = haveMode && (originalMode & EnableVirtualTerminalProcessing) == 0;
+        try
+        {
+            if (changedMode && !SetConsoleMode(output, originalMode | EnableVirtualTerminalProcessing))
+                throw new InvalidOperationException(
+                    "Could not enable terminal color output (Windows error " + Marshal.GetLastWin32Error() + ")."
+                );
+
+            string sequence = BuildTerminalBackgroundSequence(background);
+            byte[] bytes = Encoding.UTF8.GetBytes(sequence);
+            uint written;
+            if (!WriteFile(output, bytes, (uint)bytes.Length, out written, IntPtr.Zero) ||
+                written != bytes.Length)
+                throw new IOException(
+                    "Could not write this terminal's background (Windows error " + Marshal.GetLastWin32Error() + ")."
+                );
+        }
+        finally
+        {
+            if (changedMode) SetConsoleMode(output, originalMode);
+            CloseHandle(output);
+        }
+    }
+
+    static string BuildTerminalBackgroundSequence(string background)
+    {
+        return
+            "\x1b]11;" + background + "\x07" +
+            "\x1b]4;0;" + background + "\x07";
     }
 
     static int RunAgent(string agent, string project, Dictionary<string, string> args)
@@ -473,8 +938,19 @@ class AgentTerminalLauncher
                 terminalArgs.IndexOf("--useApplicationTitle", StringComparison.Ordinal) < 0)
                 throw new Exception("Windows Terminal arguments are missing the window, background-matched tab, color scheme, or live-title option.");
 
+            int parsedColor;
+            if (!TryParseSessionScheme("Agent Hub Session 04", out parsedColor) ||
+                parsedColor != 3 ||
+                TryParseSessionScheme("Agent Hub Session 17", out parsedColor))
+                throw new Exception("Session color scheme parsing accepted an invalid assignment.");
+            string colorSequence = BuildTerminalBackgroundSequence("#123456");
+            if (colorSequence.IndexOf("\x1b]11;#123456\x07", StringComparison.Ordinal) < 0 ||
+                colorSequence.IndexOf("\x1b]4;0;#123456\x07", StringComparison.Ordinal) < 0)
+                throw new Exception("Terminal background output is missing its default-background or ANSI black update.");
+
             Console.WriteLine("PASS: all " + SessionColorCount + " session colors were unique, exhaustion-safe, and reusable after release.");
             Console.WriteLine("PASS: Windows Terminal window, background-matched tab, color scheme, live-title, and quoting arguments validated.");
+            Console.WriteLine("PASS: inherited color parsing and live terminal background output validated.");
         }
         finally
         {

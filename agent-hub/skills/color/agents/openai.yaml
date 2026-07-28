@@ -1,0 +1,4 @@
+interface:
+  display_name: "Terminal Color"
+  short_description: "Assign this terminal an unused Agent Hub color"
+  default_prompt: "Use $color to assign this terminal an unused Agent Hub background color."

@@ -8,6 +8,11 @@ dark background tints available, so no two live Claude or Codex sessions share
 one. Each tab uses the same tint as its terminal background. Closing a session
 releases its tint automatically.
 
+Run `/color` in Claude or `$color` in Codex to restore the current window's
+assigned tint. The same skill also works in a manually opened session: it claims
+the first free tint and holds it until that agent exits. Codex also lists it in
+`/skills`.
+
 The terminal title starts as `Starting Session`. Bare `/rename` lets Claude or
 Codex choose an accurate two- or three-word name from the conversation. Use
 `/rename Exact Name` when you want to choose it yourself. The same name appears
@@ -69,10 +74,11 @@ project's existing `launchers\start-*.bat`.
 3. Compiles four small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
 4. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
-5. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
-6. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
+5. Installs the personal `color` skill for Claude and Codex.
+6. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
+7. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
    lacks them, so a bare repo still launches.
-7. Registers the host to start at logon and starts it now.
+8. Registers the host to start at logon and starts it now.
 
 ### Options
 
@@ -180,6 +186,7 @@ agent-hub/
   projects.json      project list (path, display name, icon)
   src/               C# sources for the four executables
   icons/             project icons
+  skills/            personal Claude and Codex skills installed for the user
   templates/         start-claude.bat / start-codex.bat written into bare repos
   KNOWN-ISSUES.md
 ```

@@ -69,6 +69,12 @@ $StartMenu   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Age
 $StartupDir  = [Environment]::GetFolderPath('Startup')
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 $TerminalFragmentPath = Join-Path $TerminalFragmentDir 'session-backgrounds.json'
+$ColorSkillSource = Join-Path $Here 'skills\color'
+$ColorSkillMarker = '.agent-hub-managed'
+$ColorSkillDestinations = @(
+    (Join-Path $env:USERPROFILE '.claude\skills\color'),
+    (Join-Path $env:USERPROFILE '.agents\skills\color')
+)
 $TerminalSettingsPaths = @(
     (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
     (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json'),
@@ -137,6 +143,26 @@ function Get-OklabDistance([string]$first, [string]$second) {
 function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor DarkGray }
 function Write-Warn2($m)  { Write-Host "    ! $m" -ForegroundColor Yellow }
+
+function Install-AgentHubColorSkill([string]$destination) {
+    $markerPath = Join-Path $destination $ColorSkillMarker
+    if ((Test-Path -LiteralPath $destination) -and
+        -not (Test-Path -LiteralPath $markerPath -PathType Leaf)) {
+        Write-Warn2 "kept existing unmanaged color skill at $destination"
+        return $false
+    }
+
+    New-Item -ItemType Directory -Force $destination | Out-Null
+    foreach ($entry in Get-ChildItem -LiteralPath $ColorSkillSource -Force) {
+        Copy-Item -LiteralPath $entry.FullName -Destination $destination -Recurse -Force
+    }
+    [IO.File]::WriteAllText(
+        $markerPath,
+        "Managed by @austencloud/agent-hub.`r`n",
+        [Text.UTF8Encoding]::new($false)
+    )
+    return $true
+}
 
 Write-Host ""
 Write-Host "  Agent Hub installer" -ForegroundColor White
@@ -320,6 +346,21 @@ Write-Ok "terminal color leasing self-test passed"
 
 Copy-Item (Join-Path $Here 'icons\*') $IconDir -Force
 Write-Ok "copied $((Get-ChildItem $IconDir).Count) icons"
+
+Write-Step "Installing the personal color skill for Claude and Codex"
+if (-not (Test-Path -LiteralPath (Join-Path $ColorSkillSource 'SKILL.md') -PathType Leaf)) {
+    throw "Color skill source is missing: $ColorSkillSource"
+}
+$installedColorSkills = 0
+foreach ($destination in $ColorSkillDestinations) {
+    if (Install-AgentHubColorSkill $destination) {
+        $installedColorSkills++
+        Write-Ok $destination
+    }
+}
+if ($installedColorSkills -eq 0) {
+    Write-Warn2 "no personal color skill was installed because both destinations are user-owned"
+}
 
 # ---------------------------------------------------------------- 3. projects
 Write-Step "Resolving projects"
