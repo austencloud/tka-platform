@@ -56,6 +56,22 @@
      * passes a tighter extent and gets a correspondingly larger drawing.
      */
     extent?: number;
+    /**
+     * Size the viewBox to what this move actually reaches, rather than to a
+     * fixed reserve.
+     *
+     * A fixed extent has to cover the widest thing it will ever be asked to
+     * draw, so every move narrower than that is rendered inside a margin it
+     * never uses — Isolation was filling 65% of its box, on a page whose entire
+     * job is to show it. Fitting recovers that.
+     *
+     * The instrument does NOT fit: its radius knob is a continuous control, and
+     * a stage that rescales as you drag it would make the knob look like it was
+     * doing nothing. The guide's moves are discrete, each states its radius in
+     * words, and the hand path stays legible against the compass ring — so
+     * there the fit is free.
+     */
+    fit?: boolean;
   }
 
   let {
@@ -65,12 +81,11 @@
     pendulum = false,
     layers = ALL_LAYERS,
     extent = 270,
+    fit = false,
   }: Props = $props();
 
   /** Pixels per prop length. The head reaches radius + 1, so 2.5 at the widest. */
   const UNIT = 100;
-  const EXTENT = $derived(extent);
-
   const HOME_BASE = [1, 2, 3, 4, 5, 6, 7, 8];
   const RING = PROP_LENGTH * UNIT;
 
@@ -297,6 +312,62 @@
     const start = indexAt(from);
     return wedge(start, indexAt(cursor) - start);
   });
+
+  /* Radii of the things that stick out past the point they are drawn at. */
+  const LABEL_R = 26;
+  const HEAD_R = 22;
+  const STROKE_R = 5;
+  /** Roughly the dart's arrowhead, which the geometry below does not include. */
+  const MARKER_R = 12;
+
+  /**
+   * How far this move reaches from the centre, over its whole cycle.
+   *
+   * Measured off the model rather than off the rendered DOM: a `getBBox` pass
+   * would only know about the frame currently on screen, so the stage would
+   * rescale the first time a later step reached further — and rescaling a
+   * drawing mid-cycle is worse than drawing it small.
+   *
+   * Layer state is deliberately NOT consulted. Switching a layer off would
+   * otherwise resize everything left behind, which reads as the stage lurching
+   * rather than as one element disappearing.
+   */
+  const reach = $derived.by(() => {
+    let out = PROP_LENGTH * 1.28 * UNIT + LABEL_R;
+    const bump = (x: number, y: number, pad: number) => {
+      out = Math.max(out, Math.abs(x) + pad, Math.abs(y) + pad);
+    };
+
+    for (const p of samples) bump(p.x * UNIT, p.y * UNIT, HEAD_R);
+
+    for (let k = 0; k < 8; k += 1) {
+      const at = pendulum ? pendulumPosesAt(k) : posesAt(knobs, k);
+      const h = { x: at.hand.x * UNIT, y: at.hand.y * UNIT };
+      /* The prop's own compass rides the hand, so it reaches a prop length past it. */
+      bump(h.x, h.y, PROP_LENGTH * UNIT + STROKE_R);
+
+      const value = increments[k]?.propDirDepart;
+      if (value === undefined || value === "n") continue;
+      /* The dart fires from the departure point and runs its full travel. */
+      const offset = pointAt(increments[k]?.propDepart ?? 8, PROP_LENGTH);
+      const heading = pointAt(value, (DART_TRAVEL + DART_LENGTH) * UNIT);
+      bump(
+        h.x + offset.x * UNIT + heading.x,
+        h.y + offset.y * UNIT + heading.y,
+        MARKER_R
+      );
+    }
+
+    return out;
+  });
+
+  /** A little air, so nothing sits flush against the edge of the box. */
+  const FIT_MARGIN = 1.04;
+
+  /* Declared here rather than beside UNIT: `reach` is defined above, and
+     referencing it earlier is a temporal dead zone that survives client-side
+     HMR but fails the server render outright. */
+  const EXTENT = $derived(fit ? reach * FIT_MARGIN : extent);
 </script>
 
 <svg

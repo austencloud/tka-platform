@@ -50,7 +50,7 @@
           {cursor}
           {layers}
           pendulum={move.pendulum ?? false}
-          extent={235}
+          fit
         />
       </div>
       <figcaption>
@@ -143,7 +143,7 @@
      * the box so that it grows the flex line, instead of overflowing the figure
      * and painting over the notation.
      */
-    min-height: min(56vw, 34vh);
+    min-height: min(72vw, 44vh);
     width: 100%;
     /* Stretch, not a content-sized centred column: the figure has to be as wide
        as the pane before the box can use that width. */
@@ -268,7 +268,13 @@
        * field, which is the exact failure `.claude/rules/4k-native-layout.md`
        * exists to prevent.
        */
-      --box-h: clamp(16rem, 54vh, 64rem);
+      /*
+       * Smaller than it looks, because the drawing now fits its box instead of
+       * sitting in a third of it. At 54vh the fitted stage came out larger than
+       * the title beside it — a zoomed-in diagram rather than a composed page.
+       * This lands the drawing at about the size it was, with the margin gone.
+       */
+      --box-h: clamp(14rem, 44vh, 52rem);
       display: grid;
       /* Matched to the instrument's column, so the two modes stay registered
          across the crossfade and neither leaves dead rail at 4K. */
@@ -307,6 +313,7 @@
       grid-area: pair;
       align-self: center;
       flex: none;
+      min-height: 0;
       width: auto;
     }
 
@@ -371,6 +378,7 @@
       grid-area: pair;
       align-self: center;
       flex: none;
+      min-height: 0;
       width: auto;
     }
 
