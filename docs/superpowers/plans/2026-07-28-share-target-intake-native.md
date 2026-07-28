@@ -1607,7 +1607,7 @@ git commit -m "feat(share-intake): bridge plugin URIs to Files with encoding, si
 ```
 
 ---
-### Task 6: Durable intake store
+### Task 6: Durable intake store — DONE (`daa0e693ff`)
 
 **Closes trace steps 1.6, 2.12 and 3.11.** This is the only reason any of the
 three traces can survive a reload, a crash, or a trip to an email client.
@@ -2220,7 +2220,7 @@ git commit -m "feat(share-intake): durable byte-backed IndexedDB store with quot
 
 ---
 
-### Task 7: Per-item classification
+### Task 7: Per-item classification — DONE (`4ae3942d2d`)
 
 **Closes trace steps 1.10 and 2.9.** This is the hop that decides, per file,
 whether trace 1 (card → viewer) or trace 2 (image → picker) applies.
