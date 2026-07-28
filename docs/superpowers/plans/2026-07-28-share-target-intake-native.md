@@ -3682,7 +3682,7 @@ covered because git records the rename from the new path.
 
 ---
 
-### Task 10: Route a classified intake to its destination
+### Task 10: Route a classified intake to its destination — DONE (`336dff9ab7`)
 
 **Closes trace steps 1.12, 1.13's hand-off, and 2.11.** This is where a
 classification becomes something the user can see: a card opens the viewer, an
@@ -4376,7 +4376,7 @@ git commit -m "feat(share-intake): route classified intakes to a viewer or a con
 
 ---
 
-### Task 11: The consumer — `share-intake-runner`
+### Task 11: The consumer — `share-intake-runner` — DONE (`f5c578f48c`)
 
 **Closes trace steps 1.10, 1.14, 2.10, 2.12, 2.14 and 3.10–3.12.** This is the
 lifecycle: what gets classified, what has to wait for a sign-in, when a record
