@@ -196,13 +196,51 @@ describe("deriveReceiptId", () => {
   });
 
   it("handles a text-only share with no files", () => {
-    expect(deriveReceiptId({ files: [], texts: ["tka.run/ABC"] })).toMatch(/^si_[0-9a-z]+$/);
+    expect(deriveReceiptId({ files: [], texts: ["tka.run/ABC"] })).toMatch(/^si_[0-9A-Za-z]{22}$/);
   });
 
   it("is order-independent across files", () => {
     const a = { files: [{ uri: "/x", name: "x", mimeType: "image/png", size: 1 }, { uri: "/y", name: "y", mimeType: "image/png", size: 2 }], texts: [] };
     const b = { files: [a.files[1], a.files[0]], texts: [] };
     expect(deriveReceiptId(a)).toBe(deriveReceiptId(b));
+  });
+
+  // The headline invariant: the two cold-launch deliveries of ONE share can
+  // carry different cache paths. If a future edit folds uri into the material,
+  // dedup silently breaks and every cold-launch share doubles. Guard it.
+  it("ignores the uri entirely", () => {
+    const a = { files: [{ uri: "/cache/first/a.png", name: "a.png", mimeType: "image/png", size: 1024 }], texts: [] };
+    const b = { files: [{ ...a.files[0], uri: "/cache/second/a.png" }], texts: [] };
+    expect(deriveReceiptId(a)).toBe(deriveReceiptId(b));
+  });
+
+  it("differs when only the size differs", () => {
+    const other = { ...shared, files: [{ ...shared.files[0], size: 2048 }] };
+    expect(deriveReceiptId(other)).not.toBe(deriveReceiptId(shared));
+  });
+
+  it("distinguishes an absent size from a zero size", () => {
+    const absent = { files: [{ uri: "/a", name: "a.png", mimeType: "image/png" }], texts: [] };
+    const zero = { files: [{ ...absent.files[0], size: 0 }], texts: [] };
+    expect(deriveReceiptId(absent)).not.toBe(deriveReceiptId(zero));
+  });
+
+  it("differs when only the mime type differs", () => {
+    const other = { ...shared, files: [{ ...shared.files[0], mimeType: "image/jpeg" }] };
+    expect(deriveReceiptId(other)).not.toBe(deriveReceiptId(shared));
+  });
+
+  // mimeType and text come from whichever app invoked the share, so they are
+  // untrusted input. Length-prefixing is what stops a crafted value from
+  // shifting a field boundary and forging a collision with a pending intake.
+  it("resists delimiter injection in untrusted fields", () => {
+    const split = { files: [], texts: ["a", "b"] };
+    const joined = { files: [], texts: ["ab"] };
+    expect(deriveReceiptId(split)).not.toBe(deriveReceiptId(joined));
+
+    const nameCarries = { files: [{ uri: "/a", name: "a b", mimeType: "c", size: 1 }], texts: [] };
+    const mimeCarries = { files: [{ uri: "/a", name: "a", mimeType: "b c", size: 1 }], texts: [] };
+    expect(deriveReceiptId(nameCarries)).not.toBe(deriveReceiptId(mimeCarries));
   });
 });
 ```
@@ -247,6 +285,23 @@ export interface SharedIntake {
   receivedAt: number;
 }
 
+/**
+ * What `deriveReceiptId` hashes. Deliberately NOT `SharedIntake`: the id has to
+ * be computed from the plugin's raw descriptors, before any File exists.
+ *
+ * `texts` is plural while `SharedIntake.text` is a single optional string
+ * because Android can deliver several EXTRA_TEXT values. The adapter maps
+ * absence to an EMPTY ARRAY, never to `[""]` - the two hash differently, and
+ * picking the wrong one desyncs the id between the two cold-launch deliveries.
+ *
+ * `title` (Android EXTRA_SUBJECT) is intentionally NOT hashed: it is decorative,
+ * and some senders populate it inconsistently between deliveries.
+ */
+export interface ReceiptInput {
+  files: SharedFileDescriptor[];
+  texts: string[];
+}
+
 /** Per-item routing decision. Classification is per file, never per batch. */
 export type IntakeItem =
   | { kind: "card"; code: string; file: File }
@@ -266,11 +321,18 @@ export interface IntakeClassification {
 Create `src/lib/shared/share-intake/domain/derive-receipt-id.ts`:
 
 ```ts
-import type { SharedFileDescriptor } from "./share-intake-models";
+import { hashString } from "$lib/shared/foundation/services/content-hasher";
+import type { ReceiptInput } from "./share-intake-models";
 
-interface ReceiptInput {
-  files: SharedFileDescriptor[];
-  texts: string[];
+/**
+ * Length-prefix a field so its content cannot shift a boundary in the hashed
+ * material. `mimeType` and the shared text come from whichever app invoked the
+ * share, so they are untrusted: with plain delimiters, a crafted value lets an
+ * unrelated share forge the receipt id of a pending one and be swallowed as a
+ * duplicate.
+ */
+function field(value: string): string {
+  return `${value.length}:${value}`;
 }
 
 /**
@@ -284,32 +346,45 @@ interface ReceiptInput {
  * Files are sorted so two deliveries that enumerate in a different order still
  * collapse to one id. The uri is deliberately EXCLUDED - the plugin can write
  * the same share to a different cache path on the second delivery.
+ *
+ * Consequence worth knowing: two genuinely different files that agree on
+ * name + mimeType + size hash identically. That is the accepted cost of
+ * excluding the uri without reading bytes, and it is bounded by the store's
+ * one-hour TTL (Task 5).
  */
 export function deriveReceiptId(input: ReceiptInput): string {
   const fileParts = input.files
-    .map((f) => `${f.name}\u0000${f.mimeType}\u0000${f.size ?? 0}`)
+    .map((f) =>
+      [
+        field(f.name),
+        field(f.mimeType),
+        // "-" and "0" must not collapse: if one delivery reports a size and the
+        // other omits it, the ids MUST diverge visibly rather than silently
+        // agreeing on a sentinel that hides the desync.
+        field(f.size === undefined ? "-" : String(f.size)),
+      ].join("")
+    )
     .sort();
-  const material = [...fileParts, "\u0001", ...input.texts].join("\u0002");
 
-  // FNV-1a 32-bit, doubled with a second offset basis for a wider key. No
-  // crypto needed - this is a dedup key, not a security boundary.
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < material.length; i++) {
-    const c = material.charCodeAt(i);
-    h1 = Math.imul(h1 ^ c, 0x01000193);
-    h2 = Math.imul(h2 ^ c, 0x811c9dc5);
-  }
-  const a = (h1 >>> 0).toString(36);
-  const b = (h2 >>> 0).toString(36);
-  return `si_${a}${b}`;
+  // The file count is length-prefixed first, so the files/texts boundary is
+  // positional and cannot be forged by any field value.
+  const material = [
+    field(String(fileParts.length)),
+    ...fileParts,
+    ...input.texts.map(field),
+  ].join("");
+
+  // hashString is the repo's 128-bit FNV-1a, emitting a fixed-width 22-char
+  // base62 digest (content-hasher.ts:156). Fixed width matters: concatenating
+  // two variable-length digests makes its own split point ambiguous.
+  return `si_${hashString(material)}`;
 }
 ```
 
 - [ ] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/derive-receipt-id.test.ts`
-Expected: PASS, 5 tests.
+Expected: PASS, 10 tests.
 
 - [ ] **Step 6: Commit**
 
