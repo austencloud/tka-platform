@@ -21,6 +21,7 @@ export const SoloPropDataSchema = z
     bigrams: z.array(z.string()),
     impliedGridMode: z.string(),
     name: z.string().optional(),
+    authoredHand: z.enum(["left", "right"]).optional(),
     author: z.string().optional(),
     notes: z.string().optional(),
     thumbnails: z.array(z.string()).optional(),

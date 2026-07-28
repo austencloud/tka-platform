@@ -27,6 +27,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 
 function injectRealCsvData() {
   const root = resolve(__dirname, "../../..");
@@ -221,6 +222,80 @@ describe("hydrateSequence — encode/decode round-trip", () => {
     expect(start.motions.blue?.propPlacementData).toBeTruthy();
     expect(start.motions.red?.propPlacementData).toBeTruthy();
     expect(hydrated.startingPosition).toEqual(start);
+  });
+
+  it("keeps solo choreography unlettered when a stale beat carries a letter", async () => {
+    const soloStep: StepData = {
+      ...makeStep(
+        1,
+        {
+          motionType: MotionType.DASH,
+          rotationDirection: RotationDirection.NO_ROTATION,
+          startLocation: GridLocation.NORTHEAST,
+          endLocation: GridLocation.WEST,
+          startOrientation: Orientation.IN,
+          endOrientation: Orientation.OUT,
+          turns: 0,
+          propType: PropType.STAFF,
+        },
+        {
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.NO_ROTATION,
+          startLocation: GridLocation.NORTH,
+          endLocation: GridLocation.NORTH,
+          startOrientation: Orientation.IN,
+          endOrientation: Orientation.IN,
+          turns: 0,
+          propType: PropType.STAFF,
+          isVisible: false,
+        }
+      ),
+      letter: "Λ",
+    };
+    const original = createSequenceData({
+      word: "Λ",
+      name: "Shared Sequence",
+      displayName: "Shared Sequence",
+      steps: [soloStep],
+      startPosition: createStartPositionData({
+        motions: {
+          blue: createMotionData({
+            motionType: MotionType.STATIC,
+            rotationDirection: RotationDirection.NO_ROTATION,
+            startLocation: GridLocation.NORTHEAST,
+            endLocation: GridLocation.NORTHEAST,
+            startOrientation: Orientation.IN,
+            endOrientation: Orientation.IN,
+            turns: 0,
+            color: MotionColor.BLUE,
+            propType: PropType.STAFF,
+            isVisible: true,
+          }),
+          red: createMotionData({
+            motionType: MotionType.STATIC,
+            rotationDirection: RotationDirection.NO_ROTATION,
+            startLocation: GridLocation.NORTH,
+            endLocation: GridLocation.NORTH,
+            startOrientation: Orientation.IN,
+            endOrientation: Orientation.IN,
+            turns: 0,
+            color: MotionColor.RED,
+            propType: PropType.STAFF,
+            isVisible: false,
+          }),
+        },
+      }),
+    });
+
+    const hydrated = await hydrateSequence(original, { loopDetector: null });
+
+    expect(hydrated.word).toBe("");
+    expect(hydrated.steps[0]?.letter).toBeNull();
+    expect(hydrated.name).toBe("Shared Sequence");
+    expect(hydrated.displayName).toBe("Shared Sequence");
+    expect(isVisibleMotion(hydrated.steps[0]?.motions.red)).toBe(false);
+    expect(isVisibleMotion(hydrated.startPosition?.motions.blue)).toBe(true);
+    expect(isVisibleMotion(hydrated.startPosition?.motions.red)).toBe(false);
   });
 
   it("preserves fractional turns (0.5) through encode → decode", () => {

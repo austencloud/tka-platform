@@ -39,14 +39,14 @@ export type SequenceSource = "community" | "my-library";
  * by the user and are not shown as dismissible chips.
  */
 export interface ActiveFilter {
-	type: BrowseFilterType;
-	value: BrowseFilterValue;
-	/** Human-readable label for chip display (e.g. "Level 2", "Favorites"). */
-	label: string;
-	/** CSS color for chip accent — a CSS variable reference or hex value. */
-	chipColor: string;
-	/** When true, this filter was set by the host and cannot be removed by the user. */
-	locked: boolean;
+  type: BrowseFilterType;
+  value: BrowseFilterValue;
+  /** Human-readable label for chip display (e.g. "Level 2", "Favorites"). */
+  label: string;
+  /** CSS color for chip accent — a CSS variable reference or hex value. */
+  chipColor: string;
+  /** When true, this filter was set by the host and cannot be removed by the user. */
+  locked: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,13 +55,13 @@ export interface ActiveFilter {
 
 /** How sequences are grouped into sections. */
 export type SectionGroupBy =
-	| keyof SequenceData
-	| "letter"
-	| "length"
-	| "difficulty"
-	| "date"
-	| "tnd-family"
-	| "none";
+  | keyof SequenceData
+  | "letter"
+  | "length"
+  | "difficulty"
+  | "date"
+  | "tnd-family"
+  | "none";
 
 // ---------------------------------------------------------------------------
 // Persisted State
@@ -69,13 +69,13 @@ export type SectionGroupBy =
 
 /** Shape written to / read from localStorage under `persistKey`. */
 export interface PersistedEngineState {
-	source: SequenceSource;
-	sortMethod: BrowseSortMethod;
-	sortDirection: "asc" | "desc";
-	/** Serialized Map<string, ActiveFilter> entries (non-locked only). */
-	activeFilters: Array<[string, ActiveFilter]>;
-	columns: number;
-	viewMode?: BrowseViewMode;
+  source: SequenceSource;
+  sortMethod: BrowseSortMethod;
+  sortDirection: "asc" | "desc";
+  /** Serialized Map<string, ActiveFilter> entries (non-locked only). */
+  activeFilters: Array<[string, ActiveFilter]>;
+  columns: number;
+  viewMode?: BrowseViewMode;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,56 +89,65 @@ export interface PersistedEngineState {
  * Sensible defaults are applied for every optional field.
  */
 export interface BrowseEngineConfig {
-	/**
-	 * localStorage key prefix for persisting engine state.
-	 * `null` = ephemeral (modal pickers that shouldn't remember state).
-	 */
-	persistKey: string | null;
+  /**
+   * localStorage key prefix for persisting engine state.
+   * `null` = ephemeral (modal pickers that shouldn't remember state).
+   */
+  persistKey: string | null;
 
-	/** Initial source. Defaults to "community". */
-	initialSource?: SequenceSource;
+  /** Initial source. Defaults to "community". */
+  initialSource?: SequenceSource;
 
-	/** Initial sort method. Defaults to ALPHABETICAL. */
-	initialSort?: BrowseSortMethod;
+  /** Initial sort method. Defaults to ALPHABETICAL. */
+  initialSort?: BrowseSortMethod;
 
-	/** Initial sort direction. Defaults to "asc". */
-	initialSortDirection?: "asc" | "desc";
+  /** Initial sort direction. Defaults to "asc". */
+  initialSortDirection?: "asc" | "desc";
 
-	/**
-	 * Locked filters — constraints the host imposes that the user cannot remove.
-	 * Example: a modal picker that only shows sequences of length 4.
-	 */
-	constraints?: Array<{
-		type: BrowseFilterType;
-		value: BrowseFilterValue;
-		label: string;
-	}>;
+  /**
+   * Locked filters — constraints the host imposes that the user cannot remove.
+   * Example: a modal picker that only shows sequences of length 4.
+   */
+  constraints?: Array<{
+    type: BrowseFilterType;
+    value: BrowseFilterValue;
+    label: string;
+  }>;
 
-	/** Pins the column count and skips width auto-adaptation. Test harnesses only. */
-	initialColumns?: number;
+  /** Pins the column count and skips width auto-adaptation. Test harnesses only. */
+  initialColumns?: number;
 
-	/** Minimum grid columns. Defaults to 2. */
-	minColumns?: number;
+  /** Minimum grid columns. Defaults to 2. */
+  minColumns?: number;
 
-	/** Whether the source toggle (community / my-library) is available. */
-	allowSourceToggle?: boolean;
+  /** Whether the source toggle (community / my-library) is available. */
+  allowSourceToggle?: boolean;
 
-	/** Enable section grouping. Defaults to false. */
-	sections?: boolean;
+  /** Enable section grouping. Defaults to false. */
+  sections?: boolean;
 
-	/** Default section grouping strategy. Defaults to "letter". */
-	defaultSectionGroupBy?: SectionGroupBy;
+  /** Default section grouping strategy. Defaults to "letter". */
+  defaultSectionGroupBy?: SectionGroupBy;
 
-	/** Which sources are available. Defaults to both community and my-library. */
-	sources?: SequenceSource[];
+  /** Which sources are available. Defaults to both community and my-library. */
+  sources?: SequenceSource[];
 
-	/**
-	 * Extra sequences appended to the COMMUNITY pool once resolved (e.g. the
-	 * canonical T&D alphabet — generated, not saved, so the loader can't know
-	 * them). Appended asynchronously after the loader's results so first paint
-	 * never waits on it; deduplicated by id against the loaded pool.
-	 */
-	extraCommunitySequences?: () => Promise<readonly SequenceData[]>;
+  /**
+   * Extra sequences appended to the COMMUNITY pool once resolved (e.g. the
+   * canonical T&D alphabet — generated, not saved, so the loader can't know
+   * them). Appended asynchronously after the loader's results so first paint
+   * never waits on it; deduplicated by id against the loaded pool.
+   */
+  extraCommunitySequences?: () => Promise<readonly SequenceData[]>;
+
+  /**
+   * Optional artifact loader for My Library's solo prop/hand-path modes.
+   * Hosts that omit it keep the historical behavior of projecting one hand
+   * from full sequences.
+   */
+  loadSoloLibrarySequences?: (
+    viewMode: BrowseViewMode
+  ) => Promise<readonly SequenceData[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,154 +161,154 @@ export interface BrowseEngineConfig {
  * Methods mutate state; the reactive pipeline propagates changes.
  */
 export interface BrowseEngine {
-	// --- Reactive state (read-only from consumers) ---
+  // --- Reactive state (read-only from consumers) ---
 
-	/** True while loading sequences from Firestore / library. */
-	readonly isLoading: boolean;
-	/** Error message from the last failed operation, or null. */
-	readonly error: string | null;
-	/** Current sequence source. */
-	readonly source: SequenceSource;
+  /** True while loading sequences from Firestore / library. */
+  readonly isLoading: boolean;
+  /** Error message from the last failed operation, or null. */
+  readonly error: string | null;
+  /** Current sequence source. */
+  readonly source: SequenceSource;
 
-	/** All sequences from the current source (unfiltered). */
-	readonly allSequences: readonly SequenceData[];
-	/** Sequences after filtering + sorting. */
-	readonly sequences: readonly SequenceData[];
-	/** Number of filtered sequences (convenience for `sequences.length`). */
-	readonly resultCount: number;
-	/** Sequences organized into titled sections. */
-	readonly sections: readonly SequenceSection[];
-	/** True once the first load + section organization is complete. */
-	readonly sectionsReady: boolean;
+  /** All sequences from the current source (unfiltered). */
+  readonly allSequences: readonly SequenceData[];
+  /** Sequences after filtering + sorting. */
+  readonly sequences: readonly SequenceData[];
+  /** Number of filtered sequences (convenience for `sequences.length`). */
+  readonly resultCount: number;
+  /** Sequences organized into titled sections. */
+  readonly sections: readonly SequenceSection[];
+  /** True once the first load + section organization is complete. */
+  readonly sectionsReady: boolean;
 
-	/** Current search text. */
-	readonly searchQuery: string;
+  /** Current search text. */
+  readonly searchQuery: string;
 
-	/** Current sort method. */
-	readonly sortMethod: BrowseSortMethod;
-	/** Current sort direction. */
-	readonly sortDirection: "asc" | "desc";
+  /** Current sort method. */
+  readonly sortMethod: BrowseSortMethod;
+  /** Current sort direction. */
+  readonly sortDirection: "asc" | "desc";
 
-	/** All active filters (user-set + locked constraints). */
-	readonly activeFilters: ReadonlyMap<string, ActiveFilter>;
-	/** All filter chips (locked + user), for chip bar rendering. Each carries
-	 * its map key — the handle for removeFilter. One-per-type filters key as
-	 * String(type); stackable loop-component filters key as `${type}:${value}`,
-	 * so several can coexist (a sequence can be mirrored AND swapped). */
-	readonly allFilterChips: readonly (ActiveFilter & { key: string })[];
-	/** Number of active user-set (non-locked) filters. */
-	readonly userFilterCount: number;
-	/** True if any user-set (non-locked) filters are active. */
-	readonly hasActiveFilters: boolean;
+  /** All active filters (user-set + locked constraints). */
+  readonly activeFilters: ReadonlyMap<string, ActiveFilter>;
+  /** All filter chips (locked + user), for chip bar rendering. Each carries
+   * its map key — the handle for removeFilter. One-per-type filters key as
+   * String(type); stackable loop-component filters key as `${type}:${value}`,
+   * so several can coexist (a sequence can be mirrored AND swapped). */
+  readonly allFilterChips: readonly (ActiveFilter & { key: string })[];
+  /** Number of active user-set (non-locked) filters. */
+  readonly userFilterCount: number;
+  /** True if any user-set (non-locked) filters are active. */
+  readonly hasActiveFilters: boolean;
 
-	// --- Layout (flat getters) ---
+  // --- Layout (flat getters) ---
 
-	/** Current number of grid columns. */
-	readonly columnCount: number;
-	/** True when zoom-in (more columns) is available. */
-	readonly canZoomIn: boolean;
-	/** True when zoom-out (fewer columns) is available. */
-	readonly canZoomOut: boolean;
-	/** True for ~200ms after column change (CSS transition hint). */
-	readonly isTransitioning: boolean;
+  /** Current number of grid columns. */
+  readonly columnCount: number;
+  /** True when zoom-in (more columns) is available. */
+  readonly canZoomIn: boolean;
+  /** True when zoom-out (fewer columns) is available. */
+  readonly canZoomOut: boolean;
+  /** True for ~200ms after column change (CSS transition hint). */
+  readonly isTransitioning: boolean;
 
-	// --- Source / section state ---
+  // --- Source / section state ---
 
-	/** True when the source toggle is available. */
-	readonly canSwitchSource: boolean;
-	/** Whether section grouping is enabled. */
-	readonly sectionsEnabled: boolean;
-	/** Current section grouping strategy. */
-	readonly sectionGroupBy: SectionGroupBy;
+  /** True when the source toggle is available. */
+  readonly canSwitchSource: boolean;
+  /** Whether section grouping is enabled. */
+  readonly sectionsEnabled: boolean;
+  /** Current section grouping strategy. */
+  readonly sectionGroupBy: SectionGroupBy;
 
-	// --- View mode (compositional browsing) ---
+  // --- View mode (compositional browsing) ---
 
-	/** Current view mode (props/hands × combined/solo). */
-	readonly viewMode: BrowseViewMode;
+  /** Current view mode (props/hands × combined/solo). */
+  readonly viewMode: BrowseViewMode;
 
-	// --- Available filter metadata (for building filter UIs) ---
+  // --- Available filter metadata (for building filter UIs) ---
 
-	/** Distinct sequence lengths present in allSequences. */
-	readonly availableLengths: readonly number[];
-	/** Distinct turn-intensity CEILINGS present in allSequences (each > 0),
-	 * ascending — the pool-derived options for the Max Turn Intensity filter. */
-	readonly availableMaxTurnIntensities: readonly number[];
-	/** LOOP type counts: { loopType: count, _total, _circular, _non_circular }. */
-	readonly loopTypeCounts: Readonly<Record<string, number>>;
+  /** Distinct sequence lengths present in allSequences. */
+  readonly availableLengths: readonly number[];
+  /** Distinct turn-intensity CEILINGS present in allSequences (each > 0),
+   * ascending — the pool-derived options for the Max Turn Intensity filter. */
+  readonly availableMaxTurnIntensities: readonly number[];
+  /** LOOP type counts: { loopType: count, _total, _circular, _non_circular }. */
+  readonly loopTypeCounts: Readonly<Record<string, number>>;
 
-	// --- Methods ---
+  // --- Methods ---
 
-	/** Load initial data for current source. Call on mount. */
-	initialize(): Promise<void>;
+  /** Load initial data for current source. Call on mount. */
+  initialize(): Promise<void>;
 
-	/** Force reload (invalidates cache). For retry buttons. */
-	refresh(): Promise<void>;
+  /** Force reload (invalidates cache). For retry buttons. */
+  refresh(): Promise<void>;
 
-	/** Set the search query text. Filters pipeline reactively. */
-	setSearch(query: string): void;
+  /** Set the search query text. Filters pipeline reactively. */
+  setSearch(query: string): void;
 
-	/** Switch source (community / my-library). Loads data. */
-	setSource(source: SequenceSource): Promise<void>;
+  /** Switch source (community / my-library). Loads data. */
+  setSource(source: SequenceSource): Promise<void>;
 
-	/** Change sort method and direction. Recomputes pipeline. */
-	setSort(method: BrowseSortMethod, direction: "asc" | "desc"): void;
+  /** Change sort method and direction. Recomputes pipeline. */
+  setSort(method: BrowseSortMethod, direction: "asc" | "desc"): void;
 
-	/**
-	 * Add or replace a user filter. Locked filters cannot be overwritten
-	 * by this method. LOOP_TYPE filters STACK (keyed `${type}:${value}`) —
-	 * adding a second loop component ANDs with the first instead of replacing.
-	 */
-	addFilter(
-		type: BrowseFilterType,
-		value: BrowseFilterValue,
-		label: string,
-		chipColor: string
-	): void;
+  /**
+   * Add or replace a user filter. Locked filters cannot be overwritten
+   * by this method. LOOP_TYPE filters STACK (keyed `${type}:${value}`) —
+   * adding a second loop component ANDs with the first instead of replacing.
+   */
+  addFilter(
+    type: BrowseFilterType,
+    value: BrowseFilterValue,
+    label: string,
+    chipColor: string
+  ): void;
 
-	/** Remove a user filter by map key. Locked filters are ignored. Prefix
-	 * aware: removeFilter("cap_type") clears every stacked "cap_type:<value>"
-	 * loop filter; a full composite key clears just that one. */
-	removeFilter(typeKey: string): void;
+  /** Remove a user filter by map key. Locked filters are ignored. Prefix
+   * aware: removeFilter("cap_type") clears every stacked "cap_type:<value>"
+   * loop filter; a full composite key clears just that one. */
+  removeFilter(typeKey: string): void;
 
-	/** Clear all user-set filters. Locked filters remain. */
-	clearUserFilters(): void;
+  /** Clear all user-set filters. Locked filters remain. */
+  clearUserFilters(): void;
 
-	/**
-	 * Contextual count: how many sequences would match if a candidate
-	 * filter were added, given other active filters.
-	 */
-	getFilteredCount(
-		candidateType: BrowseFilterType,
-		candidateValue: BrowseFilterValue
-	): number;
+  /**
+   * Contextual count: how many sequences would match if a candidate
+   * filter were added, given other active filters.
+   */
+  getFilteredCount(
+    candidateType: BrowseFilterType,
+    candidateValue: BrowseFilterValue
+  ): number;
 
-	/** Toggle favorite status for a sequence. Updates local state. */
-	toggleFavorite(sequenceId: string): Promise<void>;
+  /** Toggle favorite status for a sequence. Updates local state. */
+  toggleFavorite(sequenceId: string): Promise<void>;
 
-	/** Set grid column count (clamped to min/max). */
-	setColumns(columns: number): void;
+  /** Set grid column count (clamped to min/max). */
+  setColumns(columns: number): void;
 
-	/** Update container width (from ResizeObserver). Re-clamps columns. */
-	updateContainerWidth(width: number): void;
+  /** Update container width (from ResizeObserver). Re-clamps columns. */
+  updateContainerWidth(width: number): void;
 
-	/** Zoom in (more columns, smaller cards). */
-	zoomIn(): void;
+  /** Zoom in (more columns, smaller cards). */
+  zoomIn(): void;
 
-	/** Zoom out (fewer columns, larger cards). */
-	zoomOut(): void;
+  /** Zoom out (fewer columns, larger cards). */
+  zoomOut(): void;
 
-	/** Enable or disable section grouping. */
-	setSectionsEnabled(enabled: boolean): void;
+  /** Enable or disable section grouping. */
+  setSectionsEnabled(enabled: boolean): void;
 
-	/** Set the section grouping strategy. */
-	setSectionGroupBy(groupBy: SectionGroupBy): void;
+  /** Set the section grouping strategy. */
+  setSectionGroupBy(groupBy: SectionGroupBy): void;
 
-	/** Set the browse view mode (props/hands × combined/solo). */
-	setViewMode(mode: BrowseViewMode): void;
+  /** Set the browse view mode (props/hands × combined/solo). */
+  setViewMode(mode: BrowseViewMode): void;
 
-	/** Invalidate library cache (e.g. when impersonated user changes). */
-	invalidateLibraryCache(): void;
+  /** Invalidate library cache (e.g. when impersonated user changes). */
+  invalidateLibraryCache(): void;
 
-	/** Clean up effects and event listeners. */
-	destroy(): void;
+  /** Clean up effects and event listeners. */
+  destroy(): void;
 }

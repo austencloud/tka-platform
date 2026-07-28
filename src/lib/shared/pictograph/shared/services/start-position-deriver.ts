@@ -2,7 +2,10 @@ import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/servic
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createMotionData, isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  createMotionData,
+  isVisibleMotion,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import {
   MotionType,
@@ -11,9 +14,11 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
+import type { SoloMotionColor } from "$lib/shared/foundation/services/sequence-motion-profile";
+import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 
 export class StartPositionDeriver {
-
   deriveFromFirstStep(firstStep: StepData): StartPositionData {
     const blueMotion = firstStep.motions?.[MotionColor.BLUE];
     const redMotion = firstStep.motions?.[MotionColor.RED];
@@ -40,9 +45,9 @@ export class StartPositionDeriver {
     const blueStaticMotion = createMotionData({
       motionType: MotionType.STATIC,
       startLocation: blueStartLocation,
-      endLocation: blueStartLocation, 
+      endLocation: blueStartLocation,
       startOrientation: blueMotion.startOrientation,
-      endOrientation: blueMotion.startOrientation, 
+      endOrientation: blueMotion.startOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
       color: MotionColor.BLUE,
@@ -55,9 +60,9 @@ export class StartPositionDeriver {
     const redStaticMotion = createMotionData({
       motionType: MotionType.STATIC,
       startLocation: redStartLocation,
-      endLocation: redStartLocation, 
+      endLocation: redStartLocation,
       startOrientation: redMotion.startOrientation,
-      endOrientation: redMotion.startOrientation, 
+      endOrientation: redMotion.startOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
       color: MotionColor.RED,
@@ -85,29 +90,38 @@ export class StartPositionDeriver {
     } as StartPositionData;
   }
 
-  getOrDeriveStartPosition(
-    sequence: SequenceData
-  ): StartPositionData | null {
-    if (
-      sequence.startPosition &&
-      isVisibleMotion(sequence.startPosition.motions?.[MotionColor.BLUE]) &&
-      isVisibleMotion(sequence.startPosition.motions?.[MotionColor.RED])
-    ) {
+  getOrDeriveStartPosition(sequence: SequenceData): StartPositionData | null {
+    const profile = getSequenceMotionProfile(sequence);
+    const isRenderable = (
+      candidate: StartPositionData | null | undefined
+    ): candidate is StartPositionData => {
+      if (!candidate) return false;
+      const blueVisible = isVisibleMotion(
+        candidate.motions?.[MotionColor.BLUE]
+      );
+      const redVisible = isVisibleMotion(candidate.motions?.[MotionColor.RED]);
+      if (profile.kind === "solo") {
+        return profile.color === "blue"
+          ? blueVisible && !redVisible
+          : redVisible && !blueVisible;
+      }
+      return blueVisible && redVisible;
+    };
+
+    if (isRenderable(sequence.startPosition)) {
       return sequence.startPosition;
     }
 
-    if (
-      sequence.startingPosition &&
-      isVisibleMotion(sequence.startingPosition.motions?.[MotionColor.BLUE]) &&
-      isVisibleMotion(sequence.startingPosition.motions?.[MotionColor.RED])
-    ) {
+    if (isRenderable(sequence.startingPosition)) {
       return sequence.startingPosition;
     }
 
     const firstStep = sequence.steps?.[0];
     if (firstStep) {
       try {
-    return this.deriveFromFirstStep(firstStep);
+        return profile.kind === "solo"
+          ? this.deriveSoloFromFirstStep(firstStep, profile.color)
+          : this.deriveFromFirstStep(firstStep);
       } catch (error) {
         console.warn("Failed to derive start position from first beat:", error);
         return null;
@@ -115,6 +129,34 @@ export class StartPositionDeriver {
     }
 
     return null;
+  }
+
+  private deriveSoloFromFirstStep(
+    firstStep: StepData,
+    color: SoloMotionColor
+  ): StartPositionData {
+    const source = firstStep.motions?.[color];
+    if (!isVisibleMotion(source)) {
+      throw new Error(
+        `Cannot derive solo start position: first beat missing ${color} motion`
+      );
+    }
+
+    const staticMotion = createMotionData({
+      ...source,
+      motionType: MotionType.STATIC,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      endLocation: source.startLocation,
+      endOrientation: source.startOrientation,
+      turns: 0,
+      arrowLocation: source.startLocation,
+      isVisible: true,
+    });
+
+    return createStartPositionData({
+      gridPosition: null,
+      motions: { [color]: staticMotion },
+    });
   }
 
   private getLetterFromGridPosition(position: GridPosition): Letter {

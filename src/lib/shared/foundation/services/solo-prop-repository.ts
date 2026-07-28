@@ -61,12 +61,17 @@ function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   };
 
   if (soloProp.name !== undefined) raw["name"] = soloProp.name;
+  if (soloProp.authoredHand !== undefined)
+    raw["authoredHand"] = soloProp.authoredHand;
   if (soloProp.author !== undefined) raw["author"] = soloProp.author;
   if (soloProp.notes !== undefined) raw["notes"] = soloProp.notes;
-  if (soloProp.thumbnails !== undefined) raw["thumbnails"] = soloProp.thumbnails;
-  if (soloProp.dateCreated !== undefined) raw["dateCreated"] = soloProp.dateCreated;
+  if (soloProp.thumbnails !== undefined)
+    raw["thumbnails"] = soloProp.thumbnails;
+  if (soloProp.dateCreated !== undefined)
+    raw["dateCreated"] = soloProp.dateCreated;
   if (soloProp.ownerId !== undefined) raw["ownerId"] = soloProp.ownerId;
-  if (soloProp.ownerDisplayName !== undefined) raw["ownerDisplayName"] = soloProp.ownerDisplayName;
+  if (soloProp.ownerDisplayName !== undefined)
+    raw["ownerDisplayName"] = soloProp.ownerDisplayName;
 
   return raw;
 }
@@ -92,16 +97,24 @@ export async function getSoloProp(id: string): Promise<SoloPropData | null> {
   return docToSoloProp(snap.data(), snap.id);
 }
 
-export async function getSoloPropByHash(contentHash: string): Promise<SoloPropData | null> {
+export async function getSoloPropByHash(
+  contentHash: string
+): Promise<SoloPropData | null> {
   const ref = await soloPropCollectionRef();
-  const q = query(ref, where("contentHash", "==", contentHash), firestoreLimit(1));
+  const q = query(
+    ref,
+    where("contentHash", "==", contentHash),
+    firestoreLimit(1)
+  );
   const snap = await getDocs(q);
   if (snap.empty || snap.docs[0] === undefined) return null;
   const docSnap = snap.docs[0];
   return docToSoloProp(docSnap.data(), docSnap.id);
 }
 
-export async function listSoloProps(filters?: SoloPropFilters): Promise<SoloPropData[]> {
+export async function listSoloProps(
+  filters?: SoloPropFilters
+): Promise<SoloPropData[]> {
   const ref = await soloPropCollectionRef();
   let q = query(ref);
 
@@ -134,7 +147,10 @@ export async function listSoloProps(filters?: SoloPropFilters): Promise<SoloProp
   return snap.docs.map((d) => docToSoloProp(d.data(), d.id));
 }
 
-export async function saveSoloProp(soloProp: SoloPropData, provenance?: ArtifactProvenance): Promise<void> {
+export async function saveSoloProp(
+  soloProp: SoloPropData,
+  provenance?: ArtifactProvenance
+): Promise<void> {
   const firestore = await getFirestoreInstance();
   const uid = getUserId();
   const docRef = doc(firestore, `users/${uid}/soloProps/${soloProp.id}`);
@@ -143,14 +159,20 @@ export async function saveSoloProp(soloProp: SoloPropData, provenance?: Artifact
     const existing = await getDoc(docRef);
 
     if (existing.exists()) {
-      await setDoc(docRef, {
-        ...soloPropToDoc(soloProp),
-        provenance: {
-          sourceSequenceIds: arrayUnion(...provenance.sourceSequenceIds),
-          isOriginal: provenance.isOriginal,
-          firstSeenAt: existing.data()["provenance"]?.["firstSeenAt"] ?? provenance.firstSeenAt,
+      await setDoc(
+        docRef,
+        {
+          ...soloPropToDoc(soloProp),
+          provenance: {
+            sourceSequenceIds: arrayUnion(...provenance.sourceSequenceIds),
+            isOriginal: provenance.isOriginal,
+            firstSeenAt:
+              existing.data()["provenance"]?.["firstSeenAt"] ??
+              provenance.firstSeenAt,
+          },
         },
-      }, { merge: true });
+        { merge: true }
+      );
     } else {
       await setDoc(docRef, {
         ...soloPropToDoc(soloProp),

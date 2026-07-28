@@ -22,9 +22,12 @@ const LOOKUP_TIMEOUT_MS = 2500;
 // Only the fields the OG tags read. Keeps the response small: shortcode docs
 // also carry `encoded` and sometimes an inline `sequenceData` blob.
 const META_FIELD_PATHS = [
+  "payloadKind",
+  "payloadTitle",
   "payloadWord",
   "word",
   "sequenceName",
+  "authoredHand",
   "ownerDisplayName",
   "thumbnailUrl",
   "deckId",
@@ -35,6 +38,8 @@ const META_FIELD_PATHS = [
 
 interface ShortCodeMeta {
   word: string | null;
+  payloadKind: "word" | "solo";
+  authoredHand: "left" | "right" | null;
   creator: string | null;
   thumbnailUrl: string | null;
   deckId: string | null;
@@ -45,6 +50,8 @@ interface ShortCodeMeta {
 
 const EMPTY_META: ShortCodeMeta = {
   word: null,
+  payloadKind: "word",
+  authoredHand: null,
   creator: null,
   thumbnailUrl: null,
   deckId: null,
@@ -91,14 +98,25 @@ async function fetchShortCodeMeta(code: string): Promise<ShortCodeMeta> {
 
   const doc = (await response.json()) as { fields?: FirestoreFields };
   const fields = doc.fields ?? {};
+  const payloadKind =
+    readString(fields, "payloadKind") === "solo" ? "solo" : "word";
+  const authoredHandValue = readString(fields, "authoredHand");
+  const authoredHand =
+    authoredHandValue === "left" || authoredHandValue === "right"
+      ? authoredHandValue
+      : null;
 
   return {
-    // Strict payload-derived label first (parity-repair schema-2 mints),
-    // then the legacy fields.
+    // Schema-3 solos carry a human title, never a fabricated TKA word.
+    // Schema-2 words and legacy records retain the historical fallbacks.
     word:
-      readString(fields, "payloadWord") ??
+      (payloadKind === "solo"
+        ? readString(fields, "payloadTitle")
+        : readString(fields, "payloadWord")) ??
       readString(fields, "word") ??
       readString(fields, "sequenceName"),
+    payloadKind,
+    authoredHand,
     creator: readString(fields, "ownerDisplayName"),
     thumbnailUrl: readString(fields, "thumbnailUrl"),
     deckId: readString(fields, "deckId"),

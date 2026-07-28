@@ -62,6 +62,17 @@
     builtPictograph ? getStartPositionDisplayLabel(builtPictograph) : ""
   );
 
+  // Both props can be placed in a combination that has no canonical letter, so
+  // the label is not a stand-in for "is it built" — fall back to the generic
+  // wording rather than shipping a button that reads "Use ".
+  const applyLabel = $derived(
+    isApplying
+      ? "Applying…"
+      : positionLabel
+        ? `Use ${positionLabel}`
+        : "Use this position"
+  );
+
   function handlePlacementChange(change: PropPlacementChange) {
     blueLocation = change.blueLocation;
     redLocation = change.redLocation;
@@ -115,15 +126,6 @@
   <!-- Grouped so a wide, short host can stand them beside the board instead of
        stacking everything into a strip that leaves the board no height. -->
   <div class="builder-controls">
-    <div class="recognition" aria-live="polite" aria-atomic="true">
-      {#if builtPictograph}
-        <span class="recognition-kicker">You built</span>
-        <strong>{positionLabel}</strong>
-      {:else}
-        <span>Place both props to recognize the position.</span>
-      {/if}
-    </div>
-
     <div class="orientation-controls" aria-label="Prop orientations">
       <OrientationCycler
         orientation={blueOrientation}
@@ -137,13 +139,20 @@
       />
     </div>
 
+    <!-- The button names what it will do. A separate "You built α1" caption said
+         the same thing one row higher, and that row cost the board more height
+         than the sentence was worth on a phone. -->
     <button
       class="apply-button"
       disabled={!builtPictograph || isApplying}
       onclick={handleApply}
     >
-      {isApplying ? "Applying…" : "Use this position"}
+      {applyLabel}
     </button>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">
+      {positionLabel ? `Position recognized: ${positionLabel}.` : ""}
+    </p>
   </div>
   </div>
 </div>
@@ -226,25 +235,28 @@
     }
   }
 
-  .recognition {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 8px;
-    min-height: 28px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    text-align: center;
+  /* Vertically tight — a phone in portrait, or any host that hands the builder
+     less height than the controls plus a usable board want. Every gap here is
+     height the board doesn't get, and the board is the thing being used. */
+  @container (max-height: 560px) {
+    .builder-layout {
+      gap: 6px;
+    }
+
+    .builder-controls {
+      gap: 6px;
+    }
   }
 
-  .recognition-kicker {
-    color: var(--theme-text-dim);
-  }
 
-  .recognition strong {
-    color: var(--theme-text);
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: 1.35rem;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 
   .apply-button {
@@ -298,15 +310,6 @@
       min-height: 3.5rem;
       font-size: 1.05rem;
     }
-
-    .recognition {
-      font-size: 1.05rem;
-      min-height: 2.25rem;
-    }
-
-    .recognition strong {
-      font-size: 2rem;
-    }
   }
 
   @media (min-width: 2600px) {
@@ -319,14 +322,6 @@
       min-height: 4.5rem;
       font-size: 1.4rem;
       border-radius: 16px;
-    }
-
-    .recognition {
-      font-size: 1.4rem;
-    }
-
-    .recognition strong {
-      font-size: 2.75rem;
     }
   }
 </style>

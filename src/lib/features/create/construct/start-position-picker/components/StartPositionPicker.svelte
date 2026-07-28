@@ -327,7 +327,14 @@ Controls moved below the grid for better UX
   }
 </script>
 
-<div class="start-pos-picker" data-testid="start-position-picker">
+<!-- The build path is vertically hungry in a way the preset grid is not: it has
+     a square board plus its own controls, where Presets has three cards and
+     slack to spare. The heading band and footer padding shrink for it. -->
+<div
+  class="start-pos-picker"
+  class:build-path={pickerPath === "build"}
+  data-testid="start-position-picker"
+>
   {#if !embedded}
     <p class="workspace-hint">Choose your start position</p>
   {/if}
@@ -510,6 +517,31 @@ Controls moved below the grid for better UX
     white-space: nowrap;
     color: var(--theme-text, #fff);
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Presets can afford the deep band above the heading; Build spends that same
+     height on the board someone is aiming at. Bounded by vh so it only tightens
+     where the screen is actually short. */
+  .start-pos-picker.build-path .workspace-hint {
+    padding-top: clamp(12px, 3vh, 36px);
+  }
+
+  /* A phone in portrait has no spare band at all — the heading sits right at
+     the top and everything it isn't using goes to the board. */
+  @media (max-height: 780px) {
+    .start-pos-picker.build-path .workspace-hint {
+      padding-top: 6px;
+      font-size: clamp(0.95rem, 4.2cqi, 1.5rem);
+    }
+
+    .start-pos-picker.build-path .path-selector {
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+  }
+
+  .start-pos-picker.build-path .controls-footer {
+    padding-block: 8px;
   }
 
   .path-selector {

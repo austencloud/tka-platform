@@ -334,21 +334,46 @@ export class QRCodeGenerator {
       size,
     });
 
+    return this.loadDecodedImage(result.dataUrl);
+  }
+
+  /**
+   * Generate an image for an already-resolved URL.
+   *
+   * Serialized print exports use this after the server has minted a
+   * physical-card ID. The sequence's short code is already known at that
+   * point, so rerunning sequence warmup and short-code allocation for every
+   * physical copy would be wasteful.
+   */
+  async generateUrlAsImage(
+    url: string,
+    size: number,
+    options?: QRCodeOptions
+  ): Promise<HTMLImageElement> {
+    const result = await this.generateForUrl(url, {
+      ...options,
+      size,
+    });
+
+    return this.loadDecodedImage(result.dataUrl);
+  }
+
+  private loadDecodedImage(dataUrl: string): Promise<HTMLImageElement> {
     // Reuse an already-decoded image for the same dataURL (deck cards sharing a
     // payload decode once). Re-insert on hit so the entry is treated as most
     // recently used by the insertion-order eviction below.
-    const existing = this.decodedImages.get(result.dataUrl);
+    const existing = this.decodedImages.get(dataUrl);
     if (existing) {
-      this.decodedImages.delete(result.dataUrl);
-      this.decodedImages.set(result.dataUrl, existing);
-      return existing;
+      this.decodedImages.delete(dataUrl);
+      this.decodedImages.set(dataUrl, existing);
+      return Promise.resolve(existing);
     }
 
     // Convert data URL to HTMLImageElement
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        this.decodedImages.set(result.dataUrl, img);
+        this.decodedImages.set(dataUrl, img);
         // Evict the oldest entry once over the cap (Map iterates in insertion
         // order, so the first key is the least recently used).
         if (this.decodedImages.size > QRCodeGenerator.MAX_DECODED_IMAGES) {
@@ -358,7 +383,7 @@ export class QRCodeGenerator {
         resolve(img);
       };
       img.onerror = () => reject(new Error("Failed to load QR code as image"));
-      img.src = result.dataUrl;
+      img.src = dataUrl;
     });
   }
 }

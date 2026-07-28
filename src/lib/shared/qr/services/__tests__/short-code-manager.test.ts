@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { ShortCodeShareError } from "$lib/shared/qr/domain/short-code-error";
 
 // In-memory Firestore fake. `store` maps "collection/id" → data. Transactions
 // stage writes and apply them on successful completion, like the real SDK.
@@ -11,9 +12,10 @@ let queryResults: Array<{ id: string; data: Record<string, unknown> }> = [];
 // then forces our transaction to retry; the re-run sees the claimed index and
 // adopts the competitor's code. This is the only way to exercise the
 // cross-device write-write invariant in-process.
-let occInjection:
-  | { indexPath: string; competitorDocs: Array<[string, Record<string, unknown>]> }
-  | null = null;
+let occInjection: {
+  indexPath: string;
+  competitorDocs: Array<[string, Record<string, unknown>]>;
+} | null = null;
 
 vi.mock("firebase/firestore", () => ({
   addDoc: vi.fn(),
@@ -27,9 +29,11 @@ vi.mock("firebase/firestore", () => ({
       ? { exists: () => true, id: ref.path.split("/").pop(), data: () => data }
       : { exists: () => false };
   }),
-  setDoc: vi.fn(async (ref: { path: string }, data: Record<string, unknown>) => {
-    store.set(ref.path, data);
-  }),
+  setDoc: vi.fn(
+    async (ref: { path: string }, data: Record<string, unknown>) => {
+      store.set(ref.path, data);
+    }
+  ),
   query: vi.fn(() => ({})),
   where: vi.fn(),
   getDocs: vi.fn(async () => ({
@@ -95,12 +99,36 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 vi.mock("$lib/shared/navigation/services/sequence-encoder", () => ({
   encodeSequenceForQR: vi.fn(async () => "s~test-blob"),
   isInlineEncoded: (s: string) => s.startsWith("s~"),
-  decodeSequenceFromQR: vi.fn(),
+  decodeSequenceFromQR: vi.fn(async () => ({
+    steps: [{ id: "decoded-step-1", stepNumber: 1, letter: null }],
+  })),
+}));
+vi.mock("$lib/shared/navigation/services/letter-deriver", () => ({
+  deriveLettersForSequence: vi.fn(
+    async (sequence: Record<string, unknown>) => ({
+      ...sequence,
+      steps: [{ id: "decoded-step-1", stepNumber: 1, letter: "A" }],
+    })
+  ),
 }));
 
 import { addDoc } from "firebase/firestore";
 import { ShortCodeManager } from "../short-code-manager";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  decodeSequenceFromQR,
+  encodeSequenceForQR,
+} from "$lib/shared/navigation/services/sequence-encoder";
+import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
+import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
+import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
+import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Steps carry letters: the mint path runs STRICT payload-word derivation and
 // rejects a letterless payload (parity-repair spec, shortcode mint path).
@@ -110,6 +138,24 @@ const SEQUENCE = {
   ownerId: "user-1",
   steps: [{ id: "step-1", stepNumber: 1, letter: "A" }],
 } as unknown as SequenceData;
+
+const SOLO_PROP = createSoloProp(
+  [
+    {
+      startLocation: GridLocation.NORTH,
+      endLocation: GridLocation.EAST,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      motionType: MotionType.PRO,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      turns: 1,
+      duration: 1,
+    },
+  ],
+  GridLocation.NORTH,
+  Orientation.IN,
+  { name: "Left-hand choreography" }
+);
 
 const hashMatcher = {
   computeEncoderHash: vi.fn(async () => "HASH_A"),
@@ -129,7 +175,24 @@ beforeEach(() => {
   transactionRuns = 0;
   queryResults = [];
   occInjection = null;
-  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 })));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({ ok: false, status: 404 }))
+  );
+  vi.mocked(encodeSequenceForQR).mockReset();
+  vi.mocked(encodeSequenceForQR).mockResolvedValue("s~test-blob");
+  vi.mocked(decodeSequenceFromQR).mockReset();
+  vi.mocked(decodeSequenceFromQR).mockResolvedValue({
+    steps: [{ id: "decoded-step-1", stepNumber: 1, letter: null }],
+  } as never);
+  vi.mocked(deriveLettersForSequence).mockReset();
+  vi.mocked(deriveLettersForSequence).mockImplementation(
+    async (sequence: SequenceData) =>
+      ({
+        ...sequence,
+        steps: [{ id: "decoded-step-1", stepNumber: 1, letter: "A" }],
+      }) as unknown as SequenceData
+  );
 });
 
 describe("ShortCodeManager allocation", () => {
@@ -140,7 +203,10 @@ describe("ShortCodeManager allocation", () => {
     // single-flight scopes and each wrote its own doc — 1,044 dup groups.
     const [a, b] = await Promise.all([
       manager.createShortCode(SEQUENCE, { embedSequenceData: true }),
-      manager.createShortCode(SEQUENCE, { bluePropType: "C", redPropType: "C" }),
+      manager.createShortCode(SEQUENCE, {
+        bluePropType: "C",
+        redPropType: "C",
+      }),
     ]);
 
     expect(a.code).toBe(b.code);
@@ -245,6 +311,229 @@ describe("ShortCodeManager allocation", () => {
 
     expect(result.code).toBe("AA11");
     expect(result.isNew).toBe(false);
+  });
+
+  it("keeps a blob only when decoded motions re-derive the strict source word", async () => {
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(SEQUENCE, {});
+    const record = store.get(`shortcodes/${result.code}`);
+
+    expect(record?.encoded).toBe("s~test-blob");
+    expect(record?.sequenceData).toBeUndefined();
+    expect(record?.payloadWord).toBe("A");
+    expect(record?.payloadStepCount).toBe(1);
+    expect(deriveLettersForSequence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        steps: [
+          expect.objectContaining({
+            letter: null,
+          }),
+        ],
+      })
+    );
+  });
+
+  it("stores an honest embed instead of a blob that re-derives another word", async () => {
+    vi.mocked(deriveLettersForSequence).mockImplementationOnce(
+      async (sequence: SequenceData) =>
+        ({
+          ...sequence,
+          steps: [{ id: "decoded-step-1", stepNumber: 1, letter: "B" }],
+        }) as unknown as SequenceData
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(SEQUENCE, {});
+    const record = store.get(`shortcodes/${result.code}`);
+
+    expect(record?.encoded).toBeUndefined();
+    expect(record?.sequenceData).toEqual({
+      steps: SEQUENCE.steps,
+      // The source fixture deliberately carries stale word "TEST".
+      word: "A",
+    });
+    expect(record?.payloadWord).toBe("A");
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("storing embed-only"),
+      expect.objectContaining({
+        expectedWord: "A",
+        decodedWord: "B",
+      })
+    );
+    warn.mockRestore();
+  });
+
+  it("stores an embed when decoded motions cannot re-derive every beat", async () => {
+    vi.mocked(deriveLettersForSequence).mockImplementationOnce(
+      async (sequence: SequenceData) =>
+        ({
+          ...sequence,
+          steps: [{ id: "decoded-step-1", stepNumber: 1, letter: null }],
+        }) as unknown as SequenceData
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(SEQUENCE, {});
+    const record = store.get(`shortcodes/${result.code}`);
+
+    expect(record?.encoded).toBeUndefined();
+    expect(record?.sequenceData).toEqual({
+      steps: SEQUENCE.steps,
+      word: "A",
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("storing embed-only"),
+      expect.objectContaining({
+        decodedComplete: false,
+      })
+    );
+    warn.mockRestore();
+  });
+
+  it("stores an embed when the encoder emits a payload its decoder rejects", async () => {
+    vi.mocked(decodeSequenceFromQR).mockRejectedValueOnce(
+      new Error("unreadable payload")
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(SEQUENCE, {});
+    const record = store.get(`shortcodes/${result.code}`);
+
+    expect(record?.encoded).toBeUndefined();
+    expect(record?.sequenceData).toEqual({
+      steps: SEQUENCE.steps,
+      word: "A",
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("storing embed-only"),
+      expect.objectContaining({ sequenceId: "seq-1" })
+    );
+    warn.mockRestore();
+  });
+
+  it("mints and resolves schema-3 solo choreography without inventing a word", async () => {
+    const soloSequence = soloPropToSequence(SOLO_PROP, "left", {
+      sourceSoloPropId: SOLO_PROP.id,
+    });
+    vi.mocked(decodeSequenceFromQR).mockResolvedValue({
+      ...soloSequence,
+      word: "Λ",
+      steps: soloSequence.steps.map((step) => ({ ...step, letter: "Λ" })),
+    });
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(soloSequence, {});
+    const record = store.get(`shortcodes/${result.code}`);
+    const resolved = await manager.resolveShortCode(result.code);
+
+    expect(record).toMatchObject({
+      payloadKind: "solo",
+      payloadSchemaVersion: 3,
+      payloadTitle: "Left-hand choreography",
+      payloadContentHash: SOLO_PROP.contentHash,
+      payloadStepCount: 1,
+      authoredHand: "left",
+      sourceSoloPropId: SOLO_PROP.id,
+      encoded: "s~test-blob",
+    });
+    expect(record?.payloadWord).toBeUndefined();
+    expect(getSequenceMotionProfile(resolved!)).toEqual({
+      kind: "solo",
+      color: "blue",
+      authoredHand: "left",
+    });
+    expect(resolved?.displayName).toBe("Left-hand choreography");
+    expect(resolved?.word).toBe("");
+    expect(resolved?.steps.every((step) => step.letter === null)).toBe(true);
+    expect(resolved?.blueSoloProp?.id).toBe(SOLO_PROP.id);
+    expect(resolved?.metadata.sourceSoloPropId).toBe(SOLO_PROP.id);
+  });
+
+  it("omits source provenance for an extracted solo artifact that was never saved", async () => {
+    const soloSequence = soloPropToSequence(SOLO_PROP, "left");
+    vi.mocked(decodeSequenceFromQR).mockResolvedValue(soloSequence);
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(soloSequence, {});
+    const record = store.get(`shortcodes/${result.code}`);
+    const resolved = await manager.resolveShortCode(result.code);
+
+    expect(record?.sourceSoloPropId).toBeUndefined();
+    expect(resolved?.metadata.sourceSoloPropId).toBeUndefined();
+    expect(resolved?.blueSoloProp?.id).toBe(`shortcode-${result.code}`);
+  });
+
+  it("falls back to canonical soloData when the codec loses the absent hand", async () => {
+    vi.mocked(decodeSequenceFromQR).mockResolvedValue({
+      steps: [{ id: "decoded-step-1", stepNumber: 1, letter: null }],
+    } as never);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const manager = makeManager();
+
+    const result = await manager.createSoloShortCode(SOLO_PROP, "right");
+    const record = store.get(`shortcodes/${result.code}`);
+    const resolved = await manager.resolveShortCode(result.code);
+
+    expect(record?.encoded).toBeUndefined();
+    expect(record?.sourceSoloPropId).toBeUndefined();
+    expect(record?.soloData).toMatchObject({
+      id: SOLO_PROP.id,
+      contentHash: SOLO_PROP.contentHash,
+    });
+    expect(getSequenceMotionProfile(resolved!)).toEqual({
+      kind: "solo",
+      color: "red",
+      authoredHand: "right",
+    });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("blocks mixed paired and single-hand choreography before minting", async () => {
+    const soloSequence = soloPropToSequence(SOLO_PROP, "left");
+    const blueMotion = soloSequence.steps[0]!.motions.blue;
+    const mixed = {
+      ...soloSequence,
+      steps: [
+        {
+          ...soloSequence.steps[0],
+          motions: {
+            ...soloSequence.steps[0]!.motions,
+            red: { ...blueMotion, color: "red" },
+          },
+        },
+        {
+          ...soloSequence.steps[0],
+          id: "solo-step-2",
+          stepNumber: 2,
+        },
+      ],
+    } as SequenceData;
+    const manager = makeManager();
+
+    await expect(manager.createShortCode(mixed)).rejects.toMatchObject({
+      name: "ShortCodeShareError",
+      code: "MIXED_CHOREOGRAPHY_UNSUPPORTED",
+    } satisfies Partial<ShortCodeShareError>);
+    expect(docsIn("shortcodes")).toHaveLength(0);
+  });
+
+  it("rejects a solo title that Firestore rules cannot accept", async () => {
+    const manager = makeManager();
+
+    await expect(
+      manager.createSoloShortCode(
+        { ...SOLO_PROP, name: "x".repeat(161) },
+        "left"
+      )
+    ).rejects.toMatchObject({
+      code: "SOLO_TITLE_TOO_LONG",
+    } satisfies Partial<ShortCodeShareError>);
+    expect(docsIn("shortcodes")).toHaveLength(0);
   });
 });
 

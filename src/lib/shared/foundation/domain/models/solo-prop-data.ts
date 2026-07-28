@@ -1,7 +1,11 @@
-import type { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type {
+  GridLocation,
+  GridMode,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { HandPathData } from "./hand-path-data";
 import type { SoloPropStepData } from "./solo-prop-step-data";
+import type { AuthoredHand } from "./authored-hand";
 
 export interface SoloPropData {
   readonly id: string;
@@ -22,6 +26,11 @@ export interface SoloPropData {
 
   // Metadata
   readonly name?: string;
+  /**
+   * The hand used when this choreography was authored or last saved.
+   * Presentation only: it is deliberately excluded from contentHash.
+   */
+  readonly authoredHand?: AuthoredHand;
   readonly author?: string;
   readonly notes?: string;
   readonly thumbnails?: readonly string[];

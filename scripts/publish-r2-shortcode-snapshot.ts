@@ -5,11 +5,12 @@
  * batch just landed and waiting for the daily 03:00 UTC run would leave the
  * offline fallback serving pre-repair blobs.
  *
- * Byte-for-byte the same contract as the function: skinny `{_id, encoded}`
- * records (docs without a non-empty `encoded` are skipped), the same
- * envelope, gzip -9, and the same object key + headers. Only `_meta.source`
- * differs, honestly naming this script. The next scheduled function run
- * overwrites it — this is a refresh, not a fork.
+ * Byte-for-byte the same contract as the function: word records stay skinny
+ * `{_id, encoded}` pairs; schema-3 solo records add only the envelope fields
+ * needed to preserve their title, authored hand, and integrity checks during
+ * an offline resolve. Docs without a non-empty `encoded` are skipped. The
+ * envelope, gzip settings, object key, and headers match the scheduled
+ * function. Only `_meta.source` differs.
  *
  *   TKA_ADMIN=1 npx tsx scripts/publish-r2-shortcode-snapshot.ts                    # build only
  *   TKA_ADMIN=1 npx tsx scripts/publish-r2-shortcode-snapshot.ts --upload           # build + wrangler put
@@ -24,7 +25,7 @@ import { initFirestore } from "./lib/firestore-provider.js";
 const SNAPSHOT_KEY = "snapshots/shortcodes-v2.json";
 const BUCKET = "tka-assets";
 const PUBLIC_URL = `https://pub-f5505ed75927471cb198c54336317370.r2.dev/${SNAPSHOT_KEY}`;
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const BATCH_SIZE = 500;
 
 const argv = process.argv.slice(2);
@@ -36,6 +37,40 @@ type AnyRec = Record<string, unknown>;
 interface SkinnyRecord {
   _id: string;
   encoded: string;
+  payloadKind?: "solo";
+  payloadTitle?: string;
+  payloadStepCount?: number;
+  payloadContentHash?: string;
+  payloadSchemaVersion?: 3;
+  authoredHand?: "left" | "right";
+  sourceSoloPropId?: string;
+  sequence?: string;
+  sequenceName?: string;
+}
+
+function snapshotRecord(
+  id: string,
+  data: Record<string, unknown>
+): SkinnyRecord | null {
+  if (typeof data.encoded !== "string" || data.encoded.length === 0) {
+    return null;
+  }
+  const base: SkinnyRecord = { _id: id, encoded: data.encoded };
+  if (data.payloadKind !== "solo") return base;
+  return {
+    ...base,
+    payloadKind: "solo",
+    payloadTitle: data.payloadTitle as string,
+    payloadStepCount: data.payloadStepCount as number,
+    payloadContentHash: data.payloadContentHash as string,
+    payloadSchemaVersion: 3,
+    authoredHand: data.authoredHand as "left" | "right",
+    ...(typeof data.sourceSoloPropId === "string" && {
+      sourceSoloPropId: data.sourceSoloPropId,
+    }),
+    sequence: data.sequence as string,
+    sequenceName: data.sequenceName as string,
+  };
 }
 
 async function main(): Promise<void> {
@@ -56,14 +91,12 @@ async function main(): Promise<void> {
     if (lastDoc) q = (q.startAfter as (d: AnyRec) => AnyRec)(lastDoc);
     const snap = (await (q.get as () => Promise<AnyRec>)()) as {
       empty: boolean;
-      docs: Array<{ id: string; data(): { encoded?: unknown } }>;
+      docs: Array<{ id: string; data(): Record<string, unknown> }>;
     };
     if (snap.empty) break;
     for (const doc of snap.docs) {
-      const encoded = doc.data().encoded;
-      if (typeof encoded === "string" && encoded.length > 0) {
-        records.push({ _id: doc.id, encoded });
-      }
+      const record = snapshotRecord(doc.id, doc.data());
+      if (record) records.push(record);
     }
     lastDoc = snap.docs[snap.docs.length - 1] as unknown as AnyRec;
     if (snap.docs.length < BATCH_SIZE) break;

@@ -28,6 +28,7 @@
   import { createSavePanelState } from "../state/save-panel-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
 
   // The preview must mirror the artifact the save will actually generate. Both
   // the saved thumbnail (LibrarySaveService.generateAndUploadThumbnail) and this
@@ -73,6 +74,15 @@
     /* optional */
   }
 
+  let soloPropSaveOrchestrator: ReturnType<
+    typeof getSoloPropSaveOrchestrator
+  > | null = null;
+  try {
+    soloPropSaveOrchestrator = getSoloPropSaveOrchestrator();
+  } catch {
+    /* optional until an authenticated save */
+  }
+
   let hallOfShameSubmitter: ReturnType<typeof getHallOfShameSubmitter> | null =
     null;
   try {
@@ -85,6 +95,7 @@
   const s = createSavePanelState({
     ctx,
     librarySaveService,
+    soloPropSaveOrchestrator,
     contentModerator,
     hallOfShameSubmitter,
   });
@@ -168,13 +179,18 @@
         <div class="choreo-group">
           <div class="choreo-preview">
             <ChoreoCard
-              sequence={{ ...s.sequence, word: s.tkaName }}
+              sequence={{
+                ...s.sequence,
+                name: s.isSolo ? s.title : s.sequence.name,
+                displayName: s.isSolo ? s.title : s.sequence.displayName,
+                word: s.isSolo ? "" : s.tkaName,
+              }}
               darkMode={s.darkMode}
               userName={s.creatorName}
               forceContain={true}
               bluePropType={appSettings.bluePropType}
               redPropType={appSettings.redPropType}
-              showWord={compositionManager.addWord}
+              showWord={s.isSolo ? false : compositionManager.addWord}
               showStepNumbers={compositionManager.addStepNumbers}
               showDifficultyLevel={compositionManager.addDifficultyLevel}
               includeStartPosition={compositionManager.includeStartPosition}
@@ -187,6 +203,13 @@
               columnCount={compositionManager.getColumnCountForStepCount(
                 s.sequence.steps?.length ?? 0
               )}
+              browseViewMode={s.isSolo && s.soloColor
+                ? {
+                    subject: "props",
+                    granularity: "solo",
+                    color: s.soloColor,
+                  }
+                : undefined}
             />
           </div>
         </div>
@@ -204,6 +227,40 @@
               Variation {s.duplicateCount + 1}
             </span>
           {/if}
+        </div>
+      {/if}
+
+      {#if s.isSolo}
+        <div class="form-group">
+          <label for="solo-title">
+            Title <span class="required">*</span>
+          </label>
+          <input
+            id="solo-title"
+            type="text"
+            bind:value={s.title}
+            placeholder="Name this choreography"
+            class="input-field"
+            maxlength="100"
+            disabled={s.isSaving}
+          />
+          <p class="field-note">
+            Saved as {s.authoredHand}-hand choreography. It can still be
+            assigned to either hand when composing.
+          </p>
+        </div>
+      {:else if s.isMixed}
+        <div class="format-warning" role="alert">
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+          <div>
+            <strong
+              >This choreography mixes paired and single-hand beats.</strong
+            >
+            <p>
+              Keep editing until every beat uses both hands or the same single
+              hand.
+            </p>
+          </div>
         </div>
       {/if}
 
@@ -259,7 +316,7 @@
       {/if}
 
       <!-- Community visibility section -->
-      {#if !s.isFlagged}
+      {#if !s.isFlagged && !s.isSolo && !s.isMixed}
         <div
           class="community-section"
           class:disabled={!s.canPublishToCommunity}
@@ -303,7 +360,7 @@
       {/if}
 
       <!-- Collections — file into your library's named collections -->
-      {#if !s.isFlagged && s.currentUser}
+      {#if !s.isFlagged && !s.isSolo && !s.isMixed && s.currentUser}
         <div class="collections-section">
           <div class="section-heading">
             <i class="fas fa-folder-open" aria-hidden="true"></i>
@@ -333,7 +390,9 @@
           <textarea
             id="notes"
             bind:value={s.notes}
-            placeholder="Add personal notes about this sequence"
+            placeholder={s.isSolo
+              ? "Add personal notes about this choreography"
+              : "Add personal notes about this sequence"}
             class="textarea-field"
             rows="3"
             maxlength="500"
@@ -360,6 +419,9 @@
         {#if s.isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Saving...
+        {:else if s.requiresAccount}
+          <i class="fas fa-user-plus" aria-hidden="true"></i>
+          Create account to save
         {:else if s.isExactDuplicate && !s.isFlagged}
           <i class="fas fa-check" aria-hidden="true"></i>
           Saved
@@ -477,6 +539,76 @@
     min-height: 0;
     border-radius: 12px;
     overflow: hidden;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group label {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text);
+  }
+
+  .required {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .input-field {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+  }
+
+  .input-field:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .field-note {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.45;
+  }
+
+  .format-warning {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning, #f59e0b) 45%, transparent);
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f59e0b) 12%,
+      transparent
+    );
+    color: var(--theme-text);
+  }
+
+  .format-warning > i {
+    margin-top: 2px;
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  .format-warning strong,
+  .format-warning p {
+    margin: 0;
+  }
+
+  .format-warning p {
+    margin-top: 4px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
   }
 
   /* Content Moderation Warning */

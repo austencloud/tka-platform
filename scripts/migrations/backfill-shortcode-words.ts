@@ -38,6 +38,15 @@ import {
   type AnyRec,
   type PayloadDerivation,
 } from "./lib/shortcode-derivation";
+import { decodeSequenceFromQR } from "../../src/lib/shared/navigation/services/sequence-encoder";
+import { getSequenceMotionProfile } from "../../src/lib/shared/foundation/services/sequence-motion-profile";
+import {
+  extractBlueSoloProp,
+  extractRedSoloProp,
+} from "../../src/lib/shared/foundation/services/sequence-decomposer";
+import { hashSoloProp } from "../../src/lib/shared/foundation/services/content-hasher";
+import type { SoloPropData } from "../../src/lib/shared/foundation/domain/models/solo-prop-data";
+import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 
 const argv = process.argv.slice(2);
 const APPLY = argv.includes("--apply");
@@ -46,9 +55,9 @@ const LIMIT = (() => {
   return i >= 0 && argv[i + 1] ? Number(argv[i + 1]) : Infinity;
 })();
 
-
 type LabelClass =
   | "LABELS_CURRENT"
+  | "SOLO_CURRENT"
   | "STALE_MUTABLE_LABELS"
   | "LEGACY_PAYLOAD_VERSION"
   | "PAYLOAD_INCOMPLETE"
@@ -64,6 +73,92 @@ type LabelClass =
    *  old blobs, so an uncorroborated contradiction needs human review. */
   | "LABEL_CONTRADICTS_PAYLOAD"
   | "DERIVATION_FAILED";
+
+const SOLO_PAYLOAD_SCHEMA_VERSION = 3;
+
+async function validateSoloRecord(data: AnyRec): Promise<string | null> {
+  const title = data.payloadTitle;
+  const authoredHand = data.authoredHand;
+  const contentHash = data.payloadContentHash;
+  const stepCount = data.payloadStepCount;
+  const sourceSoloPropId = data.sourceSoloPropId;
+  if (data.payloadSchemaVersion !== SOLO_PAYLOAD_SCHEMA_VERSION) {
+    return "solo payloadSchemaVersion must be 3";
+  }
+  if (typeof title !== "string" || title.length === 0) {
+    return "solo payloadTitle is missing";
+  }
+  if (data.sequence !== title || data.sequenceName !== title) {
+    return "solo compatibility titles contradict payloadTitle";
+  }
+  if ("payloadWord" in data || "sequenceData" in data) {
+    return "solo record carries a word-only field";
+  }
+  if (authoredHand !== "left" && authoredHand !== "right") {
+    return "solo authoredHand is invalid";
+  }
+  if (
+    typeof contentHash !== "string" ||
+    contentHash.length !== 22 ||
+    !Number.isInteger(stepCount) ||
+    Number(stepCount) <= 0
+  ) {
+    return "solo identity envelope is incomplete";
+  }
+  if (
+    sourceSoloPropId !== undefined &&
+    (typeof sourceSoloPropId !== "string" || sourceSoloPropId.length === 0)
+  ) {
+    return "solo sourceSoloPropId is invalid";
+  }
+
+  const hasEncoded =
+    typeof data.encoded === "string" && data.encoded.length > 0;
+  const hasEmbedded =
+    data.soloData !== null && typeof data.soloData === "object";
+  if (hasEncoded === hasEmbedded) {
+    return "solo record must carry exactly one durable payload";
+  }
+
+  let soloProp: SoloPropData;
+  if (hasEncoded) {
+    let decoded: SequenceData;
+    try {
+      decoded = await decodeSequenceFromQR(String(data.encoded));
+    } catch (error) {
+      return `solo encoded payload does not decode: ${String(
+        error instanceof Error ? error.message : error
+      ).slice(0, 120)}`;
+    }
+    const profile = getSequenceMotionProfile(decoded);
+    const expectedColor = authoredHand === "left" ? "blue" : "red";
+    if (profile.kind !== "solo" || profile.color !== expectedColor) {
+      return "solo encoded payload contradicts authoredHand";
+    }
+    if (decoded.steps.length !== stepCount) {
+      return "solo encoded step count contradicts envelope";
+    }
+    soloProp =
+      expectedColor === "blue"
+        ? extractBlueSoloProp(decoded)
+        : extractRedSoloProp(decoded);
+  } else {
+    soloProp = data.soloData as SoloPropData;
+    if (
+      !Array.isArray(soloProp.steps) ||
+      soloProp.steps.length !== stepCount ||
+      (sourceSoloPropId !== undefined && soloProp.id !== sourceSoloPropId) ||
+      soloProp.authoredHand !== authoredHand
+    ) {
+      return "embedded solo identity contradicts envelope";
+    }
+  }
+
+  if (hashSoloProp(soloProp) !== contentHash) {
+    return "solo payload content hash contradicts envelope";
+  }
+  return null;
+}
 
 async function main(): Promise<void> {
   const { db, sdk, isAdmin } = (await initFirestore()) as AnyRec & {
@@ -108,10 +203,26 @@ async function main(): Promise<void> {
   };
 
   for (const { id: code, data } of docs) {
+    if (data.payloadKind === "solo") {
+      const detail = await validateSoloRecord(data);
+      results.push(
+        detail
+          ? {
+              code,
+              cls: "DERIVATION_FAILED",
+              storedLabel: String(data.payloadTitle ?? ""),
+              detail,
+            }
+          : { code, cls: "SOLO_CURRENT" }
+      );
+      continue;
+    }
+
     const storedLabel = String(
       data.payloadWord ?? data.sequenceName ?? data.sequence ?? ""
     );
-    const isLegacyVersion = data.payloadSchemaVersion !== PAYLOAD_SCHEMA_VERSION;
+    const isLegacyVersion =
+      data.payloadSchemaVersion !== PAYLOAD_SCHEMA_VERSION;
 
     let raw: Awaited<ReturnType<typeof derivePayloadWord>>;
     try {
@@ -229,9 +340,9 @@ async function main(): Promise<void> {
     results.push({ code, cls, storedLabel, derivedWord: derived.word });
 
     if (APPLY) {
-      const ref = (db.collection as (p: string) => AnyRec)("shortcodes")[
-        "doc"
-      ](code) as AnyRec;
+      const ref = (db.collection as (p: string) => AnyRec)("shortcodes")["doc"](
+        code
+      ) as AnyRec;
       // Label fields ONLY — scan counts, encoded payloads, ownership,
       // deck/print attribution, and timestamps are never touched.
       (batch.update as (r: AnyRec, u: AnyRec) => void)(ref, {
@@ -258,7 +369,7 @@ async function main(): Promise<void> {
   const PRINT_CAP_PER_CLASS = 40;
   const printed: Record<string, number> = {};
   for (const r of results) {
-    if (r.cls === "LABELS_CURRENT") continue;
+    if (r.cls === "LABELS_CURRENT" || r.cls === "SOLO_CURRENT") continue;
     const isProblem =
       r.cls === "PAYLOAD_INCOMPLETE" ||
       r.cls === "PAYLOAD_MISSING" ||
@@ -277,7 +388,12 @@ async function main(): Promise<void> {
     );
   }
   for (const [cls, n] of Object.entries(printed)) {
-    if (n > PRINT_CAP_PER_CLASS && cls !== "PAYLOAD_INCOMPLETE" && cls !== "PAYLOAD_MISSING" && cls !== "DERIVATION_FAILED") {
+    if (
+      n > PRINT_CAP_PER_CLASS &&
+      cls !== "PAYLOAD_INCOMPLETE" &&
+      cls !== "PAYLOAD_MISSING" &&
+      cls !== "DERIVATION_FAILED"
+    ) {
       console.log(`  … ${n - PRINT_CAP_PER_CLASS} more ${cls} (see manifest)`);
     }
   }

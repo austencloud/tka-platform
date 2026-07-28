@@ -1,9 +1,4 @@
-import {
-  doc,
-  getDoc,
-  setDoc,
-  arrayUnion,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, arrayUnion } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
   firestoreGet,
@@ -31,12 +26,17 @@ function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   };
 
   if (soloProp.name !== undefined) raw["name"] = soloProp.name;
+  if (soloProp.authoredHand !== undefined)
+    raw["authoredHand"] = soloProp.authoredHand;
   if (soloProp.author !== undefined) raw["author"] = soloProp.author;
   if (soloProp.notes !== undefined) raw["notes"] = soloProp.notes;
-  if (soloProp.thumbnails !== undefined) raw["thumbnails"] = soloProp.thumbnails;
-  if (soloProp.dateCreated !== undefined) raw["dateCreated"] = soloProp.dateCreated;
+  if (soloProp.thumbnails !== undefined)
+    raw["thumbnails"] = soloProp.thumbnails;
+  if (soloProp.dateCreated !== undefined)
+    raw["dateCreated"] = soloProp.dateCreated;
   if (soloProp.ownerId !== undefined) raw["ownerId"] = soloProp.ownerId;
-  if (soloProp.ownerDisplayName !== undefined) raw["ownerDisplayName"] = soloProp.ownerDisplayName;
+  if (soloProp.ownerDisplayName !== undefined)
+    raw["ownerDisplayName"] = soloProp.ownerDisplayName;
 
   return raw;
 }
@@ -50,7 +50,11 @@ export class SoloPropRepository {
   async get(id: string): Promise<SoloPropData | null> {
     // Schema uses z.string() for enum fields (GridLocation, Orientation, GridMode) to avoid
     // coupling Zod to domain union types. The values are runtime-valid strings; the cast is safe.
-    return firestoreGet(collectionPath(), id, SoloPropDataSchema) as unknown as Promise<SoloPropData | null>;
+    return firestoreGet(
+      collectionPath(),
+      id,
+      SoloPropDataSchema
+    ) as unknown as Promise<SoloPropData | null>;
   }
 
   async getByHash(contentHash: string): Promise<SoloPropData | null> {
@@ -66,16 +70,32 @@ export class SoloPropRepository {
     const clauses: WhereClause[] = [];
 
     if (filters?.startLocation !== undefined) {
-      clauses.push({ field: "startLocation", op: "==", value: filters.startLocation });
+      clauses.push({
+        field: "startLocation",
+        op: "==",
+        value: filters.startLocation,
+      });
     }
     if (filters?.startOrientation !== undefined) {
-      clauses.push({ field: "startOrientation", op: "==", value: filters.startOrientation });
+      clauses.push({
+        field: "startOrientation",
+        op: "==",
+        value: filters.startOrientation,
+      });
     }
     if (filters?.impliedGridMode !== undefined) {
-      clauses.push({ field: "impliedGridMode", op: "==", value: filters.impliedGridMode });
+      clauses.push({
+        field: "impliedGridMode",
+        op: "==",
+        value: filters.impliedGridMode,
+      });
     }
     if (filters?.containsBigram !== undefined) {
-      clauses.push({ field: "bigrams", op: "array-contains", value: filters.containsBigram });
+      clauses.push({
+        field: "bigrams",
+        op: "array-contains",
+        value: filters.containsBigram,
+      });
     }
     if (filters?.pathHash !== undefined) {
       clauses.push({ field: "pathHash", op: "==", value: filters.pathHash });
@@ -94,7 +114,10 @@ export class SoloPropRepository {
     }) as unknown as Promise<SoloPropData[]>;
   }
 
-  async save(soloProp: SoloPropData, provenance?: ArtifactProvenance): Promise<void> {
+  async save(
+    soloProp: SoloPropData,
+    provenance?: ArtifactProvenance
+  ): Promise<void> {
     const firestore = await getFirestoreInstance();
     const uid = requireAuth();
     const docRef = doc(firestore, `users/${uid}/soloProps/${soloProp.id}`);
@@ -103,14 +126,20 @@ export class SoloPropRepository {
       const existing = await getDoc(docRef);
 
       if (existing.exists()) {
-        await setDoc(docRef, {
-          ...soloPropToDoc(soloProp),
-          provenance: {
-            sourceSequenceIds: arrayUnion(...provenance.sourceSequenceIds),
-            isOriginal: provenance.isOriginal,
-            firstSeenAt: existing.data()["provenance"]?.["firstSeenAt"] ?? provenance.firstSeenAt,
+        await setDoc(
+          docRef,
+          {
+            ...soloPropToDoc(soloProp),
+            provenance: {
+              sourceSequenceIds: arrayUnion(...provenance.sourceSequenceIds),
+              isOriginal: provenance.isOriginal,
+              firstSeenAt:
+                existing.data()["provenance"]?.["firstSeenAt"] ??
+                provenance.firstSeenAt,
+            },
           },
-        }, { merge: true });
+          { merge: true }
+        );
       } else {
         await setDoc(docRef, {
           ...soloPropToDoc(soloProp),

@@ -12,12 +12,31 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { normalizeLetter } from "$lib/shared/foundation/domain/models/letter";
+import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { deriveGridMode } from "../../pictograph/grid/services/grid-mode-deriver";
 
 export async function deriveLettersForSequence(
   sequence: SequenceData
 ): Promise<SequenceData> {
+  // A TKA letter describes the relationship between two visible prop motions.
+  // Solo choreography has no second motion to classify. Clear any stale
+  // letter/word left by an old codec or editor beat instead of letting one
+  // coincidental placeholder match rename the whole choreography.
+  if (getSequenceMotionProfile(sequence).kind === "solo") {
+    return {
+      ...sequence,
+      word: "",
+      steps: sequence.steps.map((step) => ({ ...step, letter: null })),
+      ...(sequence.startPosition && {
+        startPosition: { ...sequence.startPosition, letter: null },
+      }),
+      ...(sequence.startingPosition && {
+        startingPosition: { ...sequence.startingPosition, letter: null },
+      }),
+    };
+  }
+
   // Derive letters for all steps in the sequence
   const stepsWithLetters = (await Promise.all(
     sequence.steps.map((step) => deriveLetterForBeat(step))

@@ -48,6 +48,7 @@
   } from "$lib/shared/analytics/scan-analytics";
   import { markScan } from "$lib/shared/analytics/scan-perf";
   import { isFirstScanRouteVisit } from "$lib/shared/qr/utils/scan-detection";
+  import { recordCardScan } from "$lib/shared/qr/services/card-scan-ingest";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import {
     authState,
@@ -70,6 +71,7 @@
     clearModuleChunkRecoveryGuard,
   } from "$lib/shared/hmr-helper";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type {
     IVideoExportOrchestrator,
@@ -119,6 +121,8 @@
       };
       meta: {
         word: string | null;
+        payloadKind: "word" | "solo";
+        authoredHand: "left" | "right" | null;
         creator: string | null;
         thumbnailUrl: string | null;
         deckId: string | null;
@@ -181,8 +185,14 @@
   // sequence resolve finishes. We priority-load just this word's glyphs so it
   // paints as a pulsing loader instead of a generic spinner.
   let glyphsReady = $state(false);
+  let resolvedSeq: SequenceData | null = $state(null);
+  const isSolo = $derived(
+    data?.meta?.payloadKind === "solo" ||
+      (resolvedSeq !== null &&
+        getSequenceMotionProfile(resolvedSeq).kind === "solo")
+  );
   const loaderWord = $derived(
-    data?.meta?.word ? simplifyRepeatedWord(data.meta.word) : ""
+    !isSolo && data?.meta?.word ? simplifyRepeatedWord(data.meta.word) : ""
   );
 
   // ── Load progress bar ──
@@ -221,7 +231,6 @@
     endScanViewerSession("route_unmount");
   });
 
-  let resolvedSeq: SequenceData | null = $state(null);
   // Raw word — DATA. Feeds analytics payloads and the OG/title derivations
   // below, which simplify on their own. Never render it directly.
   let seqWord = $state("");
@@ -288,11 +297,17 @@
   // glyphs (Σ, Δ, Λ…) here. greekToAscii ("sig", "del") is for filenames/URLs
   // only — using it for display turned the tab title into mojibake-looking ASCII.
   const displayWord = $derived(
-    rawWord !== "Sequence" ? simplifyRepeatedWord(rawWord) : "Sequence"
+    rawWord !== "Sequence"
+      ? isSolo
+        ? rawWord
+        : simplifyRepeatedWord(rawWord)
+      : "Sequence"
   );
   const ogDesc = $derived(
     displayWord !== "Sequence"
-      ? `Watch the ${displayWord} flow sequence`
+      ? isSolo
+        ? `Watch and practice ${displayWord}`
+        : `Watch the ${displayWord} flow sequence`
       : "Watch this flow sequence"
   );
   const ogImage = $derived(
@@ -819,9 +834,10 @@
 
       // `/q` is the scan-attribution boundary. This gate only deduplicates the
       // route visit; browser APIs cannot prove whether a camera opened it.
-      const shouldRecordScan =
-        !isInlineEncoded(shortCode) && isFirstScanRouteVisit(shortCode);
       const scanPrintId = page.url.searchParams.get("pid") || null;
+      const shouldRecordScan =
+        !isInlineEncoded(shortCode) &&
+        isFirstScanRouteVisit(shortCode, scanPrintId);
 
       // Load the shortcode and viewer chunks concurrently. Scan-card cells are
       // cloud-only, so the phone no longer initializes the complete render glyph
@@ -864,7 +880,7 @@
       scanInitialBpm = initialScanPlaybackBpm(shortCode, seq);
       resolvedSeq = seq;
       markScan("hydrated");
-      const word = seq.word || seq.name || "Sequence";
+      const word = seq.word || seq.displayName || seq.name || "Sequence";
       seqWord = word;
       // Raw word, not simplified: analytics is DATA, and the expanded form is
       // what joins against sequence records. Display surfaces simplify on their
@@ -919,60 +935,33 @@
           ),
         });
 
-        // Persist the scan to Firestore so the in-app Scan Activity tab lights
-        // up. This is the real card-scan path; unlike the client-only callers
-        // (viewer drawer, /sequence), it has the Cloudflare geo from the server
-        // load (data.geo), so these are the events that carry real country/city.
+        // Persist through the server-owned ingestion boundary. It validates the
+        // shortcode/physical-ID pair, derives geo from Cloudflare itself, and
+        // writes the private event plus counters atomically.
         //
         // Attribute a signed-in scanner: the bare /q layout fire-and-forgets the
         // auth listener, so give the persisted Firebase session a brief moment to
         // resolve before recording. Raced against a short timeout so an anonymous
         // scan (or a slow auth resolve) never stalls the write — it just records
         // userId: null and stays anonymous.
-        let scannerUserId: string | null = null;
         try {
           await Promise.race([
             initializeAuthListener(),
             new Promise((resolve) => setTimeout(resolve, 1500)),
           ]);
-          scannerUserId = authState.user?.uid ?? null;
         } catch {
-          scannerUserId = null;
+          // The scan stays anonymous when auth initialization is unavailable.
         }
 
-        shortCodeManager.incrementScanCount(shortCode).catch(() => {});
-        void shortCodeManager
-          .logScanEvent(shortCode, {
-            printId: scanPrintId,
-            country: geo?.country ?? null,
-            city: geo?.city ?? null,
-            userAgent: navigator.userAgent,
-            screenWidth: window.screen.width,
-            screenHeight: window.screen.height,
-            referrer: document.referrer || null,
-            userId: scannerUserId,
-            deviceId: getDeviceId(),
-            lat: geo?.lat ?? null,
-            lng: geo?.lng ?? null,
-            // Durable copy of the attribution the PostHog event carries.
-            // PostHog history can never be rewritten; these Firestore docs can
-            // be enriched later, so the deck belongs on them too.
-            deckId,
-            deckName,
-            bluePropType: scanPropConfig.bluePropType,
-            redPropType: scanPropConfig.redPropType,
-            catDogMode: scanPropConfig.catDogMode,
-          })
-          .catch(() => {});
-        void shortCodeManager
-          .logJourneyPoint(shortCode, {
-            printId: scanPrintId,
-            lat: geo?.lat ?? null,
-            lng: geo?.lng ?? null,
-            city: geo?.city ?? null,
-            country: geo?.country ?? null,
-          })
-          .catch(() => {});
+        void recordCardScan({
+          shortCode,
+          physicalCardId: scanPrintId,
+          deviceId: getDeviceId(),
+        }).catch((error) => {
+          // Instrumentation is intentionally non-blocking, but a production
+          // outage must remain visible in Worker/browser logs.
+          console.error("[q-scan] physical scan ingestion failed:", error);
+        });
       }
 
       stopTrickle();
@@ -1150,9 +1139,18 @@
             onRetry={() => retryVideoExport(ctx)}
           >
             {#snippet title()}
-              <!-- displayWord, not rawWord: the glyph row is read by a human,
-                   and a repeated word always renders in its smallest form. -->
-              <TKAWordGlyph word={displayWord} height={28} darkMode fitToParent />
+              {#if isSolo}
+                <span class="solo-export-title">{displayWord}</span>
+              {:else}
+                <!-- displayWord, not rawWord: the glyph row is read by a human,
+                     and a repeated word always renders in its smallest form. -->
+                <TKAWordGlyph
+                  word={displayWord}
+                  height={28}
+                  darkMode
+                  fitToParent
+                />
+              {/if}
             {/snippet}
           </ExportTakeover>
         </div>
@@ -1255,6 +1253,13 @@
     justify-content: center;
     width: 100%;
     animation: word-pulse 1.4s ease-in-out infinite;
+  }
+
+  .solo-export-title {
+    color: var(--theme-text, #ffffff);
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
   }
 
   .loader-progress {

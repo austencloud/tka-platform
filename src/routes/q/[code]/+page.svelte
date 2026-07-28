@@ -5,14 +5,27 @@
 
   let { data } = $props();
 
-  const displayWord = $derived(data.meta?.word ? simplifyRepeatedWord(data.meta.word) : null);
+  const isSolo = $derived(data.meta?.payloadKind === "solo");
+  const displayWord = $derived(
+    data.meta?.word
+      ? isSolo
+        ? data.meta.word
+        : simplifyRepeatedWord(data.meta.word)
+      : null
+  );
 
   const title = $derived(
-    displayWord ? `${displayWord}: Flow Arts Sequence | The Kinetic Alphabet` : "Scanned Sequence | The Kinetic Alphabet"
+    displayWord
+      ? isSolo
+        ? `${displayWord}: Solo Flow Choreography | The Kinetic Alphabet`
+        : `${displayWord}: Flow Arts Sequence | The Kinetic Alphabet`
+      : "Scanned Sequence | The Kinetic Alphabet"
   );
   const description = $derived(
     displayWord
-      ? `"${displayWord}"${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""}. Watch, practice, and remix this flow arts choreography sequence.`
+      ? isSolo
+        ? `${displayWord}${data.meta?.creator ? ` by ${data.meta.creator}` : ""}. Watch and practice this one-hand flow choreography.`
+        : `"${displayWord}"${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""}. Watch, practice, and remix this flow arts choreography sequence.`
       : "Watch and practice a flow arts choreography sequence."
   );
   const canonical = $derived(`https://tkaflowarts.com/q/${page.params.code}`);
@@ -32,9 +45,15 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={data.meta.thumbnailUrl} />
   {:else}
-    <meta property="og:image" content="https://tkaflowarts.com/og-default.png" />
+    <meta
+      property="og:image"
+      content="https://tkaflowarts.com/og-default.png"
+    />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://tkaflowarts.com/og-default.png" />
+    <meta
+      name="twitter:image"
+      content="https://tkaflowarts.com/og-default.png"
+    />
   {/if}
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />

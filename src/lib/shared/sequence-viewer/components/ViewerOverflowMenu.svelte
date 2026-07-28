@@ -49,6 +49,7 @@
     isSaved?: boolean;
     onSave?: () => void;
     onRemix?: () => void;
+    onSendTo?: () => void;
     /** Label for the onRemix item. Defaults to "Remix". */
     remixLabel?: string;
     /** Download the current sequence (QR scan funnel). Renders a Download item. */
@@ -98,6 +99,7 @@
     isSaved = true,
     onSave,
     onRemix,
+    onSendTo,
     remixLabel = "Remix",
     onDownload,
     downloadBusy = false,
@@ -188,7 +190,7 @@
     if (onSave && !isSaved) {
       items.push({
         label: "Save",
-        icon: "fa-floppy-disk",
+        icon: "fa-bookmark",
         action: onSave,
         className: "save",
       });
@@ -199,6 +201,13 @@
         icon: "fa-pen-to-square",
         action: onRemix,
         className: "remix",
+      });
+    }
+    if (onSendTo) {
+      items.push({
+        label: "Send sequence",
+        icon: "fa-paper-plane",
+        action: onSendTo,
       });
     }
     if (onDownload) {

@@ -63,6 +63,7 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
+  import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
   import {
     captureScanAction,
     captureScanExport,
@@ -166,6 +167,12 @@
   // actions into the title menu and collapse the rail to its icon presentation.
   const FULL_CHROME_MIN_WIDTH = 1080;
   const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
+  const motionProfile = $derived(
+    getSequenceMotionProfile(ctx.effectiveSequence ?? sequence)
+  );
+  const canToggleMotionVisibility = $derived(
+    motionProfile.kind === "paired" || motionProfile.kind === "mixed"
+  );
 
   // Every desktop export (card AND the 2D/3D animation download) puts its settings in
   // a fixed-width sidebar column beside the content rail and the preview. The preview
@@ -424,11 +431,13 @@
   const animTakeover = $derived(
     toExportTakeoverPhase(videoProgress, videoBusy)
   );
-  const takeoverWord = $derived(
-    simplifyRepeatedWord(
-      ctx.effectiveSequence?.word ?? ctx.effectiveSequence?.displayName ?? ""
-    )
+  const takeoverLabel = $derived(
+    ctx.effectiveSequence?.word ||
+      ctx.effectiveSequence?.displayName ||
+      ctx.effectiveSequence?.name ||
+      ""
   );
+  const takeoverWord = $derived(simplifyRepeatedWord(takeoverLabel));
   function videoExportAnalyticsConfig(): Record<string, ScanAnalyticsValue> {
     const options = ctx.exportOptions.getVideoOptions();
     return {
@@ -971,6 +980,7 @@
     isSaved={headerActions.isSaved}
     onSave={headerActions.onSave ? handleSave : undefined}
     onRemix={(onRemix ?? headerActions.onRemix) ? handleRemix : undefined}
+    onSendTo={handleSendTo}
     onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
     copyDataFeedback={copyClaudeFeedback}
     onVideoUpload={headerActions.onVideoUpload
@@ -1049,34 +1059,50 @@
         {:else}
           <button
             type="button"
-            class="header-action-btn"
+            class="header-action-btn utility"
             class:favorited={ctx.isFavorite}
             onclick={handleFavoriteToggle}
-            aria-label={ctx.isFavorite
-              ? "Remove from favorites"
-              : "Add to favorites"}
+            aria-label="Favorite sequence"
+            aria-pressed={ctx.isFavorite}
+            title={ctx.isFavorite ? "Favorited" : "Favorite"}
           >
-            <i class="fas fa-heart" aria-hidden="true"></i>
+            <i
+              class="{ctx.isFavorite ? 'fas' : 'far'} fa-heart"
+              aria-hidden="true"
+            ></i>
           </button>
-
-          {#if !ctx.isSaved}
-            <button
-              type="button"
-              class="header-action-btn save"
-              onclick={handleSave}
-              aria-label="Save sequence"
-            >
-              <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-            </button>
-          {/if}
 
           <button
             type="button"
-            class="header-action-btn remix"
+            class="header-action-btn utility"
+            class:saved={ctx.isSaved}
+            onclick={handleSave}
+            disabled={ctx.isSaved}
+            aria-label={ctx.isSaved ? "Saved to library" : "Save to library"}
+            title={ctx.isSaved ? "Saved to library" : "Save to library"}
+          >
+            <i class="fas fa-bookmark" aria-hidden="true"></i>
+          </button>
+
+          <button
+            type="button"
+            class="header-action-btn utility"
             onclick={handleRemix}
-            aria-label="Remix"
+            aria-label="Remix sequence"
+            title="Remix"
           >
             <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          </button>
+
+          <button
+            type="button"
+            class="header-action-btn utility send"
+            onclick={handleSendTo}
+            aria-label="Send sequence"
+            title="Send sequence"
+          >
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            <span>Send</span>
           </button>
 
           <button
@@ -1089,17 +1115,19 @@
             <span>Practice</span>
           </button>
 
-          <span class="header-action-divider"></span>
+          {#if canToggleMotionVisibility}
+            <span class="header-action-divider"></span>
 
-          <MotionVisibilityToggle
-            onToggleBlue={() => handleMotionToggle("blue")}
-            onToggleRed={() => handleMotionToggle("red")}
-          />
+            <MotionVisibilityToggle
+              onToggleBlue={() => handleMotionToggle("blue")}
+              onToggleRed={() => handleMotionToggle("red")}
+            />
+          {/if}
 
           {#if authState.isAdmin}
             <button
               type="button"
-              class="header-action-btn"
+              class="header-action-btn utility"
               onclick={handleCopyForClaude}
               aria-label="Copy sequence data for Claude"
               title="Copy for Claude"
@@ -1122,7 +1150,7 @@
       {:else}
         <!-- The centered title IS the overflow-menu trigger: title +
                  chevron opens the actions menu below the header. -->
-        {@render overflowMenu(compactChrome)}
+        {@render overflowMenu(compactChrome && canToggleMotionVisibility)}
       {/if}
     </div>
 
@@ -1133,7 +1161,7 @@
       {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
         <button
           type="button"
-          class="header-action-btn"
+          class="header-action-btn utility"
           class:active={!exportSidebarCollapsed}
           onclick={toggleExportSidebar}
           aria-label={exportSidebarCollapsed
@@ -1295,7 +1323,11 @@
               onRetry={() => handleVideoExport("retry")}
             >
               {#snippet title()}
-                <TKAWordGlyph word={takeoverWord} height={28} darkMode />
+                {#if motionProfile.kind === "solo"}
+                  <span class="takeover-title-text">{takeoverLabel}</span>
+                {:else}
+                  <TKAWordGlyph word={takeoverWord} height={28} darkMode />
+                {/if}
               {/snippet}
             </ExportTakeover>
           {/if}
@@ -1556,6 +1588,13 @@
     white-space: nowrap;
   }
 
+  .takeover-title-text {
+    color: var(--theme-text, #ffffff);
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+
   /* Chevron affordance beside the clickable title; rotates when the menu opens. */
   .drawer-title-caret {
     font-size: 11px;
@@ -1634,20 +1673,59 @@
     color: var(--theme-text, #ffffff);
   }
 
+  .header-action-btn.utility {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .header-action-btn.utility:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+  }
+
+  .header-action-btn.utility:disabled {
+    cursor: default;
+    opacity: 0.62;
+  }
+
   .header-action-btn.active {
     color: var(--theme-accent, #6366f1);
   }
 
   .header-action-btn.favorited {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 16%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 45%,
+      var(--theme-stroke, transparent)
+    );
     color: var(--semantic-error, #ef4444);
   }
 
-  .header-action-btn.save {
-    color: var(--semantic-success, #22c55e);
+  .header-action-btn.saved {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 14%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 40%,
+      var(--theme-stroke, transparent)
+    );
+    color: var(--theme-accent, #a78bfa);
   }
 
-  .header-action-btn.remix {
-    color: var(--semantic-warning, #f59e0b);
+  .header-action-btn.send {
+    gap: 8px;
+    padding: 0 14px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
   }
 
   /* Practice entry — labeled accent CTA. Tinted accent fill (no border, like

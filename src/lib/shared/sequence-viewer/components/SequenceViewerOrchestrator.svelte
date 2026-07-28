@@ -1,11 +1,12 @@
 <script lang="ts" module>
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
-import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
-// propInterpolator and sequenceConverter are now module-level functions injected directly
-import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
-import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+  import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
+  // propInterpolator and sequenceConverter are now module-level functions injected directly
+  import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
+  import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { getSequenceMotionVisibility } from "$lib/shared/foundation/services/sequence-motion-profile";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -15,7 +16,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type {
-    ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";
+    ViewerPlaybackState,
+    ImageCompositionProps,
+    PropRenderingProps,
+  } from "../domain/viewer-prop-groups";
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
   export type PlaybackSource = "animation" | "video";
@@ -46,11 +50,13 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     isFullscreen: boolean;
     fullscreenControlsVisible: boolean;
     fullscreenStackVertical: boolean;
-    editingPane: 'animation' | 'image' | 'video-upload' | null;
+    editingPane: "animation" | "image" | "video-upload" | null;
 
     isExportMode: boolean;
     exportType: ExportType | null;
-    exportOptions: ReturnType<typeof import("$lib/shared/animation-panel/state/export-options-state.svelte").getExportOptionsState>;
+    exportOptions: ReturnType<
+      typeof import("$lib/shared/animation-panel/state/export-options-state.svelte").getExportOptionsState
+    >;
     isExporting: boolean;
     exportProgress: VideoExportProgress | null;
     exportError: string | null;
@@ -60,7 +66,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     practiceActive: boolean;
     practiceRunning: boolean;
     practiceCountdown: number;
-    practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
+    practiceState: ReturnType<
+      typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState
+    >;
     practiceViewPrefs: import("$lib/shared/sequence-viewer/state/practice-view-prefs.svelte").PracticeViewPrefs;
     metronomeEnabled: boolean;
     handleToggleMetronome: () => void;
@@ -101,7 +109,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleUnpublishAction: () => Promise<void>;
 
     playbackMode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
-    handlePlaybackModeChange: (mode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode) => void;
+    handlePlaybackModeChange: (
+      mode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode
+    ) => void;
 
     handlePlaybackToggle: () => void;
     handleBpmChange: (bpm: number) => void;
@@ -109,7 +119,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleProgressBarSeek: (targetStep: number) => void;
     handleProgressBarScrubStart: () => void;
     handleProgressBarScrubEnd: () => void;
-    enterEditMode: (pane: 'animation' | 'image' | 'video-upload') => void;
+    enterEditMode: (pane: "animation" | "image" | "video-upload") => void;
     exitEditMode: () => void;
     enterFullscreen: () => void;
     immersive: boolean;
@@ -119,14 +129,19 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleExport: () => Promise<void>;
     handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     handleSyncToggle: () => Promise<void>;
-    handleOpenInCompose: (preset?: 'stagger' | 'mirror' | 'combo-export') => Promise<void>;
+    handleOpenInCompose: (
+      preset?: "stagger" | "mirror" | "combo-export"
+    ) => Promise<void>;
     handleEdit: () => void;
     handleSave: () => void;
     handleVideoUpload: () => Promise<void>;
     handleShare: () => void;
     handleDelete: () => Promise<void>;
     handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
-    invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
+    invokeGatedAction: (
+      type: PendingActionType,
+      realHandler: (() => void) | (() => Promise<void>) | undefined
+    ) => void;
     /** Open the sign-in sheet with no queued action (the /q header account chip). */
     openSignInPrompt: () => void;
     handleUnifiedDarkModeToggle: () => void;
@@ -169,15 +184,19 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     splitPaneImageComposition: ImageCompositionProps;
     splitPanePropRendering: PropRenderingProps;
 
-    renderMode: '2d' | '3d';
-    viewer3DState: ReturnType<typeof import("$lib/shared/3d/state/viewer-3d-state.svelte").createViewer3DState>;
+    renderMode: "2d" | "3d";
+    viewer3DState: ReturnType<
+      typeof import("$lib/shared/3d/state/viewer-3d-state.svelte").createViewer3DState
+    >;
 
     countdownValue: number;
     isRecording3D: boolean;
     recordingElapsed: number;
     handleStopRecording: () => void;
 
-    viewerState: ReturnType<typeof import("../state/viewer-state.svelte").createViewerState>;
+    viewerState: ReturnType<
+      typeof import("../state/viewer-state.svelte").createViewerState
+    >;
     viewerVisibility: SequenceViewerVisibilityState;
   }
 </script>
@@ -187,7 +206,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { SCENE_BPM_INTENT_KEY } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
-  import { generateViewerURL, encodePropForURL } from "$lib/shared/navigation/services/sequence-encoder";
+  import {
+    generateViewerURL,
+    encodePropForURL,
+  } from "$lib/shared/navigation/services/sequence-encoder";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -204,7 +226,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
-  import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
+  import {
+    getSettings,
+    updateSettings,
+  } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { calculateThumbnailAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { loadViewMode } from "$lib/shared/sequence-viewer/services/sequence-modal-persistence";
@@ -255,7 +280,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     /** Force the animation surface and request playback after assets settle. */
     playOnOpen?: boolean;
     forceGuest?: boolean;
-    initialRenderMode?: '2d' | '3d';
+    initialRenderMode?: "2d" | "3d";
     initialBlueVisible?: boolean;
     initialRedVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
@@ -282,8 +307,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     playOnOpen = false,
     forceGuest = false,
     initialRenderMode,
-    initialBlueVisible = true,
-    initialRedVisible = true,
+    initialBlueVisible,
+    initialRedVisible,
     initialActiveEffect,
     onGatedDownload,
     children,
@@ -297,7 +322,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   let playbackControllerRef = $state<AnimationPlaybackController | null>(null);
   let hapticService: HapticFeedback | null = null;
 
-  const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
+  const playback = createPlaybackController({
+    modalAnimationState,
+    initialBpm: 60,
+    initialStep: 0,
+  });
 
   // One-shot tempo seed from "open saved 3D scene" (consumed at init so the
   // initialBpm effect below can't overwrite it afterwards).
@@ -313,27 +342,30 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     }
   })();
 
-  $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = _sceneBpmIntent ?? initialBpm; });
+  $effect.pre(() => {
+    playback.currentStepLocal = initialStep;
+    playback.bpmLocal = _sceneBpmIntent ?? initialBpm;
+  });
 
   const viewer3DState = createViewer3DState();
   setViewer3DContext(viewer3DState);
 
   const accessibilityHelper = createModalAccessibilityHelper();
 
-  const exportCoord = createExportCoordinator({ viewer3DState, accessibilityHelper });
+  const exportCoord = createExportCoordinator({
+    viewer3DState,
+    accessibilityHelper,
+  });
 
   const imgComp = createImageCompositionSync();
 
   const authQueue = createAuthActionQueue();
 
-
   $effect(() => {
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  let viewMode = $state<ViewMode>(
-    playOnOpen ? "animation" : loadViewMode()
-  );
+  let viewMode = $state<ViewMode>(playOnOpen ? "animation" : loadViewMode());
   $effect.pre(() => {
     if (playOnOpen) {
       viewMode = "animation";
@@ -354,17 +386,19 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   const practiceViewPrefs = createPracticeViewPrefs();
   playback.setPracticeViewPrefs(practiceViewPrefs);
 
-  if (viewer3DState.renderMode === '3d' && !viewerState.wants3D) {
-    viewerState.setSplitPaneContent('left', 'animation-3d');
+  if (viewer3DState.renderMode === "3d" && !viewerState.wants3D) {
+    viewerState.setSplitPaneContent("left", "animation-3d");
   }
 
-  const editingPane = $derived.by((): 'animation' | 'image' | 'video-upload' | null => {
-    const { viewerMode, exportContext } = viewerState;
-    if (exportContext === 'animation-export') return 'animation';
-    if (exportContext === 'image-export') return 'image';
-    if (viewerMode === 'videos') return 'video-upload';
-    return null;
-  });
+  const editingPane = $derived.by(
+    (): "animation" | "image" | "video-upload" | null => {
+      const { viewerMode, exportContext } = viewerState;
+      if (exportContext === "animation-export") return "animation";
+      if (exportContext === "image-export") return "image";
+      if (viewerMode === "videos") return "video-upload";
+      return null;
+    }
+  );
 
   let playbackSource = $state<PlaybackSource>("animation");
   let videoPlaybackBeatIndex = $state<number | null>(null);
@@ -372,7 +406,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   const isExportMode = $derived(editingPane !== null);
   const exportType = $derived<ExportType | null>(
-    editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null
+    editingPane === "animation"
+      ? "animation"
+      : editingPane === "image"
+        ? "image"
+        : null
   );
 
   let cellsLoaded = $state(0);
@@ -392,15 +430,38 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   const redPropType = $derived(settings.redPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
 
+  function applyMotionVisibility(
+    state: SequenceViewerVisibilityState,
+    visibility: {
+      showBlueMotion: boolean;
+      showRedMotion: boolean;
+    }
+  ): void {
+    state.reset();
+    if (!visibility.showBlueMotion) state.setBlueMotion(false);
+    if (!visibility.showRedMotion) state.setRedMotion(false);
+  }
+
   const viewerVisibility = new SequenceViewerVisibilityState();
+  applyMotionVisibility(
+    viewerVisibility,
+    sequence
+      ? getSequenceMotionVisibility(sequence)
+      : { showBlueMotion: true, showRedMotion: true }
+  );
   setViewerVisibilityContext(viewerVisibility);
 
   $effect(() => {
     void sequence?.id;
-    viewerVisibility.reset();
+    const visibility = sequence
+      ? getSequenceMotionVisibility(sequence)
+      : { showBlueMotion: true, showRedMotion: true };
     untrack(() => {
-      if (!initialBlueVisible) viewerVisibility.setBlueMotion(false);
-      if (!initialRedVisible) viewerVisibility.setRedMotion(false);
+      applyMotionVisibility(viewerVisibility, {
+        showBlueMotion:
+          visibility.showBlueMotion && (initialBlueVisible ?? true),
+        showRedMotion: visibility.showRedMotion && (initialRedVisible ?? true),
+      });
     });
   });
 
@@ -408,21 +469,34 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   setEffectsConfigContext(effectsConfigState);
   // Activate a requested effect on mount (QR scan page asks for "trails").
   // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
-  if (initialActiveEffect) effectsConfigState.setActiveEffect(initialActiveEffect);
+  if (initialActiveEffect)
+    effectsConfigState.setActiveEffect(initialActiveEffect);
 
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
 
-  const isHandPath = $derived(handPathMode || Boolean(sequence?.metadata?.isHandPathVisualization));
+  const isHandPath = $derived(
+    handPathMode || Boolean(sequence?.metadata?.isHandPathVisualization)
+  );
   // Props always come from the viewer's own settings. (The former "Theirs | Mine"
   // creator-prop toggle was removed — the notation is prop-agnostic, so a sequence
   // always renders with whatever prop the viewer has chosen.)
-  const activeBlueProp = $derived(isHandPath ? PropType.HAND : (bluePropType ?? PropType.STAFF));
-  const activeRedProp = $derived(isHandPath ? PropType.HAND : (redPropType ?? PropType.STAFF));
-  const activeCatDog = $derived(isHandPath ? false : (catDogModeEnabled ?? false));
+  const activeBlueProp = $derived(
+    isHandPath ? PropType.HAND : (bluePropType ?? PropType.STAFF)
+  );
+  const activeRedProp = $derived(
+    isHandPath ? PropType.HAND : (redPropType ?? PropType.STAFF)
+  );
+  const activeCatDog = $derived(
+    isHandPath ? false : (catDogModeEnabled ?? false)
+  );
 
   // Keep the animation engine's prop types in sync with the active props.
-  function syncPropsToOrchestrator(blueProp: PropType, redProp: PropType, ready: boolean) {
+  function syncPropsToOrchestrator(
+    blueProp: PropType,
+    redProp: PropType,
+    ready: boolean
+  ) {
     if (blueProp && redProp && ready) {
       try {
         getSequenceAnimationOrchestrator().updatePropTypes(blueProp, redProp);
@@ -433,24 +507,33 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   }
 
   $effect(() => {
-    syncPropsToOrchestrator(activeBlueProp, activeRedProp, animationServicesReady);
+    syncPropsToOrchestrator(
+      activeBlueProp,
+      activeRedProp,
+      animationServicesReady
+    );
   });
 
-  const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
+  const effectiveSequence = $derived(
+    modalAnimationState.sequenceData ?? sequence
+  );
   const hasSequence = $derived(effectiveSequence !== null);
 
   const singlePlayDuration = $derived.by(() => {
     const steps = effectiveSequence?.steps;
     if (!steps?.length || playback.bpmLocal <= 0) return 0;
-    const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
+    const totalDurationUnits = steps.reduce(
+      (sum, s) => sum + (s.duration ?? 1),
+      0
+    );
     const speed = playback.bpmLocal / 60;
     return totalDurationUnits / speed;
   });
 
   const isOwned = $derived(
     !!sequence?.ownerId &&
-    !!authState.user?.uid &&
-    sequence.ownerId === authState.user.uid
+      !!authState.user?.uid &&
+      sequence.ownerId === authState.user.uid
   );
 
   const libraryActions = createLibraryActionHandler({
@@ -463,29 +546,40 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     onDeleteSuccess: () => handleClose(),
   });
 
-  const isPublished = $derived((sequence as LibrarySequence | null)?.visibility === "public");
+  const isPublished = $derived(
+    (sequence as LibrarySequence | null)?.visibility === "public"
+  );
 
-  $effect(() => { libraryActions.syncSavedState(sequence); });
-  $effect(() => { libraryActions.syncFavoriteState(sequence); });
+  $effect(() => {
+    libraryActions.syncSavedState(sequence);
+  });
+  $effect(() => {
+    libraryActions.syncFavoriteState(sequence);
+  });
 
   const showPreviousBeat = $derived.by(() => {
     const parkedOnBoundary =
       playback.currentStepLocal >= 1 &&
-      Math.abs(playback.currentStepLocal - Math.round(playback.currentStepLocal)) < 0.01;
+      Math.abs(
+        playback.currentStepLocal - Math.round(playback.currentStepLocal)
+      ) < 0.01;
     if (!parkedOnBoundary) return false;
     // Manual step-forward/backward parks: show the beat just stepped past.
     if (playback.arrivedViaStepping && !playback.isPlayingLocal) return true;
     // Step-mode playback dwells: the freeze holds the COMPLETED beat's end
     // position, so the glyph/highlight must keep attributing the boundary to
     // that beat — not the upcoming one whose motion hasn't played yet.
-    return playback.isPlayingLocal && modalAnimationState.playbackMode === "step";
+    return (
+      playback.isPlayingLocal && modalAnimationState.playbackMode === "step"
+    );
   });
 
   const highlightedStepIndex = $derived.by(() => {
     if (playbackSource === "video" && videoPlaybackBeatIndex !== null) {
       return videoPlaybackBeatIndex;
     }
-    if (!playback.isPlayingLocal && playback.currentStepLocal < 0.5) return null;
+    if (!playback.isPlayingLocal && playback.currentStepLocal < 0.5)
+      return null;
     if (playback.currentStepLocal < 1) return -1;
     if (showPreviousBeat) {
       return Math.round(playback.currentStepLocal) - 2;
@@ -502,7 +596,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
         return sequenceData.startPosition;
       }
       if (sequenceData.steps?.length > 0) {
-        const clampedIndex = Math.min(Math.max(0, prevIndex), sequenceData.steps.length - 1);
+        const clampedIndex = Math.min(
+          Math.max(0, prevIndex),
+          sequenceData.steps.length - 1
+        );
         return sequenceData.steps[clampedIndex] || null;
       }
     }
@@ -538,7 +635,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     authQueue.bootstrapFromUrl();
 
     window.addEventListener("keydown", handleKeydown, { capture: true });
-    keydownCleanup = () => window.removeEventListener("keydown", handleKeydown, { capture: true });
+    keydownCleanup = () =>
+      window.removeEventListener("keydown", handleKeydown, { capture: true });
 
     imageCompositionCleanup = imgComp.registerObserver();
 
@@ -573,10 +671,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   });
 
   $effect(() => {
-    if (viewer3DState.renderMode === '3d') {
-      onUrlParamChange?.('render', '3d');
+    if (viewer3DState.renderMode === "3d") {
+      onUrlParamChange?.("render", "3d");
     } else {
-      onUrlParamChange?.('render', '');
+      onUrlParamChange?.("render", "");
     }
   });
 
@@ -588,10 +686,12 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     // foldable), shouldBe3D is false even if the stored preference wants 3D — so
     // a persisted 3D mode auto-downgrades to 2D. viewportFits3D() is reactive, so
     // shrinking below threshold mid-3D runs exit3D(); growing back re-enters.
-    const shouldBe3D = (viewerState.wants3D || initialRenderMode === '3d') && viewportFits3D();
-    const is3D = viewer3DState.renderMode === '3d';
+    const shouldBe3D =
+      (viewerState.wants3D || initialRenderMode === "3d") && viewportFits3D();
+    const is3D = viewer3DState.renderMode === "3d";
 
-    const performersReady = viewer3DState.performerManager.performers.length > 0;
+    const performersReady =
+      viewer3DState.performerManager.performers.length > 0;
 
     if (shouldBe3D && (!is3D || !performersReady)) {
       viewer3DState.enter3D(sequence);
@@ -647,14 +747,17 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
       playback.setPlaybackController(playbackControllerRef);
       playback.setHapticService(hapticService);
-      playback.setAnimationVisible(() => viewerState.viewerMode !== 'card');
+      playback.setAnimationVisible(() => viewerState.viewerMode !== "card");
 
       const lanSyncCoordinator = getLanSyncCoordinator();
       lanSyncState.initialize(lanSyncCoordinator);
 
       animationServicesReady = true;
     } catch (error) {
-      console.error("[SequenceViewerOrchestrator] Failed to load services:", error);
+      console.error(
+        "[SequenceViewerOrchestrator] Failed to load services:",
+        error
+      );
       modalAnimationState.setError("Failed to load animation services");
     }
   }
@@ -681,7 +784,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
       modalAnimationState.setShouldLoop(true);
       modalAnimationState.setPlaybackMode("continuous");
-      const success = playbackControllerRef.initialize(loadedSequence, modalAnimationState);
+      const success = playbackControllerRef.initialize(
+        loadedSequence,
+        modalAnimationState
+      );
       if (!success) throw new Error("Failed to initialize playback");
 
       setAnimationPlaybackRef(playbackControllerRef);
@@ -719,7 +825,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
         }
       }, CHECK_INTERVAL_MS);
     } catch (err) {
-      console.warn("[SequenceViewerOrchestrator] Animation not available:", err);
+      console.warn(
+        "[SequenceViewerOrchestrator] Animation not available:",
+        err
+      );
       modalAnimationState.setError("Animation data not available");
     } finally {
       animationLoading = false;
@@ -729,36 +838,45 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   let playbackRestoreOnExit = false;
 
-  function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
+  function enterEditMode(pane: "animation" | "image" | "video-upload") {
     hapticService?.trigger("selection");
 
-    if (pane === 'animation') {
+    if (pane === "animation") {
       const leftContent = viewerState.splitConfig.leftPane;
-      const contentType = leftContent === 'animation-3d' ? 'animation-3d' as const : 'animation' as const;
-      viewerState.enterExport('animation-export', contentType);
+      const contentType =
+        leftContent === "animation-3d"
+          ? ("animation-3d" as const)
+          : ("animation" as const);
+      viewerState.enterExport("animation-export", contentType);
       if (!playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
       playbackRestoreOnExit = false;
-    } else if (pane === 'image') {
+    } else if (pane === "image") {
       playbackRestoreOnExit = playback.isPlayingLocal;
       if (playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
-      viewerState.enterExport('image-export');
-    } else if (pane === 'video-upload') {
+      viewerState.enterExport("image-export");
+    } else if (pane === "video-upload") {
       playbackRestoreOnExit = playback.isPlayingLocal;
       if (playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
-      viewerState.setViewerMode('videos');
+      viewerState.setViewerMode("videos");
     }
 
-    if (pane === 'video-upload') {
-      accessibilityHelper.announce("Upload a performance video for this sequence.", "assertive");
+    if (pane === "video-upload") {
+      accessibilityHelper.announce(
+        "Upload a performance video for this sequence.",
+        "assertive"
+      );
     } else {
-      const label = pane === 'animation' ? 'Animation' : 'Card';
-      accessibilityHelper.announce(`${label} export. Configure settings and tap Export when ready.`, "assertive");
+      const label = pane === "animation" ? "Animation" : "Card";
+      accessibilityHelper.announce(
+        `${label} export. Configure settings and tap Export when ready.`,
+        "assertive"
+      );
     }
   }
 
@@ -767,7 +885,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     viewerState.exitExport();
     exportCoord.dismissPreview();
 
-    if (playbackRestoreOnExit && !playback.isPlayingLocal && playbackControllerRef) {
+    if (
+      playbackRestoreOnExit &&
+      !playback.isPlayingLocal &&
+      playbackControllerRef
+    ) {
       playbackControllerRef.togglePlayback();
     }
     playbackRestoreOnExit = false;
@@ -784,7 +906,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       hapticService,
       playback.isPlayingLocal,
       playback.bpmLocal,
-      isHandPath,
+      isHandPath
     );
   }
 
@@ -814,7 +936,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       modalAnimationState,
       hapticService,
       (beat: number) => ctrl.additionalLayersAt(beat),
-      ctrl.spectrum,
+      ctrl.spectrum
     );
   }
 
@@ -825,7 +947,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     try {
       const sequenceWord = sequence.word || sequence.name || "Sequence";
-      lanSyncState.setLocalSequence(sequence as unknown as Record<string, unknown>);
+      lanSyncState.setLocalSequence(
+        sequence as unknown as Record<string, unknown>
+      );
 
       const isNowSyncing = await lanSyncState.toggleSync(
         sequence.id,
@@ -835,7 +959,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
           currentStep: playback.currentStepLocal,
           isPlaying: playback.isPlayingLocal,
           speed: playback.bpmLocal / 60,
-          shouldLoop: true
+          shouldLoop: true,
         }
       );
 
@@ -844,7 +968,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       }
 
       hapticService?.trigger(isNowSyncing ? "success" : "selection");
-      accessibilityHelper.announce(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
+      accessibilityHelper.announce(
+        isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled"
+      );
     } catch (err) {
       console.error("[Sync] Toggle failed:", err);
       hapticService?.trigger("error");
@@ -854,7 +980,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     }
   }
 
-  async function handleOpenInCompose(preset: 'stagger' | 'mirror' | 'combo-export' = 'stagger') {
+  async function handleOpenInCompose(
+    preset: "stagger" | "mirror" | "combo-export" = "stagger"
+  ) {
     if (!sequence) return;
     hapticService?.trigger("selection");
 
@@ -871,12 +999,13 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     handleClose();
 
-    const message = preset === 'combo-export'
-      ? "Opening in Compose for combined export..."
-      : "Opening in Compose...";
+    const message =
+      preset === "combo-export"
+        ? "Opening in Compose for combined export..."
+        : "Opening in Compose...";
     showToast({ message, type: "info", duration: 2000 });
 
-    await goto('/compose?handoff=true');
+    await goto("/compose?handoff=true");
   }
 
   function handleEdit() {
@@ -890,7 +1019,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
     handleClose();
 
-    showToast({ message: "Opening for editing...", type: "info", duration: 2000 });
+    showToast({
+      message: "Opening for editing...",
+      type: "info",
+      duration: 2000,
+    });
     void handleModuleChange("create", "construct");
   }
 
@@ -916,12 +1049,18 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
         const metadata: ShareURLMetadata = {};
 
         if (sequence.word) metadata.word = sequence.word;
-        if (sequence.ownerDisplayName) metadata.creator = sequence.ownerDisplayName;
-        if (typeof sequence.metadata?.notes === "string") metadata.notes = sequence.metadata.notes;
-        if (typeof sequence.metadata?.difficulty === "string") metadata.difficulty = sequence.metadata.difficulty;
+        if (sequence.ownerDisplayName)
+          metadata.creator = sequence.ownerDisplayName;
+        if (typeof sequence.metadata?.notes === "string")
+          metadata.notes = sequence.metadata.notes;
+        if (typeof sequence.metadata?.difficulty === "string")
+          metadata.difficulty = sequence.metadata.difficulty;
         const birthdaySource = sequence.birthday ?? sequence.createdAt;
         if (birthdaySource) {
-          const d = birthdaySource instanceof Date ? birthdaySource : new Date(birthdaySource);
+          const d =
+            birthdaySource instanceof Date
+              ? birthdaySource
+              : new Date(birthdaySource);
           if (!isNaN(d.getTime())) {
             metadata.birthday = d.toISOString().slice(0, 10).replace(/-/g, "");
           }
@@ -960,15 +1099,18 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
         })
         .catch(() => {});
     } else if (typeof navigator !== "undefined") {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast("Link copied to clipboard", "success");
-        void logShareAction("link_copy", {
-          ...activityMetadata,
-          shareMethod: "clipboard",
+      navigator.clipboard
+        .writeText(shareUrl)
+        .then(() => {
+          showToast("Link copied to clipboard", "success");
+          void logShareAction("link_copy", {
+            ...activityMetadata,
+            shareMethod: "clipboard",
+          });
+        })
+        .catch(() => {
+          showToast("Could not copy link", "error");
         });
-      }).catch(() => {
-        showToast("Could not copy link", "error");
-      });
     }
   }
 
@@ -1012,7 +1154,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
     if (event.key === " " || event.code === "Space") {
       const target = event.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
         return;
       }
       event.preventDefault();
@@ -1136,7 +1282,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     isSyncActive: lanSyncState.isActive,
     isSyncConnected: lanSyncState.isConnected,
 
-    canvasReady: (viewer3DState.renderMode === '3d' ? !!viewer3DState.webglCanvas : !!exportCoord.animationCanvas) && !!playbackControllerRef,
+    canvasReady:
+      (viewer3DState.renderMode === "3d"
+        ? !!viewer3DState.webglCanvas
+        : !!exportCoord.animationCanvas) && !!playbackControllerRef,
 
     onRenderProgress: handleRenderProgress,
 
@@ -1169,7 +1318,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       playback.handleBpmChange(bpm);
       onBpmChange?.(bpm);
     },
-    handleStepClick: (stepIndex: number) => playback.handleStepClick(stepIndex, blockClicks, editingPane),
+    handleStepClick: (stepIndex: number) =>
+      playback.handleStepClick(stepIndex, blockClicks, editingPane),
     enterEditMode,
     exitEditMode,
     enterFullscreen: fullscreen.enterFullscreen,
@@ -1187,34 +1337,44 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleShare,
     handleDelete: libraryActions.handleDelete,
     handleOpenInBrowser,
-    invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) =>
-      authQueue.invokeGatedAction(type, realHandler, sequence),
+    invokeGatedAction: (
+      type: PendingActionType,
+      realHandler: (() => void) | (() => Promise<void>) | undefined
+    ) => authQueue.invokeGatedAction(type, realHandler, sequence),
     openSignInPrompt: () => authQueue.openSignInSheet("account"),
     handleUnifiedDarkModeToggle,
     handlePracticeStart: () => {
       // Practice needs the clean Side-by-Side view (animation + steps). The
       // gallery opens cards in export/download views (Card, 2D, 3D all set an
       // export context), so leave any export and force split unless already there.
-      if (viewerState.viewerMode !== 'split') {
+      if (viewerState.viewerMode !== "split") {
         viewerState.exitExport();
-        viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
-        viewerState.setViewerMode('split');
+        viewerState.setSplitConfig({
+          leftPane: "animation",
+          rightPane: "card",
+        });
+        viewerState.setViewerMode("split");
       }
       playback.handlePracticeStart();
     },
     enterPracticeMode: () => {
       // Setup screen lives in the split companion pane — force split view first.
-      if (viewerState.viewerMode !== 'split') {
+      if (viewerState.viewerMode !== "split") {
         viewerState.exitExport();
-        viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
-        viewerState.setViewerMode('split');
+        viewerState.setSplitConfig({
+          leftPane: "animation",
+          rightPane: "card",
+        });
+        viewerState.setViewerMode("split");
       }
       playback.enterPracticeMode();
     },
     exitPracticeMode: () => playback.exitPracticeMode(),
-    handlePracticeStepLevel: (dir: 1 | -1) => playback.handlePracticeStepLevel(dir),
+    handlePracticeStepLevel: (dir: 1 | -1) =>
+      playback.handlePracticeStepLevel(dir),
     handlePracticeToggleHold: () => playback.handlePracticeToggleHold(),
-    handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) => playback.handlePracticeSetConfig(patch),
+    handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) =>
+      playback.handlePracticeSetConfig(patch),
     handlePracticeStop: () => playback.handlePracticeStop(),
     onClose: handleClose,
     stepHalfBeatBackward: playback.stepHalfBeatBackward,

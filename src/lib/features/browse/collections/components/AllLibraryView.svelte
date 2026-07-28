@@ -11,119 +11,123 @@ is a separate localStorage record, so your library's sort/filters don't fight
 the gallery's, and the source is pinned to my-library with no toggle.
 -->
 <script lang="ts">
-	import { onMount } from "svelte";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-	import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
-	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
-	import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
-	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
-	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-	import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
-	import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
-	import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
-	import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
-	import {
-		getVariationPickerState,
-		openVariationPicker,
-		closeVariationPicker,
-	} from "../../shared/state/variation-picker-state.svelte";
-	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
-	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
-	import { t } from "$lib/shared/i18n/i18n.svelte";
-	import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-	import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
-	import {
-		featureFlagService,
-		featureFlagState,
-	} from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import { onMount } from "svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
+  import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
+  import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
+  import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
+  import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
+  import {
+    getVariationPickerState,
+    openVariationPicker,
+    closeVariationPicker,
+  } from "../../shared/state/variation-picker-state.svelte";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
+  import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
+  import {
+    featureFlagService,
+    featureFlagState,
+  } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
+  import { loadSoloLibrarySequences } from "$lib/features/browse/shared/services/solo-library-sequence-loader";
 
-	const FIRST_SESSION_ACTIVATION_FLAG =
-		"capability:onboarding:first-session-activation" as const;
+  const FIRST_SESSION_ACTIVATION_FLAG =
+    "capability:onboarding:first-session-activation" as const;
 
-	// The desktop split view keeps the collection rail visible, so it passes no
-	// onBack — BrowsePanel then omits the back pill entirely.
-	let { onBack }: { onBack?: () => void } = $props();
+  // The desktop split view keeps the collection rail visible, so it passes no
+  // onBack — BrowsePanel then omits the back pill entirely.
+  let { onBack }: { onBack?: () => void } = $props();
 
-	const engine = createBrowseEngine({
-		persistKey: "tka-browse-library-all",
-		initialSource: "my-library",
-		sources: ["my-library"],
-		sections: true,
-	});
+  const engine = createBrowseEngine({
+    persistKey: "tka-browse-library-all",
+    initialSource: "my-library",
+    sources: ["my-library"],
+    sections: true,
+    loadSoloLibrarySequences,
+  });
 
-	let isSideBySide = $state(false);
-	const isMobile = $derived(!isSideBySide);
+  let isSideBySide = $state(false);
+  const isMobile = $derived(!isSideBySide);
 
-	onMount(() => {
-		engine.initialize();
-		isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
-		const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
-			isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
-		});
-		return () => {
-			unsubscribe();
-			engine.destroy();
-		};
-	});
+  onMount(() => {
+    engine.initialize();
+    isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+    const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
+      isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+    });
+    return () => {
+      unsubscribe();
+      engine.destroy();
+    };
+  });
 
-	let isFilterSheetOpen = $state(false);
-	let smartSaveOpen = $state(false);
+  let isFilterSheetOpen = $state(false);
+  let smartSaveOpen = $state(false);
 
-	const pickerState = getVariationPickerState();
+  const pickerState = getVariationPickerState();
 
-	function openViewer(sequence: SequenceData) {
-		openSequenceViewer(sequence, {
-			returnPath: "/browse/library",
-			returnLabel: "Library",
-			scrollY: browseScrollState.lastScrollY,
-			handPathMode: engine.viewMode.subject === "hands",
-		});
-	}
+  function openViewer(sequence: SequenceData) {
+    openSequenceViewer(sequence, {
+      returnPath: "/browse/library",
+      returnLabel: "Library",
+      scrollY: browseScrollState.lastScrollY,
+      handPathMode: engine.viewMode.subject === "hands",
+    });
+  }
 
-	function handleSelect(sequence: SequenceData, variations?: SequenceData[]) {
-		if (variations && variations.length > 1) {
-			openVariationPicker(variations);
-		} else {
-			openViewer(sequence);
-		}
-	}
+  function handleSelect(sequence: SequenceData, variations?: SequenceData[]) {
+    if (variations && variations.length > 1) {
+      openVariationPicker(variations);
+    } else {
+      openViewer(sequence);
+    }
+  }
 
-	const availableNavigationSections = $derived(engine.sections.map((s) => s.title));
+  const availableNavigationSections = $derived(
+    engine.sections.map((s) => s.title)
+  );
 
-	const emptyAction = $derived.by(() => {
-		// Admin and remote flag updates increment this version. Reading it here
-		// keeps the Library CTA in lockstep with the rollout switch.
-		void featureFlagState.flagsVersion;
-		if (!featureFlagService.canAccess(FIRST_SESSION_ACTIVATION_FLAG)) {
-			return undefined;
-		}
+  const emptyAction = $derived.by(() => {
+    // Admin and remote flag updates increment this version. Reading it here
+    // keeps the Library CTA in lockstep with the rollout switch.
+    void featureFlagState.flagsVersion;
+    if (!featureFlagService.canAccess(FIRST_SESSION_ACTIVATION_FLAG)) {
+      return undefined;
+    }
 
-		return {
-			label: "Make your first sequence",
-			onClick: () => {
-				// This CTA only renders for a genuinely empty library, so the
-				// starter can trust the empty result even if an older account
-				// probe is still cached.
-				firstSequenceStarterState.rearmForSession();
-				navigationState.setCurrentModule("create", "construct");
-			},
-		};
-	});
+    return {
+      label: "Make your first sequence",
+      onClick: () => {
+        // This CTA only renders for a genuinely empty library, so the
+        // starter can trust the empty result even if an older account
+        // probe is still cached.
+        firstSequenceStarterState.rearmForSession();
+        navigationState.setCurrentModule("create", "construct");
+      },
+    };
+  });
 </script>
 
 <div class="all-library">
-	<BrowsePanel
-		{engine}
-		layout="fullpage"
-		onSelect={handleSelect}
-		{onBack}
-		backLabel="Library"
-		hideToolbarSearch
-		onOpenFilters={() => (isFilterSheetOpen = true)}
-		onSaveSmart={() => (smartSaveOpen = true)}
-		{emptyAction}
-	/>
+  <BrowsePanel
+    {engine}
+    layout="fullpage"
+    onSelect={handleSelect}
+    {onBack}
+    backLabel="Library"
+    hideToolbarSearch
+    onOpenFilters={() => (isFilterSheetOpen = true)}
+    onSaveSmart={() => (smartSaveOpen = true)}
+    {emptyAction}
+  />
 </div>
 
 <GalleryFilterSheet {engine} bind:isOpen={isFilterSheetOpen} {isMobile} />
@@ -131,41 +135,44 @@ the gallery's, and the source is pinned to my-library with no toggle.
 <SmartCollectionSaveDialog {engine} bind:show={smartSaveOpen} />
 
 {#if isMobile}
-	<Drawer
-		isOpen={sequencePanelManager.isSortJumpOpen}
-		placement="bottom"
-		onOpenChange={(open) => {
-			if (!open) sequencePanelManager.close();
-		}}
-	>
-		<DrawerHeader title={t("browse_sort_navigate")} onClose={() => sequencePanelManager.close()} />
-		<SortJumpSheet
-			currentSortMethod={engine.sortMethod}
-			availableSections={availableNavigationSections}
-			onSortMethodChange={(method) => {
-				engine.setSort(method, "asc");
-				sequencePanelManager.close();
-			}}
-			onSectionClick={() => {
-				sequencePanelManager.close();
-			}}
-		/>
-	</Drawer>
+  <Drawer
+    isOpen={sequencePanelManager.isSortJumpOpen}
+    placement="bottom"
+    onOpenChange={(open) => {
+      if (!open) sequencePanelManager.close();
+    }}
+  >
+    <DrawerHeader
+      title={t("browse_sort_navigate")}
+      onClose={() => sequencePanelManager.close()}
+    />
+    <SortJumpSheet
+      currentSortMethod={engine.sortMethod}
+      availableSections={availableNavigationSections}
+      onSortMethodChange={(method) => {
+        engine.setSort(method, "asc");
+        sequencePanelManager.close();
+      }}
+      onSectionClick={() => {
+        sequencePanelManager.close();
+      }}
+    />
+  </Drawer>
 {/if}
 
 <VariationPickerDrawer
-	isOpen={pickerState.isOpen}
-	variations={pickerState.variations}
-	onSelect={openViewer}
-	onClose={closeVariationPicker}
+  isOpen={pickerState.isOpen}
+  variations={pickerState.variations}
+  onSelect={openViewer}
+  onClose={closeVariationPicker}
 />
 
 <style>
-	.all-library {
-		flex: 1;
-		overflow-y: auto;
-		overflow-x: hidden;
-		min-width: 0;
-		height: 100%;
-	}
+  .all-library {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-width: 0;
+    height: 100%;
+  }
 </style>

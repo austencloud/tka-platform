@@ -21,7 +21,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { ensureStepPlacement } from "$lib/shared/pictograph/shared/services/motion-placement";
 import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 import { derivePositionsForSequence } from "$lib/shared/navigation/services/position-deriver";

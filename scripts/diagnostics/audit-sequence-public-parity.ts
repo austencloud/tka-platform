@@ -11,10 +11,11 @@
  * Actionable drift =
  *   - ANY reconcile classification other than IN_SYNC (the corpus converged
  *     466/466 on 2026-07-27; there is no acceptable non-IN_SYNC state), or
- *   - a shortcode classified anything but LABELS_CURRENT that is NOT in the
- *     baseline, or whose class CHANGED from its baselined class.
+ *   - a shortcode classified anything but LABELS_CURRENT or SOLO_CURRENT
+ *     that is NOT in the baseline, or whose class CHANGED from its baselined
+ *     class.
  *
- * Baselined records that become LABELS_CURRENT are reported as improvements,
+ * Baselined records that become a current class are reported as improvements,
  * not violations (a source may be restored, or a human review may repair
  * them) — regenerate the baseline after intentional repairs.
  *
@@ -56,7 +57,12 @@ if (!existsSync(join(REPO_ROOT, "scripts", "migrations"))) {
 
 interface EngineResult {
   counts: Record<string, number>;
-  results: Array<{ code?: string; id?: string; cls?: string; classification?: string }>;
+  results: Array<{
+    code?: string;
+    id?: string;
+    cls?: string;
+    classification?: string;
+  }>;
   manifestPath: string;
 }
 
@@ -79,7 +85,8 @@ function runEngine(script: string, label: string): EngineResult {
     records?: EngineResult["results"];
   };
   const rows = manifest.results ?? manifest.records;
-  if (!rows) throw new Error(`${label}: manifest has neither results nor records`);
+  if (!rows)
+    throw new Error(`${label}: manifest has neither results nor records`);
   return { counts: manifest.counts, results: rows, manifestPath };
 }
 
@@ -97,7 +104,10 @@ async function alertAdmins(message: string): Promise<void> {
       v: string
     ) => { get(): Promise<AnyRec> }
   )("role", "==", "admin").get()) as {
-    docs: Array<{ id: string; ref: { collection(p: string): { add(d: AnyRec): Promise<unknown> } } }>;
+    docs: Array<{
+      id: string;
+      ref: { collection(p: string): { add(d: AnyRec): Promise<unknown> } };
+    }>;
   };
   for (const adminDoc of admins.docs) {
     await adminDoc.ref.collection("notifications").add({
@@ -130,17 +140,20 @@ async function main(): Promise<void> {
   );
   const shortcodeActionable = shortcodes.results.filter((r) => {
     const cls = r.cls ?? r.classification ?? "";
-    if (cls === "LABELS_CURRENT") return false;
+    if (cls === "LABELS_CURRENT" || cls === "SOLO_CURRENT") return false;
     const code = r.code ?? "";
     return baseline.quarantined[code] !== cls;
   });
   const improved = Object.keys(baseline.quarantined).filter((code) =>
     shortcodes.results.some(
-      (r) => r.code === code && (r.cls ?? "") === "LABELS_CURRENT"
+      (r) =>
+        r.code === code &&
+        ((r.cls ?? "") === "LABELS_CURRENT" || (r.cls ?? "") === "SOLO_CURRENT")
     )
   );
 
-  const actionableTotal = reconcileActionable.length + shortcodeActionable.length;
+  const actionableTotal =
+    reconcileActionable.length + shortcodeActionable.length;
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const reportPath = join(
     REPO_ROOT,
@@ -184,7 +197,10 @@ async function main(): Promise<void> {
   console.log(`report: ${reportPath}`);
 
   if (actionableTotal > 0) {
-    for (const r of [...reconcileActionable, ...shortcodeActionable].slice(0, 20)) {
+    for (const r of [...reconcileActionable, ...shortcodeActionable].slice(
+      0,
+      20
+    )) {
       console.log(`  ⚠️  ${JSON.stringify(r)}`);
     }
     if (ALERT) {

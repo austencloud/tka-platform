@@ -1,10 +1,11 @@
 /**
  * Scheduled Cloud Function: publish a lean shortcode snapshot to R2.
  *
- * Runs daily. Reads every `shortcodes/*` doc, emits only `{_id, encoded}`
- * pairs (docs without `encoded` are skipped — they're covered by the
- * Firestore primary path at resolve time). Uploads the resulting JSON to R2
- * so the SPA can fetch it as a static asset if Firestore is ever unreachable.
+ * Runs daily. Reads every `shortcodes/*` doc. Word records emit only
+ * `{_id, encoded}`; schema-3 solo records add the small identity envelope
+ * needed to retain their title and authored hand offline. Docs without
+ * `encoded` are skipped because the Firestore primary path serves their
+ * canonical embedded payload.
  *
  * Target: less than a few MB (at ~250 bytes/record, 50k records = 12 MB).
  *
@@ -30,12 +31,46 @@ const r2SecretAccessKey = defineSecret("R2_SECRET_ACCESS_KEY");
 const r2BucketName = defineSecret("R2_BUCKET_NAME");
 
 const SNAPSHOT_KEY = "snapshots/shortcodes-v2.json";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const BATCH_SIZE = 500;
 
 interface SkinnyRecord {
   _id: string;
   encoded: string;
+  payloadKind?: "solo";
+  payloadTitle?: string;
+  payloadStepCount?: number;
+  payloadContentHash?: string;
+  payloadSchemaVersion?: 3;
+  authoredHand?: "left" | "right";
+  sourceSoloPropId?: string;
+  sequence?: string;
+  sequenceName?: string;
+}
+
+function snapshotRecord(
+  id: string,
+  data: FirebaseFirestore.DocumentData
+): SkinnyRecord | null {
+  if (typeof data.encoded !== "string" || data.encoded.length === 0) {
+    return null;
+  }
+  const base: SkinnyRecord = { _id: id, encoded: data.encoded };
+  if (data.payloadKind !== "solo") return base;
+  return {
+    ...base,
+    payloadKind: "solo",
+    payloadTitle: data.payloadTitle,
+    payloadStepCount: data.payloadStepCount,
+    payloadContentHash: data.payloadContentHash,
+    payloadSchemaVersion: 3,
+    authoredHand: data.authoredHand,
+    ...(typeof data.sourceSoloPropId === "string" && {
+      sourceSoloPropId: data.sourceSoloPropId,
+    }),
+    sequence: data.sequence,
+    sequenceName: data.sequenceName,
+  };
 }
 
 async function buildSkinnySnapshot(): Promise<SkinnyRecord[]> {
@@ -51,10 +86,8 @@ async function buildSkinnySnapshot(): Promise<SkinnyRecord[]> {
     if (snap.empty) break;
 
     for (const doc of snap.docs) {
-      const data = doc.data() as { encoded?: string };
-      if (typeof data.encoded === "string" && data.encoded.length > 0) {
-        records.push({ _id: doc.id, encoded: data.encoded });
-      }
+      const record = snapshotRecord(doc.id, doc.data());
+      if (record) records.push(record);
     }
 
     lastDoc = snap.docs[snap.docs.length - 1] ?? null;

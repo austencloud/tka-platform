@@ -1,0 +1,109 @@
+import { describe, expect, it, vi } from "vitest";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
+
+vi.mock("$lib/shared/browse/get-browse-loader", () => ({
+  getBrowseLoader: () => ({
+    loadSequenceMetadata: vi.fn(async () => []),
+    refreshFromFirestore: vi.fn(async () => []),
+    removeFromCache: vi.fn(),
+  }),
+}));
+
+vi.mock("$lib/shared/library/get-library-repository", () => ({
+  getLibraryRepository: () => null,
+}));
+
+vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
+  authState: {
+    isAuthenticated: true,
+    isFullAccount: true,
+  },
+}));
+
+vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
+  settingsService: {
+    settings: { gridZoomByBucket: {} },
+    updateSetting: vi.fn(),
+  },
+}));
+
+vi.mock("$lib/shared/library/library-events", () => ({
+  onLibraryMutated: () => () => {},
+  onLibrarySequenceAdded: () => () => {},
+}));
+
+vi.mock("$lib/shared/library/services/collection-manager", () => ({
+  toggleFavorite: vi.fn(),
+}));
+
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+
+interface PendingLoad {
+  readonly viewMode: BrowseViewMode;
+  readonly resolve: (sequences: readonly SequenceData[]) => void;
+}
+
+function sequence(id: string): SequenceData {
+  return {
+    id,
+    name: id,
+    word: "",
+    steps: [],
+    thumbnails: [],
+    tags: [],
+    metadata: {},
+    isFavorite: false,
+    isCircular: false,
+  };
+}
+
+describe("BrowseEngine solo library loads", () => {
+  it("ignores an older hand response that arrives after the current hand", async () => {
+    const pending: PendingLoad[] = [];
+    const loadSoloLibrarySequences = vi.fn(
+      (viewMode: BrowseViewMode) =>
+        new Promise<readonly SequenceData[]>((resolve) => {
+          pending.push({ viewMode: { ...viewMode }, resolve });
+        })
+    );
+    const engine = createBrowseEngine({
+      persistKey: null,
+      initialSource: "my-library",
+      loadSoloLibrarySequences,
+    });
+
+    engine.setViewMode({
+      subject: "props",
+      granularity: "solo",
+      color: "blue",
+    });
+    engine.setViewMode({
+      subject: "props",
+      granularity: "solo",
+      color: "red",
+    });
+
+    expect(pending.map((request) => request.viewMode.color)).toEqual([
+      "blue",
+      "red",
+    ]);
+
+    pending[1]!.resolve([sequence("right-hand")]);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(engine.allSequences.map((item) => item.id)).toEqual(["right-hand"]);
+
+    pending[0]!.resolve([sequence("left-hand")]);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(engine.allSequences.map((item) => item.id)).toEqual(["right-hand"]);
+    expect(engine.isLoading).toBe(false);
+
+    engine.destroy();
+  });
+});

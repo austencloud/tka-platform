@@ -18,8 +18,59 @@ export class SoloPropSaveOrchestrator {
     private readonly handPathRepository: HandPathRepository
   ) {}
 
-  async save(data: SoloPropData, name?: string): Promise<void> {
-    const soloProp = name ? { ...data, name } : data;
+  async save(
+    data: SoloPropData,
+    metadata?: {
+      name?: string;
+      notes?: string;
+      authoredHand?: SoloPropData["authoredHand"];
+      ownerId?: string;
+      ownerDisplayName?: string;
+    }
+  ): Promise<{ soloPropId: string; reusedExisting: boolean }> {
+    const [existingSoloProp, existingHandPath] = await Promise.all([
+      this.soloPropRepository.getByHash(data.contentHash),
+      this.handPathRepository.getByHash(data.handPath.contentHash),
+    ]);
+    const name = existingSoloProp?.name ?? metadata?.name ?? data.name;
+    const notes = existingSoloProp?.notes ?? metadata?.notes ?? data.notes;
+    const authoredHand =
+      existingSoloProp?.authoredHand ??
+      metadata?.authoredHand ??
+      data.authoredHand;
+    const ownerId =
+      existingSoloProp?.ownerId ?? metadata?.ownerId ?? data.ownerId;
+    const ownerDisplayName =
+      existingSoloProp?.ownerDisplayName ??
+      metadata?.ownerDisplayName ??
+      data.ownerDisplayName;
+    const handPathName =
+      existingHandPath?.name ?? existingSoloProp?.name ?? metadata?.name;
+    const handPathNotes =
+      existingHandPath?.notes ?? existingSoloProp?.notes ?? metadata?.notes;
+    const soloProp: SoloPropData = {
+      ...(existingSoloProp ?? data),
+      ...data,
+      id: existingSoloProp?.id ?? data.id,
+      handPath: {
+        ...(existingHandPath ?? data.handPath),
+        ...data.handPath,
+        id: existingHandPath?.id ?? data.handPath.id,
+        ...(handPathName !== undefined && { name: handPathName }),
+        ...(handPathNotes !== undefined && { notes: handPathNotes }),
+        ...(ownerId !== undefined && { ownerId }),
+        ...(ownerDisplayName !== undefined && {
+          ownerDisplayName,
+        }),
+      },
+      ...(name !== undefined && { name }),
+      ...(notes !== undefined && { notes }),
+      ...(authoredHand !== undefined && { authoredHand }),
+      ...(ownerId !== undefined && { ownerId }),
+      ...(ownerDisplayName !== undefined && { ownerDisplayName }),
+      dateCreated:
+        existingSoloProp?.dateCreated ?? data.dateCreated ?? new Date(),
+    };
 
     const provenance: ArtifactProvenance = {
       sourceSequenceIds: [],
@@ -31,10 +82,7 @@ export class SoloPropSaveOrchestrator {
     // allSettled so one failure doesn't block the other.
     const results = await Promise.allSettled([
       this.soloPropRepository.save(soloProp, provenance),
-      this.handPathRepository.save(
-        name ? { ...soloProp.handPath, name } : soloProp.handPath,
-        provenance
-      ),
+      this.handPathRepository.save(soloProp.handPath, provenance),
     ]);
 
     // If the primary save (solo prop) failed, throw so the caller can show an error.
@@ -52,5 +100,10 @@ export class SoloPropSaveOrchestrator {
         handPathResult.reason
       );
     }
+
+    return {
+      soloPropId: soloProp.id,
+      reusedExisting: existingSoloProp !== null,
+    };
   }
 }

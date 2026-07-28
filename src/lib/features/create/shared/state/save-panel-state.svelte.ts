@@ -19,6 +19,13 @@ import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
+import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/solo-prop-save-orchestrator";
+import {
+  extractBlueSoloProp,
+  extractRedSoloProp,
+} from "$lib/shared/foundation/services/sequence-decomposer";
+import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
+import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 
 type ContentModerator = {
   checkWord: (word: string) => ContentModerationResult;
@@ -27,6 +34,7 @@ type ContentModerator = {
 export interface SavePanelDeps {
   ctx: CreateModuleContext;
   librarySaveService: LibrarySaveService | null;
+  soloPropSaveOrchestrator: SoloPropSaveOrchestrator | null;
   contentModerator: ContentModerator | null;
   hallOfShameSubmitter: HallOfShameSubmitter | null;
 }
@@ -40,8 +48,13 @@ export interface SavePanelProps {
 }
 
 export function createSavePanelState(deps: SavePanelDeps) {
-  const { ctx, librarySaveService, contentModerator, hallOfShameSubmitter } =
-    deps;
+  const {
+    ctx,
+    librarySaveService,
+    soloPropSaveOrchestrator,
+    contentModerator,
+    hallOfShameSubmitter,
+  } = deps;
   const { CreateModuleState } = ctx;
   const logger = createComponentLogger("SaveToLibraryPanel");
 
@@ -66,6 +79,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   // Form state
   let notes = $state("");
+  let title = $state("");
   let showNotes = $state(false);
   // Collections chosen in the picker. The sequence isn't saved yet, so we
   // collect ids here and file them right after the save (see handleSave).
@@ -97,6 +111,18 @@ export function createSavePanelState(deps: SavePanelDeps) {
     CreateModuleState.getActiveTabSequenceState()
   );
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
+  const motionProfile = $derived.by(() =>
+    sequence ? getSequenceMotionProfile(sequence) : { kind: "empty" as const }
+  );
+  const isSolo = $derived(motionProfile.kind === "solo");
+  const isMixed = $derived(motionProfile.kind === "mixed");
+  const soloColor = $derived(
+    motionProfile.kind === "solo" ? motionProfile.color : null
+  );
+  const authoredHand = $derived(
+    motionProfile.kind === "solo" ? motionProfile.authoredHand : null
+  );
+  const requiresAccount = $derived(isSolo && !authState.isFullAccount);
 
   const isMobileLayout = $derived(panelWidth < 640);
 
@@ -107,7 +133,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
   const darkMode = $derived(getSettings().darkMode ?? false);
 
   const isFlagged = $derived(
-    moderationResult !== null && !moderationResult.isAllowed
+    !isSolo && moderationResult !== null && !moderationResult.isAllowed
   );
 
   // Props getter — allows the component to bind its reactive props into this factory.
@@ -136,10 +162,11 @@ export function createSavePanelState(deps: SavePanelDeps) {
   });
 
   const tkaName = $derived(derivedWord);
+  const saveName = $derived(isSolo ? title.trim() : tkaName);
 
   // Duplicate detection
   const duplicateCheck = $derived.by(() => {
-    if (!tkaName || !isOpen)
+    if (isSolo || !tkaName || !isOpen)
       return { hasDuplicate: false, existingSequences: [] as unknown[] };
     return libraryState.checkForDuplicate(tkaName);
   });
@@ -167,7 +194,12 @@ export function createSavePanelState(deps: SavePanelDeps) {
   );
 
   const canSave = $derived(
-    !!tkaName && !isSaving && !isFlagged && !isExactDuplicate && !isTooShort
+    !!saveName &&
+      !isSaving &&
+      !isFlagged &&
+      !isExactDuplicate &&
+      !isTooShort &&
+      !isMixed
   );
 
   // ---------------------------------------------------------------------------
@@ -199,7 +231,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   // Run content moderation when tkaName changes
   $effect(() => {
-    if (tkaName && contentModerator && _propsGetter().show) {
+    if (!isSolo && tkaName && contentModerator && _propsGetter().show) {
       moderationResult = contentModerator.checkWord(tkaName);
     } else {
       moderationResult = null;
@@ -210,6 +242,10 @@ export function createSavePanelState(deps: SavePanelDeps) {
   $effect(() => {
     if (sequence && _propsGetter().show) {
       notes = "";
+      title =
+        motionProfile.kind === "solo"
+          ? `${motionProfile.authoredHand === "left" ? "Left" : "Right"}-hand choreography`
+          : "";
       showNotes = false;
       selectedCollectionIds = [];
     }
@@ -225,7 +261,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // Exact duplicate detection (async hash comparison)
   $effect(() => {
     const show = _propsGetter().show;
-    if (!show || !sequence) {
+    if (!show || !sequence || isSolo) {
       isExactDuplicate = false;
       return;
     }
@@ -248,7 +284,96 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   async function handleSave() {
     const props = _propsGetter();
-    if (!tkaName || !sequence) return;
+    if (!saveName || !sequence || isMixed) return;
+
+    if (isSolo && !authState.isFullAccount) {
+      showToast({
+        message: "Create an account to keep solo choreography in your library.",
+        type: "info",
+        duration: 6000,
+      });
+      authDrawerState.show("signup", "save");
+      return;
+    }
+
+    if (isSolo) {
+      if (!soloPropSaveOrchestrator || !authoredHand || !soloColor) {
+        logger.error("SoloPropSaveOrchestrator not available");
+        showToast({
+          message: "Solo choreography could not be saved. Try again.",
+          type: "error",
+          duration: 6000,
+        });
+        return;
+      }
+
+      isSaving = true;
+      saveStep = 1;
+      try {
+        const extracted =
+          soloColor === "blue"
+            ? extractBlueSoloProp(sequence)
+            : extractRedSoloProp(sequence);
+        const result = await soloPropSaveOrchestrator.save(extracted, {
+          name: saveName,
+          notes: notes.trim(),
+          authoredHand,
+          ownerId: authState.effectiveUserId ?? undefined,
+          ownerDisplayName: creatorName,
+        });
+        saveStep = 4;
+
+        const sessionId =
+          ctx.sessionManager?.getSessionId() ?? ctx.autosaver?.getSessionId();
+        try {
+          await ctx.autosaver?.deleteLocalDraft(sessionId);
+        } catch (draftError) {
+          logger.warn(
+            "Could not remove the completed local draft:",
+            draftError
+          );
+        }
+        if (ctx.sessionManager) {
+          void ctx.sessionManager
+            .markAsSaved(result.soloPropId)
+            .catch((sessionError) =>
+              logger.warn(
+                "Could not complete the cloud session lifecycle:",
+                sessionError
+              )
+            );
+        }
+
+        props.onSaveComplete?.(result.soloPropId);
+        showToast({
+          message: result.reusedExisting
+            ? "Already in your solo library."
+            : "Saved to your solo library.",
+          type: "success",
+          duration: 6000,
+          action: {
+            label: "Go to library",
+            onClick: () => void handleModuleChange("browse", "library"),
+          },
+        });
+        handleClose();
+      } catch (error) {
+        logger.error("Failed to save solo choreography:", error);
+        showToast({
+          message:
+            error instanceof Error
+              ? `Couldn't save this choreography: ${error.message}`
+              : "Couldn't save this choreography. Try again.",
+          type: "error",
+          duration: 6000,
+        });
+      } finally {
+        isSaving = false;
+        saveStep = 0;
+      }
+      return;
+    }
+
     if (!librarySaveService) {
       logger.error("LibrarySaveService not available");
       return;
@@ -491,6 +616,12 @@ export function createSavePanelState(deps: SavePanelDeps) {
     set notes(v: string) {
       notes = v;
     },
+    get title() {
+      return title;
+    },
+    set title(v: string) {
+      title = v;
+    },
 
     get showNotes() {
       return showNotes;
@@ -565,6 +696,21 @@ export function createSavePanelState(deps: SavePanelDeps) {
     },
     get isFlagged() {
       return isFlagged;
+    },
+    get isSolo() {
+      return isSolo;
+    },
+    get isMixed() {
+      return isMixed;
+    },
+    get soloColor() {
+      return soloColor;
+    },
+    get authoredHand() {
+      return authoredHand;
+    },
+    get requiresAccount() {
+      return requiresAccount;
     },
     get hasDuplicate() {
       return hasDuplicate;
