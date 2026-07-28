@@ -386,34 +386,41 @@
           </div>
 
           <div class="knobs">
-            <label class="knob" for="radius">
-              <span class="knob-label">Hand path radius</span>
-              <input
-                id="radius"
-                type="range"
-                min="0"
-                max="1.5"
-                step="0.05"
-                bind:value={radius}
-                oninput={() => (pendulum = false)}
-              />
-            </label>
-
-            <div class="knob">
-              <span class="knob-label" id="downbeats-label"
-                >Prop rotations per hand rotation</span
-              >
-              <div class="fit">
-                <SegmentedControl
-                  options={DOWNBEAT_OPTIONS}
-                  value={String(downbeats)}
-                  onchange={(v) => {
-                    downbeats = Number(v);
-                    pendulum = false;
-                  }}
-                  size="sm"
-                  ariaLabelledby="downbeats-label"
+            <!--
+              Paired at wide sizes. Stacked, the four control groups plus the
+              notation are taller than a 1000px-high window can hold, and the
+              table lost its last row off the bottom.
+            -->
+            <div class="knob-pair">
+              <label class="knob" for="radius">
+                <span class="knob-label">Hand path radius</span>
+                <input
+                  id="radius"
+                  type="range"
+                  min="0"
+                  max="1.5"
+                  step="0.05"
+                  bind:value={radius}
+                  oninput={() => (pendulum = false)}
                 />
+              </label>
+
+              <div class="knob">
+                <span class="knob-label" id="downbeats-label"
+                  >Prop rotations per hand rotation</span
+                >
+                <div class="fit">
+                  <SegmentedControl
+                    options={DOWNBEAT_OPTIONS}
+                    value={String(downbeats)}
+                    onchange={(v) => {
+                      downbeats = Number(v);
+                      pendulum = false;
+                    }}
+                    size="sm"
+                    ariaLabelledby="downbeats-label"
+                  />
+                </div>
               </div>
             </div>
 
@@ -716,6 +723,12 @@
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.62));
   }
 
+  /* Stacked by default; side by side once there is width for it. */
+  .knob-pair {
+    display: grid;
+    gap: clamp(0.6rem, 1.5vh, 1.1rem);
+  }
+
   .knob-row {
     display: grid;
     grid-template-columns: repeat(2, auto);
@@ -842,6 +855,12 @@
       grid-area: knobs;
       align-self: start;
       width: auto;
+    }
+
+    .knob-pair {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      column-gap: clamp(1.5rem, 2.5vw, 3rem);
     }
   }
 
