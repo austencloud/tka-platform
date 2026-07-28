@@ -28,23 +28,36 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ArtifactTile from "./ArtifactTile.svelte";
+  import BandDoorway from "./BandDoorway.svelte";
+  import { shouldUseDoorway } from "./doorway-policy";
   import { LiveSlots, type Medium } from "./live-slots.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { setPendingBrowseIntent } from "$lib/features/browse/state/pending-browse-intent.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   let {
     userId,
-    archiveCap = 120,
+    displayName,
   }: {
     userId: string;
     /**
-     * How many archive tiles to mount. The archive is the whole library, which
-     * for the author of this feature is 505 sequences; mounting every one costs
-     * more than any viewport can show. A real virtualiser is the eventual
-     * answer — this cap is what keeps the band honest until then.
+     * The creator's display name. The gallery's OWNER filter matches on
+     * `ownerDisplayName`, not on uid, so the Archive handoff needs it to scope
+     * a visitor's landing. Optional: the harness at /test/profile-stage mounts
+     * this component with a bare uid, and an own-profile handoff never uses it.
      */
-    archiveCap?: number;
+    displayName?: string;
   } = $props();
+
+  /**
+   * One design for everyone — the doorway looks and behaves the same on your
+   * own profile as on anyone else's. What differs is plumbing: which pool the
+   * count is read from, and therefore which pool the button opens. See the
+   * resolved-prerequisite section of the lobby spec.
+   */
+  const isOwnProfile = $derived(!!userId && userId === authState.user?.uid);
 
   const slots = new LiveSlots();
   onDestroy(() => slots.destroy());
@@ -63,8 +76,16 @@
 
     loading = true;
     loadError = null;
+    // A visitor may only read this creator's PUBLISHED sequences
+    // (firestore.rules: `visibility == 'public' || isOwner || isAdmin`). The
+    // unfiltered query this used to issue is not provably satisfiable, so
+    // Firestore rejected the whole thing and the stage fell into its error
+    // state for every non-admin visitor. Scoping the read repairs that, and it
+    // is also what keeps the Archive doorway honest: the count a visitor sees
+    // is the count of the work their handoff will actually show them.
+    const scope = userId === authState.user?.uid ? {} : { visibility: "public" as const };
     getLibraryRepository()
-      .getUserSequences(id, {})
+      .getUserSequences(id, scope)
       .then((result) => {
         sequences = result;
         loading = false;
@@ -86,7 +107,36 @@
     ) as LibrarySequence[]
   );
 
-  const archive = $derived(sortedSequences.slice(0, archiveCap));
+  /**
+   * Where "browse all their sequences" goes.
+   *
+   * The doorway promises a number, so landing somewhere that holds a DIFFERENT
+   * number is the defect this whole design turns on. Each branch opens the pool
+   * its own count was read from:
+   *
+   * - Own profile → Browse > Library > the All shelf, backed by
+   *   `getSequences()`, which IS `getUserSequences(ownUid)` — the same call
+   *   above. The counts match by construction.
+   * - Another creator → the community gallery with the OWNER filter applied to
+   *   their name, which is their published work. That is also what the
+   *   visitor's own count was scoped to.
+   *
+   * Browse reads neither of these from a URL: it is a keep-alive module panel,
+   * so the intent is set first and consumed on the other side.
+   */
+  function enterArchive(): void {
+    if (isOwnProfile) {
+      setPendingBrowseIntent({ kind: "own-library" });
+      void handleModuleChange("browse", "library");
+      return;
+    }
+    // Without a display name there is nothing to filter on, so the visitor
+    // lands on the gallery front door rather than on a silently empty grid.
+    if (displayName) {
+      setPendingBrowseIntent({ kind: "creator-gallery", ownerName: displayName });
+    }
+    void handleModuleChange("browse", "gallery");
+  }
 
   /**
    * The Showcase stands in for pinned items. `PinnedItem` exists on the profile
@@ -190,6 +240,11 @@
     if (w >= 700) return 4;
     return 2;
   }
+
+  /** One row of the newest work, which is all the doorway shows. The old
+   *  `archiveCap` existed to stop the wall being 505 tiles; the doorway removes
+   *  the wall, so the cap goes with it. */
+  const archiveSample = $derived(sortedSequences.slice(0, capFor("archive")));
 
   /**
    * ONE mixed Collections grid, not three type-segregated subbands.
@@ -301,6 +356,54 @@
       opts.push({ value: "mandala", label: "Mandalas", count: counts.mandala });
     return opts;
   });
+
+  /** The medium the handoff opens when the filter says "All": whichever the
+   *  user has most of, which is the one they most likely meant. Under a real
+   *  filter the handoff continues the narrowing they already did instead of
+   *  resetting it. */
+  function dominantMedium(): Medium {
+    const counts: Record<string, number> = {};
+    for (const e of collectionEntries) counts[e.medium] = (counts[e.medium] ?? 0) + 1;
+    let best: Medium = "mandala";
+    let bestCount = -1;
+    for (const [medium, n] of Object.entries(counts)) {
+      if (n > bestCount) {
+        best = medium as Medium;
+        bestCount = n;
+      }
+    }
+    return best;
+  }
+
+  /** Library > Art shelf ids, which are how the three collection galleries are
+   *  addressed (`MyCollectionsPanel.svelte` ART_DETAIL). There is no route —
+   *  they mount inside the Library detail pane. */
+  const ART_SHELF: Partial<Record<Medium, { id: string; label: string }>> = {
+    scene: { id: "art_scenes", label: "3D Scenes" },
+    tunnel: { id: "art_tunnels", label: "Tunnels" },
+    mandala: { id: "art_mandala", label: "Mandalas" },
+  };
+
+  function enterCollections(): void {
+    const medium = collectionFilter === "all" ? dominantMedium() : collectionFilter;
+    const shelf = ART_SHELF[medium];
+    if (!shelf) return;
+    setPendingBrowseIntent({ kind: "art-shelf", shelfId: shelf.id, label: shelf.label });
+    void handleModuleChange("browse", "library");
+  }
+
+  /**
+   * Collections converts past its threshold — but only on your own profile.
+   *
+   * The Library's Art shelves read the three collection singletons for the
+   * SIGNED-IN user, so there is no surface that shows someone else's saved
+   * scenes, tunnels or mandalas. A doorway into a destination that would show
+   * the wrong person's work is worse than a long band, so a visitor keeps the
+   * inline grid until such a surface exists.
+   */
+  const collectionsAreDoorway = $derived(
+    isOwnProfile && shouldUseDoorway("collections", visibleCollection.length)
+  );
 </script>
 
 <div class="stage">
@@ -363,22 +466,42 @@
           </div>
         {/if}
 
-        <div
-          class="grid"
-          style:--cols={fitColumns(visibleCollection.length, capFor("collection"))}
-        >
-          {#each visibleCollection as entry (entry.id)}
-            <ArtifactTile
-              {slots}
-              medium={entry.medium}
-              title={entry.title}
-              poster={entry.poster}
-              scene={entry.scene}
-              tunnel={entry.tunnel}
-              mandala={entry.mandala}
-            />
-          {/each}
-        </div>
+        {#if collectionsAreDoorway}
+          <BandDoorway
+            {slots}
+            size="md"
+            total={visibleCollection.length}
+            columns={capFor("collection")}
+            actionLabel="Browse all collections"
+            onenter={enterCollections}
+            items={visibleCollection.slice(0, capFor("collection")).map((e) => ({
+              key: e.id,
+              medium: e.medium,
+              title: e.title,
+              poster: e.poster,
+              scene: e.scene,
+              tunnel: e.tunnel,
+              mandala: e.mandala,
+            }))}
+          />
+        {:else}
+          <div
+            class="grid"
+            style:--cols={fitColumns(visibleCollection.length, capFor("collection"))}
+          >
+            {#each visibleCollection as entry (entry.id)}
+              <ArtifactTile
+                {slots}
+                medium={entry.medium}
+                title={entry.title}
+                poster={entry.poster}
+                scene={entry.scene}
+                tunnel={entry.tunnel}
+                mandala={entry.mandala}
+              />
+            {/each}
+          </div>
+        {/if}
       {/if}
     </section>
 
@@ -391,18 +514,24 @@
 
       {#if loading}
         <PanelState type="loading" message="Loading your library..." />
-      {:else}
-        <div class="grid" style:--cols={fitColumns(archive.length, capFor("archive"))}>
-          {#each archive as sequence (sequence.id)}
-            <ArtifactTile
-              {slots}
-              medium="sequence"
-              title={sequence.word || sequence.name || "Untitled"}
-              {sequence}
-              size="sm"
-            />
-          {/each}
-        </div>
+      {:else if sequences.length === 0}
+        <p class="band-empty">No sequences saved on this account yet.</p>
+      {:else if shouldUseDoorway("archive", sequences.length)}
+        <!-- Always a doorway, never a grid. A band that is browsable at 40 and
+             a doorway at 400 teaches two interactions for one thing. -->
+        <BandDoorway
+          {slots}
+          total={sequences.length}
+          columns={capFor("archive")}
+          actionLabel="Browse all sequences"
+          onenter={enterArchive}
+          items={archiveSample.map((s) => ({
+            key: s.id,
+            medium: "sequence" as const,
+            title: s.word || s.name || "Untitled",
+            sequence: s as SequenceData,
+          }))}
+        />
       {/if}
     </section>
   {/if}

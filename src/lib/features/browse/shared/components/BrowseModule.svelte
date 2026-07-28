@@ -40,12 +40,17 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
+  import {
+    peekPendingBrowseIntent,
+    clearPendingBrowseIntent,
+  } from "../../state/pending-browse-intent.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
   import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
   import {
     getGalleryViewState,
     setGalleryViewState,
   } from "../services/gallery-view-persister";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 
   // Tab ids match tab labels (renamed 2026-07-10): "library" is your saved
   // work (label Library, was id "collections"); "collections" is community
@@ -145,6 +150,44 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       })
     );
   }
+  // A handoff from another module — today the profile's Archive doorway, which
+  // displays a count above its button and so must land on the pool that count
+  // was read from. Consumed in an effect rather than onMount because Browse is
+  // keep-alive: it mounts once and every later handoff would be dropped.
+  //
+  // Deferred a frame in both branches. The tab-sync effect below writes its own
+  // `navigateTo({ view: "list" })` when the active tab changes, and effect order
+  // between the two is not guaranteed — running after the frame settles means
+  // the intent always wins rather than usually winning.
+  $effect(() => {
+    const intent = peekPendingBrowseIntent();
+    if (!intent) return;
+    clearPendingBrowseIntent();
+
+    if (intent.kind === "creator-gallery") {
+      const name = intent.ownerName;
+      requestAnimationFrame(() => {
+        // Exactly what the drill's own creator row applies
+        // (GalleryDrill.svelte), so the destination is the familiar filtered
+        // grid rather than a second thing that means the same.
+        applyToGrid(() => {
+          engine.clearUserFilters();
+          engine.setSearch("");
+          engine.addFilter(BrowseFilterType.OWNER, name, name, "#6aa0ff");
+        });
+      });
+    } else if (intent.kind === "art-shelf") {
+      const { shelfId, label } = intent;
+      requestAnimationFrame(() =>
+        browseNavigationState.viewCollectionDetail(shelfId, label)
+      );
+    } else {
+      requestAnimationFrame(() =>
+        browseNavigationState.viewCollectionDetail("all", "All")
+      );
+    }
+  });
+
   let showAnimator = $state<boolean>(false);
   let sequenceToAnimate = $state<SequenceData | null>(null);
   let isAnimationModalOpen = $state(false);

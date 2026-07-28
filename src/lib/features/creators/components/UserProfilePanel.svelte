@@ -242,7 +242,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
              library and collections from the userId, so nothing upstream needs
              to fetch on its behalf. -->
         <div class="profile-main">
-          <ProfileStage {userId} />
+          <ProfileStage {userId} displayName={userProfile.displayName} />
         </div>
 
         {#if showAside}
