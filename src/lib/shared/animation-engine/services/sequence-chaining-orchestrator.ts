@@ -11,7 +11,15 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
-import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator, IBroadcastProvider, PlaybackHistoryEntry, SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
+import type {
+  BroadcastSequenceConverter,
+  IBroadcastProvider,
+  IEndlessSpinnerOrchestrator,
+  IInfiniteSequenceGenerator,
+  PlaybackHistoryEntry,
+  SourceMode,
+} from "$lib/shared/animation-engine/domain/chaining-types";
+import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
 // re-export for existing consumers
 export type { SourceMode };
 
@@ -22,6 +30,11 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
+interface SequenceChainingOptions {
+  historyCapacity?: number;
+  convertBroadcastSequence?: BroadcastSequenceConverter;
+}
+
 export class SequenceChainingOrchestrator {
   private playbackController: AnimationPlaybackController | null = null;
   private animationState: AnimationPanelState | null = null;
@@ -29,6 +42,7 @@ export class SequenceChainingOrchestrator {
 
   private _isChainingNow = false;
   private _isPreloading = false;
+  private _chainingEnabled = true;
   private preloadedSequence: SequenceData | null = null;
   private lastStep = -1;
   private currentSequence: SequenceData | null = null;
@@ -45,15 +59,24 @@ export class SequenceChainingOrchestrator {
 
   // --- Live mode ---
   private broadcastUnsubscribe: (() => void) | null = null;
+  private broadcastStateCallback:
+    | ((state: BroadcastStateClient | null) => void)
+    | null = null;
+  private liveSyncInterval: ReturnType<typeof setInterval> | null = null;
+  private latestBroadcastState: BroadcastStateClient | null = null;
+  private lastBroadcastSequenceNumber: number | null = null;
   private _sourceMode: SourceMode = "library";
+  private sourceRevision = 0;
+  private readonly convertBroadcastSequence?: BroadcastSequenceConverter;
 
   constructor(
     private readonly spinnerOrchestrator: IEndlessSpinnerOrchestrator,
     private readonly infiniteGenerator: IInfiniteSequenceGenerator,
     private readonly broadcastProvider?: IBroadcastProvider,
-    options?: { historyCapacity?: number }
+    options?: SequenceChainingOptions
   ) {
     this._historyCapacity = options?.historyCapacity ?? 30;
+    this.convertBroadcastSequence = options?.convertBroadcastSequence;
   }
 
   get isChainingNow(): boolean {
@@ -70,6 +93,13 @@ export class SequenceChainingOrchestrator {
 
   setPropType(type: PropType): void {
     this._propType = type;
+  }
+
+  setChainingEnabled(enabled: boolean): void {
+    this._chainingEnabled = enabled;
+    if (!enabled) {
+      this.preloadedSequence = null;
+    }
   }
 
   get historyCapacity(): number {
@@ -90,36 +120,74 @@ export class SequenceChainingOrchestrator {
   }
 
   async startAutoMode(mode: SourceMode): Promise<void> {
+    const revision = ++this.sourceRevision;
+    this.stopLiveMode();
     this._sourceMode = mode;
     this.preloadedSequence = null;
     this.lastStep = -1;
+    this._isChainingNow = false;
+    this._isPreloading = false;
 
     if (mode === "library") {
       const initial = await this.spinnerOrchestrator.getInitialSequence();
+      if (revision !== this.sourceRevision || mode !== this._sourceMode) return;
       if (initial) {
         this.doHotSwap(initial);
         this.preloadNext(mode);
       }
     } else if (mode === "infinite") {
       const generated = await this.infiniteGenerator.generateInitial();
+      if (revision !== this.sourceRevision || mode !== this._sourceMode) return;
       if (generated) {
         this.doHotSwap(generated.sequence);
         this.preloadNext(mode);
       }
     } else if (mode === "live") {
-      if (!this.broadcastProvider) {
-        this.errorCallback?.("Live mode requires a broadcast provider");
+      if (!this.broadcastProvider || !this.convertBroadcastSequence) {
+        this.notifyError("Live mode is unavailable");
         return;
       }
-      this.broadcastUnsubscribe = this.broadcastProvider.subscribeToBroadcast((state) => {
-        if (state?.currentSequence) {
-          this.doHotSwap(state.currentSequence as unknown as SequenceData);
+
+      await this.broadcastProvider.calculateServerTimeOffset();
+      if (revision !== this.sourceRevision || mode !== this._sourceMode) return;
+
+      this.broadcastUnsubscribe = this.broadcastProvider.subscribeToBroadcast(
+        (state) => {
+          if (revision !== this.sourceRevision || this._sourceMode !== "live")
+            return;
+
+          this.latestBroadcastState = state;
+          this.broadcastStateCallback?.(state);
+          if (
+            !state ||
+            state.sequenceNumber === this.lastBroadcastSequenceNumber
+          ) {
+            return;
+          }
+
+          try {
+            const sequence = this.convertBroadcastSequence!(
+              state.currentSequence
+            );
+            if (this.doHotSwap(sequence)) {
+              this.lastBroadcastSequenceNumber = state.sequenceNumber;
+              this.syncLivePosition();
+            }
+          } catch (error) {
+            console.error(
+              "SequenceChainingOrchestrator: broadcast conversion failed:",
+              error
+            );
+            this.notifyError("The live sequence could not be loaded");
+          }
         }
-      });
+      );
+      this.liveSyncInterval = setInterval(() => this.syncLivePosition(), 100);
     }
   }
 
   skip(): void {
+    if (this._sourceMode === "pick" || this._sourceMode === "live") return;
     this.chainToNext();
   }
 
@@ -148,7 +216,13 @@ export class SequenceChainingOrchestrator {
     servicesReady: boolean,
     hasSequence: boolean
   ): void {
-    if (sourceMode === "pick" || sourceMode === "live") return;
+    if (
+      !this._chainingEnabled ||
+      sourceMode === "pick" ||
+      sourceMode === "live"
+    ) {
+      return;
+    }
 
     const floored = Math.floor(currentStep);
 
@@ -173,7 +247,13 @@ export class SequenceChainingOrchestrator {
     servicesReady: boolean,
     hasSequence: boolean
   ): void {
-    if (sourceMode === "pick" || sourceMode === "live") return;
+    if (
+      !this._chainingEnabled ||
+      sourceMode === "pick" ||
+      sourceMode === "live"
+    ) {
+      return;
+    }
 
     const floored = Math.floor(currentStep);
     const shouldPreload =
@@ -196,14 +276,21 @@ export class SequenceChainingOrchestrator {
     this.errorCallback = callback;
   }
 
+  onBroadcastStateUpdated(
+    callback: (state: BroadcastStateClient | null) => void
+  ): void {
+    this.broadcastStateCallback = callback;
+  }
+
   dispose(): void {
-    this.broadcastUnsubscribe?.();
-    this.broadcastUnsubscribe = null;
+    this.sourceRevision++;
+    this.stopLiveMode();
     this.playbackController = null;
     this.animationState = null;
     this.preloadedSequence = null;
     this.swapCallback = null;
     this.errorCallback = null;
+    this.broadcastStateCallback = null;
     this._history = [];
   }
 
@@ -218,10 +305,21 @@ export class SequenceChainingOrchestrator {
     }
   }
 
-  private doHotSwap(sequenceData: SequenceData): void {
-    if (!this.playbackController || !this.animationState) return;
+  private doHotSwap(sequenceData: SequenceData): boolean {
+    if (!this.playbackController || !this.animationState) return false;
 
-    // Push to history before swapping
+    const applied = this.propTypeApplier.applyToSequence(
+      sequenceData,
+      this._propType
+    );
+
+    this.animationState.setShouldLoop(true);
+    const ok = this.playbackController.initialize(applied, this.animationState);
+    if (!ok) {
+      this.notifyError("The sequence could not be played");
+      return false;
+    }
+
     this._history = [
       {
         sequence: sequenceData,
@@ -235,12 +333,6 @@ export class SequenceChainingOrchestrator {
     this.currentSequence = sequenceData;
     this.lastStep = -1;
 
-    const applied = this.propTypeApplier.applyToSequence(sequenceData, this._propType);
-
-    this.animationState.setShouldLoop(true);
-    const ok = this.playbackController.initialize(applied, this.animationState);
-    if (!ok) return;
-
     this.animationState.setPlaybackMode("continuous");
     this.playbackController.seekToStep(1);
 
@@ -249,6 +341,42 @@ export class SequenceChainingOrchestrator {
     }
 
     this.swapCallback?.(sequenceData);
+    return true;
+  }
+
+  private stopLiveMode(): void {
+    this.broadcastUnsubscribe?.();
+    this.broadcastUnsubscribe = null;
+    if (this.liveSyncInterval) {
+      clearInterval(this.liveSyncInterval);
+      this.liveSyncInterval = null;
+    }
+    this.latestBroadcastState = null;
+    this.lastBroadcastSequenceNumber = null;
+    this.broadcastStateCallback?.(null);
+  }
+
+  private syncLivePosition(): void {
+    if (
+      this._sourceMode !== "live" ||
+      !this.broadcastProvider ||
+      !this.latestBroadcastState ||
+      !this.animationState
+    ) {
+      return;
+    }
+
+    const state = this.latestBroadcastState;
+    const targetStep = this.broadcastProvider.getCurrentStepPosition(
+      state.startedAtMs,
+      state.durationMs,
+      state.currentSequence.totalSteps,
+      state.beatsPerMinute
+    );
+
+    if (Math.abs(this.animationState.currentStep - targetStep) > 0.5) {
+      this.animationState.setCurrentStep(targetStep);
+    }
   }
 
   private extractEndState(): EndState {
@@ -306,8 +434,7 @@ export class SequenceChainingOrchestrator {
       this.doHotSwap(this.preloadedSequence);
       this.preloadedSequence = null;
       this._isChainingNow = false;
-      // Detect current mode from whether infiniteGenerator was used for preload
-      this.preloadNext(this.inferCurrentMode());
+      this.preloadNext(this._sourceMode);
       return;
     }
 
@@ -317,57 +444,90 @@ export class SequenceChainingOrchestrator {
   }
 
   private async chainAsync(): Promise<void> {
+    const revision = this.sourceRevision;
+    const mode = this._sourceMode;
     try {
       const endState = this.extractEndState();
-      // Try infinite first, then library
-      const generated = await this.infiniteGenerator.generateFromEndState(endState);
-      if (generated) {
-        this.doHotSwap(generated.sequence);
-      } else {
-        const nextSeq = await this.spinnerOrchestrator.getNextSequence(endState);
-        if (nextSeq) this.doHotSwap(nextSeq);
+      if (mode === "infinite") {
+        const generated =
+          await this.infiniteGenerator.generateFromEndState(endState);
+        if (
+          generated &&
+          this._chainingEnabled &&
+          revision === this.sourceRevision &&
+          mode === this._sourceMode
+        ) {
+          this.doHotSwap(generated.sequence);
+        }
+      } else if (mode === "library") {
+        const nextSeq =
+          await this.spinnerOrchestrator.getNextSequence(endState);
+        if (
+          nextSeq &&
+          this._chainingEnabled &&
+          revision === this.sourceRevision &&
+          mode === this._sourceMode
+        ) {
+          this.doHotSwap(nextSeq);
+        }
       }
     } catch (err) {
-      console.error("SequenceChainingOrchestrator: chain failed:", err);
-      this.notifyError("Failed to load the next sequence");
+      if (revision === this.sourceRevision) {
+        console.error("SequenceChainingOrchestrator: chain failed:", err);
+        this.notifyError("Failed to load the next sequence");
+      }
     } finally {
-      this._isChainingNow = false;
-      this.preloadNext(this.inferCurrentMode());
+      if (revision === this.sourceRevision) {
+        this._isChainingNow = false;
+        this.preloadNext(this._sourceMode);
+      }
     }
   }
 
   private async preloadNext(mode: SourceMode): Promise<void> {
-    if (!this.currentSequence || this._isPreloading || this.preloadedSequence) return;
+    if (
+      !this._chainingEnabled ||
+      !this.currentSequence ||
+      this._isPreloading ||
+      this.preloadedSequence
+    ) {
+      return;
+    }
+    const revision = this.sourceRevision;
     this._isPreloading = true;
     try {
       const endState = this.extractEndState();
+      let nextSequence: SequenceData | null = null;
 
       if (mode === "infinite") {
-        const generated = await this.infiniteGenerator.generateFromEndState(endState);
-        this.preloadedSequence = generated?.sequence ?? null;
+        const generated =
+          await this.infiniteGenerator.generateFromEndState(endState);
+        nextSequence = generated?.sequence ?? null;
       } else if (mode === "library") {
-        const nextSeq = await this.spinnerOrchestrator.getNextSequence(endState);
-        this.preloadedSequence =
+        const nextSeq =
+          await this.spinnerOrchestrator.getNextSequence(endState);
+        nextSequence =
           nextSeq ?? (await this.spinnerOrchestrator.getInitialSequence());
       }
-    } catch (err) {
-      console.error("SequenceChainingOrchestrator: preload failed:", err);
-      // Preload is a background optimization (chaining falls back to async
-      // generation), so warn rather than error.
-      toast.warning("Couldn't preload the next sequence");
-    } finally {
-      this._isPreloading = false;
-    }
-  }
 
-  /**
-   * Infer the current source mode based on which service has activity.
-   * Used when the orchestrator needs to preload but doesn't receive
-   * the mode parameter directly (e.g. after a synchronous chain swap).
-   */
-  private inferCurrentMode(): SourceMode {
-    if (this._sourceMode !== "library") return this._sourceMode;
-    if (this.infiniteGenerator.getSessionCount() > 0) return "infinite";
-    return "library";
+      if (
+        this._chainingEnabled &&
+        revision === this.sourceRevision &&
+        mode === this._sourceMode
+      ) {
+        this.preloadedSequence = nextSequence;
+      }
+    } catch (err) {
+      if (revision === this.sourceRevision && mode === this._sourceMode) {
+        console.error("SequenceChainingOrchestrator: preload failed:", err);
+        // Preload is a background optimization (chaining falls back to async
+        // generation), so warn rather than error.
+        toast.warning("Couldn't preload the next sequence");
+      }
+    } finally {
+      if (revision === this.sourceRevision) {
+        this._isPreloading = false;
+      }
+    }
   }
 }

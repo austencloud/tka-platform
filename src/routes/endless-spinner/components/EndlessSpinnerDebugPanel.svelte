@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
-  import type { SpinnerStats } from '$lib/shared/landing/domain/types';
+  import { flyFade } from "$lib/shared/transitions/motion";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import type { SpinnerStats } from "$lib/shared/landing/domain/types";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PlaybackHistoryEntry } from "$lib/shared/animation-engine/domain/chaining-types";
 
@@ -19,12 +20,15 @@
   }: Props = $props();
 </script>
 
-<aside class="debug-panel" in:fly={{ y: 20, duration: 200 }}>
+<aside class="debug-panel themed-scrollbar" in:flyFade={{ y: 20, duration: 200 }}>
   <div class="debug-section">
     <h3>Sequence Chain</h3>
-    <div class="history-list">
+    <div class="history-list themed-scrollbar">
       {#each sequenceHistory as entry, i}
-        <div class="history-item" class:current={i === 0}>{entry.word ?? entry.sequence.word ?? "Generated"}</div>
+        <div class="history-item" class:current={i === 0}>
+          {simplifyRepeatedWord(entry.word ?? entry.sequence.word ?? "") ||
+            "Generated"}
+        </div>
       {/each}
     </div>
   </div>
@@ -54,6 +58,7 @@
   <div class="debug-section">
     <h3>Controls</h3>
     <button
+      type="button"
       class="toggle-row"
       aria-pressed={isChainingEnabled}
       onclick={() => (isChainingEnabled = !isChainingEnabled)}
@@ -67,24 +72,24 @@
 <style>
   .debug-panel {
     position: fixed;
-    bottom: 60px;
-    right: 20px;
-    width: 300px;
+    bottom: 5rem;
+    right: 1.25rem;
+    width: 20rem;
     max-height: 60vh;
     overflow-y: auto;
-    background: rgba(10, 10, 20, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 16px;
+    background: var(--theme-panel-bg, rgba(10, 10, 20, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.875rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    backdrop-filter: blur(20px);
+    gap: 1rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
   }
 
   .debug-section h3 {
-    margin: 0 0 8px;
-    font-size: 0.7rem;
+    margin: 0 0 0.5rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
@@ -94,29 +99,33 @@
   .history-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    max-height: 150px;
+    gap: 0.25rem;
+    max-height: 9.375rem;
     overflow-y: auto;
   }
 
   .history-item {
     font-size: 0.75rem;
     font-family: monospace;
-    padding: 6px 10px;
+    padding: 0.375rem 0.625rem;
     background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     color: rgba(255, 255, 255, 0.5);
   }
 
   .history-item.current {
-    background: rgba(80, 200, 120, 0.15);
-    color: #50c878;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
+    color: var(--semantic-success, #22c55e);
   }
 
   .debug-stats {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0.375rem;
   }
 
   .debug-stat {
@@ -131,37 +140,43 @@
 
   .debug-stat span:last-child {
     font-family: monospace;
+    font-variant-numeric: tabular-nums;
     color: rgba(255, 255, 255, 0.8);
   }
 
   .toggle-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.8rem;
+    gap: 0.625rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 0.625rem;
+    box-sizing: border-box;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 0.5rem;
+    font-size: var(--font-size-min, 0.875rem);
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    background: none;
-    border: none;
-    padding: 6px 4px;
     width: 100%;
     text-align: left;
   }
 
   .toggle-row:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     color: rgba(255, 255, 255, 0.9);
   }
 
   .toggle-row:focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 0.25rem;
   }
 
   .toggle-indicator {
-    width: 32px;
-    height: 18px;
-    border-radius: 9px;
+    width: 2rem;
+    height: 1.125rem;
+    border-radius: 0.5625rem;
     background: rgba(255, 255, 255, 0.15);
     position: relative;
     transition: background 0.15s;
@@ -171,29 +186,30 @@
   .toggle-indicator::after {
     content: "";
     position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 14px;
-    height: 14px;
+    top: 0.125rem;
+    left: 0.125rem;
+    width: 0.875rem;
+    height: 0.875rem;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.6);
     transition: transform 0.15s;
   }
 
   .toggle-indicator.active {
-    background: rgba(99, 102, 241, 0.6);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
   }
 
   .toggle-indicator.active::after {
-    transform: translateX(14px);
+    transform: translateX(0.875rem);
     background: #fff;
   }
 
   @media (max-width: 600px) {
     .debug-panel {
-      width: calc(100vw - 40px);
-      left: 20px;
-      right: 20px;
+      width: calc(100vw - 2rem);
+      left: 1rem;
+      right: 1rem;
     }
   }
+
 </style>

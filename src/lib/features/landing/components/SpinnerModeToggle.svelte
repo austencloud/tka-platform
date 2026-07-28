@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SpinnerMode } from "../domain/models/spinner-models";
 
   let {
@@ -23,14 +24,16 @@
     onModeChange?: (mode: SpinnerMode) => void;
   } = $props();
 
-  const options: { value: SpinnerMode; label: string; icon: string }[] = [
-    { value: "library", label: "Library", icon: "fas fa-book-open" },
-    { value: "infinite", label: "Infinite", icon: "fas fa-infinity" },
-    { value: "live", label: "Live", icon: "fas fa-broadcast-tower" },
-  ];
+  const options = $derived<{ value: SpinnerMode; label: string }[]>([
+    { value: "library", label: t("landing_spinner_mode_library") },
+    { value: "infinite", label: t("landing_spinner_mode_infinite") },
+    { value: "live", label: t("landing_spinner_mode_live") },
+  ]);
 
   // Live selection gets the red indicator; everything else uses the brand accent.
-  let indicatorColor = $derived<"accent" | "red">(mode === "live" ? "red" : "accent");
+  let indicatorColor = $derived<"accent" | "red">(
+    mode === "live" ? "red" : "accent"
+  );
 
   function handleChange(value: SpinnerMode) {
     onModeChange?.(value);
@@ -43,19 +46,15 @@
     value={mode}
     onchange={handleChange}
     color={indicatorColor}
+    semantics="radiogroup"
+    ariaLabel={t("landing_spinner_mode_source")}
   />
 </div>
 
 <style>
+  /* rem width: the route's continuous 4K root ramp grows it — no step tier. */
   .mode-toggle {
-    width: fit-content;
-    max-width: 360px;
+    width: min(100%, 28rem);
     margin: 0 auto;
-  }
-
-  @media (max-width: 600px) {
-    .mode-toggle {
-      width: 100%;
-    }
   }
 </style>

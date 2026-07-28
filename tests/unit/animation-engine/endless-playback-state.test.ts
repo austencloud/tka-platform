@@ -8,36 +8,49 @@ vi.mock("@firebase/firestore/lite", () => ({}));
 vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
   getSettings: vi.fn(() => ({})),
 }));
-vi.mock("$lib/shared/settings/services/implementations/FirebaseSettingsPersister", () => ({
-  FirebaseSettingsPersister: class {},
-}));
-vi.mock("$lib/shared/animation-engine/state/animation-visibility-state.svelte", () => ({
-  getAnimationVisibilityManager: vi.fn(() => ({ getEffortPreset: () => "linear" })),
-}));
+vi.mock(
+  "$lib/shared/settings/services/implementations/FirebaseSettingsPersister",
+  () => ({
+    FirebaseSettingsPersister: class {},
+  })
+);
+vi.mock(
+  "$lib/shared/animation-engine/state/animation-visibility-state.svelte",
+  () => ({
+    getAnimationVisibilityManager: vi.fn(() => ({
+      getEffortPreset: () => "linear",
+    })),
+  })
+);
 vi.mock("$lib/features/compose/utils/animation-panel-persistence", () => ({
   loadTrailSettings: vi.fn(() => ({})),
 }));
-vi.mock("$lib/features/compose/services/implementations/Canvas2DAnimationRenderer", () => ({
-  Canvas2DAnimationRenderer: class {},
-}));
+vi.mock(
+  "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer",
+  () => ({
+    Canvas2DAnimationRenderer: class {},
+  })
+);
 vi.mock("$lib/shared/animation-engine/services/animator-loader", () => ({
   loadAnimatorServices: vi.fn(),
 }));
 vi.mock("$lib/shared/landing/services/prop-type-applier", () => ({
   applyToSequence: vi.fn((seq: unknown) => seq),
 }));
-vi.mock("$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver", () => ({
-  gridPositionDeriver: { getGridPositionFromLocations: vi.fn() },
+vi.mock("$lib/shared/pictograph/grid/services/grid-position-deriver", () => ({
+  getGridPositionFromLocations: vi.fn(),
 }));
-vi.mock("$lib/shared/browse/getClaudeCodeCopier", () => ({
+vi.mock("$lib/shared/browse/get-claude-code-copier", () => ({
   getClaudeCodeCopier: vi.fn(() => ({
     copyForClaude: vi.fn(async () => ({ success: true })),
   })),
 }));
-vi.mock("$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver", () => ({
-  startPositionDeriver: { getOrDeriveStartPosition: vi.fn(() => null) },
-  StartPositionDeriver: class {},
-}));
+vi.mock(
+  "$lib/shared/pictograph/shared/services/start-position-deriver",
+  () => ({
+    startPositionDeriver: { getOrDeriveStartPosition: vi.fn(() => null) },
+  })
+);
 
 import { effect_root } from "svelte/internal/client";
 import { createEndlessPlayback } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
@@ -79,18 +92,118 @@ describe("createEndlessPlayback", () => {
     expect(state!.currentSequence).toBeNull();
     expect(state!.sourceMode).toBe("library");
     expect(state!.history).toEqual([]);
+    expect(state!.broadcastState).toBeNull();
+    expect(state!.sequenceSwapCount).toBe(0);
     expect(state!.isChainingNow).toBe(false);
     expect(state!.isPreloading).toBe(false);
     expect(state!.servicesReady).toBe(false);
     expect(typeof state!.initialize).toBe("function");
     expect(typeof state!.setSourceMode).toBe("function");
     expect(typeof state!.setPropType).toBe("function");
+    expect(typeof state!.setChainingEnabled).toBe("function");
     expect(typeof state!.skip).toBe("function");
     expect(typeof state!.shuffle).toBe("function");
     expect(typeof state!.copyForAI).toBe("function");
     expect(typeof state!.copyHistoryEntry).toBe("function");
     expect(typeof state!.hotSwapSequence).toBe("function");
     expect(typeof state!.dispose).toBe("function");
+
+    state!.dispose();
+    cleanup();
+  });
+
+  it("counts every accepted sequence swap", async () => {
+    const initialSequence = {
+      id: "initial",
+      name: "initial",
+      word: "initial",
+      steps: [],
+      thumbnails: [],
+      isFavorite: false,
+      isCircular: false,
+      tags: [],
+      metadata: {},
+    } as any;
+    const mockSpinner = {
+      initialize: vi.fn(async () => {}),
+      getInitialSequence: vi.fn(async () => initialSequence),
+      getNextSequence: vi.fn(async () => null),
+    };
+    const mockGenerator = {
+      generateInitial: vi.fn(async () => null),
+      generateFromEndState: vi.fn(async () => null),
+      getSessionCount: vi.fn(() => 0),
+    };
+    const mockPlaybackController = {
+      initialize: vi.fn(() => true),
+      togglePlayback: vi.fn(),
+      seekToStep: vi.fn(),
+      dispose: vi.fn(),
+    };
+
+    let state: ReturnType<typeof createEndlessPlayback>;
+    const cleanup = effect_root(() => {
+      state = createEndlessPlayback({
+        modes: ["library"],
+        defaultMode: "library",
+        spinnerOrchestrator: mockSpinner,
+        infiniteGenerator: mockGenerator,
+        playbackController: mockPlaybackController as any,
+      });
+    });
+
+    await state!.initialize();
+
+    expect(state!.sequenceSwapCount).toBe(1);
+    expect(state!.currentSequence?.id).toBe("initial");
+
+    state!.dispose();
+    cleanup();
+  });
+
+  it("releases Live playback ownership when switching to Pick mode", async () => {
+    const unsubscribe = vi.fn();
+    const mockSpinner = {
+      initialize: vi.fn(async () => {}),
+      getInitialSequence: vi.fn(async () => null),
+      getNextSequence: vi.fn(async () => null),
+    };
+    const mockGenerator = {
+      generateInitial: vi.fn(async () => null),
+      generateFromEndState: vi.fn(async () => null),
+      getSessionCount: vi.fn(() => 0),
+    };
+    const mockPlaybackController = {
+      initialize: vi.fn(() => true),
+      togglePlayback: vi.fn(),
+      seekToStep: vi.fn(),
+      dispose: vi.fn(),
+    };
+    const mockBroadcast = {
+      subscribeToBroadcast: vi.fn(() => unsubscribe),
+      calculateServerTimeOffset: vi.fn(async () => 0),
+      getCurrentStepPosition: vi.fn(() => 1),
+    };
+
+    let state: ReturnType<typeof createEndlessPlayback>;
+    const cleanup = effect_root(() => {
+      state = createEndlessPlayback({
+        modes: ["pick", "library", "live"],
+        defaultMode: "library",
+        spinnerOrchestrator: mockSpinner,
+        infiniteGenerator: mockGenerator,
+        playbackController: mockPlaybackController as any,
+        broadcastProvider: mockBroadcast,
+        convertBroadcastSequence: vi.fn((sequence) => sequence as any),
+      });
+    });
+
+    await state!.initialize();
+    await state!.setSourceMode("live");
+    await state!.setSourceMode("pick");
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(state!.sourceMode).toBe("pick");
 
     state!.dispose();
     cleanup();

@@ -5,12 +5,17 @@ import type {
   PlaybackHistoryEntry,
   IEndlessSpinnerOrchestrator,
   IInfiniteSequenceGenerator,
+  BroadcastSequenceConverter,
 } from "$lib/shared/animation-engine/domain/chaining-types";
+import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { CopyResult } from "$lib/shared/browse/services/claude-code-copier";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/sequence-chaining-orchestrator";
-import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import {
+  createAnimationPanelState,
+  type AnimationPanelState,
+} from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -24,6 +29,7 @@ export interface EndlessPlaybackConfig {
   historyCapacity?: number;
   propType?: PropType;
   broadcastProvider?: IBroadcastProvider;
+  convertBroadcastSequence?: BroadcastSequenceConverter;
   spinnerOrchestrator: IEndlessSpinnerOrchestrator;
   infiniteGenerator: IInfiniteSequenceGenerator;
   playbackController: AnimationPlaybackController;
@@ -33,9 +39,13 @@ export interface EndlessPlaybackState {
   readonly currentSequence: SequenceData | null;
   readonly sourceMode: SourceMode;
   readonly history: readonly PlaybackHistoryEntry[];
+  readonly broadcastState: BroadcastStateClient | null;
+  readonly sequenceSwapCount: number;
   readonly isChainingNow: boolean;
   readonly isPreloading: boolean;
-  readonly derivedStartPosition: ReturnType<typeof startPositionDeriver.getOrDeriveStartPosition>;
+  readonly derivedStartPosition: ReturnType<
+    typeof startPositionDeriver.getOrDeriveStartPosition
+  >;
   readonly currentLetter: Letter | null;
   readonly currentStepData: StepData | StartPositionData | null;
   readonly gridMode: GridMode | null;
@@ -47,6 +57,7 @@ export interface EndlessPlaybackState {
   initialize(): Promise<void>;
   setSourceMode(mode: SourceMode): Promise<void>;
   setPropType(type: PropType): void;
+  setChainingEnabled(enabled: boolean): void;
   skip(): void;
   shuffle(): Promise<void>;
   copyForAI(): Promise<CopyResult>;
@@ -55,7 +66,9 @@ export interface EndlessPlaybackState {
   dispose(): void;
 }
 
-export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPlaybackState {
+export function createEndlessPlayback(
+  config: EndlessPlaybackConfig
+): EndlessPlaybackState {
   const animationState = createAnimationPanelState();
   const playbackController = config.playbackController;
 
@@ -63,25 +76,41 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
     config.spinnerOrchestrator,
     config.infiniteGenerator,
     config.broadcastProvider,
-    { historyCapacity: config.historyCapacity ?? 30 }
+    {
+      historyCapacity: config.historyCapacity ?? 30,
+      convertBroadcastSequence: config.convertBroadcastSequence,
+    }
   );
 
   if (config.propType) {
     orchestrator.setPropType(config.propType);
   }
 
-  let _currentSequence = $state<SequenceData | null>(null);
+  // $state.raw, deliberately: a deep $state would hand consumers a reactive
+  // PROXY of the swapped sequence, which breaks identity-keyed lookups (the
+  // infinite generator's WeakMap of per-sequence LOOP info never matched, so
+  // the page could not show which LOOP type was playing). Sequences are
+  // immutable snapshots — only the reassignment needs reactivity.
+  let _currentSequence = $state.raw<SequenceData | null>(null);
   let _sourceMode = $state<SourceMode>(config.defaultMode);
   let _servicesReady = $state(false);
+  let _sequenceSwapCount = $state(0);
+  let _broadcastState = $state<BroadcastStateClient | null>(null);
 
   orchestrator.onSequenceSwapped((seq) => {
     _currentSequence = seq;
+    _sequenceSwapCount++;
+  });
+  orchestrator.onBroadcastStateUpdated((state) => {
+    _broadcastState = state;
   });
 
   // Derived values — eliminates the ~30-line block duplicated across 6 surfaces
   const derivedStartPosition = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    return startPositionDeriver.getOrDeriveStartPosition(animationState.sequenceData);
+    return startPositionDeriver.getOrDeriveStartPosition(
+      animationState.sequenceData
+    );
   });
 
   const currentLetter = $derived.by((): Letter | null => {
@@ -89,7 +118,8 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
     const step = animationState.currentStep;
     if (step < 1) {
       const startPos = derivedStartPosition;
-      if (startPos && "letter" in startPos) return (startPos.letter as Letter) || null;
+      if (startPos && "letter" in startPos)
+        return (startPos.letter as Letter) || null;
       return null;
     }
     const steps = animationState.sequenceData.steps;
@@ -100,17 +130,23 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
     return null;
   });
 
-  const currentStepData = $derived.by((): StepData | StartPositionData | null => {
-    if (!animationState.sequenceData) return null;
-    const step = animationState.currentStep;
-    if (step < 1) return (derivedStartPosition as StartPositionData | null) || null;
-    const steps = animationState.sequenceData.steps;
-    if (steps?.length) {
-      const idx = Math.max(0, Math.min(Math.floor(step) - 1, steps.length - 1));
-      return steps[idx] || null;
+  const currentStepData = $derived.by(
+    (): StepData | StartPositionData | null => {
+      if (!animationState.sequenceData) return null;
+      const step = animationState.currentStep;
+      if (step < 1)
+        return (derivedStartPosition as StartPositionData | null) || null;
+      const steps = animationState.sequenceData.steps;
+      if (steps?.length) {
+        const idx = Math.max(
+          0,
+          Math.min(Math.floor(step) - 1, steps.length - 1)
+        );
+        return steps[idx] || null;
+      }
+      return null;
     }
-    return null;
-  });
+  );
 
   const gridMode: GridMode | null = $derived(
     _currentSequence?.gridMode ?? animationState.sequenceData?.gridMode ?? null
@@ -141,37 +177,69 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
   });
 
   return {
-    get currentSequence() { return _currentSequence; },
-    get sourceMode() { return _sourceMode; },
-    get history() { return orchestrator.getHistory(); },
-    get isChainingNow() { return orchestrator.isChainingNow; },
-    get isPreloading() { return orchestrator.isPreloading; },
-    get derivedStartPosition() { return derivedStartPosition; },
-    get currentLetter() { return currentLetter; },
-    get currentStepData() { return currentStepData; },
-    get gridMode() { return gridMode; },
-    get totalSteps() { return animationState.totalSteps; },
-    get animationState() { return animationState; },
-    get playbackController() { return playbackController; },
-    get servicesReady() { return _servicesReady; },
+    get currentSequence() {
+      return _currentSequence;
+    },
+    get sourceMode() {
+      return _sourceMode;
+    },
+    get history() {
+      return orchestrator.getHistory();
+    },
+    get broadcastState() {
+      return _broadcastState;
+    },
+    get sequenceSwapCount() {
+      return _sequenceSwapCount;
+    },
+    get isChainingNow() {
+      return orchestrator.isChainingNow;
+    },
+    get isPreloading() {
+      return orchestrator.isPreloading;
+    },
+    get derivedStartPosition() {
+      return derivedStartPosition;
+    },
+    get currentLetter() {
+      return currentLetter;
+    },
+    get currentStepData() {
+      return currentStepData;
+    },
+    get gridMode() {
+      return gridMode;
+    },
+    get totalSteps() {
+      return animationState.totalSteps;
+    },
+    get animationState() {
+      return animationState;
+    },
+    get playbackController() {
+      return playbackController;
+    },
+    get servicesReady() {
+      return _servicesReady;
+    },
 
     async initialize() {
       await orchestrator.initialize(playbackController, animationState);
       _servicesReady = true;
-      if (_sourceMode !== "pick") {
-        await orchestrator.startAutoMode(_sourceMode);
-      }
+      await orchestrator.startAutoMode(_sourceMode);
     },
 
     async setSourceMode(mode: SourceMode) {
       _sourceMode = mode;
-      if (mode !== "pick") {
-        await orchestrator.startAutoMode(mode);
-      }
+      await orchestrator.startAutoMode(mode);
     },
 
     setPropType(type: PropType) {
       orchestrator.setPropType(type);
+    },
+
+    setChainingEnabled(enabled: boolean) {
+      orchestrator.setChainingEnabled(enabled);
     },
 
     skip() {
@@ -184,13 +252,15 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
 
     async copyForAI(): Promise<CopyResult> {
       const seq = animationState.sequenceData;
-      if (!seq) return { success: false, error: new Error("No sequence loaded") };
+      if (!seq)
+        return { success: false, error: new Error("No sequence loaded") };
       return getClaudeCodeCopier().copyForClaude(seq);
     },
 
     async copyHistoryEntry(index: number): Promise<CopyResult> {
       const entry = orchestrator.getHistory()[index];
-      if (!entry) return { success: false, error: new Error("History entry not found") };
+      if (!entry)
+        return { success: false, error: new Error("History entry not found") };
       return getClaudeCodeCopier().copyForClaude(entry.sequence);
     },
 

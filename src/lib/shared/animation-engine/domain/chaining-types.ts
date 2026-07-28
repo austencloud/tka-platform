@@ -7,7 +7,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { EndState } from "$lib/shared/landing/domain/types";
-import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
+import type {
+  BroadcastSequence,
+  BroadcastStateClient,
+} from "$lib/shared/landing/domain/broadcast-models";
 
 export type SourceMode = "pick" | "library" | "infinite" | "live";
 
@@ -16,7 +19,17 @@ export interface IBroadcastProvider {
     callback: (state: BroadcastStateClient | null) => void
   ): () => void;
   calculateServerTimeOffset(): Promise<number>;
+  getCurrentStepPosition(
+    startedAtMs: number,
+    durationMs: number,
+    totalSteps: number,
+    beatsPerMinute: number
+  ): number;
 }
+
+export type BroadcastSequenceConverter = (
+  sequence: BroadcastSequence
+) => SequenceData;
 
 export interface PlaybackHistoryEntry {
   sequence: SequenceData;

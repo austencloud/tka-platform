@@ -49,16 +49,16 @@
   // Get a color for the LOOP type badge
   function getLoopColor(loopType: LOOPType): string {
     const colors: Partial<Record<LOOPType, string>> = {
-      [LOOPType.ROTATED]: "#6366f1",     // Indigo
-      [LOOPType.MIRRORED]: "#8b5cf6",    // Purple
-      [LOOPType.SWAPPED]: "#ec4899",     // Pink
-      [LOOPType.INVERTED]: "#f59e0b",    // Amber
-      [LOOPType.ROTATED_SWAPPED]: "#10b981",    // Emerald
-      [LOOPType.MIRRORED_SWAPPED]: "#06b6d4",   // Cyan
-      [LOOPType.ROTATED_INVERTED]: "#f97316",   // Orange
-      [LOOPType.MIRRORED_INVERTED]: "#a855f7",  // Violet
-      [LOOPType.MIRRORED_ROTATED]: "#14b8a6",   // Teal
-      [LOOPType.SWAPPED_INVERTED]: "#ef4444",   // Red
+      [LOOPType.ROTATED]: "#6366f1", // Indigo
+      [LOOPType.MIRRORED]: "#8b5cf6", // Purple
+      [LOOPType.SWAPPED]: "#ec4899", // Pink
+      [LOOPType.INVERTED]: "#f59e0b", // Amber
+      [LOOPType.ROTATED_SWAPPED]: "#10b981", // Emerald
+      [LOOPType.MIRRORED_SWAPPED]: "#06b6d4", // Cyan
+      [LOOPType.ROTATED_INVERTED]: "#f97316", // Orange
+      [LOOPType.MIRRORED_INVERTED]: "#a855f7", // Violet
+      [LOOPType.MIRRORED_ROTATED]: "#14b8a6", // Teal
+      [LOOPType.SWAPPED_INVERTED]: "#ef4444", // Red
       [LOOPType.MIRRORED_INVERTED_ROTATED]: "#84cc16", // Lime
     };
     return colors[loopType] || "#6366f1";
@@ -69,12 +69,18 @@
   let reduceMotion = $state(
     typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
   $effect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    )
+      return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
+    const handler = (e: MediaQueryListEvent) => {
+      reduceMotion = e.matches;
+    };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   });
@@ -105,9 +111,17 @@
   });
 
   // Derived values for display
-  let loopLabel = $derived(sequenceInfo?.settings ? getLoopLabel(sequenceInfo.settings.loopType) : "");
-  let sliceLabel = $derived(sequenceInfo?.settings ? getPeriodLabel(sequenceInfo.settings.period) : "");
-  let loopColor = $derived(sequenceInfo?.settings ? getLoopColor(sequenceInfo.settings.loopType) : "#6366f1");
+  let loopLabel = $derived(
+    sequenceInfo?.settings ? getLoopLabel(sequenceInfo.settings.loopType) : ""
+  );
+  let sliceLabel = $derived(
+    sequenceInfo?.settings ? getPeriodLabel(sequenceInfo.settings.period) : ""
+  );
+  let loopColor = $derived(
+    sequenceInfo?.settings
+      ? getLoopColor(sequenceInfo.settings.loopType)
+      : "#6366f1"
+  );
   let totalSteps = $derived(sequenceInfo?.settings?.totalSteps ?? 0);
 </script>
 
@@ -119,30 +133,34 @@
         <span
           class="loop-badge"
           style="--loop-color: {loopColor}"
-          in:fly={{ y: reduceMotion ? 0 : -10, duration: reduceMotion ? 0 : 300 }}
+          in:fly={{
+            y: reduceMotion ? 0 : -10,
+            duration: reduceMotion ? 0 : 300,
+          }}
         >
           {loopLabel}
         </span>
       {/key}
       <span class="loop-details">
-        {sliceLabel} · {t('landing_infinite_steps', { count: totalSteps })}
+        {sliceLabel} · {t("landing_infinite_steps", { count: totalSteps })}
       </span>
     </div>
 
-    <!-- First Rendering Badge -->
-    {#if badgeVisible}
-      <span
-        class="first-rendering-badge"
-        in:fade={{ duration: reduceMotion ? 0 : 200 }}
-        out:fade={{ duration: reduceMotion ? 0 : 200, delay: reduceMotion ? 0 : 200 }}
-      >
-        {t('landing_infinite_first_rendering')}
-      </span>
-    {/if}
+    <!-- First Rendering Badge: the slot stays in flow and only opacity
+         changes, so the timed hide never moves the rows around it. -->
+    <span
+      class="first-rendering-badge"
+      class:visible={badgeVisible}
+      aria-hidden={!badgeVisible}
+    >
+      {t("landing_infinite_first_rendering")}
+    </span>
 
     <!-- Timestamp -->
     <span class="timestamp">
-      {t('landing_infinite_generated_at', { timestamp: formatTimestamp(sequenceInfo.generatedAt) })}
+      {t("landing_infinite_generated_at", {
+        timestamp: formatTimestamp(sequenceInfo.generatedAt),
+      })}
     </span>
   </div>
 {/if}
@@ -152,23 +170,22 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    min-height: 72px;
+    gap: 0.5rem;
   }
 
   .loop-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0.75rem;
   }
 
   .loop-badge {
     display: inline-flex;
     align-items: center;
-    padding: 6px 14px;
+    padding: 0.375rem 0.875rem;
     background: color-mix(in srgb, var(--loop-color) 20%, transparent);
     border: 1px solid color-mix(in srgb, var(--loop-color) 40%, transparent);
-    border-radius: 20px;
+    border-radius: 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--loop-color);
@@ -178,20 +195,23 @@
 
   .loop-details {
     font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .first-rendering-badge {
     display: inline-flex;
     align-items: center;
-    padding: 4px 12px;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    padding: 0.25rem 0.75rem;
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--color-success, #50c878) 20%, transparent),
       color-mix(in srgb, var(--color-success, #50c878) 15%, transparent)
     );
-    border: 1px solid color-mix(in srgb, var(--color-success, #50c878) 30%, transparent);
-    border-radius: 20px;
+    border: 1px solid
+      color-mix(in srgb, var(--color-success, #50c878) 30%, transparent);
+    border-radius: 1.25rem;
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--color-success, #50c878);
@@ -199,25 +219,34 @@
     letter-spacing: 0.05em;
   }
 
+  .first-rendering-badge.visible {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .first-rendering-badge {
+      transition: none;
+    }
+  }
+
   .timestamp {
     font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   @media (max-width: 600px) {
     .infinite-info {
-      min-height: 64px;
-      gap: 6px;
+      gap: 0.375rem;
     }
 
     .loop-info {
       flex-direction: column;
-      gap: 4px;
+      gap: 0.25rem;
     }
 
     .loop-badge {
       font-size: 0.8125rem;
-      padding: 5px 12px;
+      padding: 0.3125rem 0.75rem;
     }
 
     .loop-details {
@@ -225,8 +254,8 @@
     }
 
     .first-rendering-badge {
-      font-size: var(--font-size-compact, 12px);
-      padding: 3px 10px;
+      font-size: var(--font-size-compact, 0.75rem);
+      padding: 0.1875rem 0.625rem;
     }
 
     .timestamp {
@@ -234,15 +263,16 @@
     }
   }
 
-  /* Honor reduced-motion: the badge/loop fly+fade transitions are declared in
-     markup (in:fade/in:fly/out:fade) — neutralize any CSS-driven motion and let
-     the transitions land instantly rather than animating. */
-  @media (prefers-reduced-motion: reduce) {
-    .infinite-info,
-    .loop-badge,
-    .first-rendering-badge {
-      animation: none !important;
-      transition: none !important;
+  @media (min-width: 700px) and (max-height: 600px) {
+    .infinite-info {
+      flex-direction: row;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .loop-info {
+      gap: 0.5rem;
     }
   }
+
 </style>

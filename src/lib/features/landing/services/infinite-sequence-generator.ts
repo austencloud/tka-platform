@@ -11,7 +11,10 @@
  * - Cycles through LOOP types: Rotated, Mirrored, Swapped, Inverted, and combinations
  */
 
-import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  type GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   GenerationMode,
@@ -26,9 +29,13 @@ import {
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { GenerationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
 import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
-import type { GeneratedSequenceInfo, GenerationSettings } from "../domain/models/spinner-models";
+import type {
+  GeneratedSequenceInfo,
+  GenerationSettings,
+} from "../domain/models/spinner-models";
 import type { EndState } from "$lib/shared/landing/domain/types";
 import type { SpinnerMetricsRepository } from "./spinner-metrics-repository";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 /**
  * LOOP types that compose rotation + mirroring.
@@ -79,12 +86,16 @@ const LOOP_TYPE_ROTATION: LOOPType[] = [
  */
 const SLICE_OPTIONS: { slice: Period; weight: number }[] = [
   { slice: Period.QUARTERED, weight: 70 }, // 70% - 16 steps total
-  { slice: Period.HALVED, weight: 30 },    // 30% - 8 steps total
+  { slice: Period.HALVED, weight: 30 }, // 30% - 8 steps total
 ];
 
 export class InfiniteSequenceGenerator {
   private sessionCount = 0;
   private loopTypeIndex = 0;
+  private generatedInfoBySequence = new WeakMap<
+    SequenceData,
+    GeneratedSequenceInfo
+  >();
 
   constructor(
     private generationOrchestrator: GenerationOrchestrator,
@@ -131,11 +142,13 @@ export class InfiniteSequenceGenerator {
 
     if (targetStartPosition) {
       // Force the target position
-      blockedStartPositions = allPositions.filter(p => p !== targetStartPosition);
+      blockedStartPositions = allPositions.filter(
+        (p) => p !== targetStartPosition
+      );
     } else if (REQUIRES_AXIS_SYMMETRIC_START.has(settings.loopType)) {
       // No target position, but LOOP type needs axis-symmetric start.
       // Block all non-axis positions (all gamma, plus alpha3/7, beta3/7).
-      blockedStartPositions = allPositions.filter(p => !isAxisSymmetric(p));
+      blockedStartPositions = allPositions.filter((p) => !isAxisSymmetric(p));
     }
 
     try {
@@ -164,12 +177,12 @@ export class InfiniteSequenceGenerator {
       // Update settings with actual beat count from extended sequence
       settings.totalSteps = extended.steps?.length ?? settings.totalSteps;
 
-      return {
+      return this.rememberGeneratedSequence({
         sequence: extended,
         generatedAt: new Date(),
         globalIndex,
         settings,
-      };
+      });
     } catch (error) {
       console.warn(
         `[InfiniteSequenceGenerator] Failed to generate ${settings.loopType} LOOP, trying fallback:`,
@@ -199,7 +212,9 @@ export class InfiniteSequenceGenerator {
     };
 
     const blockedStartPositions = targetStartPosition
-      ? getAllPositions(GridMode.DIAMOND).filter(p => p !== targetStartPosition)
+      ? getAllPositions(GridMode.DIAMOND).filter(
+          (p) => p !== targetStartPosition
+        )
       : undefined;
 
     try {
@@ -220,16 +235,20 @@ export class InfiniteSequenceGenerator {
 
       this.sessionCount++;
       const globalIndex = await this.incrementMetricsSafely();
-      fallbackSettings.totalSteps = extended.steps?.length ?? fallbackSettings.totalSteps;
+      fallbackSettings.totalSteps =
+        extended.steps?.length ?? fallbackSettings.totalSteps;
 
-      return {
+      return this.rememberGeneratedSequence({
         sequence: extended,
         generatedAt: new Date(),
         globalIndex,
         settings: fallbackSettings,
-      };
+      });
     } catch (error) {
-      console.error("[InfiniteSequenceGenerator] Fallback generation also failed:", error);
+      console.error(
+        "[InfiniteSequenceGenerator] Fallback generation also failed:",
+        error
+      );
       return null;
     }
   }
@@ -287,7 +306,10 @@ export class InfiniteSequenceGenerator {
     try {
       return await this.metricsRepository.incrementGeneratedCount();
     } catch (error) {
-      console.warn("[InfiniteSequenceGenerator] Failed to update metrics:", error);
+      console.warn(
+        "[InfiniteSequenceGenerator] Failed to update metrics:",
+        error
+      );
       // Return session count as fallback if Firebase fails
       return this.sessionCount;
     }
@@ -297,7 +319,22 @@ export class InfiniteSequenceGenerator {
     return this.sessionCount;
   }
 
+  getInfoForSequence(
+    sequence: SequenceData | null
+  ): GeneratedSequenceInfo | null {
+    return sequence
+      ? (this.generatedInfoBySequence.get(sequence) ?? null)
+      : null;
+  }
+
   resetSessionCount(): void {
     this.sessionCount = 0;
+  }
+
+  private rememberGeneratedSequence(
+    info: GeneratedSequenceInfo
+  ): GeneratedSequenceInfo {
+    this.generatedInfoBySequence.set(info.sequence, info);
+    return info;
   }
 }

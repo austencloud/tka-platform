@@ -4,12 +4,16 @@
   Displays statistics that adapt based on the current spinner mode.
   - Library mode: transitions, unique sequences, in session
   - Infinite mode: total generated globally, this session
+  - Live mode: transitions, sequences received, current tempo
 -->
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { SpinnerMode, SpinnerMetrics } from "../domain/models/spinner-models";
+  import type {
+    SpinnerMode,
+    SpinnerMetrics,
+  } from "../domain/models/spinner-models";
   import type { SpinnerStats } from "$lib/shared/landing/domain/types";
 
   let {
@@ -18,12 +22,16 @@
     transitionCount = 0,
     globalMetrics,
     sessionGeneratedCount = 0,
+    liveSessionCount = 0,
+    liveBpm = 0,
   }: {
     mode: SpinnerMode;
     libraryStats?: SpinnerStats;
     transitionCount?: number;
     globalMetrics?: SpinnerMetrics | null;
     sessionGeneratedCount?: number;
+    liveSessionCount?: number;
+    liveBpm?: number;
   } = $props();
 
   // Format large numbers with commas
@@ -39,25 +47,42 @@
         <!-- Library mode stats -->
         <div class="stat">
           <span class="stat-value">{transitionCount}</span>
-          <span class="stat-label">{t('landing_stats_transitions')}</span>
+          <span class="stat-label">{t("landing_stats_transitions")}</span>
         </div>
         <div class="stat">
-          <span class="stat-value">{libraryStats?.uniqueSequencesUsed ?? 0}</span>
-          <span class="stat-label">{t('landing_stats_unique')}</span>
+          <span class="stat-value"
+            >{libraryStats?.uniqueSequencesUsed ?? 0}</span
+          >
+          <span class="stat-label">{t("landing_stats_unique")}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{libraryStats?.sequencesPlayed ?? 0}</span>
-          <span class="stat-label">{t('landing_stats_in_session')}</span>
+          <span class="stat-label">{t("landing_stats_in_session")}</span>
         </div>
-      {:else}
+      {:else if mode === "infinite"}
         <!-- Infinite mode stats -->
         <div class="stat highlight">
-          <span class="stat-value">{formatNumber(globalMetrics?.totalGenerated ?? 0)}</span>
-          <span class="stat-label">{t('landing_stats_ever_generated')}</span>
+          <span class="stat-value"
+            >{formatNumber(globalMetrics?.totalGenerated ?? 0)}</span
+          >
+          <span class="stat-label">{t("landing_stats_ever_generated")}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{sessionGeneratedCount}</span>
-          <span class="stat-label">{t('landing_stats_this_session')}</span>
+          <span class="stat-label">{t("landing_stats_this_session")}</span>
+        </div>
+      {:else}
+        <div class="stat">
+          <span class="stat-value">{transitionCount}</span>
+          <span class="stat-label">{t("landing_stats_transitions")}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{liveSessionCount}</span>
+          <span class="stat-label">{t("landing_stats_in_session")}</span>
+        </div>
+        <div class="stat highlight">
+          <span class="stat-value">{liveBpm || "..."}</span>
+          <span class="stat-label">{t("compose_bpm")}</span>
         </div>
       {/if}
     </div>
@@ -68,35 +93,45 @@
   .stats-bar {
     display: flex;
     justify-content: center;
-    padding: 16px 32px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    min-height: 72px;
+    width: 100%;
+    min-width: 0;
+    min-height: 4.5rem;
+    padding: 0.875rem clamp(1rem, 2vw, 2rem);
+    box-sizing: border-box;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.07));
+    border-radius: 0.875rem;
   }
 
   .stats-content {
     display: flex;
-    gap: 32px;
+    justify-content: space-around;
+    gap: clamp(1rem, 3vw, 3rem);
+    width: 100%;
+  }
+
+  .stats-bar :global(.crossfade) {
+    width: 100%;
   }
 
   .stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 0.25rem;
   }
 
   .stat-value {
     font-size: 1.25rem;
     font-weight: 600;
     font-family: monospace;
-    color: #fff;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text, #fff);
   }
 
   .stat-label {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -120,11 +155,12 @@
 
   @media (max-width: 600px) {
     .stats-bar {
-      padding: 12px 20px;
+      min-height: 4rem;
+      padding: 0.75rem;
     }
 
     .stats-content {
-      gap: 20px;
+      gap: 0.75rem;
     }
 
     .stat-value {
@@ -139,4 +175,25 @@
       font-size: var(--font-size-compact, 12px);
     }
   }
+
+  @media (min-width: 700px) and (max-height: 600px) {
+    .stats-bar {
+      min-height: 3.5rem;
+      padding: 0.5rem 1rem;
+    }
+
+    .stat {
+      gap: 0.125rem;
+    }
+
+    .stat-value,
+    .stat.highlight .stat-value {
+      font-size: 1rem;
+    }
+
+    .stat-label {
+      font-size: var(--font-size-compact, 0.75rem);
+    }
+  }
+
 </style>
