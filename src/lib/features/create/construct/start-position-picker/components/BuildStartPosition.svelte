@@ -91,7 +91,12 @@
   }
 </script>
 
+<!-- The outer element is only the size container; the inner one does the
+     laying out. An element can't be restyled by its own container query, so
+     with the flex on the outer div the wide/short rule silently applied to the
+     children and skipped the direction change on the parent. -->
 <div class="position-builder" data-testid="build-start-position">
+  <div class="builder-layout">
   <div class="placement-area">
     <PropPlacementGrid
       {gridMode}
@@ -107,39 +112,53 @@
     />
   </div>
 
-  <div class="recognition" aria-live="polite" aria-atomic="true">
-    {#if builtPictograph}
-      <span class="recognition-kicker">You built</span>
-      <strong>{positionLabel}</strong>
-    {:else}
-      <span>Place both props to recognize the position.</span>
-    {/if}
-  </div>
+  <!-- Grouped so a wide, short host can stand them beside the board instead of
+       stacking everything into a strip that leaves the board no height. -->
+  <div class="builder-controls">
+    <div class="recognition" aria-live="polite" aria-atomic="true">
+      {#if builtPictograph}
+        <span class="recognition-kicker">You built</span>
+        <strong>{positionLabel}</strong>
+      {:else}
+        <span>Place both props to recognize the position.</span>
+      {/if}
+    </div>
 
-  <div class="orientation-controls" aria-label="Prop orientations">
-    <OrientationCycler
-      orientation={blueOrientation}
-      onOrientationChange={onBlueOrientationChange}
-      color="blue"
-    />
-    <OrientationCycler
-      orientation={redOrientation}
-      onOrientationChange={onRedOrientationChange}
-      color="red"
-    />
-  </div>
+    <div class="orientation-controls" aria-label="Prop orientations">
+      <OrientationCycler
+        orientation={blueOrientation}
+        onOrientationChange={onBlueOrientationChange}
+        color="blue"
+      />
+      <OrientationCycler
+        orientation={redOrientation}
+        onOrientationChange={onRedOrientationChange}
+        color="red"
+      />
+    </div>
 
-  <button
-    class="apply-button"
-    disabled={!builtPictograph || isApplying}
-    onclick={handleApply}
-  >
-    {isApplying ? "Applying…" : "Use this position"}
-  </button>
+    <button
+      class="apply-button"
+      disabled={!builtPictograph || isApplying}
+      onclick={handleApply}
+    >
+      {isApplying ? "Applying…" : "Use this position"}
+    </button>
+  </div>
+  </div>
 </div>
 
 <style>
   .position-builder {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 8px clamp(12px, 3vmin, 28px);
+    box-sizing: border-box;
+    container-type: size;
+  }
+
+  .builder-layout {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -147,8 +166,6 @@
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 8px clamp(12px, 3vmin, 28px);
-    box-sizing: border-box;
   }
 
   .placement-area {
@@ -158,6 +175,55 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .builder-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  /* Wide AND genuinely short — the composer's embedded pane, a Fold in
+     landscape. Stacking there leaves the board almost no height, so it collapses
+     to a speck while half the pane sits empty beside it. Standing the controls
+     alongside gives the board the whole height, which is the scarce dimension.
+     The height bound matters as much as the ratio: a full-height desktop pane is
+     also "wide", but it has room to stack, and going two-column there only pulls
+     the board off centre for nothing. */
+  @container (max-height: 620px) and (min-aspect-ratio: 5 / 4) and (min-width: 34rem) {
+    .builder-layout {
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: center;
+      gap: clamp(12px, 2.5cqw, 28px);
+    }
+
+    /* The board is square and bounded by height here, so its column never needs
+       to be wider than the builder is tall. Sizing it off `cqh` makes it hug the
+       board; left to flex it claimed the whole row and stranded the controls at
+       the far edge with a canyon between them. */
+    .placement-area {
+      flex: 0 0 auto;
+      width: min(100%, 100cqh);
+      min-width: 0;
+      height: 100%;
+    }
+
+    .builder-controls {
+      flex: 0 1 clamp(13rem, 38cqw, 24rem);
+      justify-content: center;
+      min-width: 0;
+    }
+
+    /* The prompt sits in the narrow left column here, where it wrapped to two
+       lines and took that height straight off the board. One line instead. */
+    .placement-area :global(.prompt-text) {
+      font-size: var(--font-size-min, 13px);
+      min-height: 0;
+    }
   }
 
   .recognition {

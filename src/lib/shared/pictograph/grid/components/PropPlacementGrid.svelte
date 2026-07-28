@@ -437,7 +437,7 @@
         ? `${blueNoun} placement restored. Place the ${redNoun}.`
         : activeColor === MotionColor.BLUE
           ? `Place the ${blueNoun}.`
-          : "Previous pose restored.";
+          : "Previous position restored.";
     publishChange();
   }
 
@@ -537,6 +537,12 @@
     <p class="prompt-text" data-testid="placement-prompt">{promptText}</p>
   {/if}
 
+  <!-- The grid area is its own size container so the square below can be sized
+       from the room it ACTUALLY has. Sizing it from the viewport and letting
+       max-height clamp it turned the square into a letterboxed strip whenever
+       the host was wide and short (the composer embed), which is what made the
+       pictograph read as a speck. -->
+  <div class="grid-area">
   <div class="grid-wrapper">
     <div class="pictograph-layer">
       <PictographContainer
@@ -705,9 +711,14 @@
       {/if}
     </svg>
   </div>
+  </div>
 
-  {#if isComplete && editAfterCompletion && !disabled}
-    <div class="edit-controls" aria-label="Move a prop">
+  <!-- One tray, one row, always occupying its height. These buttons appear and
+       disappear as you place props; letting them come and go took height away
+       from the grid above, which shrank the board mid-task — the worst moment
+       to move the thing someone is aiming at. -->
+  <div class="controls-tray" aria-label="Move a prop">
+    {#if isComplete && editAfterCompletion && !disabled}
       <button
         class="edit-button blue"
         class:active={activeColor === MotionColor.BLUE}
@@ -724,12 +735,16 @@
       >
         Move red
       </button>
-    </div>
-  {/if}
+    {/if}
 
-  {#if canUndo}
-    <button class="undo-button" onclick={handleUndo}>Undo placement</button>
-  {/if}
+    {#if canUndo}
+      <!-- Short visible label so three buttons stay on one row (a second row
+           would eat the board's height); the full name stays for assistive tech. -->
+      <button class="undo-button" onclick={handleUndo} aria-label="Undo placement">
+        Undo
+      </button>
+    {/if}
+  </div>
 
   <div class="sr-only" aria-live="polite" aria-atomic="true">
     {liveAnnouncement}
@@ -761,10 +776,28 @@
     text-align: center;
   }
 
+  /* Owns the leftover space and measures it for the square inside. */
+  .grid-area {
+    flex: 1 1 auto;
+    width: 100%;
+    /* A floor, not a preference. If a host gives this no definite height, `cqh`
+       resolves to zero and the board below would vanish — present in the DOM,
+       zero pixels, unclickable. */
+    min-height: 8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    container-type: size;
+  }
+
   .grid-wrapper {
     position: relative;
-    width: min(100%, 56vh);
-    max-height: 100%;
+    /* The board is square, so it's bounded by whichever runs out first — the
+       width of the area or its height. Saying that directly keeps it square in
+       every host shape. The old `min(100%, 56vh)` measured the VIEWPORT, so a
+       short embed produced a wide box with a letterboxed speck inside it. */
+    width: min(100%, 100cqh);
+    min-width: 8rem;
     aspect-ratio: 1;
     overflow: hidden;
     border-radius: 12px;
@@ -834,17 +867,28 @@
     animation: ripple-expand 1.5s ease-out infinite;
   }
 
-  .edit-controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  /* Reserved slot: holds one control row's height whether or not it has
+     buttons in it, so the board above never resizes mid-task. */
+  .controls-tray {
+    display: flex;
     gap: 8px;
     width: min(100%, 360px);
+    min-height: var(--min-touch-target, 48px);
+    flex-shrink: 0;
+  }
+
+  .controls-tray > * {
+    flex: 1;
+    min-width: 0;
   }
 
   .edit-button,
   .undo-button {
     min-height: var(--min-touch-target, 48px);
-    padding: 8px 14px;
+    padding: 8px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     border: 1.5px solid var(--theme-stroke);
     border-radius: 10px;
     background: var(--theme-card-bg);
@@ -911,14 +955,10 @@
     }
   }
 
-  /* Big-screen tiers at the shared 1680 seam. The 56vh cap leaves the grid
-     small and strands a dead band beneath it on a 4K display; the prompt needs
-     to be readable from across a room too. */
+  /* Big-screen tiers at the shared 1680 seam. The board sizes itself from its
+     area now, so only the chrome needs stepping — the prompt has to be readable
+     from across a room. */
   @media (min-width: 1680px) {
-    .grid-wrapper {
-      width: min(100%, 66vh);
-    }
-
     .prompt-text {
       font-size: 1.25rem;
     }
@@ -929,16 +969,13 @@
       font-size: 1.05rem;
     }
 
-    .edit-controls {
+    .controls-tray {
       width: min(100%, 32rem);
+      min-height: 3.25rem;
     }
   }
 
   @media (min-width: 2600px) {
-    .grid-wrapper {
-      width: min(100%, 72vh);
-    }
-
     .prompt-text {
       font-size: 1.7rem;
     }
@@ -949,8 +986,9 @@
       font-size: 1.3rem;
     }
 
-    .edit-controls {
+    .controls-tray {
       width: min(100%, 44rem);
+      min-height: 4rem;
     }
   }
 

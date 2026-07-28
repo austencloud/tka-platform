@@ -917,12 +917,10 @@
     justify-content: center;
   }
 
-  /* Start tiles: the shared grid sizes tiles at 28% of the container's short
-     side — tuned for the full Create tab, undersized in this pane (124px in a
-     695×476 box). Three across at ~42% of the short side fills the stage. */
-  .picker-pane :global(.pictograph-row .pictograph-wrapper) {
-    width: min(100%, 42cqmin);
-  }
+  /* The shared grid now sizes each tile from the room it actually has (cell
+     width vs row height), which fills this pane on its own. The old 42cqmin
+     override was compensating for a sizing bug upstream and now works against
+     it — it would shrink the tiles it used to grow. */
 
   /* The All/Continuous pill FLOATS top-left over the pane (same move as the
      picker's own corner mode) — in flow it pushed the whole grid down when it
