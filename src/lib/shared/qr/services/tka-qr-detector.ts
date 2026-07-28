@@ -16,16 +16,24 @@ export interface TkaQrDetection {
 	/** Raw string contents of the QR. */
 	rawValue: string;
 	/**
-	 * Where the QR sits in the frame, in FRAME pixels (the ImageData handed to
-	 * detect). The scan sheet uses this to lift the actual QR pixels out of the
-	 * frame for the capture animation.
+	 * Where the QR sits in the source's own pixel space (the ImageData/Blob/File
+	 * handed to detect). The scan sheet uses this to lift the actual QR pixels
+	 * out of the frame for the capture animation.
 	 */
 	boundingBox: { x: number; y: number; width: number; height: number };
 }
 
 export interface TkaQrDetector {
-	/** Every QR found in the frame, with its location. */
-	detect(frame: ImageData): Promise<TkaQrDetection[]>;
+	/**
+	 * Every QR found in the source, with its location.
+	 *
+	 * Accepts anything the underlying ponyfill accepts - an ImageData frame
+	 * from the camera (ScanCardSheet), or a Blob/File straight off disk (share
+	 * intake). Do NOT decode a File to ImageData by hand before calling this:
+	 * zxing-wasm decodes a Blob internally and the canvas round trip is pure
+	 * cost.
+	 */
+	detect(source: ImageBitmapSource): Promise<TkaQrDetection[]>;
 }
 
 export function createTkaQrDetector(): TkaQrDetector {
@@ -42,8 +50,8 @@ export function createTkaQrDetector(): TkaQrDetector {
 	const detector = new BarcodeDetector({ formats: ["qr_code"] });
 
 	return {
-		async detect(frame: ImageData): Promise<TkaQrDetection[]> {
-			const results = await detector.detect(frame);
+		async detect(source: ImageBitmapSource): Promise<TkaQrDetection[]> {
+			const results = await detector.detect(source);
 			return results.map((r) => ({
 				rawValue: r.rawValue,
 				boundingBox: {
