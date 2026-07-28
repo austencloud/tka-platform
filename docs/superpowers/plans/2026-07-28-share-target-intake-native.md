@@ -5014,7 +5014,7 @@ git commit -m "feat(share-intake): consume intakes, gate on auth, keep bytes unt
 
 ---
 
-### Task 12: Mount the runner inside the app shell
+### Task 12: Mount the runner inside the app shell — DONE (`29484d3b0f`)
 
 **Closes trace steps 1.7, 1.9, 2.8 and 3.15 — the wiring whose absence is the
 reason this plan failed review three times.**
@@ -5301,7 +5301,7 @@ git commit -m "feat(share-intake): run intakes from inside the app shell, and re
 
 ---
 
-### Task 13: Native adapter, and always boot into the app shell
+### Task 13: Native adapter, and always boot into the app shell — DONE (`493d120577`)
 
 **Closes trace steps 1.1–1.8 and 2.1–2.7 — the arrival half of every trace.**
 After this task all three traces are walkable end to end.
@@ -5866,7 +5866,7 @@ git commit -m "feat(share-intake): native adapter with synchronous dedup, and al
 
 ---
 
-### Task 14: Full verification
+### Task 14: Full verification — DONE (steps 1-10 green; 131 tests, not the predicted 130 — intake-router is 19)
 
 - [ ] **Step 1: Run the whole share-intake unit suite**
 
