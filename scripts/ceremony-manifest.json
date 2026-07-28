@@ -7673,10 +7673,6 @@
         "getter": "getData"
       },
       {
-        "file": "src/lib/shared/inbox/components/SendSequenceSheetHost.svelte",
-        "getter": "getSendSequencePayload"
-      },
-      {
         "file": "src/lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte",
         "getter": "getCustomizedCount"
       },
