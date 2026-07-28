@@ -2,7 +2,7 @@
 
 **Feedback:** `DVS2RLzH0qdBezLPGIWu`  
 **Date:** 2026-07-27  
-**Status:** Core and Twin selected; production integration approved  
+**Status:** Shipped 2026-07-28 (`2526ce0033` props + premium visibility, `0270db3769` 3D scene-prop seam)  
 **Product labels:** Energy Saber, Energy Staff  
 **Feedback shorthand:** Lightsaber
 
