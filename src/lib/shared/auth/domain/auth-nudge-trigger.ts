@@ -12,7 +12,8 @@ export type AuthNudgeTrigger =
   | "viewer-signin-publish"
   | "viewer-signin-download"
   | "viewer-signin-account"
-  | "guest-first-save";
+  | "guest-first-save"
+  | "share-image-signin";
 
 // One phrasing for the account ask across every entry: "Create a free
 // account to <do the specific thing>." The button that pairs with this copy
@@ -50,4 +51,11 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   // save persists - see docs/superpowers/specs/active/2026-07-22-first-session-activation-design.md.
   "guest-first-save":
     "Create a free account to keep your sequences and find them on any device.",
+  // Share intake, trace 3: the user shared an image while signed out.
+  // services/implementations/MessageImageSender.ts:32-34 rejects anonymous/guest
+  // uploads outright, so this is a hard requirement, not a nudge. Phrased as
+  // the ask rather than the refusal - the bytes are already safe in IndexedDB
+  // and the send resumes by itself once they are in.
+  "share-image-signin":
+    "Create a free account to send the image you shared. It's saved until you do.",
 };
