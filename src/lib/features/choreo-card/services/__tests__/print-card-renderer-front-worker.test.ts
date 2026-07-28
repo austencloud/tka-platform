@@ -14,7 +14,12 @@ vi.mock("$lib/shared/render/services/composition-dispatcher", () => ({
 vi.mock("$lib/shared/render/get-composition-dispatcher", () => ({
   getCompositionDispatcher: () => ({ composeFrontBitmap: h.composeFrontBitmap }),
 }));
-vi.mock("../card-front-frame", () => ({ wrapContentInCardFrame: h.wrapFrame }));
+// Only the canvas-drawing wrapper needs stubbing. getCardFrameContentInset is
+// pure arithmetic the compose options genuinely depend on, so it stays real.
+vi.mock("../card-front-frame", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../card-front-frame")>()),
+  wrapContentInCardFrame: h.wrapFrame,
+}));
 
 // Stub the back-render import graph (pulls Firebase/protobuf, irrelevant here).
 vi.mock("../card-back-dom-renderer", () => ({ renderCardBack: vi.fn() }));

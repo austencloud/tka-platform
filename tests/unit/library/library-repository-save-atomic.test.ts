@@ -61,6 +61,15 @@ vi.mock("$lib/shared/foundation/services/sequence-hydrator", () => ({
 }));
 vi.mock("$lib/shared/firestore", () => ({
   firestoreGet: firestoreMocks.firestoreGet,
+  // The repository reads through firestoreGetDetailed so it can tell "absent"
+  // apart from "we never reached the server". Derive it from the same stub the
+  // tests already arrange, so a resolved value still reads as found.
+  firestoreGetDetailed: vi.fn(async (...args: unknown[]) => {
+    const data = await (
+      firestoreMocks.firestoreGet as (...a: unknown[]) => Promise<unknown>
+    )(...args);
+    return data ? { status: "found", data } : { status: "absent" };
+  }),
   firestoreList: vi.fn(),
   stripUndefined: (value: Record<string, unknown>) =>
     Object.fromEntries(

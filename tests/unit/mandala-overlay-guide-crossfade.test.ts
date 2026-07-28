@@ -4,6 +4,10 @@ import { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overl
 import type { PreparedMandalaPaths } from "$lib/shared/mandala/services/types";
 import { DURATION } from "$lib/shared/transitions/transitions";
 
+// The overlay drives its guide crossfade with DURATION.dramatic. Read it from
+// the same token rather than restating a number, so a retuned fade moves both.
+const GUIDE_FADE_MS = DURATION.dramatic;
+
 interface DrawCall {
   source: unknown;
   alpha: number;
@@ -149,12 +153,12 @@ describe("MandalaOverlayCanvas guide transitions", () => {
     expect(mainDrawCalls.map(({ alpha }) => alpha)).toEqual([1, 0]);
 
     mainDrawCalls.length = 0;
-    render(overlay, second, 100 + DURATION.emphasis / 2);
+    render(overlay, second, 100 + GUIDE_FADE_MS / 2);
     expect(mainDrawCalls[0]?.alpha).toBeCloseTo(0.5);
     expect(mainDrawCalls[1]?.alpha).toBeCloseTo(0.275);
 
     mainDrawCalls.length = 0;
-    render(overlay, second, 100 + DURATION.emphasis);
+    render(overlay, second, 100 + GUIDE_FADE_MS);
     expect(mainDrawCalls.map(({ alpha }) => alpha)).toEqual([0.55]);
     expect(overlay.isTransitioning()).toBe(false);
 
@@ -185,10 +189,10 @@ describe("MandalaOverlayCanvas guide transitions", () => {
 
     render(overlay, first, 0);
     render(overlay, second, 100);
-    render(overlay, second, 100 + DURATION.emphasis / 2);
+    render(overlay, second, 100 + GUIDE_FADE_MS / 2);
     mainDrawCalls.length = 0;
 
-    render(overlay, third, 100 + DURATION.emphasis / 2);
+    render(overlay, third, 100 + GUIDE_FADE_MS / 2);
 
     const snapshotContext = offscreenCanvases[1]?.context;
     expect(snapshotContext?.drawImage).toHaveBeenLastCalledWith(
