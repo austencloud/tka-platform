@@ -21,7 +21,7 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import { ensureVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getVideoExporter } from "$lib/shared/animation-engine/get-video-exporter";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -229,8 +229,12 @@ import type { AnimationPanelState } from "../navigation/services/types";
     try {
       browseLoader = getBrowseLoader();
       playbackController = getAnimationPlaybackController();
-      videoExportOrchestrator = getVideoExportOrchestrator();
       VideoExporter = getVideoExporter();
+      // videoExportOrchestrator is resolved at export time, not here: its
+      // factory registers in composition-root/deferred-registrations, which the
+      // root layout schedules on an idle callback. Browse mounts this
+      // coordinator well before that idle slot on a cold /browse/library load,
+      // so resolving eagerly threw and took playback setup down with it.
 
       // Expose playback controller for keyboard shortcuts
       setAnimationPlaybackRef(playbackController);
@@ -617,7 +621,7 @@ import type { AnimationPanelState } from "../navigation/services/types";
   }
 
   async function _handleExport(format: VideoExportFormat) {
-    if (!videoExportOrchestrator || !playbackController) {
+    if (!playbackController) {
       console.error("Export services not ready");
       return;
     }
@@ -629,6 +633,9 @@ import type { AnimationPanelState } from "../navigation/services/types";
 
     try {
       isExporting = true;
+
+      // Loads deferred-registrations if the idle callback hasn't fired yet.
+      videoExportOrchestrator = await ensureVideoExportOrchestrator();
 
       // Execute export using orchestrator service
       await videoExportOrchestrator.executeExport(

@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
-import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import { ensureVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orchestrator";
   /**
    * SequenceDrawerHost
@@ -235,7 +235,10 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     try {
       // Animation services available synchronously via ITI
       playbackController = getAnimationPlaybackController();
-      videoExportOrchestrator = getVideoExportOrchestrator();
+      // Awaited, not eager: the factory registers in deferred-registrations,
+      // which the root layout schedules on an idle callback. Opening the export
+      // panel can beat that idle slot.
+      videoExportOrchestrator = await ensureVideoExportOrchestrator();
       layoutService = responsiveLayoutManager;
       setAnimationPlaybackRef(playbackController);
 

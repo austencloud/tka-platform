@@ -391,32 +391,13 @@
 
     let orchestrator: IVideoExportOrchestrator | null = null;
     try {
-      try {
-        const { getVideoExportOrchestrator } =
-          await import("$lib/shared/animation-engine/get-video-export-orchestrator");
-        orchestrator = getVideoExportOrchestrator();
-      } catch {
-        const [
-          { VideoExportOrchestrator },
-          { getVideoExporter },
-          { getCompositeVideoRenderer },
-          { getExportGlyphPrerenderer },
-          { getBackgroundVideoEncoder },
-        ] = await Promise.all([
-          import("$lib/features/compose/services/video-export-orchestrator"),
-          import("$lib/shared/animation-engine/get-video-exporter"),
-          import("$lib/shared/animation-engine/get-composite-video-renderer"),
-          import("$lib/shared/animation-engine/get-export-glyph-prerenderer"),
-          import("$lib/shared/animation-engine/get-background-video-encoder"),
-        ]);
-        orchestrator = new VideoExportOrchestrator(
-          getVideoExporter(),
-          getCompositeVideoRenderer(),
-          getExportGlyphPrerenderer(),
-          getBackgroundVideoEncoder()
-        );
-      }
-      if (!orchestrator) throw new Error("Video export unavailable");
+      // Guests never trigger the auth-gated deferred-registrations import
+      // above, so this route reaches export with the factory unregistered.
+      // ensure* loads that module on demand — one registration path for every
+      // host, instead of this route rebuilding the orchestrator by hand.
+      const { ensureVideoExportOrchestrator } =
+        await import("$lib/shared/animation-engine/get-video-export-orchestrator");
+      orchestrator = await ensureVideoExportOrchestrator();
       activeVideoExportOrchestrator = orchestrator;
       if (!videoExportAttempt.isActive(attemptToken)) {
         orchestrator.cancelExport();

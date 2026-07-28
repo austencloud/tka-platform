@@ -35,3 +35,28 @@ export function tryGetVideoExportOrchestrator(): IVideoExportOrchestrator | null
   }
   return instance;
 }
+
+/**
+ * Resolve the orchestrator, loading the composition root's deferred
+ * registrations first if they haven't run yet.
+ *
+ * The factory registers as a side effect of
+ * composition-root/deferred-registrations, which the root layout schedules via
+ * requestIdleCallback (2s timeout). Any host that can reach a video export
+ * before that idle slot arrives — the Browse animation sheet, the sequence
+ * viewer shell's export panel, the Create export drawer — must await this
+ * instead of grabbing the orchestrator eagerly, otherwise the resolution races
+ * the bootstrap and throws.
+ *
+ * The dynamic import is module-cached, so repeat calls are free and concurrent
+ * calls share one load. Importing dynamically (not statically) also keeps
+ * deferred-registrations' heavy graph — mediabunny, WebCodecs, Firestore — out
+ * of this module's import cost, and avoids a static cycle with
+ * deferred-registrations, which imports this file.
+ */
+export async function ensureVideoExportOrchestrator(): Promise<IVideoExportOrchestrator> {
+  if (!factory) {
+    await import("$lib/shared/composition-root/deferred-registrations");
+  }
+  return getVideoExportOrchestrator();
+}

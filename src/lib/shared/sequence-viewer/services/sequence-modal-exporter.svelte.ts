@@ -16,7 +16,10 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 import type { VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 
-import { tryGetVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+import {
+  ensureVideoExportOrchestrator,
+  tryGetVideoExportOrchestrator,
+} from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
@@ -170,12 +173,13 @@ export class SequenceModalExporter {
   private _sequenceRenderer: SequenceRenderer | null = null;
   private _activeExporter: Offline3DExporter | null = null;
 
-  private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
-    if (!this._videoExportOrchestrator) {
-      // Registration happens in deferred-registrations.ts via idle callback,
-      // so this can legitimately be null early in the app's life.
-      this._videoExportOrchestrator = tryGetVideoExportOrchestrator();
-    }
+  private async resolveVideoExportOrchestrator(): Promise<IVideoExportOrchestrator> {
+    // Registration happens in deferred-registrations.ts via idle callback, so
+    // it can legitimately not have run yet when a viewer host reaches export.
+    // ensure* loads that module on demand rather than losing the export to the
+    // race.
+    this._videoExportOrchestrator ??=
+      tryGetVideoExportOrchestrator() ?? (await ensureVideoExportOrchestrator());
     return this._videoExportOrchestrator;
   }
 
@@ -200,11 +204,6 @@ export class SequenceModalExporter {
     deps: VideoExportDependencies,
     callbacks: ExportCallbacks
   ): Promise<void> {
-    if (!this.videoExportOrchestrator) {
-      this._error = "Export services not ready. Please try again.";
-      return;
-    }
-
     this._isExporting = true;
     this._error = null;
     this._progress = { progress: 0, stage: "capturing" };
@@ -214,7 +213,8 @@ export class SequenceModalExporter {
     let capturedFrameCount = 0;
 
     try {
-      const blob = await this.videoExportOrchestrator.executeExport(
+      const orchestrator = await this.resolveVideoExportOrchestrator();
+      const blob = await orchestrator.executeExport(
         deps.canvas,
         deps.playbackController,
         deps.panelState,
