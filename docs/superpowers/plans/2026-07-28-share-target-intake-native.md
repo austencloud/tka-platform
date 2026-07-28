@@ -572,7 +572,7 @@ git commit -m "feat(share-intake): content-derived receipt id for cold-launch de
 
 ---
 
-### Task 3: Shared image limits, the problem record, and the validation gate
+### Task 3: Shared image limits, the problem record, and the validation gate — DONE (`d231c87d6d`, `92130ddbfe`)
 
 **Closes trace step 1.4** (and its twin in traces 2 and 3): every arriving
 descriptor is screened before a byte is read, and every drop leaves a record.
@@ -1089,7 +1089,7 @@ git commit -m "feat(share-intake): shared image limits, problem records, two-sta
 
 ---
 
-### Task 4: Widen the shared QR detector to `ImageBitmapSource`
+### Task 4: Widen the shared QR detector to `ImageBitmapSource` — DONE (`986ad48750`)
 
 **Closes trace step 1.11.** Without this the classifier cannot read a QR out of
 a shared `File` without a hand-rolled canvas round trip.
@@ -1169,7 +1169,7 @@ git commit -m "refactor(qr): accept any ImageBitmapSource in the shared detector
 
 ---
 
-### Task 5: The `SharedFile` → `File` bridge
+### Task 5: The `SharedFile` → `File` bridge — DONE (`23c86928c7`)
 
 **Closes trace step 1.5** (and 2.x / 3.x, which share it). This is the hop that
 turns the plugin's cache paths into bytes the rest of the trace can carry.
