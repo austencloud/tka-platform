@@ -142,7 +142,52 @@ explaining a flower that renders as a stroke.
   375×667. Guide mode re-checked after the `QftFigure` extraction and renders
   identically.
 
+## Phone: the controls open from below
+
+Measured on an iPhone SE the first version was indefensible. The pane held
+**3.79 screens** of content and the stage — the entire subject — rendered at
+**160×160**, because two flower axes, a mode control and two eight-row tables
+were laid out in flow under it. Instrument mode had the same 160×160 stage at
+1.78 screens. Only the guide was fine.
+
+On phones (width ≤ 48rem) the mode-specific controls move into `ControlDock`,
+the shared bottom dock the mandala viewer and the download panel already use:
+
+| | Before | After |
+|---|---|---|
+| Matrix stage | 160×160 | 351×317 |
+| Matrix scroll | 3.79 screens | none |
+| Instrument stage | 160×160 | 351×317 |
+| Instrument scroll | 1.78 screens | none |
+
+Four decisions worth keeping:
+
+- **Overlay, inside the stage's box — not a grid row.** In flow the dock took
+  its height from the surface, so opening Knobs shrank the stage to 123px
+  exactly while you drag a radius slider whose purpose is to change the thing
+  you can then no longer see. Overlaid, the stage measures 351×317 whether the
+  tray is open or shut: zero layout shift.
+- **Named grid areas on `.app`.** Rows were assigned positionally, so hiding
+  the chips row slid every child up one — the surface inherited `auto`,
+  collapsed to nothing against Crossfade's absolutely positioned layers, and
+  the dock inherited the `1fr` meant for the stage.
+- **The layer switches became a dock tab.** As a flat row they overflowed 375px
+  and turned into a horizontally scrolling strip, which is the thing this
+  layout exists to remove.
+- **The move-chips row becomes a Guide/Knobs/Matrix segmented control.** Those
+  chips are the guide's controls and select nothing in the other two modes.
+  Exactly one mode is active, so segmented rather than chips. The transport's
+  mode buttons drop on phone rather than offering the same thing twice, which
+  takes it from two rows to one.
+
+Guide mode keeps its existing chrome on phone — one figure, one table, it
+already fit, and its move chips *are* its controls.
+
+Controls are defined once as snippets and rendered either in the reading column
+or in the tray. Writing them twice is how the two paths would drift.
+
 ## Not in this pass
 
-The toy redesign: `ControlDock` replacing the two chip rails, and click-the-
-animation to play/pause instead of a Pause button. Separate spec, on top of this.
+Click-the-animation to play/pause instead of a Pause button. And the dock is
+phone-only — on desktop the inline pickers still show all twelve flowers at
+once, which is the comparison the wide layout is for.

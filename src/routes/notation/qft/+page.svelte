@@ -47,6 +47,9 @@
     saveQftSession,
     type QftSession,
   } from "$lib/shared/notation/qft/qft-session";
+  import ControlDock, {
+    type ControlDockTab,
+  } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import QftFrames from "$lib/shared/notation/qft/components/QftFrames.svelte";
   import QftGuidePane from "$lib/shared/notation/qft/components/QftGuidePane.svelte";
   import QftStage from "$lib/shared/notation/qft/components/QftStage.svelte";
@@ -265,6 +268,78 @@
     return () => q.removeEventListener("change", sync);
   });
 
+  /**
+   * Phones, by width alone — deliberately NOT `compact`.
+   *
+   * On a phone the controls move into a bottom dock and open over the stage.
+   * Laid out in flow they cost more than the pane has: on an SE the matrix
+   * mode's two flower axes, mode control and tables made the pane 3.8 screens
+   * tall and left the stage — the entire subject — at 160×160.
+   *
+   * `compact` also fires on wide-and-short (fold landscape), and that tier has
+   * the width to lay the same controls out flat, which it already does. Docking
+   * there would trade a layout that works for one that hides things.
+   */
+  let phone = $state(false);
+  $effect(() => {
+    const q = matchMedia("(max-width: 48rem)");
+    const sync = () => (phone = q.matches);
+    sync();
+    q.addEventListener("change", sync);
+    return () => q.removeEventListener("change", sync);
+  });
+
+  /* Which dock tray is open, or null for a collapsed bar. */
+  let dockTab = $state<string | null>(null);
+
+  const LAYERS_TAB: ControlDockTab = {
+    id: "layers",
+    label: "Layers",
+    icon: "fa-layer-group",
+  };
+
+  const CELL_TABS: ControlDockTab[] = [
+    { id: "blue", label: "Blue", accentColor: "var(--dm-motion-blue, #3575E2)" },
+    { id: "red", label: "Red", accentColor: "var(--dm-motion-red, #ED1C24)" },
+    { id: "timing", label: "Timing", icon: "fa-arrows-left-right" },
+    { id: "table", label: "Table", icon: "fa-table-list" },
+    LAYERS_TAB,
+  ];
+
+  const INSTRUMENT_TABS: ControlDockTab[] = [
+    { id: "knobs", label: "Knobs", icon: "fa-sliders" },
+    { id: "table", label: "Table", icon: "fa-table-list" },
+    LAYERS_TAB,
+  ];
+
+  /* Guide · Knobs · Matrix. On a docked phone this takes the row the guide's
+     move chips vacate, so "which mode" stays visible without costing a row. */
+  const APP_MODE_OPTIONS = [
+    { value: "guide" as const, label: "Guide" },
+    { value: "instrument" as const, label: "Knobs" },
+    { value: "matrix" as const, label: "Matrix" },
+  ];
+
+  function goToMode(next: AppMode) {
+    if (next === "guide") selectMove(moveIndex);
+    else if (next === "instrument") openInstrument();
+    else appMode = "matrix";
+  }
+
+  const dockTabs = $derived(
+    appMode === "matrix" ? CELL_TABS : INSTRUMENT_TABS
+  );
+
+  /* Re-selecting the open tab closes it — the toggle every dock consumer owns. */
+  const selectDockTab = (id: string) => {
+    dockTab = dockTab === id ? null : id;
+  };
+
+  /* A tab that does not exist in the mode you just switched to cannot stay open. */
+  $effect(() => {
+    if (dockTab && !dockTabs.some((t) => t.id === dockTab)) dockTab = null;
+  });
+
   const snapshot = (): QftSession => ({
     appMode,
     moveIndex,
@@ -401,7 +476,174 @@
   />
 </svelte:head>
 
-<div class="app">
+<!--
+  The control groups, defined once.
+
+  Each is rendered either in the reading column (wide) or inside the dock's
+  tray (phone). Writing them twice is how the two paths would drift, and these
+  are the controls the whole mode is made of.
+-->
+{#snippet cellBlue()}
+  <QftFlowerPicker
+    label="Blue hand"
+    flowers={MATRIX_AXIS}
+    value={blueIndex}
+    onchange={(i) => (blueIndex = i)}
+    tone="blue"
+  />
+{/snippet}
+
+{#snippet cellRed()}
+  <QftFlowerPicker
+    label="Red hand"
+    flowers={MATRIX_AXIS}
+    value={redIndex}
+    onchange={(i) => (redIndex = i)}
+    tone="red"
+  />
+{/snippet}
+
+{#snippet cellTiming()}
+  <div class="knob">
+    <span class="knob-label" id="vtg-label">Timing and direction</span>
+    <div class="fit">
+      <SegmentedControl
+        options={MODE_OPTIONS}
+        value={vtgMode}
+        onchange={(v) => (vtgMode = v)}
+        size="sm"
+        ariaLabelledby="vtg-label"
+      />
+    </div>
+  </div>
+{/snippet}
+
+<!--
+  Two tables, because a cell is two hands and QfT reads one hand at a time.
+  Side by side once the column can hold both, stacked before that.
+-->
+{#snippet cellTable()}
+  <div class="notation duet">
+    <div class="hand-table" data-tone="blue">
+      <span class="hand-name">Blue</span>
+      <QftTable increments={blueHand.increments} activeStep={step} {compact} />
+    </div>
+    <div class="hand-table" data-tone="red">
+      <span class="hand-name">Red</span>
+      <QftTable increments={redHand.increments} activeStep={step} {compact} />
+    </div>
+  </div>
+{/snippet}
+
+{#snippet instrumentKnobs()}
+  <!--
+    Paired at wide sizes. Stacked, the four control groups plus the notation
+    are taller than a 1000px-high window can hold, and the table lost its last
+    row off the bottom.
+  -->
+  <div class="knob-pair">
+    <label class="knob" for="radius">
+      <span class="knob-label">Hand path radius</span>
+      <input
+        id="radius"
+        type="range"
+        min="0"
+        max="1.5"
+        step="0.05"
+        bind:value={radius}
+        oninput={() => (pendulum = false)}
+      />
+    </label>
+
+    <div class="knob">
+      <span class="knob-label" id="downbeats-label"
+        >Prop rotations per hand rotation</span
+      >
+      <div class="fit">
+        <SegmentedControl
+          options={DOWNBEAT_OPTIONS}
+          value={String(downbeats)}
+          onchange={(v) => {
+            downbeats = Number(v);
+            pendulum = false;
+          }}
+          size="sm"
+          ariaLabelledby="downbeats-label"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="knob-row">
+    <div class="knob">
+      <span class="knob-label" id="spin-label">Direction</span>
+      <div class="fit">
+        <SegmentedControl
+          options={SPIN_OPTIONS}
+          value={spin}
+          onchange={(v) => {
+            spin = v;
+            pendulum = false;
+          }}
+          size="sm"
+          ariaLabelledby="spin-label"
+        />
+      </div>
+    </div>
+
+    <div class="knob">
+      <span class="knob-label" id="convention-label">Direction convention</span>
+      <div class="fit">
+        <SegmentedControl
+          options={CONVENTION_OPTIONS}
+          value={convention}
+          onchange={(v) => (convention = v)}
+          size="sm"
+          ariaLabelledby="convention-label"
+        />
+      </div>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet instrumentTable()}
+  <div class="notation">
+    <QftTable increments={instrumentIncrements} activeStep={step} {compact} />
+  </div>
+{/snippet}
+
+{#snippet dockTray()}
+  <div class="tray">
+    {#if dockTab === "blue"}{@render cellBlue()}
+    {:else if dockTab === "red"}{@render cellRed()}
+    {:else if dockTab === "timing"}{@render cellTiming()}
+    {:else if dockTab === "knobs"}{@render instrumentKnobs()}
+    {:else if dockTab === "table"}
+      {#if appMode === "matrix"}{@render cellTable()}{:else}{@render instrumentTable()}{/if}
+    {:else if dockTab === "layers"}{@render layerSwitches()}
+    {/if}
+  </div>
+{/snippet}
+
+<!--
+  Layers. Independent switches, so toggle chips rather than a segmented
+  control (.claude/rules/chip-primitives.md).
+-->
+{#snippet layerSwitches()}
+  <nav class="layers" aria-label="Stage layers">
+    {#each LAYER_KEYS as key (key)}
+      <FilterChipBase
+        label={LAYER_LABELS[key]}
+        mode="toggle"
+        size="sm"
+        active={layers[key]}
+        onclick={() => toggleLayer(key)}
+      />
+    {/each}
+  </nav>
+{/snippet}
+
+<div class="app" class:docked={phone && appMode !== "guide"}>
   <!--
     Toggles rather than a SegmentedControl: in instrument mode NO move is
     selected, and a segmented indicator has nowhere to sit in that state
@@ -409,18 +651,36 @@
     because the selected move is a hard selection, not a filter that is merely
     switched on.
   -->
-  <nav class="chips" aria-label="Moves">
-    {#each GUIDE_MOVES as m, i (m.id)}
-      <FilterChipBase
-        label={m.title}
-        mode="toggle"
-        emphasis="solid"
+  {#if phone && appMode !== "guide"}
+    <!--
+      The move chips are the guide's controls and select nothing here, so on a
+      docked phone this row carries the one thing that IS ambiguous at this
+      size: which of the three modes you are in. Exactly one is active, so a
+      segmented control rather than chips (.claude/rules/chip-primitives.md).
+    -->
+    <div class="mode-switch">
+      <SegmentedControl
+        options={APP_MODE_OPTIONS}
+        value={appMode}
+        onchange={goToMode}
         size="sm"
-        active={appMode === "guide" && i === moveIndex}
-        onclick={() => selectMove(i)}
+        ariaLabel="Mode"
       />
-    {/each}
-  </nav>
+    </div>
+  {:else}
+    <nav class="chips" aria-label="Moves">
+      {#each GUIDE_MOVES as m, i (m.id)}
+        <FilterChipBase
+          label={m.title}
+          mode="toggle"
+          emphasis="solid"
+          size="sm"
+          active={appMode === "guide" && i === moveIndex}
+          onclick={() => selectMove(i)}
+        />
+      {/each}
+    </nav>
+  {/if}
 
   <main class="surface">
     <Crossfade key={appMode === "guide" ? move.id : appMode} fill>
@@ -450,60 +710,14 @@
             <QftStage hands={matrixHands} cursor={pos} {layers} />
           </div>
 
-          <div class="knobs">
-            <QftFlowerPicker
-              label="Blue hand"
-              flowers={MATRIX_AXIS}
-              value={blueIndex}
-              onchange={(i) => (blueIndex = i)}
-              tone="blue"
-            />
-            <QftFlowerPicker
-              label="Red hand"
-              flowers={MATRIX_AXIS}
-              value={redIndex}
-              onchange={(i) => (redIndex = i)}
-              tone="red"
-            />
-
-            <div class="knob">
-              <span class="knob-label" id="vtg-label"
-                >Timing and direction</span
-              >
-              <div class="fit">
-                <SegmentedControl
-                  options={MODE_OPTIONS}
-                  value={vtgMode}
-                  onchange={(v) => (vtgMode = v)}
-                  size="sm"
-                  ariaLabelledby="vtg-label"
-                />
-              </div>
+          {#if !phone}
+            <div class="knobs">
+              {@render cellBlue()}
+              {@render cellRed()}
+              {@render cellTiming()}
+              {@render cellTable()}
             </div>
-
-            <!--
-              Two tables, because a cell is two hands and QfT reads one hand at
-              a time. Side by side at width, stacked when they stop fitting.
-            -->
-            <div class="notation duet">
-              <div class="hand-table" data-tone="blue">
-                <span class="hand-name">Blue</span>
-                <QftTable
-                  increments={blueHand.increments}
-                  activeStep={step}
-                  {compact}
-                />
-              </div>
-              <div class="hand-table" data-tone="red">
-                <span class="hand-name">Red</span>
-                <QftTable
-                  increments={redHand.increments}
-                  activeStep={step}
-                  {compact}
-                />
-              </div>
-            </div>
-          </div>
+          {/if}
         </div>
       {:else if appMode === "guide"}
         <QftGuidePane
@@ -536,107 +750,61 @@
             />
           </div>
 
-          <div class="knobs">
-            <!--
-              Paired at wide sizes. Stacked, the four control groups plus the
-              notation are taller than a 1000px-high window can hold, and the
-              table lost its last row off the bottom.
-            -->
-            <div class="knob-pair">
-              <label class="knob" for="radius">
-                <span class="knob-label">Hand path radius</span>
-                <input
-                  id="radius"
-                  type="range"
-                  min="0"
-                  max="1.5"
-                  step="0.05"
-                  bind:value={radius}
-                  oninput={() => (pendulum = false)}
-                />
-              </label>
-
-              <div class="knob">
-                <span class="knob-label" id="downbeats-label"
-                  >Prop rotations per hand rotation</span
-                >
-                <div class="fit">
-                  <SegmentedControl
-                    options={DOWNBEAT_OPTIONS}
-                    value={String(downbeats)}
-                    onchange={(v) => {
-                      downbeats = Number(v);
-                      pendulum = false;
-                    }}
-                    size="sm"
-                    ariaLabelledby="downbeats-label"
-                  />
-                </div>
-              </div>
+          {#if !phone}
+            <div class="knobs">
+              {@render instrumentKnobs()}
+              {@render instrumentTable()}
             </div>
-
-            <div class="knob-row">
-              <div class="knob">
-                <span class="knob-label" id="spin-label">Direction</span>
-                <div class="fit">
-                  <SegmentedControl
-                    options={SPIN_OPTIONS}
-                    value={spin}
-                    onchange={(v) => {
-                      spin = v;
-                      pendulum = false;
-                    }}
-                    size="sm"
-                    ariaLabelledby="spin-label"
-                  />
-                </div>
-              </div>
-
-              <div class="knob">
-                <span class="knob-label" id="convention-label"
-                  >Direction convention</span
-                >
-                <div class="fit">
-                  <SegmentedControl
-                    options={CONVENTION_OPTIONS}
-                    value={convention}
-                    onchange={(v) => (convention = v)}
-                    size="sm"
-                    ariaLabelledby="convention-label"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="notation">
-              <QftTable
-                increments={instrumentIncrements}
-                activeStep={step}
-                {compact}
-              />
-            </div>
-          </div>
+          {/if}
         </div>
       {/if}
     </Crossfade>
+
+    <!--
+      On a phone the controls open from below instead of stacking under the
+      stage. Same shared dock the mandala viewer and the download panel use, so
+      this is the app's existing "open a tray" gesture rather than a new one.
+
+      Overlay, and inside the stage's own box: the tray floats over the drawing
+      rather than displacing it. In flow it took the height from the surface, so
+      opening Knobs shrank the stage to 123px — exactly while you are dragging a
+      radius slider whose whole purpose is to change the thing you can no longer
+      see. Overlaid, the stage never resizes at all.
+
+      Guide mode has no dock: it is one figure and one table, it already fits,
+      and its move chips are its controls.
+    -->
+    {#if phone && appMode !== "guide"}
+      <ControlDock
+        tabs={dockTabs}
+        activeTab={dockTab}
+        onTabSelect={selectDockTab}
+        tray={dockTray}
+        labelMinWidth={0}
+        trayMaxHeight="46vh"
+        overlay
+      />
+    {/if}
   </main>
 
   <!--
-    Layers. Independent switches, so toggle chips rather than a segmented
-    control. They sit above the transport because they change what the stage
-    IS, where the transport only changes where it is in the cycle.
+    On a phone the controls open from below instead of stacking under the
+    stage. Same shared dock the mandala viewer and the download panel use, so
+    this is the app's existing "open a tray" gesture rather than a new one.
+
+    Guide mode has no dock: it is one figure and one table, it already fits,
+    and its move chips are its controls.
   -->
-  <nav class="layers" aria-label="Stage layers">
-    {#each LAYER_KEYS as key (key)}
-      <FilterChipBase
-        label={LAYER_LABELS[key]}
-        mode="toggle"
-        size="sm"
-        active={layers[key]}
-        onclick={() => toggleLayer(key)}
-      />
-    {/each}
-  </nav>
+
+  <!--
+    Above the transport because they change what the stage IS, where the
+    transport only changes where it is in the cycle. On a docked phone they
+    move into the dock instead: as a flat row they overflowed the width and
+    became the horizontally-scrolling strip this layout is trying to be rid of.
+  -->
+  {#if !(phone && appMode !== "guide")}
+    <div class="layers-row">{@render layerSwitches()}</div>
+  {/if}
 
   <div class="transport">
     <button
@@ -659,21 +827,28 @@
       >
     {/if}
 
-    <!-- The two modes you are not in, so every mode is one click from here. -->
-    {#if appMode !== "guide"}
-      <button type="button" class="mode" onclick={() => selectMove(moveIndex)}
-        >Back to guide</button
-      >
-    {/if}
-    {#if appMode !== "instrument"}
-      <button type="button" class="mode" onclick={openInstrument}
-        >Turn the knobs</button
-      >
-    {/if}
-    {#if appMode !== "matrix"}
-      <button type="button" class="mode" onclick={() => (appMode = "matrix")}
-        >From the matrix</button
-      >
+    <!--
+      The two modes you are not in, so every mode is one click from here — but
+      not on a docked phone, where the row above is a mode switch and these
+      would be a second, wider way to do the same thing on the one screen that
+      cannot afford it.
+    -->
+    {#if !(phone && appMode !== "guide")}
+      {#if appMode !== "guide"}
+        <button type="button" class="mode" onclick={() => selectMove(moveIndex)}
+          >Back to guide</button
+        >
+      {/if}
+      {#if appMode !== "instrument"}
+        <button type="button" class="mode" onclick={openInstrument}
+          >Turn the knobs</button
+        >
+      {/if}
+      {#if appMode !== "matrix"}
+        <button type="button" class="mode" onclick={() => (appMode = "matrix")}
+          >From the matrix</button
+        >
+      {/if}
     {/if}
 
     <button type="button" class="mode info" onclick={() => (showInfo = true)}
@@ -806,13 +981,29 @@
     height: calc(100dvh - var(--site-header));
     margin-top: var(--site-header);
     display: grid;
+    /*
+     * Named, not positional. Two of these children come and go — the chips row
+     * hides on a docked phone, the dock only exists there — and with rows
+     * assigned by order, hiding the chips slid every child up one: the surface
+     * inherited `auto`, collapsed to nothing against Crossfade's absolutely
+     * positioned layers, and the dock inherited the `1fr` meant for the stage.
+     */
     grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "chips" "surface" "layers" "transport";
     gap: clamp(0.5rem, 1.5vh, 1.25rem);
     padding: clamp(0.5rem, 1.5vh, 1.25rem) clamp(0.75rem, 2vw, 2rem);
     overflow: hidden;
   }
 
+  .mode-switch {
+    grid-area: chips;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+  }
+
   .chips {
+    grid-area: chips;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -820,8 +1011,61 @@
   }
 
   .surface {
+    grid-area: surface;
     position: relative;
     min-height: 0;
+  }
+
+  /*
+   * Room for the collapsed dock bar, so the drawing is never underneath it.
+   * A constant rather than the dock's measured height: measured, the reserve
+   * would grow with the open tray and shrink the stage again, which is the
+   * thing overlaying the dock was meant to stop.
+   */
+  .app.docked .surface {
+    padding-bottom: 4.25rem;
+  }
+
+  /*
+   * The dock's tray holds one control group at a time, so it gets the room the
+   * flat layout could not give it: a flower axis opens three across at a size
+   * you can actually hit, instead of twelve chips crushed into a phone width.
+   */
+  .tray {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.25rem 0.1rem 0.5rem;
+  }
+
+  /*
+   * The move chips are the GUIDE's controls — eight named moves, one of them
+   * lit. In the other two modes none is selected, so on a phone the row is a
+   * horizontally-scrolling strip that costs 44px and selects nothing. The
+   * transport already carries the way back to the guide.
+   */
+  .app.docked .chips {
+    display: none;
+  }
+
+  /*
+   * With the controls in the dock there is nothing under the stage, so the
+   * stage takes the pane instead of sitting at a fixed 24vh in the middle of
+   * it. On an SE that is the difference between 160×160 and filling the width.
+   *
+   * `aspect-ratio: auto` because the box no longer needs to be square: the
+   * SVG's own viewBox letterboxes the drawing inside whatever shape it gets.
+   */
+  .app.docked .instrument {
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .app.docked .stage-box {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    aspect-ratio: auto;
   }
 
   .instrument {
@@ -1153,6 +1397,11 @@
     }
   }
 
+  .layers-row {
+    grid-area: layers;
+    min-width: 0;
+  }
+
   .layers {
     display: flex;
     flex-wrap: wrap;
@@ -1162,6 +1411,7 @@
   }
 
   .transport {
+    grid-area: transport;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
