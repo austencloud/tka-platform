@@ -177,6 +177,10 @@
     min-height: 0;
   }
 
+  /* A size container so the grid inside can lay itself out from the room IT
+     has. Keying that off the viewport was wrong for an embedded pane: the
+     composer page is 1080px tall while the pane it hands the builder is ~300,
+     so a viewport rule reads "plenty of height" and stacks. */
   .placement-area {
     flex: 1;
     width: 100%;
@@ -184,6 +188,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    container-type: size;
   }
 
   .builder-controls {
@@ -202,7 +207,11 @@
      The height bound matters as much as the ratio: a full-height desktop pane is
      also "wide", but it has room to stack, and going two-column there only pulls
      the board off centre for nothing. */
-  @container (max-height: 620px) and (min-aspect-ratio: 5 / 4) and (min-width: 34rem) {
+  /* 31rem, not 34: a size container reports its CONTENT box, so this element's
+     own horizontal padding comes off the number the query sees. At 34rem the
+     picker's two-column mode handed the builder a 559px column and the rule
+     still missed by 9px, which left the board stacked and tiny. */
+  @container (max-height: 620px) and (min-aspect-ratio: 5 / 4) and (min-width: 31rem) {
     .builder-layout {
       flex-direction: row;
       align-items: stretch;
@@ -225,6 +234,13 @@
       flex: 0 1 clamp(13rem, 38cqw, 24rem);
       justify-content: center;
       min-width: 0;
+    }
+
+    /* Side by side, the two cyclers split a ~200px column and the arrows crowd
+       the word between them. The column has height to spare, so they stack. */
+    .orientation-controls {
+      flex-direction: column;
+      width: 100%;
     }
 
     /* The prompt sits in the narrow left column here, where it wrapped to two

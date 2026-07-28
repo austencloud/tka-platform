@@ -1014,11 +1014,14 @@
     }
   }
 
-  /* Short viewport (a phone in portrait, a laptop with the browser chrome
-     eating half the screen). The prompt and the control tray are at their touch
-     and legibility floors already, so the only slack left is the gaps between
-     them — and every pixel of it belongs to the board. */
-  @media (max-height: 780px) {
+  /* Short host (a phone in portrait, a Fold in landscape, the composer's
+     embedded pane). The prompt and the control tray are at their touch and
+     legibility floors already, so the only slack left is the gaps between them
+     — and every pixel of it belongs to the board. */
+  /* Queries whatever the host declared as this grid's size container (the
+     builder wraps it in one). A host that declares none — the Learn lesson grid
+     — never matches and keeps the stacked layout it was designed for. */
+  @container (max-height: 520px) {
     /* The prompt moves alongside the tray so the two share one reserved row.
        The tray keeps its own width (its buttons stay at the touch floor) and
        the prompt takes what's left. */

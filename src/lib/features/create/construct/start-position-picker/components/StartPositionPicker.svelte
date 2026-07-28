@@ -526,6 +526,66 @@ Controls moved below the grid for better UX
     padding-top: clamp(12px, 3vh, 36px);
   }
 
+  /* Wide and short — a Fold in landscape, a laptop with half the screen gone to
+     browser chrome, the composer's embedded pane. Stacking heading, method
+     toggle, board, and footer down a 370px-tall screen leaves the board about
+     130px: too small to read the points, let alone press one.
+
+     Here the whole picker turns sideways. The board owns the left side and
+     takes the full height; every control — heading, method toggle, orientation,
+     the action button, grid mode — lives in a column on the right. Horizontal
+     room is the room we actually have. */
+  @media (max-height: 620px) and (min-width: 60rem) {
+    .start-pos-picker.build-path {
+      display: grid;
+      /* The right column is bounded so the left stays above the builder's own
+         34rem row-mode threshold — that inner rule is what puts the orientation
+         controls beside the board rather than under it. */
+      grid-template-columns: minmax(0, 1fr) minmax(12rem, 17rem);
+      grid-template-areas:
+        "view hint"
+        "view sel"
+        "view footer";
+      grid-template-rows: auto auto 1fr;
+      column-gap: clamp(12px, 2vw, 28px);
+      padding: 8px 12px;
+      box-sizing: border-box;
+    }
+
+    .start-pos-picker.build-path .workspace-hint {
+      grid-area: hint;
+      padding: 0;
+      /* The nowrap that keeps this on one line across the full width would
+         overflow a 17rem column. */
+      white-space: normal;
+      font-size: clamp(1rem, 1.4vw, 1.4rem);
+      text-align: center;
+    }
+
+    .start-pos-picker.build-path .path-selector {
+      grid-area: sel;
+      width: 100%;
+      margin: 8px 0 0;
+    }
+
+    .start-pos-picker.build-path .picker-view {
+      grid-area: view;
+      align-self: stretch;
+    }
+
+    .start-pos-picker.build-path .controls-footer {
+      grid-area: footer;
+      align-self: start;
+      flex-direction: column;
+      max-width: none;
+      padding: 8px 0 0;
+    }
+
+    .start-pos-picker.build-path .mode-controls {
+      width: 100%;
+    }
+  }
+
   /* A phone in portrait has no spare band at all — the heading sits right at
      the top and everything it isn't using goes to the board. */
   @media (max-height: 780px) {
