@@ -155,10 +155,59 @@ origin/main** — a mix of this work and theirs.
 
 ---
 
+## Update — pickup session, 2026-07-28
+
+Audited every claim above before continuing: all 14 cited commits exist, the
+prototype paths are clean, and both test files pass (14/14, re-run). Other
+sessions have landed ~20 more commits on `main` since; none touch
+`src/routes/test/notation-playable/`.
+
+- **Loose end 1 is DONE** — `75c7fef551`, local, unpushed.
+  `VtgGlyphField.svelte` is deleted; `VtgFlowerField.svelte` replaces it. The
+  six real glyphs are now the axis control; the stage paints the four
+  spin-style pairings that the current timing/direction traces, from that
+  mode's canonical base word, via the shared poi-trail painter. Two findings
+  worth keeping:
+  - **Do not parity-correct here.** `verifyAndCorrect` re-anchors both hands
+    onto one canonical locus, which erased the axis — Split·Same and
+    Together·Same came out pixel-identical. Measured, then removed. (It stays
+    correct for the shape-matrix drill, where the cell IS the flower pair.)
+  - **Static geometry cannot separate split from together.** A same-direction
+    loop traces the same path set either way; only the hands' phase differs,
+    and phase is what the timing word means. `shape-matrix-poi-render.ts`
+    gained an opt-in `startMarkers` flag that dots where each hand begins
+    (default off — existing callers unchanged). With it, 6 of 6 modes draw
+    distinct pictures.
+  - Swept 1920 / 2560 / 3840 / 1440 / 820×1180 / 960×412 / 338×600: zero
+    document overflow, stage inside its tile at every one. Fold-landscape
+    spilled 7px until the stage reserved the text rows and became a
+    border-box square; per-cell captions stand down under a 360px stage
+    (they rendered at 7px).
+
+- **Loose end 3 is BLOCKED on sourcing, not on effort.** Fong's wiki — the one
+  place the previous session flagged as unread — was read. Both the wiki home
+  and its Instructions page carry the DSL course assignment only: no semantics
+  for `rotations` / `armSpin` / `handleSpin` / `extended`, and **no citation of
+  any prior system**. That independently confirms the "no relationship claims"
+  decision below. It also means drawing the pattern a PoiNotation line
+  describes would require inventing a parameter→geometry mapping, which the
+  catalog's sourcing rules forbid. Needs either a better primary source or
+  Austen's explicit call on how far to interpret.
+
+- **4K dead space is a board-level issue, not a tile-level one.** At 3840 the
+  hero tile is 1702px tall holding a 787px stage; every tile centres its
+  content and leaves the rest empty. This reproduces on the shipped tiles
+  (Lorq uses the same `min(100%, Ncqh)` + `aspect-ratio: 1` structure), so it
+  was left alone — the bento was reached after Austen rejected two other
+  layouts, and changing how the board uses the vertical is his call.
+
+---
+
 ## Loose ends (ranked)
 
-1. **Vulcan Tech Gospel is the worst artifact on the page and the most
-   important system.** Six static letter tiles (SS SO TS TO QS QO) for what
+1. ~~**Vulcan Tech Gospel is the worst artifact on the page and the most
+   important system.**~~ **DONE** — see the update section above.
+   Original note follows for context. Six static letter tiles (SS SO TS TO QS QO) for what
    Austen calls quite possibly the biggest influence on his work. Yee's own
    framing is "the flower patterns available within a given timing and
    direction, and how to transition between them" — so the artifact should be
