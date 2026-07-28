@@ -1,24 +1,30 @@
 <!--
 ConsolidatedLOOPCard.svelte - Single LOOP card that absorbs toggle, type, and slice size
-Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded overlay.
+Shows "Off" when disabled, the LOOP type name plus its canonical component
+icons when enabled. Click opens the expanded overlay.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import {
     LOOPType,
+    Period,
   } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-  import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import CardHeader from "./shared/CardHeader.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import { buildLoopCardDisplay, describeLoopRhythm } from "./loop-card-display";
   import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
   let {
     loopEnabled,
     currentLOOPType,
+    period,
+    inversionInterval,
+    inversionMode,
     reflectionAxis,
     onLOOPTypeChange,
     cardIndex = 0,
@@ -26,6 +32,10 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   } = $props<{
     loopEnabled: boolean;
     currentLOOPType: LOOPType;
+    /** Requested rotation period. Gated to halved for non-rotation LOOPs. */
+    period?: Period | string;
+    inversionInterval?: 2 | 4;
+    inversionMode?: "expand" | "overlay";
     reflectionAxis?: ReflectionAxis;
     onLOOPTypeChange: (loopType: LOOPType) => void;
     cardIndex?: number;
@@ -39,25 +49,31 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
     hapticService = getHapticFeedback();
   });
 
+  // Everything the icons need, resolved once. Period gating, axis
+  // normalization and overlay grouping live in the pure module beside this
+  // file so the glyphs can never contradict the label below.
+  const display = $derived(
+    buildLoopCardDisplay({
+      loopEnabled,
+      loopType: currentLOOPType,
+      period,
+      inversionInterval,
+      inversionMode,
+      reflectionAxis,
+    })
+  );
+
   // Selected components for the overlay. When the loop is OFF, the overlay
   // opens with nothing selected — the stale loopType (config keeps its last
   // value; there's no "none" LOOPType) must not pre-highlight a component.
-  const selectedComponents = $derived(
-    loopEnabled ? parseLoopComponents(currentLOOPType) : new Set<LOOPComponent>()
-  );
+  const selectedComponents = $derived(display.selectedComponents);
 
-  // Display value: "Off" or the LOOP type name
+  // The icon strip can't encode the two diagonal reflection axes or every
+  // combined type precisely, so the exact text label stays.
   const displayValue = $derived.by(() => {
     if (!loopEnabled) return "Off";
-    if (
-      selectedComponents.has(LOOPComponent.MIRRORED) ||
-      selectedComponents.has(LOOPComponent.FLIPPED)
-    ) {
-      const effectiveAxis: ReflectionAxis =
-        reflectionAxis ??
-        (selectedComponents.has(LOOPComponent.FLIPPED)
-          ? "east-west"
-          : "north-south");
+    if (display.effectiveAxis) {
+      const effectiveAxis: ReflectionAxis = display.effectiveAxis;
       const reflectionLabels: Record<ReflectionAxis, string> = {
         "north-south": t("generator_loop_mirrored"),
         "east-west": t("generator_loop_flipped"),
@@ -100,6 +116,25 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
       currentLOOPType.replace(/^strict_/, "").split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" / ");
   });
 
+  // Combined labels run to ~45 characters ("NE-SW Reflection + Rotated +
+  // Swapped + Inverted"). At the shared card text size those wrap to two full
+  // lines and push the icon row past the card's edge, so the label steps down
+  // by length onto the same ramp the Customize summary uses.
+  const labelTier = $derived(
+    displayValue.length > 32 ? "long" : displayValue.length > 18 ? "medium" : "short"
+  );
+
+  // Icon size tracks the card. A literal 16px reads as punctuation on a native
+  // 4K card, and overwhelms the label on a phone.
+  let cardHeight = $state(0);
+  const iconSize = $derived(
+    Math.min(24, Math.max(12, Math.round(cardHeight * 0.15)))
+  );
+
+  // The strip is hidden from the accessibility tree (this button already owns
+  // the name), so the rhythm it encodes visually has to be spoken here.
+  const rhythmDetail = $derived(loopEnabled ? describeLoopRhythm(display) : "");
+
   function handleClick() {
     hapticService?.trigger("selection");
 
@@ -130,12 +165,32 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   <button
     class="loop-consolidated-card"
     class:enabled={loopEnabled}
+    bind:clientHeight={cardHeight}
     onclick={handleClick}
     onkeydown={handleKeydown}
-    aria-label="LOOP: {displayValue}. Click to configure."
+    aria-label="LOOP: {displayValue}{rhythmDetail ? `, ${rhythmDetail}` : ''}. Click to configure."
   >
     <CardHeader title="LOOP" {headerFontSize} />
-    <div class="card-value">{displayValue}</div>
+    <!-- Label and icons center as one group, so this card's text lines up with
+         the plain single-line text on the Customize card beside it. -->
+    <div class="loop-body">
+      <div class="card-value" data-label={labelTier}>{displayValue}</div>
+      <!-- The row is always here, empty when the loop is off, so toggling
+           can't move the label above it. The strip carries its own role="img"
+           and label, which would duplicate this button's name — hide it. -->
+      <div class="loop-icon-row" style="min-height: {iconSize}px;" aria-hidden="true">
+        {#if display.iconComponents.size > 0}
+          <LOOPIconStrip
+            activeComponents={display.iconComponents}
+            overlayComponents={display.overlayComponents}
+            rotationPeriod={display.rotationPeriod}
+            inversionPeriod={display.inversionPeriod}
+            size={iconSize}
+            showFreeformWhenEmpty={false}
+          />
+        {/if}
+      </div>
+    </div>
   </button>
 </div>
 
@@ -282,6 +337,89 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
     overflow: hidden;
     width: 100%;
     margin: clamp(2px, 0.5cqh, 4px) 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* The whole flexible middle band: label + reserved icon row, centered as a
+     unit. .card-value's own flex:1 would push the icons to the card's bottom
+     edge and lift the label off centre. */
+  .loop-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(2px, 1cqh, 6px);
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  /* 1.1 leading is tighter than this font's ink box, so overflow:hidden was
+     shaving the descenders. 1.35 clears them; the body has the room. */
+  .loop-body .card-value {
+    flex: 0 1 auto;
+    min-height: 0;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  /* Same two fractions as the Customize summary's stacked rows, and for the
+     same reason: the desktop card grid is capped at 750px, so a card-width
+     ramp would stop growing while every sibling card's value kept scaling. */
+  .card-value[data-label="medium"] {
+    font-size: clamp(
+      15px,
+      calc(var(--card-text-size, clamp(16px, 2.2vmin, 30px)) * 0.62),
+      22px
+    );
+    letter-spacing: 0;
+  }
+
+  .card-value[data-label="long"] {
+    font-size: clamp(
+      13px,
+      calc(var(--card-text-size, clamp(16px, 2.2vmin, 30px)) * 0.5),
+      16px
+    );
+    letter-spacing: 0;
+  }
+
+  /* At 375x667 this card is 64px tall and the label band is ~17px — the full
+     46-character combined label cannot fit at any readable size. Step the type
+     down and clamp to a single line so it ends in an ellipsis instead of a
+     sliced-off glyph. The label leads with the reflection axis, which is the
+     one thing the icons cannot encode; the icons carry the components, and the
+     exact text stays in the accessible name and the drawer. */
+  @container loop-card (max-height: 88px) {
+    .loop-body {
+      gap: 1px;
+    }
+
+    .card-value[data-label="medium"] {
+      font-size: 13px;
+    }
+
+    .card-value[data-label="long"] {
+      font-size: 11px;
+    }
+
+    .card-value {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
+  }
+
+  /* Reserved icon row. flex-shrink:0 keeps its height even when a long
+     multi-component label wants the space. */
+  .loop-icon-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 100%;
     position: relative;
     z-index: 2;
   }

@@ -216,6 +216,12 @@ export function buildCardDescriptors(
       props: {
         loopEnabled,
         currentLOOPType: config.loopType,
+        // The card renders the same LOOP the generator will build, so it needs
+        // the whole rhythm — not just the type. Dropping any of these makes the
+        // icons disagree with what actually gets generated.
+        period: config.period,
+        inversionInterval: config.inversionInterval,
+        inversionMode: config.inversionMode,
         reflectionAxis: config.reflectionAxis,
         onLOOPTypeChange: handlers.handleLOOPTypeChange,
         cardIndex: cardIndex++,

@@ -4,7 +4,9 @@ Date: 2026-07-28
 
 Target: the Generate settings panel in Create, plus its public Composer demo consumer
 
-Status: investigated and reviewed; no product code has been changed
+Status: SHIPPED 2026-07-28. Implemented, unit tested, and verified in the
+browser on both routes at all seven required viewports. See "What shipped"
+below for the four places the implementation had to depart from this contract.
 
 ## Mission
 
@@ -16,6 +18,53 @@ cards at stable half widths.
 The implementation must preserve every active generation constraint, remain
 legible from phone through native 4K, and avoid any card movement when a setting
 changes.
+
+## What shipped
+
+Files changed:
+
+| File | Change |
+| --- | --- |
+| `components/cards/customize-summary.ts` | New. Pure resolver, shared orientation map, `capSummaryFacts`, `summaryRowBudget` |
+| `components/cards/loop-card-display.ts` | New. Pure LOOP display model: period gate, axis normalization, overlay grouping, `describeLoopRhythm` |
+| `components/cards/CustomizeCard.svelte` | Consumes the resolver; injected `styleBaseline`; measured row budget; accessible name; three-row type ramp |
+| `components/cards/CustomizeExpandedOverlay.svelte` | Imports the shared orientation abbreviations |
+| `components/cards/ConsolidatedLOOPCard.svelte` | Canonical icon strip, reserved row, rhythm props, length-tiered label |
+| `components/CardBasedSettingsContainer.svelte` | Reads the new rhythm fields so the descriptor stays reactive |
+| `shared/services/card-configurator.ts` | Passes `period`, `inversionInterval`, `inversionMode` |
+| `routes/(public)/composer/_sections/GenerateSection.svelte` | Demo baseline, `period`, and a card-cell sizing fix |
+| `components/cards/__tests__/customize-summary.test.ts` | New. 22 tests |
+| `components/cards/__tests__/loop-card-display.test.ts` | New. 17 tests, including the descriptor wiring and the 3/3 span |
+
+### Departures from this contract
+
+1. **`loop-card-display.ts` was extracted**, taking the escape hatch this doc
+   allowed. The period gate, axis normalization, interval conversion, and
+   overlay grouping were four conditionals too many for the component.
+2. **The three-row budget is measured, not fixed.** At 375x667 the card is 64px
+   tall with a 28px summary band — room for exactly one row, and three rows
+   clipped mid-glyph. `summaryRowBudget(cardHeight)` returns 3 / 2 / 1, and the
+   one-row form is `Props: Choppy +5` rather than a bare `+5 more`, which would
+   have been the uninformative label this work exists to remove.
+3. **The type ramp is a fraction of `--card-text-size`, not of card width.**
+   Container-width units freeze at the desktop grid's 750px cap, so a `cqw`
+   ramp sat at ~10px while every sibling card's value grew to 30px at 4K. Both
+   cards now use the same two fractions with px floors and ceilings; the LOOP
+   label picks its tier from label length, and a short card clamps it to one
+   line with an ellipsis.
+4. **Leading went from 1.1 to 1.35 on both clipped elements.** `overflow:
+   hidden` clips vertically as well as horizontally, and 1.1 is tighter than
+   this font's ink box, so descenders were being shaved.
+
+Also fixed, because it made the LOOP card unverifiable on the demo route: the
+public Composer's `.card-cell` never sized its child, so `.loop-card-wrapper`
+(the one card that does not set its own height) collapsed to 2px and spilled
+its label over the panel. The demo now mirrors the app grid's sizing rule.
+
+Left alone as instructed: the unused `cards/LOOPCard.svelte`, the
+non-interpolable `transition: grid-column`, and the 750px desktop grid cap.
+That cap is why both cards still read small at 2560 and 3840 — it deserves the
+separate native-4K audit this doc calls for.
 
 ## Done — verified
 

@@ -60,6 +60,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { buildStartEndOptions } from "./customize-start-end-options";
+  import { ORIENTATION_SHORT } from "./customize-summary";
   import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
@@ -133,17 +134,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   // Compact orientation suffix for the section header — empty when In/In so the
   // default reads clean. flex:1 right-aligned value grows toward the fixed
   // chevron, so a wider string never shifts siblings (no-layout-shift rule).
-  const ORI_SHORT: Record<string, string> = {
-    [Orientation.IN]: "In",
-    [Orientation.CLOCK]: "CW",
-    [Orientation.OUT]: "Out",
-    [Orientation.COUNTER]: "CCW",
-  };
+  // Abbreviations come from the summary resolver so this header and the
+  // collapsed card can't drift into two vocabularies.
   const oriDisplay = $derived.by(() => {
     const b = localBlueOri ?? Orientation.IN;
     const r = localRedOri ?? Orientation.IN;
     if (b === Orientation.IN && r === Orientation.IN) return "";
-    return ` · ${ORI_SHORT[b] ?? b}/${ORI_SHORT[r] ?? r}`;
+    return ` · ${ORIENTATION_SHORT[b] ?? b}/${ORIENTATION_SHORT[r] ?? r}`;
   });
 
   // Current preset (All / Classic 3 / Custom) derived from the blocked list.

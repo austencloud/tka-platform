@@ -1,6 +1,7 @@
 <!--
 CustomizeCard.svelte - Single card absorbing Style and Start/End
-Shows summary ("Default" or "Custom"), click opens the expanded overlay.
+Shows the settings that actually differ from this surface's baseline, capped
+to three rows. Click opens the expanded overlay.
 (Rhythm was removed pending a finished rhythm-preset design.)
 -->
 <script lang="ts">
@@ -11,13 +12,12 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CardHeader from "./shared/CardHeader.svelte";
   import {
-    detectPresetFromBlocked,
-    getAllowedPositions,
-    StartPositionPreset,
-  } from "../../shared/domain/start-position-presets";
-  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
+    buildCustomizeSummary,
+    capSummaryFacts,
+    summaryRowBudget,
+    PRODUCTION_STYLE_BASELINE,
+    type CustomizeStyleBaseline,
+  } from "./customize-summary";
 
   let {
     constraintPreset,
@@ -26,6 +26,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     startEndOptions,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
+    styleBaseline = PRODUCTION_STYLE_BASELINE,
     onConstraintPresetChange,
     onHandPathModeChange,
     onMotionTypeFilterChange,
@@ -42,6 +43,12 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     startEndOptions?: StartEndOptions;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
+    /**
+     * What "untouched" means on THIS surface. The public Composer demo opens
+     * on its own recipe, so without this it would report two changes the
+     * visitor never made.
+     */
+    styleBaseline?: CustomizeStyleBaseline;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
@@ -60,57 +67,30 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     hapticService = getHapticFeedback();
   });
 
-  // Determine if everything is default. Measured against the real starting
-  // config so "Reset all" leaves this card reading Default (it used to hardcode
-  // smooth/smooth, but the default hand path is Mixed).
-  const isAllDefault = $derived.by(() => {
-    const isDefaultStyle =
-      constraintPreset === GENERATE_DEFAULT_CONFIG.constraintPreset &&
-      handPathMode === GENERATE_DEFAULT_CONFIG.handPathMode &&
-      motionTypeFilter === GENERATE_DEFAULT_CONFIG.motionTypeFilter;
-    const isDefaultOri =
-      (startEndOptions?.blueStartOrientation ?? Orientation.IN) === Orientation.IN &&
-      (startEndOptions?.redStartOrientation ?? Orientation.IN) === Orientation.IN;
-    const isDefaultStartEnd = !startEndOptions ||
-      (startEndOptions.blockedStartPositions.length === 0 &&
-       !startEndOptions.endPosition &&
-       isDefaultOri);
-    return isDefaultStyle && isDefaultStartEnd;
-  });
+  // One pass answers both questions: is anything non-default, and what is it.
+  // isDefault comes straight from the fact list, so the word "Default" can
+  // never disagree with the rows underneath it.
+  const summary = $derived(
+    buildCustomizeSummary(
+      {
+        constraintPreset,
+        handPathMode,
+        motionTypeFilter,
+        startEndOptions,
+        gridMode,
+      },
+      styleBaseline
+    )
+  );
 
-  // Build summary lines for non-default settings
-  const summaryLines = $derived.by((): string[] => {
-    if (isAllDefault) return [];
-    const lines: string[] = [];
-
-    // Start position
-    if (startEndOptions && startEndOptions.blockedStartPositions.length > 0) {
-      const preset = detectPresetFromBlocked(startEndOptions.blockedStartPositions, gridMode);
-      if (preset === StartPositionPreset.CLASSIC) {
-        lines.push("Classic 3");
-      } else {
-        const allowed = getAllowedPositions(startEndOptions.blockedStartPositions, gridMode);
-        if (allowed.length === 1) {
-          lines.push(`Start: ${allowed[0]}`);
-        }
-      }
-    }
-
-    // Start orientation (only when non-default In/In)
-    const blueOri = startEndOptions?.blueStartOrientation ?? Orientation.IN;
-    const redOri = startEndOptions?.redStartOrientation ?? Orientation.IN;
-    if (blueOri !== Orientation.IN || redOri !== Orientation.IN) {
-      const short: Record<string, string> = {
-        [Orientation.IN]: "In",
-        [Orientation.CLOCK]: "CW",
-        [Orientation.OUT]: "Out",
-        [Orientation.COUNTER]: "CCW",
-      };
-      lines.push(`Ori: ${short[blueOri] ?? blueOri}/${short[redOri] ?? redOri}`);
-    }
-
-    return lines;
-  });
+  // What fits on THIS card. The grid squeezes this row hardest — at 375x667
+  // the card is 64px tall with a 28px summary band, room for one row — so the
+  // budget is measured rather than fixed at three. The full list still reaches
+  // the accessible name either way.
+  let cardHeight = $state(0);
+  const summaryLines = $derived(
+    capSummaryFacts(summary.facts, summaryRowBudget(cardHeight))
+  );
 
   function handleClick() {
     hapticService?.trigger("selection");
@@ -140,21 +120,20 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
 <button
   class="customize-card"
   style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex};"
+  bind:clientHeight={cardHeight}
   onclick={handleClick}
   onkeydown={handleKeydown}
-  aria-label="Customize: {isAllDefault ? 'Default' : 'Custom'}. Click to configure style, rhythm, and positions."
+  aria-label="Customize: {summary.accessibleSummary}. Click to configure style and positions."
 >
   <CardHeader title="Customize" {headerFontSize} />
-  {#if isAllDefault}
+  {#if summary.isDefault}
     <div class="card-value">Default</div>
-  {:else if summaryLines.length > 0}
-    <div class="card-summary">
+  {:else}
+    <div class="card-summary" data-rows={summaryLines.length}>
       {#each summaryLines as line}
         <span class="summary-line">{line}</span>
       {/each}
     </div>
-  {:else}
-    <div class="card-value">Custom</div>
   {/if}
 </button>
 
@@ -249,6 +228,10 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     z-index: 2;
   }
 
+  /* Same flexible middle band as .card-value, so switching between Default and
+     a summary never resizes the card. overflow:hidden is the backstop — the
+     grid and card wrappers keep overflow visible for popovers, so the text has
+     to contain itself. */
   .card-summary {
     display: flex;
     flex-direction: column;
@@ -257,6 +240,9 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     gap: clamp(1px, 0.5cqh, 4px);
     flex: 1;
     min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    margin: clamp(2px, 0.5cqh, 4px) 0;
     position: relative;
     z-index: 2;
   }
@@ -267,16 +253,40 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay.
     letter-spacing: var(--card-text-spacing);
     color: white;
     text-shadow: var(--card-text-shadow);
-    line-height: 1.1;
+    /* overflow:hidden drives the ellipsis, and it clips vertically too — 1.1
+       leading is tighter than the font's ink box, so descenders were being
+       shaved off "Props: Choppy". */
+    line-height: 1.35;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
   }
 
-  /* Scale down when multiple lines need to fit */
-  .card-summary:has(.summary-line:nth-child(2)) .summary-line {
-    font-size: clamp(11px, 3.5cqw, 16px);
+  /* Scale down as rows stack, as a fraction of the shared card text size
+     rather than the card's own width: the desktop grid is capped at 750px, so
+     a cqw ramp would freeze at ~10px while every sibling card's value grew to
+     30px at 4K. The LOOP card's long-label tiers use the same two fractions,
+     so the pair reads as siblings. */
+  .card-summary[data-rows="2"] .summary-line {
+    font-size: clamp(
+      15px,
+      calc(var(--card-text-size, clamp(16px, 2.2vmin, 30px)) * 0.62),
+      22px
+    );
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  /* The floors matter: the base size is vmin-driven, so a short viewport
+     (1440x900) would otherwise put three rows at ~10px inside a band with
+     95px of room. */
+  .card-summary[data-rows="3"] .summary-line {
+    font-size: clamp(
+      13px,
+      calc(var(--card-text-size, clamp(16px, 2.2vmin, 30px)) * 0.5),
+      16px
+    );
     font-weight: 600;
     letter-spacing: 0;
   }

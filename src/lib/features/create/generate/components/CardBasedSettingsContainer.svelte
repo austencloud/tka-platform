@@ -410,8 +410,14 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     const loopEnabled = config.loopEnabled;
     const _loopType = config.loopType;
     const _reflectionAxis = config.reflectionAxis;
+    const _period = config.period;
+    const _inversionInterval = config.inversionInterval;
+    const _inversionMode = config.inversionMode;
     void _loopType;
     void _reflectionAxis;
+    void _period;
+    void _inversionInterval;
+    void _inversionMode;
 
     return buildCardDescriptors(
       config,

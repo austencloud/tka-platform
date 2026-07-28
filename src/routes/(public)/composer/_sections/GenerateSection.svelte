@@ -54,6 +54,7 @@
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import GridModeCard from "$lib/features/create/generate/components/cards/GridModeCard.svelte";
   import CustomizeCard from "$lib/features/create/generate/components/cards/CustomizeCard.svelte";
+  import type { CustomizeStyleBaseline } from "$lib/features/create/generate/components/cards/customize-summary";
   import ConsolidatedLOOPCard from "$lib/features/create/generate/components/cards/ConsolidatedLOOPCard.svelte";
   import CustomizeDrawer from "$lib/features/create/generate/components/modals/CustomizeDrawer.svelte";
   import LOOPDrawer from "$lib/features/create/generate/components/modals/LOOPDrawer.svelte";
@@ -82,9 +83,24 @@
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let loopType = $state<LOOPType>(LOOPType.ROTATED);
   let period = $state<Period>(Period.QUARTERED);
-  let constraintPreset = $state<"smooth" | "mixed" | "choppy">("smooth");
-  let handPathMode = $state<"smooth" | "mixed" | "choppy">("smooth");
-  let motionTypeFilter = $state<"no-dash" | "prefer-dash" | null>("no-dash");
+  // The toy opens on its own style recipe, not the production defaults. The
+  // Customize card measures "changed" against THIS, so an untouched visitor
+  // isn't told they made two changes they never made.
+  const DEMO_STYLE_BASELINE: CustomizeStyleBaseline = {
+    constraintPreset: "smooth",
+    handPathMode: "smooth",
+    motionTypeFilter: "no-dash",
+  };
+
+  let constraintPreset = $state<"smooth" | "mixed" | "choppy">(
+    DEMO_STYLE_BASELINE.constraintPreset
+  );
+  let handPathMode = $state<"smooth" | "mixed" | "choppy">(
+    DEMO_STYLE_BASELINE.handPathMode
+  );
+  let motionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(
+    DEMO_STYLE_BASELINE.motionTypeFilter
+  );
 
   function allowedTurnsFor(lvl: DifficultyLevel): number[] {
     switch (lvl) {
@@ -571,6 +587,7 @@
                 {motionTypeFilter}
                 {gridMode}
                 isFreeformMode={false}
+                styleBaseline={DEMO_STYLE_BASELINE}
                 onConstraintPresetChange={(value) => (constraintPreset = value)}
                 onHandPathModeChange={(value) => (handPathMode = value)}
                 onMotionTypeFilterChange={handleMotionTypeFilterChange}
@@ -580,6 +597,7 @@
               <ConsolidatedLOOPCard
                 loopEnabled={true}
                 currentLOOPType={loopType}
+                {period}
                 onLOOPTypeChange={handleLOOPTypeChange}
               />
             </div>
@@ -905,6 +923,16 @@
     min-width: 140px;
     height: clamp(118px, 10cqw, 148px);
     min-height: 0;
+  }
+
+  /* Most cards set their own height:100%, but the LOOP card's outer wrapper
+     doesn't — in the app it gets its size from the card grid's equivalent
+     rule, and without a match here it collapsed to 2px and spilled its label
+     over the panel. */
+  .card-cell > :global(*) {
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
   }
 
   .generate-action {
