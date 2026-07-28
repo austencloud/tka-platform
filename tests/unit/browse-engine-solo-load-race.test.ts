@@ -41,7 +41,7 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+import { createBrowseEngineForTest } from "./browse-engine-test-helpers.svelte";
 
 interface PendingLoad {
   readonly viewMode: BrowseViewMode;
@@ -71,7 +71,7 @@ describe("BrowseEngine solo library loads", () => {
           pending.push({ viewMode: { ...viewMode }, resolve });
         })
     );
-    const engine = createBrowseEngine({
+    const { engine, dispose } = createBrowseEngineForTest({
       persistKey: null,
       initialSource: "my-library",
       loadSoloLibrarySequences,
@@ -105,5 +105,6 @@ describe("BrowseEngine solo library loads", () => {
     expect(engine.isLoading).toBe(false);
 
     engine.destroy();
+    dispose();
   });
 });

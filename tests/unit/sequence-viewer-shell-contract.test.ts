@@ -138,13 +138,16 @@ describe("SequenceViewerShell host contract", () => {
     },
   );
 
+  // The counter increment and the scanEvents write moved behind
+  // /api/physical-cards/scan, so the host's half of the contract is now the
+  // recordCardScan call rather than the two Firestore writes it replaced.
   it("records card scans only from the dedicated /q host", () => {
     expect(scanSource).toContain("isFirstScanRouteVisit");
-    expect(scanSource).toContain("incrementScanCount");
-    expect(scanSource).toContain("logScanEvent");
+    expect(scanSource).toContain("recordCardScan");
 
     for (const directLinkSource of [drawerSource, sequenceRouteSource]) {
       expect(directLinkSource).not.toContain("isFirstScanRouteVisit");
+      expect(directLinkSource).not.toContain("recordCardScan");
       expect(directLinkSource).not.toContain("incrementScanCount");
       expect(directLinkSource).not.toContain("logScanEvent");
     }

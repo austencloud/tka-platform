@@ -120,8 +120,8 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
 
     expect(visibleKey).toMatch(/^lsp11-/);
     expect(hiddenKey).toMatch(/^lsp12-/);
-    expect(hiddenKey).toContain('\\"isVisible\\":true');
-    expect(hiddenKey).toContain('\\"isVisible\\":false');
+    expect(hiddenKey).toContain('"isVisible":true');
+    expect(hiddenKey).toContain('"isVisible":false');
     expect(visibleKey).not.toBe(hiddenKey);
   });
 
