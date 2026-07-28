@@ -56,9 +56,11 @@ Original handoff: `2026-07-26-profile-as-stage-handoff.md`.
    ArtifactTile simplifies per token at render time; the data still wants a repair.
 6. **Collection `visibility` field + rules, pin/unpin UI** — never started; the
    Showcase is auto-picked because `PinnedItem` exists but nothing writes it.
-7. **A visitor's Collections band shows the VIEWER's collections.** Open another
-   creator's profile and Collections reads 46 — Austen's count, not theirs. The
-   stage calls `ensureStarted(profileUserId)` on three collection singletons that
-   are really keyed to the signed-in user. Pre-dates the lobby work; it is also
-   why the Collections doorway is own-profile-only (there is no surface that
-   would show the right person's saved art).
+7. ~~**A visitor's Collections band shows the VIEWER's collections.**~~
+   **Fixed 2026-07-28**, and it was not cosmetic. `ensureStarted(uid)` on the
+   three art singletons repoints where they READ *and WRITE*; the stage passed
+   the visited creator's id, so the rejected owner-only load left the viewer's
+   entries in place (rendered as the owner's, Showcase included) AND aimed the
+   viewer's next save at a stranger's namespace, where the rules bounced it.
+   The Collections band is now own-profile-only — saved art is private by rule
+   (`allow read ... if isOwner`), so there is nothing a visitor could be shown.
