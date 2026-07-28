@@ -50,6 +50,7 @@
           {cursor}
           {layers}
           pendulum={move.pendulum ?? false}
+          extent={235}
         />
       </div>
       <figcaption>
@@ -90,7 +91,12 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    /* `safe`, so that when the stage floor pushes the pane past the viewport
+       the top stays reachable rather than being clipped away. */
+    justify-content: safe center;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
     align-items: center;
     gap: clamp(0.75rem, 2vh, 1.75rem);
     /* Shared measure for both halves, so they line up whatever shape the
@@ -121,19 +127,48 @@
    * bottom-aligning the two figures pushed the drawings themselves out of line
    * with each other — the one thing on this page that must line up.
    */
+  /*
+   * The figure takes whatever height is left after the title, the caption and
+   * the notation — it does not guess at a fraction of the viewport. A `30vh`
+   * box left the subject of the page as its smallest element: 334px of stage
+   * in an 832px pane, with a band of empty sky above and below it.
+   */
   .pair {
-    display: grid;
-    justify-content: center;
+    flex: 1 1 auto;
+    /*
+     * A floor, because "take what is left" is the wrong answer when nothing is
+     * left: on a phone showing one of the two moves that carry a quote, the
+     * stage collapsed to a 90px thumbnail. Below this the pane scrolls instead
+     * of crushing the thing you came to look at. It sits here rather than on
+     * the box so that it grows the flex line, instead of overflowing the figure
+     * and painting over the notation.
+     */
+    min-height: min(56vw, 34vh);
+    width: 100%;
+    /* Stretch, not a content-sized centred column: the figure has to be as wide
+       as the pane before the box can use that width. */
+    display: flex;
+    flex-direction: column;
   }
 
   figure {
     margin: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* One subject now, so it takes the whole measure the layout gives it. */
+  /*
+   * No aspect-ratio here: the stage's SVG letterboxes its square viewBox inside
+   * whatever box it is given, so the drawing scales to min(width, height) and
+   * fills the space without the box having to be square itself.
+   */
   .box {
-    height: var(--box-h);
-    aspect-ratio: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: min(100%, 92vw);
   }
 
   .stage {
@@ -238,13 +273,15 @@
       /* Matched to the instrument's column, so the two modes stay registered
          across the crossfade and neither leaves dead rail at 4K. */
       grid-template-columns: auto clamp(26rem, 32vw, 46rem);
-      grid-template-areas: "pair head" "pair notation" "pair quote";
       /*
-       * All three rows content-sized. A 1fr tail row looks fine on the moves
-       * that carry a quote and leaves a hole a third of the page tall on the
-       * six that do not.
+       * Empty rows top and bottom take the slack. The pair spans the whole
+       * column and is taller than the three content rows, and that surplus was
+       * being distributed BETWEEN them — opening a gap between the table and
+       * the quote that belongs to it. Pushing it outside the group keeps the
+       * three tight and still centres them against the stage.
        */
-      grid-template-rows: auto auto auto;
+      grid-template-areas: "pair ." "pair head" "pair notation" "pair quote" "pair .";
+      grid-template-rows: 1fr auto auto auto 1fr;
       align-content: center;
       justify-content: center;
       column-gap: clamp(2rem, 4vw, 5rem);
@@ -269,6 +306,17 @@
     .pair {
       grid-area: pair;
       align-self: center;
+      flex: none;
+      width: auto;
+    }
+
+    /* Explicit height here: the pair is a grid item beside the reading column,
+       so there is no leftover column height for it to fill. */
+    .box {
+      flex: none;
+      height: var(--box-h);
+      width: auto;
+      aspect-ratio: 1;
     }
 
     .notation {
@@ -293,7 +341,7 @@
    */
   @media (min-width: 44rem) and (max-height: 32rem) {
     .guide {
-      --box-h: min(40vh, 9rem);
+      --box-h: min(54vh, 11rem);
       display: grid;
       grid-template-columns: auto minmax(15rem, 26rem);
       grid-template-areas: "pair head" "pair notation";
@@ -322,6 +370,15 @@
     .pair {
       grid-area: pair;
       align-self: center;
+      flex: none;
+      width: auto;
+    }
+
+    .box {
+      flex: none;
+      height: var(--box-h);
+      width: auto;
+      aspect-ratio: 1;
     }
 
     .notation {

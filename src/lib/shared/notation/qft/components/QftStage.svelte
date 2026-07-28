@@ -15,9 +15,12 @@
     tracePendulum,
     PROP_LENGTH,
     type QftIncrement,
-    type QftKnobs
+    type QftKnobs,
   } from "$lib/shared/notation/qft/qft-model";
-  import { ALL_LAYERS, type QftLayers } from "$lib/shared/notation/qft/qft-layers";
+  import {
+    ALL_LAYERS,
+    type QftLayers,
+  } from "$lib/shared/notation/qft/qft-layers";
 
   interface Props {
     knobs: QftKnobs;
@@ -41,13 +44,32 @@
      * this list: with that gone there is no stage.
      */
     layers?: QftLayers;
+    /**
+     * Half the viewBox, in the same units as UNIT below — that is, how far the
+     * stage reserves room for the drawing to reach.
+     *
+     * It has to be CONSTANT across every move a reader compares, or the radius
+     * would stop meaning anything: a small move would be drawn at the same size
+     * as a large one. But it does not have to be the same constant everywhere.
+     * The default covers the instrument, whose radius knob goes to 1.5 and whose
+     * widest setting measures 254. The guide's eight moves top out at 222, so it
+     * passes a tighter extent and gets a correspondingly larger drawing.
+     */
+    extent?: number;
   }
 
-  let { knobs, increments, cursor, pendulum = false, layers = ALL_LAYERS }: Props = $props();
+  let {
+    knobs,
+    increments,
+    cursor,
+    pendulum = false,
+    layers = ALL_LAYERS,
+    extent = 270,
+  }: Props = $props();
 
   /** Pixels per prop length. The head reaches radius + 1, so 2.5 at the widest. */
   const UNIT = 100;
-  const EXTENT = 270;
+  const EXTENT = $derived(extent);
 
   const HOME_BASE = [1, 2, 3, 4, 5, 6, 7, 8];
   const RING = PROP_LENGTH * UNIT;
@@ -55,7 +77,9 @@
   const step = $derived(Math.floor(cursor) % 8);
   const row = $derived(increments[step]);
 
-  const poses = $derived(pendulum ? pendulumPosesAt(cursor) : posesAt(knobs, cursor));
+  const poses = $derived(
+    pendulum ? pendulumPosesAt(cursor) : posesAt(knobs, cursor)
+  );
   const hand = $derived({ x: poses.hand.x * UNIT, y: poses.hand.y * UNIT });
   const head = $derived({ x: poses.head.x * UNIT, y: poses.head.y * UNIT });
 
@@ -63,7 +87,10 @@
 
   const trail = $derived(
     samples
-      .map((p, i) => `${i === 0 ? "M" : "L"}${(p.x * UNIT).toFixed(2)},${(p.y * UNIT).toFixed(2)}`)
+      .map(
+        (p, i) =>
+          `${i === 0 ? "M" : "L"}${(p.x * UNIT).toFixed(2)},${(p.y * UNIT).toFixed(2)}`
+      )
       .join(" ")
   );
 
@@ -125,7 +152,7 @@
       dash: `${band} ${Math.max(0.01, total - band)}`,
       offset: -(headDistance - (k + 1) * band),
       opacity: 0.9 * (1 - k / BANDS) ** 1.6,
-      width: 5 + 2.5 * (1 - k / BANDS)
+      width: 5 + 2.5 * (1 - k / BANDS),
     }));
   });
 
@@ -198,7 +225,7 @@
       x1,
       y1,
       x2: x1 + heading.x * DART_LENGTH * UNIT,
-      y2: y1 + heading.y * DART_LENGTH * UNIT
+      y2: y1 + heading.y * DART_LENGTH * UNIT,
     };
   });
 
@@ -220,7 +247,8 @@
    * position — at 8 rotations per hand rotation the prop turns a full circle in
    * one increment, which no angle measured off screen coordinates can express.
    */
-  const indexAt = (u: number) => (pendulum ? pendulumIndexAt(u) : propIndexAt(knobs, u));
+  const indexAt = (u: number) =>
+    pendulum ? pendulumIndexAt(u) : propIndexAt(knobs, u);
 
   const RADIANS_PER_POSITION = Math.PI / 4;
 
@@ -444,7 +472,9 @@
     fill: var(--semantic-surface-raised, rgb(0 0 0 / 0.5));
     stroke: var(--semantic-border, rgb(255 255 255 / 0.28));
     stroke-width: 2;
-    transition: fill 160ms ease, stroke 160ms ease;
+    transition:
+      fill 160ms ease,
+      stroke 160ms ease;
   }
 
   .point text {
