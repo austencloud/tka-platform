@@ -3,7 +3,8 @@
  * the full publish-transaction shape (schema-2 fields, owner parity after the
  * transaction, hash claim after the transaction), claims are linkage-proven
  * in both directions, owner-document projection stamps are persister-only,
- * and shortcode mints are strict schema-2 with claim linkage.
+ * and shortcode mints are strict schema-2 words or schema-3 solos with claim
+ * linkage.
  *
  * The write shapes under test mirror what public-sequence-persister.ts and
  * ShortCodeManager.allocateCode produce inside their transactions. The
@@ -40,7 +41,10 @@ beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: "the-kinetic-alphabet",
     firestore: {
-      rules: readFileSync(resolve(__dirname, "../../../firestore.rules"), "utf8"),
+      rules: readFileSync(
+        resolve(__dirname, "../../../firestore.rules"),
+        "utf8"
+      ),
       host: "127.0.0.1",
       port: 8080,
     },
@@ -126,7 +130,10 @@ function claimDoc(
 
 /** The owner document in FULL PARITY with schemaTwoDoc — what the publish
  *  transaction leaves behind on the owner side. */
-function ownerDocInParity(hash: string, overrides: Record<string, unknown> = {}) {
+function ownerDocInParity(
+  hash: string,
+  overrides: Record<string, unknown> = {}
+) {
   return {
     visibility: "public",
     word: "ABCD",
@@ -155,7 +162,11 @@ async function seedOwnerDoc(
 /** Seed a committed schema-2 publish the way production commits one: the
  *  owner doc in parity, then the owner's own batched public+claim write,
  *  which the strict rules provably accept. */
-async function seedPublishedSequence(seqId: string, hash: string, claimId: string) {
+async function seedPublishedSequence(
+  seqId: string,
+  hash: string,
+  claimId: string
+) {
   await seedOwnerDoc(seqId, ownerDocInParity(hash));
   const db = ownerDb();
   const batch = writeBatch(db);
@@ -186,10 +197,15 @@ describe("publicSequences: phase-4 strict writes", () => {
     const db = ownerDb();
     const batch = writeBatch(db);
     batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
-    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
     await assertSucceeds(batch.commit());
     const landedDoc = await getDoc(doc(db, `publicSequences/${seqId}`));
-    const landedClaim = await getDoc(doc(db, `publicSequenceHashes/${claimId}`));
+    const landedClaim = await getDoc(
+      doc(db, `publicSequenceHashes/${claimId}`)
+    );
     if (!landedDoc.exists() || !landedClaim.exists()) {
       throw new Error("batch reported success but writes did not land");
     }
@@ -219,7 +235,10 @@ describe("publicSequences: phase-4 strict writes", () => {
       contentHashVersion: 2,
     });
     batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
-    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
     await assertSucceeds(batch.commit());
   });
 
@@ -240,17 +259,26 @@ describe("publicSequences: phase-4 strict writes", () => {
     const db = ownerDb();
     const batch = writeBatch(db);
     batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
-    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
     await assertFails(batch.commit());
   });
 
   it("denies a publish whose owner document is not public", async () => {
     const { seqId, hash, claimId } = ids("privowner");
-    await seedOwnerDoc(seqId, ownerDocInParity(hash, { visibility: "private" }));
+    await seedOwnerDoc(
+      seqId,
+      ownerDocInParity(hash, { visibility: "private" })
+    );
     const db = ownerDb();
     const batch = writeBatch(db);
     batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
-    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
     await assertFails(batch.commit());
   });
 
@@ -260,7 +288,10 @@ describe("publicSequences: phase-4 strict writes", () => {
     const db = ownerDb();
     const batch = writeBatch(db);
     batch.set(doc(db, `publicSequences/${seqId}`), schemaTwoDoc(seqId, hash));
-    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
     await assertFails(batch.commit());
   });
 
@@ -292,7 +323,10 @@ describe("publicSequences: phase-4 strict writes", () => {
         sourceRef: `users/${OTHER_UID}/sequences/${seqId}`,
       })
     );
-    batch.set(doc(db, `publicSequenceHashes/${claimId}`), claimDoc(seqId, hash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
     await assertFails(batch.commit());
   });
 
@@ -365,7 +399,8 @@ describe("publicSequences: phase-4 strict writes", () => {
     });
     await assertSucceeds(batch.commit());
     const gone = await getDoc(doc(db, `publicSequences/${seqId}`));
-    if (gone.exists()) throw new Error("unpublish reported success but doc remains");
+    if (gone.exists())
+      throw new Error("unpublish reported success but doc remains");
   });
 
   it("denies forging owner projection stamps without the mirror", async () => {
@@ -401,7 +436,10 @@ describe("publicSequences: phase-4 strict writes", () => {
       doc(db, `publicSequences/${seqId}`),
       schemaTwoDoc(seqId, newHash, { publicProjectionRevision: 2 })
     );
-    batch.set(doc(db, `publicSequenceHashes/${newClaimId}`), claimDoc(seqId, newHash));
+    batch.set(
+      doc(db, `publicSequenceHashes/${newClaimId}`),
+      claimDoc(seqId, newHash)
+    );
     batch.delete(doc(db, `publicSequenceHashes/${claimId}`));
     batch.update(doc(db, `users/${OWNER_UID}/sequences/${seqId}`), {
       contentHash: newHash,
@@ -544,6 +582,10 @@ describe("publicSequenceHashes: claim linkage", () => {
 
 describe("shortcodes: phase-4 strict mint", () => {
   const MINT_HASH = ("mint" + "c".repeat(64)).slice(0, 64);
+  const EMBED_MINT_HASH = ("embed" + "d".repeat(64)).slice(0, 64);
+  const SOLO_MINT_HASH = ("solo" + "e".repeat(64)).slice(0, 64);
+  const SOLO_EMBED_HASH = ("soloembed" + "f".repeat(64)).slice(0, 64);
+  const SOLO_CONTENT_HASH = "s".repeat(22);
 
   function mintDoc(overrides: Record<string, unknown> = {}) {
     return {
@@ -560,6 +602,25 @@ describe("shortcodes: phase-4 strict mint", () => {
     };
   }
 
+  function soloMintDoc(overrides: Record<string, unknown> = {}) {
+    return {
+      encoded: "solo-payload-blob",
+      payloadKind: "solo",
+      payloadTitle: "Left-hand choreography",
+      payloadStepCount: 1,
+      payloadContentHash: SOLO_CONTENT_HASH,
+      payloadSchemaVersion: 3,
+      authoredHand: "left",
+      sourceSoloPropId: "solo-prop-1",
+      sequence: "Left-hand choreography",
+      sequenceName: "Left-hand choreography",
+      encoderHash: SOLO_MINT_HASH,
+      createdAt: new Date().toISOString(),
+      scanCount: 0,
+      ...overrides,
+    };
+  }
+
   it("allows the allocateCode shape: code doc + hash claim in one transaction, and it LANDS", async () => {
     const db = ownerDb();
     const batch = writeBatch(db);
@@ -570,7 +631,33 @@ describe("shortcodes: phase-4 strict mint", () => {
     });
     await assertSucceeds(batch.commit());
     const landed = await getDoc(doc(db, "shortcodes/MNT1"));
-    if (!landed.exists()) throw new Error("mint reported success but did not land");
+    if (!landed.exists())
+      throw new Error("mint reported success but did not land");
+  });
+
+  it("allows a verified embed-only mint and matching hash claim to land", async () => {
+    const db = ownerDb();
+    const embedOnlyDoc = mintDoc({
+      encoderHash: EMBED_MINT_HASH,
+      sequenceData: {
+        steps: [{ letter: "A" }, { letter: "B" }],
+        word: "AB",
+      },
+    }) as Record<string, unknown>;
+    delete embedOnlyDoc.encoded;
+
+    const batch = writeBatch(db);
+    batch.set(doc(db, "shortcodes/MNT4"), embedOnlyDoc);
+    batch.set(doc(db, `shortcodeHashes/${EMBED_MINT_HASH}`), {
+      code: "MNT4",
+      createdAt: new Date().toISOString(),
+    });
+
+    await assertSucceeds(batch.commit());
+    const landed = await getDoc(doc(db, "shortcodes/MNT4"));
+    if (!landed.exists() || landed.data().encoded !== undefined) {
+      throw new Error("embed-only mint did not land with the expected shape");
+    }
   });
 
   it("denies a mint without payload-derived label fields", async () => {
@@ -586,6 +673,106 @@ describe("shortcodes: phase-4 strict mint", () => {
   it("denies a hash-carrying mint that skips its claim", async () => {
     const db = ownerDb();
     await assertFails(setDoc(doc(db, "shortcodes/MNT3"), mintDoc()));
+  });
+
+  it("allows a schema-3 encoded solo mint with no synthetic payloadWord", async () => {
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(doc(db, "shortcodes/SOL1"), soloMintDoc());
+    batch.set(doc(db, `shortcodeHashes/${SOLO_MINT_HASH}`), {
+      code: "SOL1",
+      createdAt: new Date().toISOString(),
+    });
+
+    await assertSucceeds(batch.commit());
+    const landed = await getDoc(doc(db, "shortcodes/SOL1"));
+    if (!landed.exists() || landed.data().payloadWord !== undefined) {
+      throw new Error("schema-3 encoded solo did not land cleanly");
+    }
+  });
+
+  it("allows an encoded solo mint without false persisted-artifact provenance", async () => {
+    const db = ownerDb();
+    const hash = "4".repeat(64);
+    const mint = soloMintDoc({ encoderHash: hash }) as Record<string, unknown>;
+    delete mint.sourceSoloPropId;
+    const batch = writeBatch(db);
+    batch.set(doc(db, "shortcodes/SOL0"), mint);
+    batch.set(doc(db, `shortcodeHashes/${hash}`), {
+      code: "SOL0",
+      createdAt: new Date().toISOString(),
+    });
+
+    await assertSucceeds(batch.commit());
+  });
+
+  it("allows a schema-3 canonical soloData fallback", async () => {
+    const db = ownerDb();
+    const fallback = soloMintDoc({
+      encoderHash: SOLO_EMBED_HASH,
+      soloData: {
+        id: "solo-prop-1",
+        steps: [{ motionType: "pro" }],
+        startLocation: "n",
+        startOrientation: "in",
+        contentHash: SOLO_CONTENT_HASH,
+        handPath: { id: "hand-path-1", locations: ["n", "e"] },
+        length: 1,
+        bigrams: ["n-e"],
+        impliedGridMode: "diamond",
+        authoredHand: "left",
+      },
+    }) as Record<string, unknown>;
+    delete fallback.encoded;
+    delete fallback.sourceSoloPropId;
+    const batch = writeBatch(db);
+    batch.set(doc(db, "shortcodes/SOL2"), fallback);
+    batch.set(doc(db, `shortcodeHashes/${SOLO_EMBED_HASH}`), {
+      code: "SOL2",
+      createdAt: new Date().toISOString(),
+    });
+
+    await assertSucceeds(batch.commit());
+    const landed = await getDoc(doc(db, "shortcodes/SOL2"));
+    if (!landed.exists() || landed.data().encoded !== undefined) {
+      throw new Error("schema-3 soloData fallback did not land cleanly");
+    }
+  });
+
+  it("denies schema-3 solos that smuggle a word or paired sequenceData", async () => {
+    const db = ownerDb();
+    const wordSmuggling = soloMintDoc({
+      payloadWord: "A",
+    }) as Record<string, unknown>;
+    delete wordSmuggling.encoderHash;
+    await assertFails(setDoc(doc(db, "shortcodes/SOL3"), wordSmuggling));
+    const pairedSmuggling = soloMintDoc({
+      sequenceData: { steps: [{ letter: "A" }] },
+    }) as Record<string, unknown>;
+    delete pairedSmuggling.encoderHash;
+    await assertFails(setDoc(doc(db, "shortcodes/SOL4"), pairedSmuggling));
+  });
+
+  it("denies a schema-3 solo whose embedded identity contradicts its envelope", async () => {
+    const db = ownerDb();
+    const contradictory = soloMintDoc({
+      soloData: {
+        id: "different-prop",
+        steps: [{ motionType: "pro" }],
+        startLocation: "n",
+        startOrientation: "in",
+        contentHash: "x".repeat(22),
+        handPath: { id: "hand-path-1", locations: ["n", "e"] },
+        length: 1,
+        bigrams: ["n-e"],
+        impliedGridMode: "diamond",
+        authoredHand: "right",
+      },
+    }) as Record<string, unknown>;
+    delete contradictory.encoderHash;
+    delete contradictory.encoded;
+
+    await assertFails(setDoc(doc(db, "shortcodes/SOL5"), contradictory));
   });
 
   it("allows the resolution-time claim heal only for a matching code doc", async () => {

@@ -52,3 +52,19 @@ namespace_id = "1004"
   [ratelimits.simple]
   limit = 30
   period = 60
+
+[[ratelimits]]
+name = "RL_CARD_ISSUE"
+namespace_id = "1005"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[[ratelimits]]
+name = "RL_CARD_SCAN"
+namespace_id = "1006"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60

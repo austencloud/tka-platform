@@ -115,6 +115,26 @@ describe("Firebase ID token verification", () => {
       verify(await tokenWith({ authTime: NOW_SECONDS + 60 }))
     ).rejects.toThrow("invalid authentication-time claim");
   });
+
+  it("exposes the signed Firebase provider used to distinguish full accounts", async () => {
+    const verify = createFirebaseIdTokenVerifier(
+      publicKey,
+      () => NOW_MILLISECONDS
+    );
+
+    await expect(
+      verify(
+        await tokenWith({
+          claims: {
+            firebase: { sign_in_provider: "password" },
+          },
+        })
+      )
+    ).resolves.toMatchObject({
+      uid: "admin-user",
+      signInProvider: "password",
+    });
+  });
 });
 
 describe("admin claim authorization", () => {

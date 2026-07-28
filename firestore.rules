@@ -30,6 +30,104 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid;
     }
 
+    function hasEncodedShortcodePayload() {
+      let data = request.resource.data;
+      return data.keys().hasAny(['encoded'])
+        && data.encoded is string
+        && data.encoded.size() > 0;
+    }
+
+    function hasEmbeddedWordShortcodePayload() {
+      let data = request.resource.data;
+      return data.keys().hasAny(['sequenceData'])
+        && data.sequenceData is map
+        && data.sequenceData.keys().hasAny(['steps'])
+        && data.sequenceData.steps is list
+        && data.sequenceData.steps.size() == data.get('payloadStepCount', 0);
+    }
+
+    function hasEmbeddedSoloShortcodePayload() {
+      let data = request.resource.data;
+      return data.keys().hasAny(['soloData'])
+        && data.soloData is map
+        && data.soloData.keys().hasAll([
+          'id',
+          'steps',
+          'startLocation',
+          'startOrientation',
+          'contentHash',
+          'handPath',
+          'length',
+          'bigrams',
+          'impliedGridMode',
+          'authoredHand'
+        ])
+        && (
+          !data.keys().hasAny(['sourceSoloPropId'])
+          || data.soloData.id == data.get('sourceSoloPropId', '')
+        )
+        && data.soloData.contentHash == data.get('payloadContentHash', '')
+        && data.soloData.authoredHand == data.get('authoredHand', '')
+        && data.soloData.steps is list
+        && data.soloData.steps.size() == data.get('payloadStepCount', 0)
+        && data.soloData.length == data.get('payloadStepCount', 0);
+    }
+
+    function isValidWordShortcodeMint() {
+      let data = request.resource.data;
+      return data.get('payloadKind', 'word') == 'word'
+        && data.get('payloadSchemaVersion', 0) == 2
+        && data.get('payloadWord', '') is string
+        && data.get('payloadWord', '').size() > 0
+        && data.get('payloadStepCount', 0) is int
+        && data.get('payloadStepCount', 0) > 0
+        && !data.keys().hasAny([
+          'payloadTitle',
+          'payloadContentHash',
+          'authoredHand',
+          'sourceSoloPropId',
+          'soloData'
+        ])
+        && (hasEncodedShortcodePayload() || hasEmbeddedWordShortcodePayload());
+    }
+
+    function isValidSoloShortcodeMint() {
+      let data = request.resource.data;
+      return data.get('payloadKind', '') == 'solo'
+        && data.get('payloadSchemaVersion', 0) == 3
+        && data.get('payloadTitle', '') is string
+        && data.get('payloadTitle', '').size() > 0
+        && data.get('payloadTitle', '').size() <= 160
+        && data.get('payloadStepCount', 0) is int
+        && data.get('payloadStepCount', 0) > 0
+        && data.get('payloadContentHash', '') is string
+        && data.get('payloadContentHash', '').size() == 22
+        && (
+          data.get('authoredHand', '') == 'left'
+          || data.get('authoredHand', '') == 'right'
+        )
+        && (
+          !data.keys().hasAny(['sourceSoloPropId'])
+          || (
+            data.get('sourceSoloPropId', '') is string
+            && data.get('sourceSoloPropId', '').size() > 0
+          )
+        )
+        && data.get('sequence', '') == data.get('payloadTitle', '')
+        && data.get('sequenceName', '') == data.get('payloadTitle', '')
+        && !data.keys().hasAny(['payloadWord', 'sequenceData'])
+        && (
+          (
+            hasEncodedShortcodePayload()
+            && !data.keys().hasAny(['soloData'])
+          )
+          || (
+            !data.keys().hasAny(['encoded'])
+            && hasEmbeddedSoloShortcodePayload()
+          )
+        );
+    }
+
     // Check if user is an admin (supports both old isAdmin boolean and new role field)
     function isAdmin() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
@@ -914,37 +1012,15 @@ service cloud.firestore {
       // ANYONE can read short codes (QR scanning works without auth)
       allow read: if true;
 
-      // Authenticated users can create short codes.
-      // Durability invariant: every shortcode MUST carry a non-empty `encoded`
-      // blob (self-contained payload) OR a non-empty `sequenceData.steps` array
-      // (embedded inline). Without one of those, the doc is a zombie waiting
-      // to happen — see docs/superpowers/specs/2026-04-18-shortcode-durability-roadmap.md.
-      //
-      // PHASE 4 STRICT MINT (parity-repair spec, 2026-07-27): the label must
-      // be payload-derived at mint — schema-2 fields are required, so a
-      // stale cached client minting label-less or title-labeled codes is
-      // denied instead of creating the drift class the label repair just
-      // cleaned. A mint that carries an encoderHash must also write its
-      // shortcodeHashes claim in the same transaction (allocateCode's shape);
-      // hash-less mints (encode failure fallback) carry no claim.
+      // Strict immutable mint contract:
+      //   - schema 2 is a payload-derived two-hand word;
+      //   - schema 3 is titled solo choreography with no invented word.
+      // Each branch requires its own durable payload shape. A mint carrying an
+      // encoderHash must write its shortcodeHashes claim in the same
+      // transaction (allocateCode's shape); hash-less schema-2 fallback mints
+      // carry no claim.
       allow create: if isFullUser()
-        && (
-          (
-            request.resource.data.keys().hasAny(['encoded'])
-            && request.resource.data.encoded is string
-            && request.resource.data.encoded.size() > 0
-          )
-          || (
-            request.resource.data.keys().hasAny(['sequenceData'])
-            && request.resource.data.sequenceData.keys().hasAny(['steps'])
-            && request.resource.data.sequenceData.steps.size() > 0
-          )
-        )
-        && request.resource.data.get('payloadSchemaVersion', 0) == 2
-        && request.resource.data.get('payloadWord', '') is string
-        && request.resource.data.get('payloadWord', '').size() > 0
-        && request.resource.data.get('payloadStepCount', 0) is int
-        && request.resource.data.get('payloadStepCount', 0) > 0
+        && (isValidWordShortcodeMint() || isValidSoloShortcodeMint())
         && (
           !request.resource.data.keys().hasAny(['encoderHash'])
           || (
@@ -954,10 +1030,9 @@ service cloud.firestore {
           )
         );
 
-      // Anyone can increment scan count (fire-and-forget analytics).
-      // Allowed keys on update: scanCount, lastScannedAt, and dailyScans
-      // (the per-day sparkline rollup map — see incrementScanCount).
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount', 'lastScannedAt', 'dailyScans']);
+      // Scan counters are updated only by the server-owned ingestion endpoint.
+      // Client-side increments made this field trivially inflatable.
+      allow update: if isAdmin();
 
       // No deletion - short codes are permanent
       allow delete: if isAdmin();
@@ -965,19 +1040,33 @@ service cloud.firestore {
       // Scan event log — scoped creation under shortcodes only.
       // The collectionGroup read rule above covers admin live-feed queries.
       match /scanEvents/{eventId} {
-        allow create: if true;
+        // Service-account writes bypass rules; browsers cannot manufacture
+        // events or spoof geo/device attribution.
+        allow create: if false;
         allow read: if isAdmin();
         allow update, delete: if false;
       }
 
-      // Public journey projection — PII-free (coords/time/printId only).
-      // Readable by anyone so the scanner-facing card-journey reveal works
-      // without auth; scanEvents above stays admin-only for the full record.
+      // Historical journey projections are retained as private source data.
+      // Public maps are derived only after a card has enough meaningful history.
       match /journeyPoints/{pointId} {
-        allow create: if true;
-        allow read: if true;
+        allow create: if false;
+        allow read: if isAdmin();
         allow update, delete: if false;
       }
+    }
+
+    // Server-issued physical artwork inventory. These collections contain
+    // provenance, recipient placeholders, and scan counters; they are not a
+    // browser-writable or public collector surface.
+    match /cardPrintRuns/{runId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /physicalCards/{physicalCardId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     // Content-addressed shortcode index: one code per encoderHash.

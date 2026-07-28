@@ -28,6 +28,7 @@ export interface VerifiedFirebaseIdToken {
   admin?: boolean;
   isAdmin?: boolean;
   role?: string;
+  signInProvider?: string;
 }
 
 type FirebaseVerificationKey = CryptoKey | JWK | JWTVerifyGetKey;
@@ -90,6 +91,17 @@ export function createFirebaseIdTokenVerifier(
       throw new Error("Firebase ID token has expired.");
     }
 
+    const firebaseClaims =
+      payload.firebase &&
+      typeof payload.firebase === "object" &&
+      !Array.isArray(payload.firebase)
+        ? (payload.firebase as Record<string, unknown>)
+        : null;
+    const signInProvider =
+      typeof firebaseClaims?.sign_in_provider === "string"
+        ? firebaseClaims.sign_in_provider
+        : undefined;
+
     return {
       uid: payload.sub,
       email: typeof payload.email === "string" ? payload.email : undefined,
@@ -98,6 +110,7 @@ export function createFirebaseIdTokenVerifier(
       admin: payload.admin === true ? true : undefined,
       isAdmin: payload.isAdmin === true ? true : undefined,
       role: typeof payload.role === "string" ? payload.role : undefined,
+      ...(signInProvider ? { signInProvider } : {}),
     };
   };
 }

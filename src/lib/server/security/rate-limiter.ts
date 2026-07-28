@@ -174,6 +174,18 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000, // 1 minute
     binding: "RL_ADMIN",
   },
+  /** Serialized card issuance: expensive Firestore fan-out, per signed-in user. */
+  CARD_ISSUE: {
+    maxRequests: 10,
+    windowMs: 60 * 1000,
+    binding: "RL_CARD_ISSUE",
+  },
+  /** Physical scan ingestion: keyed to the browser's stable device identity. */
+  CARD_SCAN: {
+    maxRequests: 20,
+    windowMs: 60 * 1000,
+    binding: "RL_CARD_SCAN",
+  },
   /** Agent feedback ingest: 20 requests per 15 minutes */
   FEEDBACK_INGEST: {
     maxRequests: 20,

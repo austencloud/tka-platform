@@ -27,8 +27,8 @@ import {
  *
  * @param event - SvelteKit request event
  * @param config - Rate limit preset (from RATE_LIMITS)
- * @param keyType - 'ip' uses client IP, 'user' requires a uid string
- * @param uid - Required when keyType is 'user'
+ * @param keyType - 'ip' uses client IP; 'user' and 'key' use a supplied identifier
+ * @param keyValue - Required when keyType is 'user' or 'key'
  * @returns null if allowed, 429 Response if blocked
  */
 export function withRateLimit(
@@ -42,17 +42,23 @@ export function withRateLimit(
   keyType: "user",
   uid: string,
 ): Promise<Response | null>;
+export function withRateLimit(
+  event: RequestEvent,
+  config: RateLimitConfig,
+  keyType: "key",
+  key: string,
+): Promise<Response | null>;
 export async function withRateLimit(
   event: RequestEvent,
   config: RateLimitConfig,
-  keyType: "ip" | "user",
-  uid?: string,
+  keyType: "ip" | "user" | "key",
+  keyValue?: string,
 ): Promise<Response | null> {
   const prefix = event.url.pathname;
   const identifier =
-    keyType === "user" && uid
-      ? `${prefix}:user:${uid}`
-      : `${prefix}:ip:${event.getClientAddress()}`;
+    keyType === "ip"
+      ? `${prefix}:ip:${event.getClientAddress()}`
+      : `${prefix}:${keyType}:${keyValue ?? "missing"}`;
 
   // Prefer the native Cloudflare ratelimit binding (cross-isolate) when this
   // preset declares one and it's wired on platform.env at runtime.

@@ -45,6 +45,8 @@ declare global {
         RL_AI_CHAT?: { limit(o: { key: string }): Promise<{ success: boolean }> };
         RL_AI_RENDER?: { limit(o: { key: string }): Promise<{ success: boolean }> };
         RL_ADMIN?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_CARD_ISSUE?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_CARD_SCAN?: { limit(o: { key: string }): Promise<{ success: boolean }> };
       };
     }
   }

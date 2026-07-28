@@ -26,6 +26,7 @@ let testEnv: RulesTestEnvironment;
 
 const ANON_UID = "anon-user-1";
 const FULL_UID = "full-user-1";
+const ADMIN_UID = "admin-user-1";
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
@@ -70,6 +71,11 @@ function anonCtx() {
 }
 function fullCtx() {
   return testEnv.authenticatedContext(FULL_UID, {
+    firebase: { sign_in_provider: "password" },
+  });
+}
+function adminCtx() {
+  return testEnv.authenticatedContext(ADMIN_UID, {
     firebase: { sign_in_provider: "password" },
   });
 }
@@ -212,9 +218,7 @@ describe("full users: community write paths succeed", () => {
     );
     // The pre-phase-4 label-less mint is the drift class the label repair
     // cleaned — denied.
-    await assertFails(
-      setDoc(doc(db, `shortcodes/abc124`), { encoded: "abc" })
-    );
+    await assertFails(setDoc(doc(db, `shortcodes/abc124`), { encoded: "abc" }));
   });
   it("can create a userReport", async () => {
     const db = fullCtx().firestore(SDK_SETTINGS);
@@ -442,7 +446,7 @@ describe("legacy root /sequences and /collections (2026-07-18 hardening)", () =>
   });
 });
 
-describe("journeyPoints: public read + create, no update/delete", () => {
+describe("physical-card instrumentation is private and server-written", () => {
   const SHORTCODE = "ABCD";
   const pointData = {
     printId: "print-abc",
@@ -455,38 +459,55 @@ describe("journeyPoints: public read + create, no update/delete", () => {
 
   beforeEach(async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, "users", ADMIN_UID), {
+        role: "admin",
+      });
       await setDoc(
-        doc(
-          context.firestore(SDK_SETTINGS),
-          "shortcodes",
-          SHORTCODE,
-          "journeyPoints",
-          "point1"
-        ),
+        doc(db, "shortcodes", SHORTCODE, "journeyPoints", "point1"),
         pointData
       );
     });
   });
 
-  it("unauthenticated user can read journeyPoints collection", async () => {
+  it("signed-out scanners cannot read historical journey points", async () => {
     const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
-    await assertSucceeds(
+    await assertFails(
       getDocs(collection(db, "shortcodes", SHORTCODE, "journeyPoints"))
     );
   });
 
-  it("unauthenticated user can create a journeyPoint", async () => {
+  it("browsers cannot create journey points or scan events", async () => {
     const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
-    await assertSucceeds(
+    await assertFails(
       addDoc(
         collection(db, "shortcodes", SHORTCODE, "journeyPoints"),
         pointData
       )
     );
+    await assertFails(
+      addDoc(collection(db, "shortcodes", SHORTCODE, "scanEvents"), {
+        printId: "spoofed",
+        timestamp: new Date(),
+      })
+    );
   });
 
-  it("unauthenticated user cannot update a journeyPoint", async () => {
-    const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+  it("full users cannot bypass server ingestion", async () => {
+    const db = fullCtx().firestore(SDK_SETTINGS);
+    await assertFails(
+      addDoc(collection(db, "shortcodes", SHORTCODE, "scanEvents"), {
+        printId: "spoofed",
+        timestamp: new Date(),
+      })
+    );
+  });
+
+  it("admins can inspect private scan source data but cannot mutate it from a browser", async () => {
+    const db = adminCtx().firestore(SDK_SETTINGS);
+    await assertSucceeds(
+      getDocs(collection(db, "shortcodes", SHORTCODE, "journeyPoints"))
+    );
     await assertFails(
       setDoc(
         doc(db, "shortcodes", SHORTCODE, "journeyPoints", "point1"),
@@ -494,12 +515,31 @@ describe("journeyPoints: public read + create, no update/delete", () => {
         { merge: true }
       )
     );
-  });
-
-  it("unauthenticated user cannot delete a journeyPoint", async () => {
-    const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
     await assertFails(
       deleteDoc(doc(db, "shortcodes", SHORTCODE, "journeyPoints", "point1"))
+    );
+  });
+
+  it("keeps print runs and physical-card inventory admin-readable and browser-write-closed", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, "cardPrintRuns", "run1"), { status: "ready" });
+      await setDoc(doc(db, "physicalCards", "card1"), {
+        printRunId: "run1",
+      });
+    });
+
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+    const full = fullCtx().firestore(SDK_SETTINGS);
+    const admin = adminCtx().firestore(SDK_SETTINGS);
+    await assertFails(getDoc(doc(signedOut, "physicalCards", "card1")));
+    await assertFails(getDoc(doc(full, "cardPrintRuns", "run1")));
+    await assertSucceeds(getDoc(doc(admin, "physicalCards", "card1")));
+    await assertSucceeds(getDoc(doc(admin, "cardPrintRuns", "run1")));
+    await assertFails(
+      setDoc(doc(full, "physicalCards", "fake"), {
+        printRunId: "run1",
+      })
     );
   });
 });
@@ -527,12 +567,16 @@ describe("Instagram custom-auth handshake", () => {
 
   it("lets the initiating session watch its exact state document", async () => {
     await assertSucceeds(
-      getDoc(doc(anonCtx().firestore(SDK_SETTINGS), "instagramOAuthStates", STATE))
+      getDoc(
+        doc(anonCtx().firestore(SDK_SETTINGS), "instagramOAuthStates", STATE)
+      )
     );
   });
 
   it("keeps OAuth state private from other and signed-out clients", async () => {
-    const other = testEnv.authenticatedContext("other-user").firestore(SDK_SETTINGS);
+    const other = testEnv
+      .authenticatedContext("other-user")
+      .firestore(SDK_SETTINGS);
     const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
     await assertFails(getDoc(doc(other, "instagramOAuthStates", STATE)));
     await assertFails(getDoc(doc(signedOut, "instagramOAuthStates", STATE)));
@@ -568,15 +612,18 @@ describe("messaging attachments", () => {
 
   async function seedConversation() {
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(SDK_SETTINGS), `conversations/${CONVERSATION}`), {
-        type: "direct",
-        participants: [SENDER, RECIPIENT],
-        participantInfo: {
-          [SENDER]: { userId: SENDER, displayName: "Sender" },
-          [RECIPIENT]: { userId: RECIPIENT, displayName: "Recipient" },
-        },
-        unreadCount: { [SENDER]: 0, [RECIPIENT]: 0 },
-      });
+      await setDoc(
+        doc(context.firestore(SDK_SETTINGS), `conversations/${CONVERSATION}`),
+        {
+          type: "direct",
+          participants: [SENDER, RECIPIENT],
+          participantInfo: {
+            [SENDER]: { userId: SENDER, displayName: "Sender" },
+            [RECIPIENT]: { userId: RECIPIENT, displayName: "Recipient" },
+          },
+          unreadCount: { [SENDER]: 0, [RECIPIENT]: 0 },
+        }
+      );
     });
   }
 
