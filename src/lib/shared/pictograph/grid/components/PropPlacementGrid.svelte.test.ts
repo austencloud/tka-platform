@@ -30,7 +30,7 @@ describe("PropPlacementGrid", () => {
 
     await expect
       .element(page.getByTestId("placement-prompt"))
-      .toHaveTextContent("Place the blue prop");
+      .toHaveTextContent("Place the left prop");
 
     await page.getByRole("button", { name: "East point" }).click();
     expect(onChange).toHaveBeenLastCalledWith({
@@ -41,9 +41,9 @@ describe("PropPlacementGrid", () => {
     });
     await expect
       .element(page.getByTestId("placement-prompt"))
-      .toHaveTextContent("Place the red prop");
+      .toHaveTextContent("Place the right prop");
 
-    await page.getByRole("button", { name: "East point (blue prop)" }).click();
+    await page.getByRole("button", { name: "East point (left prop)" }).click();
     expect(onPlacementComplete).toHaveBeenCalledWith(
       GridLocation.EAST,
       GridLocation.EAST
@@ -63,7 +63,7 @@ describe("PropPlacementGrid", () => {
       onChange,
     });
 
-    await page.getByRole("button", { name: "Move red" }).click();
+    await page.getByRole("button", { name: "Move right prop" }).click();
     await page.getByRole("button", { name: "North point" }).click();
     expect(onChange).toHaveBeenLastCalledWith({
       blueLocation: GridLocation.EAST,

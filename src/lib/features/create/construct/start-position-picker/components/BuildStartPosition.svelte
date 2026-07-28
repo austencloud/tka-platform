@@ -126,7 +126,11 @@
   <!-- Grouped so a wide, short host can stand them beside the board instead of
        stacking everything into a strip that leaves the board no height. -->
   <div class="builder-controls">
-    <div class="orientation-controls" aria-label="Prop orientations">
+    <div
+      class="orientation-controls"
+      role="group"
+      aria-label="Prop orientations: left is blue, right is red"
+    >
       <OrientationCycler
         orientation={blueOrientation}
         onOrientationChange={onBlueOrientationChange}

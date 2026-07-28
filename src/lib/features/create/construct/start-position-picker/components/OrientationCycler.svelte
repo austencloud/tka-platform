@@ -41,7 +41,12 @@ center label opens an anchored popover with all four orientations.
     ORIENTATIONS.find((o) => o.value === orientation) ?? ORIENTATIONS[0]!
   );
 
-  const colorLabel = $derived(color === "blue" ? "Blue" : color === "red" ? "Red" : "");
+  // Left is the blue prop, right is the red one. The control itself is fully
+  // tinted, so the word lives in the accessible name rather than on screen
+  // (`chip-primitives.md`, Blue/Red prop identity).
+  const colorLabel = $derived(
+    color === "blue" ? "Left" : color === "red" ? "Right" : ""
+  );
 
   let popoverOpen = $state(false);
 

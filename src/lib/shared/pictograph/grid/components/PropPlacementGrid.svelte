@@ -82,8 +82,11 @@
     initialRedLocation = null,
     editAfterCompletion = false,
     disabled = false,
-    blueNoun = "blue prop",
-    redNoun = "red prop",
+    // Left is the blue prop, right is the red one — the naming the rest of the
+    // app already uses (MotionColorChips defaults to Left/Right). The colour
+    // rides along on the label rather than replacing it.
+    blueNoun = "left prop",
+    redNoun = "right prop",
     showUndo = true,
     allowUndoAfterComplete = true,
     showGuideLines = false,
@@ -110,6 +113,9 @@
   // --- Press-and-drag aiming -------------------------------------------------
   let overlayElement = $state<SVGSVGElement | null>(null);
   /** The color currently being dragged, and the point it was pressed on. */
+  /** Which pointer owns the in-flight aim. Plain, not `$state` — nothing renders
+   *  from it, and it must read true the instant a second pointer arrives. */
+  let dragPointerId: number | null = null;
   let dragColor = $state<MotionColor | null>(null);
   let dragLocation = $state<GridLocation | null>(null);
   /** Last orientation the drag pointed at. Holds its value if the finger
@@ -170,24 +176,45 @@
       (allowUndoAfterComplete || !isComplete)
   );
 
-  const promptText = $derived.by(() => {
-    if (disabled) return "";
+  /** The prompt is split so the prop it names can carry that prop's colour.
+   *  Which prop you are placing is the one thing the sentence has to land, and
+   *  the board is already speaking in blue and red (`chip-primitives.md`, prop
+   *  identity). `promptText` stays whole for assistive tech and tests. */
+  const promptParts = $derived.by(() => {
+    const build = (noun: string, color: MotionColor, lead: string) => ({
+      lead,
+      noun,
+      color,
+    });
+    if (disabled) return null;
     if (activeColor === MotionColor.BLUE) {
       if (blueLocation !== null)
-        return `Choose a new location for the ${blueNoun}`;
-      return canAim
-        ? `Press a point and drag to aim the ${blueNoun}`
-        : `Place the ${blueNoun}`;
+        return build(blueNoun, MotionColor.BLUE, "Choose a new location for the");
+      return build(
+        blueNoun,
+        MotionColor.BLUE,
+        canAim ? "Press a point and drag to aim the" : "Place the"
+      );
     }
     if (activeColor === MotionColor.RED) {
       if (redLocation !== null)
-        return `Choose a new location for the ${redNoun}`;
-      return canAim
-        ? `Press a point and drag to aim the ${redNoun}`
-        : `Place the ${redNoun}`;
+        return build(redNoun, MotionColor.RED, "Choose a new location for the");
+      return build(
+        redNoun,
+        MotionColor.RED,
+        canAim ? "Press a point and drag to aim the" : "Place the"
+      );
     }
-    return isComplete ? "Position ready" : "";
+    return null;
   });
+
+  const promptText = $derived(
+    promptParts
+      ? `${promptParts.lead} ${promptParts.noun}`
+      : !disabled && isComplete
+        ? "Position ready"
+        : ""
+  );
 
   const pulseColor = $derived(
     activeColor === MotionColor.RED
@@ -359,26 +386,25 @@
     // click path entirely alone (this is what keeps Learn unchanged).
     if (!canAim) return;
 
+    // One finger owns the aim. A second touch landing mid-drag — a palm, the
+    // other thumb — used to seize the gesture and commit whatever direction the
+    // first finger happened to be pointing when it did.
+    if (dragPointerId !== null) return;
+
     const color = resolvePressColor(location);
     if (color === null) return;
 
     pointerHandledPress = true;
     handlePointSelect(location, color);
 
+    dragPointerId = event.pointerId;
     dragColor = color;
     dragLocation = location;
     dragAim = committedOrientationFor(color);
-
-    // Capture keeps the drag alive when the finger leaves the hit circle. It
-    // throws if the pointer is already gone, which is a no-op for us.
-    try {
-      (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
-    } catch {
-      /* pointer already released */
-    }
   }
 
   function handlePointerMove(event: PointerEvent) {
+    if (event.pointerId !== dragPointerId) return;
     if (dragColor === null || dragLocation === null) return;
 
     const pointer = toSvgPoint(event);
@@ -399,10 +425,13 @@
     pendingOrientation = { color: dragColor, orientation: aimed };
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(event: PointerEvent) {
+    if (event.pointerId !== dragPointerId) return;
+
     const color = dragColor;
     const aimed = dragAim;
 
+    dragPointerId = null;
     dragColor = null;
     dragLocation = null;
     dragAim = null;
@@ -412,6 +441,18 @@
 
     hapticService?.trigger("selection");
     onOrientationChange?.(color, aimed);
+  }
+
+  /** The system took the gesture away mid-aim — a scroll took over, a call came
+   *  in. Drop the aim rather than committing a direction the person never
+   *  finished choosing. The placement itself stands; Undo covers that. */
+  function handleDragCancel(event: PointerEvent) {
+    if (event.pointerId !== dragPointerId) return;
+    dragPointerId = null;
+    dragColor = null;
+    dragLocation = null;
+    dragAim = null;
+    pendingOrientation = null;
   }
 
   function handleEdit(color: MotionColor) {
@@ -532,9 +573,40 @@
   });
 </script>
 
+<!-- The rest of the gesture is watched on the window, not on the hit circle the
+     finger started on. A circle can be re-rendered or stop being pressable in
+     the middle of a drag, and an up event that lands on a node no longer in the
+     document is an up event nobody hears — which used to leave the drag latched
+     open and every later press ignored. The handlers no-op unless the pointer
+     that owns the drag is the one reporting. -->
+<svelte:window
+  onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
+  onpointercancel={handleDragCancel}
+/>
+
 <div class="placement-grid" class:disabled class:complete={isComplete}>
   {#if promptText}
-    <p class="prompt-text" data-testid="placement-prompt">{promptText}</p>
+    <p class="prompt-text" data-testid="placement-prompt">
+      <!-- One wrapper, so the sentence lays out as inline text. Left as bare
+           children of the prompt, the space between the lead and the coloured
+           noun is a whitespace-only anonymous item — which a flex container
+           (what this element becomes on a short host) discards, giving
+           "aim theleft prop". -->
+      <span class="prompt-line">
+        {#if promptParts}
+          {promptParts.lead}
+          <span
+            class="prompt-noun"
+            class:blue={promptParts.color === MotionColor.BLUE}
+            class:red={promptParts.color === MotionColor.RED}
+            >{promptParts.noun}</span
+          >
+        {:else}
+          {promptText}
+        {/if}
+      </span>
+    </p>
   {/if}
 
   <!-- The grid area is its own size container so the square below can be sized
@@ -623,9 +695,6 @@
             class="click-target"
             class:tappable={isPressable(point.location)}
             onpointerdown={(event) => handlePointerDown(event, point.location)}
-            onpointermove={handlePointerMove}
-            onpointerup={handlePointerUp}
-            onpointercancel={handlePointerUp}
             onclick={() => {
               // A pointer press already placed this one; don't place it twice.
               if (pointerHandledPress) {
@@ -729,8 +798,8 @@
         aria-pressed={activeColor === MotionColor.BLUE}
         aria-label={`Move ${blueNoun}`}
       >
-        <span class="label-full" aria-hidden="true">Move blue</span>
-        <span class="label-short" aria-hidden="true">Blue</span>
+        <span class="label-full" aria-hidden="true">Move left</span>
+        <span class="label-short" aria-hidden="true">Left</span>
       </button>
       <button
         class="edit-button red"
@@ -739,8 +808,8 @@
         aria-pressed={activeColor === MotionColor.RED}
         aria-label={`Move ${redNoun}`}
       >
-        <span class="label-full" aria-hidden="true">Move red</span>
-        <span class="label-short" aria-hidden="true">Red</span>
+        <span class="label-full" aria-hidden="true">Move right</span>
+        <span class="label-short" aria-hidden="true">Right</span>
       </button>
     {/if}
 
@@ -920,6 +989,28 @@
     display: none;
   }
 
+  /* The prop's colour is identity, not selection state — "Left" next to "Right"
+     tells you nothing about which prop is which unless the colour is on the
+     control before you touch it. Selecting deepens it rather than introducing
+     it (`chip-primitives.md`, Blue/Red prop identity). */
+  .edit-button.blue {
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue, #3b82f6) 45%,
+      var(--theme-stroke)
+    );
+    color: color-mix(in srgb, var(--prop-blue, #3b82f6) 45%, var(--theme-text));
+  }
+
+  .edit-button.red {
+    border-color: color-mix(
+      in srgb,
+      var(--prop-red, #ef4444) 45%,
+      var(--theme-stroke)
+    );
+    color: color-mix(in srgb, var(--prop-red, #ef4444) 45%, var(--theme-text));
+  }
+
   .edit-button.blue.active {
     border-color: color-mix(
       in srgb,
@@ -927,6 +1018,7 @@
       var(--theme-stroke)
     );
     background: color-mix(in srgb, var(--prop-blue, #3b82f6) 15%, transparent);
+    color: var(--theme-text);
   }
 
   .edit-button.red.active {
@@ -936,6 +1028,27 @@
       var(--theme-stroke)
     );
     background: color-mix(in srgb, var(--prop-red, #ef4444) 15%, transparent);
+    color: var(--theme-text);
+  }
+
+  .prompt-noun {
+    font-weight: 750;
+  }
+
+  /* Lightened toward white rather than mixed with the body colour: mixing
+     toward the text colour lands on a washed periwinkle that reads as LESS
+     emphatic than the words around it, which is backwards for the one word the
+     sentence is about. */
+  /* `--prop-blue` is a deep navy (#2e3192), so it needs lifting to stay legible
+     against a dark board — and lifting toward white rather than toward the body
+     text colour, which lands on a washed periwinkle that reads as LESS emphatic
+     than the words around it. */
+  .prompt-noun.blue {
+    color: color-mix(in srgb, var(--prop-blue, #3b82f6) 48%, white);
+  }
+
+  .prompt-noun.red {
+    color: color-mix(in srgb, var(--prop-red, #ef4444) 62%, white);
   }
 
   .edit-button:focus-visible,
