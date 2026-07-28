@@ -186,8 +186,52 @@ already fit, and its move chips *are* its controls.
 Controls are defined once as snippets and rendered either in the reading column
 or in the tray. Writing them twice is how the two paths would drift.
 
+## It is an app, not a page about one
+
+The route left the marketing chrome (`MARKETING_EXCLUDE` in
+`src/routes/+layout.svelte`) and now owns the viewport. Consequences that had to
+be handled rather than inherited:
+
+- **It runs its own theme pipeline.** `MarketingChrome` was mounting the cosmic
+  `BackgroundHost` and calling `applyThemeForBackground(COSMIC)`. Leaving it
+  took both, and the body's saved-theme gradient showed through — a maroon page
+  under a purple drawing. Same pattern as `GuideShell`.
+- **The cosmos layer sits at `z-index: 0`, not `-1`.** Negative puts it behind
+  the body's own background, which is what made the fix look like no fix.
+- **`.exit` replaces the site header's way out**, going back to `/notation`.
+
+## One chrome, three modes
+
+The mode switch moved from the bottom of the page to the top bar. Entering a
+mode from a button underneath the controls of the mode you were already in was
+backwards, and it meant the guide never reached the docked layout at all.
+
+The guide now uses the same shell as the other two: its eight moves became the
+dock's **Moves** tray instead of a horizontally scrolling chip strip that showed
+four and a half of them at 375px. Each entry carries its spec line, because the
+titles alone ("Extension", "Isolation") are names you have to already know.
+`QftGuidePane` gained `showNotation` so its table can move to the shared Table
+tray rather than render twice.
+
+The bottom chrome is now a single edge-to-edge unit holding the transport and
+the dock tabs, escaping the app's own padding via a negative inline margin so it
+meets both sides of the screen. Its background is opaque with a short fixed
+fade; a percentage fade looked right with the tray shut and left the transport
+floating on bare stage with it open.
+
+**The transport is the app's own `HorizontalTransportRow`** — the same control
+the sequence viewer runs, glyph crossfade included — rather than a second set of
+buttons doing the same job in a different shape. Its half-step chevrons map onto
+QfT cleanly: an increment is a quarter circle, and the midpoint is where the
+direction reading is easiest to check. `step8` grew fractional deltas that
+quantize to their own grid so repeated half-steps stay on .0 / .5.
+
+Note the play button takes `--theme-accent`, so it is purple under this route's
+cosmic theme and green wherever the viewer's background theme is green. It is
+the same component either way.
+
 ## Not in this pass
 
-Click-the-animation to play/pause instead of a Pause button. And the dock is
-phone-only — on desktop the inline pickers still show all twelve flowers at
+Click-the-animation to play/pause instead of the transport button. And the dock
+is phone-only — on desktop the inline pickers still show all twelve flowers at
 once, which is the comparison the wide layout is for.

@@ -50,6 +50,7 @@
   import ControlDock, {
     type ControlDockTab,
   } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
+  import HorizontalTransportRow from "$lib/shared/sequence-viewer/components/HorizontalTransportRow.svelte";
   import QftFrames from "$lib/shared/notation/qft/components/QftFrames.svelte";
   import QftGuidePane from "$lib/shared/notation/qft/components/QftGuidePane.svelte";
   import QftStage from "$lib/shared/notation/qft/components/QftStage.svelte";
@@ -237,10 +238,21 @@
     typeof matchMedia !== "undefined" &&
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /**
+   * Move the cursor by `delta` increments, animated.
+   *
+   * A fractional delta quantizes to its own grid, so repeated half-steps land
+   * on .0 / .5 rather than drifting off wherever playback happened to be
+   * paused. Half-steps are worth having here: an increment is a quarter of a
+   * circle, and the midpoint of one is where the prop's direction reading is
+   * easiest to see against the compass.
+   */
   const step8 = (delta: number) => {
     playing = false;
     velocity = 0;
-    const target = Math.round(scrubbing ? scrubTo : Math.floor(cursor)) + delta;
+    const grid = Number.isInteger(delta) ? 1 : 2;
+    const base = scrubbing ? scrubTo : Math.floor(cursor * grid) / grid;
+    const target = base + delta;
 
     if (reducedMotion()) {
       cursor = target;
@@ -292,6 +304,43 @@
   /* Which dock tray is open, or null for a collapsed bar. */
   let dockTab = $state<string | null>(null);
 
+  /**
+   * The cosmic background and its theme, which this route now owns.
+   *
+   * It used to inherit both from MarketingChrome. Opting out of that to become
+   * a full-screen app took the background with it and left the body's saved
+   * theme showing through — a maroon page under a purple drawing. The theme
+   * pipeline is what sets every `--theme-*` var the stage and the transport
+   * read, so a standalone host has to run it itself (same as GuideShell).
+   */
+  type BackgroundHostComponent =
+    (typeof import("$lib/shared/background/shared/components/BackgroundHost.svelte"))["default"];
+
+  let LiveBackground = $state<BackgroundHostComponent | null>(null);
+
+  $effect(() => {
+    let mounted = true;
+    /* After first paint: the animated canvas is an enhancement, and its
+       renderer graph is large enough to delay the drawing if loaded eagerly. */
+    const frame = requestAnimationFrame(() => {
+      void import(
+        "$lib/shared/background/shared/components/BackgroundHost.svelte"
+      ).then(({ default: BackgroundHost }) => {
+        if (mounted) LiveBackground = BackgroundHost;
+      });
+      void Promise.all([
+        import("$lib/shared/settings/utils/background-theme-calculator"),
+        import("@austencloud/backgrounds"),
+      ]).then(([{ applyThemeForBackground }, { BackgroundType }]) => {
+        if (mounted) applyThemeForBackground(BackgroundType.COSMIC);
+      });
+    });
+    return () => {
+      mounted = false;
+      cancelAnimationFrame(frame);
+    };
+  });
+
   const LAYERS_TAB: ControlDockTab = {
     id: "layers",
     label: "Layers",
@@ -312,6 +361,14 @@
     LAYERS_TAB,
   ];
 
+  /* The guide's controls ARE its eight moves, so they get a tray of their own
+     rather than the horizontally-scrolling strip they were. */
+  const GUIDE_TABS: ControlDockTab[] = [
+    { id: "moves", label: "Moves", icon: "fa-list" },
+    { id: "table", label: "Table", icon: "fa-table-list" },
+    LAYERS_TAB,
+  ];
+
   /* Guide · Knobs · Matrix. On a docked phone this takes the row the guide's
      move chips vacate, so "which mode" stays visible without costing a row. */
   const APP_MODE_OPTIONS = [
@@ -327,7 +384,11 @@
   }
 
   const dockTabs = $derived(
-    appMode === "matrix" ? CELL_TABS : INSTRUMENT_TABS
+    appMode === "matrix"
+      ? CELL_TABS
+      : appMode === "instrument"
+        ? INSTRUMENT_TABS
+        : GUIDE_TABS
   );
 
   /* Re-selecting the open tab closes it — the toggle every dock consumer owns. */
@@ -612,16 +673,83 @@
   </div>
 {/snippet}
 
+<!--
+  The transport, shared by every mode and both layouts.
+
+  HorizontalTransportRow is the app's own — the same control the sequence
+  viewer runs, down to the play/pause glyph crossfade — rather than a second
+  set of buttons that does the same job in a different shape. Its half-step
+  chevrons map onto QfT cleanly: an increment is a quarter circle, and the
+  midpoint is where the direction reading is easiest to check.
+-->
+{#snippet transportRow()}
+  <div class="transport">
+    <span class="counter">{step + 1} / 8</span>
+    <HorizontalTransportRow
+      isPlaying={playing}
+      onPlaybackToggle={() => (playing = !playing)}
+      onStepHalfBack={() => step8(-0.5)}
+      onStepHalfFwd={() => step8(0.5)}
+      onStepFullBack={() => step8(-1)}
+      onStepFullFwd={() => step8(1)}
+    />
+  </div>
+{/snippet}
+
 {#snippet dockTray()}
   <div class="tray">
     {#if dockTab === "blue"}{@render cellBlue()}
     {:else if dockTab === "red"}{@render cellRed()}
     {:else if dockTab === "timing"}{@render cellTiming()}
     {:else if dockTab === "knobs"}{@render instrumentKnobs()}
+    {:else if dockTab === "moves"}{@render moveList()}
     {:else if dockTab === "table"}
-      {#if appMode === "matrix"}{@render cellTable()}{:else}{@render instrumentTable()}{/if}
+      {#if appMode === "matrix"}
+        {@render cellTable()}
+      {:else if appMode === "instrument"}
+        {@render instrumentTable()}
+      {:else}
+        <div class="notation">
+          <QftTable increments={guideIncrements} activeStep={step} {compact} />
+        </div>
+      {/if}
     {:else if dockTab === "layers"}{@render layerSwitches()}
     {/if}
+  </div>
+{/snippet}
+
+<!--
+  The eight canonical moves. A tray rather than the row they used to be: at
+  375px that row scrolled sideways and showed four and a half of them, which
+  is no way to offer a list of eight.
+-->
+{#snippet moveList()}
+  <div class="move-list">
+    {#each GUIDE_MOVES as m, i (m.id)}
+      <button
+        type="button"
+        class="move"
+        class:active={appMode === "guide" && i === moveIndex}
+        onclick={() => {
+          selectMove(i);
+          dockTab = null;
+        }}
+      >
+        <span class="move-title">{m.title}</span>
+        <span class="move-spec">{m.spec}</span>
+      </button>
+    {/each}
+    <button
+      type="button"
+      class="move archive"
+      onclick={() => {
+        showArchive = true;
+        dockTab = null;
+      }}
+    >
+      <span class="move-title">See the 2011 diagram</span>
+      <span class="move-spec">The published animation for this move</span>
+    </button>
   </div>
 {/snippet}
 
@@ -643,7 +771,15 @@
   </nav>
 {/snippet}
 
-<div class="app" class:docked={phone && appMode !== "guide"}>
+<!-- The CSS cosmos paints immediately; the animated canvas swaps in after. -->
+<div class="cosmos" aria-hidden="true">
+  {#if LiveBackground}
+    {@const Background = LiveBackground}
+    <Background />
+  {/if}
+</div>
+
+<div class="app" class:docked={phone}>
   <!--
     Toggles rather than a SegmentedControl: in instrument mode NO move is
     selected, and a segmented indicator has nowhere to sit in that state
@@ -651,23 +787,37 @@
     because the selected move is a hard selection, not a filter that is merely
     switched on.
   -->
-  {#if phone && appMode !== "guide"}
-    <!--
-      The move chips are the guide's controls and select nothing here, so on a
-      docked phone this row carries the one thing that IS ambiguous at this
-      size: which of the three modes you are in. Exactly one is active, so a
-      segmented control rather than chips (.claude/rules/chip-primitives.md).
-    -->
-    <div class="mode-switch">
-      <SegmentedControl
-        options={APP_MODE_OPTIONS}
-        value={appMode}
-        onchange={goToMode}
-        size="sm"
-        ariaLabel="Mode"
-      />
-    </div>
-  {:else}
+  <!--
+    The app's own top bar, since this route no longer carries the site header.
+
+    One row, three jobs: the way back out, which mode you are in, and the
+    colophon. The mode switch lives HERE rather than in the transport because
+    changing mode is not a transport action — and entering a mode from a button
+    at the bottom of the page, below the controls of the mode you were already
+    in, was the thing that read as backwards.
+  -->
+  <div class="topbar">
+    <a class="exit" href="/notation" aria-label="Leave the QfT app">
+      <i class="fas fa-chevron-left" aria-hidden="true"></i>
+    </a>
+
+    <SegmentedControl
+      options={APP_MODE_OPTIONS}
+      value={appMode}
+      onchange={goToMode}
+      size="sm"
+      ariaLabel="Mode"
+    />
+
+    <button
+      type="button"
+      class="about"
+      onclick={() => (showInfo = true)}
+      aria-label="About QfT">?</button
+    >
+  </div>
+
+  {#if !phone && appMode === "guide"}
     <nav class="chips" aria-label="Moves">
       {#each GUIDE_MOVES as m, i (m.id)}
         <FilterChipBase
@@ -675,7 +825,7 @@
           mode="toggle"
           emphasis="solid"
           size="sm"
-          active={appMode === "guide" && i === moveIndex}
+          active={i === moveIndex}
           onclick={() => selectMove(i)}
         />
       {/each}
@@ -726,6 +876,7 @@
           cursor={pos}
           {compact}
           {layers}
+          showNotation={!phone}
           onShowArchive={() => (showArchive = true)}
         />
       {:else}
@@ -761,100 +912,43 @@
     </Crossfade>
 
     <!--
-      On a phone the controls open from below instead of stacking under the
-      stage. Same shared dock the mandala viewer and the download panel use, so
-      this is the app's existing "open a tray" gesture rather than a new one.
+      One piece of bottom chrome, edge to edge, holding the transport and the
+      dock together.
 
-      Overlay, and inside the stage's own box: the tray floats over the drawing
-      rather than displacing it. In flow it took the height from the surface, so
-      opening Knobs shrank the stage to 123px — exactly while you are dragging a
-      radius slider whose whole purpose is to change the thing you can no longer
-      see. Overlaid, the stage never resizes at all.
+      It is anchored to the bottom of the stage's own box and overlays it, so
+      the drawing never resizes when a tray opens — the failure the previous
+      in-flow version had, where opening Knobs shrank the stage to 123px
+      exactly while you drag a radius slider whose purpose is to change the
+      thing you can then no longer see.
 
-      Guide mode has no dock: it is one figure and one table, it already fits,
-      and its move chips are its controls.
+      Transport above the tabs, because the transport is always live and the
+      tabs are a drawer handle. Every mode gets the same one, including the
+      guide: its eight moves are a tray like everything else now.
     -->
-    {#if phone && appMode !== "guide"}
-      <ControlDock
-        tabs={dockTabs}
-        activeTab={dockTab}
-        onTabSelect={selectDockTab}
-        tray={dockTray}
-        labelMinWidth={0}
-        trayMaxHeight="46vh"
-        overlay
-      />
+    {#if phone}
+      <div class="bottom-chrome">
+        {@render transportRow()}
+        <ControlDock
+          tabs={dockTabs}
+          activeTab={dockTab}
+          onTabSelect={selectDockTab}
+          tray={dockTray}
+          labelMinWidth={0}
+          trayMaxHeight="42vh"
+        />
+      </div>
     {/if}
   </main>
 
   <!--
-    On a phone the controls open from below instead of stacking under the
-    stage. Same shared dock the mandala viewer and the download panel use, so
-    this is the app's existing "open a tray" gesture rather than a new one.
-
-    Guide mode has no dock: it is one figure and one table, it already fits,
-    and its move chips are its controls.
+    Wide screens keep the layer switches and the transport as their own rows
+    under the stage: there is room, and a control you can see is better than
+    one you have to open. The phone gets both inside the dock instead.
   -->
-
-  <!--
-    Above the transport because they change what the stage IS, where the
-    transport only changes where it is in the cycle. On a docked phone they
-    move into the dock instead: as a flat row they overflowed the width and
-    became the horizontally-scrolling strip this layout is trying to be rid of.
-  -->
-  {#if !(phone && appMode !== "guide")}
+  {#if !phone}
     <div class="layers-row">{@render layerSwitches()}</div>
+    {@render transportRow()}
   {/if}
-
-  <div class="transport">
-    <button
-      type="button"
-      onclick={() => step8(-1)}
-      aria-label="Previous increment">‹</button
-    >
-    <span class="counter">{step + 1} / 8</span>
-    <button type="button" onclick={() => step8(1)} aria-label="Next increment"
-      >›</button
-    >
-    <button type="button" class="play" onclick={() => (playing = !playing)}>
-      {playing ? "Pause" : "Play"}
-    </button>
-
-    {#if compact && appMode === "guide"}
-      <!-- Lives under the figure on wider screens; see QftGuidePane. -->
-      <button type="button" onclick={() => (showArchive = true)}
-        >2011 diagram</button
-      >
-    {/if}
-
-    <!--
-      The two modes you are not in, so every mode is one click from here — but
-      not on a docked phone, where the row above is a mode switch and these
-      would be a second, wider way to do the same thing on the one screen that
-      cannot afford it.
-    -->
-    {#if !(phone && appMode !== "guide")}
-      {#if appMode !== "guide"}
-        <button type="button" class="mode" onclick={() => selectMove(moveIndex)}
-          >Back to guide</button
-        >
-      {/if}
-      {#if appMode !== "instrument"}
-        <button type="button" class="mode" onclick={openInstrument}
-          >Turn the knobs</button
-        >
-      {/if}
-      {#if appMode !== "matrix"}
-        <button type="button" class="mode" onclick={() => (appMode = "matrix")}
-          >From the matrix</button
-        >
-      {/if}
-    {/if}
-
-    <button type="button" class="mode info" onclick={() => (showInfo = true)}
-      >About</button
-    >
-  </div>
 </div>
 
 {#if showArchive}
@@ -976,10 +1070,36 @@
    * subtracts it rather than assuming the full screen — otherwise the move
    * chips sit underneath it and the page gains a scrollbar it should not have.
    */
+  /*
+   * Behind everything, and fixed so it never scrolls with a tray. The gradient
+   * is the same cosmos the marketing chrome paints, so leaving that shell does
+   * not change what the app looks like — only what wraps it.
+   */
+  /* z-index 0, not -1: negative would put it behind the BODY's own saved-theme
+     gradient, which is what left a maroon page under a purple drawing. */
+  .cosmos {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(
+        ellipse at 50% 0%,
+        rgb(46 26 84 / 0.55) 0%,
+        transparent 60%
+      ),
+      linear-gradient(180deg, #0b0a1a 0%, #10142e 45%, #0a1024 100%);
+  }
+
   .app {
-    --site-header: 65px;
-    height: calc(100dvh - var(--site-header));
-    margin-top: var(--site-header);
+    /*
+     * The whole viewport. This route opts out of the marketing chrome (see
+     * MARKETING_EXCLUDE in src/routes/+layout.svelte), so there is no site
+     * header to sit under — the app's own top bar carries the way back out.
+     */
+    --app-pad: clamp(0.75rem, 2vw, 2rem);
+    height: 100dvh;
+    position: relative;
+    z-index: 1;
     display: grid;
     /*
      * Named, not positional. Two of these children come and go — the chips row
@@ -988,18 +1108,145 @@
      * inherited `auto`, collapsed to nothing against Crossfade's absolutely
      * positioned layers, and the dock inherited the `1fr` meant for the stage.
      */
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "chips" "surface" "layers" "transport";
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "topbar"
+      "chips"
+      "surface"
+      "layers"
+      "transport";
     gap: clamp(0.5rem, 1.5vh, 1.25rem);
-    padding: clamp(0.5rem, 1.5vh, 1.25rem) clamp(0.75rem, 2vw, 2rem);
+    padding: clamp(0.5rem, 1.5vh, 1.25rem) var(--app-pad);
     overflow: hidden;
   }
 
-  .mode-switch {
-    grid-area: chips;
-    display: flex;
-    justify-content: center;
+  /*
+   * The app's own header. Back / mode / colophon, with the mode switch centred
+   * against the two icon buttons rather than pushed off-centre by them.
+   */
+  .topbar {
+    grid-area: topbar;
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /*
+   * `width: auto` as well as the centring. SegmentedControl sets `width: 100%`
+   * on itself, and a grid item's `justify-self: center` cannot beat an explicit
+   * width — three short labels stretched across 1300px of a 1440 screen, which
+   * is the progress-bar failure `visual-verification-mandatory.md` is about.
+   */
+  .topbar :global(> :nth-child(2)) {
+    justify-self: center;
+    width: auto;
+    max-width: 100%;
     min-width: 0;
+  }
+
+  .exit,
+  .about {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Touch-target floor, per the design system. */
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.2));
+    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.28));
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.75));
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .exit:hover,
+  .about:hover {
+    border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
+    color: var(--semantic-text-primary, #fff);
+  }
+
+  /*
+   * One piece of bottom chrome, edge to edge — the negative inline margin
+   * escapes the app's own padding so it meets both sides of the screen rather
+   * than floating as an island with the page visible either side of it.
+   */
+  .bottom-chrome {
+    position: absolute;
+    left: calc(-1 * var(--app-pad));
+    right: calc(-1 * var(--app-pad));
+    bottom: calc(-1 * var(--app-pad));
+    display: grid;
+    gap: 0.5rem;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /*
+     * Opaque, with only a short fade at the very top. A percentage-based fade
+     * looked right with the tray shut and fell apart with it open: the chrome
+     * grows to half the screen, so 18% of it left the transport sitting on
+     * bare stage with a transparent gap under it, reading as a floating card
+     * rather than as the bottom of the app.
+     */
+    background: linear-gradient(
+      to bottom,
+      transparent 0,
+      rgb(8 10 24 / 0.92) 1.5rem,
+      rgb(8 10 24 / 0.96) 100%
+    );
+  }
+
+  .bottom-chrome .transport {
+    padding-inline: var(--app-pad);
+  }
+
+  /*
+   * The eight moves as a tray list. Two lines each, because the spec line is
+   * what tells them apart — the titles alone ("Extension", "Isolation") are
+   * names you have to already know.
+   */
+  .move-list {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .move {
+    display: grid;
+    gap: 0.1rem;
+    text-align: left;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.16));
+    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.22));
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.72));
+    cursor: pointer;
+  }
+
+  .move.active {
+    border-color: var(--theme-accent, #8b5cf6);
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
+    color: var(--semantic-text-primary, #fff);
+  }
+
+  .move-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .move-spec {
+    font-size: 0.74rem;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .move.archive {
+    margin-top: 0.35rem;
+    border-style: dashed;
   }
 
   .chips {
@@ -1017,13 +1264,25 @@
   }
 
   /*
-   * Room for the collapsed dock bar, so the drawing is never underneath it.
-   * A constant rather than the dock's measured height: measured, the reserve
-   * would grow with the open tray and shrink the stage again, which is the
-   * thing overlaying the dock was meant to stop.
+   * Room for the collapsed bottom chrome — transport plus tab bar — so the
+   * drawing is never underneath it. A constant rather than the dock's measured
+   * height: measured, the reserve would grow with the open tray and shrink the
+   * stage again, which is the thing overlaying the chrome was meant to stop.
    */
   .app.docked .surface {
-    padding-bottom: 4.25rem;
+    padding-bottom: 11.5rem;
+  }
+
+  /*
+   * A pill, because it sits above the chrome's own background and over the
+   * drawing. Tabular so the digits do not jitter as the step advances
+   * (.claude/rules/no-layout-shift.md).
+   */
+  .bottom-chrome .counter {
+    justify-self: center;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.55);
   }
 
   /*
@@ -1035,16 +1294,6 @@
     display: grid;
     gap: 0.75rem;
     padding: 0.25rem 0.1rem 0.5rem;
-  }
-
-  /*
-   * The move chips are the GUIDE's controls — eight named moves, one of them
-   * lit. In the other two modes none is selected, so on a phone the row is a
-   * horizontally-scrolling strip that costs 44px and selects nothing. The
-   * transport already carries the way back to the guide.
-   */
-  .app.docked .chips {
-    display: none;
   }
 
   /*
@@ -1410,8 +1659,13 @@
     gap: 0.4rem;
   }
 
-  .transport {
+  /* Only the wide layout's copy is a grid child; the phone's lives in the
+     bottom chrome, which places it itself. */
+  .app > .transport {
     grid-area: transport;
+  }
+
+  .transport {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1441,11 +1695,6 @@
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.6));
-  }
-
-  .mode {
-    border-color: var(--theme-accent, #8b5cf6) !important;
-    color: var(--theme-accent, #8b5cf6) !important;
   }
 
   .scrim {

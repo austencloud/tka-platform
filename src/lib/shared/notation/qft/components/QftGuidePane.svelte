@@ -20,10 +20,25 @@
     compact: boolean;
     layers: QftLayers;
     onShowArchive: () => void;
+    /**
+     * Whether this pane draws the notation table.
+     *
+     * False on a docked phone, where the table lives in the dock's Table tray
+     * along with every other mode's. Drawing it here as well would put the
+     * same eight rows on screen twice and cost the stage the height.
+     */
+    showNotation?: boolean;
   }
 
-  let { move, increments, cursor, compact, layers, onShowArchive }: Props =
-    $props();
+  let {
+    move,
+    increments,
+    cursor,
+    compact,
+    layers,
+    onShowArchive,
+    showNotation = true,
+  }: Props = $props();
 </script>
 
 <div class="guide">
@@ -69,9 +84,11 @@
     </figure>
   </div>
 
-  <div class="notation">
-    <QftTable {increments} activeStep={Math.floor(cursor) % 8} {compact} />
-  </div>
+  {#if showNotation}
+    <div class="notation">
+      <QftTable {increments} activeStep={Math.floor(cursor) % 8} {compact} />
+    </div>
+  {/if}
 
   {#if move.quote}
     <blockquote>

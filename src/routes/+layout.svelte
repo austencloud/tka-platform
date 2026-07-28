@@ -184,8 +184,14 @@
   // /notation is a subtree: the hub plus the per-prop pages (/notation/staves,
   // /notation/fans, ...) all render the same persistent chrome.
   const MARKETING_SUBTREES = ["/shop", "/notation"];
+  // Carve-outs inside those subtrees. The QfT app is an instrument, not a page
+  // about one: it wants the whole viewport, owns its own bottom chrome, and
+  // carries its own way back out to /notation. The persistent site header on
+  // top of that reads as a page wrapped around an app.
+  const MARKETING_EXCLUDE = new Set(["/notation/qft"]);
   const isMarketing = $derived.by(() => {
     const p = page.url.pathname;
+    if (MARKETING_EXCLUDE.has(p)) return false;
     if (MARKETING_EXACT.has(p)) return true;
     return MARKETING_SUBTREES.some(
       (root) => p === root || p.startsWith(root + "/")
