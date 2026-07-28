@@ -20,6 +20,7 @@
   } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   let { sequence, active = true }: { sequence: SequenceData; active?: boolean } = $props();
 
@@ -106,8 +107,8 @@
         showGrid={false}
         visiblePlanes={new Set([Plane.WALL])}
         gridMode={((sequence?.gridMode ?? "diamond") as GridMode)}
-        bluePropType={PropType.STAFF}
-        redPropType={PropType.STAFF}
+        bluePropType={toScenePropType(PropType.STAFF)}
+        redPropType={toScenePropType(PropType.STAFF)}
         {groundOffset}
         enableLocomotion={true}
         enableFootPlanting={true}

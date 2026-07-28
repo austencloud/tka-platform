@@ -17,6 +17,7 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   import { Avatar3D } from "@austencloud/scene-3d";
   import { Prop3D } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   // ── State ────────────────────────────────────────────────────────────
 
@@ -120,13 +121,13 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     >
       {#snippet children()}
         {#if bluePropState && blueVisible}
-          <Prop3D propType={PropType.STAFF}
+          <Prop3D propType={toScenePropType(PropType.STAFF)}
             propState={bluePropState}
             color="blue"
           />
         {/if}
         {#if redPropState && redVisible}
-          <Prop3D propType={PropType.STAFF}
+          <Prop3D propType={toScenePropType(PropType.STAFF)}
             propState={redPropState}
             color="red"
           />

@@ -14,6 +14,7 @@
   import type { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   let { sequence, backgroundType }: { sequence: SequenceData | null; backgroundType: BackgroundType } = $props();
 
@@ -109,8 +110,8 @@
         showGrid={false}
         visiblePlanes={new Set([Plane.WALL])}
         gridMode={((sequence?.gridMode ?? "diamond") as GridMode)}
-        bluePropType={PropType.STAFF}
-        redPropType={PropType.STAFF}
+        bluePropType={toScenePropType(PropType.STAFF)}
+        redPropType={toScenePropType(PropType.STAFF)}
         {groundOffset}
         enableLocomotion={true}
         enableFootPlanting={true}

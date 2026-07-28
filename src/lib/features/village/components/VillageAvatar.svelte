@@ -17,6 +17,7 @@
 	import type { AvatarRenderState } from "../state/village-state.svelte";
 	import type { EffectAffinity } from "../domain/village-types";
 	import type { AvatarId } from "@austencloud/scene-3d";
+	import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
 	interface Props {
 		renderState: AvatarRenderState;
@@ -192,8 +193,8 @@
 		{isMoving}
 		{moveSpeed}
 		{tipEffectMap}
-		bluePropType={propType}
-		redPropType={propType}
+		bluePropType={toScenePropType(propType)}
+		redPropType={toScenePropType(propType)}
 	/>
 
 	<!-- Elder knowledge glow: soft emissive sphere -->

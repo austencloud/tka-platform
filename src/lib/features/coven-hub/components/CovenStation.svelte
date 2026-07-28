@@ -34,6 +34,7 @@
   import { useGltf } from "@threlte/extras";
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   interface Props {
     stationId: string;
@@ -317,8 +318,8 @@
         tipEffectMap={tipEffectMap}
         visiblePlanes={new Set([planeCfg.plane])}
         gridMode={"diamond"}
-        {bluePropType}
-        {redPropType}
+        bluePropType={toScenePropType(bluePropType)}
+        redPropType={toScenePropType(redPropType)}
         groundOffset={museumGroundOffset}
       >
         {#snippet effectsSlot({ bluePropState, redPropState, blueHandPos, redHandPos, isPlaying: rigPlaying, staffHalfLength, effectsParentRef })}
@@ -354,8 +355,8 @@
           showEffects={false}
           bluePropState={propOverride.blue}
           redPropState={propOverride.red}
-          {bluePropType}
-          {redPropType}
+          bluePropType={toScenePropType(bluePropType)}
+          redPropType={toScenePropType(redPropType)}
           groundOffset={museumGroundOffset}
         />
       {/if}

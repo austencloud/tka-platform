@@ -81,6 +81,7 @@
   // Terrain material + game loop services
   import { createTerrainMaterialFactory } from "../services/terrain-material-factory";
   import { tickWorldGameLoop, type GameLoopContext, type GameLoopState } from "../services/world-game-loop";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   // Feature flag for terrain texturing system
   // Set to true to enable PBR terrain textures (grass, rock, dirt, sand)
@@ -1002,7 +1003,7 @@
           position.z={performerState.bluePropState.worldPosition.z}
         >
           <Prop3D
-            propType={PropType.STAFF}
+            propType={toScenePropType(PropType.STAFF)}
             propState={performerState.bluePropState}
             color="blue"
             isActivePlayer={true}
@@ -1016,7 +1017,7 @@
           position.z={performerState.redPropState.worldPosition.z}
         >
           <Prop3D
-            propType={PropType.STAFF}
+            propType={toScenePropType(PropType.STAFF)}
             propState={performerState.redPropState}
             color="red"
             isActivePlayer={true}

@@ -37,6 +37,7 @@
   import type { PropState3D } from "@austencloud/scene-3d";
   import { Plane } from "@austencloud/scene-3d";
   import type { DiamondPosition, HandOrientation, StancePose } from "../domain/types";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   interface Props {
     stance: StancePose;
@@ -181,7 +182,7 @@
           position.z={bluePropState.worldPosition.z}
         >
           <Prop3D
-            propType={PropType.STAFF}
+            propType={toScenePropType(PropType.STAFF)}
             propState={bluePropState}
             color="blue"
           />
@@ -193,7 +194,7 @@
           position.z={redPropState.worldPosition.z}
         >
           <Prop3D
-            propType={PropType.STAFF}
+            propType={toScenePropType(PropType.STAFF)}
             propState={redPropState}
             color="red"
           />

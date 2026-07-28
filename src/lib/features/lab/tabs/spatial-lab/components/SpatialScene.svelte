@@ -9,6 +9,7 @@
   import { Vector3, type Group } from "three";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   interface Props {
     state: SpatialLabState;
@@ -87,7 +88,7 @@
             ]}
           >
             <Prop3D
-              propType={PropType.STAFF}
+              propType={toScenePropType(PropType.STAFF)}
               propState={labState.bluePropState}
               color="blue"
             />
@@ -104,7 +105,7 @@
             ]}
           >
             <Prop3D
-              propType={PropType.STAFF}
+              propType={toScenePropType(PropType.STAFF)}
               propState={labState.redPropState}
               color="red"
             />

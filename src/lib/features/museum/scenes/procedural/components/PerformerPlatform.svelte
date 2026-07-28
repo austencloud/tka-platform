@@ -17,6 +17,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   interface Props {
     slot: ExhibitSlot;
     isPopulated: boolean;
@@ -88,8 +89,8 @@
         avatarState={performerState}
         showGrid={false}
         visiblePlanes={new Set([Plane.WALL])}
-        bluePropType={PropType.STAFF}
-        redPropType={PropType.STAFF}
+        bluePropType={toScenePropType(PropType.STAFF)}
+        redPropType={toScenePropType(PropType.STAFF)}
         {groundOffset}
       />
     {:else if isPopulated && isActive}

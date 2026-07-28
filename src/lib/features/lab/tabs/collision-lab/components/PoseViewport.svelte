@@ -54,6 +54,7 @@
   import { getCollisionLabContext } from "../context/collision-lab-context";
   import { createSceneFeatureState } from "$lib/shared/3d/scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   const labCtx = getCollisionLabContext();
   const sceneFeatureState = createSceneFeatureState({ audience: true });
@@ -264,7 +265,7 @@
             position.y={bluePropState.worldPosition.y}
             position.z={bluePropState.worldPosition.z}
           >
-            <Prop3D propType={PropType.STAFF} propState={bluePropState} color="blue" />
+            <Prop3D propType={toScenePropType(PropType.STAFF)} propState={bluePropState} color="blue" />
           </T.Group>
         {/if}
         {#if redPropState}
@@ -274,7 +275,7 @@
             position.y={redPropState.worldPosition.y}
             position.z={redPropState.worldPosition.z}
           >
-            <Prop3D propType={PropType.STAFF} propState={redPropState} color="red" />
+            <Prop3D propType={toScenePropType(PropType.STAFF)} propState={redPropState} color="red" />
           </T.Group>
         {/if}
       </T.Group>

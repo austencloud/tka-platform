@@ -23,6 +23,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { GridMode } from "@austencloud/scene-3d";
   import { MUSEUM_EXHIBIT_SEQUENCES, type MuseumSequenceData } from "../../data/museum-exhibit-sequences";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   interface Props {
     stationId: string;
@@ -172,8 +173,8 @@
       {showGrid}
       visiblePlanes={new Set([Plane.WALL])}
       gridMode={(resolvedSequence?.gridMode ?? "diamond") as GridMode}
-      {bluePropType}
-      {redPropType}
+      bluePropType={toScenePropType(bluePropType)}
+      redPropType={toScenePropType(redPropType)}
       groundOffset={museumGroundOffset}
       enableLocomotion={true}
       enableFootPlanting={true}

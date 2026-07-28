@@ -28,6 +28,7 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
   import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -435,8 +436,8 @@
           avatarId={performer.avatarModelId}
           visiblePlanes={explicitPlanes}
           gridMode={performerGridMode}
-          bluePropType={resolvePerformerProp(performer, bluePropType)}
-          redPropType={resolvePerformerProp(performer, redPropType)}
+          bluePropType={toScenePropType(resolvePerformerProp(performer, bluePropType))}
+          redPropType={toScenePropType(resolvePerformerProp(performer, redPropType))}
           bluePropState={performer.bluePropState}
           redPropState={performer.redPropState}
           tipEffectMap={perfTipMap}
