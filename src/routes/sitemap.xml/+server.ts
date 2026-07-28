@@ -64,7 +64,8 @@ const pages: SitemapEntry[] = [
   // Per-letter notation pages with baked pictographs (2026-07-14-image-seo-google-images-design.md)
   { url: "notation/letters" },
   { url: "glossary" },
-  { url: "learn/staff-spinning-choreography" },
+  // The staff choreography article is deliberately absent while it awaits
+  // human review (2026-07-27). Its production route carries noindex.
   // /roots redirects (301) to /notation and is intentionally omitted here, same
   // convention as /landing above — a redirected URL doesn't self-list.
   { url: "roots/software" },
