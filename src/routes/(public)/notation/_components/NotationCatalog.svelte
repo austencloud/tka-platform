@@ -101,7 +101,9 @@
 </script>
 
 <div class="editorial">
-  <header class="editorial-header">
+  <!-- Receives the launchpad tile's morph, the same way every other front-door
+       destination does. Dropping it silently downgrades the tile to a cut. -->
+  <header class="editorial-header" style:view-transition-name="launchpad-notation">
     <h1 class="page-title">Writing flow arts down</h1>
     <p class="page-subtitle">
       People have been trying to notate this since 2009. Here is who, and where

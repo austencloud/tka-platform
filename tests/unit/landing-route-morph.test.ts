@@ -17,14 +17,21 @@ import {
 const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
-const routeSourceByPath: Record<string, string> = {
-  "/composer": "src/routes/(public)/composer/+page.svelte",
-  "/shop/choreography-cards":
+// A destination may host its morph participant in a local component rather than
+// in +page.svelte — /notation puts its header inside NotationCatalog. Each entry
+// therefore lists every file the participant is allowed to live in.
+const routeSourceByPath: Record<string, string[]> = {
+  "/composer": ["src/routes/(public)/composer/+page.svelte"],
+  "/shop/choreography-cards": [
     "src/routes/(public)/shop/choreography-cards/+page.svelte",
-  "/guide": "src/routes/(public)/guide/+page.svelte",
-  "/notation": "src/routes/(public)/notation/+page.svelte",
-  "/faq": "src/routes/(public)/faq/+page.svelte",
-  "/glossary": "src/routes/(public)/glossary/+page.svelte",
+  ],
+  "/guide": ["src/routes/(public)/guide/+page.svelte"],
+  "/notation": [
+    "src/routes/(public)/notation/+page.svelte",
+    "src/routes/(public)/notation/_components/NotationCatalog.svelte",
+  ],
+  "/faq": ["src/routes/(public)/faq/+page.svelte"],
+  "/glossary": ["src/routes/(public)/glossary/+page.svelte"],
 };
 
 const location = (pathname: string, routeId = pathname) => ({
@@ -127,13 +134,16 @@ describe("landing shared-element contract", () => {
       expect(morphName).toBeTruthy();
       if (!morphName) continue;
 
-      const routePath = routeSourceByPath[tile.href];
-      expect(routePath).toBeTruthy();
-      if (!routePath) continue;
-      const routeSource = readSource(routePath);
-      expect(routeSource).toContain(
-        `style:view-transition-name="${morphName}"`
+      const routePaths = routeSourceByPath[tile.href];
+      expect(routePaths).toBeTruthy();
+      if (!routePaths) continue;
+      const hostsParticipant = routePaths.some((path) =>
+        readSource(path).includes(`style:view-transition-name="${morphName}"`)
       );
+      expect(
+        hostsParticipant,
+        `${tile.href} has no element named ${morphName}, so its tile morph degrades to a cut`
+      ).toBe(true);
     }
   });
 
@@ -285,9 +295,10 @@ describe("landing shared-element contract", () => {
       'import { loadActiveProducts } from "../services/product-loader"'
     );
     expect(anatomy).toContain('await import("../services/product-loader")');
-    expect(notation).toContain(
-      'import("$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte")'
-    );
+    // /notation used to lazy-load a shape-matrix teaser to keep it out of the
+    // morph window. The 2026-07-27 rebuild dropped that component entirely, so
+    // there is no heavy media left on the page to defer.
+    expect(notation).not.toContain("ShapeMatrixTeaser");
   });
 
   it("keeps the Choreo Card preview truthful through catalog loading and failure", () => {
@@ -349,8 +360,11 @@ describe("landing shared-element contract", () => {
     const notation = readSource("src/routes/(public)/notation/+page.svelte");
     const loops = readSource("src/routes/(public)/notation/loops/+page.svelte");
 
+    // The catalog stopped rendering a loop teaser when /notation was rebuilt as
+    // a text catalog on 2026-07-27. Only the loops page still shows one — but
+    // the corpus must stay out of BOTH chunks, which is the actual guard here.
+    expect(loops).toContain("notation-loop-teaser");
     for (const source of [notation, loops]) {
-      expect(source).toContain("notation-loop-teaser");
       expect(source).not.toContain(
         'from "$lib/shared/loop-explorer/domain/curated-seeds"'
       );
