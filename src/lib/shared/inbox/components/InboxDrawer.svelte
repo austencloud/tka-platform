@@ -242,8 +242,17 @@
     inboxState.cancelSequenceShare();
   }
 
-  function handleSequenceSent(conversationId: string) {
-    inboxState.completeSequenceShare(conversationId);
+  async function handleSequenceSent(conversationId: string) {
+    // Read the id BEFORE completing — completeAttachmentShare clears it.
+    const receiptId = inboxState.shareAttachmentReceiptId;
+    inboxState.completeAttachmentShare(conversationId);
+
+    // Null for an ordinary in-app share; there is no intake record behind it.
+    if (!receiptId) return;
+    const { completeShareIntake } = await import(
+      "$lib/shared/share-intake/services/share-intake-runner"
+    );
+    await completeShareIntake(receiptId);
   }
 
   function handleOpenGroupSettings() {
