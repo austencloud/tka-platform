@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: L
-remaining: "Unimplemented. Plugin API unverified — spike required before build. Only a Play release puts TKA in the Android share sheet for the native app."
+remaining: "Unimplemented. Plugin spiked and verified 2026-07-28 (v8.0.44). Highest-risk unit is the URI->File bridge. Only a Play release puts TKA in the Android share sheet for the native app."
 depends_on: ""
 plan_path: ""
 tags: [android, pwa, messaging, qr, share]
@@ -62,23 +62,52 @@ below; they are listed here so the corrections are not silently absorbed.
 | `accept` must carry MIME types AND extensions | Field-reported compatibility practice, not a W3C requirement. Keep the practice, drop the certainty. |
 | `singleTask` is required | It is not required for `ACTION_SEND`. It is already set, and its real consequence is that a share **reuses the existing task** and can destroy unsaved work. |
 
-## Prerequisites
+## Spike results (2026-07-28) — plugin verified
 
-Two items must land before or alongside this work.
+The plugin spike is **done**. Everything below is read from the published
+package and its actual source, not inferred.
 
-1. **Spike the plugin (blocking).** `@capgo/capacitor-share-target`'s exact
-   export name, event shape, and file representation are **unverified** — the
-   review read them from GitHub, not from an install. The review asserts it
-   exports `CapacitorShareTarget`, emits `texts`, and returns
-   `{ uri, name, mimeType }` descriptors rather than `File` objects, and that
-   its native copy loop has no count/byte/timeout limits and ignores
-   `ClipData`. If true, the native adapter needs its own descriptor→`File`
-   bridge and the plugin choice itself is reopened. **Install it and read the
-   source before writing adapter code.**
-2. **Fix `clients.claim()` (independent).** `static/sw.js:112` calls
-   `self.clients.claim()` *outside* the `event.waitUntil()` block closing at
-   line 111, so activation can finish before clients are claimed. Pre-existing
-   bug, found in passing, worth fixing on its own merits.
+`@capgo/capacitor-share-target` **v8.0.44**, MPL-2.0, peer
+`@capacitor/core >=8.0.0` — compatible with this repo's Capacitor 8.4.2.
+Capawesome's equivalent remains paywalled behind an Insiders sponsorship, and
+Cap-go is already the incumbent vendor here (`@capgo/capacitor-updater`
+^8.45.9), so the choice stands.
+
+**The API is not what the first draft assumed:**
+
+```ts
+export interface CapacitorShareTargetPlugin { /* not "ShareTarget" */ }
+
+export interface ShareReceivedEvent {
+  title: string;
+  texts: string[];        // array, not a single `text`
+  files: SharedFile[];
+}
+
+export interface SharedFile {
+  uri: string;            // NOT a browser File
+  name: string;
+  mimeType: string;
+}
+```
+
+**Confirmed limitations in its Android source** (`CapacitorShareTargetPlugin.java`).
+These are accepted, not fixed — decision 2026-07-28 is to use the plugin as-is
+and compensate in JS where we can:
+
+| Limitation | Consequence | Our response |
+|---|---|---|
+| Copies URIs into `cacheDir/shared_files` with no count, byte, or time limit | A huge or hostile share consumes disk before JS ever sees it | **Cannot be gated from JS.** Accepted risk. |
+| No filename sanitization — `new File(cacheDir, fileName)` verbatim | A name containing `../` writes outside the cache dir | Accepted; would require forking the Java |
+| No collision handling | Same-named files overwrite each other | Bridge renames per `receiptId` on read |
+| No cache cleanup | `shared_files` grows forever | **Ours to do** — sweep on intake completion and at boot |
+| No `ClipData` support (only `EXTRA_STREAM`) | Some Android share sources deliver nothing | Coverage gap — must be checked in device testing |
+| Reads the intent in **both** `load()` and `handleOnNewIntent()` | Cold launch delivers the same share twice | `receiptId` dedup (see Idempotency) — mandatory, not optional |
+
+**One prerequisite remains:** fix `clients.claim()`. `static/sw.js:112` calls
+`self.clients.claim()` *outside* the `event.waitUntil()` block closing at line
+111, so activation can finish before clients are claimed. Pre-existing bug,
+found in passing, worth fixing on its own merits.
 
 ## What already exists (reuse, never hand-roll)
 
@@ -140,14 +169,35 @@ the initial route, always.
 
 ### Native adapter
 
-`@capgo/capacitor-share-target` (MPL-2.0, Capacitor 8) — **pending the spike
-above**. Capawesome's equivalent is gated behind a paid Insiders sponsorship
-and a private npm registry, and the project already ships
-`@capgo/capacitor-updater` ^8.45.9, so Cap-go is the incumbent vendor.
+The adapter's real job is the **URI→File bridge**, which the first draft
+missed entirely. `SharedFile.uri` is a raw filesystem path from
+`getAbsolutePath()` — not a `file://` URI, not fetchable as-is from the
+WebView, and the plugin's README gives no guidance for reading it on native.
 
-The adapter converts whatever the plugin emits into `File` objects and hands
-`shareIntake.receive()` a normalized payload. If the plugin returns URI
-descriptors, that conversion is the adapter's job and must be covered by tests.
+```ts
+CapacitorShareTarget.addListener("shareReceived", async (event) => {
+  const files = await Promise.all(
+    event.files.map(async (f) => {
+      // WebView can't fetch a bare native path; convertFileSrc makes it
+      // reachable over the local bridge scheme.
+      const res = await fetch(Capacitor.convertFileSrc(f.uri));
+      const blob = await res.blob();
+      // Rename per receipt: the plugin overwrites same-named cache files.
+      return new File([blob], f.name, { type: f.mimeType });
+    })
+  );
+  shareIntake.receive({ files, text: event.texts.join("\n"), title: event.title });
+});
+```
+
+`Filesystem.readFile` → base64 → Blob is the fallback if `convertFileSrc`
+proves unreliable across Android versions; the bridge is isolated behind one
+function so swapping the mechanism doesn't touch routing. **This bridge is the
+highest-risk unit in the design and needs its own tests** — it is where a
+descriptor becomes the `File` that every downstream consumer assumes.
+
+After a successful intake the adapter deletes the copies from
+`cacheDir/shared_files`, since the plugin never does.
 
 `AndroidManifest.xml` gains `ACTION_SEND` / `ACTION_SEND_MULTIPLE` filters on
 `MainActivity`, which already has `android:exported="true"`.
@@ -218,8 +268,14 @@ ships:**
 
 The share sheet accepts input from **any app on the device**, and declared MIME
 types are attacker-controlled. Intake bypasses `MessageAttachmentPicker`'s
-checks, so it re-implements them at the boundary — before IndexedDB write,
-before QR decode, before upload:
+checks, so it re-implements them at the boundary.
+
+**Scope limit, stated honestly:** on native the plugin has already copied the
+bytes to `cacheDir/shared_files` before JS is notified, with no size or count
+limit. The gate below therefore runs before **IndexedDB write, QR decode, and
+upload** — it does **not** and cannot prevent the native copy. Disk consumption
+by a hostile or enormous share is an accepted risk of using this plugin
+unmodified (see Spike results). The gate still protects everything downstream:
 
 - File count cap, per-file cap (10 MB, matching `MAX_IMAGE_BYTES`), aggregate cap
 - Magic-byte sniffing — never trust the declared type
@@ -309,9 +365,11 @@ Unit and component tests cover what they can, but the review's sharpest point
 stands: **most of the real failure modes here are lifecycle failures that unit
 tests and manifest inspection cannot see.**
 
-- **Unit:** adapter normalization; `receiptId` stability across a duplicated
-  intent; per-item batch classification; validation-gate rejections; TTL
-  reaping; IndexedDB upgrade and `versionchange`.
+- **Unit:** the **URI→File bridge** (highest-risk unit — a `SharedFile`
+  descriptor must become a `File` with correct bytes, name, and MIME type);
+  adapter normalization; `receiptId` stability across a duplicated intent;
+  per-item batch classification; validation-gate rejections; TTL reaping;
+  IndexedDB upgrade and `versionchange`; cache sweep after intake.
 - **Component** (vitest-browser-svelte, per `component-test-discipline.md`):
   `SendAttachmentSheet` renders both union arms.
 - **Static contract test** (style of `sequence-viewer-shell-contract.test.ts`):
@@ -319,9 +377,12 @@ tests and manifest inspection cannot see.**
   filter both exist and agree on MIME types. This proves declaration only — it
   **cannot** prove OS delivery.
 - **Manual device matrix — required before shipping, not optional:** cold
-  launch, warm launch, background, process death, offline, sign-in return,
+  launch (proves `receiptId` dedup actually suppresses the confirmed double
+  fire), warm launch, background, process death, offline, sign-in return,
   rapid consecutive shares, and an already-open PWA window. Across at least
-  Photos, Chrome, and a messaging app as share sources.
+  Photos, Chrome, and a messaging app as share sources — **specifically to
+  find senders that use `ClipData`**, which the plugin ignores and which will
+  present as "TKA opens but receives nothing."
 
 ## Rollout
 
