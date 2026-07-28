@@ -1,16 +1,17 @@
 ---
-status: active
+status: shipped
 value: 5
 effort: S
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-28
 ---
 # Fable Dispatch — Index
 
 **Date:** 2026-07-03
+**Status:** Dispatch complete. This is a reference map; each linked spec owns its remaining work and queue state.
 **Purpose:** seven self-contained specs prepared for execution by a stronger reasoning model (Fable 5), in two clusters — a **correctness cluster** (4) and **game-changer features** (3). Each is dispatchable independently in a fresh session — no shared conversation context assumed. This index is a map, not a campaign spec.
 
 ## The two root causes that bind the set
@@ -24,10 +25,10 @@ Most of the difficulty across these tasks traces to two design patterns. Fix the
 
 | # | Spec | Autonomy | Risk |
 |---|---|---|---|
-| 1 | [Loop-detection audit fixes](2026-07-03-fable-loop-detection-audit-fixes-design.md) | Full auto | Low — detection logic + tests, no data migration |
-| 2 | [Hand-arc-aware reversal detector](2026-07-03-fable-hand-arc-reversal-detector-design.md) | Full auto (ship-gated on #3) | Low to build; identity-affecting to *enable* |
-| 3 | [Content-hash V2 rollout](../shipped/2026-07-03-fable-content-hash-v2-rollout-execution-design.md) | ~~Checkpoint~~ **DONE** | **Resolved 2026-07-05: rollout had already executed 2026-06-30** (`d814ad76d3`→`4a9b8e872c`), before this spec was staged. Post-execution verification on live corpus green (38/38 tests, 936 docs, 0 would-rewrite, 0 would-fork): see [checkpoint package](2026-07-05-content-hash-v2-checkpoint-package.md). Spec 2's ship-gate is satisfied. |
-| 4 | [StepData→Step + MotionData→Motion remainder](../shipped/2026-07-03-fable-stepdata-motion-migration-remainder-design.md) | ~~Checkpoint~~ **DONE 2026-07-11** | W0 fixed the 8 silent-corruption/dead-gate sites (2026-07-05, `cd2b8ee349`); W1 widening + cast fixes and W2 extras retirement executed 2026-07-09; residual widening slices closed as not-worth-executing (zero behavioral gain). End state = Option C subtypes by design. Record: [checkpoint package](../shipped/2026-07-05-stepdata-migration-checkpoint-package.md) §5-6. |
+| 1 | [Loop-detection audit fixes](../active/2026-07-03-fable-loop-detection-audit-fixes-design.md) | **Code DONE 2026-07-05**; runtime publication remains tracked by the child spec | Detection algebra and regression coverage shipped in `f3f2eab145`. |
+| 2 | [Hand-arc-aware reversal detector](2026-07-03-fable-hand-arc-reversal-detector-design.md) | **DONE 2026-07-05** | Canonical derivation and regression coverage shipped in `6423f92e2b` and `63a3840053`. |
+| 3 | [Content-hash V2 rollout](2026-07-03-fable-content-hash-v2-rollout-execution-design.md) | ~~Checkpoint~~ **DONE** | **Resolved 2026-07-05: rollout had already executed 2026-06-30** (`d814ad76d3`→`4a9b8e872c`), before this spec was staged. Post-execution verification on live corpus green (38/38 tests, 936 docs, 0 would-rewrite, 0 would-fork): see [checkpoint package](../active/2026-07-05-content-hash-v2-checkpoint-package.md). Spec 2's ship-gate is satisfied. |
+| 4 | [StepData→Step + MotionData→Motion remainder](2026-07-03-fable-stepdata-motion-migration-remainder-design.md) | ~~Checkpoint~~ **DONE 2026-07-11** | W0 fixed the 8 silent-corruption/dead-gate sites (2026-07-05, `cd2b8ee349`); W1 widening + cast fixes and W2 extras retirement executed 2026-07-09; residual widening slices closed as not-worth-executing (zero behavioral gain). End state = Option C subtypes by design. Record: [checkpoint package](2026-07-05-stepdata-migration-checkpoint-package.md) §5-6. |
 
 ## Recommended sequence
 
@@ -41,9 +42,9 @@ Chosen from a six-pillar scout of the codebase (real-flow, practice, create, man
 
 | Spec | Kind | Autonomy | Why Fable |
 |---|---|---|---|
-| [Real-flow notation — validate + robust perception core](2026-07-03-fable-real-flow-notation-validation-design.md) | Moonshot / differentiator | Code half ✅ 2026-07-05 (82/82 tests); **real-clip validation PARKED 2026-07-11 per Austen ("pass on 5 for now")** — active prop-tracking-lab session continues separately | Reasoning-limited inference with no ground truth (sign conventions, correspondence aliasing, out-of-plane) |
-| [Practice judgment loop](2026-07-03-fable-practice-judgment-loop-design.md) | Retention pillar | Full auto; **checkpoint** on game-feel | CV judgment + calibration + non-gameable game-feel design |
-| [Mandala signature identity](2026-07-03-fable-mandala-signature-identity-design.md) | Facelift / virality | Aesthetic checkpoint PASSED 2026-07-12 (9-candidate page → Austen picked ink/gilded/abyss); presets + per-preset backgrounds SHIPPED `0e97409bfc` (viewer + MP4 export). **Remainder PARKED per Austen scope-down**: trails, tka.run share links, print/poster, hero surface | Taste-heavy beauty on a rigorous substrate; the shareable-art pillar |
+| [Real-flow notation — validate + robust perception core](../active/2026-07-03-fable-real-flow-notation-validation-design.md) | Moonshot / differentiator | Code half ✅ 2026-07-05 (82/82 tests); **real-clip validation PARKED 2026-07-11 per Austen ("pass on 5 for now")** — active prop-tracking-lab session continues separately | Reasoning-limited inference with no ground truth (sign conventions, correspondence aliasing, out-of-plane) |
+| [Practice judgment loop](../active/2026-07-03-fable-practice-judgment-loop-design.md) | Retention pillar | Full auto; **checkpoint** on game-feel | CV judgment + calibration + non-gameable game-feel design |
+| [Mandala signature identity](../active/2026-07-03-fable-mandala-signature-identity-design.md) | Facelift / virality | Aesthetic checkpoint PASSED 2026-07-12 (9-candidate page → Austen picked ink/gilded/abyss); presets + per-preset backgrounds SHIPPED `0e97409bfc` (viewer + MP4 export). **Remainder PARKED per Austen scope-down**: trails, tka.run share links, print/poster, hero surface | Taste-heavy beauty on a rigorous substrate; the shareable-art pillar |
 
 ### The unifying insight (perception core)
 
