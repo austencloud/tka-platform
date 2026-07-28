@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: M
-remaining: "Phase 2 complete — toggle wired end-to-end (ViewModeToggle → BrowseEngine.viewMode → BrowseGrid → ChoreoCardThumbnail → PropAwareThumbnail → ThumbnailRenderer handPathMode). Remaining: Phase 1 save-side artifact extraction (ArtifactExtractor in LibrarySaveService), Phase 3 solo prop save from Assemble Lab, Phase 4 CompositionBreakdown detail view, Phase 5 hand path builder save integration."
+remaining: "Phases 1-3 and 5 shipped (artifact-extractor.ts, solo prop save from Assemble, browse taxonomy toggle, hand path builder save). Only Phase 4 CompositionBreakdown detail view was never built (no src match as of 2026-07-28)."
 depends_on: ""
 plan_path: plans/backlog/2026-03-19-compositional-data-model.md
 tags: []
-last_triaged: 2026-05-12
+last_triaged: 2026-07-28
 ---
 # Compositional Data Model: Browsing, Saving, and Progressive Disclosure
 

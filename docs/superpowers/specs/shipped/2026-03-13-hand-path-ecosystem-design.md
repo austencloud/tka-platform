@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 4
 effort: L
-remaining: "3 lab tabs: Atlas, Builder, Disassemble view"
+remaining: "Explorer and Builder live under src/lib/features/hand-paths/ (HandPathModule, HandPathExplorerLab, HandPathBuilderLab). Disassemble view was never built."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-07-28
 ---
 # Hand Path Ecosystem — Design Spec
 
