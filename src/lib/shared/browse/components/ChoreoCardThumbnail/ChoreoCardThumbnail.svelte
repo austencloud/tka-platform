@@ -29,6 +29,7 @@ Variation support:
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { untrack } from "svelte";
+  import { claimViewTransitionName } from "$lib/shared/transitions/view-transition-name-registry";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
   import SyncStatusBadge from "./SyncStatusBadge.svelte";
@@ -298,6 +299,26 @@ Variation support:
   const isSelected = $derived(
     selectedIds ? selectedIds.has(displayedSequence.id) : selected,
   );
+
+  // ── Shared-element morph name ──────────────────────────────────────
+  // The same sequence is on screen twice whenever an overlay stacks over a
+  // grid: the variation picker modal, the "add sequences" sheet, the smart
+  // collection builder. Two elements carrying `sequence-<id>` abort the next
+  // view transition with InvalidStateError, so the name is claimed rather than
+  // stamped. The grid card mounts first and keeps the name; the overlay copy
+  // renders without one. See view-transition-name-registry.
+  let morphName = $state<string | undefined>(undefined);
+
+  $effect(() => {
+    const name = `sequence-${displayedSequence.id}`;
+    const release = claimViewTransitionName(name, (granted) => {
+      morphName = granted ? name : undefined;
+    });
+    return () => {
+      release();
+      morphName = undefined;
+    };
+  });
 </script>
 
 <button
@@ -309,11 +330,13 @@ Variation support:
   onpointerenter={handlePointerEnter}
   onpointerleave={handlePointerLeave}
 >
-  <!-- view-transition-name enables Google Photos-style morph animation to /sequence/[id] -->
+  <!-- view-transition-name enables Google Photos-style morph animation to
+       /sequence/[id]. Undefined on any duplicate copy of this sequence that is
+       mounted at the same time (see the morph-name claim above). -->
   <div
     class="thumbnail-container"
     class:crossfade={variationCount > 0}
-    style:view-transition-name="sequence-{displayedSequence.id}"
+    style:view-transition-name={morphName}
   >
     <PropAwareThumbnail
       bind:this={thumbnailRef}
