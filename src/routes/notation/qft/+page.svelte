@@ -1,16 +1,22 @@
 <script lang="ts">
   /**
-   * QfT Notation — one app, two modes.
+   * QfT Notation — one app, three modes.
    *
    * Guide walks the eight canonical moves, each restored animation running
    * beside a model that computes the same move from the published rules.
    * Instrument unlocks the knobs. The step from watching to playing is one
    * click, not one URL.
    *
+   * Matrix is the argument the other two set up: TKA's shape matrix and QfT
+   * describe the same geometry, so any of its cells can be read as a pair of
+   * QfT hands. Pick two flowers and a VTG mode and the stage draws the move in
+   * Charlie's notation, which is the form it was meant to be written in.
+   *
    * No narrator: the only prose is quoted from the source, and every label
    * states a fact rather than an interpretation.
    *
    * Design: docs/superpowers/specs/2026-07-27-qft-archive-app-design.md
+   *         docs/superpowers/specs/2026-07-28-qft-shape-matrix-bridge-design.md
    * Sources: docs/reference/archive/qft-notation/README.md
    */
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -44,9 +50,20 @@
   import QftFrames from "$lib/shared/notation/qft/components/QftFrames.svelte";
   import QftGuidePane from "$lib/shared/notation/qft/components/QftGuidePane.svelte";
   import QftStage from "$lib/shared/notation/qft/components/QftStage.svelte";
+  import QftFlowerPicker from "$lib/shared/notation/qft/components/QftFlowerPicker.svelte";
   import QftTable from "$lib/shared/notation/qft/components/QftTable.svelte";
+  import {
+    buildFlowerAxis,
+    ratioLabel,
+  } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import {
+    MODE_LABEL,
+    MODE_ORDER,
+    type VtgMode,
+  } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+  import { realizationToHands } from "$lib/shared/notation/qft/qft-flower-bridge";
 
-  type AppMode = "guide" | "instrument";
+  type AppMode = "guide" | "instrument" | "matrix";
 
   /*
    * Restored synchronously at init rather than in an effect, so the first paint
@@ -105,11 +122,58 @@
   const instrumentIncrements = $derived(
     pendulum ? buildPendulum() : buildIncrements(knobs, convention)
   );
-  const increments = $derived(
-    appMode === "guide" ? guideIncrements : instrumentIncrements
+  const step = $derived(Math.floor(pos) % 8);
+
+  /*
+   * The matrix mode.
+   *
+   * The twelve flowers of the shape matrix's `large` size preset — diamond
+   * grid, turns 0/1/2, both styles and both orientations — on each axis, which
+   * is where its 144 cells come from. Six VTG modes on top of that makes 864
+   * distinct moves, every one of which lands on the eight-point compass without
+   * rounding. See qft-flower-bridge.ts.
+   */
+  const MATRIX_AXIS = buildFlowerAxis().filter(
+    (f) => f.grid === "diamond" && [0, 1, 2].includes(f.turns)
   );
 
-  const step = $derived(Math.floor(pos) % 8);
+  let blueIndex = $state(restored?.blueIndex ?? 6);
+  let redIndex = $state(restored?.redIndex ?? 7);
+  let vtgMode = $state<VtgMode>(restored?.vtgMode ?? "SS");
+
+  const blueFlower = $derived(MATRIX_AXIS[blueIndex] ?? MATRIX_AXIS[0]!);
+  const redFlower = $derived(MATRIX_AXIS[redIndex] ?? MATRIX_AXIS[0]!);
+
+  const cell = $derived(realizationToHands(blueFlower, redFlower, vtgMode));
+
+  /*
+   * Charlie's convention rather than the instrument's toggle: his rule reads
+   * the tangent of the path the head actually traces, and an out-of-resolution
+   * step is a real fact about a flower that the reader should see. Drex's rule
+   * never returns `n`, which would quietly hide it.
+   */
+  const blueHand = $derived({
+    knobs: cell.blue,
+    increments: buildIncrements(cell.blue, convention),
+    tone: "blue" as const,
+  });
+  const redHand = $derived({
+    knobs: cell.red,
+    increments: buildIncrements(cell.red, convention),
+    tone: "red" as const,
+  });
+  const matrixHands = $derived([blueHand, redHand]);
+
+  /* Short forms carry the row: six full "Split · Same" labels in one control
+     is the kind of thing that stretches into a progress bar at 4K. */
+  const MODE_OPTIONS = MODE_ORDER.map((m) => ({
+    value: m,
+    label: MODE_LABEL[m],
+    shortLabel: m,
+  }));
+
+  const styleWord = (style: "pro" | "anti") =>
+    style === "pro" ? "inspin" : "antispin";
 
   const instrumentName = $derived(
     pendulum
@@ -204,6 +268,9 @@
   const snapshot = (): QftSession => ({
     appMode,
     moveIndex,
+    blueIndex,
+    redIndex,
+    vtgMode,
     radius,
     downbeats,
     spin,
@@ -225,6 +292,9 @@
     void [
       appMode,
       moveIndex,
+      blueIndex,
+      redIndex,
+      vtgMode,
       radius,
       downbeats,
       spin,
@@ -353,8 +423,89 @@
   </nav>
 
   <main class="surface">
-    <Crossfade key={appMode === "guide" ? move.id : "instrument"} fill>
-      {#if appMode === "guide"}
+    <Crossfade key={appMode === "guide" ? move.id : appMode} fill>
+      {#if appMode === "matrix"}
+        <!--
+          A shape-matrix cell, read as QfT.
+
+          Same layout as the instrument — header, stage, controls — because it
+          is the same kind of surface and the 4K composition is already tuned
+          for that shape. What changes is what the knobs are: instead of four
+          free parameters, two flowers off the matrix axis and the VTG mode
+          that relates them.
+        -->
+        <div class="instrument cell">
+          <header>
+            <h2>
+              {ratioLabel(blueFlower.turns)} × {ratioLabel(redFlower.turns)}
+            </h2>
+            <p class="spec">
+              {MODE_LABEL[vtgMode]} · {blueFlower.petals}-petal {styleWord(
+                blueFlower.style
+              )} and {redFlower.petals}-petal {styleWord(redFlower.style)}
+            </p>
+          </header>
+
+          <div class="stage-box">
+            <QftStage hands={matrixHands} cursor={pos} {layers} />
+          </div>
+
+          <div class="knobs">
+            <QftFlowerPicker
+              label="Blue hand"
+              flowers={MATRIX_AXIS}
+              value={blueIndex}
+              onchange={(i) => (blueIndex = i)}
+              tone="blue"
+            />
+            <QftFlowerPicker
+              label="Red hand"
+              flowers={MATRIX_AXIS}
+              value={redIndex}
+              onchange={(i) => (redIndex = i)}
+              tone="red"
+            />
+
+            <div class="knob">
+              <span class="knob-label" id="vtg-label"
+                >Timing and direction</span
+              >
+              <div class="fit">
+                <SegmentedControl
+                  options={MODE_OPTIONS}
+                  value={vtgMode}
+                  onchange={(v) => (vtgMode = v)}
+                  size="sm"
+                  ariaLabelledby="vtg-label"
+                />
+              </div>
+            </div>
+
+            <!--
+              Two tables, because a cell is two hands and QfT reads one hand at
+              a time. Side by side at width, stacked when they stop fitting.
+            -->
+            <div class="notation duet">
+              <div class="hand-table" data-tone="blue">
+                <span class="hand-name">Blue</span>
+                <QftTable
+                  increments={blueHand.increments}
+                  activeStep={step}
+                  {compact}
+                />
+              </div>
+              <div class="hand-table" data-tone="red">
+                <span class="hand-name">Red</span>
+                <QftTable
+                  increments={redHand.increments}
+                  activeStep={step}
+                  {compact}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if appMode === "guide"}
         <QftGuidePane
           {move}
           increments={guideIncrements}
@@ -508,13 +659,20 @@
       >
     {/if}
 
-    {#if appMode === "guide"}
+    <!-- The two modes you are not in, so every mode is one click from here. -->
+    {#if appMode !== "guide"}
+      <button type="button" class="mode" onclick={() => selectMove(moveIndex)}
+        >Back to guide</button
+      >
+    {/if}
+    {#if appMode !== "instrument"}
       <button type="button" class="mode" onclick={openInstrument}
         >Turn the knobs</button
       >
-    {:else}
-      <button type="button" class="mode" onclick={() => selectMove(moveIndex)}
-        >Back to guide</button
+    {/if}
+    {#if appMode !== "matrix"}
+      <button type="button" class="mode" onclick={() => (appMode = "matrix")}
+        >From the matrix</button
       >
     {/if}
 
@@ -800,6 +958,137 @@
 
   .notation {
     width: 100%;
+  }
+
+  /*
+   * A cell's two tables. Side by side once both genuinely fit, stacked before
+   * that — each is seven numeric columns, and two of them squeezed into one
+   * reading column makes both unreadable rather than one.
+   *
+   * A container query, not a media query. The tables care about the width of
+   * the COLUMN they sit in, and that column is `clamp(26rem, 32vw, 46rem)` —
+   * a fraction of the viewport that varies by tier. Keyed to viewport width
+   * this went two-up at 1440, where the column is only 430px, and the tables
+   * came out ~200px each: the RADIUS and ARRIVE headers collided and the last
+   * column was clipped to "Pro".
+   */
+  .notation.duet {
+    display: grid;
+    gap: clamp(0.6rem, 1.6vh, 1.1rem);
+  }
+
+  @container cell-knobs (min-width: 40rem) {
+    .notation.duet {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.8rem, 2vw, 2rem);
+    }
+  }
+
+  /* The measure the duet above is keyed to. */
+  .instrument.cell .knobs {
+    container-type: inline-size;
+    container-name: cell-knobs;
+  }
+
+  .hand-table {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .hand-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--dm-motion-blue, #3575e2);
+  }
+
+  .hand-table[data-tone="red"] .hand-name {
+    color: var(--dm-motion-red, #ed1c24);
+  }
+
+  /*
+   * The cell pane runs its reading column tighter than the instrument's.
+   *
+   * It carries two flower axes, a mode control and TWO eight-row tables where
+   * the instrument carries four controls and one table, and at the instrument's
+   * spacing that column overran the pane — putting the notation, on a page
+   * about notation, below the fold. The stage is untouched: it was never the
+   * thing that did not fit.
+   */
+  @media (min-width: 90rem) and (min-height: 45rem) {
+    .instrument.cell {
+      row-gap: clamp(0.6rem, 1.4vh, 1.25rem);
+      /*
+       * Wider than the guide's and the instrument's column, deliberately.
+       *
+       * Those two carry one table; this carries two, side by side, and at the
+       * shared 32vw/46rem the column could not fit them — so they stacked and
+       * the pane scrolled past a screen and a half. The extra width buys the
+       * side-by-side back, and it also closes most of the dead rail this tier
+       * left at 4K, where 32vw capped at 46rem and the whole app sat as a
+       * band in the middle of the screen.
+       *
+       * The three modes no longer share a column width, so they no longer stay
+       * registered across the crossfade. That is the right trade: a mode that
+       * has twice the notation to show should not be held to the width of one
+       * that does not.
+       */
+      grid-template-columns: auto clamp(26rem, 46vw, 74rem);
+    }
+
+    .instrument.cell .knobs {
+      gap: clamp(0.4rem, 1vh, 0.7rem);
+    }
+
+    .instrument.cell h2 {
+      font-size: clamp(1.8rem, 1rem + 1.9vw, 3.6rem);
+    }
+  }
+
+  /*
+   * Wide and short — fold-open landscape, a squashed laptop window.
+   *
+   * The pane is about 220px tall here. Two flower axes, a mode control and two
+   * eight-row tables do not go into that, and the tables are the part that
+   * stops being readable first: eight rows of seven numbers at this height is
+   * not notation anyone can use. So the cell keeps what this size can actually
+   * serve — the stage and the two choices that drive it — and the tables come
+   * back the moment there is room. Same call the guide makes with its quote at
+   * this tier.
+   *
+   * Revisit when the controls move into a bottom dock: a picker that opens
+   * over the stage would give the notation its height back.
+   */
+  @media (min-width: 44rem) and (max-height: 32rem) {
+    .instrument.cell .notation.duet {
+      display: none;
+    }
+
+    /*
+     * Both axes on one row, using width this tier had spare — the shared
+     * two-column tier left ~380px of the viewport unused while the controls
+     * ran off the bottom of a 220px pane. Trading the horizontal it has for
+     * the vertical it does not.
+     */
+    .instrument.cell {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .instrument.cell .knobs {
+      grid-template-columns: 1fr 1fr;
+      column-gap: clamp(0.75rem, 2vw, 1.5rem);
+    }
+
+    .instrument.cell .knob {
+      grid-column: 1 / -1;
+    }
+
+    /* The petal counts are on the chips; the sentence restating them is not
+       worth a row of a pane this short. */
+    .instrument.cell .spec {
+      display: none;
+    }
   }
 
   /*

@@ -13,12 +13,23 @@
 
 import { normalizeLayers, type QftLayers } from "./qft-layers";
 import type { Convention, Spin } from "./qft-model";
+import {
+	MODE_ORDER,
+	type VtgMode
+} from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 
-const KEY = "qft:session:v1";
+const KEY = "qft:session:v2";
+
+/** Flowers per matrix axis: the shape matrix's `large` preset. */
+const AXIS_LENGTH = 12;
 
 export interface QftSession {
-	appMode: "guide" | "instrument";
+	appMode: "guide" | "instrument" | "matrix";
 	moveIndex: number;
+	/** Index into the twelve-flower matrix axis, per hand. */
+	blueIndex: number;
+	redIndex: number;
+	vtgMode: VtgMode;
 	radius: number;
 	downbeats: number;
 	spin: Spin;
@@ -65,8 +76,14 @@ export function loadQftSession(moveCount: number): QftSession | null {
 	const s = raw as Record<string, unknown>;
 
 	return {
-		appMode: s.appMode === "instrument" ? "instrument" : "guide",
+		appMode:
+			s.appMode === "instrument" || s.appMode === "matrix"
+				? (s.appMode as "instrument" | "matrix")
+				: "guide",
 		moveIndex: Math.floor(num(s.moveIndex, 0, moveCount - 1, 0)),
+		blueIndex: Math.floor(num(s.blueIndex, 0, AXIS_LENGTH - 1, 6)),
+		redIndex: Math.floor(num(s.redIndex, 0, AXIS_LENGTH - 1, 7)),
+		vtgMode: MODE_ORDER.includes(s.vtgMode as VtgMode) ? (s.vtgMode as VtgMode) : "SS",
 		radius: num(s.radius, 0, 1.5, 1),
 		downbeats: Math.floor(num(s.downbeats, 1, 8, 3)),
 		spin: SPINS.includes(s.spin as Spin) ? (s.spin as Spin) : "antispin",
