@@ -1,8 +1,8 @@
 ---
 status: active
 value: 4
-effort: M
-remaining: "Unimplemented. PWA half ships on a normal deploy; native intent filter needs a Play release."
+effort: L
+remaining: "Unimplemented. Plugin API unverified — spike required before build. Only a Play release puts TKA in the Android share sheet for the native app."
 depends_on: ""
 plan_path: ""
 tags: [android, pwa, messaging, qr, share]
@@ -12,15 +12,16 @@ last_triaged: 2026-07-28
 # Share Target Intake — Design
 
 **Date:** 2026-07-28
-**Status:** Approved (design dialogue 2026-07-28)
+**Status:** Approved in shape (design dialogue 2026-07-28), revised after
+adversarial review (Codex, 2026-07-28) — see [Review corrections](#review-corrections).
 **Owner:** Messaging / QR
 
 ## The idea
 
 Austen shares an image from any Android app — Photos, Messages, a browser — and
 **Flow Arts Composer appears in the native share sheet**. Picking it routes the
-image to whichever destination makes sense: if the image carries a TKA QR it
-resolves to the sequence, and otherwise it lands in the inbox with a
+image to whichever destination makes sense: if the image carries a TKA card QR
+it resolves to the sequence, and otherwise it lands in the inbox with a
 conversation picker so it can be sent to someone.
 
 Austen: *"if on my android device it could automatically give share on TKA
@@ -30,93 +31,145 @@ native phone method."*
 ## Direction check: outbound already works
 
 `Sharer.shareViaDevice` (`src/lib/shared/share/services/sharer.ts:148`) already
-calls `navigator.share()` with the rendered PNG as a `File`, so sharing OUT of
-TKA into WhatsApp/Messages is built. This spec is strictly the **inbound**
+calls `navigator.share()` with the rendered PNG as a `File`. Sharing OUT of TKA
+into WhatsApp/Messages is built. This spec is strictly the **inbound**
 direction: TKA as a share *target*.
 
 ## Decisions locked during brainstorming
 
-1. **Auto-detect, no chooser screen.** Run the QR detector first. Found →
+1. **Auto-detect, no chooser screen.** Scan for a TKA card code first. Found →
    sequence actions. Not found → conversation picker. A "what do you want to
-   do?" screen every time was explicitly rejected.
+   do?" screen on every share was explicitly rejected.
 2. **Accepts images, text/links, and multi-image batches.** Video is out of
-   scope — routing clips to skel2tka is a separate design.
+   scope.
 3. **Hold the file, then sign in.** A share can cold-start the app while signed
    out or on the guest tier. The intake persists *before* any auth check and
-   resumes after sign-in. Nothing is lost.
+   resumes after sign-in.
 4. **One intake seam, two adapters.** Native and PWA normalize to the same
-   payload; all routing logic exists once.
-5. **Multi-image with no QR** attaches the first and queues the rest, sending
-   sequentially into the chosen conversation — ordinary messaging-app behavior.
+   payload; routing logic exists once.
+
+## Review corrections
+
+An adversarial review found six errors in the first draft. Each is corrected
+below; they are listed here so the corrections are not silently absorbed.
+
+| First draft said | Reality |
+|---|---|
+| Route QR results through `ShortCodeManager.resolveShortCode` | Wrong contract. The correct existing path is `extractScanCode()` → `resolveForImport()`, which `ScanCardSheet` already uses. The draft would have rejected valid URLs and lost prop overrides. |
+| "Reuse `IMessageImageSender` untouched"; batches queue and send | It takes ONE `File`, uploads immediately, and clears staging in `finally`. Batch send is new orchestration, not a rendering refactor. |
+| "PWA half reaches users immediately" | False twice over: the app leaves new service workers *waiting* for user approval, and the manifest `share_target` is **inert inside the Capacitor app** regardless. |
+| Read-and-delete the IndexedDB record on GET | Contradicts "survives an auth redirect." A reload or a cross-browser magic link loses the only copy. |
+| `accept` must carry MIME types AND extensions | Field-reported compatibility practice, not a W3C requirement. Keep the practice, drop the certainty. |
+| `singleTask` is required | It is not required for `ACTION_SEND`. It is already set, and its real consequence is that a share **reuses the existing task** and can destroy unsaved work. |
+
+## Prerequisites
+
+Two items must land before or alongside this work.
+
+1. **Spike the plugin (blocking).** `@capgo/capacitor-share-target`'s exact
+   export name, event shape, and file representation are **unverified** — the
+   review read them from GitHub, not from an install. The review asserts it
+   exports `CapacitorShareTarget`, emits `texts`, and returns
+   `{ uri, name, mimeType }` descriptors rather than `File` objects, and that
+   its native copy loop has no count/byte/timeout limits and ignores
+   `ClipData`. If true, the native adapter needs its own descriptor→`File`
+   bridge and the plugin choice itself is reopened. **Install it and read the
+   source before writing adapter code.**
+2. **Fix `clients.claim()` (independent).** `static/sw.js:112` calls
+   `self.clients.claim()` *outside* the `event.waitUntil()` block closing at
+   line 111, so activation can finish before clients are claimed. Pre-existing
+   bug, found in passing, worth fixing on its own merits.
 
 ## What already exists (reuse, never hand-roll)
 
 | Need | Existing primitive |
 |---|---|
-| QR decode from a still image | `createTkaQrDetector()` (`src/lib/shared/qr/services/tka-qr-detector.ts:31`) — `detect(frame: ImageData)`, zxing self-hosted at `static/zxing/` |
-| Code → sequence | `ShortCodeManager.resolveShortCode` (`src/lib/shared/qr/services/short-code-manager.ts`) — handles every carrier form |
-| Image message upload | `IMessageImageSender` (`src/lib/shared/messaging/services/contracts/IMessageImageSender.ts`) — Storage upload, progress, cancel |
-| Pending attachment model | `PendingMessageAttachment` (`src/lib/shared/inbox/domain/pending-message-attachment.ts`) — already a `image \| sequence` union |
-| "Pick who gets this" flow | `inboxState.openSequenceShare` (`src/lib/shared/inbox/state/inbox-state.svelte.ts:210`) + `SendSequenceSheet.svelte` |
-| Add to collection | `collectionsState` + `addSequenceToCollection` (per the scan-card-to-collection design) |
-| Service worker | `static/sw.js`, registered at `/sw.js` scope `/` from `src/hooks.client.ts:291` |
-
-Nothing here is greenfield. The only new code is the intake seam and its two
-adapters.
+| QR decode from a still image | `createTkaQrDetector()` (`src/lib/shared/qr/services/tka-qr-detector.ts:31`) — `detect(frame: ImageData)`. Returns **every** QR payload, not just TKA ones. |
+| QR payload → TKA code | `extractScanCode()` (`src/lib/shared/qr/services/extract-scan-code.ts:16`) — handles `tka.run/{code}`, `tka.run/q/{code}`, inline `s~` payloads, bare codes. Returns `null` for anything else. |
+| Code → importable sequence | `ShortCodeManager.resolveForImport(code, userId)` (`short-code-manager.ts:1338`) → `{ sequence, docBacked } \| null` |
+| The whole correct scan flow | `ScanCardSheet.svelte:151` — `seen` dedup set, `docBacked` branch, re-aim retry. **Copy this flow.** |
+| Image message upload | `IMessageImageSender` (`src/lib/shared/messaging/services/contracts/IMessageImageSender.ts`) — single file, Storage upload, progress, cancel |
+| Pending attachment model | `PendingMessageAttachment` (`src/lib/shared/inbox/domain/pending-message-attachment.ts`) — already an `image \| sequence` union |
+| "Pick who gets this" flow | `inboxState.openSequenceShare` (`inbox-state.svelte.ts:210`) + `SendSequenceSheet.svelte` |
+| Input validation limits | `MessageAttachmentPicker.svelte:9` — `MAX_IMAGE_BYTES = 10 * 1024 * 1024`, JPEG/PNG/WebP only |
+| Server-side re-encode | `firebase-functions/src/messaging/messageImageNormalizer.ts` |
 
 ## Architecture
 
 New module `src/lib/shared/share-intake/`, owning a normalized payload:
 
 ```ts
+type ShareIntakeStatus =
+  | "received" | "needs-auth" | "ready"
+  | "partially-sent" | "failed" | "expired";
+
 type SharedIntake = {
-  id: string;
+  /** Stable, derived from the source intent — NOT random. See Idempotency. */
+  receiptId: string;
+  source: "native" | "pwa";
   files: File[];
   text?: string;
+  title?: string;
+  status: ShareIntakeStatus;
   receivedAt: number;
 };
 ```
 
-Two adapters produce it. Everything downstream is platform-blind.
+### Idempotency (fixes cold-launch double delivery)
 
-### Native adapter (Capacitor)
+`BridgeActivity.java:51` calls `this.onNewIntent(getIntent())` immediately
+after `load()`. A plugin that reads the intent in both places delivers the same
+share **twice** on a cold launch. A random intake id would produce two sheets,
+two uploads, or two collection entries.
 
-`@capgo/capacitor-share-target` — MPL-2.0, tracks Capacitor 8, supports arrays
-of files and text.
+`receiptId` is therefore derived from the source content — a hash over the URI
+list, byte sizes, and shared text — not generated fresh. `receive()` is a
+no-op when a record with that `receiptId` already exists in a non-terminal
+state. This is the single most important correctness detail in the design.
 
-**Why this plugin:** Capawesome's `@capawesome/capacitor-share-target` is
-gated behind a paid Insiders sponsorship and a private npm registry. Cap-go's
-is free, and the project already ships `@capgo/capacitor-updater` ^8.45.9 with
-a `capgo:upload` script — same vendor, same major version, no new licensing
-surface.
+### Boot barrier (fixes the routing race)
 
-Registration sits with the existing Capacitor plugin wiring at app boot:
+`native-initializer.ts:81` runs `bootIntoApp()` → `goto("/create")` when there
+is no launch URL. An `ACTION_SEND` has no URL, so today it would take that path
+and race the share listener's own navigation — last `goto()` wins,
+nondeterministically.
 
-```ts
-ShareTarget.addListener("shareReceived", (event) => {
-  shareIntake.receive({ files: event.files, text: event.text?.join("\n") });
-});
-```
+The initializer gains a share-aware state: if a share intake is pending at boot,
+`bootIntoApp()` yields to it rather than navigating to `/create`. One owner of
+the initial route, always.
 
-`AndroidManifest.xml` gains an `ACTION_SEND` / `ACTION_SEND_MULTIPLE` filter on
-`MainActivity`, which already has the `android:exported="true"` and
-`android:launchMode="singleTask"` this requires:
+### Native adapter
 
-```xml
-<intent-filter>
-    <action android:name="android.intent.action.SEND" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <data android:mimeType="image/*" />
-    <data android:mimeType="text/plain" />
-</intent-filter>
-<intent-filter>
-    <action android:name="android.intent.action.SEND_MULTIPLE" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <data android:mimeType="image/*" />
-</intent-filter>
-```
+`@capgo/capacitor-share-target` (MPL-2.0, Capacitor 8) — **pending the spike
+above**. Capawesome's equivalent is gated behind a paid Insiders sponsorship
+and a private npm registry, and the project already ships
+`@capgo/capacitor-updater` ^8.45.9, so Cap-go is the incumbent vendor.
 
-### PWA adapter (manifest + service worker)
+The adapter converts whatever the plugin emits into `File` objects and hands
+`shareIntake.receive()` a normalized payload. If the plugin returns URI
+descriptors, that conversion is the adapter's job and must be covered by tests.
+
+`AndroidManifest.xml` gains `ACTION_SEND` / `ACTION_SEND_MULTIPLE` filters on
+`MainActivity`, which already has `android:exported="true"`.
+
+**On `singleTask`:** already set, and not required for shares. Its real
+consequence is that a share reuses the existing task. Intake therefore opens as
+a **dismissible sheet over the current screen**, never a replacing navigation,
+so unsaved work survives and cancel returns the user where they were.
+
+**Declared MIME types:** narrow the filter to the formats the app can actually
+process (`image/jpeg`, `image/png`, `image/webp`) rather than `image/*`.
+Advertising `image/*` makes TKA appear for HEIC — Android's default camera
+format — which the composer then rejects. Narrowing is preferable to promising
+and failing. If HEIC support is wanted later it needs a real decode step, and
+that is its own scope.
+
+### PWA adapter
+
+**Scope reality:** the manifest `share_target` is **inert inside the Capacitor
+app**. Android builds the share sheet for an installed app from
+`AndroidManifest.xml`. This adapter serves only users who installed the PWA
+from Chrome. It is not a faster path to the same result.
 
 `static/pwa/manifest.webmanifest` gains:
 
@@ -137,108 +190,160 @@ ShareTarget.addListener("shareReceived", (event) => {
 }
 ```
 
-**`accept` must carry both MIME types AND file extensions.** With MIME types
-alone, Chrome on Android shows the PWA in the share sheet but fails to deliver
-the file, and `event.request.formData()` throws `TypeError: Failed to fetch`.
-This is the single most common way this feature ships broken.
-
-**Android puts shared URLs in `text`, not `url`.** A handler that reads only
-`url` receives nothing from Android. Read `text` and parse it for a link.
+Listing extensions alongside MIME types is **compatibility practice**, widely
+reported to matter on Chrome for Android, not a spec requirement. All four
+declared params (`title`, `text`, `url`, `media`) are read — the first draft
+declared `title`/`url` and silently dropped them. Android delivers shared URLs
+in `text`, not `url`, so both are parsed.
 
 The service worker branch goes **above** the `method !== "GET"` early return at
-`static/sw.js:123`, which would otherwise drop the POST:
+`static/sw.js:123`, which would otherwise drop the POST.
 
-```js
-if (event.request.method === "POST" && url.pathname === "/share-target") {
-  event.respondWith((async () => {
-    const formData = await event.request.formData();
-    const id = await persistIntake({
-      files: formData.getAll("media"),
-      text: formData.get("text") ?? undefined,
-    });
-    return Response.redirect(`/share-target?id=${id}`, 303);
-  })());
-  return;
-}
-```
+**Two known lifecycle risks, both requiring device proof before this half
+ships:**
 
-Persistence is **IndexedDB**, which structured-clones `File` directly. It
-survives the 303 redirect, a cold start, and a sign-in redirect. The
-`GET /share-target` route reads the record by id, hands it to the intake
-module, and deletes it.
+- **Version skew.** `sw-update-manager.ts` leaves new workers *waiting* for user
+  approval. Chrome may pick up the new manifest — exposing the share target —
+  while the old worker is still active and returns immediately for non-GET
+  requests. The POST then falls through to the network and fails. Mitigation:
+  gate the manifest change behind the new worker being active, or make
+  `/share-target` survive a server-side POST.
+- **`launch_handler: "focus-existing"`.** The manifest sets it and the app has
+  no `launchQueue.setConsumer()`. Focusing an existing client may not load the
+  target URL, and `LaunchParams` does not carry a POST body — so an
+  already-open PWA could swallow the share. Must be tested on a device, not
+  reasoned about.
+
+## Validation gate (runs before anything else)
+
+The share sheet accepts input from **any app on the device**, and declared MIME
+types are attacker-controlled. Intake bypasses `MessageAttachmentPicker`'s
+checks, so it re-implements them at the boundary — before IndexedDB write,
+before QR decode, before upload:
+
+- File count cap, per-file cap (10 MB, matching `MAX_IMAGE_BYTES`), aggregate cap
+- Magic-byte sniffing — never trust the declared type
+- Pixel-dimension cap and a decode timeout, so a decompression bomb cannot hang the app
+- Filename sanitization (no separators, collision-safe)
+- Text length cap
+- Short-code resolution restricted to the exact origins `extractScanCode` allows
+
+Anything failing the gate is rejected with a named reason and never persisted.
 
 ## Routing
 
-`share-intake` draws each image to a canvas for `ImageData` and runs
-`detect()`:
+For each image passing the gate: draw to a canvas → `detect()` →
+`extractScanCode()` on each payload.
 
-- **One QR resolves** → sequence surface with View / Add to collection / Send
-  to someone. Resolution runs through `ShortCodeManager.resolveShortCode`, so
-  every carrier form it already handles works unchanged.
-- **Batch of QRs** → the continuous-filing path from the scan-card design:
-  each adds to a chosen collection with a running count.
-- **No QR** → `inboxState` conversation picker, image pre-attached; remaining
-  images queue and send sequentially.
-- **Text only** → parse for a `tka.run` / `tkaflowarts.com` short code and
-  resolve it. Anything else becomes prefilled message text.
+- **A TKA code found** → `resolveForImport(code, userId)`. On
+  `{ docBacked: false }` (printed deck cards) save to the library first, exactly
+  as `ScanCardSheet` does, then offer View / Add to collection / Send. On
+  `null`, a retryable read failure.
+- **A QR that is not a TKA code** → `extractScanCode` returns `null`; this is
+  **not** a failure. The image falls through to the image path.
+- **No QR** → conversation picker with the image attached.
+- **Text** → `extractScanCode` on the shared text; a code resolves as above,
+  anything else becomes prefilled message text.
+- **Mixed batch** (some images carry codes, some don't) → classify **per item**,
+  never per batch. Codes file as sequences; the rest go to the image path. The
+  first draft classified whole batches and discarded data.
 
-## The one refactor
+Deduplicate codes within a batch using the `seen`-set pattern from
+`ScanCardSheet`.
 
-`InboxView`'s `"send-sequence"` generalizes to `"send-attachment"`, and
-`shareSequencePayload` becomes a `PendingMessageAttachment`. `SendSequenceSheet`
-becomes `SendAttachmentSheet`, rendering a sequence card or an image preview
-off the union the domain **already models**. `openSequenceShare` stays as a thin
-wrapper so existing call sites don't churn.
+## The refactors (two, not one)
 
-Sending then reuses `IMessageImageSender` untouched.
+1. **Inbox view generalization.** `InboxView`'s `"send-sequence"` becomes
+   `"send-attachment"`; `shareSequencePayload` becomes a
+   `PendingMessageAttachment`. `SendSequenceSheet` → `SendAttachmentSheet`,
+   rendering either union arm. `openSequenceShare` stays as a thin wrapper so
+   existing call sites don't churn. This part is genuinely small.
+2. **Batch send orchestration (new work, previously underestimated).**
+   `IMessageImageSender` handles one file, uploads immediately, and clears
+   staging in `finally` including on failed finalization. Sending N images
+   needs: explicit ordering, per-item progress, cancellation, partial-success
+   reporting, and restart recovery. Multi-image batches send as **separate
+   sequential messages** with a single confirmation before the run — not a
+   silent burst.
 
-## Auth hold-and-resume
+## Durable pending-share record
 
-The intake persists to IndexedDB *before* any auth check. Signed out or guest →
-sign-in prompt; the record survives the redirect, and the flow resumes when
-`authState` reports a real user.
+Replaces the first draft's read-and-delete, which contradicted the
+survive-sign-in requirement.
 
-A **1 hour TTL** reaps abandoned intakes, so a forgotten share doesn't ambush
-the user days later. Reaping runs on intake write.
+- **Store:** IndexedDB, `tka-share-intake`, version 1, object store
+  `intakes`, keyPath `receiptId`, index on `receivedAt`. `versionchange` closes
+  the connection so an upgrading page is never blocked.
+- **Lifecycle:** records are written by the SW or native adapter, transition
+  through `ShareIntakeStatus`, and are deleted only on reaching a terminal
+  state (`ready` and consumed, or explicitly discarded). A page load reads
+  without deleting, so a reload or crash mid-flow recovers.
+- **Auth:** persisted *before* any auth check. Signed out or guest →
+  `needs-auth`; the flow resumes when `authState` reports a real user.
+  `EmailLinkAuth.svelte` hardcodes a `/create` return and its own comments note
+  that finishing in a different browser strands local state — so a
+  cross-browser magic link is a **known unrecoverable case**, surfaced as
+  `expired` rather than promised as working.
+- **Reaping:** 1 hour TTL, swept on write *and* on app boot. Write-only sweeping
+  would leave records forever if no later share arrives.
+- **Honesty:** IndexedDB is best-effort and quota writes can fail. The record
+  makes loss *rare and visible*, not impossible. A failed persist reports at
+  intake rather than silently dropping.
 
 ## Error handling
 
 | Case | Behavior |
 |---|---|
-| Non-JPEG/PNG/WebP (HEIC is likely — Android cameras emit it) | Named failure: "Convert this to JPEG or PNG first." Never a silent drop. |
-| QR detection finds nothing | Not an error. The no-QR branch. |
-| Short code resolves to nothing | Retryable read failure, consistent with the scan-card design. |
-| `formData()` throws | Logged distinctly as the malformed-`accept` symptom, not a generic fetch failure. |
-| Intake arrives while offline | Persists; resolution retries when back online. Sending is already queued by the messaging layer. |
+| Fails the validation gate | Named rejection at the boundary. Never persisted, never uploaded. |
+| Unsupported format (HEIC/AVIF) | Should not reach us — the intent filter is narrowed. If it does, a named "convert to JPEG or PNG" message. |
+| QR present but not a TKA code | Not an error. Falls to the image path. |
+| `resolveForImport` returns null | Retryable read failure, matching `ScanCardSheet`. |
+| Duplicate intent (cold-launch double fire) | Absorbed by `receiptId` dedup. Silent by design. |
+| `formData()` throws | Logged as the suspected malformed-`accept` / skew symptom, distinct from a generic fetch failure. |
+| Offline at intake | Persists as `received`; resolution retries when back online. |
+| Batch partially sent | `partially-sent` with per-item state; user can retry only the failures. |
 
 ## Testing
 
-- **Unit:** adapter normalization to `SharedIntake`; QR-vs-no-QR routing;
-  short-code extraction from shared text; TTL reaping.
-- **Component** (vitest-browser-svelte, per `component-test-discipline.md` —
-  an interactive surface worth locking): `SendAttachmentSheet` renders both
-  union arms.
-- **Static contract test**, in the style of
-  `tests/unit/sequence-viewer-shell-contract.test.ts`: asserts the manifest
-  `accept` array carries both MIME types and extensions, and that the
-  `AndroidManifest.xml` `ACTION_SEND` filter exists. These are the two silent
-  breakages, so they get pinned rather than trusted.
+Unit and component tests cover what they can, but the review's sharpest point
+stands: **most of the real failure modes here are lifecycle failures that unit
+tests and manifest inspection cannot see.**
+
+- **Unit:** adapter normalization; `receiptId` stability across a duplicated
+  intent; per-item batch classification; validation-gate rejections; TTL
+  reaping; IndexedDB upgrade and `versionchange`.
+- **Component** (vitest-browser-svelte, per `component-test-discipline.md`):
+  `SendAttachmentSheet` renders both union arms.
+- **Static contract test** (style of `sequence-viewer-shell-contract.test.ts`):
+  the manifest `accept` array and the `AndroidManifest.xml` `ACTION_SEND`
+  filter both exist and agree on MIME types. This proves declaration only — it
+  **cannot** prove OS delivery.
+- **Manual device matrix — required before shipping, not optional:** cold
+  launch, warm launch, background, process death, offline, sign-in return,
+  rapid consecutive shares, and an already-open PWA window. Across at least
+  Photos, Chrome, and a messaging app as share sources.
 
 ## Rollout
 
-1. **PWA half** — manifest + service worker + `/share-target` route. Ships on a
-   normal Cloudflare deploy. Reaches installed-PWA users immediately.
-2. **Native web layer** — intake module and adapters ride `CapacitorUpdater`
-   OTA.
-3. **Native shell** — `AndroidManifest.xml` intent filter and the plugin's
-   native code require a **full Play Store release**. This is the long pole;
-   nothing else waits on it.
+Corrected. The first draft's ordering was unsafe in both directions: web code
+first means `addListener()` runs against native shells that lack the plugin;
+shell first means Android delivers shares to JS with no handler.
+
+1. **Prerequisites** — plugin spike; `clients.claim()` fix.
+2. **Native, as one Play release** — plugin, `AndroidManifest.xml` filters, and
+   the web consumer ship **together**. The adapter feature-detects plugin
+   availability so OTA web updates never assume a newer shell than is
+   installed. **This is the only step that puts TKA in the share sheet on a
+   Play-build device.**
+3. **PWA half** — after the two lifecycle risks above are proven on a device.
+   Serves Chrome-installed PWA users only.
 
 ## Out of scope
 
-- Video shares → skel2tka. Separate design.
-- iOS share extension. The Capacitor plugin supports iOS, but the iOS app is
-  not a shipping target for this work.
-- Sharing INTO a specific conversation directly from the Android sheet
-  (Android "direct share" shortcuts). Possible follow-up once the base flow
-  proves out.
+- Video → skel2tka. Separate design.
+- iOS share extension.
+- HEIC/AVIF decoding (the intent filter is narrowed instead).
+- Android direct-share shortcuts (share straight into a named conversation).
+- A mixed-content review screen — re-introduces the chooser screen that was
+  explicitly rejected. Revisit only if per-item classification proves confusing
+  in practice.
