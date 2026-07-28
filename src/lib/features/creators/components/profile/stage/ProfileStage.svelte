@@ -70,9 +70,23 @@
     const id = userId;
     if (!id) return;
 
-    scene3dCollectionState.ensureStarted(id);
-    tunnelCollectionState.ensureStarted(id);
-    mandalaCollectionState.ensureStarted(id);
+    // ONLY ever for your own profile. These three are global singletons that
+    // hold the SIGNED-IN user's saved art, and `ensureStarted(uid)` repoints
+    // them at that uid — including where their `add`/`remove`/`rename` write.
+    // Passing a visited creator's id here pointed your own store at a stranger,
+    // and since their art is owner-only by rule (firestore.rules
+    // mandala-/tunnel-/scene-3d-collection: `allow read ... if isOwner`) the
+    // load was rejected, left `collection` holding YOUR entries, and rendered
+    // your 46 saved artifacts on their profile. It also broke your next save,
+    // which would target their namespace and bounce off the rules.
+    //
+    // Another creator's saved art is private and there is nothing to show. The
+    // Collections band is omitted for a visitor rather than faked.
+    if (isOwnProfile) {
+      scene3dCollectionState.ensureStarted(id);
+      tunnelCollectionState.ensureStarted(id);
+      mandalaCollectionState.ensureStarted(id);
+    }
 
     loading = true;
     loadError = null;
@@ -96,9 +110,12 @@
       });
   });
 
-  const scenes = $derived(scene3dCollectionState.collection);
-  const tunnels = $derived(tunnelCollectionState.collection);
-  const mandalas = $derived(mandalaCollectionState.collection);
+  // Guarded at the read too, not just at the load. The singletons stay
+  // populated with YOUR art while you browse someone else's profile, so a bare
+  // read would leak it into their Showcase even with the load skipped above.
+  const scenes = $derived(isOwnProfile ? scene3dCollectionState.collection : []);
+  const tunnels = $derived(isOwnProfile ? tunnelCollectionState.collection : []);
+  const mandalas = $derived(isOwnProfile ? mandalaCollectionState.collection : []);
 
   const sortedSequences = $derived(
     sortSequences(
@@ -442,7 +459,9 @@
       </header>
       {#if showcase.length === 0}
         <p class="band-empty">
-          Nothing saved yet — the showcase fills from your collections.
+          {isOwnProfile
+            ? "Nothing saved yet — the showcase fills from your collections."
+            : "Nothing published yet."}
         </p>
       {:else}
         <div
@@ -466,6 +485,11 @@
       {/if}
     </section>
 
+    <!-- Own profile only. Saved scenes, tunnels and mandalas are owner-only by
+         Firestore rule, so on someone else's profile there is nothing to read —
+         and an empty "Collections 0" band would claim they have saved nothing
+         when the truth is that it is private. Omit it. -->
+    {#if isOwnProfile}
     <section class="band" aria-labelledby="band-collections">
       <header class="band-head">
         <h2 id="band-collections">Collections</h2>
@@ -528,6 +552,7 @@
         {/if}
       {/if}
     </section>
+    {/if}
 
     <section class="band" aria-labelledby="band-archive">
       <header class="band-head">
@@ -539,7 +564,11 @@
       {#if loading}
         <PanelState type="loading" message="Loading your library..." />
       {:else if sequences.length === 0}
-        <p class="band-empty">No sequences saved on this account yet.</p>
+        <p class="band-empty">
+          {isOwnProfile
+            ? "No sequences saved on this account yet."
+            : "No published sequences yet."}
+        </p>
       {:else if shouldUseDoorway("archive", sequences.length)}
         <!-- Always a doorway, never a grid. A band that is browsable at 40 and
              a doorway at 400 teaches two interactions for one thing. -->

@@ -25,6 +25,21 @@ export class CollectionState<T extends CollectionEntry> {
     private readonly localRepo: LocalCollectionRepository<T>,
   ) {}
 
+  /**
+   * Hydrate this store for a user, and point its WRITES at them.
+   *
+   * The uid passed here must always be the signed-in user's. These stores are
+   * module-level singletons standing for "my saved art", and this call
+   * repoints `add`/`remove`/`rename` as well as the read — so handing it
+   * somebody else's uid quietly makes your own saves target their namespace.
+   *
+   * The profile stage did exactly that while rendering a visited creator, and
+   * because these collections are owner-only by Firestore rule the load was
+   * rejected, `collection` kept the previous user's entries, and one person's
+   * saved art rendered on another person's profile. If you want to display a
+   * DIFFERENT user's collection, read it separately — do not route it through
+   * this singleton.
+   */
   async init(userId: string): Promise<void> {
     this.userId = userId;
     this.startedFor = userId;
