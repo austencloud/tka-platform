@@ -1,8 +1,15 @@
-import type { SharedFileDescriptor } from "./share-intake-models";
+import { hashString } from "$lib/shared/foundation/services/content-hasher";
+import type { ReceiptInput } from "./share-intake-models";
 
-interface ReceiptInput {
-  files: SharedFileDescriptor[];
-  texts: string[];
+/**
+ * Length-prefix a field so its content cannot shift a boundary in the hashed
+ * material. `mimeType` and the shared text come from whichever app invoked the
+ * share, so they are untrusted: with plain delimiters, a crafted value lets an
+ * unrelated share forge the receipt id of a pending one and be swallowed as a
+ * duplicate.
+ */
+function field(value: string): string {
+  return `${value.length}:${value}`;
 }
 
 /**
@@ -16,23 +23,36 @@ interface ReceiptInput {
  * Files are sorted so two deliveries that enumerate in a different order still
  * collapse to one id. The uri is deliberately EXCLUDED - the plugin can write
  * the same share to a different cache path on the second delivery.
+ *
+ * Consequence worth knowing: two genuinely different files that agree on
+ * name + mimeType + size hash identically. That is the accepted cost of
+ * excluding the uri without reading bytes, and it is bounded by the store's
+ * one-hour TTL (Task 5).
  */
 export function deriveReceiptId(input: ReceiptInput): string {
   const fileParts = input.files
-    .map((f) => `${f.name}\u0000${f.mimeType}\u0000${f.size ?? 0}`)
+    .map((f) =>
+      [
+        field(f.name),
+        field(f.mimeType),
+        // "-" and "0" must not collapse: if one delivery reports a size and the
+        // other omits it, the ids MUST diverge visibly rather than silently
+        // agreeing on a sentinel that hides the desync.
+        field(f.size === undefined ? "-" : String(f.size)),
+      ].join("")
+    )
     .sort();
-  const material = [...fileParts, "\u0001", ...input.texts].join("\u0002");
 
-  // FNV-1a 32-bit, doubled with a second offset basis for a wider key. No
-  // crypto needed - this is a dedup key, not a security boundary.
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < material.length; i++) {
-    const c = material.charCodeAt(i);
-    h1 = Math.imul(h1 ^ c, 0x01000193);
-    h2 = Math.imul(h2 ^ c, 0x811c9dc5);
-  }
-  const a = (h1 >>> 0).toString(36);
-  const b = (h2 >>> 0).toString(36);
-  return `si_${a}${b}`;
+  // The file count is length-prefixed first, so the files/texts boundary is
+  // positional and cannot be forged by any field value.
+  const material = [
+    field(String(fileParts.length)),
+    ...fileParts,
+    ...input.texts.map(field),
+  ].join("");
+
+  // hashString is the repo's 128-bit FNV-1a, emitting a fixed-width 22-char
+  // base62 digest (content-hasher.ts:156). Fixed width matters: concatenating
+  // two variable-length digests makes its own split point ambiguous.
+  return `si_${hashString(material)}`;
 }
