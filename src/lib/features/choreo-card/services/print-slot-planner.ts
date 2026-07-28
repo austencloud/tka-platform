@@ -10,6 +10,10 @@ import { TND_ELEMENTS, type TnDElement } from "../domain/tnd-element";
 export interface PlannedSlot<T> {
   item: T | null;
   elementName: string | null;
+  /** Zero-based occurrence of this card within the requested copy count.
+   *  Null for blank padding slots. Physical-card serialization uses this to
+   *  bind each printed occurrence to its allocated ID. */
+  copyIndex: number | null;
 }
 
 /** Back-compat alias for the exporter's pair-typed slots. */
@@ -56,11 +60,15 @@ export function planPrintSlots<T>(
     const out: PlannedSlot<T>[] = [];
     for (let i = 0; i < orderedItems.length; i++) {
       for (let c = 0; c < n; c++) {
-        out.push({ item: orderedItems[i]!, elementName: null });
+        out.push({
+          item: orderedItems[i]!,
+          elementName: null,
+          copyIndex: c,
+        });
       }
     }
     while (out.length % cardsPerPage !== 0) {
-      out.push({ item: null, elementName: null });
+      out.push({ item: null, elementName: null, copyIndex: null });
     }
     return out;
   }
@@ -90,10 +98,12 @@ export function planPrintSlots<T>(
 
     const repeated: PlannedSlot<T>[] = [];
     for (const p of bucket) {
-      for (let c = 0; c < n; c++) repeated.push({ item: p, elementName });
+      for (let c = 0; c < n; c++) {
+        repeated.push({ item: p, elementName, copyIndex: c });
+      }
     }
     while (repeated.length % cardsPerPage !== 0) {
-      repeated.push({ item: null, elementName });
+      repeated.push({ item: null, elementName, copyIndex: null });
     }
     out.push(...repeated);
   }

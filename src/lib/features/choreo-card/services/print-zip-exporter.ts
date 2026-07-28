@@ -10,10 +10,19 @@
 import type { ZipCardPair } from "./types";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 
+export interface DeckZipExportOptions {
+  /** Per-card front renderer used to stamp a freshly allocated physical ID. */
+  frontRenderer?: (
+    pair: ZipCardPair,
+    cardIndex: number
+  ) => Promise<HTMLCanvasElement>;
+}
+
 export async function exportDeckZIP(
   pairs: ZipCardPair[],
   deckName: string,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  options: DeckZipExportOptions = {}
 ): Promise<Blob> {
   // JSZip is lazy-loaded - it uses `new Function` internally (CSP-incompatible
   // when eagerly imported into the main chunk).
@@ -31,7 +40,10 @@ export async function exportDeckZIP(
     // [^a-zA-Z0-9_-] regex flattened every Greek letter to "_".
     const safeName = sanitizeFilename(pair.label).replace(/\s+/g, "_") || index;
 
-    const frontBlob = await canvasToBlob(pair.front);
+    const front = options.frontRenderer
+      ? await options.frontRenderer(pair, i)
+      : pair.front;
+    const frontBlob = await canvasToBlob(front);
     fronts.file(`${index}_${safeName}_front.png`, frontBlob);
 
     const backBlob = await canvasToBlob(pair.back);

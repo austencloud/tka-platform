@@ -12,15 +12,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { PrintRenderOptions } from "./types";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
+import { getCardFrameContentInset } from "./card-front-frame";
 
 // MPC poker card defaults (822x1122 at 300 DPI with 36px bleed).
 const MPC_WIDTH = 822;
 const MPC_HEIGHT = 1122;
 const MPC_BLEED = 36;
-
-// Colored frame thickness as a multiple of the print bleed. MUST match
-// card-front-frame.ts BORDER_SCALE — both inset content by round(bleed * scale).
-const BORDER_SCALE = 2.0;
 
 /** Concrete frame geometry/colors for `wrapContentInCardFrame`. */
 export interface FrontCardFrame {
@@ -52,7 +49,7 @@ export function buildFrontComposeOptions(
   const bleed = options.bleedPx ?? MPC_BLEED;
   // Border (colored frame) is thicker than the bleed so it stays visible after
   // an imprecise cut. Content insets by `border`, not `bleed`.
-  const border = Math.round(bleed * BORDER_SCALE);
+  const border = getCardFrameContentInset(bleed);
   const contentW = canvasW - border * 2;
   const contentH = canvasH - border * 2;
 

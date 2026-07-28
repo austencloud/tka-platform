@@ -10,6 +10,11 @@
 > existing **`GlobalUserMap`** (zoomable Google Maps, already accepts `scanMarkers`),
 > NOT the globe.gl globe and NOT in the scan flow. Sections below describe the
 > abandoned interstitial approach — read with that caveat.
+>
+> **DIRECTION CHANGE (2026-07-27):** Public map writes and public scan history
+> are retired. New exports receive per-artwork physical IDs, and validated scan
+> facts accumulate privately until the dataset supports a useful public
+> experience. See `docs/reference/physical-card-instrumentation.md`.
 
 **Date:** 2026-06-22
 **Status:** Interstitial approach abandoned; data layer shipped. See status note above.

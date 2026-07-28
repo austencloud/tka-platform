@@ -38,6 +38,19 @@ export async function getOrBuildPrintPDF(
   options: HomePrintOptions,
   onProgress?: (current: number, total: number) => void,
 ): Promise<Blob> {
+  // A slot renderer intentionally makes new pixels for each invocation (the
+  // physical-card ID changes). It must never return an earlier cached run.
+  if (options.frontRenderer) {
+    return exportHomePrintPDF(
+      pairs,
+      deckName,
+      cardSize,
+      onProgress,
+      mode,
+      options
+    );
+  }
+
   const hit = blobCache.get(key);
   if (hit) {
     // Refresh recency so a re-print keeps the entry from aging out under churn.

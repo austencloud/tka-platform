@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Approved (design dialogue 2026-07-02)"
+remaining: "Collection scanner unimplemented; carrier and scan-purpose semantics now depend on the 2026-07-27 official production-ledger design."
 depends_on: ""
 plan_path: ""
 tags: []
@@ -13,6 +13,14 @@ last_triaged: 2026-07-25
 **Date:** 2026-07-02
 **Status:** Approved (design dialogue 2026-07-02)
 **Owner:** Collections module
+
+> **Superseded in part on 2026-07-27:** The canonical carrier, production, and
+> scan-purpose contracts now live in
+> [`../2026-07-27-official-card-production-ledger-design.md`](../2026-07-27-official-card-production-ledger-design.md).
+> Keep the collection-scoped continuous scanner and sequence-add behavior.
+> Replace the assumptions that every printed card is officially minted and
+> that filing writes no scan fact. Filing creates a location-suppressed
+> observation that is excluded from physical journeys.
 
 ## The idea
 
@@ -34,13 +42,13 @@ the collection."*
 2. **Continuous filing.** Camera stays open; each recognized card adds with
    haptic + toast; a running count ticks in the header. Physical decks are
    stacks — filing is batch work.
-3. **No rejection state.** Every printed card was minted through
-   `createShortCode`, which refuses to write a record without resolvable data
-   (`short-code-manager.ts` — "would produce an unresolvable zombie
-   document"). Printed card ⇒ record exists ⇒ resolves. The only fork is HOW
-   it resolves (backing sequence doc vs embedded data), and both forks end in
-   "added." Failures are camera/network errors — retryable, never "card
-   refused."
+3. **Carrier-aware resolution.** A recognized TKA QR may be an official
+   physical carrier, prototype, digital screen carrier, presentation carrier,
+   v1 `?pid=` card, or legacy short code. The canonical resolver classifies it
+   before the existing identity-first collection import runs. Do not infer
+   "printed" or "official" from the presence of a QR. A valid carrier still
+   resolves to sequence content; unknown and malformed targets remain
+   retryable read failures.
 
 ## What already exists (reuse, never hand-roll)
 
@@ -76,7 +84,8 @@ ScanCardSheet.svelte  (features/browse/collections/components/)
   ├── detection loop (~200ms interval): captureFrame() → BarcodeDetector.detect()
   ├── header: "Scan into {name}" + session count + Done
   └── per-hit pipeline (card-scan-import service):
-        extract code → resolveForImport(code) → add/import → haptic + toast
+        extract target → resolve carrier/legacy target
+          → resolveForImport(shortCode) → add/import → haptic + toast
 ```
 
 ### New units
@@ -86,20 +95,20 @@ ScanCardSheet.svelte  (features/browse/collections/components/)
 interval, session seen-set, count, toasts. Mount-closed + rAF-open slide-in,
 `requestClose()` slide-out before unmount (AddSequencesSheet pattern).
 
-**2. `extractScanCode(rawValue: string): string | null`** — pure function
-(plain module, tree-shakeable). Accepts what a QR can contain:
-`HTTPS://TKA.RUN/{CODE}` with optional `?bp/rp/vm` params (case-insensitive
-host/path), bare codes, and inline `s~...` payloads. Returns the code or null
-for non-TKA QR content (ignored silently).
+**2. `extractScanTarget(rawValue: string): ScanTarget | null`.** Pure function
+(plain module, tree-shakeable). Accepts `https://tka.run/x/{token}`, legacy
+`https://tka.run/{code}` with optional parameters, bare codes, and inline
+`s~...` payloads. Returns a carrier token or legacy code. Non-TKA QR content
+is ignored silently.
 
-**3. `ShortCodeManager.resolveForImport(code)`** — same record fetch
-(Firestore → static snapshot) as `resolveShortCode`, but **identity-first
-strategy order**: public index / sequenceId-as-word / direct doc load FIRST
-(returns `{ sequence, hasDoc: true }` with a real doc id + ownerId), embedded
-blob / encoded decode LAST (`{ sequence, hasDoc: false }`). Rationale:
-`resolveShortCode` prefers the self-contained encoded blob for viewing speed
-and returns `id: code` — useless as a collection member reference. Viewing
-wants speed; filing wants identity.
+**3. Carrier resolver plus `ShortCodeManager.resolveForImport(code)`.** A
+carrier target first resolves through the canonical server resolver to a short
+code and carrier classification. Legacy targets already contain the code. The
+existing record fetch then uses **identity-first strategy order**: public index
+/ sequenceId-as-word / direct doc load FIRST (returns
+`{ sequence, hasDoc: true }` with a real doc id + ownerId), embedded blob /
+encoded decode LAST (`{ sequence, hasDoc: false }`). Viewing wants speed;
+filing wants stable collection identity.
 
 **4. Import fork** (inside the scan handler, not a new service):
 
@@ -143,9 +152,10 @@ implied (own collection detail requires auth).
 
 ## Analytics
 
-Filing scans write NOTHING to `scanEvents` / `scanCount` / journey points.
-Those streams mean "card discovered in the wild" and feed the geo dashboard;
-filing your own deck from your couch would pollute them.
+Filing scans create a deduplicated observation with purpose `filing`, suppressed
+location, and `eligibleForJourney: false`. This records how the collection
+relationship was created without treating home filing as travel. See the
+canonical production-ledger spec linked above.
 
 ## Out of scope (deliberate)
 
@@ -157,8 +167,8 @@ filing your own deck from your couch would pollute them.
 
 ## Testing & verification
 
-- Unit: `extractScanCode` (URL forms, params, case, inline `s~`, garbage) —
-  vitest, pure function.
+- Unit: `extractScanTarget` (carrier URL, legacy URL, params, case, inline
+  `s~`, garbage), tested as a pure function in vitest.
 - Unit: `resolveForImport` strategy order + `hasDoc` fork (mock Firestore
   record shapes: doc-backed, embedded-only, encoded-only).
 - Unit: scan handler session semantics (dedupe, already-member, failure

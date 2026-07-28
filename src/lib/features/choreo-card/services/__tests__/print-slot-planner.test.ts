@@ -32,8 +32,12 @@ describe("planPrintSlots", () => {
 
     const labels = slots.slice(0, 6).map((s) => s.item?.label);
     expect(labels).toEqual(["a", "a", "a", "b", "b", "b"]);
+    expect(slots.slice(0, 6).map((s) => s.copyIndex)).toEqual([
+      0, 1, 2, 0, 1, 2,
+    ]);
     expect(slots.length).toBe(9);
     expect(slots[6]!.item).toBeNull();
+    expect(slots[6]!.copyIndex).toBeNull();
   });
 
   it("puts untagged cards in a trailing bucket with null elementName", () => {

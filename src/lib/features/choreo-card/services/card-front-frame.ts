@@ -29,6 +29,10 @@ const BORDER_SCALE = 2.0;
 const OUTER_RADIUS = 0;
 const INNER_RADIUS = 0;
 
+export function getCardFrameContentInset(bleedPx: number): number {
+  return Math.round(bleedPx * BORDER_SCALE);
+}
+
 /** Draw a rounded rectangle path (does not fill or stroke) */
 function roundRectPath(
   ctx: CanvasRenderingContext2D,
@@ -112,7 +116,7 @@ export function wrapContentInCardFrame(
   const bleed = opts.bleedPx ?? MPC_BLEED;
   // Border (colored frame) is thicker than the bleed so it stays visible after
   // an imprecise cut. Content insets by `border`, not `bleed`.
-  const border = Math.round(bleed * BORDER_SCALE);
+  const border = getCardFrameContentInset(bleed);
   const contentW = canvasW - border * 2;
   const contentH = canvasH - border * 2;
 

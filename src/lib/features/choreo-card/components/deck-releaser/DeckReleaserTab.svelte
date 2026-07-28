@@ -416,19 +416,122 @@
     URL.revokeObjectURL(url);
   }
 
+  function physicalDeckIdentity() {
+    const releaseNumber = rs.viewingRelease?.deckNumber ?? null;
+    return {
+      deckId: releaseNumber
+        ? `release:${releaseNumber}`
+        : `generated:${deckRefNumber}`,
+      deckName: rs.name?.trim() || `Deck #${deckRefPadded}`,
+      deckReleaseNumber: releaseNumber,
+    };
+  }
+
+  function metaForPrintRun(printRunId: string) {
+    const meta = buildDeckMeta();
+    return {
+      ...meta,
+      subject: `${meta.subject} Serialized artwork run ${printRunId}.`,
+      keywords: [...(meta.keywords ?? []), `print-run:${printRunId}`],
+    };
+  }
+
+  async function recordFailedPrintRun(run: {
+    printRunId: string;
+    fail(): Promise<void>;
+  }): Promise<void> {
+    try {
+      await run.fail();
+    } catch (error) {
+      console.error(
+        `[deck-releaser] could not mark print run ${run.printRunId} failed:`,
+        error,
+      );
+    }
+  }
+
+  async function buildPrintPDF(mode: PrintPDFMode): Promise<{
+    blob: Blob;
+    printRunId: string | null;
+  }> {
+    const deckName = `Deck_${deckRefPadded}`;
+    const onProgress = (current: number, total: number) => {
+      exportProgress = current;
+      exportTotal = total;
+    };
+
+    // A backs-only file contains no identity-bearing QR. Reuse the existing
+    // byte cache and do not claim another physical issuance.
+    if (mode === "backs") {
+      const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
+      const blob = await getOrBuildPrintPDF(
+        buildPrintKey(mode),
+        renderedPairs,
+        deckName,
+        cardSize,
+        mode,
+        {
+          copies,
+          elements: tndElements,
+          groupByElement,
+          meta: buildDeckMeta(),
+        },
+        onProgress,
+      );
+      return { blob, printRunId: null };
+    }
+
+    // Every explicit front/combined export is a new issuance run. The PDF cache
+    // is intentionally bypassed because reusing it would silently reuse every
+    // physical-card identity.
+    const [{ prepareSerializedPrintRun }, { exportHomePrintPDF }] = await Promise.all([
+      import("$lib/features/choreo-card/services/serialized-print-run"),
+      import("$lib/features/choreo-card/services/print-pdf-exporter"),
+    ]);
+    const identity = physicalDeckIdentity();
+    const run = await prepareSerializedPrintRun({
+      pairs: renderedPairs,
+      ...identity,
+      cardSize,
+      copies,
+      groupByElement,
+      outputMode: mode,
+    });
+    let blob: Blob;
+    try {
+      blob = await exportHomePrintPDF(
+        renderedPairs,
+        deckName,
+        cardSize,
+        onProgress,
+        mode,
+        {
+          copies,
+          elements: tndElements,
+          groupByElement,
+          meta: metaForPrintRun(run.printRunId),
+          frontRenderer: ({ pair, cardIndex, copyIndex }) =>
+            run.renderFront(pair, cardIndex, copyIndex),
+        },
+      );
+    } catch (error) {
+      await recordFailedPrintRun(run);
+      throw error;
+    }
+    await run.complete();
+    return { blob, printRunId: run.printRunId };
+  }
+
   async function handleExportPDF(mode: PrintPDFMode = "combined") {
     if (renderedPairs.length === 0) return;
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
-      const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
       const deckName = `Deck_${deckRefPadded}`;
       const copiesSuffix = copies > 1 ? `_x${copies}` : "";
       const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
-      const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckName, cardSize, mode,
-        { copies, elements: tndElements, groupByElement, meta: buildDeckMeta() }, (current, total) => {
-          exportProgress = current; exportTotal = total;
-        });
-      triggerDownload(blob, `${deckName}${suffix}.pdf`);
+      const { blob, printRunId } = await buildPrintPDF(mode);
+      const runSuffix = printRunId ? `_run-${printRunId.slice(0, 8)}` : "";
+      triggerDownload(blob, `${deckName}${suffix}${runSuffix}.pdf`);
     } catch (e) {
       exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
@@ -448,11 +551,8 @@
     if (renderedPairs.length === 0 || isPrinting) return;
     isPrinting = true; exportError = "";
     try {
-      const { getOrBuildPrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-cache");
       const { printPdfBlob } = await import("$lib/features/choreo-card/services/print-blob");
-      const deckLabel = `Deck_${deckRefPadded}`;
-      const blob = await getOrBuildPrintPDF(buildPrintKey(mode), renderedPairs, deckLabel, cardSize, mode,
-        { copies, elements: tndElements, groupByElement, meta: buildDeckMeta() });
+      const { blob } = await buildPrintPDF(mode);
       printPdfBlob(blob);
     } catch (e) {
       exportError = `Print failed: ${e instanceof Error ? e.message : e}`;
@@ -465,12 +565,36 @@
     if (renderedPairs.length === 0) return;
     isExporting = true; exportError = ""; exportProgress = 0; exportTotal = 0;
     try {
-      const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
+      const [{ exportDeckZIP }, { prepareSerializedPrintRun }] = await Promise.all([
+        import("$lib/features/choreo-card/services/print-zip-exporter"),
+        import("$lib/features/choreo-card/services/serialized-print-run"),
+      ]);
       const deckName = `Deck_${deckRefPadded}`;
-      const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
-        exportProgress = current; exportTotal = total;
+      const run = await prepareSerializedPrintRun({
+        pairs: renderedPairs,
+        ...physicalDeckIdentity(),
+        cardSize,
+        copies: 1,
+        groupByElement,
+        outputMode: "zip",
       });
-      triggerDownload(blob, `${deckName}_cards.zip`);
+      let blob: Blob;
+      try {
+        blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
+          exportProgress = current; exportTotal = total;
+        }, {
+          frontRenderer: (pair, cardIndex) =>
+            run.renderFront(pair, cardIndex, 0),
+        });
+      } catch (error) {
+        await recordFailedPrintRun(run);
+        throw error;
+      }
+      await run.complete();
+      triggerDownload(
+        blob,
+        `${deckName}_cards_run-${run.printRunId.slice(0, 8)}.zip`,
+      );
     } catch (e) {
       exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
     } finally {

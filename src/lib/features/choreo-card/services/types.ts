@@ -120,13 +120,16 @@ export interface CardPair {
   front: HTMLCanvasElement;
   back: HTMLCanvasElement;
   label: string;
+  /** Exact source inputs that produced the front. Serialized print exports use
+   *  them to replace the shared QR without recomposing the card. Optional for
+   *  legacy/test callers that never issue physical identities. */
+  renderMeta?: {
+    sequence: SequenceData;
+    options: PrintRenderOptions;
+  };
 }
 
-export interface ZipCardPair {
-  front: HTMLCanvasElement;
-  back: HTMLCanvasElement;
-  label: string;
-}
+export type ZipCardPair = CardPair;
 
 export interface FamilyRatioGroup {
   readonly ratio: string;

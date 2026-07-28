@@ -1,5 +1,6 @@
-import { PDFDocument, PDFFont, PDFImage, PDFPage, rgb, StandardFonts } from 'pdf-lib';
-import { planPrintSlots, type PrintSlot } from './print-slot-planner';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib';
+import { planPrintSlots, type PlannedSlot } from './print-slot-planner';
 import type { TnDElement } from '../domain/tnd-element';
 import type { CardPair } from "./types";
 import { CARD_SIZES, getPageLayout, type CardSizeId, type PageLayout } from '../domain/card-sizes';
@@ -70,7 +71,22 @@ export interface HomePrintOptions {
 	 *  `deckSummary` also prints centered in each sheet's top margin (the recipe:
 	 *  e.g. "Rotated · Quartered · 8-step · L1 · 1 turn · Diamond · Staff"). */
 	meta?: { title?: string; subject?: string; keywords?: string[]; deckSummary?: string };
+	/** Per-occurrence front renderer. Serialized exports provide this to replace
+	 *  the shared QR with the physical ID allocated for this exact print slot. */
+	frontRenderer?: (context: {
+		pair: CardPair;
+		cardIndex: number;
+		copyIndex: number;
+		slotIndex: number;
+	}) => Promise<HTMLCanvasElement>;
 }
+
+interface IndexedCardPair {
+	pair: CardPair;
+	cardIndex: number;
+}
+
+type IndexedPrintSlot = PlannedSlot<IndexedCardPair>;
 
 /** Capitalize an element key for sheet labels: "fire" → "Fire". */
 function capitalize(s: string): string {
@@ -105,7 +121,15 @@ export async function exportHomePrintPDF(
 	const groupByElement = options.groupByElement ?? true;
 	// firstOnTop: reverse card order so the deck's FIRST card is drawn last and
 	// lands on top of the printed/cut stack (was: last card on top).
-	const slots = planPrintSlots(pairs, elements, copies, cardsPerPage, groupByElement, true);
+	const indexedPairs = pairs.map((pair, cardIndex) => ({ pair, cardIndex }));
+	const slots = planPrintSlots(
+		indexedPairs,
+		elements,
+		copies,
+		cardsPerPage,
+		groupByElement,
+		true
+	);
 	const totalSheets = slots.length / cardsPerPage; // integer by construction
 
 	const pdfDoc = await PDFDocument.create();
@@ -130,7 +154,7 @@ export async function exportHomePrintPDF(
 		return img;
 	};
 
-	const sheetSide = (base: string, sheetSlots: PrintSlot[]): string => {
+	const sheetSide = (base: string, sheetSlots: IndexedPrintSlot[]): string => {
 		const el = sheetSlots[0]?.elementName ?? null;
 		return el ? `${base}  ·  ${capitalize(el)}` : base;
 	};
@@ -148,7 +172,19 @@ export async function exportHomePrintPDF(
 				const row = Math.floor(i / cols);
 				const x = marginXPt + col * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await embedFront(slot.item.front);
+				const front = options.frontRenderer
+					? await options.frontRenderer({
+						pair: slot.item.pair,
+						cardIndex: slot.item.cardIndex,
+						copyIndex: slot.copyIndex!,
+						slotIndex: start + i,
+					})
+					: slot.item.pair.front;
+				// Serialized fronts are unique by definition; caching their canvas
+				// handles would retain every full-size copy for the life of the PDF.
+				const img = options.frontRenderer
+					? await pdfDoc.embedPng(canvasToPngBytes(front))
+					: await embedFront(front);
 				frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
 
@@ -177,7 +213,7 @@ export async function exportHomePrintPDF(
 				const mirroredCol = cols - 1 - col;
 				const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await embedBack(slot.item.back);
+				const img = await embedBack(slot.item.pair.back);
 				backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
 

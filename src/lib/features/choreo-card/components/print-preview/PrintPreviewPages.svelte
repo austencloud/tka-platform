@@ -466,6 +466,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
       const footer = seqFooter(i);
+      const options = buildRenderOptions(stepCount, footer, i);
+      const renderMeta = { sequence: seq, options };
       const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
@@ -482,10 +484,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       try {
         if (cached) {
           cards[i] = cached.rendered;
-          if (!cached.pair) cached.pair = await reconstructPair(cached.rendered);
-          pairs[i] = cached.pair;
+          if (!cached.pair) {
+            cached.pair = await reconstructPair(cached.rendered, renderMeta);
+          }
+          pairs[i] = { ...cached.pair, renderMeta };
         } else {
-          const options = buildRenderOptions(stepCount, footer, i);
           // Front (Canvas2D) and back (DOM screenshot, ~200ms fixed wait) are
           // independent and each allocate their own canvas/container, so render
           // them together rather than front-then-back.
@@ -500,7 +503,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             backUrl: canvasToDataUrl(backCanvas),
             label,
           };
-          const pair: CardPair = { front: frontCanvas, back: backCanvas, label };
+          const pair: CardPair = {
+            front: frontCanvas,
+            back: backCanvas,
+            label,
+            renderMeta,
+          };
 
           cards[i] = card;
           pairs[i] = pair;
@@ -554,10 +562,18 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       if (generation !== renderGeneration) return null;
       const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, idx));
       if (!cached) return null;
+      const renderMeta = {
+        sequence: seq,
+        options: buildRenderOptions(
+          seq.steps?.length,
+          seqFooter(idx),
+          idx
+        ),
+      };
       if (cached.pair) {
-        pairs.push(cached.pair);
+        pairs.push({ ...cached.pair, renderMeta });
       } else {
-        const pair = await reconstructPair(cached.rendered);
+        const pair = await reconstructPair(cached.rendered, renderMeta);
         cached.pair = pair;
         pairs.push(pair);
       }
@@ -565,12 +581,15 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     return pairs;
   }
 
-  async function reconstructPair(rendered: RenderedCard): Promise<CardPair> {
+  async function reconstructPair(
+    rendered: RenderedCard,
+    renderMeta: NonNullable<CardPair["renderMeta"]>
+  ): Promise<CardPair> {
     const [front, back] = await Promise.all([
       dataUrlToCanvas(rendered.frontUrl),
       dataUrlToCanvas(rendered.backUrl),
     ]);
-    return { front, back, label: rendered.label };
+    return { front, back, label: rendered.label, renderMeta };
   }
 
   function dataUrlToCanvas(dataUrl: string): Promise<HTMLCanvasElement> {
@@ -626,7 +645,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     cardCache.set(cacheKey, {
       rendered: card,
-      pair: { front: frontCanvas, back: backCanvas, label },
+      pair: {
+        front: frontCanvas,
+        back: backCanvas,
+        label,
+        renderMeta: { sequence: seq, options },
+      },
     });
 
     Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
