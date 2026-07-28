@@ -176,6 +176,12 @@ must be derived from content.
 import { describe, it, expect } from "vitest";
 import { deriveReceiptId } from "$lib/shared/share-intake/domain/derive-receipt-id";
 
+// The delimiters an earlier revision of deriveReceiptId used. Named rather
+// than inlined: raw control bytes are invisible in an editor and easy to
+// mangle in a diff.
+const NUL = String.fromCharCode(0);
+const STX = String.fromCharCode(2);
+
 describe("deriveReceiptId", () => {
   const shared = {
     files: [{ uri: "/cache/shared_files/a.png", name: "a.png", mimeType: "image/png", size: 1024 }],
@@ -235,11 +241,20 @@ describe("deriveReceiptId", () => {
   // shifting a field boundary and forging a collision with a pending intake.
   it("resists delimiter injection in untrusted fields", () => {
     const split = { files: [], texts: ["a", "b"] };
-    const joined = { files: [], texts: ["ab"] };
+    const joined = { files: [], texts: [`a${STX}b`] };
     expect(deriveReceiptId(split)).not.toBe(deriveReceiptId(joined));
 
-    const nameCarries = { files: [{ uri: "/a", name: "a b", mimeType: "c", size: 1 }], texts: [] };
-    const mimeCarries = { files: [{ uri: "/a", name: "a", mimeType: "b c", size: 1 }], texts: [] };
+    // The bytes below are the delimiters an earlier revision of this function
+    // used. Under ANY delimiter scheme, embedding them in untrusted content
+    // shifts a field boundary and forges a collision. Length-prefixing makes no
+    // byte special, so these pairs must stay distinct. Both assertions below
+    // FAIL against the delimiter-based implementation - that is the point.
+    const injectedText = { files: [], texts: [`a${STX}b`] };
+    const twoTexts = { files: [], texts: ["a", "b"] };
+    expect(deriveReceiptId(injectedText)).not.toBe(deriveReceiptId(twoTexts));
+
+    const nameCarries = { files: [{ uri: "/a", name: `a${NUL}b`, mimeType: "c", size: 1 }], texts: [] };
+    const mimeCarries = { files: [{ uri: "/a", name: "a", mimeType: `b${NUL}c`, size: 1 }], texts: [] };
     expect(deriveReceiptId(nameCarries)).not.toBe(deriveReceiptId(mimeCarries));
   });
 });
