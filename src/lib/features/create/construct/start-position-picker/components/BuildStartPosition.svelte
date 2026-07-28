@@ -211,11 +211,18 @@
      The height bound matters as much as the ratio: a full-height desktop pane is
      also "wide", but it has room to stack, and going two-column there only pulls
      the board off centre for nothing. */
-  /* 31rem, not 34: a size container reports its CONTENT box, so this element's
+  /* Board beside its controls whenever the host is meaningfully wider than it
+     is tall. This used to also require `max-height: 620px` — only genuinely
+     short hosts — which left a 4K display stacking: a 1539px square with a
+     thousand pixels of dead rail either side and the controls huddled beneath
+     it. A square board can only ever spend height, so on any wide host the
+     width belongs to the controls.
+
+     31rem, not 34: a size container reports its CONTENT box, so this element's
      own horizontal padding comes off the number the query sees. At 34rem the
      picker's two-column mode handed the builder a 559px column and the rule
      still missed by 9px, which left the board stacked and tiny. */
-  @container (max-height: 620px) and (min-aspect-ratio: 5 / 4) and (min-width: 31rem) {
+  @container (min-aspect-ratio: 5 / 4) and (min-width: 31rem) {
     .builder-layout {
       flex-direction: row;
       align-items: stretch;
@@ -319,6 +326,15 @@
   @media (min-width: 1680px) {
     .position-builder {
       gap: 1rem;
+      /* The shared content band. Left to span a 4K display the board and its
+         controls drift to opposite edges with a canyon between them; centred in
+         the band they read as one composed pair. */
+      max-width: var(--shell-w, min(1720px, 92vw));
+      margin-inline: auto;
+    }
+
+    .builder-controls {
+      flex-basis: clamp(20rem, 30cqw, 34rem);
     }
 
     .apply-button,
@@ -333,6 +349,15 @@
   }
 
   @media (min-width: 2600px) {
+    /* A square board can always spend more height than anyone needs. Past this
+       it stops being a better target and becomes a bigger black field, and it
+       starves the controls beside it. Bounded to the viewport's short side so
+       it still steps up on a 4K display without running away. Only at this tier
+       — below it the board is the scarce thing, not the abundant one. */
+    .placement-area {
+      max-width: min(100%, 52vmin);
+    }
+
     .apply-button,
     .orientation-controls {
       width: min(100%, 44rem);

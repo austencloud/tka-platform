@@ -535,19 +535,26 @@ Controls moved below the grid for better UX
      takes the full height; every control — heading, method toggle, orientation,
      the action button, grid mode — lives in a column on the right. Horizontal
      room is the room we actually have. */
+  /* Two triggers, one layout. Short-and-wide is the Fold/composer case above.
+     The second is plain WIDE at the shared 1680 seam: on a 4K display the
+     stacked version is a 1539px square with ~1150px of dead rail either side
+     and the controls huddled underneath it — the exact "scaled-up phone
+     layout" `4k-native-layout.md` exists to prevent. The band is capped and
+     centred so the board and its controls read as one composed pair rather
+     than a square stranded in a field. */
   @media (max-height: 620px) and (min-width: 60rem) {
     .start-pos-picker.build-path {
       display: grid;
       /* The right column is bounded so the left stays above the builder's own
-         34rem row-mode threshold — that inner rule is what puts the orientation
+         31rem row-mode threshold — that inner rule is what puts the orientation
          controls beside the board rather than under it. */
-      grid-template-columns: minmax(0, 1fr) minmax(12rem, 17rem);
+      grid-template-columns: minmax(0, 1fr) clamp(14rem, 22vw, 32rem);
       grid-template-areas:
         "view hint"
         "view sel"
         "view footer";
       grid-template-rows: auto auto 1fr;
-      column-gap: clamp(12px, 2vw, 28px);
+      column-gap: clamp(12px, 2vw, 48px);
       padding: 8px 12px;
       box-sizing: border-box;
     }
