@@ -384,11 +384,33 @@
     mandala: { id: "art_mandala", label: "Mandalas" },
   };
 
-  function enterCollections(): void {
+  /**
+   * What the Collections doorway opens, and therefore what it may claim.
+   *
+   * The destination is ONE Art shelf — there is no "all media" shelf to land
+   * on. So under the All filter the button cannot advertise the mixed total:
+   * it would say 46 and open a shelf holding 41. It names the shelf it will
+   * actually open, and counts that shelf. Under a medium filter the two are
+   * already the same number.
+   */
+  const collectionsTarget = $derived.by(() => {
     const medium = collectionFilter === "all" ? dominantMedium() : collectionFilter;
     const shelf = ART_SHELF[medium];
-    if (!shelf) return;
-    setPendingBrowseIntent({ kind: "art-shelf", shelfId: shelf.id, label: shelf.label });
+    if (!shelf) return null;
+    return {
+      ...shelf,
+      medium,
+      count: collectionEntries.filter((e) => e.medium === medium).length,
+    };
+  });
+
+  function enterCollections(): void {
+    if (!collectionsTarget) return;
+    setPendingBrowseIntent({
+      kind: "art-shelf",
+      shelfId: collectionsTarget.id,
+      label: collectionsTarget.label,
+    });
     void handleModuleChange("browse", "library");
   }
 
@@ -402,7 +424,9 @@
    * inline grid until such a surface exists.
    */
   const collectionsAreDoorway = $derived(
-    isOwnProfile && shouldUseDoorway("collections", visibleCollection.length)
+    isOwnProfile &&
+      !!collectionsTarget &&
+      shouldUseDoorway("collections", visibleCollection.length)
   );
 </script>
 
@@ -470,9 +494,9 @@
           <BandDoorway
             {slots}
             size="md"
-            total={visibleCollection.length}
+            total={collectionsTarget?.count ?? 0}
             columns={capFor("collection")}
-            actionLabel="Browse all collections"
+            actionLabel="Browse all {collectionsTarget?.label.toLowerCase()}"
             onenter={enterCollections}
             items={visibleCollection.slice(0, capFor("collection")).map((e) => ({
               key: e.id,

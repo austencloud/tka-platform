@@ -167,6 +167,11 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     if (intent.kind === "creator-gallery") {
       const name = intent.ownerName;
       requestAnimationFrame(() => {
+        // Browse restores its own last location from localStorage, and the
+        // effect that mirrors it into the active tab will happily pull the
+        // Library tab back over a gallery handoff. Say where we are in that
+        // vocabulary too, so both sources of truth agree.
+        browseNavigationState.navigateTo({ tab: "gallery", view: "list" });
         // Exactly what the drill's own creator row applies
         // (GalleryDrill.svelte), so the destination is the familiar filtered
         // grid rather than a second thing that means the same.
