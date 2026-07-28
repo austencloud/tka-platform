@@ -15,7 +15,7 @@
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
   import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   import ConstructTutorialGuide from "../../construct/tutorial/components/ConstructTutorialGuide.svelte";
-  import type { StartPosePath } from "../../construct/services/construct-analytics";
+  import type { StartPositionPath } from "../../construct/services/construct-analytics";
   // Props
   let {
     shouldShowStartPositionPicker,
@@ -56,7 +56,7 @@
     onToggleContinuous?: (value: boolean) => void;
     onStartPositionSubmitted?: (
       position: PictographData,
-      path: StartPosePath
+      path: StartPositionPath
     ) => void;
   }>();
 </script>

@@ -161,9 +161,13 @@
   }
 
   .pictograph-container {
-    /* Size constrained by container dimensions */
-    width: fit-content;
-    height: fit-content;
+    /* Fill the grid cell rather than shrink-wrapping. A `fit-content` cell made
+       the wrapper's `width: 100%` circular — it resolved against a parent whose
+       size came from the wrapper — which collapsed the card on wide screens and
+       overflowed it on short ones. Filling the cell gives that percentage a real
+       box to resolve against; the inner flex still centers the card. */
+    width: 100%;
+    height: 100%;
     max-width: 100%;
     max-height: 100%;
     min-width: 0; /* Allow shrinking below default minimums */
@@ -195,13 +199,13 @@
 
   .pictograph-wrapper {
     /*
-     * Container-query-based sizing:
-     * - For horizontal layout (3 columns): each item gets ~30% of width
-     * - For vertical layout (3 rows): each item gets ~30% of height
-     * - Using cqmin ensures we pick the smaller dimension to prevent overflow
-     * - 28cqmin ≈ 28% of the smaller container dimension (accounts for gaps/padding)
+     * The card is square, so it is bounded by whichever runs out first: the
+     * width of its grid cell, or the height of the row. `min(100%, 100cqh)`
+     * says exactly that in one rule and holds at every shape — a short, wide
+     * Fold-landscape strip and a 4K expanse both land correctly, where the old
+     * cqmin/cqw/cqh trio disagreed with each other at the extremes.
      */
-    width: min(100%, 28cqmin);
+    width: min(100%, 100cqh);
     height: auto;
     /* Constrain to maintain square aspect ratio matching the SVG */
     aspect-ratio: 1 / 1;
@@ -220,29 +224,11 @@
       0 2px 4px rgba(0, 0, 0, 0.06);
   }
 
-  /*
-   * Adjust pictograph size based on container aspect ratio
-   * This ensures optimal sizing for both portrait and landscape containers
-   */
-
-  /* Portrait/tall containers: size based on height (30% of container height for 3 rows) */
+  /* Stacked (portrait) layout: each of the three rows owns a third of the
+     height, so the height bound is a third of the container, not all of it. */
   @container (aspect-ratio < 0.75) {
     .pictograph-wrapper {
-      width: min(100%, 30cqh);
-    }
-  }
-
-  /* Landscape/wide containers: size based on width (30% of container width for 3 columns) */
-  @container (aspect-ratio > 1.5) {
-    .pictograph-wrapper {
-      width: min(100%, 30cqw);
-    }
-  }
-
-  /* Square-ish containers: use the smaller dimension */
-  @container (0.75 <= aspect-ratio <= 1.5) {
-    .pictograph-wrapper {
-      width: min(100%, 28cqmin);
+      width: min(100%, 31cqh);
     }
   }
 
@@ -291,6 +277,33 @@
   .pictograph-container:focus-visible .pictograph-wrapper {
     outline: 2px solid var(--primary-color, #6366f1);
     outline-offset: 2px;
+  }
+
+  /* Big-screen tiers at the shared 1680 seam (.claude/rules/4k-native-layout.md).
+     Two things go wrong at 4K without these:
+     1. The row spans the whole shell, so three centered cards land at the far
+        left, middle, and far right with a screen of gutter between them.
+     2. `min(100%, 30cqw)` resolves its 100% against a `fit-content` parent —
+        circular sizing that collapses each card to ~300px no matter how much
+        room there is. Stretching the cell gives the percentage something real
+        to resolve against, and the height cap keeps the square from
+        overflowing a short-but-wide region. */
+  @media (min-width: 1680px) {
+    /* max-width, not width: the row is a flex item with `flex: 1`, and grow
+       beats a plain width. max-width still clamps it, and the parent's
+       justify-content keeps the group centered. */
+    .pictograph-row {
+      max-width: 105rem;
+      margin-inline: auto;
+      gap: clamp(1.5rem, 3cqw, 4rem);
+    }
+
+  }
+
+  @media (min-width: 2600px) {
+    .pictograph-row {
+      max-width: 150rem;
+    }
   }
 
   @media (max-width: 768px) {

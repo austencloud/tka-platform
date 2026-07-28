@@ -9,7 +9,7 @@
   constructTutorialState.start();
 
   if (atPlayStep) {
-    constructTutorialState.recordStartPose("α1");
+    constructTutorialState.recordStartPosition("α1");
     constructTutorialState.recordMovementType();
     constructTutorialState.recordOptionApplied({
       letter: "A",

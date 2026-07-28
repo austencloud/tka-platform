@@ -9,13 +9,13 @@ describe("ConstructTutorialGuide", () => {
     render(ConstructTutorialGuideHarness);
 
     await expect
-      .element(page.getByText("Choose a start pose", { exact: true }))
+      .element(page.getByText("Choose a start position", { exact: true }))
       .toBeInTheDocument();
     await expectNoA11yViolations();
 
     await page.getByRole("button", { name: "Dismiss Construct guide" }).click();
     expect(
-      page.getByText("Choose a start pose", { exact: true }).elements()
+      page.getByText("Choose a start position", { exact: true }).elements()
     ).toHaveLength(0);
   });
 

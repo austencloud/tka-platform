@@ -6,7 +6,7 @@ describe("Construct live tutorial state", () => {
     const tutorial = createConstructTutorialState();
     tutorial.start();
 
-    expect(tutorial.stage).toBe("start-pose");
+    expect(tutorial.stage).toBe("start-position");
     expect(
       tutorial.recordOptionApplied({
         letter: "A",
@@ -14,7 +14,7 @@ describe("Construct live tutorial state", () => {
       })
     ).toBe(false);
 
-    expect(tutorial.recordStartPose("α1")).toBe(true);
+    expect(tutorial.recordStartPosition("α1")).toBe(true);
     expect(tutorial.stage).toBe("movement-type");
     expect(tutorial.positionLabel).toBe("α1");
 
@@ -37,7 +37,7 @@ describe("Construct live tutorial state", () => {
   it("dismisses and can restart cleanly", () => {
     const tutorial = createConstructTutorialState();
     tutorial.start();
-    tutorial.recordStartPose("β5");
+    tutorial.recordStartPosition("β5");
     tutorial.dismiss();
 
     expect(tutorial.status).toBe("dismissed");
@@ -45,7 +45,7 @@ describe("Construct live tutorial state", () => {
 
     tutorial.start();
     expect(tutorial.status).toBe("active");
-    expect(tutorial.stage).toBe("start-pose");
+    expect(tutorial.stage).toBe("start-position");
     expect(tutorial.positionLabel).toBeNull();
   });
 });

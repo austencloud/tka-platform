@@ -10,7 +10,7 @@ vi.mock("./PictographGrid.svelte", async () => ({
   ).default,
 }));
 
-vi.mock("./BuildStartPose.svelte", async () => ({
+vi.mock("./BuildStartPosition.svelte", async () => ({
   default: (
     await import("./StartPositionPickerBuildTestStub.svelte")
   ).default,
@@ -44,7 +44,7 @@ describe("StartPositionPicker paths", () => {
     localStorage.removeItem("tka-start-position-picker-prefs");
   });
 
-  it("offers Presets and Build a pose as direct single-select paths", async () => {
+  it("offers Presets and Build as direct single-select paths", async () => {
     render(StartPositionPicker, {
       startPositionState: pickerState() as never,
       embedded: true,
@@ -55,10 +55,10 @@ describe("StartPositionPicker paths", () => {
       .element(page.getByRole("button", { name: "Presets" }))
       .toHaveAttribute("aria-pressed", "true");
 
-    await page.getByRole("button", { name: "Build a pose" }).click();
+    await page.getByRole("button", { name: "Build" }).click();
     await expect.element(page.getByTestId("build-path")).toBeInTheDocument();
     await expect
-      .element(page.getByRole("button", { name: "Build a pose" }))
+      .element(page.getByRole("button", { name: "Build" }))
       .toHaveAttribute("aria-pressed", "true");
   });
 });

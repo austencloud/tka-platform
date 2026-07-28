@@ -9,7 +9,7 @@ import type {
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-export type StartPoseUpdateResult =
+export type StartPositionUpdateResult =
   | { ok: true; sequence: SequenceData }
   | { ok: false; reason: "grid-mismatch" | "broken-transition" };
 
@@ -35,11 +35,11 @@ function deriveBoundaryPosition(
  * Change a sequence start only when the existing first beat remains reachable.
  * Orientation changes are propagated through every downstream beat.
  */
-export function updateSequenceStartPose(
+export function updateSequenceStartPosition(
   sequence: SequenceData,
   startPosition: StartPositionData,
   gridMode: GridMode
-): StartPoseUpdateResult {
+): StartPositionUpdateResult {
   const firstStep = sequence.steps[0];
   const changesGrid =
     sequence.steps.length > 0 &&

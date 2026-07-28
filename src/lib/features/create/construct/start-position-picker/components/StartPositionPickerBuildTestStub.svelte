@@ -1,1 +1,1 @@
-<div data-testid="build-path">Pose builder</div>
+<div data-testid="build-path">Position builder</div>

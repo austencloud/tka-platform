@@ -13,6 +13,10 @@
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
+  import {
+    aimDirectionsFor,
+    orientationFromDrag,
+  } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
   import { getPlacementGridPoints } from "$lib/shared/pictograph/grid/services/placement-grid-points";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
@@ -56,6 +60,16 @@
       blueLocation: GridLocation,
       redLocation: GridLocation
     ) => void;
+    /**
+     * Supplying this turns on press-and-drag aiming: pressing a point places
+     * the prop, dragging away from the point aims it, releasing commits. Its
+     * presence IS the opt-in — surfaces that only teach placement (Learn's
+     * lessons) pass nothing and keep the plain tap behavior untouched.
+     */
+    onOrientationChange?: (
+      color: MotionColor,
+      orientation: Orientation
+    ) => void;
   }
 
   let {
@@ -77,6 +91,7 @@
     guideLineLocations = null,
     onChange = () => {},
     onPlacementComplete,
+    onOrientationChange,
   }: Props = $props();
 
   let blueLocation = $state<GridLocation | null>(initialBlueLocation);
@@ -92,6 +107,27 @@
   let liveAnnouncement = $state("");
   let initializationKey = "";
 
+  // --- Press-and-drag aiming -------------------------------------------------
+  let overlayElement = $state<SVGSVGElement | null>(null);
+  /** The color currently being dragged, and the point it was pressed on. */
+  let dragColor = $state<MotionColor | null>(null);
+  let dragLocation = $state<GridLocation | null>(null);
+  /** Last orientation the drag pointed at. Holds its value if the finger
+   *  wanders back inside the dead zone, so a jittery grip can't scramble it. */
+  let dragAim = $state<Orientation | null>(null);
+  /**
+   * Shows the dragged orientation before the parent has committed it. Cleared
+   * by an effect once the incoming prop catches up, which is what stops a
+   * one-frame snap-back between release and the parent's state flowing down.
+   */
+  let pendingOrientation = $state<{
+    color: MotionColor;
+    orientation: Orientation;
+  } | null>(null);
+  /** Set when a pointer press already handled a placement, so the click that
+   *  follows the same press doesn't place it a second time. */
+  let pointerHandledPress = false;
+
   let hapticService: { trigger: (type: string) => void } | null = null;
   try {
     hapticService = getHapticFeedback() as {
@@ -104,6 +140,29 @@
   const activePoints = $derived(getPlacementGridPoints(gridMode));
   const isComplete = $derived(blueLocation !== null && redLocation !== null);
   const canPlace = $derived(!disabled && activeColor !== null);
+  const canAim = $derived(!disabled && onOrientationChange !== undefined);
+
+  // What the grid draws right now: the parent's orientation, unless a drag is
+  // showing something the parent hasn't been told about yet.
+  const shownBlueOrientation = $derived(
+    pendingOrientation?.color === MotionColor.BLUE
+      ? pendingOrientation.orientation
+      : blueOrientation
+  );
+  const shownRedOrientation = $derived(
+    pendingOrientation?.color === MotionColor.RED
+      ? pendingOrientation.orientation
+      : redOrientation
+  );
+
+  const dragPoint = $derived(
+    dragLocation === null
+      ? null
+      : (activePoints.find((point) => point.location === dragLocation) ?? null)
+  );
+  const aimDirections = $derived(
+    dragLocation === null ? [] : aimDirectionsFor(dragLocation, gridMode)
+  );
   const canUndo = $derived(
     showUndo &&
       !disabled &&
@@ -114,16 +173,20 @@
   const promptText = $derived.by(() => {
     if (disabled) return "";
     if (activeColor === MotionColor.BLUE) {
-      return blueLocation === null
-        ? `Place the ${blueNoun}`
-        : `Choose a new location for the ${blueNoun}`;
+      if (blueLocation !== null)
+        return `Choose a new location for the ${blueNoun}`;
+      return canAim
+        ? `Press a point and drag to aim the ${blueNoun}`
+        : `Place the ${blueNoun}`;
     }
     if (activeColor === MotionColor.RED) {
-      return redLocation === null
-        ? `Place the ${redNoun}`
-        : `Choose a new location for the ${redNoun}`;
+      if (redLocation !== null)
+        return `Choose a new location for the ${redNoun}`;
+      return canAim
+        ? `Press a point and drag to aim the ${redNoun}`
+        : `Place the ${redNoun}`;
     }
-    return isComplete ? "Pose ready" : "";
+    return isComplete ? "Position ready" : "";
   });
 
   const pulseColor = $derived(
@@ -166,7 +229,7 @@
       motions[MotionColor.BLUE] = buildMotion(
         blueLocation,
         MotionColor.BLUE,
-        blueOrientation,
+        shownBlueOrientation,
         bluePropType
       );
     }
@@ -174,7 +237,7 @@
       motions[MotionColor.RED] = buildMotion(
         redLocation,
         MotionColor.RED,
-        redOrientation,
+        shownRedOrientation,
         redPropType
       );
     }
@@ -221,13 +284,16 @@
     );
   }
 
-  function handlePointSelect(location: GridLocation) {
-    if (!canPlace || activeColor === null) return;
+  function handlePointSelect(
+    location: GridLocation,
+    color: MotionColor | null = activeColor
+  ) {
+    if (disabled || color === null) return;
 
     const label = labelForLocation(location);
     pushHistory();
 
-    if (activeColor === MotionColor.BLUE) {
+    if (color === MotionColor.BLUE) {
       blueLocation = location;
       activeColor = redLocation === null ? MotionColor.RED : null;
       hapticService?.trigger("selection");
@@ -235,7 +301,7 @@
       if (redLocation === null) {
         liveAnnouncement = `${blueNoun} placed at ${label}. Place the ${redNoun}.`;
       } else {
-        liveAnnouncement = `${blueNoun} moved to ${label}. Pose ready.`;
+        liveAnnouncement = `${blueNoun} moved to ${label}. Position ready.`;
       }
     } else {
       redLocation = location;
@@ -245,11 +311,107 @@
       if (blueLocation === null) {
         liveAnnouncement = `${redNoun} placed at ${label}. Place the ${blueNoun}.`;
       } else {
-        liveAnnouncement = `${redNoun} placed at ${label}. ${blueNoun} at ${labelForLocation(blueLocation)}, ${redNoun} at ${label}. Pose ready.`;
+        liveAnnouncement = `${redNoun} placed at ${label}. ${blueNoun} at ${labelForLocation(blueLocation)}, ${redNoun} at ${label}. Position ready.`;
       }
     }
 
     publishChange();
+  }
+
+  /**
+   * Which prop a press on this point acts on. Normally the prop whose turn it
+   * is. Once both are down, pressing an occupied point grabs THAT prop, so
+   * re-aiming doesn't need a trip through the Move blue / Move red buttons.
+   */
+  /** A point is pressable when it's someone's turn, or — once both props are
+   *  down and aiming is on — when it already holds a prop to re-aim. */
+  function isPressable(location: GridLocation): boolean {
+    if (canPlace) return true;
+    return canAim && resolvePressColor(location) !== null;
+  }
+
+  function resolvePressColor(location: GridLocation): MotionColor | null {
+    if (activeColor !== null) return activeColor;
+    if (!editAfterCompletion) return null;
+    if (blueLocation === location) return MotionColor.BLUE;
+    if (redLocation === location) return MotionColor.RED;
+    return null;
+  }
+
+  function toSvgPoint(event: PointerEvent): { x: number; y: number } | null {
+    const matrix = overlayElement?.getScreenCTM();
+    if (!matrix) return null;
+    const point = new DOMPoint(
+      event.clientX,
+      event.clientY
+    ).matrixTransform(matrix.inverse());
+    return { x: point.x, y: point.y };
+  }
+
+  /** The parent's committed orientation — deliberately NOT the shown one, which
+   *  may still be carrying an uncommitted drag preview. */
+  function committedOrientationFor(color: MotionColor): Orientation {
+    return color === MotionColor.BLUE ? blueOrientation : redOrientation;
+  }
+
+  function handlePointerDown(event: PointerEvent, location: GridLocation) {
+    // Without an orientation sink there's nothing to aim, so leave the plain
+    // click path entirely alone (this is what keeps Learn unchanged).
+    if (!canAim) return;
+
+    const color = resolvePressColor(location);
+    if (color === null) return;
+
+    pointerHandledPress = true;
+    handlePointSelect(location, color);
+
+    dragColor = color;
+    dragLocation = location;
+    dragAim = committedOrientationFor(color);
+
+    // Capture keeps the drag alive when the finger leaves the hit circle. It
+    // throws if the pointer is already gone, which is a no-op for us.
+    try {
+      (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+  }
+
+  function handlePointerMove(event: PointerEvent) {
+    if (dragColor === null || dragLocation === null) return;
+
+    const pointer = toSvgPoint(event);
+    const origin = dragPoint;
+    if (!pointer || !origin) return;
+
+    const aimed = orientationFromDrag({
+      location: dragLocation,
+      gridMode,
+      dx: pointer.x - origin.x,
+      dy: pointer.y - origin.y,
+    });
+    // Inside the dead zone `aimed` is null; hold the last aim rather than
+    // flickering back, so a tap is a tap and a wobble is not a change.
+    if (!aimed || aimed === dragAim) return;
+
+    dragAim = aimed;
+    pendingOrientation = { color: dragColor, orientation: aimed };
+  }
+
+  function handlePointerUp() {
+    const color = dragColor;
+    const aimed = dragAim;
+
+    dragColor = null;
+    dragLocation = null;
+    dragAim = null;
+
+    if (color === null || aimed === null) return;
+    if (aimed === committedOrientationFor(color)) return;
+
+    hapticService?.trigger("selection");
+    onOrientationChange?.(color, aimed);
   }
 
   function handleEdit(color: MotionColor) {
@@ -340,6 +502,17 @@
     publishChange();
   }
 
+  // Retire the drag preview once the parent's committed value matches it.
+  // Holding it until then is what prevents a one-frame snap-back on release.
+  $effect(() => {
+    const pending = pendingOrientation;
+    if (!pending) return;
+    if (committedOrientationFor(pending.color) !== pending.orientation) return;
+    untrack(() => {
+      pendingOrientation = null;
+    });
+  });
+
   $effect(() => {
     const nextInitializationKey = `${gridMode}:${initialBlueLocation ?? ""}:${initialRedLocation ?? ""}`;
     if (nextInitializationKey === initializationKey) return;
@@ -382,7 +555,11 @@
       />
     </div>
 
-    <svg viewBox="0 0 950 950" class="interaction-overlay">
+    <svg
+      viewBox="0 0 950 950"
+      class="interaction-overlay"
+      bind:this={overlayElement}
+    >
       <g class="touch-indicators">
         {#each activePoints as point (point.location)}
           {#if canPlace}
@@ -405,6 +582,31 @@
         {/each}
       </g>
 
+      <!-- Aim ticks: the four directions this point can be aimed, drawn only
+           while dragging so they teach the gesture without cluttering the
+           resting grid. Same source as the snap, so a tick can never point
+           somewhere the release won't land. -->
+      {#if dragPoint && dragColor}
+        <g class="aim-ticks" aria-hidden="true">
+          {#each aimDirections as direction (direction.orientation)}
+            {@const radians = (direction.angle * Math.PI) / 180}
+            {@const cos = Math.cos(radians)}
+            {@const sin = Math.sin(radians)}
+            <line
+              x1={dragPoint.x + cos * 72}
+              y1={dragPoint.y + sin * 72}
+              x2={dragPoint.x + cos * 138}
+              y2={dragPoint.y + sin * 138}
+              class="aim-tick"
+              class:aimed={direction.orientation === dragAim}
+              stroke={dragColor === MotionColor.RED
+                ? "var(--prop-red, #ef4444)"
+                : "var(--prop-blue, #3b82f6)"}
+            />
+          {/each}
+        </g>
+      {/if}
+
       <g class="click-targets">
         {#each activePoints as point (point.location)}
           <circle
@@ -413,15 +615,26 @@
             r="75"
             fill="transparent"
             class="click-target"
-            class:tappable={canPlace}
-            onclick={() => handlePointSelect(point.location)}
+            class:tappable={isPressable(point.location)}
+            onpointerdown={(event) => handlePointerDown(event, point.location)}
+            onpointermove={handlePointerMove}
+            onpointerup={handlePointerUp}
+            onpointercancel={handlePointerUp}
+            onclick={() => {
+              // A pointer press already placed this one; don't place it twice.
+              if (pointerHandledPress) {
+                pointerHandledPress = false;
+                return;
+              }
+              handlePointSelect(point.location);
+            }}
             onkeydown={(event) => handleKeydown(event, point.location)}
             role="button"
-            tabindex={canPlace ? 0 : -1}
+            tabindex={isPressable(point.location) ? 0 : -1}
             aria-label="{point.label} point{isBlueAt(point.location)
               ? ` (${blueNoun})`
               : ''}{isRedAt(point.location) ? ` (${redNoun})` : ''}"
-            aria-disabled={!canPlace}
+            aria-disabled={!isPressable(point.location)}
           />
         {/each}
       </g>
@@ -583,6 +796,23 @@
   .click-target {
     cursor: default;
     pointer-events: auto;
+    /* A drag across a hit target is aiming, not scrolling. Without this the
+       page pans out from under the gesture on touch. */
+    touch-action: none;
+  }
+
+  .aim-tick {
+    stroke-width: 6;
+    stroke-linecap: round;
+    opacity: 0.22;
+    transition:
+      opacity 0.12s ease,
+      stroke-width 0.12s ease;
+  }
+
+  .aim-tick.aimed {
+    stroke-width: 12;
+    opacity: 0.95;
   }
 
   .click-target.tappable {
@@ -681,6 +911,49 @@
     }
   }
 
+  /* Big-screen tiers at the shared 1680 seam. The 56vh cap leaves the grid
+     small and strands a dead band beneath it on a 4K display; the prompt needs
+     to be readable from across a room too. */
+  @media (min-width: 1680px) {
+    .grid-wrapper {
+      width: min(100%, 66vh);
+    }
+
+    .prompt-text {
+      font-size: 1.25rem;
+    }
+
+    .edit-button,
+    .undo-button {
+      min-height: 3.25rem;
+      font-size: 1.05rem;
+    }
+
+    .edit-controls {
+      width: min(100%, 32rem);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .grid-wrapper {
+      width: min(100%, 72vh);
+    }
+
+    .prompt-text {
+      font-size: 1.7rem;
+    }
+
+    .edit-button,
+    .undo-button {
+      min-height: 4rem;
+      font-size: 1.3rem;
+    }
+
+    .edit-controls {
+      width: min(100%, 44rem);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .point-glow {
       animation: none;
@@ -692,6 +965,10 @@
     }
 
     .point-solid {
+      transition: none;
+    }
+
+    .aim-tick {
       transition: none;
     }
   }

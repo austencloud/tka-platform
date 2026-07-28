@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { updateSequenceStartPose } from "$lib/features/create/construct/start-position-picker/services/update-sequence-start-pose";
+import { updateSequenceStartPosition } from "$lib/features/create/construct/start-position-picker/services/update-sequence-start-position";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -90,14 +90,14 @@ function fixture() {
   });
 }
 
-describe("updateSequenceStartPose", () => {
+describe("updateSequenceStartPosition", () => {
   it("keeps a connecting edit and propagates its orientations", () => {
     const editedStart = start(
       GridLocation.NORTH,
       GridPosition.BETA1,
       Orientation.CLOCK
     );
-    const result = updateSequenceStartPose(
+    const result = updateSequenceStartPosition(
       fixture(),
       editedStart,
       GridMode.DIAMOND
@@ -113,7 +113,7 @@ describe("updateSequenceStartPose", () => {
   });
 
   it("rejects a pose that would silently break the first transition", () => {
-    const result = updateSequenceStartPose(
+    const result = updateSequenceStartPosition(
       fixture(),
       start(GridLocation.EAST, GridPosition.BETA3),
       GridMode.DIAMOND
@@ -123,7 +123,7 @@ describe("updateSequenceStartPose", () => {
   });
 
   it("rejects changing the grid under a nonempty sequence", () => {
-    const result = updateSequenceStartPose(
+    const result = updateSequenceStartPosition(
       fixture(),
       start(GridLocation.NORTH, GridPosition.BETA1),
       GridMode.BOX

@@ -219,9 +219,6 @@
     return result;
   }
 
-  function dismissStarter() {
-    firstSequenceStarterState.markDismissed();
-  }
 </script>
 
 <div
@@ -292,12 +289,6 @@
   <div class="tool-panel-container" bind:this={toolPanelElement}>
     {#if !hasWorkspaceContent && isGeneratorTab}
       <GenerateEmptyState />
-    {:else if !hasWorkspaceContent && isConstructTab && firstSequenceStarterState.isEligible}
-      <GenerateEmptyState
-        showStarterOffer
-        onStarterGenerate={runStarter}
-        onStarterDismiss={dismissStarter}
-      />
     {/if}
     <CreationToolPanelSlot
       bind:toolPanelRef
@@ -308,6 +299,12 @@
       {onOpenFilters}
       {onCloseFilters}
     />
+    <!-- The first-session starter renders AFTER the picker, not above it. The
+         picker owns the heading and the primary decision; this is the quiet
+         alternative to making one yourself, so it reads as a footnote. -->
+    {#if !hasWorkspaceContent && isConstructTab && firstSequenceStarterState.isEligible}
+      <GenerateEmptyState showStarterOffer onStarterGenerate={runStarter} />
+    {/if}
   </div>
 </div>
 

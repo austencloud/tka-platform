@@ -50,7 +50,7 @@ describe("PropPlacementGrid", () => {
     );
     await expect
       .element(page.getByTestId("placement-prompt"))
-      .toHaveTextContent("Pose ready");
+      .toHaveTextContent("Position ready");
   });
 
   it("edits either prop after completion and restores one placement with Undo", async () => {

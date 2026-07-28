@@ -22,8 +22,8 @@
   // ~400 files out of the Create module's first-paint graph (see scripts/trace-create-three.cjs).
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import {
-    logConstructStartPoseCompleted,
-    type StartPosePath,
+    logConstructStartPositionCompleted,
+    type StartPositionPath,
   } from "../../construct/services/construct-analytics";
   import { getStartPositionDisplayLabel } from "../../construct/start-position-picker/services/start-position-display-label";
 
@@ -120,8 +120,8 @@
   // Transition state for undo animations
   let isUndoingOption = $state(false);
 
-  let pendingStartPose = $state<{
-    path: StartPosePath;
+  let pendingStartPosition = $state<{
+    path: StartPositionPath;
     previousPosition: PictographData | null;
   } | null>(null);
 
@@ -142,30 +142,30 @@
 
   function handleStartPositionSubmitted(
     _position: PictographData,
-    path: StartPosePath
+    path: StartPositionPath
   ) {
-    pendingStartPose = {
+    pendingStartPosition = {
       path,
       previousPosition: currentStartPosition,
     };
   }
 
   $effect(() => {
-    const pending = pendingStartPose;
+    const pending = pendingStartPosition;
     const committedPosition = currentStartPosition;
     if (!pending || !committedPosition) return;
     if (committedPosition === pending.previousPosition) return;
 
-    logConstructStartPoseCompleted({
+    logConstructStartPositionCompleted({
       path: pending.path,
       gridMode: sequenceGridMode,
     });
 
     const label = getStartPositionDisplayLabel(committedPosition);
     if (label) {
-      constructTutorialState.recordStartPose(label);
+      constructTutorialState.recordStartPosition(label);
     }
-    pendingStartPose = null;
+    pendingStartPosition = null;
   });
 
 </script>

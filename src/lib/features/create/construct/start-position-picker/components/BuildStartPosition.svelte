@@ -7,7 +7,10 @@
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    MotionColor,
+    type Orientation,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import OrientationCycler from "./OrientationCycler.svelte";
   import { getStartPositionDisplayLabel } from "../services/start-position-display-label";
@@ -51,7 +54,7 @@
       redOrientation,
       bluePropType,
       redPropType,
-      id: "start-built-pose",
+      id: "start-built-position",
     });
   });
 
@@ -62,6 +65,19 @@
   function handlePlacementChange(change: PropPlacementChange) {
     blueLocation = change.blueLocation;
     redLocation = change.redLocation;
+  }
+
+  /** A drag on the grid commits through the same per-hand handlers the cyclers
+   *  use, so the cyclers stay in step with whatever the drag just aimed. */
+  function handleOrientationChange(
+    color: MotionColor,
+    orientation: Orientation
+  ) {
+    if (color === MotionColor.BLUE) {
+      void onBlueOrientationChange(orientation);
+    } else {
+      void onRedOrientationChange(orientation);
+    }
   }
 
   async function handleApply() {
@@ -75,7 +91,7 @@
   }
 </script>
 
-<div class="pose-builder" data-testid="build-start-pose">
+<div class="position-builder" data-testid="build-start-position">
   <div class="placement-area">
     <PropPlacementGrid
       {gridMode}
@@ -87,6 +103,7 @@
       {initialRedLocation}
       editAfterCompletion
       onChange={handlePlacementChange}
+      onOrientationChange={handleOrientationChange}
     />
   </div>
 
@@ -117,12 +134,12 @@
     disabled={!builtPictograph || isApplying}
     onclick={handleApply}
   >
-    {isApplying ? "Applying…" : "Use this pose"}
+    {isApplying ? "Applying…" : "Use this position"}
   </button>
 </div>
 
 <style>
-  .pose-builder {
+  .position-builder {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -197,5 +214,53 @@
   .apply-button:focus-visible {
     outline: 2px solid var(--theme-text);
     outline-offset: 2px;
+  }
+
+  /* Big-screen tiers, matching the picker's 1680 seam so the builder's controls
+     grow with the shell instead of staying phone-sized on a 4K display. */
+  @media (min-width: 1680px) {
+    .position-builder {
+      gap: 1rem;
+    }
+
+    .apply-button,
+    .orientation-controls {
+      width: min(100%, 32rem);
+    }
+
+    .apply-button {
+      min-height: 3.5rem;
+      font-size: 1.05rem;
+    }
+
+    .recognition {
+      font-size: 1.05rem;
+      min-height: 2.25rem;
+    }
+
+    .recognition strong {
+      font-size: 2rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .apply-button,
+    .orientation-controls {
+      width: min(100%, 44rem);
+    }
+
+    .apply-button {
+      min-height: 4.5rem;
+      font-size: 1.4rem;
+      border-radius: 16px;
+    }
+
+    .recognition {
+      font-size: 1.4rem;
+    }
+
+    .recognition strong {
+      font-size: 2.75rem;
+    }
   }
 </style>

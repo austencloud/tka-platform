@@ -7,16 +7,16 @@
 
   const message = $derived.by(() => {
     switch (constructTutorialState.stage) {
-      case "start-pose":
+      case "start-position":
         return {
-          title: "Choose a start pose",
-          instruction: "Pick a preset or build the pose in your hands.",
+          title: "Choose a start position",
+          instruction: "Pick a preset, or build the position in your hands.",
         };
       case "movement-type":
         return {
           title: constructTutorialState.positionLabel
             ? `You built ${constructTutorialState.positionLabel}`
-            : "Start pose ready",
+            : "Start position ready",
           instruction: "Choose a movement type.",
         };
       case "movement-option":

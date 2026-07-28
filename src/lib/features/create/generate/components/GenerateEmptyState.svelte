@@ -36,7 +36,6 @@
     logOnboardingFirstSequenceStarterShown,
     logOnboardingFirstSequenceStarterGenerated,
     logOnboardingFirstSequenceStarterKept,
-    logOnboardingFirstSequenceStarterDismissed,
   } from "$lib/shared/analytics/services/onboarding-events";
 
   interface Props {
@@ -46,15 +45,9 @@
     showStarterOffer?: boolean;
     /** Runs the generate → load → keep command and returns the typed result. */
     onStarterGenerate?: () => Promise<StartFirstSequenceResult>;
-    /** Dismiss the starter ("Build from scratch"). */
-    onStarterDismiss?: () => void;
   }
 
-  let {
-    showStarterOffer = false,
-    onStarterGenerate,
-    onStarterDismiss,
-  }: Props = $props();
+  let { showStarterOffer = false, onStarterGenerate }: Props = $props();
 
   let hapticService = $state<ReturnType<typeof getHapticFeedback> | null>(null);
   let starterBusy = $state(false);
@@ -113,12 +106,6 @@
     }
   }
 
-  function handleStarterDismiss() {
-    if (starterBusy) return;
-    hapticService?.trigger("selection");
-    logOnboardingFirstSequenceStarterDismissed();
-    onStarterDismiss?.();
-  }
 </script>
 
 <!--
@@ -126,40 +113,31 @@
   the shared Crossfade primitive (grid-stack + {#key}). The 120ms in-delay is a
   deliberate gentle stagger; reduced-motion is handled inside the primitive.
 -->
-<div class="empty-state">
+<div class="empty-state" class:inline-starter={showStarterOffer}>
   {#if showStarterOffer}
     <!-- First-session starter (SP3b): one tap generates a sequence, loads it
          into the workspace, and saves it. Both starter and tour actions reuse
          PanelButton. -->
-    <div class="tour-offer starter-offer">
-      <p class="offer-title">Make your first sequence</p>
-      <p class="offer-sub">
-        Get a ready-to-edit sequence in the workspace, already saved to your
-        library.
-      </p>
-      <div class="offer-actions">
-        <PanelButton
-          variant="primary"
-          onclick={handleStarterGenerate}
-          disabled={starterBusy}
-        >
-          <span class="starter-action-label">
-            <span class="starter-action-sizer" aria-hidden="true">
-              Generate a sequence
-            </span>
-            <span class="starter-action-live">
-              {starterBusy ? "Generating…" : "Generate a sequence"}
-            </span>
+    <!-- One quiet action, deliberately not a titled card. The start-position
+         picker above it already asks the question and already IS "build from
+         scratch", so a second heading and a dismiss button would be the same
+         decision printed twice. -->
+    <div class="starter-inline">
+      <span class="starter-lead">or</span>
+      <PanelButton
+        variant="secondary"
+        onclick={handleStarterGenerate}
+        disabled={starterBusy}
+      >
+        <span class="starter-action-label">
+          <span class="starter-action-sizer" aria-hidden="true">
+            Generate one for me
           </span>
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          onclick={handleStarterDismiss}
-          disabled={starterBusy}
-        >
-          Build from scratch
-        </PanelButton>
-      </div>
+          <span class="starter-action-live">
+            {starterBusy ? "Generating…" : "Generate one for me"}
+          </span>
+        </span>
+      </PanelButton>
       {#if starterError}
         <p class="offer-error" role="alert">{starterError}</p>
       {/if}
@@ -245,10 +223,39 @@
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
   }
 
-  /* Starter offer keeps the tour-offer layout but gives the copy a touch more
-     room, since its sub is a full sentence. */
-  .starter-offer {
-    max-width: 34rem;
+  /* The inline starter sits BELOW the start-position picker, so it drops the
+     hint's top margin entirely and reads as a footnote to the picker rather
+     than a second offer competing with it. */
+  .empty-state.inline-starter {
+    margin-top: 0;
+    padding-bottom: clamp(0.5rem, 2vmin, 1rem);
+  }
+
+  .starter-inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  .starter-lead {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Grows with the picker above it at the shared 1680 seam. */
+  @media (min-width: 1680px) {
+    .starter-lead {
+      font-size: 1.05rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .starter-lead {
+      font-size: 1.4rem;
+    }
   }
 
   .offer-error {

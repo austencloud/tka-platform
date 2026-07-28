@@ -20,13 +20,13 @@ Controls moved below the grid for better UX
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
-  import BuildStartPose from "./BuildStartPose.svelte";
+  import BuildStartPosition from "./BuildStartPosition.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
   import {
-    logConstructStartPoseCancelled,
-    logConstructStartPosePath,
-    type StartPosePath,
+    logConstructStartPositionCancelled,
+    logConstructStartPositionPath,
+    type StartPositionPath,
   } from "../../services/construct-analytics";
 
   // The guest "New here? Show me how" chip was removed: it only ever rendered
@@ -38,7 +38,7 @@ Controls moved below the grid for better UX
   const STORAGE_KEY = "tka-start-position-picker-prefs";
   const START_POSITION_PATHS = [
     { value: "presets" as const, label: "Presets" },
-    { value: "build" as const, label: "Build a pose" },
+    { value: "build" as const, label: "Build" },
   ];
 
   // Props - receive navigation callbacks and layout detection
@@ -73,7 +73,7 @@ Controls moved below the grid for better UX
     validationMessage?: string | null;
     onPositionSubmitted?: (
       position: PictographData,
-      path: StartPosePath
+      path: StartPositionPath
     ) => void;
   }>();
 
@@ -84,9 +84,9 @@ Controls moved below the grid for better UX
 
   // State for showing advanced picker
   let showAdvancedPicker = $state(false);
-  let pickerPath = $state<StartPosePath>("presets");
+  let pickerPath = $state<StartPositionPath>("presets");
   let buildPathOpened = false;
-  let buildPoseSubmitted = false;
+  let buildPositionSubmitted = false;
 
   const effectiveBluePropType = $derived(
     bluePropTypeOverride ??
@@ -143,8 +143,8 @@ Controls moved below the grid for better UX
   });
 
   onDestroy(() => {
-    if (pickerPath === "build" && buildPathOpened && !buildPoseSubmitted) {
-      logConstructStartPoseCancelled("build");
+    if (pickerPath === "build" && buildPathOpened && !buildPositionSubmitted) {
+      logConstructStartPositionCancelled("build");
     }
   });
 
@@ -158,7 +158,7 @@ Controls moved below the grid for better UX
 
       const prefs = JSON.parse(stored) as {
         showAdvanced?: boolean;
-        pickerPath?: StartPosePath;
+        pickerPath?: StartPositionPath;
         gridMode?: string;
         orientation?: string; // legacy single orientation
         blueOrientation?: string;
@@ -253,28 +253,28 @@ Controls moved below the grid for better UX
     hapticService?.trigger("selection");
     const submittedPath = pickerPath;
     if (submittedPath === "build") {
-      buildPoseSubmitted = true;
+      buildPositionSubmitted = true;
     }
     onPositionSubmitted(position, submittedPath);
     await pickerState.selectPosition(position);
   }
 
-  function handlePathChange(path: StartPosePath) {
+  function handlePathChange(path: StartPositionPath) {
     hapticService?.trigger("selection");
     if (
       pickerPath === "build" &&
       path !== "build" &&
       buildPathOpened &&
-      !buildPoseSubmitted
+      !buildPositionSubmitted
     ) {
-      logConstructStartPoseCancelled("build");
+      logConstructStartPositionCancelled("build");
     }
     if (path === "build") {
       buildPathOpened = true;
-      buildPoseSubmitted = false;
+      buildPositionSubmitted = false;
     }
     pickerPath = path;
-    logConstructStartPosePath(path);
+    logConstructStartPositionPath(path);
     persistPreferences();
   }
 
@@ -329,7 +329,7 @@ Controls moved below the grid for better UX
 
 <div class="start-pos-picker" data-testid="start-position-picker">
   {#if !embedded}
-    <p class="workspace-hint">Choose or build your start pose</p>
+    <p class="workspace-hint">Choose your start position</p>
   {/if}
 
   <div class="path-selector">
@@ -339,7 +339,7 @@ Controls moved below the grid for better UX
       onchange={handlePathChange}
       color="accent"
       size="sm"
-      ariaLabel="Start pose method"
+      ariaLabel="Start position method"
     />
   </div>
 
@@ -356,7 +356,7 @@ Controls moved below the grid for better UX
         out:scale={{ start: 0.92, duration: 200, easing: cubicOut }}
       >
         {#if pickerPath === "build"}
-          <BuildStartPose
+          <BuildStartPosition
             gridMode={pickerState.currentGridMode}
             bluePropType={effectiveBluePropType}
             redPropType={effectiveRedPropType}
@@ -689,6 +689,62 @@ Controls moved below the grid for better UX
 
     .control-button:hover {
       transform: none;
+    }
+  }
+
+  /* Big-screen tiers at the documented 1680 seam (.claude/rules/4k-native-layout.md).
+     Without these the picker is a phone column marooned in a 4K field: a 2rem
+     heading and a 360px method toggle read as postage stamps across the room,
+     which is the exact "scaled-up phone layout" this codebase keeps fixing. */
+  @media (min-width: 1680px) {
+    .workspace-hint {
+      font-size: clamp(2rem, 2.2vw, 3rem);
+      padding-top: clamp(20px, 5vh, 52px);
+    }
+
+    .path-selector {
+      width: min(calc(100% - 24px), 32rem);
+      margin-top: 1rem;
+    }
+
+    .controls-footer {
+      max-width: 64rem;
+      gap: 1rem;
+    }
+
+    .control-button {
+      min-height: 3.5rem;
+      font-size: 1.05rem;
+    }
+
+    .control-icon {
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .workspace-hint {
+      font-size: clamp(3rem, 2vw, 4.25rem);
+    }
+
+    .path-selector {
+      width: min(calc(100% - 24px), 44rem);
+    }
+
+    .controls-footer {
+      max-width: 84rem;
+    }
+
+    .control-button {
+      min-height: 4.5rem;
+      font-size: 1.4rem;
+      border-radius: 16px;
+    }
+
+    .control-icon {
+      width: 28px;
+      height: 28px;
     }
   }
 

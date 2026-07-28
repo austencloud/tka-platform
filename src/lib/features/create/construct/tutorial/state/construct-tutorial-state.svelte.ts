@@ -1,5 +1,5 @@
 export const CONSTRUCT_TUTORIAL_STAGES = [
-  "start-pose",
+  "start-position",
   "movement-type",
   "movement-option",
   "play-sequence",
@@ -23,20 +23,20 @@ export interface AppliedTutorialOption {
  */
 export function createConstructTutorialState() {
   let status = $state<ConstructTutorialStatus>("inactive");
-  let stage = $state<ConstructTutorialStage>("start-pose");
+  let stage = $state<ConstructTutorialStage>("start-position");
   let positionLabel = $state<string | null>(null);
   let movementLetter = $state<string | null>(null);
 
   function start() {
     status = "active";
-    stage = "start-pose";
+    stage = "start-position";
     positionLabel = null;
     movementLetter = null;
   }
 
   function reset() {
     status = "inactive";
-    stage = "start-pose";
+    stage = "start-position";
     positionLabel = null;
     movementLetter = null;
   }
@@ -47,8 +47,8 @@ export function createConstructTutorialState() {
     }
   }
 
-  function recordStartPose(label: string): boolean {
-    if (status !== "active" || stage !== "start-pose") return false;
+  function recordStartPosition(label: string): boolean {
+    if (status !== "active" || stage !== "start-position") return false;
     positionLabel = label;
     stage = "movement-type";
     return true;
@@ -101,7 +101,7 @@ export function createConstructTutorialState() {
     start,
     reset,
     dismiss,
-    recordStartPose,
+    recordStartPosition,
     recordMovementType,
     recordOptionApplied,
     recordFullPlay,

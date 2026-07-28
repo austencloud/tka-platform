@@ -33,7 +33,7 @@ import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import type { IFilterPersister } from "../../construct/option-picker/services/filter-persister";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { invalidateLoopDisplayCache } from "$lib/shared/create/services/loop-certificate";
-import { updateSequenceStartPose } from "../../construct/start-position-picker/services/update-sequence-start-pose";
+import { updateSequenceStartPosition } from "../../construct/start-position-picker/services/update-sequence-start-position";
 
 /**
  * Minimal interface for createModuleState dependency
@@ -190,7 +190,7 @@ export function createConstructTabState(
     const currentGridMode = startPositionStateService.currentGridMode;
 
     if (currentSequence) {
-      const update = updateSequenceStartPose(
+      const update = updateSequenceStartPosition(
         currentSequence,
         startPositionData,
         currentGridMode
@@ -199,7 +199,7 @@ export function createConstructTabState(
       if (!update.ok) {
         setError(
           update.reason === "grid-mismatch"
-            ? "This sequence uses a different grid. Keep its current grid to edit the start pose."
+            ? "This sequence uses a different grid. Keep its current grid to edit the start position."
             : "This pose does not connect to step 1. Move the props to the position where step 1 begins."
         );
         setShowStartPositionPicker(true);
@@ -209,7 +209,7 @@ export function createConstructTabState(
       undoController?.pushUndoSnapshot(UndoOperationType.UPDATE_BEAT, {
         stepNumber: 0,
         stepIndex: 0,
-        description: "Update start pose",
+        description: "Update start position",
       });
 
       sequenceState.setCurrentSequence(update.sequence);
