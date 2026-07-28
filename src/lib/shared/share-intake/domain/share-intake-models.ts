@@ -74,14 +74,25 @@ export interface ReceiptInput {
 }
 
 /** Per-item routing decision. Classification is per file, never per batch. */
-export type IntakeItem =
-  | { kind: "card"; code: string; file: File }
-  | { kind: "image"; file: File };
+export type IntakeItem
+  = { kind: "card"; code: string; file: File }
+  | { kind: "image"; file: File }
+  /**
+   * A second photo of a card already seen in this batch. NOT an image: filing
+   * it as one would send a picture of a card into a conversation, which is
+   * what the first draft did and what its own test asserted.
+   */
+  | { kind: "duplicate"; code: string; file: File };
 
 export interface IntakeClassification {
   items: IntakeItem[];
   /** A TKA code found in the shared text, if any. */
   textCode: string | null;
-  /** Shared text that was not a TKA code. Becomes prefilled message text. */
+  /**
+   * Shared text minus any code that was extracted from it. Becomes the
+   * prefilled message note. Kept even when a code WAS found - "look at this
+   * one" alongside a link is exactly the case that matters.
+   */
   residualText: string | null;
+  problems: IntakeProblem[];
 }
