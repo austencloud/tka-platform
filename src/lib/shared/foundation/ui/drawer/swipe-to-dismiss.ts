@@ -26,6 +26,17 @@ const DISMISS_THRESHOLDS = {
   /** Minimum movement (px) to consider gesture as intentional drag */
   MOVEMENT_THRESHOLD: 5,
   /**
+   * Tap slop (px) for gestures that START on an interactive control (button,
+   * link, input). A finger is never perfectly still, so the 5px drag threshold
+   * was cancelling real taps: a few px of jitter set `hasMoved`, which set
+   * `justDragged`, which made the capture-phase click handler swallow the
+   * click. Buttons inside drawers then read as dead on touch devices — the
+   * inbox header toggle and the card-export chips both rage-clicked because of
+   * it. Only travel along the dismiss axis beyond this slop cancels a tap.
+   * 12px matches the touch slop native browsers use.
+   */
+  TAP_SLOP: 12,
+  /**
    * Distance (px) a pull must travel to dismiss when the gesture STARTS at a
    * scrollable container's dismiss edge (e.g. a message list already scrolled to
    * the top). Deliberately larger than DISTANCE_SLOW and velocity-independent so
@@ -509,9 +520,25 @@ export class SwipeToDismiss {
       }
     }
 
+    // Travel along the axis that could actually dismiss. Off-axis drift — a
+    // thumb rolling vertically on a right-placed drawer — is not a dismiss
+    // gesture and must never be treated as one.
+    const dismissAxisTravel =
+      this.options.placement === "right" || this.options.placement === "left"
+        ? absDeltaX
+        : absDeltaY;
+
+    // Gestures that began on a control only forfeit their click once they clear
+    // real tap slop on the dismiss axis (see TAP_SLOP). Everything else keeps
+    // the original 5px drag threshold.
+    const forfeitsTap =
+      dismissAxisTravel > DISMISS_THRESHOLDS.TAP_SLOP;
+
     if (absDeltaY > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD || absDeltaX > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD) {
-      this.hasMoved = true;
-      if (this.startedOnInteractive) {
+      if (!this.startedOnInteractive || forfeitsTap) {
+        this.hasMoved = true;
+      }
+      if (this.startedOnInteractive && forfeitsTap) {
         event.preventDefault();
       }
     }

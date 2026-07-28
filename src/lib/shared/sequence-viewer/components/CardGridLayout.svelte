@@ -39,6 +39,7 @@
   import CellRenderer from "./CellRenderer.svelte";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { getQRCellScale } from "$lib/shared/qr/qr-cell-scale";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface CellData {
     index: number;
@@ -73,6 +74,8 @@
     highlightedStepIndex: number | null;
     showQRCode: boolean;
     qrDataUrl: string | null;
+    /** A QR is being minted for this card — reserve the cell and show it working. */
+    qrPending?: boolean;
     qrGridPosition: { gridColumn: number; gridRow: number } | null;
     showMandala: boolean;
     mandalaPlacements: MandalaPlacement[];
@@ -120,6 +123,7 @@
     highlightedStepIndex,
     showQRCode,
     qrDataUrl,
+    qrPending = false,
     qrGridPosition,
     showMandala,
     mandalaPlacements,
@@ -235,6 +239,24 @@
   {/if}
 {/snippet}
 
+<!-- The reserved QR cell. Minting a code is a Firestore round trip plus a
+     two-theme cell warm, so the slot shows it working rather than sitting blank
+     and reading as a toggle that did nothing. -->
+{#snippet qrCellBlock()}
+  {#if qrDataUrl}
+    {@render qrImageBlock()}
+  {:else if qrPending}
+    <div class="qr-pending" role="status" aria-label="Generating QR code">
+      <ProgressRing
+        percent={-1}
+        size={20}
+        strokeWidth={2}
+        color={activeDarkMode ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.45)"}
+      />
+    </div>
+  {/if}
+{/snippet}
+
 {#if hasMixedDurations && durationRows.length > 0}
   <!-- Duration-aware layout: start position as fixed column barrier, step rows to the right -->
   {@const startCell = cells.find(c => c.index === -1)}
@@ -247,9 +269,7 @@
             {@render startCellBlock(startCell)}
             {#if showQRCode}
               <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
-                {#if qrDataUrl}
-                  {@render qrImageBlock()}
-                {/if}
+                {@render qrCellBlock()}
               </div>
             {/if}
           </div>
@@ -328,9 +348,9 @@
       {#if includeStartPosition && startCell}
         <div class="duration-start-col" class:dark-mode={activeDarkMode}>
           {@render startCellBlock(startCell)}
-          {#if showQRCode && qrDataUrl}
+          {#if showQRCode && (qrDataUrl || qrPending)}
             <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
-              {@render qrImageBlock()}
+              {@render qrCellBlock()}
             </div>
           {/if}
         </div>
@@ -484,14 +504,14 @@
         {/if}
         </div>
       {/each}
-      {#if qrGridPosition && qrDataUrl}
+      {#if qrGridPosition && (qrDataUrl || qrPending)}
         <div
           class="cell-flip-wrapper qr-cell-wrapper"
           style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
           transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
         >
           <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
-            {@render qrImageBlock()}
+            {@render qrCellBlock()}
           </div>
         </div>
       {/if}
@@ -596,14 +616,14 @@
       {/if}
       </div>
     {/each}
-    {#if qrGridPosition && qrDataUrl}
+    {#if qrGridPosition && (qrDataUrl || qrPending)}
       <div
         class="cell-flip-wrapper qr-cell-wrapper"
         style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
         transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
         <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
-          {@render qrImageBlock()}
+          {@render qrCellBlock()}
         </div>
       </div>
     {/if}
@@ -857,6 +877,16 @@
 
   .qr-cell.dark-mode {
     background: #000;
+  }
+
+  /* Fills the reserved cell rather than sizing to the ring, so nothing shifts
+     when the real QR image replaces it. */
+  .qr-pending {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
   }
 
   .qr-code-image {

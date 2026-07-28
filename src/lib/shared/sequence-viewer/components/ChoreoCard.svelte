@@ -203,6 +203,39 @@
   let isLoading = $state(true);
   let isRendering = false;
   let renderQueued = false;
+
+  // Reactive mirror of isRendering, for the UI only. NEVER read this inside the
+  // render path: the render $effect calls renderAllCells(), so reading a $state
+  // there would subscribe the effect to its own busy flag and re-trigger it.
+  // Writing it from inside an effect is safe; reading it is not.
+  let isRefreshing = $state(false);
+  let refreshDelayTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // A warm cache hit settles in a few ms, so a pip that flashed on every toggle
+  // would be pure noise. The affordance only appears once a regeneration has run
+  // long enough to read as "nothing happened" — which is what makes people
+  // hammer the export-panel chips.
+  const REFRESH_AFFORDANCE_DELAY_MS = 200;
+
+  function beginRefresh(): void {
+    // Deliberately does not read isRefreshing: this runs inside the render
+    // $effect's call chain, and reading the flag there would subscribe that
+    // effect to its own busy state and re-trigger it every time the pip
+    // appeared. The timer guard is enough — a redundant re-set is a no-op.
+    if (refreshDelayTimer !== null) return;
+    refreshDelayTimer = setTimeout(() => {
+      refreshDelayTimer = null;
+      isRefreshing = true;
+    }, REFRESH_AFFORDANCE_DELAY_MS);
+  }
+
+  function endRefresh(): void {
+    if (refreshDelayTimer !== null) {
+      clearTimeout(refreshDelayTimer);
+      refreshDelayTimer = null;
+    }
+    isRefreshing = false;
+  }
   // Suppress cellWidth updates during cell loading. Cell content swaps cause
   // the preview-stack to micro-fluctuate, cascading into font/header jitter.
   // Container dimensions (containedWidth/Height) are NEVER suppressed — the
@@ -339,6 +372,12 @@
   // The grid cell is always reserved (via qrGridPosition) so layout doesn't
   // shift when the QR image loads in.
   let qrDataUrl = $state<string | null>(null);
+  // True only while a QR is genuinely being minted. Minting is expensive — a
+  // Firestore short-code transaction plus a full two-theme cell warm — so
+  // without this the QR chip toggled a cell that stayed empty for seconds and
+  // read as a dead control. Guests never mint one, so their empty slot is
+  // final, not pending, and must not spin forever.
+  let qrGenerating = $state(false);
   const qrCacheMap = new Map<string, string>();
   let lastQrKey = "";
 
@@ -358,6 +397,7 @@
     const key = qrCacheKey;
     if (!key) {
       qrDataUrl = null;
+      qrGenerating = false;
       lastQrKey = "";
       return;
     }
@@ -370,6 +410,7 @@
     const cached = qrCacheMap.get(key);
     if (cached) {
       qrDataUrl = cached;
+      qrGenerating = false;
       return;
     }
 
@@ -387,10 +428,20 @@
     // analytics.
     if (!authState.isAuthenticated) {
       qrDataUrl = null;
+      qrGenerating = false;
       return;
     }
     const qrGenerator = getQRCodeGenerator();
-    if (!qrGenerator || !seq) return;
+    if (!qrGenerator || !seq) {
+      qrGenerating = false;
+      return;
+    }
+
+    // qrDataUrl is deliberately left alone: on a theme switch the existing code
+    // is still worth showing until its replacement lands. qrPending only fires
+    // when there is nothing in the slot yet — the case that looked like a dead
+    // toggle.
+    qrGenerating = true;
 
     qrGenerator
       .generateForSequence(seq, {
@@ -407,12 +458,19 @@
         // Only update if this is still the current key (sequence didn't change mid-flight)
         if (lastQrKey === key) {
           qrDataUrl = result.dataUrl;
+          qrGenerating = false;
         }
       })
       .catch(() => {
-        // QR is optional - don't block the card
+        // QR is optional - don't block the card. Clear the pending state so the
+        // slot settles empty instead of spinning forever.
+        if (lastQrKey === key) qrGenerating = false;
       });
   });
+
+  // The reserved QR cell shows a pending state instead of staying blank while
+  // the code is minted, so toggling the QR chip has an immediate visible result.
+  const qrPending = $derived(effShowQRCode && !qrDataUrl && qrGenerating);
 
   // Calculate difficulty level (with null safety)
   const difficultyLevel = $derived.by(() => {
@@ -716,6 +774,7 @@
       return;
     }
     isRendering = true;
+    beginRefresh();
 
     try {
       // Calculate layout
@@ -1003,8 +1062,12 @@
         flipEnabled = true;
       });
       if (renderQueued) {
+        // A queued pass continues the same visible refresh — don't blink the
+        // affordance off and restart its delay between the two.
         renderQueued = false;
         renderAllCells();
+      } else {
+        endRefresh();
       }
     }
   }
@@ -1027,6 +1090,7 @@
       return;
     }
     isRendering = true;
+    beginRefresh();
 
     // Flush any pending cleanup timer from a previous cross-fade
     crossfader.flushPendingCrossfade(() => {
@@ -1134,6 +1198,8 @@
           cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
         });
         renderAllCells();
+      } else {
+        endRefresh();
       }
     }
   }
@@ -1681,6 +1747,7 @@
 
   onDestroy(() => {
     cancelLongPress();
+    if (refreshDelayTimer !== null) clearTimeout(refreshDelayTimer);
     clearCellUrls();
     crossfader.destroy();
     if (settleWindowTimer !== null) clearTimeout(settleWindowTimer);
@@ -1695,7 +1762,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} bind:this={containerElement}
+<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} aria-busy={isRefreshing ? "true" : undefined} bind:this={containerElement}
   oncontextmenu={(e: MouseEvent) => {
     e.preventDefault();
     if (longPressFired) {
@@ -1731,6 +1798,15 @@
   onpointerup={() => cancelLongPress()}
   onpointercancel={() => cancelLongPress()}
 >
+  {#if isRefreshing && cells.length > 0}
+    <!-- The card keeps showing its previous images while it regenerates, so
+         without this a toggle looks like a dead control. Absolutely positioned
+         and pointer-events:none — it can never move or block the card. -->
+    <div class="card-refreshing" role="status" aria-label="Updating card preview">
+      <ProgressRing percent={-1} size={16} strokeWidth={2} />
+      <span>Updating</span>
+    </div>
+  {/if}
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
@@ -1782,6 +1858,7 @@
         {highlightedStepIndex}
         showQRCode={effShowQRCode}
         {qrDataUrl}
+        {qrPending}
         {qrGridPosition}
         showMandala={effShowMandala}
         {mandalaPlacements}
@@ -1865,6 +1942,31 @@
     width: 100%;
     height: 100%;
     background: var(--theme-card-bg);
+  }
+
+  /* Refresh pip. Absolute + pointer-events:none so it reserves no space and
+     steals no clicks — the card behind it stays fully interactive. */
+  .card-refreshing {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 88%,
+      transparent
+    );
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    line-height: 1;
+    pointer-events: none;
   }
 
 

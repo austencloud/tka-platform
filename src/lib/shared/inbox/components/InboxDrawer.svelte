@@ -222,6 +222,16 @@
     inboxState.backToList();
   }
 
+  // One control swaps between the two inbox tabs. It gets the same tactile
+  // acknowledgement as every other header button so a tap is felt even when the
+  // destination list happens to look like the one being left (both empty).
+  function handleToggleNotifications() {
+    hapticService?.trigger("selection");
+    inboxState.setTab(
+      inboxState.activeTab === "notifications" ? "messages" : "notifications"
+    );
+  }
+
   function handleCancelCompose() {
     hapticService?.trigger("selection");
     inboxState.cancelCompose();
@@ -442,12 +452,8 @@
         <button
           class="header-action-btn notification-toggle"
           class:active={inboxState.activeTab === "notifications"}
-          onclick={() =>
-            inboxState.setTab(
-              inboxState.activeTab === "notifications"
-                ? "messages"
-                : "notifications"
-            )}
+          onclick={handleToggleNotifications}
+          aria-pressed={inboxState.activeTab === "notifications"}
           aria-label={inboxState.activeTab === "notifications"
             ? "Back to messages"
             : "View notifications"}
