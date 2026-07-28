@@ -8,6 +8,7 @@
    * No narration. The only prose is quoted from the source.
    */
   import type { QftIncrement } from "../qft-model";
+  import type { QftLayers } from "../qft-layers";
   import type { GuideMove } from "../qft-guide";
   import QftStage from "./QftStage.svelte";
   import QftTable from "./QftTable.svelte";
@@ -17,10 +18,11 @@
     increments: QftIncrement[];
     cursor: number;
     compact: boolean;
+    layers: QftLayers;
     onShowArchive: () => void;
   }
 
-  let { move, increments, cursor, compact, onShowArchive }: Props = $props();
+  let { move, increments, cursor, compact, layers, onShowArchive }: Props = $props();
 </script>
 
 <div class="guide">
@@ -41,13 +43,26 @@
   <div class="pair">
     <figure>
       <div class="box stage">
-        <QftStage knobs={move.knobs} {increments} {cursor} pendulum={move.pendulum ?? false} />
+        <QftStage
+          knobs={move.knobs}
+          {increments}
+          {cursor}
+          {layers}
+          pendulum={move.pendulum ?? false}
+        />
       </div>
       <figcaption>
         <span>computed from the published rules</span>
-        <button type="button" class="archive-link" onclick={onShowArchive}>
-          See the 2011 diagram
-        </button>
+        <!--
+          On a phone this button costs the stage about a third of its height,
+          and the stage is the thing worth looking at. There it moves to the
+          transport row instead, which the page owns.
+        -->
+        {#if !compact}
+          <button type="button" class="archive-link" onclick={onShowArchive}>
+            See the 2011 diagram
+          </button>
+        {/if}
       </figcaption>
     </figure>
   </div>
@@ -321,8 +336,11 @@
 
   @media (max-width: 30rem) {
     .guide {
-      /* Sized for one subject. This was 30vw when two figures shared the row. */
-      --box-h: clamp(8rem, 33vw, 15rem);
+      /*
+       * Sized for one subject, and for a phone that also has to fit the
+       * notation strip and the layer switches under it.
+       */
+      --box-h: clamp(7rem, 32vw, 15rem);
       /* Tighter than the fluid default, which overran the app box by a few
          pixels once the caption under the left figure gained its control. */
       gap: 0.4rem;

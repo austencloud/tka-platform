@@ -29,6 +29,12 @@
     type QftKnobs,
     type Spin
   } from "$lib/shared/notation/qft/qft-model";
+  import {
+    LAYER_KEYS,
+    LAYER_LABELS,
+    normalizeLayers,
+    type QftLayers
+  } from "$lib/shared/notation/qft/qft-layers";
   import { nameFor } from "$lib/shared/notation/qft/qft-naming";
   import {
     loadQftSession,
@@ -71,6 +77,17 @@
   let playing = $state(restored?.playing ?? true);
 
   const pos = $derived(((cursor % 8) + 8) % 8);
+
+  /*
+   * Which layers the stage draws. Independent booleans rather than a
+   * single-select, so these are toggle chips and not a SegmentedControl
+   * (.claude/rules/chip-primitives.md).
+   */
+  let layers = $state<QftLayers>(normalizeLayers(restored?.layers));
+
+  const toggleLayer = (key: keyof QftLayers) => {
+    layers = { ...layers, [key]: !layers[key] };
+  };
 
   /*
    * Indexing is possibly-undefined under strict index access, and the guide is
@@ -190,7 +207,8 @@
     convention,
     /* Normalised: the raw cursor runs unbounded while playing and negative mid-scrub. */
     cursor: pos,
-    playing
+    playing,
+    layers
   });
 
   /*
@@ -208,7 +226,8 @@
       phase,
       pendulum,
       convention,
-      playing
+      playing,
+      layers
     ];
     saveQftSession(snapshot());
   });
@@ -336,6 +355,7 @@
           increments={guideIncrements}
           cursor={pos}
           {compact}
+          {layers}
           onShowArchive={() => (showArchive = true)}
         />
       {:else}
@@ -351,7 +371,13 @@
 
           <div class="instrument-body">
             <div class="stage-box">
-              <QftStage {knobs} increments={instrumentIncrements} cursor={pos} {pendulum} />
+              <QftStage
+                {knobs}
+                increments={instrumentIncrements}
+                cursor={pos}
+                {pendulum}
+                {layers}
+              />
             </div>
 
             <div class="knobs">
@@ -426,6 +452,23 @@
     </Crossfade>
   </main>
 
+  <!--
+    Layers. Independent switches, so toggle chips rather than a segmented
+    control. They sit above the transport because they change what the stage
+    IS, where the transport only changes where it is in the cycle.
+  -->
+  <nav class="layers" aria-label="Stage layers">
+    {#each LAYER_KEYS as key (key)}
+      <FilterChipBase
+        label={LAYER_LABELS[key]}
+        mode="toggle"
+        size="sm"
+        active={layers[key]}
+        onclick={() => toggleLayer(key)}
+      />
+    {/each}
+  </nav>
+
   <div class="transport">
     <button type="button" onclick={() => step8(-1)} aria-label="Previous increment">‹</button>
     <span class="counter">{step + 1} / 8</span>
@@ -433,6 +476,11 @@
     <button type="button" class="play" onclick={() => (playing = !playing)}>
       {playing ? "Pause" : "Play"}
     </button>
+
+    {#if compact && appMode === "guide"}
+      <!-- Lives under the figure on wider screens; see QftGuidePane. -->
+      <button type="button" onclick={() => (showArchive = true)}>2011 diagram</button>
+    {/if}
 
     {#if appMode === "guide"}
       <button type="button" class="mode" onclick={openInstrument}>Turn the knobs</button>
@@ -553,7 +601,7 @@
     height: calc(100dvh - var(--site-header));
     margin-top: var(--site-header);
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     gap: clamp(0.5rem, 1.5vh, 1.25rem);
     padding: clamp(0.5rem, 1.5vh, 1.25rem) clamp(0.75rem, 2vw, 2rem);
     overflow: hidden;
@@ -708,6 +756,14 @@
     .stage-box {
       width: clamp(14rem, 38vh, 30rem);
     }
+  }
+
+  .layers {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
   }
 
   .transport {
@@ -952,6 +1008,18 @@
     }
 
     .chips :global(.filter-chip) {
+      flex: none;
+    }
+
+    /* Six labels do not fit a 375px row; scroll them rather than stack them. */
+    .layers {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      justify-content: flex-start;
+      scrollbar-width: none;
+    }
+
+    .layers :global(.filter-chip) {
       flex: none;
     }
   }

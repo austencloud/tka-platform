@@ -17,6 +17,7 @@
     type QftIncrement,
     type QftKnobs
   } from "$lib/shared/notation/qft/qft-model";
+  import { ALL_LAYERS, type QftLayers } from "$lib/shared/notation/qft/qft-layers";
 
   interface Props {
     knobs: QftKnobs;
@@ -30,9 +31,19 @@
      * prop it names.
      */
     pendulum?: boolean;
+    /**
+     * Which layers to draw.
+     *
+     * The stage carries six things that are each a separate claim about the
+     * move, and reading any one of them is easier with the others out of the
+     * way — the direction dart in particular is hard to follow through a lit
+     * trail and two compasses. The prop itself (hand, tether, head) is not on
+     * this list: with that gone there is no stage.
+     */
+    layers?: QftLayers;
   }
 
-  let { knobs, increments, cursor, pendulum = false }: Props = $props();
+  let { knobs, increments, cursor, pendulum = false, layers = ALL_LAYERS }: Props = $props();
 
   /** Pixels per prop length. The head reaches radius + 1, so 2.5 at the widest. */
   const UNIT = 100;
@@ -146,12 +157,29 @@
    * permanently it competes with the tether and the trail.
    *
    * So it fires rather than persists: a dart leaves the head at each step
-   * boundary, pointing along that step's direction value, and fades out over
-   * the increment. On Charlie's convention an out-of-resolution cell has no
-   * direction to fire, so the absence of a dart IS the `n` — visible rather
-   * than merely tabulated.
+   * boundary, pointing along that step's direction value. On Charlie's
+   * convention an out-of-resolution cell has no direction to fire, so the
+   * absence of a dart IS the `n` — visible rather than merely tabulated.
+   *
+   * And it TRAVELS. Pinned at the departure point it was immediately overtaken
+   * by the prop rotating towards it, which read as the prop swallowing its own
+   * direction marker — the opposite of the thing the dart is there to say. It
+   * now shoots away along the direction it names and fades as it goes, so it
+   * stays ahead of the prop for as long as it is visible.
    */
   const DART_LENGTH = 0.55;
+  /** How far the dart runs before it is gone, in prop lengths. */
+  const DART_TRAVEL = 0.8;
+  /** Share of an increment the dart lives for. */
+  const DART_SPAN = 0.45;
+
+  /** 0 at the instant a step begins, 1 when the dart has finished its run. */
+  const dartAge = $derived(
+    Math.min(1, (cursor - Math.floor(cursor)) / DART_SPAN)
+  );
+
+  /** Fades out over its own flight rather than sitting still and dimming. */
+  const dartLife = $derived(1 - dartAge);
 
   const dart = $derived.by(() => {
     const current = row;
@@ -159,17 +187,20 @@
     if (!current || value === undefined || value === "n") return null;
 
     const from = handLocalPoint(current.propDepart);
-    const along = pointAt(value, DART_LENGTH);
+    /* Unit vector of the named direction; the same one both offsets ride along. */
+    const heading = pointAt(value, 1);
+    /* Decelerating, so it leaves fast and trails off rather than moving linearly. */
+    const run = DART_TRAVEL * (1 - (1 - dartAge) ** 2) * UNIT;
+
+    const x1 = from.x + heading.x * run;
+    const y1 = from.y + heading.y * run;
     return {
-      x1: from.x,
-      y1: from.y,
-      x2: from.x + along.x * UNIT,
-      y2: from.y + along.y * UNIT
+      x1,
+      y1,
+      x2: x1 + heading.x * DART_LENGTH * UNIT,
+      y2: y1 + heading.y * DART_LENGTH * UNIT
     };
   });
-
-  /** 1 at the instant a step begins, falling to 0 across the increment. */
-  const dartLife = $derived(Math.max(0, 1 - (cursor - Math.floor(cursor)) * 2.2));
 
   /**
    * The swept sector.
@@ -260,46 +291,56 @@
     </marker>
   </defs>
 
-  <circle class="ring" cx="0" cy="0" r={RING} />
+  {#if layers.handCompass}
+    <circle class="ring" cx="0" cy="0" r={RING} />
+  {/if}
 
-  {#if knobs.radius > 0.01}
+  {#if layers.handPath && knobs.radius > 0.01}
     <circle class="hand-path" cx="0" cy="0" r={knobs.radius * UNIT} />
   {/if}
 
   <!-- Under the trail and the tether: this is ground, not a mark. -->
-  {#if sectorFull}
-    <path class="sector" d={sectorFull} />
-  {/if}
-  {#if sectorProgress}
-    <path class="sector-progress" d={sectorProgress} />
+  {#if layers.sector}
+    {#if sectorFull}
+      <path class="sector" d={sectorFull} />
+    {/if}
+    {#if sectorProgress}
+      <path class="sector-progress" d={sectorProgress} />
+    {/if}
   {/if}
 
-  <path class="trail" d={trail} />
-  {#each bands as b (b.k)}
-    <path
-      class="trail-recent"
-      d={trail}
-      stroke-dasharray={b.dash}
-      stroke-dashoffset={b.offset}
-      stroke-width={b.width}
-      opacity={b.opacity}
-    />
-  {/each}
+  {#if layers.trail}
+    <path class="trail" d={trail} />
+    {#each bands as b (b.k)}
+      <path
+        class="trail-recent"
+        d={trail}
+        stroke-dasharray={b.dash}
+        stroke-dashoffset={b.offset}
+        stroke-width={b.width}
+        opacity={b.opacity}
+      />
+    {/each}
+  {/if}
 
-  {#each HOME_BASE as position (position)}
-    {@const p = labelPoint(position)}
-    {@const isOrigin = row?.handDepart === position}
-    {@const isArrival = row?.handArrive === position}
-    <g class="point" class:origin={isOrigin} class:arrival={isArrival}>
-      <circle cx={p.x} cy={p.y} r="26" />
-      <text x={p.x} y={p.y} dy="9">{position}</text>
-    </g>
-  {/each}
+  {#if layers.handCompass}
+    {#each HOME_BASE as position (position)}
+      {@const p = labelPoint(position)}
+      {@const isOrigin = row?.handDepart === position}
+      {@const isArrival = row?.handArrive === position}
+      <g class="point" class:origin={isOrigin} class:arrival={isArrival}>
+        <circle cx={p.x} cy={p.y} r="26" />
+        <text x={p.x} y={p.y} dy="9">{position}</text>
+      </g>
+    {/each}
+  {/if}
 
   <!-- The prop's own compass, projected from the hand. -->
-  <circle class="hand-ring" cx={hand.x} cy={hand.y} r={PROP_LENGTH * UNIT} />
+  {#if layers.propCompass}
+    <circle class="hand-ring" cx={hand.x} cy={hand.y} r={PROP_LENGTH * UNIT} />
+  {/if}
   {#each HOME_BASE as position (position)}
-    {#if row?.propDepart !== position}
+    {#if layers.propCompass && row?.propDepart !== position}
       {@const p = handLocalPoint(position)}
       <circle class="prop-tick" cx={p.x} cy={p.y} r="4" />
     {/if}
@@ -311,13 +352,13 @@
     an abstract slider value. Nothing to draw at radius 0 — the hand is the
     centre.
   -->
-  {#if knobs.radius > 0.01 && !pendulum}
+  {#if layers.handPath && knobs.radius > 0.01 && !pendulum}
     <line class="arm" x1="0" y1="0" x2={hand.x} y2={hand.y} />
   {/if}
 
   <line class="tether" x1={hand.x} y1={hand.y} x2={head.x} y2={head.y} />
 
-  {#if dart && dartLife > 0}
+  {#if layers.dart && dart && dartLife > 0}
     <line
       class="dart"
       x1={dart.x1}
@@ -336,7 +377,7 @@
     which is the whole point — the lit number IS where the prop is. Drawing it
     before the head would bury the label underneath it.
   -->
-  {#if row}
+  {#if layers.propCompass && row}
     {@const p = handLocalPoint(row.propDepart)}
     <g class="prop-point">
       <circle cx={p.x} cy={p.y} r="21" />

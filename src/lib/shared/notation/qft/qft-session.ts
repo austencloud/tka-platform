@@ -11,6 +11,7 @@
  * half-restored state is worse than a fresh one.
  */
 
+import { normalizeLayers, type QftLayers } from "./qft-layers";
 import type { Convention, Spin } from "./qft-model";
 
 const KEY = "qft:session:v1";
@@ -27,6 +28,12 @@ export interface QftSession {
 	/** Continuous position in the eight-step cycle. */
 	cursor: number;
 	playing: boolean;
+	/**
+	 * Which stage layers are on. Stored loosely and validated on the way back in
+	 * by `normalizeLayers`, so a layer added after a payload was written simply
+	 * restores on rather than invalidating the whole session.
+	 */
+	layers: QftLayers;
 }
 
 const SPINS: Spin[] = ["inspin", "antispin"];
@@ -69,7 +76,8 @@ export function loadQftSession(moveCount: number): QftSession | null {
 			? (s.convention as Convention)
 			: "drex",
 		cursor: num(s.cursor, 0, 8, 0),
-		playing: s.playing !== false
+		playing: s.playing !== false,
+		layers: normalizeLayers(s.layers)
 	};
 }
 
