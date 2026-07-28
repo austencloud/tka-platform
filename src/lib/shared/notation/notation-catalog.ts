@@ -4,9 +4,16 @@
  *
  * Sourcing rules (docs/superpowers/specs/2026-07-26-notation-catalog-design.md):
  * every `records` line traces to a primary that was actually read, no acronym is
- * expanded without one, no date is guessed, and no entry claims a relationship
- * to another entry. If a fact cannot be sourced it does not appear — which is
- * why some rows are shorter than others, and why Transition Theory has no row.
+ * expanded without one, and no date is guessed. If a fact cannot be sourced it
+ * does not appear — which is why some rows are shorter than others, and why
+ * Transition Theory has no row.
+ *
+ * The rule against claiming a relationship between entries has ONE exception,
+ * added 2026-07-28: Lorq Nichols and the Vulcan Tech Gospel. That one is not an
+ * inference from structural similarity — it is documented from both sides, and
+ * the evidence is cited on the `lorq` entry. Everything else on this page stays
+ * silent about influence, because silence is the honest default when the only
+ * argument is that two systems look alike.
  *
  * The Home of Poi threads are behind a Cloudflare challenge that blocks every
  * automated client, and no homeofpoi.com forum topic has ever been captured by
@@ -122,6 +129,24 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     // from Yee's own walkthrough video.
     records:
       "The flower patterns available within a given timing and direction, and how to move between them. Volume 1 covers the one-to-one case as ten minimal beat shapes for two hands: isolation, extension, vertical antispin, horizontal antispin, and the six hybrids they stack into.",
+    subWorks: [
+      {
+        name: "VTG 1",
+        note: "2010, released 2011: five chapters, five different authors",
+      },
+      {
+        name: "VTG #2",
+        note: "October 2011, Cantor and Yee: past the one-to-one case, to three-to-three",
+      },
+      {
+        name: "Book of P.H.A.T. Volume 1",
+        note: "illustrated and written by Lorq Nichols, with Thompson, Cantor and Yee. The Shape Matrix is page 32",
+      },
+      {
+        name: "VTG 3",
+        note: "announced in 2019 as the final installment; never published",
+      },
+    ],
     sources: [
       {
         label: "The Vulcan Tech Gospel, on Noel Yee's site",
@@ -202,27 +227,55 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     year: "2012–",
     sortYear: 2012,
     system: "Lorq Nichols' catalogs",
-    people: "Lorq Nichols",
+    people: "Lorq Nichols, publishing as Spin Science",
+    // The one relationship claim in this catalog, and the only one with primary
+    // sources on BOTH sides — the standard the header sets. Yee's 2015 app page
+    // lists "VTG Authors: Noel Yee, David Cantor, Brian Thompson, Lorq Nichols";
+    // Nichols' own 2012 Tech Tiles post thanks "Noel Yee (this chart
+    // intrinsically encompasses transition theory), and all the Vulcan Tech
+    // Gospel crew"; and the Book of P.H.A.T. cover and contents page put the
+    // Shape Matrix at page 32 of a volume titled Vulcan Tech Gospel. Nichols
+    // also cites VTG#2 as source material throughout his LORQ:TECH series.
     records:
-      "Patterns enumerated rather than described. Driving styles crossed against each other, arm paths crossed against club shapes, until the grid is full.",
+      "Patterns enumerated rather than described. Driving styles crossed against each other, arm paths crossed against club shapes, until the grid is full. Nichols is one of the four Vulcan Tech Gospel authors, and this work is not separate from it: the Shape Matrix is page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1.",
     subWorks: [
-      { name: "144 Shape Matrix", note: "twelve driving styles against twelve" },
+      {
+        name: "144 Shape Matrix",
+        note: "twelve driving styles against twelve; his own gloss is “a multiplication table for tricks”",
+      },
       { name: "324 Patterns", note: "counted from arm paths and club shapes" },
+      {
+        name: "27 Arm Paths",
+        note: "three axes, three planes, nine arm positions, and the transitions between them",
+      },
       {
         name: "Tech Tiles / Book of P.H.A.T.",
         note: "published as Vulcan Tech Gospel Book of P.H.A.T. Volume 1, with Brian Thompson, David Cantor, and Noel Yee",
       },
+      {
+        name: "Position Matrix",
+        note: "2013, with Brian Thompson and David Cantor: the 1:1 club flowers and every transition between them",
+      },
     ],
+    // Nichols' live site, spinscience.xyz, is deliberately NOT in this list.
+    // Its HTTPS certificate is expired, so an https:// link fails outright and
+    // an http:// one breaks the catalog's https-only contract (enforced by
+    // tests/unit/notation-roots-remediation-contract.test.ts). Both of his
+    // domains that still serve over https are below, and the live site is
+    // linked in full from /notation/shape-matrix, where the http exception is
+    // made once and explained.
     sources: [
+      {
+        label: "Book of P.H.A.T.",
+        href: "https://sirlorq.wordpress.com/tech-tiles/",
+      },
       {
         label: "324 Patterns",
         href: "https://sirlorq.wordpress.com/324-patterns/",
       },
-      {
-        label: "Tech Tiles",
-        href: "https://sirlorq.wordpress.com/tech-tiles/",
-      },
+      { label: "LORQ:TECH", href: "https://www.youtube.com/user/SirLorq" },
     ],
+    explore: { label: "Run the Shape Matrix", href: "/notation/shape-matrix" },
   },
   {
     id: "poinotation",

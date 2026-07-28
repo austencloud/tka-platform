@@ -136,6 +136,31 @@ describe("notation catalog", () => {
     expect(prose).not.toMatch(/here's how|step 1|to do this|try it yourself/i);
   });
 
+  it("names another system only where the connection is documented", () => {
+    // The catalog gained exactly one cross-entry claim on 2026-07-28: Lorq
+    // Nichols is a credited Vulcan Tech Gospel author and his Shape Matrix is
+    // page 32 of VTG Book of P.H.A.T. Volume 1. That is a publication fact with
+    // primary sources on both sides, which is why it survives the rule above —
+    // it never reaches for the "inspired by" register, because it is not an
+    // influence claim.
+    //
+    // This pins the exception at one. A second entry naming another system is
+    // the drift this whole contract exists to catch, and it should fail here
+    // until someone brings sources and updates this test deliberately.
+    const otherSystems = NOTATION_CATALOG.map((entry) => entry.system);
+    const crossReferencing = NOTATION_CATALOG.filter((entry) =>
+      otherSystems.some(
+        (system) => system !== entry.system && entry.records.includes(system)
+      )
+    ).map((entry) => entry.id);
+
+    expect(crossReferencing).toEqual(["lorq"]);
+
+    const lorq = NOTATION_CATALOG.find((entry) => entry.id === "lorq");
+    expect(lorq?.records).toContain("Vulcan Tech Gospel");
+    expect(lorq?.sources.length).toBeGreaterThan(0);
+  });
+
   it("links each entry out to its creator's own material", () => {
     // Ben Drexler appears where he is genuinely the author, not as the standing
     // citation beneath everyone else's work.

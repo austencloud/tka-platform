@@ -113,25 +113,60 @@
         <span class="section-kicker">The lineage</span>
         <div class="prose lineage-prose">
           <p>
-            Lorq Nichols charted the 144 Shape Matrix in 2012: twelve left-hand driving
-            styles against twelve right-hand ones, the even-petaled prospin and antispin
-            shapes across the 1:1, 1:3, and 1:5 ratios. It was a paper chart, doing what
-            a simulator does today: lay the space out so you can find what you have not
-            tried. This page draws the same table live from the alphabet, one shape per
-            cell, and every cell is clickable.
+            The Shape Matrix is Lorq Nichols', who publishes as
+            <a href="http://spinscience.xyz/" target="_blank" rel="noopener noreferrer"
+              >Spin Science</a
+            >. He describes it best himself: “A Shape Matrix is like a multiplication
+            table for tricks (moves, patterns) that you can do with your left or right
+            hand.” Twelve left-hand driving styles against twelve right-hand ones: the
+            even-petaled prospin and antispin shapes across the 1:1, 1:3 and 1:5 ratios.
+            He charted it in 2012 and reworked it in 2014 and 2016.
           </p>
           <p>
-            The rows are blue-hand flowers, the columns red-hand flowers. Matched styles
-            on the diagonal are basic shapes; every other cell overlaps the two into a
-            hybrid. Further reading: Ben Drexler's VTG glossary entry
+            It is not a separate tradition from the Vulcan Tech Gospel. It is
+            <em>page 32</em> of one: the Shape Matrix appears in
             <a
-              href="https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained"
+              href="https://sirlorq.wordpress.com/tech-tiles/"
               target="_blank"
-              rel="noopener noreferrer">VTG:153</a
-            >
-            gives the timing-and-direction vocabulary each cell's six realizations draw from.
+              rel="noopener noreferrer">Vulcan Tech Gospel Book of P.H.A.T. Volume 1</a
+            >, illustrated and written by Nichols in collaboration with Brian Thompson,
+            David Cantor and Noel Yee. Yee lists all four as VTG authors. Nichols, for his
+            part, thanked “Noel Yee (this chart intrinsically encompasses transition
+            theory), and all the Vulcan Tech Gospel crew.”
+          </p>
+          <p>
+            The chart was paper doing what a simulator does today: lay the space out so
+            you can find what you have not tried. This page draws the same table live from
+            the alphabet, one shape per cell, every cell clickable. Rows are blue-hand
+            flowers, columns red-hand; matched styles on the diagonal are basic shapes,
+            and every other cell overlaps the two into a hybrid.
           </p>
         </div>
+
+        <!--
+          Outbound credit block. Spin Science links are http:// on purpose — the
+          site's HTTPS certificate is expired, so an https:// link fails outright.
+          A working http link beats a broken https one.
+        -->
+        <nav class="credit-links" aria-label="Lorq Nichols and Spin Science">
+          <a href="http://spinscience.xyz/work/" target="_blank" rel="noopener noreferrer"
+            >Spin Science: the work <span aria-hidden="true">&nearr;</span></a
+          >
+          <a
+            href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >The 144 Shape Matrix <span aria-hidden="true">&nearr;</span></a
+          >
+          <a
+            href="https://sirlorq.wordpress.com/tech-tiles/"
+            target="_blank"
+            rel="noopener noreferrer">Book of P.H.A.T. <span aria-hidden="true">&nearr;</span></a
+          >
+          <a href="http://spinscience.xyz/store" target="_blank" rel="noopener noreferrer"
+            >Posters and prints <span aria-hidden="true">&nearr;</span></a
+          >
+        </nav>
       </div>
 
       <figure class="matrix-figure">
@@ -143,10 +178,13 @@
           alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
           loading="lazy"
         />
+        <!-- sirlorq.com no longer resolves; his current home is spinscience.xyz
+             (http:// — expired cert on https). -->
         <figcaption>
-          The original: Lorq Nichols' 144 Shape Matrix, 2012. Diagram by
-          <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer">Lorq Nichols</a>.
-          The live table below is TKA's rendering of the same space.
+          The original: Lorq Nichols' 144 Shape Matrix. Diagram &copy; Lorq Nichols,
+          <a href="http://spinscience.xyz/" target="_blank" rel="noopener noreferrer"
+            >Spin Science</a
+          >, used with credit. The live table below is TKA's rendering of the same space.
         </figcaption>
       </figure>
     </div>
@@ -240,6 +278,59 @@
   .lineage-prose p {
     font-size: clamp(1.02rem, 0.96rem + 0.22vw, 1.24rem);
     line-height: 1.7;
+  }
+
+  /* Buttons, not a row of text links: these are standalone calls to action, and
+     the point of them is that people actually click through to Lorq's site
+     (.claude/rules/clickables-look-like-buttons.md). Wrapping, 44px floor. */
+  /* Explicit column counts, not `flex-wrap`. Four buttons wrapped freely land
+     on 3+1 in this column, stranding a row of one
+     (.claude/rules/4k-native-layout.md). For four items the wraps that do not
+     orphan are 4, 2 and 1, so those are the only counts offered. */
+  .credit-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin-top: 1.4rem;
+  }
+
+  @media (max-width: 30rem) {
+    .credit-links {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* The site-wide big-screen seam: above it the lineage column is wide enough
+     to carry all four on one row. */
+  @media (min-width: 1680px) {
+    .credit-links {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .credit-links a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--accent, #f59e0b) 45%, transparent);
+    background: color-mix(in oklab, var(--accent, #f59e0b) 10%, transparent);
+    color: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .credit-links a:hover,
+  .credit-links a:focus-visible {
+    background: color-mix(in oklab, var(--accent, #f59e0b) 22%, transparent);
+    border-color: color-mix(in oklab, var(--accent, #f59e0b) 75%, transparent);
   }
 
   .matrix-figure {
