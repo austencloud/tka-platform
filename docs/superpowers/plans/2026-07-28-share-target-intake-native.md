@@ -2640,7 +2640,7 @@ git commit -m "feat(share-intake): per-item classification with duplicate detect
 ```
 
 ---
-### Task 8: Give the card path a destination
+### Task 8: Give the card path a destination — DONE (`7bb2f311c1`)
 
 **Closes trace step 1.13 — the terminal state of trace 1.** Until this exists,
 trace 1 dead-ends: `routeIntake` returns `result.cards` and the runner reads
@@ -2900,7 +2900,7 @@ git commit -m "feat(share-intake): open the viewer on a filed card, and the shar
 
 ---
 
-### Task 9: Generalize the inbox share view so it can actually send an image
+### Task 9: Generalize the inbox share view so it can actually send an image — DONE (`b95a943aaf`, type fixes `319fb89da4`)
 
 **Closes trace steps 2.11, 2.13 and 2.14.** This is the picker the image lands
 in, the code that actually uploads it, and the completion hook that tells the
