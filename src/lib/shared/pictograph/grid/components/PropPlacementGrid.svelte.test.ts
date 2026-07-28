@@ -38,6 +38,7 @@ describe("PropPlacementGrid", () => {
       redLocation: null,
       activeColor: "red",
       complete: false,
+      canUndo: true,
     });
     await expect
       .element(page.getByTestId("placement-prompt"))
@@ -70,6 +71,7 @@ describe("PropPlacementGrid", () => {
       redLocation: GridLocation.NORTH,
       activeColor: null,
       complete: true,
+      canUndo: true,
     });
 
     await page.getByRole("button", { name: "Undo placement" }).click();
@@ -78,6 +80,8 @@ describe("PropPlacementGrid", () => {
       redLocation: GridLocation.WEST,
       activeColor: "red",
       complete: true,
+      // The undo just consumed the only entry in the history.
+      canUndo: false,
     });
   });
 
@@ -102,6 +106,7 @@ describe("PropPlacementGrid", () => {
       redLocation: null,
       activeColor: "red",
       complete: false,
+      canUndo: true,
     });
   });
 });

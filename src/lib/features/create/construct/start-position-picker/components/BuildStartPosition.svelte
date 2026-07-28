@@ -42,6 +42,18 @@
   let blueLocation = $state<GridLocation | null>(initialBlueLocation);
   let redLocation = $state<GridLocation | null>(initialRedLocation);
   let isApplying = $state(false);
+  let activeColor = $state<MotionColor | null>(null);
+  let canUndo = $state(false);
+  let grid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
+
+  // The layout mode is measured rather than left purely to a container query,
+  // because it decides WHERE the move/undo controls render, not just how things
+  // are arranged. Same thresholds as the stylesheet's row rule.
+  let builderWidth = $state(0);
+  let builderHeight = $state(0);
+  const isRowLayout = $derived(
+    builderWidth >= 496 && builderHeight > 0 && builderWidth / builderHeight >= 1.25
+  );
 
   const builtPictograph = $derived.by(() => {
     if (!blueLocation || !redLocation) return null;
@@ -76,6 +88,8 @@
   function handlePlacementChange(change: PropPlacementChange) {
     blueLocation = change.blueLocation;
     redLocation = change.redLocation;
+    activeColor = change.activeColor;
+    canUndo = change.canUndo;
   }
 
   /** A drag on the grid commits through the same per-hand handlers the cyclers
@@ -106,10 +120,16 @@
      laying out. An element can't be restyled by its own container query, so
      with the flex on the outer div the wide/short rule silently applied to the
      children and skipped the direction change on the parent. -->
-<div class="position-builder" data-testid="build-start-position">
+<div
+  class="position-builder"
+  data-testid="build-start-position"
+  bind:clientWidth={builderWidth}
+  bind:clientHeight={builderHeight}
+>
   <div class="builder-layout">
   <div class="placement-area">
     <PropPlacementGrid
+      bind:this={grid}
       {gridMode}
       {bluePropType}
       {redPropType}
@@ -118,6 +138,7 @@
       {initialBlueLocation}
       {initialRedLocation}
       editAfterCompletion
+      renderTray={!isRowLayout}
       onChange={handlePlacementChange}
       onOrientationChange={handleOrientationChange}
     />
@@ -126,6 +147,42 @@
   <!-- Grouped so a wide, short host can stand them beside the board instead of
        stacking everything into a strip that leaves the board no height. -->
   <div class="builder-controls">
+    <!-- Side by side, these live here rather than in a row under the board:
+         the column has height going spare and the board does not. -->
+    {#if isRowLayout}
+      <div class="move-controls" role="group" aria-label="Move a prop">
+        {#if builtPictograph}
+          <button
+            class="move-button blue"
+            class:active={activeColor === MotionColor.BLUE}
+            aria-pressed={activeColor === MotionColor.BLUE}
+            aria-label="Move left prop"
+            onclick={() => grid?.moveProp(MotionColor.BLUE)}
+          >
+            Move left
+          </button>
+          <button
+            class="move-button red"
+            class:active={activeColor === MotionColor.RED}
+            aria-pressed={activeColor === MotionColor.RED}
+            aria-label="Move right prop"
+            onclick={() => grid?.moveProp(MotionColor.RED)}
+          >
+            Move right
+          </button>
+        {/if}
+        {#if canUndo}
+          <button
+            class="move-button"
+            aria-label="Undo placement"
+            onclick={() => grid?.undoPlacement()}
+          >
+            Undo
+          </button>
+        {/if}
+      </div>
+    {/if}
+
     <div
       class="orientation-controls"
       role="group"
@@ -307,6 +364,78 @@
     width: min(100%, 360px);
   }
 
+  /* Reserved whether or not it currently holds buttons, so the controls below
+     it do not jump as props are placed. */
+  .move-controls {
+    display: flex;
+    gap: 8px;
+    width: min(100%, 360px);
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .move-controls > * {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .move-button {
+    min-height: var(--min-touch-target, 48px);
+    padding: 8px 10px;
+    white-space: nowrap;
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 10px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  /* Prop colour is identity, carried before selection, deepened by it
+     (`chip-primitives.md`). */
+  .move-button.blue {
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue, #3b82f6) 45%,
+      var(--theme-stroke)
+    );
+    color: color-mix(in srgb, var(--prop-blue, #3b82f6) 45%, var(--theme-text));
+  }
+
+  .move-button.red {
+    border-color: color-mix(
+      in srgb,
+      var(--prop-red, #ef4444) 45%,
+      var(--theme-stroke)
+    );
+    color: color-mix(in srgb, var(--prop-red, #ef4444) 45%, var(--theme-text));
+  }
+
+  .move-button.blue.active {
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue, #3b82f6) 70%,
+      var(--theme-stroke)
+    );
+    background: color-mix(in srgb, var(--prop-blue, #3b82f6) 15%, transparent);
+    color: var(--theme-text);
+  }
+
+  .move-button.red.active {
+    border-color: color-mix(
+      in srgb,
+      var(--prop-red, #ef4444) 70%,
+      var(--theme-stroke)
+    );
+    background: color-mix(in srgb, var(--prop-red, #ef4444) 15%, transparent);
+    color: var(--theme-text);
+  }
+
+  .move-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   .orientation-controls :global(.orientation-cycler) {
     flex: 1;
   }
@@ -335,6 +464,12 @@
 
     .builder-controls {
       flex-basis: clamp(20rem, 30cqw, 34rem);
+    }
+
+    .move-controls,
+    .apply-button,
+    .orientation-controls {
+      width: 100%;
     }
 
     .apply-button,

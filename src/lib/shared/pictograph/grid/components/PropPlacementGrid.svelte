@@ -49,6 +49,11 @@
     redNoun?: string;
     showUndo?: boolean;
     allowUndoAfterComplete?: boolean;
+    /** Set false when the host renders the move/undo controls itself — a wide
+     *  layout puts them in the column beside the board, where a row under the
+     *  board would only cost the board height. The host drives them through the
+     *  exported `moveProp`/`undoPlacement` and the `canUndo` on each change. */
+    renderTray?: boolean;
     showGuideLines?: boolean;
     guideLineType?: "alpha" | "beta" | "gamma";
     guideLineLocations?: {
@@ -89,6 +94,7 @@
     redNoun = "right prop",
     showUndo = true,
     allowUndoAfterComplete = true,
+    renderTray = true,
     showGuideLines = false,
     guideLineType,
     guideLineLocations = null,
@@ -285,6 +291,12 @@
       redLocation,
       activeColor,
       complete: blueLocation !== null && redLocation !== null,
+      canUndo:
+        !disabled &&
+        history.length > 0 &&
+        (allowUndoAfterComplete ||
+          blueLocation === null ||
+          redLocation === null),
     };
     onChange(change);
 
@@ -532,6 +544,15 @@
     if (difference > Math.PI) difference -= 2 * Math.PI;
 
     return `M ${startX} ${startY} A ${radius} ${radius} 0 0 ${difference > 0 ? 1 : 0} ${endX} ${endY}`;
+  }
+
+  /** For hosts that render the tray themselves (`renderTray={false}`). */
+  export function moveProp(color: MotionColor) {
+    handleEdit(color);
+  }
+
+  export function undoPlacement() {
+    handleUndo();
   }
 
   export function resetPlacement() {
@@ -786,6 +807,7 @@
        disappear as you place props; letting them come and go took height away
        from the grid above, which shrank the board mid-task — the worst moment
        to move the thing someone is aiming at. -->
+  {#if renderTray}
   <div class="controls-tray" aria-label="Move a prop">
     {#if isComplete && editAfterCompletion && !disabled}
       <!-- Two labels, one accessible name. The short form is what fits when the
@@ -821,6 +843,7 @@
       </button>
     {/if}
   </div>
+  {/if}
 
   <div class="sr-only" aria-live="polite" aria-atomic="true">
     {liveAnnouncement}
