@@ -27,8 +27,13 @@
     onCancel: () => void;
   }
 
-  let { recipientId, recipientName, groupMode = false, onConversationCreated, onCancel }: Props =
-    $props();
+  let {
+    recipientId,
+    recipientName,
+    groupMode = false,
+    onConversationCreated,
+    onCancel,
+  }: Props = $props();
 
   // Form state
   let selectedUsers = $state<
@@ -61,11 +66,16 @@
     ...selectedUsers.map((u) => u.id),
   ]);
 
-  // Is this a group (2+ recipients)?
-  const isGroup = $derived(selectedUsers.length >= 2);
+  // Group mode stays a group while the user is still choosing participants.
+  const isGroup = $derived(groupMode || selectedUsers.length >= 2);
 
   // Can we proceed?
-  const canProceed = $derived(selectedUsers.length >= 1 && !isCreating);
+  const canProceed = $derived(
+    !isCreating &&
+      (isGroup
+        ? selectedUsers.length >= 2 && groupName.trim().length > 0
+        : selectedUsers.length === 1)
+  );
 
   // If recipient is pre-selected, add them immediately
   $effect(() => {
@@ -165,7 +175,7 @@
     error = null;
 
     try {
-      if (selectedUsers.length === 1) {
+      if (!isGroup) {
         // Single recipient → direct message
         const firstUser = selectedUsers[0];
         if (!firstUser) return;
@@ -179,7 +189,7 @@
         const participantIds = selectedUsers.map((u) => u.id);
         const result = await conversationService.getOrCreateGroupConversation(
           participantIds,
-          groupName.trim() || undefined
+          groupName.trim()
         );
         hapticService?.trigger("success");
         onConversationCreated(result.conversation.id);
@@ -196,15 +206,13 @@
   // Filter suggestions to exclude already selected users
   const availableSuggestions = $derived(
     followedUsers.filter(
-      (u) =>
-        u.id !== currentUserId && !selectedUsers.some((s) => s.id === u.id)
+      (u) => u.id !== currentUserId && !selectedUsers.some((s) => s.id === u.id)
     )
   );
 
   const availableRecentUsers = $derived(
     recentUsers.filter(
-      (u) =>
-        u.id !== currentUserId && !selectedUsers.some((s) => s.id === u.id)
+      (u) => u.id !== currentUserId && !selectedUsers.some((s) => s.id === u.id)
     )
   );
 
@@ -221,7 +229,9 @@
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       </div>
       <span>
-        {isGroup ? "Starting group conversation..." : "Starting conversation..."}
+        {isGroup
+          ? "Starting group conversation..."
+          : "Starting conversation..."}
       </span>
     </div>
   {:else}
@@ -272,15 +282,16 @@
       {#if isGroup}
         <div class="group-name-section">
           <label for="group-name" class="form-label">
-            Group Name <span class="optional">(optional)</span>
+            Group name <span class="required">(required)</span>
           </label>
           <input
             id="group-name"
             type="text"
             bind:value={groupName}
-            placeholder="Enter a name or leave blank for auto-generated"
+            placeholder="Name this group"
             maxlength={100}
             class="name-input"
+            required
           />
         </div>
       {/if}
@@ -376,9 +387,7 @@
                       customSize={40}
                     />
                     <span class="suggestion-row-name">{user.displayName}</span>
-                    <i
-                      class="fas fa-plus suggestion-add"
-                      aria-hidden="true"
+                    <i class="fas fa-plus suggestion-add" aria-hidden="true"
                     ></i>
                   </button>
                 {/each}
@@ -566,10 +575,10 @@
     letter-spacing: 0.5px;
   }
 
-  .form-label .optional {
-    font-weight: 400;
+  .form-label .required {
+    font-weight: 500;
     text-transform: none;
-    opacity: 0.7;
+    opacity: 0.8;
   }
 
   .name-input {

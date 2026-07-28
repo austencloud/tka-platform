@@ -20,6 +20,7 @@
   import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
   import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
   import type {
     MessageImageSendHandle,
     MessageImageSendProgress,
@@ -208,7 +209,10 @@
       console.error("Failed to send message:", error);
 
       // Show error toast
-      toast.error("Failed to send message. Please try again.");
+      toast.error(
+        getShortCodeShareMessage(error) ??
+          "Failed to send message. Please try again."
+      );
     } finally {
       imageSendHandle = null;
       attachmentProgress = null;

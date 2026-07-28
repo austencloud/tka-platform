@@ -1,801 +1,867 @@
 <script lang="ts">
-  /**
-   * SendSequenceSheet
-   *
-   * Lets a user send a sequence to another user via inbox messaging.
-   * Shows a sequence preview, recipient picker with suggestions and search,
-   * and a message field. Handles the full send flow with loading and success states.
-   */
-
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount, onDestroy } from "svelte";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
-  import { inboxState } from "../../state/inbox-state.svelte";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
-  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
-  import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
+  import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
+  import { onMount } from "svelte";
+  import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
+  import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
+  import { inboxState } from "../../state/inbox-state.svelte";
+  import ConversationItem from "./ConversationItem.svelte";
+  import GroupAvatarStack from "./GroupAvatarStack.svelte";
 
   interface Props {
     payload: SequenceSharePayload;
-    onClose: () => void;
-    onSent?: (conversationId: string) => void;
+    onSent: (conversationId: string) => void;
   }
 
-  let { payload, onClose, onSent }: Props = $props();
-
-  // Phase state: idle -> sending -> success
-  type SheetPhase = "idle" | "sending" | "success";
-  let phase = $state<SheetPhase>("idle");
-
-  // Recipient selection (single-select)
-  let selectedUser = $state<{
+  type SelectedUser = {
     id: string;
     displayName: string;
     avatar?: string;
-  } | null>(null);
+  };
 
-  // Message
-  let message = $state("");
+  let { payload, onSent }: Props = $props();
+
   const MESSAGE_MAX = 500;
+  const MAX_RECENT_CONVERSATIONS = 8;
 
-  // Search state (for UserSearchInput)
+  let selectedConversation = $state<ConversationPreview | null>(null);
+  let selectedUser = $state<SelectedUser | null>(null);
+  let message = $state("");
+  let phase = $state<"idle" | "sending">("idle");
+  let thumbnailFailed = $state(false);
+  let searchResetKey = $state(0);
   let searchUserId = $state("");
   let searchUserDisplay = $state("");
-
-  // Error
-  let error = $state<string | null>(null);
-
-  // Suggestions
-  let recentUsers = $state<
-    Array<{ id: string; displayName: string; avatar?: string }>
-  >([]);
-  let isLoadingSuggestions = $state(true);
-
-  // Services
   let hapticService: HapticFeedback | undefined;
 
-  // Current user
   const currentUserId = $derived(authState.user?.uid ?? "");
-
-  // Exclude current user and selected user from search
+  const displayWord = $derived(
+    simplifyRepeatedWord(
+      payload.sequenceWord || payload.sequenceCloudWord || ""
+    )
+  );
+  const recentConversations = $derived(
+    inboxState.conversations
+      .filter(
+        (conversation) =>
+          conversation.type === "group" || !!conversation.otherParticipant
+      )
+      .slice(0, MAX_RECENT_CONVERSATIONS)
+  );
+  const selectedConversationIsGroup = $derived(
+    selectedConversation?.type === "group"
+  );
+  const destinationName = $derived(
+    selectedConversation
+      ? conversationName(selectedConversation)
+      : selectedUser?.displayName || ""
+  );
+  const destinationDetail = $derived.by(() => {
+    if (selectedConversation?.type === "group") {
+      const count =
+        selectedConversation.participantCount ??
+        selectedConversation.participantPreviews?.length ??
+        0;
+      return count > 0
+        ? `${count} ${count === 1 ? "member" : "members"}`
+        : "Group conversation";
+    }
+    if (selectedConversation) return "Existing conversation";
+    if (selectedUser) return "New conversation";
+    return "";
+  });
+  const hasDestination = $derived(
+    selectedConversation !== null || selectedUser !== null
+  );
+  const canSend = $derived(hasDestination && phase === "idle");
   const excludeUserIds = $derived(
     [currentUserId, selectedUser?.id].filter(Boolean) as string[]
   );
 
-  // Can send?
-  const canSend = $derived(selectedUser !== null && phase === "idle");
-
-  // Sent-to name for the success screen
-  let sentToName = $state("");
-
-  // Auto-close timer (cleared on unmount so it can't fire after teardown)
-  let closeTimer: ReturnType<typeof setTimeout> | null = null;
-
-  onMount(async () => {
+  onMount(() => {
     hapticService = getHapticFeedback();
-    await loadSuggestions();
   });
 
-  onDestroy(() => {
-    if (closeTimer) clearTimeout(closeTimer);
-  });
-
-  async function loadSuggestions() {
-    if (!currentUserId) {
-      isLoadingSuggestions = false;
-      return;
-    }
-
-    isLoadingSuggestions = true;
-
-    try {
-      // Pull recent direct conversation partners from inbox state
-      const conversations = inboxState.conversations
-        .filter((c) => c.type === "direct" && c.otherParticipant)
-        .slice(0, 8);
-
-      recentUsers = conversations
-        .map((conv) => ({
-          id: conv.otherParticipant!.userId,
-          displayName: conv.otherParticipant!.displayName,
-          avatar: conv.otherParticipant!.avatar,
-        }))
-        .filter((user) => user.id !== currentUserId);
-    } catch (err) {
-      console.error("[SendSequenceSheet] Failed to load suggestions:", err);
-    } finally {
-      isLoadingSuggestions = false;
-    }
+  function conversationName(conversation: ConversationPreview): string {
+    return conversation.type === "group"
+      ? conversation.groupName || "Unnamed group"
+      : conversation.otherParticipant?.displayName || "Unknown";
   }
 
-  function handleSuggestionClick(
-    userId: string,
-    displayName: string,
-    avatar?: string
-  ) {
-    hapticService?.trigger("selection");
-    selectedUser = { id: userId, displayName, avatar };
-    error = null;
+  function selectConversation(conversation: ConversationPreview): void {
+    if (phase !== "idle") return;
+    selectedConversation = conversation;
+    selectedUser = null;
+    searchUserId = "";
+    searchUserDisplay = "";
+    searchResetKey++;
   }
 
-  function handleSearchSelect(user: {
+  function selectUser(user: {
     uid: string;
     displayName: string;
     username?: string;
     photoURL?: string;
-  }) {
-    hapticService?.trigger("selection");
+  }): void {
+    if (phase !== "idle") return;
+    selectedConversation = null;
     selectedUser = {
       id: user.uid,
       displayName: user.displayName || user.username || "Unknown",
       avatar: user.photoURL,
     };
-    // Clear search fields
+    searchUserId = user.uid;
+    searchUserDisplay = user.displayName || user.username || "Unknown";
+  }
+
+  function clearDestination(): void {
+    if (phase !== "idle") return;
+    hapticService?.trigger("selection");
+    selectedConversation = null;
+    selectedUser = null;
     searchUserId = "";
     searchUserDisplay = "";
-    error = null;
+    searchResetKey++;
   }
 
-  function deselectUser() {
-    hapticService?.trigger("selection");
-    selectedUser = null;
-  }
-
-  async function send() {
-    if (!selectedUser || phase !== "idle") return;
+  async function send(): Promise<void> {
+    const conversation = selectedConversation;
+    const user = selectedUser;
+    if ((!conversation && !user) || phase !== "idle") return;
 
     phase = "sending";
-    error = null;
 
     try {
-      // 1. Mint the same durable short code used by QR cards and shared viewers.
+      await ensureGuestIdentity();
+
       const { code } = await getShortCodeManager().createShortCode(
         payload.sequence,
         { embedSequenceData: true }
       );
       const attachment = buildSequenceMessageAttachment(payload.sequence, code);
 
-      // 2. Get or create conversation with the recipient
-      const result = await conversationService.getOrCreateConversation(
-        selectedUser.id
-      );
-      const conversationId = result.conversation.id;
-
-      // 3. Send the message
-      const content =
-        message.trim() || `Check out this sequence: ${payload.sequenceWord}`;
+      const conversationId = conversation
+        ? conversation.id
+        : (
+            await conversationService.getOrCreateConversation(user!.id, {
+              silent: true,
+            })
+          ).conversation.id;
 
       await messagingService.sendMessage({
         conversationId,
-        content,
+        content: message.trim(),
         attachments: [attachment],
       });
 
-      // 4. Success
       hapticService?.trigger("success");
-      sentToName = selectedUser.displayName;
-      phase = "success";
-
-      // Auto-close after a moment so the user sees confirmation
-      if (closeTimer) clearTimeout(closeTimer);
-      closeTimer = setTimeout(() => {
-        onSent?.(conversationId);
-        onClose();
-      }, 1200);
-    } catch (err) {
-      console.error("[SendSequenceSheet] Send failed:", err);
-      error = err instanceof Error ? err.message : "Failed to send sequence";
+      onSent(conversationId);
+    } catch (caught) {
+      const failure =
+        caught instanceof Error ? caught : new Error(String(caught));
+      getErrorHandler().showUserError({
+        message:
+          getShortCodeShareMessage(caught) ??
+          "The sequence wasn’t sent. Try again.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "warning",
+        context: {
+          module: "inbox",
+          tab: "messages",
+          action: "sendSequence",
+        },
+      });
       hapticService?.trigger("error");
       phase = "idle";
     }
   }
-
-  // Suggestions that aren't the currently selected user
-  const availableSuggestions = $derived(
-    recentUsers.filter(
-      (u) => u.id !== currentUserId && u.id !== selectedUser?.id
-    )
-  );
 </script>
 
-<div class="send-sequence-sheet">
-  {#if phase === "success"}
-    <!-- Success confirmation -->
-    <div class="success-state">
-      <div class="success-icon">
-        <i class="fas fa-check" aria-hidden="true"></i>
-      </div>
-      <p class="success-text">Sent to {sentToName}</p>
+<div
+  class="send-sequence-sheet"
+  class:destination-selected={hasDestination}
+  aria-busy={phase === "sending"}
+>
+  <article class="sequence-preview" aria-label="Sequence being shared">
+    <div class="preview-thumbnail">
+      {#if payload.sequenceThumbnail && !thumbnailFailed}
+        <img
+          src={payload.sequenceThumbnail}
+          alt=""
+          class="thumbnail-img"
+          onerror={() => {
+            thumbnailFailed = true;
+          }}
+        />
+      {:else}
+        <div class="thumbnail-fallback" aria-hidden="true">
+          <i class="fas fa-layer-group"></i>
+        </div>
+      {/if}
     </div>
-  {:else}
-    <!-- Sequence preview card -->
-    <div class="sequence-preview">
-      <div class="preview-thumbnail">
-        {#if payload.sequenceThumbnail}
-          <img
-            src={payload.sequenceThumbnail}
-            alt="{payload.sequenceWord} sequence"
-            class="thumbnail-img"
-          />
-        {:else}
-          <div class="thumbnail-fallback">
-            <i class="fas fa-layer-group" aria-hidden="true"></i>
-          </div>
+
+    <div class="preview-info">
+      <span class="preview-kicker">Sharing</span>
+      <strong class="preview-word">{displayWord || "Sequence"}</strong>
+      <div class="preview-meta">
+        {#if payload.sequenceStepCount}
+          <span>{payload.sequenceStepCount} steps</span>
+        {/if}
+        {#if payload.sequenceAuthor}
+          <span>by {payload.sequenceAuthor}</span>
         {/if}
       </div>
-      <div class="preview-info">
-        <span class="preview-word">{payload.sequenceWord.toUpperCase()}</span>
-        <div class="preview-meta">
-          {#if payload.sequenceStepCount}
-            <span class="step-badge">
-              {payload.sequenceStepCount} beats
-            </span>
-          {/if}
-          {#if payload.sequenceAuthor}
-            <span class="preview-author">by {payload.sequenceAuthor}</span>
-          {/if}
-        </div>
+    </div>
+  </article>
+
+  <section
+    class="destination-section"
+    aria-labelledby="share-destination-title"
+  >
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">Destination</span>
+        <h3 id="share-destination-title">Send to</h3>
       </div>
     </div>
 
-    <!-- Error banner -->
-    {#if error}
-      <div class="error-banner" role="alert">
-        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-        <span>{error}</span>
-      </div>
-    {/if}
-
-    <!-- Recipient picker -->
-    <div class="recipient-section">
-      <span class="section-label">Send to</span>
-
-      {#if selectedUser}
-        <!-- Selected recipient chip -->
-        <div class="selected-recipient">
-          <div class="recipient-chip selected">
-            <RobustAvatar
-              src={selectedUser.avatar}
-              name={selectedUser.displayName}
-              alt=""
-              customSize={28}
-            />
-            <span class="chip-name">{selectedUser.displayName}</span>
-            <button
-              type="button"
-              class="chip-deselect"
-              onclick={deselectUser}
-              disabled={phase === "sending"}
-              aria-label="Remove {selectedUser.displayName}"
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
+    <div class="selected-slot" aria-live="polite">
+      {#if hasDestination}
+        <div class="selected-destination">
+          <div class="selected-avatar">
+            {#if selectedConversationIsGroup && selectedConversation}
+              {#if selectedConversation.participantPreviews?.length}
+                <GroupAvatarStack
+                  participants={selectedConversation.participantPreviews}
+                  customAvatar={selectedConversation.groupAvatar}
+                  size={44}
+                  maxVisible={3}
+                />
+              {:else}
+                <span class="group-fallback" aria-hidden="true">
+                  <i class="fas fa-user-group"></i>
+                </span>
+              {/if}
+            {:else}
+              <RobustAvatar
+                src={selectedConversation?.otherParticipant?.avatar ??
+                  selectedUser?.avatar}
+                name={destinationName}
+                alt=""
+                customSize={44}
+              />
+            {/if}
           </div>
+          <div class="selected-copy">
+            <strong>{destinationName}</strong>
+            <span>{destinationDetail}</span>
+          </div>
+          <button
+            type="button"
+            class="clear-destination"
+            onclick={clearDestination}
+            disabled={phase === "sending"}
+          >
+            Change
+          </button>
         </div>
       {:else}
-        <!-- Search input -->
-        <div class="search-wrapper">
-          <UserSearchInput
-            selectedUserId={searchUserId}
-            selectedUserDisplay={searchUserDisplay}
-            onSelect={handleSearchSelect}
-            placeholder="Search by name or email..."
-            inlineResults={true}
-            {excludeUserIds}
-          />
-        </div>
-
-        <!-- Suggestions row -->
-        {#if isLoadingSuggestions}
-          <div class="suggestions-loading">
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            <span>Loading suggestions...</span>
+        <div class="destination-placeholder">
+          <span class="placeholder-icon" aria-hidden="true">
+            <i class="fas fa-paper-plane"></i>
+          </span>
+          <div>
+            <strong>Choose a conversation</strong>
+            <span>Pick a recent chat or find someone new.</span>
           </div>
-        {:else if availableSuggestions.length > 0}
-          <div class="suggestions-row-container">
-            <span class="suggestions-label">
-              <i class="fas fa-clock" aria-hidden="true"></i>
-              Recent
-            </span>
-            <div class="suggestions-scroll">
-              {#each availableSuggestions as user (user.id)}
-                <button
-                  type="button"
-                  class="suggestion-chip"
-                  onclick={() =>
-                    handleSuggestionClick(
-                      user.id,
-                      user.displayName,
-                      user.avatar
-                    )}
-                >
-                  <RobustAvatar
-                    src={user.avatar}
-                    name={user.displayName}
-                    alt=""
-                    customSize={32}
-                  />
-                  <span class="suggestion-chip-name">{user.displayName}</span>
-                </button>
+        </div>
+      {/if}
+    </div>
+
+    {#if !hasDestination}
+      <div
+        class="destination-browser"
+        inert={phase === "sending"}
+        aria-label="Share destinations"
+      >
+        {#if recentConversations.length > 0}
+          <div class="destination-group">
+            <h4>Recent conversations</h4>
+            <div class="conversation-options">
+              {#each recentConversations as conversation (conversation.id)}
+                <ConversationItem
+                  {conversation}
+                  selectionMode
+                  selected={selectedConversation?.id === conversation.id}
+                  onclick={() => selectConversation(conversation)}
+                />
               {/each}
             </div>
           </div>
         {/if}
-      {/if}
-    </div>
 
-    <!-- Message input -->
-    <div class="message-section">
-      <textarea
-        class="message-input"
-        bind:value={message}
-        placeholder="Add a message..."
-        maxlength={MESSAGE_MAX}
-        rows={2}
-        disabled={phase === "sending"}
-      ></textarea>
-      {#if message.length > MESSAGE_MAX * 0.8}
-        <span class="char-count">{message.length}/{MESSAGE_MAX}</span>
-      {/if}
-    </div>
+        <div class="destination-group new-conversation">
+          <h4>
+            {recentConversations.length > 0
+              ? "Start a new conversation"
+              : "Find someone"}
+          </h4>
+          {#key searchResetKey}
+            <UserSearchInput
+              selectedUserId={searchUserId}
+              selectedUserDisplay={searchUserDisplay}
+              onSelect={selectUser}
+              placeholder="Search by name or email"
+              inlineResults
+              {excludeUserIds}
+              autofocus={recentConversations.length === 0}
+            />
+          {/key}
+        </div>
+      </div>
+    {/if}
+  </section>
 
-    <!-- Send button -->
-    <button
-      type="button"
-      class="send-btn"
-      onclick={send}
-      disabled={!canSend || phase === "sending"}
+  <div class="message-section">
+    <label for="sequence-share-message">
+      Note <span>Optional</span>
+    </label>
+    <textarea
+      id="sequence-share-message"
+      class="message-input"
+      bind:value={message}
+      placeholder="Add a note"
+      maxlength={MESSAGE_MAX}
+      rows={2}
+      disabled={phase === "sending"}
+    ></textarea>
+    <span
+      class="char-count"
+      class:visible={message.length > MESSAGE_MAX * 0.8}
+      aria-hidden={message.length <= MESSAGE_MAX * 0.8}
     >
-      {#if phase === "sending"}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Sending...</span>
-      {:else}
-        <i class="fas fa-paper-plane" aria-hidden="true"></i>
-        <span>Send Sequence</span>
-      {/if}
-    </button>
-  {/if}
+      {message.length}/{MESSAGE_MAX}
+    </span>
+  </div>
+
+  <button type="button" class="send-button" onclick={send} disabled={!canSend}>
+    <i
+      class="fas {phase === 'sending'
+        ? 'fa-spinner fa-spin'
+        : 'fa-paper-plane'}"
+      aria-hidden="true"
+    ></i>
+    <span>{phase === "sending" ? "Sending…" : "Send sequence"}</span>
+  </button>
 </div>
 
 <style>
   .send-sequence-sheet {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 16px;
+    container-type: inline-size;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: 0.875rem;
     height: 100%;
+    min-height: 0;
+    padding: 1rem;
+    color: var(--theme-text);
   }
-
-  /* ── Success state ────────────────────────────────────────────────── */
-
-  .success-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    min-height: 240px;
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .success-icon {
-    width: 56px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
-    color: var(--semantic-success);
-    font-size: var(--font-size-2xl, 24px);
-    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .success-text {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--theme-text, #fff);
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes popIn {
-    0% {
-      opacity: 0;
-      transform: scale(0.5);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* ── Sequence preview ─────────────────────────────────────────────── */
 
   .sequence-preview {
-    display: flex;
+    display: grid;
+    grid-template-columns: clamp(4.5rem, 18cqw, 6rem) minmax(0, 1fr);
+    gap: 0.875rem;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin: 0;
+    padding: 0.75rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 1rem;
   }
 
   .preview-thumbnail {
-    flex-shrink: 0;
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: color-mix(in srgb, var(--theme-panel-bg) 82%, transparent);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
   }
 
   .thumbnail-img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
   }
 
   .thumbnail-fallback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     width: 100%;
     height: 100%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: 24px;
+    color: var(--theme-text-dim);
+    font-size: clamp(
+      var(--font-size-xl, 1.25rem),
+      6cqw,
+      var(--font-size-3xl, 1.875rem)
+    );
   }
 
   .preview-info {
-    flex: 1;
-    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    min-width: 0;
+  }
+
+  .preview-kicker,
+  .section-kicker {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
   }
 
   .preview-word {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: var(--theme-text, #fff);
-    letter-spacing: 0.5px;
     overflow: hidden;
+    margin-top: 0.2rem;
+    color: var(--theme-text);
+    font-size: clamp(
+      var(--font-size-xl, 1.25rem),
+      5cqw,
+      var(--font-size-3xl, 1.875rem)
+    );
+    line-height: 1.15;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .preview-meta {
     display: flex;
-    align-items: center;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    margin-top: 0.4rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
-  .step-badge {
-    display: inline-flex;
+  .destination-section {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 0.625rem;
+    min-height: 0;
+  }
+
+  .destination-selected .destination-section {
+    grid-template-rows: auto auto;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .section-heading h3 {
+    margin: 0.1rem 0 0;
+    color: var(--theme-text);
+    font-size: var(--font-size-base, 1rem);
+    line-height: 1.2;
+  }
+
+  .clear-destination {
+    min-width: 4.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 0.875rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    color: var(--theme-accent, var(--semantic-info));
+    font: inherit;
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .clear-destination:hover:not(:disabled) {
+    border-color: var(--theme-accent, var(--semantic-info));
+  }
+
+  .clear-destination:focus-visible,
+  .send-button:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
+  }
+
+  .selected-slot {
+    min-height: 4.5rem;
+  }
+
+  .selected-destination,
+  .destination-placeholder {
+    display: flex;
     align-items: center;
-    padding: 2px 8px;
+    gap: 0.75rem;
+    min-height: 4.5rem;
+    padding: 0.625rem 0.75rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.875rem;
+  }
+
+  .selected-destination {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, var(--semantic-info)) 55%,
+      var(--theme-stroke)
+    );
+  }
+
+  .selected-avatar,
+  .placeholder-icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  .group-fallback,
+  .placeholder-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
     background: color-mix(
       in srgb,
-      var(--theme-accent, #6366f1) 20%,
+      var(--theme-accent, var(--semantic-info)) 14%,
       transparent
     );
-    color: var(--theme-accent, #6366f1);
-    border-radius: 10px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
+    border-radius: 50%;
+    color: var(--theme-accent, var(--semantic-info));
   }
 
-  .preview-author {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  .selected-copy,
+  .destination-placeholder > div:last-child {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .selected-copy strong,
+  .destination-placeholder strong {
     overflow: hidden;
+    color: var(--theme-text);
+    font-size: var(--font-size-base, 1rem);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  /* ── Error ────────────────────────────────────────────────────────── */
-
-  .error-banner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
-    border: 1px solid var(--semantic-error);
-    border-radius: 8px;
-    color: var(--semantic-error);
-    font-size: var(--font-size-sm, 14px);
+  .selected-copy span,
+  .destination-placeholder span {
+    margin-top: 0.15rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
-  /* ── Recipient section ────────────────────────────────────────────── */
-
-  .recipient-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .section-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .selected-recipient {
-    display: flex;
-    align-items: center;
-  }
-
-  .recipient-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px 6px 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-accent, #6366f1);
-    border-radius: 24px;
-    animation: chipIn 0.2s ease-out;
-  }
-
-  @keyframes chipIn {
-    from {
-      opacity: 0;
-      transform: scale(0.92);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .chip-name {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 500;
-    color: var(--theme-text, #fff);
-  }
-
-  .chip-deselect {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      color 0.15s ease;
-  }
-
-  .chip-deselect:hover {
-    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
-    color: var(--semantic-error);
-  }
-
-  .chip-deselect:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .chip-deselect i {
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  /* ── Suggestions row ──────────────────────────────────────────────── */
-
-  .suggestions-loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .suggestions-row-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .suggestions-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .suggestions-label i {
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .suggestions-scroll {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
+  .destination-browser {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.875rem;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
-      transparent;
+    scrollbar-color: var(--theme-stroke) transparent;
   }
 
-  .suggestions-scroll::-webkit-scrollbar {
-    height: 4px;
+  .destination-browser[inert] {
+    opacity: 0.65;
   }
 
-  .suggestions-scroll::-webkit-scrollbar-track {
-    background: transparent;
+  .destination-group {
+    padding: 0.75rem;
   }
 
-  .suggestions-scroll::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
-    border-radius: 2px;
+  .destination-group + .destination-group {
+    border-top: 1px solid var(--theme-stroke);
   }
 
-  .suggestion-chip {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px 6px 6px;
-    min-height: var(--touch-target-min, 44px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 24px;
-    cursor: pointer;
-    transition:
-      border-color 0.15s ease,
-      background 0.15s ease;
+  .destination-group h4 {
+    margin: 0 0 0.5rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
   }
 
-  .suggestion-chip:hover {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #6366f1) 8%,
-      transparent
-    );
+  .conversation-options {
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
   }
 
-  .suggestion-chip:active {
-    transform: scale(0.97);
+  .conversation-options :global(.conversation-item:last-child) {
+    border-bottom: 0;
   }
 
-  .suggestion-chip:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+  .new-conversation {
+    position: relative;
+    z-index: 1;
   }
-
-  .suggestion-chip-name {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text, #fff);
-    white-space: nowrap;
-  }
-
-  /* ── Message section ──────────────────────────────────────────────── */
 
   .message-section {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .message-section label {
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
+  }
+
+  .message-section label span {
+    margin-left: 0.25rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 500;
   }
 
   .message-input {
+    grid-column: 1 / -1;
     width: 100%;
-    padding: 12px 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-sm, 14px);
-    font-family: inherit;
-    resize: none;
-    transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
-  }
-
-  .message-input:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    min-height: 3.25rem;
+    max-height: 7.5rem;
+    padding: 0.75rem;
+    resize: vertical;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--font-size-base, 1rem);
+    line-height: 1.35;
   }
 
   .message-input::placeholder {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-dim);
+  }
+
+  .message-input:focus {
+    border-color: var(--theme-accent, var(--semantic-info));
+    outline: none;
+    box-shadow: 0 0 0 2px
+      color-mix(
+        in srgb,
+        var(--theme-accent, var(--semantic-info)) 22%,
+        transparent
+      );
   }
 
   .message-input:disabled {
-    opacity: 0.5;
+    cursor: not-allowed;
+    opacity: 0.65;
   }
 
   .char-count {
-    position: absolute;
-    bottom: 6px;
-    right: 10px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    pointer-events: none;
+    justify-self: end;
+    min-width: 4.75rem;
+    visibility: hidden;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
   }
 
-  /* ── Send button ──────────────────────────────────────────────────── */
+  .char-count.visible {
+    visibility: visible;
+  }
 
-  .send-btn {
+  .send-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 0.625rem;
     width: 100%;
-    min-height: var(--touch-target-min, 44px);
-    padding: 14px 20px;
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent, #6366f1);
-    color: #fff;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    background: var(--theme-accent, var(--semantic-info));
+    border: 1px solid transparent;
+    border-radius: 0.875rem;
+    color: white;
+    font: inherit;
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 800;
     cursor: pointer;
     transition:
-      filter 0.15s ease,
-      transform 0.1s ease,
-      opacity 0.15s ease;
+      filter var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease,
+      opacity var(--duration-fast, 150ms) ease;
   }
 
-  .send-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
+  .send-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
   }
 
-  .send-btn:active:not(:disabled) {
-    transform: scale(0.98);
+  .send-button:active:not(:disabled) {
+    transform: translateY(0);
   }
 
-  .send-btn:disabled {
-    opacity: 0.45;
+  .send-button:disabled {
     cursor: not-allowed;
+    opacity: 0.45;
   }
 
-  /* ── Reduced motion ───────────────────────────────────────────────── */
+  @container (min-width: 34rem) {
+    .sequence-preview {
+      padding: 0.875rem;
+    }
+
+    .destination-group {
+      padding: 0.875rem;
+    }
+  }
+
+  @media (max-height: 31rem) {
+    .send-sequence-sheet {
+      gap: 0.375rem;
+      padding: 0.375rem 0.5rem 0.5rem;
+    }
+
+    .sequence-preview {
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      gap: 0.5rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .preview-kicker,
+    .preview-meta,
+    .section-kicker {
+      display: none;
+    }
+
+    .preview-word,
+    .section-heading h3 {
+      margin-top: 0;
+    }
+
+    .destination-section {
+      gap: 0.35rem;
+    }
+
+    .selected-slot,
+    .selected-destination,
+    .destination-placeholder {
+      min-height: 3rem;
+    }
+
+    .selected-destination,
+    .destination-placeholder {
+      padding: 0.25rem 0.5rem;
+    }
+
+    .selected-avatar,
+    .placeholder-icon,
+    .group-fallback {
+      width: 36px;
+      height: 36px;
+    }
+
+    .clear-destination {
+      min-width: 4.25rem;
+    }
+
+    .destination-browser {
+      min-height: 5rem;
+    }
+
+    .destination-group {
+      padding: 0.5rem;
+    }
+
+    .message-input {
+      min-height: 2.75rem;
+      max-height: 3.5rem;
+      padding-block: 0.5rem;
+    }
+
+    .send-button {
+      min-height: var(--min-touch-target, 44px);
+      padding-block: 0.5rem;
+    }
+  }
+
+  @media (max-height: 31rem) and (min-width: 40rem) {
+    .send-sequence-sheet {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      column-gap: 0.5rem;
+    }
+
+    .sequence-preview,
+    .destination-section {
+      grid-column: 1 / -1;
+    }
+
+    .destination-section {
+      grid-row: 2;
+    }
+
+    .destination-browser {
+      min-height: 4.25rem;
+    }
+
+    .destination-group h4 {
+      margin-bottom: 0.25rem;
+    }
+
+    .message-section {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    .send-button {
+      grid-column: 2;
+      grid-row: 3;
+      align-self: end;
+      width: auto;
+      min-width: 10rem;
+    }
+  }
+
+  @media (max-height: 31rem) and (max-width: 39.999rem) {
+    .send-sequence-sheet {
+      grid-template-rows: auto auto auto auto;
+      height: auto;
+      min-height: 100%;
+      overflow-y: auto;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .success-state,
-    .success-icon,
-    .recipient-chip,
-    .suggestion-chip,
-    .send-btn,
-    .chip-deselect,
-    .message-input {
-      transition: none !important;
-      animation: none !important;
+    .send-button {
+      transition: none;
     }
   }
 </style>

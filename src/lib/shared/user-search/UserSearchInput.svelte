@@ -9,6 +9,7 @@
   import { searchUsers as searchUsersService } from "./services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { UserSearchResult } from "./services/types";
+  import { onDestroy } from "svelte";
 
   type UserResult = UserSearchResult;
 
@@ -38,13 +39,22 @@
 
   let inputElement: HTMLInputElement | undefined = $state();
   let dropdownStyle = $state("");
+  const componentId = $props.id();
+  const resultsId = `${componentId}-results`;
 
   let searchQuery = $state("");
   let searchResults = $state<UserResult[]>([]);
   let isSearching = $state(false);
   let showResults = $state(false);
+  let activeIndex = $state(-1);
   let searchTimeout: number | null = null;
+  let searchRequestId = 0;
   let wasCleared = $state(false);
+  const activeResultId = $derived(
+    showResults && activeIndex >= 0
+      ? `${resultsId}-option-${activeIndex}`
+      : undefined
+  );
 
   // Services
   const hapticService = getHapticFeedback();
@@ -77,6 +87,12 @@
   }
 
   async function handleSearchInput() {
+    const requestId = ++searchRequestId;
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      searchTimeout = null;
+    }
+
     if (wasCleared && searchQuery) {
       wasCleared = false;
     }
@@ -86,37 +102,97 @@
     if (!q || q.length < 2) {
       searchResults = [];
       showResults = false;
+      activeIndex = -1;
+      isSearching = false;
       return;
-    }
-
-    // Debounce search
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
     }
 
     searchTimeout = window.setTimeout(async () => {
       isSearching = true;
       try {
-        searchResults = await searchUsers(q);
+        const results = await searchUsers(q);
+        if (requestId !== searchRequestId) return;
+        searchResults = results;
         showResults = true;
+        activeIndex = -1;
         if (!inlineResults) {
           updateDropdownPosition();
         }
       } catch (error) {
+        if (requestId !== searchRequestId) return;
         console.error("Failed to search users:", error);
         searchResults = [];
       } finally {
-        isSearching = false;
+        if (requestId === searchRequestId) {
+          isSearching = false;
+          searchTimeout = null;
+        }
       }
     }, 300);
   }
 
   function handleSelectUser(user: UserResult) {
+    searchRequestId++;
+    if (searchTimeout) clearTimeout(searchTimeout);
     hapticService?.trigger("selection");
     searchQuery = user.displayName || user.username || "";
     showResults = false;
     searchResults = [];
+    activeIndex = -1;
+    isSearching = false;
     onSelect(user);
+  }
+
+  function setActiveIndex(index: number): void {
+    if (searchResults.length === 0) {
+      activeIndex = -1;
+      return;
+    }
+
+    activeIndex = (index + searchResults.length) % searchResults.length;
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`${resultsId}-option-${activeIndex}`)
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }
+
+  function handleInputKeydown(event: KeyboardEvent): void {
+    if (
+      !showResults &&
+      (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+      searchResults.length > 0
+    ) {
+      showResults = true;
+    }
+
+    if (!showResults) return;
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setActiveIndex(activeIndex + 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setActiveIndex(
+          activeIndex <= 0 ? searchResults.length - 1 : activeIndex - 1
+        );
+        break;
+      case "Enter": {
+        const activeResult = searchResults[activeIndex];
+        if (!activeResult) return;
+        event.preventDefault();
+        handleSelectUser(activeResult);
+        break;
+      }
+      case "Escape":
+        event.preventDefault();
+        event.stopPropagation();
+        showResults = false;
+        activeIndex = -1;
+        break;
+    }
   }
 
   function updateDropdownPosition() {
@@ -143,16 +219,26 @@
     }
     setTimeout(() => {
       showResults = false;
+      activeIndex = -1;
     }, 200);
   }
 
   function clearSelection() {
+    searchRequestId++;
+    if (searchTimeout) clearTimeout(searchTimeout);
     hapticService?.trigger("selection");
     wasCleared = true;
     searchQuery = "";
     searchResults = [];
     showResults = false;
+    activeIndex = -1;
+    isSearching = false;
   }
+
+  onDestroy(() => {
+    searchRequestId++;
+    if (searchTimeout) clearTimeout(searchTimeout);
+  });
 </script>
 
 <div class="user-search" role="search">
@@ -165,11 +251,17 @@
       bind:this={inputElement}
       bind:value={searchQuery}
       oninput={handleSearchInput}
+      onkeydown={handleInputKeydown}
       onfocus={handleFocus}
       onblur={handleBlur}
       {placeholder}
       {disabled}
       autocomplete="off"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded={showResults}
+      aria-controls={showResults ? resultsId : undefined}
+      aria-activedescendant={activeResultId}
       aria-label="Search users"
       data-1p-ignore
       data-lpignore="true"
@@ -202,6 +294,7 @@
 
   {#if showResults && searchResults.length > 0}
     <div
+      id={resultsId}
       class="search-results"
       class:fixed-position={useFixedPosition}
       class:inline={inlineResults}
@@ -209,14 +302,20 @@
       role="listbox"
       aria-label="Search results"
     >
-      {#each searchResults as user (user.uid)}
+      {#each searchResults as user, index (user.uid)}
         <button
+          id="{resultsId}-option-{index}"
           type="button"
           class="result-item"
           class:selected={user.uid === selectedUserId}
+          class:active={index === activeIndex}
           role="option"
           aria-selected={user.uid === selectedUserId}
+          tabindex="-1"
           onclick={() => handleSelectUser(user)}
+          onmouseenter={() => {
+            activeIndex = index;
+          }}
         >
           <RobustAvatar
             src={user.photoURL}
@@ -226,7 +325,9 @@
           />
           <div class="result-info">
             <span class="result-name">{user.displayName || "No name"}</span>
-            <span class="result-username">@{user.username || user.uid.slice(0, 8)}</span>
+            <span class="result-username"
+              >@{user.username || user.uid.slice(0, 8)}</span
+            >
           </div>
           <i class="fas fa-check result-check" aria-hidden="true"></i>
         </button>
@@ -236,10 +337,13 @@
 
   {#if showResults && searchResults.length === 0 && searchQuery.length >= 2 && !isSearching}
     <div
+      id={resultsId}
       class="search-results"
       class:fixed-position={useFixedPosition}
       class:inline={inlineResults}
       style={inlineResults ? "" : dropdownStyle}
+      role="listbox"
+      aria-label="Search results"
     >
       <div class="no-results">
         <i class="fas fa-user-slash" aria-hidden="true"></i>
@@ -356,6 +460,11 @@
     color: rgba(255, 255, 255, 0.75);
   }
 
+  .search-input::-webkit-search-cancel-button {
+    display: none;
+    appearance: none;
+  }
+
   .search-input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -433,7 +542,8 @@
     border-bottom: none;
   }
 
-  .result-item:hover {
+  .result-item:hover,
+  .result-item.active {
     background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
   }
 
@@ -478,7 +588,8 @@
     flex-shrink: 0;
   }
 
-  .result-item:hover .result-check {
+  .result-item:hover .result-check,
+  .result-item.active .result-check {
     opacity: 1;
     color: var(--theme-accent, var(--theme-accent));
   }
@@ -503,5 +614,4 @@
     font-size: var(--font-size-3xl);
     opacity: 0.5;
   }
-
 </style>

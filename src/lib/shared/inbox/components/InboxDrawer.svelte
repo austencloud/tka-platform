@@ -18,6 +18,7 @@
   import ConversationList from "./messages/ConversationList.svelte";
   import MessageThread from "./messages/MessageThread.svelte";
   import NewMessageSheet from "./messages/NewMessageSheet.svelte";
+  import SendSequenceSheet from "./messages/SendSequenceSheet.svelte";
   import GroupSettingsSheet from "./messages/GroupSettingsSheet.svelte";
   import NotificationList from "./notifications/NotificationList.svelte";
   import { conversationService } from "../../messaging/services/conversation-manager";
@@ -226,6 +227,15 @@
     inboxState.cancelCompose();
   }
 
+  function handleCancelSequenceShare() {
+    hapticService?.trigger("selection");
+    inboxState.cancelSequenceShare();
+  }
+
+  function handleSequenceSent(conversationId: string) {
+    inboxState.completeSequenceShare(conversationId);
+  }
+
   function handleOpenGroupSettings() {
     hapticService?.trigger("selection");
     inboxState.openGroupSettings();
@@ -251,6 +261,8 @@
         handleBack();
       } else if (inboxState.currentView === "compose") {
         inboxState.cancelCompose();
+      } else if (inboxState.currentView === "send-sequence") {
+        inboxState.cancelSequenceShare();
       } else if (inboxState.currentView === "group-settings") {
         inboxState.closeGroupSettings();
       } else {
@@ -340,7 +352,10 @@
     // Add messages
     lines.push("", "### Messages", "");
     for (const msg of inboxState.messages) {
-      const sender = conv.participantInfo[msg.senderId]?.displayName || msg.senderName || "Unknown";
+      const sender =
+        conv.participantInfo[msg.senderId]?.displayName ||
+        msg.senderName ||
+        "Unknown";
       const timestamp = msg.createdAt?.toLocaleString() || "Unknown";
       const edited = msg.editedAt ? " (edited)" : "";
       const deleted = msg.isDeleted ? " [DELETED]" : "";
@@ -348,13 +363,17 @@
       lines.push(`**${sender}** - ${timestamp}${edited}${deleted}`);
 
       if (msg.replyTo) {
-        lines.push(`> Reply to: ${msg.replyTo.senderName}: "${msg.replyTo.content?.slice(0, 50)}..."`);
+        lines.push(
+          `> Reply to: ${msg.replyTo.senderName}: "${msg.replyTo.content?.slice(0, 50)}..."`
+        );
       }
 
       lines.push(msg.content || "(empty)");
 
       if (msg.reactions && msg.reactions.length > 0) {
-        const reactionStr = msg.reactions.map(r => `${r.emoji}×${r.userIds.length}`).join(" ");
+        const reactionStr = msg.reactions
+          .map((r) => `${r.emoji}×${r.userIds.length}`)
+          .join(" ");
         lines.push(`Reactions: ${reactionStr}`);
       }
 
@@ -394,7 +413,9 @@
     <header class="inbox-header">
       {#if inboxState.currentView === "list"}
         <h2 id="inbox-title">
-          {inboxState.activeTab === "notifications" ? "Notifications" : "Messages"}
+          {inboxState.activeTab === "notifications"
+            ? "Notifications"
+            : "Messages"}
         </h2>
 
         <!-- New message and create group buttons -->
@@ -421,14 +442,33 @@
         <button
           class="header-action-btn notification-toggle"
           class:active={inboxState.activeTab === "notifications"}
-          onclick={() => inboxState.setTab(inboxState.activeTab === "notifications" ? "messages" : "notifications")}
-          aria-label={inboxState.activeTab === "notifications" ? "Back to messages" : "View notifications"}
-          title={inboxState.activeTab === "notifications" ? "Back to messages" : "Notifications"}
+          onclick={() =>
+            inboxState.setTab(
+              inboxState.activeTab === "notifications"
+                ? "messages"
+                : "notifications"
+            )}
+          aria-label={inboxState.activeTab === "notifications"
+            ? "Back to messages"
+            : "View notifications"}
+          title={inboxState.activeTab === "notifications"
+            ? "Back to messages"
+            : "Notifications"}
         >
-          <i class="fas {inboxState.activeTab === 'notifications' ? 'fa-comments' : 'fa-bell'}" aria-hidden="true"></i>
+          <i
+            class="fas {inboxState.activeTab === 'notifications'
+              ? 'fa-comments'
+              : 'fa-bell'}"
+            aria-hidden="true"
+          ></i>
           {#if inboxState.activeTab !== "notifications" && inboxState.unreadNotificationCount > 0}
-            <span class="notification-badge" aria-label="{inboxState.unreadNotificationCount} unread">
-              {inboxState.unreadNotificationCount > 99 ? "99+" : inboxState.unreadNotificationCount}
+            <span
+              class="notification-badge"
+              aria-label="{inboxState.unreadNotificationCount} unread"
+            >
+              {inboxState.unreadNotificationCount > 99
+                ? "99+"
+                : inboxState.unreadNotificationCount}
             </span>
           {/if}
         </button>
@@ -483,8 +523,19 @@
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
         </button>
-        <h2 id="inbox-title">{inboxState.composeGroupMode ? "New Group" : "New Message"}</h2>
+        <h2 id="inbox-title">
+          {inboxState.composeGroupMode ? "New Group" : "New Message"}
+        </h2>
         <div class="spacer"></div>
+      {:else if inboxState.currentView === "send-sequence"}
+        <h2 id="inbox-title">Send sequence</h2>
+        <button
+          class="close-button"
+          onclick={handleCancelSequenceShare}
+          aria-label="Close sequence sharing"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
       {:else if inboxState.currentView === "group-settings"}
         <!-- GroupSettingsSheet has its own header, just show close -->
         <div class="spacer"></div>
@@ -501,6 +552,7 @@
     <!-- Content -->
     <section
       class="inbox-content"
+      class:contained={inboxState.currentView === "send-sequence"}
       id="{inboxState.activeTab}-panel"
       role="tabpanel"
     >
@@ -539,6 +591,13 @@
           onConversationCreated={handleConversationSelect}
           onCancel={handleCancelCompose}
         />
+      {:else if inboxState.currentView === "send-sequence"}
+        {#if inboxState.shareSequencePayload}
+          <SendSequenceSheet
+            payload={inboxState.shareSequencePayload}
+            onSent={handleSequenceSent}
+          />
+        {/if}
       {:else if inboxState.currentView === "group-settings"}
         {#if inboxState.selectedConversation}
           <GroupSettingsSheet
@@ -598,6 +657,10 @@
       background 0.2s ease,
       color 0.2s ease,
       transform 0.15s ease;
+  }
+
+  .inbox-header button i {
+    font-size: var(--font-size-base);
   }
 
   .back-button:hover,
@@ -671,8 +734,13 @@
 
   .inbox-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  .inbox-content.contained {
+    overflow: hidden;
   }
 
   .thread-loading {
@@ -692,7 +760,55 @@
   }
 
   :global(.drawer-content.inbox-drawer) {
-    --sheet-width: min(480px, 95vw);
+    --sheet-width: min(clamp(30rem, 28vw, 64rem), 95vw);
+  }
+
+  @media (min-width: 1680px) {
+    :global(.drawer-content.inbox-drawer) {
+      --font-size-min: clamp(
+        0.875rem,
+        calc(0.875rem + (100vw - 1680px) * 7 / 2160),
+        1.3125rem
+      );
+      --font-size-compact: clamp(
+        0.75rem,
+        calc(0.75rem + (100vw - 1680px) * 6 / 2160),
+        1.125rem
+      );
+      --font-size-xs: var(--font-size-compact);
+      --font-size-sm: var(--font-size-min);
+      --font-size-base: clamp(
+        1rem,
+        calc(1rem + (100vw - 1680px) * 8 / 2160),
+        1.5rem
+      );
+      --font-size-md: var(--font-size-base);
+      --font-size-lg: clamp(
+        1.125rem,
+        calc(1.125rem + (100vw - 1680px) * 9 / 2160),
+        1.6875rem
+      );
+      --font-size-xl: clamp(
+        1.25rem,
+        calc(1.25rem + (100vw - 1680px) * 10 / 2160),
+        1.875rem
+      );
+      --font-size-2xl: clamp(
+        1.5rem,
+        calc(1.5rem + (100vw - 1680px) * 12 / 2160),
+        2.25rem
+      );
+      --font-size-3xl: clamp(
+        1.875rem,
+        calc(1.875rem + (100vw - 1680px) * 15 / 2160),
+        2.8125rem
+      );
+      --min-touch-target: clamp(
+        44px,
+        calc(44px + (100vw - 1680px) * 22 / 2160),
+        66px
+      );
+    }
   }
 
   @media (max-width: 768px) {
@@ -714,9 +830,8 @@
       height: 100dvh;
     }
 
-    /* Thread / compose / group-settings shrink by the keyboard height (via the
-       container's inline style) so the bottom-anchored composer clears the
-       on-screen keyboard. */
+    /* Thread, compose, sequence sharing, and group settings shrink by the
+       keyboard height so their focused inputs stay visible. */
     .inbox-container.expanded {
       max-height: none;
       height: 100%;

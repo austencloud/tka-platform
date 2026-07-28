@@ -57,6 +57,21 @@ describe("message attachment presentation", () => {
     expect(buildSequenceSharePayload(sequence).sequence).toBe(sequence);
   });
 
+  it("uses the canonical compact word in share previews and attachments", () => {
+    const sequence = createSequenceData({
+      id: "repeating-sequence",
+      name: "Repeating sequence",
+      word: "ABABABAB",
+    });
+
+    const payload = buildSequenceSharePayload(sequence);
+    const attachment = buildSequenceMessageAttachment(sequence, "LOOP");
+
+    expect(payload.sequenceWord).toBe("AB");
+    expect(attachment.name).toBe("AB");
+    expect(attachment.metadata?.sequenceWord).toBe("AB");
+  });
+
   it("recovers already-sent serialized sequence attachments", () => {
     const sequence = createSequenceData({
       id: "legacy-sequence",

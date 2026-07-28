@@ -17,9 +17,16 @@
   interface Props {
     conversation: ConversationPreview;
     onclick: () => void;
+    selectionMode?: boolean;
+    selected?: boolean;
   }
 
-  let { conversation, onclick }: Props = $props();
+  let {
+    conversation,
+    onclick,
+    selectionMode = false,
+    selected = false,
+  }: Props = $props();
 
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
@@ -41,20 +48,25 @@
       : conversation.otherParticipant?.displayName || "Unknown"
   );
   const ariaLabel = $derived(
-    isGroup
-      ? `Group: ${displayName}, ${conversation.participantCount} members${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
-      : `Conversation with ${displayName}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
+    selectionMode
+      ? `${selected ? "Selected. " : ""}Send to ${displayName}${isGroup && conversation.participantCount ? `, ${conversation.participantCount} members` : ""}`
+      : isGroup
+        ? `Group: ${displayName}, ${conversation.participantCount} members${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
+        : `Conversation with ${displayName}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
   );
 </script>
 
 <button
   class="conversation-item"
-  class:unread={conversation.unreadCount > 0}
+  class:unread={!selectionMode && conversation.unreadCount > 0}
+  class:selection-mode={selectionMode}
+  class:selected
   onclick={handleClick}
   aria-label={ariaLabel}
+  aria-pressed={selectionMode ? selected : undefined}
 >
   <!-- Unread accent bar -->
-  {#if conversation.unreadCount > 0}
+  {#if !selectionMode && conversation.unreadCount > 0}
     <div class="unread-accent"></div>
   {/if}
 
@@ -75,7 +87,7 @@
         customSize={44}
       />
     {/if}
-    {#if conversation.unreadCount > 0}
+    {#if !selectionMode && conversation.unreadCount > 0}
       <span class="online-dot" aria-hidden="true"></span>
     {/if}
   </div>
@@ -104,7 +116,11 @@
   </div>
 
   <!-- Unread badge -->
-  {#if conversation.unreadCount > 0}
+  {#if selectionMode}
+    <span class="selection-indicator" class:selected aria-hidden="true">
+      <i class="fas {selected ? 'fa-check' : 'fa-paper-plane'}"></i>
+    </span>
+  {:else if conversation.unreadCount > 0}
     <span
       class="unread-badge"
       aria-label="{conversation.unreadCount} unread messages"
@@ -149,6 +165,15 @@
 
   .conversation-item.unread {
     background: color-mix(in srgb, var(--theme-accent) 5%, transparent);
+  }
+
+  .conversation-item.selection-mode.selected {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, var(--semantic-info)) 10%,
+      transparent
+    );
+    box-shadow: inset 3px 0 0 var(--theme-accent, var(--semantic-info));
   }
 
   /* Unread accent bar */
@@ -282,6 +307,25 @@
     line-height: 22px;
     text-align: center;
     box-shadow: 0 2px 4px var(--theme-shadow);
+  }
+
+  .selection-indicator {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    background: transparent;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 50%;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .selection-indicator.selected {
+    background: var(--theme-accent, var(--semantic-info));
+    border-color: var(--theme-accent, var(--semantic-info));
+    color: white;
   }
 
   /* Reduced motion */

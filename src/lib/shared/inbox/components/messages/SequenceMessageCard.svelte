@@ -16,6 +16,7 @@
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { decodeLegacySequenceAttachment } from "../../domain/message-attachment-builders";
 
@@ -136,7 +137,9 @@
         caught instanceof Error ? caught : new Error(String(caught));
       console.error("[SequenceMessageCard] Failed to open sequence:", failure);
       getErrorHandler().showUserError({
-        message: "This sequence could not be opened.",
+        message:
+          getShortCodeShareMessage(caught) ??
+          "This sequence could not be opened.",
         technicalDetails: failure.message,
         error: failure,
         severity: "error",

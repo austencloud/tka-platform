@@ -10,6 +10,7 @@ import type {
 } from "$lib/shared/messaging/domain/models/conversation-models";
 import type { Message } from "$lib/shared/messaging/domain/models/message-models";
 import type { UserNotification } from "$lib/shared/notifications/domain/models/notification-models";
+import type { SequenceSharePayload } from "../domain/models/sequence-share-payload";
 
 // Inbox tab types
 export type InboxTab = "messages" | "notifications";
@@ -19,7 +20,8 @@ export type InboxView =
   | "list"
   | "thread"
   | "compose"
-  | "group-settings";
+  | "group-settings"
+  | "send-sequence";
 
 /**
  * Reactive inbox state using Svelte 5 runes
@@ -57,6 +59,9 @@ class InboxState {
   composeRecipientName = $state<string | null>(null);
   composeGroupMode = $state(false);
 
+  // Sequence sharing state
+  shareSequencePayload = $state<SequenceSharePayload | null>(null);
+
   // Reply state - message being replied to
   replyToMessage = $state<Message | null>(null);
 
@@ -87,6 +92,7 @@ class InboxState {
       this.activeTab = tab;
     }
     this.currentView = "list";
+    this.shareSequencePayload = null;
   }
 
   close() {
@@ -97,9 +103,12 @@ class InboxState {
     this.composeRecipientId = null;
     this.composeRecipientName = null;
     this.composeGroupMode = false;
+    this.shareSequencePayload = null;
     this.replyToMessage = null;
     this.editingMessage = null;
     this.typingUsers = [];
+    this.pendingConversationId = null;
+    this.pendingNotificationId = null;
   }
 
   setTab(tab: InboxTab) {
@@ -110,9 +119,11 @@ class InboxState {
     this.replyToMessage = null;
     this.editingMessage = null;
     this.typingUsers = [];
+    this.shareSequencePayload = null;
   }
 
   selectConversation(conversation: Conversation) {
+    this.shareSequencePayload = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
   }
@@ -124,6 +135,7 @@ class InboxState {
   openToConversation(conversation: Conversation) {
     this.isOpen = true;
     this.activeTab = "messages";
+    this.shareSequencePayload = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
   }
@@ -136,6 +148,7 @@ class InboxState {
     this.pendingConversationId = conversationId;
     this.isOpen = true;
     this.activeTab = "messages";
+    this.shareSequencePayload = null;
     this.currentView = "thread"; // Go directly to thread view
     this.isLoadingMessages = true; // Show loading state
     // InboxDrawer will detect pendingConversationId and load the conversation
@@ -149,6 +162,7 @@ class InboxState {
     this.pendingNotificationId = notificationId;
     this.isOpen = true;
     this.activeTab = "notifications";
+    this.shareSequencePayload = null;
     // InboxDrawer will detect pendingNotificationId and handle the action
   }
 
@@ -161,6 +175,7 @@ class InboxState {
   }
 
   backToList() {
+    this.shareSequencePayload = null;
     this.selectedConversation = null;
     this.messages = [];
     this.currentView = "list";
@@ -170,6 +185,7 @@ class InboxState {
   }
 
   startCompose(recipientId?: string, recipientName?: string) {
+    this.shareSequencePayload = null;
     this.composeRecipientId = recipientId || null;
     this.composeRecipientName = recipientName || null;
     this.composeGroupMode = false;
@@ -177,6 +193,7 @@ class InboxState {
   }
 
   startGroupCompose() {
+    this.shareSequencePayload = null;
     this.composeGroupMode = true;
     this.composeRecipientId = null;
     this.composeRecipientName = null;
@@ -188,6 +205,32 @@ class InboxState {
     this.composeRecipientName = null;
     this.composeGroupMode = false;
     this.currentView = "list";
+  }
+
+  openSequenceShare(payload: SequenceSharePayload) {
+    this.isOpen = true;
+    this.activeTab = "messages";
+    this.currentView = "send-sequence";
+    this.shareSequencePayload = payload;
+    this.pendingConversationId = null;
+    this.pendingNotificationId = null;
+    this.selectedConversation = null;
+    this.messages = [];
+    this.composeRecipientId = null;
+    this.composeRecipientName = null;
+    this.composeGroupMode = false;
+    this.replyToMessage = null;
+    this.editingMessage = null;
+    this.typingUsers = [];
+  }
+
+  completeSequenceShare(conversationId: string) {
+    this.shareSequencePayload = null;
+    this.openToConversationById(conversationId);
+  }
+
+  cancelSequenceShare() {
+    this.close();
   }
 
   openGroupSettings() {
