@@ -111,11 +111,31 @@ the sheet variant deliberately drops search, which an archive of 505 needs; and
 the page variant is the one that persists its sub-screen. Weaker reasons than
 the false one, and worth revisiting if navigating away proves jarring in use.
 
-**3. Collections stays inline now, and becomes a doorway past a threshold.**
-46 tiles is browsable, and it is the band that best shows the multimodal
-variety — the whole argument for the stage. It flips to a shallow row + handoff
-above **60 entries**. The page changing shape as a collection grows is accepted:
-the alternative is either a sea later or a hidden band now.
+**3. ~~Collections stays inline now, and becomes a doorway past a threshold.~~**
+~~46 tiles is browsable~~ — **superseded 2026-07-28, on sight of the shipped
+band.** It was not browsable. Austen: *"I just frankly should not see a giant
+ass grid of stuff."* 41 of the 46 are mandalas, so the mixed grid reads as a
+wall of near-identical circles whatever the threshold is set to.
+
+**Collections is now one strip per medium, always.** Each strip names its
+medium, counts it, shows the six most recent, and carries its own "See all"
+into that medium's Library shelf. The filter chips are gone: a strip per medium
+IS the filter, already applied, so the page does the narrowing instead of
+asking for it. Strips are ordered by count, so the medium you actually have
+leads and a lone 3D scene never opens the band.
+
+This retires the 60-entry threshold entirely — there is no grid left for it to
+flip away from — and with it `shouldUseDoorway`. The Archive was already
+unconditional, which is now the rule for both bands rather than a special case.
+
+One consequence worth stating, because it inverts a decision made earlier in
+this very spec: the mixed grid existed to avoid type-segregated sub-bands,
+whose lopsided counts (1 scene, 4 tunnels, 41 mandalas) stranded tiles beside
+empty tracks at 4K. Strips bring the segregation back, and the lopsidedness
+with it. It is handled by sizing the row from the COLUMN count instead of the
+item count: a 1-item shelf is one normal tile with empty tracks after it, not
+one tile stretched across the band. Uniform tile size across shelves is what
+makes the segregation read as shelves rather than as a broken grid.
 
 ### The doorway component
 
@@ -227,9 +247,13 @@ This is a verification criterion, not a new mechanism.
   engine (the same call the drill's own author row makes,
   `GalleryDrill.svelte:872`) and lands on the grid. Making the user choose
   something we already know would be the handoff failing at its one job.
-- **Collections (past threshold) → `CollectionGalleryDetail`**, scoped to this
-  user, opened on the medium that was showing when the handoff was taken (the
-  filter chips already track this).
+- **Collections → one handoff per strip**, each into its own medium's Library
+  Art shelf (`art_mandala` / `art_tunnels` / `art_scenes`, which mount
+  `CollectionGalleryDetail` inside the Library detail pane). Because the strip
+  and its destination are the same medium, the count above the button and the
+  count at the destination are the same number by construction — no dominant-
+  medium guess, which is what the earlier single-handoff design needed and got
+  wrong (it advertised the mixed 46 and opened a shelf holding 41).
 
 ---
 
