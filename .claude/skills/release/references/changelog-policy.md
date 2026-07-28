@@ -63,6 +63,11 @@ wording.
 9. Lead with the change. Highlights must land before word ten. Keep other
    entries under 16 words when possible.
 10. Remove promotional filler and feature-list slogans.
+11. Link every new feature and improvement to its live production URL
+    (`https://tkaflowarts.com/...`) as an inline markdown link on the
+    destination word. Verify each route against the router before linking —
+    module surfaces resolve as `/{module}/{tab}`. Bug fixes only need a link
+    when the fixed surface has a stable URL worth visiting.
 
 ### Examples
 
