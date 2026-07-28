@@ -3,7 +3,7 @@ import { buildSequenceSharePayload } from "../../domain/build-sequence-share-pay
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import SendSequenceSheet from "./SendSequenceSheet.svelte";
+import SendAttachmentSheet from "./SendAttachmentSheet.svelte";
 
 const mocks = vi.hoisted(() => ({
   conversations: [] as Array<Record<string, unknown>>,
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   getOrCreateConversation: vi.fn(),
   searchUsers: vi.fn(),
   sendMessage: vi.fn(),
+  sendImage: vi.fn(),
   showUserError: vi.fn(),
 }));
 
@@ -39,6 +40,10 @@ vi.mock("$lib/shared/messaging/services/conversation-manager", () => ({
 
 vi.mock("$lib/shared/messaging/services/messenger", () => ({
   messagingService: { sendMessage: mocks.sendMessage },
+}));
+
+vi.mock("$lib/shared/messaging/get-message-image-sender", () => ({
+  getMessageImageSender: () => ({ send: mocks.sendImage }),
 }));
 
 vi.mock("$lib/shared/qr/get-short-code-manager", () => ({
@@ -77,7 +82,7 @@ function addGroupConversation(): void {
   });
 }
 
-describe("SendSequenceSheet", () => {
+describe("SendAttachmentSheet", () => {
   beforeEach(() => {
     mocks.conversations.length = 0;
     mocks.createShortCode.mockReset();
@@ -88,6 +93,16 @@ describe("SendSequenceSheet", () => {
     mocks.searchUsers.mockReset();
     mocks.sendMessage.mockReset();
     mocks.sendMessage.mockResolvedValue({ id: "message-1" });
+    mocks.sendImage.mockReset();
+    mocks.sendImage.mockReturnValue({
+      promise: Promise.resolve({
+        messageId: "message-1",
+        storagePath: "p",
+        width: 1,
+        height: 1,
+      }),
+      cancel: vi.fn(),
+    });
     mocks.showUserError.mockReset();
   });
 
@@ -95,8 +110,8 @@ describe("SendSequenceSheet", () => {
     addGroupConversation();
     const onSent = vi.fn();
 
-    render(SendSequenceSheet, {
-      payload: createPayload(),
+    render(SendAttachmentSheet, {
+      attachment: { type: "sequence", payload: createPayload() },
       onSent,
     });
 
@@ -149,8 +164,8 @@ describe("SendSequenceSheet", () => {
     });
     const onSent = vi.fn();
 
-    render(SendSequenceSheet, {
-      payload: createPayload(),
+    render(SendAttachmentSheet, {
+      attachment: { type: "sequence", payload: createPayload() },
       onSent,
     });
 
@@ -181,8 +196,8 @@ describe("SendSequenceSheet", () => {
     addGroupConversation();
     mocks.sendMessage.mockRejectedValue(new Error("permission denied"));
 
-    render(SendSequenceSheet, {
-      payload: createPayload(),
+    render(SendAttachmentSheet, {
+      attachment: { type: "sequence", payload: createPayload() },
       onSent: vi.fn(),
     });
 
@@ -201,5 +216,42 @@ describe("SendSequenceSheet", () => {
     await expect
       .element(page.getByRole("button", { name: "Send sequence" }))
       .toBeEnabled();
+  });
+
+  it("uploads an image attachment through the image sender", async () => {
+    addGroupConversation();
+    const onSent = vi.fn();
+
+    render(SendAttachmentSheet, {
+      attachment: {
+        type: "image",
+        file: new File([new Uint8Array([1, 2, 3])], "shared.png", {
+          type: "image/png",
+        }),
+        messageId: "msg-1",
+        attachmentId: "att-1",
+      },
+      initialNote: "from the share sheet",
+      onSent,
+    });
+
+    await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+    await page.getByRole("button", { name: "Send image" }).click();
+
+    await vi.waitFor(() => {
+      expect(mocks.sendImage).toHaveBeenCalledOnce();
+    });
+
+    expect(mocks.sendImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: "group-1",
+        messageId: "msg-1",
+        attachmentId: "att-1",
+        content: "from the share sheet",
+      })
+    );
+    // An image never goes through the message writer; the sender owns the write.
+    expect(mocks.sendMessage).not.toHaveBeenCalled();
+    expect(onSent).toHaveBeenCalledWith("group-1");
   });
 });

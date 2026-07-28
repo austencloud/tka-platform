@@ -80,13 +80,11 @@
 
   const sequenceLabel = $derived.by(() => {
     if (attachment?.type !== "sequence") return "";
-    const sequence = attachment.sequence;
-    return (
-      sequence.displayName ||
-      sequence.intendedWord ||
-      sequence.word ||
-      sequence.name
-    );
+    const { payload } = attachment;
+    // buildSequenceSharePayload already ran displayName/intendedWord/word
+    // through simplifyRepeatedWord, so this is the simplified form by
+    // construction (.claude/rules/simplified-word-display.md).
+    return payload.sequenceWord || payload.sequenceName || payload.sequence.word || "";
   });
 
   const progressLabel = $derived.by(() => {

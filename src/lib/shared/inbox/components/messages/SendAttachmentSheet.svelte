@@ -9,18 +9,21 @@
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
+  import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
+  import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import { onMount } from "svelte";
   import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
-  import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ConversationItem from "./ConversationItem.svelte";
   import GroupAvatarStack from "./GroupAvatarStack.svelte";
 
   interface Props {
-    payload: SequenceSharePayload;
+    attachment: PendingMessageAttachment;
+    /** Prefilled note. Share intake passes the shared text that was not a code. */
+    initialNote?: string;
     onSent: (conversationId: string) => void;
   }
 
@@ -30,14 +33,21 @@
     avatar?: string;
   };
 
-  let { payload, onSent }: Props = $props();
+  let { attachment, initialNote = "", onSent }: Props = $props();
+
+  // Naming this `payload` is what keeps the nine existing payload.* references
+  // in this file working across the generalization.
+  const payload = $derived(
+    attachment.type === "sequence" ? attachment.payload : null
+  );
+  const image = $derived(attachment.type === "image" ? attachment : null);
 
   const MESSAGE_MAX = 500;
   const MAX_RECENT_CONVERSATIONS = 8;
 
   let selectedConversation = $state<ConversationPreview | null>(null);
   let selectedUser = $state<SelectedUser | null>(null);
-  let message = $state("");
+  let message = $state(initialNote);
   let phase = $state<"idle" | "sending">("idle");
   let thumbnailFailed = $state(false);
   let searchResetKey = $state(0);
@@ -46,10 +56,29 @@
   let hapticService: HapticFeedback | undefined;
 
   const currentUserId = $derived(authState.user?.uid ?? "");
+  const imagePreviewUrl = $derived(
+    image ? URL.createObjectURL(image.file) : null
+  );
+
+  // Revoke on swap and on unmount; a leaked blob: URL pins the whole image in
+  // memory for the life of the tab.
+  $effect(() => {
+    const url = imagePreviewUrl;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  });
+
   const displayWord = $derived(
-    simplifyRepeatedWord(
-      payload.sequenceWord || payload.sequenceCloudWord || ""
-    )
+    payload
+      ? simplifyRepeatedWord(
+          payload.sequenceWord || payload.sequenceCloudWord || ""
+        )
+      : (image?.file.name ?? "")
+  );
+  const kicker = $derived(attachment.type === "image" ? "Sending" : "Sharing");
+  const sendLabel = $derived(
+    attachment.type === "image" ? "Send image" : "Send sequence"
   );
   const recentConversations = $derived(
     inboxState.conversations
@@ -135,6 +164,17 @@
     searchResetKey++;
   }
 
+  async function resolveConversationId(
+    conversation: ConversationPreview | null,
+    user: SelectedUser | null
+  ): Promise<string> {
+    if (conversation) return conversation.id;
+    const created = await conversationService.getOrCreateConversation(user!.id, {
+      silent: true,
+    });
+    return created.conversation.id;
+  }
+
   async function send(): Promise<void> {
     const conversation = selectedConversation;
     const user = selectedUser;
@@ -145,25 +185,38 @@
     try {
       await ensureGuestIdentity();
 
-      const { code } = await getShortCodeManager().createShortCode(
-        payload.sequence,
-        { embedSequenceData: true }
-      );
-      const attachment = buildSequenceMessageAttachment(payload.sequence, code);
+      let conversationId: string;
 
-      const conversationId = conversation
-        ? conversation.id
-        : (
-            await conversationService.getOrCreateConversation(user!.id, {
-              silent: true,
-            })
-          ).conversation.id;
-
-      await messagingService.sendMessage({
-        conversationId,
-        content: message.trim(),
-        attachments: [attachment],
-      });
+      if (attachment.type === "sequence") {
+        // Short code first, exactly as before: creating the conversation and
+        // THEN failing would leave an empty conversation behind.
+        const { code } = await getShortCodeManager().createShortCode(
+          attachment.payload.sequence,
+          { embedSequenceData: true }
+        );
+        const sequenceAttachment = buildSequenceMessageAttachment(
+          attachment.payload.sequence,
+          code
+        );
+        conversationId = await resolveConversationId(conversation, user);
+        await messagingService.sendMessage({
+          conversationId,
+          content: message.trim(),
+          attachments: [sequenceAttachment],
+        });
+      } else {
+        // The image path is a Storage upload, not a message write:
+        // IMessageImageSender owns finalization and clears staging itself, and
+        // it needs the conversation id up front.
+        conversationId = await resolveConversationId(conversation, user);
+        await getMessageImageSender().send({
+          conversationId,
+          messageId: attachment.messageId,
+          attachmentId: attachment.attachmentId,
+          file: attachment.file,
+          content: message.trim(),
+        }).promise;
+      }
 
       hapticService?.trigger("success");
       onSent(conversationId);
@@ -173,14 +226,16 @@
       getErrorHandler().showUserError({
         message:
           getShortCodeShareMessage(caught) ??
-          "The sequence wasn’t sent. Try again.",
+          (attachment.type === "image"
+            ? "The image wasn’t sent. Try again."
+            : "The sequence wasn’t sent. Try again."),
         technicalDetails: failure.message,
         error: failure,
         severity: "warning",
         context: {
           module: "inbox",
           tab: "messages",
-          action: "sendSequence",
+          action: attachment.type === "image" ? "sendImage" : "sendSequence",
         },
       });
       hapticService?.trigger("error");
@@ -190,13 +245,13 @@
 </script>
 
 <div
-  class="send-sequence-sheet"
+  class="send-attachment-sheet"
   class:destination-selected={hasDestination}
   aria-busy={phase === "sending"}
 >
-  <article class="sequence-preview" aria-label="Sequence being shared">
+  <article class="sequence-preview" aria-label="Attachment being shared">
     <div class="preview-thumbnail">
-      {#if payload.sequenceThumbnail && !thumbnailFailed}
+      {#if payload && payload.sequenceThumbnail && !thumbnailFailed}
         <img
           src={payload.sequenceThumbnail}
           alt=""
@@ -205,21 +260,23 @@
             thumbnailFailed = true;
           }}
         />
+      {:else if imagePreviewUrl}
+        <img src={imagePreviewUrl} alt="" class="thumbnail-img" />
       {:else}
         <div class="thumbnail-fallback" aria-hidden="true">
-          <i class="fas fa-layer-group"></i>
+          <i class="fas {image ? 'fa-image' : 'fa-layer-group'}"></i>
         </div>
       {/if}
     </div>
 
     <div class="preview-info">
-      <span class="preview-kicker">Sharing</span>
-      <strong class="preview-word">{displayWord || "Sequence"}</strong>
+      <span class="preview-kicker">{kicker}</span>
+      <strong class="preview-word">{displayWord || "Attachment"}</strong>
       <div class="preview-meta">
-        {#if payload.sequenceStepCount}
+        {#if payload?.sequenceStepCount}
           <span>{payload.sequenceStepCount} steps</span>
         {/if}
-        {#if payload.sequenceAuthor}
+        {#if payload?.sequenceAuthor}
           <span>by {payload.sequenceAuthor}</span>
         {/if}
       </div>
@@ -363,12 +420,12 @@
         : 'fa-paper-plane'}"
       aria-hidden="true"
     ></i>
-    <span>{phase === "sending" ? "Sending…" : "Send sequence"}</span>
+    <span>{phase === "sending" ? "Sending…" : sendLabel}</span>
   </button>
 </div>
 
 <style>
-  .send-sequence-sheet {
+  .send-attachment-sheet {
     container-type: inline-size;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto;
@@ -744,7 +801,7 @@
   }
 
   @media (max-height: 31rem) {
-    .send-sequence-sheet {
+    .send-attachment-sheet {
       gap: 0.375rem;
       padding: 0.375rem 0.5rem 0.5rem;
     }
@@ -813,7 +870,7 @@
   }
 
   @media (max-height: 31rem) and (min-width: 40rem) {
-    .send-sequence-sheet {
+    .send-attachment-sheet {
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-rows: auto minmax(0, 1fr) auto;
       column-gap: 0.5rem;
@@ -851,7 +908,7 @@
   }
 
   @media (max-height: 31rem) and (max-width: 39.999rem) {
-    .send-sequence-sheet {
+    .send-attachment-sheet {
       grid-template-rows: auto auto auto auto;
       height: auto;
       min-height: 100%;

@@ -18,7 +18,7 @@
   import ConversationList from "./messages/ConversationList.svelte";
   import MessageThread from "./messages/MessageThread.svelte";
   import NewMessageSheet from "./messages/NewMessageSheet.svelte";
-  import SendSequenceSheet from "./messages/SendSequenceSheet.svelte";
+  import SendAttachmentSheet from "./messages/SendAttachmentSheet.svelte";
   import GroupSettingsSheet from "./messages/GroupSettingsSheet.svelte";
   import NotificationList from "./notifications/NotificationList.svelte";
   import { conversationService } from "../../messaging/services/conversation-manager";
@@ -271,8 +271,8 @@
         handleBack();
       } else if (inboxState.currentView === "compose") {
         inboxState.cancelCompose();
-      } else if (inboxState.currentView === "send-sequence") {
-        inboxState.cancelSequenceShare();
+      } else if (inboxState.currentView === "send-attachment") {
+        inboxState.cancelAttachmentShare();
       } else if (inboxState.currentView === "group-settings") {
         inboxState.closeGroupSettings();
       } else {
@@ -533,8 +533,12 @@
           {inboxState.composeGroupMode ? "New Group" : "New Message"}
         </h2>
         <div class="spacer"></div>
-      {:else if inboxState.currentView === "send-sequence"}
-        <h2 id="inbox-title">Send sequence</h2>
+      {:else if inboxState.currentView === "send-attachment"}
+        <h2 id="inbox-title">
+          {inboxState.shareAttachment?.type === "image"
+            ? "Send image"
+            : "Send sequence"}
+        </h2>
         <button
           class="close-button"
           onclick={handleCancelSequenceShare}
@@ -558,7 +562,7 @@
     <!-- Content -->
     <section
       class="inbox-content"
-      class:contained={inboxState.currentView === "send-sequence"}
+      class:contained={inboxState.currentView === "send-attachment"}
       id="{inboxState.activeTab}-panel"
       role="tabpanel"
     >
@@ -597,10 +601,11 @@
           onConversationCreated={handleConversationSelect}
           onCancel={handleCancelCompose}
         />
-      {:else if inboxState.currentView === "send-sequence"}
-        {#if inboxState.shareSequencePayload}
-          <SendSequenceSheet
-            payload={inboxState.shareSequencePayload}
+      {:else if inboxState.currentView === "send-attachment"}
+        {#if inboxState.shareAttachment}
+          <SendAttachmentSheet
+            attachment={inboxState.shareAttachment}
+            initialNote={inboxState.shareAttachmentNote ?? ""}
             onSent={handleSequenceSent}
           />
         {/if}

@@ -1,4 +1,5 @@
 import type { SequenceSharePayload } from "../domain/models/sequence-share-payload";
+import type { PendingMessageAttachment } from "../domain/pending-message-attachment";
 import { inboxState } from "./inbox-state.svelte";
 export { buildSequenceSharePayload } from "../domain/build-sequence-share-payload";
 
@@ -22,4 +23,21 @@ export function buildThumbnailUrl(
 
 export function openSendSequenceSheet(p: SequenceSharePayload): void {
   inboxState.openSequenceShare(p);
+}
+
+/**
+ * The share-intake entry point, called by intake-router.ts (Task 10).
+ * openSendSequenceSheet stays as the sequence-shaped convenience its four
+ * existing call sites already use.
+ *
+ * The router goes through this function rather than poking `inboxState`
+ * directly so both share paths - in-app and share-sheet - enter the picker the
+ * same way. An earlier revision added this function and then never called it
+ * from anywhere, which is a dead export, not an entry point.
+ */
+export function openSendAttachmentSheet(
+  attachment: PendingMessageAttachment,
+  options: { note?: string; receiptId?: string } = {}
+): void {
+  inboxState.openAttachmentShare(attachment, options);
 }

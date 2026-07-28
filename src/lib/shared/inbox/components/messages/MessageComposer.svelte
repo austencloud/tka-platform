@@ -17,6 +17,7 @@
   import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
+  import { buildSequenceSharePayload } from "../../domain/build-sequence-share-payload";
   import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
   import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
@@ -174,10 +175,10 @@
         const sequenceAttachment =
           attachment?.type === "sequence"
             ? buildSequenceMessageAttachment(
-                attachment.sequence,
+                attachment.payload.sequence,
                 (
                   await getShortCodeManager().createShortCode(
-                    attachment.sequence,
+                    attachment.payload.sequence,
                     { embedSequenceData: true }
                   )
                 ).code
@@ -231,7 +232,12 @@
   }
 
   function selectSequence(sequence: SequenceData) {
-    pendingAttachment = { type: "sequence", sequence };
+    // The picker hands over a raw SequenceData; the payload is what every
+    // sequence-rendering consumer downstream expects.
+    pendingAttachment = {
+      type: "sequence",
+      payload: buildSequenceSharePayload(sequence),
+    };
     attachmentProgress = null;
   }
 

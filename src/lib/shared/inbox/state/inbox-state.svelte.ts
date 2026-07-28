@@ -11,6 +11,7 @@ import type {
 import type { Message } from "$lib/shared/messaging/domain/models/message-models";
 import type { UserNotification } from "$lib/shared/notifications/domain/models/notification-models";
 import type { SequenceSharePayload } from "../domain/models/sequence-share-payload";
+import type { PendingMessageAttachment } from "../domain/pending-message-attachment";
 
 // Inbox tab types
 export type InboxTab = "messages" | "notifications";
@@ -21,7 +22,7 @@ export type InboxView =
   | "thread"
   | "compose"
   | "group-settings"
-  | "send-sequence";
+  | "send-attachment";
 
 /**
  * Reactive inbox state using Svelte 5 runes
@@ -60,7 +61,25 @@ class InboxState {
   composeGroupMode = $state(false);
 
   // Sequence sharing state
-  shareSequencePayload = $state<SequenceSharePayload | null>(null);
+  /**
+   * What the share sheet is about to send. The domain already modelled
+   * image | sequence; only this view was sequence-only.
+   */
+  shareAttachment = $state<PendingMessageAttachment | null>(null);
+
+  /** Prefilled note — shared text that was not a TKA code (Task 10). */
+  shareAttachmentNote = $state<string | null>(null);
+
+  /**
+   * The share-intake record these bytes came from, or null for an ordinary
+   * in-app share.
+   *
+   * Trace 2.14 needs it: the intake is resolved when the image is SENT, not
+   * when the picker opens. Held as a plain id rather than a callback so a
+   * reload cannot strand a closure - the id is re-derivable from the store,
+   * a closure is not.
+   */
+  shareAttachmentReceiptId = $state<string | null>(null);
 
   // Reply state - message being replied to
   replyToMessage = $state<Message | null>(null);
@@ -92,7 +111,9 @@ class InboxState {
       this.activeTab = tab;
     }
     this.currentView = "list";
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
   }
 
   close() {
@@ -103,7 +124,9 @@ class InboxState {
     this.composeRecipientId = null;
     this.composeRecipientName = null;
     this.composeGroupMode = false;
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.replyToMessage = null;
     this.editingMessage = null;
     this.typingUsers = [];
@@ -119,11 +142,15 @@ class InboxState {
     this.replyToMessage = null;
     this.editingMessage = null;
     this.typingUsers = [];
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
   }
 
   selectConversation(conversation: Conversation) {
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
   }
@@ -135,7 +162,9 @@ class InboxState {
   openToConversation(conversation: Conversation) {
     this.isOpen = true;
     this.activeTab = "messages";
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
   }
@@ -148,7 +177,9 @@ class InboxState {
     this.pendingConversationId = conversationId;
     this.isOpen = true;
     this.activeTab = "messages";
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.currentView = "thread"; // Go directly to thread view
     this.isLoadingMessages = true; // Show loading state
     // InboxDrawer will detect pendingConversationId and load the conversation
@@ -162,7 +193,9 @@ class InboxState {
     this.pendingNotificationId = notificationId;
     this.isOpen = true;
     this.activeTab = "notifications";
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     // InboxDrawer will detect pendingNotificationId and handle the action
   }
 
@@ -175,7 +208,9 @@ class InboxState {
   }
 
   backToList() {
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.selectedConversation = null;
     this.messages = [];
     this.currentView = "list";
@@ -185,7 +220,9 @@ class InboxState {
   }
 
   startCompose(recipientId?: string, recipientName?: string) {
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.composeRecipientId = recipientId || null;
     this.composeRecipientName = recipientName || null;
     this.composeGroupMode = false;
@@ -193,7 +230,9 @@ class InboxState {
   }
 
   startGroupCompose() {
-    this.shareSequencePayload = null;
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.composeGroupMode = true;
     this.composeRecipientId = null;
     this.composeRecipientName = null;
@@ -207,11 +246,17 @@ class InboxState {
     this.currentView = "list";
   }
 
-  openSequenceShare(payload: SequenceSharePayload) {
+  /** Open the picker for any attachment the domain models. */
+  openAttachmentShare(
+    attachment: PendingMessageAttachment,
+    options: { note?: string; receiptId?: string } = {}
+  ) {
     this.isOpen = true;
     this.activeTab = "messages";
-    this.currentView = "send-sequence";
-    this.shareSequencePayload = payload;
+    this.currentView = "send-attachment";
+    this.shareAttachment = attachment;
+    this.shareAttachmentNote = options.note ?? null;
+    this.shareAttachmentReceiptId = options.receiptId ?? null;
     this.pendingConversationId = null;
     this.pendingNotificationId = null;
     this.selectedConversation = null;
@@ -224,13 +269,35 @@ class InboxState {
     this.typingUsers = [];
   }
 
-  completeSequenceShare(conversationId: string) {
-    this.shareSequencePayload = null;
+  /** Existing sequence call sites keep working unchanged. */
+  openSequenceShare(payload: SequenceSharePayload) {
+    this.openAttachmentShare({ type: "sequence", payload });
+  }
+
+  completeAttachmentShare(conversationId: string) {
+    this.shareAttachment = null;
+    this.shareAttachmentNote = null;
+    this.shareAttachmentReceiptId = null;
     this.openToConversationById(conversationId);
   }
 
-  cancelSequenceShare() {
+  /**
+   * Cancel is NOT a data-loss path any more. It clears the view; the intake
+   * record and its bytes stay in IndexedDB as `ready` until the TTL, so the
+   * share can be resumed. The previous revision deleted the record when the
+   * picker OPENED, which made cancel, reload, crash and the sign-in round trip
+   * all destroy the only copy.
+   */
+  cancelAttachmentShare() {
     this.close();
+  }
+
+  completeSequenceShare(conversationId: string) {
+    this.completeAttachmentShare(conversationId);
+  }
+
+  cancelSequenceShare() {
+    this.cancelAttachmentShare();
   }
 
   openGroupSettings() {
