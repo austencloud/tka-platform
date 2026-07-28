@@ -21,8 +21,13 @@ function field(value: string): string {
  * makes the second delivery a no-op instead of a duplicate upload.
  *
  * Files are sorted so two deliveries that enumerate in a different order still
- * collapse to one id. The uri is deliberately EXCLUDED - the plugin can write
- * the same share to a different cache path on the second delivery.
+ * collapse to one id. The uri is deliberately EXCLUDED - but NOT because the
+ * plugin writes a different cache path each time. It does not:
+ * copyFileToCache writes to new File(cacheDir, fileName), a deterministic
+ * path (CapacitorShareTargetPlugin.java:170). The real reasons are that
+ * getFileData falls back to uri.toString() when that copy fails (Java line
+ * 114), which yields a content:// uri that genuinely does vary between
+ * deliveries, and that a data: uri would drag the whole payload into the id.
  *
  * Consequence worth knowing: two genuinely different files that agree on
  * name + mimeType + size hash identically. That is the accepted cost of

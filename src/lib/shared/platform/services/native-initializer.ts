@@ -55,6 +55,23 @@ export class NativeInitializer {
 			});
 		}
 
+		// Register the share target BEFORE the first await that could yield, so
+		// the plugin's retained ACTION_SEND event has a listener to be replayed
+		// to. Nothing here is awaited for a grace period and nothing routes:
+		// the adapter persists the bytes and bumps a signal, and
+		// ShareIntakeHost - mounted inside MainApplication, beside the drawers a
+		// share actually opens - runs the pipeline.
+		//
+		// The unconditional boot-into-app-shell call below is unchanged by this
+		// edit. An earlier revision skipped it when a share was pending, which
+		// left the app on "/" - the marketing landing (src/routes/+page.svelte) -
+		// where InboxDrawer and SequenceViewerDrawerHost do not exist, so the
+		// share opened as state nothing rendered.
+		const { ensureShareTargetRegistered } = await import(
+			"$lib/shared/share-intake/get-share-intake"
+		);
+		await ensureShareTargetRegistered();
+
 		// Handle deep links from both cold start and warm resume.
 		// Cold start: getLaunchUrl() returns the URL that opened the app.
 		// Warm resume: appUrlOpen fires when a new URL arrives while running.
