@@ -11,6 +11,11 @@ import {
   MAX_INTAKE_NAME,
 } from "$lib/shared/share-intake/services/intake-validator";
 
+// A control character these tests expect safeName/validateIntake to strip.
+// Named rather than inlined: a raw control byte is invisible in an editor,
+// survives a diff badly, and tooling silently rewrites it.
+const BEL = String.fromCharCode(7);
+
 function fileOf(name: string, type: string, bytes: number): File {
   return new File([new Uint8Array(bytes)], name, { type });
 }
@@ -40,7 +45,7 @@ describe("safeName", () => {
 
   it("falls back for an empty or control-only name", () => {
     expect(safeName("")).toBe("shared-image");
-    expect(safeName("")).toBe("shared-image");
+    expect(safeName(`${BEL}${BEL}`)).toBe("shared-image");
   });
 
   it("caps a long name and keeps the extension", () => {
@@ -144,7 +149,7 @@ describe("validateIntake", () => {
   });
 
   it("strips control characters out of the title without flagging a problem", () => {
-    const result = validateIntake({ files: [], title: "Photos" });
+    const result = validateIntake({ files: [], title: `Pho${BEL}tos` });
     expect(result.title).toBe("Photos");
     // Sanitizing is not worth reporting to the user; only truncation is.
     expect(result.problems).toHaveLength(0);
