@@ -11,7 +11,7 @@
 	import CapsAssembly from "../../../(public)/notation/caps/_components/CapsAssembly.svelte";
 	import QftLiveArtifact from "./QftLiveArtifact.svelte";
 	import UnitCircleArtifact from "./UnitCircleArtifact.svelte";
-	import VtgMinimalBeatShapes from "./VtgMinimalBeatShapes.svelte";
+	import VtgChapterStepper from "./VtgChapterStepper.svelte";
 	import NineSquareStack from "./NineSquareStack.svelte";
 	import LorqMatrixSheet from "./LorqMatrixSheet.svelte";
 	import PoiNotationCartridge from "./PoiNotationCartridge.svelte";
@@ -31,7 +31,7 @@
 {:else if entry.id === "unit-circle"}
 	<UnitCircleArtifact {active} />
 {:else if entry.id === "vtg"}
-	<VtgMinimalBeatShapes {active} />
+	<VtgChapterStepper {active} />
 {:else if entry.id === "nine-square"}
 	<NineSquareStack videos={entry.videos} {active} />
 {:else if entry.id === "qft"}

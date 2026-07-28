@@ -460,7 +460,10 @@
 					class="stop"
 					class:on={i === activeIndex}
 					class:seen={archive.visited.has(i)}
-					aria-label={`${entry.system}, ${entry.year}`}
+					class:span={entry.id === "vtg"}
+					aria-label={entry.id === "vtg"
+						? `${entry.system}, 2010 to 2011, five chapters`
+						: `${entry.system}, ${entry.year}`}
 					aria-current={i === activeIndex ? "true" : undefined}
 					onclick={() => applySelect(i)}
 				>
@@ -1008,6 +1011,23 @@
 		transition: background 260ms ease, height 260ms ease, width 260ms ease;
 	}
 
+	/* VTG is the one entry on this rail that is not a moment. It was written
+	   across 2010 and released through 2011 in five chapters and four dated
+	   drops, so it gets a span rather than a tick — and the tile's own chapter
+	   rail is this span magnified. Every other entry stays a tick, which is
+	   what makes the difference legible.
+
+	   Kept to a hairline BAR, not a wide block: the rail's whole vocabulary is
+	   2px marks, and a heavy span would read as the selected state. */
+	.stop.span .stop-dot {
+		width: 14px;
+		border-radius: 2px;
+	}
+
+	.stop.span.on .stop-dot {
+		width: 16px;
+	}
+
 	.stop.seen .stop-dot {
 		background: color-mix(in oklch, var(--artifact-accent) 70%, oklch(0.6 0.03 270));
 	}
@@ -1211,6 +1231,20 @@
 		.stop-dot {
 			width: 1.1rem;
 			height: 1.1rem;
+		}
+		/* This tier turns the ticks into squares, so the VTG span has to be
+		   restated against THAT shape. Left at its base 14px it came out
+		   narrower than a normal stop here — the span reading as smaller than
+		   the moments it contains. */
+		.stop.span .stop-dot {
+			width: 2.6rem;
+		}
+		.stop.span.on .stop-dot {
+			width: 2.9rem;
+		}
+		.stop.span {
+			width: 72px;
+			flex-basis: 72px;
 		}
 		.stop {
 			width: 56px;

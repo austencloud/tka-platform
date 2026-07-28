@@ -8,6 +8,7 @@
 	import type { CatalogEntry } from "$lib/shared/notation/notation-catalog";
 	import SourceVideoCard from "$lib/shared/components/SourceVideoCard.svelte";
 	import ArtifactVisual from "./ArtifactVisual.svelte";
+	import { VTG_DECADE } from "../_lib/vtg-chronicle.svelte";
 
 	let {
 		entry,
@@ -40,6 +41,21 @@
 		<h2 class="detail-title"><em>{entry.system}</em></h2>
 		<p class="detail-people">{entry.people}</p>
 		<p class="detail-records">{entry.records}</p>
+
+		<!-- VTG is the only entry whose story is a decade rather than a document,
+		     and the only one whose last chapter never arrived. The tile can't
+		     carry that (2015 and 2019 have no plate), so it lives here. Quotes
+		     and provenance: ../_lib/vtg-chronicle.ts -->
+		{#if entry.id === "vtg"}
+			<ol class="decade">
+				{#each VTG_DECADE as event (event.when + event.what)}
+					<li class:unshipped={event.unshipped}>
+						<span class="when">{event.when}</span>
+						<span class="what">{event.what}</span>
+					</li>
+				{/each}
+			</ol>
+		{/if}
 
 		{#if entry.subWorks?.length}
 			<ul class="subworks">
@@ -144,6 +160,55 @@
 		font-size: clamp(0.95rem, 1.5cqi, 1.15rem);
 		line-height: 1.6;
 		color: oklch(0.85 0.02 270);
+	}
+
+	/* A ruled column rather than bullets: the rule reads as the same timeline
+	   the rail and the tile's chapter stepper draw, turned vertical. */
+	.decade {
+		margin: 0;
+		padding: 0 0 0 1.1rem;
+		list-style: none;
+		display: grid;
+		gap: 0.7rem;
+		border-left: 1px solid oklch(0.45 0.04 270 / 0.45);
+	}
+
+	.decade li {
+		display: grid;
+		grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+		gap: 0 0.9rem;
+		align-items: baseline;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		color: oklch(0.78 0.02 270);
+	}
+
+	.decade .when {
+		font-family: "Fraunces", Georgia, serif;
+		font-style: italic;
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		color: var(--artifact-accent, oklch(0.75 0.13 40));
+	}
+
+	/* The one entry that never happened is the point of the list, so it is set
+	   apart rather than styled as a peer of the seven that did. */
+	.decade li.unshipped {
+		margin-top: 0.35rem;
+		padding-top: 0.7rem;
+		border-top: 1px dashed oklch(0.5 0.04 270 / 0.5);
+		color: oklch(0.68 0.02 270);
+	}
+
+	.decade li.unshipped .when {
+		color: oklch(0.6 0.03 270);
+	}
+
+	@media (max-width: 620px) {
+		.decade li {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.15rem;
+		}
 	}
 
 	.subworks {
