@@ -54,9 +54,25 @@ it.
 **The profile does not need a new drill-down. It needs to stop being a wall and
 start being a lobby that hands off to the drill-downs already built.**
 
-Critically, `GalleryDrill` already models `author` as a first-class filter
-category (`GalleryDrill.svelte:116,127`), complete with per-creator counts,
-sample work, and avatars. "Browse scoped to this creator" is not new machinery.
+`GalleryDrill` does model `author` as a first-class filter category
+(`GalleryDrill.svelte:116,127`, section rendered at `:865`), complete with
+per-creator counts, sample work, and avatars.
+
+**Corrected 2026-07-28 after adversarial review.** An earlier draft of this spec
+claimed that made a per-creator scope "not new machinery." That was wrong, and
+the correction matters enough to state plainly rather than quietly edit:
+
+- **`section` cannot be preset from outside.** It is internal `$state`
+  initialised by `restoreSection()` from sessionStorage, page variant only
+  (`:131-144`). The `Props` interface (`:60-95`) exposes `pool`, `getCount`,
+  `onApply`, `onShowAll`, `onSearch`, the loop/family toggles and `variant` —
+  and nothing that opens the drill on a chosen section or a chosen value.
+  Landing a visitor on "this creator's work" therefore needs a **new prop**
+  (`initialSection`, or a fuller `preset`). Small, but real, and it must be in
+  the plan rather than assumed away.
+- **Nothing here is URL-addressable.** Sub-screen state persists through
+  `sessionStorage` (`gallery-view-persister`), not the URL. A handoff
+  destination is not linkable or refresh-durable until that changes.
 
 ---
 
@@ -78,10 +94,22 @@ what visitors see — a property worth more than the convenience of an inline
 wall on your own page. Your own library stays one click away.
 
 **2. The Archive doorway navigates to Browse, scoped to the creator.**
-Not an in-place mount, not an overlay. `GalleryDrill` keeps exactly one host,
-where it already works and already owns its routing and state. Hosting it in a
-second or third place means owning its state there too, for no gain the back
-button does not already provide.
+Not an in-place mount, not an overlay.
+
+The decision stands; **the reason originally given for it was false.** That
+draft argued `GalleryDrill` "keeps exactly one host" and that embedding it
+elsewhere means owning its state there. Not true — embedding is a designed,
+first-class mode. It ships a `variant?: "page" | "sheet"` prop (`:94,:106`) and
+already has three hosts: `BrowseModule.svelte:502`,
+`AddSequencesSheet.svelte:158`, `SmartCollectionBuilderSheet.svelte:171`
+(plus `GalleryFilterSheet.svelte:77`).
+
+So in-place mounting was never blocked by the architecture, and anyone reading
+the old rationale would have been misled. The honest reasons to still navigate:
+Browse is where a visitor expects to land when following "see all their work";
+the sheet variant deliberately drops search, which an archive of 505 needs; and
+the page variant is the one that persists its sub-screen. Weaker reasons than
+the false one, and worth revisiting if navigating away proves jarring in use.
 
 **3. Collections stays inline now, and becomes a doorway past a threshold.**
 46 tiles is browsable, and it is the band that best shows the multimodal
@@ -116,9 +144,24 @@ This is a verification criterion, not a new mechanism.
 ### What the doorway hands off
 
 - **Archive → Browse, `author` filter preset to this creator.** The drill's
-  existing category. Implementation must confirm whether that preset travels by
-  URL or by engine state, and prefer URL so the destination is linkable and
-  survives refresh.
+  existing category, reached through a new preset prop (see the correction
+  above). Prefer routing it through the URL so the destination is linkable and
+  survives refresh; today nothing in this path is URL-addressable.
+
+  **HARD PREREQUISITE — verify before building.** `GalleryDrill` filters over a
+  `pool` its host supplies; every host passes `engine.allSequences`
+  (`BrowseModule.svelte:502` and the three sheets). **If that pool does not
+  contain the sequences of the creator whose profile you came from, the Archive
+  handoff silently lands on an empty or wrong result and the entire design
+  fails.** The drill's own header calls it "the community pool"
+  (`GalleryDrill.svelte:18`).
+
+  Two cases must be checked separately, because they are not the same pool
+  question: your OWN profile (is your private library in `allSequences`?) and
+  ANOTHER creator's profile (are their public sequences?). Unresolved. This is
+  step one of the plan, not a detail — if it fails, decision #2 has to be
+  revisited and an in-place mount over a profile-supplied pool becomes the
+  likely answer, which the `variant="sheet"` precedent already supports.
 - **Collections (past threshold) → `CollectionGalleryDetail`**, scoped to this
   user, opened on the medium that was showing when the handoff was taken (the
   filter chips already track this).
