@@ -9,7 +9,9 @@
   import {
     PROP_TYPE_DISPLAY_REGISTRY,
     VARIANT_PROP_TYPES,
+    isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { checkPremiumCosmeticAccess } from "$lib/shared/subscription/domain/premium-prop-access";
   import {
     ALL_GRADIENTS,
     COLOR_FAMILIES,
@@ -45,16 +47,22 @@
 
   const NON_PROP_TYPES = new Set([PropType.HAND]);
 
-  const PROPS: PropOption[] = Object.entries(PROP_TYPE_DISPLAY_REGISTRY)
-    .filter(([propType]) => {
-      const pt = propType as PropType;
-      return !VARIANT_PROP_TYPES.includes(pt) && !NON_PROP_TYPES.has(pt);
-    })
-    .map(([propType, info]) => ({
-      id: propType as PropType,
-      label: info.label,
-      image: info.image,
-    }));
+  // Reading the whole registry also picks up paid cosmetics, so they come out
+  // again unless this user may use them. An avatar is a keepsake, not a demo.
+  const PROPS = $derived.by<PropOption[]>(() => {
+    const premiumPropsAllowed = checkPremiumCosmeticAccess().allowed;
+    return Object.entries(PROP_TYPE_DISPLAY_REGISTRY)
+      .filter(([propType]) => {
+        const pt = propType as PropType;
+        if (isPremiumCosmeticProp(pt) && !premiumPropsAllowed) return false;
+        return !VARIANT_PROP_TYPES.includes(pt) && !NON_PROP_TYPES.has(pt);
+      })
+      .map(([propType, info]) => ({
+        id: propType as PropType,
+        label: info.label,
+        image: info.image,
+      }));
+  });
 
   // ============ DERIVED ============
 

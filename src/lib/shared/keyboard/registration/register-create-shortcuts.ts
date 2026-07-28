@@ -19,6 +19,7 @@ import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
@@ -794,7 +795,9 @@ export function registerCreateShortcuts(
     action: async () => {
       const settings = getSettings();
       const currentProp = settings.bluePropType ?? PropType.STAFF;
-      const allProps = getAllPropTypes();
+      // Shuffle draws from the whole enum, so paid cosmetics drop out unless
+      // the user may actually use them.
+      const allProps = filterPremiumCosmeticProps(getAllPropTypes());
       const otherProps = allProps.filter((p) => p !== currentProp);
       const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
 

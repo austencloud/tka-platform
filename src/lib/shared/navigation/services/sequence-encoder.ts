@@ -97,6 +97,10 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
   [PropType.SWORD]: "W",
+  // Energy pair. Digits, because every letter that reads as "energy", "saber",
+  // or "staff" is already spoken for and a short code has one character to give.
+  [PropType.ENERGY_SABER]: "3",
+  [PropType.ENERGY_STAFF]: "4",
   [PropType.CHICKEN]: "K",
   [PropType.BIGCHICKEN]: "k",
   [PropType.GUITAR]: "G",

@@ -26,12 +26,16 @@
     getAllPropTypes,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
 
-  // All prop types for the random pool (excludes POI which is momentum-based)
-  const ALL_ARENA_PROPS = getAllPropTypes().filter(pt => pt !== PropType.POI);
-
+  // All prop types for the random pool (excludes POI which is momentum-based,
+  // and paid cosmetics unless this player may actually use them — a matchup is
+  // not a place to hand out a prop that costs money).
   function pickRandomPropType(): PropType {
-    return ALL_ARENA_PROPS[Math.floor(Math.random() * ALL_ARENA_PROPS.length)]!;
+    const availableProps = filterPremiumCosmeticProps(getAllPropTypes()).filter(
+      (pt) => pt !== PropType.POI
+    );
+    return availableProps[Math.floor(Math.random() * availableProps.length)]!;
   }
 
   let mounted = true;
@@ -70,8 +74,12 @@
   }
 
   // Current prop's display info for the button
-  const currentPropImage = $derived(PROP_TYPE_DISPLAY_REGISTRY[matchupPropType]?.image);
-  const currentPropLabel = $derived(PROP_TYPE_DISPLAY_REGISTRY[matchupPropType]?.label ?? "Staff");
+  const currentPropImage = $derived(
+    PROP_TYPE_DISPLAY_REGISTRY[matchupPropType]?.image
+  );
+  const currentPropLabel = $derived(
+    PROP_TYPE_DISPLAY_REGISTRY[matchupPropType]?.label ?? "Staff"
+  );
 
   // Shared BPM for both animation players
   let arenaBpm = $state(60);
@@ -83,7 +91,7 @@
       userId = auth.currentUser?.uid ?? null;
 
       if (!userId) {
-        arenaState.error = t('arena_battle_sign_in_required');
+        arenaState.error = t("arena_battle_sign_in_required");
         arenaState.isLoading = false;
         return;
       }
@@ -94,7 +102,7 @@
       arenaState.isLoading = false;
     } catch (err) {
       console.error("[Arena] Failed to initialize:", err);
-      arenaState.error = t('arena_battle_load_failed');
+      arenaState.error = t("arena_battle_load_failed");
       arenaState.isLoading = false;
     }
 
@@ -138,7 +146,7 @@
       await orchestrator.vote(winnerId);
     } catch (err) {
       console.error("[Arena] Vote failed:", err);
-      arenaState.error = t('arena_battle_vote_failed');
+      arenaState.error = t("arena_battle_vote_failed");
       if (mounted) {
         voteResult = null;
         winnerWord = "";
@@ -204,9 +212,14 @@
       <p>{arenaState.error}</p>
     </div>
   {:else if arenaState.isLoading}
-    <div class="battle-loading" role="status" aria-live="polite" aria-busy="true">
+    <div
+      class="battle-loading"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <p>{t('arena_battle_loading')}</p>
+      <p>{t("arena_battle_loading")}</p>
     </div>
   {:else if arenaState.currentMatchup}
     {@const matchup = arenaState.currentMatchup}
@@ -247,18 +260,21 @@
           class="skip-button"
           onclick={skip}
           disabled={transitioning}
-          aria-label={t('arena_battle_skip_matchup')}
+          aria-label={t("arena_battle_skip_matchup")}
           type="button"
         >
           <i class="fas fa-forward" aria-hidden="true"></i>
-          {t('arena_action_skip')}
+          {t("arena_action_skip")}
         </button>
 
         {#if showKeyboardHints}
           <div class="keyboard-hints" aria-hidden="true">
-            <kbd>&larr;</kbd> {t('arena_battle_key_left')}
-            <kbd>&rarr;</kbd> {t('arena_battle_key_right')}
-            <kbd>Space</kbd> {t('arena_action_skip')}
+            <kbd>&larr;</kbd>
+            {t("arena_battle_key_left")}
+            <kbd>&rarr;</kbd>
+            {t("arena_battle_key_right")}
+            <kbd>Space</kbd>
+            {t("arena_action_skip")}
           </div>
         {/if}
       </div>
@@ -266,12 +282,16 @@
       <div class="settings-row">
         <button
           class="prop-button"
-          onclick={() => propDrawerOpen = true}
+          onclick={() => (propDrawerOpen = true)}
           type="button"
-          aria-label={t('arena_battle_change_prop', { prop: currentPropLabel })}
+          aria-label={t("arena_battle_change_prop", { prop: currentPropLabel })}
           title={currentPropLabel}
         >
-          <img src={currentPropImage} alt={currentPropLabel} class="prop-button-icon" />
+          <img
+            src={currentPropImage}
+            alt={currentPropLabel}
+            class="prop-button-icon"
+          />
         </button>
 
         <button
@@ -279,14 +299,26 @@
           class:active={randomPropMode}
           onclick={toggleRandomProp}
           type="button"
-          aria-label={t(randomPropMode ? 'arena_battle_random_active' : 'arena_battle_random_enable')}
-          title={t(randomPropMode ? 'arena_battle_random_click_to_choose' : 'arena_battle_shuffle')}
+          aria-label={t(
+            randomPropMode
+              ? "arena_battle_random_active"
+              : "arena_battle_random_enable"
+          )}
+          title={t(
+            randomPropMode
+              ? "arena_battle_random_click_to_choose"
+              : "arena_battle_shuffle"
+          )}
         >
           <i class="fas fa-shuffle" aria-hidden="true"></i>
         </button>
 
         <div class="bpm-section">
-          <BpmChips bpm={arenaBpm} variant="compact" onBpmChange={(v) => arenaBpm = v} />
+          <BpmChips
+            bpm={arenaBpm}
+            variant="compact"
+            onBpmChange={(v) => (arenaBpm = v)}
+          />
         </div>
       </div>
     </div>
@@ -297,12 +329,12 @@
       bind:isOpen={propDrawerOpen}
       selectedPropType={matchupPropType}
       onSelect={handlePropSelect}
-      onClose={() => propDrawerOpen = false}
+      onClose={() => (propDrawerOpen = false)}
     />
   {:else}
     <div class="battle-empty" role="status">
       <i class="fas fa-inbox" aria-hidden="true"></i>
-      <p>{t('arena_battle_empty')}</p>
+      <p>{t("arena_battle_empty")}</p>
     </div>
   {/if}
 </div>
@@ -376,7 +408,9 @@
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
     padding: 6px;
     flex-shrink: 0;
   }
@@ -407,7 +441,9 @@
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
     flex-shrink: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 16px;
@@ -419,8 +455,16 @@
   }
 
   .shuffle-button.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 25%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 50%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 
@@ -447,7 +491,9 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: border-color 0.2s ease, color 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 
   .skip-button:hover:not(:disabled) {

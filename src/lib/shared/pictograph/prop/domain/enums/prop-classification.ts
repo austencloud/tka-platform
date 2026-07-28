@@ -11,7 +11,13 @@
  * - Large size
  * - SKIP beta offset when ending in radial (IN/OUT) or non-radial (CLOCK/COUNTER)
  */
-export const BIG_UNILATERAL_PROPS = ["bighoop", "bigfan", "bigtriad", "bigtorch", "bigcontactball"] as const;
+export const BIG_UNILATERAL_PROPS = [
+  "bighoop",
+  "bigfan",
+  "bigtriad",
+  "bigtorch",
+  "bigcontactball",
+] as const;
 
 /**
  * Small Unilateral Props
@@ -46,6 +52,10 @@ export const BIG_BILATERAL_PROPS = [
   "bigchicken",
   "guitar",
   "sword",
+  // Energy Saber follows sword exactly: same reach, same big-prop beta offset.
+  // Bilateral here is about spacing, not about how many ends get tracked — it
+  // still traces a single tip (see TWO_ENDED_PROPS in prop-tip-ends.ts).
+  "energy_saber",
   "bigdoublecontactball",
 ] as const;
 
@@ -59,6 +69,8 @@ export const SMALL_BILATERAL_PROPS = [
   "staff",
   "simple_staff",
   "staff_v2",
+  // Energy Staff follows staff exactly: same reach, same small-prop beta offset.
+  "energy_staff",
   "buugeng",
   "trigeng",
   "doublestar",
@@ -155,9 +167,7 @@ export function pictographRequiresStrictHandpoints(
   bluePropType: string,
   redPropType: string
 ): boolean {
-  return (
-    isStrictPlacedProp(bluePropType) && isStrictPlacedProp(redPropType)
-  );
+  return isStrictPlacedProp(bluePropType) && isStrictPlacedProp(redPropType);
 }
 
 /**
@@ -203,7 +213,12 @@ export function getBilateralEndLabels(propType: string): [string, string] {
   const normalizedType = propType.toLowerCase();
 
   // Staff family: Pinky End / Thumb End (LEFT_END=pinky side, RIGHT_END=thumb side)
-  if ((STAFF_FAMILY_PROPS as readonly string[]).includes(normalizedType)) {
+  // Energy Staff joins them — its two collars are shaped differently precisely
+  // so the pinky and thumb references stay readable on a double-ended prop.
+  if (
+    (STAFF_FAMILY_PROPS as readonly string[]).includes(normalizedType) ||
+    normalizedType === "energy_staff"
+  ) {
     return ["Pinky End", "Thumb End"];
   }
 
@@ -213,7 +228,7 @@ export function getBilateralEndLabels(propType: string): [string, string] {
   }
 
   // Sword: Tip End / Hilt End
-  if (normalizedType === "sword") {
+  if (normalizedType === "sword" || normalizedType === "energy_saber") {
     return ["Tip End", "Hilt End"];
   }
 

@@ -13,12 +13,18 @@ import { PropType } from "./enums/prop-type";
  * prop-classification.ts). Fans, triads, hoops, hands, swords, etc. trace a
  * single tip. Add a prop here only if it genuinely presents two symmetric ends
  * to track.
+ *
+ * The energy pair splits the same way its parents do: Energy Staff belongs
+ * here, Energy Saber does not. Leaving Energy Saber out is load-bearing — the
+ * default below is 2, so an omitted single-blade prop would quietly trace a
+ * phantom second tip out the back of the hilt.
  */
 const TWO_ENDED_PROPS: ReadonlySet<PropType> = new Set([
   PropType.STAFF,
   PropType.SIMPLESTAFF,
   PropType.BIGSTAFF,
   PropType.STAFF2,
+  PropType.ENERGY_STAFF,
   PropType.BUUGENG,
   PropType.BIGBUUGENG,
   PropType.BIGCLUB,
@@ -49,7 +55,7 @@ export function propTipEnds(propType: PropType | string | undefined): 1 | 2 {
  */
 export function pairTipEnds(
   blue: PropType | string | undefined,
-  red: PropType | string | undefined,
+  red: PropType | string | undefined
 ): 1 | 2 {
   return propTipEnds(blue) === 2 || propTipEnds(red) === 2 ? 2 : 1;
 }

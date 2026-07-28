@@ -186,6 +186,26 @@ const SWORD_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 280, dy: 0 }],
 };
 
+// ─── Energy Family (premium cosmetics) ────────────────────────────────────────
+
+// Energy Saber is a sword restyle, so it gets sword's reach exactly: the blade
+// tip sits 280 units from the pivot in a 620-unit box. Single-ended — the hilt
+// end is not tracked (see TWO_ENDED_PROPS in prop-tip-ends.ts, which must
+// agree with this entry).
+const ENERGY_SABER_TIP_POINTS: PropTipConfig = {
+  points: [{ dx: 280, dy: 0 }],
+};
+
+// Energy Staff is a staff restyle, so both blades reach 126.4 like staff's two
+// ends. The collars are shaped differently for the thumb/pinky landmark, but
+// the tracked geometry stays mirror-symmetric.
+const ENERGY_STAFF_TIP_POINTS: PropTipConfig = {
+  points: [
+    { dx: -126.4, dy: 0 },
+    { dx: 126.4, dy: 0 },
+  ],
+};
+
 // ─── Triquetra Family ─────────────────────────────────────────────────────────
 
 const TRIQUETRA_TIP_POINTS: PropTipConfig = {
@@ -367,6 +387,10 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
 
   // Sword
   sword: SWORD_TIP_POINTS,
+
+  // Energy family (premium cosmetics) — reach copied from each parent
+  energy_saber: ENERGY_SABER_TIP_POINTS,
+  energy_staff: ENERGY_STAFF_TIP_POINTS,
 
   // Chicken family
   chicken: CHICKEN_TIP_POINTS,

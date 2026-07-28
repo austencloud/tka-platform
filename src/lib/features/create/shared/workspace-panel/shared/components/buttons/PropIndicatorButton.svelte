@@ -8,6 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getPropTypeDisplayInfo, getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
@@ -24,7 +25,9 @@
   );
 
   function shuffleToRandomProp() {
-    const allProps = getAllPropTypes();
+    // Shift-click draws from the whole enum, so paid cosmetics drop out unless
+    // the user may actually use them.
+    const allProps = filterPremiumCosmeticProps(getAllPropTypes());
     const otherProps = allProps.filter((p) => p !== bluePropType);
     const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
 

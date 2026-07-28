@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Energy Staff — premium cosmetic prop, Staff family.
+  Original generic energy prop. No franchise hilt silhouette or marking.
+
+  Geometry (matches PROP_DIMENSIONS.energy_staff and PROP_TIP_POINTS.energy_staff):
+    viewBox 300 x 90, so the hand pivot sits at (150, 45).
+    Both blades are exactly 78.4 units long and both tips land 126.4 units from
+    the pivot — the same reach staff traces, so the mandala radius and both
+    tracked tips come out identical to its physical parent. The remaining width
+    and height is halo padding, grown symmetrically about the pivot so
+    placement, tip reach, and mandala radius never move.
+
+  The two ends are deliberately unlike each other. TKA's orientation system
+  rests on one staff end staying a consistent thumb reference and the other a
+  consistent pinky reference, and two mirror-image glowing ends would erase
+  that landmark. The blades stay equal; the collars carry the difference:
+    right / thumb end = tall flared block, roughly 48 units of vertical bite,
+                        ridged with three raised fins
+    left  / pinky end = smooth rounded cap, no fins, half the vertical bite
+  The picker draws this tile as a flat white silhouette at 52 px
+  (PropCompositionPreview neutral mode), where only the outline survives, so
+  the difference is carried by vertical mass rather than by surface detail.
+
+  Color contract (packages/render-core/src/svg-color.ts, selective mode):
+    Blade layers are flat neutral grays (saturation 0, luminance > 0.4), so the
+    fill passes recolor them to the motion color.
+    The pale cores are #FFF6E8 (saturation 0.09 > 0.05), so they are preserved
+    and read the same on blue and red.
+    Every grip and collar fill sits below 0.4 luminance, so selective mode
+    preserves it. Gradients carry sheen only; stop-color is never rewritten.
+    Every id is prefixed `estaff` and gets suffixed per motion color when the
+    loader inlines both props into one document.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 90">
+  <defs>
+    <linearGradient id="estaffSheen" x1="0" y1="32" x2="0" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0.05" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.30" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="0.52" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+    <filter id="estaffHalo" x="-20%" y="-60%" width="140%" height="220%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="estaffSoft" x="-14%" y="-60%" width="128%" height="220%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- Blades: outer halo -->
+  <rect x="196" y="31" width="82.4" height="28" rx="14" fill="#D0D0D0" opacity="0.3" filter="url(#estaffHalo)"/>
+  <rect x="21.6" y="31" width="82.4" height="28" rx="14" fill="#D0D0D0" opacity="0.3" filter="url(#estaffHalo)"/>
+  <!-- Blades: inner bloom -->
+  <rect x="198" y="36" width="78.4" height="18" rx="9" fill="#DCDCDC" opacity="0.9" filter="url(#estaffSoft)"/>
+  <rect x="23.6" y="36" width="78.4" height="18" rx="9" fill="#DCDCDC" opacity="0.9" filter="url(#estaffSoft)"/>
+  <!-- Blades: hard bodies, equal length, tips at +/- 126.4 from the pivot -->
+  <rect x="198" y="38" width="78.4" height="14" rx="7" fill="#E4E4E4" stroke="#101319" stroke-width="1.2" stroke-opacity="0.55"/>
+  <rect x="23.6" y="38" width="78.4" height="14" rx="7" fill="#E4E4E4" stroke="#101319" stroke-width="1.2" stroke-opacity="0.55"/>
+  <!-- Blades: preserved pale cores -->
+  <rect x="202" y="41.5" width="70.4" height="7" rx="3.5" fill="#FFF6E8"/>
+  <rect x="27.6" y="41.5" width="70.4" height="7" rx="3.5" fill="#FFF6E8"/>
+
+  <!-- Grip, centered on the pivot -->
+  <rect x="128" y="35" width="44" height="20" rx="9" fill="#24272E"/>
+  <rect x="128" y="35" width="44" height="20" rx="9" fill="url(#estaffSheen)"/>
+  <rect x="143" y="32" width="14" height="26" rx="4" fill="#3A3F49"/>
+
+  <!-- Thumb end: tall flared block, three raised fins.
+       Sized to be roughly three times the pinky cap's vertical bite. At the
+       52 px picker tile the whole prop is about seven pixels tall, so anything
+       subtler than this reads as one symmetric blur and the landmark is gone. -->
+  <path d="M 172,23 L 192,16 L 198,18 L 198,72 L 192,74 L 172,67 Z" fill="#4A505B" stroke="#12151A" stroke-width="1.5"/>
+  <path d="M 172,23 L 192,16 L 198,18 L 198,72 L 192,74 L 172,67 Z" fill="url(#estaffSheen)"/>
+  <rect x="175" y="22" width="6" height="46" rx="2" fill="#5C6470"/>
+  <rect x="183" y="18" width="6" height="54" rx="2" fill="#5C6470"/>
+  <rect x="191" y="16" width="6" height="58" rx="2" fill="#5C6470"/>
+
+  <!-- Pinky end: smooth rounded cap, no fins -->
+  <rect x="102" y="36" width="26" height="18" rx="9" fill="#4A505B" stroke="#12151A" stroke-width="1.5"/>
+  <rect x="102" y="36" width="26" height="18" rx="9" fill="url(#estaffSheen)"/>
+  <rect x="106" y="34" width="8" height="22" rx="4" fill="#5C6470"/>
+</svg>

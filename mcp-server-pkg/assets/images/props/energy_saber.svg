@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Energy Saber — premium cosmetic prop, Sword family.
+  Original generic energy prop. No franchise hilt silhouette or marking.
+
+  Geometry (matches PROP_DIMENSIONS.energy_saber and PROP_TIP_POINTS.energy_saber):
+    viewBox 620 x 96, so the hand pivot sits at (310, 48).
+    Blade root is at the pivot; the blade tip lands at x = 590, which is
+    dx = +280 from center — the exact reach sword traces, so the mandala radius
+    and trail attachment come out identical to its physical parent.
+    The extra width and height beyond the blade is halo padding. It is symmetric
+    about the pivot, following the torch precedent: grow the box around the
+    prop center so placement, tip reach, and mandala radius never move.
+
+  Color contract (packages/render-core/src/svg-color.ts, selective mode):
+    Blade layers are flat neutral grays (saturation 0, luminance > 0.4), so the
+    fill passes recolor them to the motion color.
+    The pale core is #FFF6E8 (saturation 0.09 > 0.05), so it is preserved and
+    reads the same on blue and red.
+    Every hilt fill sits below 0.4 luminance, so selective mode preserves it.
+    Gradients carry hilt sheen only; stop-color is never rewritten, so a
+    gradient-filled blade would be frozen gray.
+    Every id is prefixed `saber` and gets suffixed per motion color when the
+    loader inlines both props into one document.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 96">
+  <defs>
+    <linearGradient id="saberGripSheen" x1="0" y1="30" x2="0" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0.05" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.30" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="0.52" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+    <filter id="saberHalo" x="-12%" y="-200%" width="124%" height="500%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="saberSoft" x="-6%" y="-120%" width="112%" height="340%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- Blade: outer halo -->
+  <rect x="308" y="30" width="286" height="36" rx="18" fill="#D0D0D0" opacity="0.32" filter="url(#saberHalo)"/>
+  <!-- Blade: inner bloom -->
+  <rect x="310" y="37" width="282" height="22" rx="11" fill="#DCDCDC" opacity="0.9" filter="url(#saberSoft)"/>
+  <!-- Blade: hard body. The dark hairline keeps the edge readable on light backgrounds. -->
+  <rect x="310" y="40" width="280" height="16" rx="8" fill="#E4E4E4" stroke="#101319" stroke-width="1.4" stroke-opacity="0.55"/>
+  <!-- Pale core: preserved, identical on blue and red -->
+  <rect x="316" y="44.5" width="268" height="7" rx="3.5" fill="#FFF6E8"/>
+
+  <!-- Hilt: pommel end cap -->
+  <rect x="132" y="41" width="9" height="14" rx="3" fill="#3A3F49"/>
+  <rect x="138" y="38" width="26" height="20" rx="6" fill="#1A1D22"/>
+  <!-- Hilt: grip -->
+  <rect x="160" y="36" width="108" height="24" rx="10" fill="#24272E"/>
+  <rect x="160" y="36" width="108" height="24" rx="10" fill="url(#saberGripSheen)"/>
+  <!-- Hilt: two control bands -->
+  <rect x="188" y="34" width="11" height="28" rx="3" fill="#3A3F49"/>
+  <rect x="224" y="34" width="11" height="28" rx="3" fill="#3A3F49"/>
+  <!-- Hilt: emitter shroud -->
+  <rect x="268" y="30" width="38" height="36" rx="7" fill="#4A505B" stroke="#12151A" stroke-width="1.5"/>
+  <rect x="268" y="30" width="38" height="36" rx="7" fill="url(#saberGripSheen)"/>
+  <!-- Hilt: emitter throat ring, straddling the pivot -->
+  <rect x="300" y="26" width="12" height="44" rx="3" fill="#5C6470" stroke="#12151A" stroke-width="1.2"/>
+</svg>

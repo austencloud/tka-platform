@@ -125,6 +125,18 @@ const FAMILY_RECIPES: Partial<Record<PropType, CompositionRecipe>> = {
     red: { x: 50, y: 50, rotation: 40, scale: 0.55 },
     pairScale: 1,
   },
+  // Energy Saber: crossed, matching its sword parent
+  [PropType.ENERGY_SABER]: {
+    blue: { x: 50, y: 50, rotation: -40, scale: 0.55 },
+    red: { x: 50, y: 50, rotation: 40, scale: 0.55 },
+    pairScale: 1,
+  },
+  // Energy Staff: crossed in an X, matching its staff parent
+  [PropType.ENERGY_STAFF]: {
+    blue: { x: 50, y: 50, rotation: -45, scale: 0.55 },
+    red: { x: 50, y: 50, rotation: 45, scale: 0.55 },
+    pairScale: 1,
+  },
   // Quiad: side by side
   [PropType.QUIAD]: {
     blue: { x: 38, y: 50, rotation: 0, scale: 0.45 },
@@ -159,7 +171,10 @@ export function getCompositionRecipe(propType: PropType): CompositionRecipe {
  * All base prop types that have explicit recipes.
  * Used by the lab tab to display all configurable families.
  */
-export function getRecipeFamilies(): { propType: PropType; recipe: CompositionRecipe }[] {
+export function getRecipeFamilies(): {
+  propType: PropType;
+  recipe: CompositionRecipe;
+}[] {
   return Object.entries(FAMILY_RECIPES).map(([key, recipe]) => ({
     propType: key as PropType,
     recipe,

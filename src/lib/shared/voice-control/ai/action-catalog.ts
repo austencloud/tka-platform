@@ -211,6 +211,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     validTargets: [
       "staff", "poi", "fan", "club", "hoop", "buugeng",
       "triad", "sword", "hand", "chicken", "guitar", "ukulele", "minihoop",
+      "energy_saber", "energy_staff",
     ],
     validArgs: { hand: "both | blue | red" },
   },

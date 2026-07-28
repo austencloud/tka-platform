@@ -127,6 +127,10 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
   [PropType.SWORD]: "W",
+  // Same two codes the current codec uses, so a sequence keeps its prop when it
+  // moves between formats.
+  [PropType.ENERGY_SABER]: "3",
+  [PropType.ENERGY_STAFF]: "4",
   [PropType.CHICKEN]: "K",
   [PropType.BIGCHICKEN]: "k",
   [PropType.GUITAR]: "G",

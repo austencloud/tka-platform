@@ -80,7 +80,7 @@ If truly unrecognizable, return category "system", action "unknown".
 
 ## Domain Vocabulary
 - Modules: create, browse, compose, learn, train, watch, settings, tika, lab
-- Props: staff, poi, fan, club, hoop, buugeng, triad, sword, hand
+- Props: staff, poi, fan, club, hoop, buugeng, triad, sword, hand, energy_saber, energy_staff
 - Generator params: level (1-5), length (1-64), mode (freeform/circular), gridMode (diamond/box), propContinuity (continuous/random), turnIntensity (0-3)
 - "smooth" or "continuous" → propContinuity: "continuous"
 - "practice" or "I want to practice" → navigate to train module

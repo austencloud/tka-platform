@@ -27,7 +27,11 @@ export interface PropTypeDisplayInfo {
 export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
   {
     // === STAFF FAMILY ===
-    [PropType.STAFF]: { label: "Staff", image: "/images/props/buttons/staff.svg?v=2", category: "staves-clubs" },
+    [PropType.STAFF]: {
+      label: "Staff",
+      image: "/images/props/buttons/staff.svg?v=2",
+      category: "staves-clubs",
+    },
     [PropType.SIMPLESTAFF]: {
       label: "Simple Staff",
       image: "/images/props/buttons/simple_staff.svg?v=2",
@@ -42,18 +46,33 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === CLUB FAMILY ===
-    [PropType.CLUB]: { label: "Club", image: "/images/props/buttons/club.svg", category: "staves-clubs" },
+    [PropType.CLUB]: {
+      label: "Club",
+      image: "/images/props/buttons/club.svg",
+      category: "staves-clubs",
+    },
     [PropType.BIGCLUB]: {
       label: "Big Club",
       image: "/images/props/buttons/bigclub.svg",
     },
 
     // === FAN FAMILY ===
-    [PropType.FAN]: { label: "Fan", image: "/images/props/buttons/fan.svg", category: "staves-clubs" },
-    [PropType.BIGFAN]: { label: "Big Fan", image: "/images/props/buttons/bigfan.svg" },
+    [PropType.FAN]: {
+      label: "Fan",
+      image: "/images/props/buttons/fan.svg",
+      category: "staves-clubs",
+    },
+    [PropType.BIGFAN]: {
+      label: "Big Fan",
+      image: "/images/props/buttons/bigfan.svg",
+    },
 
     // === TRIAD FAMILY ===
-    [PropType.TRIAD]: { label: "Triad", image: "/images/props/buttons/triad.svg", category: "curved" },
+    [PropType.TRIAD]: {
+      label: "Triad",
+      image: "/images/props/buttons/triad.svg",
+      category: "curved",
+    },
     [PropType.BIGTRIAD]: {
       label: "Big Triad",
       image: "/images/props/buttons/bigtriad.svg",
@@ -89,7 +108,11 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === HAND ===
-    [PropType.HAND]: { label: "Hand", image: "/images/props/buttons/hand.svg", category: "singles" },
+    [PropType.HAND]: {
+      label: "Hand",
+      image: "/images/props/buttons/hand.svg",
+      category: "singles",
+    },
 
     // === TRIQUETRA FAMILY ===
     [PropType.TRIQUETRA]: {
@@ -103,7 +126,25 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === SWORD ===
-    [PropType.SWORD]: { label: "Sword", image: "/images/props/buttons/sword.svg", category: "singles" },
+    [PropType.SWORD]: {
+      label: "Sword",
+      image: "/images/props/buttons/sword.svg",
+      category: "singles",
+    },
+
+    // === ENERGY FAMILY (premium cosmetics) ===
+    // No `category` on purpose. The category taxonomy feeds getBasePropsByCategory(),
+    // which the 3D prop controls expand without an access check. Leaving these two
+    // out of it keeps them off those surfaces entirely instead of relying on every
+    // future consumer remembering to gate.
+    [PropType.ENERGY_SABER]: {
+      label: "Energy Saber",
+      image: "/images/props/buttons/energy_saber.svg",
+    },
+    [PropType.ENERGY_STAFF]: {
+      label: "Energy Staff",
+      image: "/images/props/buttons/energy_staff.svg",
+    },
 
     // === CHICKEN FAMILY ===
     [PropType.CHICKEN]: {
@@ -117,7 +158,11 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === GUITAR FAMILY ===
-    [PropType.GUITAR]: { label: "Guitar", image: "/images/props/buttons/guitar.svg", category: "novelty" },
+    [PropType.GUITAR]: {
+      label: "Guitar",
+      image: "/images/props/buttons/guitar.svg",
+      category: "novelty",
+    },
     [PropType.UKULELE]: {
       label: "Ukulele",
       image: "/images/props/buttons/ukulele.svg",
@@ -146,11 +191,22 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === QUIAD ===
-    [PropType.QUIAD]: { label: "Quiad", image: "/images/props/buttons/quiad.svg", category: "singles" },
+    [PropType.QUIAD]: {
+      label: "Quiad",
+      image: "/images/props/buttons/quiad.svg",
+      category: "singles",
+    },
 
     // === TORCH FAMILY ===
-    [PropType.TORCH]: { label: "Torch", image: "/images/props/buttons/torch.svg", category: "novelty" },
-    [PropType.BIGTORCH]: { label: "Big Torch", image: "/images/props/buttons/bigtorch.svg" },
+    [PropType.TORCH]: {
+      label: "Torch",
+      image: "/images/props/buttons/torch.svg",
+      category: "novelty",
+    },
+    [PropType.BIGTORCH]: {
+      label: "Big Torch",
+      image: "/images/props/buttons/bigtorch.svg",
+    },
 
     // === CONTACT BALL FAMILY ===
     [PropType.CONTACTBALL]: {
@@ -173,7 +229,11 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === POI FAMILY (Momentum-based) ===
-    [PropType.POI]: { label: "Poi", image: "/images/props/buttons/poi.svg", category: "novelty" },
+    [PropType.POI]: {
+      label: "Poi",
+      image: "/images/props/buttons/poi.svg",
+      category: "novelty",
+    },
   } as const;
 
 /**
@@ -199,6 +259,33 @@ export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
  */
 export function isPropActive(propType: PropType): boolean {
   return !DEACTIVATED_PROP_TYPES.has(propType);
+}
+
+/**
+ * Props that cost money rather than practice. These are cosmetic restyles of
+ * props the app already has, so nothing about a sequence changes when you pick
+ * one — but they are not free, and they are not earned by playing either.
+ *
+ * This set is pure classification with no opinion on who may use them. The
+ * access decision (premium module off, dev/admin preview, subscription gate)
+ * lives in `$lib/shared/subscription/domain/premium-prop-access`, so the
+ * pictograph domain never has to know about auth.
+ */
+export const PREMIUM_COSMETIC_PROP_TYPES: ReadonlySet<PropType> = new Set([
+  PropType.ENERGY_SABER,
+  PropType.ENERGY_STAFF,
+]);
+
+/**
+ * Whether a prop is a paid cosmetic. Every place that enumerates prop types
+ * raw — keyboard cycling, shuffle, Arena, avatar generation — has to consult
+ * this before offering the prop, or it hands out a paid prop for free.
+ */
+export function isPremiumCosmeticProp(
+  propType: PropType | string | null | undefined
+): boolean {
+  if (!propType) return false;
+  return PREMIUM_COSMETIC_PROP_TYPES.has(propType as PropType);
 }
 
 /**
@@ -315,7 +402,10 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
-  [PropType.CONTACTBALL]: [PropType.BIGCONTACTBALL, PropType.BIGDOUBLECONTACTBALL],
+  [PropType.CONTACTBALL]: [
+    PropType.BIGCONTACTBALL,
+    PropType.BIGDOUBLECONTACTBALL,
+  ],
   [PropType.TORCH]: [PropType.BIGTORCH],
 };
 
@@ -428,11 +518,18 @@ export function getBasePropsByCategory(): Map<PropCategory, PropType[]> {
     result.set(cat.id, []);
   }
 
-  for (const [propTypeStr, info] of Object.entries(PROP_TYPE_DISPLAY_REGISTRY)) {
+  for (const [propTypeStr, info] of Object.entries(
+    PROP_TYPE_DISPLAY_REGISTRY
+  )) {
     const propType = propTypeStr as PropType;
     if (!info.category) continue;
     if (!isPropActive(propType)) continue;
     if (VARIANT_PROP_TYPES.includes(propType)) continue;
+    // Callers of this map (the 3D prop popover, the performer hub) expand a
+    // family and select straight from it with no access check. Paid cosmetics
+    // carry no category today, so this is belt and braces: if one ever gets a
+    // category it still cannot leak out through here.
+    if (isPremiumCosmeticProp(propType)) continue;
     result.get(info.category)?.push(propType);
   }
 
@@ -461,7 +558,7 @@ const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
 };
 
 const BIG_TO_STANDARD: Partial<Record<PropType, PropType>> = Object.fromEntries(
-  Object.entries(STANDARD_TO_BIG).map(([std, big]) => [big, std]),
+  Object.entries(STANDARD_TO_BIG).map(([std, big]) => [big, std])
 ) as Partial<Record<PropType, PropType>>;
 
 /** Whether a prop has a standard⇄big counterpart (either direction). */
@@ -495,6 +592,9 @@ export function toggleBigVariant(propType: PropType): PropType {
  * dark-gated in BentoPropGrid (dev/admin only, matching the poi-legal filter
  * gate), so the public picker still omits it while the filter is validated.
  * (Fractalgeng was removed from the codebase entirely.)
+ *
+ * The Premium section is the one place the paid cosmetics appear. BentoPropGrid
+ * decides who sees it and what a click does — see premium-prop-access.ts.
  *
  * Rendering filters by isPropActive, so deactivating a listed prop hides it
  * without editing this list.
@@ -541,5 +641,9 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       // Dark-gated to dev/admin in BentoPropGrid — see the docstring above.
       PropType.POI,
     ],
+  },
+  {
+    label: "Premium",
+    props: [PropType.ENERGY_SABER, PropType.ENERGY_STAFF],
   },
 ];

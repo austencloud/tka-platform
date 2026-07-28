@@ -29,10 +29,19 @@ export const MOTION_COLOR_MAP: Record<
   },
 };
 
+/**
+ * Props whose artwork is only PARTLY the motion color. Selective mode keeps any
+ * fill that is dark (luminance below 0.4) or saturated (above 0.05) and repaints
+ * the rest — so a torch keeps its shaft, a sword keeps its gold blade, and the
+ * energy pair keeps its neutral hilt and pale core while the blade takes on
+ * blue or red.
+ */
 export const SELECTIVE_COLOR_PROP_TYPES = [
   "torch",
   "bigtorch",
   "sword",
+  "energy_saber",
+  "energy_staff",
   "sword-knight",
   "sword-saber",
   "sword-flamberge",

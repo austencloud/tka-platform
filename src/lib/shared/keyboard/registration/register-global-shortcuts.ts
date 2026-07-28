@@ -39,6 +39,7 @@ import {
   getAllPropTypes,
   PROP_TYPE_DISPLAY_REGISTRY,
 } from "../../pictograph/prop/domain/prop-type-display-registry";
+import { filterPremiumCosmeticProps } from "../../subscription/domain/premium-prop-access";
 
 export function registerGlobalShortcuts(
   service: KeyboardShortcutManager,
@@ -308,7 +309,9 @@ export function registerGlobalShortcuts(
     scope: "action",
     priority: "high",
     action: () => {
-      const allProps = getAllPropTypes();
+      // Cycling walks the whole enum, so paid cosmetics drop out unless the
+      // user may actually use them — otherwise Shift+P hands one over free.
+      const allProps = filterPremiumCosmeticProps(getAllPropTypes());
       if (allProps.length === 0) return;
 
       const currentProp = settingsService.settings.bluePropType;

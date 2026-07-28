@@ -1,9 +1,9 @@
 <!--
   BentoPropGrid.svelte - Flat prop selection grid
 
-  Every prop renders as its own button under one of three section headers
-  (Standard / Big / Novelty). No variant popover, no count badges — the
-  sections come from PROP_PICKER_SECTIONS.
+  Every prop renders as its own button under a picker section header
+  (Standard / Big / Novelty / Premium). No variant popover, no count badges —
+  the sections come from PROP_PICKER_SECTIONS.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
@@ -17,16 +17,30 @@
   import {
     PROP_PICKER_SECTIONS,
     isPropActive,
+    isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropTypeButton from "./PropTypeButton.svelte";
   import { isPropUnlocked } from "$lib/shared/gamification/state/prop-collection-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
+  import PremiumBadge from "$lib/shared/subscription/components/PremiumBadge.svelte";
+  import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
+  import {
+    checkPremiumCosmeticAccess,
+    isPremiumCosmeticVisible,
+    routePropTileClick,
+    PREMIUM_COSMETIC_NUDGE,
+  } from "$lib/shared/subscription/domain/premium-prop-access";
 
   // Poi is deactivated for the public picker but re-enabled for dev/admin so the
   // poi-legal composer filter can be exercised — same gate as the filter itself
   // (isPoiComposerFilterEnabled in apply-poi-legal-filter.ts). Kept inline to
   // avoid a shared→feature import.
   const poiPickerEnabled = $derived(import.meta.env.DEV || isAdmin());
+
+  // Paid cosmetics. While the Scribe tier is shelved these are a dev/admin
+  // preview and everyone else never sees the tile — showing a "Go Premium"
+  // button now would lead to a stubbed-out module.
+  const premiumPickerEnabled = $derived(isPremiumCosmeticVisible());
 
   let {
     selectedPropType,
@@ -49,34 +63,57 @@
     flat?: boolean;
   }>();
 
-  // Active props grouped into the three flat picker sections. Each prop renders
-  // as its own button — no variant drill-down.
+  // Active props grouped into the flat picker sections. Each prop renders as
+  // its own button — no variant drill-down.
   const sections = $derived(
     PROP_PICKER_SECTIONS.map((s) => ({
       label: s.label,
-      props: s.props.filter((p) =>
-        p === PropType.POI ? poiPickerEnabled : isPropActive(p),
-      ),
-    })).filter((s) => s.props.length > 0),
+      props: s.props.filter((p) => {
+        if (p === PropType.POI) return poiPickerEnabled;
+        if (isPremiumCosmeticProp(p)) return premiumPickerEnabled;
+        return isPropActive(p);
+      }),
+    })).filter((s) => s.props.length > 0)
   );
 
   const allProps = $derived(sections.flatMap((s) => s.props));
 
   // Track which locked prop (if any) is showing its inline earn tip.
   let lockedTipFor = $state<PropType | null>(null);
+  // Track which paid prop (if any) is showing its upgrade nudge.
+  let premiumNudgeFor = $state<PropType | null>(null);
 
   /**
-   * Central click router for all tiles.
-   * - Unlocked: delegates to the parent onSelect callback (existing behavior).
-   * - Locked: toggles the inline earn tip; never calls onSelect.
+   * Central click router for all tiles. The decision itself lives in
+   * routePropTileClick so the ordering it encodes — premium before
+   * play-earned — is pinned by a test rather than by this component.
+   * - select: delegates to the parent onSelect callback.
+   * - premium-nudge: toggles the upgrade callout; never calls onSelect.
+   * - earn-tip: toggles the inline earn tip; never calls onSelect.
    */
   function handleTileClick(prop: PropType) {
-    if (isPropUnlocked(prop)) {
+    const premium = isPremiumCosmeticProp(prop);
+    const route = routePropTileClick({
+      isPremiumCosmetic: premium,
+      premiumAllowed: premium && checkPremiumCosmeticAccess().allowed,
+      isUnlocked: isPropUnlocked(prop),
+    });
+
+    if (route === "select") {
       lockedTipFor = null;
+      premiumNudgeFor = null;
       onSelect(prop);
-    } else {
-      lockedTipFor = lockedTipFor === prop ? null : prop;
+      return;
     }
+
+    if (route === "premium-nudge") {
+      lockedTipFor = null;
+      premiumNudgeFor = premiumNudgeFor === prop ? null : prop;
+      return;
+    }
+
+    premiumNudgeFor = null;
+    lockedTipFor = lockedTipFor === prop ? null : prop;
   }
 </script>
 
@@ -93,19 +130,33 @@
 
   {#snippet tile(prop: PropType)}
     <!--
-      Each tile is wrapped in a relative-positioned container so the lock glyph
-      and earn-tip can be absolutely positioned over / below the button.
-      The click is always routed through handleTileClick (via PropTypeButton's
-      onSelect prop), which gates on isPropUnlocked.
+      Each tile is wrapped in a relative-positioned container so the lock glyph,
+      crown and earn-tip can be positioned over / below the button. The click
+      is always routed through handleTileClick (via PropTypeButton's onSelect
+      prop).
+
+      A paid cosmetic wears a crown and never the play-earned lock or the
+      "Earn by creating" tip — those two states mean different things and
+      showing both would tell the user to spin their way to something that is
+      only for sale.
     -->
-    <div class="tile-wrapper" class:locked={!isPropUnlocked(prop)}>
+    {@const premium = isPremiumCosmeticProp(prop)}
+    <div
+      class="tile-wrapper"
+      class:premium
+      class:locked={!premium && !isPropUnlocked(prop)}
+    >
       <PropTypeButton
         propType={prop}
         selected={selectedPropType === prop}
         {color}
         onSelect={() => handleTileClick(prop)}
       />
-      {#if !isPropUnlocked(prop)}
+      {#if premium}
+        <span class="crown-glyph">
+          <PremiumBadge tooltip="Premium prop" />
+        </span>
+      {:else if !isPropUnlocked(prop)}
         <i class="fas fa-lock lock-glyph" aria-hidden="true"></i>
         {#if lockedTipFor === prop}
           <span class="earn-tip">Earn by creating</span>
@@ -134,10 +185,20 @@
       </div>
     {/if}
   </div>
+
+  {#if premiumNudgeFor}
+    <div class="premium-nudge-dock">
+      <PremiumNudge
+        nudge={PREMIUM_COSMETIC_NUDGE}
+        onDismiss={() => (premiumNudgeFor = null)}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
   .prop-grid-root {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -234,6 +295,14 @@
     flex-shrink: 0;
   }
 
+  /* Paid labels include the product family name. At the narrowest picker
+     container, give those two tiles enough room to keep the full label. */
+  @container prop-grid (max-width: 399px) {
+    .section-buttons .tile-wrapper.premium :global(.prop-button) {
+      width: 95px;
+    }
+  }
+
   /* Container queries for larger containers */
   @container prop-grid (min-width: 400px) {
     .section-buttons :global(.prop-button) {
@@ -309,5 +378,39 @@
     padding: 2px 6px;
     pointer-events: none;
     z-index: 20;
+  }
+
+  /* ─── Paid cosmetic: crown + upgrade nudge ─── */
+
+  /* Top-left, not bottom-right where the play-earned lock sits: the crown is
+     permanent rather than a transient state, and down there it lands on top of
+     the prop name and eats the last letters of "Energy Saber". Top-right is the
+     selection checkmark's corner; top-left is free in this grid. */
+  .crown-glyph {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* The nudge belongs to the picker, not one 79px tile. Docking it inside the
+     picker shell keeps it clear of the scroll clip and avoids a layout shift. */
+  .premium-nudge-dock {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 30;
+  }
+
+  .premium-nudge-dock :global(.nudge-callout) {
+    width: min(280px, 100%);
+    box-sizing: border-box;
+    pointer-events: auto;
   }
 </style>

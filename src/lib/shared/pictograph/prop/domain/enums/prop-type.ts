@@ -50,6 +50,16 @@ export enum PropType {
   // === SWORD ===
   SWORD = "sword",
 
+  // === ENERGY FAMILY (premium cosmetics) ===
+  // Two paid prop styles that follow their physical parent in every registry:
+  // Energy Saber spins exactly like a sword, Energy Staff exactly like a staff.
+  // They are deliberately NOT variants of those parents — the variant cycle
+  // (getNextVariation) has no access gate, so listing them there would hand a
+  // paid prop out for free on any surface offering a variant toggle.
+  // Access lives in PREMIUM_COSMETIC_PROP_TYPES (prop-type-display-registry.ts).
+  ENERGY_SABER = "energy_saber",
+  ENERGY_STAFF = "energy_staff",
+
   // === CHICKEN FAMILY ===
   CHICKEN = "chicken",
   BIGCHICKEN = "bigchicken",

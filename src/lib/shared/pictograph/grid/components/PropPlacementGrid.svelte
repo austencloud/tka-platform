@@ -532,7 +532,7 @@
   });
 </script>
 
-<div class="placement-grid" class:disabled>
+<div class="placement-grid" class:disabled class:complete={isComplete}>
   {#if promptText}
     <p class="prompt-text" data-testid="placement-prompt">{promptText}</p>
   {/if}
@@ -719,21 +719,28 @@
        to move the thing someone is aiming at. -->
   <div class="controls-tray" aria-label="Move a prop">
     {#if isComplete && editAfterCompletion && !disabled}
+      <!-- Two labels, one accessible name. The short form is what fits when the
+           tray shares a row with the prompt on a short screen; aria-label keeps
+           the spoken name identical either way. -->
       <button
         class="edit-button blue"
         class:active={activeColor === MotionColor.BLUE}
         onclick={() => handleEdit(MotionColor.BLUE)}
         aria-pressed={activeColor === MotionColor.BLUE}
+        aria-label={`Move ${blueNoun}`}
       >
-        Move blue
+        <span class="label-full" aria-hidden="true">Move blue</span>
+        <span class="label-short" aria-hidden="true">Blue</span>
       </button>
       <button
         class="edit-button red"
         class:active={activeColor === MotionColor.RED}
         onclick={() => handleEdit(MotionColor.RED)}
         aria-pressed={activeColor === MotionColor.RED}
+        aria-label={`Move ${redNoun}`}
       >
-        Move red
+        <span class="label-full" aria-hidden="true">Move red</span>
+        <span class="label-short" aria-hidden="true">Red</span>
       </button>
     {/if}
 
@@ -752,10 +759,18 @@
 </div>
 
 <style>
+  /* Grid, not flex, so a short host can put the prompt and the control tray on
+     ONE row beside each other instead of stacking them above and below the
+     board. Two reserved rows cost ~50px, which is the difference between hit
+     targets that clear the 44px touch floor and ones that don't. */
   .placement-grid {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-areas:
+      "prompt"
+      "board"
+      "tray";
+    grid-template-rows: auto 1fr auto;
+    justify-items: center;
     gap: 0.75rem;
     width: 100%;
     height: 100%;
@@ -768,6 +783,8 @@
   }
 
   .prompt-text {
+    grid-area: prompt;
+    align-self: center;
     margin: 0;
     min-height: 1.5em;
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
@@ -778,8 +795,9 @@
 
   /* Owns the leftover space and measures it for the square inside. */
   .grid-area {
-    flex: 1 1 auto;
+    grid-area: board;
     width: 100%;
+    height: 100%;
     /* A floor, not a preference. If a host gives this no definite height, `cqh`
        resolves to zero and the board below would vanish — present in the DOM,
        zero pixels, unclickable. */
@@ -870,11 +888,11 @@
   /* Reserved slot: holds one control row's height whether or not it has
      buttons in it, so the board above never resizes mid-task. */
   .controls-tray {
+    grid-area: tray;
     display: flex;
     gap: 8px;
     width: min(100%, 360px);
     min-height: var(--min-touch-target, 48px);
-    flex-shrink: 0;
   }
 
   .controls-tray > * {
@@ -896,6 +914,10 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 650;
     cursor: pointer;
+  }
+
+  .label-short {
+    display: none;
   }
 
   .edit-button.blue.active {
@@ -989,6 +1011,71 @@
     .controls-tray {
       width: min(100%, 44rem);
       min-height: 4rem;
+    }
+  }
+
+  /* Short viewport (a phone in portrait, a laptop with the browser chrome
+     eating half the screen). The prompt and the control tray are at their touch
+     and legibility floors already, so the only slack left is the gaps between
+     them — and every pixel of it belongs to the board. */
+  @media (max-height: 780px) {
+    /* The prompt moves alongside the tray so the two share one reserved row.
+       The tray keeps its own width (its buttons stay at the touch floor) and
+       the prompt takes what's left. */
+    .placement-grid {
+      grid-template-areas:
+        "prompt tray"
+        "board board";
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto 1fr;
+      align-items: center;
+      gap: 0.4rem 0.5rem;
+    }
+
+    .prompt-text {
+      min-height: var(--min-touch-target, 48px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.2;
+      font-size: var(--font-size-min, 14px);
+    }
+
+    .controls-tray {
+      width: auto;
+      justify-self: end;
+    }
+
+    /* Content-sized here, not equal-thirds: the shared row has no width to
+       spare, and equal columns truncated "Undo" to "U…". */
+    .controls-tray > * {
+      flex: 0 0 auto;
+    }
+
+    /* Once both props are down the prompt only says "Position ready" — the
+       enabled action button below already says that, and better. The row goes
+       to the three controls that still do something. */
+    .placement-grid.complete .prompt-text {
+      display: none;
+    }
+
+    .placement-grid.complete .controls-tray {
+      grid-column: 1 / -1;
+      justify-self: center;
+    }
+
+    /* Wording that survives the narrower slot. The accessible names on these
+       buttons are unchanged. */
+    .edit-button {
+      padding: 8px 12px;
+    }
+
+    .label-full {
+      display: none;
+    }
+
+    .label-short {
+      display: inline;
     }
   }
 

@@ -1,5 +1,9 @@
 import type { ISubInterpreter } from "../ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
+import type {
+  VoiceCommand,
+  VoiceCommandCategory,
+  CommandContext,
+} from "../../domain/voice-command-types";
 
 // Prop type aliases: spoken name → canonical prop type
 const PROP_ALIASES: Record<string, string> = {
@@ -19,6 +23,16 @@ const PROP_ALIASES: Record<string, string> = {
   triads: "triad",
   sword: "sword",
   swords: "sword",
+  // Energy Saber and Energy Staff are the product names, but nobody says that
+  // out loud. Recognising what people actually say is separate from being
+  // allowed to use the prop — PropCommandHandler makes that call.
+  "energy saber": "energy_saber",
+  "light saber": "energy_saber",
+  lightsaber: "energy_saber",
+  "energy staff": "energy_staff",
+  "light staff": "energy_staff",
+  "saber staff": "energy_staff",
+  "double lightsaber": "energy_staff",
   hand: "hand",
   hands: "hand",
   chicken: "chicken",
