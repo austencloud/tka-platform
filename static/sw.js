@@ -107,8 +107,8 @@ self.addEventListener("activate", (event) => {
             .map((name) => caches.delete(name))
         )
       )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
