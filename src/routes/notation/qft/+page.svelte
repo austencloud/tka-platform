@@ -12,8 +12,9 @@
    * QfT hands. Pick two flowers and a VTG mode and the stage draws the move in
    * Charlie's notation, which is the form it was meant to be written in.
    *
-   * No narrator: the only prose is quoted from the source, and every label
-   * states a fact rather than an interpretation.
+   * No narrator and no pull-quotes: every label states a fact about the knob
+   * values that produce the move. The sources are credited by link in the
+   * About panel, which is attribution rather than commentary.
    *
    * Design: docs/superpowers/specs/2026-07-27-qft-archive-app-design.md
    *         docs/superpowers/specs/2026-07-28-qft-shape-matrix-bridge-design.md
@@ -1547,8 +1548,7 @@
    * stops being readable first: eight rows of seven numbers at this height is
    * not notation anyone can use. So the cell keeps what this size can actually
    * serve — the stage and the two choices that drive it — and the tables come
-   * back the moment there is room. Same call the guide makes with its quote at
-   * this tier.
+   * back the moment there is room.
    *
    * Revisit when the controls move into a bottom dock: a picker that opens
    * over the stage would give the notation its height back.

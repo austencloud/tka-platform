@@ -2,12 +2,9 @@
   /**
    * Prototype of /notation/qft — the archive reader.
    *
-   * The restored animations, the computed model, and the passages that specify
-   * the system. No narrator: the only prose is quoted from the source, and
-   * every label states a fact rather than an interpretation.
-   *
-   * Quotes are the ones verified in docs/reference/archive/qft-notation/README.md.
-   * Moves without a transcribed passage carry none rather than invented text.
+   * The restored animations and the computed model. No narrator and no
+   * pull-quotes: every label states a fact about the knob values that produce
+   * the move.
    */
   import QftUnit from "./_components/QftUnit.svelte";
 
@@ -46,8 +43,7 @@
       stem: "static2",
       aspect: "384/389",
       knobs: { radius: 0, downbeats: 1, spin: "inspin" as const },
-      spec: "radius 0 · one prop rotation per hand rotation",
-      quote: "Because we made this thing up and we say so."
+      spec: "radius 0 · one prop rotation per hand rotation"
     },
     {
       title: "Pendulum",
@@ -62,8 +58,7 @@
       stem: "extension",
       aspect: "296/298",
       knobs: { radius: 1, downbeats: 1, spin: "inspin" as const },
-      spec: "radius 1 · hand and prop orientations identical",
-      quote: "…because it's the only constant distance we can think of in spinning."
+      spec: "radius 1 · hand and prop orientations identical"
     },
     {
       title: "Isolation",

@@ -7,7 +7,7 @@
    * reader is always looking at one whole concept rather than the tail of one
    * and the head of the next.
    *
-   * No narration. Labels state facts; the only prose is quoted from the source.
+   * No narration. Labels state facts about the knob values that produce the move.
    */
   import {
     buildIncrements,
@@ -26,7 +26,6 @@
     pendulum?: boolean;
     /** Factual label: the knob values that produce this move. */
     spec: string;
-    quote?: string;
     /** Below this width the notation collapses to the active step. */
     compact: boolean;
     /**
@@ -40,7 +39,7 @@
     aspect: string;
   }
 
-  let { title, stem, knobs, pendulum = false, spec, quote, compact, aspect }: Props = $props();
+  let { title, stem, knobs, pendulum = false, spec, compact, aspect }: Props = $props();
 
   const increments = $derived(pendulum ? buildPendulum() : buildIncrements(knobs, "drex"));
 
@@ -85,18 +84,6 @@
   <div class="notation">
     <QftTable {increments} activeStep={step} {compact} />
   </div>
-
-  {#if quote}
-    <blockquote>
-      <p>{quote}</p>
-      <cite
-        >Drex, <a
-          href="https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
-          rel="noreferrer">A Beginner's Guide to Prop QFT Notation</a
-        ></cite
-      >
-    </blockquote>
-  {/if}
 </section>
 
 <style>
@@ -196,30 +183,6 @@
     width: 100%;
   }
 
-  blockquote {
-    margin: 0;
-    padding-left: 1rem;
-    border-left: 3px solid var(--theme-accent, #8b5cf6);
-  }
-
-  blockquote p {
-    margin: 0;
-    font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
-    line-height: 1.55;
-  }
-
-  cite {
-    display: block;
-    margin-top: 0.4rem;
-    font-size: 0.8rem;
-    font-style: normal;
-    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.6));
-  }
-
-  cite a {
-    color: var(--theme-accent, #8b5cf6);
-  }
-
   /*
    * Big screens use both axes. Stacking title, pair and table down the middle
    * leaves a narrow island in a tall dark field — the arrangement reads as a
@@ -231,7 +194,7 @@
     .unit {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
-      grid-template-areas: "head head" "pair notation" "pair quote";
+      grid-template-areas: "head head" "pair notation";
       align-content: center;
       justify-content: center;
       column-gap: clamp(2rem, 4vw, 5rem);
@@ -251,12 +214,6 @@
     .notation {
       grid-area: notation;
       align-self: end;
-    }
-
-    blockquote {
-      grid-area: quote;
-      align-self: start;
-      max-width: 42rem;
     }
 
     .pair {
@@ -284,10 +241,6 @@
 
     .notation {
       grid-area: notation;
-    }
-
-    blockquote {
-      display: none;
     }
   }
 

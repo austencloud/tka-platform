@@ -1,11 +1,13 @@
 <script lang="ts">
   /**
-   * One canonical move: the computed stage, its notation, and its source quote.
+   * One canonical move: the computed stage and its notation.
    *
    * The 2011 diagrams used to run beside this. They now live in the archive
    * view, reachable from here — see the comment on the figure below for why.
    *
-   * No narration. The only prose is quoted from the source.
+   * No narration and no pull-quotes. Every label states a fact about the knob
+   * values that produce the move; the sources are credited by link, in the
+   * About panel, which is attribution rather than commentary.
    */
   import type { QftIncrement } from "../qft-model";
   import type { QftLayers } from "../qft-layers";
@@ -90,17 +92,6 @@
     </div>
   {/if}
 
-  {#if move.quote}
-    <blockquote>
-      <p>{move.quote}</p>
-      <cite
-        >Drex, <a
-          href="https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
-          rel="noreferrer">A Beginner's Guide to Prop QFT Notation</a
-        ></cite
-      >
-    </blockquote>
-  {/if}
 </div>
 
 <style>
@@ -154,7 +145,7 @@
     flex: 1 1 auto;
     /*
      * A floor, because "take what is left" is the wrong answer when nothing is
-     * left: on a phone showing one of the two moves that carry a quote, the
+     * left: on a phone, once the title and the table had taken their share, the
      * stage collapsed to a 90px thumbnail. Below this the pane scrolls instead
      * of crushing the thing you came to look at. It sits here rather than on
      * the box so that it grows the flex line, instead of overflowing the figure
@@ -236,31 +227,6 @@
     max-width: 46rem;
   }
 
-  blockquote {
-    margin: 0;
-    max-width: 46rem;
-    padding-left: 1rem;
-    border-left: 3px solid var(--theme-accent, #8b5cf6);
-  }
-
-  blockquote p {
-    margin: 0;
-    font-size: clamp(0.9rem, 0.85rem + 0.2vw, 1.05rem);
-    line-height: 1.5;
-  }
-
-  cite {
-    display: block;
-    margin-top: 0.35rem;
-    font-size: 0.78rem;
-    font-style: normal;
-    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.6));
-  }
-
-  cite a {
-    color: var(--theme-accent, #8b5cf6);
-  }
-
   /*
    * Big screens use both axes. Stacking everything down the middle leaves a
    * narrow island in a tall field — a phone layout that happened to be opened
@@ -298,13 +264,13 @@
       grid-template-columns: auto clamp(26rem, 32vw, 46rem);
       /*
        * Empty rows top and bottom take the slack. The pair spans the whole
-       * column and is taller than the three content rows, and that surplus was
-       * being distributed BETWEEN them — opening a gap between the table and
-       * the quote that belongs to it. Pushing it outside the group keeps the
-       * three tight and still centres them against the stage.
+       * column and is taller than the content rows, and that surplus was being
+       * distributed BETWEEN them — opening a gap between the title and the
+       * table. Pushing it outside the group keeps them tight and still centres
+       * them against the stage.
        */
-      grid-template-areas: "pair ." "pair head" "pair notation" "pair quote" "pair .";
-      grid-template-rows: 1fr auto auto auto 1fr;
+      grid-template-areas: "pair ." "pair head" "pair notation" "pair .";
+      grid-template-rows: 1fr auto auto 1fr;
       align-content: center;
       justify-content: center;
       column-gap: clamp(2rem, 4vw, 5rem);
@@ -345,11 +311,6 @@
 
     .notation {
       grid-area: notation;
-      align-self: start;
-    }
-
-    blockquote {
-      grid-area: quote;
       align-self: start;
     }
   }
@@ -414,10 +375,6 @@
     figcaption {
       margin-top: 0.3rem;
       gap: 0.3rem;
-    }
-
-    blockquote {
-      display: none;
     }
   }
 

@@ -6,8 +6,10 @@
  * scripts/extract-qft-frames.mjs — several of these drawings are markedly tall
  * or wide, and each card is shaped to fit its own.
  *
- * Quotes are only those verified in docs/reference/archive/qft-notation/README.md.
- * A move without a transcribed passage carries none rather than invented text.
+ * No pull-quotes. The moves are stated in their own terms — every `spec` is a
+ * fact about the knob values that produce the move, which is what a reader
+ * needs. The sources are credited by link in SOURCES below; that is attribution,
+ * not commentary.
  */
 
 import type { QftKnobs } from "./qft-model";
@@ -23,7 +25,6 @@ export interface GuideMove {
 	pendulum?: boolean;
 	/** Factual label: the knob values that produce this move. */
 	spec: string;
-	quote?: string;
 }
 
 export const GUIDE_MOVES: GuideMove[] = [
@@ -33,8 +34,7 @@ export const GUIDE_MOVES: GuideMove[] = [
 		stem: "static2",
 		aspect: "344/389",
 		knobs: { radius: 0, downbeats: 1, spin: "inspin" },
-		spec: "radius 0 · one prop rotation per hand rotation",
-		quote: "Because we made this thing up and we say so."
+		spec: "radius 0 · one prop rotation per hand rotation"
 	},
 	{
 		id: "pendulum",
@@ -51,8 +51,7 @@ export const GUIDE_MOVES: GuideMove[] = [
 		stem: "extension",
 		aspect: "296/298",
 		knobs: { radius: 1, downbeats: 1, spin: "inspin" },
-		spec: "radius 1 · hand and prop orientations identical",
-		quote: "…because it's the only constant distance we can think of in spinning."
+		spec: "radius 1 · hand and prop orientations identical"
 	},
 	{
 		id: "isolation",
