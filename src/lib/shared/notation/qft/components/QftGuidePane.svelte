@@ -22,7 +22,8 @@
     onShowArchive: () => void;
   }
 
-  let { move, increments, cursor, compact, layers, onShowArchive }: Props = $props();
+  let { move, increments, cursor, compact, layers, onShowArchive }: Props =
+    $props();
 </script>
 
 <div class="guide">
@@ -162,7 +163,9 @@
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.78));
     font-size: 0.82rem;
     cursor: pointer;
-    transition: border-color 140ms ease, color 140ms ease;
+    transition:
+      border-color 140ms ease,
+      color 140ms ease;
   }
 
   .archive-link:hover {
@@ -232,7 +235,9 @@
        */
       --box-h: clamp(16rem, 54vh, 64rem);
       display: grid;
-      grid-template-columns: auto minmax(26rem, 38rem);
+      /* Matched to the instrument's column, so the two modes stay registered
+         across the crossfade and neither leaves dead rail at 4K. */
+      grid-template-columns: auto clamp(26rem, 32vw, 46rem);
       grid-template-areas: "pair head" "pair notation" "pair quote";
       /*
        * All three rows content-sized. A 1fr tail row looks fine on the moves

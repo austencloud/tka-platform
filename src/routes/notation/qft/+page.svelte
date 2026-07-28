@@ -20,26 +20,26 @@
     GUIDE_MOVES,
     SOURCES,
     TIMELINE,
-    type GuideMove
+    type GuideMove,
   } from "$lib/shared/notation/qft/qft-guide";
   import {
     buildIncrements,
     buildPendulum,
     type Convention,
     type QftKnobs,
-    type Spin
+    type Spin,
   } from "$lib/shared/notation/qft/qft-model";
   import {
     LAYER_KEYS,
     LAYER_LABELS,
     normalizeLayers,
-    type QftLayers
+    type QftLayers,
   } from "$lib/shared/notation/qft/qft-layers";
   import { nameFor } from "$lib/shared/notation/qft/qft-naming";
   import {
     loadQftSession,
     saveQftSession,
-    type QftSession
+    type QftSession,
   } from "$lib/shared/notation/qft/qft-session";
   import QftFrames from "$lib/shared/notation/qft/components/QftFrames.svelte";
   import QftGuidePane from "$lib/shared/notation/qft/components/QftGuidePane.svelte";
@@ -105,12 +105,16 @@
   const instrumentIncrements = $derived(
     pendulum ? buildPendulum() : buildIncrements(knobs, convention)
   );
-  const increments = $derived(appMode === "guide" ? guideIncrements : instrumentIncrements);
+  const increments = $derived(
+    appMode === "guide" ? guideIncrements : instrumentIncrements
+  );
 
   const step = $derived(Math.floor(pos) % 8);
 
   const instrumentName = $derived(
-    pendulum ? { label: "Pendulum", provenance: "sourced" as const } : nameFor(knobs)
+    pendulum
+      ? { label: "Pendulum", provenance: "sourced" as const }
+      : nameFor(knobs)
   );
 
   function openInstrument() {
@@ -163,7 +167,8 @@
   let animating = $state(false);
 
   const reducedMotion = () =>
-    typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const step8 = (delta: number) => {
     playing = false;
@@ -208,7 +213,7 @@
     /* Normalised: the raw cursor runs unbounded while playing and negative mid-scrub. */
     cursor: pos,
     playing,
-    layers
+    layers,
   });
 
   /*
@@ -227,7 +232,7 @@
       pendulum,
       convention,
       playing,
-      layers
+      layers,
     ];
     saveQftSession(snapshot());
   });
@@ -304,17 +309,17 @@
   const DOWNBEAT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({
     value: String(n),
     label: String(n),
-    ariaLabel: `${n} prop rotation${n === 1 ? "" : "s"} per hand rotation`
+    ariaLabel: `${n} prop rotation${n === 1 ? "" : "s"} per hand rotation`,
   }));
 
   const SPIN_OPTIONS: Array<{ value: Spin; label: string }> = [
     { value: "inspin", label: "Inspin" },
-    { value: "antispin", label: "Antispin" }
+    { value: "antispin", label: "Antispin" },
   ];
 
   const CONVENTION_OPTIONS: Array<{ value: Convention; label: string }> = [
     { value: "charlie", label: "Charlie" },
-    { value: "drex", label: "Drex" }
+    { value: "drex", label: "Drex" },
   ];
 </script>
 
@@ -363,88 +368,94 @@
           <header>
             <h2>{instrumentName.label}</h2>
             <p class="spec">
-              {radius.toFixed(2)} prop lengths · {downbeats} prop rotation{downbeats === 1
+              {radius.toFixed(2)} prop lengths · {downbeats} prop rotation{downbeats ===
+              1
                 ? ""
                 : "s"} per hand rotation
             </p>
           </header>
 
-          <div class="instrument-body">
-            <div class="stage-box">
-              <QftStage
-                {knobs}
-                increments={instrumentIncrements}
-                cursor={pos}
-                {pendulum}
-                {layers}
+          <div class="stage-box">
+            <QftStage
+              {knobs}
+              increments={instrumentIncrements}
+              cursor={pos}
+              {pendulum}
+              {layers}
+            />
+          </div>
+
+          <div class="knobs">
+            <label class="knob" for="radius">
+              <span class="knob-label">Hand path radius</span>
+              <input
+                id="radius"
+                type="range"
+                min="0"
+                max="1.5"
+                step="0.05"
+                bind:value={radius}
+                oninput={() => (pendulum = false)}
               />
+            </label>
+
+            <div class="knob">
+              <span class="knob-label" id="downbeats-label"
+                >Prop rotations per hand rotation</span
+              >
+              <div class="fit">
+                <SegmentedControl
+                  options={DOWNBEAT_OPTIONS}
+                  value={String(downbeats)}
+                  onchange={(v) => {
+                    downbeats = Number(v);
+                    pendulum = false;
+                  }}
+                  size="sm"
+                  ariaLabelledby="downbeats-label"
+                />
+              </div>
             </div>
 
-            <div class="knobs">
-              <label class="knob" for="radius">
-                <span class="knob-label">Hand path radius</span>
-                <input
-                  id="radius"
-                  type="range"
-                  min="0"
-                  max="1.5"
-                  step="0.05"
-                  bind:value={radius}
-                  oninput={() => (pendulum = false)}
-                />
-              </label>
-
+            <div class="knob-row">
               <div class="knob">
-                <span class="knob-label" id="downbeats-label">Prop rotations per hand rotation</span
-                >
+                <span class="knob-label" id="spin-label">Direction</span>
                 <div class="fit">
                   <SegmentedControl
-                    options={DOWNBEAT_OPTIONS}
-                    value={String(downbeats)}
+                    options={SPIN_OPTIONS}
+                    value={spin}
                     onchange={(v) => {
-                      downbeats = Number(v);
+                      spin = v;
                       pendulum = false;
                     }}
                     size="sm"
-                    ariaLabelledby="downbeats-label"
+                    ariaLabelledby="spin-label"
                   />
                 </div>
               </div>
 
-              <div class="knob-row">
-                <div class="knob">
-                  <span class="knob-label" id="spin-label">Direction</span>
-                  <div class="fit">
-                    <SegmentedControl
-                      options={SPIN_OPTIONS}
-                      value={spin}
-                      onchange={(v) => {
-                        spin = v;
-                        pendulum = false;
-                      }}
-                      size="sm"
-                      ariaLabelledby="spin-label"
-                    />
-                  </div>
-                </div>
-
-                <div class="knob">
-                  <span class="knob-label" id="convention-label">Direction convention</span>
-                  <div class="fit">
-                    <SegmentedControl
-                      options={CONVENTION_OPTIONS}
-                      value={convention}
-                      onchange={(v) => (convention = v)}
-                      size="sm"
-                      ariaLabelledby="convention-label"
-                    />
-                  </div>
+              <div class="knob">
+                <span class="knob-label" id="convention-label"
+                  >Direction convention</span
+                >
+                <div class="fit">
+                  <SegmentedControl
+                    options={CONVENTION_OPTIONS}
+                    value={convention}
+                    onchange={(v) => (convention = v)}
+                    size="sm"
+                    ariaLabelledby="convention-label"
+                  />
                 </div>
               </div>
+            </div>
 
-              <div class="notation">
-                <QftTable increments={instrumentIncrements} activeStep={step} {compact} />
-              </div>
+            <div class="notation">
+              <QftTable
+                increments={instrumentIncrements}
+                activeStep={step}
+                {compact}
+              />
             </div>
           </div>
         </div>
@@ -470,25 +481,39 @@
   </nav>
 
   <div class="transport">
-    <button type="button" onclick={() => step8(-1)} aria-label="Previous increment">‹</button>
+    <button
+      type="button"
+      onclick={() => step8(-1)}
+      aria-label="Previous increment">‹</button
+    >
     <span class="counter">{step + 1} / 8</span>
-    <button type="button" onclick={() => step8(1)} aria-label="Next increment">›</button>
+    <button type="button" onclick={() => step8(1)} aria-label="Next increment"
+      >›</button
+    >
     <button type="button" class="play" onclick={() => (playing = !playing)}>
       {playing ? "Pause" : "Play"}
     </button>
 
     {#if compact && appMode === "guide"}
       <!-- Lives under the figure on wider screens; see QftGuidePane. -->
-      <button type="button" onclick={() => (showArchive = true)}>2011 diagram</button>
+      <button type="button" onclick={() => (showArchive = true)}
+        >2011 diagram</button
+      >
     {/if}
 
     {#if appMode === "guide"}
-      <button type="button" class="mode" onclick={openInstrument}>Turn the knobs</button>
+      <button type="button" class="mode" onclick={openInstrument}
+        >Turn the knobs</button
+      >
     {:else}
-      <button type="button" class="mode" onclick={() => selectMove(moveIndex)}>Back to guide</button>
+      <button type="button" class="mode" onclick={() => selectMove(moveIndex)}
+        >Back to guide</button
+      >
     {/if}
 
-    <button type="button" class="mode info" onclick={() => (showInfo = true)}>About</button>
+    <button type="button" class="mode info" onclick={() => (showInfo = true)}
+      >About</button
+    >
   </div>
 </div>
 
@@ -517,11 +542,16 @@
             href="https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
             rel="noreferrer"
             target="_blank">A Beginner's Guide to Prop QFT Notation</a
-          >, where they are still served. The forum copy of the same post lost every image.
+          >, where they are still served. The forum copy of the same post lost
+          every image.
         </p>
       </div>
       <div class="archive-controls">
-        <button type="button" class="close" onclick={() => (showArchive = false)}>Close</button>
+        <button
+          type="button"
+          class="close"
+          onclick={() => (showArchive = false)}>Close</button
+        >
       </div>
     </header>
 
@@ -529,7 +559,11 @@
       {#each GUIDE_MOVES as m (m.id)}
         <figure class:current={m.id === move.id}>
           <div class="archive-box" style={`--aspect: ${m.aspect}`}>
-            <QftFrames stem={m.stem} {step} alt={`${m.title}, as published in Drex's 2011 guide`} />
+            <QftFrames
+              stem={m.stem}
+              {step}
+              alt={`${m.title}, as published in Drex's 2011 guide`}
+            />
           </div>
           <figcaption>{m.title}</figcaption>
         </figure>
@@ -550,14 +584,16 @@
   <aside class="info-panel" aria-label="About QfT notation">
     <h2>QfT Notation</h2>
     <p>
-      A poi notation devised by Charlie Cushing and written up by Ben "DrexFactor" Drexler in 2011.
-      The guide was posted to the Home of Poi forum and to Drex's blog. The forum's copy has since
-      lost every image; the blog still serves them. Each move here runs against a model that computes
+      A poi notation devised by Charlie Cushing and written up by Ben
+      "DrexFactor" Drexler in 2011. The guide was posted to the Home of Poi
+      forum and to Drex's blog. The forum's copy has since lost every image; the
+      blog still serves them. Each move here runs against a model that computes
       the same move from the published rules.
     </p>
     <p class="note">
-      The article credits Charlie with devising the system and does not say who drew the diagrams, so
-      they are attributed to the guide rather than to a person.
+      The article credits Charlie with devising the system and does not say who
+      drew the diagrams, so they are attributed to the guide rather than to a
+      person.
     </p>
 
     <h3>Sources</h3>
@@ -575,13 +611,17 @@
     </ol>
 
     <p class="note">
-      As published, the direction column has two variants: Charlie's, in which a direction that does
-      not land on the eight-point compass is written <em>n</em>, and Drex's, in which direction is
-      always a right angle to the tether and every cell resolves. The guide uses Drex's; the
-      instrument offers both.
+      As published, the direction column has two variants: Charlie's, in which a
+      direction that does not land on the eight-point compass is written <em
+        >n</em
+      >, and Drex's, in which direction is always a right angle to the tether
+      and every cell resolves. The guide uses Drex's; the instrument offers
+      both.
     </p>
 
-    <button type="button" class="close" onclick={() => (showInfo = false)}>Close</button>
+    <button type="button" class="close" onclick={() => (showInfo = false)}
+      >Close</button
+    >
   </aside>
 {/if}
 
@@ -624,8 +664,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    /*
+     * `safe`, and scrollable. Four controls and the notation are taller than a
+     * 900px-high pane, and plain centring clips a too-tall child at BOTH ends
+     * with no way to reach either — the title went under the move chips and the
+     * last row of the table under the layer switches.
+     */
+    justify-content: safe center;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
     gap: clamp(0.75rem, 2vh, 1.5rem);
+    /* Sized off the viewport's height, like the guide's figure, so the stage
+       grows with the screen instead of sitting at one fixed size in a large
+       dark field (.claude/rules/4k-native-layout.md). */
+    --box-h: clamp(9rem, 30vh, 22rem);
   }
 
   .instrument header {
@@ -645,16 +698,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .instrument-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    gap: clamp(1rem, 3vh, 2rem);
-    width: 100%;
-  }
-
   .stage-box {
-    width: clamp(9rem, 30vh, 22rem);
+    height: var(--box-h);
     aspect-ratio: 1;
   }
 
@@ -744,17 +789,59 @@
     width: 100%;
   }
 
+  /*
+   * Wide screens: the same arrangement the guide uses, for the same reasons.
+   * The stage anchors the left at whatever height the viewport can give it, the
+   * title opens the column you read, and the knobs and the notation stack under
+   * it. The previous version centred a title band over a small stage and a much
+   * larger table, which at 4K read as a phone layout dropped into the middle of
+   * a monitor.
+   */
   @media (min-width: 90rem) and (min-height: 45rem) {
-    .instrument-body {
-      grid-template-columns: auto minmax(24rem, 34rem);
-      align-items: center;
-      justify-items: stretch;
-      column-gap: clamp(2rem, 4vw, 4rem);
-      width: auto;
+    .instrument {
+      /* Ceiling deliberately above any real screen, so the viewport governs and
+         the stage keeps growing rather than capping out at 4K. */
+      --box-h: clamp(16rem, 54vh, 64rem);
+      display: grid;
+      /*
+       * The ceiling is generous on purpose. rem already ramps with the viewport
+       * on this route, so a 38rem cap still left roughly 1100px of dead rail on
+       * either side at 3840 — the band has to grow with the screen, not just
+       * the type inside it (.claude/rules/4k-native-layout.md).
+       */
+      grid-template-columns: auto clamp(26rem, 32vw, 46rem);
+      grid-template-areas: "stage head" "stage knobs";
+      grid-template-rows: auto auto;
+      align-content: safe center;
+      justify-content: center;
+      column-gap: clamp(2rem, 4vw, 5rem);
+      row-gap: clamp(1rem, 2.5vh, 2rem);
+    }
+
+    .instrument header {
+      grid-area: head;
+      text-align: left;
+      align-self: end;
+    }
+
+    .instrument h2 {
+      font-size: clamp(2rem, 1.1rem + 2.2vw, 4.2rem);
+      line-height: 1.02;
+    }
+
+    .spec {
+      font-size: 0.95rem;
     }
 
     .stage-box {
-      width: clamp(14rem, 38vh, 30rem);
+      grid-area: stage;
+      align-self: center;
+    }
+
+    .knobs {
+      grid-area: knobs;
+      align-self: start;
+      width: auto;
     }
   }
 
@@ -938,7 +1025,8 @@
     overflow-y: auto;
     padding: 2rem clamp(1.25rem, 3vw, 2.5rem);
     background: var(--semantic-surface, #14162b);
-    border-left: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
+    border-left: 1px solid
+      var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
   }
 
   .info-panel h2 {
@@ -997,6 +1085,74 @@
     background: transparent;
     color: var(--semantic-text-primary, #fff);
     cursor: pointer;
+  }
+
+  /*
+   * The instrument carries four controls and the notation under its stage,
+   * which is more than a phone's shell can hold — it was running off the bottom
+   * and under the move chips at the top. The knobs are the point of this mode,
+   * so the pane scrolls here rather than being clipped, and the stage gives up
+   * the height to make the first control visible without scrolling at all.
+   */
+  @media (max-width: 48rem), (max-height: 32rem) {
+    .instrument {
+      --box-h: clamp(6rem, 24vh, 12rem);
+      justify-content: flex-start;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: none;
+    }
+  }
+
+  /*
+   * Wide and short — fold-open landscape, or a squashed laptop window. Stacking
+   * here put the title and a thumbnail-sized stage on screen with every control
+   * below the fold. Same answer as the guide: turn it on its side.
+   */
+  @media (min-width: 44rem) and (max-height: 32rem) {
+    .instrument {
+      --box-h: min(52vh, 11rem);
+      display: grid;
+      grid-template-columns: auto minmax(15rem, 32rem);
+      grid-template-areas: "stage head" "stage knobs";
+      grid-template-rows: auto auto;
+      /* `safe`, because at this height the knobs can be taller than the pane:
+         plain centring would push the title off the top with no way to scroll
+         back to it. */
+      align-content: safe center;
+      justify-content: center;
+      column-gap: clamp(1rem, 3vw, 2.5rem);
+      row-gap: 0.5rem;
+    }
+
+    .instrument header {
+      grid-area: head;
+      text-align: left;
+      align-self: end;
+    }
+
+    .instrument h2 {
+      font-size: clamp(1.1rem, 0.8rem + 1.4vw, 1.9rem);
+    }
+
+    .spec {
+      margin-top: 0.15rem;
+      font-size: 0.75rem;
+    }
+
+    .stage-box {
+      grid-area: stage;
+      /* Start, not centre: the knob column is the taller of the two here, and a
+         centred stage hangs below the fold with only its top edge on screen. */
+      align-self: start;
+    }
+
+    .knobs {
+      grid-area: knobs;
+      align-self: start;
+      width: auto;
+      gap: 0.5rem;
+    }
   }
 
   @media (max-width: 48rem) {
