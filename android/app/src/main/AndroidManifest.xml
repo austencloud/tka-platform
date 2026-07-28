@@ -39,6 +39,28 @@
                 <data android:pathPrefix="/sequence/" />
                 <data android:pathPrefix="/store/" />
             </intent-filter>
+
+            <!--
+                Share target. MIME types are narrowed to what the message composer
+                actually accepts (MessageAttachmentPicker: JPEG/PNG/WebP). Declaring
+                image/* would advertise TKA for HEIC - Android's default camera format -
+                which we would then have to reject after the user already chose us.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/webp" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/webp" />
+            </intent-filter>
         </activity>
 
         <provider

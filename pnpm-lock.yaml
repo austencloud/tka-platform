@@ -88,6 +88,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^8.0.2
         version: 8.0.2(@capacitor/core@8.4.2)
+      '@capgo/capacitor-share-target':
+        specifier: 8.0.44
+        version: 8.0.44(@capacitor/core@8.4.2)
       '@capgo/capacitor-updater':
         specifier: ^8.45.9
         version: 8.45.9(@capacitor/core@8.4.2)
@@ -925,6 +928,11 @@ packages:
 
   '@capacitor/status-bar@8.0.2':
     resolution: {integrity: sha512-WXs8YB8B9eEaPZz+bcdY6t2nForF1FLoj/JU0Dl9RRgQnddnS98FEEyDooQhaY7wivr000j4+SC1FyeJkrFO7A==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capgo/capacitor-share-target@8.0.44':
+    resolution: {integrity: sha512-0B2ZG2gO/KUj8lSmPhC3OfeH8/aLQGMK8ZaDARxJ++Ke2O8G8Jf48lur0O6v1AixbteqcqtGX4zPOExzWxrTsg==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -8710,6 +8718,10 @@ snapshots:
       '@capacitor/core': 8.4.2
 
   '@capacitor/status-bar@8.0.2(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
+
+  '@capgo/capacitor-share-target@8.0.44(@capacitor/core@8.4.2)':
     dependencies:
       '@capacitor/core': 8.4.2
 
