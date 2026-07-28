@@ -184,16 +184,10 @@
    * mangles the head and makes it taller than its neighbours in the row.
    *
    * Take the part before an em/en dash. The trailing half is only ever the
-   * medium restated, which the kind tag beside the header already says.
+   * medium restated, which the artwork itself already makes obvious.
    */
   const headerWord = $derived(label.split(/\s[—–-]\s/)[0]?.trim() || label);
 
-  const mediumLabel: Record<Medium, string> = {
-    sequence: "Sequence",
-    mandala: "Mandala",
-    scene: "3D scene",
-    tunnel: "Tunnel",
-  };
 </script>
 
 <div
@@ -211,7 +205,6 @@
        (never-hand-roll.md — this is the existing component, not a new one.) -->
   <header class="tile-head">
     <WordHeader word={headerWord} visible darkMode={!lightMode} />
-    <span class="kind" class:live={showLive}>{mediumLabel[medium]}</span>
   </header>
 
   <!-- Pointer + focus handlers live on the button, not the tile wrapper: it is
@@ -320,7 +313,7 @@
       <!-- No stored poster on CollectedMandala — it always renders from steps.
            `animate` is the only thing the token gates, so there is nothing to
            crossfade and nothing to remount. -->
-      <div class="poster">
+      <div class="poster mandala-poster">
         <SequenceMandala
           sequence={{ steps: mandala.steps }}
           mode="gallery"
@@ -329,6 +322,7 @@
           redPropType={mandala.redPropType}
           pathShape={mandala.pathShape ?? "arc"}
           animate={showLive}
+          animateRotation={0}
           darkMode={!lightMode}
           size={320}
         />
@@ -532,6 +526,37 @@
     object-fit: cover;
   }
 
+  /* A collection mandala must fill its square stage, at whatever size that
+     stage actually is.
+
+     Two bugs lived here. `size={320}` is a fixed pixel count, so on an archive
+     or collection tile (~165px at high column counts) the mandala rendered
+     bigger than its box and `overflow: hidden` cropped it — it looked like it
+     was escaping the container because it WAS. And `animate` switches
+     SequenceMandala from SVG to canvas: the SVG holds its aspect through its
+     viewBox, the canvas simply stretches to its CSS box, so a mandala turned
+     oval the moment it started animating and snapped round again on hover
+     (hover reveals the still card). Pinning both elements to a square box that
+     is 100% of the square stage fixes the crop and the squish together. */
+  /* No rotation on a tile (animateRotation={0}). SequenceMandala rotates 90deg
+     per undulation cycle by default, and a rotating square's bounding box grows
+     by |cos|+|sin| — up to 1.41x — so the mandala grew past the square stage
+     and got clipped on the diagonal the moment it began animating, then snapped
+     back to round on hover because hover stops it. Undulation alone animates
+     without ever leaving the box, which keeps the mandala as big as Austen
+     wants it AND inside its container. */
+  .mandala-poster {
+    width: 100%;
+    height: 100%;
+  }
+
+  .mandala-poster :global(.mandala-container),
+  .mandala-poster :global(canvas),
+  .mandala-poster :global(svg) {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
   .poster.empty {
     color: var(--theme-text-dim);
     font-size: 0.8125em;
@@ -540,35 +565,26 @@
   /* Header sits ON the tile, above the work. Reserved height (not intrinsic)
      so a one-glyph word and a long one give every tile in a row the same head
      and the grid baseline never jitters (no-layout-shift.md). */
+  /* Header sits ON the tile, above the work, CENTRED on the box it labels.
+     It briefly carried a medium tag on the right, which pushed the word off
+     that centre — and the tag was telling you what the artwork underneath
+     already shows. Removed: the word centres, and a mandala reads as a mandala
+     without being told.
+
+     Reserved height (not intrinsic) so a one-glyph word and a four-glyph word
+     give every tile in a row the same head (no-layout-shift.md). */
   .tile-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5em;
+    justify-content: center;
     min-width: 0;
     height: 2.75em;
     overflow: hidden;
   }
 
-  .tile-head :global(.word-header),
-  .tile-head > :global(:first-child) {
+  .tile-head > :global(*) {
     min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  .kind {
-    font-size: 0.6875em;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--theme-text-dim);
-    white-space: nowrap;
-    /* Reserved by the widest state so flipping to live never nudges the
-       label (no-layout-shift.md). */
-    transition: color var(--duration-normal) ease;
-  }
-
-  .kind.live {
-    color: var(--theme-accent);
+    max-width: 100%;
   }
 
   .size-sm .stage {
