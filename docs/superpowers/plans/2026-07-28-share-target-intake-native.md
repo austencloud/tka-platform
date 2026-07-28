@@ -89,8 +89,13 @@ the previous revision:
 | 1.14 | Record deleted; nothing is left behind | `share-intake-runner.ts` → `deleteIntake` | 11 |
 
 **Terminal state:** the sequence viewer overlay is open on the shared card, over
-`/create`. From there the viewer's own chrome supplies Add-to-collection and
-Send — the three affordances the spec asks for (spec:295-297).
+`/create` — that open viewer IS the View affordance. From there the viewer's
+own chrome supplies Save-to-library (`ViewerOverflowMenu.svelte:190-194`,
+`ViewerHeader.svelte:142-143`) and Send (`SequenceViewerShell.svelte:277`). The
+spec asks for View / Add to collection / Send (spec:295-297); Save-to-library is
+the accepted stand-in for Add-to-collection — the viewer's chrome has no
+collection-picker entry point at all (see Task 8's note and Known accepted
+limitations).
 **Bytes:** consumed. The record is deleted only at 1.14, after the viewer has
 the hydrated sequence. A crash anywhere in 1.10–1.13 leaves the bytes in
 IndexedDB and 1.9 replays on the next launch.
@@ -103,16 +108,16 @@ IndexedDB and 1.9 replays on the next launch.
 | 2.2–2.7 | Same as 1.3–1.8, minus the boot: the shell is already mounted | — | 13, 3, 5, 6, 12 |
 | 2.8 | `ShareIntakeHost`'s signal `$effect` fires; runner starts | `ShareIntakeHost.svelte` | 12 |
 | 2.9 | Classification yields three `image` items | `intake-classifier.ts` → `classifyIntake` | 7 |
-| 2.10 | **Auth gate.** Images need a full account (`MessageImageSender.ts:31-33` throws for `!user \|\| user.isAnonymous`). Signed in → continue | `share-intake-runner.ts` → `requiresFullAccount` | 11 |
-| 2.11 | Router opens the picker on image #1, carrying the intake's `receiptId`, and reports #2 and #3 as `queued` + `send-dropped` | `intake-router.ts` → `routeIntake` → `openSendAttachmentSheet` | 10, 9 |
+| 2.10 | **Auth gate.** Images need a full account (`services/implementations/MessageImageSender.ts:32-34` throws for `!user \|\| user.isAnonymous`). Signed in → continue | `share-intake-runner.ts` → `requiresFullAccount` | 11 |
+| 2.11 | Router opens the picker on image #1, carrying the intake's `receiptId`, reports #2 and #3 as `queued` + `send-dropped`, and toasts the count | `intake-router.ts` → `routeIntake` → `openSendAttachmentSheet` | 10, 9 |
 | 2.12 | Runner sets status `ready` and **keeps the record**. It does not delete on picker-open | `share-intake-runner.ts` | 11 |
 | 2.13 | User picks a conversation, hits Send; the sheet uploads via `getMessageImageSender().send(...)` | `SendAttachmentSheet.svelte` → `send()` | 9 |
 | 2.14 | `onSent` → drawer resolves the intake: two files still queued → status `partially-sent`, record kept, problems visible | `InboxDrawer.svelte` → `handleSequenceSent` → `completeShareIntake` | 9, 11 |
 
 **Terminal state:** image #1 is in the conversation; the record survives as
 `partially-sent` carrying two `send-dropped` problems for #2 and #3, and the
-sheet's error surface has already told the user. Re-opening the app replays
-2.8 for the remaining files.
+router's toast has already told the user the other two are saved rather than
+lost. Re-opening the app replays 2.8 for the remaining files.
 **Bytes:** all three survive until the user has seen what happened to each.
 Cancelling the picker, reloading, or force-stopping mid-flow leaves the record
 `ready` with every byte intact — the previous revision deleted the record when
@@ -127,7 +132,7 @@ the picker **opened**, leaving the only copy in an in-memory `File` on
 | 3.10 | **Auth gate fires.** `authState.isFullAccount` is false and the classification contains an `image` item | `share-intake-runner.ts` → `requiresFullAccount` | 11 |
 | 3.11 | Status → `needs-auth`. Nothing is routed. The record is exempt from the 1 h TTL and from quota eviction | `intake-store.ts` → `NEEDS_AUTH_TTL_MS`, `makeRoomFor` | 6 |
 | 3.12 | **Visible prompt**: the auth drawer opens on sign-in with share-specific copy, plus a toast | `authDrawerState.show("signin", "share-image-signin")` | 11 |
-| 3.13 | User taps the emailed link. Best case it deep-links into the running app and `EmailLinkConfirmModal` completes in place (`AppShellLoader.svelte:35-37`); worst case the process was killed and this is a fresh cold start. Both are covered because the bytes are in IndexedDB, not in memory | `email-link-completion.ts` → `completeEmailLinkSignIn` | — |
+| 3.13 | User taps the emailed link. Best case it deep-links into the running app and `EmailLinkConfirmModal` completes in place (`AppShellLoader.svelte:35-37`); worst case the process was killed and this is a fresh cold start. Both are covered because the bytes are in IndexedDB, not in memory | `auth/services/email-link-completion.ts` → `completeEmailLinkSignIn` | — |
 | 3.14 | `onAuthStateChanged` updates `authState` (`auth-state.svelte.ts:400`) | — | — |
 | 3.15 | **The resume point.** `ShareIntakeHost`'s `$effect` on `authState.isFullAccount` re-fires and calls the runner. On a cold start its `onMount` does the same | `ShareIntakeHost.svelte` | 12 |
 | 3.16 | Gate now passes; trace 2 resumes at 2.11 | — | 10, 11 |
@@ -139,7 +144,8 @@ check — and `needs-auth` is the one status exempt from both the TTL and quota
 eviction, so nothing can reap them during the round trip.
 
 **Correction worth recording:** completing a magic link is **not** a full page
-reload. `email-link-completion.ts:249-253` uses `window.history.replaceState`
+reload. `src/lib/shared/auth/services/email-link-completion.ts:249-253` uses
+`window.history.replaceState`
 to strip the consumed Firebase params and stays on the same route; there is no
 `window.location` assignment, no `reload()`, no `goto()`. The durability
 requirement stands anyway — the round trip leaves the app for an email client,
@@ -590,7 +596,7 @@ into WebView memory and only then rejected.
 **Files:**
 - Create: `src/lib/shared/inbox/domain/image-attachment-limits.ts`
 - Modify: `src/lib/shared/inbox/components/messages/MessageAttachmentPicker.svelte:9-11`
-- Modify: `src/lib/shared/share-intake/domain/share-intake-models.ts` (add `IntakeProblem`, `SharedIntake.problems`)
+- Modify: `src/lib/shared/share-intake/domain/share-intake-models.ts` (add `IntakeProblem`, `SharedIntake.problems`; drop the unwritten `"expired"` status)
 - Create: `src/lib/shared/share-intake/services/intake-validator.ts`
 - Test: `tests/unit/share-intake/intake-validator.test.ts`
 
@@ -654,10 +660,37 @@ and add this import next to the other `../../domain/` import (line 6):
 
 Nothing else in the file changes — the three identifiers keep their names.
 
-- [ ] **Step 3: Add `IntakeProblem` to the domain model**
+- [ ] **Step 3: Add `IntakeProblem` to the domain model, and drop the dead `expired` status**
 
-In `src/lib/shared/share-intake/domain/share-intake-models.ts`, insert after the
-`SharedFileDescriptor` interface:
+`ShareIntakeStatus` (committed in Task 2) carries an `"expired"` member that no
+code ever writes: `reapExpired` (Task 6) **deletes** a stale record outright —
+it never sets a status. A status value nothing produces is dead weight on an
+exhaustive union; remove it here while the file is already being touched.
+
+In `src/lib/shared/share-intake/domain/share-intake-models.ts`, change:
+
+```ts
+export type ShareIntakeStatus =
+  | "received"
+  | "needs-auth"
+  | "ready"
+  | "partially-sent"
+  | "failed"
+  | "expired";
+```
+
+to:
+
+```ts
+export type ShareIntakeStatus =
+  | "received"
+  | "needs-auth"
+  | "ready"
+  | "partially-sent"
+  | "failed";
+```
+
+Then, still in the same file, insert after the `SharedFileDescriptor` interface:
 
 ```ts
 /**
@@ -1043,7 +1076,12 @@ Expected: PASS, 18 tests.
 Run: `npx svelte-check --tsconfig ./tsconfig.json --threshold error --output human 2>&1 | grep -iE "MessageAttachmentPicker|image-attachment-limits" | head -20`
 Expected: no output (no errors mentioning either file).
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 9: Confirm the dead status is gone**
+
+Run: `grep -n "expired" src/lib/shared/share-intake/domain/share-intake-models.ts`
+Expected: no output.
+
+- [ ] **Step 10: Commit**
 
 ```bash
 git commit -m "feat(share-intake): shared image limits, problem records, two-stage validation gate" -- src/lib/shared/inbox/domain/image-attachment-limits.ts src/lib/shared/inbox/components/messages/MessageAttachmentPicker.svelte src/lib/shared/share-intake/domain/share-intake-models.ts src/lib/shared/share-intake/services/intake-validator.ts tests/unit/share-intake/intake-validator.test.ts
@@ -1085,8 +1123,8 @@ Run: `grep -n "detect(image" node_modules/barcode-detector/dist/es/core.d.ts && 
 
 Expected:
 ```
-21:    detect(image: ImageBitmapSourceWebCodecs): Promise<DetectedBarcode[]>;
-4:export type ImageBitmapSourceWebCodecs = CanvasImageSourceWebCodecs | Blob | ImageData;
+20:    detect(image: ImageBitmapSourceWebCodecs): Promise<DetectedBarcode[]>;
+3:export type ImageBitmapSourceWebCodecs = CanvasImageSourceWebCodecs | Blob | ImageData;
 ```
 
 - [ ] **Step 2: Widen the interface**
@@ -1594,7 +1632,7 @@ Seven defects earlier revisions shipped, all fixed here:
   another tab left the promise pending forever and hung every caller.
 - **A new connection per operation** — `reapExpired` opened N+1 of them. The
   repo's own pattern is a cached `dbPromise`
-  (`thumbnail-local-cache.ts:47-53`); follow it.
+  (`thumbnail-local-cache.ts:40-55`); follow it.
 - **`updateStatus` read and wrote in separate transactions** (lost update) and
   silently succeeded when the record was gone.
 - **No aggregate quota.** Every comparable store in the repo caps
@@ -2188,9 +2226,10 @@ git commit -m "feat(share-intake): durable byte-backed IndexedDB store with quot
 whether trace 1 (card → viewer) or trace 2 (image → picker) applies.
 
 Routes through the **existing** scan path — `extractScanCode`
-(`src/lib/shared/qr/services/extract-scan-code.ts:16`), which is what
-`ScanCardSheet.svelte:151` uses. It returns `null` for any QR that is not a TKA
-card, so a random QR is not a failure; it falls through to the image path.
+(`src/lib/shared/qr/services/extract-scan-code.ts:17`), which is what
+`src/lib/features/browse/collections/components/ScanCardSheet.svelte:159` uses.
+It returns `null` for any QR that is not a TKA card, so a random QR is not a
+failure; it falls through to the image path.
 
 Five defects the first draft shipped:
 
@@ -2610,9 +2649,20 @@ record. For a `docBacked` card **nothing observable happens at all** — the use
 shares a photo of a card, the app opens, and the screen shows `/create`.
 
 The spec asks for View / Add to collection / Send (spec:295-297). Opening the
-sequence viewer overlay delivers all three: `SequenceViewerShell` already
-carries add-to-collection and send-to in its own chrome, so a bespoke
-three-button sheet would be a hand-rolled duplicate of a surface that exists
+sequence viewer overlay delivers View by construction, and its chrome already
+carries Save-to-library (`ViewerOverflowMenu.svelte:190-194`,
+`ViewerHeader.svelte:142-143`) and Send (`SequenceViewerShell.svelte:277`).
+
+**Correction:** the viewer's chrome does NOT carry an add-to-collection action.
+Grepping the whole `sequence-viewer` tree for `openCollectionPicker` /
+`CollectionPicker` turns up nothing; the collection picker's only caller
+anywhere in the codebase is `ChoreoCardThumbnail.svelte`
+(`collection-picker-state.svelte.ts:49` → `openCollectionPicker`). Save-to-library
+is the accepted stand-in: it is the affordance the viewer actually has, and the
+gap — no add-to-collection from a filed card — is recorded in Known accepted
+limitations rather than built around. A bespoke three-button sheet would still
+be a hand-rolled duplicate of the View/Send surface that already exists, so it
+is not the fix for the missing third button either
 (`.claude/rules/never-hand-roll.md`, `.claude/rules/sequence-viewer-shell.md`).
 
 **Reuse evidence.** Greps run before writing anything here:
@@ -2824,10 +2874,10 @@ omitting it is a type error, which is the point):
 
 ```ts
   // Share intake, trace 3: the user shared an image while signed out.
-  // MessageImageSender.ts:31-33 rejects anonymous/guest uploads outright, so
-  // this is a hard requirement, not a nudge. Phrased as the ask rather than
-  // the refusal - the bytes are already safe in IndexedDB and the send resumes
-  // by itself once they are in.
+  // services/implementations/MessageImageSender.ts:32-34 rejects anonymous/guest
+  // uploads outright, so this is a hard requirement, not a nudge. Phrased as
+  // the ask rather than the refusal - the bytes are already safe in IndexedDB
+  // and the send resumes by itself once they are in.
   "share-image-signin":
     "Create a free account to send the image you shared. It's saved until you do.",
 ```
@@ -3652,7 +3702,8 @@ Seven defects earlier revisions shipped:
   killed routing for every other item. Each await is wrapped.
 - **`ResolvedCard.sequence` was typed `unknown`**, discarding the very type
   needed to file a printed (non-`docBacked`) card the way
-  `ScanCardSheet.svelte:172-200` does.
+  `ScanCardSheet.svelte:172-227` (the `if (!resolution.docBacked)` branch of
+  `handleHit`) does.
 - **`residualText` was documented as prefilled message text and never read.**
 - **Codes were not deduped across the image/text merge** — the same card
   photographed *and* linked resolved twice.
@@ -3715,6 +3766,9 @@ vi.mock("$lib/features/library/get-library-save-service", () => ({
   getLibrarySaveService: () => ({ saveSequence }),
 }));
 
+const toast = { info: vi.fn(), error: vi.fn() };
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({ toast }));
+
 import { routeIntake } from "$lib/shared/share-intake/services/intake-router";
 import type { IntakeClassification } from "$lib/shared/share-intake/domain/share-intake-models";
 
@@ -3745,6 +3799,8 @@ describe("routeIntake", () => {
     saveSequence.mockReset();
     getShortCodeManager.mockReset();
     getShortCodeManager.mockReturnValue({ resolveForImport });
+    toast.info.mockReset();
+    toast.error.mockReset();
   });
 
   it("opens the conversation picker for a plain image", async () => {
@@ -3862,7 +3918,7 @@ describe("routeIntake", () => {
   });
 
   it("saves a printed (non-doc-backed) card to the library before filing it", async () => {
-    // ScanCardSheet:172-200 does exactly this. Without it the "card" points at
+    // ScanCardSheet.svelte:172-227 does exactly this. Without it the "card" points at
     // nothing.
     resolveForImport.mockResolvedValue({
       sequence: { id: "inline", word: "ABC" },
@@ -4039,6 +4095,37 @@ describe("routeIntake", () => {
     const result = await routeIntake(classification(), null, CONTEXT);
     expect(result.opened).toBeNull();
   });
+
+  it("toasts the count of images left queued behind the picker", async () => {
+    // The router is the only place that knows how many images did NOT reach a
+    // screen. Without this the user sees one picker open and nothing else -
+    // the other two files are gone as far as they can tell.
+    await routeIntake(
+      classification({
+        items: [
+          { kind: "image", file: png("a.png") },
+          { kind: "image", file: png("b.png") },
+          { kind: "image", file: png("c.png") },
+        ],
+      }),
+      null,
+      CONTEXT
+    );
+
+    expect(toast.info).toHaveBeenCalledWith(
+      "2 more images are saved — share again to send them."
+    );
+  });
+
+  it("says nothing when only one image was shared and none are queued", async () => {
+    await routeIntake(
+      classification({ items: [{ kind: "image", file: png("a.png") }] }),
+      null,
+      CONTEXT
+    );
+
+    expect(toast.info).not.toHaveBeenCalled();
+  });
 });
 ```
 
@@ -4055,6 +4142,7 @@ Create `src/lib/shared/share-intake/services/intake-router.ts`:
 import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 import { openSendAttachmentSheet } from "$lib/shared/inbox/state/send-sequence-state.svelte";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   IntakeClassification,
@@ -4199,7 +4287,8 @@ export async function routeIntake(
         type: "image",
         file: first.file,
         // Same id shape MessageComposer.selectImage uses, and the same shape
-        // the Storage staging path in MessageImageSender.ts:37-39 expects.
+        // the Storage staging path in
+        // services/implementations/MessageImageSender.ts:37-39 expects.
         messageId: crypto.randomUUID(),
         attachmentId: crypto.randomUUID(),
       },
@@ -4216,6 +4305,18 @@ export async function routeIntake(
     for (const item of rest) {
       queued.push(item.file);
       problems.push({ name: item.file.name, reason: "send-dropped" });
+    }
+
+    // The picker only ever shows ONE image. Without this, the other N images
+    // in a SEND_MULTIPLE share vanish from the user's point of view - they see
+    // one picker open and nothing else. Mirrors openFiledCard's extraCards
+    // toast (Task 8) for the image side of the same problem.
+    if (rest.length > 0) {
+      toast.info(
+        rest.length === 1
+          ? "1 more image is saved — share again to send it."
+          : `${rest.length} more images are saved — share again to send them.`
+      );
     }
   }
 
@@ -4237,7 +4338,7 @@ async function fileCard(
 
   // No referenceable doc behind this card (printed deck cards): save it to My
   // Library under the normal public default, then file it. Exactly the branch
-  // ScanCardSheet.svelte:172-200 takes.
+  // ScanCardSheet.svelte:172-227 takes.
   const name = resolution.sequence.word || resolution.sequence.name || "Sequence";
   const saved = await getLibrarySaveService().saveSequence(resolution.sequence, {
     name,
@@ -4258,7 +4359,7 @@ async function fileCard(
 - [ ] **Step 4: Run it and watch it pass**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/intake-router.test.ts`
-Expected: PASS, 17 tests.
+Expected: PASS, 18 tests.
 
 - [ ] **Step 5: Prove no destination was left dangling**
 
@@ -4320,8 +4421,9 @@ Lifecycle, explicitly:
 
 **The auth gate is whole-intake, and that is a decision.** It fires when the
 classification contains at least one `image` item, because
-`MessageImageSender.ts:31-33` throws `"Sign in with an account to send images."`
-for `!user || user.isAnonymous`. A mixed card+image share therefore waits for
+`services/implementations/MessageImageSender.ts:32-34` throws
+`"Sign in with an account to send images."` for `!user || user.isAnonymous`. A
+mixed card+image share therefore waits for
 sign-in even though the card alone would not need it. The alternative — route
 the cards now, hold the images — means the next run after sign-in must know
 which cards it already filed, which is per-item progress state on the record.
@@ -4692,8 +4794,8 @@ import {
  * re-open its picker or the share is silently stranded. Within a session the
  * in-picker guard below stops it re-opening on top of itself.
  *
- * `failed` and `expired` are NOT in the set: a failed record must not be
- * retried in a loop. The TTL reaps it.
+ * `failed` is NOT in the set: a failed record must not be retried in a loop.
+ * The TTL reaps it.
  */
 const UNCONSUMED: readonly ShareIntakeStatus[] = ["received", "needs-auth", "ready"];
 
@@ -4733,8 +4835,9 @@ export function scheduleIntakeRun(): Promise<void> {
 }
 
 /**
- * An image cannot be sent without a full account: MessageImageSender.ts:31-33
- * throws for `!user || user.isAnonymous`. Cards can - resolveForImport takes
+ * An image cannot be sent without a full account:
+ * services/implementations/MessageImageSender.ts:32-34 throws for
+ * `!user || user.isAnonymous`. Cards can - resolveForImport takes
  * `userId: string | null` and ScanCardSheet files printed cards for guests.
  */
 function requiresFullAccount(classification: IntakeClassification): boolean {
@@ -5325,6 +5428,9 @@ vi.mock("$lib/shared/share-intake/state/share-intake-signal.svelte", () => ({
   bumpIntakeSignal: () => bumpIntakeSignal(),
 }));
 
+const toast = { info: vi.fn(), error: vi.fn() };
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({ toast }));
+
 import {
   registerNativeShareTarget,
   whenIdle,
@@ -5521,6 +5627,7 @@ Create `src/lib/shared/share-intake/services/native-share-adapter.ts`:
 
 ```ts
 import { CapacitorShareTarget } from "@capgo/capacitor-share-target";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { deriveReceiptId } from "../domain/derive-receipt-id";
 import type {
   SharedFileDescriptor,
@@ -5572,7 +5679,7 @@ const handling = new Set<Promise<void>>();
  * simultaneous shares of same-named files distinct content:// uris that a
  * name+mime key would wrongly merge.
  */
-export function deriveDeliveryKey(event: ShareReceivedEvent): string {
+function deriveDeliveryKey(event: ShareReceivedEvent): string {
   const files = event.files ?? [];
   const base = deriveReceiptId({ files, texts: event.texts ?? [] });
   // Length-prefixed for the same reason deriveReceiptId prefixes its fields:
@@ -5643,7 +5750,12 @@ async function handleShareReceived(event: ShareReceivedEvent): Promise<void> {
     texts,
   });
 
-  // Second delivery of a share already persisted in an earlier session.
+  // Second delivery of a share already persisted in an earlier session. Known
+  // gap: if that existing record is `failed` or `needs-auth`, this bails out
+  // with no signal bump and no bumped visibility - see Known accepted
+  // limitations. A genuinely fresh share is unaffected; receiptId is
+  // content-derived, so re-sharing the SAME bytes is indistinguishable from
+  // the earlier delivery replaying.
   if (await getIntake(receiptId)) return;
 
   const problems = [...screen.problems, ...bridgeProblems, ...gate.problems];
@@ -5671,8 +5783,13 @@ async function handleShareReceived(event: ShareReceivedEvent): Promise<void> {
     await putIntake(record);
   } catch (caught) {
     // Quota, a blocked upgrade, or a store full of pending sign-in shares.
-    // Loud rather than silent, per the store's own honesty note.
+    // This is the one arrival exit where the bytes exist only in the
+    // plugin's own cache dir with no record of them anywhere else, so a
+    // console line alone would leave the user staring at "nothing happened"
+    // with no way to know why. Loud on both channels, per the store's own
+    // honesty note.
     console.error("[ShareIntake] Could not persist the share:", caught);
+    toast.error("Couldn't save what you shared. Try sharing it again.");
     return;
   }
 
@@ -5715,11 +5832,11 @@ including `bootIntoApp()` — exactly as it is:
 		// ShareIntakeHost - mounted inside MainApplication, beside the drawers a
 		// share actually opens - runs the pipeline.
 		//
-		// bootIntoApp() below stays UNCONDITIONAL. An earlier revision skipped it
-		// when a share was pending, which left the app on "/" - the marketing
-		// landing (src/routes/+page.svelte) - where InboxDrawer and
-		// SequenceViewerDrawerHost do not exist, so the share opened as state
-		// nothing rendered.
+		// The unconditional boot-into-app-shell call below is unchanged by this
+		// edit. An earlier revision skipped it when a share was pending, which
+		// left the app on "/" - the marketing landing (src/routes/+page.svelte) -
+		// where InboxDrawer and SequenceViewerDrawerHost do not exist, so the
+		// share opened as state nothing rendered.
 		const { ensureShareTargetRegistered } = await import(
 			"$lib/shared/share-intake/get-share-intake"
 		);
@@ -5755,7 +5872,7 @@ git commit -m "feat(share-intake): native adapter with synchronous dedup, and al
 
 Run: `npx vitest run --config tests/config/vitest.config.ts tests/unit/share-intake/`
 
-Expected: PASS — **11 files, 129 tests** (10 + 18 + 13 + 13 + 16 + 6 + 8 + 17 + 14 + 5 + 9):
+Expected: PASS — **11 files, 130 tests** (10 + 18 + 13 + 13 + 16 + 6 + 8 + 18 + 14 + 5 + 9):
 
 | File | Tests | Task |
 |---|---|---|
@@ -5766,7 +5883,7 @@ Expected: PASS — **11 files, 129 tests** (10 + 18 + 13 + 13 + 16 + 6 + 8 + 17 
 | `intake-classifier.test.ts` | 16 | 7 |
 | `open-filed-card.test.ts` | 6 | 8 |
 | `inbox-attachment-share.test.ts` | 8 | 9 |
-| `intake-router.test.ts` | 17 | 10 |
+| `intake-router.test.ts` | 18 | 10 |
 | `share-intake-runner.test.ts` | 14 | 11 |
 | `share-intake-host-contract.test.ts` | 5 | 12 |
 | `native-share-adapter.test.ts` | 9 | 13 |
@@ -5979,4 +6096,21 @@ Recorded so nobody rediscovers them as bugs. Full detail in the spec's Spike res
   uri without hashing content, and it is bounded by the store's TTL.
 - **No `ClipData`.** Some share sources will deliver nothing. With this plan
   that is a `failed` record plus a console warning rather than silence.
+- **The viewer's chrome has no add-to-collection action.** The spec asks for
+  View / Add to collection / Send from a filed card (spec:295-297);
+  Save-to-library (`ViewerOverflowMenu.svelte:190-194`,
+  `ViewerHeader.svelte:142-143`) is the accepted stand-in. Adding a
+  collection-picker entry point to the viewer chrome — the only existing
+  caller is `ChoreoCardThumbnail.svelte` — is a feature in its own right and
+  out of scope here.
+- **Re-sharing content that already has a `failed` or `needs-auth` record is a
+  silent no-op.** `handleShareReceived`'s dedup check
+  (`if (await getIntake(receiptId)) return;`) fires for ANY existing record
+  with that receiptId, not only unconsumed ones. A user who re-shares after a
+  routing failure, or shares the same bytes again while an earlier signed-out
+  share is still pending, gets no signal, no toast, and no new attempt — the
+  stale record just sits there until its TTL reaps it. Content-derived ids
+  make this hard to fix cheaply: distinguishing "replay of the same delivery"
+  from "the user deliberately tried again" needs either a retry affordance on
+  the existing record or a nonce the plugin does not give us.
 - The PWA half is not built. Installed-PWA users get no share target yet.
