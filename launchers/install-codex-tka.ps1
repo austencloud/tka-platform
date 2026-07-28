@@ -259,14 +259,14 @@ try {
     # Entering codex-rs makes rustup honor the release's rust-toolchain.toml.
     if (-not $SkipTests) {
         Write-Host 'Testing the patched status renderer...'
-        Invoke-Native { cargo test -p codex-tui status_line_style } 'Status renderer tests'
+        Invoke-Native { cargo test -p codex-tui --lib status_line_style } 'Status renderer tests'
 
         Write-Host 'Testing manual terminal titles...'
-        Invoke-Native { cargo test -p codex-tui terminal_title } 'Terminal title tests'
+        Invoke-Native { cargo test -p codex-tui --lib terminal_title } 'Terminal title tests'
 
         Write-Host 'Testing generated and explicit renames...'
-        Invoke-Native { cargo test -p codex-tui thread_name_generation } 'Generated rename tests'
-        Invoke-Native { cargo test -p codex-tui rename } 'Rename interaction tests'
+        Invoke-Native { cargo test -p codex-tui --lib thread_name_generation } 'Generated rename tests'
+        Invoke-Native { cargo test -p codex-tui --lib rename } 'Rename interaction tests'
     }
 
     if ($DevelopmentBuild) {

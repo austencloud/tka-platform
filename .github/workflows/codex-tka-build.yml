@@ -22,7 +22,9 @@ permissions:
 jobs:
   windows-x64:
     runs-on: windows-2025
-    timeout-minutes: 90
+    # A clean hosted runner compiles both the targeted tests and release binary.
+    # Codex 0.145.0 exceeded the previous 90-minute limit during release linking.
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4
