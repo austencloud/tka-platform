@@ -80,7 +80,11 @@ export class ScanActivityWatcher implements IScanActivityWatcher {
               lat: toFiniteOrNull(data.lat),
               lng: toFiniteOrNull(data.lng),
               deviceId:
-                typeof data.deviceId === "string" ? data.deviceId : null,
+                typeof data.deviceHash === "string"
+                  ? data.deviceHash
+                  : typeof data.deviceId === "string"
+                    ? data.deviceId
+                    : null,
               userId: typeof data.userId === "string" ? data.userId : null,
               bluePropType:
                 parsePropTypeFromURLValue(data.bluePropType) ?? null,
