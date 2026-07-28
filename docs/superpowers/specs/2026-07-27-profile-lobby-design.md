@@ -179,6 +179,54 @@ This is a verification criterion, not a new mechanism.
   Whichever source is used, the doorway's count MUST be derived from the same
   pool the handoff lands in. A count from one source over a doorway into
   another is the defect this whole finding is about.
+
+  **RESOLVED AGAIN 2026-07-28, from the code rather than a browser.** The
+  prerequisite above was going to be answered by measuring two counts in a
+  running app. Reading the seam answered it better, and overturned the shape
+  the implementation plan assumed:
+
+  - **There is no `/browse?source=…` URL to hand off to.** Browse is a module
+    panel reached through `handleModuleChange("browse", tab)`; its gallery
+    sub-screen persists in `sessionStorage`, and nothing in the path reads
+    query params. A URL-based handoff would have to be built first.
+  - **The gallery engine cannot be put in `my-library` at all.**
+    `BrowseModule.svelte:75-89` constructs it with `sources: ["community"]`,
+    and the engine sanitizes a persisted `my-library` back to community. So
+    "send your own profile to Browse with `source: my-library`" is not
+    available on that surface.
+  - **The own-library surface that DOES exist is Browse › Library › the "All"
+    shelf** (`MyCollectionsPanel.svelte:120-131` → `AllLibraryView.svelte`,
+    an engine pinned to `sources: ["my-library"]`). Its pool is
+    `getLibraryRepository().getSequences()`, which is literally
+    `getUserSequences(ownUid)` (`library-repository.ts:1099-1104`) — the same
+    call the Archive counts. **The counts match by construction**, not by
+    coincidence, which is exactly the invariant this section demands.
+  - **The visitor case is gated by Firestore, not by preference.**
+    `firestore.rules:462` allows a read of `users/{id}/sequences/{seq}` only
+    when `visibility == 'public'`, or to the owner, or to an admin. A query
+    with no `visibility` clause is not provably satisfiable, so
+    `getUserSequences(otherId, {})` — what `ProfileStage.svelte:67` issues
+    today — is **rejected for any non-admin visitor**, and the whole stage
+    falls into its error state. Austen never saw it because he is admin.
+
+  So the resolved handoffs are:
+
+  | Case | Doorway count reads | Handoff lands on |
+  |---|---|---|
+  | Own profile | `getUserSequences(uid, {})` — the private library | Browse › Library › **All** shelf (`viewCollectionDetail("all", "All")`) |
+  | Another creator | `getUserSequences(id, { visibility: "public" })` — their published work | Browse › Gallery, `OWNER` filter applied to their display name |
+
+  The visitor row also repairs the rejected-query defect above, and it is what
+  keeps that doorway honest: a visitor is shown the count of the published work
+  the handoff will actually show them.
+
+  One consequence for the plan: **`GalleryDrill` does not need an
+  `initialSection` prop.** That prop existed to open the drill on its author
+  list so the visitor could pick the creator — but the creator is already
+  known, so the handoff applies the `OWNER` filter directly through the
+  engine (the same call the drill's own author row makes,
+  `GalleryDrill.svelte:872`) and lands on the grid. Making the user choose
+  something we already know would be the handoff failing at its one job.
 - **Collections (past threshold) → `CollectionGalleryDetail`**, scoped to this
   user, opened on the medium that was showing when the handoff was taken (the
   filter chips already track this).
