@@ -5,10 +5,11 @@
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
   import type { MessageImageSendProgress } from "$lib/shared/messaging/services/contracts/IMessageImageSender";
-
-  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-  const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-  const IMAGE_ACCEPT = IMAGE_TYPES.join(",");
+  import {
+    MAX_IMAGE_BYTES,
+    IMAGE_TYPES,
+    IMAGE_ACCEPT,
+  } from "../../domain/image-attachment-limits";
 
   interface Props {
     attachment: PendingMessageAttachment | null;

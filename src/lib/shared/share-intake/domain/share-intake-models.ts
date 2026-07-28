@@ -6,8 +6,7 @@ export type ShareIntakeStatus =
   | "needs-auth"
   | "ready"
   | "partially-sent"
-  | "failed"
-  | "expired";
+  | "failed";
 
 /** A file as the plugin hands it to us: a path, not bytes. */
 export interface SharedFileDescriptor {
@@ -15,6 +14,33 @@ export interface SharedFileDescriptor {
   name: string;
   mimeType: string;
   size?: number;
+}
+
+/**
+ * Why one piece of a share did not make it. Every drop in the pipeline pushes
+ * one of these onto the intake and logs it. A bare `return` that swallows a
+ * file is the failure mode this type exists to make impossible.
+ */
+export type IntakeProblemReason =
+  | "unsupported-type"
+  | "too-large"
+  | "empty"
+  | "too-many"
+  | "unreachable"
+  | "not-found"
+  | "text-truncated"
+  | "title-truncated"
+  | "decode-failed"
+  | "resolve-failed"
+  | "route-failed"
+  | "send-dropped";
+
+export interface IntakeProblem {
+  /** The file (or code) this concerns. Empty string when it concerns the share itself. */
+  name: string;
+  reason: IntakeProblemReason;
+  /** Technical detail for the console. Never rendered raw to the user. */
+  detail?: string;
 }
 
 /** Normalized payload. Everything downstream is platform-blind. */
@@ -26,6 +52,8 @@ export interface SharedIntake {
   title?: string;
   status: ShareIntakeStatus;
   receivedAt: number;
+  /** Everything that was dropped, truncated, or failed. Never empty silently. */
+  problems: IntakeProblem[];
 }
 
 /**
