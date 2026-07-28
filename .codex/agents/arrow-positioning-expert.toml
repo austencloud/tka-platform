@@ -77,6 +77,25 @@ entirely. Key differences from the full-motion cascade:
   `static/data/arrow_placement/diamond/default/default_diamond_{mt}_half_placements.json`,
   shape `{ "<mt>": { "<turns>": [x, y] } }` — no layer/positionType axis.
   This is distinct from tier-5 manual adjustment (screen-space, per-beat).
+- **Segment placements are GRID-MODE-INVARIANT** (canon, 2026-07-25). Because the
+  stored value is glyph-local and gets rotated with the glyph, one
+  `(motionType, turns)` value serves every location, direction, AND grid mode.
+  The four diamond `_half` files above are the **single source of truth for ALL
+  grid modes**. `arrow-placer.ts` `filesFor()` deliberately hardcodes the
+  `/diamond/default/default_diamond_{mt}_half_placements.json` path for the
+  segment buckets regardless of the requested grid mode — box (and any future
+  grid) reads the diamond data on purpose. **Never author
+  `default_box_*_half_placements.json`** (or a per-grid copy for skewed/centric/
+  trigrid/8point): a second source would contradict the coverage oracle
+  (`scripts/half-domain-coverage.mjs`) and the WASD authoring harness
+  (`/test/half-movements` + its save endpoint), both diamond-only by design.
+  Before this landed, box-mode half segments fell through to the `{0,0}`
+  fallback plus a missing-file warning per pictograph; they now get the real
+  diamond nudges.
+- **Bucket loads are deduped in flight.** `ArrowPlacer.ensureLoaded` keys an
+  in-flight `Promise` map by `${gridMode}:${propType}` (mirroring
+  `SimpleJsonCache.loadingPromises`), so a grid mounting N pictographs
+  concurrently triggers one 9-file load per bucket, not N.
 
 **Tooling for this path:**
 
