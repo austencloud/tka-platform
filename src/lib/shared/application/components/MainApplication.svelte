@@ -624,6 +624,13 @@ import type { SheetType } from "../../navigation/services/types";
       <mod.default />
     {/await}
 
+    <!-- Share intake (Android share sheet). Mounted HERE, beside the drawers
+         it routes into, so a share can never open a picker before the picker
+         exists. This is the only caller of the share-intake runner. -->
+    {#await import("../../share-intake/components/ShareIntakeHost.svelte") then mod}
+      <mod.default />
+    {/await}
+
     <!-- Collections picker — app-level so it outlives the card that opened it
          (unticking the collection you're browsing unmounts that card) -->
     {#await import("$lib/features/library/components/collection-picker/CollectionPickerHost.svelte") then mod}
