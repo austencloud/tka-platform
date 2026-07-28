@@ -78,7 +78,10 @@ export async function sharedFileToFile(
     };
   }
 
-  let bytes: Uint8Array;
+  // Uint8Array<ArrayBuffer>, not the default Uint8Array<ArrayBufferLike>: a
+  // BlobPart cannot be backed by a SharedArrayBuffer, so the loose form is
+  // rejected by the File constructor's types.
+  let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = new Uint8Array(await response.arrayBuffer());
   } catch (caught) {
@@ -133,7 +136,11 @@ export async function sharedFilesToFiles(
     while (cursor < descriptors.length) {
       const index = cursor;
       cursor += 1;
-      const outcome = await sharedFileToFile(descriptors[index]);
+      const descriptor = descriptors[index];
+      // Unreachable given the loop bound, but noUncheckedIndexedAccess is on
+      // and a cast here would be a lie for zero gain.
+      if (!descriptor) continue;
+      const outcome = await sharedFileToFile(descriptor);
       if (outcome.ok) {
         slots[index] = { file: outcome.file, descriptor: outcome.descriptor };
       } else {
