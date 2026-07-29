@@ -68,12 +68,17 @@ async function resolveEmailForLink(
   const state = getMagicLinkState(link);
   if (!state) return savedEmail;
 
-  // State resolution is an ENHANCEMENT (it lets a second device finish without
-  // re-typing the address), never a dependency. On the same device localStorage
+  // State resolution is an ENHANCEMENT (it lets a second browser finish without
+  // re-typing the address), never a dependency. On the same browser localStorage
   // already holds the address, so a resolver outage must not take sign-in down
-  // with it — which is exactly what happened on 2026-07-28, when the client
-  // shipped the resolve-email action against a function that predated it and
-  // every magic link died on a 400 the user read as "the link is broken".
+  // with it.
+  //
+  // The 2026-07-28 outage was the mirror image of that: this whole state feature
+  // shipped client-side on 2026-07-22 but its function was never deployed, so
+  // links carried no state at all and fell through to a localStorage lookup that
+  // is empty whenever the link is opened somewhere other than where it was
+  // requested — a mail app's in-app webview, which is the common case. Users got
+  // "Request a new sign-in link", requested another, and hit the same wall.
   //
   // Falling back is safe: signInWithEmailLink still verifies the address against
   // the oobCode server-side, so a wrong local email is rejected by Firebase
