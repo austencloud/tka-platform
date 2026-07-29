@@ -274,6 +274,43 @@ describe("share-intake-runner", () => {
     ).toHaveLength(1);
   });
 
+  it("tells the user when an unresolved code left nothing on screen", async () => {
+    // Found on-device 2026-07-29: this path reported to logcat only, so the
+    // user shared a card link and watched the app open to Construct with no
+    // explanation. `partially-sent` is not in UNCONSUMED, so nothing retries
+    // it either - if it is not said here it is never said.
+    routeIntake.mockResolvedValue({
+      ...cleanRoute,
+      unresolved: ["AB12"],
+      problems: [{ name: "AB12", reason: "resolve-failed" as const }],
+    });
+    await putIntake(intake());
+
+    await runPendingIntakes();
+
+    expect(toast.info).toHaveBeenCalledWith(
+      "Couldn't open that shared TKA card."
+    );
+  });
+
+  it("stays quiet about unresolved codes when a destination DID open", async () => {
+    // Cards win a mixed share: openFiledCard's extraCards toast and the
+    // router's queued-image toast already speak for the leftovers. A second
+    // toast here would double-report the same share.
+    routeIntake.mockResolvedValue({
+      ...cleanRoute,
+      unresolved: ["AB12"],
+      queued: [new File([new Uint8Array([1])], "b.png", { type: "image/png" })],
+      problems: [{ name: "AB12", reason: "resolve-failed" as const }],
+      opened: "card",
+    });
+    await putIntake(intake());
+
+    await runPendingIntakes();
+
+    expect(toast.info).not.toHaveBeenCalled();
+  });
+
   it("marks a record failed when routing throws, and does not retry it", async () => {
     routeIntake.mockRejectedValue(new Error("boom"));
     await putIntake(intake());

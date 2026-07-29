@@ -144,6 +144,25 @@ export async function runPendingIntakes(): Promise<void> {
         // is on screen to finish it. Keeping the record is the point: the
         // bytes are still there to retry with.
         await updateStatus(record.receiptId, "partially-sent", problems);
+
+        // When nothing opened, console.warn is the ONLY signal a human gets,
+        // which is the "TKA opened and nothing happened" symptom this whole
+        // feature exists to avoid. Found on-device 2026-07-29: sharing a card
+        // link whose code does not resolve booted the app to Construct and
+        // reported the failure to logcat alone.
+        //
+        // Scoped to opened === null on purpose. When a viewer or picker DID
+        // open, openFiledCard's extraCards toast and routeIntake's queued-image
+        // toast already cover the leftovers, and a second toast here would
+        // double-report the cards-won-a-mixed-share case.
+        if (result.opened === null && result.unresolved.length > 0) {
+          toast.info(
+            result.unresolved.length === 1
+              ? "Couldn't open that shared TKA card."
+              : `Couldn't open ${result.unresolved.length} shared TKA cards.`
+          );
+        }
+
         console.warn(
           `[ShareIntake] ${record.receiptId} kept: ${result.unresolved.length} unresolved, ${result.queued.length} queued`
         );
