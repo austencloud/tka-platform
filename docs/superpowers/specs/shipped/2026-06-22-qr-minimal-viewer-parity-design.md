@@ -1,18 +1,26 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: S
-remaining: "Body status: Approved (build now)"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # QR Viewer — Minimal Parity with the Sequence Viewer
 
 **Date:** 2026-06-22
-**Status:** Approved (build now)
+**Status:** Shipped (`9bd67c1492`); current behavior lives in the shared viewer shell (`fcd3a516d8`)
 **Author:** Austen + Claude (Opus 4.8)
+
+## Implementation record
+
+Commit `9bd67c1492` delivered the mobile parity described here. Commit
+`fcd3a516d8` later replaced route-specific viewer chrome with
+`SequenceViewerShell`, rendered by both the QR route and the in-app drawer. The
+host-level instructions below remain as historical context; current viewer
+changes go through the shell's prop seam.
 
 ## Problem
 
