@@ -10,6 +10,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     constraintPreset,
     handPathMode,
     motionTypeFilter,
+    baseline,
     haptic,
     onPropsChange,
     onHandsChange,
@@ -18,6 +19,17 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     constraintPreset: "smooth" | "mixed" | "choppy";
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
+    /**
+     * The untouched value of each axis, marked in the row so the baseline is
+     * visible. Without it, Props defaulting to Smooth while Hands and Dashes
+     * default to Mixed is invisible, and a summary reading "Props: Mixed" with
+     * all three showing Mixed looks arbitrary.
+     */
+    baseline?: {
+      constraintPreset: "smooth" | "mixed" | "choppy";
+      handPathMode: "smooth" | "mixed" | "choppy";
+      motionTypeFilter: "no-dash" | "prefer-dash" | null;
+    };
     haptic: HapticFeedback | null;
     onPropsChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandsChange: (v: "smooth" | "mixed" | "choppy") => void;
@@ -64,6 +76,16 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     return "mixed";
   });
 
+  // Which option is the untouched one, per axis. null when no baseline was
+  // given, which leaves the row rendering exactly as it did before.
+  const defaultProps = $derived(baseline?.constraintPreset ?? null);
+  const defaultHands = $derived(baseline?.handPathMode ?? null);
+  const defaultDashes = $derived.by(() => {
+    if (!baseline) return null;
+    const f = baseline.motionTypeFilter;
+    return f === "no-dash" || f === "prefer-dash" ? f : "mixed";
+  });
+
   function handleProps(v: "smooth" | "mixed" | "choppy") {
     haptic?.trigger("selection");
     onPropsChange(v);
@@ -90,7 +112,10 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
             class="option-btn"
             class:selected={constraintPreset === opt.value}
             onclick={() => handleProps(opt.value)}
-          >{opt.label}</button>
+          >
+            <span class="option-label">{opt.label}</span>
+            {#if defaultProps === opt.value}<span class="option-default">default</span>{/if}
+          </button>
         {/each}
       </div>
     </div>
@@ -115,7 +140,10 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
             class="option-btn"
             class:selected={handPathMode === opt.value}
             onclick={() => handleHands(opt.value)}
-          >{opt.label}</button>
+          >
+            <span class="option-label">{opt.label}</span>
+            {#if defaultHands === opt.value}<span class="option-default">default</span>{/if}
+          </button>
         {/each}
       </div>
     </div>
@@ -137,7 +165,10 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
             class="option-btn"
             class:selected={currentDashValue === opt.value}
             onclick={() => handleDashes(opt.value)}
-          >{opt.label}</button>
+          >
+            <span class="option-label">{opt.label}</span>
+            {#if defaultDashes === opt.value}<span class="option-default">default</span>{/if}
+          </button>
         {/each}
       </div>
     </div>
@@ -208,8 +239,16 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     flex: 1;
   }
 
+  /* Two stacked lines: the value, and the "default" marker on whichever option
+     is the untouched one. The marker's row is reserved on every button so
+     nothing moves between the marked and unmarked options. */
   .option-btn {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
     min-height: 44px;
     background: rgba(0, 0, 0, 0.25);
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
@@ -228,6 +267,23 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
 
   .option-btn:active {
     transform: scale(0.96);
+  }
+
+  .option-label {
+    line-height: 1.2;
+  }
+
+  .option-default {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .option-btn.selected .option-default {
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .option-btn.selected {

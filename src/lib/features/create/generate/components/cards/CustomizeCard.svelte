@@ -101,6 +101,7 @@ to three rows. Click opens the expanded overlay.
       startEndOptions: startEndOptions ?? null,
       gridMode,
       isFreeformMode,
+      styleBaseline,
       onConstraintPresetChange,
       onHandPathModeChange,
       onMotionTypeFilterChange,

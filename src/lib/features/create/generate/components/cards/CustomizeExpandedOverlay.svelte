@@ -60,7 +60,12 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { buildStartEndOptions } from "./customize-start-end-options";
-  import { ORIENTATION_SHORT } from "./customize-summary";
+  import {
+    buildCustomizeSummary,
+    ORIENTATION_SHORT,
+    PRODUCTION_STYLE_BASELINE,
+    type CustomizeStyleBaseline,
+  } from "./customize-summary";
   import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
@@ -73,6 +78,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     startEndOptions,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
+    styleBaseline = PRODUCTION_STYLE_BASELINE,
     onConstraintPresetChange,
     onHandPathModeChange,
     onMotionTypeFilterChange,
@@ -86,6 +92,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     startEndOptions: StartEndOptions | null;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
+    styleBaseline?: CustomizeStyleBaseline;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
@@ -169,15 +176,21 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   });
 
   // ─── Style summary ───
-  // Measured against the real starting config, not a hardcoded smooth/smooth:
-  // with the latter, "Reset all" left the summary reading "Custom" immediately
-  // after a reset, because the default hand path is Mixed.
+  // Names the axes that differ instead of saying "Custom". The bare word left
+  // the collapsed card ("Props: Mixed") looking like it had singled out one of
+  // three axes at random, when Props was simply the only one off its default.
+  // Same resolver the card uses, so the two can't disagree.
   const styleSummary = $derived.by(() => {
-    const isDefault =
-      localConstraintPreset === GENERATE_DEFAULT_CONFIG.constraintPreset &&
-      localHandPathMode === GENERATE_DEFAULT_CONFIG.handPathMode &&
-      localMotionTypeFilter === GENERATE_DEFAULT_CONFIG.motionTypeFilter;
-    return isDefault ? "Default" : "Custom";
+    const { isDefault, facts } = buildCustomizeSummary(
+      {
+        constraintPreset: localConstraintPreset,
+        handPathMode: localHandPathMode,
+        motionTypeFilter: localMotionTypeFilter,
+        startEndOptions: null,
+      },
+      styleBaseline
+    );
+    return isDefault ? "Default" : facts.join(" · ");
   });
 
   function handleClose() {
@@ -340,6 +353,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
             constraintPreset={localConstraintPreset}
             handPathMode={localHandPathMode}
             motionTypeFilter={localMotionTypeFilter}
+            baseline={styleBaseline}
             haptic={hapticService}
             onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
             onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
@@ -605,12 +619,20 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     text-align: left;
   }
 
+  /* One line, always. Naming all three style axes runs past the available
+     width and wrapped the header from 56px to 77px, shoving the Start Pos.
+     section down whenever the value changed — the no-layout-shift rule. The
+     complete list is on the collapsed card and in the rows below. */
   .accordion-value {
     flex: 1;
+    min-width: 0;
     text-align: right;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .accordion-chevron {

@@ -42,6 +42,7 @@
           startEndOptions={overlayProps.startEndOptions}
           gridMode={overlayProps.gridMode}
           isFreeformMode={overlayProps.isFreeformMode}
+          styleBaseline={overlayProps.styleBaseline}
           onConstraintPresetChange={overlayProps.onConstraintPresetChange}
           onHandPathModeChange={overlayProps.onHandPathModeChange}
           onMotionTypeFilterChange={overlayProps.onMotionTypeFilterChange}

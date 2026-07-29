@@ -145,6 +145,17 @@ export interface CustomizeOverlayProps {
   startEndOptions: StartEndOptions | null;
   gridMode: GridMode;
   isFreeformMode: boolean;
+  /**
+   * What "untouched" means on the host surface. Structurally identical to the
+   * Customize card's CustomizeStyleBaseline; declared inline so shared state
+   * doesn't have to import a feature type. Absent falls back to the production
+   * defaults.
+   */
+  styleBaseline?: {
+    constraintPreset: "smooth" | "mixed" | "choppy";
+    handPathMode: "smooth" | "mixed" | "choppy";
+    motionTypeFilter: "no-dash" | "prefer-dash" | null;
+  };
   onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
   onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
