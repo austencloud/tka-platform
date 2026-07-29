@@ -147,6 +147,13 @@
           Outbound credit block. Spin Science links are http:// on purpose — the
           site's HTTPS certificate is expired, so an https:// link fails outright.
           A working http link beats a broken https one.
+
+          DO NOT "fix" these to https://. .claude/rules/clickable-links.md makes
+          https the default for every link we hand out, and spinscience.xyz is the
+          standing exception to it. All four verified 200 on 2026-07-29. Note
+          sirlorq.com already died and took /27armpaths, /3axes, /9armfacings and
+          /27transitiontheory with it, so if one of these starts 404ing, reach for
+          a Wayback snapshot rather than dropping the credit.
         -->
         <nav class="credit-links" aria-label="Lorq Nichols and Spin Science">
           <a href="http://spinscience.xyz/work/" target="_blank" rel="noopener noreferrer"
@@ -163,7 +170,8 @@
             target="_blank"
             rel="noopener noreferrer">Book of P.H.A.T. <span aria-hidden="true">&nearr;</span></a
           >
-          <a href="http://spinscience.xyz/store" target="_blank" rel="noopener noreferrer"
+          <!-- Trailing slash matters: /store 301s to /store/. -->
+          <a href="http://spinscience.xyz/store/" target="_blank" rel="noopener noreferrer"
             >Posters and prints <span aria-hidden="true">&nearr;</span></a
           >
         </nav>
