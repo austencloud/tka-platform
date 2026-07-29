@@ -5,6 +5,7 @@
   import { fly, scale } from "svelte/transition";
   import ContributorBadge from "./ContributorBadge.svelte";
   import ContributorPicker from "./ContributorPicker.svelte";
+  import ChangelogRichText from "./ChangelogRichText.svelte";
 
   let {
     entry,
@@ -255,21 +256,30 @@
 {:else}
   <!-- View Mode -->
   <div class="change-item-container">
-    <button
-      type="button"
+    <!-- div, not button: entry text can contain real links, and anchors
+         can't nest inside a button. Role/tabindex only when editing is live. -->
+    <div
       class="change-item"
       class:clickable={canEdit}
       class:editable={canEdit}
+      role={canEdit ? "button" : undefined}
+      tabindex={canEdit ? 0 : undefined}
       onclick={(e) => {
         if (canEdit) {
           e.stopPropagation();
           startEdit();
         }
       }}
+      onkeydown={(e) => {
+        if (canEdit && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          startEdit();
+        }
+      }}
     >
       <span class="bullet"></span>
       <div class="change-item-content">
-        <span class="change-text">{entry.text}</span>
+        <span class="change-text"><ChangelogRichText text={entry.text} /></span>
         {#if contributors && contributors.length > 0}
           <div class="entry-contributors">
             {#each contributors as c (c.id)}
@@ -278,7 +288,7 @@
           </div>
         {/if}
       </div>
-    </button>
+    </div>
 
     {#if hasLink && onOpenFeedback}
       <button

@@ -7,6 +7,7 @@
     ChangelogEntry,
   } from "$lib/shared/versioning/domain/models/version-models";
   import { CHANGELOG_CATEGORIES } from "$lib/shared/versioning/domain/constants/changelog-constants";
+  import { changelogPlainText } from "$lib/shared/versioning/domain/utils/changelog-rich-text";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
@@ -290,7 +291,7 @@
       if (entries.length > 0) {
         lines.push(`${label}:`);
         for (const entry of entries) {
-          lines.push(`• ${entry.text}`);
+          lines.push(`• ${changelogPlainText(entry.text)}`);
         }
         lines.push("");
       }

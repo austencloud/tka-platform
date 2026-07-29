@@ -19,6 +19,7 @@
     ChangelogEntry,
   } from "$lib/shared/versioning/domain/models/version-models";
   import ContributorBadge from "./tabs/release-notes/ContributorBadge.svelte";
+  import ChangelogRichText from "./tabs/release-notes/ChangelogRichText.svelte";
 
   // Category display order and colors
   const CATEGORY_CONFIG: Record<
@@ -168,7 +169,10 @@
               <ul class="category-list">
                 {#each group.entries as entry}
                   <li>
-                    <span>{entry.text}</span>
+                    <ChangelogRichText
+                      text={entry.text}
+                      onNavigate={handleClose}
+                    />
                     {#if entry.contributorIds?.length}
                       <span class="entry-contributors">
                         {#each entry.contributorIds as cid}
@@ -262,7 +266,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 720px;
+    max-width: 45rem;
     max-height: calc(100vh - 40px);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -616,6 +620,110 @@
   /* ============================================================================
      RESPONSIVE
      ============================================================================ */
+
+  /* Big-screen tiers (4k-native-layout: 1680 seam, second tier >= 2600).
+     The modal grows with the canvas instead of floating as a phone column. */
+  @media (min-width: 1680px) {
+    .modal-container {
+      max-width: 62rem;
+      border-radius: 24px;
+    }
+
+    .modal-body {
+      padding: 32px;
+      gap: 20px;
+    }
+
+    .category-card {
+      padding: 22px;
+    }
+
+    .category-list li {
+      font-size: var(--font-size-base, 1rem);
+      padding: 8px 0 8px 18px;
+    }
+
+    .category-list li::before {
+      top: 16px;
+    }
+
+    .modal-header {
+      padding: 24px 32px;
+      padding-right: 64px;
+    }
+
+    .modal-footer {
+      padding: 20px 32px;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    /* 4K @ 100%: nothing scales for us here, so type and spacing step too. */
+    .modal-container {
+      max-width: 96rem;
+      border-radius: 28px;
+    }
+
+    .category-list {
+      columns: 3;
+      column-gap: 40px;
+    }
+
+    .category-list li {
+      font-size: 1.25rem;
+      line-height: 1.55;
+      padding: 10px 0 10px 22px;
+    }
+
+    .category-list li::before {
+      top: 19px;
+      width: 8px;
+      height: 8px;
+    }
+
+    .modal-header h1 {
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+    }
+
+    .version-badge {
+      padding: 10px 20px;
+      font-size: 1.05rem;
+    }
+
+    .category-header h3 {
+      font-size: 1.2rem;
+    }
+
+    .category-icon {
+      width: 44px;
+      height: 44px;
+      font-size: 1.1rem;
+    }
+
+    .category-count {
+      font-size: 1rem;
+    }
+
+    .category-card {
+      padding: 28px;
+      border-radius: 18px;
+    }
+
+    .modal-body {
+      padding: 40px;
+      gap: 24px;
+    }
+
+    .footer-btn {
+      font-size: 1.1rem;
+      padding: 16px 24px;
+    }
+  }
+
   @media (max-width: 540px) {
     .modal-container {
       max-height: calc(100vh - 20px);
