@@ -20,6 +20,9 @@ const h = vi.hoisted(() => {
     }),
     mergeGuestCollection: vi.fn(async () => undefined),
     toastSuccess: vi.fn(),
+    refreshUser: vi.fn(async () => {
+      order.push("refresh");
+    }),
   };
 });
 
@@ -78,6 +81,10 @@ vi.mock("$lib/shared/auth/get-user-document-manager", () => ({
   }),
 }));
 
+vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
+  refreshUser: h.refreshUser,
+}));
+
 import { notifyUpgradeSignup } from "$lib/shared/auth/services/anonymous-upgrade";
 
 beforeEach(() => {
@@ -106,8 +113,55 @@ describe("notifyUpgradeSignup", () => {
     );
     expect(h.order).toEqual([
       "token",
+      "refresh",
       "profile",
       "event:guest_upgraded_to_account",
     ]);
+  });
+
+  // Regression (2026-07-29): an in-place link keeps the same uid, so
+  // onAuthStateChanged never fires and nothing reassigns authState's user.
+  // isFullAccount stayed false, MainApplication's {#if isGuest} kept the
+  // sign-in modal mounted, and users retried a Google sign-in that had already
+  // succeeded. The client-state refresh is what closes that sheet.
+  it("refreshes client auth state so the upgraded user stops reading as a guest", async () => {
+    const linkedUser = {
+      uid: "guest-upgraded-in-place",
+      isAnonymous: false,
+      getIdToken: h.getIdToken,
+    } as unknown as User;
+
+    await notifyUpgradeSignup(linkedUser);
+
+    expect(h.refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("still refreshes client auth state when the user-doc write fails", async () => {
+    h.createOrUpdateUserDocument.mockRejectedValueOnce(
+      new Error("permission-denied")
+    );
+    const linkedUser = {
+      uid: "guest-upgraded-in-place",
+      isAnonymous: false,
+      getIdToken: h.getIdToken,
+    } as unknown as User;
+
+    await notifyUpgradeSignup(linkedUser);
+
+    // The refresh runs before the doc write and has its own catch, so a denied
+    // write can never leave the UI stranded on the sign-in sheet.
+    expect(h.refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not refresh for a still-anonymous user (no upgrade happened)", async () => {
+    const stillGuest = {
+      uid: "guest",
+      isAnonymous: true,
+      getIdToken: h.getIdToken,
+    } as unknown as User;
+
+    await notifyUpgradeSignup(stillGuest);
+
+    expect(h.refreshUser).not.toHaveBeenCalled();
   });
 });

@@ -121,6 +121,32 @@ export async function notifyUpgradeSignup(linkedUser?: User): Promise<void> {
     await user.getIdToken(true);
     if (user.isAnonymous) return;
 
+    // Push the upgraded user into authState so the CLIENT stops believing it is
+    // a guest. An in-place link mutates Firebase's User object without changing
+    // the uid, so onAuthStateChanged never fires and nothing reassigns
+    // _state.user — Svelte therefore never recomputes isFullAccount, isGuest
+    // stays true, and MainApplication's {#if isGuest} keeps the sign-in modal
+    // mounted on top of a fully upgraded account. That is the 2026-07-29 report:
+    // "it just bounced them back to the app without signing them in" — Google
+    // had in fact succeeded (both accounts existed server-side), the sheet just
+    // never closed, so the users kept retrying a sign-in they had already
+    // completed.
+    //
+    // Here rather than at each call site: this function is already the single
+    // convergence point for every in-place link (all three upgradeAnonymousWith*
+    // fns plus the magic-link branch), and it already force-refreshes the ID
+    // token for the same "linking mutates the User" reason. Its own try/catch so
+    // a user-doc or toast failure below can never strand the UI as a guest.
+    try {
+      const { refreshUser } = await import("../state/auth-state.svelte");
+      await refreshUser();
+    } catch (error) {
+      console.warn(
+        "⚠️ [anonymous-upgrade] Failed to refresh client auth state after link:",
+        error
+      );
+    }
+
     // Clear the guest flag now that this uid is a full account, so the creator
     // surfaces in Browse Creators. onAuthStateChanged doesn't reliably fire on
     // an in-place link, so we do it explicitly. createOrUpdateUserDocument's
