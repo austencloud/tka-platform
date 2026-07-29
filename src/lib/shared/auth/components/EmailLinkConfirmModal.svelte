@@ -41,8 +41,12 @@
         })
         .catch((err: unknown) => {
           const code = (err as { code?: string })?.code;
+          // auth/invalid-action-code reaches here only when the link is
+          // cross-device AND this device has no saved address — resolution
+          // failures alone now fall back to localStorage rather than throwing.
           error =
-            code === "functions/failed-precondition"
+            code === "functions/failed-precondition" ||
+            code === "auth/invalid-action-code"
               ? "This link is invalid or has expired. Request a new one."
               : "Couldn't verify this sign-in link. Check your connection and try again.";
         })

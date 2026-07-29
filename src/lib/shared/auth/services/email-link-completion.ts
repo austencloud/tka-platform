@@ -68,26 +68,56 @@ async function resolveEmailForLink(
   const state = getMagicLinkState(link);
   if (!state) return savedEmail;
 
-  const functions = await getFunctionsInstance();
-  const resolveEmail = httpsCallable<
-    { action: "resolve-email"; state: string },
-    ResolveMagicLinkEmailResponse
-  >(functions, "sendMagicLink");
-  const result = await resolveEmail({ action: "resolve-email", state });
+  // State resolution is an ENHANCEMENT (it lets a second device finish without
+  // re-typing the address), never a dependency. On the same device localStorage
+  // already holds the address, so a resolver outage must not take sign-in down
+  // with it — which is exactly what happened on 2026-07-28, when the client
+  // shipped the resolve-email action against a function that predated it and
+  // every magic link died on a 400 the user read as "the link is broken".
+  //
+  // Falling back is safe: signInWithEmailLink still verifies the address against
+  // the oobCode server-side, so a wrong local email is rejected by Firebase
+  // rather than opening someone else's account.
+  let resolutionError: unknown = null;
+  try {
+    const functions = await getFunctionsInstance();
+    const resolveEmail = httpsCallable<
+      { action: "resolve-email"; state: string },
+      ResolveMagicLinkEmailResponse
+    >(functions, "sendMagicLink");
+    const result = await resolveEmail({ action: "resolve-email", state });
 
-  if (
-    result.data?.success !== true ||
-    typeof result.data.email !== "string" ||
-    !result.data.email
-  ) {
-    const invalidResponse = new Error(
-      "The sign-in link did not resolve to an email address."
-    ) as Error & { code: string };
-    invalidResponse.code = "auth/invalid-action-code";
-    throw invalidResponse;
+    if (
+      result.data?.success === true &&
+      typeof result.data.email === "string" &&
+      result.data.email
+    ) {
+      return result.data.email;
+    }
+  } catch (error) {
+    resolutionError = error;
+    console.warn(
+      "[email-link] State resolution failed; falling back to the address saved on this device.",
+      error
+    );
   }
 
-  return result.data.email;
+  // Same device: we already know the address, and Firebase remains the authority
+  // on whether the oobCode is still live — an expired code still surfaces as
+  // auth/expired-action-code from signInWithEmailLink. Trying is strictly better
+  // than refusing.
+  if (savedEmail) return savedEmail;
+
+  // No local address to fall back to. Rethrow the original failure so the
+  // caller keeps its precise mapping (an expired opaque state must still read
+  // as expired, not as a generic invalid link).
+  if (resolutionError) throw resolutionError;
+
+  const invalidResponse = new Error(
+    "The sign-in link did not resolve to an email address."
+  ) as Error & { code: string };
+  invalidResponse.code = "auth/invalid-action-code";
+  throw invalidResponse;
 }
 
 /**

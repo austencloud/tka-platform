@@ -262,6 +262,28 @@ describe("completeEmailLinkSignIn — the code-consuming call", () => {
     expect(h.linkWithCredential).not.toHaveBeenCalled();
   });
 
+  // Regression (2026-07-28 outage): the client shipped the resolve-email action
+  // against a deployed function that predated it, so every state resolution
+  // returned 400 and every magic link dead-ended — including same-device links
+  // where the address was sitting in localStorage the whole time. Resolution is
+  // an enhancement for the second device, never a dependency.
+  it("still signs in when state resolution fails but this device saved the email", async () => {
+    h.isSignInWithEmailLink.mockReturnValue(true);
+    setOpaqueLinkState();
+    window.localStorage.setItem(EMAIL_KEY, "same-device@example.com");
+    h.resolveEmail.mockRejectedValue({
+      code: "functions/invalid-argument",
+      message: "Email is required",
+    });
+
+    const result = await completeEmailLinkSignIn();
+
+    expect(result.completed).toBe(true);
+    expect(h.signInWithEmailLink.mock.calls[0][1]).toBe(
+      "same-device@example.com"
+    );
+  });
+
   it("never falls back to window.prompt when no email is available", async () => {
     h.isSignInWithEmailLink.mockReturnValue(true);
     const promptSpy = vi
