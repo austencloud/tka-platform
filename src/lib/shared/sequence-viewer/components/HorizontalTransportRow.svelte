@@ -19,8 +19,11 @@
 	}: {
 		isPlaying: boolean;
 		onPlaybackToggle: () => void;
-		onStepHalfBack: () => void;
-		onStepHalfFwd: () => void;
+		/** Half-step scrub. Omit both to ship a three-button transport — back,
+		 *  play, forward — for contexts where a step is the smallest unit anyone
+		 *  wants to move by. */
+		onStepHalfBack?: () => void;
+		onStepHalfFwd?: () => void;
 		/** Step backward by one full step (compose context) */
 		onStepFullBack?: () => void;
 		/** Restart from the beginning (viewer context) - replaces step-back button when provided */
@@ -37,16 +40,27 @@
 		mq.addEventListener("change", sync);
 		return () => mq.removeEventListener("change", sync);
 	});
+
+	/*
+	 * Double chevrons only mean "the BIGGER step" when there is a smaller one
+	 * beside them. On a three-button transport they are the only steppers, so a
+	 * single chevron is what "one step" looks like.
+	 */
+	const stepGlyph = $derived(
+		onStepHalfBack || onStepHalfFwd ? "fa-angles" : "fa-chevron"
+	);
 </script>
 
 <div class="horizontal-transport-row">
-	<button
-		class="step-btn step-secondary"
-		onclick={onStepHalfBack}
-		aria-label="Previous half step"
-	>
-		<i class="fas fa-chevron-left" aria-hidden="true"></i>
-	</button>
+	{#if onStepHalfBack}
+		<button
+			class="step-btn step-secondary"
+			onclick={onStepHalfBack}
+			aria-label="Previous half step"
+		>
+			<i class="fas fa-chevron-left" aria-hidden="true"></i>
+		</button>
+	{/if}
 	{#if onRestartToStart}
 		<button
 			class="step-btn step-primary"
@@ -61,7 +75,7 @@
 			onclick={onStepFullBack}
 			aria-label="Previous step"
 		>
-			<i class="fas fa-angles-left" aria-hidden="true"></i>
+			<i class="fas {stepGlyph}-left" aria-hidden="true"></i>
 		</button>
 	{/if}
 
@@ -93,15 +107,17 @@
 		onclick={onStepFullFwd}
 		aria-label="Next step"
 	>
-		<i class="fas fa-angles-right" aria-hidden="true"></i>
+		<i class="fas {stepGlyph}-right" aria-hidden="true"></i>
 	</button>
-	<button
-		class="step-btn step-secondary"
-		onclick={onStepHalfFwd}
-		aria-label="Next half step"
-	>
-		<i class="fas fa-chevron-right" aria-hidden="true"></i>
-	</button>
+	{#if onStepHalfFwd}
+		<button
+			class="step-btn step-secondary"
+			onclick={onStepHalfFwd}
+			aria-label="Next half step"
+		>
+			<i class="fas fa-chevron-right" aria-hidden="true"></i>
+		</button>
+	{/if}
 </div>
 
 <style>

@@ -760,14 +760,18 @@ h6 {
    /notation/*, /shop/*, /support, ...). App routes never mount it, and the
    /guide subtree is excluded from that list (it ramps itself), so neither the
    app UI nor the fixed-inch print artboards under /guide can be caught here.
-   `.legal-container` opts privacy/terms/delete-account in.
+   `.legal-container` opts privacy/terms/delete-account in. `.qft-app` opts in
+   /notation/qft, which is on the marketing route list by URL but deliberately
+   opts OUT of MarketingChrome to run full-screen — and so lost the ramp with
+   it, leaving the whole instrument as a small band in a 3840px field.
 
    Deliberately NOT a media-query step: steps produce a visible jolt at one
    width. This is continuous from 1680 → 3840.
    See .claude/rules/4k-native-layout.md. */
 @media (min-width: 1680px) {
   html:has(.mkt-shell),
-  html:has(.legal-container) {
+  html:has(.legal-container),
+  html:has(.qft-app) {
     font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
   }
 }

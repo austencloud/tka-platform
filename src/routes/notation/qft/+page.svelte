@@ -37,11 +37,15 @@
     type Spin,
   } from "$lib/shared/notation/qft/qft-model";
   import {
+    ALL_LAYERS,
     LAYER_KEYS,
     LAYER_LABELS,
+    NO_LAYERS,
+    allLayersOn as everyLayerOn,
     normalizeLayers,
     type QftLayers,
   } from "$lib/shared/notation/qft/qft-layers";
+  import QftLayerGlyph from "$lib/shared/notation/qft/components/QftLayerGlyph.svelte";
   import { nameFor } from "$lib/shared/notation/qft/qft-naming";
   import {
     loadQftSession,
@@ -110,6 +114,8 @@
   const toggleLayer = (key: keyof QftLayers) => {
     layers = { ...layers, [key]: !layers[key] };
   };
+
+  const allLayersOn = $derived(everyLayerOn(layers));
 
   /*
    * Indexing is possibly-undefined under strict index access, and the guide is
@@ -679,9 +685,13 @@
 
   HorizontalTransportRow is the app's own — the same control the sequence
   viewer runs, down to the play/pause glyph crossfade — rather than a second
-  set of buttons that does the same job in a different shape. Its half-step
-  chevrons map onto QfT cleanly: an increment is a quarter circle, and the
-  midpoint is where the direction reading is easiest to check.
+  set of buttons that does the same job in a different shape.
+
+  Three buttons, not five. The half-step chevrons were there because an
+  increment is a quarter circle and its midpoint is a legible place to stop, but
+  the notation has exactly eight rows and every one of them is a whole
+  increment: a half step lands between two lines of the thing you came to read.
+  Back, play, forward is the whole vocabulary this app needs.
 -->
 {#snippet transportRow()}
   <div class="transport">
@@ -689,8 +699,6 @@
     <HorizontalTransportRow
       isPlaying={playing}
       onPlaybackToggle={() => (playing = !playing)}
-      onStepHalfBack={() => step8(-0.5)}
-      onStepHalfFwd={() => step8(0.5)}
       onStepFullBack={() => step8(-1)}
       onStepFullFwd={() => step8(1)}
     />
@@ -714,7 +722,7 @@
           <QftTable increments={guideIncrements} activeStep={step} {compact} />
         </div>
       {/if}
-    {:else if dockTab === "layers"}{@render layerSwitches()}
+    {:else if dockTab === "layers"}{@render layerSwitches(true)}
     {/if}
   </div>
 {/snippet}
@@ -757,8 +765,14 @@
 <!--
   Layers. Independent switches, so toggle chips rather than a segmented
   control (.claude/rules/chip-primitives.md).
+
+  Each switch carries a miniature of the mark it controls, and they are LAID OUT
+  rather than scrolled: six of these in a nowrap row meant turning the last one
+  off began with scrolling to find it. The wide row wraps; the dock's tray runs
+  them two-up plus a switch that clears the lot, so every layer is one tap away
+  from the moment the tray opens.
 -->
-{#snippet layerSwitches()}
+{#snippet layerSwitches(showReset: boolean)}
   <nav class="layers" aria-label="Stage layers">
     {#each LAYER_KEYS as key (key)}
       <FilterChipBase
@@ -767,8 +781,21 @@
         size="sm"
         active={layers[key]}
         onclick={() => toggleLayer(key)}
-      />
+      >
+        {#snippet iconSnippet()}
+          <QftLayerGlyph layer={key} />
+        {/snippet}
+      </FilterChipBase>
     {/each}
+    {#if showReset}
+      <FilterChipBase
+        label={allLayersOn ? "Only the prop" : "Everything"}
+        icon={allLayersOn ? "fas fa-eye-slash" : "fas fa-eye"}
+        mode="action"
+        size="sm"
+        onclick={() => (layers = allLayersOn ? NO_LAYERS : { ...ALL_LAYERS })}
+      />
+    {/if}
   </nav>
 {/snippet}
 
@@ -780,7 +807,10 @@
   {/if}
 </div>
 
-<div class="app" class:docked={phone}>
+<!-- `qft-app` is the hook the root 4K ramp scopes to (src/app.css). This route
+     opts out of MarketingChrome, which is what carries the ramp everywhere else
+     on the public site, so it has to opt itself back in by name. -->
+<div class="app qft-app" class:docked={phone}>
   <!--
     Toggles rather than a SegmentedControl: in instrument mode NO move is
     selected, and a segmented indicator has nowhere to sit in that state
@@ -947,7 +977,7 @@
     one you have to open. The phone gets both inside the dock instead.
   -->
   {#if !phone}
-    <div class="layers-row">{@render layerSwitches()}</div>
+    <div class="layers-row">{@render layerSwitches(false)}</div>
     {@render transportRow()}
   {/if}
 </div>
@@ -1098,6 +1128,11 @@
      * header to sit under — the app's own top bar carries the way back out.
      */
     --app-pad: clamp(0.75rem, 2vw, 2rem);
+    /* Named, because the bottom chrome has to escape exactly this much to reach
+       the bottom edge of the screen. Read off the same token as the padding
+       rather than re-guessing it — mismatched, the difference showed as a strip
+       of bare page under the dock. */
+    --app-pad-block: clamp(0.5rem, 1.5vh, 1.25rem);
     height: 100dvh;
     position: relative;
     z-index: 1;
@@ -1116,9 +1151,24 @@
       "surface"
       "layers"
       "transport";
-    gap: clamp(0.5rem, 1.5vh, 1.25rem);
-    padding: clamp(0.5rem, 1.5vh, 1.25rem) var(--app-pad);
+    gap: var(--app-pad-block);
+    padding: var(--app-pad-block) var(--app-pad);
     overflow: hidden;
+  }
+
+  /*
+   * A docked phone renders neither the chips row nor the two rows under the
+   * stage — they all live in the dock instead. Their grid rows collapse to zero
+   * height, but the GAPS between them do not: three of them survived below the
+   * surface, and since the bottom chrome only reaches one pad past the stage,
+   * the rest showed as a bare strip of page under the tab bar. So the docked
+   * layout declares the rows it actually has.
+   */
+  .app.docked {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "topbar"
+      "surface";
   }
 
   /*
@@ -1182,7 +1232,7 @@
     position: absolute;
     left: calc(-1 * var(--app-pad));
     right: calc(-1 * var(--app-pad));
-    bottom: calc(-1 * var(--app-pad));
+    bottom: calc(-1 * var(--app-pad-block));
     display: grid;
     gap: 0.5rem;
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -1512,7 +1562,7 @@
    */
   @media (min-width: 90rem) and (min-height: 45rem) {
     .instrument.cell {
-      row-gap: clamp(0.6rem, 1.4vh, 1.25rem);
+      row-gap: clamp(0.5rem, 1.1vh, 0.9rem);
       /*
        * Wider than the guide's and the instrument's column, deliberately.
        *
@@ -1532,11 +1582,27 @@
     }
 
     .instrument.cell .knobs {
-      gap: clamp(0.4rem, 1vh, 0.7rem);
+      gap: clamp(0.3rem, 0.7vh, 0.55rem);
     }
 
     .instrument.cell h2 {
       font-size: clamp(1.8rem, 1rem + 1.9vw, 3.6rem);
+    }
+
+    /*
+     * A cell's column carries two eight-row tables where every other mode
+     * carries one, and at the shared row padding the pair ran about 70px past
+     * the pane — so rows 7 and 8 of both hands sat below the fold on a 1080
+     * screen. Tightening the rows is the cheap fix: these are single digits, and
+     * the space they lose is padding, not legibility.
+     */
+    .instrument.cell .notation.duet :global(tbody td),
+    .instrument.cell .notation.duet :global(tbody th) {
+      padding-block: 0.28rem;
+    }
+
+    .instrument.cell .notation.duet :global(thead th) {
+      padding-top: 0.4rem;
     }
   }
 
@@ -1659,18 +1725,53 @@
     gap: 0.4rem;
   }
 
+  /*
+   * In the tray, a grid — two per row on a phone, three once there is width.
+   * A wrapping flex row would leave the last switch alone on a row of its own
+   * (.claude/rules/4k-native-layout.md, never a row of one), and the pill widths
+   * differ enough that the column edges would not line up.
+   */
+  .tray .layers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  @media (min-width: 26rem) {
+    .tray .layers {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* The pills fill their cell, so the glyph column lines up down the grid. */
+  .tray .layers :global(.filter-chip) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* The reset spans the row it lands on: it acts on all six, not on one cell. */
+  .tray .layers :global(.filter-chip:last-child) {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
   /* Only the wide layout's copy is a grid child; the phone's lives in the
      bottom chrome, which places it itself. */
   .app > .transport {
     grid-area: transport;
   }
 
+  /*
+   * Counter above, buttons below. Beside them it pushed the play button off
+   * centre by half its own width — a transport whose middle button is not in the
+   * middle, which is exactly what a three-button row is supposed to look like.
+   */
   .transport {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
   }
 
   .transport button {
@@ -1974,16 +2075,5 @@
       flex: none;
     }
 
-    /* Six labels do not fit a 375px row; scroll them rather than stack them. */
-    .layers {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      justify-content: flex-start;
-      scrollbar-width: none;
-    }
-
-    .layers :global(.filter-chip) {
-      flex: none;
-    }
   }
 </style>

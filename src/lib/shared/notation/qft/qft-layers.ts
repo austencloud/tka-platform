@@ -35,7 +35,29 @@ export const ALL_LAYERS: QftLayers = {
 	trail: true
 };
 
+/**
+ * Every layer off — the prop, its tether and the hand, and nothing else.
+ *
+ * Worth having as one action rather than six taps: reading a single mark against
+ * a bare stage is exactly why the layers are switchable, and getting there by
+ * turning five things off one at a time is the part that made it not worth
+ * doing.
+ */
+export const NO_LAYERS: QftLayers = {
+	handCompass: false,
+	handPath: false,
+	propCompass: false,
+	dart: false,
+	sector: false,
+	trail: false
+};
+
 export const LAYER_KEYS = Object.keys(ALL_LAYERS) as Array<keyof QftLayers>;
+
+/** Whether every layer is currently drawn, which is what the reset toggles off. */
+export function allLayersOn(layers: QftLayers): boolean {
+	return LAYER_KEYS.every((key) => layers[key]);
+}
 
 /**
  * Labels name the thing on the stage, not the code. Each one should be findable

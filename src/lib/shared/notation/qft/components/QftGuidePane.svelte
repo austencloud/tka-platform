@@ -151,7 +151,15 @@
      * the box so that it grows the flex line, instead of overflowing the figure
      * and painting over the notation.
      */
-    min-height: min(72vw, 44vh);
+    /*
+     * The third term is a ceiling ON THE FLOOR. 72vw/44vh alone demanded 519px
+     * of stage in an 818px pane, which is more than was left once the title and
+     * the eight-row table had theirs — so the pane scrolled and the table came
+     * out three rows tall on screen. Past this size the stage is comfortably
+     * large and can afford to give the notation the rest; below it the original
+     * floor still protects the drawing from collapsing to a thumbnail.
+     */
+    min-height: min(72vw, 44vh, 17rem);
     width: 100%;
     /* Stretch, not a content-sized centred column: the figure has to be as wide
        as the pane before the box can use that width. */
@@ -216,7 +224,18 @@
     color: var(--semantic-text-primary, #fff);
   }
 
+  /*
+   * `flex: none`, so the notation is never the thing that gives.
+   *
+   * As a shrinkable flex item it lost to the stage's own min-height floor and
+   * came out three rows tall with rows 4–8 clipped away — a table you cannot
+   * read the end of, on a page whose subject is the table. The pane already
+   * scrolls (`safe center` above), so the honest outcome when both the stage
+   * floor and the whole notation cannot fit is a pane you scroll, not notation
+   * with its bottom cut off.
+   */
   .notation {
+    flex: none;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -275,6 +294,21 @@
       justify-content: center;
       column-gap: clamp(2rem, 4vw, 5rem);
       row-gap: clamp(1rem, 2.5vh, 2rem);
+    }
+
+    /*
+     * Past the 1680 seam the root font ramps (src/app.css), so everything you
+     * read grows — but 44vh of stage does not grow WITH it. At 3840 the drawing
+     * came out 1015px in a 1628px pane with 613px of empty sky split above and
+     * below it. Nested inside this tier rather than beside it because 58vh at
+     * 1440×900 would push the figure past what that pane has and start it
+     * scrolling; only up here is there height to spend
+     * (.claude/rules/4k-native-layout.md, "use the vertical too").
+     */
+    @media (min-width: 105rem) and (min-height: 60rem) {
+      .guide {
+        --box-h: clamp(20rem, 58vh, 52rem);
+      }
     }
 
     header {

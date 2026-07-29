@@ -24,33 +24,50 @@
   let { increments, activeStep, compact = false }: Props = $props();
 
   const cell = (v: number | "n") => (v === "n" ? "n" : String(v));
-
-  const active = $derived(increments[activeStep] ?? increments[0]);
-
-  const strip = $derived(
-    active
-      ? [
-          { label: "Prop depart", value: cell(active.propDepart) },
-          { label: "Dir depart", value: cell(active.propDirDepart) },
-          { label: "Hand depart", value: cell(active.handDepart) },
-          { label: "Radius", value: String(active.radius) },
-          { label: "Hand arrive", value: cell(active.handArrive) },
-          { label: "Dir arrive", value: cell(active.propDirArrive) },
-          { label: "Prop arrive", value: cell(active.propArrive) }
-        ]
-      : []
-  );
 </script>
 
 {#if compact}
-  <dl class="strip">
-    {#each strip as item (item.label)}
-      <div class="pair">
-        <dt>{item.label}</dt>
-        <dd>{item.value}</dd>
-      </div>
-    {/each}
-  </dl>
+  <!--
+    The notation as written, not as a spreadsheet.
+
+    Seven labelled key/value pairs is the formula taken apart and its terms
+    named one at a time, which is more reading than the whole line costs and
+    still only shows one step. Written out — `a,b ( h / r / h' ) a',b'`, the
+    published form — all eight fit a phone, so you get the sweep down the
+    cycle instead of a caption for the frame on screen.
+  -->
+  <div class="script">
+    <p class="legend" aria-hidden="true">
+      prop,dir <span class="paren">(</span> hand / radius / hand
+      <span class="paren">)</span> prop,dir
+    </p>
+    <ol class="lines">
+      {#each increments as row, i (i)}
+        <li class:active={i === activeStep}>
+          <span class="idx">{i + 1}</span>
+          <span class="line">
+            <span class="term">{row.propDepart}</span><span class="punct"
+              >,</span
+            ><span class="term" class:unresolved={row.propDirDepart === "n"}
+              >{cell(row.propDirDepart)}</span
+            >
+            <span class="punct">(</span>
+            <span class="term">{row.handDepart}</span>
+            <span class="punct">/</span>
+            <span class="term dim">{row.radius}</span>
+            <span class="punct">/</span>
+            <span class="term">{row.handArrive}</span>
+            <span class="punct">)</span>
+            <span class="term">{row.propArrive}</span><span class="punct"
+              >,</span
+            ><span class="term" class:unresolved={row.propDirArrive === "n"}
+              >{cell(row.propDirArrive)}</span
+            >
+          </span>
+        </li>
+      {/each}
+    </ol>
+  </div>
 {:else}
 <div class="wrap">
   <table>
@@ -103,37 +120,109 @@
 {/if}
 
 <style>
-  .strip {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.4rem 1rem;
-    margin: 0;
-    padding: 0.9rem 1rem;
+  .script {
+    padding: 0.6rem 0.75rem 0.7rem;
     border-radius: 0.75rem;
     border: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
     background: var(--semantic-surface-raised, rgb(0 0 0 / 0.24));
   }
 
-  .strip .pair {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
+  /* The formula, once. Not a label per value — the shape of the line, so the
+     eight lines under it read without any of them being annotated. */
+  .legend {
+    margin: 0 0 0.4rem;
+    padding-left: 1.9rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.38));
   }
 
-  .strip dt {
-    font-size: 0.78rem;
+  .lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.06rem;
+  }
+
+  /*
+   * Wide and short — fold-open landscape, a squashed laptop window. The pane is
+   * about 220px tall here, and eight lines in one column do not go into it: they
+   * ran under the layer switches, which is the notation being cut off on a page
+   * about notation. Four and four, using the width this tier has spare.
+   */
+  @media (min-width: 44rem) and (max-height: 32rem) {
+    .lines {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(4, auto);
+      grid-auto-flow: column;
+      column-gap: clamp(1rem, 3vw, 2.5rem);
+    }
+  }
+
+  /* Tight on purpose: all eight lines have to be in the tray at once, or this is
+     back to being a caption for the frame on screen. */
+  .lines li {
+    display: grid;
+    grid-template-columns: 1.9rem minmax(0, 1fr);
+    align-items: baseline;
+    line-height: 1.35;
+    /* Reserved so the active marker cannot shift the line when it appears. */
+    border-left: 2px solid transparent;
+    opacity: 0.4;
+    transition: opacity 220ms ease;
+  }
+
+  .lines li.active {
+    opacity: 1;
+    border-left-color: var(--theme-accent, #8b5cf6);
+  }
+
+  .idx {
+    padding-left: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.45));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .line {
+    font-size: 1rem;
+    /* Tabular so a 1 and an 8 are the same width: the eight lines have to stack
+       into columns you can read straight down (.claude/rules/no-layout-shift.md). */
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .term {
+    font-weight: 600;
+    color: var(--semantic-text-primary, rgb(255 255 255 / 0.92));
+  }
+
+  .lines li.active .term {
+    font-weight: 700;
+  }
+
+  .term.dim {
+    font-weight: 500;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.6));
   }
 
-  .strip dd {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    /* Reserved so a value going from 8 to n never shifts its label. */
-    min-width: 1.5ch;
-    text-align: right;
+  .term.unresolved {
+    color: var(--semantic-warning, #fbbf24);
+    font-style: italic;
+  }
+
+  .punct,
+  .legend .paren {
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.35));
+    font-weight: 400;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lines li {
+      transition: none;
+    }
   }
 
   .wrap {
