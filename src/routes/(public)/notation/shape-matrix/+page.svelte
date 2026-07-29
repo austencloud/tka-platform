@@ -183,7 +183,11 @@
           src="/notation/lorq-144-shape-matrix.webp"
           width="1400"
           height="1812"
-          alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
+          <!-- Axes per Nichols' own caption on the 2014 rework: "the driving style
+               of the left hand (columns) paired with a driving style of the right
+               hand (rows)". Do not swap these to match OUR grid below, which is
+               rows-blue / columns-red by our own choice. -->
+          alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve left-hand driving styles, rows are twelve right-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
           loading="lazy"
         />
         <!-- sirlorq.com no longer resolves; his current home is spinscience.xyz

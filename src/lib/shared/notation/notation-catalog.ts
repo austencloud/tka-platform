@@ -120,8 +120,17 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     year: "2010",
     sortYear: 2010,
     system: "Vulcan Tech Gospel",
+    // Verbatim from the V.1 PDF's own cover and contents pages, extracted
+    // 2026-07-29: "Compiled by Noel Yee / Cover Artwork by: Forest Sterns", then
+    // Transition Theory (Yee and Cantor), Minimal Beat Shapes (Thompson),
+    // Necessity of 40 Patterns (Yee), Transitions Between Shapes (Cantor), 3D
+    // Hybrid Shapes (Nope, Drexler, Yee).
+    //
+    // Lorq Nichols is NOT in V.1 — zero occurrences in the whole document. He
+    // enters the lineage afterward, via Book of P.H.A.T. and Yee's own 2015 app
+    // credits; see the `lorq` entry. Do not add him to this line.
     people:
-      "Compiled by Noel Yee, with David “Tankboy” Cantor, Lorq Nichols, Brian Thompson, Maiki Nope, and a final chapter Ben Drexler had a hand in. Logo by Forest Stearns.",
+      "Compiled by Noel Yee, with David “Tankboy” Cantor, Brian Thompson, Maiki Nope, and a final chapter Ben Drexler had a hand in. Cover artwork by Forest Sterns.",
     // Yee's own site: "The first goal of VTG is to help the user to understand
     // the variety of flower patterns available in a given arm and prop timing
     // and direction. The second is to teach the user how to transition between
@@ -237,7 +246,7 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     // Shape Matrix at page 32 of a volume titled Vulcan Tech Gospel. Nichols
     // also cites VTG#2 as source material throughout his LORQ:TECH series.
     records:
-      "Patterns enumerated rather than described. Driving styles crossed against each other, arm paths crossed against club shapes, until the grid is full. Nichols is one of the four Vulcan Tech Gospel authors, and this work is not separate from it: the Shape Matrix is page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1.",
+      "Patterns enumerated rather than described. Driving styles crossed against each other, arm paths crossed against club shapes, until the grid is full. Nichols is not among the Vulcan Tech Gospel V.1 authors, and joins the lineage after it: Yee lists him as a VTG author by 2015, and the Shape Matrix is page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1. He published as Tech Tiles before renaming to Spin Science in October 2015.",
     subWorks: [
       {
         name: "144 Shape Matrix",

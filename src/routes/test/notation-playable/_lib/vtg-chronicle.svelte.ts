@@ -45,7 +45,10 @@ export const VTG1_CHAPTERS: VtgChapter[] = [
   {
     figure: "transition-theory",
     title: "Transition Theory",
-    people: "David “Tankboy” Cantor, Jordan Campbell and Noel Yee",
+    // The V.1 contents page reads "Transition Theory / Noel Yee and David
+    // Cantor". An earlier draft of this line also credited a Jordan Campbell;
+    // the name appears zero times in the document and has been removed.
+    people: "Noel Yee and David “Tankboy” Cantor",
     note: "“Deeply meditated on” by the three of them. Cantor drew the figure at the centre of the document, where overlaying circles show transitions without the compound circle.",
   },
   {
