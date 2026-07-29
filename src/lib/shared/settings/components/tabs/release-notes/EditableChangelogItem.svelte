@@ -258,6 +258,7 @@
   <div class="change-item-container">
     <!-- div, not button: entry text can contain real links, and anchors
          can't nest inside a button. Role/tabindex only when editing is live. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="change-item"
       class:clickable={canEdit}
