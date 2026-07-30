@@ -3,7 +3,8 @@
    * One canonical move: the computed stage and its notation.
    *
    * The 2011 diagrams used to run beside this. They now live in the archive
-   * view, reachable from here — see the comment on the figure below for why.
+   * view, reachable from the reading column — see the comment on the stage below
+   * for why.
    *
    * No narration and no pull-quotes. Every label states a fact about the knob
    * values that produce the move; the sources are credited by link, in the
@@ -44,11 +45,6 @@
 </script>
 
 <div class="guide">
-  <header>
-    <h2>{move.title}</h2>
-    <p class="spec">{move.spec}</p>
-  </header>
-
   <!--
     One stage, computed. The 2011 diagrams used to sit beside this and drive the
     layout of every move, but they are not one visual language: two of them fill
@@ -57,41 +53,56 @@
     same thing consistently for all eight, and now draws the swept sector the
     best of those diagrams used. The originals are still here, one click away and
     still sourced — they are just no longer the thing the page is built around.
+
+    Nothing under it. The provenance line and the archive button both sit in the
+    reading column: they are things you READ and CLICK, and hanging them off the
+    bottom of the drawing left the left half of a wide screen ending in a caption
+    and a button with a field of sky under them.
   -->
   <div class="pair">
-    <figure>
-      <div class="box stage">
-        <QftStage
-          knobs={move.knobs}
-          {increments}
-          {cursor}
-          {layers}
-          pendulum={move.pendulum ?? false}
-          fit
-        />
-      </div>
-      <figcaption>
-        <span>computed from the published rules</span>
-        <!--
-          On a phone this button costs the stage about a third of its height,
-          and the stage is the thing worth looking at. There it moves to the
-          transport row instead, which the page owns.
-        -->
-        {#if !compact}
-          <button type="button" class="archive-link" onclick={onShowArchive}>
-            See the 2011 diagram
-          </button>
-        {/if}
-      </figcaption>
-    </figure>
+    <div class="box stage">
+      <QftStage
+        knobs={move.knobs}
+        {increments}
+        {cursor}
+        {layers}
+        pendulum={move.pendulum ?? false}
+        fit
+      />
+    </div>
   </div>
 
-  {#if showNotation}
-    <div class="notation">
-      <QftTable {increments} activeStep={Math.floor(cursor) % 8} {compact} />
-    </div>
-  {/if}
+  <!--
+    `display: contents` when the pane is a single column, so the title still
+    comes before the drawing and the notation after it. A grid item only when
+    there are two columns to be an item of.
+  -->
+  <div class="reading">
+    <header>
+      <h2>{move.title}</h2>
+      <p class="spec">{move.spec}</p>
+    </header>
 
+    {#if showNotation}
+      <div class="notation">
+        <QftTable {increments} activeStep={Math.floor(cursor) % 8} {compact} />
+      </div>
+    {/if}
+
+    <div class="credit">
+      <span>computed from the published rules</span>
+      <!--
+        On a phone this button costs the stage about a third of its height, and
+        the stage is the thing worth looking at. There it moves into the dock's
+        Moves tray instead, which the page owns.
+      -->
+      {#if !compact}
+        <button type="button" class="archive-link" onclick={onShowArchive}>
+          See the 2011 diagram
+        </button>
+      {/if}
+    </div>
+  </div>
 </div>
 
 <style>
@@ -106,14 +117,27 @@
     overscroll-behavior: contain;
     scrollbar-width: none;
     align-items: center;
-    gap: clamp(0.75rem, 2vh, 1.75rem);
-    /* Shared measure for both halves, so they line up whatever shape the
-       original turns out to be. */
+    gap: clamp(0.6rem, 1.6vh, 1.4rem);
     --box-h: clamp(8rem, 30vh, 22rem);
   }
 
+  /* One column: the reading group dissolves so its children order themselves
+     against the drawing directly. */
+  .reading {
+    display: contents;
+  }
+
   header {
+    order: -1;
     text-align: center;
+  }
+
+  .notation {
+    order: 1;
+  }
+
+  .credit {
+    order: 2;
   }
 
   h2 {
@@ -131,15 +155,10 @@
   }
 
   /*
-   * Top-aligned. The left figure carries a control the right one does not, so
-   * bottom-aligning the two figures pushed the drawings themselves out of line
-   * with each other — the one thing on this page that must line up.
-   */
-  /*
-   * The figure takes whatever height is left after the title, the caption and
-   * the notation — it does not guess at a fraction of the viewport. A `30vh`
-   * box left the subject of the page as its smallest element: 334px of stage
-   * in an 832px pane, with a band of empty sky above and below it.
+   * The drawing takes whatever height is left after the title, the notation and
+   * the credit line — it does not guess at a fraction of the viewport. A `30vh`
+   * box left the subject of the page as its smallest element: 334px of stage in
+   * an 832px pane, with a band of empty sky above and below it.
    */
   .pair {
     flex: 1 1 auto;
@@ -147,57 +166,39 @@
      * A floor, because "take what is left" is the wrong answer when nothing is
      * left: on a phone, once the title and the table had taken their share, the
      * stage collapsed to a 90px thumbnail. Below this the pane scrolls instead
-     * of crushing the thing you came to look at. It sits here rather than on
-     * the box so that it grows the flex line, instead of overflowing the figure
-     * and painting over the notation.
-     */
-    /*
+     * of crushing the thing you came to look at.
+     *
      * The third term is a ceiling ON THE FLOOR. 72vw/44vh alone demanded 519px
      * of stage in an 818px pane, which is more than was left once the title and
      * the eight-row table had theirs — so the pane scrolled and the table came
-     * out three rows tall on screen. Past this size the stage is comfortably
-     * large and can afford to give the notation the rest; below it the original
-     * floor still protects the drawing from collapsing to a thumbnail.
+     * out three rows tall. Past this size the drawing is comfortably large and
+     * can afford to give the notation the rest.
      */
     min-height: min(72vw, 44vh, 17rem);
     width: 100%;
-    /* Stretch, not a content-sized centred column: the figure has to be as wide
-       as the pane before the box can use that width. */
-    display: flex;
-    flex-direction: column;
-  }
-
-  figure {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
     display: flex;
     flex-direction: column;
   }
 
   /*
-   * No aspect-ratio here: the stage's SVG letterboxes its square viewBox inside
-   * whatever box it is given, so the drawing scales to min(width, height) and
-   * fills the space without the box having to be square itself.
+   * No aspect-ratio in the stacked layout: the stage's SVG letterboxes its
+   * square viewBox inside whatever box it is given, so the drawing scales to
+   * min(width, height) without the box having to be square itself.
    */
   .box {
     flex: 1 1 auto;
     min-height: 0;
     width: min(100%, 92vw);
-  }
-
-  .stage {
     display: grid;
     place-items: center;
   }
 
-  figcaption {
-    margin-top: 0.5rem;
+  .credit {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.5rem 0.9rem;
     text-align: center;
     font-size: 0.75rem;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.5));
@@ -229,92 +230,100 @@
    *
    * As a shrinkable flex item it lost to the stage's own min-height floor and
    * came out three rows tall with rows 4–8 clipped away — a table you cannot
-   * read the end of, on a page whose subject is the table. The pane already
-   * scrolls (`safe center` above), so the honest outcome when both the stage
-   * floor and the whole notation cannot fit is a pane you scroll, not notation
-   * with its bottom cut off.
+   * read the end of, on a page whose subject is the table.
    */
+  /* The measure QftTable's short-viewport column counts are keyed to. */
   .notation {
     flex: none;
     width: 100%;
     display: flex;
     justify-content: center;
+    container-type: inline-size;
+    container-name: notation;
   }
 
   .notation > :global(*) {
     width: 100%;
-    max-width: 46rem;
   }
 
   /*
-   * Big screens use both axes. Stacking everything down the middle leaves a
-   * narrow island in a tall field — a phone layout that happened to be opened
-   * on a monitor.
+   * Two columns: the drawing anchors the left and everything you read stacks
+   * down the right.
+   *
+   * The drawing is the full height of the pane and square, so it is as large as
+   * the screen allows with no vh guess anywhere — which is what stops it from
+   * sitting at one fixed size in a large dark field at 4K, and equally from
+   * demanding more height than a squashed window has
+   * (.claude/rules/4k-native-layout.md).
    */
   /*
-   * Wide screens: the drawings anchor the left, everything you read stacks down
-   * the right. The previous arrangement centred a title band over two columns,
-   * which gave the page three things of equal weight in a row and nothing to
-   * start at. Here the figures are unmistakably the subject and the title opens
-   * the column you read.
-   *
-   * The pair spans all three rows so it can take the height the viewport has,
-   * rather than sitting in a band with the screen empty above and below it.
+   * One structural block for both two-column tiers (big screens, and wide-and-
+   * short), which then only differ in the three measures and the type scale.
+   * Written once because the shape is the same shape — duplicating it is how the
+   * two tiers would drift apart.
    */
-  @media (min-width: 90rem) and (min-height: 45rem) {
+  @media (min-width: 90rem) and (min-height: 45rem),
+    (min-width: 44rem) and (max-height: 32rem) {
     .guide {
-      /*
-       * The ceiling is deliberately far above any screen this runs on, so the
-       * viewport governs and the figures keep growing with it. A 40rem cap hit
-       * first at 4K and left the whole app as a small band in a large dark
-       * field, which is the exact failure `.claude/rules/4k-native-layout.md`
-       * exists to prevent.
-       */
-      /*
-       * Smaller than it looks, because the drawing now fits its box instead of
-       * sitting in a third of it. At 54vh the fitted stage came out larger than
-       * the title beside it — a zoomed-in diagram rather than a composed page.
-       * This lands the drawing at about the size it was, with the margin gone.
-       */
-      --box-h: clamp(14rem, 44vh, 52rem);
       display: grid;
-      /* Matched to the instrument's column, so the two modes stay registered
-         across the crossfade and neither leaves dead rail at 4K. */
-      grid-template-columns: auto clamp(26rem, 32vw, 46rem);
       /*
-       * Empty rows top and bottom take the slack. The pair spans the whole
-       * column and is taller than the content rows, and that surplus was being
-       * distributed BETWEEN them — opening a gap between the title and the
-       * table. Pushing it outside the group keeps them tight and still centres
-       * them against the stage.
+       * The drawing takes the LEFTOVER width, it does not declare its own.
+       *
+       * Sizing the track from a square box (`auto` + `aspect-ratio: 1`) makes
+       * the drawing's width a function of the pane's height, and a `1fr`-less
+       * grid cannot shrink an `auto` track — so on any viewport where the two
+       * do not happen to add up, the row simply ran off the right edge. With
+       * `minmax(0, 1fr)` the drawing is min(leftover width, pane height) by
+       * construction: as large as the screen allows, never larger.
        */
-      grid-template-areas: "pair ." "pair head" "pair notation" "pair .";
-      grid-template-rows: 1fr auto auto 1fr;
-      align-content: center;
-      justify-content: center;
-      column-gap: clamp(2rem, 4vw, 5rem);
-      row-gap: clamp(1rem, 2.5vh, 2rem);
+      grid-template-columns: minmax(0, 1fr) var(--read-w);
+      align-items: center;
+      column-gap: var(--col-gap);
     }
 
-    /*
-     * Past the 1680 seam the root font ramps (src/app.css), so everything you
-     * read grows — but 44vh of stage does not grow WITH it. At 3840 the drawing
-     * came out 1015px in a 1628px pane with 613px of empty sky split above and
-     * below it. Nested inside this tier rather than beside it because 58vh at
-     * 1440×900 would push the figure past what that pane has and start it
-     * scrolling; only up here is there height to spend
-     * (.claude/rules/4k-native-layout.md, "use the vertical too").
-     */
-    @media (min-width: 105rem) and (min-height: 60rem) {
-      .guide {
-        --box-h: clamp(20rem, 58vh, 52rem);
-      }
+    .reading {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--read-gap);
+      min-width: 0;
     }
 
     header {
-      grid-area: head;
+      order: 0;
       text-align: left;
-      align-self: end;
+    }
+
+    .pair {
+      /* Stretch, so the box's `height: 100%` resolves against the pane rather
+         than against its own content. */
+      align-self: stretch;
+      flex: none;
+      min-height: 0;
+      min-width: 0;
+      width: auto;
+    }
+
+    .box {
+      flex: none;
+      height: 100%;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .credit {
+      justify-content: flex-start;
+      text-align: left;
+    }
+  }
+
+  @media (min-width: 90rem) and (min-height: 45rem) {
+    .guide {
+      /* Matched to the instrument's column, so the two modes stay registered
+         across the crossfade. */
+      --read-w: clamp(26rem, 32vw, 46rem);
+      --col-gap: clamp(2rem, 4vw, 5rem);
+      --read-gap: clamp(1rem, 2.5vh, 2rem);
     }
 
     h2 {
@@ -326,55 +335,22 @@
       font-size: 0.95rem;
     }
 
-    .pair {
-      grid-area: pair;
-      align-self: center;
-      flex: none;
-      min-height: 0;
-      width: auto;
-    }
-
-    /* Explicit height here: the pair is a grid item beside the reading column,
-       so there is no leftover column height for it to fill. */
-    .box {
-      flex: none;
-      height: var(--box-h);
-      width: auto;
-      aspect-ratio: 1;
-    }
-
-    .notation {
-      grid-area: notation;
-      align-self: start;
+    .credit {
+      font-size: 0.82rem;
     }
   }
 
   /*
    * Wide and short — fold-open landscape, and any laptop with the window
-   * squashed. There is no room to stack a title, two figures and the notation
-   * down 412px, so this tier turns the page on its side: figures left, the
-   * words and the notation strip right, everything smaller.
-   *
-   * Stacking here overflowed the app's fixed height, and since the shell hides
-   * overflow the drawing ran up underneath the move chips.
+   * squashed. There is no room to stack a title, a drawing and the notation
+   * down 412px, so this tier turns the page on its side and everything shrinks
+   * with the pane rather than against it.
    */
   @media (min-width: 44rem) and (max-height: 32rem) {
     .guide {
-      --box-h: min(54vh, 11rem);
-      display: grid;
-      grid-template-columns: auto minmax(15rem, 26rem);
-      grid-template-areas: "pair head" "pair notation";
-      grid-template-rows: auto auto;
-      align-content: center;
-      justify-content: center;
-      column-gap: clamp(1rem, 3vw, 2.5rem);
-      row-gap: 0.5rem;
-    }
-
-    header {
-      grid-area: head;
-      text-align: left;
-      align-self: end;
+      --read-w: minmax(15rem, 26rem);
+      --col-gap: clamp(1rem, 3vw, 2.5rem);
+      --read-gap: 0.4rem;
     }
 
     h2 {
@@ -386,29 +362,14 @@
       font-size: 0.75rem;
     }
 
-    .pair {
-      grid-area: pair;
-      align-self: center;
-      flex: none;
-      min-height: 0;
-      width: auto;
-    }
-
-    .box {
-      flex: none;
-      height: var(--box-h);
-      width: auto;
-      aspect-ratio: 1;
-    }
-
-    .notation {
-      grid-area: notation;
-      align-self: start;
-    }
-
-    figcaption {
-      margin-top: 0.3rem;
-      gap: 0.3rem;
+    /*
+     * The pane is about 200px tall here, and the credit line was the 24px that
+     * pushed the notation under the footer. The claim it makes — computed, not
+     * traced — is made again in the About panel and in the archive view itself,
+     * so this is the one tier that drops it rather than clipping the notation.
+     */
+    .credit {
+      display: none;
     }
   }
 
@@ -416,11 +377,9 @@
     .guide {
       /*
        * Sized for one subject, and for a phone that also has to fit the
-       * notation strip and the layer switches under it.
+       * notation strip under it.
        */
       --box-h: clamp(7rem, 32vw, 15rem);
-      /* Tighter than the fluid default, which overran the app box by a few
-         pixels once the caption under the left figure gained its control. */
       gap: 0.4rem;
     }
   }

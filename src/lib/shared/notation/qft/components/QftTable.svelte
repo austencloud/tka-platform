@@ -120,11 +120,28 @@
 {/if}
 
 <style>
+  /*
+   * A real panel, not a tint.
+   *
+   * At 24% black over an animated starfield the notation read as a ghost — the
+   * aurora bands showed straight through the inactive rows and the whole thing
+   * looked like a placeholder. It is the subject of the page; it gets a surface,
+   * a hairline and a shadow, and the background goes behind it rather than
+   * through it.
+   */
+  .script,
+  .wrap {
+    border-radius: 0.85rem;
+    border: 1px solid rgb(255 255 255 / 0.11);
+    background: rgb(9 11 26 / 0.82);
+    backdrop-filter: blur(14px);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.05) inset,
+      0 18px 40px rgb(0 0 0 / 0.35);
+  }
+
   .script {
     padding: 0.6rem 0.75rem 0.7rem;
-    border-radius: 0.75rem;
-    border: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
-    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.24));
   }
 
   /* The formula, once. Not a label per value — the shape of the line, so the
@@ -147,17 +164,45 @@
   }
 
   /*
-   * Wide and short — fold-open landscape, a squashed laptop window. The pane is
-   * about 220px tall here, and eight lines in one column do not go into it: they
-   * ran under the layer switches, which is the notation being cut off on a page
-   * about notation. Four and four, using the width this tier has spare.
+   * Short viewports — fold-open landscape, a squashed laptop window. Eight lines
+   * in one column do not go into a 200px pane: they ran under the footer, which
+   * is the notation being cut off on a page about notation. So the lines spread
+   * sideways instead, into however many columns the panel it is sitting in can
+   * actually hold.
+   *
+   * A container query, not a media query, because that panel is a different
+   * width in every mode — a 416px reading column in the guide, a ~700px one in
+   * the instrument. Keyed to the viewport this went three-up in both and clipped
+   * the third column off the narrow one. Column counts are pinned per step
+   * rather than auto-fit: with eight items, seven columns would strand the
+   * eighth on a row of its own (.claude/rules/4k-native-layout.md).
    */
-  @media (min-width: 44rem) and (max-height: 32rem) {
-    .lines {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(4, auto);
-      grid-auto-flow: column;
-      column-gap: clamp(1rem, 3vw, 2.5rem);
+  @media (max-height: 32rem) {
+    /* Every millimetre of panel chrome is a millimetre the lines do not get in a
+       200px pane. The lines themselves keep their size. */
+    .script {
+      padding: 0.35rem 0.5rem 0.4rem;
+    }
+
+    .legend {
+      margin-bottom: 0.25rem;
+      font-size: 0.62rem;
+    }
+
+    @container notation (min-width: 26rem) {
+      .lines {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(4, auto);
+        grid-auto-flow: column;
+        column-gap: clamp(1rem, 3vw, 2.5rem);
+      }
+    }
+
+    @container notation (min-width: 40rem) {
+      .lines {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: repeat(3, auto);
+      }
     }
   }
 
@@ -170,7 +215,7 @@
     line-height: 1.35;
     /* Reserved so the active marker cannot shift the line when it appears. */
     border-left: 2px solid transparent;
-    opacity: 0.4;
+    opacity: 0.52;
     transition: opacity 220ms ease;
   }
 
@@ -233,9 +278,6 @@
      */
     flex: none;
     overflow-x: auto;
-    border-radius: 0.75rem;
-    border: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.12));
-    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.24));
   }
 
   table {
@@ -296,8 +338,10 @@
    * One row is the step on screen; the other seven are the context it sits in.
    * Everything recedes except the row the stage is currently drawing.
    */
+  /* 0.52, not 0.38: the un-lit rows are CONTEXT, not decoration — you read the
+     column down them — and at 0.38 on a dark panel they were barely there. */
   tbody tr {
-    opacity: 0.38;
+    opacity: 0.52;
     transition: opacity 220ms ease;
   }
 
@@ -320,6 +364,29 @@
 
   tr.active td {
     font-weight: 700;
+  }
+
+  /*
+   * Past the 1680 seam the drawing beside this grows with the viewport and the
+   * table does not — its height is eight rows of ramped type, which lands it at
+   * about a third of the drawing's and reads as a small card parked next to a
+   * big one. Row height is the one dimension there is room to spend, and spent
+   * here it is air inside the panel rather than air around it
+   * (.claude/rules/4k-native-layout.md, "use the vertical too").
+   */
+  @media (min-width: 105rem) {
+    tbody td,
+    .step {
+      padding-block: 0.85rem;
+    }
+
+    .groups th {
+      padding-top: 1rem;
+    }
+
+    .fields th {
+      padding-bottom: 0.85rem;
+    }
   }
 
   td.radius {

@@ -193,8 +193,13 @@
    * eight-row tables — more than the pane has, so the notation fell off the
    * bottom. Flat is also the better read: the axis runs simple to complex in
    * one direction, and wrapping it hides that halfway through.
+   *
+   * Keyed to the AXIS's own width, not the viewport. Keyed to the viewport this
+   * only fired on big screens and on fold landscape, so a tablet in portrait —
+   * where the axis is a perfectly roomy 644px — still wrapped to two rows and
+   * pushed 500px of content off the bottom of the pane.
    */
-  @media (min-width: 90rem), (min-width: 44rem) and (max-height: 32rem) {
+  @container flower-axis (min-width: 38rem) {
     .row {
       grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 0.25rem;

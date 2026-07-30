@@ -693,15 +693,21 @@
   increment: a half step lands between two lines of the thing you came to read.
   Back, play, forward is the whole vocabulary this app needs.
 -->
+{#snippet transportButtons()}
+  <HorizontalTransportRow
+    isPlaying={playing}
+    onPlaybackToggle={() => (playing = !playing)}
+    onStepFullBack={() => step8(-1)}
+    onStepFullFwd={() => step8(1)}
+  />
+{/snippet}
+
+<!-- The phone's dock stacks the counter over the buttons; the wide footer gives
+     it a zone of its own so the play button stays dead centre either way. -->
 {#snippet transportRow()}
   <div class="transport">
     <span class="counter">{step + 1} / 8</span>
-    <HorizontalTransportRow
-      isPlaying={playing}
-      onPlaybackToggle={() => (playing = !playing)}
-      onStepFullBack={() => step8(-1)}
-      onStepFullFwd={() => step8(1)}
-    />
+    {@render transportButtons()}
   </div>
 {/snippet}
 
@@ -828,9 +834,17 @@
     in, was the thing that read as backwards.
   -->
   <div class="topbar">
-    <a class="exit" href="/notation" aria-label="Leave the QfT app">
-      <i class="fas fa-chevron-left" aria-hidden="true"></i>
-    </a>
+    <!-- Back plus a wordmark: on a wide screen a lone chevron in a corner does
+         not say what you are in, and the left third of the bar was empty. -->
+    <div class="brand">
+      <a class="exit" href="/notation" aria-label="Leave the QfT app">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </a>
+      <span class="wordmark">
+        <span class="wordmark-name">QfT</span>
+        <span class="wordmark-sub">Cushing · 2011</span>
+      </span>
+    </div>
 
     <SegmentedControl
       options={APP_MODE_OPTIONS}
@@ -893,9 +907,15 @@
 
           {#if !phone}
             <div class="knobs">
-              {@render cellBlue()}
-              {@render cellRed()}
-              {@render cellTiming()}
+              <!-- The choices on one surface, the notation on its own: two
+                   things, so two panels. Bare labels and controls floating
+                   straight on the starfield beside a panelled table read as a
+                   layout that had not been finished. -->
+              <div class="control-panel">
+                {@render cellBlue()}
+                {@render cellRed()}
+                {@render cellTiming()}
+              </div>
               {@render cellTable()}
             </div>
           {/if}
@@ -934,7 +954,7 @@
 
           {#if !phone}
             <div class="knobs">
-              {@render instrumentKnobs()}
+              <div class="control-panel">{@render instrumentKnobs()}</div>
               {@render instrumentTable()}
             </div>
           {/if}
@@ -972,13 +992,23 @@
   </main>
 
   <!--
-    Wide screens keep the layer switches and the transport as their own rows
-    under the stage: there is room, and a control you can see is better than
-    one you have to open. The phone gets both inside the dock instead.
+    One footer, mirroring the top bar: what the stage draws on the left, the
+    transport in the middle, where you are in the cycle on the right.
+
+    It used to be two separate centred rows with a gap between them, which at
+    any width above a laptop read as three clusters of controls floating in
+    empty sky rather than as the bottom of an instrument. One bar, edge to edge,
+    on its own surface — and past the 1680 seam the three zones spread into a
+    single row, so the width becomes the bar instead of becoming margin.
   -->
   {#if !phone}
-    <div class="layers-row">{@render layerSwitches(false)}</div>
-    {@render transportRow()}
+    <div class="footer">
+      <div class="zone zone-layers">{@render layerSwitches(false)}</div>
+      <div class="zone zone-transport">{@render transportButtons()}</div>
+      <div class="zone zone-counter">
+        <span class="counter">{step + 1} / 8</span>
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -1144,13 +1174,12 @@
      * inherited `auto`, collapsed to nothing against Crossfade's absolutely
      * positioned layers, and the dock inherited the `1fr` meant for the stage.
      */
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     grid-template-areas:
       "topbar"
       "chips"
       "surface"
-      "layers"
-      "transport";
+      "footer";
     gap: var(--app-pad-block);
     padding: var(--app-pad-block) var(--app-pad);
     overflow: hidden;
@@ -1172,15 +1201,171 @@
   }
 
   /*
+   * The footer. Full-bleed on its own surface, and the last row of the app grid
+   * — so the negative margins are the only thing standing between it and the
+   * three edges of the screen it should be touching.
+   */
+  .footer {
+    grid-area: footer;
+    margin-inline: calc(-1 * var(--app-pad));
+    margin-bottom: calc(-1 * var(--app-pad-block));
+    padding: 0.55rem var(--app-pad);
+    padding-bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px));
+    /*
+     * One centred cluster — switches, transport, counter — rather than a
+     * centred row of switches stacked over a centred transport. Two centred
+     * rows put a 160px band of empty dark across the bottom of a 900px screen
+     * with a lone counter marooned in the right of it. Wrapping only kicks in
+     * below about 1100px, where the two groups genuinely do not share a line.
+     */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem clamp(0.9rem, 2vw, 2rem);
+    background: linear-gradient(
+      to bottom,
+      rgb(8 10 24 / 0.62) 0,
+      rgb(8 10 24 / 0.94) 100%
+    );
+    border-top: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.1));
+    backdrop-filter: blur(12px);
+  }
+
+  /*
+   * The footer and the phone's dock chrome are both already surfaces, so the
+   * transport drops its own card inside them — a bordered card sitting on a
+   * bordered bar reads as two pieces of chrome stacked, which is the thing the
+   * one-footer change was for. Same override PlaybackBar makes for the same
+   * reason.
+   */
+  .footer :global(.horizontal-transport-row),
+  .bottom-chrome :global(.horizontal-transport-row) {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  /* A fixed measure so the counter never resizes its own slot as the step
+     advances (.claude/rules/no-layout-shift.md). */
+  .zone-counter {
+    min-width: 4ch;
+    text-align: right;
+  }
+
+  /*
+   * Past the seam there is width for all three to spread: switches on the left
+   * edge, transport on the centre line of the SCREEN, counter on the right —
+   * a status bar, and the mirror of the top bar. `1fr auto 1fr` is what puts the
+   * play button on the centre line rather than in the middle of what is left,
+   * and it only holds once each side track can carry its own group.
+   */
+  @media (min-width: 105rem) {
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      column-gap: clamp(1rem, 2vw, 2.5rem);
+      padding-block: 0.7rem;
+    }
+
+    .zone-layers .layers {
+      justify-content: flex-start;
+    }
+
+    .zone-counter {
+      justify-self: end;
+    }
+
+    /*
+     * The chrome primitives size their type in rem, so it ramps — but their
+     * padding and touch floors are px, so at 3840 the pills came out as 18px
+     * labels crammed into a 44px box and the transport read as a row of small
+     * dots. Restated in rem here, on this route only, so the whole bar grows
+     * with everything else (.claude/rules/4k-native-layout.md: past 1680 the
+     * ELEMENTS have to scale too, not just the type).
+     */
+    .chips :global(.filter-chip),
+    .zone-layers :global(.filter-chip) {
+      padding: 0.4rem 0.8rem;
+      min-height: 2.5rem;
+      gap: 0.4rem;
+    }
+
+    .footer :global(.step-btn) {
+      width: 3rem;
+      height: 3rem;
+      min-width: 3rem;
+      min-height: 3rem;
+    }
+
+    .footer :global(.play-btn) {
+      width: 4.2rem;
+      height: 4.2rem;
+      min-width: 4.2rem;
+      min-height: 4.2rem;
+    }
+
+    .footer :global(.play-icon-stack),
+    .footer :global(.play-btn svg) {
+      width: 1.9rem;
+      height: 1.9rem;
+    }
+  }
+
+  /*
    * The app's own header. Back / mode / colophon, with the mode switch centred
    * against the two icon buttons rather than pushed off-centre by them.
    */
   .topbar {
     grid-area: topbar;
     display: grid;
-    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    /*
+     * Mirrored side tracks, so the mode switch sits on the centre line of the
+     * screen even though the left zone carries a wordmark the right one does
+     * not. `1fr` both sides rather than a measured width: the wordmark hides on
+     * a phone and the two tracks stay equal without a second breakpoint.
+     */
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+  }
+
+  .wordmark {
+    display: grid;
+    line-height: 1.15;
+    /* Hidden below the tier where the bar has room for it — on a phone the mode
+       switch needs the width more than the title does. */
+    display: none;
+  }
+
+  .wordmark-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--semantic-text-primary, #fff);
+  }
+
+  .wordmark-sub {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.5));
+  }
+
+  @media (min-width: 48rem) {
+    .wordmark {
+      display: grid;
+    }
+  }
+
+  .topbar > .about {
+    justify-self: end;
   }
 
   /*
@@ -1321,7 +1506,11 @@
    * stage again, which is the thing overlaying the chrome was meant to stop.
    */
   .app.docked .surface {
-    padding-bottom: 11.5rem;
+    /* 10.5rem = 168px against a measured 161px of collapsed chrome — the
+       transport gave back its own card padding when the chrome became the
+       surface, so the old 11.5rem was reserving room for padding that no longer
+       exists. */
+    padding-bottom: 10.5rem;
   }
 
   /*
@@ -1418,6 +1607,25 @@
     width: min(100%, 42rem);
   }
 
+  /*
+   * The knob group's surface, matched to the notation panel's so the reading
+   * column reads as two panels of one instrument rather than as controls adrift
+   * over a starfield. Not applied in the dock's tray, which is already a
+   * surface — a panel inside a panel is the same mistake in the other direction.
+   */
+  .control-panel {
+    display: grid;
+    gap: clamp(0.6rem, 1.5vh, 1.1rem);
+    padding: clamp(0.7rem, 1.4vh, 1.1rem) clamp(0.8rem, 1.2vw, 1.2rem);
+    border-radius: 0.85rem;
+    border: 1px solid rgb(255 255 255 / 0.11);
+    background: rgb(9 11 26 / 0.72);
+    backdrop-filter: blur(14px);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.05) inset,
+      0 18px 40px rgb(0 0 0 / 0.3);
+  }
+
   .knob-label {
     display: block;
     margin-bottom: 0.35rem;
@@ -1500,8 +1708,11 @@
     border-radius: 0.4rem;
   }
 
+  /* The measure QftTable's short-viewport column counts are keyed to. */
   .notation {
     width: 100%;
+    container-type: inline-size;
+    container-name: notation;
   }
 
   /*
@@ -1578,7 +1789,7 @@
        * has twice the notation to show should not be held to the width of one
        * that does not.
        */
-      grid-template-columns: auto clamp(26rem, 46vw, 74rem);
+      grid-template-columns: minmax(0, 1fr) clamp(26rem, 46vw, 74rem);
     }
 
     .instrument.cell .knobs {
@@ -1607,6 +1818,28 @@
   }
 
   /*
+   * Wide but not tall — a 1440×900 laptop, the most common desktop this runs on.
+   *
+   * The cell mode carries two flower axes, a mode control AND two eight-row
+   * tables in one column; at 900px that column wanted 765px of a 711px pane and
+   * rows 7 and 8 of both hands sat under the footer. Everything above 960px tall
+   * has the room and keeps the roomier spacing, so this trims only where the
+   * trim is the difference between reading the notation and not.
+   */
+  @media (min-width: 90rem) and (min-height: 45rem) and (max-height: 60rem) {
+    .instrument.cell .control-panel {
+      gap: 0.5rem;
+      padding-block: 0.55rem;
+    }
+
+    .instrument.cell .notation.duet :global(tbody td),
+    .instrument.cell .notation.duet :global(tbody th) {
+      padding-block: 0.16rem;
+      font-size: 0.95rem;
+    }
+  }
+
+  /*
    * Wide and short — fold-open landscape, a squashed laptop window.
    *
    * The pane is about 220px tall here. Two flower axes, a mode control and two
@@ -1630,16 +1863,21 @@
      * ran off the bottom of a 220px pane. Trading the horizontal it has for
      * the vertical it does not.
      */
+    /* The reading side carries two flower axes and a mode control at this
+       height; the drawing can never be taller than a ~190px pane, so it gets
+       the smaller share of the width rather than an equal one. */
     .instrument.cell {
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
     }
 
-    .instrument.cell .knobs {
+    /* The two flower axes side by side inside the panel, with the mode control
+       spanning under them. */
+    .instrument.cell .control-panel {
       grid-template-columns: 1fr 1fr;
       column-gap: clamp(0.75rem, 2vw, 1.5rem);
     }
 
-    .instrument.cell .knob {
+    .instrument.cell .control-panel .knob {
       grid-column: 1 / -1;
     }
 
@@ -1647,6 +1885,47 @@
        worth a row of a pane this short. */
     .instrument.cell .spec {
       display: none;
+    }
+  }
+
+  /*
+   * Tablet portrait — one column, but a tall one, and this is where the
+   * instrument carries the most content relative to its width: four knobs or two
+   * flower axes, plus a full eight-row table (two of them in a cell). Stacked at
+   * the default measures that ran 190–530px past the pane.
+   *
+   * Three moves, in order of what they buy: a smaller drawing (the pane is
+   * portrait, so height is the scarce axis and the drawing is the biggest single
+   * consumer of it), the knobs paired side by side, and the two flower axes
+   * likewise. The notation keeps its full size — it is what the page is for.
+   */
+  @media (min-width: 48rem) and (max-width: 89.99rem) and (min-height: 45rem) {
+    .instrument {
+      --box-h: clamp(8rem, 13vh, 13rem);
+      gap: clamp(0.5rem, 1.2vh, 0.9rem);
+    }
+
+    .knob-pair {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      column-gap: clamp(1rem, 2.5vw, 2rem);
+    }
+
+    /*
+     * The flower axes stay full width, deliberately. Side by side they drop
+     * under the width their one-row-of-twelve layout needs and wrap to two rows
+     * each — 211px per axis instead of 93px, which is worse than the stacking it
+     * was meant to fix. The height comes out of the two tables instead, where it
+     * is row padding rather than content.
+     */
+    .instrument.cell .notation.duet :global(tbody td),
+    .instrument.cell .notation.duet :global(tbody th) {
+      padding-block: 0.26rem;
+    }
+
+    .instrument.cell .control-panel {
+      gap: 0.5rem;
+      padding-block: 0.55rem;
     }
   }
 
@@ -1660,9 +1939,6 @@
    */
   @media (min-width: 90rem) and (min-height: 45rem) {
     .instrument {
-      /* Ceiling deliberately above any real screen, so the viewport governs and
-         the stage keeps growing rather than capping out at 4K. */
-      --box-h: clamp(16rem, 54vh, 64rem);
       display: grid;
       /*
        * The ceiling is generous on purpose. rem already ramps with the viewport
@@ -1670,9 +1946,9 @@
        * either side at 3840 — the band has to grow with the screen, not just
        * the type inside it (.claude/rules/4k-native-layout.md).
        */
-      grid-template-columns: auto clamp(26rem, 32vw, 46rem);
+      grid-template-columns: minmax(0, 1fr) clamp(26rem, 32vw, 46rem);
       grid-template-areas: "stage head" "stage knobs";
-      grid-template-rows: auto auto;
+      grid-template-rows: 1fr auto;
       align-content: safe center;
       justify-content: center;
       column-gap: clamp(2rem, 4vw, 5rem);
@@ -1694,9 +1970,20 @@
       font-size: 0.95rem;
     }
 
+    /*
+     * As tall as the pane and square, rather than a fraction of the viewport.
+     * A vh clamp cannot know how much chrome is above and below it, so it was
+     * either leaving a band of empty sky at 4K or demanding height a squashed
+     * window did not have. Spanning both rows of a `1fr auto` grid makes the
+     * pane itself the measure (.claude/rules/4k-native-layout.md).
+     */
     .stage-box {
       grid-area: stage;
-      align-self: center;
+      align-self: stretch;
+      height: 100%;
+      min-height: 0;
+      width: 100%;
+      min-width: 0;
     }
 
     .knobs {
@@ -1710,11 +1997,6 @@
       align-items: end;
       column-gap: clamp(1.5rem, 2.5vw, 3rem);
     }
-  }
-
-  .layers-row {
-    grid-area: layers;
-    min-width: 0;
   }
 
   .layers {
@@ -1753,12 +2035,6 @@
   .tray .layers :global(.filter-chip:last-child) {
     grid-column: 1 / -1;
     justify-content: center;
-  }
-
-  /* Only the wide layout's copy is a grid child; the phone's lives in the
-     bottom chrome, which places it itself. */
-  .app > .transport {
-    grid-area: transport;
   }
 
   /*
@@ -2019,11 +2295,21 @@
    */
   @media (min-width: 44rem) and (max-height: 32rem) {
     .instrument {
-      --box-h: min(52vh, 11rem);
       display: grid;
-      grid-template-columns: auto minmax(15rem, 32rem);
+      /*
+       * The reading side takes three quarters of the width here. The drawing
+       * can never be taller than a ~190px pane, so width spent on its column is
+       * width wasted — and the four control groups plus the notation need every
+       * bit of the rest to lay out flat instead of stacking off the bottom.
+       */
+      /*
+       * The drawing gets a track exactly as wide as the pane is tall — it can
+       * never be larger than that, so anything more is width the controls need.
+       * 12rem tracks the pane height closely across this tier's range.
+       */
+      grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
       grid-template-areas: "stage head" "stage knobs";
-      grid-template-rows: auto auto;
+      grid-template-rows: 1fr auto;
       /* `safe`, because at this height the knobs can be taller than the pane:
          plain centring would push the title off the top with no way to scroll
          back to it. */
@@ -2048,18 +2334,53 @@
       font-size: 0.75rem;
     }
 
+    /* Same rule as the big-screen tier: the pane is the measure, so a 412px
+       window gets a 412px-scaled drawing instead of an 11rem one that overran
+       it. */
     .stage-box {
       grid-area: stage;
-      /* Start, not centre: the knob column is the taller of the two here, and a
-         centred stage hangs below the fold with only its top edge on screen. */
-      align-self: start;
+      align-self: stretch;
+      height: 100%;
+      min-height: 0;
+      width: 100%;
+      min-width: 0;
     }
 
     .knobs {
       grid-area: knobs;
       align-self: start;
       width: auto;
-      gap: 0.5rem;
+      gap: 0.35rem;
+    }
+
+    /*
+     * All four knobs on ONE row, and the notation under them in three columns.
+     *
+     * Stacked, the four groups plus the table wanted 428px of a 190px pane and
+     * ran off the bottom of the window. Beside each other they do not fit
+     * either — the eight-segment rotation control alone needs ~180px and the
+     * notation needs ~280. Flat across the full width they all fit with room:
+     * the radius slider takes the slack, the other three size to their content.
+     *
+     * `display: contents` on the two pair wrappers so the four knobs become
+     * items of this grid rather than two nested sub-grids.
+     */
+    .instrument:not(.cell) .control-panel {
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
+      align-items: end;
+      column-gap: 0.9rem;
+      padding-block: 0.35rem;
+    }
+
+    .instrument:not(.cell) .knob-pair,
+    .instrument:not(.cell) .knob-row {
+      display: contents;
+    }
+
+    /* The rotation count and the direction are on the chips and the drawing; the
+       sentence restating them is not worth a row of a pane this short. */
+    .instrument:not(.cell) .spec {
+      display: none;
     }
   }
 
