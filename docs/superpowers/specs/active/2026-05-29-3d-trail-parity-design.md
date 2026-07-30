@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: S
-remaining: "Body status: Approved 2026-05-29."
+remaining: "Implement and test the missing 300 ms entrance / 200 ms exit visibility envelope. Then capture LOW and HIGH tier visual proof in the viewer and Coven, and confirm the current maximum Coven formation produces no GPU-starvation timeout flood."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # 3D Trail Parity — Design
 
@@ -101,4 +101,17 @@ Root cause of "no trails render" = no `effectsSlot` provider. Fix:
 
 - Visual: open the sequence viewer 3D pane (or `/coven`) with a sequence playing; the prop tips leave a glowing, tapering, fading trail that reads like the 2D animation canvas. Screenshot.
 - Tier: force LOW tier (localStorage override `tka-3d-quality-tier-override`) → trail still shows the shader halo, no bloom. Force HIGH → bloom haze appears.
-- Coven: with ~144 rigs, the trail renders without the GPU-starvation render-timeout flood.
+- Coven: with the current maximum formation (6 center rigs plus 6 optional acolytes), the trail renders without the GPU-starvation render-timeout flood.
+
+## Revalidation (2026-07-29)
+
+The main implementation landed but this spec never moved out of the active queue:
+
+- `a8f2a4af6c` consolidated the renderer, added the halo and tier-gated bloom, wired the viewer and Coven slots, deleted the competing implementations, and recorded live `/coven` trail proof.
+- `b4cd826dc9` added per-performer effect routing and adaptive Catmull-Rom subdivisions.
+- `674c254d49` stitched the ribbon with an index buffer.
+- `fc538455ed` made trail tuning apply live.
+
+Current source confirms one Catmull-Rom trail implementation, shared `FADE_EXPONENT` and `MIN_TAIL_WIDTH_RATIO` constants, indexed ribbon geometry, an additive Gaussian halo, HIGH/MEDIUM bloom, LOW-tier shader glow, and live `effectsSlot` wiring in both consumers. Focused verification passed 17 tests across `trail-ring-buffer.test.ts` and `trail-mesh.test.ts`.
+
+One approved behavior is still absent: `Trail3D.svelte` mounts and unmounts its mesh immediately when `enabled` changes. It does not apply the specified 300 ms entrance and 200 ms exit opacity envelope. LOW/HIGH comparison screenshots and a current-formation Coven performance check also remain unrecorded.
