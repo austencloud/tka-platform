@@ -1,14 +1,22 @@
 ---
-status: backlog
+status: archived
 value: 4
 effort: M
-remaining: "iOS Universal Links blocked: TEAMID placeholder in AASA file, ios/ not scaffolded, entitlements not configured. Android App Links + web fallback complete. Depends on Capacitor Phase 2."
-depends_on: ""
+remaining: "Superseded by the active native-mobile integration spec and the 2026-06-30 offline-persistence audit. Android App Links and appUrlOpen shipped; iOS Universal Links remain owned by native mobile. The proposed dense inline-QR default was deliberately retired as unscannable."
+depends_on: "2026-04-24-native-mobile-integration-design.md"
 plan_path: ""
 tags: []
-last_triaged: 2026-05-04
+last_triaged: 2026-07-30
 ---
 # Festival QR Offline Flow — Audit & Path Forward (Capacitor-era)
+
+> **Archived 2026-07-30:** Superseded by
+> `active/2026-04-24-native-mobile-integration-design.md` and
+> `docs/reference/offline-persistence-audit-2026-06-30.md`. Android App Links
+> and cold/warm `appUrlOpen` routing landed in `d321342cc3`. iOS Universal
+> Links and device verification remain in the native-mobile spec. The proposed
+> festival default of dense self-contained `s~...` QRs was later rejected in
+> `29ad58ae16` because those codes were not reliably scannable.
 
 **Date:** 2026-04-14
 **Scope:** The "festival QR code scenario": user scans a printed QR code with a phone that may have poor or no connectivity, lands on a sequence viewer, and should see the sequence render.
