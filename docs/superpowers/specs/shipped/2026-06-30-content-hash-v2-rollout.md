@@ -1,20 +1,22 @@
 ---
-status: active
+status: shipped
 value: 3
 effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Content-Hash V2 Rollout (Option A) — Spec
 
-> Status: **mechanism built + proven, live-core wiring + migration GATED on
-> Austen.** Implements Option A from the reversal findings
+> Status: **shipped and verified.** The version-aware rollout, corpus migration,
+> and V2 activation completed on 2026-06-30. Implements Option A from the reversal findings
 > (`2026-06-30-reversal-derivation-reconciliation-findings.md`): exclude
 > round-trip-derived fields from the identity hash so re-derivation can't change
 > identity, killing the phantom-fork-on-resave.
+
+> **Queue closeout (2026-07-29):** `e7331c42c1`, `d814ad76d3`, `81f72d2457`, and `4a9b8e872c` contain the staged implementation and V2 flip. The recorded post-execution proof covered 38 identity tests and 936 production documents with zero would-rewrite or would-fork-on-resave results.
 
 ## Goal
 

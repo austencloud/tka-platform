@@ -1,18 +1,21 @@
 ---
-status: active
+status: archived
 value: 2
 effort: M
-remaining: "Body status: Draft"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+superseded_by: docs/superpowers/specs/shipped/2026-05-21-performer-rail-design.md
+last_triaged: 2026-07-29
 ---
 # Per-Performer Prop Sizing — Design Spec
 
 **Date:** 2026-05-20
-**Status:** Draft
+**Status:** Archived as superseded (verified 2026-07-29)
 **Scope:** Move prop size out of Scene popover into Performers popover. Add per-performer sizing with linked/unlinked mode. Fix chip strip layout. Add performer identification badges in 3D scene.
+
+> **Queue closeout:** The underlying per-performer sizing, linked state, scene threading, and badges landed across `a2bea2b2e1`, `d62aada8b2`, `0192fbc583`, and `776b3346aa`. The proposed popover structure was replaced by the shipped Performer Rail and Performer Hub designs, so this draft is retained as implementation history rather than active work.
 
 ---
 

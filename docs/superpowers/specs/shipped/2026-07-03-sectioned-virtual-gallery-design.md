@@ -1,18 +1,20 @@
 ---
-status: active
+status: shipped
 value: 3
 effort: M
-remaining: "Body status: Active"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Sectioned Virtual Gallery — Design
 
 **Date:** 2026-07-03
-**Status:** Active
+**Status:** Shipped (verified 2026-07-29)
 **Author:** Claude (Opus 4.8) + Austen
+
+> **Queue closeout:** `9d6b3cfe75` shipped the sectioned virtual grid and recorded browser measurements of 6–7 rendered cards, 57–65 ms tasks, bounded DOM size, working section jumps, and correct mobile columns. `81b9716271` fixed the remaining first-paint hole. The component remains wired through `BrowseGrid.svelte` and `BrowsePanel.svelte`.
 
 ## Problem
 

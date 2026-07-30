@@ -1,12 +1,12 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Fable Spec 1 — Loop-Detection Audit Fixes
 

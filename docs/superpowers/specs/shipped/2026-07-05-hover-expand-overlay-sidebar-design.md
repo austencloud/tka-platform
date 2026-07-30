@@ -1,18 +1,20 @@
 ---
-status: active
+status: shipped
 value: 3
 effort: L
-remaining: "Body status: Awaiting review"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Hover-Expand Overlay Rail Sidebar — Design
 
 **Date:** 2026-07-05
-**Status:** Awaiting review
+**Status:** Shipped (verified 2026-07-29)
 **Inspiration:** Cloudflare dashboard sidebar (thin rail, hover expands as overlay above content, content never reflows)
+
+> **Queue closeout:** The rail, intent controller, and overlay expansion shipped across `b1af963bbc`, `2db901593b`, and `5637f5e982`. The single-tree morph followed in `89bcf81be8`, and the shell now lives in `@austencloud/sidebar` via `5483ff00f5`. `tests/unit/sidebar-shell-contract.test.ts` guards that package boundary.
 
 ## Problem
 

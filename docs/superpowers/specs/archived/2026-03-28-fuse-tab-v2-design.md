@@ -1,17 +1,20 @@
 ---
-status: backlog
+status: archived
 value: 3
 effort: L
-remaining: Full rebuild — v2 was reverted. FLIP approach failed
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-03-28-fuse-tab-v2.md
 tags: []
-last_triaged: 2026-04-26
+superseded_by: docs/superpowers/specs/2026-07-20-fuse-mixer-design.md
+last_triaged: 2026-07-29
 ---
 # Fuse Tab v2 — Single Component with Assemble/Disassemble States
 
 **Date:** 2026-03-28
-**Status:** Draft
+**Status:** Archived as superseded (verified 2026-07-29)
+
+> **Queue closeout:** This v2 was reverted and its FLIP model was explicitly recorded as failed. The July Fuse-as-a-Mixer design (`65af4c3175`) replaced the interaction model and is the current lineage.
 
 ## Problem
 

@@ -1,18 +1,21 @@
 ---
-status: backlog
+status: archived
 value: 2
 effort: M
-remaining: Full build — merge card view into decks tab
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+superseded_by: "Choreo-card module retirement (dd8420258d)"
+last_triaged: 2026-07-29
 ---
 # Merge Card View into Decks Tab
 
 **Date:** 2026-03-28
-**Status:** Draft
+**Status:** Archived as obsolete (verified 2026-07-29)
 **Supersedes:** `2026-03-28-card-preview-tab-design.md` (Card Preview as separate tab)
+
+> **Queue closeout:** The proposed Decks and Designer tab structure no longer exists. Commit `dd8420258d` retired Catalogs, Card Designer, and Theme Lab, removing the product surface this draft intended to reorganize.
 
 ## Problem
 

@@ -1,18 +1,20 @@
 ---
-status: active
+status: shipped
 value: 3
 effort: S
-remaining: "Body status: Active"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Creator Profile — Readability + Density Pass
 
 **Date:** 2026-06-30
-**Status:** Active
+**Status:** Shipped (verified 2026-07-29)
 **Scope:** Visual/UX polish of the creator profile page (`/browse/creators/[id]`). No data-model changes, no layout rewrite.
+
+> **Queue closeout:** The readability and density pass shipped in `7b72aefa6d`, followed by the profile audit fixes in `df6bc2f1cc`. The current Creators module retains the compact panel state, frosted profile surface, and collapsed admin controls after its move from Browse to Social.
 
 ## Problem
 

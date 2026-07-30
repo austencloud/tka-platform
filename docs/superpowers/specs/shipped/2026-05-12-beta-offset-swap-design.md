@@ -1,18 +1,20 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: M
-remaining: "Body status: Approved (autonomous mode)"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Beta Offset Swap — Design Spec
 
 **Date:** 2026-05-12
-**Status:** Approved (autonomous mode)
+**Status:** Shipped (verified 2026-07-29)
 **Legacy parity:** Porting from Python desktop app
+
+> **Queue closeout:** Beta swap shipped in `ceb4a0f342`. The current data model, prop placement, arrow placement, Create handler, editor UI, MCP renderer, cache-key differentiation, and `tests/unit/CellCacheKeyDeriver.test.ts` all carry `betaSwapped`.
 
 ## Problem
 

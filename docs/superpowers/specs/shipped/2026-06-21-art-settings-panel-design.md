@@ -1,18 +1,20 @@
 ---
-status: active
+status: shipped
 value: 3
 effort: S
-remaining: "Body status: Approved (verbal, 2026-06-21)"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Art Settings Panel + Tunnel Export — Design
 
 **Date:** 2026-06-21
-**Status:** Approved (verbal, 2026-06-21)
+**Status:** Shipped (verified 2026-07-29)
 **Related:** `2026-06-20-tunnel-view-design.md` (+ Art-mode addendum), tunnel feature under `src/lib/shared/sequence-viewer/tunnel/`.
+
+> **Queue closeout:** The Art settings rail shipped in `8c6338de3b`; Art-mode tunnel export shipped in `c776aacd34` and gained full kaleidoscope-layer rendering in `a39c7027f3`. The current source and `tests/unit/art-export-analytics.test.ts` preserve the implemented path.
 
 ## Goal
 

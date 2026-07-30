@@ -1,26 +1,22 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: XL
-remaining: "DRIFT 2026-07-25 — largely shipped. Body says 'Approved (go nuts)' as though unstarted, but gallery drill v7 landed (src/lib/features/browse/gallery-home/GalleryDrill.svelte; commit 'land gallery drill v7 — unified front door + content peek', plus Max Turn Intensity section and show-all collage polish). 21 of 25 commits touching its named files are topical. Reconcile against the shipped drill before implementing anything here."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Gallery Drill — Content-Peek Visual Redesign
 
 **Date:** 2026-07-01
-**Status:** Approved (Austen: "go nuts")
+**Status:** Shipped
 **Surface:** `/browse/gallery` front door (`GalleryDrill.svelte`)
 
-> **DRIFT WARNING (2026-07-25) — this spec's status line is stale.**
-> Gallery drill **v7 shipped**: `GalleryDrill.svelte` exists, and commits landed
-> the unified front door, content peek, Max Turn Intensity section, and the
-> show-all collage strip.
->
-> **Reconcile against the shipped drill before building from this spec.**
-> Treat it as a record of intent, not a work order.
+> **QUEUE CLOSE-OUT 2026-07-29.** Gallery drill v7 shipped in `e2d821b1f9`.
+> Follow-up commits added desktop tiers and the later v8 refinements recorded
+> below. `GalleryDrill.svelte` remains the live gallery front door.
 
 
 ## Locked interaction model (unchanged)

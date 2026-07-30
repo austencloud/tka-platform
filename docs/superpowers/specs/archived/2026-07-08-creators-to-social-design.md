@@ -1,8 +1,25 @@
+---
+status: archived
+value: 3
+effort: M
+remaining: ""
+depends_on: ""
+plan_path: ""
+tags: [creators, navigation, social]
+superseded_by: src/lib/features/creators/CreatorsModule.svelte
+last_triaged: 2026-07-29
+---
+
 # Move Creators from Browse to Social
 
 **Date:** 2026-07-08
 **Status:** Superseded 2026-07-25
 **Related:** `2026-07-08-collections-ia-mine-joint-others-design.md`
+
+> **ARCHIVED 2026-07-29.** Commit `2a940bd17e` promotes Creators to its own
+> top-level module. Both intermediate routes from this design redirect to
+> `/creators`, so implementing this Social-tab placement would restore an
+> intentionally retired information architecture.
 
 Creators now has its own tabless module at `/creators`. Both routes introduced
 by this design, `/browse/creators/*` and `/social/creators/*`, redirect to the
