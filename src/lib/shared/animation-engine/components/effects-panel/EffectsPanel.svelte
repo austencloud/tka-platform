@@ -508,6 +508,7 @@
             <EffectTuneStrip
               effectId={activeEffect}
               config={effectsConfigState}
+              propType={animationSettings.currentPropType}
               overrides={tuneOverrides}
               onSettingChange={(setting, previousValue, value, coalesce) =>
                 reportSetting(

@@ -8,13 +8,14 @@
  *
  * Every effect has a uniform Primary row (Color/Palette · Intensity · two
  * character knobs, 3–5 controls) so effects feel equally simple to control;
- * deeper params live under tier "advanced". `tracking` is the standard
- * left/both/right segmented control for tip-emission effects.
+ * deeper params live under tier "advanced". `tracking` is the prop-aware end
+ * selector for tip-emission effects.
  *
  * Spec: docs/superpowers/specs/2026-06-21-effect-control-consolidation-design.md
  */
 
 import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+import { getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 
 export type ControlType =
   | "slider"
@@ -53,9 +54,9 @@ export interface ControlDescriptor {
 }
 
 const TRACK_OPTS = [
-  { value: "left_end", label: "Left" },
-  { value: "both_ends", label: "Both" },
-  { value: "right_end", label: "Right" },
+  { value: "left_end", label: "End 1" },
+  { value: "both_ends", label: "Both Ends" },
+  { value: "right_end", label: "End 2" },
 ];
 
 // Trails-only: emit from the hand path (prop center) instead of the tips. The
@@ -65,6 +66,38 @@ const TRAILS_TRACK_OPTS = [
   ...TRACK_OPTS,
   { value: "hand", label: "Hand" },
 ];
+
+function compactEndLabel(label: string): string {
+  return label.replace(/ End$/, "");
+}
+
+/**
+ * Translate the legacy left/right tracking values into the names carried by
+ * the selected prop. Staff controls read Pinky / Pinky + Thumb / Thumb while
+ * the persisted values and renderer routing remain unchanged.
+ */
+export function resolveEffectControlOptions(
+  control: ControlDescriptor,
+  propType: string | null | undefined,
+): { value: string; label: string }[] {
+  const options = control.options ?? [];
+  if (control.field !== "trackingMode") return options;
+
+  const [leftEnd, rightEnd] = getBilateralEndLabels(propType ?? "");
+  const left = compactEndLabel(leftEnd);
+  const right = compactEndLabel(rightEnd);
+  const combined =
+    leftEnd === "End 1" && rightEnd === "End 2"
+      ? "Both Ends"
+      : `${left} + ${right}`;
+
+  return options.map((option) => {
+    if (option.value === "left_end") return { ...option, label: left };
+    if (option.value === "both_ends") return { ...option, label: combined };
+    if (option.value === "right_end") return { ...option, label: right };
+    return option;
+  });
+}
 
 const isCustomPalette = (i: Record<string, unknown>) => i.palette === "custom";
 

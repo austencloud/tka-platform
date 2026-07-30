@@ -10,6 +10,7 @@ import {
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import {
   EFFECT_CONTROLS,
+  resolveEffectControlOptions,
   type ControlDescriptor,
 } from "$lib/shared/effects/domain/effect-control-manifest";
 import {
@@ -88,6 +89,19 @@ describe("effect control fields", () => {
     expect(animation.setTrackingMode).toHaveBeenCalledWith(
       TrackingMode.BOTH_ENDS
     );
+  });
+
+  it("uses canonical staff-end names for trail tracking", () => {
+    const track = EFFECT_CONTROLS.trails.find(
+      (control) => control.id === "trails-track"
+    )!;
+
+    expect(resolveEffectControlOptions(track, "staff")).toEqual([
+      { value: "left_end", label: "Pinky" },
+      { value: "both_ends", label: "Pinky + Thumb" },
+      { value: "right_end", label: "Thumb" },
+      { value: "hand", label: "Hand" },
+    ]);
   });
 
   it("routes fire color controls through the flame color conversion", () => {

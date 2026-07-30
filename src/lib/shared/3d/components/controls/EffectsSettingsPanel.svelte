@@ -56,6 +56,16 @@
   const multi = $derived(
     performers && performers.length > 0 ? performers : null
   );
+  const trackingPropType = $derived.by(() => {
+    if (!multi) {
+      return performer?.effectiveProp ?? animationSettings.currentPropType;
+    }
+
+    const firstProp = multi[0]?.effectiveProp;
+    return firstProp && multi.every((item) => item.effectiveProp === firstProp)
+      ? firstProp
+      : null;
+  });
 
   const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
@@ -337,6 +347,7 @@
       <EffectControlStack
         effect={activeEffectId}
         {config}
+        propType={trackingPropType}
         overrides={controlOverrides}
         onSettingChange={handleEffectSettingChange}
       />
@@ -357,6 +368,7 @@
           <EffectControlStack
             effect={activeEffectId}
             {config}
+            propType={trackingPropType}
             overrides={controlOverrides}
             tiers={["advanced"]}
             onSettingChange={handleEffectSettingChange}

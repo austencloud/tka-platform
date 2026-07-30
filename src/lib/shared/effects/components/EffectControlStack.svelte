@@ -18,6 +18,7 @@
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
     EFFECT_CONTROLS,
+    resolveEffectControlOptions,
     type ControlTier,
   } from "$lib/shared/effects/domain/effect-control-manifest";
   import {
@@ -37,6 +38,8 @@
      *  selected knob chip already names the control, so the label is redundant
      *  and the reclaimed width lets segmented controls fit the narrow tray. */
     hideLabel?: boolean;
+    /** Prop whose end names should appear in tracking controls. */
+    propType?: string | null;
     /** Per-field get/set overrides for controls whose value does NOT live on
      *  effectsConfig[effect] (e.g. Trails' tailLength / trackingMode live in the
      *  separate animationSettings.trail store). Keyed by descriptor `field`. The
@@ -56,6 +59,7 @@
     tiers = ["primary", "tracking"],
     only,
     hideLabel = false,
+    propType = null,
     overrides,
     onSettingChange,
   }: Props = $props();
@@ -129,7 +133,7 @@
       {@const opts =
         c.type === "palette"
           ? c.paletteOptions!.map((p) => ({ value: p.value, label: p.label }))
-          : c.options!}
+          : resolveEffectControlOptions(c, propType)}
       <div class="ctl-row ctl-row-wide">
         {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <SegmentedControl

@@ -29,6 +29,8 @@
   interface Props {
     effectId: EffectId;
     config: EffectsConfigState;
+    /** Prop whose end names should appear in tracking controls. */
+    propType?: string | null;
     /** Cross-store field get/set overrides (e.g. Trails' animationSettings
      *  fields). Passed straight through to EffectControlStack; also used here so
      *  chip values + conditional visibility read the right source. */
@@ -40,7 +42,13 @@
       coalesce?: boolean
     ) => void;
   }
-  let { effectId, config, overrides, onSettingChange }: Props = $props();
+  let {
+    effectId,
+    config,
+    propType = null,
+    overrides,
+    onSettingChange,
+  }: Props = $props();
 
   const intent = $derived(
     config.effect(effectId) as unknown as Record<string, unknown>
@@ -142,6 +150,7 @@
       <EffectControlStack
         effect={effectId}
         {config}
+        {propType}
         {overrides}
         only={[active.id]}
         hideLabel
