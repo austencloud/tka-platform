@@ -81,7 +81,10 @@
   // min(clamp(30rem, 28vw, 64rem), 95vw), and 100% under the 768px seam.
   const WIDTHS = [
     { label: "Phone / drawer full width", width: 375, height: 720 },
-    { label: "Z Fold unfolded (707 CSS px)", width: 707, height: 823 },
+    { label: "Z Fold unfolded portrait (707 CSS px)", width: 707, height: 823 },
+    // Landscape used to fall past the 768px seam into a 480px side panel; the
+    // drawer is full-bleed on any handheld now, so the sheet gets all 823px.
+    { label: "Z Fold unfolded landscape (823 CSS px)", width: 823, height: 707 },
     { label: "1920 desktop drawer (537px)", width: 537, height: 900 },
     { label: "2560 desktop drawer (717px)", width: 717, height: 900 },
     { label: "3840 desktop drawer (1024px)", width: 1024, height: 900 },

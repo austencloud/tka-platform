@@ -33,8 +33,10 @@
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { createKeyboardInset } from "$lib/shared/mobile/utils/keyboard-inset.svelte";
+  import { FULL_BLEED_DRAWER_QUERY } from "../domain/full-bleed-drawer";
 
-  // Responsive placement
+  // Responsive placement. `isMobile` is really "the drawer owns the screen" —
+  // true on any handheld, in either orientation, not merely on narrow ones.
   let isMobile = $state(false);
   let placement = $derived(isMobile ? "bottom" : "right") as "bottom" | "right";
 
@@ -70,7 +72,7 @@
   onMount(() => {
     hapticService = getHapticFeedback();
 
-    mediaQuery = window.matchMedia("(max-width: 768px)");
+    mediaQuery = window.matchMedia(FULL_BLEED_DRAWER_QUERY);
     isMobile = mediaQuery.matches;
     mediaQuery.addEventListener("change", handleMediaChange);
   });
@@ -836,7 +838,11 @@
     }
   }
 
-  @media (max-width: 768px) {
+  /* Byte-identical to FULL_BLEED_DRAWER_QUERY in domain/full-bleed-drawer.ts.
+     Pinned by full-bleed-drawer-contract.test.ts — see that module for why the
+     test is "held", not "narrow". */
+  @media (max-width: 768px),
+    ((hover: none) and (pointer: coarse) and (max-width: 1024px)) {
     :global(.drawer-content.inbox-drawer) {
       --sheet-width: 100%;
       --sheet-radius-large: 0;
