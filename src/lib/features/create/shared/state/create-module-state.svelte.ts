@@ -15,7 +15,10 @@ import type { SequencePersister } from "$lib/features/create/shared/services/seq
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+import {
+  reversalDetector,
+  type ReversalDetector,
+} from "$lib/shared/create/services/reversal-detector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
@@ -91,7 +94,9 @@ export function createCreateModuleState(
   // ARCHIVED: _assemblerTabState removed (Feb 2026)
   let _generatorTabState: GeneratorTabState | null = null;
   let _assembleTabState: AssembleTabState | null = null;
-
+  let tutorialWorkspaceActive = $state(false);
+  let tutorialWorkspaceSequenceState: SequenceState | null = null;
+  let tutorialWorkspaceUndoController: UndoController | null = null;
 
   /**
    * Get the sequence state for a specific tab
@@ -141,7 +146,12 @@ export function createCreateModuleState(
   // what the user requested. Without this, activeSection defaults to
   // "construct" and the CreateModule→Navigation sync effect overwrites the
   // URL tab (e.g. "fuse") the moment persistence finishes initializing.
-  const VALID_CREATE_TABS: BuildModeId[] = ["construct", "assemble", "generate", "fuse"];
+  const VALID_CREATE_TABS: BuildModeId[] = [
+    "construct",
+    "assemble",
+    "generate",
+    "fuse",
+  ];
   const urlTab = navigationState.activeTab as BuildModeId;
   if (urlTab && VALID_CREATE_TABS.includes(urlTab)) {
     navigationController.bootstrap(urlTab);
@@ -268,6 +278,33 @@ export function createCreateModuleState(
     }
   }
 
+  function beginTutorialWorkspace(): void {
+    if (tutorialWorkspaceActive) {
+      return;
+    }
+
+    tutorialWorkspaceActive = true;
+    tutorialWorkspaceSequenceState = getSequenceStateForTab("construct");
+    tutorialWorkspaceUndoController =
+      _constructorTabState?.undoController ?? null;
+
+    tutorialWorkspaceUndoController?.suspendHistory();
+    tutorialWorkspaceSequenceState.beginTutorialWorkspace();
+  }
+
+  function finishTutorialWorkspace(): void {
+    if (!tutorialWorkspaceActive) {
+      return;
+    }
+
+    tutorialWorkspaceSequenceState?.restoreTutorialWorkspace();
+    tutorialWorkspaceUndoController?.resumeHistory();
+
+    tutorialWorkspaceSequenceState = null;
+    tutorialWorkspaceUndoController = null;
+    tutorialWorkspaceActive = false;
+  }
+
   const stateObject = {
     // Sequence state - now returns active tab's sequence state
     get sequenceState() {
@@ -294,6 +331,16 @@ export function createCreateModuleState(
     get isPersistenceInitialized() {
       return persistenceController.isInitialized;
     },
+    get isTutorialWorkspaceActive() {
+      return tutorialWorkspaceActive;
+    },
+    get isTutorialWorkspaceIsolated() {
+      return (
+        tutorialWorkspaceSequenceState?.isTutorialWorkspaceIsolated ?? false
+      );
+    },
+    beginTutorialWorkspace,
+    finishTutorialWorkspace,
 
     // Option history
     optionHistoryManager,
@@ -304,6 +351,10 @@ export function createCreateModuleState(
       return getActiveTabUndoController();
     },
     pushUndoSnapshot: (type: UndoOperationType, metadata?: UndoMetadata) => {
+      if (tutorialWorkspaceActive) {
+        return;
+      }
+
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         _assembleTabState?.assembleBuilderState.beginExternalEdit(
@@ -315,6 +366,10 @@ export function createCreateModuleState(
       controller?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {
+      if (tutorialWorkspaceActive) {
+        return false;
+      }
+
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         const builder = _assembleTabState?.assembleBuilderState;
@@ -324,6 +379,10 @@ export function createCreateModuleState(
       return controller?.undo() || false;
     },
     redo: () => {
+      if (tutorialWorkspaceActive) {
+        return false;
+      }
+
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         return _assembleTabState?.assembleBuilderState.redoStep() ?? false;
@@ -332,6 +391,10 @@ export function createCreateModuleState(
       return controller?.redo() || false;
     },
     clearUndoHistory: () => {
+      if (tutorialWorkspaceActive) {
+        return;
+      }
+
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         _assembleTabState?.assembleBuilderState.clearHistory();
@@ -353,6 +416,10 @@ export function createCreateModuleState(
       controller?.setOnUndoingOptionCallback(callback);
     },
     get canUndo() {
+      if (tutorialWorkspaceActive) {
+        return false;
+      }
+
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         return _assembleTabState?.assembleBuilderState.canUndo || false;
@@ -361,6 +428,10 @@ export function createCreateModuleState(
       return controller?.canUndo || false;
     },
     get canRedo() {
+      if (tutorialWorkspaceActive) {
+        return false;
+      }
+
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         return _assembleTabState?.assembleBuilderState.canRedo || false;
@@ -369,18 +440,34 @@ export function createCreateModuleState(
       return controller?.canRedo || false;
     },
     get undoHistory() {
+      if (tutorialWorkspaceActive) {
+        return [];
+      }
+
       const controller = getActiveTabUndoController();
       return controller?.undoHistory || [];
     },
     get redoHistory() {
+      if (tutorialWorkspaceActive) {
+        return [];
+      }
+
       const controller = getActiveTabUndoController();
       return controller?.redoHistory || [];
     },
     jumpToState: (entryId: string) => {
+      if (tutorialWorkspaceActive) {
+        return false;
+      }
+
       const controller = getActiveTabUndoController();
       return controller?.jumpToState(entryId) || false;
     },
     getTimeline: () => {
+      if (tutorialWorkspaceActive) {
+        return [];
+      }
+
       const controller = getActiveTabUndoController();
       return controller?.getTimeline() || [];
     },

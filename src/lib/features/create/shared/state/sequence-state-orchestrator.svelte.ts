@@ -40,8 +40,12 @@ import { createSequenceCoreState } from "./core/sequence-core-state.svelte";
 import { createSequenceStepOperations } from "./operations/sequence-step-operations";
 import { createSequenceTransformOperations } from "./operations/sequence-transform-operations";
 import { createSequencePersistenceCoordinator } from "./persistence/sequence-persistence-coordinator.svelte";
-import { createSequenceSelectionState } from "./selection/sequence-selection-state.svelte";
+import {
+  createSequenceSelectionState,
+  type SequenceSelectionSnapshot,
+} from "./selection/sequence-selection-state.svelte";
 import { isStep } from "$lib/features/create/shared/domain/type-guards/pictograph-type-guards";
+import { createSequence as createSequenceData } from "$lib/shared/create/services/sequence-domain-manager";
 
 /**
  * Clean service configuration - no more type gymnastics!
@@ -93,6 +97,10 @@ export function createSequenceState(services: SequenceStateServices) {
   // 🚀 PERFORMANCE: Debounced auto-save to prevent excessive persistence operations
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
   const SAVE_DEBOUNCE_MS = 500; // Wait 500ms after last change before saving
+  let tutorialWorkspaceSnapshot: {
+    sequence: SequenceData;
+    selection: SequenceSelectionSnapshot;
+  } | null = null;
 
   // Create operation facades
   const stepOperations = createSequenceStepOperations({
@@ -165,6 +173,89 @@ export function createSequenceState(services: SequenceStateServices) {
     );
   }
 
+  /**
+   * Temporarily replaces an in-progress draft with an empty Construct workspace.
+   * Tutorial edits stay in memory and cannot overwrite or clear the saved draft.
+   * Empty first-run workspaces are left alone so a learner keeps what they build.
+   */
+  function beginTutorialWorkspace(): boolean {
+    if (tutorialWorkspaceSnapshot) {
+      return false;
+    }
+
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+
+    if (!coreState.currentSequence) {
+      // A sequence-less workspace can still carry stale picker selection from
+      // a prior HMR/tab handoff. Tutorial Step 1 must always begin unselected.
+      selectionState.reset();
+      arrowState.reset();
+      coreState.clearError();
+      return false;
+    }
+
+    const sequence = $state.snapshot(coreState.currentSequence) as SequenceData;
+    const selection = $state.snapshot(
+      selectionState.captureSnapshot()
+    ) as SequenceSelectionSnapshot;
+    const sequenceStartPosition =
+      sequence.startingPosition ?? sequence.startPosition ?? null;
+
+    // The sequence is authoritative if a prior HMR/tab handoff left the
+    // selection cache stale in either direction.
+    selection.selectedStartPosition = sequenceStartPosition;
+    if (sequenceStartPosition === null && selection.selectedStepNumber === 0) {
+      selection.selectedStepNumber = null;
+    }
+
+    // Persist the latest real draft before tutorial persistence is suspended.
+    // saveSequenceOnly passes its enabled guard synchronously before yielding.
+    void persistenceCoordinator.saveSequenceOnly(
+      sequence,
+      sequenceStartPosition,
+      sequenceStartPosition !== null
+    );
+
+    persistenceCoordinator.setAutoSaveEnabled(false);
+    tutorialWorkspaceSnapshot = { sequence, selection };
+
+    // Use the core state directly so opening the tutorial cannot schedule a
+    // debounced null save over the draft we just preserved.
+    coreState.setCurrentSequence(null);
+    selectionState.reset();
+    arrowState.reset();
+    coreState.clearError();
+
+    return true;
+  }
+
+  function restoreTutorialWorkspace(): boolean {
+    const snapshot = tutorialWorkspaceSnapshot;
+    if (!snapshot) {
+      return false;
+    }
+
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+
+    // Keep persistence suspended until the original sequence and selection
+    // are both back in memory.
+    coreState.setCurrentSequence(snapshot.sequence);
+    selectionState.restoreSnapshot(snapshot.selection);
+    arrowState.reset();
+    coreState.clearError();
+
+    tutorialWorkspaceSnapshot = null;
+    persistenceCoordinator.setAutoSaveEnabled(true);
+
+    return true;
+  }
+
   // ============================================================================
   // SEQUENCE SERVICE INTEGRATION
   // ============================================================================
@@ -200,6 +291,15 @@ export function createSequenceState(services: SequenceStateServices) {
     coreState.clearError();
 
     try {
+      if (tutorialWorkspaceSnapshot) {
+        const sequence = createSequenceData({
+          ...request,
+          word: request.name,
+        });
+        coreState.setCurrentSequence(sequence);
+        return sequence;
+      }
+
       const sequence = await sequenceService.createSequence({
         ...request,
         word: request.name,
@@ -550,6 +650,9 @@ export function createSequenceState(services: SequenceStateServices) {
     get isInitialized() {
       return persistenceCoordinator.isInitialized;
     },
+    get isTutorialWorkspaceIsolated() {
+      return tutorialWorkspaceSnapshot !== null;
+    },
     get selectedStepData() {
       return getSelectedStepData();
     },
@@ -645,6 +748,8 @@ export function createSequenceState(services: SequenceStateServices) {
 
     // Reset
     resetSequenceState,
+    beginTutorialWorkspace,
+    restoreTutorialWorkspace,
 
     // Step operations - delegate to facade
     addStep: (stepData?: Partial<StepData>) => stepOperations.addStep(stepData),

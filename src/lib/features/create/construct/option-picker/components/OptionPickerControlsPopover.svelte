@@ -1,7 +1,7 @@
 <!--
   OptionPickerControlsPopover.svelte
 
-  Continuous compact layouts have no movement-type header, so their settings
+  Continuous compact layouts have no letter-type header, so their settings
   remain in this anchored popover. Sectioned swipe layouts render the same
   OptionPickerHeader inside their shared utility tray instead.
 -->

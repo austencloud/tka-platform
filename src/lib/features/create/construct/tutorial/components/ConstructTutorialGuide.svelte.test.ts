@@ -11,6 +11,9 @@ describe("ConstructTutorialGuide", () => {
     await expect
       .element(page.getByText("Choose a start position", { exact: true }))
       .toBeInTheDocument();
+    await expect
+      .element(page.getByText("Construct guide · Step 1 of 3", { exact: true }))
+      .toBeInTheDocument();
     await expectNoA11yViolations();
 
     await page.getByRole("button", { name: "Dismiss Construct guide" }).click();
@@ -19,9 +22,34 @@ describe("ConstructTutorialGuide", () => {
     ).toHaveLength(0);
   });
 
+  it("asks for the next pictograph without inventing another required action", async () => {
+    render(ConstructTutorialGuideHarness, { atPictographStep: true });
+
+    await expect
+      .element(page.getByText("Construct guide · Step 2 of 3", { exact: true }))
+      .toBeInTheDocument();
+    await expect
+      .element(page.getByText("Start position: α1", { exact: true }))
+      .toBeInTheDocument();
+    await expect
+      .element(
+        page.getByText("Choose a pictograph for the next step.", {
+          exact: true,
+        })
+      )
+      .toBeInTheDocument();
+    expect(page.getByText(/movement type/i).elements()).toHaveLength(0);
+  });
+
   it("uses the shared Play sequence action name", async () => {
     render(ConstructTutorialGuideHarness, { atPlayStep: true });
 
+    await expect
+      .element(page.getByText("Construct guide · Step 3 of 3", { exact: true }))
+      .toBeInTheDocument();
+    await expect
+      .element(page.getByText("Next step: A", { exact: true }))
+      .toBeInTheDocument();
     await expect
       .element(
         page.getByText("Use Play sequence below the workspace.", {

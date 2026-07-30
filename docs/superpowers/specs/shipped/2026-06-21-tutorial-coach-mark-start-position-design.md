@@ -1,18 +1,18 @@
 ---
-status: active
+status: shipped
 value: 3
 effort: S
-remaining: "Supersession is verified. Move this spec to shipped after the shared full check is green."
-depends_on: "external: shared full check is blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+remaining: ""
+depends_on: ""
 plan_path: ""
 tags: []
 last_triaged: 2026-07-30
 ---
+
 # Create Tutorial — Coach-Mark the Real Start-Position Picker (Design)
 
 Date: 2026-06-21
-Status: Closure ready 2026-07-30. Superseded by the live Construct guide; the
-queue move is blocked on an unrelated shared-check failure.
+Status: Shipped and verified 2026-07-30. Superseded by the live Construct guide.
 
 ## Problem
 
@@ -102,15 +102,27 @@ Do not build this coach-mark. Commit `e2615015a2` replaced the production
 duplicate-picker wizard with `ConstructTutorialGuide.svelte`, an inline guide
 rendered beside the real Construct controls.
 
-The live path now works as follows:
+The audited live path now works as follows:
 
-1. `MainApplication.svelte` shows the opt-in prompt.
+1. `MainApplication.svelte` shows an opt-in prompt that names the three actions:
+   choose a start position, add one pictograph, and play the sequence.
 2. Accepting it moves `appEntryState` to `create-tutorial`.
-3. `CreateModule.svelte` starts `constructTutorialState`.
+3. `CreateModule.svelte` waits for every persistence restore to finish, then
+   starts `constructTutorialState` in a clean tutorial workspace. If a draft
+   already exists, its sequence, selection, persistence record, and undo
+   timeline are held outside the tutorial session.
 4. `ConstructTabContent.svelte` renders the guide above the real
    `StartPositionPicker`.
-5. Successful actions in the real workflow advance the guide through start
-   position, movement type, movement option, and full playback.
+5. Choosing a canonical or custom start position advances the guide, including
+   the valid replay case where the chosen position is already current.
+6. Choosing any available pictograph advances the guide. Clicking a letter-type
+   tab is optional navigation, not a tutorial requirement.
+7. Playing the sequence completes the guide and shows a completion
+   acknowledgment.
+8. Dismissing the guide restores an existing draft exactly. Completing the
+   guide keeps its temporary sequence visible through the sequence viewer, then
+   restores the draft when the viewer closes. A true first-run sequence remains
+   the user's sequence.
 
 The old `CreateTutorialWizard` and its embedded `PickStartPositionStep` remain
 reachable only from the dedicated test route and component tests. Removing that
@@ -119,11 +131,22 @@ onboarding layer.
 
 Verification on 2026-07-30:
 
-- 19 unit tests passed across the Construct tutorial state, analytics, and app
-  entry state.
-- 2 Chromium component tests passed for the live guide, including its keyboard
-  dismissal and accessibility scan.
-- The full `npm run check` reached 7 errors and 5 warnings. All 7 errors are in
-  another session's untracked
-  `src/lib/features/create/shared/workspace-panel/shared/components/buttons/WorkspaceShareControl.svelte`.
-  This spec did not change that file.
+- Flow Arts MCP confirmed that `movement type` is not a glossary term. The
+  canonical learner concepts used here are `letter`, `step`, `pictograph`, and
+  the six numbered letter types.
+- 29 focused unit tests passed across tutorial state, start-position display and
+  equivalence, letter-type navigation, analytics, and app-entry state.
+- 16 Chromium component tests passed across the live guide, opt-in prompt,
+  letter-type reference, desktop picker, and swipe layout, including
+  accessibility scans.
+- The real app passed the complete three-action walkthrough. Replay over an
+  existing α draft opened a blank Step 1, stayed blank after an eight-second
+  delayed-restore check, and restored the same α draft after Dismiss.
+- Four dedicated workspace-isolation tests cover draft and selection
+  restoration, suppressed tutorial persistence, first-run retention, stale
+  picker selection, and undo-history suspension.
+- Screenshots were inspected at 375×812, 960×412, 768×1024, 1440×900,
+  1920×1080, 2560×1440, and 3840×2160.
+- The latest shared `pnpm run check` reported no diagnostics in this work. Its
+  only two errors are in another session's untracked
+  `ButtonPanel.svelte.test.ts`; five pre-existing warnings remain elsewhere.

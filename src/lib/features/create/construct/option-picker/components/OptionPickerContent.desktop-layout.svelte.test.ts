@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import OptionPickerDesktopLayoutHarness from "./OptionPickerDesktopLayoutHarness.svelte";
 
 describe("OptionPickerContent desktop layout", () => {
-  it("does not render redundant movement navigation above visible sections", async () => {
+  it("does not render redundant letter-type navigation above visible sections", async () => {
     render(OptionPickerDesktopLayoutHarness);
 
     await vi.waitFor(() => {
@@ -12,14 +12,14 @@ describe("OptionPickerContent desktop layout", () => {
     });
 
     expect(
-      page.getByRole("tablist", { name: "Movement type" }).elements()
+      page.getByRole("tablist", { name: "Letter type" }).elements()
     ).toHaveLength(0);
     expect(
-      page.getByRole("radiogroup", { name: "Movement type" }).elements()
+      page.getByRole("radiogroup", { name: "Letter type" }).elements()
     ).toHaveLength(0);
   });
 
-  it("keeps the mobile movement controls aligned without an action prompt", async () => {
+  it("keeps the mobile letter-type controls aligned without an action prompt", async () => {
     await page.viewport(327, 708);
 
     render(OptionPickerDesktopLayoutHarness, {
@@ -29,9 +29,9 @@ describe("OptionPickerContent desktop layout", () => {
       topOffset: 350,
     });
 
-    const tabs = page.getByRole("tablist", { name: "Movement type" });
+    const tabs = page.getByRole("tablist", { name: "Letter type" });
     const settings = page.getByRole("button", { name: /^Option settings/ });
-    const info = page.getByRole("button", { name: "Explain movement types" });
+    const info = page.getByRole("button", { name: "Explain letter types" });
     await expect.element(tabs).toBeInTheDocument();
     await expect.element(settings).toBeInTheDocument();
     await expect.element(info).toBeInTheDocument();

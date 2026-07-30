@@ -1,25 +1,25 @@
 <!--
-  MovementTypeGuide.svelte
+  LetterTypeGuide.svelte
 
-  The movement reference that lives inside the option picker's shared utility
-  tray. The tray owns disclosure behavior; this component only owns the guide's
-  content and responsive card layout.
+  The letter-type reference inside the option picker's shared utility tray.
+  The tray owns disclosure behavior; this component owns only the guide content
+  and responsive card layout.
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { MOVEMENT_TYPE_DESCRIPTORS } from "../services/section-title-formatter";
+  import { LETTER_TYPE_DESCRIPTORS } from "../services/section-title-formatter";
 
-  const movementTypes = Object.values(MOVEMENT_TYPE_DESCRIPTORS);
+  const letterTypes = Object.values(LETTER_TYPE_DESCRIPTORS);
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -- Keyboard users need to scroll this compact reference when its cards exceed the tray. -->
 <section
   class="type-info-panel themed-scrollbar"
   tabindex="0"
-  aria-label="Movement type reference"
+  aria-label="Letter type reference"
 >
   <header class="type-info-header">
-    <h2>Movement types</h2>
+    <h2>Letter types</h2>
     <p>
       Shift moves a hand to an adjacent point. Dash moves it to the opposite
       point.
@@ -27,29 +27,29 @@
   </header>
 
   <div class="type-grid">
-    {#each movementTypes as movementType (movementType.key)}
+    {#each letterTypes as letterType (letterType.key)}
       <article class="type-card">
         <div class="type-card-heading">
           <strong>
             <span class="sr-only">Type </span>
-            {movementType.typeName.replace("Type ", "")}
+            {letterType.typeName.replace("Type ", "")}
           </strong>
           <span
             class="type-palette"
             aria-hidden="true"
-            title={t(movementType.translationKey)}
+            title={t(letterType.translationKey)}
           >
-            {#each movementType.coloredParts as part}
+            {#each letterType.coloredParts as part}
               {#if part.color && part.color !== "currentColor"}
                 <span style:background-color={part.color}></span>
               {/if}
             {/each}
           </span>
           <span class="type-name">
-            {t(movementType.translationKey)}
+            {t(letterType.translationKey)}
           </span>
         </div>
-        <p>{movementType.explanation}</p>
+        <p>{letterType.explanation}</p>
       </article>
     {/each}
   </div>

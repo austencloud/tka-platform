@@ -1,7 +1,6 @@
 export const CONSTRUCT_TUTORIAL_STAGES = [
   "start-position",
-  "movement-type",
-  "movement-option",
+  "next-pictograph",
   "play-sequence",
 ] as const;
 
@@ -17,28 +16,44 @@ export interface AppliedTutorialOption {
   stepNumber: number;
 }
 
+export interface ConstructTutorialState {
+  readonly status: ConstructTutorialStatus;
+  readonly isActive: boolean;
+  readonly stage: ConstructTutorialStage;
+  readonly currentStepNumber: number;
+  readonly totalSteps: number;
+  readonly positionLabel: string | null;
+  readonly addedLetter: string | null;
+  start(): void;
+  reset(): void;
+  dismiss(): void;
+  recordStartPosition(label: string | null): boolean;
+  recordOptionApplied(option: AppliedTutorialOption): boolean;
+  recordFullPlay(): boolean;
+}
+
 /**
  * Tracks only successful actions in the live Construct workflow. Account-level
  * persistence remains owned by appEntryState at the Create composition root.
  */
-export function createConstructTutorialState() {
+export function createConstructTutorialState(): ConstructTutorialState {
   let status = $state<ConstructTutorialStatus>("inactive");
   let stage = $state<ConstructTutorialStage>("start-position");
   let positionLabel = $state<string | null>(null);
-  let movementLetter = $state<string | null>(null);
+  let addedLetter = $state<string | null>(null);
 
   function start() {
     status = "active";
     stage = "start-position";
     positionLabel = null;
-    movementLetter = null;
+    addedLetter = null;
   }
 
   function reset() {
     status = "inactive";
     stage = "start-position";
     positionLabel = null;
-    movementLetter = null;
+    addedLetter = null;
   }
 
   function dismiss() {
@@ -47,22 +62,16 @@ export function createConstructTutorialState() {
     }
   }
 
-  function recordStartPosition(label: string): boolean {
+  function recordStartPosition(label: string | null): boolean {
     if (status !== "active" || stage !== "start-position") return false;
     positionLabel = label;
-    stage = "movement-type";
-    return true;
-  }
-
-  function recordMovementType(): boolean {
-    if (status !== "active" || stage !== "movement-type") return false;
-    stage = "movement-option";
+    stage = "next-pictograph";
     return true;
   }
 
   function recordOptionApplied(option: AppliedTutorialOption): boolean {
-    if (status === "active" && stage === "movement-option") {
-      movementLetter = option.letter;
+    if (status === "active" && stage === "next-pictograph") {
+      addedLetter = option.letter;
       stage = "play-sequence";
       return true;
     }
@@ -95,19 +104,14 @@ export function createConstructTutorialState() {
     get positionLabel() {
       return positionLabel;
     },
-    get movementLetter() {
-      return movementLetter;
+    get addedLetter() {
+      return addedLetter;
     },
     start,
     reset,
     dismiss,
     recordStartPosition,
-    recordMovementType,
     recordOptionApplied,
     recordFullPlay,
   };
 }
-
-export type ConstructTutorialState = ReturnType<
-  typeof createConstructTutorialState
->;

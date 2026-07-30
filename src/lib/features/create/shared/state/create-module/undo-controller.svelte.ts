@@ -44,6 +44,7 @@ export function createUndoController({
   let onUndoingOptionCallback: ((isUndoing: boolean) => void) | null = null; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   let undoChangeCounter = $state(0);
+  let historySuspended = $state(false);
 
   UndoManager.onChange(() => {
     undoChangeCounter++;
@@ -70,6 +71,10 @@ export function createUndoController({
   }
 
   function pushUndoSnapshot(type: UndoOperationType, metadata?: UndoMetadata) {
+    if (historySuspended) {
+      return;
+    }
+
     if (
       !sequenceState.currentSequence &&
       type !== UndoOperationType.SELECT_START_POSITION
@@ -106,6 +111,10 @@ export function createUndoController({
   }
 
   function undo(): boolean {
+    if (historySuspended) {
+      return false;
+    }
+
     const currentSection = getActiveSection();
 
     // Only undo entries from the current tab
@@ -156,6 +165,10 @@ export function createUndoController({
   }
 
   function redo(): boolean {
+    if (historySuspended) {
+      return false;
+    }
+
     const entry = UndoManager.redo();
     if (!entry) {
       return false;
@@ -179,7 +192,19 @@ export function createUndoController({
   }
 
   function clearUndoHistory() {
+    if (historySuspended) {
+      return;
+    }
+
     UndoManager.clearHistory();
+  }
+
+  function suspendHistory(): void {
+    historySuspended = true;
+  }
+
+  function resumeHistory(): void {
+    historySuspended = false;
   }
 
   function setShowStartPositionPickerCallback(callback: () => void) {
@@ -199,6 +224,10 @@ export function createUndoController({
    * Used by history panel to allow jumping to any point in history
    */
   function jumpToState(entryId: string): boolean {
+    if (historySuspended) {
+      return false;
+    }
+
     // Get timeline to find the entry
     const timeline = UndoManager.getTimeline();
     const entry = timeline.find((e) => e.id === entryId);
@@ -242,27 +271,31 @@ export function createUndoController({
     undo,
     redo,
     clearUndoHistory,
+    suspendHistory,
+    resumeHistory,
     jumpToState,
     setShowStartPositionPickerCallback,
     setSyncPickerStateCallback,
     setOnUndoingOptionCallback,
     get canUndo() {
       void undoChangeCounter;
-      return UndoManager.canUndoForSection(getActiveSection());
+      return (
+        !historySuspended && UndoManager.canUndoForSection(getActiveSection())
+      );
     },
     get canRedo() {
       void undoChangeCounter;
-      return UndoManager.canRedo;
+      return !historySuspended && UndoManager.canRedo;
     },
     get undoHistory() {
-      return UndoManager.undoHistory;
+      return historySuspended ? [] : UndoManager.undoHistory;
     },
     get redoHistory() {
-      return UndoManager.redoHistory;
+      return historySuspended ? [] : UndoManager.redoHistory;
     },
     getTimeline() {
       void undoChangeCounter;
-      return UndoManager.getTimeline();
+      return historySuspended ? [] : UndoManager.getTimeline();
     },
     getOperationDescription(type: UndoOperationType) {
       return UndoManager.getOperationDescription(type);

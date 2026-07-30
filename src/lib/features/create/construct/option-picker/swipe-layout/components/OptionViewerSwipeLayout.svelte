@@ -22,15 +22,15 @@ Features:
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { flyFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import MovementTypeGuide from "../../components/MovementTypeGuide.svelte";
+  import LetterTypeGuide from "../../components/LetterTypeGuide.svelte";
   import OptionPickerIconButton from "../../components/OptionPickerIconButton.svelte";
   import type { OrganizedSection } from "../../domain/option-picker-types";
   import {
-    getMovementFamilyDescriptor,
-    getMovementFamilyPresentation,
-    MOVEMENT_FAMILY_DESCRIPTORS,
-    type MovementFamilyDescriptor,
-    type MovementFamilyKey,
+    getLetterTypeGroupDescriptor,
+    getLetterTypeGroupPresentation,
+    LETTER_TYPE_GROUP_DESCRIPTORS,
+    type LetterTypeGroupDescriptor,
+    type LetterTypeGroupKey,
   } from "../../services/section-title-formatter";
   import OptionPicker456Group from "./OptionViewer456Group.svelte";
   import OptionViewerSection from "./OptionViewerSection.svelte";
@@ -44,7 +44,7 @@ Features:
     currentSequence = [],
     onSlotClicked,
     getContinuationIndex,
-    onMovementFamilySelected = () => {},
+    onLetterTypeGroupSelected = () => {},
     settingsEnabled = false,
     settingsContent,
     settingsHasTurnRows = true,
@@ -65,8 +65,8 @@ Features:
     currentSequence?: PictographData[];
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     getContinuationIndex?: (sectionTitle: string) => number | null;
-    onMovementFamilySelected?: (
-      family: MovementFamilyKey,
+    onLetterTypeGroupSelected?: (
+      group: LetterTypeGroupKey,
       source: "selector" | "carousel"
     ) => void;
     settingsEnabled?: boolean;
@@ -80,7 +80,7 @@ Features:
 
   const PANEL_STORAGE_KEY = "tka-option-picker-panel";
   const componentId = $props.id();
-  const defaultFamily = MOVEMENT_FAMILY_DESCRIPTORS[0]!;
+  const defaultGroup = LETTER_TYPE_GROUP_DESCRIPTORS[0]!;
   const utilityPanelId = `${componentId}-utility-panel`;
   const settingsTriggerId = `${componentId}-settings-trigger`;
   const infoTriggerId = `${componentId}-info-trigger`;
@@ -94,7 +94,7 @@ Features:
         return isNaN(panelIndex)
           ? 0
           : Math.min(
-              MOVEMENT_FAMILY_DESCRIPTORS.length - 1,
+              LETTER_TYPE_GROUP_DESCRIPTORS.length - 1,
               Math.max(0, panelIndex)
             );
       } catch {
@@ -128,47 +128,47 @@ Features:
   const activePanel = $derived(
     organizedPictographs[activePanelIndex] ?? organizedPictographs[0]
   );
-  const activeFamily = $derived(
-    getMovementFamilyDescriptor(activePanel?.title ?? "") ?? defaultFamily
+  const activeGroup = $derived(
+    getLetterTypeGroupDescriptor(activePanel?.title ?? "") ?? defaultGroup
   );
-  const familyPresentations = $derived(
+  const groupPresentations = $derived(
     new Map(
-      MOVEMENT_FAMILY_DESCRIPTORS.map((family) => [
-        family.key,
-        getMovementFamilyPresentation(family, (descriptor) =>
+      LETTER_TYPE_GROUP_DESCRIPTORS.map((group) => [
+        group.key,
+        getLetterTypeGroupPresentation(group, (descriptor) =>
           t(descriptor.translationKey)
         ),
       ])
     )
   );
-  function getLocalizedFamilyPresentation(family: MovementFamilyDescriptor) {
+  function getLocalizedGroupPresentation(group: LetterTypeGroupDescriptor) {
     return (
-      familyPresentations.get(family.key) ??
-      getMovementFamilyPresentation(family, (descriptor) =>
+      groupPresentations.get(group.key) ??
+      getLetterTypeGroupPresentation(group, (descriptor) =>
         t(descriptor.translationKey)
       )
     );
   }
-  const activeFamilyKey = $derived(activeFamily.key);
-  const activeFamilyPresentation = $derived(
-    getLocalizedFamilyPresentation(activeFamily)
+  const activeGroupKey = $derived(activeGroup.key);
+  const activeGroupPresentation = $derived(
+    getLocalizedGroupPresentation(activeGroup)
   );
   const activeOptionCount = $derived(activePanel?.pictographs.length ?? 0);
   const utilityOpen = $derived(activeUtilityPanel !== null);
   const utilityPanelLabel = $derived(
     renderedUtilityPanel === "settings"
       ? "Option settings"
-      : "Movement type guide"
+      : "Letter type guide"
   );
   const typeOptions = $derived(
-    MOVEMENT_FAMILY_DESCRIPTORS.map((family, index) => {
-      const presentation = getLocalizedFamilyPresentation(family);
+    LETTER_TYPE_GROUP_DESCRIPTORS.map((group, index) => {
+      const presentation = getLocalizedGroupPresentation(group);
       const optionCount =
         organizedPictographs.find(
-          (section: OrganizedSection) => section.title === family.key
+          (section: OrganizedSection) => section.title === group.key
         )?.pictographs.length ?? 0;
       return {
-        value: family.key,
+        value: group.key,
         label: presentation.accessibleName,
         ariaLabel: `${presentation.accessibleName}, ${optionCount} ${
           optionCount === 1 ? "option" : "options"
@@ -206,11 +206,11 @@ Features:
       pendingDirectPanelIndex = null;
     }
     if (!wasDirectSelection && activePanelIndex !== previousPanelIndex) {
-      const selectedFamily = getMovementFamilyDescriptor(
+      const selectedGroup = getLetterTypeGroupDescriptor(
         organizedPictographs[activePanelIndex]?.title ?? ""
       );
-      if (selectedFamily) {
-        onMovementFamilySelected(selectedFamily.key, "carousel");
+      if (selectedGroup) {
+        onLetterTypeGroupSelected(selectedGroup.key, "carousel");
       }
     }
 
@@ -230,13 +230,13 @@ Features:
     onSectionChange(panelIndex);
   }
 
-  function handleTypeSelect(type: MovementFamilyKey) {
+  function handleTypeSelect(type: LetterTypeGroupKey) {
     const panelIndex = organizedPictographs.findIndex(
       (section: OrganizedSection) => section.title === type
     );
     if (panelIndex === -1) return;
 
-    onMovementFamilySelected(type, "selector");
+    onLetterTypeGroupSelected(type, "selector");
     pendingDirectPanelIndex = panelIndex;
     if (emblaApi) {
       emblaApi.scrollTo(panelIndex);
@@ -280,16 +280,16 @@ Features:
   }
 </script>
 
-{#snippet movementFamilyLabel(familyKey: MovementFamilyKey)}
-  {@const family = getMovementFamilyDescriptor(familyKey) ?? defaultFamily}
-  {@const presentation = getLocalizedFamilyPresentation(family)}
-  <span class="movement-family-label" aria-hidden="true">
-    <span class="movement-family-compact">
-      <span class="movement-family-number">{family.shortLabel}</span>
-      <span class="movement-family-palette">
+{#snippet letterTypeGroupLabel(groupKey: LetterTypeGroupKey)}
+  {@const group = getLetterTypeGroupDescriptor(groupKey) ?? defaultGroup}
+  {@const presentation = getLocalizedGroupPresentation(group)}
+  <span class="letter-type-group-label" aria-hidden="true">
+    <span class="letter-type-group-compact">
+      <span class="letter-type-group-number">{group.shortLabel}</span>
+      <span class="letter-type-group-palette">
         {#each presentation.paletteColors as color}
           <span
-            class="movement-family-palette-color"
+            class="letter-type-group-palette-color"
             style:background-color={color}
           ></span>
         {/each}
@@ -320,14 +320,14 @@ Features:
     <div class="type-navigation-selector">
       <SegmentedControl
         options={typeOptions}
-        value={activeFamilyKey}
+        value={activeGroupKey}
         onchange={handleTypeSelect}
         color="accent"
         size="sm"
         density="compact"
         semantics="tabs"
-        ariaLabel="Movement type"
-        optionContent={movementFamilyLabel}
+        ariaLabel="Letter type"
+        optionContent={letterTypeGroupLabel}
       />
     </div>
 
@@ -337,8 +337,8 @@ Features:
         icon="fa-circle-info"
         density="compact"
         active={activeUtilityPanel === "info"}
-        aria-label="Explain movement types"
-        title="Movement type guide"
+        aria-label="Explain letter types"
+        title="Letter type guide"
         aria-expanded={activeUtilityPanel === "info"}
         aria-controls={utilityPanelId}
         onclick={() => toggleUtilityPanel("info")}
@@ -347,7 +347,7 @@ Features:
     </div>
 
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-      {activeFamilyPresentation.accessibleName}, {activeOptionCount}
+      {activeGroupPresentation.accessibleName}, {activeOptionCount}
       {activeOptionCount === 1 ? "option" : "options"}
     </p>
   </div>
@@ -366,7 +366,7 @@ Features:
           {@render settingsContent()}
         </div>
       {:else}
-        <MovementTypeGuide />
+        <LetterTypeGuide />
       {/if}
     </Crossfade>
   </div>
@@ -465,13 +465,15 @@ Features:
           <div class="option-viewer-body">
             {#if section.pictographs.length === 0}
               <!-- Empty feedback does not need measurements, so it appears on the first frame. -->
-              <div class="empty-family" role="status">
+              <div class="empty-type-group" role="status">
                 <p>
-                  No legal movements in {getLocalizedFamilyPresentation(
-                    getMovementFamilyDescriptor(section.title) ?? defaultFamily
+                  No pictographs in {getLocalizedGroupPresentation(
+                    getLetterTypeGroupDescriptor(section.title) ?? defaultGroup
                   ).accessibleName} match these settings.
                 </p>
-                <span>Try another type or adjust the movement filters.</span>
+                <span
+                  >Try another letter type or adjust the option settings.</span
+                >
               </div>
             {:else if boundsReady()}
               <!-- Wait for bounds before rendering pictographs to prevent size burst on mobile -->
@@ -689,7 +691,7 @@ Features:
     min-width: 0;
   }
 
-  .movement-family-label {
+  .letter-type-group-label {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -697,7 +699,7 @@ Features:
     line-height: 1.1;
   }
 
-  .movement-family-compact {
+  .letter-type-group-compact {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -707,11 +709,11 @@ Features:
     line-height: 1;
   }
 
-  .movement-family-number {
+  .letter-type-group-number {
     font-variant-numeric: tabular-nums;
   }
 
-  .movement-family-palette {
+  .letter-type-group-palette {
     display: flex;
     width: 28px;
     height: 3px;
@@ -723,7 +725,7 @@ Features:
       box-shadow var(--duration-fast);
   }
 
-  .movement-family-palette-color {
+  .letter-type-group-palette-color {
     flex: 1;
     min-width: 0;
   }
@@ -738,7 +740,7 @@ Features:
     color: var(--theme-text);
   }
 
-  :global(.segment.selected) .movement-family-palette {
+  :global(.segment.selected) .letter-type-group-palette {
     opacity: 1;
     box-shadow: 0 0 5px color-mix(in srgb, var(--theme-text) 24%, transparent);
   }
@@ -782,7 +784,7 @@ Features:
     /* Removed transition to prevent layout shifts during option changes */
   }
 
-  .empty-family {
+  .empty-type-group {
     width: min(100%, 28rem);
     margin: auto;
     padding: 1rem;
@@ -793,13 +795,13 @@ Features:
     text-align: center;
   }
 
-  .empty-family p {
+  .empty-type-group p {
     margin: 0 0 0.35rem;
     font-size: var(--font-size-sm);
     font-weight: 600;
   }
 
-  .empty-family span {
+  .empty-type-group span {
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
   }

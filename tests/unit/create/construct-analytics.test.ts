@@ -8,7 +8,7 @@ import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import {
   logConstructContextPreviewReady,
   logConstructImmediateUndo,
-  logConstructMovementFamilySelected,
+  logConstructLetterTypeGroupSelected,
   logConstructOptionApplied,
   logConstructStartPositionCompleted,
   resetConstructAnalyticsForTests,
@@ -25,8 +25,8 @@ describe("Construct privacy-safe analytics", () => {
       path: "build",
       gridMode: "diamond",
     });
-    logConstructMovementFamilySelected({
-      family: "Type2",
+    logConstructLetterTypeGroupSelected({
+      group: "Type2",
       source: "selector",
     });
     logConstructContextPreviewReady({

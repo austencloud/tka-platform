@@ -26,6 +26,7 @@
     type StartPositionPath,
   } from "../../construct/services/construct-analytics";
   import { getStartPositionDisplayLabel } from "../../construct/start-position-picker/services/start-position-display-label";
+  import { areStartPositionsEquivalent } from "../../construct/start-position-picker/services/start-position-equivalence";
 
   // Get context
   const ctx = getCreateModuleContext();
@@ -141,13 +142,32 @@
   } = $props();
 
   function handleStartPositionSubmitted(
-    _position: PictographData,
+    position: PictographData,
     path: StartPositionPath
-  ) {
+  ): void {
+    if (areStartPositionsEquivalent(position, currentStartPosition)) {
+      completeTutorialStartPosition(position, path);
+      pendingStartPosition = null;
+      return;
+    }
+
     pendingStartPosition = {
       path,
       previousPosition: currentStartPosition,
     };
+  }
+
+  function completeTutorialStartPosition(
+    position: PictographData,
+    path: StartPositionPath
+  ): void {
+    logConstructStartPositionCompleted({
+      path,
+      gridMode: sequenceGridMode,
+    });
+    constructTutorialState.recordStartPosition(
+      getStartPositionDisplayLabel(position)
+    );
   }
 
   $effect(() => {
@@ -156,15 +176,7 @@
     if (!pending || !committedPosition) return;
     if (committedPosition === pending.previousPosition) return;
 
-    logConstructStartPositionCompleted({
-      path: pending.path,
-      gridMode: sequenceGridMode,
-    });
-
-    const label = getStartPositionDisplayLabel(committedPosition);
-    if (label) {
-      constructTutorialState.recordStartPosition(label);
-    }
+    completeTutorialStartPosition(committedPosition, pending.path);
     pendingStartPosition = null;
   });
 

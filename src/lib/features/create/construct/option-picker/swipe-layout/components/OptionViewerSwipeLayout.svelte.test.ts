@@ -20,11 +20,11 @@ describe("OptionViewerSwipeLayout type navigation", () => {
 
   it("keeps direct selection, carousel arrows, and the active panel in sync", async () => {
     const onSectionChange = vi.fn();
-    const onMovementFamilySelected = vi.fn();
+    const onLetterTypeGroupSelected = vi.fn();
     render(OptionViewerSwipeLayoutTestHarness, {
       organizedPictographs: EMPTY_PANELS,
       onSectionChange,
-      onMovementFamilySelected,
+      onLetterTypeGroupSelected,
     });
 
     const type1 = page.getByRole("tab", {
@@ -49,12 +49,12 @@ describe("OptionViewerSwipeLayout type navigation", () => {
     );
     await expect.element(type2).toHaveAttribute("aria-selected", "true");
     await expect.element(type2).toHaveAttribute("tabindex", "0");
-    expect(onMovementFamilySelected).toHaveBeenCalledWith("Type2", "selector");
+    expect(onLetterTypeGroupSelected).toHaveBeenCalledWith("Type2", "selector");
 
     await type3.click();
     await expect.element(type3).toHaveAttribute("aria-selected", "true");
     expect(onSectionChange).toHaveBeenCalledWith(2);
-    expect(onMovementFamilySelected).toHaveBeenCalledWith("Type3", "selector");
+    expect(onLetterTypeGroupSelected).toHaveBeenCalledWith("Type3", "selector");
 
     (
       page
@@ -62,10 +62,10 @@ describe("OptionViewerSwipeLayout type navigation", () => {
         .element() as HTMLButtonElement
     ).click();
     await expect.element(type2).toHaveAttribute("aria-selected", "true");
-    expect(onMovementFamilySelected).toHaveBeenCalledWith("Type2", "carousel");
+    expect(onLetterTypeGroupSelected).toHaveBeenCalledWith("Type2", "carousel");
   });
 
-  it("keeps an empty selected family visible and explains how to recover", async () => {
+  it("keeps an empty selected letter-type group visible and explains how to recover", async () => {
     render(OptionViewerSwipeLayoutTestHarness, {
       organizedPictographs: EMPTY_PANELS,
     });
@@ -78,21 +78,21 @@ describe("OptionViewerSwipeLayout type navigation", () => {
     await expect
       .element(
         activePanel.getByText(
-          "No legal movements in Type 2: Shift match these settings."
+          "No pictographs in Type 2: Shift match these settings."
         )
       )
       .toBeVisible();
     await expect
       .element(
         activePanel.getByText(
-          "Try another type or adjust the movement filters."
+          "Try another letter type or adjust the option settings."
         )
       )
       .toBeVisible();
     await expect.element(activePanel).toHaveAttribute("aria-hidden", "false");
   });
 
-  it("restores the selected movement family from session storage", async () => {
+  it("restores the selected letter-type group from session storage", async () => {
     sessionStorage.setItem("tka-option-picker-panel", "2");
 
     render(OptionViewerSwipeLayoutTestHarness, {
@@ -108,16 +108,16 @@ describe("OptionViewerSwipeLayout type navigation", () => {
       .toHaveAttribute("aria-selected", "true");
   });
 
-  it("keeps compact labels visible while full family names remain accessible", async () => {
+  it("keeps compact labels visible while full group names remain accessible", async () => {
     render(OptionViewerSwipeLayoutTestHarness, {
       organizedPictographs: EMPTY_PANELS,
       width: 640,
     });
 
-    expect(document.querySelector(".movement-family-full")).toBeNull();
+    expect(document.querySelector(".letter-type-group-full")).toBeNull();
     expect(
       Array.from(
-        document.querySelectorAll<HTMLElement>(".movement-family-number")
+        document.querySelectorAll<HTMLElement>(".letter-type-group-number")
       ).map((label) => label.textContent)
     ).toEqual(["1", "2", "3", "4-6"]);
     await expect
@@ -129,7 +129,7 @@ describe("OptionViewerSwipeLayout type navigation", () => {
       .toBeInTheDocument();
   });
 
-  it("uses one shared tray for settings and movement help", async () => {
+  it("uses one shared tray for settings and letter-type help", async () => {
     render(OptionViewerSwipeLayoutTestHarness, {
       organizedPictographs: EMPTY_PANELS,
       width: 480,
@@ -141,7 +141,7 @@ describe("OptionViewerSwipeLayout type navigation", () => {
 
     const settings = page.getByRole("button", { name: "Option settings" });
     const info = page.getByRole("button", {
-      name: "Explain movement types",
+      name: "Explain letter types",
     });
 
     await settings.click();
@@ -155,14 +155,14 @@ describe("OptionViewerSwipeLayout type navigation", () => {
 
     await info.click();
     const infoRegion = page.getByRole("region", {
-      name: "Movement type guide",
+      name: "Letter type guide",
     });
     await expect.element(infoRegion).toBeVisible();
     expect(infoRegion.element().id).toBe(sharedPanelId);
     await expect.element(settings).toHaveAttribute("aria-expanded", "false");
     await expect.element(info).toHaveAttribute("aria-expanded", "true");
     await expect
-      .element(page.getByRole("heading", { name: "Movement types" }))
+      .element(page.getByRole("heading", { name: "Letter types" }))
       .toBeVisible();
     expect(document.querySelectorAll(".workspace-utility-panel")).toHaveLength(
       1
@@ -197,7 +197,7 @@ describe("OptionViewerSwipeLayout type navigation", () => {
     expect(header).not.toBeNull();
     const carouselTopBefore = carousel!.getBoundingClientRect().top;
 
-    await page.getByRole("button", { name: "Explain movement types" }).click();
+    await page.getByRole("button", { name: "Explain letter types" }).click();
     await new Promise((resolve) => setTimeout(resolve, 320));
 
     const workspacePanel = document.querySelector<HTMLElement>(
@@ -230,7 +230,7 @@ describe("OptionViewerSwipeLayout type navigation", () => {
     expect(carousel).not.toBeNull();
     const carouselTopBefore = carousel!.getBoundingClientRect().top;
 
-    await page.getByRole("button", { name: "Explain movement types" }).click();
+    await page.getByRole("button", { name: "Explain letter types" }).click();
     await new Promise((resolve) => setTimeout(resolve, 320));
 
     const disclosure = document.querySelector<HTMLElement>(

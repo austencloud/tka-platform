@@ -2,7 +2,7 @@ import { render } from "vitest-browser-svelte";
 import { page } from "vitest/browser";
 import { describe, expect, it } from "vitest";
 import { expectNoA11yViolations } from "$test-helpers/component-a11y";
-import MovementTypeGuide from "./MovementTypeGuide.svelte";
+import LetterTypeGuide from "./LetterTypeGuide.svelte";
 
 const TYPE_EXPLANATIONS = [
   ["Type 1", "Both hands shift."],
@@ -13,12 +13,12 @@ const TYPE_EXPLANATIONS = [
   ["Type 6", "Both hands stay in place. The props can still rotate."],
 ] as const;
 
-describe("MovementTypeGuide", () => {
+describe("LetterTypeGuide", () => {
   it("keeps the six canonical explanations together in one accessible guide", async () => {
-    render(MovementTypeGuide);
+    render(LetterTypeGuide);
 
     await expect
-      .element(page.getByRole("heading", { name: "Movement types" }))
+      .element(page.getByRole("heading", { name: "Letter types" }))
       .toBeVisible();
 
     for (const [typeName, explanation] of TYPE_EXPLANATIONS) {

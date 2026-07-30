@@ -1,9 +1,9 @@
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { MovementFamilyKey } from "../option-picker/services/section-title-formatter";
+import type { LetterTypeGroupKey } from "../option-picker/services/section-title-formatter";
 
 export type StartPositionPath = "presets" | "build";
-export type MovementFamilyNavigationSource = "selector" | "carousel";
+export type LetterTypeNavigationSource = "selector" | "carousel";
 
 const IMMEDIATE_UNDO_WINDOW_MS = 5_000;
 let lastOptionApplication:
@@ -31,16 +31,20 @@ export function logConstructStartPositionCompleted(props: {
   });
 }
 
-export function logConstructStartPositionCancelled(path: StartPositionPath): void {
+export function logConstructStartPositionCancelled(
+  path: StartPositionPath
+): void {
   captureEvent("construct_start_pose_cancelled", { path });
 }
 
-export function logConstructMovementFamilySelected(props: {
-  family: MovementFamilyKey;
-  source: MovementFamilyNavigationSource;
+export function logConstructLetterTypeGroupSelected(props: {
+  group: LetterTypeGroupKey;
+  source: LetterTypeNavigationSource;
 }): void {
+  // Keep the established event and property names so historical dashboards
+  // remain continuous while the product uses the canonical "letter type" term.
   captureEvent("construct_movement_type_selected", {
-    family: props.family,
+    family: props.group,
     source: props.source,
   });
 }

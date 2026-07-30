@@ -145,7 +145,7 @@
         onclick={handleReplayTutorial}
       >
         <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        <span>Replay create tutorial</span>
+        <span>Replay Construct guide</span>
       </button>
 
       <button

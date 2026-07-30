@@ -82,19 +82,19 @@
       <i class="fas fa-compass" aria-hidden="true"></i>
     </div>
 
-    <h2 id="tutorial-prompt-title" class="prompt-title">Quick tour?</h2>
+    <h2 id="tutorial-prompt-title" class="prompt-title">
+      Try the Construct guide?
+    </h2>
     <p class="prompt-body">
-      Build a short sequence in Construct with one prompt at a time.
+      Choose a start position, add one pictograph, then play the sequence.
     </p>
 
     <div class="prompt-actions">
       <button class="accept-button" onclick={handleAccept}>
-        Show me
+        Start guide
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
-      <button class="skip-button" onclick={handleSkip}>
-        Skip, I'll explore
-      </button>
+      <button class="skip-button" onclick={handleSkip}> Skip for now </button>
     </div>
   </div>
 </div>
@@ -168,7 +168,11 @@
 
   .prompt-body {
     font-size: 0.95rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: color-mix(
+      in srgb,
+      var(--theme-text, #fff) 82%,
+      var(--theme-panel-bg, #12121c)
+    );
     margin: 0;
     line-height: 1.5;
     max-width: 280px;
@@ -228,7 +232,11 @@
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: color-mix(
+      in srgb,
+      var(--theme-text, #fff) 82%,
+      var(--theme-panel-bg, #12121c)
+    );
     font-size: 0.9rem;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) var(--ease-out);

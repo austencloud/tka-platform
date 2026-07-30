@@ -3,14 +3,19 @@
   import { createConstructTutorialState } from "../state/construct-tutorial-state.svelte";
   import ConstructTutorialGuide from "./ConstructTutorialGuide.svelte";
 
-  let { atPlayStep = false } = $props<{ atPlayStep?: boolean }>();
+  let { atPictographStep = false, atPlayStep = false } = $props<{
+    atPictographStep?: boolean;
+    atPlayStep?: boolean;
+  }>();
 
   const constructTutorialState = createConstructTutorialState();
   constructTutorialState.start();
 
-  if (atPlayStep) {
+  if (atPictographStep || atPlayStep) {
     constructTutorialState.recordStartPosition("α1");
-    constructTutorialState.recordMovementType();
+  }
+
+  if (atPlayStep) {
     constructTutorialState.recordOptionApplied({
       letter: "A",
       stepNumber: 1,

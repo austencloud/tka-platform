@@ -10,23 +10,20 @@
       case "start-position":
         return {
           title: "Choose a start position",
-          instruction: "Pick a preset, or build the position in your hands.",
+          instruction: "Use Presets, or choose Build to place both props.",
         };
-      case "movement-type":
+      case "next-pictograph":
         return {
           title: constructTutorialState.positionLabel
-            ? `You built ${constructTutorialState.positionLabel}`
-            : "Start position ready",
-          instruction: "Choose a movement type.",
-        };
-      case "movement-option":
-        return {
-          title: "Pick a movement",
-          instruction: "Hold to preview. Tap to add.",
+            ? `Start position: ${constructTutorialState.positionLabel}`
+            : "Start position set",
+          instruction: "Choose a pictograph for the next step.",
         };
       case "play-sequence":
         return {
-          title: "Play the full sequence",
+          title: constructTutorialState.addedLetter
+            ? `Next step: ${constructTutorialState.addedLetter}`
+            : "Next step added",
           instruction: `Use ${WORKSPACE_BUTTON_ICON.view.actionLabel} below the workspace.`,
         };
     }

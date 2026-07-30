@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { OrganizedSection } from "../../domain/option-picker-types";
-  import type { MovementFamilyKey } from "../../services/section-title-formatter";
+  import type { LetterTypeGroupKey } from "../../services/section-title-formatter";
   import OptionViewerSwipeLayout from "./OptionViewerSwipeLayout.svelte";
 
   const {
     organizedPictographs,
     onSectionChange = () => {},
-    onMovementFamilySelected = () => {},
+    onLetterTypeGroupSelected = () => {},
     width = 480,
     height = 640,
     settingsEnabled = false,
@@ -15,8 +15,8 @@
   } = $props<{
     organizedPictographs: OrganizedSection[];
     onSectionChange?: (index: number) => void;
-    onMovementFamilySelected?: (
-      family: MovementFamilyKey,
+    onLetterTypeGroupSelected?: (
+      group: LetterTypeGroupKey,
       source: "selector" | "carousel"
     ) => void;
     width?: number;
@@ -36,7 +36,7 @@
   <OptionViewerSwipeLayout
     {organizedPictographs}
     {onSectionChange}
-    {onMovementFamilySelected}
+    {onLetterTypeGroupSelected}
     {settingsEnabled}
     {openIntoWorkspace}
   >

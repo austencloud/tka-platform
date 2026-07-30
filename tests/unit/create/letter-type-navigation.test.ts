@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildMovementFamilyPanels } from "$lib/features/create/construct/option-picker/services/movement-type-navigation";
+import { buildLetterTypeGroupPanels } from "$lib/features/create/construct/option-picker/services/letter-type-navigation";
 import {
-  getMovementFamilyPresentation,
-  MOVEMENT_FAMILY_DESCRIPTORS,
-  MOVEMENT_TYPE_DESCRIPTORS,
+  getLetterTypeGroupPresentation,
+  LETTER_TYPE_GROUP_DESCRIPTORS,
+  LETTER_TYPE_DESCRIPTORS,
 } from "$lib/features/create/construct/option-picker/services/section-title-formatter";
 import type { OrganizedSection } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
 
@@ -15,18 +15,18 @@ function section(title: string, ids: string[]): OrganizedSection {
   };
 }
 
-describe("movement type navigation", () => {
-  it("always returns the four visible movement families in selector order", () => {
-    const panels = buildMovementFamilyPanels([]);
+describe("letter type navigation", () => {
+  it("always returns the four visible letter-type groups in selector order", () => {
+    const panels = buildLetterTypeGroupPanels([]);
 
     expect(panels.map((panel) => panel.title)).toEqual(
-      MOVEMENT_FAMILY_DESCRIPTORS.map((family) => family.key)
+      LETTER_TYPE_GROUP_DESCRIPTORS.map((group) => group.key)
     );
     expect(panels.every((panel) => panel.pictographs.length === 0)).toBe(true);
   });
 
-  it("derives family presentation from resolved movement descriptions", () => {
-    expect(MOVEMENT_TYPE_DESCRIPTORS.Type1).toMatchObject({
+  it("derives group presentation from resolved letter-type descriptions", () => {
+    expect(LETTER_TYPE_DESCRIPTORS.Type1).toMatchObject({
       key: "Type1",
       typeName: "Type 1",
       description: "Dual-Shift",
@@ -38,8 +38,8 @@ describe("movement type navigation", () => {
       ],
     });
 
-    const presentation = getMovementFamilyPresentation(
-      MOVEMENT_FAMILY_DESCRIPTORS[3]!,
+    const presentation = getLetterTypeGroupPresentation(
+      LETTER_TYPE_GROUP_DESCRIPTORS[3]!,
       (descriptor) => `Traduit-${descriptor.description}`
     );
 
@@ -65,8 +65,8 @@ describe("movement type navigation", () => {
     });
   });
 
-  it("keeps an empty family in place after filtering", () => {
-    const panels = buildMovementFamilyPanels([
+  it("keeps an empty group in place after filtering", () => {
+    const panels = buildLetterTypeGroupPanels([
       section("Type1", ["a"]),
       section("Type3", ["b"]),
     ]);
@@ -78,7 +78,7 @@ describe("movement type navigation", () => {
   });
 
   it("combines Types 4, 5, and 6 without changing their order", () => {
-    const panels = buildMovementFamilyPanels([
+    const panels = buildLetterTypeGroupPanels([
       section("Type4", ["dash"]),
       section("Type5", ["dual-dash"]),
       section("Type6", ["static"]),

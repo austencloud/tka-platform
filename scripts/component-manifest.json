@@ -37119,7 +37119,7 @@
       "hiddenMonster": false
     },
     {
-      "file": "lib/features/create/construct/option-picker/components/MovementTypeGuide.svelte",
+      "file": "lib/features/create/construct/option-picker/components/LetterTypeGuide.svelte",
       "total": 168,
       "scriptLines": 6,
       "templateLines": 52,

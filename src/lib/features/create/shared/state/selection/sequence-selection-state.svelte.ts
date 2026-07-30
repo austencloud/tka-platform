@@ -37,10 +37,12 @@ interface PersistedMultiSelection {
   stepNumbers: number[];
   anchor: number | null;
 }
-const multiSelectPersistence = createPersistenceHelper<PersistedMultiSelection>({
-  key: "tka_multi_selection",
-  defaultValue: { mode: "single", stepNumbers: [], anchor: null },
-});
+const multiSelectPersistence = createPersistenceHelper<PersistedMultiSelection>(
+  {
+    key: "tka_multi_selection",
+    defaultValue: { mode: "single", stepNumbers: [], anchor: null },
+  }
+);
 
 export interface SequenceSelectionStateData {
   // Mode
@@ -58,6 +60,14 @@ export interface SequenceSelectionStateData {
   // Start position
   selectedStartPosition: StartPositionData | null;
   hasStartPosition: boolean;
+}
+
+export interface SequenceSelectionSnapshot {
+  mode: SelectionMode;
+  selectedStepNumber: number | null;
+  selectedStepNumbers: number[];
+  selectionAnchor: number | null;
+  selectedStartPosition: StartPositionData | null;
 }
 
 export function createSequenceSelectionState() {
@@ -347,6 +357,25 @@ export function createSequenceSelectionState() {
     setStartPosition(startPosition: StartPositionData | null) {
       state.selectedStartPosition = startPosition;
       state.hasStartPosition = startPosition !== null;
+    },
+
+    captureSnapshot(): SequenceSelectionSnapshot {
+      return {
+        mode: state.mode,
+        selectedStepNumber: state.selectedStepNumber,
+        selectedStepNumbers: Array.from(state.selectedStepNumbers),
+        selectionAnchor: state.selectionAnchor,
+        selectedStartPosition: state.selectedStartPosition,
+      };
+    },
+
+    restoreSnapshot(snapshot: SequenceSelectionSnapshot): void {
+      state.mode = snapshot.mode;
+      state.selectedStepNumber = snapshot.selectedStepNumber;
+      state.selectedStepNumbers = new Set(snapshot.selectedStepNumbers);
+      state.selectionAnchor = snapshot.selectionAnchor;
+      state.selectedStartPosition = snapshot.selectedStartPosition;
+      state.hasStartPosition = snapshot.selectedStartPosition !== null;
     },
 
     // Helpers for beat removal adjustments

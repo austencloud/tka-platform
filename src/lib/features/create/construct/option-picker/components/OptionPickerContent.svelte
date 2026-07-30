@@ -31,12 +31,11 @@ Uses organizer and sizer services for section grouping and sizing.
     TurnValue,
   } from "$lib/shared/create/services/level-turn-values";
   import { identifyContinuation } from "../services/continuation-identifier";
-  import { buildMovementFamilyPanels } from "../services/movement-type-navigation";
-  import type { MovementFamilyKey } from "../services/section-title-formatter";
-  import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import { buildLetterTypeGroupPanels } from "../services/letter-type-navigation";
+  import type { LetterTypeGroupKey } from "../services/section-title-formatter";
   import {
-    logConstructMovementFamilySelected,
-    type MovementFamilyNavigationSource,
+    logConstructLetterTypeGroupSelected,
+    type LetterTypeNavigationSource,
   } from "../../services/construct-analytics";
 
   interface Props {
@@ -102,8 +101,6 @@ Uses organizer and sizer services for section grouping and sizing.
     onBlueRotationChange,
     onRedRotationChange,
   }: Props = $props();
-  const createContext = tryGetCreateModuleContext();
-
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
   let containerWidth = $state(800); // Default to desktop-size to avoid mobile flash
@@ -246,7 +243,7 @@ Uses organizer and sizer services for section grouping and sizing.
     // - In mobile stacked layout (always use swipe for mobile)
     // - OR not using wide layout (container < 750px)
     // - AND not using compact 4x4 (continuous mode)
-    // Fixed movement-family panels remain mounted even when a family is empty.
+    // Fixed letter-type groups remain mounted even when a group is empty.
     const shouldSwipe = isMobileStackedLayout() || !shouldUseWideLayout;
     return shouldSwipe && !shouldUseCompact4x4();
   });
@@ -276,15 +273,14 @@ Uses organizer and sizer services for section grouping and sizing.
 
   // For swipe layout: combine Types 4-6 into a single grouped panel
   const swipeSections = $derived(() => {
-    return buildMovementFamilyPanels(continuationState().sections);
+    return buildLetterTypeGroupPanels(continuationState().sections);
   });
 
-  function notifyMovementFamilySelected(
-    family: MovementFamilyKey,
-    source: MovementFamilyNavigationSource
+  function notifyLetterTypeGroupSelected(
+    group: LetterTypeGroupKey,
+    source: LetterTypeNavigationSource
   ) {
-    createContext?.constructTutorialState.recordMovementType();
-    logConstructMovementFamilySelected({ family, source });
+    logConstructLetterTypeGroupSelected({ group, source });
   }
 
   // ==================== DESKTOP SIZING ====================
@@ -413,7 +409,7 @@ Uses organizer and sizer services for section grouping and sizing.
         </div>
       {/if}
 
-      <!-- Continuous mode has no movement-type header, so its settings trigger
+      <!-- Continuous mode has no letter-type header, so its settings trigger
            keeps the established corner position. Swipe mode places the same
            trigger inside its three-part header below. -->
       {#if showCompactControls() && !shouldUseSwipeLayout()}
@@ -477,7 +473,7 @@ Uses organizer and sizer services for section grouping and sizing.
             {currentSequence}
             {onSlotClicked}
             {getContinuationIndex}
-            onMovementFamilySelected={notifyMovementFamilySelected}
+            onLetterTypeGroupSelected={notifyLetterTypeGroupSelected}
             settingsEnabled={showCompactControls()}
             settingsHasTurnRows={turnControlsEditable && level > 1}
             openIntoWorkspace={isMobileStackedLayout()}
@@ -606,7 +602,7 @@ Uses organizer and sizer services for section grouping and sizing.
     z-index: 5;
   }
 
-  /* Continuous mode has no movement-type header to host this trigger. */
+  /* Continuous mode has no letter-type header to host this trigger. */
   .controls-corner {
     position: absolute;
     top: 2px;

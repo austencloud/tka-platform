@@ -15,11 +15,8 @@ describe("Construct live tutorial state", () => {
     ).toBe(false);
 
     expect(tutorial.recordStartPosition("α1")).toBe(true);
-    expect(tutorial.stage).toBe("movement-type");
+    expect(tutorial.stage).toBe("next-pictograph");
     expect(tutorial.positionLabel).toBe("α1");
-
-    expect(tutorial.recordMovementType()).toBe(true);
-    expect(tutorial.stage).toBe("movement-option");
 
     expect(
       tutorial.recordOptionApplied({
@@ -28,7 +25,7 @@ describe("Construct live tutorial state", () => {
       })
     ).toBe(true);
     expect(tutorial.stage).toBe("play-sequence");
-    expect(tutorial.movementLetter).toBe("A");
+    expect(tutorial.addedLetter).toBe("A");
 
     expect(tutorial.recordFullPlay()).toBe(true);
     expect(tutorial.status).toBe("completed");
@@ -41,11 +38,26 @@ describe("Construct live tutorial state", () => {
     tutorial.dismiss();
 
     expect(tutorial.status).toBe("dismissed");
-    expect(tutorial.recordMovementType()).toBe(false);
+    expect(
+      tutorial.recordOptionApplied({
+        letter: "A",
+        stepNumber: 1,
+      })
+    ).toBe(false);
 
     tutorial.start();
     expect(tutorial.status).toBe("active");
     expect(tutorial.stage).toBe("start-position");
+    expect(tutorial.positionLabel).toBeNull();
+    expect(tutorial.addedLetter).toBeNull();
+  });
+
+  it("accepts a valid custom start position without a canonical label", () => {
+    const tutorial = createConstructTutorialState();
+    tutorial.start();
+
+    expect(tutorial.recordStartPosition(null)).toBe(true);
+    expect(tutorial.stage).toBe("next-pictograph");
     expect(tutorial.positionLabel).toBeNull();
   });
 });

@@ -150,7 +150,7 @@ export function createSequencePersistenceCoordinator(
     },
 
     async clearState(): Promise<void> {
-      if (!persistenceService) return;
+      if (!persistenceService || !state.autoSaveEnabled) return;
 
       try {
         await persistenceService.clearCurrentState();
