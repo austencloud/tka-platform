@@ -1,3 +1,22 @@
+<!--
+  The identity rail — who this person is, which is the one thing every profile
+  can always answer.
+
+  This was a wide banner sitting above a wall of work. That composition assumed
+  work existed, and most accounts have none: they got a banner over two grey
+  "Nothing published yet" sentences. Austen (2026-07-29): "Most of the people in
+  this app have not created anything yet so it should just show how long they've
+  been on and all that kind of stuff."
+
+  So it became a rail. Same data plus the fields the banner was dropping on the
+  floor (joined, last active, location, pronouns, catdog), stacked vertically
+  beside the work rather than above it. When there is no work at all the parent
+  centres this and renders nothing else — see `centered`.
+
+  Every optional field collapses. Location, bio, pronouns, Instagram and props
+  are all sparse in real data; a rail that reserved space for each would be a
+  column of gaps, which is a worse empty state than the one being replaced.
+-->
 <script lang="ts">
   import { fade } from "svelte/transition";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -5,6 +24,8 @@
   import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
+  import { formatLocationLabel } from "$lib/shared/presence/domain/models/presence-models";
+  import { joinedLabel, activeLabel } from "$lib/features/creators/domain/profile-tenure";
 
   let {
     userProfile,
@@ -14,7 +35,8 @@
     onFollowToggle,
     onFollowersClick,
     onFollowingClick,
-    fill = false,
+    collectionsCount,
+    centered = false,
   }: {
     userProfile: EnhancedUserProfile;
     currentUserId?: string | null;
@@ -24,16 +46,25 @@
     onFollowersClick?: () => void;
     onFollowingClick?: () => void;
     /**
-     * Fill the parent's width instead of capping at 900px and centring.
+     * The real number of saved collection items, from the band that shows them.
      *
-     * The cap is right for a hero standing alone above a narrow column, which
-     * is what both existing consumers are. It is wrong when the hero is the
-     * first member of a band whose siblings run the full content width — there
-     * it strands ~2000px of rail at 4K and reads as a different page from the
-     * rows under it ("one width per page", 4k-native-layout.md). Opt-in so
-     * neither existing consumer moves.
+     * NOT `userProfile.collectionCount` — that counter never increments
+     * (`reference_collection_count_broken`), so the header read 0 next to a band
+     * reading 46 in Austen's own screenshot. Same invariant the doorway work
+     * established: a count comes from the pool it describes. Undefined when the
+     * viewer cannot read the collections at all (they are owner-only by
+     * Firestore rule), in which case the stat is omitted rather than shown as a
+     * zero that would claim this person has saved nothing.
      */
-    fill?: boolean;
+    collectionsCount?: number;
+    /**
+     * Stand alone as a centred card instead of anchoring a column.
+     *
+     * Set when the profile has no work, so this is the entire page. Centring is
+     * a content decision the parent owns, which is why it is a prop and not a
+     * container query — the rail's own width is identical in both cases.
+     */
+    centered?: boolean;
   } = $props();
 
   const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
@@ -42,6 +73,22 @@
   const fallbackProp = $derived(
     !userProfile.propsISpinWith?.length ? getEffectiveProp(userProfile) : null
   );
+
+  const shownProps = $derived(
+    userProfile.propsISpinWith?.length
+      ? userProfile.propsISpinWith
+      : fallbackProp
+        ? [fallbackProp]
+        : []
+  );
+
+  const locationText = $derived(formatLocationLabel(userProfile.location));
+  const joined = $derived(joinedLabel(userProfile.joinedDate));
+  const active = $derived(
+    activeLabel(userProfile.lastActiveAt, userProfile.joinedDate)
+  );
+
+  const catdog = $derived(userProfile.favoriteCatdog ?? null);
 
   function handleReportUser() {
     reportModalState.open({
@@ -52,101 +99,154 @@
 </script>
 
 <div
-  class="hero-section"
-  class:fill
+  class="rail"
+  class:centered
   transition:fade={{ duration: 300 }}
   style:--profile-color={accentColor}
 >
-  <div class="hero-ambient"></div>
+  <div class="rail-ambient" aria-hidden="true"></div>
 
-  <div class="hero-content">
-    <div class="avatar-container">
-      <div class="avatar-glow"></div>
-      <AvatarImage
-        src={userProfile.avatar}
-        alt={userProfile.displayName}
-        name={userProfile.displayName}
-        size={120}
-        className="avatar"
-      />
+  <div class="rail-body">
+    <div class="identity">
+      <div class="avatar-container">
+        <div class="avatar-glow" aria-hidden="true"></div>
+        <AvatarImage
+          src={userProfile.avatar}
+          alt={userProfile.displayName}
+          name={userProfile.displayName}
+          size={120}
+          className="avatar"
+        />
+      </div>
+
+      <div class="naming">
+        <h1 class="display-name">{userProfile.displayName}</h1>
+        <p class="handle">
+          <span class="username">@{userProfile.username}</span>
+          {#if userProfile.pronouns}
+            <span class="pronouns">{userProfile.pronouns}</span>
+          {/if}
+        </p>
+      </div>
     </div>
 
-    <div class="info-block">
-      <div class="name-row">
-        <h1 class="display-name">{userProfile.displayName}</h1>
-        <span class="username">@{userProfile.username}</span>
-        {#if userProfile.propsISpinWith && userProfile.propsISpinWith.length > 0}
-          <div class="props-row">
-            {#each userProfile.propsISpinWith as prop}
-              <div
-                class="profile-prop-icon"
-                class:favorite={prop === userProfile.favoriteProp}
-                title={getPropTypeDisplayInfo(prop).label}
-              >
-                <img
-                  src={getPropTypeDisplayInfo(prop).image}
-                  alt={getPropTypeDisplayInfo(prop).label}
-                />
-                {#if prop === userProfile.favoriteProp}
-                  <span class="favorite-star" aria-label="Favorite">&#9733;</span>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        {:else if fallbackProp}
-          <div class="props-row">
+    {#if userProfile.bio}
+      <p class="bio">{userProfile.bio}</p>
+    {/if}
+
+    <!-- Tenure and place. `joined` always renders: `createdAt` is the only
+         field populated on 100% of user documents, which makes it the one fact
+         an otherwise-empty profile can always stand on. `active` is omitted
+         when it would only restate the join date. -->
+    <ul class="facts">
+      {#if locationText}
+        <li class="fact">
+          <i class="fas fa-location-dot" aria-hidden="true"></i>
+          <span>{locationText}</span>
+        </li>
+      {/if}
+      <li class="fact">
+        <i class="fas fa-calendar" aria-hidden="true"></i>
+        <span>Joined {joined}</span>
+      </li>
+      {#if active}
+        <li class="fact">
+          <i class="fas fa-circle-dot" aria-hidden="true"></i>
+          <span>Active {active}</span>
+        </li>
+      {/if}
+    </ul>
+
+    {#if shownProps.length > 0 || catdog}
+      <div class="props-block">
+        <span class="block-label">Spins with</span>
+        <div class="props-row">
+          {#each shownProps as prop (prop)}
             <div
               class="profile-prop-icon"
-              title="Spins with {getPropTypeDisplayInfo(fallbackProp).label}"
+              class:favorite={prop === userProfile.favoriteProp}
+              title={getPropTypeDisplayInfo(prop).label}
             >
               <img
-                src={getPropTypeDisplayInfo(fallbackProp).image}
-                alt="Spins with {getPropTypeDisplayInfo(fallbackProp).label}"
+                src={getPropTypeDisplayInfo(prop).image}
+                alt={getPropTypeDisplayInfo(prop).label}
+              />
+              {#if prop === userProfile.favoriteProp}
+                <span class="favorite-star" aria-label="Favorite">&#9733;</span>
+              {/if}
+            </div>
+          {/each}
+
+          {#if catdog}
+            <!-- A catdog is one identity made of two props, so it renders as a
+                 single paired glyph rather than two more icons in the row. -->
+            <div
+              class="catdog"
+              title="Catdog: {getPropTypeDisplayInfo(catdog.bluePropType).label} + {getPropTypeDisplayInfo(catdog.redPropType).label}"
+            >
+              <img
+                class="catdog-blue"
+                src={getPropTypeDisplayInfo(catdog.bluePropType).image}
+                alt={getPropTypeDisplayInfo(catdog.bluePropType).label}
+              />
+              <img
+                class="catdog-red"
+                src={getPropTypeDisplayInfo(catdog.redPropType).image}
+                alt={getPropTypeDisplayInfo(catdog.redPropType).label}
               />
             </div>
-          </div>
-        {/if}
-      </div>
-
-      {#if userProfile.bio}
-        <p class="bio">{userProfile.bio}</p>
-      {/if}
-
-      {#if userProfile.instagramUsername}
-        <a
-          href="https://instagram.com/{userProfile.instagramUsername}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="instagram-link"
-          aria-label="View {userProfile.displayName}'s Instagram profile"
-        >
-          <i class="fab fa-instagram" aria-hidden="true"></i>
-          <span>@{userProfile.instagramUsername}</span>
-        </a>
-      {/if}
-
-      <div class="stats-row">
-        <div class="stat">
-          <span class="stat-value">{userProfile.sequenceCount}</span>
-          <span class="stat-label">Sequences</span>
+          {/if}
         </div>
-        <div class="stat">
-          <span class="stat-value">{userProfile.collectionCount}</span>
-          <span class="stat-label">Collections</span>
-        </div>
-        <button class="stat stat-clickable" onclick={() => onFollowersClick?.()}>
-          <span class="stat-value">{userProfile.followerCount}</span>
-          <span class="stat-label">Followers</span>
-        </button>
-        <button class="stat stat-clickable" onclick={() => onFollowingClick?.()}>
-          <span class="stat-value">{userProfile.followingCount}</span>
-          <span class="stat-label">Following</span>
-        </button>
       </div>
-    </div>
+    {/if}
+
+    {#if userProfile.instagramUsername}
+      <a
+        href="https://instagram.com/{userProfile.instagramUsername}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="instagram-link"
+        aria-label="View {userProfile.displayName}'s Instagram profile"
+      >
+        <i class="fab fa-instagram" aria-hidden="true"></i>
+        <span>@{userProfile.instagramUsername}</span>
+      </a>
+    {/if}
+
+    <!-- Label left, count right — the same shape the work bands' heads use, so
+         the rail reads as part of the same page. Counts are `tabular-nums` so a
+         changing value never jitters its row (no-layout-shift.md). -->
+    <dl class="stats">
+      <div class="stat">
+        <dt>Sequences</dt>
+        <dd>{userProfile.sequenceCount.toLocaleString()}</dd>
+      </div>
+      {#if collectionsCount !== undefined}
+        <div class="stat">
+          <dt>Collections</dt>
+          <dd>{collectionsCount.toLocaleString()}</dd>
+        </div>
+      {/if}
+      <div class="stat">
+        <dt>
+          <button type="button" class="stat-link" onclick={() => onFollowersClick?.()}>
+            Followers
+          </button>
+        </dt>
+        <dd>{userProfile.followerCount.toLocaleString()}</dd>
+      </div>
+      <div class="stat">
+        <dt>
+          <button type="button" class="stat-link" onclick={() => onFollowingClick?.()}>
+            Following
+          </button>
+        </dt>
+        <dd>{userProfile.followingCount.toLocaleString()}</dd>
+      </div>
+    </dl>
 
     {#if currentUserId && !isOwnProfile}
-      <div class="actions-block">
+      <div class="actions">
         <button
           class="follow-button"
           class:following={userProfile.isFollowing}
@@ -176,78 +276,84 @@
 </div>
 
 <style>
-  .hero-section {
-    --instagram-brand: #E4405F;
+  .rail {
+    --instagram-brand: #e4405f;
 
+    /* The rail recomposes on ITS OWN width, not the viewport's. At desktop it
+       is a ~400px column and stacks vertically; stacked above the work on a
+       tablet it is ~800px wide, where a vertical column of facts would be
+       absurd — the `min-width: 640px` query below turns it into a band. One
+       component, two compositions, chosen by the box it was given. */
     container-type: inline-size;
-    container-name: hero-section;
+    container-name: profile-rail;
 
     position: relative;
     overflow: hidden;
-    padding: clamp(20px, 4cqi, 32px);
     border-radius: 16px;
-    margin-bottom: 24px;
-    max-width: 900px;
-    margin-inline: auto;
   }
 
-  /* Band member, not a standalone card: match the siblings' width. The inner
-     container query (hero-section) still drives the stacked/wide layouts, so
-     the hero recomposes on its own box exactly as before. */
-  .hero-section.fill {
-    max-width: none;
+  /* Standing alone as the whole page rather than anchoring a column. Only the
+     interior alignment lives here — the card's WIDTH is the parent's decision,
+     because the connection section stacked beneath it has to match (one width
+     per page, 4k-native-layout.md).
+
+     `width: 100%` is load-bearing: `container-type: inline-size` above makes this
+     box size to its own contents whenever nothing hands it a width, which
+     collapsed the card to 58px. */
+  .rail.centered {
+    width: 100%;
+    text-align: center;
   }
 
-  /* Removing the cap alone just moves the dead space inside: identity clusters
-     left and ~2000px of the card sits empty. Filling a wide box means USING it,
-     so the identity anchors the left edge and the stats anchor the right —
-     which is also what the rows below do (label left, count right). Above the
-     640px container query only; the stacked layout keeps its centred column. */
-  @container hero-section (min-width: 641px) {
-    .fill .info-block {
-      flex-direction: row;
-      align-items: center;
-      gap: clamp(24px, 4cqi, 64px);
-    }
-
-    /* `margin-left: auto` on the stats, not `space-between` on the parent:
-       space-between distributes EVERY child, which strands the bio and the
-       Instagram link alone in the middle of the card. Auto margin keeps the
-       identity as one left-anchored cluster and pushes only the stats right. */
-    .fill .stats-row {
-      flex: 0 0 auto;
-      margin-top: 0;
-      margin-left: auto;
-      gap: clamp(24px, 2.5cqi, 56px);
-    }
-  }
-
-  .hero-ambient {
+  .rail-ambient {
     position: absolute;
     inset: 0;
-    background:
-      radial-gradient(
-        circle 200px at 100px 50%,
-        color-mix(in srgb, var(--profile-color) 12%, transparent),
-        transparent 70%
-      );
+    background: radial-gradient(
+      circle 260px at 50% 0%,
+      color-mix(in srgb, var(--profile-color) 14%, transparent),
+      transparent 70%
+    );
     pointer-events: none;
     z-index: 0;
   }
 
-  .hero-content {
+  .rail-body {
     position: relative;
     z-index: 1;
     display: flex;
-    align-items: center;
-    gap: 24px;
+    flex-direction: column;
+    gap: clamp(14px, 2cqi, 20px);
   }
 
+  .identity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .centered .identity {
+    align-items: center;
+  }
+
+  /* 7.5em == the 120px passed to AvatarImage at the base root size, so nothing
+     moves on a laptop — but it now grows with the panel's type ramp instead of
+     staying a 120px thumbnail beside 1.5x text at 4K. */
   .avatar-container {
     position: relative;
-    width: 120px;
-    height: 120px;
+    width: 7.5em;
+    height: 7.5em;
     flex-shrink: 0;
+  }
+
+  /* AvatarImage writes `--avatar-size` as an INLINE style on its own wrapper, so
+     an ancestor cannot redefine it — the only way to make the image follow the
+     container is to override the declarations it feeds. An author `!important`
+     beats a non-important inline declaration, which is exactly this case. */
+  .avatar-container :global(.avatar-wrapper),
+  .avatar-container :global(.avatar-wrapper img) {
+    width: 100% !important;
+    height: 100% !important;
   }
 
   .avatar-glow {
@@ -259,39 +365,158 @@
     z-index: -1;
   }
 
-  .info-block {
-    flex: 1;
+  .naming {
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .name-row {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    flex-wrap: wrap;
   }
 
   .display-name {
     margin: 0;
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
     font-weight: 700;
+    line-height: 1.2;
     color: var(--theme-text, white);
+    /* Long display names must wrap inside a rail rather than widen it. */
+    overflow-wrap: anywhere;
   }
 
-  .username {
-    font-size: var(--font-size-base);
+  .handle {
+    margin: 4px 0 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
+  }
+
+  .centered .handle {
+    justify-content: center;
+  }
+
+  .pronouns {
+    padding: 1px 8px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    font-size: var(--font-size-compact);
   }
 
   .bio {
-    margin: 4px 0 0 0;
+    margin: 0;
     font-size: var(--font-size-sm);
     line-height: 1.6;
     color: var(--theme-text-dim);
-    max-width: min(400px, 100%);
+  }
+
+  .facts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .fact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
+  }
+
+  .centered .fact {
+    justify-content: center;
+  }
+
+  .fact i {
+    width: 1em;
+    flex: 0 0 auto;
+    text-align: center;
+    opacity: 0.7;
+  }
+
+  .block-label {
+    display: block;
+    font-size: var(--font-size-compact);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim);
+  }
+
+  .props-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .props-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .centered .props-row {
+    justify-content: center;
+  }
+
+  .profile-prop-icon {
+    position: relative;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+  }
+
+  .profile-prop-icon.favorite {
+    opacity: 1;
+  }
+
+  .profile-prop-icon img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    /* The prop SVGs are a dark brand-indigo silhouette that washes out at this
+       size; recolor to white so they read against the panel (staff is the worst
+       case and the most common prop). */
+    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  }
+
+  .favorite-star {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 0.65rem;
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  .catdog {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding-left: 6px;
+    margin-left: 2px;
+    border-left: 1px solid var(--theme-stroke);
+  }
+
+  .catdog img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  /* Recoloured to the prop identity they carry rather than washed white, since
+     the pairing IS the point of a catdog. */
+  .catdog-blue {
+    filter: brightness(0) saturate(100%) invert(48%) sepia(72%) saturate(1800%)
+      hue-rotate(198deg) brightness(97%) contrast(95%);
+  }
+
+  .catdog-red {
+    filter: brightness(0) saturate(100%) invert(23%) sepia(89%) saturate(3000%)
+      hue-rotate(353deg) brightness(95%) contrast(95%);
   }
 
   .instagram-link {
@@ -310,6 +535,10 @@
     width: fit-content;
   }
 
+  .centered .instagram-link {
+    margin-inline: auto;
+  }
+
   .instagram-link:hover {
     background: color-mix(in srgb, var(--instagram-brand) 20%, transparent);
     border-color: color-mix(in srgb, var(--instagram-brand) 40%, transparent);
@@ -320,59 +549,79 @@
     font-size: 16px;
   }
 
-  .stats-row {
+  .stats {
+    margin: 0;
+    padding-top: clamp(10px, 1.5cqi, 14px);
+    border-top: 1px solid var(--theme-stroke);
     display: flex;
-    gap: 24px;
-    margin-top: 8px;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .stat {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    background: none;
-    border: none;
-    padding: 0;
-    text-align: left;
-    color: inherit;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 32px;
   }
 
-  .stat-clickable {
-    cursor: pointer;
+  .stat dt {
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
   }
 
-  .stat-clickable:hover .stat-label {
-    color: var(--theme-text);
-  }
-
-  .stat-value {
-    font-size: var(--font-size-lg);
+  .stat dd {
+    margin: 0 0 0 auto;
+    font-size: var(--font-size-base);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     color: var(--theme-text, white);
   }
 
-  .stat-label {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    transition: color var(--duration-normal) ease;
-  }
-
-  .stat-clickable .stat-label {
+  /* A row-wide hit area rather than a bare text link: the whole point is that
+     it is obviously pressable (clickables-look-like-buttons.md). The 44px floor
+     is on the row, in px on purpose — touch targets must not scale. */
+  .stat-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: -6px 0;
+    padding: 0;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
     text-decoration: underline;
     text-decoration-style: dotted;
     text-underline-offset: 3px;
+    transition: color var(--duration-normal) ease;
   }
 
-  .actions-block {
+  .stat-link:hover {
+    color: var(--theme-text);
+  }
+
+  .stat-link:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .actions {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+  }
+
+  .centered .actions {
+    justify-content: center;
   }
 
   .follow-button {
-    padding: 12px 32px;
+    flex: 1;
+    min-height: 44px;
+    padding: 12px 24px;
     background: var(--theme-accent);
     border: 1px solid var(--theme-accent);
     border-radius: 8px;
@@ -414,6 +663,7 @@
   .report-button {
     width: 44px;
     height: 44px;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -437,123 +687,110 @@
     outline-offset: 2px;
   }
 
-  .props-row {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-left: 4px;
-  }
-
-  .profile-prop-icon {
-    position: relative;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-  }
-
-  .profile-prop-icon.favorite {
-    opacity: 1;
-  }
-
-  .profile-prop-icon img {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-    /* The prop SVGs are a dark brand-indigo silhouette that washes out at
-       this size; recolor to white so they read against the hero (staff is
-       the worst case and the most common prop). */
-    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
-  }
-
-  .favorite-star {
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    font-size: 0.65rem;
-    color: var(--semantic-warning, #f59e0b);
-  }
-
-  /* ═══ Mobile: collapse to centered vertical stack ═══ */
-  @container hero-section (max-width: 640px) {
-    .hero-content {
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .avatar-container {
-      width: 80px;
-      height: 80px;
-    }
-
-    .name-row {
-      justify-content: center;
-    }
-
-    .display-name {
-      font-size: var(--font-size-2xl);
-    }
-
-    .bio {
-      text-align: center;
-      margin-inline: auto;
-    }
-
-    .instagram-link {
-      margin-inline: auto;
-    }
-
-    .stats-row {
-      justify-content: center;
-    }
-
-    .actions-block {
-      flex-direction: row;
-      gap: 12px;
-    }
-
-    .follow-button {
-      padding: 10px 24px;
-    }
-
-    .props-row {
-      justify-content: center;
-      margin-left: 0;
-    }
-  }
-
-  /* ═══ Very narrow ═══ */
-  @container hero-section (max-width: 400px) {
-    .hero-section {
-      padding: 14px;
-    }
-
-    .stats-row {
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .display-name {
-      font-size: var(--font-size-xl);
-    }
-
-    .username {
-      font-size: var(--font-size-sm);
-    }
-  }
-
   .instagram-link:focus-visible {
     outline: 3px solid var(--instagram-brand);
     outline-offset: 2px;
   }
 
+  /*
+    Wide box: stop being a rail and become a band.
+
+    This fires when the rail is stacked above the work on a tablet or a folded
+    phone in landscape, where it owns the full panel width. A vertical column of
+    single facts at 800px+ is the dead-rail failure in miniature, so identity
+    goes beside the details and the stats spread into a row.
+  */
+  @container profile-rail (min-width: 640px) {
+    .rail-body {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: clamp(16px, 2cqi, 28px);
+      row-gap: 0.7em;
+      align-items: start;
+    }
+
+    /* `display: contents` so the avatar and the name become grid items in their
+       own right. Left as one block, the whole identity cluster occupied column
+       one and the facts flowed into column one's first row — which rendered the
+       location and join date ABOVE the person's name. */
+    .identity {
+      display: contents;
+    }
+
+    .avatar-container {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .naming,
+    .bio,
+    .facts,
+    .props-block,
+    .instagram-link,
+    .actions {
+      grid-column: 2;
+    }
+
+    .stats {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      gap: clamp(20px, 3cqi, 48px);
+    }
+
+    .stat {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .stat dd {
+      margin-left: 0;
+      /* Value above label in a row of stats — the reading order that a
+         horizontal stat strip wants. */
+      order: -1;
+      font-size: var(--font-size-lg);
+    }
+
+    .actions {
+      justify-content: flex-start;
+    }
+
+    .follow-button {
+      flex: 0 0 auto;
+    }
+  }
+
+  /* Narrow: centre the identity the way a phone profile expects, whether or not
+     the parent asked for a centred card. */
+  @container profile-rail (max-width: 400px) {
+    .identity {
+      align-items: center;
+    }
+
+    /* No avatar shrink here. `AvatarImage size={120}` writes a hard 120px box,
+       so shrinking only this container let the image spill 32px past it and land
+       on the display name. 120px fits the rail at every width it is used at, so
+       the honest fix is to leave the size alone rather than fight the prop from
+       CSS. */
+
+    .naming {
+      text-align: center;
+    }
+
+    .handle {
+      justify-content: center;
+    }
+
+    .display-name {
+      font-size: var(--font-size-xl);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .follow-button,
     .instagram-link,
-    .report-button {
+    .report-button,
+    .stat-link {
       transition: none;
     }
 

@@ -67,7 +67,6 @@
           isOwnProfile={true}
           followInProgress={false}
           onFollowToggle={() => {}}
-          fill
         />
       </div>
     {/if}

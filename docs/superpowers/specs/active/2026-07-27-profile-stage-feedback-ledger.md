@@ -22,7 +22,7 @@ Original handoff: `2026-07-26-profile-as-stage-handoff.md`.
 | 7 | Consolidate rather than patch the same bug twice. "consolidate, obv" | Applied (one hydrator, one `engineAlignScale`) |
 | 8 | Big mandalas, filling their whole square. "I really love the big ass mandalas and I like them taking up their whole square." | Honoured EXCEPT the animation overlay, which must register with the trail (~61%) |
 | 9 | The mandala overlay must match the path the prop actually traces. | Shipped — `engineAlignScale` |
-| 10 | One width per page. No dead rail at 4K. | Shipped on the stage; **the live panel still caps at 1920px** |
+| 10 | One width per page. No dead rail at 4K. | **Shipped 2026-07-29.** The panel now uses `var(--shell-w)` (fluid, 2600 ceiling) instead of a hardcoded 1920 cap — dead rail at a real 3840 went 960px → 592px per side, and the panel carries its own type ramp so elements scale too (`2026-07-29-profile-person-first-design.md`) |
 | 11 | Band chrome must ride the same type ramp as the tiles it labels. | Shipped |
 | 12 | **The word belongs in a header on top of each artifact, for every medium — not a caption at the bottom left.** The animation canvas already has this header; build the same one around all the others. Portrait tiles are fine. | In progress |
 | 13 | **The page must ARRIVE, and it must END.** "it should feel like I'm already on the destination as soon as I get there ... when I scroll down it's just a sea of mandalas." | Shipped — the Archive is a doorway (`2026-07-27-profile-lobby-design.md`). Measured at 1920×1080: 10.52 screens → 4.12; Showcase bottom 857px, above the 1080 fold |
@@ -39,11 +39,18 @@ Original handoff: `2026-07-26-profile-as-stage-handoff.md`.
 
 ## Open
 
-1. **Live panel width** — `.profile-layout` caps at `max-width: 1920px`. Product
-   decision; awaiting Austen's call. **Measured 2026-07-28 at a real 3840
-   viewport: the band is exactly 1920px, so 960px of dead rail each side — the
-   page uses half its width.** Now the most visible thing left on this surface;
-   the doorway made the page short enough that the empty rail is what you see.
+1. ~~**Live panel width** — `.profile-layout` caps at `max-width: 1920px`.~~
+   **Closed 2026-07-29.** Replaced with `var(--shell-w)`; the identity rail now
+   absorbs a slice of the extra width so tiles grow rather than multiply, and a
+   panel-scoped type ramp (the root ramp is scoped to `.mkt-shell` /
+   `.legal-container` / `.qft-app` and never reached in-app) scales type and the
+   avatar in lockstep. Measured at a real 3840: band 2600px, dead rail 592px per
+   side, archive tiles 233px → 364px, root 16px → 23.3px.
+
+   Residual, lower priority: a **visitor** view of a prolific creator is still
+   short at 3840 (two bands, one row each) so the page ends around 73% down.
+   That is the doorway design working as intended; adding rows would undo it.
+   An own-profile view fills further because Collections adds strips.
 2. **`ProfileShowcase.svelte` / `ProfileTabs.svelte`** are unreferenced by
    UserProfilePanel now. Not deleted — every other consumer must be checked first.
 3. **Black quads in the 3D scene preview** — particle sprites failing to texture.

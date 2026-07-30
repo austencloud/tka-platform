@@ -23,6 +23,7 @@
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import { fitColumns } from "$lib/features/creators/domain/fit-columns";
+  import { hasProfileWork } from "$lib/features/creators/domain/profile-tenure";
   import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
@@ -39,6 +40,10 @@
   let {
     userId,
     displayName,
+    hasWork = $bindable(true),
+    // No fallback: `$bindable(undefined)` still counts as one, and Svelte rejects
+    // binding an undefined value to a prop that has a fallback.
+    savedCount = $bindable(),
   }: {
     userId: string;
     /**
@@ -48,6 +53,23 @@
      * this component with a bare uid, and an own-profile handoff never uses it.
      */
     displayName?: string;
+    /**
+     * Whether this stage has anything at all to show.
+     *
+     * Reported outward because the parent drops the whole work column when it is
+     * false — an empty profile becomes a centred identity card rather than a
+     * two-column page with a hole in it. The stage owns the answer because it
+     * owns the three queries; the parent must not recompute it from a second
+     * read. Starts `true` so the column does not flicker away and back during
+     * the initial load.
+     */
+    hasWork?: boolean;
+    /**
+     * The real count of saved collection items, for the rail's Collections stat.
+     * `undefined` when the viewer cannot read them at all (owner-only by
+     * Firestore rule), which is different from zero and must render differently.
+     */
+    savedCount?: number | undefined;
   } = $props();
 
   /**
@@ -224,36 +246,77 @@
   // Column counts are pinned per tier and routed through fitColumns so a band
   // never strands one tile in its own row (4k-native-layout.md). This is the
   // rule ProfileTabs' `repeat(auto-fill, minmax(240px, 1fr))` breaks.
-  let viewportWidth = $state(1920);
+  /*
+    Measured on the STAGE, not the window.
+
+    These tiers were tuned when the stage was the whole page, so the window's
+    width and the band's width were the same number. They are not anymore: the
+    identity rail takes a ~400px column beside this one. Reading the window
+    over-estimates every count, which squeezes tiles or overflows the row — and
+    it degrades all three bands at once, since they share this function.
+
+    A ResizeObserver rather than a container query because these numbers feed
+    `items.slice()`, not just CSS.
+  */
+  let stageEl = $state<HTMLElement | null>(null);
+  let stageEm = $state(80);
   $effect(() => {
-    const measure = () => (viewportWidth = window.innerWidth);
+    if (!stageEl) return;
+    const el = stageEl;
+    const measure = () => {
+      const root = parseFloat(getComputedStyle(el).fontSize) || 16;
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) stageEm = w / root;
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
     measure();
-    window.addEventListener("resize", measure, { passive: true });
-    return () => window.removeEventListener("resize", measure);
+    return () => observer.disconnect();
   });
 
+  /*
+    Tiers measured in `em`, not `px`.
+
+    Px thresholds against a panel that carries a type ramp produce MORE, THINNER
+    tiles as the screen grows — the failure 4k-native-layout.md names in rule 2.
+    Concretely: the archive got 5 columns of 233px at 1920 and 7 columns of 253px
+    at a real 3840, so the art never grew while the type around it did.
+
+    Dividing the band's width by the ramped root size makes the tier ramp-aware:
+    the stage measures ~80em at 1920 and ~84em at 3840, so it stays in the same
+    tier and each tile grows with the ramp instead of the count growing. The
+    higher tiers still exist for a stage with no rail beside it (the harness at
+    /test/profile-stage runs full width).
+
+    The two low boundaries are 40em and 26em rather than a straight px-to-em
+    translation of the old 700/1100. Those numbers were compared against the
+    VIEWPORT; the stage is always narrower — panel padding, the sidebar, and now
+    the rail. Translating 700px to 44em put the 820px tablet at 43.4em, one hair
+    under, and dropped its archive from four tiles to two.
+  */
   function capFor(band: "showcase" | "collection" | "archive"): number {
-    const w = viewportWidth;
+    const w = stageEm;
     if (band === "showcase") {
-      if (w >= 2600) return 5;
-      if (w >= 1680) return 4;
-      if (w >= 1100) return 3;
-      if (w >= 700) return 2;
+      if (w >= 163) return 5;
+      if (w >= 105) return 4;
+      if (w >= 69) return 3;
+      if (w >= 40) return 2;
       return 1;
     }
     if (band === "collection") {
-      if (w >= 3400) return 8;
-      if (w >= 2600) return 7;
-      if (w >= 1680) return 6;
-      if (w >= 1100) return 4;
-      if (w >= 700) return 3;
+      if (w >= 213) return 8;
+      if (w >= 163) return 7;
+      if (w >= 105) return 6;
+      if (w >= 69) return 4;
+      if (w >= 40) return 3;
       return 2;
     }
-    if (w >= 3400) return 10;
-    if (w >= 2600) return 8;
-    if (w >= 1680) return 7;
-    if (w >= 1100) return 5;
-    if (w >= 700) return 4;
+    if (w >= 213) return 10;
+    if (w >= 163) return 8;
+    if (w >= 105) return 7;
+    if (w >= 69) return 5;
+    if (w >= 40) return 4;
+    if (w >= 26) return 3;
     return 2;
   }
 
@@ -385,9 +448,32 @@
     setPendingBrowseIntent({ kind: "art-shelf", shelfId, label });
     void handleModuleChange("browse", "library");
   }
+
+  /*
+    Report outward what the parent needs to compose the page around this stage.
+
+    Held back until the first load settles, so the work column does not appear,
+    vanish, and reappear on a profile that does have work. `loadError` counts as
+    settled: a stage that cannot load is not a stage with nothing in it, and
+    collapsing the column would hide the error message.
+  */
+  $effect(() => {
+    if (loading && !loadError) return;
+    hasWork = hasProfileWork({
+      showcase: showcase.length,
+      sequences: sortedSequences.length,
+      collections: collectionEntries.length,
+    });
+  });
+
+  // Saved art is owner-only by Firestore rule, so on a visitor's view there is
+  // no count to report — which is not the same as a count of zero.
+  $effect(() => {
+    savedCount = isOwnProfile ? collectionEntries.length : undefined;
+  });
 </script>
 
-<div class="stage">
+<div class="stage" bind:this={stageEl}>
   {#if loadError}
     <PanelState type="error" title="Could not load library" message={loadError} />
   {:else}
@@ -406,7 +492,8 @@
       {:else}
         <div
           class="grid showcase-grid"
-          style:--cols={fitColumns(showcase.length, capFor("showcase"))}
+          style:--cols={Math.min(showcase.length, fitColumns(showcase.length, capFor("showcase")))}
+          style:--cap={capFor("showcase")}
         >
           {#each showcase as pick (pick.key)}
             <ArtifactTile
@@ -572,6 +659,24 @@
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: clamp(0.75em, 1.2cqw, 1.25em);
     align-items: start;
+  }
+
+  /* A showcase holding fewer items than the tier's column cap gets one track per
+     item, not a full row with empty tracks trailing the last tile — that is the
+     stranded-track failure (visual-verification-mandatory.md). Capping the
+     grid's own width to the same share of the row keeps each tile the size it
+     would have been in a full row, so one pinned item reads as one tile rather
+     than ballooning to the whole band. Gaps are ignored in the ratio, which
+     makes a short row a few px wider than a full one — invisible, and worth not
+     threading the gap token through a calc. */
+  .showcase-grid {
+    /* `width: 100%` is load-bearing: `margin-inline: auto` on a column-flex item
+       cancels the default stretch, and the grid then shrank to its tile's
+       content width (173px instead of 407px). An explicit width makes the box
+       definite again so max-width has something to clamp. */
+    width: 100%;
+    max-width: calc(100% * var(--cols) / var(--cap));
+    margin-inline: auto;
   }
 
   /* Short-landscape: a grid of 1:1 tiles can't fit even one row, so the

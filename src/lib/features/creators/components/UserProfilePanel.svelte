@@ -54,12 +54,21 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   const isOwnProfile = $derived(currentUserId === userId);
   const isAdmin = $derived(authState.isAdmin);
 
-  // Right rail appears when viewing someone else while logged in (connection)
-  // or as an admin. The desktop build grants isAdmin with user: null
-  // (auth-state desktop fallback), so isAdmin must be its own gate — it is NOT
-  // implied by currentUserId. Own profile / logged-out non-admin → gallery
-  // goes full width, no rail.
-  const showAside = $derived((!!currentUserId || isAdmin) && !isOwnProfile);
+  /**
+   * Reported up from the stage, which owns the three queries behind them.
+   *
+   * `stageHasWork` starts true so the work column does not flicker away and back
+   * on a profile that has work. `stageSavedCount` feeds the rail's Collections
+   * stat, replacing the `collectionCount` field that never increments.
+   */
+  let stageHasWork = $state(true);
+  let stageSavedCount = $state<number | undefined>(undefined);
+
+  // The admin column is moderation tooling, not identity, so it stays its own
+  // column rather than moving into the rail with the connection section. The
+  // desktop build grants isAdmin with user: null (auth-state desktop fallback),
+  // so isAdmin must be its own gate — it is NOT implied by currentUserId.
+  const showAdmin = $derived(isAdmin && !isOwnProfile);
 
   const modalUsers = $derived(followersModalType === "followers" ? followerUsers : followingUsers);
   const modalLoading = $derived(followersModalType === "followers" ? followersLoading : followingLoading);
@@ -222,46 +231,62 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     <ProfileHeaderBar onBack={handleBack} />
 
     <div class="profile-content">
-      <div class="profile-layout" class:has-aside={showAside}>
-        <div class="hero-area">
+      <div
+        class="profile-layout"
+        class:has-aside={showAdmin}
+        class:no-work={!stageHasWork}
+      >
+        <!-- The person, not their work. Everything about them lives in this one
+             column: identity, tenure, place, props, counts, and — when you are
+             signed in looking at someone else — your connection to them, which
+             is also about the person rather than about what they made. -->
+        <div class="rail-area">
           <ProfileHeroSection
             {userProfile}
             {currentUserId}
             {isOwnProfile}
             {followInProgress}
-            fill
+            collectionsCount={stageSavedCount}
+            centered={!stageHasWork}
             onFollowToggle={handleFollowToggle}
             onFollowersClick={() => openFollowersModal("followers")}
             onFollowingClick={() => openFollowersModal("following")}
           />
+
+          {#if currentUserId && !isOwnProfile}
+            <ProfileConnectionSection
+              targetUserId={userId}
+              targetUserName={userProfile.displayName}
+              isFollowing={userProfile.isFollowing}
+            />
+          {/if}
         </div>
 
         <!-- Three bands, each artifact in its own medium — replaces the pinned
              showcase strip plus the single wall of choreo-card fronts that
              ProfileShowcase and ProfileTabs rendered. The stage loads its own
              library and collections from the userId, so nothing upstream needs
-             to fetch on its behalf. -->
-        <div class="profile-main">
-          <ProfileStage {userId} displayName={userProfile.displayName} />
+             to fetch on its behalf; it reports back only what the layout needs.
+
+             Kept MOUNTED when empty rather than removed, so its queries are not
+             torn down and re-run — `hidden` drops it from the layout without
+             discarding the load that decided it was empty. -->
+        <div class="work-area" hidden={!stageHasWork}>
+          <ProfileStage
+            {userId}
+            displayName={userProfile.displayName}
+            bind:hasWork={stageHasWork}
+            bind:savedCount={stageSavedCount}
+          />
         </div>
 
-        {#if showAside}
+        {#if showAdmin}
           <aside class="profile-aside">
-            {#if currentUserId && !isOwnProfile}
-              <ProfileConnectionSection
-                targetUserId={userId}
-                targetUserName={userProfile.displayName}
-                isFollowing={userProfile.isFollowing}
-              />
-            {/if}
-
-            {#if isAdmin && !isOwnProfile}
-              <ProfileAdminSection
-                {userProfile}
-                onUserUpdated={handleAdminUpdate}
-                {onUserDeleted}
-              />
-            {/if}
+            <ProfileAdminSection
+              {userProfile}
+              onUserUpdated={handleAdminUpdate}
+              {onUserDeleted}
+            />
           </aside>
         {/if}
       </div>
@@ -281,6 +306,37 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   .profile-panel {
     container-type: inline-size;
     container-name: profile-panel;
+
+    /*
+      A local type ramp, because the site-wide one does not reach here.
+
+      The lockstep root ramp in app.css is scoped to `html:has(.mkt-shell)`,
+      `.legal-container` and `.qft-app` — none of which an in-app module is. So at
+      a real 3840 viewport (4K at 100%, or a TV across the room) nothing scaled
+      for this page: every rem measure stayed frozen at 1080p size while the band
+      grew to 2600px, which is the disjointed-4K failure 4k-native-layout.md
+      describes.
+
+      Redefining the size tokens as `em` off a container-scaled root does what the
+      root ramp does, at panel scope: every measure below grows by the SAME
+      multiplier, so nothing can outgrow its neighbours. `cqi` rather than `vw` so
+      it tracks the panel — the sidebar and any future rail come off the top
+      first.
+
+      Floor 1rem keeps laptops on the base design; the 1.5rem ceiling lands the
+      2600px band at ~24px root, matching the site ramp's own ceiling.
+    */
+    font-size: clamp(1rem, 0.62cqi, 1.5rem);
+    --font-size-min: 0.875em;
+    --font-size-compact: 0.75em;
+    --font-size-xs: 0.75em;
+    --font-size-sm: 0.875em;
+    --font-size-base: 1em;
+    --font-size-md: 1em;
+    --font-size-lg: 1.125em;
+    --font-size-xl: 1.25em;
+    --font-size-2xl: 1.5em;
+    --font-size-3xl: 1.875em;
 
     display: flex;
     flex-direction: column;
@@ -312,57 +368,82 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     padding: clamp(16px, 4cqi, 32px);
   }
 
-  /* 4K-first layout: full-width hero banner, gallery main that fills the
-     width, and a sticky right rail for viewer-only sections. Collapses to a
-     single stacked column on narrow panels. */
+  /* Identity rail beside the work, not a banner above it.
+     `--shell-w` rather than a hardcoded cap: the old `max-width: 1920px` left
+     960px of dead rail per side at 3840 and the page used half its width.
+     4k-native-layout.md forbids hardcoding a band and names this variable as the
+     mechanism (floor 1720px, fluid 88vw, ceiling 2600px). */
   .profile-layout {
     width: 100%;
-    max-width: 1920px;
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin-inline: auto;
     display: grid;
     gap: 24px;
     grid-template-columns: 1fr;
     grid-template-areas:
-      "hero"
-      "main";
+      "rail"
+      "work";
     align-items: start;
   }
 
-  .profile-layout.has-aside {
-    grid-template-columns: minmax(0, 1fr) clamp(320px, 22cqi, 400px);
-    grid-template-areas:
-      "hero hero"
-      "main aside";
-  }
-
-  .hero-area {
-    grid-area: hero;
-  }
-
-  .profile-main {
-    grid-area: main;
+  .rail-area {
+    grid-area: rail;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     min-width: 0;
-    /* Sit above the sticky rail so the gallery's sort popover can overlap the
-       rail region instead of being covered by it (both are backdrop-filter
-       panels = separate stacking contexts). */
+  }
+
+  /* A height-capped flex column shrinks its children by default, and the rail
+     card sets `overflow: hidden` for its ambient gradient — so at 1440x900 the
+     card was squeezed and clipped its own stats and Follow button rather than
+     letting the column scroll. Children keep their natural height; the scroll
+     belongs to the column. */
+  .rail-area > :global(*) {
+    flex: 0 0 auto;
+  }
+
+  /* Nothing to sit beside, so the rail becomes the page: one centred column at a
+     card's width. The cap is here rather than inside the rail because the
+     connection section stacks beneath it and has to be the same width — a 544px
+     card over a 1720px panel reads as two unrelated pages. */
+  .profile-layout.no-work .rail-area {
+    /* `width: 100%` before the cap: auto inline margins make a grid item
+       shrink-to-fit, and the rail inside it is an inline-size container that then
+       sizes to its own text — the pair collapsed the column to 58px. */
+    width: 100%;
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+
+  .work-area {
+    grid-area: work;
+    min-width: 0;
+    /* Sit above the sticky admin column so the gallery's sort popover can
+       overlap it instead of being covered (both are backdrop-filter panels =
+       separate stacking contexts). */
     z-index: 2;
   }
 
+  /* `hidden` on a grid item still participates in layout unless told otherwise;
+     the element stays mounted so the stage's queries survive. */
+  .work-area[hidden] {
+    display: none;
+  }
+
+  /* Static while stacked; the wide tier below turns it sticky alongside the rail. */
   .profile-aside {
     grid-area: aside;
-    position: sticky;
-    top: 0;
-    align-self: start;
     display: flex;
     flex-direction: column;
     z-index: 1;
   }
 
-  /* Three frosted glass panels (banner / main / rail) so all content reads
-     against calm surfaces; the ocean breathes in the grid gaps + page
-     margins. Reuses the app modal-surface token (--theme-panel-bg). */
-  .hero-area,
-  .profile-main,
+  /* Frosted glass panels so all content reads against calm surfaces; the ocean
+     breathes in the grid gaps + page margins. Reuses the app modal-surface
+     token (--theme-panel-bg). */
+  .rail-area > :global(*),
+  .work-area,
   .profile-aside {
     background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 90%, transparent);
     backdrop-filter: blur(12px);
@@ -373,35 +454,69 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     box-shadow: var(--theme-shadow, 0 8px 32px rgba(0, 0, 0, 0.3));
   }
 
-  /* Hero fills its banner panel edge-to-edge. The width half of this is now the
-     hero's own `fill` prop, which also spreads the content (identity left,
-     stats right) instead of only widening the box and leaving the surplus
-     empty. What stays here is panel-specific: the hero IS this panel's banner,
-     so it drops its own margins, padding and radius and lets the frosted panel
-     supply them. */
-  .hero-area :global(.hero-section) {
-    margin: 0;
-    padding: 0;
-    border-radius: 0;
-  }
-
   .profile-aside > :global(:first-child) {
     margin-top: 0;
     padding-top: 0;
     border-top: none;
   }
 
-  @container profile-panel (max-width: 1100px) {
+  /* Wide enough for the rail to stand beside the work. Below this the rail
+     stacks on top, where the rail's own container query (640px) turns it into a
+     horizontal band so it does not become a tall column of single facts pushing
+     the Showcase below the fold. */
+  @container profile-panel (min-width: 1100px) {
+    /* Rail track in `em`, not `rem`, so it grows with the panel's type ramp — a
+       416px rail beside a 2160px work column at 4K reads as an afterthought. */
+    .profile-layout {
+      grid-template-columns: clamp(20em, 22cqi, 26em) minmax(0, 1fr);
+      grid-template-areas: "rail work";
+    }
+
     .profile-layout.has-aside {
-      grid-template-columns: 1fr;
+      grid-template-columns:
+        clamp(20em, 20cqi, 25em)
+        minmax(0, 1fr)
+        clamp(20em, 18cqi, 25em);
+      grid-template-areas: "rail work aside";
+    }
+
+    /* Nothing to sit beside: the rail becomes the page. One column, centred,
+       and the rail's own `centered` prop caps and centres its contents. */
+    .profile-layout.no-work,
+    .profile-layout.no-work.has-aside {
+      grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        "hero"
-        "main"
+        "rail"
         "aside";
     }
 
-    .profile-aside {
+    /* Sticky so the person stays visible while their work scrolls, with its own
+       scroll for the case where identity plus a connection section outgrows the
+       viewport — otherwise the Follow button at its bottom would be unreachable. */
+    .rail-area {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100dvh;
+      overflow-y: auto;
+      /* Cancels the sticky scroll container on the empty-profile composition,
+         where the rail is the only thing on the page and has nothing to stick
+         against. */
+      scrollbar-width: thin;
+    }
+
+    .profile-layout.no-work .rail-area {
       position: static;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .profile-aside {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100dvh;
+      overflow-y: auto;
     }
   }
 

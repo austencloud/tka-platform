@@ -183,6 +183,42 @@ Tiers, all on the `profile-panel` container query that already exists:
   run twice: once on a populated profile, once on an **empty** one. The empty
   case is what the redesign is for and it cannot be verified by arithmetic.
 
+## Found during implementation
+
+Two things the design did not anticipate, both fixed rather than deferred.
+
+**The panel had no type ramp at all.** The spec assumed the existing `cqi` clamps
+were "the equivalent mechanism" to the root ramp. They are not: they scale
+padding and gaps, but every type size comes from `--font-size-*`, which is `rem`,
+and the root ramp is scoped to `.mkt-shell` / `.legal-container` / `.qft-app` —
+never an in-app module. So at a real 3840 the band grew to 2600px while all type
+stayed at 1080p size. Fixed by redefining the size tokens as `em` off a
+container-scaled root **on `.profile-panel` only**, which is the lockstep ramp
+applied at panel scope. It correctly stays inert at 1920 and 2560 (4K at 200% and
+150% need composition and band width, not bigger type) and engages near 3840.
+
+**`capFor()`'s tiers had to move to `em`, not just to the stage's box.** Fixing
+the measured element was necessary but not sufficient: px thresholds against a
+ramped panel produce *more, thinner* tiles as the screen grows — the archive gave
+5 columns of 233px at 1920 and 7 of 253px at 3840, so the art never grew.
+Measuring the band in `em` keeps it in one tier across both (≈80em and ≈84em) and
+the tiles grow with the ramp instead.
+
+Four CSS traps found only by looking, all the same shape — a box collapsing
+because something removed its definite width:
+
+| Symptom | Cause |
+|---|---|
+| Avatar overlapping the display name | `AvatarImage` writes a hard 120px; a narrow-width override shrank only the container |
+| Showcase grid 173px instead of 407px | `margin-inline: auto` cancels a column-flex item's stretch |
+| Empty-profile card 58px wide | same, compounded by `container-type: inline-size` sizing to its own text |
+| Rail clipped mid-stats at 1440×900, Follow button unreachable | a height-capped flex column shrinks its children, and the card sets `overflow: hidden` |
+
+And one reading-order bug: in the ≥640px band form the identity block held column
+one, so the location and join date rendered **above** the person's name. Fixed
+with `display: contents` so the avatar and name become grid items in their own
+right.
+
 ## Risks
 
 - **The rail is a new fixed cost on narrow screens.** Stacked, identity now

@@ -150,13 +150,21 @@ async function mapFirestoreToEnhancedProfile(
         : rawCreatedAt && typeof rawCreatedAt === "object" && "toDate" in rawCreatedAt
           ? (rawCreatedAt as Timestamp).toDate()
           : new Date();
+    // Absent stays absent. This used to fall back to `joinedDate`, which made
+    // "never returned" indistinguishable from "returned on the day they
+    // joined" — the profile then rendered "Member since July 2026 / Active
+    // July 2026" and looked broken. It also put this path out of step with the
+    // directory path, which preserves the absence (hence the live
+    // "never returned" branch in CreatorCell and the null handling in
+    // creator-recency). `lastActiveAt` is optional on the interface and every
+    // consumer already tolerates undefined.
     const rawLastActivity = data.lastActivityDate;
     const lastActiveAt =
       rawLastActivity instanceof Date
         ? rawLastActivity
         : rawLastActivity && typeof rawLastActivity === "object" && "toDate" in rawLastActivity
           ? (rawLastActivity as Timestamp).toDate()
-          : joinedDate;
+          : undefined;
 
     const isFeatured = data.isFeatured ?? false;
     const bio = data.bio ?? undefined;
