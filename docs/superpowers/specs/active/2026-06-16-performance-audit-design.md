@@ -2,11 +2,11 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Audit complete with verified evidence (static build analysis + in-browser runtime trace via Chrome DevTools MCP). Three fixes SHIPPED (committed, build-verified green). The headline win — three.js off the boot path — is diagnosed precisely but BLOCKED on a package change; the landing LCP win needs one design decision. This spec is the handoff: findings, what shipped, and the…"
-depends_on: ""
+remaining: "The audit deliverable and its three scoped fixes are complete. The audited Firestore-gated video hero is no longer the live home route; src/routes/+page.svelte mounts HomeHero, which has no video path. The remaining systemic three.js boot-weld work belongs in a dedicated package/performance follow-up: installed @austencloud/scene-3d 0.1.6 still lacks sideEffects metadata and useful deep exports. Move this audit to shipped after that follow-up is recorded and the shared full check is green."
+depends_on: "external: @austencloud/scene-3d tree-shaking release/follow-up; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Performance Audit (Boot JS + Landing LCP) — Design
 
@@ -126,3 +126,10 @@ npx wrangler pages dev .svelte-kit/cloudflare --port 5180 --ip 127.0.0.1 --compa
 # then via Chrome DevTools MCP: new_page http://127.0.0.1:5180/ ; performance_start_trace (reload+autoStop)
 ```
 Note: use `127.0.0.1` explicitly — `localhost` collided with another project's dev server during this audit and produced numbers for the wrong app (caught and discarded). Local wrangler numbers are inflated vs production CDN; trust the *breakdown* (load-delay vs render-delay split), not the absolute ms.
+
+## Reconciliation (2026-07-30)
+
+- The three shipped commits named above remain in history: `dc6bfe998b`, `e5c6694b18`, and `872a694d1a`.
+- The live home route no longer follows the audited `VideoShowcaseSection` mount chain. `src/routes/+page.svelte` mounts `HomeHero.svelte`, which has no video path, so the measured video-LCP failure is obsolete.
+- The systemic package finding remains valid. Installed `@austencloud/scene-3d` 0.1.6 still exposes the root barrel without `sideEffects` metadata and offers only the root plus one `./state` subpath.
+- The audit itself is complete. Its remaining package work needs a focused follow-up with a fresh bundle trace, not another execution of this historical audit.
