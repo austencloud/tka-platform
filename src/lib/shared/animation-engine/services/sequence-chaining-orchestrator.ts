@@ -12,14 +12,11 @@ import type { AnimationPlaybackController } from "$lib/shared/animation-engine/s
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
 import type {
-  BroadcastSequenceConverter,
-  IBroadcastProvider,
   IEndlessSpinnerOrchestrator,
   IInfiniteSequenceGenerator,
   PlaybackHistoryEntry,
   SourceMode,
 } from "$lib/shared/animation-engine/domain/chaining-types";
-import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
 // re-export for existing consumers
 export type { SourceMode };
 
@@ -32,7 +29,6 @@ import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pic
 
 interface SequenceChainingOptions {
   historyCapacity?: number;
-  convertBroadcastSequence?: BroadcastSequenceConverter;
 }
 
 export class SequenceChainingOrchestrator {
@@ -57,26 +53,16 @@ export class SequenceChainingOrchestrator {
   private _history: PlaybackHistoryEntry[] = [];
   private _historyCapacity: number;
 
-  // --- Live mode ---
-  private broadcastUnsubscribe: (() => void) | null = null;
-  private broadcastStateCallback:
-    | ((state: BroadcastStateClient | null) => void)
-    | null = null;
-  private liveSyncInterval: ReturnType<typeof setInterval> | null = null;
-  private latestBroadcastState: BroadcastStateClient | null = null;
-  private lastBroadcastSequenceNumber: number | null = null;
+  // --- Source selection ---
   private _sourceMode: SourceMode = "library";
   private sourceRevision = 0;
-  private readonly convertBroadcastSequence?: BroadcastSequenceConverter;
 
   constructor(
     private readonly spinnerOrchestrator: IEndlessSpinnerOrchestrator,
     private readonly infiniteGenerator: IInfiniteSequenceGenerator,
-    private readonly broadcastProvider?: IBroadcastProvider,
     options?: SequenceChainingOptions
   ) {
     this._historyCapacity = options?.historyCapacity ?? 30;
-    this.convertBroadcastSequence = options?.convertBroadcastSequence;
   }
 
   get isChainingNow(): boolean {
@@ -121,7 +107,6 @@ export class SequenceChainingOrchestrator {
 
   async startAutoMode(mode: SourceMode): Promise<void> {
     const revision = ++this.sourceRevision;
-    this.stopLiveMode();
     this._sourceMode = mode;
     this.preloadedSequence = null;
     this.lastStep = -1;
@@ -142,52 +127,11 @@ export class SequenceChainingOrchestrator {
         this.doHotSwap(generated.sequence);
         this.preloadNext(mode);
       }
-    } else if (mode === "live") {
-      if (!this.broadcastProvider || !this.convertBroadcastSequence) {
-        this.notifyError("Live mode is unavailable");
-        return;
-      }
-
-      await this.broadcastProvider.calculateServerTimeOffset();
-      if (revision !== this.sourceRevision || mode !== this._sourceMode) return;
-
-      this.broadcastUnsubscribe = this.broadcastProvider.subscribeToBroadcast(
-        (state) => {
-          if (revision !== this.sourceRevision || this._sourceMode !== "live")
-            return;
-
-          this.latestBroadcastState = state;
-          this.broadcastStateCallback?.(state);
-          if (
-            !state ||
-            state.sequenceNumber === this.lastBroadcastSequenceNumber
-          ) {
-            return;
-          }
-
-          try {
-            const sequence = this.convertBroadcastSequence!(
-              state.currentSequence
-            );
-            if (this.doHotSwap(sequence)) {
-              this.lastBroadcastSequenceNumber = state.sequenceNumber;
-              this.syncLivePosition();
-            }
-          } catch (error) {
-            console.error(
-              "SequenceChainingOrchestrator: broadcast conversion failed:",
-              error
-            );
-            this.notifyError("The live sequence could not be loaded");
-          }
-        }
-      );
-      this.liveSyncInterval = setInterval(() => this.syncLivePosition(), 100);
     }
   }
 
   skip(): void {
-    if (this._sourceMode === "pick" || this._sourceMode === "live") return;
+    if (this._sourceMode === "pick") return;
     this.chainToNext();
   }
 
@@ -216,11 +160,7 @@ export class SequenceChainingOrchestrator {
     servicesReady: boolean,
     hasSequence: boolean
   ): void {
-    if (
-      !this._chainingEnabled ||
-      sourceMode === "pick" ||
-      sourceMode === "live"
-    ) {
+    if (!this._chainingEnabled || sourceMode === "pick") {
       return;
     }
 
@@ -247,11 +187,7 @@ export class SequenceChainingOrchestrator {
     servicesReady: boolean,
     hasSequence: boolean
   ): void {
-    if (
-      !this._chainingEnabled ||
-      sourceMode === "pick" ||
-      sourceMode === "live"
-    ) {
+    if (!this._chainingEnabled || sourceMode === "pick") {
       return;
     }
 
@@ -276,21 +212,13 @@ export class SequenceChainingOrchestrator {
     this.errorCallback = callback;
   }
 
-  onBroadcastStateUpdated(
-    callback: (state: BroadcastStateClient | null) => void
-  ): void {
-    this.broadcastStateCallback = callback;
-  }
-
   dispose(): void {
     this.sourceRevision++;
-    this.stopLiveMode();
     this.playbackController = null;
     this.animationState = null;
     this.preloadedSequence = null;
     this.swapCallback = null;
     this.errorCallback = null;
-    this.broadcastStateCallback = null;
     this._history = [];
   }
 
@@ -342,41 +270,6 @@ export class SequenceChainingOrchestrator {
 
     this.swapCallback?.(sequenceData);
     return true;
-  }
-
-  private stopLiveMode(): void {
-    this.broadcastUnsubscribe?.();
-    this.broadcastUnsubscribe = null;
-    if (this.liveSyncInterval) {
-      clearInterval(this.liveSyncInterval);
-      this.liveSyncInterval = null;
-    }
-    this.latestBroadcastState = null;
-    this.lastBroadcastSequenceNumber = null;
-    this.broadcastStateCallback?.(null);
-  }
-
-  private syncLivePosition(): void {
-    if (
-      this._sourceMode !== "live" ||
-      !this.broadcastProvider ||
-      !this.latestBroadcastState ||
-      !this.animationState
-    ) {
-      return;
-    }
-
-    const state = this.latestBroadcastState;
-    const targetStep = this.broadcastProvider.getCurrentStepPosition(
-      state.startedAtMs,
-      state.durationMs,
-      state.currentSequence.totalSteps,
-      state.beatsPerMinute
-    );
-
-    if (Math.abs(this.animationState.currentStep - targetStep) > 0.5) {
-      this.animationState.setCurrentStep(targetStep);
-    }
   }
 
   private extractEndState(): EndState {

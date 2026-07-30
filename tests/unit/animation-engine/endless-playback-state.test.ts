@@ -92,7 +92,6 @@ describe("createEndlessPlayback", () => {
     expect(state!.currentSequence).toBeNull();
     expect(state!.sourceMode).toBe("library");
     expect(state!.history).toEqual([]);
-    expect(state!.broadcastState).toBeNull();
     expect(state!.sequenceSwapCount).toBe(0);
     expect(state!.isChainingNow).toBe(false);
     expect(state!.isPreloading).toBe(false);
@@ -156,54 +155,6 @@ describe("createEndlessPlayback", () => {
 
     expect(state!.sequenceSwapCount).toBe(1);
     expect(state!.currentSequence?.id).toBe("initial");
-
-    state!.dispose();
-    cleanup();
-  });
-
-  it("releases Live playback ownership when switching to Pick mode", async () => {
-    const unsubscribe = vi.fn();
-    const mockSpinner = {
-      initialize: vi.fn(async () => {}),
-      getInitialSequence: vi.fn(async () => null),
-      getNextSequence: vi.fn(async () => null),
-    };
-    const mockGenerator = {
-      generateInitial: vi.fn(async () => null),
-      generateFromEndState: vi.fn(async () => null),
-      getSessionCount: vi.fn(() => 0),
-    };
-    const mockPlaybackController = {
-      initialize: vi.fn(() => true),
-      togglePlayback: vi.fn(),
-      seekToStep: vi.fn(),
-      dispose: vi.fn(),
-    };
-    const mockBroadcast = {
-      subscribeToBroadcast: vi.fn(() => unsubscribe),
-      calculateServerTimeOffset: vi.fn(async () => 0),
-      getCurrentStepPosition: vi.fn(() => 1),
-    };
-
-    let state: ReturnType<typeof createEndlessPlayback>;
-    const cleanup = effect_root(() => {
-      state = createEndlessPlayback({
-        modes: ["pick", "library", "live"],
-        defaultMode: "library",
-        spinnerOrchestrator: mockSpinner,
-        infiniteGenerator: mockGenerator,
-        playbackController: mockPlaybackController as any,
-        broadcastProvider: mockBroadcast,
-        convertBroadcastSequence: vi.fn((sequence) => sequence as any),
-      });
-    });
-
-    await state!.initialize();
-    await state!.setSourceMode("live");
-    await state!.setSourceMode("pick");
-
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
-    expect(state!.sourceMode).toBe("pick");
 
     state!.dispose();
     cleanup();

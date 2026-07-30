@@ -4,7 +4,6 @@
   Displays statistics that adapt based on the current spinner mode.
   - Library mode: transitions, unique sequences, in session
   - Infinite mode: total generated globally, this session
-  - Live mode: transitions, sequences received, current tempo
 -->
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -22,16 +21,12 @@
     transitionCount = 0,
     globalMetrics,
     sessionGeneratedCount = 0,
-    liveSessionCount = 0,
-    liveBpm = 0,
   }: {
     mode: SpinnerMode;
     libraryStats?: SpinnerStats;
     transitionCount?: number;
     globalMetrics?: SpinnerMetrics | null;
     sessionGeneratedCount?: number;
-    liveSessionCount?: number;
-    liveBpm?: number;
   } = $props();
 
   // Format large numbers with commas
@@ -70,19 +65,6 @@
         <div class="stat">
           <span class="stat-value">{sessionGeneratedCount}</span>
           <span class="stat-label">{t("landing_stats_this_session")}</span>
-        </div>
-      {:else}
-        <div class="stat">
-          <span class="stat-value">{transitionCount}</span>
-          <span class="stat-label">{t("landing_stats_transitions")}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{liveSessionCount}</span>
-          <span class="stat-label">{t("landing_stats_in_session")}</span>
-        </div>
-        <div class="stat highlight">
-          <span class="stat-value">{liveBpm || "..."}</span>
-          <span class="stat-label">{t("compose_bpm")}</span>
         </div>
       {/if}
     </div>

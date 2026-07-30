@@ -24,7 +24,6 @@
   import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
   import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
   import InfiniteModeInfo from "$lib/features/landing/components/InfiniteModeInfo.svelte";
-  import LiveModeInfo from "$lib/features/landing/components/LiveModeInfo.svelte";
   import SpinnerStatsBar from "$lib/features/landing/components/SpinnerStatsBar.svelte";
 
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -69,12 +68,10 @@
     rotatedMatches: 0,
     bridgesGenerated: 0,
   });
-  let spinnerMode = $state<SpinnerMode>("library");
+  let spinnerMode = $state<SpinnerMode>("infinite");
   let sessionGeneratedCount = $state(0);
   let globalMetrics = $state<SpinnerMetrics | null>(null);
   let currentGeneratedInfo = $state<GeneratedSequenceInfo | null>(null);
-  let liveSessionCount = $state(0);
-  let observedSequenceSwapCount = 0;
 
   let metricsUnsubscribe: (() => void) | null = null;
   let modeRevision = 0;
@@ -86,21 +83,12 @@
   let transitionCount = $derived(
     Math.max(0, (playback?.sequenceSwapCount ?? 0) - 1)
   );
-  let broadcastState = $derived(playback?.broadcastState ?? null);
 
   $effect(() => {
     const swapCount = playback?.sequenceSwapCount ?? 0;
     const currentSequence = playback?.currentSequence ?? null;
 
     if (swapCount === 0 || !currentSequence) return;
-
-    if (swapCount > observedSequenceSwapCount) {
-      const newEntryCount = swapCount - observedSequenceSwapCount;
-      liveSessionCount += (playback?.history ?? [])
-        .slice(0, newEntryCount)
-        .filter((entry) => entry.sourceMode === "live").length;
-      observedSequenceSwapCount = swapCount;
-    }
 
     if (spinnerMode === "library" && session) {
       stats = session.spinnerOrchestrator.getStats();
@@ -129,6 +117,12 @@
       visibilityManager.setDarkMode(true);
 
       session = createSpinnerSession(scope);
+      metricsUnsubscribe = session.metricsRepository.subscribe(
+        (m) => (globalMetrics = m)
+      );
+      session.metricsRepository
+        .getMetrics()
+        .then((m) => (globalMetrics = m));
 
       await session.playback.initialize();
       // A resolved initialize with no sequence is still a failed boot — the
@@ -331,8 +325,6 @@
               <LibraryModeInfo sequence={playback?.currentSequence ?? null} />
             {:else if spinnerMode === "infinite"}
               <InfiniteModeInfo sequenceInfo={currentGeneratedInfo} />
-            {:else if spinnerMode === "live"}
-              <LiveModeInfo {broadcastState} />
             {/if}
           </div>
         </Crossfade>
@@ -410,7 +402,6 @@
         <SpinnerControls
           isPlaying={playback?.animationState?.isPlaying ?? false}
           {animationReady}
-          canSkip={spinnerMode !== "live"}
           {showStepGrid}
           {showHistory}
           onToggleGrid={() => (showStepGrid = !showStepGrid)}
@@ -426,8 +417,6 @@
           {transitionCount}
           {globalMetrics}
           {sessionGeneratedCount}
-          {liveSessionCount}
-          liveBpm={broadcastState?.beatsPerMinute ?? 0}
         />
       </div>
 

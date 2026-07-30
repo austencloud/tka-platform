@@ -1,13 +1,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   SourceMode,
-  IBroadcastProvider,
   PlaybackHistoryEntry,
   IEndlessSpinnerOrchestrator,
   IInfiniteSequenceGenerator,
-  BroadcastSequenceConverter,
 } from "$lib/shared/animation-engine/domain/chaining-types";
-import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { CopyResult } from "$lib/shared/browse/services/claude-code-copier";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
@@ -28,8 +25,6 @@ export interface EndlessPlaybackConfig {
   defaultMode: SourceMode;
   historyCapacity?: number;
   propType?: PropType;
-  broadcastProvider?: IBroadcastProvider;
-  convertBroadcastSequence?: BroadcastSequenceConverter;
   spinnerOrchestrator: IEndlessSpinnerOrchestrator;
   infiniteGenerator: IInfiniteSequenceGenerator;
   playbackController: AnimationPlaybackController;
@@ -39,7 +34,6 @@ export interface EndlessPlaybackState {
   readonly currentSequence: SequenceData | null;
   readonly sourceMode: SourceMode;
   readonly history: readonly PlaybackHistoryEntry[];
-  readonly broadcastState: BroadcastStateClient | null;
   readonly sequenceSwapCount: number;
   readonly isChainingNow: boolean;
   readonly isPreloading: boolean;
@@ -75,10 +69,8 @@ export function createEndlessPlayback(
   const orchestrator = new SequenceChainingOrchestrator(
     config.spinnerOrchestrator,
     config.infiniteGenerator,
-    config.broadcastProvider,
     {
       historyCapacity: config.historyCapacity ?? 30,
-      convertBroadcastSequence: config.convertBroadcastSequence,
     }
   );
 
@@ -95,14 +87,10 @@ export function createEndlessPlayback(
   let _sourceMode = $state<SourceMode>(config.defaultMode);
   let _servicesReady = $state(false);
   let _sequenceSwapCount = $state(0);
-  let _broadcastState = $state<BroadcastStateClient | null>(null);
 
   orchestrator.onSequenceSwapped((seq) => {
     _currentSequence = seq;
     _sequenceSwapCount++;
-  });
-  orchestrator.onBroadcastStateUpdated((state) => {
-    _broadcastState = state;
   });
 
   // Derived values — eliminates the ~30-line block duplicated across 6 surfaces
@@ -154,7 +142,7 @@ export function createEndlessPlayback(
 
   // Auto-chaining effect — replaces the most-duplicated pattern
   $effect(() => {
-    if (_sourceMode === "pick" || _sourceMode === "live") return;
+    if (_sourceMode === "pick") return;
     orchestrator.checkAndChain(
       Math.floor(animationState.currentStep),
       animationState.totalSteps,
@@ -166,7 +154,7 @@ export function createEndlessPlayback(
 
   // Preload effect
   $effect(() => {
-    if (_sourceMode === "pick" || _sourceMode === "live") return;
+    if (_sourceMode === "pick") return;
     orchestrator.checkAndPreload(
       Math.floor(animationState.currentStep),
       animationState.totalSteps,
@@ -185,9 +173,6 @@ export function createEndlessPlayback(
     },
     get history() {
       return orchestrator.getHistory();
-    },
-    get broadcastState() {
-      return _broadcastState;
     },
     get sequenceSwapCount() {
       return _sequenceSwapCount;

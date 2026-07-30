@@ -1,27 +1,3 @@
-// --- From BroadcastRepository ---
-/**
- * Broadcast Repository Interface
- *
- * Contract for subscribing to the live broadcast system.
- * Provides real-time updates of the current broadcast and history.
- */
-
-import type { BroadcastStateClient, BroadcastHistoryEntry } from "$lib/shared/landing/domain/broadcast-models";
-
-/**
- * Callback for broadcast state updates.
- */
-export type BroadcastStateCallback = (state: BroadcastStateClient | null) => void;
-
-/**
- * Callback for history updates.
- */
-export type BroadcastHistoryCallback = (entries: BroadcastHistoryEntry[]) => void;
-
-/**
- * Repository for accessing the live broadcast.
- */
-
 // --- From EndlessSpinnerOrchestrator ---
 /**
  * Endless Spinner Orchestrator Interface

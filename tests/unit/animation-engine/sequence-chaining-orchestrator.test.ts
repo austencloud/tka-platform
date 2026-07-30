@@ -48,7 +48,6 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   IEndlessSpinnerOrchestrator,
   IInfiniteSequenceGenerator,
-  IBroadcastProvider,
 } from "$lib/shared/animation-engine/domain/chaining-types";
 
 // ── Mock factories ────────────────────────────────────────────────────────────
@@ -66,14 +65,6 @@ function mockInfinite(): IInfiniteSequenceGenerator {
     generateInitial: vi.fn().mockResolvedValue(null),
     generateFromEndState: vi.fn().mockResolvedValue(null),
     getSessionCount: vi.fn().mockReturnValue(0),
-  };
-}
-
-function mockBroadcast(): IBroadcastProvider {
-  return {
-    subscribeToBroadcast: vi.fn().mockReturnValue(() => {}),
-    calculateServerTimeOffset: vi.fn().mockResolvedValue(0),
-    getCurrentStepPosition: vi.fn().mockReturnValue(1),
   };
 }
 
@@ -156,7 +147,6 @@ describe("SequenceChainingOrchestrator — history", () => {
     const orch = new SequenceChainingOrchestrator(
       mockSpinner(),
       mockInfinite(),
-      undefined,
       { historyCapacity: 10 }
     );
     expect(orch.historyCapacity).toBe(10);
@@ -177,127 +167,6 @@ describe("SequenceChainingOrchestrator — history", () => {
 
     expect(orch.getHistory()).toEqual([]);
     expect(swapped).not.toHaveBeenCalled();
-  });
-});
-
-describe("SequenceChainingOrchestrator — broadcast provider", () => {
-  it("constructor accepts IBroadcastProvider without error", () => {
-    const broadcast = mockBroadcast();
-    const orch = new SequenceChainingOrchestrator(
-      mockSpinner(),
-      mockInfinite(),
-      broadcast,
-      { convertBroadcastSequence: vi.fn(() => mockSequence("live")) }
-    );
-    // No error thrown — orchestrator constructed successfully
-    expect(orch).toBeDefined();
-  });
-
-  it("unsubscribes from Live when another source mode starts", async () => {
-    const unsubscribe = vi.fn();
-    const broadcast = mockBroadcast();
-    vi.mocked(broadcast.subscribeToBroadcast).mockReturnValue(unsubscribe);
-    const orch = new SequenceChainingOrchestrator(
-      mockSpinner(),
-      mockInfinite(),
-      broadcast,
-      { convertBroadcastSequence: vi.fn(() => mockSequence("live")) }
-    );
-    await orch.initialize(mockPlaybackController(), mockAnimationState());
-
-    await orch.startAutoMode("live");
-    await orch.startAutoMode("library");
-
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
-  });
-
-  it("converts, deduplicates, and synchronizes Live sequences", async () => {
-    let broadcastCallback:
-      | Parameters<IBroadcastProvider["subscribeToBroadcast"]>[0]
-      | undefined;
-    const broadcast = mockBroadcast();
-    vi.mocked(broadcast.subscribeToBroadcast).mockImplementation((callback) => {
-      broadcastCallback = callback;
-      return vi.fn();
-    });
-    vi.mocked(broadcast.getCurrentStepPosition).mockReturnValue(3);
-
-    const converted = mockSequence("converted-live");
-    const convertBroadcastSequence = vi.fn(() => converted);
-    const animationState = mockAnimationState();
-    const swapped = vi.fn();
-    const orch = new SequenceChainingOrchestrator(
-      mockSpinner(),
-      mockInfinite(),
-      broadcast,
-      { convertBroadcastSequence }
-    );
-    orch.onSequenceSwapped(swapped);
-    await orch.initialize(mockPlaybackController(), animationState);
-    await orch.startAutoMode("live");
-
-    const state = {
-      currentSequence: { id: "raw-live", totalSteps: 8 },
-      sequenceNumber: 12,
-      startedAtMs: 1_000,
-      durationMs: 4_000,
-      beatsPerMinute: 120,
-    } as any;
-
-    broadcastCallback?.(state);
-    broadcastCallback?.(state);
-
-    expect(convertBroadcastSequence).toHaveBeenCalledTimes(1);
-    expect(swapped).toHaveBeenCalledTimes(1);
-    expect(swapped).toHaveBeenCalledWith(converted);
-    expect(broadcast.getCurrentStepPosition).toHaveBeenCalledWith(
-      1_000,
-      4_000,
-      8,
-      120
-    );
-    expect(animationState.setCurrentStep).toHaveBeenCalledWith(3);
-
-    orch.dispose();
-  });
-});
-
-describe("SequenceChainingOrchestrator — live mode guards", () => {
-  it("checkAndChain is a no-op for 'live' mode", () => {
-    const spinner = mockSpinner();
-    const orch = new SequenceChainingOrchestrator(spinner, mockInfinite());
-    // Call with conditions that would normally trigger chaining
-    orch.checkAndChain(0, 4, "live", true, true);
-    // getNextSequence would be called if chaining proceeded — verify it wasn't
-    expect(spinner.getNextSequence).not.toHaveBeenCalled();
-  });
-
-  it("checkAndPreload is a no-op for 'live' mode", () => {
-    const spinner = mockSpinner();
-    const infinite = mockInfinite();
-    const orch = new SequenceChainingOrchestrator(spinner, infinite);
-    // Call with conditions that would normally trigger preloading
-    orch.checkAndPreload(3, 8, "live", true, true);
-    expect(spinner.getNextSequence).not.toHaveBeenCalled();
-    expect(infinite.generateFromEndState).not.toHaveBeenCalled();
-  });
-
-  it("manual skip is a no-op while Live owns playback", async () => {
-    const spinner = mockSpinner();
-    const infinite = mockInfinite();
-    const orch = new SequenceChainingOrchestrator(
-      spinner,
-      infinite,
-      mockBroadcast()
-    );
-    await orch.initialize(mockPlaybackController(), mockAnimationState());
-    await orch.startAutoMode("live");
-
-    orch.skip();
-    await flushPromises();
-
-    expect(spinner.getNextSequence).not.toHaveBeenCalled();
-    expect(infinite.generateFromEndState).not.toHaveBeenCalled();
   });
 });
 

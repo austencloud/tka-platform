@@ -1,7 +1,7 @@
 /**
  * Assembles the endless spinner's playback stack: the library orchestrator,
- * the infinite generator, the live-broadcast bridge, and a fresh playback
- * controller bound to the page's own AnimationScope.
+ * the infinite generator, and a fresh playback controller bound to the page's
+ * own AnimationScope.
  *
  * This lives outside the route component so the page file owns only what the
  * visitor can see (layout, controls, states) while the service wiring — which
@@ -18,8 +18,6 @@ import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/sta
 import { InfiniteSequenceGenerator } from "$lib/features/landing/services/infinite-sequence-generator";
 import { SpinnerMetricsRepository } from "$lib/features/landing/services/spinner-metrics-repository";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
-import { BroadcastRepository } from "$lib/features/landing/services/broadcast-repository";
-import * as broadcastSequenceConverter from "$lib/features/landing/services/broadcast-sequence-converter";
 import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
 import {
   createEndlessPlayback,
@@ -54,12 +52,10 @@ export function createSpinnerSession(scope: AnimationScope): SpinnerSession {
   const playbackController = createAnimationPlaybackController(scope.visibility);
 
   const playback = createEndlessPlayback({
-    modes: ["library", "infinite", "live"],
-    defaultMode: "library",
+    modes: ["infinite", "library"],
+    defaultMode: "infinite",
     spinnerOrchestrator,
     infiniteGenerator,
-    broadcastProvider: new BroadcastRepository(),
-    convertBroadcastSequence: broadcastSequenceConverter.convertSequence,
     playbackController,
   });
 
