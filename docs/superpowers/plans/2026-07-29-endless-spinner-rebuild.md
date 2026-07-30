@@ -27,6 +27,7 @@
 - Delete: `src/lib/features/landing/domain/models/broadcast-schemas.ts`
 - Delete: `src/lib/shared/landing/domain/broadcast-models.ts`
 - Delete: `src/lib/features/landing/components/LiveModeInfo.svelte`
+- Modify: `src/lib/shared/landing/domain/types.ts` (delete the "From BroadcastRepository" section: the `broadcast-models` import and the `BroadcastStateCallback`/`BroadcastHistoryCallback` types — nothing else in the file)
 - Modify: `src/lib/shared/animation-engine/domain/chaining-types.ts`
 - Modify: `src/lib/shared/animation-engine/services/sequence-chaining-orchestrator.ts`
 - Modify: `src/lib/shared/animation-engine/state/endless-playback-state.svelte.ts`
@@ -66,7 +67,7 @@
 
 - [ ] **Step 7: Commit.**
   ```bash
-  git commit -m "refactor(endless-spinner): retire Live mode — the broadcast backend no longer exists" -- src/lib/features/landing/services/broadcast-repository.ts src/lib/features/landing/services/broadcast-sequence-converter.ts src/lib/features/landing/domain/models/broadcast-schemas.ts src/lib/shared/landing/domain/broadcast-models.ts src/lib/features/landing/components/LiveModeInfo.svelte src/lib/shared/animation-engine/domain/chaining-types.ts src/lib/shared/animation-engine/services/sequence-chaining-orchestrator.ts src/lib/shared/animation-engine/state/endless-playback-state.svelte.ts src/routes/endless-spinner/services/create-spinner-session.ts src/lib/features/landing/components/SpinnerModeToggle.svelte src/lib/features/landing/components/SpinnerStatsBar.svelte src/lib/features/landing/domain/models/spinner-models.ts src/routes/endless-spinner/+page.svelte tests/unit/animation-engine/sequence-chaining-orchestrator.test.ts tests/unit/animation-engine/endless-playback-state.test.ts
+  git commit -m "refactor(endless-spinner): retire Live mode — the broadcast backend no longer exists" -- src/lib/shared/landing/domain/types.ts src/lib/features/landing/services/broadcast-repository.ts src/lib/features/landing/services/broadcast-sequence-converter.ts src/lib/features/landing/domain/models/broadcast-schemas.ts src/lib/shared/landing/domain/broadcast-models.ts src/lib/features/landing/components/LiveModeInfo.svelte src/lib/shared/animation-engine/domain/chaining-types.ts src/lib/shared/animation-engine/services/sequence-chaining-orchestrator.ts src/lib/shared/animation-engine/state/endless-playback-state.svelte.ts src/routes/endless-spinner/services/create-spinner-session.ts src/lib/features/landing/components/SpinnerModeToggle.svelte src/lib/features/landing/components/SpinnerStatsBar.svelte src/lib/features/landing/domain/models/spinner-models.ts src/routes/endless-spinner/+page.svelte tests/unit/animation-engine/sequence-chaining-orchestrator.test.ts tests/unit/animation-engine/endless-playback-state.test.ts
   ```
 
 ---
