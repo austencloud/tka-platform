@@ -52,62 +52,146 @@
 </script>
 
 <div class="work-empty">
-  {#if isOwnProfile}
-    <PanelState
-      type="empty"
-      icon="fa-wand-magic-sparkles"
-      title="Nothing on your profile yet"
-      message="Build a sequence and it shows up here."
-    />
-    <div class="actions">
-      <PanelButton variant="primary" onclick={goBuild}>
-        <i class="fas fa-pen-ruler" aria-hidden="true"></i>
-        Build a sequence
-      </PanelButton>
-      <PanelButton variant="secondary" onclick={goGenerate}>
-        <i class="fas fa-dice" aria-hidden="true"></i>
-        Generate one
-      </PanelButton>
-      <PanelButton variant="secondary" onclick={goGallery}>
-        <i class="fas fa-images" aria-hidden="true"></i>
-        See what others made
-      </PanelButton>
-    </div>
-  {:else}
-    <!-- No message line: "hasn't published anything yet" and "will show up here
-         when they publish" say the same thing twice, and the second one wrapped
-         mid-sentence inside PanelState's measure. -->
-    <PanelState
-      type="empty"
-      icon="fa-folder-open"
-      title="{who} hasn't published anything yet"
-    />
-    <div class="actions">
-      <PanelButton variant="secondary" onclick={goGallery}>
-        <i class="fas fa-images" aria-hidden="true"></i>
-        Browse the gallery
-      </PanelButton>
-    </div>
-  {/if}
+  <!-- Opens like every other section in this column: uppercase label, hairline
+       rule, count on the right. Without it the empty state floated as a centred
+       icon in a bare panel and read as a different page from the bands it
+       replaces. "Sequences 0" rather than a slogan, so the head still states a
+       fact the way Showcase / Archive / Collections do. -->
+  <header class="band-head">
+    <h2>Sequences</h2>
+    <span class="rule" aria-hidden="true"></span>
+    <span class="band-count">0</span>
+  </header>
+
+  <div class="middle">
+    {#if isOwnProfile}
+      <PanelState
+        type="empty"
+        icon="fa-wand-magic-sparkles"
+        title="Nothing on your profile yet"
+        message="Build a sequence and it shows up here."
+      />
+      <div class="actions">
+        <PanelButton variant="primary" onclick={goBuild}>
+          <i class="fas fa-pen-ruler" aria-hidden="true"></i>
+          Build a sequence
+        </PanelButton>
+        <PanelButton variant="secondary" onclick={goGenerate}>
+          <i class="fas fa-dice" aria-hidden="true"></i>
+          Generate one
+        </PanelButton>
+        <PanelButton variant="secondary" onclick={goGallery}>
+          <i class="fas fa-images" aria-hidden="true"></i>
+          See what others made
+        </PanelButton>
+      </div>
+    {:else}
+      <!-- No message line: "hasn't published anything yet" and "will show up
+           here when they publish" say the same thing twice, and the second one
+           wrapped mid-sentence inside PanelState's measure. -->
+      <PanelState
+        type="empty"
+        icon="fa-folder-open"
+        title="{who} hasn't published anything yet"
+      />
+      <div class="actions">
+        <PanelButton variant="secondary" onclick={goGallery}>
+          <i class="fas fa-images" aria-hidden="true"></i>
+          Browse the gallery
+        </PanelButton>
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
   /* Fills the column rather than floating a small notice in a large box — the
-     dead-space failure visual-verification-mandatory.md names. `min-height` in
-     `em` so it grows with the panel's type ramp at 4K instead of staying a
-     1080p-sized band in a 2600px layout. */
+     dead-space failure visual-verification-mandatory.md names. Every measure in
+     `em` so it rides the profile panel's type ramp instead of staying a
+     1080p-sized block inside a 2600px layout (4k-native-layout.md). */
   .work-empty {
+    /* ProfileStage's ramp, character for character.
+       `.stage` carries its own type ramp — keyed to the profile panel, since
+       `100cqw` in a rule resolves against the nearest ANCESTOR container, not the
+       element's own. This column stands in for the stage, so it has to ride the
+       identical curve or its band head lands at 15px beside the bands' 15.79px.
+       Measured mismatch before this line; exact match after.
+
+       The `--font-size-*` overrides are the same trick and for the same reason:
+       shared primitives (PanelState, PanelButton) size from those tokens in
+       `rem`, which would strand them at 1080p. */
+    font-size: clamp(1rem, calc(1rem + (100cqw - 1616px) * 8 / 2160), 1.5rem);
+    --font-size-sm: 0.875em;
+    --font-size-xl: 1.25em;
+    --font-size-3xl: 1.875em;
+
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5em;
+    gap: 0.85em;
     /* Generous on a desktop column, but capped against the viewport so a phone —
        where this panel stacks BELOW an already-tall identity rail — does not get
        400px of empty panel on a 667px screen. */
     min-height: min(26em, 55vh);
     height: 100%;
+  }
+
+  /* ── Copied deliberately from ProfileStage's band head, values and all, so the
+     empty column opens exactly like the bands it stands in for. Svelte's scoped
+     CSS is why this is a copy rather than an import; the alternative is a shared
+     BandHead component, which is the right move the moment a THIRD surface needs
+     it (never-hand-roll.md — two is a coincidence, three is a pattern). ── */
+  .band-head {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+  }
+
+  .band-head h2 {
+    margin: 0;
+    font-size: 0.9375em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+  }
+
+  .rule {
+    flex: 1;
+    height: 1px;
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.12));
+  }
+
+  .band-count {
+    font-size: 0.9375em;
+    color: var(--theme-text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Takes the leftover height and centres the invitation in it, so the head
+     stays pinned to the top like a band's does. */
+  .middle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.75em;
     text-align: center;
+  }
+
+  /* PanelState hardcodes `padding: 60px 20px` and caps its message at `300px`.
+     Both are px, so on this surface they alone refused to scale while the type
+     around them did — and the 300px measure is what broke a one-line message
+     into an awkward two-line wrap in a 1400px column. Restated in `em` so the
+     whole block moves together. */
+  .middle :global(.panel-state) {
+    padding: 0;
+    gap: 0.75em;
+  }
+
+  .middle :global(.panel-state__message) {
+    max-width: 26em;
   }
 
   /* Wraps rather than squeezing: three buttons fit one row on a desktop column
