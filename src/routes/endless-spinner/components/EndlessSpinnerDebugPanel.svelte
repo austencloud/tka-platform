@@ -1,5 +1,6 @@
 <script lang="ts">
   import { flyFade } from "$lib/shared/transitions/motion";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SpinnerStats } from "$lib/shared/landing/domain/types";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -10,6 +11,7 @@
     stats: SpinnerStats | null;
     gridMode: GridMode | null;
     isChainingEnabled: boolean;
+    onCopy: () => Promise<boolean>;
   }
 
   let {
@@ -17,10 +19,14 @@
     stats,
     gridMode,
     isChainingEnabled = $bindable(),
+    onCopy,
   }: Props = $props();
 </script>
 
-<aside class="debug-panel themed-scrollbar" in:flyFade={{ y: 20, duration: 200 }}>
+<aside
+  class="debug-panel themed-scrollbar"
+  in:flyFade={{ y: 20, duration: 200 }}
+>
   <div class="debug-section">
     <h3>Sequence Chain</h3>
     <div class="history-list themed-scrollbar">
@@ -57,6 +63,9 @@
 
   <div class="debug-section">
     <h3>Controls</h3>
+    <button type="button" class="toggle-row" onclick={onCopy}>
+      <span>{t("landing_spinner_copy_sequence")}</span>
+    </button>
     <button
       type="button"
       class="toggle-row"
@@ -196,7 +205,11 @@
   }
 
   .toggle-indicator.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 60%,
+      transparent
+    );
   }
 
   .toggle-indicator.active::after {
@@ -211,5 +224,4 @@
       right: 1rem;
     }
   }
-
 </style>

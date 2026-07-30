@@ -53,7 +53,7 @@
 
   // UI state
   let showDebugPanel = $state(false);
-  let showStepGrid = $state(true);
+  let viewMode = $state<"strip" | "grid">("grid");
   let showHistory = $state(false);
 
   let spinnerMode = $state<SpinnerMode>("infinite");
@@ -209,22 +209,9 @@
     }
   }
 
-  async function copyHistoryEntry(index: number): Promise<boolean> {
-    if (!playback) return false;
-    const result = await playback.copyHistoryEntry(index);
-    if (result.success) return true;
-    const failure = result.error ?? new Error("Clipboard write failed");
-    getErrorHandler().showUserError({
-      message: t("landing_spinner_copy_error"),
-      technicalDetails: failure.message,
-      error: failure,
-      severity: "error",
-      context: {
-        module: "endless-spinner",
-        action: "copyHistoryEntry",
-      },
-    });
-    return false;
+  function replayHistoryEntry(index: number) {
+    const entry = playback?.history[index];
+    if (entry) playback?.hotSwapSequence(entry.sequence);
   }
 </script>
 
@@ -287,7 +274,7 @@
       </div>
 
       <!-- Animation area -->
-      <div class="animation-area" class:with-grid={showStepGrid}>
+      <div class="animation-area" class:with-grid={viewMode === "grid"}>
         <div class="canvas-container">
           {#if animationReady}
             <AnimatorCanvas
@@ -333,10 +320,15 @@
           {/if}
         </div>
 
-        {#if showStepGrid && playback?.animationState?.sequenceData}
-          <div class="beat-grid-container" in:flyFade={{ x: 50, y: 0, duration: 300 }}>
+        {#if viewMode === "grid" && playback?.animationState?.sequenceData}
+          <div
+            class="beat-grid-container"
+            in:flyFade={{ x: 50, y: 0, duration: 300 }}
+          >
             <div class="beat-grid-header">
-              <span class="beat-grid-title">{t("landing_spinner_notation")}</span>
+              <span class="beat-grid-title"
+                >{t("landing_spinner_notation")}</span
+              >
               <span class="beat-grid-count">
                 {t("landing_infinite_steps", {
                   count: playback.animationState.sequenceData.steps.length,
@@ -358,12 +350,12 @@
         <SpinnerControls
           isPlaying={playback?.animationState?.isPlaying ?? false}
           {animationReady}
-          {showStepGrid}
+          {viewMode}
           {showHistory}
-          onToggleGrid={() => (showStepGrid = !showStepGrid)}
+          onToggleView={() =>
+            (viewMode = viewMode === "grid" ? "strip" : "grid")}
           onTogglePause={handleTogglePause}
           onSkip={handleSkip}
-          onCopy={handleCopy}
           onToggleHistory={() => (showHistory = !showHistory)}
         />
       </div>
@@ -371,7 +363,7 @@
       {#if showHistory}
         <SpinnerHistoryPanel
           entries={playback?.history ?? []}
-          onCopyEntry={copyHistoryEntry}
+          onReplayEntry={replayHistoryEntry}
         />
       {/if}
     </main>
@@ -391,6 +383,7 @@
         sequenceHistory={playback?.history ?? []}
         stats={debugStats}
         gridMode={playback?.gridMode ?? null}
+        onCopy={handleCopy}
         bind:isChainingEnabled
       />
     {/if}
@@ -663,7 +656,11 @@
     justify-content: center;
     font-size: 1.5rem;
     font-weight: 700;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 20%,
+      transparent
+    );
     border-radius: 50%;
   }
 
@@ -687,7 +684,11 @@
     margin-top: 0.5rem;
     padding: 0.625rem 1.25rem;
     min-height: var(--min-touch-target, 44px);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 20%,
+      transparent
+    );
     border: 1px solid
       color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
     border-radius: 0.5rem;
@@ -699,8 +700,16 @@
   }
 
   .retry-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 30%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 60%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent-text, #a5b4fc) 70%, white);
   }
 
@@ -798,7 +807,6 @@
     }
   }
 
-
   /* No 2600px step tier: the continuous root ramp above grows every rem
      measure on this page instead (a scale-only tier is redundant with it). */
 
@@ -860,7 +868,6 @@
     .beat-grid-content {
       padding: 0.375rem;
     }
-
   }
 
   @media (min-width: 700px) and (max-height: 600px) {
@@ -955,7 +962,6 @@
     .beat-grid-content {
       padding: 0.25rem;
     }
-
   }
 
   @media (prefers-reduced-motion: reduce) {

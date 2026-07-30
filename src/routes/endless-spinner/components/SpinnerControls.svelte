@@ -1,53 +1,27 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     isPlaying: boolean;
     animationReady: boolean;
-    canSkip?: boolean;
-    showStepGrid: boolean;
+    viewMode: "strip" | "grid";
     showHistory: boolean;
-    onToggleGrid: () => void;
+    onToggleView: () => void;
     onTogglePause: () => void;
     onSkip: () => void;
-    onCopy: () => Promise<boolean>;
     onToggleHistory: () => void;
   }
 
   let {
     isPlaying,
     animationReady,
-    canSkip = true,
-    showStepGrid,
+    viewMode,
     showHistory,
-    onToggleGrid,
+    onToggleView,
     onTogglePause,
     onSkip,
-    onCopy,
     onToggleHistory,
   }: Props = $props();
-
-  let copyState = $state<"idle" | "copying" | "copied">("idle");
-  let copyResetTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  async function handleCopyClick() {
-    if (copyState === "copying") return;
-    copyState = "copying";
-
-    const copied = await onCopy();
-    copyState = copied ? "copied" : "idle";
-    if (!copied) return;
-
-    copyResetTimeout = setTimeout(() => {
-      copyState = "idle";
-      copyResetTimeout = null;
-    }, 1500);
-  }
-
-  onDestroy(() => {
-    if (copyResetTimeout) clearTimeout(copyResetTimeout);
-  });
 </script>
 
 <div
@@ -55,41 +29,54 @@
   role="group"
   aria-label={t("landing_spinner_playback_controls")}
 >
-  <button
-    type="button"
-    class="control-btn secondary"
-    onclick={onToggleGrid}
-    aria-label={showStepGrid
-      ? t("landing_spinner_hide_grid")
-      : t("landing_spinner_show_grid")}
-    aria-pressed={showStepGrid}
-  >
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      aria-hidden="true"
+  <div class="zone left">
+    <button
+      type="button"
+      class="control-btn secondary"
+      onclick={onToggleView}
+      aria-pressed={viewMode === "grid"}
+      aria-label={viewMode === "grid"
+        ? t("landing_spinner_view_strip")
+        : t("landing_spinner_view_grid")}
     >
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  </button>
+      {#if viewMode === "grid"}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <rect x="3" y="10" width="18" height="4" rx="1" />
+          <rect x="6" y="3" width="12" height="3" rx="1" opacity="0.5" />
+          <rect x="6" y="18" width="12" height="3" rx="1" opacity="0.5" />
+        </svg>
+      {:else}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      {/if}
+    </button>
 
-  <button
-    type="button"
-    class="control-btn secondary"
-    class:copied={copyState === "copied"}
-    onclick={handleCopyClick}
-    disabled={!animationReady || copyState === "copying"}
-    aria-label={copyState === "copied"
-      ? t("landing_spinner_copy_success")
-      : t("landing_spinner_copy_sequence")}
-    title={t("landing_spinner_copy_sequence")}
-  >
-    {#if copyState === "copied"}
+    <button
+      type="button"
+      class="control-btn secondary"
+      class:active={showHistory}
+      onclick={onToggleHistory}
+      aria-pressed={showHistory}
+      aria-label={showHistory
+        ? t("landing_spinner_hide_history")
+        : t("landing_spinner_show_history")}
+    >
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -97,21 +84,11 @@
         stroke-width="2"
         aria-hidden="true"
       >
-        <polyline points="20 6 9 17 4 12" />
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
       </svg>
-    {:else}
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        aria-hidden="true"
-      >
-        <rect x="9" y="9" width="13" height="13" rx="2" />
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-      </svg>
-    {/if}
-  </button>
+    </button>
+  </div>
 
   <button
     type="button"
@@ -134,48 +111,43 @@
     {/if}
   </button>
 
-  <button
-    type="button"
-    class="control-btn secondary"
-    onclick={onSkip}
-    disabled={!animationReady || !canSkip}
-    aria-label={t("landing_spinner_skip")}
-  >
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M6 4v16l10-8z" />
-      <rect x="16" y="4" width="2" height="16" />
-    </svg>
-  </button>
-
-  <button
-    type="button"
-    class="control-btn secondary"
-    class:active={showHistory}
-    onclick={onToggleHistory}
-    aria-label={showHistory
-      ? t("landing_spinner_hide_history")
-      : t("landing_spinner_show_history")}
-    aria-pressed={showHistory}
-  >
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      aria-hidden="true"
+  <div class="zone right">
+    <button
+      type="button"
+      class="control-btn secondary"
+      onclick={onSkip}
+      disabled={!animationReady}
+      aria-label={t("landing_spinner_skip")}
     >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  </button>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M6 4v16l10-8z" />
+        <rect x="16" y="4" width="2" height="16" />
+      </svg>
+    </button>
+  </div>
 </div>
 
 <style>
   .controls {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    column-gap: clamp(0.75rem, 1.5vw, 1.25rem);
+    width: 100%;
+  }
+
+  .zone {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 0.75rem;
+  }
+
+  .zone.left {
+    justify-content: flex-end;
+  }
+
+  .zone.right {
+    justify-content: flex-start;
   }
 
   .control-btn {
@@ -236,22 +208,12 @@
     height: 1.25rem;
   }
 
-  .control-btn.copied {
+  .control-btn.active {
     background: color-mix(
       in srgb,
-      var(--semantic-success, #22c55e) 15%,
+      var(--theme-accent, #6366f1) 20%,
       transparent
     );
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-success, #22c55e) 30%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
-  }
-
-  .control-btn.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
     border-color: color-mix(
       in srgb,
       var(--theme-accent, #6366f1) 40%,
@@ -290,5 +252,4 @@
       height: 3.5rem;
     }
   }
-
 </style>

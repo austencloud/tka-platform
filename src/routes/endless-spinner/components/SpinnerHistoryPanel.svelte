@@ -2,12 +2,10 @@
   SpinnerHistoryPanel.svelte
 
   The "Recent Sequences" drawer under the transport bar: every sequence the
-  spinner has played this visit, newest first, each with a Copy action. Owns
-  its own per-row "Copied" feedback; the page owns the actual clipboard call
-  (and its error toast) through onCopyEntry.
+  spinner has played this visit, newest first, each with a Play again action.
+  The current sequence cannot be replayed because that would be a no-op.
 -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import { flyFade } from "$lib/shared/transitions/motion";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -15,30 +13,11 @@
 
   let {
     entries,
-    onCopyEntry,
+    onReplayEntry,
   }: {
     entries: readonly PlaybackHistoryEntry[];
-    /** Resolves true when the sequence data reached the clipboard. */
-    onCopyEntry: (index: number) => Promise<boolean>;
+    onReplayEntry: (index: number) => void;
   } = $props();
-
-  let copiedIndex = $state<number | null>(null);
-  let copyResetTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  async function handleCopy(index: number) {
-    const copied = await onCopyEntry(index);
-    if (!copied) return;
-    copiedIndex = index;
-    if (copyResetTimeout) clearTimeout(copyResetTimeout);
-    copyResetTimeout = setTimeout(() => {
-      copiedIndex = null;
-      copyResetTimeout = null;
-    }, 1500);
-  }
-
-  onDestroy(() => {
-    if (copyResetTimeout) clearTimeout(copyResetTimeout);
-  });
 </script>
 
 <div class="history-panel" transition:flyFade={{ y: 100, duration: 250 }}>
@@ -66,12 +45,9 @@
           <div class="entry-actions">
             <button
               type="button"
-              class="history-copy-btn"
-              class:copied={copiedIndex === i}
-              onclick={() => handleCopy(i)}
-              >{copiedIndex === i
-                ? t("landing_spinner_copied")
-                : t("landing_spinner_copy")}</button
+              class="history-replay-btn"
+              onclick={() => onReplayEntry(i)}
+              disabled={i === 0}>{t("landing_spinner_play_again")}</button
             >
           </div>
         </div>
@@ -138,7 +114,11 @@
   }
 
   .entry.current {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 8%,
+      transparent
+    );
   }
 
   .entry:hover {
@@ -194,11 +174,9 @@
     flex-shrink: 0;
   }
 
-  .history-copy-btn {
+  .history-replay-btn {
     padding: 0.5rem 0.875rem;
     min-height: var(--min-touch-target, 44px);
-    /* Wide enough for the "Copied" state so the swap never resizes the button. */
-    min-width: 4.75rem;
     text-align: center;
     font-size: var(--font-size-compact, 0.75rem);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
@@ -210,28 +188,19 @@
     white-space: nowrap;
   }
 
-  .history-copy-btn:hover {
+  .history-replay-btn:hover:not(:disabled) {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
   }
 
-  .history-copy-btn:focus-visible {
+  .history-replay-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
 
-  .history-copy-btn.copied {
-    background: color-mix(
-      in srgb,
-      var(--semantic-success, #22c55e) 15%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-success, #22c55e) 30%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
+  .history-replay-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .empty-history {
@@ -249,7 +218,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .history-copy-btn {
+    .history-replay-btn {
       transition: none;
     }
   }
