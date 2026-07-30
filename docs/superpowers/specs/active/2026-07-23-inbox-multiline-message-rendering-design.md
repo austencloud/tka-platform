@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: XS
-remaining: "Implementation is complete. Remaining: verify plain, edited, group, and attachment-caption line breaks in a signed-in Inbox session."
-depends_on: ""
+remaining: "Commit 9dfe3bdb86 is present, and the shared bubble content path covers plain, group, edited, and attachment-caption text. Remaining: with explicit browser and messaging permission, verify those variants in a signed-in Inbox at narrow and wide widths, including escaped markup and compact previews."
+depends_on: "external: signed-in Inbox verification requires explicit browser-control permission plus approval to send and edit test messages"
 plan_path: ""
 tags: ["inbox", "messaging", "css", "text-rendering"]
-last_triaged: 2026-07-23
+last_triaged: 2026-07-29
 ---
 
 # Inbox Multiline Message Rendering: Design Spec
@@ -129,6 +129,17 @@ should remain compact and use their existing truncation behavior.
 - Existing reply previews and conversation-list previews remain compact.
 
 ## Verification
+
+### Revalidation, 2026-07-29
+
+- Commit `9dfe3bdb86` added `white-space: pre-wrap` to the existing
+  `MessageBubble.svelte` content rule.
+- The shared `bubbleContent` snippet applies that rule to plain messages,
+  deleted text, group messages, and image, sequence, or feedback captions.
+- Reply and conversation-list previews retain their separate `nowrap` rules.
+- No Inbox tab was open in the connected signed-in Chrome session. Navigation,
+  sending, and editing were not attempted without the required permission.
+- The project check completed with 0 errors and 5 existing warnings.
 
 This is visible CSS behavior. A unit test that searches the component source for
 `pre-wrap` would duplicate the implementation without protecting any hidden
