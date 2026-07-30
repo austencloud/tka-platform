@@ -19,19 +19,73 @@ For working on feedback (reading, claiming, implementing): use `$fb`. This skill
 
 - First arg is 20+ alphanumeric chars -> complete existing feedback
 - First arg has spaces/is descriptive -> auto-create and complete
+- No args -> quick-log the work completed in this session
+
+## The status chain is enforced
+
+`VALID_TRANSITIONS` (`config/feedback.config.js`) allows only:
+
+```
+new -> in-progress -> in-review -> completed -> archived
+```
+
+There is **no** shortcut to `completed`. A single `fetch-feedback.js <id> completed`
+on a `new` item is rejected with `Invalid transition`. Walk the chain.
 
 ## Complete Existing
 
+An item already on the board has a real history, so it moves through the states:
+
 ```powershell
-node scripts/fetch-feedback.js <id> completed "admin notes"
+node scripts/fetch-feedback.js <id> in-progress "Implementing"
+node scripts/fetch-feedback.js <id> in-review  "Verified"
+node scripts/fetch-feedback.js <id> completed  "admin notes"
 ```
+
+Skip whichever leading steps it has already passed — check its current status first.
 
 ## Auto-Create (Quick Log)
 
+Work that shipped before any feedback item existed for it was never `new`, never
+`in-progress`, never `in-review`. Create it **already completed** rather than
+walking a history it did not have — the journal is append-only, so those extra
+entries would permanently assert a review that never happened:
+
 ```powershell
-node scripts/submit-feedback.js "Title" "Description" --type feature --module system --tab general --user austen
-node scripts/fetch-feedback.js <new-id> completed "Title"
+node scripts/submit-feedback.js "Title" "Description" \
+  --type bug --module <module> --tab general --user austen --status completed
 node scripts/fetch-feedback.js <new-id> internal-only true
 ```
 
-Parse feedback ID from submit output to use in subsequent commands.
+Parse the feedback ID from the submit output (`📋 Feedback ID: <id>`) for the
+`internal-only` call.
+
+`--status` is validated against the shared `FEEDBACK_STATUSES` list. It only sets
+the state an item is BORN in; moving an existing item still goes through
+`fetch-feedback.js` and its transition guard.
+
+## Amending an entry after the fact
+
+Text, priority and flags update WITHOUT a status transition — use these rather
+than walking a completed item back to `in-review` to fix its wording, which
+would write two journal entries recording a review that did not happen:
+
+```powershell
+node scripts/fetch-feedback.js <id> description "..."
+node scripts/fetch-feedback.js <id> title "..."
+node scripts/fetch-feedback.js <id> resolution "..."
+node scripts/fetch-feedback.js <id> priority <low|medium|high>
+node scripts/fetch-feedback.js <id> internal-only true
+```
+
+Common need: you logged the item while implementing, so it has no commit SHA.
+`description` is how you add it.
+
+## Writing the entry
+
+Put the root cause and the commit SHA in the description. For most of these the
+diagnosis is the valuable part and the patch is a line or two — an entry that
+records only what changed loses the half worth keeping.
+
+Mark internal-only unless the item is something a user would recognise from the
+changelog.
