@@ -54,6 +54,21 @@
   // UI state
   let showDebugPanel = $state(false);
   let viewMode = $state<"strip" | "grid">("strip");
+
+  // A sequence's word IS its letter string. Library sequences carry it, but
+  // generated ones ship with an empty/whitespace word — so fall back to
+  // joining the step letters (dash letters like "W-" already include their
+  // dash), then simplify repeats. Without this, the canvas word header
+  // reserved space and drew nothing in Infinite mode.
+  let displayWord = $derived.by(() => {
+    const seq = playback?.currentSequence;
+    if (!seq) return "";
+    const raw =
+      seq.word?.trim() ||
+      seq.name?.trim() ||
+      (seq.steps ?? []).map((s) => s.letter ?? "").join("");
+    return simplifyRepeatedWord(raw);
+  });
   let showHistory = $state(false);
 
   let spinnerMode = $state<SpinnerMode>("infinite");
@@ -249,7 +264,7 @@
     <div class="sr-only" aria-live="polite" aria-atomic="true">
       {#if playback?.currentSequence}
         {t("landing_spinner_now_playing", {
-          word: simplifyRepeatedWord(playback.currentSequence.word ?? ""),
+          word: displayWord,
         })}
       {/if}
     </div>
@@ -296,11 +311,7 @@
               {effectsConfigState}
               bluePropType={PropType.STAFF}
               redPropType={PropType.STAFF}
-              word={simplifyRepeatedWord(
-                playback?.currentSequence?.word ||
-                  playback?.currentSequence?.name ||
-                  ""
-              )}
+              word={displayWord}
               progressBarVariant="minimal"
               hideProgressBar={true}
               previewDarkMode={true}
@@ -577,16 +588,45 @@
   .grid-layer {
     overflow-y: auto;
     padding: clamp(0.5rem, 0.8vw, 0.875rem);
+    /* Short sequences center in the tall pane; `safe` keeps the top of a
+       LONG grid reachable when it overflows into scroll instead. */
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
   }
 
-  /* Stacked strip: a content-sized foot right under the canvas. */
-  .animation-area.strip-view + .transport-bar {
-    /* The strip needs no extra space between its foot and the transport. */
+  /* Stacked strip: a fixed-height foot right under the canvas. Definite, not
+     auto — PracticeLanePane switches its StepStrip to fill-height mode at
+     ≥768px (Practice mode's seam), and a fill-height strip inside an
+     auto-height box collapses to nothing on tablet portrait. */
+  .animation-area.strip-view .playback-pane {
+    height: clamp(9.5rem, 19dvh, 13rem);
   }
 
-  .animation-area.strip-view .playback-pane,
   .strip-layer {
-    height: auto;
+    height: 100%;
+  }
+
+  /* Tablet portrait: the stacked column must fit canvas + strip foot +
+     transport in ONE viewport, so the canvas width is derived from the
+     height budget left over after the fixed chrome (header, chips row,
+     strip foot, transport, gaps ≈ 36rem). */
+  @media (min-width: 601px) and (max-width: 1049px) and (min-height: 601px) {
+    /* Tablet PORTRAIT only — the min-height keeps folded-phone landscape
+       (short-horizontal tier) out of this budget math, whose dvh terms go
+       negative at 412px tall and crush the canvas to its floor. */
+    /* Both views share the cap, so toggling views never resizes the stage. */
+    .animation-area .canvas-container {
+      width: min(100%, 42rem, max(16rem, calc((100dvh - 36rem) * 0.75)));
+    }
+
+    /* The notation pane gets what the budget leaves, scrolling inside
+       itself — the transport must stay in the first viewport. (.showcase
+       prefix outranks the base grid-view height, which follows this block
+       in source order.) */
+    .showcase .animation-area.grid-view .playback-pane {
+      height: clamp(11rem, 20dvh, 16rem);
+    }
   }
 
   .animation-area.grid-view .playback-pane {
@@ -768,13 +808,23 @@
       aspect-ratio: auto;
     }
 
-    .playback-pane {
+    .playback-pane,
+    .animation-area.grid-view .playback-pane {
       height: 100%;
     }
 
-    /* Strip view: big canvas, narrow read-ahead column. */
+    /* Side-by-side column: the strip fills the pane's full height again
+       (the base tier's auto height is the stacked-foot behavior only —
+       left as auto here, the fill-height StepStrip collapses to nothing). */
+    .strip-layer {
+      height: 100%;
+    }
+
+    /* Strip view: the canvas stage is height-bound at laptop/1920 sizes, so
+       extra column width past its own height is dead margin — the surplus
+       goes to the read-ahead strip, where it becomes bigger cells. */
     .animation-area.strip-view {
-      grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.6fr);
+      grid-template-columns: minmax(0, 0.8fr) minmax(16rem, 1fr);
     }
 
     /* Grid view: canvas cedes room to the notation. */
@@ -785,8 +835,15 @@
     }
   }
 
-  /* No 2600px step tier: the continuous root ramp above grows every rem
-     measure on this page instead (a scale-only tier is redundant with it). */
+  /* Scale is the continuous root ramp's job (no scale-only step tier). This
+     tier exists to RECOMPOSE: above ~2600px the stage row is so tall that the
+     square canvas stops being height-bound — the strip-view columns rebalance
+     so the canvas takes the width its height can actually use. */
+  @media (min-width: 2600px) {
+    .animation-area.strip-view {
+      grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 1fr);
+    }
+  }
 
   @media (max-width: 600px) {
     .content {
@@ -834,6 +891,23 @@
       margin-inline: calc(50% - 50vw);
       border-radius: 0;
       border-inline: none;
+    }
+
+    /* With the transport docked, the in-flow history panel would open below
+       the fold where nobody sees it — on phones it becomes a bottom sheet
+       layered above the dock instead. */
+    .showcase > :global(.history-panel) {
+      position: fixed;
+      left: 0.5rem;
+      right: 0.5rem;
+      width: auto; /* the component's own width:100% would overflow the inset */
+      bottom: calc(5rem + env(safe-area-inset-bottom));
+      z-index: 6;
+      max-height: 48dvh;
+      /* Opaque: the sheet floats over the live canvas here, and the shared
+         panel's translucent card token lets the animation bleed through. */
+      background: #0a0a14;
+      box-shadow: 0 -0.5rem 2rem rgba(0, 0, 0, 0.5);
     }
 
     .transport-bar {
@@ -929,7 +1003,12 @@
       aspect-ratio: auto;
     }
 
-    .playback-pane {
+    .playback-pane,
+    .animation-area.grid-view .playback-pane {
+      height: 100%;
+    }
+
+    .strip-layer {
       height: 100%;
     }
 
