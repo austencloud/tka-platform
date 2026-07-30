@@ -221,6 +221,39 @@ Supports letter highlighting during animation playback.
     return parsedLetters.map((letter, i) => ({ kind: "letter" as const, letter, letterIdx: i }));
   });
 
+  /**
+   * Roughly how many `em` of width this word needs, so CSS can pick a font size
+   * that fits instead of letting flex crush the glyphs.
+   *
+   * A flat per-unit average cannot work here, because a dash-letter is nearly
+   * twice as wide as a plain one: the glyph itself averages ~0.8em (they run 0.6
+   * for F to 1.2 for W-), and a dash adds `.dash-bar`'s 0.70em plus the 0.08em
+   * gap on top. Counting the two kinds separately is what makes the estimate
+   * tight rather than a compromise that overflows wide words and shrinks narrow
+   * ones for nothing.
+   *
+   * Deliberately an estimate and not a measurement: measuring means rendering,
+   * reading `scrollWidth`, then restyling, and this component sits in an
+   * animation loop.
+   */
+  const wordEmWidth = $derived.by(() => {
+    let em = 0;
+    for (const unit of displayUnits) {
+      if (unit.kind === "dot") {
+        em += 0.43; // 0.15em dot + 0.2em margins + gap
+      } else if (isDashLetter(unit.letter)) {
+        // 0.96em glyph + 0.70em bar + two 0.08em gaps. The glyph term is higher
+        // than the alphabet-wide 0.8 average on purpose: dash-letters skew to the
+        // wide Greek forms (W- is 1.2, Ω- is 1.1), and using the average left
+        // real titles 6% short and still overflowing.
+        em += 1.82;
+      } else {
+        em += 0.9; // ~0.82em glyph + gap
+      }
+    }
+    return Math.max(em, 0.88);
+  });
+
   const neededBaseLetters = $derived.by(() => [
     ...new Set(
       displayUnits.flatMap((unit) =>
@@ -288,7 +321,9 @@ Supports letter highlighting during animation playback.
       </div>
     {/if}
 
-    <span class="word-text">
+    <!-- `--word-em` lets the CSS shrink the WHOLE word to fit rather than letting
+         flex squeeze the glyphs individually. See .word-text. -->
+    <span class="word-text" style="--word-em: {wordEmWidth.toFixed(2)}">
       {#if hasActiveHighlighting && displayUnits.length > 0 && animationPhase === "idle"}
         {#each displayUnits as unit, index (index)}
           {#if unit.kind === "dot"}
@@ -354,6 +389,19 @@ Supports letter highlighting during animation playback.
 <style>
   /* Full-width header attached to canvas (matches image export style) */
   .word-header {
+    /*
+      Be the box this header's own `cqw` measures.
+
+      Every `cqw` below — the type size, the padding, the badge insets — was
+      written to mean "a share of this header". Without a container declared here
+      they resolved against the nearest ancestor that happened to declare one,
+      which on a profile tile is `.stage`: a 338px tile asked a 677px box how big
+      to be, got twice the answer, and the word overflowed. Deeper into an
+      AnimatorCanvas or a landing hero it resolved somewhere else again, so the
+      header was never sized to itself anywhere.
+    */
+    container-type: inline-size;
+
     width: 100%;
     position: relative;
     display: flex;
@@ -400,10 +448,43 @@ Supports letter highlighting during animation playback.
     align-items: center;
     justify-content: center;
     gap: 0.08em;
-    font-size: clamp(12px, 6cqw, 28px);
+
+    /*
+      Two bounds, and the smaller wins.
+
+      The first is the design size. The second is what actually FITS: `--word-em`
+      is this word's width in `em`, summed per unit in the script above (a
+      dash-letter is nearly twice a plain one), and the padding either side eats
+      ~8cqw — so the largest em that fits is `92cqw / --word-em`. The floor sits
+      at 10px rather than 12 because a 15-unit title in a 160px archive tile
+      cannot fit above that.
+
+      Without that second bound a long word overflowed, and because these letters
+      are flex items they absorbed it by SHRINKING — every glyph kept its 28px
+      height while its box was squeezed to a sliver. Measured on a 12-unit title:
+      `W-` (a 120×100 glyph) and `Θ-` (79×100) both rendered 21.8px wide, and O,
+      Y, E, Z, D collapsed to 0. On another, 65×100 glyphs came out 5.6px. That is
+      the mangling — not a font problem, a layout one. The whole word now scales
+      down together and every glyph keeps its own aspect ratio.
+    */
+    font-size: min(
+      clamp(10px, 6cqw, 28px),
+      calc(92cqw / max(var(--word-em, 1), 1))
+    );
+
+    /* Belt to the braces above: with the fit-to-width font size the word should
+       never exceed its box, but a wildly narrow container (or a glyph far wider
+       than the 0.8em estimate) must clip rather than crush. */
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
+
+    /* The image path is exactly 1em tall; the FONT fallback path (a cache miss,
+       and the "..." truncation marker) inherits a normal line-height and came out
+       42px against the images' 28px, making the header taller than its
+       neighbours in a row of tiles. */
+    line-height: 1;
+
     padding: clamp(6px, 3cqw, 12px) clamp(8px, 4cqw, 16px);
   }
 
@@ -421,6 +502,10 @@ Supports letter highlighting during animation playback.
     height: 1em;
     width: auto;
     display: block;
+    /* Hold the glyph's own aspect ratio. `width: auto` alone does not survive
+       being a flex item in a container that is out of room — the default
+       `flex-shrink: 1` overrides it and squashes the box. */
+    flex-shrink: 0;
   }
 
   .glyph-img.alpha-baseline {
@@ -445,6 +530,10 @@ Supports letter highlighting during animation playback.
     display: inline-flex;
     align-items: center;
     gap: 0.08em;
+    /* Never absorb the parent's overflow. `.dash-bar` and `.group-dot` already
+       declared this; the letters themselves — the things most visibly damaged by
+       it — did not. */
+    flex-shrink: 0;
     font-family: "TKA Letters", var(--font-sans, sans-serif);
     font-feature-settings: "liga" 1, "dlig" 1;
     font-weight: normal;
