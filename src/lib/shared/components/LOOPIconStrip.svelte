@@ -4,8 +4,7 @@ LOOPIconStrip.svelte - Horizontal strip of Font Awesome icons for LOOP visualiza
 Shows only the active LOOP primitives as a compact icon strip.
 Uses the user's chosen icons from the Design Lab (2026-01-21):
 - Rotated: fa-rotate (halved / 180°) or fa-arrows-spin (quartered / 90°)
-- Mirrored: fa-left-right
-- Flipped: fa-up-down
+- Reflection: fa-left-right rotated to match the selected axis
 - Swapped: fa-shuffle
 - Inverted: fa-adjust
 - Rewound: fa-backward
@@ -23,7 +22,16 @@ Used in:
 <script lang="ts">
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { LOOP_ICON_GAP_SCALE, LOOP_ICON_DOT_SIZE_SCALE, LOOP_ICON_DOT_OPACITY } from "@tka/render-composition";
+  import {
+    getReflectionIconTransform,
+    LOOP_ICON_COLORS,
+    LOOP_ICON_GAP_SCALE,
+    LOOP_ICON_DOT_SIZE_SCALE,
+    LOOP_ICON_DOT_OPACITY,
+    type LOOPComponentId,
+    type LoopReflectionAxis,
+    type ReflectionIconTransform,
+  } from "@tka/render-composition";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
 
   interface Props {
@@ -36,6 +44,8 @@ Used in:
      */
     rotationPeriod?: Period;
     inversionPeriod?: Period;
+    /** Exact axis used by the Reflection component. */
+    reflectionAxis?: LoopReflectionAxis;
     /**
      * Components rendered LAST, after one faded separator dot — same
      * segment grammar as the word display's group-dot (TKAWordGlyph /
@@ -52,6 +62,7 @@ Used in:
     activeComponents,
     rotationPeriod,
     inversionPeriod,
+    reflectionAxis,
     overlayComponents,
     size = 16,
     darkMode = true,
@@ -74,37 +85,37 @@ Used in:
   } = {
     [LOOPComponent.ROTATED]: {
       faClass: "fas fa-rotate",
-      color: "#36c3ff",
+      color: LOOP_ICON_COLORS.rotated,
       label: "Rotated",
     },
     [LOOPComponent.MIRRORED]: {
       faClass: "fas fa-left-right",
-      color: "#6F2DA8",
+      color: LOOP_ICON_COLORS.mirrored,
       label: "Mirrored",
     },
     [LOOPComponent.FLIPPED]: {
-      faClass: "fas fa-up-down",
-      color: "#e91e63",
+      faClass: "fas fa-left-right",
+      color: LOOP_ICON_COLORS.flipped,
       label: "Flipped",
     },
     [LOOPComponent.SWAPPED]: {
       faClass: "fas fa-shuffle",
-      color: "#2ecc71",
+      color: LOOP_ICON_COLORS.swapped,
       label: "Swapped",
     },
     [LOOPComponent.INVERTED]: {
       faClass: "fas fa-adjust",
-      color: "#eb7d00",
+      color: LOOP_ICON_COLORS.inverted,
       label: "Inverted",
     },
     [LOOPComponent.REWOUND]: {
       faClass: "fas fa-backward",
-      color: "#00bcd4",
+      color: LOOP_ICON_COLORS.rewound,
       label: "Rewound",
     },
     freeform: {
       faClass: "fas fa-infinity",
-      color: "#9e9e9e",
+      color: LOOP_ICON_COLORS.freeform,
       label: "Freeform",
     },
   };
@@ -147,14 +158,35 @@ Used in:
     inversionPeriod === Period.QUARTERED
   );
 
+  const reflectionLabels: Record<LoopReflectionAxis, string> = {
+    "north-south": "Mirrored (north-south axis)",
+    "east-west": "Flipped (east-west axis)",
+    "northeast-southwest": "Northeast-southwest reflection",
+    "northwest-southeast": "Northwest-southeast reflection",
+  };
+
   function iconFor(component: LOOPComponent): {
     faClass: string;
     color: string;
     label: string;
     customSvg?: "checkerboard";
+    reflectionTransform?: ReflectionIconTransform;
   } | null {
     const base = primitiveIcons[component];
     if (!base) return null;
+    const reflectionTransform = getReflectionIconTransform(
+      component as LOOPComponentId,
+      reflectionAxis
+    );
+    if (reflectionTransform) {
+      return {
+        ...base,
+        faClass: "fas fa-left-right",
+        color: LOOP_ICON_COLORS.mirrored,
+        label: reflectionLabels[reflectionTransform.axis],
+        reflectionTransform,
+      };
+    }
     if (component === LOOPComponent.ROTATED && isQuarteredRotation) {
       return {
         faClass: "fas fa-arrows-spin",
@@ -230,7 +262,9 @@ Used in:
       {:else}
         <i
           class={icon.faClass}
-          style="font-size: {size}px; color: {icon.color};"
+          style="font-size: {size}px; color: {icon.color};{icon.reflectionTransform
+            ? ` transform: rotate(${icon.reflectionTransform.rotationDegrees}deg) scale(${icon.reflectionTransform.scale});`
+            : ''}"
           aria-hidden="true"
         ></i>
       {/if}
@@ -246,7 +280,9 @@ Used in:
   }
 
   .loop-icon-strip i {
+    display: inline-block;
     flex-shrink: 0;
+    transform-origin: center;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   }
 

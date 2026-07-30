@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { blockSignatures } from "$lib/shared/create/services/loop-block-signatures";
-import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
+import type {
+  LOOPSpecWire,
+  ReflectionAxis,
+} from "@tka/sequence-engine/loop";
 
-const wire = (prop: Record<string, { period: number; mode?: "expand" | "overlay" }>): LOOPSpecWire =>
+const wire = (prop: Record<string, {
+  period: number;
+  mode?: "expand" | "overlay";
+  reflectionAxis?: ReflectionAxis;
+}>): LOOPSpecWire =>
   ({ blue: prop, red: prop }) as LOOPSpecWire;
 
 const sigs = (cells: Array<Set<string>>) => cells.map((c) => [...c].sort().join("+") || "base");
@@ -38,5 +45,20 @@ describe("blockSignatures", () => {
     // one fused stage x2: cells [base, inverted]; rotation ribbon still shown
     expect(sigs(r.cells)).toEqual(["base", "inverted"]);
     expect(r.rotation).toEqual({ interval: 2 });
+  });
+
+  it("preserves the exact reflection axis for timeline icons", () => {
+    const r = blockSignatures(
+      wire({
+        mirrored: {
+          period: 2,
+          reflectionAxis: "northeast-southwest",
+        },
+      })
+    );
+
+    expect(r.reflectionAxes).toEqual({
+      mirrored: "northeast-southwest",
+    });
   });
 });

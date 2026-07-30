@@ -45,6 +45,11 @@ import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-rend
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import {
+  getReflectionIconTransform,
+  type LOOPComponentId,
+  type LoopReflectionAxis,
+} from "@tka/render-composition";
 
 import type { BackJob, PlacedBitmap, Placement } from "./back-job";
 import { computeCardBackLayout, type CardBackLayout } from "./card-back-layout";
@@ -343,6 +348,12 @@ export async function buildBackJob(
   //    concurrently; results are placed into their layout boxes.
   const activeLoop = LOOP_DISPLAY_ORDER.filter((c) => data.loopComponents.has(c));
   const loopDisplay = resolveLoopDisplay(sequence);
+  const reflectionLabels: Record<LoopReflectionAxis, string> = {
+    "north-south": "Mirrored",
+    "east-west": "Flipped",
+    "northeast-southwest": "NE-SW Reflection",
+    "northwest-southeast": "NW-SE Reflection",
+  };
 
   const hasStartPos = !!sequence.startPosition;
 
@@ -364,12 +375,28 @@ export async function buildBackJob(
   //   SWAPPED  → fa-shuffle (kind "swap", rendered monochrome in its brand color).
   const loopCols: LoopRowCol[] = activeLoop.map((comp) => {
     const meta = LOOP_ICONS[comp];
+    const reflection = getReflectionIconTransform(
+      comp as LOOPComponentId,
+      loopDisplay.reflectionAxis
+    );
     const color = meta?.color ?? "#ffffff";
-    const label = meta?.label ?? "";
+    const label = reflection
+      ? reflectionLabels[reflection.axis]
+      : meta?.label ?? "";
     if (comp === LOOPComponent.SWAPPED) return { kind: "swap", color, label };
     if (comp === LOOPComponent.INVERTED && loopDisplay.inversionPeriod === Period.QUARTERED)
       return { kind: "checkerboard", color, label };
     if (comp === LOOPComponent.ROTATED) return { kind: "fa", fa: "fas fa-arrows-spin", color, label };
+    if (reflection) {
+      return {
+        kind: "fa",
+        fa: "fas fa-left-right",
+        color,
+        label,
+        rotationDegrees: reflection.rotationDegrees,
+        iconScale: reflection.scale,
+      };
+    }
     return { kind: "fa", fa: meta?.fa ?? "", color, label };
   });
 

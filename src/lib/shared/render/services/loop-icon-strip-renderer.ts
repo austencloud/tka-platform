@@ -1,5 +1,9 @@
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { renderLoopIconStrip, type LOOPComponentId } from "@tka/render-composition";
+import {
+  renderLoopIconStrip,
+  type LOOPComponentId,
+  type LoopReflectionAxis,
+} from "@tka/render-composition";
 
 function toComponentId(c: LOOPComponent): LOOPComponentId {
   return c as unknown as LOOPComponentId;
@@ -11,12 +15,25 @@ export function renderLOOPIconStrip(
   x: number,
   y: number,
   iconSize: number,
-  darkMode: boolean
+  darkMode: boolean,
+  reflectionAxis?: LoopReflectionAxis
 ): number {
   const ids = new Set<LOOPComponentId>();
   for (const c of components) ids.add(toComponentId(c));
 
   const showFreeform = components.size === 0;
-  const result = renderLoopIconStrip(ctx, ids, x, y, iconSize, darkMode, showFreeform);
+  const result = renderLoopIconStrip(
+    ctx,
+    ids,
+    x,
+    y,
+    iconSize,
+    darkMode,
+    showFreeform,
+    undefined,
+    undefined,
+    undefined,
+    reflectionAxis
+  );
   return result.totalWidth;
 }

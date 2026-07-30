@@ -18,6 +18,8 @@
     fa?: string;
     color: string;
     label: string;
+    rotationDegrees?: number;
+    iconScale?: number;
   }
   interface Props {
     cols: Col[];
@@ -32,7 +34,7 @@
         {#if col.kind === "swap"}
           <i
             class="fas fa-shuffle"
-            style="font-size: 8cqi; color: {col.color}; line-height: 1; display: block;"
+            style="font-size: 8cqi; color: {col.color}; line-height: 1; display: block; transform: rotate({col.rotationDegrees ?? 0}deg) scale({col.iconScale ?? 1});"
             aria-hidden="true"
           ></i>
         {:else if col.kind === "checkerboard"}
@@ -40,7 +42,7 @@
         {:else}
           <i
             class={col.fa}
-            style="font-size: 8cqi; color: {col.color}; line-height: 1; display: block;"
+            style="font-size: 8cqi; color: {col.color}; line-height: 1; display: block; transform: rotate({col.rotationDegrees ?? 0}deg) scale({col.iconScale ?? 1});"
             aria-hidden="true"
           ></i>
         {/if}

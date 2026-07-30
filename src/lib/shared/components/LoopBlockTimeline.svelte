@@ -7,16 +7,55 @@
   never shift layout.
 -->
 <script lang="ts">
-  import type { BlockTimelineModel } from "$lib/shared/create/services/loop-block-signatures";
+  import type {
+    BlockTimelineModel,
+    TimelineReflectionComponent,
+  } from "$lib/shared/create/services/loop-block-signatures";
+  import {
+    getReflectionIconTransform,
+    type LOOPComponentId,
+    type LoopReflectionAxis,
+  } from "@tka/render-composition";
 
   let { model, height = 34 }: { model: BlockTimelineModel; height?: number } = $props();
 
   const ICONS: Record<string, { fa: string; color: string; label: string }> = {
     mirrored: { fa: "fas fa-left-right", color: "#6F2DA8", label: "Mirrored" },
-    flipped: { fa: "fas fa-up-down", color: "#e91e63", label: "Flipped" },
+    flipped: { fa: "fas fa-up-down", color: "#6F2DA8", label: "Flipped" },
     swapped: { fa: "fas fa-shuffle", color: "#2ecc71", label: "Swapped" },
     inverted: { fa: "fas fa-adjust", color: "#eb7d00", label: "Inverted" },
   };
+
+  const REFLECTION_LABELS: Record<LoopReflectionAxis, string> = {
+    "north-south": "Mirrored (north-south axis)",
+    "east-west": "Flipped (east-west axis)",
+    "northeast-southwest": "Northeast-southwest reflection",
+    "northwest-southeast": "Northwest-southeast reflection",
+  };
+
+  function iconFor(component: string) {
+    const base = ICONS[component];
+    if (!base) return null;
+
+    const reflectionAxis =
+      component === "mirrored" || component === "flipped"
+        ? model.reflectionAxes?.[component as TimelineReflectionComponent]
+        : undefined;
+    const reflection = getReflectionIconTransform(
+      component as LOOPComponentId,
+      reflectionAxis
+    );
+
+    return reflection
+      ? {
+          ...base,
+          fa: "fas fa-left-right",
+          label: REFLECTION_LABELS[reflection.axis],
+          rotationDegrees: reflection.rotationDegrees,
+          scale: reflection.scale,
+        }
+      : { ...base, rotationDegrees: 0, scale: 1 };
+  }
 </script>
 
 <div class="timeline" style="--cells: {model.cells.length}; --h: {height}px;">
@@ -27,8 +66,13 @@
           <span class="base-dot" aria-hidden="true"></span>
         {:else}
           {#each [...cell].sort() as comp (comp)}
-            {#if ICONS[comp]}
-              <i class={ICONS[comp].fa} style="color: {ICONS[comp].color}" title={ICONS[comp].label}></i>
+            {@const icon = iconFor(comp)}
+            {#if icon}
+              <i
+                class={icon.fa}
+                style="color: {icon.color}; transform: rotate({icon.rotationDegrees}deg) scale({icon.scale});"
+                title={icon.label}
+              ></i>
             {/if}
           {/each}
         {/if}
@@ -58,6 +102,10 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     font-size: calc(var(--h) * 0.42);
     min-width: 0;
+  }
+  .cell i {
+    display: inline-block;
+    transform-origin: center;
   }
   .cell.base { background: rgba(255, 255, 255, 0.03); }
   .base-dot {

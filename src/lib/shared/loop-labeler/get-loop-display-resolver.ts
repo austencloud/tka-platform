@@ -1,6 +1,9 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
-import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
+import type {
+  LOOPSpecWire,
+  ReflectionAxis,
+} from "@tka/sequence-engine/loop";
 import type { LOOPComponent, LOOPDomain } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
@@ -16,6 +19,8 @@ export interface LoopDisplay {
    * canonical LoopDisplay in loop-display-resolver.ts.
    */
   overlayComponents?: Set<LOOPComponent>;
+  /** Reflection axis shared by the surfaced reflection components. */
+  reflectionAxis?: ReflectionAxis;
   period: number;
   /** @deprecated Use `period` instead. */
   rotationPeriod?: Period;

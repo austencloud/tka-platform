@@ -38,7 +38,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     shortLabel: "Flipped",
     description: "Flip top-to-bottom",
     icon: "up-down",
-    color: "#e91e63",
+    color: "#6F2DA8",
   },
   {
     component: LOOPComponent.SWAPPED,

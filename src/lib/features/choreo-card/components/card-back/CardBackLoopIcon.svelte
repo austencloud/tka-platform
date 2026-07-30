@@ -22,15 +22,23 @@
     fa?: string;
     /** Icon color (used by fa <i> and CheckerboardCircleIcon). */
     color?: string;
+    rotationDegrees?: number;
+    iconScale?: number;
   }
-  let { kind, fa = "", color = "currentColor" }: Props = $props();
+  let {
+    kind,
+    fa = "",
+    color = "currentColor",
+    rotationDegrees = 0,
+    iconScale = 1,
+  }: Props = $props();
 </script>
 
 <span class="loop-icon-cell" style="overflow: hidden; width: 9cqi; height: 9cqi;">
   {#if kind === "swap"}
     <i
       class="fas fa-shuffle"
-      style="font-size: 8cqi; color: {color}; line-height: 1; display: block;"
+      style="font-size: 8cqi; color: {color}; line-height: 1; display: block; transform: rotate({rotationDegrees}deg) scale({iconScale});"
       aria-hidden="true"
     ></i>
   {:else if kind === "checkerboard"}
@@ -38,7 +46,7 @@
   {:else}
     <i
       class={fa}
-      style="font-size: 8cqi; color: {color}; line-height: 1; display: block;"
+      style="font-size: 8cqi; color: {color}; line-height: 1; display: block; transform: rotate({rotationDegrees}deg) scale({iconScale});"
       aria-hidden="true"
     ></i>
   {/if}

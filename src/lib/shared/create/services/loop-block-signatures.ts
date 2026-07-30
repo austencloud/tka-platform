@@ -7,11 +7,20 @@
  * components partition the final sequence. Rotation is continuous/innermost
  * and is reported as a ribbon, not a per-cell signature.
  */
-import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
+import type {
+  LOOPSpecWire,
+  ReflectionAxis,
+} from "@tka/sequence-engine/loop";
+
+export type TimelineReflectionComponent = "mirrored" | "flipped";
 
 export interface BlockTimelineModel {
   /** One Set of component ids per display cell, in sequence order. */
   cells: Array<Set<string>>;
+  /** Exact axes for reflection components shown in those cells. */
+  reflectionAxes?: Partial<
+    Record<TimelineReflectionComponent, ReflectionAxis>
+  >;
   /** Present when the spec rotates (expand mode). */
   rotation?: { interval: number };
 }
@@ -21,6 +30,18 @@ const FUSEABLE = ["mirrored", "flipped", "swapped", "inverted"] as const;
 export function blockSignatures(wire: LOOPSpecWire): BlockTimelineModel {
   const prop = wire.blue ?? wire.red;
   if (!prop) return { cells: [new Set()] };
+
+  const reflectionAxes: Partial<
+    Record<TimelineReflectionComponent, ReflectionAxis>
+  > = {};
+  if (prop.mirrored) {
+    reflectionAxes.mirrored =
+      prop.mirrored.reflectionAxis ?? "north-south";
+  }
+  if (prop.flipped) {
+    reflectionAxes.flipped =
+      prop.flipped.reflectionAxis ?? "east-west";
+  }
 
   // Group expand-mode fuseables by period (same rule as expanderMultiplier).
   const groups = new Map<number, Set<string>>();
@@ -78,6 +99,7 @@ export function blockSignatures(wire: LOOPSpecWire): BlockTimelineModel {
   const rot = prop.rotated;
   return {
     cells,
+    ...(Object.keys(reflectionAxes).length > 0 ? { reflectionAxes } : {}),
     ...(rot && rot.mode !== "overlay" ? { rotation: { interval: rot.period } } : {}),
   };
 }

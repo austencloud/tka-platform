@@ -31,6 +31,42 @@ describe("resolveLoopDisplay — wire-form loopSpec", () => {
     expect(display.rotationPeriod).toBe(Period.HALVED);
     expect(display.inversionPeriod).toBe(Period.QUARTERED);
   });
+
+  it("preserves the explicit reflection axis used by the icon renderers", () => {
+    clearLoopDisplayCache();
+    const display = resolveLoopDisplay({
+      id: "diagonal-reflection-wire-test",
+      loopSpec: {
+        blue: {
+          mirrored: {
+            period: 2,
+            reflectionAxis: "northeast-southwest",
+          },
+        },
+        red: {
+          mirrored: {
+            period: 2,
+            reflectionAxis: "northeast-southwest",
+          },
+        },
+      },
+    } as any);
+
+    expect(display.reflectionAxis).toBe("northeast-southwest");
+  });
+
+  it("keeps legacy Flipped specs on the east-west axis", () => {
+    clearLoopDisplayCache();
+    const display = resolveLoopDisplay({
+      id: "legacy-flipped-wire-test",
+      loopSpec: {
+        blue: { flipped: { period: 2 } },
+        red: { flipped: { period: 2 } },
+      },
+    } as any);
+
+    expect(display.reflectionAxis).toBe("east-west");
+  });
 });
 
 describe("resolveLoopDisplay — overlayComponents", () => {

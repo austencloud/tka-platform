@@ -14,6 +14,7 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import {
     LOOP_ICON_SIZE_SCALE,
+    type LoopReflectionAxis,
   } from "@tka/render-composition";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
@@ -31,6 +32,7 @@
     loopComponents: Set<LOOPComponent> | null;
     loopRotationPeriod: Period | undefined;
     loopInversionPeriod: Period | undefined;
+    loopReflectionAxis?: LoopReflectionAxis;
     loopOverlayComponents?: Set<LOOPComponent> | undefined;
     scaledHeaderHeight: number;
     badgeSize: number;
@@ -54,6 +56,7 @@
     loopComponents,
     loopRotationPeriod,
     loopInversionPeriod,
+    loopReflectionAxis,
     loopOverlayComponents,
     scaledHeaderHeight,
     badgeSize,
@@ -113,6 +116,7 @@
             activeComponents={loopComponents}
             rotationPeriod={loopRotationPeriod}
             inversionPeriod={loopInversionPeriod}
+            reflectionAxis={loopReflectionAxis}
             overlayComponents={loopOverlayComponents}
             size={Math.floor(badgeSize * LOOP_ICON_SIZE_SCALE)}
             darkMode={activeDarkMode}

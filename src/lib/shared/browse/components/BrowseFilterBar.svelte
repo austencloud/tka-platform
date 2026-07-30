@@ -20,7 +20,7 @@ Reads from / writes to a headless BrowseEngine instance.
     "component:rotated_halved": "#36c3ff",
     "component:rotated_quartered": "#36c3ff",
     "component:mirrored": "#6F2DA8",
-    "component:flipped": "#e91e63",
+    "component:flipped": "#6F2DA8",
     "component:swapped": "#2ecc71",
     "component:inverted": "#eb7d00",
     "component:rewound": "#00bcd4",

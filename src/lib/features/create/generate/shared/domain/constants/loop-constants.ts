@@ -38,7 +38,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     shortLabel: "Flipped",
     description: "Mirror top↔bottom (horizontal axis)",
     icon: "up-down",
-    color: "#e91e63",
+    color: "#6F2DA8",
   },
   {
     component: LOOPComponent.SWAPPED,

@@ -503,6 +503,7 @@
   });
   const loopRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const loopInversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const loopReflectionAxis = $derived(loopDisplay.reflectionAxis);
   const loopOverlayComponents = $derived(loopDisplay.overlayComponents);
 
   // Solo mode: hide dual-prop metadata (word, letters, difficulty, LOOP)
@@ -1840,6 +1841,7 @@
         {loopComponents}
         {loopRotationPeriod}
         {loopInversionPeriod}
+        {loopReflectionAxis}
         {loopOverlayComponents}
         {scaledHeaderHeight}
         {badgeSize}

@@ -338,6 +338,7 @@ export async function paintCardFrontChrome(
   const display = resolver?.(sequence);
   let rotationPeriod = display?.rotationPeriod;
   let inversionPeriod = display?.inversionPeriod;
+  const reflectionAxis = display?.reflectionAxis;
   let loopPeriod = display?.period ?? 1;
 
   if (display && display.components.size > 0) {
@@ -414,6 +415,7 @@ export async function paintCardFrontChrome(
       borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
       rotationPeriod: showLoopGlyph ? periodForRender : undefined,
       inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
+      reflectionAxis: showLoopGlyph ? reflectionAxis : undefined,
       overlayComponents: showLoopGlyph ? overlayComponents : undefined,
       accentColor: options.accentColor,
       accentTintOpacity: options.accentTintOpacity,

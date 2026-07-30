@@ -33,6 +33,11 @@
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
   import type { CardBackThemeVisuals } from "./card-back-theme-visuals";
+  import {
+    getReflectionIconTransform,
+    type LOOPComponentId,
+    type LoopReflectionAxis,
+  } from "@tka/render-composition";
   interface Props {
     sequence: SequenceData;
     themeOverride?: { visuals: CardBackThemeVisuals; name: string };
@@ -67,10 +72,16 @@
   const LOOP_ICONS: Record<string, { fa: string; color: string; label: string }> = {
     [LOOPComponent.ROTATED]:  { fa: "fas fa-rotate",     color: "#36c3ff", label: "Rotated" },
     [LOOPComponent.MIRRORED]: { fa: "fas fa-left-right",  color: "#6F2DA8", label: "Mirrored" },
-    [LOOPComponent.FLIPPED]:  { fa: "fas fa-up-down",     color: "#e91e63", label: "Flipped" },
+    [LOOPComponent.FLIPPED]:  { fa: "fas fa-up-down",     color: "#6F2DA8", label: "Flipped" },
     [LOOPComponent.SWAPPED]:  { fa: "fas fa-shuffle",     color: "#26e600", label: "Swapped" },
     [LOOPComponent.INVERTED]: { fa: "fas fa-adjust",      color: "#eb7d00", label: "Inverted" },
     [LOOPComponent.REWOUND]:  { fa: "fas fa-backward",    color: "#00bcd4", label: "Rewound" },
+  };
+  const REFLECTION_LABELS: Record<LoopReflectionAxis, string> = {
+    "north-south": "Mirrored",
+    "east-west": "Flipped",
+    "northeast-southwest": "NE-SW Reflection",
+    "northwest-southeast": "NW-SE Reflection",
   };
   const activeLoopList = $derived(
     LOOP_DISPLAY_ORDER.filter(c => loopDisplay.components.has(c))
@@ -161,6 +172,10 @@
       <div class="loop-row">
         {#each activeLoopList as comp}
           {@const icon = LOOP_ICONS[comp]!}
+          {@const reflection = getReflectionIconTransform(
+            comp as LOOPComponentId,
+            loopDisplay.reflectionAxis
+          )}
           {@const isQuarteredRot = comp === LOOPComponent.ROTATED}
           {@const isQuarteredInv = comp === LOOPComponent.INVERTED && loopDisplay.inversionPeriod === Period.QUARTERED}
           <div class="loop-col">
@@ -169,13 +184,21 @@
                 <CheckerboardCircleIcon size="8cqi" color={icon.color} />
               {:else}
                 <i
-                  class={isQuarteredRot ? "fas fa-arrows-spin" : icon.fa}
-                  style="font-size: 8cqi; color: {icon.color}; line-height: 1; display: block;"
+                  class={reflection
+                    ? "fas fa-left-right"
+                    : isQuarteredRot
+                      ? "fas fa-arrows-spin"
+                      : icon.fa}
+                  style="font-size: 8cqi; color: {icon.color}; line-height: 1; display: block;{reflection
+                    ? ` transform: rotate(${reflection.rotationDegrees}deg) scale(${reflection.scale});`
+                    : ''}"
                   aria-hidden="true"
                 ></i>
               {/if}
             </span>
-            <span class="loop-col-label">{icon.label}</span>
+            <span class="loop-col-label">{reflection
+                ? REFLECTION_LABELS[reflection.axis]
+                : icon.label}</span>
           </div>
         {/each}
       </div>

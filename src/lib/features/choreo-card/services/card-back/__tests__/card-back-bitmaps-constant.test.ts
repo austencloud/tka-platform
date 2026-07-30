@@ -113,7 +113,7 @@ describe("card-back-bitmaps-constant cache", () => {
     });
 
     it("different color is a different cache entry", async () => {
-      await rasterizeLoopIcon("flipped", "#e91e63", {});
+      await rasterizeLoopIcon("flipped", "#6F2DA8", {});
       await rasterizeLoopIcon("flipped", "#ffffff", {});
       expect(calls).toBe(2);
     });

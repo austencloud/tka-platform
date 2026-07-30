@@ -12,6 +12,7 @@ import {
   type LOOPComponentId,
   type LoopRotationPeriod,
   type LoopInversionPeriod,
+  type LoopReflectionAxis,
   type GlyphImageData,
   type CompressedSegment,
 } from "@tka/render-composition";
@@ -34,6 +35,7 @@ export interface WordHeaderOptions {
   borderColor?: string;
   rotationPeriod?: LoopRotationPeriod;
   inversionPeriod?: LoopInversionPeriod;
+  reflectionAxis?: LoopReflectionAxis;
   /**
    * Components rendered LAST in the icon strip, after one faded separator
    * dot. Absent/empty renders pixel-identical to before this option existed.
@@ -257,6 +259,7 @@ export class TextRenderer {
       loopComponents: packageComponents,
       rotationPeriod: opts.rotationPeriod,
       inversionPeriod: opts.inversionPeriod,
+      reflectionAxis: opts.reflectionAxis,
       overlayComponents: packageOverlayComponents,
       darkMode: opts.darkMode ?? false,
       backgroundColor: opts.backgroundColor,

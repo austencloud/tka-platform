@@ -5,7 +5,11 @@
 
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { renderHeader, type LOOPComponentId } from "@tka/render-composition";
+import {
+  renderHeader,
+  type LOOPComponentId,
+  type LoopReflectionAxis,
+} from "@tka/render-composition";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { textRenderer } from "$lib/shared/render/services/text-renderer";
 
@@ -118,7 +122,8 @@ export function renderWordHeaderToCanvas(
   loopComponents: Set<string> | null = null,
   rotationPeriod?: Period,
   inversionPeriod?: Period,
-  overlayComponents: Set<string> | null = null
+  overlayComponents: Set<string> | null = null,
+  reflectionAxis?: LoopReflectionAxis
 ): void {
   drawWordHeader(
     ctx,
@@ -130,7 +135,8 @@ export function renderWordHeaderToCanvas(
     loopComponents,
     rotationPeriod,
     inversionPeriod,
-    overlayComponents
+    overlayComponents,
+    reflectionAxis
   );
 }
 
@@ -342,7 +348,8 @@ function drawWordHeader(
   loopComponents: Set<string> | null,
   rotationPeriod: Period | undefined,
   inversionPeriod: Period | undefined,
-  overlayComponents: Set<string> | null = null
+  overlayComponents: Set<string> | null = null,
+  reflectionAxis?: LoopReflectionAxis
 ): void {
   if (!word || word.trim() === "") return;
 
@@ -404,6 +411,7 @@ function drawWordHeader(
       | undefined,
     rotationPeriod: periodForRender,
     inversionPeriod: inversionForRender,
+    reflectionAxis,
     overlayComponents: (overlayComponents ?? undefined) as
       | Set<LOOPComponentId>
       | undefined,

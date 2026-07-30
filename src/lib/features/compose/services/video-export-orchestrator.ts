@@ -139,6 +139,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       loopDisplayForExport?.rotationPeriod;
     const inversionPeriod: Period | undefined =
       loopDisplayForExport?.inversionPeriod;
+    const reflectionAxis = loopDisplayForExport?.reflectionAxis;
     const overlayComponents: Set<string> | null =
       loopDisplayForExport?.overlayComponents &&
       loopDisplayForExport.overlayComponents.size > 0
@@ -502,6 +503,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         loopComponents,
         rotationPeriod,
         inversionPeriod,
+        reflectionAxis,
         overlayComponents,
         showBluePathLines,
         showRedPathLines,

@@ -16,6 +16,7 @@ Supports letter highlighting during animation playback.
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import type { LoopReflectionAxis } from "@tka/render-composition";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";
@@ -48,6 +49,7 @@ Supports letter highlighting during animation playback.
     loopComponents = null,
     rotationPeriod,
     inversionPeriod,
+    reflectionAxis,
     overlayComponents,
   }: {
     word?: string | null;
@@ -58,6 +60,7 @@ Supports letter highlighting during animation playback.
     loopComponents?: Set<LOOPComponent> | null;
     rotationPeriod?: Period;
     inversionPeriod?: Period;
+    reflectionAxis?: LoopReflectionAxis;
     /**
      * Components rendered LAST in the icon strip, after one faded separator
      * dot — same segment grammar as the group-dot in the word text above.
@@ -376,6 +379,7 @@ Supports letter highlighting during animation playback.
           activeComponents={loopComponents}
           {rotationPeriod}
           {inversionPeriod}
+          {reflectionAxis}
           overlayComponents={overlayComponents ?? undefined}
           size={20}
           darkMode={darkMode}

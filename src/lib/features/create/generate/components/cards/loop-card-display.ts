@@ -40,8 +40,8 @@ export interface LoopCardDisplay {
    */
   selectedComponents: Set<LOOPComponent>;
   /**
-   * Axis-normalized components for the icon strip, so the glyph can never
-   * contradict the text label sitting above it.
+   * Legacy-component-normalized inputs for the icon strip. The exact
+   * reflection axis travels separately in effectiveAxis.
    */
   iconComponents: Set<LOOPComponent>;
   /** Inversion rendered after the strip's separator dot, in overlay mode only. */
@@ -74,10 +74,9 @@ export function resolveEffectiveAxis(
 }
 
 /**
- * Swap the reflection component for the one whose icon matches the axis:
- * east-west is the up-down (flipped) glyph, north-south is the left-right
- * (mirrored) glyph. The diagonal axes have no dedicated glyph, so the parsed
- * component is left alone and the card's text carries the exact axis.
+ * Preserve the legacy component whose default axis matches cardinal
+ * reflections. Diagonal axes keep the parsed component because the shared
+ * icon strip rotates its Reflection glyph from effectiveAxis.
  *
  * Without this, a legacy mirrored LOOP retargeted to east-west shows the
  * left-right icon under the word "Flipped".

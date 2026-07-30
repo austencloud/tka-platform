@@ -6,7 +6,13 @@ import {
   LOOP_ICON_SIZE_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
 } from "./dimensions.js";
 import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE, DIFFICULTY_FONT_FAMILY, applyGradientStops } from "./difficulty-config.js";
-import { renderLoopIconStrip, computeLoopIconStripWidth, type LoopRotationPeriod, type LoopInversionPeriod } from "./loop-icons.js";
+import {
+  renderLoopIconStrip,
+  computeLoopIconStripWidth,
+  type LoopRotationPeriod,
+  type LoopInversionPeriod,
+  type LoopReflectionAxis,
+} from "./loop-icons.js";
 
 export interface HeaderOptions {
   canvasWidth: number;
@@ -19,6 +25,8 @@ export interface HeaderOptions {
   rotationPeriod?: LoopRotationPeriod;
   /** When inverted is active, picks checkerboard circle (quartered) vs circle-half-stroke (halved) */
   inversionPeriod?: LoopInversionPeriod;
+  /** Exact reflection axis for the shared Reflection glyph. */
+  reflectionAxis?: LoopReflectionAxis;
   /**
    * Components rendered LAST in the icon strip, after one faded separator
    * dot — same segment grammar as the word display's group-dot. Absent or
@@ -262,7 +270,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   const {
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
-    loopComponents, rotationPeriod, inversionPeriod, overlayComponents, darkMode = true, letterStyles,
+    loopComponents, rotationPeriod, inversionPeriod, reflectionAxis, overlayComponents, darkMode = true, letterStyles,
     backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages,
     glyphImagesAreThemeColored = false, compressedSegments,
   } = options;
@@ -309,7 +317,19 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     const rightEdge = canvasWidth - badgePadding;
     const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
     rightIconZone = badgePadding + iconSize * LOOP_ICON_STRIP_OFFSET_SCALE + stripWidth;
-    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationPeriod, inversionPeriod, overlayComponents);
+    renderLoopIconStrip(
+      ctx,
+      loopComponents,
+      stripCenterX,
+      headerHeight / 2,
+      iconSize,
+      darkMode,
+      false,
+      rotationPeriod,
+      inversionPeriod,
+      overlayComponents,
+      reflectionAxis
+    );
   }
 
   const wordBreathingGap = headerHeight * LETTER_GAP_RATIO;

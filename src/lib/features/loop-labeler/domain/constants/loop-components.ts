@@ -33,7 +33,7 @@ export const BASE_COMPONENTS = [
     label: "Flipped",
     description: "Positions mirror horizontally (top↔bottom)",
     icon: "up-down",
-    color: "#14b8a6",
+    color: "#6F2DA8",
   },
   {
     id: "inverted",

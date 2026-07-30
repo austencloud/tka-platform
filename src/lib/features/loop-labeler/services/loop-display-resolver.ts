@@ -6,7 +6,10 @@ import {
   RESERVED_ORIENTATION_PRIMITIVES,
   type LOOPDomain,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
+import type {
+  LOOPSpecWire,
+  ReflectionAxis,
+} from "@tka/sequence-engine/loop";
 import {
   Period,
   type LOOPType,
@@ -28,6 +31,8 @@ export interface LoopDisplay {
    * Absent/empty when nothing is in overlay mode (the common case).
    */
   overlayComponents?: Set<LOOPComponent>;
+  /** Reflection axis shared by the surfaced reflection components. */
+  reflectionAxis?: ReflectionAxis;
   /**
    * Integer LOOP period: 1, 2, 4, or 8.
    */
@@ -91,6 +96,21 @@ function mapRotationInterval(
   if (interval === 2) return Period.HALVED;
   if (interval === 4) return Period.QUARTERED;
   return undefined;
+}
+
+function onlyReflectionAxis(
+  axes: ReadonlySet<ReflectionAxis>
+): ReflectionAxis | undefined {
+  return axes.size === 1 ? axes.values().next().value : undefined;
+}
+
+function reflectionAxisForComponents(
+  components: ReadonlySet<LOOPComponent>
+): ReflectionAxis | undefined {
+  const axes = new Set<ReflectionAxis>();
+  if (components.has(LOOPComponent.MIRRORED)) axes.add("north-south");
+  if (components.has(LOOPComponent.FLIPPED)) axes.add("east-west");
+  return onlyReflectionAxis(axes);
 }
 
 function isSequenceData(input: LoopDisplayInput): input is SequenceData {
@@ -202,6 +222,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
     const components = new Set<LOOPComponent>();
     const componentDomains = new Map<LOOPComponent, LOOPDomain>();
     const overlayComponents = new Set<LOOPComponent>();
+    const reflectionAxes = new Set<ReflectionAxis>();
     let maxPeriod = 1;
     let rotationInterval: number | undefined;
     let inversionInterval: number | undefined;
@@ -215,6 +236,11 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
         if (cSpec.domain) componentDomains.set(comp, cSpec.domain);
         else if (cSpec.mode === "overlay") componentDomains.set(comp, "orientation");
         if (cSpec.mode === "overlay") overlayComponents.add(comp);
+        if (comp === LOOPComponent.MIRRORED) {
+          reflectionAxes.add(cSpec.reflectionAxis ?? "north-south");
+        } else if (comp === LOOPComponent.FLIPPED) {
+          reflectionAxes.add(cSpec.reflectionAxis ?? "east-west");
+        }
         maxPeriod = Math.max(maxPeriod, cSpec.period);
         if (comp === LOOPComponent.ROTATED) rotationInterval = cSpec.period;
         if (comp === LOOPComponent.INVERTED) inversionInterval = cSpec.period;
@@ -228,6 +254,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
       period: maxPeriod,
       componentDomains: Object.fromEntries(componentDomains) as Partial<Record<LOOPComponent, LOOPDomain>>,
       overlayComponents: overlayComponents.size > 0 ? overlayComponents : undefined,
+      reflectionAxis: onlyReflectionAxis(reflectionAxes),
       rotationPeriod: mapRotationInterval(rotationInterval),
       inversionPeriod: mapRotationInterval(inversionInterval),
     };
@@ -266,6 +293,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
           components,
           componentDomains,
           period,
+          reflectionAxis: reflectionAxisForComponents(components),
           rotationPeriod: components.has(LOOPComponent.ROTATED)
             ? mapRotationInterval(
                 detection.transformationIntervals?.rotation
@@ -310,6 +338,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
         components,
         componentDomains,
         period,
+        reflectionAxis: reflectionAxisForComponents(components),
         rotationPeriod: components.has(LOOPComponent.ROTATED)
           ? period === 4 ? Period.QUARTERED : period === 2 ? Period.HALVED : undefined
           : undefined,
@@ -338,6 +367,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
         components,
         componentDomains,
         period,
+        reflectionAxis: reflectionAxisForComponents(components),
         rotationPeriod: components.has(LOOPComponent.ROTATED)
           ? period === 4 ? Period.QUARTERED : period === 2 ? Period.HALVED : undefined
           : undefined,

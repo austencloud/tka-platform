@@ -96,8 +96,8 @@ describe("buildLoopCardDisplay — reflection axis", () => {
   });
 
   it("leaves the parsed component alone on a diagonal axis", () => {
-    // No glyph encodes NE-SW, so the icon stays generic and the card's text
-    // carries the exact axis.
+    // The component remains the Reflection identity; the shared icon strip
+    // rotates it from effectiveAxis.
     const display = buildLoopCardDisplay({
       loopEnabled: true,
       loopType: LOOPType.MIRRORED,

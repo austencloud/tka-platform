@@ -68,8 +68,8 @@ icons when enabled. Click opens the expanded overlay.
   // value; there's no "none" LOOPType) must not pre-highlight a component.
   const selectedComponents = $derived(display.selectedComponents);
 
-  // The icon strip can't encode the two diagonal reflection axes or every
-  // combined type precisely, so the exact text label stays.
+  // The exact text label stays alongside the axis-aware icon so combined
+  // transformations remain readable without relying on color or glyphs alone.
   const displayValue = $derived.by(() => {
     if (!loopEnabled) return "Off";
     if (display.effectiveAxis) {
@@ -185,6 +185,7 @@ icons when enabled. Click opens the expanded overlay.
             overlayComponents={display.overlayComponents}
             rotationPeriod={display.rotationPeriod}
             inversionPeriod={display.inversionPeriod}
+            reflectionAxis={display.effectiveAxis ?? undefined}
             size={iconSize}
             showFreeformWhenEmpty={false}
           />

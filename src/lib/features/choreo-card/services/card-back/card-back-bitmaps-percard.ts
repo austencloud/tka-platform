@@ -339,6 +339,8 @@ export interface LoopRowCol {
   fa?: string;
   color: string;
   label: string;
+  rotationDegrees?: number;
+  iconScale?: number;
 }
 
 /**
@@ -402,7 +404,18 @@ export async function rasterizeLoopRow(
     const icon = icons[i]!;
     const iconW = icon.width;
     const iconH = icon.height;
-    ctx2d.drawImage(icon, colCx - iconW / 2, (iconCell - iconH) / 2, iconW, iconH);
+    const rotationDegrees = cols[i]!.rotationDegrees ?? 0;
+    const iconScale = cols[i]!.iconScale ?? 1;
+    if (rotationDegrees !== 0 || iconScale !== 1) {
+      ctx2d.save();
+      ctx2d.translate(colCx, iconCell / 2);
+      ctx2d.rotate((rotationDegrees * Math.PI) / 180);
+      ctx2d.scale(iconScale, iconScale);
+      ctx2d.drawImage(icon, -iconW / 2, -iconH / 2, iconW, iconH);
+      ctx2d.restore();
+    } else {
+      ctx2d.drawImage(icon, colCx - iconW / 2, (iconCell - iconH) / 2, iconW, iconH);
+    }
     // Label: centered under the icon cell, alphabetic baseline ~font size below
     // the gap (close to the live line box top + ascent).
     ctx2d.fillStyle = ctx.textMutedColor;

@@ -36,6 +36,11 @@
 import CardBackBrand from "../../components/card-back/CardBackBrand.svelte";
 import CardBackUrl from "../../components/card-back/CardBackUrl.svelte";
 import CardBackLoopIcon from "../../components/card-back/CardBackLoopIcon.svelte";
+import {
+  getReflectionIconTransform,
+  type LOOPComponentId,
+  type LoopReflectionAxis,
+} from "@tka/render-composition";
 import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
 import { getCardBackThemeVisuals } from "../../components/card-back/card-back-theme-visuals";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -67,7 +72,7 @@ function borderAwareBasis(theme: string): { innerWidth: number; cqiEff: number }
 export const LOOP_ICONS: Record<string, { fa: string; color: string; label: string }> = {
   [LOOPComponent.ROTATED]:  { fa: "fas fa-rotate",    color: "#36c3ff", label: "Rotated" },
   [LOOPComponent.MIRRORED]: { fa: "fas fa-left-right", color: "#6F2DA8", label: "Mirrored" },
-  [LOOPComponent.FLIPPED]:  { fa: "fas fa-up-down",    color: "#e91e63", label: "Flipped" },
+  [LOOPComponent.FLIPPED]:  { fa: "fas fa-up-down",    color: "#6F2DA8", label: "Flipped" },
   [LOOPComponent.SWAPPED]:  { fa: "fas fa-shuffle",    color: "#2ecc71", label: "Swapped" },
   [LOOPComponent.INVERTED]: { fa: "fas fa-adjust",     color: "#eb7d00", label: "Inverted" },
   [LOOPComponent.REWOUND]:  { fa: "fas fa-backward",   color: "#00bcd4", label: "Rewound" },
@@ -212,13 +217,22 @@ export function rasterizeDifficultyBadge(
 export function rasterizeLoopIcon(
   component: string,
   color: string,
-  opts: { quarteredRot?: boolean; quarteredInv?: boolean; theme?: string } = {},
+  opts: {
+    quarteredRot?: boolean;
+    quarteredInv?: boolean;
+    reflectionAxis?: LoopReflectionAxis;
+    theme?: string;
+  } = {},
 ): Promise<ImageBitmap> {
   const quarteredRot = opts.quarteredRot ?? false;
   const quarteredInv = opts.quarteredInv ?? false;
   const { innerWidth, cqiEff } = borderAwareBasis(opts.theme ?? "");
   const loopCellSize = 9 * cqiEff;
-  const key = `${component}:${color}:${quarteredRot}:${quarteredInv}:${cqiEff.toFixed(4)}`;
+  const reflection = getReflectionIconTransform(
+    component as LOOPComponentId,
+    opts.reflectionAxis
+  );
+  const key = `${component}:${color}:${quarteredRot}:${quarteredInv}:${reflection?.axis ?? ""}:${cqiEff.toFixed(4)}`;
 
   return cached(loopIconCache, key, () => {
     let props: Record<string, unknown>;
@@ -228,6 +242,14 @@ export function rasterizeLoopIcon(
       props = { kind: "checkerboard", color };
     } else if (component === LOOPComponent.ROTATED && quarteredRot) {
       props = { kind: "fa", fa: "fas fa-arrows-spin", color };
+    } else if (reflection) {
+      props = {
+        kind: "fa",
+        fa: "fas fa-left-right",
+        color,
+        rotationDegrees: reflection.rotationDegrees,
+        iconScale: reflection.scale,
+      };
     } else {
       const fa = LOOP_ICONS[component]?.fa ?? "";
       props = { kind: "fa", fa, color };

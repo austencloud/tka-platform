@@ -14,6 +14,57 @@ export type LoopRotationPeriod = "halved" | "quartered";
  */
 export type LoopInversionPeriod = "halved" | "quartered";
 
+/** Reflection axes supported by the compositional LOOP spec. */
+export type LoopReflectionAxis =
+  | "north-south"
+  | "east-west"
+  | "northeast-southwest"
+  | "northwest-southeast";
+
+export interface ReflectionIconTransform {
+  axis: LoopReflectionAxis;
+  rotationDegrees: 0 | 45 | 90 | -45;
+  scale: number;
+}
+
+const REFLECTION_ICON_ROTATIONS: Record<
+  LoopReflectionAxis,
+  ReflectionIconTransform["rotationDegrees"]
+> = {
+  "north-south": 0,
+  "east-west": 90,
+  "northeast-southwest": 45,
+  "northwest-southeast": -45,
+};
+
+/**
+ * Resolve the shared Reflection glyph transform.
+ *
+ * The double-ended arrow points across the fixed reflection axis: horizontal
+ * for the north-south axis, vertical for east-west, and perpendicular to each
+ * diagonal axis. Legacy Mirrored and Flipped components provide their familiar
+ * axis when an explicit axis was not stored.
+ */
+export function getReflectionIconTransform(
+  component: LOOPComponentId,
+  reflectionAxis?: LoopReflectionAxis
+): ReflectionIconTransform | null {
+  if (component !== "mirrored" && component !== "flipped") return null;
+
+  const axis =
+    reflectionAxis ??
+    (component === "flipped" ? "east-west" : "north-south");
+  const rotationDegrees = REFLECTION_ICON_ROTATIONS[axis];
+
+  return {
+    axis,
+    rotationDegrees,
+    // A square rotated 45° grows by √2. Scale diagonal arrows back into the
+    // same reserved icon cell so switching axes cannot collide with neighbors.
+    scale: Math.abs(rotationDegrees) === 45 ? Math.SQRT1_2 : 1,
+  };
+}
+
 // The 6 active LOOP components in the order they appear in the icon strip
 const DISPLAY_ORDER: LOOPComponentId[] = [
   "rotated",
@@ -93,7 +144,7 @@ const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered"
 export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
   rotated: "#36c3ff",
   mirrored: "#6F2DA8",
-  flipped: "#e91e63",
+  flipped: "#6F2DA8",
   swapped: "#2ecc71",
   inverted: "#eb7d00",
   rewound: "#00bcd4",
@@ -126,6 +177,8 @@ export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
  *                            separator dot — same segment grammar as the
  *                            word display's group-dot. Absent/empty is
  *                            pixel-identical to the pre-overlay strip.
+ * @param reflectionAxis    - Exact reflection axis for Mirrored/Flipped.
+ *                            Legacy components supply their default axis.
  * @returns                    The total rendered width in canvas pixels
  */
 export function renderLoopIconStrip(
@@ -138,7 +191,8 @@ export function renderLoopIconStrip(
   showFreeformWhenEmpty: boolean = false,
   rotationPeriod?: LoopRotationPeriod,
   inversionPeriod?: LoopInversionPeriod,
-  overlayComponents?: Set<LOOPComponentId>
+  overlayComponents?: Set<LOOPComponentId>,
+  reflectionAxis?: LoopReflectionAxis
 ): { totalWidth: number } {
   const active = DISPLAY_ORDER.filter((c) => components.has(c));
 
@@ -162,13 +216,28 @@ export function renderLoopIconStrip(
       drawLoopIconDot(ctx, itemCenterX, centerY, itemSize, darkMode);
     } else {
       const component = item.component;
-      const pathKey =
-        component === "rotated" && rotationPeriod === "quartered"
+      const reflectionTransform = getReflectionIconTransform(
+        component,
+        reflectionAxis
+      );
+      const pathKey = reflectionTransform
+        ? "mirrored"
+        : component === "rotated" && rotationPeriod === "quartered"
           ? "rotated-quartered"
           : component === "inverted" && inversionPeriod === "quartered"
             ? "inverted-quartered"
             : component;
-      drawLoopIcon(ctx, pathKey, itemCenterX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
+      drawLoopIcon(
+        ctx,
+        pathKey,
+        itemCenterX,
+        centerY,
+        iconSize,
+        LOOP_ICON_COLORS[component],
+        darkMode,
+        reflectionTransform?.rotationDegrees,
+        reflectionTransform?.scale
+      );
     }
 
     currentX += itemSize + gap;
@@ -252,7 +321,9 @@ function drawLoopIcon(
   y: number,
   size: number,
   color: string,
-  darkMode: boolean
+  darkMode: boolean,
+  rotationDegrees: number = 0,
+  iconScale: number = 1
 ): void {
   const iconData = LOOP_ICON_PATHS[component];
   if (!iconData) return;
@@ -266,7 +337,18 @@ function drawLoopIcon(
 
   ctx.fillStyle = color;
 
-  const target = { x: x - size / 2, y: y - size / 2, width: size, height: size };
+  ctx.translate(x, y);
+  if (rotationDegrees !== 0) {
+    ctx.rotate((rotationDegrees * Math.PI) / 180);
+  }
+
+  const drawnSize = size * iconScale;
+  const target = {
+    x: -drawnSize / 2,
+    y: -drawnSize / 2,
+    width: drawnSize,
+    height: drawnSize,
+  };
   drawSvgPath(ctx, iconData.d, { width: iconData.viewBox[0], height: iconData.viewBox[1] }, target);
   ctx.fill();
 

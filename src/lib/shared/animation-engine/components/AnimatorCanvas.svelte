@@ -41,7 +41,10 @@ Last audit: 2025-12-27
   import { AnimationEngine } from "../services/animation-engine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
-  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import {
+    tryGetLoopDisplayResolver,
+    type LoopDisplay,
+  } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
@@ -452,7 +455,7 @@ Last audit: 2025-12-27
 
   // Shared resolver: same components + slice-aware rotation as every other
   // LOOP badge surface, cached by sequence id.
-  const emptyLoopDisplay = {
+  const emptyLoopDisplay: LoopDisplay = {
     components: new Set<LOOPComponent>(),
     rotationPeriod: undefined as
       | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
@@ -473,6 +476,7 @@ Last audit: 2025-12-27
   );
   const computedRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const computedReflectionAxis = $derived(loopDisplay.reflectionAxis);
   const computedOverlayComponents = $derived(loopDisplay.overlayComponents);
 
   // Word-header underline follows the parent's stepData attribution (identity
@@ -544,6 +548,7 @@ Last audit: 2025-12-27
         loopComponents={computedLoopComponents}
         rotationPeriod={computedRotationPeriod}
         inversionPeriod={computedInversionPeriod}
+        reflectionAxis={computedReflectionAxis}
         overlayComponents={computedOverlayComponents}
       />
     </div>

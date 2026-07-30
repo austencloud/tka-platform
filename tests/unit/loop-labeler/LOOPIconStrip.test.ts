@@ -71,6 +71,7 @@ function makeFakeCtx() {
     save: vi.fn(),
     restore: vi.fn(),
     translate: vi.fn(),
+    rotate: vi.fn(),
     scale: vi.fn(),
     beginPath: vi.fn(() => {
       drawOpsThisPath = 0;
@@ -254,5 +255,42 @@ describe("renderLoopIconStrip period picker", () => {
     );
 
     expect(calls.some((c) => c.fillStyle === "#eb7d00")).toBe(true);
+  });
+
+  it("rotates the shared purple Reflection glyph to the explicit diagonal axis", () => {
+    const { ctx, calls } = makeFakeCtx();
+    renderLoopIconStrip(
+      ctx,
+      new Set(["mirrored" as const]),
+      100,
+      50,
+      20,
+      true,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      "northeast-southwest"
+    );
+
+    expect(ctx.rotate).toHaveBeenCalledWith(Math.PI / 4);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.fillStyle).toBe("#6F2DA8");
+  });
+
+  it("renders legacy Flipped as the purple Reflection glyph rotated 90 degrees", () => {
+    const { ctx, calls } = makeFakeCtx();
+    renderLoopIconStrip(
+      ctx,
+      new Set(["flipped" as const]),
+      100,
+      50,
+      20,
+      true,
+      false
+    );
+
+    expect(ctx.rotate).toHaveBeenCalledWith(Math.PI / 2);
+    expect(calls[0]?.fillStyle).toBe("#6F2DA8");
   });
 });
