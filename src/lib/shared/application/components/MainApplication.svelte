@@ -631,6 +631,15 @@ import type { SheetType } from "../../navigation/services/types";
       <mod.default />
     {/await}
 
+    <!-- Sharing Shortcuts host: republishes Android Direct Share targets
+         (share-intake/components/SharingShortcutsHost.svelte) whenever the
+         inbox conversation list changes. Mounted here for the same reason as
+         ShareIntakeHost above - inboxState.conversations is only populated
+         under the app shell. -->
+    {#await import("../../share-intake/components/SharingShortcutsHost.svelte") then mod}
+      <mod.default />
+    {/await}
+
     <!-- Collections picker — app-level so it outlives the card that opened it
          (unticking the collection you're browsing unmounts that card) -->
     {#await import("$lib/features/library/components/collection-picker/CollectionPickerHost.svelte") then mod}

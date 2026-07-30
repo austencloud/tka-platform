@@ -62,4 +62,21 @@ describe("sharing shortcuts contract", () => {
     expect(register).toBeGreaterThan(-1);
     expect(register).toBeLessThan(superCall);
   });
+
+  it("mounts the publisher host inside the app shell", () => {
+    // Same structural reason ShareIntakeHost lives here: the host must not run
+    // on the marketing landing, and mounting it beside the drawers makes that a
+    // fact rather than a timing hope.
+    expect(
+      read("src/lib/shared/application/components/MainApplication.svelte")
+    ).toContain("share-intake/components/SharingShortcutsHost.svelte");
+  });
+
+  it("the host republishes on conversation change and clears on sign-out", () => {
+    const host = read(
+      "src/lib/shared/share-intake/components/SharingShortcutsHost.svelte"
+    );
+    expect(host).toContain("inboxState.conversations");
+    expect(host).toContain("clearShareTargets");
+  });
 });
