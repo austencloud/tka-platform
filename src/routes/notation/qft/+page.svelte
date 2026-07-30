@@ -275,13 +275,37 @@
   };
 
   /**
-   * Below this the notation collapses to the step on screen. Matched to where
-   * eight rows of seven numbers stop being legible, not to a device.
+   * Below this the notation is written out as lines rather than tabulated.
+   * Matched to where eight rows of seven numbers stop fitting, not to a device.
+   *
+   * The height arm is 50rem, not the 32rem it was. A table row is ~50px, so
+   * eight of them plus a header need ~470px whatever the width — on a 768px-tall
+   * laptop that is the entire reading column, and the controls above it ran off
+   * the pane by 129px (715px in a cell, which stacks two tables). The written
+   * form goes two-up in the same column and comes to ~130px, which fits with the
+   * controls and stays just as readable.
    */
   let compact = $state(false);
   $effect(() => {
-    const q = matchMedia("(max-width: 48rem), (max-height: 32rem)");
+    const q = matchMedia("(max-width: 48rem), (max-height: 50rem)");
     const sync = () => (compact = q.matches);
+    sync();
+    q.addEventListener("change", sync);
+    return () => q.removeEventListener("change", sync);
+  });
+
+  /**
+   * A cell needs the written form earlier than the other two modes do.
+   *
+   * It is the only mode with TWO eight-row tables in one column, so the height
+   * that fits one table over a set of knobs does not fit two under a pair of
+   * flower axes: at 1100x900 that column wanted 950px of a 730px pane. 62rem is
+   * where one column stops holding both.
+   */
+  let cellCompact = $state(false);
+  $effect(() => {
+    const q = matchMedia("(max-width: 48rem), (max-height: 62rem)");
+    const sync = () => (cellCompact = q.matches);
     sync();
     q.addEventListener("change", sync);
     return () => q.removeEventListener("change", sync);
@@ -615,14 +639,24 @@
   Side by side once the column can hold both, stacked before that.
 -->
 {#snippet cellTable()}
-  <div class="notation duet">
+  <!-- `written` so the pair can go side by side at a narrower measure than two
+       seven-column tables need: the lines are ~230px, the tables ~320. -->
+  <div class="notation duet" class:written={cellCompact}>
     <div class="hand-table" data-tone="blue">
       <span class="hand-name">Blue</span>
-      <QftTable increments={blueHand.increments} activeStep={step} {compact} />
+      <QftTable
+        increments={blueHand.increments}
+        activeStep={step}
+        compact={cellCompact}
+      />
     </div>
     <div class="hand-table" data-tone="red">
       <span class="hand-name">Red</span>
-      <QftTable increments={redHand.increments} activeStep={step} {compact} />
+      <QftTable
+        increments={redHand.increments}
+        activeStep={step}
+        compact={cellCompact}
+      />
     </div>
   </div>
 {/snippet}
@@ -929,7 +963,15 @@
           </header>
 
           <div class="stage-box">
-            <QftStage hands={matrixHands} cursor={pos} {layers} />
+            <!--
+              Fitted, like the guide's moves and for the same reason: a cell is
+              a discrete choice off a twelve-item axis, not a continuous knob,
+              so there is no drag for a rescaling stage to make look dead. The
+              fixed extent has to reserve room for the widest cell in the set,
+              which left this one filling 77% of its box — 666px of drawing in
+              an 867px square at 1920, with the rest margin.
+            -->
+            <QftStage hands={matrixHands} cursor={pos} {layers} fit />
           </div>
 
           {#if !phone}
@@ -970,12 +1012,26 @@
           </header>
 
           <div class="stage-box">
+            <!--
+              Fitted here too. The reserve had to cover radius 1.5, so the
+              default state — radius 0, which is what you land on coming from
+              Static spin — drew a 400px ring in the middle of an 870px box at
+              1920: the exact "small band in a big field" this app is not
+              allowed to look like.
+
+              The old argument for a fixed box was that rescaling would make the
+              radius knob look dead. It does not: the body compass is fixed in
+              model units, so under a fitted box it visibly shrinks against the
+              hand path as the radius grows. The ring IS the scale reference,
+              and it reads better than an empty margin does.
+            -->
             <QftStage
               {knobs}
               increments={instrumentIncrements}
               cursor={pos}
               {pendulum}
               {layers}
+              fit
             />
           </div>
 
@@ -1344,6 +1400,7 @@
       width: 1.9rem;
       height: 1.9rem;
     }
+
   }
 
   /*
@@ -1440,6 +1497,42 @@
   .about:hover {
     border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
     color: var(--semantic-text-primary, #fff);
+  }
+
+  /*
+   * The top bar gets the same past-1680 treatment the footer already had, which
+   * the first pass missed.
+   *
+   * The mode switch is the most-used control on the page and it came out 52px
+   * tall in a 3733px bar on a 2091px screen — a postage stamp, which is exactly
+   * what "a phone layout scaled up" looks like. SegmentedControl's `sm` pins
+   * min-height and segment padding in px, so they are restated in rem here to
+   * ride the ramp with everything else (.claude/rules/4k-native-layout.md).
+   *
+   * Written after the base rules rather than inside the footer's tier: same
+   * specificity, so source order decides, and inside that block these lost.
+   */
+  @media (min-width: 105rem) {
+    .topbar :global(.segment) {
+      min-height: 2.3rem;
+      padding-inline: 0.9rem;
+      font-size: 0.95rem;
+    }
+
+    .exit,
+    .about {
+      width: 3.2rem;
+      height: 3.2rem;
+      font-size: 1.15rem;
+    }
+
+    .wordmark-name {
+      font-size: 1.1rem;
+    }
+
+    .wordmark-sub {
+      font-size: 0.78rem;
+    }
   }
 
   /*
@@ -1792,16 +1885,34 @@
     }
   }
 
+  /* Written out, the pair fits side by side much sooner — a line is ~230px
+     where a seven-column table needs ~320. Stacked at 630px of column they
+     were 50px of pure height for nothing. */
+  @container cell-knobs (min-width: 29rem) {
+    .notation.duet.written {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.8rem, 2vw, 2rem);
+    }
+  }
+
   /* The measure the duet above is keyed to. */
   .instrument.cell .knobs {
     container-type: inline-size;
     container-name: cell-knobs;
   }
 
+  /*
+   * Its own measure. The lines inside pick their column count from the nearest
+   * `notation` container, and with only the duet carrying that name a hand
+   * sitting in half of an 840px column was told it had 840px — so it laid out
+   * three columns of lines in a 410px box and ran out the side.
+   */
   .hand-table {
     display: grid;
     gap: 0.3rem;
     min-width: 0;
+    container-type: inline-size;
+    container-name: notation;
   }
 
   .hand-name {
@@ -1824,7 +1935,7 @@
    * about notation, below the fold. The stage is untouched: it was never the
    * thing that did not fit.
    */
-  @media (min-width: 90rem) and (min-height: 45rem) {
+  @media (min-width: 64rem) and (min-height: 33rem) {
     .instrument.cell {
       row-gap: clamp(0.5rem, 1.1vh, 0.9rem);
       /*
@@ -1879,7 +1990,86 @@
    * has the room and keeps the roomier spacing, so this trims only where the
    * trim is the difference between reading the notation and not.
    */
-  @media (min-width: 90rem) and (min-height: 45rem) and (max-height: 60rem) {
+  /*
+   * The two-column tier's narrow end — laptops and tablets from 1024 to 1440.
+   *
+   * A cell carries two twelve-chip axes, a mode control and two eight-row
+   * tables in one column. At the column's 26rem floor the axes wrap to two rows
+   * and the tables stack, which came to 1200px of content in a 1150px pane on
+   * an iPad Pro and 420px past a 768px laptop.
+   *
+   * The width is there to fix it with: the drawing is square and the pane is
+   * short, so past about 560px of stage the extra width buys nothing — it is
+   * height-capped. Handing that width to the reading column puts the axes on
+   * one row each and gives the tables room, which is what this tier could not
+   * do while the split was even.
+   */
+  @media (min-width: 64rem) and (max-width: 89.99rem) and (min-height: 33rem) {
+    .instrument.cell {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    }
+
+    .instrument.cell .notation.duet :global(tbody td),
+    .instrument.cell .notation.duet :global(tbody th) {
+      padding-block: 0.2rem;
+    }
+  }
+
+  /*
+   * A 768px-tall laptop. The cell's column is the tallest of the three and this
+   * is the shortest pane that still lays out in two columns, so it needs the
+   * subtitle's row back: the petal counts it names are written on the chips
+   * directly below it, which the fold tier already established.
+   */
+  @media (min-width: 64rem) and (max-height: 50rem) {
+    .instrument.cell .spec {
+      display: none;
+    }
+
+    /*
+     * The axes side by side, mode control spanning under them. Stacked they are
+     * two rows of chips one above the other; across, they are one row — worth
+     * ~50px of a pane that is 70px short, and the chips only drop from twelve
+     * across to six, which is still a full row per axis.
+     */
+    .instrument.cell .control-panel {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      column-gap: clamp(0.75rem, 2vw, 1.5rem);
+      gap: 0.45rem;
+      padding-block: 0.5rem;
+    }
+
+    .instrument.cell .control-panel .knob {
+      grid-column: 1 / -1;
+    }
+
+    .instrument.cell .notation.duet {
+      gap: 0.5rem;
+    }
+
+    .instrument.cell .hand-table {
+      gap: 0.12rem;
+    }
+  }
+
+  /*
+   * The instrument's own column at laptop heights. Four knobs over an eight-row
+   * table came to 31px past a 900px pane — the table is 8 x 50px whatever the
+   * width, so the row is the only place the trim can come from, and 5px a row
+   * is invisible next to a column that scrolls.
+   */
+  @media (min-width: 64rem) and (min-height: 33rem) and (max-height: 62rem) {
+    .instrument:not(.cell) .notation :global(tbody td),
+    .instrument:not(.cell) .notation :global(tbody th) {
+      padding-block: 0.3rem;
+    }
+
+    .instrument:not(.cell) .control-panel {
+      padding-block: 0.6rem;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 33rem) and (max-height: 60rem) {
     .instrument.cell .control-panel {
       gap: 0.5rem;
       padding-block: 0.55rem;
@@ -1977,8 +2167,12 @@
       align-items: start;
     }
 
+    /* `order: 0` as well as the column reset: left at -1 the mode control took
+       column ONE, which pushed a twelve-chip axis into the `auto` third track
+       and ran the panel 29px out its own side. Here it belongs last. */
     .instrument.cell .control-panel .knob {
       grid-column: auto;
+      order: 0;
     }
   }
 
@@ -1993,7 +2187,7 @@
    * consumer of it), the knobs paired side by side, and the two flower axes
    * likewise. The notation keeps its full size — it is what the page is for.
    */
-  @media (min-width: 48rem) and (max-width: 89.99rem) and (min-height: 45rem) {
+  @media (min-width: 48rem) and (max-width: 63.99rem) and (min-height: 33rem) {
     .instrument {
       --box-h: clamp(8rem, 13vh, 13rem);
       gap: clamp(0.5rem, 1.2vh, 0.9rem);
@@ -2031,7 +2225,7 @@
    * larger table, which at 4K read as a phone layout dropped into the middle of
    * a monitor.
    */
-  @media (min-width: 90rem) and (min-height: 45rem) {
+  @media (min-width: 64rem) and (min-height: 33rem) {
     .instrument {
       display: grid;
       /*
@@ -2041,8 +2235,17 @@
        * the type inside it (.claude/rules/4k-native-layout.md).
        */
       grid-template-columns: minmax(0, 1fr) clamp(26rem, 32vw, 46rem);
-      grid-template-areas: "stage head" "stage knobs";
-      grid-template-rows: 1fr auto;
+      /*
+       * Two spacer rows so the reading column is CENTRED against the drawing.
+       *
+       * With `1fr auto` the title sat at the bottom of the flexible row and the
+       * knobs under it, which pinned the whole column to the floor of the pane:
+       * at 3840 that left a 730px void of starfield above the title and nothing
+       * below it. Split evenly it reads as margin instead of as a hole. The
+       * stage still spans every row, so it keeps taking the full pane height.
+       */
+      grid-template-areas: "stage ." "stage head" "stage knobs" "stage .";
+      grid-template-rows: 1fr auto auto 1fr;
       align-content: safe center;
       justify-content: center;
       column-gap: clamp(2rem, 4vw, 5rem);

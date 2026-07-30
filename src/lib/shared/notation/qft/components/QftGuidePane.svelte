@@ -276,7 +276,7 @@
    * Written once because the shape is the same shape — duplicating it is how the
    * two tiers would drift apart.
    */
-  @media (min-width: 90rem) and (min-height: 45rem),
+  @media (min-width: 64rem) and (min-height: 33rem),
     (min-width: 44rem) and (max-height: 32rem) {
     .guide {
       display: grid;
@@ -331,7 +331,7 @@
     }
   }
 
-  @media (min-width: 90rem) and (min-height: 45rem) {
+  @media (min-width: 64rem) and (min-height: 33rem) {
     .guide {
       /* Matched to the instrument's column, so the two modes stay registered
          across the crossfade. */

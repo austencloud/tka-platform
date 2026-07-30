@@ -187,12 +187,13 @@
   }
 
   /*
-   * Short windows — fold-open landscape, a squashed laptop. Two axes of twelve
-   * plus a mode control is 311px of controls in a 245px pane, and a cell has
-   * exactly that. The 44px touch floor stays; what goes is the air around the
-   * preview, which is the part that was costing rows.
+   * Short windows — fold-open landscape, a 768px laptop, a squashed desktop.
+   * Two axes of twelve plus a mode control is 311px of controls in a 245px
+   * pane, and a cell has exactly that; at 1024x768 the same column ran 58px
+   * past. The 44px touch floor stays; what goes is the air around the preview,
+   * which is the part that was costing rows.
    */
-  @media (max-height: 32rem) {
+  @media (max-height: 50rem) {
     .picker {
       gap: 0.25rem;
     }

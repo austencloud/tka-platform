@@ -225,8 +225,8 @@
   }
 
   /* Every millimetre of panel chrome is a millimetre the lines do not get in a
-     200px pane. The lines themselves keep their size. */
-  @media (max-height: 32rem) {
+     short pane. The lines themselves keep their size. */
+  @media (max-height: 50rem) {
     .script {
       padding: 0.35rem 0.5rem 0.4rem;
     }
@@ -423,7 +423,13 @@
    * here it is air inside the panel rather than air around it
    * (.claude/rules/4k-native-layout.md, "use the vertical too").
    */
-  @media (min-width: 105rem) {
+  /*
+   * The height arm matters as much as the width one. Keyed on width alone this
+   * fired at 1920x1080 — a wide screen with an ordinary amount of height — and
+   * the eight taller rows pushed the instrument's column 42px past its pane.
+   * 75rem is where there is genuinely height to spend.
+   */
+  @media (min-width: 105rem) and (min-height: 75rem) {
     tbody td,
     .step {
       padding-block: 0.85rem;
