@@ -8,10 +8,11 @@ vi.mock("$app/environment", () => ({ browser: true }));
 // `const` throws "Cannot access '<name>' before initialization" the first time
 // the mocked module loads. vi.hoisted() hoists these alongside the mock
 // registrations. Same fix as share-intake-runner.test.ts.
-const { listeners, bumpIntakeSignal, toast } = vi.hoisted(() => ({
+const { listeners, bumpIntakeSignal, toast, consumeLaunchShortcutId } = vi.hoisted(() => ({
   listeners: {} as Record<string, (event: unknown) => void>,
   bumpIntakeSignal: vi.fn(),
   toast: { info: vi.fn(), error: vi.fn() },
+  consumeLaunchShortcutId: vi.fn(async () => null as string | null),
 }));
 
 vi.mock("@capgo/capacitor-share-target", () => ({
@@ -36,6 +37,10 @@ vi.mock("$lib/shared/share-intake/state/share-intake-signal.svelte", () => ({
 }));
 
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({ toast }));
+
+vi.mock("$lib/shared/share-intake/services/sharing-shortcuts-publisher", () => ({
+  consumeLaunchShortcutId,
+}));
 
 import {
   registerNativeShareTarget,
@@ -100,6 +105,8 @@ describe("native share adapter", () => {
   beforeEach(async () => {
     for (const record of await listIntakes()) await deleteIntake(record.receiptId);
     bumpIntakeSignal.mockClear();
+    consumeLaunchShortcutId.mockReset();
+    consumeLaunchShortcutId.mockResolvedValue(null);
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal("fetch", vi.fn(async () => bodyOf(3)));
@@ -249,5 +256,36 @@ describe("native share adapter", () => {
     const started = Date.now();
     await registerNativeShareTarget();
     expect(Date.now() - started).toBeLessThan(50);
+  });
+
+  it("stamps the tapped conversation onto the record", async () => {
+    consumeLaunchShortcutId.mockResolvedValueOnce("conv_paul");
+
+    await deliver(EVENT);
+
+    const [record] = await listIntakes();
+    expect(record?.targetConversationId).toBe("conv_paul");
+  });
+
+  it("leaves the field unset for an ordinary share", async () => {
+    consumeLaunchShortcutId.mockResolvedValueOnce(null);
+
+    await deliver(EVENT);
+
+    const [record] = await listIntakes();
+    expect(record?.targetConversationId).toBeUndefined();
+  });
+
+  it("reads the shortcut id once per delivery, not once per retained event", async () => {
+    consumeLaunchShortcutId.mockResolvedValue("conv_paul");
+
+    // The cold-launch double fire. The in-flight key already collapses these to
+    // one intake; the shortcut read must not run twice either, because the
+    // native side nulls the extra on first read and the second would get null.
+    fire(EVENT);
+    fire({ ...EVENT });
+    await whenIdle();
+
+    expect(consumeLaunchShortcutId).toHaveBeenCalledTimes(1);
   });
 });

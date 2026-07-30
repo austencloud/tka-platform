@@ -9,6 +9,7 @@ import { bumpIntakeSignal } from "../state/share-intake-signal.svelte";
 import { getIntake, putIntake } from "./intake-store";
 import { screenDescriptors, validateIntake } from "./intake-validator";
 import { sharedFilesToFiles } from "./shared-file-bridge";
+import { consumeLaunchShortcutId } from "./sharing-shortcuts-publisher";
 
 /**
  * Arrival only. This module persists bytes and raises a flag; it does NOT
@@ -133,6 +134,12 @@ async function handleShareReceived(event: ShareReceivedEvent): Promise<void> {
   const problems = [...screen.problems, ...bridgeProblems, ...gate.problems];
   const empty = gate.accepted.length === 0 && !gate.text;
 
+  // AFTER the synchronous in-flight claim (made by the listener before this
+  // function was even called), so the cold-launch twin never gets here. The
+  // native side nulls the extra on first read, so a second call would return
+  // null and quietly downgrade the share to "pick someone".
+  const targetConversationId = await consumeLaunchShortcutId();
+
   const record: SharedIntake = {
     receiptId,
     source: "native",
@@ -145,6 +152,7 @@ async function handleShareReceived(event: ShareReceivedEvent): Promise<void> {
     status: empty ? "failed" : "received",
     receivedAt: Date.now(),
     problems,
+    ...(targetConversationId ? { targetConversationId } : {}),
   };
 
   if (problems.length > 0) {

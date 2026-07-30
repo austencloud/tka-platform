@@ -54,6 +54,15 @@ export interface SharedIntake {
   receivedAt: number;
   /** Everything that was dropped, truncated, or failed. Never empty silently. */
   problems: IntakeProblem[];
+  /**
+   * The conversation the user picked straight from the Android share sheet, if
+   * they used a Direct Share target rather than the plain app row.
+   *
+   * Persisted with the record on purpose: it must survive the same reload,
+   * crash and sign-in round trip the bytes do, or the share silently
+   * downgrades to "pick someone" after an auth detour.
+   */
+  targetConversationId?: string;
 }
 
 /**
