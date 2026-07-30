@@ -75,7 +75,7 @@ describe("publishShareTargets", () => {
     expect(publish).toHaveBeenCalledTimes(2);
   });
 
-  it("publishes without an icon when the avatar fetch fails", async () => {
+  it("still publishes the person when the avatar fetch throws", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => {
       throw new Error("offline");
     }));
@@ -83,17 +83,54 @@ describe("publishShareTargets", () => {
     await publishShareTargets([target("c1", "Paul", "https://cdn/paul.webp")]);
 
     const arg = publish.mock.calls[0]?.[0] as { targets: Array<Record<string, unknown>> };
-    // A nameless gap in the sheet is worse than a generic icon.
-    expect(arg.targets[0]).toMatchObject({ id: "c1", iconBase64: "" });
+    // A nameless gap in the sheet is worse than a generic icon. The icon falls
+    // back to generated initials; jsdom has no canvas, so it is "" HERE only.
+    // The canvas case is covered by the next test.
+    expect(arg.targets[0]).toMatchObject({ id: "c1" });
   });
 
-  it("publishes without an icon when the avatar response is not ok", async () => {
+  it("still publishes the person when the avatar response is not ok", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, arrayBuffer: async () => new ArrayBuffer(0) })));
 
     await publishShareTargets([target("c1", "Paul", "https://cdn/paul.webp")]);
 
     const arg = publish.mock.calls[0]?.[0] as { targets: Array<Record<string, unknown>> };
-    expect(arg.targets[0]).toMatchObject({ iconBase64: "" });
+    expect(arg.targets[0]).toMatchObject({ id: "c1" });
+  });
+
+  it("generates an initials icon when there is no avatar", async () => {
+    // Verified on device 2026-07-30: Firestore participantInfo carries no avatar
+    // for these conversations, so EVERY target published icon=null and the sheet
+    // would show four identical app icons. jsdom has no canvas, so the drawing
+    // path is unreachable without this stub - which is exactly why the two tests
+    // above cannot be the only coverage.
+    const fillText = vi.fn();
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag !== "canvas") return realCreate(tag);
+      return {
+        width: 0,
+        height: 0,
+        getContext: () => ({
+          fillStyle: "",
+          font: "",
+          textAlign: "",
+          textBaseline: "",
+          fillRect: vi.fn(),
+          fillText,
+        }),
+        toDataURL: () => "data:image/png;base64,SU5JVElBTFM=",
+      } as unknown as HTMLElement;
+    });
+
+    await publishShareTargets([target("c1", "Paul Bunyan", null)]);
+
+    const arg = publish.mock.calls[0]?.[0] as { targets: Array<Record<string, unknown>> };
+    expect(arg.targets[0]?.iconBase64).toBe("SU5JVElBTFM=");
+    // Two initials from first and last word, not the whole name.
+    expect(fillText).toHaveBeenCalledWith("PB", expect.any(Number), expect.any(Number));
+
+    vi.mocked(document.createElement).mockRestore();
   });
 
   it("does nothing off native", async () => {

@@ -65,6 +65,59 @@ async function fetchIcon(url: string | null): Promise<string> {
   }
 }
 
+/** Deterministic hue per person, so the same face keeps the same colour. */
+function hueFor(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return Math.abs(hash) % 360;
+}
+
+function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const first = words[0]?.[0] ?? "?";
+  const second = words.length > 1 ? (words[words.length - 1]?.[0] ?? "") : "";
+  return (first + second).toUpperCase();
+}
+
+/**
+ * Draw an initials avatar as PNG bytes.
+ *
+ * Verified on device 2026-07-30: participantInfo in Firestore carries no avatar
+ * for these conversations, so every published target had icon=null and the sheet
+ * would show four identical app icons. The inbox already falls back to initials
+ * for exactly the same missing data (ConversationItem -> RobustAvatar), so this
+ * matches what the user sees in-app rather than inventing a second convention.
+ *
+ * Also a ranking signal: the Sharesheet's prediction service decides whether a
+ * target is shown at all, and an iconless target is a weaker candidate.
+ */
+function initialsIcon(target: ShareTarget): string {
+  try {
+    const size = 128;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    const hue = hueFor(target.id);
+    ctx.fillStyle = `hsl(${hue}, 55%, 42%)`;
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `600 ${size * 0.42}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initialsOf(target.name), size / 2, size / 2 + size * 0.02);
+
+    // Square, not a circle: IconCompat.createWithAdaptiveBitmap masks it round.
+    const dataUrl = canvas.toDataURL("image/png");
+    return dataUrl.slice(dataUrl.indexOf(",") + 1);
+  } catch {
+    return "";
+  }
+}
+
 /**
  * Publish the Direct Share targets, unless nothing changed.
  *
@@ -82,7 +135,10 @@ export async function publishShareTargets(targets: ShareTarget[]): Promise<void>
       targets.map(async (target) => ({
         id: target.id,
         name: target.name,
-        iconBase64: await fetchIcon(target.avatarUrl),
+        // Real avatar when there is one, generated initials otherwise. Never
+        // empty if a canvas is available: four identical app icons in the sheet
+        // are indistinguishable, which defeats the point of showing people.
+        iconBase64: (await fetchIcon(target.avatarUrl)) || initialsIcon(target),
       }))
     );
 

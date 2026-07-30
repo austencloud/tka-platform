@@ -88,6 +88,12 @@ public class TkaSharingShortcutsPlugin extends Plugin {
                     .setLongLived(true)
                     .setCategories(Collections.singleton(CATEGORY))
                     .setPerson(person.build())
+                    // Rank hint. The Sharesheet ranks Direct Share targets with a
+                    // prediction service and gives NO guarantee any target is
+                    // shown; rank is one of the few signals we can actually feed
+                    // it, alongside history and recency. Lower is more important,
+                    // and the list already arrives newest-first.
+                    .setRank(i)
                     .setIntent(launch);
 
                 if (icon != null) builder.setIcon(icon);
