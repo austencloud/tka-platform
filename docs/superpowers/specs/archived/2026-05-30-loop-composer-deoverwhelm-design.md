@@ -1,18 +1,26 @@
 ---
-status: active
+status: archived
 value: 3
 effort: S
-remaining: "Body status: Design approved (visual, via harness). Implementation **deferred** until the in-flight deck-releaser print refactor (`ReviewStep` / `DeckReleaserTab`) commits — see Promotion Constraints."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+superseded_by: src/lib/features/choreo-card/components/deck-releaser/LoopBentoBoard.svelte
+last_triaged: 2026-07-29
 ---
 # LOOP Catalog Composer — De-Overwhelm Redesign
 
 **Date:** 2026-05-30
-**Status:** Design approved (visual, via harness). Implementation **deferred** until the in-flight deck-releaser print refactor (`ReviewStep` / `DeckReleaserTab`) commits — see Promotion Constraints.
+**Status:** Shipped 2026-05-30, then superseded in production 2026-05-31.
 **Prototype:** `src/routes/test/deck-releaser-configure/` (real components, no mockup).
+
+> **ARCHIVED 2026-07-29.** Commit `d2b1e9c852` shipped this three-column
+> design as `LoopComposeBoard.svelte`. Commit `4fc09f3831` deliberately replaced
+> it in production with the seeded-recipe `LoopBentoBoard.svelte` the next day.
+> The original board remains in its test harness as a historical prototype.
+> Reapplying this spec would roll production back to the older configuration
+> model.
 
 ## Problem
 
