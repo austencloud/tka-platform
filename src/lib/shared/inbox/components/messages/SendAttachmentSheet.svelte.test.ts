@@ -4,9 +4,11 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SendAttachmentSheet from "./SendAttachmentSheet.svelte";
+import { inboxState } from "../../state/inbox-state.svelte";
 
 const mocks = vi.hoisted(() => ({
   conversations: [] as Array<Record<string, unknown>>,
+  inbox: { pendingConversationId: null as string | null },
   createShortCode: vi.fn(),
   ensureGuestIdentity: vi.fn(),
   getOrCreateConversation: vi.fn(),
@@ -57,7 +59,23 @@ vi.mock("$lib/shared/user-search/services/user-searcher", () => ({
 }));
 
 vi.mock("../../state/inbox-state.svelte", () => ({
-  inboxState: { conversations: mocks.conversations },
+  inboxState: {
+    conversations: mocks.conversations,
+    get pendingConversationId() {
+      return mocks.inbox.pendingConversationId;
+    },
+    clearPendingNavigation() {
+      mocks.inbox.pendingConversationId = null;
+    },
+    // Mirrors the one field of openAttachmentShare this sheet consumes; the
+    // real state module's own contract is covered by its unit tests.
+    openAttachmentShare(
+      _attachment: unknown,
+      options: { conversationId?: string } = {}
+    ) {
+      mocks.inbox.pendingConversationId = options.conversationId ?? null;
+    },
+  },
 }));
 
 function createPayload() {
@@ -82,9 +100,24 @@ function addGroupConversation(): void {
   });
 }
 
+function addDirectConversation(): void {
+  mocks.conversations.push({
+    id: "conv_paul",
+    type: "direct",
+    otherParticipant: {
+      userId: "paul",
+      displayName: "Paul",
+      joinedAt: new Date("2026-07-01T12:00:00Z"),
+    },
+    unreadCount: 0,
+    updatedAt: new Date("2026-07-28T12:00:00Z"),
+  });
+}
+
 describe("SendAttachmentSheet", () => {
   beforeEach(() => {
     mocks.conversations.length = 0;
+    mocks.inbox.pendingConversationId = null;
     mocks.createShortCode.mockReset();
     mocks.createShortCode.mockResolvedValue({ code: "SHARE1" });
     mocks.ensureGuestIdentity.mockReset();
@@ -253,5 +286,58 @@ describe("SendAttachmentSheet", () => {
     // An image never goes through the message writer; the sender owns the write.
     expect(mocks.sendMessage).not.toHaveBeenCalled();
     expect(onSent).toHaveBeenCalledWith("group-1");
+  });
+
+  it("opens with the direct-share conversation already selected", async () => {
+    addDirectConversation();
+    inboxState.openAttachmentShare(
+      {
+        type: "image",
+        file: new File([new Uint8Array([1])], "a.png", { type: "image/png" }),
+        messageId: "m1",
+        attachmentId: "a1",
+      },
+      { conversationId: "conv_paul", receiptId: "si_1" }
+    );
+
+    render(SendAttachmentSheet, {
+      attachment: {
+        type: "image",
+        file: new File([new Uint8Array([1])], "a.png", { type: "image/png" }),
+        messageId: "m1",
+        attachmentId: "a1",
+      },
+      onSent: vi.fn(),
+    });
+
+    // The whole point of a Direct Share tap: the next tap is Send, not a pick.
+    await expect
+      .element(page.getByRole("button", { name: "Send image" }))
+      .toBeEnabled();
+    // Pre-selected, not merely enabled: the picker is gone and Paul is named.
+    await expect.element(page.getByText("Paul")).toBeInTheDocument();
+    await expect
+      .element(page.getByRole("combobox", { name: "Search users" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("leaves the sheet unselected when the shortcut names a stale conversation", async () => {
+    addDirectConversation();
+    inboxState.openAttachmentShare(
+      { type: "sequence", payload: createPayload() },
+      { conversationId: "conv_deleted" }
+    );
+
+    render(SendAttachmentSheet, {
+      attachment: { type: "sequence", payload: createPayload() },
+      onSent: vi.fn(),
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: "Send sequence" }))
+      .toBeDisabled();
+    await expect
+      .element(page.getByRole("combobox", { name: "Search users" }))
+      .toBeInTheDocument();
   });
 });

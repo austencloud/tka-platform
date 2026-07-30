@@ -118,6 +118,27 @@
     [currentUserId, selectedUser?.id].filter(Boolean) as string[]
   );
 
+  // A Direct Share tap names the conversation before this sheet ever renders.
+  // Read it synchronously at init and consume it: InboxDrawer's pending-
+  // navigation effect reads the same field and would yank us out of this sheet
+  // into the thread view. Component init runs during the render pass, ahead of
+  // the drawer's effect flush, so this claim always lands first.
+  const directShareConversationId = inboxState.pendingConversationId;
+  if (directShareConversationId) inboxState.clearPendingNavigation();
+
+  // The conversation list may not have arrived yet on a cold share launch, so
+  // resolve against it reactively rather than once.
+  let preselectionApplied = false;
+  $effect(() => {
+    if (preselectionApplied || !directShareConversationId) return;
+    const match = inboxState.conversations.find(
+      (conversation) => conversation.id === directShareConversationId
+    );
+    if (!match) return;
+    preselectionApplied = true;
+    selectConversation(match);
+  });
+
   onMount(() => {
     hapticService = getHapticFeedback();
   });
