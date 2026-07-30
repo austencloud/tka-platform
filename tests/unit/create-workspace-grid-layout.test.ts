@@ -3,8 +3,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { calculateGridLayout } from "../../src/lib/shared/create/utils/grid-calculations";
 import {
+  WORKSPACE_BUTTON_LAYOUT,
   WORKSPACE_BUTTON_ICON,
   WORKSPACE_BUTTON_TUTORIAL,
+  workspaceButtonsInZone,
 } from "../../src/lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
 
 const workspaceGridSource = readFileSync(
@@ -18,6 +20,13 @@ const buttonPanelSource = readFileSync(
   resolve(
     process.cwd(),
     "src/lib/features/create/shared/workspace-panel/shared/components/ButtonPanel.svelte"
+  ),
+  "utf8"
+);
+const sequenceDisplaySource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/features/create/shared/workspace-panel/sequence-display/components/SequenceDisplay.svelte"
   ),
   "utf8"
 );
@@ -114,12 +123,45 @@ describe("Create workspace action rail contract", () => {
     expect(drawerLauncherSource).toContain("playOnOpen: true");
   });
 
-  it("keeps the viewer control centered at every phone breakpoint", () => {
+  it("keeps five mobile controls below a balanced workspace header", () => {
+    expect(workspaceButtonsInZone("right").map((button) => button.id)).toEqual([
+      "sequence-actions",
+      "share",
+    ]);
+    expect(
+      workspaceButtonsInZone("header-trailing").map((button) => button.id)
+    ).toEqual(["save"]);
+    expect(WORKSPACE_BUTTON_ICON.share).toEqual({
+      icon: "fa-share-nodes",
+      iconType: "fa",
+      actionLabel: "Share",
+    });
+    expect(WORKSPACE_BUTTON_TUTORIAL.share.label).toBe("Share");
+    expect(WORKSPACE_BUTTON_TUTORIAL.share.description).toContain(
+      "send the sequence in TKA"
+    );
+    expect(buttonPanelSource).toContain("<SequenceActionsButton");
+    expect(buttonPanelSource).toContain("<ShareButton");
+    expect(buttonPanelSource).not.toContain("<SaveToLibraryButton");
+    expect(sequenceDisplaySource).not.toContain("<SequenceActionsButton");
+    expect(sequenceDisplaySource).toContain("<SaveToLibraryButton");
+  });
+
+  it("keeps layout, icon, and tutorial maps in lockstep", () => {
+    const layoutIds = WORKSPACE_BUTTON_LAYOUT.map((button) => button.id).sort();
+    expect(Object.keys(WORKSPACE_BUTTON_ICON).sort()).toEqual(layoutIds);
+    expect(Object.keys(WORKSPACE_BUTTON_TUTORIAL).sort()).toEqual(layoutIds);
+  });
+
+  it("keeps Play centered in the single-row phone layout", () => {
     expect(buttonPanelSource).toMatch(
       /grid-template-columns:\s*minmax\(0, 1fr\)\s*50px\s*minmax\(0, 1fr\)/
     );
+    expect(buttonPanelSource).not.toMatch(
+      /grid-template-areas:\s*"\. center \."\s*"left \. right"/
+    );
     expect(buttonPanelSource).toMatch(
-      /grid-template-areas:\s*"left left left"\s*"\. center right"/
+      /grid-template-areas:\s*"left left left"\s*"\. center \."\s*"right right right"/
     );
   });
 
