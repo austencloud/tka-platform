@@ -13,6 +13,11 @@ assigned tint. The same skill also works in a manually opened session: it claims
 the first free tint and holds it until that agent exits. Codex also lists it in
 `/skills`.
 
+Run `/colorall` in Claude or the TKA Codex build to restore every live agent
+window in one pass. Standard Codex can invoke the same skill as `$colorall`.
+Agent Hub requests Administrator approval once when the live set includes an
+elevated terminal.
+
 The terminal title starts as `Starting Session`. Bare `/rename` lets Claude or
 Codex choose an accurate two- or three-word name from the conversation. Use
 `/rename Exact Name` when you want to choose it yourself. The same name appears
@@ -74,7 +79,7 @@ project's existing `launchers\start-*.bat`.
 3. Compiles four small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
 4. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
-5. Installs the personal `color` skill for Claude and Codex.
+5. Installs the personal `color` and `colorall` skills for Claude and Codex.
 6. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
 7. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
    lacks them, so a bare repo still launches.

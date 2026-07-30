@@ -69,11 +69,11 @@ $StartMenu   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Age
 $StartupDir  = [Environment]::GetFolderPath('Startup')
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 $TerminalFragmentPath = Join-Path $TerminalFragmentDir 'session-backgrounds.json'
-$ColorSkillSource = Join-Path $Here 'skills\color'
-$ColorSkillMarker = '.agent-hub-managed'
-$ColorSkillDestinations = @(
-    (Join-Path $env:USERPROFILE '.claude\skills\color'),
-    (Join-Path $env:USERPROFILE '.agents\skills\color')
+$ManagedSkillNames = @('color', 'colorall')
+$ManagedSkillMarker = '.agent-hub-managed'
+$PersonalSkillRoots = @(
+    (Join-Path $env:USERPROFILE '.claude\skills'),
+    (Join-Path $env:USERPROFILE '.agents\skills')
 )
 $TerminalSettingsPaths = @(
     (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
@@ -144,16 +144,20 @@ function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor DarkGray }
 function Write-Warn2($m)  { Write-Host "    ! $m" -ForegroundColor Yellow }
 
-function Install-AgentHubColorSkill([string]$destination) {
-    $markerPath = Join-Path $destination $ColorSkillMarker
+function Install-AgentHubSkill(
+    [string]$source,
+    [string]$destination,
+    [string]$skillName
+) {
+    $markerPath = Join-Path $destination $ManagedSkillMarker
     if ((Test-Path -LiteralPath $destination) -and
         -not (Test-Path -LiteralPath $markerPath -PathType Leaf)) {
-        Write-Warn2 "kept existing unmanaged color skill at $destination"
+        Write-Warn2 "kept existing unmanaged $skillName skill at $destination"
         return $false
     }
 
     New-Item -ItemType Directory -Force $destination | Out-Null
-    foreach ($entry in Get-ChildItem -LiteralPath $ColorSkillSource -Force) {
+    foreach ($entry in Get-ChildItem -LiteralPath $source -Force) {
         Copy-Item -LiteralPath $entry.FullName -Destination $destination -Recurse -Force
     }
     [IO.File]::WriteAllText(
@@ -328,14 +332,17 @@ if ($LASTEXITCODE -ne 0) { throw "Stub build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentChooserStub.exe"
 
 $terminalSource = Join-Path $Here 'src\AgentTerminalLauncher.cs'
-$terminalLauncherArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentTerminalLauncher.exe",
-                          '/reference:System.dll', '/reference:System.Core.dll', $terminalSource)
+$terminalRefs = @('System.dll', 'System.Core.dll', 'System.Management.dll')
+$terminalLauncherArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentTerminalLauncher.exe")
+$terminalLauncherArgs += $terminalRefs | ForEach-Object { "/reference:$_" }
+$terminalLauncherArgs += $terminalSource
 & $csc @terminalLauncherArgs
 if ($LASTEXITCODE -ne 0) { throw "Terminal launcher build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentTerminalLauncher.exe"
 
-$terminalSessionArgs = @('/nologo', '/target:exe', "/out:$BinDir\AgentTerminalSession.exe",
-                         '/reference:System.dll', '/reference:System.Core.dll', $terminalSource)
+$terminalSessionArgs = @('/nologo', '/target:exe', "/out:$BinDir\AgentTerminalSession.exe")
+$terminalSessionArgs += $terminalRefs | ForEach-Object { "/reference:$_" }
+$terminalSessionArgs += $terminalSource
 & $csc @terminalSessionArgs
 if ($LASTEXITCODE -ne 0) { throw "Terminal session host build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentTerminalSession.exe"
@@ -347,19 +354,23 @@ Write-Ok "terminal color leasing self-test passed"
 Copy-Item (Join-Path $Here 'icons\*') $IconDir -Force
 Write-Ok "copied $((Get-ChildItem $IconDir).Count) icons"
 
-Write-Step "Installing the personal color skill for Claude and Codex"
-if (-not (Test-Path -LiteralPath (Join-Path $ColorSkillSource 'SKILL.md') -PathType Leaf)) {
-    throw "Color skill source is missing: $ColorSkillSource"
-}
+Write-Step "Installing the personal color skills for Claude and Codex"
 $installedColorSkills = 0
-foreach ($destination in $ColorSkillDestinations) {
-    if (Install-AgentHubColorSkill $destination) {
-        $installedColorSkills++
-        Write-Ok $destination
+foreach ($skillName in $ManagedSkillNames) {
+    $skillSource = Join-Path $Here "skills\$skillName"
+    if (-not (Test-Path -LiteralPath (Join-Path $skillSource 'SKILL.md') -PathType Leaf)) {
+        throw "Color skill source is missing: $skillSource"
+    }
+    foreach ($skillRoot in $PersonalSkillRoots) {
+        $destination = Join-Path $skillRoot $skillName
+        if (Install-AgentHubSkill $skillSource $destination $skillName) {
+            $installedColorSkills++
+            Write-Ok $destination
+        }
     }
 }
 if ($installedColorSkills -eq 0) {
-    Write-Warn2 "no personal color skill was installed because both destinations are user-owned"
+    Write-Warn2 "no personal color skills were installed because every destination is user-owned"
 }
 
 # ---------------------------------------------------------------- 3. projects

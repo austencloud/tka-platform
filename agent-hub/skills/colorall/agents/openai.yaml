@@ -1,0 +1,4 @@
+interface:
+  display_name: "All Terminal Colors"
+  short_description: "Restore every live Agent Hub terminal color"
+  default_prompt: "Use $colorall to restore every live Agent Hub terminal color."

@@ -22,10 +22,12 @@ $ShortcutDir = Join-Path $env:USERPROFILE 'AgentHub'
 $StartMenu   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Agent Hub'
 $StartupLnk  = Join-Path ([Environment]::GetFolderPath('Startup')) 'Agent Hub Host.lnk'
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
-$ColorSkillMarker = '.agent-hub-managed'
-$ColorSkillPaths = @(
-    (Join-Path $env:USERPROFILE '.claude\skills\color'),
-    (Join-Path $env:USERPROFILE '.agents\skills\color')
+$ManagedSkillMarker = '.agent-hub-managed'
+$ManagedSkillPaths = @(
+    foreach ($skillName in @('color', 'colorall')) {
+        Join-Path $env:USERPROFILE ".claude\skills\$skillName"
+        Join-Path $env:USERPROFILE ".agents\skills\$skillName"
+    }
 )
 
 Get-Process AgentChooserHost -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -36,8 +38,8 @@ foreach ($p in @($StartupLnk, $StartMenu, $ShortcutDir, $TerminalFragmentDir)) {
     if (Test-Path $p) { Remove-Item $p -Recurse -Force; Write-Host "removed $p" }
 }
 
-foreach ($skillPath in $ColorSkillPaths) {
-    $markerPath = Join-Path $skillPath $ColorSkillMarker
+foreach ($skillPath in $ManagedSkillPaths) {
+    $markerPath = Join-Path $skillPath $ManagedSkillMarker
     if (Test-Path -LiteralPath $markerPath -PathType Leaf) {
         Remove-Item -LiteralPath $skillPath -Recurse -Force
         Write-Host "removed $skillPath"

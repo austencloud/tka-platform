@@ -9,10 +9,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -74,6 +77,27 @@ class AgentTerminalLauncher
             OwnerProcessId = ownerProcessId;
             ConsoleProcessId = consoleProcessId;
         }
+    }
+
+    sealed class ColorTarget
+    {
+        public readonly int SourceProcessId;
+        public readonly int ConsoleProcessId;
+        public readonly int ColorIndex;
+
+        public ColorTarget(int sourceProcessId, int consoleProcessId, int colorIndex)
+        {
+            SourceProcessId = sourceProcessId;
+            ConsoleProcessId = consoleProcessId;
+            ColorIndex = colorIndex;
+        }
+    }
+
+    sealed class ColorTargetDiscovery
+    {
+        public readonly List<ColorTarget> Targets = new List<ColorTarget>();
+        public readonly List<int> InaccessibleProcessIds = new List<int>();
+        public readonly List<int> UnrecognizedProcessIds = new List<int>();
     }
 
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -144,6 +168,8 @@ class AgentTerminalLauncher
             Dictionary<string, string> args = ParseArgs(argv);
             if (args.ContainsKey("SelfTest")) return SelfTest();
             if (args.ContainsKey("SelfTestLeaseChild")) return SelfTestLeaseChild(args);
+            if (args.ContainsKey("ApplyAllColorsElevated")) return ApplyAllColorsElevated(args);
+            if (args.ContainsKey("ApplyAllColors")) return ApplyAllColors();
             if (args.ContainsKey("ApplyCurrentColor")) return ApplyCurrentColor();
             if (args.ContainsKey("HoldManualColor")) return HoldManualColor(args);
             if (args.ContainsKey("HoldColor")) return RunInsideTerminal(args);
@@ -267,6 +293,283 @@ class AgentTerminalLauncher
         );
         report.Flush();
         return 0;
+    }
+
+    static int ApplyAllColors()
+    {
+        TextWriter report = Console.Out;
+        ColorTargetDiscovery discovery = DiscoverColorTargets();
+        if (discovery.InaccessibleProcessIds.Count > 0 && !IsAdministrator())
+            return RunElevatedColorRestore(report);
+
+        ProcessContext origin = FindProcessContext();
+        int exitCode;
+        using (var details = new StringWriter())
+        {
+            try
+            {
+                exitCode = ApplyDiscoveredColors(discovery, details);
+            }
+            finally
+            {
+                FreeConsole();
+                AttachConsole((uint)origin.ConsoleProcessId);
+            }
+            report.Write(details.ToString());
+        }
+        report.Flush();
+        return exitCode;
+    }
+
+    static int ApplyAllColorsElevated(Dictionary<string, string> args)
+    {
+        string resultPath = ValidateBulkResultPath(GetRequired(args, "ResultFile"));
+        int exitCode = 1;
+        using (var report = new StringWriter())
+        {
+            try
+            {
+                if (!IsAdministrator())
+                    throw new InvalidOperationException("Administrator access is required to recolor elevated terminals.");
+                exitCode = ApplyDiscoveredColors(DiscoverColorTargets(), report);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex.ToString());
+                report.WriteLine("Could not restore all Agent Hub terminal colors: " + ex.Message);
+            }
+            File.WriteAllText(resultPath, report.ToString(), new UTF8Encoding(false));
+        }
+        return exitCode;
+    }
+
+    static int RunElevatedColorRestore(TextWriter report)
+    {
+        string resultPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AgentHub",
+            "colorall-result-" + Guid.NewGuid().ToString("N") + ".txt"
+        );
+        string launcherPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AgentTerminalLauncher.exe");
+        if (!File.Exists(launcherPath))
+            throw new FileNotFoundException("Agent Hub's elevation helper is missing.", launcherPath);
+
+        try
+        {
+            var psi = new ProcessStartInfo(
+                launcherPath,
+                JoinArguments(new string[] {
+                    "-ApplyAllColorsElevated",
+                    "-ResultFile", resultPath
+                })
+            );
+            psi.UseShellExecute = true;
+            psi.Verb = "runas";
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            Process child;
+            try
+            {
+                child = Process.Start(psi);
+            }
+            catch (Win32Exception ex)
+            {
+                if (ex.NativeErrorCode == 1223)
+                {
+                    report.WriteLine(
+                        "Administrator approval was canceled, so elevated Agent Hub terminals were not recolored."
+                    );
+                    report.Flush();
+                    return 1;
+                }
+                throw;
+            }
+            if (child == null) throw new InvalidOperationException("Agent Hub's elevation helper did not start.");
+
+            int exitCode;
+            using (child)
+            {
+                child.WaitForExit();
+                exitCode = child.ExitCode;
+            }
+            if (!File.Exists(resultPath))
+                throw new InvalidOperationException("Agent Hub's elevation helper returned no result.");
+
+            report.Write(File.ReadAllText(resultPath));
+            report.Flush();
+            return exitCode;
+        }
+        finally
+        {
+            TryDelete(resultPath);
+        }
+    }
+
+    static string ValidateBulkResultPath(string value)
+    {
+        string agentHubDir = Path.GetFullPath(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AgentHub"
+        ));
+        Directory.CreateDirectory(agentHubDir);
+        string resultPath = Path.GetFullPath(value);
+        string requiredPrefix = agentHubDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        string resultFileName = Path.GetFileName(resultPath);
+        if (!resultPath.StartsWith(requiredPrefix, StringComparison.OrdinalIgnoreCase) ||
+            !Regex.IsMatch(
+                resultFileName,
+                "^colorall-result-[0-9a-f]{32}\\.txt$",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+            ))
+            throw new InvalidOperationException("The bulk color result path must stay inside Agent Hub's install directory.");
+        return resultPath;
+    }
+
+    static bool IsAdministrator()
+    {
+        using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+        {
+            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        }
+    }
+
+    static ColorTargetDiscovery DiscoverColorTargets()
+    {
+        var discovery = new ColorTargetDiscovery();
+        var seenConsoles = new HashSet<int>();
+        using (var searcher = new ManagementObjectSearcher(
+            "SELECT ProcessId, Name, CommandLine FROM Win32_Process " +
+            "WHERE Name LIKE 'AgentTerminalSession-%.exe'"
+        ))
+        using (ManagementObjectCollection processes = searcher.Get())
+        {
+            foreach (ManagementObject process in processes)
+            {
+                try
+                {
+                    int processId = Convert.ToInt32(process["ProcessId"]);
+                    string name = Convert.ToString(process["Name"]) ?? "";
+                    if (!IsTerminalSessionProcess(name)) continue;
+
+                    string commandLine = process["CommandLine"] as string;
+                    if (string.IsNullOrWhiteSpace(commandLine))
+                    {
+                        discovery.InaccessibleProcessIds.Add(processId);
+                        continue;
+                    }
+
+                    ColorTarget target;
+                    if (!TryParseColorTarget(processId, commandLine, out target))
+                    {
+                        discovery.UnrecognizedProcessIds.Add(processId);
+                        continue;
+                    }
+                    if (seenConsoles.Add(target.ConsoleProcessId)) discovery.Targets.Add(target);
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+        }
+        discovery.Targets.Sort(delegate(ColorTarget left, ColorTarget right) {
+            return left.ColorIndex.CompareTo(right.ColorIndex);
+        });
+        return discovery;
+    }
+
+    static bool TryParseColorTarget(int sourceProcessId, string commandLine, out ColorTarget target)
+    {
+        target = null;
+        int colorIndex;
+        if (TryReadIntegerArgument(commandLine, "HoldColor", out colorIndex))
+        {
+            if (colorIndex < 0 || colorIndex >= SessionColorCount) return false;
+            target = new ColorTarget(sourceProcessId, sourceProcessId, colorIndex);
+            return true;
+        }
+
+        int ownerProcessId;
+        if (HasArgument(commandLine, "HoldManualColor") &&
+            TryReadIntegerArgument(commandLine, "ColorIndex", out colorIndex) &&
+            TryReadIntegerArgument(commandLine, "OwnerPid", out ownerProcessId))
+        {
+            if (colorIndex < 0 || colorIndex >= SessionColorCount || ownerProcessId <= 0) return false;
+            target = new ColorTarget(sourceProcessId, ownerProcessId, colorIndex);
+            return true;
+        }
+        return false;
+    }
+
+    static bool HasArgument(string commandLine, string name)
+    {
+        return Regex.IsMatch(
+            commandLine ?? "",
+            "(?:^|\\s)-" + Regex.Escape(name) + "(?=\\s|$)",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+        );
+    }
+
+    static bool TryReadIntegerArgument(string commandLine, string name, out int value)
+    {
+        value = 0;
+        Match match = Regex.Match(
+            commandLine ?? "",
+            "(?:^|\\s)-" + Regex.Escape(name) + "\\s+([0-9]+)(?=\\s|$)",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+        );
+        return match.Success && int.TryParse(match.Groups[1].Value, out value);
+    }
+
+    static int ApplyDiscoveredColors(ColorTargetDiscovery discovery, TextWriter report)
+    {
+        int total =
+            discovery.Targets.Count +
+            discovery.InaccessibleProcessIds.Count +
+            discovery.UnrecognizedProcessIds.Count;
+        if (total == 0)
+        {
+            report.WriteLine("No live Agent Hub terminals were found.");
+            return 0;
+        }
+
+        int applied = 0;
+        var errors = new List<string>();
+        foreach (ColorTarget target in discovery.Targets)
+        {
+            try
+            {
+                string background = ReadSessionBackground(target.ColorIndex);
+                WriteTerminalBackground(target.ConsoleProcessId, background);
+                applied++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add(
+                    "session process " + target.SourceProcessId +
+                    " (" + SessionSchemeName(target.ColorIndex) + "): " + ex.Message
+                );
+            }
+        }
+        foreach (int processId in discovery.InaccessibleProcessIds)
+            errors.Add("session process " + processId + ": its command line could not be inspected");
+        foreach (int processId in discovery.UnrecognizedProcessIds)
+            errors.Add("session process " + processId + ": its color lease could not be identified");
+
+        if (errors.Count == 0)
+        {
+            if (applied == 1)
+                report.WriteLine("Restored 1 live Agent Hub terminal color from its existing lease.");
+            else
+                report.WriteLine(
+                    "Restored {0} live Agent Hub terminal colors from {0} existing leases.",
+                    applied
+                );
+            return 0;
+        }
+
+        report.WriteLine("Restored {0} of {1} live Agent Hub terminal colors.", applied, total);
+        foreach (string error in errors) report.WriteLine("Could not restore " + error + ".");
+        return 1;
     }
 
     static bool TryGetInheritedColor(out int colorIndex)
@@ -943,6 +1246,52 @@ class AgentTerminalLauncher
                 parsedColor != 3 ||
                 TryParseSessionScheme("Agent Hub Session 17", out parsedColor))
                 throw new Exception("Session color scheme parsing accepted an invalid assignment.");
+            ColorTarget parsedTarget;
+            if (!TryParseColorTarget(
+                    4242,
+                    "session.exe -HoldColor 8 -Agent codex",
+                    out parsedTarget
+                ) ||
+                parsedTarget.SourceProcessId != 4242 ||
+                parsedTarget.ConsoleProcessId != 4242 ||
+                parsedTarget.ColorIndex != 8)
+                throw new Exception("Bulk color parsing lost a launched session's lease.");
+            if (!TryParseColorTarget(
+                    5252,
+                    "session.exe -HoldManualColor -ColorIndex 6 -OwnerPid 6262",
+                    out parsedTarget
+                ) ||
+                parsedTarget.SourceProcessId != 5252 ||
+                parsedTarget.ConsoleProcessId != 6262 ||
+                parsedTarget.ColorIndex != 6 ||
+                TryParseColorTarget(7272, "session.exe -HoldColor 16", out parsedTarget))
+                throw new Exception("Bulk color parsing lost or accepted an invalid manual session lease.");
+            string validResultPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AgentHub",
+                "colorall-result-" + Guid.NewGuid().ToString("N") + ".txt"
+            );
+            if (!string.Equals(
+                    ValidateBulkResultPath(validResultPath),
+                    Path.GetFullPath(validResultPath),
+                    StringComparison.OrdinalIgnoreCase
+                ))
+                throw new Exception("Bulk color elevation rejected its generated result path.");
+            bool unsafeResultPathRejected = false;
+            try
+            {
+                ValidateBulkResultPath(Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "AgentHub",
+                    "last.ini"
+                ));
+            }
+            catch (InvalidOperationException)
+            {
+                unsafeResultPathRejected = true;
+            }
+            if (!unsafeResultPathRejected)
+                throw new Exception("Bulk color elevation accepted an unsafe result path.");
             string colorSequence = BuildTerminalBackgroundSequence("#123456");
             if (colorSequence.IndexOf("\x1b]11;#123456\x07", StringComparison.Ordinal) < 0 ||
                 colorSequence.IndexOf("\x1b]4;0;#123456\x07", StringComparison.Ordinal) < 0)
@@ -950,7 +1299,7 @@ class AgentTerminalLauncher
 
             Console.WriteLine("PASS: all " + SessionColorCount + " session colors were unique, exhaustion-safe, and reusable after release.");
             Console.WriteLine("PASS: Windows Terminal window, background-matched tab, color scheme, live-title, and quoting arguments validated.");
-            Console.WriteLine("PASS: inherited color parsing and live terminal background output validated.");
+            Console.WriteLine("PASS: current and bulk color parsing plus live terminal background output validated.");
         }
         finally
         {
