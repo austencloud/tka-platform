@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { dispatchRealTouchDrag } from "../helpers/browser-commands/real-touch";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -70,6 +71,9 @@ export default defineConfig({
       headless: true,
       provider: playwright({}),
       instances: [{ browser: "chromium" }],
+      commands: {
+        dispatchRealTouchDrag,
+      },
     },
   },
 });

@@ -1,4 +1,4 @@
-import { page } from "vitest/browser";
+import { commands, page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -6,6 +6,13 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  MotionColor,
+  Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+// Type-only: pulls in the BrowserCommands augmentation without bundling the
+// node-side command implementation into the browser.
+import type {} from "$test-helpers/browser-commands/real-touch";
 
 vi.mock(
   "$lib/shared/pictograph/shared/components/PictographContainer.svelte",
@@ -83,6 +90,33 @@ describe("PropPlacementGrid", () => {
       // The undo just consumed the only entry in the history.
       canUndo: false,
     });
+  });
+
+  it("commits a dragged aim under REAL touch input (regression: gesture-arbitration pointercancel)", async () => {
+    // Real CDP touch, not dispatchEvent: the 2026-07-29 bug was Chromium
+    // stealing the drag with a `pointercancel` (touch-action: none on the SVG
+    // circle is not honoured; it must sit on the HTML .grid-wrapper). A
+    // synthetic-event version of this test passes even with the bug present.
+    const onOrientationChange = vi.fn();
+    render(PropPlacementGrid, {
+      gridMode: GridMode.DIAMOND,
+      onOrientationChange,
+    });
+
+    const north = page.getByRole("button", { name: "North point" });
+    const rect = (north.element() as SVGCircleElement).getBoundingClientRect();
+    const from = {
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height / 2,
+    };
+    // Drag away from center (north) — for the North point that renders as OUT,
+    // which differs from the default IN, so a commit is observable.
+    await commands.dispatchRealTouchDrag(from, { x: from.x, y: from.y - 80 });
+
+    expect(onOrientationChange).toHaveBeenCalledWith(
+      MotionColor.BLUE,
+      Orientation.OUT
+    );
   });
 
   it("supports keyboard placement on the Box grid", async () => {

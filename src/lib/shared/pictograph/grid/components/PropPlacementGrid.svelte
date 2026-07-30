@@ -902,6 +902,13 @@
 
   .grid-wrapper {
     position: relative;
+    /* A drag across the board is aiming, not scrolling. This MUST live on an
+       HTML element: declaring it only on the SVG hit circles let Chrome's
+       gesture arbitration steal the drag anyway — a real finger got a
+       `pointercancel` ~20px in and the aim silently died (touch-action on SVG
+       child elements is not reliably honoured). Verified with CDP
+       Input.dispatchTouchEvent, 2026-07-29. */
+    touch-action: none;
     /* The board is square, so it's bounded by whichever runs out first — the
        width of the area or its height. Saying that directly keeps it square in
        every host shape. The old `min(100%, 56vh)` measured the VIEWPORT, so a
@@ -939,8 +946,8 @@
   .click-target {
     cursor: default;
     pointer-events: auto;
-    /* A drag across a hit target is aiming, not scrolling. Without this the
-       page pans out from under the gesture on touch. */
+    /* Belt to `.grid-wrapper`'s braces — Chrome ignores this on SVG children,
+       but engines that do honour it get the narrower declaration too. */
     touch-action: none;
   }
 
