@@ -95,6 +95,23 @@
   /** What the user is actually watching, for media with no poster to raise. */
   const showLive = $derived(live && !revealCard);
 
+  /**
+   * The choreo card is up, so this tile's own header stands down.
+   *
+   * A choreo card is a self-contained print artifact: the word is rendered INTO
+   * it, above the step grid, along with the difficulty badge and the QR. Leaving
+   * the tile's header on meant hovering showed the same word twice, once in each
+   * box. Austen (2026-07-29): "It's not very helpful to have the Choreo card
+   * display both the title and have the title above the card container itself."
+   *
+   * The card wins because it is the thing being read — hover exists to hold the
+   * card up for analysis, and it names itself. Suppressing the card's word
+   * instead is not an option: `addWord: false` flips `usesDefaults` in
+   * thumbnail-key-deriver, which drops the render out of the shared cloud cache
+   * and would re-render a bespoke card on every pointer pass.
+   */
+  const cardUp = $derived(hovered && medium === "sequence" && !!sequence);
+
   /** Live playback position, fed to the step strip so its active cell rings in
    *  time with the animation. Rests at 1 when nothing is playing. */
   let playbackStep = $state(1);
@@ -194,6 +211,7 @@
   class="tile size-{size}"
   class:is-live={showLive}
   class:reveal-card={revealCard}
+  class:card-up={cardUp}
   use:slots.tile={{ medium, onChange: (next) => (live = next) }}
 >
   <!-- One header, every medium, above the work — not a caption below it.
@@ -202,8 +220,11 @@
        fell to a footer caption and the sequence carried it twice. Lifting the
        SAME WordHeader out of the canvas and onto the tile gives all four media
        one identical head, and turns the tile portrait: header, then the work.
-       (never-hand-roll.md — this is the existing component, not a new one.) -->
-  <header class="tile-head">
+       (never-hand-roll.md — this is the existing component, not a new one.)
+
+       `aria-hidden` while the card is up so a screen reader is not handed the
+       word twice either — the card's alt text carries it. -->
+  <header class="tile-head" aria-hidden={cardUp ? "true" : undefined}>
     <WordHeader word={headerWord} visible darkMode={!lightMode} />
   </header>
 
@@ -585,6 +606,24 @@
   .tile-head > :global(*) {
     min-width: 0;
     max-width: 100%;
+  }
+
+  /* The box KEEPS its height — only its contents fade. Collapsing it would
+     resize the tile under the pointer and shove every neighbour in the row on
+     hover (no-layout-shift.md). Timed to the card's own fade so one word hands
+     over to the other rather than both being visible mid-transition. */
+  .tile.card-up .tile-head {
+    opacity: 0;
+  }
+
+  .tile-head {
+    transition: opacity var(--duration-fast, 150ms) ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile-head {
+      transition: none;
+    }
   }
 
   .size-sm .stage {
