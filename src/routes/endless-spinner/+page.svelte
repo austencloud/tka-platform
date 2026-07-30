@@ -1050,13 +1050,19 @@
   }
 
   @media (max-width: 600px) {
+    /* Everything below is budgeted so the phone NEVER scrolls: the stage, the
+       lane and the docked transport all fit one viewport. The canvas absorbs
+       whatever the fixed chrome leaves (see its height calc), so the budget only
+       has to be spent honestly — every rem reclaimed here is canvas. */
     .content {
       width: calc(100% - 1rem);
-      padding: 0.875rem 0 1.25rem;
+      /* No bottom padding: the transport is fixed, and .showcase already
+         reserves the dock's height as its own padding-bottom. */
+      padding: 0.875rem 0 0;
     }
 
     .header {
-      margin-bottom: 0.875rem;
+      margin-bottom: 0.5rem;
     }
 
     /* Compact pill so it clears the centered title on narrow phones. */
@@ -1081,29 +1087,43 @@
       margin-top: 0.5rem;
     }
 
+    /* Hug the chips. The row is a fixed-height Crossfade stage sized for the
+       worst case, and at 2.5rem a single ~22px pill sat in a 40px band with a
+       12px gap under it — 52px of the viewport for one small indicator, which is
+       the height the stage should be getting. */
     .mode-info {
-      height: 2.5rem;
+      height: 1.75rem;
+      padding-inline: 0.25rem;
     }
 
     .showcase {
-      gap: 0.75rem;
+      gap: 0.5rem;
       padding: 0.625rem;
-      padding-bottom: 5.5rem;
+      /* Reserves the fixed dock's height (plus a little) so the lane ends just
+         above it rather than under it. */
+      padding-bottom: 5rem;
       border-radius: 1rem;
     }
 
-    .mode-info {
-      padding-inline: 0.375rem;
+    /* Stacked strip foot: exactly the band the cells the pane's WIDTH allows
+       (~69px) need, so it is neither cramped nor padded with empty air. */
+    .animation-area.strip-view .playback-pane {
+      height: clamp(6.5rem, 18dvh, 12rem);
     }
 
     .canvas-container {
       width: 100vw;
       margin-inline: calc(50% - 50vw);
-      /* Not square. AnimatorCanvas's drawing is WIDTH-bound at this size, so the
-         first ~35px of card height below square costs nothing at all, and
-         trading a little more lifts the lane's focus cell above the docked
-         transport — the read-ahead is half of what this page is for. */
-      aspect-ratio: 1 / 0.8;
+      /* The stage takes the height the rest of the phone layout leaves, capped
+         at 4:5 of the width so it never gets gangly on a tall phone. An explicit
+         height (not flex) — AnimatorCanvas collapses its content to 0×0 if its
+         card's height comes from the flex line rather than a definite value.
+
+         The 23.5rem reserve is this tier's measured chrome: content padding,
+         header + margin, showcase padding + gaps, chips row, lane foot, and the
+         dock's reservation. Short phones shrink the stage instead of scrolling. */
+      height: min(80vw, calc(100dvh - 23.5rem));
+      aspect-ratio: auto;
       border-radius: 0;
       border-inline: none;
     }
@@ -1139,8 +1159,15 @@
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
+    /* Into the docked bar's free right end. At `bottom: 5.5rem` it floated
+       directly on top of the moving read-ahead strip and covered a cell; the
+       transport's buttons are centred, so the space right of Skip is empty. */
     .debug-toggle {
-      bottom: 5.5rem;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom));
+      right: 0.5rem;
+      z-index: 6;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.6875rem;
     }
   }
 
