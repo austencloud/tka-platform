@@ -229,7 +229,7 @@ export const FEATURES: FeatureDefinition[] = [
   },
   {
     id: "landing",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/landing/"],
   },
 ];
@@ -242,7 +242,6 @@ const DEV_ONLY_ROUTE_PATTERNS: string[] = [
   "src/routes/test/",
   "src/routes/(dev)/",
   "src/routes/demo/",
-  "src/routes/endless-spinner/",
   "src/routes/render-pictographs/",
   "src/routes/grant-feature/",
   "src/routes/embed/",
