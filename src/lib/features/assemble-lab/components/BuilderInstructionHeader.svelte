@@ -12,10 +12,22 @@
   import BuilderTurnBar from "./BuilderTurnBar.svelte";
   import GridModePicker from "./GridModePicker.svelte";
 
-  let { builderState }: { builderState: AssembleState } = $props();
+  let {
+    builderState,
+    startPositionSetup = false,
+  }: {
+    builderState: AssembleState;
+    startPositionSetup?: boolean;
+  } = $props();
 
   const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
-  const activeHandLabel = $derived(isBlueHand ? "Blue hand" : "Red hand");
+  const activeHandLabel = $derived(
+    startPositionSetup
+      ? "Start position"
+      : isBlueHand
+        ? "Blue hand"
+        : "Red hand"
+  );
   const otherHandLabel = $derived(isBlueHand ? "Red" : "Blue");
   const otherHandSteps = $derived(
     isBlueHand ? builderState.redSteps.length : builderState.blueSteps.length
@@ -23,7 +35,11 @@
   const activeStepCount = $derived(
     isBlueHand ? builderState.blueSteps.length : builderState.redSteps.length
   );
-  const phaseMessage = $derived(getBuilderPhaseInstruction(builderState.phase));
+  const phaseMessage = $derived(
+    startPositionSetup
+      ? "Place and aim both props"
+      : getBuilderPhaseInstruction(builderState.phase)
+  );
   const controlsDisabled = $derived(builderState.phase === "complete");
   const gridStatusLabel = $derived.by(() => {
     const modeLabel =
@@ -38,6 +54,7 @@
   });
 
   const otherHandHint = $derived.by(() => {
+    if (startPositionSetup) return "";
     if (builderState.phase === "complete" || builderState.phase === "idle") {
       return "";
     }
@@ -52,10 +69,18 @@
   });
 </script>
 
-<section class="control-header" aria-label="Assemble controls">
+<section
+  class="control-header"
+  class:start-position-setup={startPositionSetup}
+  aria-label="Assemble controls"
+>
   <div class="primary-row">
     <div class="instruction-block" aria-live="polite" aria-atomic="true">
-      <span class="active-hand" class:blue={isBlueHand} class:red={!isBlueHand}>
+      <span
+        class="active-hand"
+        class:blue={!startPositionSetup && isBlueHand}
+        class:red={!startPositionSetup && !isBlueHand}
+      >
         {activeHandLabel}
       </span>
       <strong class="instruction">{phaseMessage}</strong>
@@ -81,26 +106,30 @@
       {/if}
     </div>
 
-    <div class="control-cell hand-control">
-      <span class="control-label">Hand</span>
-      <BuilderHandPicker
-        activeHand={builderState.activeHand}
-        blueCount={builderState.blueSteps.length}
-        redCount={builderState.redSteps.length}
-        disabled={controlsDisabled}
-        onchange={(hand) => builderState.switchToHand(hand)}
-      />
-    </div>
+    {#if !startPositionSetup}
+      <div class="control-cell hand-control">
+        <span class="control-label">Hand</span>
+        <BuilderHandPicker
+          activeHand={builderState.activeHand}
+          blueCount={builderState.blueSteps.length}
+          redCount={builderState.redSteps.length}
+          disabled={controlsDisabled}
+          onchange={(hand) => builderState.switchToHand(hand)}
+        />
+      </div>
 
-    <div class="control-cell input-control">
-      <span class="control-label">Input</span>
-      <BuilderKeyboardControl {builderState} />
-    </div>
+      <div class="control-cell input-control">
+        <span class="control-label">Input</span>
+        <BuilderKeyboardControl {builderState} />
+      </div>
+    {/if}
   </div>
 
-  <div class="motion-row">
-    <BuilderTurnBar {builderState} />
-  </div>
+  {#if !startPositionSetup}
+    <div class="motion-row">
+      <BuilderTurnBar {builderState} />
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -125,6 +154,10 @@
     align-items: end;
     gap: 12px;
     min-width: 0;
+  }
+
+  .control-header.start-position-setup .primary-row {
+    grid-template-columns: minmax(190px, 1fr) 300px;
   }
 
   .instruction-block {
@@ -247,6 +280,12 @@
 
     .grid-control {
       width: auto;
+    }
+
+    .control-header.start-position-setup .instruction-block {
+      grid-column: auto;
+      align-items: flex-start;
+      text-align: left;
     }
   }
 

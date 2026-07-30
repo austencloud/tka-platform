@@ -8,4 +8,5 @@
   data-testid="placement-pictograph"
   data-blue-location={pictographData.motions.blue?.endLocation}
   data-red-location={pictographData.motions.red?.endLocation}
+  data-beta-swapped={pictographData.betaSwapped === true}
 ></div>

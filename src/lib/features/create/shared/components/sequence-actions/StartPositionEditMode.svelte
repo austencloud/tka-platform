@@ -13,12 +13,14 @@
   interface Props {
     startPositionData: StepData | null;
     stacked?: boolean;
+    compact?: boolean;
     onOrientationChange: (color: MotionColor, orientation: string) => void;
   }
 
   let {
     startPositionData,
     stacked = false,
+    compact = false,
     onOrientationChange,
   }: Props = $props();
 
@@ -37,11 +39,12 @@
     <p>No start position selected</p>
   </div>
 {:else}
-  <PropControlPair {stacked}>
+  <PropControlPair {stacked} {compact}>
     {#snippet blueContent()}
       <PropOrientationControl
         color="blue"
         orientation={blueOrientation}
+        {compact}
         onOrientationChange={(orientation) =>
           onOrientationChange(MotionColor.BLUE, orientation)}
       />
@@ -50,6 +53,7 @@
       <PropOrientationControl
         color="red"
         orientation={redOrientation}
+        {compact}
         onOrientationChange={(orientation) =>
           onOrientationChange(MotionColor.RED, orientation)}
       />

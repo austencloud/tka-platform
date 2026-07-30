@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
@@ -21,8 +22,17 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    MotionColor,
+    Orientation,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    GridLocation,
+    GridMode,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
@@ -75,6 +85,17 @@
   const ctx = getCreateModuleContext();
   const { layout, panelState } = ctx;
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
+  let editorWidth = $state(0);
+  let editorHeight = $state(0);
+  // A landscape phone leaves the right-side editor almost square. Compact
+  // controls keep both orientation cards visible without shrinking the prop
+  // below a comfortable drag target.
+  const isShortWideEditor = $derived(
+    editorWidth >= 400 && editorHeight > 0 && editorHeight <= 520
+  );
+  const startPositionHitTargetRadius = $derived(
+    isShortWideEditor ? 160 : isSideBySideLayout ? 75 : 85
+  );
 
   // Hold onto previous step data during transitions
   // This prevents layout flicker when deleting steps - the controls stay visible
@@ -110,6 +131,41 @@
   // Derived state - use displayed values for rendering to prevent flicker
   const hasSelection = $derived(displayedStepNumber !== null);
   const isStartPositionSelected = $derived(displayedStepNumber === 0);
+  const startBlueMotion = $derived(
+    displayedStepData?.motions?.[MotionColor.BLUE]
+  );
+  const startRedMotion = $derived(
+    displayedStepData?.motions?.[MotionColor.RED]
+  );
+  const startBlueLocation = $derived(
+    isVisibleMotion(startBlueMotion) ? startBlueMotion.startLocation : null
+  );
+  const startRedLocation = $derived(
+    isVisibleMotion(startRedMotion) ? startRedMotion.startLocation : null
+  );
+  const startGridMode = $derived(
+    displayedStepData?.gridMode ??
+      startBlueMotion?.gridMode ??
+      startRedMotion?.gridMode ??
+      GridMode.DIAMOND
+  );
+  const startBluePropType = $derived.by(
+    () =>
+      getSettings().bluePropType ?? startBlueMotion?.propType ?? PropType.STAFF
+  );
+  const startRedPropType = $derived.by(
+    () =>
+      getSettings().redPropType ?? startRedMotion?.propType ?? PropType.STAFF
+  );
+  const canAimStartPosition = $derived(
+    isStartPositionSelected &&
+      startBlueLocation !== null &&
+      startRedLocation !== null
+  );
+  const startPositionUsesCenter = $derived(
+    startBlueLocation === GridLocation.CENTER ||
+      startRedLocation === GridLocation.CENTER
+  );
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -259,7 +315,13 @@
   }
 </script>
 
-<div class="editor-panel" class:desktop={isSideBySideLayout} class:tour-active={stepEditorTourState.isActive}>
+<div
+  class="editor-panel"
+  class:desktop={isSideBySideLayout}
+  class:tour-active={stepEditorTourState.isActive}
+  bind:clientWidth={editorWidth}
+  bind:clientHeight={editorHeight}
+>
     <!-- Step Editor Tour overlay -->
     <StepEditorTour />
 
@@ -346,68 +408,92 @@
       </div>
     </header>
 
-    <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
-    <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
-    {#if hasSelection && displayedStepData}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="preview-section"
-        class:mobile={!isSideBySideLayout}
-        class:tour-highlight={tourHighlight === "preview"}
-        class:tour-dim={tourHighlight !== "none" && tourHighlight !== "preview"}
-        onclick={(e) => {
-          if (hasArrowSelected && !(e.target as HTMLElement).closest('[role="button"]')) {
-            selectedArrowState.clearSelection();
-          }
-        }}
-      >
-        <div class="pictograph-container">
-          <PictographContainer
-            pictographData={displayedStepData}
-            arrowsClickable={isAdmin()}
-            disableTransitions={true}
-            propRenderContext="editor"
-          />
-        </div>
-      </div>
-    {/if}
-
-    <!-- Controls - different layout for mobile vs desktop -->
-    <div
-      class="controls-section"
-      class:mobile={!isSideBySideLayout}
-      class:duration-only={hasSelection && !isStartPositionSelected}
-    >
-      {#if !hasSelection}
-        <div class="no-selection">
-          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-          <p>Select a step to edit</p>
-        </div>
-      {:else if isStartPositionSelected}
-        <StartPositionEditMode
-          startPositionData={displayedStepData}
-          stacked={!isSideBySideLayout}
-          {onOrientationChange}
-        />
-      {:else}
-        {#if onDurationChange}
-          <div
-            class="tour-section"
-            class:tour-highlight={tourHighlight === "duration"}
-            class:tour-dim={tourHighlight !== "none" && tourHighlight !== "duration"}
-          >
-            <DurationControl
-              duration={displayedStepData?.duration ?? 1}
-              compact={!isSideBySideLayout}
-              onDurationChange={onDurationChange}
-            />
+    <div class="editor-content">
+      <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
+      <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
+      {#if hasSelection && displayedStepData}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="preview-section"
+          class:mobile={!isSideBySideLayout}
+          class:tour-highlight={tourHighlight === "preview"}
+          class:tour-dim={tourHighlight !== "none" && tourHighlight !== "preview"}
+          onclick={(e) => {
+            if (hasArrowSelected && !(e.target as HTMLElement).closest('[role="button"]')) {
+              selectedArrowState.clearSelection();
+            }
+          }}
+        >
+          <div class="pictograph-container">
+            {#if canAimStartPosition && startBlueLocation && startRedLocation}
+              <div class="start-position-aim" data-swipe-block>
+                <PropPlacementGrid
+                  gridMode={startGridMode}
+                  bluePropType={startBluePropType}
+                  redPropType={startRedPropType}
+                  blueOrientation={startBlueMotion?.startOrientation ?? Orientation.IN}
+                  redOrientation={startRedMotion?.startOrientation ?? Orientation.IN}
+                  initialBlueLocation={startBlueLocation}
+                  initialRedLocation={startRedLocation}
+                  betaSwapped={displayedStepData.betaSwapped}
+                  showCenter={startPositionUsesCenter}
+                  editAfterCompletion
+                  showUndo={false}
+                  renderTray={false}
+                  hitTargetRadius={startPositionHitTargetRadius}
+                  {onOrientationChange}
+                />
+              </div>
+            {:else}
+              <PictographContainer
+                pictographData={displayedStepData}
+                arrowsClickable={isAdmin()}
+                disableTransitions={true}
+                propRenderContext="editor"
+              />
+            {/if}
           </div>
-        {/if}
-        <!-- Blue/red turns controls now live in the shared, persistent
+        </div>
+      {/if}
+
+      <!-- Controls - different layout for mobile vs desktop -->
+      <div
+        class="controls-section"
+        class:mobile={!isSideBySideLayout}
+        class:duration-only={hasSelection && !isStartPositionSelected}
+      >
+        {#if !hasSelection}
+          <div class="no-selection">
+            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+            <p>Select a step to edit</p>
+          </div>
+        {:else if isStartPositionSelected}
+          <StartPositionEditMode
+            startPositionData={displayedStepData}
+            stacked={!isSideBySideLayout}
+            compact={!isSideBySideLayout || isShortWideEditor}
+            {onOrientationChange}
+          />
+        {:else}
+          {#if onDurationChange}
+            <div
+              class="tour-section"
+              class:tour-highlight={tourHighlight === "duration"}
+              class:tour-dim={tourHighlight !== "none" && tourHighlight !== "duration"}
+            >
+              <DurationControl
+                duration={displayedStepData?.duration ?? 1}
+                compact={!isSideBySideLayout}
+                onDurationChange={onDurationChange}
+              />
+            </div>
+          {/if}
+          <!-- Blue/red turns controls now live in the shared, persistent
              StepControlsZone (rendered by the coordinator below this panel), so
              they morph across single ↔ multi instead of being rebuilt here. -->
-      {/if}
+        {/if}
+      </div>
     </div>
   </div>
 
@@ -436,6 +522,14 @@
     container-name: step-editor;
     /* Whole panel is swipe-draggable — show the grab affordance everywhere */
     cursor: grab;
+  }
+
+  .editor-content {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
   }
 
   /* Restore natural cursors on elements that need their own (cursor inherits) */
@@ -677,6 +771,12 @@
     /* Subtle container styling */
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     border-radius: 12px;
+  }
+
+  .start-position-aim {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   /* ============================================================================

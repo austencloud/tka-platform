@@ -202,6 +202,45 @@ describe("Assemble state invariants", () => {
     expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
   });
 
+  it("sets both starting poses as one reversible document action", () => {
+    const onDocumentChange = vi.fn();
+    const state = createAssembleState({ onDocumentChange });
+
+    state.setStartPoses({
+      [MotionColor.BLUE]: {
+        location: GridLocation.NORTH,
+        orientation: Orientation.OUT,
+      },
+      [MotionColor.RED]: {
+        location: GridLocation.WEST,
+        orientation: Orientation.CLOCK,
+      },
+    });
+
+    expect(state.startPoses).toEqual({
+      [MotionColor.BLUE]: {
+        location: GridLocation.NORTH,
+        orientation: Orientation.OUT,
+      },
+      [MotionColor.RED]: {
+        location: GridLocation.WEST,
+        orientation: Orientation.CLOCK,
+      },
+    });
+    expect(state.phase).toBe("placing");
+    expect(state.activeHand).toBe(MotionColor.BLUE);
+    expect(state.currentPosition).toBe(GridLocation.NORTH);
+    expect(state.undoLabel).toBe("Set start position");
+    expect(onDocumentChange).toHaveBeenCalledTimes(1);
+
+    expect(state.undoStep()).toBe(true);
+    expect(state.startPoses).toEqual({});
+    expect(state.phase).toBe("idle");
+
+    expect(state.redoStep()).toBe(true);
+    expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
+  });
+
   it("restores a starting pose removed by a grid change", () => {
     const state = createAssembleState();
     state.handlePointClick(GridLocation.NORTH);

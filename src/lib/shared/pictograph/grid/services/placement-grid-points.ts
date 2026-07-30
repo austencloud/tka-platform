@@ -42,17 +42,27 @@ const LOCATION_LABELS: Record<GridLocation, string> = {
  * and Learn share this adapter so their hit targets cannot drift apart.
  */
 export function getPlacementGridPoints(
-  gridMode: GridMode
+  gridMode: GridMode,
+  showCenter = false
 ): PlacementGridPoint[] {
-  if (gridMode !== GridMode.DIAMOND && gridMode !== GridMode.BOX) {
+  if (
+    gridMode !== GridMode.DIAMOND &&
+    gridMode !== GridMode.BOX &&
+    gridMode !== GridMode.SKEWED
+  ) {
     throw new Error(`Placement is unavailable for grid mode: ${gridMode}`);
   }
 
-  const pointData = createGridPointData(gridMode).allHandPointsNormal;
+  const gridPointData = createGridPointData(gridMode);
+  const pointData = gridPointData.allHandPointsNormal;
   const locations =
-    gridMode === GridMode.DIAMOND ? DIAMOND_LOCATIONS : BOX_LOCATIONS;
+    gridMode === GridMode.DIAMOND
+      ? DIAMOND_LOCATIONS
+      : gridMode === GridMode.BOX
+        ? BOX_LOCATIONS
+        : [...DIAMOND_LOCATIONS, ...BOX_LOCATIONS];
 
-  return locations.map((location) => {
+  const points: PlacementGridPoint[] = locations.map((location) => {
     const key = Object.keys(pointData).find((candidate) =>
       candidate.startsWith(`${location}_`)
     );
@@ -71,4 +81,19 @@ export function getPlacementGridPoints(
       y: coordinates.y,
     };
   });
+
+  if (showCenter) {
+    const center = gridPointData.centerPoint.coordinates;
+    if (!center) {
+      throw new Error(`Missing canonical ${gridMode} center placement point`);
+    }
+    points.push({
+      location: GridLocation.CENTER,
+      label: LOCATION_LABELS[GridLocation.CENTER],
+      x: center.x,
+      y: center.y,
+    });
+  }
+
+  return points;
 }

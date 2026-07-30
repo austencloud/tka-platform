@@ -32,12 +32,23 @@ export interface StartPositionPlacement {
 }
 
 export class StartPositionManager {
-
-  async getStartPositions(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): Promise<PictographData[]> {
-    return this.getDefaultStartPositions(gridMode, blueOrientation, redOrientation);
+  async getStartPositions(
+    gridMode: GridMode,
+    blueOrientation?: Orientation,
+    redOrientation?: Orientation
+  ): Promise<PictographData[]> {
+    return this.getDefaultStartPositions(
+      gridMode,
+      blueOrientation,
+      redOrientation
+    );
   }
 
-  getDefaultStartPositions(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): PictographData[] {
+  getDefaultStartPositions(
+    gridMode: GridMode,
+    blueOrientation?: Orientation,
+    redOrientation?: Orientation
+  ): PictographData[] {
     // Define start position locations based on grid mode
     const startPositionKeys =
       gridMode === "diamond"
@@ -52,10 +63,19 @@ export class StartPositionManager {
             { position: GridPosition.GAMMA12, letter: Letter.GAMMA },
           ];
 
-    return this.createPictographsFromPositions(startPositionKeys, gridMode, blueOrientation, redOrientation);
+    return this.createPictographsFromPositions(
+      startPositionKeys,
+      gridMode,
+      blueOrientation,
+      redOrientation
+    );
   }
 
-  getAllStartPositionVariations(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): PictographData[] {
+  getAllStartPositionVariations(
+    gridMode: GridMode,
+    blueOrientation?: Orientation,
+    redOrientation?: Orientation
+  ): PictographData[] {
     // Get all 16 start position variations for the specified grid mode
     // Based on legacy advanced start position picker
     const allVariations =
@@ -99,7 +119,12 @@ export class StartPositionManager {
             { position: GridPosition.GAMMA16, letter: Letter.GAMMA },
           ];
 
-    return this.createPictographsFromPositions(allVariations, gridMode, blueOrientation, redOrientation);
+    return this.createPictographsFromPositions(
+      allVariations,
+      gridMode,
+      blueOrientation,
+      redOrientation
+    );
   }
 
   private createPictographsFromPositions(
@@ -212,6 +237,8 @@ export class StartPositionManager {
     if (position.startsWith("alpha")) return Letter.ALPHA;
     if (position.startsWith("beta")) return Letter.BETA;
     if (position.startsWith("gamma")) return Letter.GAMMA;
+    if (position.startsWith("zeta")) return Letter.ZETA;
+    if (position.startsWith("eta")) return Letter.ETA;
 
     throw new Error(`Unsupported Construct start position: ${position}`);
   }

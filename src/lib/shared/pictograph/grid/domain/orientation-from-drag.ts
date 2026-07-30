@@ -1,4 +1,4 @@
-import { GridLocation, GridMode } from "./enums/grid-enums";
+import { GridLocation, type GridMode } from "./enums/grid-enums";
 import { Orientation } from "../../shared/domain/enums/pictograph-enums";
 import PropRotAngleManager from "../../prop/services/prop-rot-angle-manager";
 
@@ -35,6 +35,40 @@ const SNAP_ORIENTATIONS: readonly Orientation[] = [
   Orientation.COUNTER,
 ];
 
+/** At center there is no radial reference, so aiming uses the absolute
+ * compass family instead. Eight directions match the center orientation
+ * vocabulary and keep a drag aligned with the direction the prop renders. */
+const CENTER_SNAP_ORIENTATIONS: readonly Orientation[] = [
+  Orientation.CENTER_N,
+  Orientation.CENTER_NE,
+  Orientation.CENTER_E,
+  Orientation.CENTER_SE,
+  Orientation.CENTER_S,
+  Orientation.CENTER_SW,
+  Orientation.CENTER_W,
+  Orientation.CENTER_NW,
+];
+
+const CENTER_ORIENTATION_SET = new Set<Orientation>(CENTER_SNAP_ORIENTATIONS);
+
+/**
+ * Keep the orientation family valid when a prop moves into or out of center.
+ * The next drag can refine the aim, but a plain tap must still produce a valid
+ * held pose.
+ */
+export function normalizeOrientationForLocation(
+  orientation: Orientation,
+  location: GridLocation
+): Orientation {
+  if (location === GridLocation.CENTER) {
+    return CENTER_ORIENTATION_SET.has(orientation)
+      ? orientation
+      : Orientation.CENTER_N;
+  }
+
+  return CENTER_ORIENTATION_SET.has(orientation) ? Orientation.IN : orientation;
+}
+
 function normalizeDegrees(angle: number): number {
   return ((angle % 360) + 360) % 360;
 }
@@ -68,18 +102,20 @@ export function orientationFromDrag({
   dy,
   deadZone = DRAG_AIM_DEAD_ZONE,
 }: OrientationFromDragInput): Orientation | null {
-  // Radial orientation has no meaning at the center — there's no outward.
-  if (location === GridLocation.CENTER) return null;
   if (Math.hypot(dx, dy) < deadZone) return null;
 
   // SVG y grows downward, which is exactly the convention the rotation manager
   // documents, so no sign flip is needed here.
   const dragAngle = normalizeDegrees((Math.atan2(dy, dx) * 180) / Math.PI);
+  const candidates =
+    location === GridLocation.CENTER
+      ? CENTER_SNAP_ORIENTATIONS
+      : SNAP_ORIENTATIONS;
 
   let best: Orientation | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
 
-  for (const orientation of SNAP_ORIENTATIONS) {
+  for (const orientation of candidates) {
     const renderedAngle = PropRotAngleManager.calculateRotation(
       location,
       orientation,
@@ -104,9 +140,12 @@ export function aimDirectionsFor(
   location: GridLocation,
   gridMode: GridMode
 ): { orientation: Orientation; angle: number }[] {
-  if (location === GridLocation.CENTER) return [];
+  const candidates =
+    location === GridLocation.CENTER
+      ? CENTER_SNAP_ORIENTATIONS
+      : SNAP_ORIENTATIONS;
 
-  return SNAP_ORIENTATIONS.map((orientation) => ({
+  return candidates.map((orientation) => ({
     orientation,
     angle: normalizeDegrees(
       PropRotAngleManager.calculateRotation(location, orientation, gridMode)

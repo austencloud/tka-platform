@@ -10,6 +10,7 @@ import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { normalizeOrientationForLocation } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
 import {
   MotionColor,
   Orientation,
@@ -115,6 +116,7 @@ export interface AssembleState {
   ): void;
   hydrateFromSequence(snapshot: AssembleStateHydration): void;
   reset(): void;
+  setStartPoses(poses: Record<MotionColor, BuilderStartPose>): void;
   setRotationDirection(dir: RotationDirection): void;
   setTurnCount(turns: number): void;
   setOrientation(ori: Orientation): void;
@@ -689,6 +691,58 @@ export function createAssembleState(
     recordSnapshot("Clear sequence", before);
   }
 
+  function setStartPoses(poses: Record<MotionColor, BuilderStartPose>): void {
+    if (
+      phase === "animating" ||
+      phase === "complete" ||
+      blueSteps.length > 0 ||
+      redSteps.length > 0
+    ) {
+      return;
+    }
+
+    const blue = poses[MotionColor.BLUE];
+    const red = poses[MotionColor.RED];
+    if (
+      !blue ||
+      !red ||
+      !isLocationValidForMode(blue.location, gridMode, showCenter) ||
+      !isLocationValidForMode(red.location, gridMode, showCenter)
+    ) {
+      return;
+    }
+
+    const nextPoses: Record<MotionColor, BuilderStartPose> = {
+      [MotionColor.BLUE]: {
+        location: blue.location,
+        orientation: normalizeOrientationForLocation(
+          blue.orientation,
+          blue.location
+        ),
+      },
+      [MotionColor.RED]: {
+        location: red.location,
+        orientation: normalizeOrientationForLocation(
+          red.orientation,
+          red.location
+        ),
+      },
+    };
+    if (JSON.stringify(startPoses) === JSON.stringify(nextPoses)) return;
+
+    const before = takeSnapshot();
+    startPoses = nextPoses;
+    activeHand = MotionColor.BLUE;
+    currentPosition = nextPoses[MotionColor.BLUE].location;
+    currentOrientation = nextPoses[MotionColor.BLUE].orientation;
+    phase = "placing";
+    selectedStepIndex = null;
+    stepEditMode = null;
+    showOrientationArrow = false;
+    notifyDocumentChange();
+    recordSnapshot("Set start position", before);
+  }
+
   function setRotationDirection(dir: RotationDirection): void {
     rotationDirection = dir;
   }
@@ -904,6 +958,7 @@ export function createAssembleState(
     hydrateFromExternalSequence,
     hydrateFromSequence,
     reset,
+    setStartPoses,
     setRotationDirection,
     setTurnCount,
     setOrientation,

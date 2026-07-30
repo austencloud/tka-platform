@@ -4,6 +4,7 @@ import { Orientation } from "../../../shared/domain/enums/pictograph-enums";
 import {
   DRAG_AIM_DEAD_ZONE,
   aimDirectionsFor,
+  normalizeOrientationForLocation,
   orientationFromDrag,
 } from "../orientation-from-drag";
 
@@ -55,12 +56,12 @@ describe("orientationFromDrag", () => {
 
   it("works on the box grid's intercardinal points", () => {
     // Northeast: toward center is southwest.
-    expect(
-      aim(GridLocation.NORTHEAST, -FAR, FAR, GridMode.BOX)
-    ).toBe(Orientation.IN);
-    expect(
-      aim(GridLocation.NORTHEAST, FAR, -FAR, GridMode.BOX)
-    ).toBe(Orientation.OUT);
+    expect(aim(GridLocation.NORTHEAST, -FAR, FAR, GridMode.BOX)).toBe(
+      Orientation.IN
+    );
+    expect(aim(GridLocation.NORTHEAST, FAR, -FAR, GridMode.BOX)).toBe(
+      Orientation.OUT
+    );
   });
 
   it("returns null inside the dead zone so a tap never re-aims", () => {
@@ -71,8 +72,9 @@ describe("orientationFromDrag", () => {
     );
   });
 
-  it("returns null at the center, where there is no outward", () => {
-    expect(aim(GridLocation.CENTER, 0, -FAR)).toBeNull();
+  it("uses absolute compass orientations at the center", () => {
+    expect(aim(GridLocation.CENTER, 0, -FAR)).toBe(Orientation.CENTER_N);
+    expect(aim(GridLocation.CENTER, FAR, FAR)).toBe(Orientation.CENTER_SE);
   });
 });
 
@@ -100,7 +102,43 @@ describe("aimDirectionsFor", () => {
     expect(byOrientation.get(Orientation.COUNTER)).toBe(270);
   });
 
-  it("has no directions at the center", () => {
-    expect(aimDirectionsFor(GridLocation.CENTER, GridMode.DIAMOND)).toEqual([]);
+  it("offers the eight absolute compass directions at the center", () => {
+    expect(
+      aimDirectionsFor(GridLocation.CENTER, GridMode.DIAMOND).map(
+        (direction) => direction.orientation
+      )
+    ).toEqual([
+      Orientation.CENTER_N,
+      Orientation.CENTER_NE,
+      Orientation.CENTER_E,
+      Orientation.CENTER_SE,
+      Orientation.CENTER_S,
+      Orientation.CENTER_SW,
+      Orientation.CENTER_W,
+      Orientation.CENTER_NW,
+    ]);
+  });
+});
+
+describe("normalizeOrientationForLocation", () => {
+  it("switches orientation families when a prop crosses the center boundary", () => {
+    expect(
+      normalizeOrientationForLocation(Orientation.OUT, GridLocation.CENTER)
+    ).toBe(Orientation.CENTER_N);
+    expect(
+      normalizeOrientationForLocation(Orientation.CENTER_W, GridLocation.EAST)
+    ).toBe(Orientation.IN);
+  });
+
+  it("preserves an orientation already valid for its location", () => {
+    expect(
+      normalizeOrientationForLocation(Orientation.COUNTER, GridLocation.NORTH)
+    ).toBe(Orientation.COUNTER);
+    expect(
+      normalizeOrientationForLocation(
+        Orientation.CENTER_SW,
+        GridLocation.CENTER
+      )
+    ).toBe(Orientation.CENTER_SW);
   });
 });

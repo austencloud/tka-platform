@@ -119,6 +119,46 @@ describe("PropPlacementGrid", () => {
     );
   });
 
+  it("re-aims a prop from an already-complete position", async () => {
+    const onOrientationChange = vi.fn();
+    render(PropPlacementGrid, {
+      gridMode: GridMode.DIAMOND,
+      initialBlueLocation: GridLocation.EAST,
+      initialRedLocation: GridLocation.WEST,
+      betaSwapped: true,
+      editAfterCompletion: true,
+      renderTray: false,
+      hitTargetRadius: 160,
+      onOrientationChange,
+    });
+
+    await expect
+      .element(page.getByTestId("placement-prompt"))
+      .toHaveTextContent("Drag a prop to aim it");
+    await expect
+      .element(page.getByTestId("placement-pictograph"))
+      .toHaveAttribute("data-beta-swapped", "true");
+
+    const east = page.getByRole("button", {
+      name: "East point (left prop)",
+    });
+    expect((east.element() as SVGCircleElement).getAttribute("r")).toBe("160");
+    const rect = (east.element() as SVGCircleElement).getBoundingClientRect();
+    const from = {
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height / 2,
+    };
+    await commands.dispatchRealTouchDrag(from, {
+      x: from.x + 80,
+      y: from.y,
+    });
+
+    expect(onOrientationChange).toHaveBeenCalledWith(
+      MotionColor.BLUE,
+      Orientation.OUT
+    );
+  });
+
   it("supports keyboard placement on the Box grid", async () => {
     const onChange = vi.fn();
     render(PropPlacementGrid, {
@@ -142,5 +182,22 @@ describe("PropPlacementGrid", () => {
       complete: false,
       canUndo: true,
     });
+  });
+
+  it("offers merged and center placement with center-safe aiming", async () => {
+    const onOrientationChange = vi.fn();
+    render(PropPlacementGrid, {
+      gridMode: GridMode.SKEWED,
+      showCenter: true,
+      onOrientationChange,
+    });
+
+    expect(document.querySelectorAll(".click-target")).toHaveLength(9);
+    await page.getByRole("button", { name: "Center point" }).click();
+
+    expect(onOrientationChange).toHaveBeenCalledWith(
+      MotionColor.BLUE,
+      Orientation.CENTER_N
+    );
   });
 });

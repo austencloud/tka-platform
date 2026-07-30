@@ -11,6 +11,7 @@ import {
   MotionColor,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 describe("direct start-position placement", () => {
   const manager = new StartPositionManager();
@@ -86,7 +87,25 @@ describe("direct start-position placement", () => {
     });
   });
 
-  it("uses the canonical rendered hand points for both supported grids", () => {
+  it("names merged-grid zeta and eta placements", () => {
+    const zeta = manager.createStartPositionFromLocations({
+      blueLocation: GridLocation.SOUTHWEST,
+      redLocation: GridLocation.NORTH,
+      gridMode: GridMode.SKEWED,
+    });
+    const eta = manager.createStartPositionFromLocations({
+      blueLocation: GridLocation.NORTH,
+      redLocation: GridLocation.NORTHEAST,
+      gridMode: GridMode.SKEWED,
+    });
+
+    expect(zeta.startPosition).toBe(GridPosition.ZETA1);
+    expect(zeta.letter).toBe(Letter.ZETA);
+    expect(eta.startPosition).toBe(GridPosition.ETA2);
+    expect(eta.letter).toBe(Letter.ETA);
+  });
+
+  it("uses the canonical rendered hand points for every supported grid", () => {
     expect(getPlacementGridPoints(GridMode.DIAMOND)).toEqual([
       { location: GridLocation.NORTH, label: "North", x: 475, y: 331.9 },
       { location: GridLocation.EAST, label: "East", x: 618.1, y: 475 },
@@ -120,5 +139,25 @@ describe("direct start-position placement", () => {
         y: 373.8,
       },
     ]);
+
+    expect(
+      getPlacementGridPoints(GridMode.SKEWED).map((point) => point.location)
+    ).toEqual([
+      GridLocation.NORTH,
+      GridLocation.EAST,
+      GridLocation.SOUTH,
+      GridLocation.WEST,
+      GridLocation.NORTHEAST,
+      GridLocation.SOUTHEAST,
+      GridLocation.SOUTHWEST,
+      GridLocation.NORTHWEST,
+    ]);
+
+    expect(getPlacementGridPoints(GridMode.SKEWED, true).at(-1)).toEqual({
+      location: GridLocation.CENTER,
+      label: "Center",
+      x: 475,
+      y: 475,
+    });
   });
 });

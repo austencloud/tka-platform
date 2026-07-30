@@ -15,6 +15,7 @@
   import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
   import {
     aimDirectionsFor,
+    normalizeOrientationForLocation,
     orientationFromDrag,
   } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
   import { getPlacementGridPoints } from "$lib/shared/pictograph/grid/services/placement-grid-points";
@@ -33,6 +34,8 @@
     blueLocation: GridLocation | null;
     redLocation: GridLocation | null;
     activeColor: MotionColor | null;
+    blueOrientation: Orientation;
+    redOrientation: Orientation;
   }
 
   interface Props {
@@ -43,6 +46,9 @@
     redOrientation?: Orientation;
     initialBlueLocation?: GridLocation | null;
     initialRedLocation?: GridLocation | null;
+    betaSwapped?: boolean;
+    showCenter?: boolean;
+    hitTargetRadius?: number;
     editAfterCompletion?: boolean;
     disabled?: boolean;
     blueNoun?: string;
@@ -85,6 +91,9 @@
     redOrientation = Orientation.IN,
     initialBlueLocation = null,
     initialRedLocation = null,
+    betaSwapped = false,
+    showCenter = false,
+    hitTargetRadius = 75,
     editAfterCompletion = false,
     disabled = false,
     // Left is the blue prop, right is the red one — the naming the rest of the
@@ -149,7 +158,7 @@
     // Haptics are optional on desktop and during SSR.
   }
 
-  const activePoints = $derived(getPlacementGridPoints(gridMode));
+  const activePoints = $derived(getPlacementGridPoints(gridMode, showCenter));
   const isComplete = $derived(blueLocation !== null && redLocation !== null);
   const canPlace = $derived(!disabled && activeColor !== null);
   const canAim = $derived(!disabled && onOrientationChange !== undefined);
@@ -159,12 +168,16 @@
   const shownBlueOrientation = $derived(
     pendingOrientation?.color === MotionColor.BLUE
       ? pendingOrientation.orientation
-      : blueOrientation
+      : blueLocation
+        ? normalizeOrientationForLocation(blueOrientation, blueLocation)
+        : blueOrientation
   );
   const shownRedOrientation = $derived(
     pendingOrientation?.color === MotionColor.RED
       ? pendingOrientation.orientation
-      : redOrientation
+      : redLocation
+        ? normalizeOrientationForLocation(redOrientation, redLocation)
+        : redOrientation
   );
 
   const dragPoint = $derived(
@@ -189,6 +202,14 @@
     [Orientation.OUT]: "Out",
     [Orientation.CLOCK]: "Clock",
     [Orientation.COUNTER]: "Counter",
+    [Orientation.CENTER_N]: "North",
+    [Orientation.CENTER_NE]: "Northeast",
+    [Orientation.CENTER_E]: "East",
+    [Orientation.CENTER_SE]: "Southeast",
+    [Orientation.CENTER_S]: "South",
+    [Orientation.CENTER_SW]: "Southwest",
+    [Orientation.CENTER_W]: "West",
+    [Orientation.CENTER_NW]: "Northwest",
   };
 
   /** The prompt is split so the prop it names can carry that prop's colour.
@@ -213,16 +234,15 @@
     // occludes — is where the current aim reads back.
     if (dragColor !== null && dragAim !== null) {
       const noun = dragColor === MotionColor.BLUE ? blueNoun : redNoun;
-      return build(
-        noun,
-        dragColor,
-        "Aiming the",
-        AIM_LABELS[dragAim] ?? null
-      );
+      return build(noun, dragColor, "Aiming the", AIM_LABELS[dragAim] ?? null);
     }
     if (activeColor === MotionColor.BLUE) {
       if (blueLocation !== null)
-        return build(blueNoun, MotionColor.BLUE, "Choose a new location for the");
+        return build(
+          blueNoun,
+          MotionColor.BLUE,
+          "Choose a new location for the"
+        );
       return build(
         blueNoun,
         MotionColor.BLUE,
@@ -245,7 +265,9 @@
     promptParts
       ? `${promptParts.lead} ${promptParts.noun}${promptParts.aim ? `: ${promptParts.aim}` : ""}`
       : !disabled && isComplete
-        ? "Position ready"
+        ? canAim
+          ? "Drag a prop to aim it"
+          : "Position ready"
         : ""
   );
 
@@ -308,6 +330,7 @@
       startPosition: null,
       endPosition: null,
       gridMode,
+      betaSwapped,
       motions,
     } satisfies PictographData;
   });
@@ -339,8 +362,26 @@
         blueLocation,
         redLocation,
         activeColor,
+        blueOrientation: blueLocation
+          ? normalizeOrientationForLocation(blueOrientation, blueLocation)
+          : blueOrientation,
+        redOrientation: redLocation
+          ? normalizeOrientationForLocation(redOrientation, redLocation)
+          : redOrientation,
       },
     ];
+  }
+
+  function normalizePlacedOrientation(
+    color: MotionColor,
+    location: GridLocation
+  ): Orientation {
+    const current = committedOrientationFor(color);
+    const normalized = normalizeOrientationForLocation(current, location);
+    if (normalized !== current) {
+      onOrientationChange?.(color, normalized);
+    }
+    return normalized;
   }
 
   function labelForLocation(location: GridLocation | null): string {
@@ -358,6 +399,7 @@
 
     const label = labelForLocation(location);
     pushHistory();
+    normalizePlacedOrientation(color, location);
 
     if (color === MotionColor.BLUE) {
       blueLocation = location;
@@ -407,10 +449,9 @@
   function toSvgPoint(event: PointerEvent): { x: number; y: number } | null {
     const matrix = overlayElement?.getScreenCTM();
     if (!matrix) return null;
-    const point = new DOMPoint(
-      event.clientX,
-      event.clientY
-    ).matrixTransform(matrix.inverse());
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+      matrix.inverse()
+    );
     return { x: point.x, y: point.y };
   }
 
@@ -439,7 +480,10 @@
     dragPointerId = event.pointerId;
     dragColor = color;
     dragLocation = location;
-    dragAim = committedOrientationFor(color);
+    dragAim = normalizeOrientationForLocation(
+      committedOrientationFor(color),
+      location
+    );
   }
 
   function handlePointerMove(event: PointerEvent) {
@@ -514,6 +558,12 @@
     redLocation = previous.redLocation;
     activeColor = previous.activeColor;
     history = history.slice(0, -1);
+    if (blueOrientation !== previous.blueOrientation) {
+      onOrientationChange?.(MotionColor.BLUE, previous.blueOrientation);
+    }
+    if (redOrientation !== previous.redOrientation) {
+      onOrientationChange?.(MotionColor.RED, previous.redOrientation);
+    }
     hapticService?.trigger("selection");
     liveAnnouncement =
       activeColor === MotionColor.RED
@@ -606,7 +656,7 @@
   });
 
   $effect(() => {
-    const nextInitializationKey = `${gridMode}:${initialBlueLocation ?? ""}:${initialRedLocation ?? ""}`;
+    const nextInitializationKey = `${gridMode}:${showCenter}:${initialBlueLocation ?? ""}:${initialRedLocation ?? ""}`;
     if (nextInitializationKey === initializationKey) return;
 
     untrack(() => {
@@ -673,189 +723,190 @@
        the host was wide and short (the composer embed), which is what made the
        pictograph read as a speck. -->
   <div class="grid-area">
-  <div class="grid-wrapper">
-    <div class="pictograph-layer">
-      <PictographContainer
-        {pictographData}
-        {gridMode}
-        showTKA={false}
-        showReversals={false}
-        showTnD={false}
-        showElemental={false}
-        showPositions={false}
-        disableTransitions={true}
-        cellIndex={null}
-        bluePropTypeOverride={bluePropType}
-        redPropTypeOverride={redPropType}
-        propRenderContext="editor"
-      />
-    </div>
+    <div class="grid-wrapper">
+      <div class="pictograph-layer">
+        <PictographContainer
+          {pictographData}
+          {gridMode}
+          showTKA={false}
+          showReversals={false}
+          showTnD={false}
+          showElemental={false}
+          showPositions={false}
+          disableTransitions={true}
+          cellIndex={null}
+          bluePropTypeOverride={bluePropType}
+          redPropTypeOverride={redPropType}
+          propRenderContext="editor"
+        />
+      </div>
 
-    <svg
-      viewBox="0 0 950 950"
-      class="interaction-overlay"
-      bind:this={overlayElement}
-    >
-      <g class="touch-indicators">
-        {#each activePoints as point (point.location)}
-          {#if canPlace}
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="40"
-              fill={pulseColor}
-              class="point-glow"
-            />
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="18"
-              fill={pulseColor}
-              opacity="0.5"
-              class="point-solid"
-            />
-          {/if}
-        {/each}
-      </g>
+      <svg
+        viewBox="0 0 950 950"
+        class="interaction-overlay"
+        bind:this={overlayElement}
+      >
+        <g class="touch-indicators">
+          {#each activePoints as point (point.location)}
+            {#if canPlace}
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="40"
+                fill={pulseColor}
+                class="point-glow"
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="18"
+                fill={pulseColor}
+                opacity="0.5"
+                class="point-solid"
+              />
+            {/if}
+          {/each}
+        </g>
 
-      <!-- Aim halo: while a drag is live, the prop being aimed wears a soft
+        <!-- Aim halo: while a drag is live, the prop being aimed wears a soft
            ring in its own colour. The overlay sits ABOVE the pictograph, so
            this is a blurred screen-blended ring rather than a filled disc —
            it reads as light around the prop instead of paint over it. -->
-      {#if dragPoint && dragColor}
-        <circle
-          cx={dragPoint.x}
-          cy={dragPoint.y}
-          r="56"
-          fill="none"
-          class="aim-halo"
-          stroke={dragColor === MotionColor.RED
-            ? "var(--prop-red, #ef4444)"
-            : "var(--prop-blue, #3b82f6)"}
-          aria-hidden="true"
-        />
-      {/if}
+        {#if dragPoint && dragColor}
+          <circle
+            cx={dragPoint.x}
+            cy={dragPoint.y}
+            r="56"
+            fill="none"
+            class="aim-halo"
+            stroke={dragColor === MotionColor.RED
+              ? "var(--prop-red, #ef4444)"
+              : "var(--prop-blue, #3b82f6)"}
+            aria-hidden="true"
+          />
+        {/if}
 
-      <!-- Aim ticks: the four directions this point can be aimed, drawn only
+        <!-- Aim ticks: the four directions this point can be aimed, drawn only
            while dragging so they teach the gesture without cluttering the
            resting grid. Same source as the snap, so a tick can never point
            somewhere the release won't land. -->
-      {#if dragPoint && dragColor}
-        <g class="aim-ticks" aria-hidden="true">
-          {#each aimDirections as direction (direction.orientation)}
-            {@const radians = (direction.angle * Math.PI) / 180}
-            {@const cos = Math.cos(radians)}
-            {@const sin = Math.sin(radians)}
-            <line
-              x1={dragPoint.x + cos * 72}
-              y1={dragPoint.y + sin * 72}
-              x2={dragPoint.x + cos * 138}
-              y2={dragPoint.y + sin * 138}
-              class="aim-tick"
-              class:aimed={direction.orientation === dragAim}
-              stroke={dragColor === MotionColor.RED
-                ? "var(--prop-red, #ef4444)"
-                : "var(--prop-blue, #3b82f6)"}
+        {#if dragPoint && dragColor}
+          <g class="aim-ticks" aria-hidden="true">
+            {#each aimDirections as direction (direction.orientation)}
+              {@const radians = (direction.angle * Math.PI) / 180}
+              {@const cos = Math.cos(radians)}
+              {@const sin = Math.sin(radians)}
+              <line
+                x1={dragPoint.x + cos * 72}
+                y1={dragPoint.y + sin * 72}
+                x2={dragPoint.x + cos * 138}
+                y2={dragPoint.y + sin * 138}
+                class="aim-tick"
+                class:aimed={direction.orientation === dragAim}
+                stroke={dragColor === MotionColor.RED
+                  ? "var(--prop-red, #ef4444)"
+                  : "var(--prop-blue, #3b82f6)"}
+              />
+            {/each}
+          </g>
+        {/if}
+
+        <g class="click-targets">
+          {#each activePoints as point (point.location)}
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={hitTargetRadius}
+              fill="transparent"
+              class="click-target"
+              class:tappable={isPressable(point.location)}
+              onpointerdown={(event) =>
+                handlePointerDown(event, point.location)}
+              onclick={() => {
+                // A pointer press already placed this one; don't place it twice.
+                if (pointerHandledPress) {
+                  pointerHandledPress = false;
+                  return;
+                }
+                handlePointSelect(point.location);
+              }}
+              onkeydown={(event) => handleKeydown(event, point.location)}
+              role="button"
+              tabindex={isPressable(point.location) ? 0 : -1}
+              aria-label="{point.label} point{isBlueAt(point.location)
+                ? ` (${blueNoun})`
+                : ''}{isRedAt(point.location) ? ` (${redNoun})` : ''}"
+              aria-disabled={!isPressable(point.location)}
             />
           {/each}
         </g>
-      {/if}
 
-      <g class="click-targets">
-        {#each activePoints as point (point.location)}
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="75"
-            fill="transparent"
-            class="click-target"
-            class:tappable={isPressable(point.location)}
-            onpointerdown={(event) => handlePointerDown(event, point.location)}
-            onclick={() => {
-              // A pointer press already placed this one; don't place it twice.
-              if (pointerHandledPress) {
-                pointerHandledPress = false;
-                return;
-              }
-              handlePointSelect(point.location);
-            }}
-            onkeydown={(event) => handleKeydown(event, point.location)}
-            role="button"
-            tabindex={isPressable(point.location) ? 0 : -1}
-            aria-label="{point.label} point{isBlueAt(point.location)
-              ? ` (${blueNoun})`
-              : ''}{isRedAt(point.location) ? ` (${redNoun})` : ''}"
-            aria-disabled={!isPressable(point.location)}
-          />
-        {/each}
-      </g>
-
-      {#if showGuideLines && guideLineType && guideLineLocations}
-        {@const coordinates = getGuideCoordinates()}
-        {#if coordinates}
-          <g class="guide-lines">
-            {#if guideLineType === "alpha"}
-              <line
-                x1={coordinates.blue.x}
-                y1={coordinates.blue.y}
-                x2={coordinates.red.x}
-                y2={coordinates.red.y}
-                stroke="rgba(0, 0, 0, 0.4)"
-                stroke-width="4"
-                stroke-dasharray="15 10"
-              />
-              <circle cx="475" cy="475" r="10" fill="rgba(0, 0, 0, 0.3)" />
-            {:else if guideLineType === "beta"}
-              {#each [30, 50, 70] as radius, index}
-                <circle
-                  cx={coordinates.blue.x}
-                  cy={coordinates.blue.y}
-                  r={radius}
-                  fill="none"
-                  stroke="rgba(0, 0, 0, 0.3)"
-                  stroke-width="2.5"
-                  class="beta-ripple"
-                  style:animation-delay={`${index * 0.3}s`}
+        {#if showGuideLines && guideLineType && guideLineLocations}
+          {@const coordinates = getGuideCoordinates()}
+          {#if coordinates}
+            <g class="guide-lines">
+              {#if guideLineType === "alpha"}
+                <line
+                  x1={coordinates.blue.x}
+                  y1={coordinates.blue.y}
+                  x2={coordinates.red.x}
+                  y2={coordinates.red.y}
+                  stroke="rgba(0, 0, 0, 0.4)"
+                  stroke-width="4"
+                  stroke-dasharray="15 10"
                 />
-              {/each}
-            {:else}
-              <line
-                x1="475"
-                y1="475"
-                x2={coordinates.blue.x}
-                y2={coordinates.blue.y}
-                stroke="rgba(0, 0, 0, 0.25)"
-                stroke-width="2.5"
-                stroke-dasharray="10 8"
-              />
-              <line
-                x1="475"
-                y1="475"
-                x2={coordinates.red.x}
-                y2={coordinates.red.y}
-                stroke="rgba(0, 0, 0, 0.25)"
-                stroke-width="2.5"
-                stroke-dasharray="10 8"
-              />
-              <path
-                d={computeGammaArc()}
-                fill="none"
-                stroke="rgba(0, 0, 0, 0.4)"
-                stroke-width="4"
-              />
-              <text
-                x="475"
-                y="450"
-                text-anchor="middle"
-                fill="rgba(0, 0, 0, 0.4)"
-                font-size="32">90°</text
-              >
-            {/if}
-          </g>
+                <circle cx="475" cy="475" r="10" fill="rgba(0, 0, 0, 0.3)" />
+              {:else if guideLineType === "beta"}
+                {#each [30, 50, 70] as radius, index}
+                  <circle
+                    cx={coordinates.blue.x}
+                    cy={coordinates.blue.y}
+                    r={radius}
+                    fill="none"
+                    stroke="rgba(0, 0, 0, 0.3)"
+                    stroke-width="2.5"
+                    class="beta-ripple"
+                    style:animation-delay={`${index * 0.3}s`}
+                  />
+                {/each}
+              {:else}
+                <line
+                  x1="475"
+                  y1="475"
+                  x2={coordinates.blue.x}
+                  y2={coordinates.blue.y}
+                  stroke="rgba(0, 0, 0, 0.25)"
+                  stroke-width="2.5"
+                  stroke-dasharray="10 8"
+                />
+                <line
+                  x1="475"
+                  y1="475"
+                  x2={coordinates.red.x}
+                  y2={coordinates.red.y}
+                  stroke="rgba(0, 0, 0, 0.25)"
+                  stroke-width="2.5"
+                  stroke-dasharray="10 8"
+                />
+                <path
+                  d={computeGammaArc()}
+                  fill="none"
+                  stroke="rgba(0, 0, 0, 0.4)"
+                  stroke-width="4"
+                />
+                <text
+                  x="475"
+                  y="450"
+                  text-anchor="middle"
+                  fill="rgba(0, 0, 0, 0.4)"
+                  font-size="32">90°</text
+                >
+              {/if}
+            </g>
+          {/if}
         {/if}
-      {/if}
-    </svg>
-  </div>
+      </svg>
+    </div>
   </div>
 
   <!-- One tray, one row, always occupying its height. These buttons appear and
@@ -863,41 +914,45 @@
        from the grid above, which shrank the board mid-task — the worst moment
        to move the thing someone is aiming at. -->
   {#if renderTray}
-  <div class="controls-tray" aria-label="Move a prop">
-    {#if isComplete && editAfterCompletion && !disabled}
-      <!-- Two labels, one accessible name. The short form is what fits when the
+    <div class="controls-tray" aria-label="Move a prop">
+      {#if isComplete && editAfterCompletion && !disabled}
+        <!-- Two labels, one accessible name. The short form is what fits when the
            tray shares a row with the prompt on a short screen; aria-label keeps
            the spoken name identical either way. -->
-      <button
-        class="edit-button blue"
-        class:active={activeColor === MotionColor.BLUE}
-        onclick={() => handleEdit(MotionColor.BLUE)}
-        aria-pressed={activeColor === MotionColor.BLUE}
-        aria-label={`Move ${blueNoun}`}
-      >
-        <span class="label-full" aria-hidden="true">Move left</span>
-        <span class="label-short" aria-hidden="true">Left</span>
-      </button>
-      <button
-        class="edit-button red"
-        class:active={activeColor === MotionColor.RED}
-        onclick={() => handleEdit(MotionColor.RED)}
-        aria-pressed={activeColor === MotionColor.RED}
-        aria-label={`Move ${redNoun}`}
-      >
-        <span class="label-full" aria-hidden="true">Move right</span>
-        <span class="label-short" aria-hidden="true">Right</span>
-      </button>
-    {/if}
+        <button
+          class="edit-button blue"
+          class:active={activeColor === MotionColor.BLUE}
+          onclick={() => handleEdit(MotionColor.BLUE)}
+          aria-pressed={activeColor === MotionColor.BLUE}
+          aria-label={`Move ${blueNoun}`}
+        >
+          <span class="label-full" aria-hidden="true">Move left</span>
+          <span class="label-short" aria-hidden="true">Left</span>
+        </button>
+        <button
+          class="edit-button red"
+          class:active={activeColor === MotionColor.RED}
+          onclick={() => handleEdit(MotionColor.RED)}
+          aria-pressed={activeColor === MotionColor.RED}
+          aria-label={`Move ${redNoun}`}
+        >
+          <span class="label-full" aria-hidden="true">Move right</span>
+          <span class="label-short" aria-hidden="true">Right</span>
+        </button>
+      {/if}
 
-    {#if canUndo}
-      <!-- Short visible label so three buttons stay on one row (a second row
+      {#if canUndo}
+        <!-- Short visible label so three buttons stay on one row (a second row
            would eat the board's height); the full name stays for assistive tech. -->
-      <button class="undo-button" onclick={handleUndo} aria-label="Undo placement">
-        Undo
-      </button>
-    {/if}
-  </div>
+        <button
+          class="undo-button"
+          onclick={handleUndo}
+          aria-label="Undo placement"
+        >
+          Undo
+        </button>
+      {/if}
+    </div>
   {/if}
 
   <div class="sr-only" aria-live="polite" aria-atomic="true">
@@ -1347,14 +1402,13 @@
       flex: 0 0 auto;
     }
 
-    /* Once both props are down the prompt only says "Position ready" — the
-       enabled action button below already says that, and better. The row goes
-       to the three controls that still do something. */
-    .placement-grid.complete .prompt-text {
+    /* Builders with their own control rail still need the drag instruction.
+       Only the built-in tray can take this row once both props are down. */
+    .placement-grid.complete.has-tray .prompt-text {
       display: none;
     }
 
-    .placement-grid.complete .controls-tray {
+    .placement-grid.complete.has-tray .controls-tray {
       grid-column: 1 / -1;
       justify-self: center;
     }

@@ -13,32 +13,136 @@ center label opens an anchored popover with all four orientations.
     orientation: Orientation;
     onOrientationChange: (orientation: Orientation) => void;
     color?: "blue" | "red";
+    centered?: boolean;
   }
 
-  const { orientation, onOrientationChange, color }: Props = $props();
+  const {
+    orientation,
+    onOrientationChange,
+    color,
+    centered = false,
+  }: Props = $props();
 
-  const CYCLE_ORDER: Orientation[] = [
+  interface OrientationOption {
+    value: Orientation;
+    label: string;
+    icon: string;
+    hint: string;
+    iconRotation?: number;
+  }
+
+  const RADIAL_CYCLE_ORDER: Orientation[] = [
     Orientation.IN,
     Orientation.CLOCK,
     Orientation.OUT,
     Orientation.COUNTER,
   ];
 
-  // Full option set rendered inside the popover (label + hint + icon).
-  const ORIENTATIONS: {
-    value: Orientation;
-    label: string;
-    icon: string;
-    hint: string;
-  }[] = [
-    { value: Orientation.IN, label: "In", icon: "fa-compress-arrows-alt", hint: "Toward center" },
-    { value: Orientation.CLOCK, label: "Clock", icon: "fa-redo", hint: "Clockwise" },
-    { value: Orientation.OUT, label: "Out", icon: "fa-expand-arrows-alt", hint: "Away from center" },
-    { value: Orientation.COUNTER, label: "Counter", icon: "fa-undo", hint: "Counterclockwise" },
+  const CENTER_CYCLE_ORDER: Orientation[] = [
+    Orientation.CENTER_N,
+    Orientation.CENTER_NE,
+    Orientation.CENTER_E,
+    Orientation.CENTER_SE,
+    Orientation.CENTER_S,
+    Orientation.CENTER_SW,
+    Orientation.CENTER_W,
+    Orientation.CENTER_NW,
   ];
 
+  const RADIAL_ORIENTATIONS: OrientationOption[] = [
+    {
+      value: Orientation.IN,
+      label: "In",
+      icon: "fa-compress-arrows-alt",
+      hint: "Toward center",
+    },
+    {
+      value: Orientation.CLOCK,
+      label: "Clock",
+      icon: "fa-redo",
+      hint: "Clockwise",
+    },
+    {
+      value: Orientation.OUT,
+      label: "Out",
+      icon: "fa-expand-arrows-alt",
+      hint: "Away from center",
+    },
+    {
+      value: Orientation.COUNTER,
+      label: "Counter",
+      icon: "fa-undo",
+      hint: "Counterclockwise",
+    },
+  ];
+
+  const CENTER_ORIENTATIONS: OrientationOption[] = [
+    {
+      value: Orientation.CENTER_N,
+      label: "North",
+      icon: "fa-arrow-up",
+      hint: "Aim north",
+    },
+    {
+      value: Orientation.CENTER_NE,
+      label: "Northeast",
+      icon: "fa-arrow-up",
+      hint: "Aim northeast",
+      iconRotation: 45,
+    },
+    {
+      value: Orientation.CENTER_E,
+      label: "East",
+      icon: "fa-arrow-up",
+      hint: "Aim east",
+      iconRotation: 90,
+    },
+    {
+      value: Orientation.CENTER_SE,
+      label: "Southeast",
+      icon: "fa-arrow-up",
+      hint: "Aim southeast",
+      iconRotation: 135,
+    },
+    {
+      value: Orientation.CENTER_S,
+      label: "South",
+      icon: "fa-arrow-up",
+      hint: "Aim south",
+      iconRotation: 180,
+    },
+    {
+      value: Orientation.CENTER_SW,
+      label: "Southwest",
+      icon: "fa-arrow-up",
+      hint: "Aim southwest",
+      iconRotation: 225,
+    },
+    {
+      value: Orientation.CENTER_W,
+      label: "West",
+      icon: "fa-arrow-up",
+      hint: "Aim west",
+      iconRotation: 270,
+    },
+    {
+      value: Orientation.CENTER_NW,
+      label: "Northwest",
+      icon: "fa-arrow-up",
+      hint: "Aim northwest",
+      iconRotation: 315,
+    },
+  ];
+
+  const cycleOrder = $derived(
+    centered ? CENTER_CYCLE_ORDER : RADIAL_CYCLE_ORDER
+  );
+  const orientationOptions = $derived(
+    centered ? CENTER_ORIENTATIONS : RADIAL_ORIENTATIONS
+  );
   const currentDisplay = $derived(
-    ORIENTATIONS.find((o) => o.value === orientation) ?? ORIENTATIONS[0]!
+    orientationOptions.find((option) => option.value === orientation) ??
+      orientationOptions[0]!
   );
 
   // Left is the blue prop, right is the red one. The control itself is fully
@@ -51,18 +155,18 @@ center label opens an anchored popover with all four orientations.
   let popoverOpen = $state(false);
 
   function currentIndex(): number {
-    const idx = CYCLE_ORDER.indexOf(orientation);
+    const idx = cycleOrder.indexOf(orientation);
     return idx >= 0 ? idx : 0;
   }
 
   function cyclePrev() {
-    const idx = (currentIndex() + 1) % CYCLE_ORDER.length;
-    onOrientationChange(CYCLE_ORDER[idx]!);
+    const idx = (currentIndex() + 1) % cycleOrder.length;
+    onOrientationChange(cycleOrder[idx]!);
   }
 
   function cycleNext() {
-    const idx = (currentIndex() - 1 + CYCLE_ORDER.length) % CYCLE_ORDER.length;
-    onOrientationChange(CYCLE_ORDER[idx]!);
+    const idx = (currentIndex() - 1 + cycleOrder.length) % cycleOrder.length;
+    onOrientationChange(cycleOrder[idx]!);
   }
 
   function handleSelect(value: Orientation) {
@@ -114,11 +218,21 @@ center label opens an anchored popover with all four orientations.
                 class="orientation-popover"
                 class:color-blue={color === "blue"}
                 class:color-red={color === "red"}
-                in:scale={{ duration: 180, start: 0.92, opacity: 0, easing: backOut }}
-                out:scale={{ duration: 130, start: 0.95, opacity: 0, easing: cubicOut }}
+                in:scale={{
+                  duration: 180,
+                  start: 0.92,
+                  opacity: 0,
+                  easing: backOut,
+                }}
+                out:scale={{
+                  duration: 130,
+                  start: 0.95,
+                  opacity: 0,
+                  easing: cubicOut,
+                }}
               >
                 <div class="orientation-options">
-                  {#each ORIENTATIONS as opt (opt.value)}
+                  {#each orientationOptions as opt (opt.value)}
                     <button
                       class="orientation-option"
                       class:selected={opt.value === orientation}
@@ -126,7 +240,13 @@ center label opens an anchored popover with all four orientations.
                       aria-pressed={opt.value === orientation}
                       aria-label="{opt.label}: {opt.hint}"
                     >
-                      <i class="fas {opt.icon}" aria-hidden="true"></i>
+                      <i
+                        class="fas {opt.icon}"
+                        style:transform={opt.iconRotation === undefined
+                          ? undefined
+                          : `rotate(${opt.iconRotation}deg)`}
+                        aria-hidden="true"
+                      ></i>
                       <div class="option-text">
                         <span class="option-label">{opt.label}</span>
                         <span class="option-hint">{opt.hint}</span>
@@ -317,7 +437,11 @@ center label opens an anchored popover with all four orientations.
   }
 
   .orientation-popover.color-blue .orientation-option.selected {
-    border-color: color-mix(in srgb, var(--prop-blue, #3b82f6) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue, #3b82f6) 60%,
+      transparent
+    );
     background: var(--prop-blue-bg, rgba(59, 130, 246, 0.15));
   }
 

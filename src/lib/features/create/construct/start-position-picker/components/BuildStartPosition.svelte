@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import {
+    startPositionManager,
+    type StartPositionPlacement,
+  } from "$lib/shared/create/services/start-position-manager";
   import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
   import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
-  import type {
+  import {
     GridLocation,
-    GridMode,
+    type GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { normalizeOrientationForLocation } from "$lib/shared/pictograph/grid/domain/orientation-from-drag";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     MotionColor,
@@ -23,9 +27,11 @@
     redOrientation,
     initialBlueLocation = null,
     initialRedLocation = null,
+    showCenter = false,
     onBlueOrientationChange,
     onRedOrientationChange,
     onApply,
+    onApplyPlacement,
   } = $props<{
     gridMode: GridMode;
     bluePropType: PropType;
@@ -34,9 +40,13 @@
     redOrientation: Orientation;
     initialBlueLocation?: GridLocation | null;
     initialRedLocation?: GridLocation | null;
+    showCenter?: boolean;
     onBlueOrientationChange: (orientation: Orientation) => void | Promise<void>;
     onRedOrientationChange: (orientation: Orientation) => void | Promise<void>;
-    onApply: (position: PictographData) => void | Promise<void>;
+    onApply?: (position: PictographData) => void | Promise<void>;
+    onApplyPlacement?: (
+      placement: StartPositionPlacement
+    ) => void | Promise<void>;
   }>();
 
   let blueLocation = $state<GridLocation | null>(initialBlueLocation);
@@ -52,23 +62,52 @@
   let builderWidth = $state(0);
   let builderHeight = $state(0);
   const isRowLayout = $derived(
-    builderWidth >= 496 && builderHeight > 0 && builderWidth / builderHeight >= 1.25
+    builderWidth >= 496 &&
+      builderHeight > 0 &&
+      builderWidth / builderHeight >= 1.25
   );
 
-  const builtPictograph = $derived.by(() => {
+  const builtPlacement = $derived.by((): StartPositionPlacement | null => {
     if (!blueLocation || !redLocation) return null;
 
-    return startPositionManager.createStartPositionFromLocations({
+    return {
       blueLocation,
       redLocation,
       gridMode,
-      blueOrientation,
-      redOrientation,
+      blueOrientation: normalizeOrientationForLocation(
+        blueOrientation,
+        blueLocation
+      ),
+      redOrientation: normalizeOrientationForLocation(
+        redOrientation,
+        redLocation
+      ),
       bluePropType,
       redPropType,
       id: "start-built-position",
-    });
+    };
   });
+
+  const builtPictograph = $derived.by(() => {
+    if (!builtPlacement) return null;
+    // Center placements do not have a canonical TKA position name. Assemble
+    // accepts the two poses directly, while Construct still requires one.
+    if (
+      builtPlacement.blueLocation === GridLocation.CENTER ||
+      builtPlacement.redLocation === GridLocation.CENTER
+    ) {
+      return null;
+    }
+    return startPositionManager.createStartPositionFromLocations(
+      builtPlacement
+    );
+  });
+
+  const canApply = $derived(
+    builtPlacement !== null &&
+      (onApplyPlacement !== undefined ||
+        (onApply !== undefined && builtPictograph !== null))
+  );
 
   const positionLabel = $derived(
     builtPictograph ? getStartPositionDisplayLabel(builtPictograph) : ""
@@ -106,10 +145,14 @@
   }
 
   async function handleApply() {
-    if (!builtPictograph || isApplying) return;
+    if (!builtPlacement || !canApply || isApplying) return;
     isApplying = true;
     try {
-      await onApply(builtPictograph);
+      if (onApplyPlacement) {
+        await onApplyPlacement(builtPlacement);
+      } else if (onApply && builtPictograph) {
+        await onApply(builtPictograph);
+      }
     } finally {
       isApplying = false;
     }
@@ -127,99 +170,102 @@
   bind:clientHeight={builderHeight}
 >
   <div class="builder-layout">
-  <div class="placement-area">
-    <PropPlacementGrid
-      bind:this={grid}
-      {gridMode}
-      {bluePropType}
-      {redPropType}
-      {blueOrientation}
-      {redOrientation}
-      {initialBlueLocation}
-      {initialRedLocation}
-      editAfterCompletion
-      renderTray={!isRowLayout}
-      onChange={handlePlacementChange}
-      onOrientationChange={handleOrientationChange}
-    />
-  </div>
-
-  <!-- Grouped so a wide, short host can stand them beside the board instead of
-       stacking everything into a strip that leaves the board no height. -->
-  <div class="builder-controls">
-    <!-- Side by side, these live here rather than in a row under the board:
-         the column has height going spare and the board does not. -->
-    {#if isRowLayout}
-      <div class="move-controls" role="group" aria-label="Move a prop">
-        {#if builtPictograph}
-          <button
-            class="move-button blue"
-            class:active={activeColor === MotionColor.BLUE}
-            aria-pressed={activeColor === MotionColor.BLUE}
-            aria-label="Move left prop"
-            onclick={() => grid?.moveProp(MotionColor.BLUE)}
-          >
-            <!-- Two labels, one accessible name — same mechanism the grid's own
-                 tray uses. This column can be as narrow as 13rem, which is not
-                 enough for three full labels. -->
-            <span class="label-full" aria-hidden="true">Move left</span>
-            <span class="label-short" aria-hidden="true">Left</span>
-          </button>
-          <button
-            class="move-button red"
-            class:active={activeColor === MotionColor.RED}
-            aria-pressed={activeColor === MotionColor.RED}
-            aria-label="Move right prop"
-            onclick={() => grid?.moveProp(MotionColor.RED)}
-          >
-            <span class="label-full" aria-hidden="true">Move right</span>
-            <span class="label-short" aria-hidden="true">Right</span>
-          </button>
-        {/if}
-        {#if canUndo}
-          <button
-            class="move-button"
-            aria-label="Undo placement"
-            onclick={() => grid?.undoPlacement()}
-          >
-            Undo
-          </button>
-        {/if}
-      </div>
-    {/if}
-
-    <div
-      class="orientation-controls"
-      role="group"
-      aria-label="Prop orientations: left is blue, right is red"
-    >
-      <OrientationCycler
-        orientation={blueOrientation}
-        onOrientationChange={onBlueOrientationChange}
-        color="blue"
-      />
-      <OrientationCycler
-        orientation={redOrientation}
-        onOrientationChange={onRedOrientationChange}
-        color="red"
+    <div class="placement-area">
+      <PropPlacementGrid
+        bind:this={grid}
+        {gridMode}
+        {bluePropType}
+        {redPropType}
+        {blueOrientation}
+        {redOrientation}
+        {initialBlueLocation}
+        {initialRedLocation}
+        {showCenter}
+        editAfterCompletion
+        renderTray={!isRowLayout}
+        onChange={handlePlacementChange}
+        onOrientationChange={handleOrientationChange}
       />
     </div>
 
-    <!-- The button names what it will do. A separate "You built α1" caption said
+    <!-- Grouped so a wide, short host can stand them beside the board instead of
+       stacking everything into a strip that leaves the board no height. -->
+    <div class="builder-controls">
+      <!-- Side by side, these live here rather than in a row under the board:
+         the column has height going spare and the board does not. -->
+      {#if isRowLayout}
+        <div class="move-controls" role="group" aria-label="Move a prop">
+          {#if builtPlacement}
+            <button
+              class="move-button blue"
+              class:active={activeColor === MotionColor.BLUE}
+              aria-pressed={activeColor === MotionColor.BLUE}
+              aria-label="Move left prop"
+              onclick={() => grid?.moveProp(MotionColor.BLUE)}
+            >
+              <!-- Two labels, one accessible name — same mechanism the grid's own
+                 tray uses. This column can be as narrow as 13rem, which is not
+                 enough for three full labels. -->
+              <span class="label-full" aria-hidden="true">Move left</span>
+              <span class="label-short" aria-hidden="true">Left</span>
+            </button>
+            <button
+              class="move-button red"
+              class:active={activeColor === MotionColor.RED}
+              aria-pressed={activeColor === MotionColor.RED}
+              aria-label="Move right prop"
+              onclick={() => grid?.moveProp(MotionColor.RED)}
+            >
+              <span class="label-full" aria-hidden="true">Move right</span>
+              <span class="label-short" aria-hidden="true">Right</span>
+            </button>
+          {/if}
+          {#if canUndo}
+            <button
+              class="move-button"
+              aria-label="Undo placement"
+              onclick={() => grid?.undoPlacement()}
+            >
+              Undo
+            </button>
+          {/if}
+        </div>
+      {/if}
+
+      <div
+        class="orientation-controls"
+        role="group"
+        aria-label="Prop orientations: left is blue, right is red"
+      >
+        <OrientationCycler
+          orientation={blueOrientation}
+          onOrientationChange={onBlueOrientationChange}
+          color="blue"
+          centered={blueLocation === GridLocation.CENTER}
+        />
+        <OrientationCycler
+          orientation={redOrientation}
+          onOrientationChange={onRedOrientationChange}
+          color="red"
+          centered={redLocation === GridLocation.CENTER}
+        />
+      </div>
+
+      <!-- The button names what it will do. A separate "You built α1" caption said
          the same thing one row higher, and that row cost the board more height
          than the sentence was worth on a phone. -->
-    <button
-      class="apply-button"
-      disabled={!builtPictograph || isApplying}
-      onclick={handleApply}
-    >
-      {applyLabel}
-    </button>
+      <button
+        class="apply-button"
+        disabled={!canApply || isApplying}
+        onclick={handleApply}
+      >
+        {applyLabel}
+      </button>
 
-    <p class="sr-only" aria-live="polite" aria-atomic="true">
-      {positionLabel ? `Position recognized: ${positionLabel}.` : ""}
-    </p>
-  </div>
+      <p class="sr-only" aria-live="polite" aria-atomic="true">
+        {positionLabel ? `Position recognized: ${positionLabel}.` : ""}
+      </p>
+    </div>
   </div>
 </div>
 
@@ -336,7 +382,6 @@
       gap: 6px;
     }
   }
-
 
   .sr-only {
     position: absolute;
