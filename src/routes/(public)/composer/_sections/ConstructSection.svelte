@@ -28,6 +28,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
   import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -71,6 +72,7 @@
   const MAX_STEPS = 8;
   const STEP_COLUMNS = 4;
   const ATTRACT_STEPS = 4;
+  type CompactPane = "build" | "sequence";
 
   // Whole turns only (0-3) — the demo deliberately skips half turns; the full
   // turns system lives in the real Create tab.
@@ -113,6 +115,12 @@
   let playerController: AnimationPlaybackController | null = null;
   let playerIsPlaying = false;
   let startHoldTimer: ReturnType<typeof setTimeout> | null = null;
+  let compactPane = $state<CompactPane>("build");
+  const compactDemoQuery =
+    typeof window === "undefined"
+      ? null
+      : new MediaQuery("(max-width: 74.99rem)");
+  const isCompactDemo = $derived(compactDemoQuery?.current ?? false);
 
   // The real start-position picker drives its own state object; we subscribe to
   // the user's pick and lift it into our local demo state (source "sync" changes
@@ -142,7 +150,7 @@
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (!reduced && bandEl) {
+    if (!reduced && !isCompactDemo && bandEl) {
       act = createConstructAttractAct({
         getRoot: () => bandEl,
         resetBoard: reset,
@@ -160,6 +168,15 @@
       );
       io.observe(bandEl);
     }
+  });
+
+  $effect(() => {
+    if (!isCompactDemo || !act) return;
+    act.kill();
+    act = null;
+    io?.disconnect();
+    io = null;
+    tookOver = false;
   });
 
   onDestroy(() => {
@@ -203,6 +220,37 @@
       : playing || steps.length >= MAX_STEPS
         ? "play"
         : "add-step"
+  );
+  const compactPaneOptions = $derived(
+    phase === "play"
+      ? [
+          {
+            value: "build" as const,
+            label: "Player",
+            id: "construct-build-tab",
+            controls: "construct-build-panel",
+          },
+          {
+            value: "sequence" as const,
+            label: "Pictographs",
+            id: "construct-sequence-tab",
+            controls: "construct-sequence-panel",
+          },
+        ]
+      : [
+          {
+            value: "build" as const,
+            label: "Build",
+            id: "construct-build-tab",
+            controls: "construct-build-panel",
+          },
+          {
+            value: "sequence" as const,
+            label: "Sequence",
+            id: "construct-sequence-tab",
+            controls: "construct-sequence-panel",
+          },
+        ]
   );
 
   // sequence.word is DATA (the expanded letters); what the user reads is the
@@ -330,32 +378,85 @@
     playingStepNumber = null;
     dropPlayerRefs();
     startPositionState.clearSelectedPosition();
+    compactPane = "build";
   }
 </script>
 
+{#snippet propControl()}
+  <div class="tool-group prop-group">
+    <span class="tool-label">Prop</span>
+    <PropPicker
+      value={demoProp}
+      onchange={(p) => (demoProp = p)}
+      options={SHOP_PROP_OPTIONS}
+    />
+  </div>
+{/snippet}
+
+{#snippet playPhaseActions()}
+  <div class="play-actions">
+    {#if steps.length < MAX_STEPS}
+      <button
+        type="button"
+        class="cta-btn quiet"
+        onclick={() => {
+          playing = false;
+          playingStepNumber = null;
+          compactPane = "build";
+          dropPlayerRefs();
+        }}
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Keep building
+      </button>
+    {/if}
+    <button type="button" class="cta-btn" data-demo-again onclick={reset}>
+      <i class="fas fa-rotate-left" aria-hidden="true"></i>
+      Build another
+    </button>
+  </div>
+{/snippet}
+
 <section
   class="construct-demo"
+  class:compact-demo={isCompactDemo}
+  class:play-phase={phase === "play"}
   bind:this={bandEl}
   onpointerdowncapture={takeover}
   onfocusincapture={takeover}
 >
   <div class="demo-shell">
+    {#if isCompactDemo}
+      <div class="compact-view-switch">
+        <SegmentedControl
+          options={compactPaneOptions}
+          value={compactPane}
+          onchange={(pane) => (compactPane = pane)}
+          color="accent"
+          size="sm"
+          semantics="tabs"
+          ariaLabel="Construct demo view"
+        />
+      </div>
+    {/if}
+
     <!-- Two column stacks: prop + workspace left, turns + picker right. Each
        control sits directly above the panel it affects, and the turns strip
        lives INSIDE the right column — when it slides away for the play phase
        the player pane (flex: 1) expands upward into the freed strip and the
        canvas gets bigger. The columns' total height stays constant across
        phases (the strip's space is reserved), so the page never shifts. -->
-    <div class="demo-columns">
-      <div class="demo-col">
-        <div class="tool-group">
-          <span class="tool-label">Prop</span>
-          <PropPicker
-            value={demoProp}
-            onchange={(p) => (demoProp = p)}
-            options={SHOP_PROP_OPTIONS}
-          />
-        </div>
+    <div class="demo-columns" class:compact-layout={isCompactDemo}>
+      <div
+        class="demo-col sequence-column"
+        id={isCompactDemo ? "construct-sequence-panel" : undefined}
+        role={isCompactDemo ? "tabpanel" : undefined}
+        aria-labelledby={isCompactDemo ? "construct-sequence-tab" : undefined}
+        hidden={isCompactDemo && compactPane !== "sequence"}
+      >
+        {#if !isCompactDemo}
+          {@render propControl()}
+        {/if}
 
         <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
         <div class="workspace">
@@ -435,37 +536,16 @@
                 >
                   <ViewSequenceButton
                     purpose="play"
-                    onclick={() => (playing = true)}
+                    onclick={() => {
+                      playing = true;
+                      compactPane = "build";
+                    }}
                   />
                 </span>
               {:else if phase === "play"}
-                <div class="play-actions">
-                  <!-- Back to the option picker with the build intact — "one more
-                   step". Hidden at the 8-step cap (nothing to go back to). -->
-                  {#if steps.length < MAX_STEPS}
-                    <button
-                      type="button"
-                      class="cta-btn quiet"
-                      onclick={() => {
-                        playing = false;
-                        playingStepNumber = null;
-                        dropPlayerRefs();
-                      }}
-                    >
-                      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                      Keep building
-                    </button>
-                  {/if}
-                  <button
-                    type="button"
-                    class="cta-btn"
-                    data-demo-again
-                    onclick={reset}
-                  >
-                    <i class="fas fa-rotate-left" aria-hidden="true"></i>
-                    Build another
-                  </button>
-                </div>
+                {#if !isCompactDemo}
+                  {@render playPhaseActions()}
+                {/if}
               {/if}
             </Crossfade>
             <div class="slot-side" aria-hidden="true"></div>
@@ -473,7 +553,17 @@
         </div>
       </div>
 
-      <div class="demo-col">
+      <div
+        class="demo-col build-column"
+        id={isCompactDemo ? "construct-build-panel" : undefined}
+        role={isCompactDemo ? "tabpanel" : undefined}
+        aria-labelledby={isCompactDemo ? "construct-build-tab" : undefined}
+        hidden={isCompactDemo && compactPane !== "build"}
+      >
+        {#if isCompactDemo && phase !== "play"}
+          {@render propControl()}
+        {/if}
+
         <!-- Turns imply "you can change the playing sequence's turns" — not true
          during playback, so they slide away for the play phase (freeing their
          strip for the player) and return on Keep building / Build another. -->
@@ -547,7 +637,7 @@
                     sequence={playSequence}
                     autoPlay
                     showControls={false}
-                    hideWordHeader
+                    hideWordHeader={!isCompactDemo}
                     tapToToggle
                     progressLine
                     progressLineSeekable
@@ -569,6 +659,12 @@
         </div>
       </div>
     </div>
+
+    {#if isCompactDemo && phase === "play"}
+      <div class="compact-play-actions">
+        {@render playPhaseActions()}
+      </div>
+    {/if}
   </div>
 
   {#if act}
@@ -632,6 +728,75 @@
     flex-direction: column;
     gap: 16px;
     min-width: 0;
+  }
+
+  /* Phones and tablets use one coherent stage instead of a four-screen-tall
+     stack. Build/Player and Sequence/Pictographs are two views of the same
+     live state, so moving between them never resets the visitor's work. */
+  .compact-view-switch {
+    width: min(100%, 28rem);
+    margin-inline: auto;
+  }
+
+  .compact-view-switch :global(.segmented-control) {
+    width: 100%;
+  }
+
+  .compact-demo .demo-shell {
+    --compact-stage-height: 38rem;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .demo-columns.compact-layout {
+    display: block;
+    min-height: var(--compact-stage-height);
+  }
+
+  .demo-columns.compact-layout > [hidden] {
+    display: none;
+  }
+
+  .compact-layout .demo-col {
+    min-height: var(--compact-stage-height);
+  }
+
+  .compact-layout .sequence-column .workspace {
+    flex: 1;
+    min-height: var(--compact-stage-height);
+  }
+
+  .compact-layout .sequence-column .ws-frame {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+
+  .compact-layout .build-column {
+    gap: 12px;
+  }
+
+  .compact-layout .build-column .picker-pane {
+    flex: 1 1 auto;
+    height: clamp(19rem, 52svh, 22rem);
+    min-height: 19rem;
+  }
+
+  .compact-demo.play-phase .build-column .picker-pane {
+    flex: 1 1 0;
+    height: auto;
+    min-height: var(--compact-stage-height);
+  }
+
+  .compact-play-actions {
+    min-height: 52px;
+    display: grid;
+    place-items: center;
+  }
+
+  .compact-play-actions .play-actions {
+    flex-wrap: wrap;
   }
 
   .tool-group {
@@ -1013,8 +1178,20 @@
   }
 
   @media (max-width: 480px) {
+    .compact-demo .demo-shell {
+      --compact-stage-height: 41rem;
+    }
+
     .picker-pane {
       height: clamp(320px, 56vh, 520px);
+    }
+
+    .compact-layout .build-column .picker-pane {
+      height: clamp(19rem, 52svh, 22rem);
+    }
+
+    .compact-demo.play-phase .build-column .picker-pane {
+      height: auto;
     }
   }
 

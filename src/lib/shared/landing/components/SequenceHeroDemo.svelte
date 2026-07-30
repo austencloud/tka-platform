@@ -55,6 +55,7 @@
     externalBpm,
     showNotationStrip = false,
     showWordHeader = false,
+    loadPriority = "idle",
   }: {
     /** Null while the host is still producing the sequence (e.g. /composer's
         per-visit generated demo) — the stage box and caption line keep their
@@ -105,6 +106,10 @@
     /** Shows the shared animated word header while preserving the square
         canvas beneath it. The header is isolated from persisted app settings. */
     showWordHeader?: boolean;
+    /** Above-the-fold hosts can skip the idle wait once the stage is near.
+        Below-the-fold embeds keep the default so they do not contend with the
+        page's first paint. */
+    loadPriority?: "idle" | "immediate";
   } = $props();
 
   type LoadStatus = "idle" | "loading" | "loaded" | "error";
@@ -129,9 +134,7 @@
   const narrowNotationRail =
     typeof window === "undefined"
       ? null
-      : new MediaQuery(
-          "(width < 42rem) and (height >= 500px)"
-        );
+      : new MediaQuery("(width < 42rem) and (height >= 500px)");
   const shouldMountNotationRail = $derived(
     showNotationStrip && !(hiddenNotationRail?.current ?? false)
   );
@@ -171,7 +174,7 @@
     return activateWhenNear(node, {
       rootMargin: "240px",
       activate: () => (active = true),
-      deferUntilIdle: true,
+      deferUntilIdle: loadPriority === "idle",
       idleTimeout: 2500,
       fallbackDelay: 300,
     });
@@ -257,7 +260,9 @@
               class:visible={!!element}
               style="--el-scale: {shownElement.iconScale}"
               role="img"
-              aria-label={element ? `${shownElement.element} element` : undefined}
+              aria-label={element
+                ? `${shownElement.element} element`
+                : undefined}
               aria-hidden={element ? undefined : "true"}
             >
               <img src={shownElement.iconPath} alt="" />
@@ -346,12 +351,12 @@
           >{pending
             ? "Preparing..."
             : rerolling
-            ? errorMessage
-              ? "Trying again..."
-              : "Rolling..."
-            : errorMessage
-              ? "Try again"
-              : "Roll a new one"}</span
+              ? errorMessage
+                ? "Trying again..."
+                : "Rolling..."
+              : errorMessage
+                ? "Try again"
+                : "Roll a new one"}</span
         >
       </button>
     </div>
@@ -468,8 +473,7 @@
     transform-origin: center;
     /* No backing circle — a dark drop-shadow keeps light glyphs (cloud, sun)
        legible over the animation. */
-    filter:
-      drop-shadow(0 1px 3px oklch(0 0 0 / 0.6))
+    filter: drop-shadow(0 1px 3px oklch(0 0 0 / 0.6))
       drop-shadow(0 0 2px oklch(0 0 0 / 0.5));
   }
   @media (prefers-reduced-motion: reduce) {
@@ -692,8 +696,7 @@
   /* Short viewports use the animation without the thumbnail rail at every
      width. The rail stays dormant, not merely invisible, through
      shouldMountNotationRail. */
-  @media (height < 500px),
-    (width >= 105rem) and (height < 64rem) {
+  @media (height < 500px), (width >= 105rem) and (height < 64rem) {
     .with-notation-strip .notation-strip {
       display: none;
     }
@@ -714,7 +717,7 @@
      StepStrip. Both columns reserve their complete footprint before either
      lazy chunk mounts. */
   @media (width < 42rem) and (height >= 500px) {
-    .demo-media {
+    .with-notation-strip .demo-media {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 5.25rem;
       align-items: stretch;

@@ -281,10 +281,19 @@ describe("landing shared-element contract", () => {
     expect(launchpad).toContain('typeof IntersectionObserver === "undefined"');
     expect(launchpad).toContain("active={mediaActive.has(tile.id)}");
     expect(launchpad).toContain("visible={visible.has(tile.id)}");
-    expect(composer).toContain("runAfterNamedRouteMorphIdle(() =>");
+    expect(composer).toContain(
+      'import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo"'
+    );
+    expect(composer).toContain(
+      "let demoSeq = $state<SequenceData | null>(FALLBACK_DEMO)"
+    );
     expect(composer).toContain(
       'await import("$lib/shared/landing/data/per-visit-demo")'
     );
+    expect(composer).toContain("showNotationStrip={true}");
+    expect(composer).toContain("showWordHeader={true}");
+    expect(composer).toContain('loadPriority="immediate"');
+    expect(sequenceHero).toContain(".with-notation-strip .demo-media");
     expect(choreoCards).toContain("runAfterNamedRouteMorphIdle(async () =>");
     expect(anatomyExplainer).toContain("use:activateCardsWhenNear");
     expect(anatomyExplainer).toContain("deferUntilIdle: true");
@@ -354,6 +363,36 @@ describe("landing shared-element contract", () => {
     expect(composer).toContain("false,\n      rerollingDemo");
     expect(sequenceHero).toContain("placeholder={playerPlaceholder}");
     expect(sequenceHero).toContain("onStatusChange={(status) =>");
+  });
+
+  it("keeps compact Composer demos in state-sharing tab panels", () => {
+    const construct = readSource(
+      "src/routes/(public)/composer/_sections/ConstructSection.svelte"
+    );
+    const generate = readSource(
+      "src/routes/(public)/composer/_sections/GenerateSection.svelte"
+    );
+
+    for (const source of [construct, generate]) {
+      expect(source).toContain('new MediaQuery("(max-width: 74.99rem)")');
+      expect(source).toContain('semantics="tabs"');
+      expect(source).toContain('role={isCompactDemo ? "tabpanel" : undefined}');
+    }
+
+    expect(construct).toContain(
+      'hidden={isCompactDemo && compactPane !== "sequence"}'
+    );
+    expect(construct).toContain(
+      'hidden={isCompactDemo && compactPane !== "build"}'
+    );
+    expect(generate).toContain(
+      'hidden={isCompactDemo && compactView !== "result"}'
+    );
+    expect(generate).toContain(
+      'hidden={isCompactDemo && compactView !== "recipe"}'
+    );
+    expect(generate).toContain("<summary>More settings</summary>");
+    expect(generate).toContain("onclick={() => void generate(true)}");
   });
 
   it("keeps the verification corpus out of public notation route chunks", () => {

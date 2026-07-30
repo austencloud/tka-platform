@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import { onDestroy, onMount, setContext, tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
   import { browser } from "$app/environment";
 
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
@@ -32,6 +33,7 @@
   import { createPanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import BackButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/BackButton.svelte";
   import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import GhostPointer from "./GhostPointer.svelte";
   import {
     createGenerateAttractAct,
@@ -66,6 +68,7 @@
   const SIDE_STRIP_MIN_REMAINDER = 220;
   const FALLBACK_WORKSPACE_WIDTH = 620;
   const FALLBACK_WORKSPACE_HEIGHT = 360;
+  type CompactView = "recipe" | "result";
   const DEMO_TIP_EFFORT_MAP = {
     "*": { effort: "linear" },
   } satisfies TipEffortMap;
@@ -169,6 +172,26 @@
   let playingStepNumber = $state<number | null>(null);
   let reportedStep = $state(0);
   let reportedSequenceId = $state<string | null>(null);
+  let compactView = $state<CompactView>("recipe");
+  const compactDemoQuery =
+    typeof window === "undefined"
+      ? null
+      : new MediaQuery("(max-width: 74.99rem)");
+  const isCompactDemo = $derived(compactDemoQuery?.current ?? false);
+  const compactViewOptions = [
+    {
+      value: "recipe" as const,
+      label: "Recipe",
+      id: "generate-recipe-tab",
+      controls: "generate-recipe-panel",
+    },
+    {
+      value: "result" as const,
+      label: "Result",
+      id: "generate-result-tab",
+      controls: "generate-result-panel",
+    },
+  ];
   let mounted = false;
   let generationRun = 0;
 
@@ -231,7 +254,7 @@
     return new Promise<void>((resolve) => setTimeout(resolve, ms));
   }
 
-  async function generate() {
+  async function generate(revealResult = false) {
     if (generating || !mounted) return;
     const run = ++generationRun;
     const isCurrentRun = () => mounted && generationRun === run;
@@ -296,6 +319,7 @@
         current = next;
         generationError = null;
         revealing = true;
+        if (revealResult && isCompactDemo) compactView = "result";
 
         await tick();
         if (!isCurrentRun()) return;
@@ -350,7 +374,7 @@
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (!reduced && bandEl) {
+    if (!reduced && !isCompactDemo && bandEl) {
       act = createGenerateAttractAct({
         getRoot: () => bandEl,
         togglePlayback: () => playerToggle?.(),
@@ -373,12 +397,94 @@
     };
   });
 
+  $effect(() => {
+    if (!isCompactDemo || !act) return;
+    act.kill();
+    act = null;
+    io?.disconnect();
+    io = null;
+    tookOver = false;
+  });
+
   onDestroy(() => {
     workspaceDisplayState.cleanupAnimation();
     act?.kill();
     io?.disconnect();
   });
 </script>
+
+{#snippet lengthCard()}
+  <div class="card-cell">
+    <LengthCard
+      currentLength={length}
+      currentMode={GenerationMode.CIRCULAR}
+      loopEnabled={true}
+      minOverride={DEMO_MIN_LENGTH}
+      maxOverride={DEMO_MAX_LENGTH}
+      stepOverride={DEMO_LENGTH_STEP}
+      onLengthChange={handleLengthChange}
+    />
+  </div>
+{/snippet}
+
+{#snippet levelCard()}
+  <div class="card-cell">
+    <LevelCard
+      currentLevel={level}
+      brightBackgroundOverride={false}
+      onLevelChange={handleLevelChange}
+    />
+  </div>
+{/snippet}
+
+{#snippet gridCard()}
+  <div class="card-cell">
+    <GridModeCard currentMode={gridMode} onModeChange={handleGridModeChange} />
+  </div>
+{/snippet}
+
+{#snippet turnsCard()}
+  {#if level !== DifficultyLevel.BEGINNER}
+    <div class="card-cell">
+      <TurnIntensityCard
+        currentIntensity={turnIntensity}
+        allowedValues={allowedTurnValues}
+        brightBackgroundOverride={false}
+        onIntensityChange={handleTurnIntensityChange}
+      />
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet customizeCard()}
+  <div class="card-cell">
+    <CustomizeCard
+      {constraintPreset}
+      {handPathMode}
+      {motionTypeFilter}
+      {gridMode}
+      isFreeformMode={false}
+      styleBaseline={DEMO_STYLE_BASELINE}
+      onConstraintPresetChange={(value) => (constraintPreset = value)}
+      onHandPathModeChange={(value) => (handPathMode = value)}
+      onMotionTypeFilterChange={handleMotionTypeFilterChange}
+    />
+  </div>
+{/snippet}
+
+{#snippet loopCard()}
+  <div
+    class="card-cell loop-cell"
+    class:wide-loop={level === DifficultyLevel.BEGINNER}
+  >
+    <ConsolidatedLOOPCard
+      loopEnabled={true}
+      currentLOOPType={loopType}
+      {period}
+      onLOOPTypeChange={handleLOOPTypeChange}
+    />
+  </div>
+{/snippet}
 
 {#snippet playerPlaceholder()}
   <div class="player-placeholder" aria-hidden="true">
@@ -402,14 +508,35 @@
 
 <section
   class="generate-section"
+  class:compact-demo={isCompactDemo}
   bind:this={bandEl}
   onpointerdowncapture={takeover}
   onfocusincapture={takeover}
 >
   <div class="demo-shell">
     {#if browser}
-      <div class="demo-grid">
-        <div class="result-col">
+      {#if isCompactDemo}
+        <div class="compact-view-switch">
+          <SegmentedControl
+            options={compactViewOptions}
+            value={compactView}
+            onchange={(view) => (compactView = view)}
+            color="accent"
+            size="sm"
+            semantics="tabs"
+            ariaLabel="Generate demo view"
+          />
+        </div>
+      {/if}
+
+      <div class="demo-grid" class:compact-layout={isCompactDemo}>
+        <div
+          class="result-col"
+          id={isCompactDemo ? "generate-result-panel" : undefined}
+          role={isCompactDemo ? "tabpanel" : undefined}
+          aria-labelledby={isCompactDemo ? "generate-result-tab" : undefined}
+          hidden={isCompactDemo && compactView !== "result"}
+        >
           <div class="sequence-card">
             <header
               class="sequence-heading word-label-area"
@@ -544,70 +671,44 @@
           </div>
         </div>
 
-        <div class="controls">
-          <div class="card-grid">
-            <div class="card-cell">
-              <LengthCard
-                currentLength={length}
-                currentMode={GenerationMode.CIRCULAR}
-                loopEnabled={true}
-                minOverride={DEMO_MIN_LENGTH}
-                maxOverride={DEMO_MAX_LENGTH}
-                stepOverride={DEMO_LENGTH_STEP}
-                onLengthChange={handleLengthChange}
-              />
+        <div
+          class="controls"
+          id={isCompactDemo ? "generate-recipe-panel" : undefined}
+          role={isCompactDemo ? "tabpanel" : undefined}
+          aria-labelledby={isCompactDemo ? "generate-recipe-tab" : undefined}
+          hidden={isCompactDemo && compactView !== "recipe"}
+        >
+          {#if isCompactDemo}
+            <div class="compact-core-grid">
+              {@render lengthCard()}
+              {@render levelCard()}
+              {@render turnsCard()}
+              {@render loopCard()}
             </div>
-            <div class="card-cell">
-              <LevelCard
-                currentLevel={level}
-                brightBackgroundOverride={false}
-                onLevelChange={handleLevelChange}
-              />
-            </div>
-            <div class="card-cell">
-              <GridModeCard
-                currentMode={gridMode}
-                onModeChange={handleGridModeChange}
-              />
-            </div>
-            {#if level !== DifficultyLevel.BEGINNER}
-              <div class="card-cell">
-                <TurnIntensityCard
-                  currentIntensity={turnIntensity}
-                  allowedValues={allowedTurnValues}
-                  brightBackgroundOverride={false}
-                  onIntensityChange={handleTurnIntensityChange}
-                />
+
+            <details class="more-settings">
+              <summary>More settings</summary>
+              <div class="compact-advanced-grid">
+                {@render gridCard()}
+                {@render customizeCard()}
               </div>
-            {/if}
-            <div class="card-cell">
-              <CustomizeCard
-                {constraintPreset}
-                {handPathMode}
-                {motionTypeFilter}
-                {gridMode}
-                isFreeformMode={false}
-                styleBaseline={DEMO_STYLE_BASELINE}
-                onConstraintPresetChange={(value) => (constraintPreset = value)}
-                onHandPathModeChange={(value) => (handPathMode = value)}
-                onMotionTypeFilterChange={handleMotionTypeFilterChange}
-              />
+            </details>
+          {:else}
+            <div class="card-grid">
+              {@render lengthCard()}
+              {@render levelCard()}
+              {@render gridCard()}
+              {@render turnsCard()}
+              {@render customizeCard()}
+              {@render loopCard()}
             </div>
-            <div class="card-cell">
-              <ConsolidatedLOOPCard
-                loopEnabled={true}
-                currentLOOPType={loopType}
-                {period}
-                onLOOPTypeChange={handleLOOPTypeChange}
-              />
-            </div>
-          </div>
+          {/if}
 
           <div class="generate-action">
             <button
               type="button"
               class="generate-button"
-              onclick={generate}
+              onclick={() => void generate(true)}
               disabled={generating}
             >
               <i
@@ -706,12 +807,43 @@
     );
   }
 
+  /* The compact demo is a single stage with two related views. This keeps the
+     recipe beside its action and the generated sequence beside its player,
+     while preserving one shared state model underneath both tabs. */
+  .compact-demo .demo-shell {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .compact-view-switch {
+    width: min(100%, 28rem);
+    margin: 0 auto 12px;
+  }
+
+  .compact-view-switch :global(.segmented-control) {
+    width: 100%;
+  }
+
   .demo-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
     gap: clamp(1.2rem, 2.2cqw, 2rem);
     align-items: center;
     width: 100%;
+  }
+
+  .demo-grid.compact-layout {
+    display: block;
+    min-height: 30rem;
+  }
+
+  .demo-grid.compact-layout > [hidden] {
+    display: none;
+  }
+
+  .compact-layout > .result-col,
+  .compact-layout > .controls {
+    min-height: 30rem;
   }
 
   .result-col,
@@ -918,11 +1050,69 @@
     gap: 0.75rem;
   }
 
+  .compact-core-grid,
+  .compact-advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
   .card-cell {
     flex: 1 1 calc((100% - 1.5rem) / 3);
     min-width: 140px;
     height: clamp(118px, 10cqw, 148px);
     min-height: 0;
+  }
+
+  .compact-core-grid .card-cell,
+  .compact-advanced-grid .card-cell {
+    min-width: 0;
+    height: 7.5rem;
+  }
+
+  .compact-core-grid .wide-loop {
+    grid-column: 1 / -1;
+  }
+
+  .more-settings {
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 14px;
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(12, 12, 20, 0.8)) 66%,
+      transparent
+    );
+  }
+
+  .more-settings summary {
+    min-height: var(--min-touch-target, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 1rem;
+    color: var(--theme-text, #fff);
+    font-weight: 650;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .more-settings summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .more-settings summary::after {
+    content: "+";
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+    font-size: 1.25rem;
+    font-weight: 450;
+  }
+
+  .more-settings[open] summary::after {
+    content: "−";
+  }
+
+  .compact-advanced-grid {
+    padding: 0 0.75rem 0.75rem;
   }
 
   /* Most cards set their own height:100%, but the LOOP card's outer wrapper

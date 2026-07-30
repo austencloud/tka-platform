@@ -2,6 +2,7 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import Seo from "$lib/shared/components/Seo.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
   import {
     trackCtaClick,
     trackDemoInteraction,
@@ -11,8 +12,6 @@
   import FanSkeleton from "./_components/FanSkeleton.svelte";
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
   import { activateWhenNear } from "$lib/actions/activate-when-near";
-  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
-  import { onMount } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
@@ -90,10 +89,10 @@
     });
   }
 
-  // Per-visit demo: freshly generated for every visitor (no canonical
-  // example). The hero player is keyed on sequence id, so its dice button
-  // reloads onto a fresh draw without a page refresh.
-  let demoSeq = $state<SequenceData | null>(null);
+  // The baked draw gives the first screen real movement immediately. Generating
+  // a fresh draw can take several attempts on a phone, so that work begins only
+  // when the visitor asks for another one instead of blocking the page's proof.
+  let demoSeq = $state<SequenceData | null>(FALLBACK_DEMO);
   let rerollingDemo = $state(false);
   let demoError = $state<string | null>(null);
 
@@ -103,18 +102,9 @@
     return generatePerVisitDemo();
   }
 
-  onMount(() => {
-    let mounted = true;
-    const cancel = runAfterNamedRouteMorphIdle(() => {
-      void refreshDemo(() => mounted);
-    });
-
-    return () => {
-      mounted = false;
-      cancel();
-    };
-  });
-  async function refreshDemo(isCurrent: () => boolean = () => true): Promise<void> {
+  async function refreshDemo(
+    isCurrent: () => boolean = () => true
+  ): Promise<void> {
     if (rerollingDemo) return;
     rerollingDemo = true;
     try {
@@ -253,7 +243,11 @@
   const activateTunnelWhenNear = (node: HTMLElement) =>
     activateDemoWhenNear(node, "tunnel", () => (tunnelActive = true));
   const activateChoreoCardsWhenNear = (node: HTMLElement) =>
-    activateDemoWhenNear(node, "choreo_cards", () => (choreoCardsActive = true));
+    activateDemoWhenNear(
+      node,
+      "choreo_cards",
+      () => (choreoCardsActive = true)
+    );
   const activate3DWhenNear = (node: HTMLElement) =>
     activateDemoWhenNear(node, "viewer_3d", () => (viewer3DActive = true));
   const activatePlayWithItWhenNear = (node: HTMLElement) =>
@@ -413,10 +407,13 @@
     <div class="hero-stage">
       <SequenceHeroDemo
         sequence={demoSeq}
-        note="a rotated LOOP from the generator, animating live"
+        note="generated in Composer and playing live"
         onReroll={rerollHeroDemo}
         rerolling={rerollingDemo}
         errorMessage={demoError}
+        showNotationStrip={true}
+        showWordHeader={true}
+        loadPriority="immediate"
       />
     </div>
 
