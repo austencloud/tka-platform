@@ -1,8 +1,8 @@
 diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
-index cffd90edb8..581fdea0cf 100644
+index c70d1ea5d6..75917b8631 100644
 --- a/codex-rs/tui/src/app.rs
 +++ b/codex-rs/tui/src/app.rs
-@@ -177,6 +177,7 @@ use ratatui::widgets::Paragraph;
+@@ -180,6 +180,7 @@ use ratatui::widgets::Paragraph;
  use ratatui::widgets::Wrap;
  use std::collections::BTreeMap;
  use std::collections::HashMap;
@@ -10,7 +10,7 @@ index cffd90edb8..581fdea0cf 100644
  use std::collections::VecDeque;
  use std::io::Write;
  use std::path::Path;
-@@ -219,6 +220,7 @@ mod side;
+@@ -223,6 +224,7 @@ mod side;
  mod startup_prompts;
  mod thread_events;
  mod thread_goal_actions;
@@ -18,7 +18,7 @@ index cffd90edb8..581fdea0cf 100644
  mod thread_routing;
  mod thread_session_state;
  mod thread_settings;
-@@ -234,6 +236,7 @@ use self::side::SideParentStatusChange;
+@@ -238,6 +240,7 @@ use self::side::SideParentStatusChange;
  use self::side::SideThreadState;
  use self::startup_prompts::*;
  use self::thread_events::*;
@@ -26,7 +26,7 @@ index cffd90edb8..581fdea0cf 100644
  
  const EXTERNAL_EDITOR_HINT: &str = "Save and close external editor to continue.";
  const THREAD_EVENT_CHANNEL_CAPACITY: usize = 32768;
-@@ -569,6 +572,8 @@ pub(crate) struct App {
+@@ -574,6 +577,8 @@ pub(crate) struct App {
      thread_event_listener_tasks: HashMap<ThreadId, JoinHandle<()>>,
      agent_navigation: AgentNavigationState,
      side_threads: HashMap<ThreadId, SideThreadState>,
@@ -35,7 +35,7 @@ index cffd90edb8..581fdea0cf 100644
      active_thread_id: Option<ThreadId>,
      active_thread_rx: Option<mpsc::Receiver<ThreadBufferedEvent>>,
      primary_thread_id: Option<ThreadId>,
-@@ -1058,6 +1063,8 @@ See the Codex keymap documentation for supported actions and examples."
+@@ -1067,6 +1072,8 @@ See the Codex keymap documentation for supported actions and examples."
              thread_event_listener_tasks: HashMap::new(),
              agent_navigation: AgentNavigationState::default(),
              side_threads: HashMap::new(),
@@ -45,10 +45,10 @@ index cffd90edb8..581fdea0cf 100644
              active_thread_rx: None,
              primary_thread_id: None,
 diff --git a/codex-rs/tui/src/app/app_server_events.rs b/codex-rs/tui/src/app/app_server_events.rs
-index 06ed4320d8..a63e3f73e2 100644
+index 188fbd8dc8..3f2f84005d 100644
 --- a/codex-rs/tui/src/app/app_server_events.rs
 +++ b/codex-rs/tui/src/app/app_server_events.rs
-@@ -142,6 +142,9 @@ impl App {
+@@ -156,6 +156,9 @@ impl App {
  
          match server_notification_thread_target(&notification) {
              ServerNotificationThreadTarget::Thread(thread_id) => {
@@ -59,10 +59,10 @@ index 06ed4320d8..a63e3f73e2 100644
                      || self.primary_thread_id.is_none()
                  {
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index a5d408d4ca..19d7ec25c0 100644
+index 42dbcae5a4..550238b667 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
-@@ -1953,6 +1953,18 @@ impl App {
+@@ -1999,6 +1999,18 @@ impl App {
                      .handle_start_side(tui, app_server, parent_thread_id, user_message)
                      .await;
              }
@@ -82,10 +82,10 @@ index a5d408d4ca..19d7ec25c0 100644
                  self.chat_widget.open_skills_list();
              }
 diff --git a/codex-rs/tui/src/app/test_support.rs b/codex-rs/tui/src/app/test_support.rs
-index e0eafaa23b..8c69b609e1 100644
+index d4beb21635..cb3417ad3e 100644
 --- a/codex-rs/tui/src/app/test_support.rs
 +++ b/codex-rs/tui/src/app/test_support.rs
-@@ -56,6 +56,8 @@ pub(super) async fn make_test_app() -> App {
+@@ -57,6 +57,8 @@ pub(super) async fn make_test_app() -> App {
          thread_event_listener_tasks: HashMap::new(),
          agent_navigation: AgentNavigationState::default(),
          side_threads: HashMap::new(),
@@ -95,10 +95,10 @@ index e0eafaa23b..8c69b609e1 100644
          active_thread_rx: None,
          primary_thread_id: None,
 diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
-index 04c2e8505b..2eb3640f00 100644
+index f044c45afb..d358d0a6db 100644
 --- a/codex-rs/tui/src/app/tests.rs
 +++ b/codex-rs/tui/src/app/tests.rs
-@@ -4095,6 +4095,8 @@ async fn make_test_app() -> App {
+@@ -4655,6 +4655,8 @@ async fn make_test_app() -> App {
          thread_event_listener_tasks: HashMap::new(),
          agent_navigation: AgentNavigationState::default(),
          side_threads: HashMap::new(),
@@ -107,7 +107,7 @@ index 04c2e8505b..2eb3640f00 100644
          active_thread_id: None,
          active_thread_rx: None,
          primary_thread_id: None,
-@@ -4160,6 +4162,8 @@ async fn make_test_app_with_channels() -> (
+@@ -4722,6 +4724,8 @@ async fn make_test_app_with_channels() -> (
              thread_event_listener_tasks: HashMap::new(),
              agent_navigation: AgentNavigationState::default(),
              side_threads: HashMap::new(),
@@ -118,7 +118,7 @@ index 04c2e8505b..2eb3640f00 100644
              primary_thread_id: None,
 diff --git a/codex-rs/tui/src/app/thread_name_generation.rs b/codex-rs/tui/src/app/thread_name_generation.rs
 new file mode 100644
-index 0000000000..b22b71439e
+index 0000000000..471d70b61b
 --- /dev/null
 +++ b/codex-rs/tui/src/app/thread_name_generation.rs
 @@ -0,0 +1,275 @@
@@ -399,7 +399,7 @@ index 0000000000..b22b71439e
 +mod tests;
 diff --git a/codex-rs/tui/src/app/thread_name_generation_tests.rs b/codex-rs/tui/src/app/thread_name_generation_tests.rs
 new file mode 100644
-index 0000000000..82965f2e63
+index 0000000000..528154d575
 --- /dev/null
 +++ b/codex-rs/tui/src/app/thread_name_generation_tests.rs
 @@ -0,0 +1,103 @@
@@ -507,10 +507,10 @@ index 0000000000..82965f2e63
 +    );
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index 553a58d8d4..350e5d2654 100644
+index 0bb4990ff2..17a3097dcd 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
-@@ -158,6 +158,17 @@ pub(crate) enum AppEvent {
+@@ -188,6 +188,17 @@ pub(crate) enum AppEvent {
          user_message: Option<UserMessage>,
      },
  
@@ -528,6 +528,1209 @@ index 553a58d8d4..350e5d2654 100644
      /// Submit an op to the specified thread, regardless of current focus.
      SubmitThreadOp {
          thread_id: ThreadId,
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer.rs b/codex-rs/tui/src/bottom_pane/chat_composer.rs
+index 2404ad13ca..dc45705217 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer.rs
+@@ -549,6 +549,7 @@ impl ChatComposer {
+             self.draft.is_bash_mode,
+             self.builtin_command_flags(),
+             &self.service_tier_commands,
++            self.skills.as_deref().unwrap_or(&[]),
+         )
+     }
+ 
+@@ -738,6 +739,9 @@ impl ChatComposer {
+ 
+     pub fn set_skill_mentions(&mut self, skills: Option<Vec<SkillMetadata>>) {
+         self.skills = skills;
++        if matches!(self.popups.active, ActivePopup::Command(_)) {
++            self.popups.active = ActivePopup::None;
++        }
+         self.sync_popups();
+     }
+ 
+@@ -2847,6 +2851,16 @@ impl ChatComposer {
+         let original_pending_pastes = self.draft.pending_pastes.clone();
+         let mut text_elements = original_text_elements.clone();
+         let input_starts_with_space = original_input.starts_with(' ');
++        let skill_slash_command = if input_starts_with_space {
++            None
++        } else {
++            parse_slash_name(&text).and_then(|(name, _, _)| {
++                match self.slash_input().command(name) {
++                    Some(SlashCommandItem::Skill(command)) => Some((command, 1 + name.len())),
++                    _ => None,
++                }
++            })
++        };
+         self.draft.recent_submission_mention_bindings.clear();
+         self.draft.textarea.set_text_clearing_elements("");
+         self.draft.is_bash_mode = false;
+@@ -2866,6 +2880,21 @@ impl ChatComposer {
+         // If there is neither text nor attachments, suppress submission entirely.
+         text = text.trim().to_string();
+         text_elements = Self::trim_text_elements(&expanded_input, &text, text_elements);
++        let history_text = text.clone();
++        let history_text_elements = text_elements.clone();
++        let mut submission_mention_bindings = original_mention_bindings.clone();
++
++        if let Some((skill, command_token_end)) = &skill_slash_command {
++            text.replace_range(..1, "$");
++            text_elements.retain(|element| {
++                element.byte_range.start != 0 || element.byte_range.end != *command_token_end
++            });
++            submission_mention_bindings.push(MentionBinding {
++                sigil: '$',
++                mention: skill.command.clone(),
++                path: skill.path.to_string_lossy().into_owned(),
++            });
++        }
+ 
+         if slash_validation == SlashValidation::Immediate
+             && let SubmissionValidation::UnknownCommand(name) = self
+@@ -2914,11 +2943,11 @@ impl ChatComposer {
+         if text.is_empty() && self.attachments.is_empty() {
+             return None;
+         }
+-        self.draft.recent_submission_mention_bindings = original_mention_bindings.clone();
++        self.draft.recent_submission_mention_bindings = submission_mention_bindings;
+         if record_history && (!text.is_empty() || !self.attachments.is_empty()) {
+             self.history.record_local_submission(HistoryEntry {
+-                text: text.clone(),
+-                text_elements: text_elements.clone(),
++                text: history_text,
++                text_elements: history_text_elements,
+                 local_image_paths: self.attachments.local_image_paths(),
+                 remote_image_urls: self.attachments.remote_image_urls(),
+                 mention_bindings: original_mention_bindings,
+@@ -3122,6 +3151,9 @@ impl ChatComposer {
+         let command = self
+             .slash_input()
+             .bare_command(self.draft.textarea.text())?;
++        if matches!(&command, SlashCommandItem::Skill(_)) {
++            return None;
++        }
+         if self.reject_slash_command_if_unavailable(&command) {
+             self.stage_slash_command_history(&command);
+             self.record_pending_slash_command_history();
+@@ -3133,6 +3165,9 @@ impl ChatComposer {
+         Some(match command {
+             SlashCommandItem::Builtin(cmd) => InputResult::Command(cmd),
+             SlashCommandItem::ServiceTier(command) => InputResult::ServiceTierCommand(command),
++            SlashCommandItem::Skill(_) => {
++                unreachable!("skill slash aliases submit through the prompt path")
++            }
+         })
+     }
+ 
+@@ -3142,6 +3177,9 @@ impl ChatComposer {
+         let text = self.draft.textarea.text().to_string();
+         let inline_command = self.slash_input().inline_command(&text)?;
+         let command = inline_command.command;
++        if matches!(&command, SlashCommandItem::Skill(_)) {
++            return None;
++        }
+         if self.reject_slash_command_if_unavailable(&command) {
+             self.stage_slash_command_history(&command);
+             self.record_pending_slash_command_history();
+@@ -4252,7 +4290,10 @@ fn skill_description(skill: &SkillMetadata) -> Option<String> {
+ }
+ 
+ fn is_mention_name_char(byte: u8) -> bool {
+-    matches!(byte, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-')
++    matches!(
++        byte,
++        b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-' | b':'
++    )
+ }
+ 
+ fn ends_plaintext_at_mention(bytes: &[u8], index: usize) -> bool {
+@@ -4287,7 +4328,7 @@ fn starts_plaintext_at_mention(text: &str, index: usize) -> bool {
+ }
+ 
+ fn is_mention_name_char_char(ch: char) -> bool {
+-    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')
++    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | ':')
+ }
+ 
+ fn find_next_mention_token_range(text: &str, token: &str, from: usize) -> Option<Range<usize>> {
+@@ -8914,6 +8955,9 @@ mod tests {
+                 Some(CommandItem::ServiceTier(command)) => {
+                     panic!("expected model command, got service tier {command:?}")
+                 }
++                Some(CommandItem::Skill(command)) => {
++                    panic!("expected model command, got skill {command:?}")
++                }
+                 None => panic!("no selected command for '/mo'"),
+             },
+             _ => panic!("slash popup not active after typing '/mo'"),
+@@ -8996,6 +9040,9 @@ mod tests {
+                 Some(CommandItem::ServiceTier(command)) => {
+                     panic!("expected resume command, got service tier {command:?}")
+                 }
++                Some(CommandItem::Skill(command)) => {
++                    panic!("expected resume command, got skill {command:?}")
++                }
+                 None => panic!("no selected command for '/res'"),
+             },
+             _ => panic!("slash popup not active after typing '/res'"),
+@@ -9050,6 +9097,9 @@ mod tests {
+                 Some(CommandItem::ServiceTier(command)) => {
+                     panic!("expected pets command, got service tier {command:?}")
+                 }
++                Some(CommandItem::Skill(command)) => {
++                    panic!("expected pets command, got skill {command:?}")
++                }
+                 None => panic!("no selected command for '/pet'"),
+             },
+             _ => panic!("slash popup not active after typing '/pet'"),
+@@ -9104,6 +9154,9 @@ mod tests {
+                 Some(CommandItem::ServiceTier(command)) => {
+                     panic!("expected btw command, got service tier {command:?}")
+                 }
++                Some(CommandItem::Skill(command)) => {
++                    panic!("expected btw command, got skill {command:?}")
++                }
+                 None => panic!("no selected command for '/bt'"),
+             },
+             _ => panic!("slash popup not active after typing '/bt'"),
+@@ -9158,6 +9211,9 @@ mod tests {
+                 Some(CommandItem::ServiceTier(command)) => {
+                     panic!("expected side command, got service tier {command:?}")
+                 }
++                Some(CommandItem::Skill(command)) => {
++                    panic!("expected side command, got skill {command:?}")
++                }
+                 None => panic!("no selected command for '/si'"),
+             },
+             _ => panic!("slash popup not active after typing '/si'"),
+@@ -9196,6 +9252,138 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn skill_slash_submission_expands_to_bound_skill_mention() {
++        let (mut composer, _rx) = new_test_composer();
++        let skill = test_skill_metadata("queue");
++        let expected_path = skill.path.to_string_lossy().into_owned();
++        composer.set_skill_mentions(Some(vec![skill]));
++        composer.set_text_content(
++            "/queue prioritize the feedback backlog".to_string(),
++            Vec::new(),
++            Vec::new(),
++        );
++
++        let (result, _) = composer.handle_submission(/*should_queue*/ false);
++
++        match result {
++            InputResult::Submitted {
++                text,
++                text_elements,
++            } => {
++                assert_eq!(text, "$queue prioritize the feedback backlog");
++                assert!(text_elements.is_empty());
++            }
++            other => panic!("expected a submitted skill prompt, got {other:?}"),
++        }
++        assert_eq!(
++            composer.take_recent_submission_mention_bindings(),
++            vec![MentionBinding {
++                sigil: '$',
++                mention: "queue".to_string(),
++                path: expected_path,
++            }]
++        );
++    }
++
++    #[test]
++    fn skill_slash_popup_enter_submits_selected_skill() {
++        let (mut composer, _rx) = new_test_composer();
++        composer.set_skill_mentions(Some(vec![test_skill_metadata("queue")]));
++        type_chars_humanlike(&mut composer, &['/', 'q', 'u', 'e']);
++
++        let (result, _) =
++            composer.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
++
++        match result {
++            InputResult::Submitted { text, .. } => assert_eq!(text, "$queue"),
++            other => panic!("expected popup selection to submit queue, got {other:?}"),
++        }
++    }
++
++    #[test]
++    fn skill_slash_skill_update_refreshes_open_popup() {
++        use super::super::command_popup::CommandItem;
++
++        let (mut composer, _rx) = new_test_composer();
++        composer.set_skill_mentions(Some(vec![test_skill_metadata("queue-old")]));
++        type_chars_humanlike(&mut composer, &['/', 'q', 'u', 'e']);
++        assert!(matches!(composer.popups.active, ActivePopup::Command(_)));
++
++        composer.set_skill_mentions(Some(vec![test_skill_metadata("queue")]));
++
++        let ActivePopup::Command(popup) = &composer.popups.active else {
++            panic!("expected slash popup to remain open after skills update");
++        };
++        match popup.selected_item() {
++            Some(CommandItem::Skill(command)) => assert_eq!(command.command, "queue"),
++            other => panic!("expected refreshed queue skill, got {other:?}"),
++        }
++    }
++
++    #[test]
++    fn skill_slash_queued_submission_keeps_explicit_skill_binding() {
++        let (mut composer, _rx) = new_test_composer();
++        let skill = test_skill_metadata("queue");
++        let expected_path = skill.path.to_string_lossy().into_owned();
++        composer.set_skill_mentions(Some(vec![skill]));
++        composer.set_text_content("/queue".to_string(), Vec::new(), Vec::new());
++
++        let (result, _) = composer.handle_submission(/*should_queue*/ true);
++
++        match result {
++            InputResult::Queued {
++                text,
++                action,
++                pending_pastes,
++                ..
++            } => {
++                assert_eq!(text, "$queue");
++                assert_eq!(action, QueuedInputAction::Plain);
++                assert!(pending_pastes.is_empty());
++            }
++            other => panic!("expected a queued skill prompt, got {other:?}"),
++        }
++        assert_eq!(
++            composer.take_recent_submission_mention_bindings(),
++            vec![MentionBinding {
++                sigil: '$',
++                mention: "queue".to_string(),
++                path: expected_path,
++            }]
++        );
++    }
++
++    #[test]
++    fn skill_slash_short_plugin_alias_binds_canonical_skill() {
++        let (mut composer, _rx) = new_test_composer();
++        let skill = test_skill_metadata("github:gh-fix-ci");
++        let expected_path = skill.path.to_string_lossy().into_owned();
++        composer.set_skill_mentions(Some(vec![skill]));
++        composer.set_text_content(
++            "/gh-fix-ci repair the failing checks".to_string(),
++            Vec::new(),
++            Vec::new(),
++        );
++
++        let (result, _) = composer.handle_submission(/*should_queue*/ false);
++
++        match result {
++            InputResult::Submitted { text, .. } => {
++                assert_eq!(text, "$gh-fix-ci repair the failing checks");
++            }
++            other => panic!("expected a submitted plugin skill prompt, got {other:?}"),
++        }
++        assert_eq!(
++            composer.take_recent_submission_mention_bindings(),
++            vec![MentionBinding {
++                sigil: '$',
++                mention: "gh-fix-ci".to_string(),
++                path: expected_path,
++            }]
++        );
++    }
++
+     fn flush_after_paste_burst(composer: &mut ChatComposer) -> bool {
+         std::thread::sleep(PasteBurst::recommended_active_flush_delay());
+         composer.flush_paste_burst_if_due()
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/slash_input.rs b/codex-rs/tui/src/bottom_pane/chat_composer/slash_input.rs
+index d8a6201946..ba784c12c5 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/slash_input.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/slash_input.rs
+@@ -16,6 +16,7 @@ use crate::bottom_pane::slash_commands::SlashCommandItem;
+ use crate::bottom_pane::slash_commands::find_slash_command;
+ use crate::bottom_pane::slash_commands::has_slash_command_prefix;
+ use crate::slash_command::SlashCommand;
++use codex_app_server_protocol::SkillMetadata;
+ use codex_protocol::user_input::ByteRange;
+ use codex_protocol::user_input::TextElement;
+ 
+@@ -48,6 +49,7 @@ pub(super) struct SlashInput<'a> {
+     is_bash_mode: bool,
+     command_flags: BuiltinCommandFlags,
+     service_tier_commands: &'a [ServiceTierCommand],
++    skills: &'a [SkillMetadata],
+ }
+ 
+ impl<'a> SlashInput<'a> {
+@@ -56,12 +58,14 @@ impl<'a> SlashInput<'a> {
+         is_bash_mode: bool,
+         command_flags: BuiltinCommandFlags,
+         service_tier_commands: &'a [ServiceTierCommand],
++        skills: &'a [SkillMetadata],
+     ) -> Self {
+         Self {
+             enabled,
+             is_bash_mode,
+             command_flags,
+             service_tier_commands,
++            skills,
+         }
+     }
+ 
+@@ -165,7 +169,12 @@ impl<'a> SlashInput<'a> {
+             return rest.is_empty();
+         }
+ 
+-        has_slash_command_prefix(name, self.command_flags, self.service_tier_commands)
++        has_slash_command_prefix(
++            name,
++            self.command_flags,
++            self.service_tier_commands,
++            self.skills,
++        )
+     }
+ 
+     pub(super) fn command_popup(&self, filter_text: &str) -> CommandPopup {
+@@ -182,13 +191,19 @@ impl<'a> SlashInput<'a> {
+                 side_conversation_active: self.command_flags.side_conversation_active,
+             },
+             self.service_tier_commands.to_vec(),
++            self.skills.to_vec(),
+         );
+         command_popup.on_composer_text_change(filter_text.to_string());
+         command_popup
+     }
+ 
+     pub(super) fn command(&self, name: &str) -> Option<SlashCommandItem> {
+-        find_slash_command(name, self.command_flags, self.service_tier_commands)
++        find_slash_command(
++            name,
++            self.command_flags,
++            self.service_tier_commands,
++            self.skills,
++        )
+     }
+ }
+ 
+@@ -350,16 +365,41 @@ impl ChatComposer {
+                                     |(_, args, _)| parent_owned_command_is_allowed(*cmd, args),
+                                 )
+                             }
+-                            CommandItem::ServiceTier(_) => false,
++                            CommandItem::ServiceTier(_) | CommandItem::Skill(_) => false,
+                         };
+                         if !command_is_allowed {
+                             return (InputResult::ParentOwnedInputBlocked, true);
+                         }
+                     }
+-                    if self
++                    let completed_with_args = self
+                         .complete_selected_slash_command_preserving_existing_draft_tail_as_inline_args(
+                             &sel,
+-                        )
++                        );
++                    if matches!(&sel, CommandItem::Skill(_)) {
++                        if !completed_with_args {
++                            let first_line = self
++                                .draft
++                                .textarea
++                                .text()
++                                .lines()
++                                .next()
++                                .unwrap_or("")
++                                .to_owned();
++                            if let Some(completed_text) =
++                                selected_command_completion(&first_line, &sel)
++                            {
++                                self.draft
++                                    .textarea
++                                    .set_text_clearing_elements(&completed_text);
++                                self.draft
++                                    .textarea
++                                    .set_cursor(self.draft.textarea.text().len());
++                            }
++                        }
++                        self.popups.active = ActivePopup::None;
++                        return self.handle_submission(self.queue_submissions);
++                    }
++                    if completed_with_args
+                         && let Some(result) = self.try_dispatch_slash_command_with_args()
+                     {
+                         return (result, true);
+@@ -374,6 +414,9 @@ impl ChatComposer {
+                             CommandItem::ServiceTier(command) => {
+                                 InputResult::ServiceTierCommand(command)
+                             }
++                            CommandItem::Skill(_) => {
++                                unreachable!("skill commands submit through the prompt path")
++                            }
+                         },
+                         true,
+                     );
+@@ -389,12 +432,10 @@ impl ChatComposer {
+         &mut self,
+         selected_cmd: &CommandItem,
+     ) -> bool {
+-        let CommandItem::Builtin(cmd) = selected_cmd else {
+-            return false;
+-        };
+-        if !cmd.supports_inline_args() {
++        if !selected_cmd.supports_inline_args() {
+             return false;
+         }
++        let command_name = selected_cmd.command();
+ 
+         let text = self.draft.textarea.text();
+         let first_line_end = text.find('\n').unwrap_or(text.len());
+@@ -413,14 +454,14 @@ impl ChatComposer {
+             return false;
+         }
+         let replace_end =
+-            if cursor <= 1 || (typed_command_name == cmd.command() && rest_after_token_is_empty) {
++            if cursor <= 1 || (typed_command_name == command_name && rest_after_token_is_empty) {
+                 command_token_end
+             } else {
+                 cursor
+             };
+         let tail = &text[replace_end..];
+         let tail_starts_with_whitespace = tail.chars().next().is_some_and(char::is_whitespace);
+-        let selected_command_text = format!("/{}", cmd.command());
++        let selected_command_text = format!("/{command_name}");
+         let replacement = if tail_starts_with_whitespace {
+             selected_command_text
+         } else {
+diff --git a/codex-rs/tui/src/bottom_pane/command_popup.rs b/codex-rs/tui/src/bottom_pane/command_popup.rs
+index f613e5ee3f..a0f615daba 100644
+--- a/codex-rs/tui/src/bottom_pane/command_popup.rs
++++ b/codex-rs/tui/src/bottom_pane/command_popup.rs
+@@ -11,11 +11,13 @@ use super::selection_popup_common::measure_rows_height_with_col_width_mode;
+ use super::selection_popup_common::render_rows_with_col_width_mode;
+ use super::slash_commands::BuiltinCommandFlags;
+ use super::slash_commands::ServiceTierCommand;
++use super::slash_commands::SkillCommand;
+ use super::slash_commands::SlashCommandItem;
+ use super::slash_commands::commands_for_input;
+ use crate::render::Insets;
+ use crate::render::RectExt;
+ use crate::slash_command::SlashCommand;
++use codex_app_server_protocol::SkillMetadata;
+ 
+ // Hide alias commands in the default popup list so each unique action appears once.
+ // `quit` is an alias of `exit`, and `btw` is an alias of `side`, so we skip
+@@ -31,6 +33,7 @@ const COMMAND_COLUMN_WIDTH: ColumnWidthConfig = ColumnWidthConfig::new(
+ pub(crate) enum CommandItem {
+     Builtin(SlashCommand),
+     ServiceTier(ServiceTierCommand),
++    Skill(SkillCommand),
+ }
+ 
+ pub(crate) struct CommandPopup {
+@@ -72,15 +75,17 @@ impl CommandPopup {
+     pub(crate) fn new(
+         flags: CommandPopupFlags,
+         service_tier_commands: Vec<ServiceTierCommand>,
++        skills: Vec<SkillMetadata>,
+     ) -> Self {
+         // Keep built-in availability in sync with the composer.
+-        let commands = commands_for_input(flags.into(), &service_tier_commands)
++        let commands = commands_for_input(flags.into(), &service_tier_commands, &skills)
+             .into_iter()
+             .filter_map(|command| match command {
+                 SlashCommandItem::Builtin(cmd) => (!cmd.command().starts_with("debug")
+                     && cmd != SlashCommand::Apps)
+                     .then_some(CommandItem::Builtin(cmd)),
+                 SlashCommandItem::ServiceTier(command) => Some(CommandItem::ServiceTier(command)),
++                SlashCommandItem::Skill(command) => Some(CommandItem::Skill(command)),
+             })
+             .collect();
+         Self {
+@@ -212,7 +217,8 @@ impl CommandPopup {
+                     match_indices: indices.map(|v| v.into_iter().map(|i| i + 1).collect()),
+                     display_shortcut: None,
+                     description: Some(description),
+-                    category_tag: None,
++                    category_tag: matches!(item, CommandItem::Skill(_))
++                        .then(|| "[Skill]".to_string()),
+                     wrap_indent: None,
+                     is_disabled: false,
+                     disabled_reason: None,
+@@ -250,6 +256,15 @@ impl CommandItem {
+         match self {
+             Self::Builtin(cmd) => cmd.command(),
+             Self::ServiceTier(command) => &command.name,
++            Self::Skill(command) => &command.command,
++        }
++    }
++
++    pub(crate) fn supports_inline_args(&self) -> bool {
++        match self {
++            Self::Builtin(cmd) => cmd.supports_inline_args(),
++            Self::ServiceTier(_) => false,
++            Self::Skill(_) => true,
+         }
+     }
+ 
+@@ -257,6 +272,7 @@ impl CommandItem {
+         match self {
+             Self::Builtin(cmd) => cmd.description(),
+             Self::ServiceTier(command) => &command.description,
++            Self::Skill(command) => &command.description,
+         }
+     }
+ }
+@@ -281,11 +297,26 @@ impl WidgetRef for CommandPopup {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use crate::test_support::PathBufExt;
++    use crate::test_support::test_path_buf;
+     use pretty_assertions::assert_eq;
+ 
++    fn skill(name: &str) -> SkillMetadata {
++        SkillMetadata {
++            name: name.to_string(),
++            description: format!("Run the {name} workflow."),
++            short_description: None,
++            interface: None,
++            dependencies: None,
++            path: test_path_buf(&format!("/tmp/{name}/SKILL.md")).abs(),
++            scope: crate::test_support::skill_scope_user(),
++            enabled: true,
++        }
++    }
++
+     #[test]
+     fn filter_includes_init_when_typing_prefix() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         // Simulate the composer line starting with '/in' so the popup filters
+         // matching commands by prefix.
+         popup.on_composer_text_change("/in".to_string());
+@@ -296,6 +327,7 @@ mod tests {
+         let has_init = matches.iter().any(|item| match item {
+             CommandItem::Builtin(cmd) => cmd.command() == "init",
+             CommandItem::ServiceTier(_) => false,
++            CommandItem::Skill(_) => false,
+         });
+         assert!(
+             has_init,
+@@ -305,7 +337,7 @@ mod tests {
+ 
+     #[test]
+     fn selecting_init_by_exact_match() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/init".to_string());
+ 
+         // When an exact match exists, the selected command should be that
+@@ -316,13 +348,16 @@ mod tests {
+             Some(CommandItem::ServiceTier(command)) => {
+                 panic!("expected init command, got service tier {command:?}")
+             }
++            Some(CommandItem::Skill(command)) => {
++                panic!("expected init command, got skill {command:?}")
++            }
+             None => panic!("expected a selected command for exact match"),
+         }
+     }
+ 
+     #[test]
+     fn model_is_first_suggestion_for_mo() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/mo".to_string());
+         let matches = popup.filtered_items();
+         match matches.first() {
+@@ -330,6 +365,9 @@ mod tests {
+             Some(CommandItem::ServiceTier(command)) => {
+                 panic!("expected model command, got service tier {command:?}")
+             }
++            Some(CommandItem::Skill(command)) => {
++                panic!("expected model command, got skill {command:?}")
++            }
+             None => panic!("expected at least one match for '/mo'"),
+         }
+     }
+@@ -346,6 +384,7 @@ mod tests {
+                 name: "fast".to_string(),
+                 description: "Fastest inference with increased plan usage".to_string(),
+             }],
++            Vec::new(),
+         );
+         popup.on_composer_text_change("/fa".to_string());
+ 
+@@ -367,9 +406,36 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn skill_slash_popup_shows_queue_with_skill_label() {
++        let mut popup = CommandPopup::new(
++            CommandPopupFlags::default(),
++            Vec::new(),
++            vec![skill("queue")],
++        );
++        popup.on_composer_text_change("/que".to_string());
++
++        match popup.selected_item() {
++            Some(CommandItem::Skill(command)) => {
++                assert_eq!(command.command, "queue");
++                assert_eq!(command.skill_name, "queue");
++            }
++            other => panic!("expected queue skill command, got {other:?}"),
++        }
++
++        let rows = popup.rows_from_matches(popup.filtered());
++        assert_eq!(rows.len(), 1);
++        assert_eq!(rows[0].name, "/queue");
++        assert_eq!(
++            rows[0].description.as_deref(),
++            Some("Run the queue workflow.")
++        );
++        assert_eq!(rows[0].category_tag.as_deref(), Some("[Skill]"));
++    }
++
+     #[test]
+     fn filtered_commands_keep_presentation_order_for_prefix() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/m".to_string());
+ 
+         let cmds: Vec<String> = popup
+@@ -378,6 +444,7 @@ mod tests {
+             .map(|item| match item {
+                 CommandItem::Builtin(cmd) => cmd.command().to_string(),
+                 CommandItem::ServiceTier(command) => command.name,
++                CommandItem::Skill(command) => command.command,
+             })
+             .collect();
+         assert_eq!(
+@@ -394,7 +461,7 @@ mod tests {
+     #[cfg(any(target_os = "macos", target_os = "windows"))]
+     #[test]
+     fn app_command_popup_snapshot() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/app".to_string());
+ 
+         let width = 72;
+@@ -413,7 +480,7 @@ mod tests {
+     #[cfg(target_os = "macos")]
+     #[test]
+     fn default_command_popup_items_snapshot() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/".to_string());
+ 
+         let commands = popup
+@@ -432,7 +499,7 @@ mod tests {
+ 
+     #[test]
+     fn prefix_filter_limits_matches_for_ac() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/ac".to_string());
+ 
+         let cmds: Vec<String> = popup
+@@ -441,6 +508,7 @@ mod tests {
+             .map(|item| match item {
+                 CommandItem::Builtin(cmd) => cmd.command().to_string(),
+                 CommandItem::ServiceTier(command) => command.name,
++                CommandItem::Skill(command) => command.command,
+             })
+             .collect();
+         assert!(
+@@ -451,7 +519,7 @@ mod tests {
+ 
+     #[test]
+     fn changing_filter_resets_selection_after_scrolling() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/".to_string());
+ 
+         for _ in 0..MAX_POPUP_ROWS {
+@@ -483,7 +551,7 @@ mod tests {
+ 
+     #[test]
+     fn quit_hidden_in_empty_filter_but_shown_for_prefix() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/".to_string());
+         let items = popup.filtered_items();
+         assert!(!items.contains(&CommandItem::Builtin(SlashCommand::Quit)));
+@@ -495,7 +563,7 @@ mod tests {
+ 
+     #[test]
+     fn btw_hidden_in_empty_filter_but_shown_for_prefix() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/".to_string());
+         let items = popup.filtered_items();
+         assert!(!items.contains(&CommandItem::Builtin(SlashCommand::Btw)));
+@@ -507,7 +575,7 @@ mod tests {
+ 
+     #[test]
+     fn plan_command_hidden_when_collaboration_modes_disabled() {
+-        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let mut popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         popup.on_composer_text_change("/".to_string());
+ 
+         let cmds: Vec<String> = popup
+@@ -516,6 +584,7 @@ mod tests {
+             .map(|item| match item {
+                 CommandItem::Builtin(cmd) => cmd.command().to_string(),
+                 CommandItem::ServiceTier(command) => command.name,
++                CommandItem::Skill(command) => command.command,
+             })
+             .collect();
+         assert!(
+@@ -539,6 +608,7 @@ mod tests {
+                 side_conversation_active: false,
+             },
+             Vec::new(),
++            Vec::new(),
+         );
+         popup.on_composer_text_change("/plan".to_string());
+ 
+@@ -547,6 +617,9 @@ mod tests {
+             Some(CommandItem::ServiceTier(command)) => {
+                 panic!("expected plan command, got service tier {command:?}")
+             }
++            Some(CommandItem::Skill(command)) => {
++                panic!("expected plan command, got skill {command:?}")
++            }
+             other => panic!("expected plan to be selected for exact match, got {other:?}"),
+         }
+     }
+@@ -566,6 +639,7 @@ mod tests {
+                 side_conversation_active: false,
+             },
+             Vec::new(),
++            Vec::new(),
+         );
+         popup.on_composer_text_change("/pers".to_string());
+ 
+@@ -575,6 +649,7 @@ mod tests {
+             .map(|item| match item {
+                 CommandItem::Builtin(cmd) => cmd.command().to_string(),
+                 CommandItem::ServiceTier(command) => command.name,
++                CommandItem::Skill(command) => command.command,
+             })
+             .collect();
+         assert!(
+@@ -598,6 +673,7 @@ mod tests {
+                 side_conversation_active: false,
+             },
+             Vec::new(),
++            Vec::new(),
+         );
+         popup.on_composer_text_change("/personality".to_string());
+ 
+@@ -606,19 +682,23 @@ mod tests {
+             Some(CommandItem::ServiceTier(command)) => {
+                 panic!("expected personality command, got service tier {command:?}")
+             }
++            Some(CommandItem::Skill(command)) => {
++                panic!("expected personality command, got skill {command:?}")
++            }
+             other => panic!("expected personality to be selected for exact match, got {other:?}"),
+         }
+     }
+ 
+     #[test]
+     fn debug_commands_are_hidden_from_popup() {
+-        let popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new());
++        let popup = CommandPopup::new(CommandPopupFlags::default(), Vec::new(), Vec::new());
+         let cmds: Vec<String> = popup
+             .filtered_items()
+             .into_iter()
+             .map(|item| match item {
+                 CommandItem::Builtin(cmd) => cmd.command().to_string(),
+                 CommandItem::ServiceTier(command) => command.name,
++                CommandItem::Skill(command) => command.command,
+             })
+             .collect();
+ 
+diff --git a/codex-rs/tui/src/bottom_pane/slash_commands.rs b/codex-rs/tui/src/bottom_pane/slash_commands.rs
+index 6ca1ba93d1..62cb70fd69 100644
+--- a/codex-rs/tui/src/bottom_pane/slash_commands.rs
++++ b/codex-rs/tui/src/bottom_pane/slash_commands.rs
+@@ -3,10 +3,15 @@
+ //! The same sandbox- and feature-gating rules are used by both the composer
+ //! and the command popup. Centralizing them here keeps those call sites small
+ //! and ensures they stay in sync.
++use std::collections::HashMap;
++use std::collections::HashSet;
+ use std::str::FromStr;
+ 
++use codex_app_server_protocol::SkillMetadata;
++use codex_utils_absolute_path::AbsolutePathBuf;
+ use codex_utils_fuzzy_match::fuzzy_match;
+ 
++use crate::skills_helpers::skill_description;
+ use crate::slash_command::SlashCommand;
+ use crate::slash_command::built_in_slash_commands;
+ 
+@@ -17,10 +22,19 @@ pub(crate) struct ServiceTierCommand {
+     pub(crate) description: String,
+ }
+ 
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct SkillCommand {
++    pub(crate) command: String,
++    pub(crate) skill_name: String,
++    pub(crate) description: String,
++    pub(crate) path: AbsolutePathBuf,
++}
++
+ #[derive(Clone, Debug, PartialEq, Eq)]
+ pub(crate) enum SlashCommandItem {
+     Builtin(SlashCommand),
+     ServiceTier(ServiceTierCommand),
++    Skill(SkillCommand),
+ }
+ 
+ impl SlashCommandItem {
+@@ -28,6 +42,7 @@ impl SlashCommandItem {
+         match self {
+             Self::Builtin(cmd) => cmd.command(),
+             Self::ServiceTier(command) => &command.name,
++            Self::Skill(command) => &command.command,
+         }
+     }
+ 
+@@ -35,6 +50,7 @@ impl SlashCommandItem {
+         match self {
+             Self::Builtin(cmd) => cmd.supports_inline_args(),
+             Self::ServiceTier(_) => false,
++            Self::Skill(_) => true,
+         }
+     }
+ 
+@@ -42,6 +58,7 @@ impl SlashCommandItem {
+         match self {
+             Self::Builtin(cmd) => cmd.available_in_side_conversation(),
+             Self::ServiceTier(_) => false,
++            Self::Skill(_) => true,
+         }
+     }
+ 
+@@ -49,6 +66,7 @@ impl SlashCommandItem {
+         match self {
+             Self::Builtin(cmd) => cmd.available_during_task(),
+             Self::ServiceTier(_) => true,
++            Self::Skill(_) => true,
+         }
+     }
+ }
+@@ -84,6 +102,7 @@ pub(crate) fn builtins_for_input(flags: BuiltinCommandFlags) -> Vec<(&'static st
+ pub(crate) fn commands_for_input(
+     flags: BuiltinCommandFlags,
+     service_tier_commands: &[ServiceTierCommand],
++    skills: &[SkillMetadata],
+ ) -> Vec<SlashCommandItem> {
+     let mut commands = Vec::new();
+     let tiers_enabled = flags.service_tier_commands_enabled;
+@@ -98,12 +117,121 @@ pub(crate) fn commands_for_input(
+             );
+         }
+     }
++    commands.extend(
++        skill_commands_for_input(flags, service_tier_commands, skills)
++            .into_iter()
++            .map(SlashCommandItem::Skill),
++    );
+     commands
+         .into_iter()
+         .filter(|cmd| !flags.side_conversation_active || cmd.available_in_side_conversation())
+         .collect()
+ }
+ 
++fn skill_commands_for_input(
++    flags: BuiltinCommandFlags,
++    service_tier_commands: &[ServiceTierCommand],
++    skills: &[SkillMetadata],
++) -> Vec<SkillCommand> {
++    let skills = skills
++        .iter()
++        .filter(|skill| skill.enabled && valid_skill_command_name(&skill.name))
++        .collect::<Vec<_>>();
++    let preferred_name_counts =
++        skills
++            .iter()
++            .fold(HashMap::<&str, usize>::new(), |mut counts, skill| {
++                *counts
++                    .entry(preferred_skill_command_name(&skill.name))
++                    .or_default() += 1;
++                counts
++            });
++    let canonical_name_counts =
++        skills
++            .iter()
++            .fold(HashMap::<&str, usize>::new(), |mut counts, skill| {
++                *counts.entry(skill.name.as_str()).or_default() += 1;
++                counts
++            });
++    let mut used_names = HashSet::new();
++
++    skills
++        .into_iter()
++        .map(|skill| {
++            let preferred_name = preferred_skill_command_name(&skill.name);
++            let preferred_is_unique = preferred_name_counts.get(preferred_name).copied() == Some(1);
++            let canonical_is_unique =
++                canonical_name_counts.get(skill.name.as_str()).copied() == Some(1);
++            let command = if preferred_is_unique
++                && !slash_name_is_reserved(
++                    preferred_name,
++                    flags,
++                    service_tier_commands,
++                    &used_names,
++                ) {
++                preferred_name.to_string()
++            } else if canonical_is_unique
++                && !slash_name_is_reserved(&skill.name, flags, service_tier_commands, &used_names)
++            {
++                skill.name.clone()
++            } else {
++                unique_skill_command_name(&skill.name, flags, service_tier_commands, &used_names)
++            };
++            used_names.insert(command.clone());
++            SkillCommand {
++                command,
++                skill_name: skill.name.clone(),
++                description: skill_description(skill).trim().to_string(),
++                path: skill.path.clone(),
++            }
++        })
++        .collect()
++}
++
++fn valid_skill_command_name(name: &str) -> bool {
++    !name.is_empty() && !name.contains('/') && !name.chars().any(char::is_whitespace)
++}
++
++fn preferred_skill_command_name(name: &str) -> &str {
++    name.rsplit_once(':')
++        .map(|(_, skill_name)| skill_name)
++        .filter(|skill_name| !skill_name.is_empty())
++        .unwrap_or(name)
++}
++
++fn slash_name_is_reserved(
++    name: &str,
++    flags: BuiltinCommandFlags,
++    service_tier_commands: &[ServiceTierCommand],
++    used_names: &HashSet<String>,
++) -> bool {
++    used_names.contains(name)
++        || find_builtin_command(name, flags).is_some()
++        || flags.service_tier_commands_enabled
++            && service_tier_commands
++                .iter()
++                .any(|command| command.name == name)
++}
++
++fn unique_skill_command_name(
++    skill_name: &str,
++    flags: BuiltinCommandFlags,
++    service_tier_commands: &[ServiceTierCommand],
++    used_names: &HashSet<String>,
++) -> String {
++    let base = format!("skill:{skill_name}");
++    if !slash_name_is_reserved(&base, flags, service_tier_commands, used_names) {
++        return base;
++    }
++
++    (2usize..)
++        .map(|suffix| format!("{base}:{suffix}"))
++        .find(|candidate| {
++            !slash_name_is_reserved(candidate, flags, service_tier_commands, used_names)
++        })
++        .expect("skill slash command suffix space should be unbounded")
++}
++
+ /// Find a single built-in command by a recognized name or alias, after applying feature gating.
+ ///
+ /// Side-conversation and token-activity gating are intentionally enforced by dispatch rather than
+@@ -129,13 +257,14 @@ pub(crate) fn find_slash_command(
+     name: &str,
+     flags: BuiltinCommandFlags,
+     service_tier_commands: &[ServiceTierCommand],
++    skills: &[SkillMetadata],
+ ) -> Option<SlashCommandItem> {
+     if let Some(cmd) = find_builtin_command(name, flags) {
+         return Some(SlashCommandItem::Builtin(cmd));
+     }
+ 
+     let tiers_enabled = flags.service_tier_commands_enabled;
+-    tiers_enabled
++    if let Some(command) = tiers_enabled
+         .then(|| {
+             service_tier_commands
+                 .iter()
+@@ -144,14 +273,23 @@ pub(crate) fn find_slash_command(
+                 .map(SlashCommandItem::ServiceTier)
+         })
+         .flatten()
++    {
++        return Some(command);
++    }
++
++    skill_commands_for_input(flags, service_tier_commands, skills)
++        .into_iter()
++        .find(|command| command.command == name)
++        .map(SlashCommandItem::Skill)
+ }
+ 
+ pub(crate) fn has_slash_command_prefix(
+     name: &str,
+     flags: BuiltinCommandFlags,
+     service_tier_commands: &[ServiceTierCommand],
++    skills: &[SkillMetadata],
+ ) -> bool {
+-    commands_for_input(flags, service_tier_commands)
++    commands_for_input(flags, service_tier_commands, skills)
+         .into_iter()
+         .any(|command| fuzzy_match(command.command(), name).is_some())
+ }
+@@ -159,6 +297,8 @@ pub(crate) fn has_slash_command_prefix(
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use crate::test_support::PathBufExt;
++    use crate::test_support::test_path_buf;
+     use pretty_assertions::assert_eq;
+     use std::slice::from_ref;
+ 
+@@ -176,6 +316,19 @@ mod tests {
+         }
+     }
+ 
++    fn skill(name: &str) -> SkillMetadata {
++        SkillMetadata {
++            name: name.to_string(),
++            description: format!("Run the {name} workflow."),
++            short_description: None,
++            interface: None,
++            dependencies: None,
++            path: test_path_buf(&format!("/tmp/{name}/SKILL.md")).abs(),
++            scope: crate::test_support::skill_scope_user(),
++            enabled: true,
++        }
++    }
++
+     #[test]
+     fn debug_command_still_resolves_for_dispatch() {
+         let cmd = find_builtin_command("debug-config", all_enabled_flags());
+@@ -224,7 +377,7 @@ mod tests {
+             description: "fastest inference".to_string(),
+         }];
+ 
+-        assert_eq!(find_slash_command("fast", flags, &commands), None);
++        assert_eq!(find_slash_command("fast", flags, &commands, &[]), None);
+     }
+ 
+     #[test]
+@@ -242,7 +395,7 @@ mod tests {
+             },
+         ];
+ 
+-        let items = commands_for_input(all_enabled_flags(), &commands);
++        let items = commands_for_input(all_enabled_flags(), &commands, &[]);
+         let model_idx = items
+             .iter()
+             .position(|item| matches!(item, SlashCommandItem::Builtin(SlashCommand::Model)))
+@@ -340,8 +493,86 @@ mod tests {
+         };
+ 
+         assert_eq!(
+-            find_slash_command("fast", flags, from_ref(&command)),
++            find_slash_command("fast", flags, from_ref(&command), &[]),
+             Some(SlashCommandItem::ServiceTier(command))
+         );
+     }
++
++    #[test]
++    fn skill_slash_command_resolves_enabled_skill() {
++        let skill = skill("queue");
++
++        assert_eq!(
++            find_slash_command("queue", all_enabled_flags(), &[], from_ref(&skill)),
++            Some(SlashCommandItem::Skill(SkillCommand {
++                command: "queue".to_string(),
++                skill_name: "queue".to_string(),
++                description: "Run the queue workflow.".to_string(),
++                path: skill.path,
++            }))
++        );
++    }
++
++    #[test]
++    fn skill_slash_command_uses_unique_short_name_for_plugin_skill() {
++        let skill = skill("github:gh-fix-ci");
++
++        let command = find_slash_command("gh-fix-ci", all_enabled_flags(), &[], from_ref(&skill));
++
++        assert!(
++            matches!(
++                command,
++                Some(SlashCommandItem::Skill(SkillCommand {
++                    skill_name,
++                    ..
++                })) if skill_name == "github:gh-fix-ci"
++            ),
++            "expected the unique plugin skill suffix to be directly invocable"
++        );
++    }
++
++    #[test]
++    fn skill_slash_command_keeps_full_names_when_short_names_collide() {
++        let skills = vec![skill("alpha:queue"), skill("beta:queue")];
++
++        let commands = commands_for_input(all_enabled_flags(), &[], &skills)
++            .into_iter()
++            .filter_map(|command| match command {
++                SlashCommandItem::Skill(command) => Some(command.command),
++                _ => None,
++            })
++            .collect::<Vec<_>>();
++
++        assert!(commands.contains(&"alpha:queue".to_string()));
++        assert!(commands.contains(&"beta:queue".to_string()));
++        assert!(!commands.contains(&"queue".to_string()));
++    }
++
++    #[test]
++    fn skill_slash_command_does_not_shadow_builtin() {
++        let skill = skill("review");
++
++        assert_eq!(
++            find_slash_command("review", all_enabled_flags(), &[], from_ref(&skill)),
++            Some(SlashCommandItem::Builtin(SlashCommand::Review))
++        );
++        assert!(
++            matches!(
++                find_slash_command("skill:review", all_enabled_flags(), &[], from_ref(&skill),),
++                Some(SlashCommandItem::Skill(_))
++            ),
++            "expected a collision-safe alias for the skill"
++        );
++    }
++
++    #[test]
++    fn skill_slash_command_omits_disabled_skill() {
++        let mut skill = skill("queue");
++        skill.enabled = false;
++
++        assert_eq!(
++            find_slash_command("queue", all_enabled_flags(), &[], from_ref(&skill)),
++            None
++        );
++    }
+ }
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
 index 4198943a4f..d355b628d8 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
@@ -665,10 +1868,10 @@ index 1a3993c1cd..7c2147622f 100644
              TerminalTitleItem::ContextRemaining => {
                  "Percentage of context window remaining (omitted when unknown)"
 diff --git a/codex-rs/tui/src/chatwidget/interaction.rs b/codex-rs/tui/src/chatwidget/interaction.rs
-index ba0aeb0a91..cc57f52003 100644
+index c59a818851..2ec06766d7 100644
 --- a/codex-rs/tui/src/chatwidget/interaction.rs
 +++ b/codex-rs/tui/src/chatwidget/interaction.rs
-@@ -298,36 +298,6 @@ impl ChatWidget {
+@@ -289,36 +289,6 @@ impl ChatWidget {
          self.transcript.last_agent_markdown.as_deref()
      }
  
@@ -705,11 +1908,63 @@ index ba0aeb0a91..cc57f52003 100644
      pub(super) fn ensure_thread_rename_allowed(&mut self) -> bool {
          match self.thread_rename_block_message.clone() {
              Some(message) => {
+diff --git a/codex-rs/tui/src/chatwidget/protocol.rs b/codex-rs/tui/src/chatwidget/protocol.rs
+index 9586f5fd7d..ad5643f17d 100644
+--- a/codex-rs/tui/src/chatwidget/protocol.rs
++++ b/codex-rs/tui/src/chatwidget/protocol.rs
+@@ -228,7 +228,11 @@ impl ChatWidget {
+             | ServerNotification::WindowsWorldWritableWarning(_)
+             | ServerNotification::WindowsSandboxSetupCompleted(_)
+             | ServerNotification::AccountLoginCompleted(_) => {}
+-            ServerNotification::ContextCompacted(_) => {}
++            ServerNotification::ContextCompacted(_) => {
++                if !from_replay {
++                    self.reassert_terminal_title();
++                }
++            }
+         }
+     }
+ 
+@@ -241,6 +245,8 @@ impl ChatWidget {
+         // this TUI already rendered locally. Once that turn ends, another
+         // client can submit the same text and it still needs its own user cell.
+         self.last_rendered_user_message_display = None;
++        let should_reassert_terminal_title =
++            replay_kind.is_none() && !matches!(&notification.turn.status, TurnStatus::InProgress);
+         match notification.turn.status {
+             TurnStatus::Completed => {
+                 self.last_non_retry_error = None;
+@@ -280,6 +286,9 @@ impl ChatWidget {
+             }
+             TurnStatus::InProgress => {}
+         }
++        if should_reassert_terminal_title {
++            self.reassert_terminal_title();
++        }
+     }
+ 
+     fn handle_item_started_notification(
+diff --git a/codex-rs/tui/src/chatwidget/skills.rs b/codex-rs/tui/src/chatwidget/skills.rs
+index 3d5f9cc1b6..a964345ae9 100644
+--- a/codex-rs/tui/src/chatwidget/skills.rs
++++ b/codex-rs/tui/src/chatwidget/skills.rs
+@@ -435,7 +435,10 @@ fn is_common_env_var(name: &str) -> bool {
+ }
+ 
+ fn is_mention_name_char(byte: u8) -> bool {
+-    matches!(byte, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-')
++    matches!(
++        byte,
++        b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-' | b':'
++    )
+ }
+ 
+ fn is_skill_path(path: &str) -> bool {
 diff --git a/codex-rs/tui/src/chatwidget/slash_dispatch.rs b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
-index df9c65f8ce..7f83c3dc72 100644
+index 877d2a846c..b2779303c9 100644
 --- a/codex-rs/tui/src/chatwidget/slash_dispatch.rs
 +++ b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
-@@ -264,9 +264,20 @@ impl ChatWidget {
+@@ -268,9 +268,20 @@ impl ChatWidget {
                  self.open_review_popup();
              }
              SlashCommand::Rename => {
@@ -731,7 +1986,65 @@ index df9c65f8ce..7f83c3dc72 100644
              }
              SlashCommand::Model => {
                  self.open_model_popup();
-@@ -1036,7 +1047,10 @@ impl ChatWidget {
+@@ -941,9 +952,13 @@ impl ChatWidget {
+         }
+ 
+         let service_tier_commands = self.current_model_service_tier_commands();
+-        let Some(command) =
+-            find_slash_command(name, self.builtin_command_flags(), &service_tier_commands)
+-        else {
++        let skills = self.bottom_pane.skills().cloned().unwrap_or_default();
++        let Some(command) = find_slash_command(
++            name,
++            self.builtin_command_flags(),
++            &service_tier_commands,
++            &skills,
++        ) else {
+             self.add_info_message(
+                 format!(
+                     r#"Unrecognized command '/{name}'. Type "/" for a list of supported commands."#
+@@ -953,6 +968,30 @@ impl ChatWidget {
+             return QueueDrain::Continue;
+         };
+ 
++        if let SlashCommandItem::Skill(skill) = &command {
++            let mut skill_text = text.clone();
++            skill_text.replace_range(..1, "$");
++            let command_token_end = 1 + name.len();
++            let mut skill_text_elements = text_elements.clone();
++            skill_text_elements.retain(|element| {
++                element.byte_range.start != 0 || element.byte_range.end != command_token_end
++            });
++            let mut skill_mention_bindings = mention_bindings.clone();
++            skill_mention_bindings.push(MentionBinding {
++                sigil: '$',
++                mention: skill.command.clone(),
++                path: skill.path.to_string_lossy().into_owned(),
++            });
++            self.submit_user_message(UserMessage {
++                text: skill_text,
++                local_images,
++                remote_image_urls,
++                text_elements: skill_text_elements,
++                mention_bindings: skill_mention_bindings,
++            });
++            return QueueDrain::Stop;
++        }
++
+         if rest.is_empty() {
+             return match command {
+                 SlashCommandItem::Builtin(cmd) => {
+@@ -963,6 +1002,9 @@ impl ChatWidget {
+                     self.handle_service_tier_command_dispatch(command);
+                     QueueDrain::Continue
+                 }
++                SlashCommandItem::Skill(_) => {
++                    unreachable!("skill slash aliases submit through the prompt path")
++                }
+             };
+         }
+ 
+@@ -1041,7 +1083,10 @@ impl ChatWidget {
      }
  
      fn queued_command_drain_result(&self, cmd: SlashCommand) -> QueueDrain {
@@ -802,35 +2115,13 @@ index c821ddce93..9f7280e8cb 100644
  
    monthly 65% left | weekly 50% left
    Press space to toggle; ←/→ to move; enter to confirm and close; esc to close
-diff --git a/codex-rs/tui/src/chatwidget/protocol.rs b/codex-rs/tui/src/chatwidget/protocol.rs
-index 9586f5fd7d..ad5643f17d 100644
---- a/codex-rs/tui/src/chatwidget/protocol.rs
-+++ b/codex-rs/tui/src/chatwidget/protocol.rs
-@@ -230,3 +230,7 @@ impl ChatWidget {
-             | ServerNotification::AccountLoginCompleted(_) => {}
--            ServerNotification::ContextCompacted(_) => {}
-+            ServerNotification::ContextCompacted(_) => {
-+                if !from_replay {
-+                    self.reassert_terminal_title();
-+                }
-+            }
-         }
-@@ -243,2 +247,4 @@ impl ChatWidget {
-         self.last_rendered_user_message_display = None;
-+        let should_reassert_terminal_title =
-+            replay_kind.is_none() && !matches!(&notification.turn.status, TurnStatus::InProgress);
-         match notification.turn.status {
-@@ -282,2 +288,5 @@ impl ChatWidget {
-         }
-+        if should_reassert_terminal_title {
-+            self.reassert_terminal_title();
-+        }
-     }
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
 index 7120462330..baa0e06fb8 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-@@ -225,3 +225,7 @@ impl ChatWidget {
+@@ -223,7 +223,11 @@ impl ChatWidget {
+     /// the last successfully written title so redundant OSC writes are avoided.
+     /// When the `activity` item is present in an animated running state, this also
      /// schedules the next frame so the title animation keeps advancing.
 -    fn refresh_terminal_title_from_selections(&mut self, selections: &StatusSurfaceSelections) {
 +    fn refresh_terminal_title_from_selections(
@@ -839,17 +2130,29 @@ index 7120462330..baa0e06fb8 100644
 +        force: bool,
 +    ) {
          self.last_terminal_title_requires_action =
-@@ -238,3 +242,3 @@ impl ChatWidget {
+             self.terminal_title_shows_action_required_with_selections(selections);
+         if selections.terminal_title_items.is_empty() {
+@@ -236,7 +240,7 @@ impl ChatWidget {
+         let now = Instant::now();
+         let title = self.terminal_title_text_for_selections(selections, now);
          let animation_interval = self.terminal_title_animation_interval_with_selections(selections);
 -        if self.last_terminal_title == title {
 +        if !force && self.last_terminal_title == title {
              if let Some(interval) = animation_interval {
-@@ -282,3 +286,3 @@ impl ChatWidget {
+                 self.frame_requester.schedule_frame_in(interval);
+             }
+@@ -280,7 +284,7 @@ impl ChatWidget {
+         self.warn_invalid_terminal_title_items_once(&selections.invalid_terminal_title_items);
+         self.sync_status_surface_shared_state(&selections);
          self.refresh_status_line_from_selections(&selections);
 -        self.refresh_terminal_title_from_selections(&selections);
 +        self.refresh_terminal_title_from_selections(&selections, /*force*/ false);
      }
-@@ -290,3 +294,15 @@ impl ChatWidget {
+ 
+     /// Recomputes and emits the terminal title from config and runtime state.
+@@ -288,7 +292,19 @@ impl ChatWidget {
+         let selections = self.status_surface_selections();
+         self.warn_invalid_terminal_title_items_once(&selections.invalid_terminal_title_items);
          self.sync_status_surface_shared_state(&selections);
 -        self.refresh_terminal_title_from_selections(&selections);
 +        self.refresh_terminal_title_from_selections(&selections, /*force*/ false);
@@ -866,7 +2169,11 @@ index 7120462330..baa0e06fb8 100644
 +        self.sync_status_surface_shared_state(&selections);
 +        self.refresh_terminal_title_from_selections(&selections, /*force*/ true);
      }
-@@ -815,5 +831,11 @@ impl ChatWidget {
+ 
+     fn terminal_title_requires_action(&self) -> bool {
+@@ -813,9 +829,15 @@ impl ChatWidget {
+             )),
+             TerminalTitleItem::Spinner => self.terminal_title_spinner_text_at(now),
              TerminalTitleItem::Status => Some(self.run_state_status_text()),
 -            TerminalTitleItem::Thread => self
 -                .status_line_value_for_item(StatusLineItem::ThreadTitle)
@@ -881,8 +2188,10 @@ index 7120462330..baa0e06fb8 100644
 +                /*max_chars*/ 48,
 +            )),
              TerminalTitleItem::GitBranch => self.status_line_branch.as_ref().map(|branch| {
+                 Self::truncate_terminal_title_part(branch.clone(), /*max_chars*/ 32)
+             }),
 diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
-index d683aa3fbf..838a0cd760 100644
+index 04a303291c..7be977ef30 100644
 --- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 @@ -459,26 +459,27 @@ async fn queued_bare_rename_drains_next_input_after_name_update() {
@@ -920,7 +2229,7 @@ index d683aa3fbf..838a0cd760 100644
              },
          ),
          /*replay_kind*/ None,
-@@ -1169,36 +1170,34 @@ async fn interrupted_merged_message_history_encodes_mentions_once() {
+@@ -1184,36 +1185,34 @@ async fn interrupted_merged_message_history_encodes_mentions_once() {
  }
  
  #[tokio::test]
@@ -1066,3 +2375,52 @@ index 7445162759..0c7d03e611 100644
  #[tokio::test]
  async fn terminal_title_shows_action_required_while_exec_approval_is_pending() {
      let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+diff --git a/codex-rs/tui/src/mention_codec.rs b/codex-rs/tui/src/mention_codec.rs
+index eb3a0d1ea5..aa4aa7f764 100644
+--- a/codex-rs/tui/src/mention_codec.rs
++++ b/codex-rs/tui/src/mention_codec.rs
+@@ -219,7 +219,10 @@ fn parse_linked_tool_mention<'a>(
+ }
+ 
+ fn is_mention_name_char(byte: u8) -> bool {
+-    matches!(byte, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-')
++    matches!(
++        byte,
++        b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-' | b':'
++    )
+ }
+ 
+ fn starts_plaintext_mention(text: &str, index: usize) -> bool {
+@@ -248,7 +251,7 @@ fn ends_plaintext_mention(text_bytes: &[u8], index: usize) -> bool {
+ }
+ 
+ fn is_mention_name_char_char(ch: char) -> bool {
+-    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')
++    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | ':')
+ }
+ 
+ pub(crate) fn is_common_env_var(name: &str) -> bool {
+@@ -420,6 +423,23 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn skill_slash_history_preserves_namespaced_alias() {
++        let mention = LinkedMention {
++            sigil: '$',
++            mention: "alpha:queue".to_string(),
++            path: "/tmp/alpha/queue/SKILL.md".to_string(),
++        };
++
++        let encoded = encode_history_mentions("$alpha:queue run it", &[mention.clone()]);
++        assert_eq!(encoded, "[$alpha:queue](/tmp/alpha/queue/SKILL.md) run it");
++
++        let decoded =
++            decode_history_mentions_with_at_mentions(&encoded, /*at_mentions_enabled*/ true);
++        assert_eq!(decoded.text, "$alpha:queue run it");
++        assert_eq!(decoded.mentions, vec![mention]);
++    }
++
+     #[test]
+     fn encode_history_mentions_links_dollar_mentions_after_punctuation() {
+         let encoded = encode_history_mentions(

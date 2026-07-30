@@ -1,5 +1,5 @@
 <#
-    Builds TKA's status-meter patch against the exact Codex release used here.
+    Builds TKA's Codex patch against the exact release used here.
     The resulting executable lives beside the official installation and shares
     its login, config, plugins, and update state.
 #>
@@ -122,7 +122,7 @@ function Install-BuiltCodexExecutable([string]$BuiltExePath) {
 }
 
 if (-not (Test-Path -LiteralPath $PatchPath)) {
-    throw "Missing renderer patch: $PatchPath"
+    throw "Missing Codex TKA patch: $PatchPath"
 }
 
 $patchHash = (Get-FileHash -LiteralPath $PatchPath -Algorithm SHA256).Hash
@@ -240,8 +240,8 @@ if ($LASTEXITCODE -ne 0 -or $actualCommit -ne $UpstreamCommit) {
 & git -C $SourceRoot apply --reverse --check $PatchPath 2>$null
 $alreadyPatched = $LASTEXITCODE -eq 0
 if (-not $alreadyPatched) {
-    Invoke-Native { git -C $SourceRoot apply --check $PatchPath } 'Renderer patch validation'
-    Invoke-Native { git -C $SourceRoot apply $PatchPath } 'Renderer patch application'
+    Invoke-Native { git -C $SourceRoot apply --check $PatchPath } 'Codex TKA patch validation'
+    Invoke-Native { git -C $SourceRoot apply $PatchPath } 'Codex TKA patch application'
 }
 
 $toolchainFile = Join-Path $SourceRoot 'codex-rs\rust-toolchain.toml'
@@ -267,6 +267,9 @@ try {
         Write-Host 'Testing generated and explicit renames...'
         Invoke-Native { cargo test -p codex-tui --lib thread_name_generation } 'Generated rename tests'
         Invoke-Native { cargo test -p codex-tui --lib rename } 'Rename interaction tests'
+
+        Write-Host 'Testing direct skill slash commands...'
+        Invoke-Native { cargo test -p codex-tui --lib skill_slash } 'Skill slash command tests'
     }
 
     if ($DevelopmentBuild) {
