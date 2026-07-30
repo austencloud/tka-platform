@@ -56,7 +56,7 @@ Selection is split from publishing on purpose: the ranking rules are the part wo
 
 ---
 
-### Task 1: The Java plugin
+### Task 1: The Java plugin — DONE (`6abc00a146`)
 
 **Files:**
 - Create: `android/app/src/main/java/com/tkaflowarts/composer/TkaSharingShortcutsPlugin.java`
@@ -273,7 +273,7 @@ git commit -m "feat(share-intake): native plugin to publish sharing shortcuts an
 
 ---
 
-### Task 2: Declare the share target
+### Task 2: Declare the share target — DONE (`42dcfc0d5e`)
 
 **Files:**
 - Create: `android/app/src/main/res/xml/shortcuts.xml`
@@ -335,7 +335,7 @@ git commit -m "feat(share-intake): declare the sharing-shortcuts share target" -
 
 ---
 
-### Task 3: Contract test for the three-way category match
+### Task 3: Contract test for the three-way category match — DONE (`9e5132fb99`)
 
 **Files:**
 - Test: `tests/unit/share-intake/sharing-shortcuts-contract.test.ts`
@@ -428,7 +428,7 @@ The suite is red until Task 5. That is intentional and it is the TDD signal for 
 
 ---
 
-### Task 4: Pure target selection
+### Task 4: Pure target selection — DONE (`cf43af138f`)
 
 **Files:**
 - Create: `src/lib/shared/share-intake/domain/share-target-selection.ts`
@@ -601,7 +601,7 @@ git commit -m "feat(share-intake): choose which conversations become direct shar
 
 ---
 
-### Task 5: The publisher
+### Task 5: The publisher — DONE (`7ef7679b56`)
 
 **Files:**
 - Create: `src/lib/shared/share-intake/services/sharing-shortcuts-publisher.ts`
@@ -901,7 +901,7 @@ git commit -m "feat(share-intake): publish direct share targets with cached icon
 
 ---
 
-### Task 6: Mount the publisher
+### Task 6: Mount the publisher — DONE (`97220620d7`)
 
 **Files:**
 - Create: `src/lib/shared/share-intake/components/SharingShortcutsHost.svelte`
@@ -1014,7 +1014,7 @@ git commit -m "feat(share-intake): keep direct share targets in step with the in
 
 ---
 
-### Task 7: Carry the tapped target onto the record
+### Task 7: Carry the tapped target onto the record — DONE (`dfad2e616d`)
 
 **Files:**
 - Modify: `src/lib/shared/share-intake/domain/share-intake-models.ts`
@@ -1124,7 +1124,7 @@ git commit -m "feat(share-intake): carry the tapped share-sheet target onto the 
 
 ---
 
-### Task 8: Route to the tapped conversation
+### Task 8: Route to the tapped conversation — DONE (`c11dfcc625`; inversion narrowed to shares carrying a photo)
 
 **Files:**
 - Modify: `src/lib/shared/share-intake/services/intake-router.ts`
@@ -1317,7 +1317,7 @@ git commit -m "feat(share-intake): send to the conversation tapped in the androi
 
 ---
 
-### Task 9: Verify the send sheet actually honors the pre-selection
+### Task 9: Verify the send sheet actually honors the pre-selection — DONE (`f4251b2319`, field split `974b0e3520`)
 
 **Files:**
 - Test: `src/lib/shared/inbox/components/messages/SendAttachmentSheet.svelte.test.ts`
@@ -1369,7 +1369,7 @@ git commit -m "test(inbox): the send sheet opens pre-selected for a direct share
 
 ---
 
-### Task 10: Device verification
+### Task 10: Device verification — BLOCKED, needs the phone (ask Austen first)
 
 Unit tests structurally cannot confirm this feature. Every test above can pass while no face ever appears in the share sheet.
 
