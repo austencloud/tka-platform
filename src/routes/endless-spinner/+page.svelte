@@ -931,28 +931,41 @@
     .animation-area {
       display: flex;
       align-items: stretch;
+      /* The pair centres as a unit; surplus band width becomes page margin
+         around two TIGHT surfaces instead of dead framing inside the card. */
+      justify-content: center;
       gap: clamp(0.75rem, 1.4vw, 1.5rem);
       width: 100%;
       min-width: 0;
       flex: 1 1 auto;
       min-height: 24rem;
+      /* Shared geometry. The card's width takes whichever constraint binds:
+         the row height (normal desktops) or the width left beside the rail
+         (landscape mid-size windows). Its height then FOLLOWS the width, so
+         the drawing fills the card exactly in both regimes — AnimatorCanvas
+         draws a square capped by (card height − ~53px word-header band).
+         Both dimensions stay definite: an auto height here collapses
+         AnimatorCanvas's content box to 0×0 (measured, twice now). cqw, not
+         %, for the row width: a % inside the shared var would re-resolve
+         against the container HEIGHT when used in the height calc. */
+      container-type: inline-size;
+      --rail-w: clamp(
+        20rem,
+        calc((var(--stage-h, 40rem) - 9.5rem) * 0.5),
+        46rem
+      );
+      --card-w: min(
+        calc(var(--stage-h, 40rem) - 53px),
+        calc(100cqw - var(--rail-w) - clamp(0.75rem, 1.4vw, 1.5rem))
+      );
     }
 
-    /* The stage card takes the band's leftover and fills its cell edge to edge;
-       AnimatorCanvas centres its square drawing inside it. Surplus width at this
-       aspect is unavoidable — a square drawing plus a rail cannot fill a
-       1720×~880 stage — so the card absorbs it as a player frame. Left
-       transparent instead (tried), the same surplus reads as two bare ~210px
-       bands of panel; boxed, the row is two full-height surfaces with no gap.
-
-       The card's width is identical in both views (the rail column's is), and
-       the drawing is height-bound, so a view switch cannot move it. */
     .canvas-container {
       order: 0;
-      flex: 1 1 auto;
-      align-self: stretch;
-      width: auto;
-      height: auto;
+      flex: 0 0 auto;
+      align-self: center;
+      width: var(--card-w);
+      height: calc(var(--card-w) + 53px);
       min-width: 0;
       aspect-ratio: auto;
     }
@@ -979,8 +992,7 @@
          controls in place during a mode switch, when the pane unmounts for a beat
          while the next sequence resolves — otherwise they jump up and back. */
       justify-content: space-between;
-      flex: 0 0
-        clamp(20rem, calc((var(--stage-h, 40rem) - 9.5rem) * 0.5), 46rem);
+      flex: 0 0 var(--rail-w);
       min-width: 0;
       min-height: 0;
       gap: clamp(0.5rem, 0.9vw, 1rem);
@@ -1216,9 +1228,10 @@
       order: 0;
       flex: 0 0 auto;
       align-self: stretch;
-      /* Square and height-bound, so the notation column gets the rest of a very
-         wide, very short stage. */
-      width: var(--stage-h, 14rem);
+      /* Height-bound, minus the word-header band so the drawing fills the
+         card's width exactly (no side framing); the notation column gets the
+         rest of a very wide, very short stage. */
+      width: calc(var(--stage-h, 14rem) - 53px);
       max-width: 45%;
       height: auto;
       aspect-ratio: auto;
