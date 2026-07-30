@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
 import { TrailOverlayWebGL2 } from "../trail-overlay-web-gl2";
 import type { TrailOverlayRenderParams } from "../ITrailOverlayCanvas";
 import {
   DEFAULT_TRAIL_SETTINGS,
   TrackingMode,
 } from "../../domain/types/trail-types";
+import { setTrailPointOverrideProvider } from "../../domain/types/trail-point-types";
 import type {
   RenderBackend,
   BackendStats,
@@ -88,6 +89,10 @@ function propAt(centerPathAngle: number): PropState {
   return { centerPathAngle, staffRotationAngle: 0 };
 }
 
+afterEach(() => {
+  setTrailPointOverrideProvider(null);
+});
+
 function baseParams(
   overrides: Partial<TrailOverlayRenderParams>
 ): TrailOverlayRenderParams {
@@ -157,6 +162,46 @@ function blueRightTailOf(overlay: TrailOverlayWebGL2): {
 }
 
 describe("TrailOverlayWebGL2 prop-swap suppression", () => {
+  it("keeps prop-end tracking off the hand when a legacy center assignment exists", () => {
+    setTrailPointOverrideProvider(() => ({
+      left: { type: "custom", dx: 0, dy: 0 },
+      right: { type: "custom", dx: 0, dy: 0 },
+    }));
+
+    const propEndOverlay = makeOverlay();
+    propEndOverlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0),
+        trailSettings: {
+          ...DEFAULT_TRAIL_SETTINGS,
+          trackingMode: TrackingMode.RIGHT_END,
+        },
+      })
+    );
+
+    const handOverlay = makeOverlay();
+    handOverlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0),
+        trailSettings: {
+          ...DEFAULT_TRAIL_SETTINGS,
+          trackingMode: TrackingMode.HAND,
+        },
+      })
+    );
+
+    const [propEndPoint] = blueRightRingOf(propEndOverlay);
+    const [handPoint] = blueRightRingOf(handOverlay);
+    expect(propEndPoint).toBeDefined();
+    expect(handPoint).toBeDefined();
+
+    const separation = Math.hypot(
+      propEndPoint!.x - handPoint!.x,
+      propEndPoint!.y - handPoint!.y
+    );
+    expect(separation).toBeGreaterThan(50);
+  });
+
   it("captures a fan from its canonical center rib", () => {
     const overlay = makeOverlay();
     overlay.renderFrame(

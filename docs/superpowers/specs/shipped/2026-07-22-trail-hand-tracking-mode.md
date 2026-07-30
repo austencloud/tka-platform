@@ -1,21 +1,46 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: S
-remaining: "Body status: Feature SHIPPED to main (`b90408a59b`). A follow-up bug is OPEN and"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # Trail "Hand" tracking mode + thumb/pinky-renders-as-hand bug
 
-**Status:** Feature SHIPPED to main (`b90408a59b`). A follow-up bug is OPEN and
-UNVERIFIED — user reports that on the sequence viewer, trails still render at the
-hand (prop center) even when Track is set to Thumb/Pinky. Could not be confirmed
-or refuted from automation (see Blockers). Awaiting a clean runtime read.
+**Status:** Shipped. Hand tracking landed in `b90408a59b`. The reported
+center-collapse failure mode was fixed in `593cacaaf9`, and the active WebGL2
+renderer now has a regression test proving prop-end tracking stays distinct from
+Hand even when a legacy center-only assignment exists.
 
 Date: 2026-07-22. Author: Claude (Opus 4.8) session.
+
+---
+
+## Queue reconciliation (2026-07-29)
+
+The queue drift detector correctly flagged this spec as `LIKELY_DONE`. Its status
+predated commit `593cacaaf9`, which made prop-end modes ignore the exact
+center-only override shape saved by the old Effects Lab Hand control. That
+commit also added a resolver-level regression test.
+
+Current source confirms the sequence viewer registers the `trails` overlay and
+routes frames through `TrailOverlayWebGL2.renderFrame`. A new renderer-level
+regression test exercises that path with the legacy center-only override, renders
+both `RIGHT_END` and `HAND`, and verifies their captured points remain more than
+50 pixels apart on the 500-pixel test canvas.
+
+Verification on 2026-07-29:
+
+- `trail-point-resolution.test.ts`: 17 passed
+- `trail-overlay-web-gl2-prop-swap-suppression.test.ts`: 9 passed
+- Focused total: 26 passed
+
+The historical investigation below is retained as the record of the original
+report. Its proposed runtime logging is superseded by the post-spec fix and
+production-renderer regression coverage.
 
 ---
 
@@ -23,14 +48,9 @@ Date: 2026-07-22. Author: Claude (Opus 4.8) session.
 
 1. The **Hand tracking option** (trails emit from the prop center = hand path) is
    built, tested, committed, and live in the dev bundle. Don't rebuild it.
-2. The **open question** is whether Thumb/Pinky (and default) tracking actually
-   put the staff trail on the ±135 TIP or wrongly at the CENTER on the sequence
-   viewer. User says center ("rendering as hands"). Code inspection says tip.
-   Not resolved — verification kept failing for environmental reasons.
-3. Next step is a **2-line dev console.log in the trail capture** so a hard-reload
-   + toggle prints the captured radius per mode (tip≈0.28 vs hand≈0.16 of canvas
-   half). That definitively separates real-bug from the tip-passes-near-center
-   illusion. See "Next steps."
+2. The reported center-only override failure mode is fixed in `593cacaaf9`.
+3. The active WebGL2 renderer path is covered by a regression test that compares
+   prop-end tracking with Hand tracking under that legacy override.
 
 ---
 
@@ -91,7 +111,7 @@ committed overlays + that agent's uncommitted UI.
 
 ---
 
-## The OPEN bug
+## Historical follow-up bug
 
 **Report (user, 2026-07-22):** "even though I have the tracking set to thumb or
 pinky it's still tracking the hand" / "it's rendering as hands." His ORIGINAL
@@ -165,7 +185,7 @@ regardless of trackingMode?**
 
 ---
 
-## Next steps (do these, in order)
+## Historical next steps (superseded)
 
 1. **Add a dev-only console.log to the trail capture** to get a real-instance
    reading that also defeats the stale-instance problem (user hard-reloads → fresh
