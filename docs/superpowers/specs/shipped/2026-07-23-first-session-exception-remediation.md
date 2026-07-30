@@ -1,17 +1,17 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: S
-remaining: "Body status: Implemented and verified locally; application release pending"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # First-Session Exception Remediation
 
 **Date:** 2026-07-23  
-**Status:** Implemented and verified locally; application release pending  
+**Status:** Shipped; application release verified 2026-07-29  
 **Source:** PostHog session `019f8ccc-c1b2-779f-97d0-d848530e0d69` and
 targeted Firestore reads  
 **Scope:** Every exception family observed during the July 22-23 first-user
@@ -356,13 +356,15 @@ must survive magic-link tab/device handoff without including email in the URL.
 
 ## Release state
 
-The immutable 3D objects and `@austencloud/scene-3d@0.1.6` are deployed. The
-current local application build consumes those versioned assets and contains
-the viewer lifecycle fix. The production site still serves its previous
-application chunks. This checkout contains unrelated work from several active
-sessions, so deploying the entire generated bundle would publish changes
-outside this remediation. No application deploy was made from that mixed
-source state.
+The remediation is live in production. GitHub Actions run `30505354078`
+triggered a Cloudflare Pages build after CI validated commit
+`96b7057b5261305703c0de5f6b7ec0ce4171f3ba`; the deploy hook returned 200 at
+2026-07-30 01:20:24 UTC. The public SvelteKit version endpoint advanced to
+`1785374522183`, corresponding to 2026-07-30 01:22:02 UTC.
+
+The remediation commits for 3D assets, effects, asset hosting, viewer loading,
+auth, persistence, onboarding, keyboard input, and thumbnail telemetry are all
+ancestors of that CI-validated commit.
 
 The final follow-ups are recorded as completed internal feedback:
 
@@ -403,3 +405,6 @@ The final follow-ups are recorded as completed internal feedback:
     remain.
 11. No interactive browser verification was performed because permission was
     not granted.
+12. Release verification on 2026-07-29: the gated Pages workflow returned 200,
+    the production SvelteKit version advanced after the hook, and all nine
+    remediation commits were ancestors of the CI-validated deploy commit.
