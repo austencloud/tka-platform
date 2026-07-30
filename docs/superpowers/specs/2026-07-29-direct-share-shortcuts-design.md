@@ -28,6 +28,13 @@ network miss on a deliberately invalid code, not app boot.
 Designing a boot-path change against that number would be building for a
 problem we have not observed. Task 1 below measures it properly instead.
 
+**MEASURED 2026-07-30 on device (SM_F956U), and the answer is no.** Cold share,
+plain text, app force-stopped first: first native delivery at 0ms, the
+cold-launch twin at +65ms, JS listener registered at +663ms, pipeline routing at
+**+829ms**. The share path is sub-second. The original ~8s was the
+`resolveForImport` Firestore miss on a made-up code and nothing else. **Do not
+reopen boot-path work on the strength of that number.**
+
 ## Decisions taken
 
 | Question | Decision |
