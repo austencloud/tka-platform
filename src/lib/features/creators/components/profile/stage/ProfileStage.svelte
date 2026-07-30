@@ -23,7 +23,6 @@
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import { fitColumns } from "$lib/features/creators/domain/fit-columns";
-  import { hasProfileWork } from "$lib/features/creators/domain/profile-tenure";
   import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
@@ -40,10 +39,6 @@
   let {
     userId,
     displayName,
-    hasWork = $bindable(true),
-    // No fallback: `$bindable(undefined)` still counts as one, and Svelte rejects
-    // binding an undefined value to a prop that has a fallback.
-    savedCount = $bindable(),
   }: {
     userId: string;
     /**
@@ -53,23 +48,6 @@
      * this component with a bare uid, and an own-profile handoff never uses it.
      */
     displayName?: string;
-    /**
-     * Whether this stage has anything at all to show.
-     *
-     * Reported outward because the parent drops the whole work column when it is
-     * false — an empty profile becomes a centred identity card rather than a
-     * two-column page with a hole in it. The stage owns the answer because it
-     * owns the three queries; the parent must not recompute it from a second
-     * read. Starts `true` so the column does not flicker away and back during
-     * the initial load.
-     */
-    hasWork?: boolean;
-    /**
-     * The real count of saved collection items, for the rail's Collections stat.
-     * `undefined` when the viewer cannot read them at all (owner-only by
-     * Firestore rule), which is different from zero and must render differently.
-     */
-    savedCount?: number | undefined;
   } = $props();
 
   /**
@@ -450,27 +428,15 @@
   }
 
   /*
-    Report outward what the parent needs to compose the page around this stage.
+    Emptiness is NOT reported outward from here.
 
-    Held back until the first load settles, so the work column does not appear,
-    vanish, and reappear on a profile that does have work. `loadError` counts as
-    settled: a stage that cannot load is not a stage with nothing in it, and
-    collapsing the column would hide the error message.
+    It used to be, and the parent defaulted to "has work" while this stage's read
+    was in flight — which painted the two-column layout with an empty column and
+    then collapsed it. The parent already awaits the same sequence list before it
+    paints anything, so it can decide the composition up front from data it
+    already holds. This component only renders; it does not shape the page around
+    itself. See the derivation in UserProfilePanel.
   */
-  $effect(() => {
-    if (loading && !loadError) return;
-    hasWork = hasProfileWork({
-      showcase: showcase.length,
-      sequences: sortedSequences.length,
-      collections: collectionEntries.length,
-    });
-  });
-
-  // Saved art is owner-only by Firestore rule, so on a visitor's view there is
-  // no count to report — which is not the same as a count of zero.
-  $effect(() => {
-    savedCount = isOwnProfile ? collectionEntries.length : undefined;
-  });
 </script>
 
 <div class="stage" bind:this={stageEl}>

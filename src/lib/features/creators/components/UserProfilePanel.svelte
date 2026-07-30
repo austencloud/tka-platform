@@ -8,6 +8,10 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { hasProfileWork } from "../domain/profile-tenure";
+  import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
+  import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
+  import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -55,14 +59,51 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   const isAdmin = $derived(authState.isAdmin);
 
   /**
-   * Reported up from the stage, which owns the three queries behind them.
+   * The composition is decided HERE, before anything paints.
    *
-   * `stageHasWork` starts true so the work column does not flicker away and back
-   * on a profile that has work. `stageSavedCount` feeds the rail's Collections
-   * stat, replacing the `collectionCount` field that never increments.
+   * It used to be reported up from the stage, defaulting to "has work" until the
+   * stage's own Firestore read settled. On an empty profile that painted the
+   * two-column layout with a hole where the work should be, then collapsed to the
+   * centred card — a visible jump on every empty profile, which is most of them.
+   * Austen (2026-07-29): "we should have a consistent layout and we should show it
+   * as empty if it really is empty rather than showing it empty and then
+   * immediately making the whole thing disappear."
+   *
+   * There is nothing to wait for: `onMount` already awaits the full sequence list
+   * before it clears `isLoading`, and pinned items ride on the profile document.
+   * So every input is in hand at first paint and the layout never changes shape.
+   * `hasProfileWork` is the same predicate the stage used, so the two cannot
+   * disagree about what "empty" means.
    */
-  let stageHasWork = $state(true);
-  let stageSavedCount = $state<number | undefined>(undefined);
+  const savedTotal = $derived(
+    isOwnProfile
+      ? scene3dCollectionState.collection.length +
+        tunnelCollectionState.collection.length +
+        mandalaCollectionState.collection.length
+      : undefined
+  );
+
+  const hasWork = $derived(
+    hasProfileWork({
+      showcase: userProfile?.pinnedItems?.length ?? 0,
+      sequences: userSequences.length,
+      collections: savedTotal ?? 0,
+    })
+  );
+
+  /**
+   * Saved art is owner-only by Firestore rule, so a visitor has nothing to wait
+   * for. On your own profile the three stores are global singletons that are
+   * usually already warm; when they are not, holding the loading state for them
+   * is what keeps the composition from being decided on a count of zero that is
+   * about to become forty-six.
+   */
+  const collectionsSettled = $derived(
+    !isOwnProfile ||
+      (!scene3dCollectionState.loading &&
+        !tunnelCollectionState.loading &&
+        !mandalaCollectionState.loading)
+  );
 
   // The admin column is moderation tooling, not identity, so it stays its own
   // column rather than moving into the rail with the connection section. The
@@ -103,6 +144,18 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
         error = "User not found";
         isLoading = false;
         return;
+      }
+
+      // Started here, not only in the stage, because the layout decision needs
+      // these counts and the stage does not mount until that decision is made —
+      // leaving it to the stage would deadlock an own profile whose only content
+      // is saved art. ONLY ever for your own uid: `ensureStarted` repoints these
+      // singletons' writes as well as their reads, and another creator's saved
+      // art is unreadable by rule. Idempotent, so the stage's own call is free.
+      if (isOwnProfile) {
+        scene3dCollectionState.ensureStarted(userId);
+        tunnelCollectionState.ensureStarted(userId);
+        mandalaCollectionState.ensureStarted(userId);
       }
 
       userSequences = await libraryService.getUserSequences(userId, {
@@ -213,7 +266,10 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 </script>
 
 <div class="profile-panel">
-  {#if isLoading}
+  <!-- `collectionsSettled` is part of the loading gate, not a separate spinner:
+       the layout is chosen from these counts, so painting before they are known
+       is what produced the empty-column flash. -->
+  {#if isLoading || !collectionsSettled}
     <PanelState type="loading" message="Loading profile..." />
   {:else if error || !userProfile}
     <div class="error-with-action">
@@ -234,7 +290,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       <div
         class="profile-layout"
         class:has-aside={showAdmin}
-        class:no-work={!stageHasWork}
+        class:no-work={!hasWork}
       >
         <!-- The person, not their work. Everything about them lives in this one
              column: identity, tenure, place, props, counts, and — when you are
@@ -246,8 +302,8 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
             {currentUserId}
             {isOwnProfile}
             {followInProgress}
-            collectionsCount={stageSavedCount}
-            centered={!stageHasWork}
+            collectionsCount={savedTotal}
+            centered={!hasWork}
             onFollowToggle={handleFollowToggle}
             onFollowersClick={() => openFollowersModal("followers")}
             onFollowingClick={() => openFollowersModal("following")}
@@ -265,20 +321,18 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
         <!-- Three bands, each artifact in its own medium — replaces the pinned
              showcase strip plus the single wall of choreo-card fronts that
              ProfileShowcase and ProfileTabs rendered. The stage loads its own
-             library and collections from the userId, so nothing upstream needs
-             to fetch on its behalf; it reports back only what the layout needs.
+             library and collections from the userId, so nothing upstream needs to
+             fetch on its behalf.
 
-             Kept MOUNTED when empty rather than removed, so its queries are not
-             torn down and re-run — `hidden` drops it from the layout without
-             discarding the load that decided it was empty. -->
-        <div class="work-area" hidden={!stageHasWork}>
-          <ProfileStage
-            {userId}
-            displayName={userProfile.displayName}
-            bind:hasWork={stageHasWork}
-            bind:savedCount={stageSavedCount}
-          />
-        </div>
+             Not rendered at all when there is no work. `hasWork` is settled
+             before this branch is ever evaluated (see the derivation above), so
+             there is no load to preserve and nothing to hide — the column simply
+             does not exist on an empty profile. -->
+        {#if hasWork}
+          <div class="work-area">
+            <ProfileStage {userId} displayName={userProfile.displayName} />
+          </div>
+        {/if}
 
         {#if showAdmin}
           <aside class="profile-aside">
@@ -423,12 +477,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
        overlap it instead of being covered (both are backdrop-filter panels =
        separate stacking contexts). */
     z-index: 2;
-  }
-
-  /* `hidden` on a grid item still participates in layout unless told otherwise;
-     the element stays mounted so the stage's queries survive. */
-  .work-area[hidden] {
-    display: none;
   }
 
   /* Static while stacked; the wide tier below turns it sticky alongside the rail. */
