@@ -19,6 +19,22 @@ import { Canvas2DFadeManager } from "../canvas-2d-fade-manager";
  * (alpha stays clamped at 0) and pass once the manager is clock-agnostic.
  */
 describe("fade managers are clock-agnostic (virtual-clock export path)", () => {
+  it("supports a hidden initial state with the trail's 300 ms in / 200 ms out envelope", () => {
+    const m = new Canvas2DVisibilityFadeManager(300, 200, false);
+
+    expect(m.updateProgress(0).alpha).toBe(0);
+
+    m.setVisible(true);
+    expect(m.updateProgress(0).alpha).toBe(0);
+    expect(m.updateProgress(150).alpha).toBeCloseTo(0.875, 5);
+    expect(m.updateProgress(300).alpha).toBe(1);
+
+    m.setVisible(false);
+    expect(m.updateProgress(300).alpha).toBe(1);
+    expect(m.updateProgress(400).alpha).toBeCloseTo(0.125, 5);
+    expect(m.updateProgress(500).alpha).toBe(0);
+  });
+
   it("Canvas2DVisibilityFadeManager completes a fade-in on a virtual clock from 0", () => {
     const m = new Canvas2DVisibilityFadeManager(250, 200);
 

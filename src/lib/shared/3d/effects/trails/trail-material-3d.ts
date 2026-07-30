@@ -1,9 +1,4 @@
-import {
-  ShaderMaterial,
-  Color,
-  DoubleSide,
-  AdditiveBlending,
-} from "three";
+import { ShaderMaterial, Color, DoubleSide, AdditiveBlending } from "three";
 
 /**
  * 3D trail ribbon material — the 3D port of the 2D WebGL2 accumulator look.
@@ -40,6 +35,7 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   uniform float uOpacity;
+  uniform float uVisibility;
   uniform vec3 uBaseColor;
   uniform float uEmissiveStrength; // HDR core multiplier (>1 so bloom catches it)
   uniform float uCoreFrac;         // inner fraction that stays solid
@@ -62,7 +58,7 @@ const fragmentShader = /* glsl */ `
 
     // HDR emissive core; head→tail fade via vAlpha; halo via profile.
     vec3 finalColor = color * uEmissiveStrength;
-    float finalAlpha = vAlpha * uOpacity * profile;
+    float finalAlpha = vAlpha * uOpacity * uVisibility * profile;
     if (finalAlpha < 0.001) discard;
 
     gl_FragColor = vec4(finalColor, finalAlpha);
@@ -81,13 +77,18 @@ export interface TrailMaterialOptions {
   rainbow?: boolean;
 }
 
-export function createTrailMaterial(options: TrailMaterialOptions): ShaderMaterial {
-  const baseColor = new Color(options.color === "rainbow" ? "#ffffff" : options.color);
+export function createTrailMaterial(
+  options: TrailMaterialOptions
+): ShaderMaterial {
+  const baseColor = new Color(
+    options.color === "rainbow" ? "#ffffff" : options.color
+  );
 
   return new ShaderMaterial({
     uniforms: {
       uBaseColor: { value: baseColor },
       uOpacity: { value: options.opacity },
+      uVisibility: { value: 1.0 },
       uEmissiveStrength: { value: options.emissiveStrength ?? 2.5 },
       uCoreFrac: { value: options.coreFrac ?? 0.35 },
       uHaloSoftness: { value: options.haloSoftness ?? 3.5 },

@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { TrailRingBuffer } from "$lib/shared/3d/effects/trails/trail-renderer-3d";
-import { Vector3 } from "three";
+import {
+  TrailRenderer3D,
+  TrailRingBuffer,
+} from "$lib/shared/3d/effects/trails/trail-renderer-3d";
+import { Vector3, type ShaderMaterial } from "three";
 
 describe("TrailRingBuffer", () => {
   it("stores points up to capacity", () => {
@@ -40,5 +43,25 @@ describe("TrailRingBuffer", () => {
     buf.push(new Vector3(4, 5, 6));
     buf.clear();
     expect(buf.length).toBe(0);
+  });
+
+  it("applies lifecycle visibility without overwriting authored opacity", () => {
+    const renderer = new TrailRenderer3D({ opacity: 0.42 });
+    const mesh = renderer.object3D;
+    const material = mesh.material as ShaderMaterial;
+
+    renderer.setVisibilityAlpha(-1);
+    expect(material.uniforms.uVisibility?.value).toBe(0);
+    expect(material.uniforms.uOpacity?.value).toBe(0.42);
+    expect(mesh.visible).toBe(false);
+
+    renderer.setVisibilityAlpha(0.5);
+    expect(material.uniforms.uVisibility?.value).toBe(0.5);
+    expect(mesh.visible).toBe(true);
+
+    renderer.setVisibilityAlpha(2);
+    expect(material.uniforms.uVisibility?.value).toBe(1);
+
+    renderer.dispose();
   });
 });

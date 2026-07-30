@@ -4,8 +4,15 @@
   import { onDestroy, untrack } from "svelte";
   import { TrailRenderer3D } from "./trail-renderer-3d";
   import type { TrailMode } from "./trail-renderer-3d";
-  import type { DynamicLightManager, LightHandle } from "../lighting/dynamic-light-manager";
+  import type {
+    DynamicLightManager,
+    LightHandle,
+  } from "../lighting/dynamic-light-manager";
   import type { QualityTier } from "../types";
+  import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
+
+  const TRAIL_FADE_IN_MS = 300;
+  const TRAIL_FADE_OUT_MS = 200;
 
   interface Props {
     tipPosition: Vector3 | null;
@@ -41,6 +48,12 @@
   }: Props = $props();
 
   const { camera } = useThrelte();
+  const visibilityFade = new Canvas2DVisibilityFadeManager(
+    TRAIL_FADE_IN_MS,
+    TRAIL_FADE_OUT_MS,
+    false
+  );
+  let fadeClockMs = 0;
 
   // svelte-ignore state_referenced_locally
   const renderer = new TrailRenderer3D({
@@ -63,6 +76,7 @@
     // svelte-ignore state_referenced_locally
     emissiveStrength,
   });
+  renderer.setVisibilityAlpha(0);
 
   // Push live prop changes (thickness/brightness/color/rainbow from the tuning
   // sliders) into the already-constructed renderer. Without this the renderer
@@ -71,36 +85,47 @@
     renderer.updateConfig({ width, opacity, color, rainbow, emissiveStrength });
   });
 
-  let lightHandle: LightHandle | null = null;
-  const lightColor = untrack(() => new Color(color === "rainbow" ? "#ffffff" : color));
+  $effect(() => {
+    visibilityFade.setVisible(enabled);
+  });
 
-  useTask(() => {
-    if (!enabled || !tipPosition) {
-      if (lightHandle && lightManager) {
-        lightManager.releaseLight(lightHandle);
-        lightHandle = null;
-      }
-      return;
+  let lightHandle: LightHandle | null = null;
+  const lightColor = untrack(
+    () => new Color(color === "rainbow" ? "#ffffff" : color)
+  );
+
+  useTask((delta) => {
+    // Threlte's delta follows both live playback and the synthetic offline
+    // render clock. The trail therefore takes the same 300 ms in and 200 ms
+    // out regardless of frame rate or export speed.
+    fadeClockMs += delta * 1000;
+    const visibility = visibilityFade.updateProgress(fadeClockMs);
+    renderer.setVisibilityAlpha(visibility.alpha);
+
+    if (enabled && tipPosition) {
+      renderer.addPoint(tipPosition);
     }
 
-    renderer.addPoint(tipPosition);
-
     const cam = camera.current;
-    if (cam) {
+    if (cam && (enabled || visibility.alpha > 0)) {
       renderer.update(cam.position);
     }
 
-    if (lightManager) {
+    if (lightManager && tipPosition && visibility.alpha > 0) {
+      const lightIntensity = 0.5 * visibility.alpha;
       if (!lightHandle) {
         lightHandle = lightManager.requestLight(
           tipPosition,
           lightColor,
-          0.5,
+          lightIntensity,
           3.0
         );
       } else {
-        lightManager.updateLight(lightHandle, tipPosition, 0.5);
+        lightManager.updateLight(lightHandle, tipPosition, lightIntensity);
       }
+    } else if (lightHandle && lightManager) {
+      lightManager.releaseLight(lightHandle);
+      lightHandle = null;
     }
   });
 
@@ -112,6 +137,4 @@
   });
 </script>
 
-{#if enabled}
-  <T is={renderer.object3D} />
-{/if}
+<T is={renderer.object3D} />

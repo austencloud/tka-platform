@@ -2,7 +2,7 @@
 status: active
 value: 3
 effort: S
-remaining: "Implement and test the missing 300 ms entrance / 200 ms exit visibility envelope. Then capture LOW and HIGH tier visual proof in the viewer and Coven, and confirm the current maximum Coven formation produces no GPU-starvation timeout flood."
+remaining: "The trail envelope, focused tests, LOW/HIGH visual proof, and maximum-Coven stability proof are complete. Shipment is blocked by seven TypeScript errors in the unrelated in-flight WorkspaceShareControl.svelte. Rerun pnpm run check after that work is green, then move this spec to shipped."
 depends_on: ""
 plan_path: ""
 tags: []
@@ -115,3 +115,11 @@ The main implementation landed but this spec never moved out of the active queue
 Current source confirms one Catmull-Rom trail implementation, shared `FADE_EXPONENT` and `MIN_TAIL_WIDTH_RATIO` constants, indexed ribbon geometry, an additive Gaussian halo, HIGH/MEDIUM bloom, LOW-tier shader glow, and live `effectsSlot` wiring in both consumers. Focused verification passed 17 tests across `trail-ring-buffer.test.ts` and `trail-mesh.test.ts`.
 
 One approved behavior is still absent: `Trail3D.svelte` mounts and unmounts its mesh immediately when `enabled` changes. It does not apply the specified 300 ms entrance and 200 ms exit opacity envelope. LOW/HIGH comparison screenshots and a current-formation Coven performance check also remain unrecorded.
+
+## Completion evidence (2026-07-29)
+
+- `Trail3D.svelte` now keeps the ribbon mounted through a 300 ms entrance and 200 ms exit. The shared visibility manager owns the envelope, and the shader uniform applies it without discarding buffered trail geometry during exit.
+- Focused Vitest verification passed 11 tests across `visibility-fade-clock-agnostic.test.ts` and `trail-ring-buffer.test.ts`.
+- HIGH and LOW tier proof was captured with the shipping `PerformerRig`, `EffectOrchestrator3D`, `CovenStation`, and quality-tier override. The HIGH observation ran for 15.0 seconds with no new console errors or render timeouts. The LOW observation ran for 10.0 seconds with the same result.
+- The proof scene rendered one viewer rig beside the maximum Coven formation of six center rigs and six acolytes. Screenshots are saved at `test-results/visual/3d-trail-envelope-high.png` and `test-results/visual/3d-trail-envelope-low.png`.
+- The repository gate remains blocked. `pnpm run check` reported seven TypeScript errors, all in the unrelated in-flight `WorkspaceShareControl.svelte`; none were reported in the trail files changed here.

@@ -1,12 +1,5 @@
-import type {
-  ShaderMaterial} from "three";
-import {
-  Vector3,
-  BufferGeometry,
-  BufferAttribute,
-  Mesh,
-  Color
-} from "three";
+import type { ShaderMaterial } from "three";
+import { Vector3, BufferGeometry, BufferAttribute, Mesh, Color } from "three";
 import { createTrailMaterial } from "./trail-material-3d";
 import type { QualityTier } from "../types";
 import {
@@ -87,12 +80,34 @@ export class TrailRingBuffer {
   }
 }
 
-function catmullRom(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: number, out: Vector3): Vector3 {
+function catmullRom(
+  p0: Vector3,
+  p1: Vector3,
+  p2: Vector3,
+  p3: Vector3,
+  t: number,
+  out: Vector3
+): Vector3 {
   const t2 = t * t;
   const t3 = t2 * t;
-  out.x = 0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-  out.y = 0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
-  out.z = 0.5 * (2 * p1.z + (-p0.z + p2.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3);
+  out.x =
+    0.5 *
+    (2 * p1.x +
+      (-p0.x + p2.x) * t +
+      (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+      (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+  out.y =
+    0.5 *
+    (2 * p1.y +
+      (-p0.y + p2.y) * t +
+      (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+      (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+  out.z =
+    0.5 *
+    (2 * p1.z +
+      (-p0.z + p2.z) * t +
+      (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 +
+      (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3);
   return out;
 }
 
@@ -146,9 +161,10 @@ export class TrailRenderer3D {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.sampleRate = this.config.qualityTier === "low" ? 2 : 1;
 
-    const effectiveMaxPoints = this.config.qualityTier === "low"
-      ? Math.floor(this.config.maxPoints / 2)
-      : this.config.maxPoints;
+    const effectiveMaxPoints =
+      this.config.qualityTier === "low"
+        ? Math.floor(this.config.maxPoints / 2)
+        : this.config.maxPoints;
 
     this.ringBuffer = new TrailRingBuffer(effectiveMaxPoints);
 
@@ -161,9 +177,15 @@ export class TrailRenderer3D {
     this.edges = new Float32Array(this.maxVertices);
 
     this.geometry = new BufferGeometry();
-    this.geometry.setAttribute("position", new BufferAttribute(this.positions, 3));
+    this.geometry.setAttribute(
+      "position",
+      new BufferAttribute(this.positions, 3)
+    );
     this.geometry.setAttribute("alpha", new BufferAttribute(this.alphas, 1));
-    this.geometry.setAttribute("instanceColor", new BufferAttribute(this.colors, 3));
+    this.geometry.setAttribute(
+      "instanceColor",
+      new BufferAttribute(this.colors, 3)
+    );
     // Edge sign is fixed by vertex parity (even = left = -1, odd = right = +1)
     // and never changes, so fill it once. The shader reads |edge| for the
     // cross-ribbon halo profile.
@@ -181,13 +203,17 @@ export class TrailRenderer3D {
     const maxQuads = maxInterpolated - 1;
     this.indices = new Uint32Array(maxQuads * 6);
     for (let k = 0; k < maxQuads; k++) {
-      const a = 2 * k;       // left  of point k
-      const b = 2 * k + 1;   // right of point k
-      const c = 2 * k + 2;   // left  of point k+1
-      const d = 2 * k + 3;   // right of point k+1
+      const a = 2 * k; // left  of point k
+      const b = 2 * k + 1; // right of point k
+      const c = 2 * k + 2; // left  of point k+1
+      const d = 2 * k + 3; // right of point k+1
       const o = k * 6;
-      this.indices[o] = a;     this.indices[o + 1] = b;     this.indices[o + 2] = c;
-      this.indices[o + 3] = b; this.indices[o + 4] = d;     this.indices[o + 5] = c;
+      this.indices[o] = a;
+      this.indices[o + 1] = b;
+      this.indices[o + 2] = c;
+      this.indices[o + 3] = b;
+      this.indices[o + 4] = d;
+      this.indices[o + 5] = c;
     }
     this.geometry.setIndex(new BufferAttribute(this.indices, 1));
 
@@ -217,11 +243,27 @@ export class TrailRenderer3D {
   updateConfig(partial: Partial<TrailRendererConfig>): void {
     this.config = { ...this.config, ...partial };
     const mat = this.mesh.material as ShaderMaterial;
-    if (partial.opacity !== undefined) mat.uniforms.uOpacity!.value = partial.opacity;
-    if (partial.emissiveStrength !== undefined) mat.uniforms.uEmissiveStrength!.value = partial.emissiveStrength;
+    if (partial.opacity !== undefined)
+      mat.uniforms.uOpacity!.value = partial.opacity;
+    if (partial.emissiveStrength !== undefined)
+      mat.uniforms.uEmissiveStrength!.value = partial.emissiveStrength;
     if (partial.color !== undefined) {
-      (mat.uniforms.uBaseColor!.value as Color).set(partial.color === "rainbow" ? "#ffffff" : partial.color);
+      (mat.uniforms.uBaseColor!.value as Color).set(
+        partial.color === "rainbow" ? "#ffffff" : partial.color
+      );
     }
+  }
+
+  /**
+   * Apply the play/visibility envelope without overwriting the brightness the
+   * user chose in trail settings. Fully hidden ribbons also leave the render
+   * list, so a paused Coven does not spend GPU time blending invisible trails.
+   */
+  setVisibilityAlpha(alpha: number): void {
+    const clampedAlpha = Math.max(0, Math.min(1, alpha));
+    const mat = this.mesh.material as ShaderMaterial;
+    mat.uniforms.uVisibility!.value = clampedAlpha;
+    this.mesh.visible = clampedAlpha > 0;
   }
 
   addPoint(position: Vector3): void {
@@ -247,13 +289,17 @@ export class TrailRenderer3D {
     // so the ribbon never facets; a long trail needs fewer per segment.
     const subdivisions = Math.max(
       4,
-      Math.min(MAX_SUBDIVISIONS, Math.round(TARGET_TOTAL_INTERPOLATED / Math.max(2, pointCount))),
+      Math.min(
+        MAX_SUBDIVISIONS,
+        Math.round(TARGET_TOTAL_INTERPOLATED / Math.max(2, pointCount))
+      )
     );
     const totalSegments = pointCount - 1;
     const totalInterpolatedPoints = totalSegments * subdivisions + 1;
 
     for (let seg = 0; seg < totalSegments; seg++) {
-      const numSubdivs = seg === totalSegments - 1 ? subdivisions + 1 : subdivisions;
+      const numSubdivs =
+        seg === totalSegments - 1 ? subdivisions + 1 : subdivisions;
 
       for (let sub = 0; sub < numSubdivs; sub++) {
         const t = sub / subdivisions;
@@ -274,13 +320,19 @@ export class TrailRenderer3D {
         catmullRom(p0, p1, p2, p3, tNext, this.tempCR);
         this.tempTangent.subVectors(this.tempCR, this.tempVec).normalize();
 
-        const toCamera = this.tempNormal.subVectors(cameraPosition, this.tempVec).normalize();
-        const normal = this.tempNormal.crossVectors(this.tempTangent, toCamera).normalize();
+        const toCamera = this.tempNormal
+          .subVectors(cameraPosition, this.tempVec)
+          .normalize();
+        const normal = this.tempNormal
+          .crossVectors(this.tempTangent, toCamera)
+          .normalize();
 
         // progress: 0 at the tail (oldest), 1 at the head (current tip).
-        const progress = (seg * subdivisions + sub) / (totalInterpolatedPoints - 1);
+        const progress =
+          (seg * subdivisions + sub) / (totalInterpolatedPoints - 1);
         // Head fat, tail thin — matches the 2D MIN_TAIL_WIDTH_RATIO ramp.
-        const taper = MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
+        const taper =
+          MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
         // Widen by the glow ratio so the shader halo falls off outside the
         // solid core (which the shader keeps at the authored line width).
         const halfWidth = this.config.width * 0.5 * taper * TRAIL_GLOW_RATIO;
@@ -292,7 +344,9 @@ export class TrailRenderer3D {
           // Multiply by per-point age so a stopped prop's trail keeps receding
           // instead of freezing at full length.
           const now = performance.now() / 1000;
-          const pointTime = this.ringBuffer.getTimestamp(Math.min(seg, pointCount - 1));
+          const pointTime = this.ringBuffer.getTimestamp(
+            Math.min(seg, pointCount - 1)
+          );
           const age = now - pointTime;
           const ageAlpha = Math.max(0, 1.0 - age / this.config.fadeDuration);
           alpha = positionAlpha * ageAlpha;
@@ -333,7 +387,8 @@ export class TrailRenderer3D {
     (this.geometry.attributes.position as BufferAttribute).needsUpdate = true;
     (this.geometry.attributes.alpha as BufferAttribute).needsUpdate = true;
     if (this.config.rainbow) {
-      (this.geometry.attributes.instanceColor as BufferAttribute).needsUpdate = true;
+      (this.geometry.attributes.instanceColor as BufferAttribute).needsUpdate =
+        true;
     }
 
     // Indexed draw: range is in index count, not vertex count. vertexIndex is

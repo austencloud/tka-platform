@@ -23,9 +23,16 @@ export class Canvas2DVisibilityFadeManager {
   private targetVisible: boolean = true;
   private previousVisible: boolean = true;
 
-  constructor(fadeInMs: number = 250, fadeOutMs: number = 200) {
+  constructor(
+    fadeInMs: number = 250,
+    fadeOutMs: number = 200,
+    initiallyVisible: boolean = true
+  ) {
     this.fadeInDurationMs = fadeInMs;
     this.fadeOutDurationMs = fadeOutMs;
+    this.currentAlpha = initiallyVisible ? 1 : 0;
+    this.targetVisible = initiallyVisible;
+    this.previousVisible = initiallyVisible;
   }
 
   /**
