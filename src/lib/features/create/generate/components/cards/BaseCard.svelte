@@ -18,6 +18,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     gridColumnSpan = 2,
     cardIndex = 0, // For stagger animations
     headerFontSize = "9px",
+    ariaLabel,
     onClick,
     children,
   } = $props<{
@@ -31,6 +32,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     gridColumnSpan?: number;
     cardIndex?: number; // Index for stagger animations
     headerFontSize?: string;
+    ariaLabel?: string;
     onClick?: () => void;
     children?: import("svelte").Snippet;
   }>();
@@ -75,7 +77,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     tabindex="0"
     onclick={handleClick}
     onkeydown={handleKeydown}
-    aria-label={`${title}: ${currentValue}. Click to change.`}
+    aria-label={ariaLabel ?? `${title}: ${currentValue}. Click to change.`}
     style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   >
     <CardHeader {title} {headerFontSize} />
@@ -109,7 +111,7 @@ Provides consistent styling and interaction patterns for all generation setting 
 {:else}
   <div
     class="base-card"
-    aria-label={`${title}: ${currentValue}`}
+    aria-label={ariaLabel ?? `${title}: ${currentValue}`}
     style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   >
     <CardHeader {title} {headerFontSize} />

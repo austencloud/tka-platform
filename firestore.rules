@@ -353,6 +353,16 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // GENERATOR SETUPS (Private saved generator configs; admins can read for
+      // impersonation preview, mirroring /settings. The public Favorite remains
+      // on users/{uid}.favoriteConfig and is written only by its owner.)
+      // -------------------------------------------------------------------------
+      match /generatorSetups/{setupId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update, delete: if isOwner(userId);
+      }
+
+      // -------------------------------------------------------------------------
       // USER TAGS (Private)
       // -------------------------------------------------------------------------
       match /tags/{tagId} {

@@ -758,3 +758,96 @@ describe("messaging attachments", () => {
     );
   });
 });
+
+describe("generator setups: private saved configs", () => {
+  const setupPath = (uid: string, id = "s1") =>
+    `users/${uid}/generatorSetups/${id}`;
+
+  it("lets an owner create, read, update, and delete a setup", async () => {
+    const db = fullCtx().firestore(SDK_SETTINGS);
+    await assertSucceeds(
+      setDoc(doc(db, setupPath(FULL_UID)), {
+        name: "Setup 1",
+        config: { level: 1 },
+      })
+    );
+    await assertSucceeds(getDoc(doc(db, setupPath(FULL_UID))));
+    await assertSucceeds(
+      updateDoc(doc(db, setupPath(FULL_UID)), {
+        name: "Renamed",
+      })
+    );
+    await assertSucceeds(deleteDoc(doc(db, setupPath(FULL_UID))));
+  });
+
+  it("lets an anonymous owner use private setups", async () => {
+    const db = anonCtx().firestore(SDK_SETTINGS);
+    await assertSucceeds(
+      setDoc(doc(db, setupPath(ANON_UID)), {
+        name: "Setup 1",
+        config: {},
+      })
+    );
+    await assertSucceeds(getDoc(doc(db, setupPath(ANON_UID))));
+  });
+
+  it("denies another authenticated user read and write access", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), setupPath(FULL_UID)), {
+        name: "Setup 1",
+        config: {},
+      });
+    });
+    const other = anonCtx().firestore(SDK_SETTINGS);
+
+    await assertFails(getDoc(doc(other, setupPath(FULL_UID))));
+    await assertFails(
+      setDoc(doc(other, setupPath(FULL_UID)), {
+        name: "Changed",
+      })
+    );
+  });
+
+  it("lets an admin preview but not mutate another user's setups", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `users/${ADMIN_UID}`), {
+        role: "admin",
+      });
+      await setDoc(doc(context.firestore(), setupPath(FULL_UID)), {
+        name: "Setup 1",
+        config: {},
+      });
+    });
+    const admin = adminCtx().firestore(SDK_SETTINGS);
+
+    await assertSucceeds(getDoc(doc(admin, setupPath(FULL_UID))));
+    await assertFails(
+      updateDoc(doc(admin, setupPath(FULL_UID)), {
+        name: "Changed",
+      })
+    );
+  });
+
+  it("denies signed-out setup reads without changing public Favorite reads", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `users/${FULL_UID}`), {
+        favoriteConfig: {
+          sourceSetupId: "s1",
+          config: {},
+        },
+      });
+      await setDoc(doc(context.firestore(), setupPath(FULL_UID)), {
+        name: "Setup 1",
+        config: {},
+      });
+    });
+    const signedOut = testEnv
+      .unauthenticatedContext()
+      .firestore(SDK_SETTINGS);
+
+    await assertFails(getDoc(doc(signedOut, setupPath(FULL_UID))));
+    await assertSucceeds(
+      getDoc(doc(signedOut, `users/${FULL_UID}`))
+    );
+  });
+});

@@ -3,6 +3,7 @@ import { firestoreDate } from "$lib/shared/firestore";
 
 export const FavoriteConfigSchema = z
   .object({
+    sourceSetupId: z.string().optional(),
     config: z.record(z.string(), z.unknown()),
     startEndOptions: z.record(z.string(), z.unknown()).nullable().optional(),
     setAt: firestoreDate,
@@ -33,6 +34,7 @@ export const UserWithFavoriteSchema = z
     id: z.string(),
     favoriteConfig: z
       .object({
+        sourceSetupId: z.string().optional(),
         config: z.record(z.string(), z.unknown()),
         startEndOptions: z.record(z.string(), z.unknown()).nullable().optional(),
         setAt: firestoreDate.optional(),
@@ -46,3 +48,18 @@ export const UserWithFavoriteSchema = z
   .passthrough();
 
 export type UserWithFavorite = z.infer<typeof UserWithFavoriteSchema>;
+
+export const SavedGeneratorSetupSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    config: z.record(z.string(), z.unknown()),
+    startEndOptions: z.record(z.string(), z.unknown()).nullable().optional(),
+    createdAt: firestoreDate.optional(),
+    updatedAt: firestoreDate.optional(),
+  })
+  .passthrough();
+
+export type SavedGeneratorSetupDoc = z.infer<
+  typeof SavedGeneratorSetupSchema
+>;

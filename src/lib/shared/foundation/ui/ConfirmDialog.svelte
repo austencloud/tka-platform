@@ -205,7 +205,7 @@ import { onMount } from "svelte";
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-modal);
+    z-index: var(--z-modal, 600);
     padding: 20px;
   }
 
@@ -223,7 +223,7 @@ import { onMount } from "svelte";
     box-shadow: var(--theme-shadow, 0 20px 60px rgba(0, 0, 0, 0.5));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    z-index: calc(var(--z-modal) + 1);
+    z-index: calc(var(--z-modal, 600) + 1);
   }
 
   :global(.dialog-container.warning) {

@@ -19,13 +19,17 @@ const BANNED_PHRASES = [
   "Unlock",
 ];
 
-const entries = Object.entries(AUTH_NUDGE_TEXTS) as [AuthNudgeTrigger, string][];
+const entries = Object.entries(AUTH_NUDGE_TEXTS) as [
+  AuthNudgeTrigger,
+  string,
+][];
 
 describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
-  it("has exactly the 13 live triggers (generate-cap deleted as a dead duplicate of step-cap-guest; viewer-signin-* added for SignInSheet.svelte's consolidated account ask; guest-first-save added for SP3 first-session activation; share-image-signin added for share-intake trace 3)", () => {
+  it("has exactly the 16 live triggers, including community setups and sharing", () => {
     expect(Object.keys(AUTH_NUDGE_TEXTS).sort()).toEqual(
       [
         "step-cap-guest",
+        "community-setups",
         "edit-community",
         "export",
         "guest-first-save",
@@ -35,6 +39,8 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
         "module:settings",
         "save",
         "share-image-signin",
+        "share-sequence",
+        "share-setup",
         "viewer-signin-account",
         "viewer-signin-download",
         "viewer-signin-publish",
@@ -45,7 +51,10 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
   it("every entry avoids the competing phrasings the audit flagged", () => {
     for (const [trigger, text] of entries) {
       for (const banned of BANNED_PHRASES) {
-        expect(text, `${trigger} contains banned phrase "${banned}"`).not.toContain(banned);
+        expect(
+          text,
+          `${trigger} contains banned phrase "${banned}"`
+        ).not.toContain(banned);
       }
     }
   });

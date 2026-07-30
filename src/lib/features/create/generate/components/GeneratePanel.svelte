@@ -15,7 +15,7 @@ Card-based architecture with integrated Generate button:
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import { createDeviceState } from "../state/generate-device.svelte";
@@ -29,6 +29,8 @@ Card-based architecture with integrated Generate button:
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
   import PresetDrawer from "./presets/PresetDrawer.svelte";
   import { createFavoriteState } from "../state/favorite-state.svelte";
+  import { captureSetupSnapshot } from "../domain/setup-snapshot";
+  import type { ActiveSetupSource } from "../domain/models/favorite-config";
   import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import GeneratePanelTour from "$lib/shared/onboarding/components/generate-tour/GeneratePanelTour.svelte";
@@ -38,16 +40,20 @@ Card-based architecture with integrated Generate button:
   } from "$lib/shared/create/state/generator-voice-ref.svelte";
   import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
   import type { GenerationOptions } from "../shared/domain/models/generate-models";
-  import {
-    LOOPType,
-    Period,
-  } from "../circular/domain/models/circular-models";
+  import { LOOPType, Period } from "../circular/domain/models/circular-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import {
+    authState,
+    getEffectiveUserId,
+  } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-  import { resolveAccessTier, getMaxSteps } from "$lib/shared/auth/domain/access-tier";
+  import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
+  import {
+    resolveAccessTier,
+    getMaxSteps,
+  } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -75,58 +81,86 @@ Card-based architecture with integrated Generate button:
     () => isSequentialAnimation,
     () => configState.config,
     () => spellModeState,
-    (type, metadata) => context?.CreateModuleState.pushUndoSnapshot(type, metadata)
+    (type, metadata) =>
+      context?.CreateModuleState.pushUndoSnapshot(type, metadata)
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
-  const favoriteState = createFavoriteState();
+  const favoriteState = createFavoriteState(() =>
+    captureSetupSnapshot(configState.config, startEndState.options)
+  );
 
   // Guest LOOP gating: guests only get rotated LOOPs + configs within their step
   // cap; tapping a gated LOOP opens a sign-up nudge (the conversion channel).
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    )
   );
   const guestLoopMaxLength = $derived(
     accessTier === "guest" ? getMaxSteps("guest") : undefined
   );
   let loopSignupReason = $state<string | null>(null);
+  let setupSignupTrigger = $state<
+    "community-setups" | "share-setup" | "step-cap-guest" | null
+  >(null);
 
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
   const hasWord = $derived(!!spellModeState.inputWord?.trim());
   const isMobile = $derived(deviceState.isMobile);
+  const isSignedOut = $derived(getEffectiveUserId() === null);
+  const isPreview = $derived(userPreviewState.isActive);
+  const isAnonymousViewer = $derived(
+    !authState.isAuthenticated || authState.isAnonymous
+  );
+  let favoriteIdentity = $state<string | null>(getEffectiveUserId());
 
-  function handleFavoriteActivated(id: string) {
-    if (id === favoriteState.activeFavoriteId) {
-      favoriteState.deactivateFavorite();
+  $effect(() => {
+    const initialized = authState.initialized;
+    const nextIdentity = getEffectiveUserId();
+    if (!initialized || nextIdentity === favoriteIdentity) return;
+
+    favoriteIdentity = nextIdentity;
+    void favoriteState.loadPersonal();
+    void favoriteState.loadCommunity();
+  });
+
+  function handleApplySource(source: ActiveSetupSource): void {
+    const saved =
+      source.kind === "setup"
+        ? favoriteState.setups.find((setup) => setup.id === source.setupId)
+        : favoriteState.communityFavorites.find(
+            (favorite) => favorite.userId === source.userId
+          );
+    if (!saved) return;
+
+    if (source.kind === "community" && isAnonymousViewer) {
+      setupSignupTrigger = "community-setups";
+      return;
+    }
+    if (accessTier === "guest" && saved.config.length > getMaxSteps("guest")) {
+      setupSignupTrigger = "step-cap-guest";
       return;
     }
 
-    favoriteState.activateFavorite(id);
-
-    // Get the config from either "mine" or a community favorite
-    const fav =
-      id === "mine"
-        ? favoriteState.myFavorite
-        : favoriteState.communityFavorites.find((f) => f.userId === id);
-
-    if (fav) {
-      configState.updateConfig(fav.config);
-      if (fav.startEndOptions) {
-        startEndState.setOptions(fav.startEndOptions);
-      }
+    const snapshot = captureSetupSnapshot(
+      saved.config,
+      saved.startEndOptions ?? null
+    );
+    configState.updateConfig(snapshot.config);
+    if (snapshot.startEndOptions) {
+      startEndState.setOptions(snapshot.startEndOptions);
+    } else {
+      startEndState.resetOptions();
     }
-
     if (spellModeState.inputWord?.trim()) {
       spellModeState.setInputWord("");
     }
-
-    panelState?.closePresetDrawer();
-  }
-
-  async function handleSaveAsFavorite() {
-    await favoriteState.saveMyFavorite(
-      configState.config,
-      startEndState.options
+    favoriteState.setActiveSource(
+      source,
+      captureSetupSnapshot(configState.config, startEndState.options)
     );
     panelState?.closePresetDrawer();
   }
@@ -208,7 +242,6 @@ Card-based architecture with integrated Generate button:
       setGeneratorVoiceRef(null);
     };
   });
-
 </script>
 
 <div
@@ -235,7 +268,7 @@ Card-based architecture with integrated Generate button:
       onWordSubmit={() => handleGenerate(null)}
       {isMobile}
       onOpenWordInput={() => spellModeState.openWordInput()}
-      favoriteState={favoriteState}
+      {favoriteState}
     />
   </div>
 </div>
@@ -282,9 +315,14 @@ Card-based architecture with integrated Generate button:
     onRhythmChange={(u) =>
       configState.updateConfig({
         ...(u.rotationInterval
-          ? { period: u.rotationInterval === 4 ? Period.QUARTERED : Period.HALVED }
+          ? {
+              period:
+                u.rotationInterval === 4 ? Period.QUARTERED : Period.HALVED,
+            }
           : {}),
-        ...(u.inversionInterval ? { inversionInterval: u.inversionInterval } : {}),
+        ...(u.inversionInterval
+          ? { inversionInterval: u.inversionInterval }
+          : {}),
         ...(u.inversionMode ? { inversionMode: u.inversionMode } : {}),
         ...(u.reflectionAxis ? { reflectionAxis: u.reflectionAxis } : {}),
       })}
@@ -298,13 +336,14 @@ Card-based architecture with integrated Generate button:
 
   <PresetDrawer
     isOpen={panelState.isPresetDrawerOpen}
-    myFavorite={favoriteState.myFavorite}
-    communityFavorites={favoriteState.communityFavorites}
-    activeFavoriteId={favoriteState.activeFavoriteId}
-    isLoading={favoriteState.isLoading}
-    onActivateMine={() => handleFavoriteActivated("mine")}
-    onActivateCommunity={(userId) => handleFavoriteActivated(userId)}
-    onSaveAsFavorite={handleSaveAsFavorite}
+    {favoriteState}
+    {isSignedOut}
+    {isPreview}
+    isAnonymous={isAnonymousViewer}
+    onApply={handleApplySource}
+    onRequestCommunityAccount={() => (setupSignupTrigger = "community-setups")}
+    onRequestShareAccount={() => (setupSignupTrigger = "share-setup")}
+    onRequestSignIn={() => authDrawerState.show("signin")}
     onClose={() => panelState.closePresetDrawer()}
   />
 
@@ -312,15 +351,47 @@ Card-based architecture with integrated Generate button:
     open={loopSignupReason !== null}
     size="fit"
     class="chromeless"
-    onclose={() => { loopSignupReason = null; }}
+    onclose={() => {
+      loopSignupReason = null;
+    }}
   >
     <AuthNudge
       trigger="loop-locked-guest"
       text={loopSignupReason ?? undefined}
-      onCreateAccount={() => { loopSignupReason = null; authDrawerState.show("signup"); }}
-      onLogin={() => { loopSignupReason = null; authDrawerState.show("signin"); }}
-      onDismiss={() => { loopSignupReason = null; }}
+      onCreateAccount={() => {
+        loopSignupReason = null;
+        authDrawerState.show("signup");
+      }}
+      onLogin={() => {
+        loopSignupReason = null;
+        authDrawerState.show("signin");
+      }}
+      onDismiss={() => {
+        loopSignupReason = null;
+      }}
     />
+  </BaseModal>
+
+  <BaseModal
+    open={setupSignupTrigger !== null}
+    size="fit"
+    class="chromeless"
+    onclose={() => (setupSignupTrigger = null)}
+  >
+    {#if setupSignupTrigger}
+      <AuthNudge
+        trigger={setupSignupTrigger}
+        onCreateAccount={() => {
+          setupSignupTrigger = null;
+          authDrawerState.show("signup");
+        }}
+        onLogin={() => {
+          setupSignupTrigger = null;
+          authDrawerState.show("signin");
+        }}
+        onDismiss={() => (setupSignupTrigger = null)}
+      />
+    {/if}
   </BaseModal>
 {/if}
 

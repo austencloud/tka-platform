@@ -47,10 +47,12 @@ function deriveLoopMinOverride(
  * Grid is 6 columns. Cards auto-wrap to new rows when a row fills up.
  *
  *   Row 1: Word(2) + Preset(2) + Length(2) = 6
- *   Row 2 (beginner): Level(3) + GridMode(3) = 6
- *   Row 2 (non-beginner): Level(2) + GridMode(2) + TurnIntensity(2) = 6
- *   Row 3: Customize(3) + LOOP(3) = 6
- *   Row 4: Generate(6)
+ *   Level: shared selector in the fixed toolbar above this grid
+ *   Row 2 (beginner): GridMode(2) + Customize(2) + LOOP(2) = 6
+ *   Row 2 (non-beginner): GridMode(3) + TurnIntensity(3) = 6
+ *   Row 3 (beginner): Generate(6)
+ *   Row 3 (non-beginner): Customize(3) + LOOP(3) = 6
+ *   Row 4 (non-beginner): Generate(6)
  */
 export function buildCardDescriptors(
   config: UIGenerationConfig,
@@ -82,13 +84,13 @@ export function buildCardDescriptors(
     gridColumnSpan: 2,
   });
 
-  // Favorite card
+  // Saved setups card
   if (handlers.handleOpenPresetDrawer) {
     cardList.push({
       id: "preset",
       props: {
-        activeFavoriteId: handlers.activeFavoriteId ?? null,
-        activeFavoriteName: handlers.activeFavoriteName ?? null,
+        setupsCardValue: handlers.setupsCardValue ?? "Browse",
+        setupsCardStatus: handlers.setupsCardStatus ?? null,
         onOpenDrawer: handlers.handleOpenPresetDrawer,
         cardIndex: cardIndex++,
       },
@@ -142,21 +144,10 @@ export function buildCardDescriptors(
     });
   }
 
-  // ─── Row 2: Level + GridMode [+ TurnIntensity] ───
-
-  // Beginner: Level(3) + GridMode(3) = 6
-  // Non-beginner: Level(2) + GridMode(2) + TurnIntensity(2) = 6
-  const row2Span = isBeginnerLevel ? 3 : 2;
-
-  cardList.push({
-    id: "level",
-    props: {
-      currentLevel,
-      onLevelChange: handlers.handleLevelChange,
-      cardIndex: cardIndex++,
-    },
-    gridColumnSpan: row2Span,
-  });
+  // ─── Row 2: GridMode [+ TurnIntensity] ───
+  // Level 1 has exactly three remaining settings, so they share one balanced
+  // row. Levels 2 and 3 reserve this row for Grid + Turn Intensity.
+  const row2Span = isBeginnerLevel ? 2 : 3;
 
   cardList.push({
     id: "grid-mode",
@@ -177,14 +168,14 @@ export function buildCardDescriptors(
         onIntensityChange: handlers.handleTurnIntensityChange,
         cardIndex: cardIndex++,
       },
-      gridColumnSpan: 2,
+      gridColumnSpan: 3,
     });
   }
 
   // ─── Customize + LOOP row ───
   // Rotation owns its Halved/Quartered choice inside the LOOP drawer. A separate
   // Period card here exposed the same config field through a second control.
-  const customizeLoopSpan = 3;
+  const customizeLoopSpan = isBeginnerLevel ? 2 : 3;
 
   // Customize card (absorbs Style + Start/End; Rhythm removed pending design)
   const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
@@ -196,6 +187,7 @@ export function buildCardDescriptors(
         handPathMode: config.handPathMode,
         motionTypeFilter: config.motionTypeFilter,
         startEndOptions: handlers.startEndOptions ?? null,
+        level: config.level,
         gridMode: handlers.currentGridMode,
         isFreeformMode: !loopEnabled,
         onConstraintPresetChange: handlers.handleConstraintPresetChange,

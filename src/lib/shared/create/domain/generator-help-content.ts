@@ -191,21 +191,21 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     tip: "Use this to practice transitioning into or out of specific positions.",
   },
 
-  // === FAVORITES ===
+  // === SAVED SETUPS ===
   {
     id: "favorite",
     icon: "fa-heart",
-    name: "Favorites",
+    name: "Setups",
     color: "#e11d48",
-    shortDesc: "Save and load your settings",
+    shortDesc: "Save and reuse your settings",
     fullDesc:
-      "Save your current generator settings as a favorite so you can reload them later with one tap. You can also browse favorites shared by other users.",
+      "Save your current generator settings as a private setup and bring them back in one tap. Share one setup as your Favorite so other people can try it.",
     bullets: [
-      "Save: Stores your current Level, Length, Grid, LOOP, and other settings",
-      "Load: Tap a saved favorite to instantly apply all its settings",
-      "Community: Browse and try favorites shared by other users",
+      "Save: Keeps up to 10 private setups with your Level, Length, Grid, and LOOP settings",
+      "Apply: Tap a setup to load all of its settings",
+      "Share: Pick one setup as your public Favorite for the Community tab",
     ],
-    tip: "Save a favorite once you find settings you like. Saves you from reconfiguring every time.",
+    tip: "Setups are private until you share one as your Favorite.",
   },
 
   // === GENERATE ACTION ===

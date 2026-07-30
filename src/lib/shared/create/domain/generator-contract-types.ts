@@ -71,9 +71,9 @@ export interface CardHandlers {
   positionsResetTrigger?: number;
   // Current grid mode for position picker filtering
   currentGridMode?: GridMode;
-  // Favorite card
-  activeFavoriteId?: string | null;
-  activeFavoriteName?: string | null;
+  // Saved setups card
+  setupsCardValue?: string;
+  setupsCardStatus?: "active" | "modified" | null;
   handleOpenPresetDrawer?: () => void;
 }
 

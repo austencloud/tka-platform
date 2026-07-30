@@ -9,6 +9,9 @@ export type AuthNudgeTrigger =
   | "module:settings"
   | "edit-community"
   | "loop-locked-guest"
+  | "community-setups"
+  | "share-setup"
+  | "share-sequence"
   | "viewer-signin-publish"
   | "viewer-signin-download"
   | "viewer-signin-account"
@@ -37,6 +40,14 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   // not one angle.
   "loop-locked-guest":
     "Rotated LOOPs, sequences that return to their start by repeating the pattern rotated around the grid, are free. Create a free account for every LOOP type.",
+  "community-setups":
+    "Create a free account to use community setups and build sequences up to 64 steps.",
+  // Community cards show the creator's name and avatar, so sharing a setup
+  // needs a full account. The state layer blocks the write as a second gate.
+  "share-setup":
+    "Create a free account to share your setup with the community.",
+  "share-sequence":
+    "Create a free account to send sequences, make links, and share or download Choreo Cards.",
   // SignInSheet.svelte (sequence-viewer, /q scan funnel) - the three reasons
   // that actually reach the sheet (publish/download require a full account
   // per gated-action-policy.ts; account is the /q header chip's plain

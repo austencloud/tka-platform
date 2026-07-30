@@ -10,6 +10,8 @@
     icon: string;
     action: () => void;
     variant?: "danger";
+    /** Keep unavailable actions discoverable without making them activatable. */
+    disabled?: boolean;
   }
 
   interface Props {
@@ -96,7 +98,11 @@
           class="overflow-item"
           class:danger={item.variant === "danger"}
           role="menuitem"
-          onclick={() => handleItemClick(item)}
+          disabled={item.disabled}
+          aria-disabled={item.disabled || undefined}
+          onclick={() => {
+            if (!item.disabled) handleItemClick(item);
+          }}
         >
           <i class={item.icon} aria-hidden="true"></i>
           <span>{item.label}</span>
@@ -176,8 +182,13 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .overflow-item:hover {
+  .overflow-item:not(:disabled):hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  .overflow-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .overflow-item:focus-visible {
@@ -195,7 +206,7 @@
     color: var(--semantic-error);
   }
 
-  .overflow-item.danger:hover {
+  .overflow-item.danger:not(:disabled):hover {
     background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
   }
 
