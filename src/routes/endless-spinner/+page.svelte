@@ -3,7 +3,6 @@
   import { flyFade } from "$lib/shared/transitions/motion";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
-  import type { SpinnerStats } from "$lib/shared/landing/domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { TrackingMode } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -18,13 +17,9 @@
   // Mode toggle and infinite generation
   import type {
     SpinnerMode,
-    SpinnerMetrics,
     GeneratedSequenceInfo,
   } from "$lib/features/landing/domain/models/spinner-models";
   import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
-  import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
-  import InfiniteModeInfo from "$lib/features/landing/components/InfiniteModeInfo.svelte";
-  import SpinnerStatsBar from "$lib/features/landing/components/SpinnerStatsBar.svelte";
 
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
 
@@ -32,6 +27,7 @@
   import SpinnerControls from "./components/SpinnerControls.svelte";
   import SpinnerHistoryPanel from "./components/SpinnerHistoryPanel.svelte";
   import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
+  import SpinnerNowPlaying from "./components/SpinnerNowPlaying.svelte";
   import {
     createSpinnerSession,
     type SpinnerSession,
@@ -60,29 +56,20 @@
   let showStepGrid = $state(true);
   let showHistory = $state(false);
 
-  // Stats
-  let stats = $state<SpinnerStats>({
-    sequencesPlayed: 0,
-    uniqueSequencesUsed: 0,
-    directMatches: 0,
-    rotatedMatches: 0,
-    bridgesGenerated: 0,
-  });
   let spinnerMode = $state<SpinnerMode>("infinite");
-  let sessionGeneratedCount = $state(0);
-  let globalMetrics = $state<SpinnerMetrics | null>(null);
   let currentGeneratedInfo = $state<GeneratedSequenceInfo | null>(null);
 
-  let metricsUnsubscribe: (() => void) | null = null;
   let modeRevision = 0;
 
   // Derived
   let currentStepNumber = $derived(
     Math.floor(playback?.animationState?.currentStep ?? 0)
   );
-  let transitionCount = $derived(
-    Math.max(0, (playback?.sequenceSwapCount ?? 0) - 1)
-  );
+  let debugStats = $derived.by(() => {
+    const swapCount = playback?.sequenceSwapCount ?? 0;
+    if (swapCount === 0) return null;
+    return session?.spinnerOrchestrator.getStats() ?? null;
+  });
 
   $effect(() => {
     const swapCount = playback?.sequenceSwapCount ?? 0;
@@ -90,21 +77,10 @@
 
     if (swapCount === 0 || !currentSequence) return;
 
-    if (spinnerMode === "library" && session) {
-      stats = session.spinnerOrchestrator.getStats();
-    }
-
     currentGeneratedInfo =
       spinnerMode === "infinite" && session
         ? session.infiniteGenerator.getInfoForSequence(currentSequence)
         : null;
-
-    // The generator's counter is plain (non-reactive) state; it only changes
-    // when a generation lands, and every landed generation swaps — so syncing
-    // it here, on the swap signal, keeps the stats bar honest.
-    if (session) {
-      sessionGeneratedCount = session.infiniteGenerator.getSessionCount();
-    }
   });
 
   $effect(() => {
@@ -117,12 +93,6 @@
       visibilityManager.setDarkMode(true);
 
       session = createSpinnerSession(scope);
-      metricsUnsubscribe = session.metricsRepository.subscribe(
-        (m) => (globalMetrics = m)
-      );
-      session.metricsRepository
-        .getMetrics()
-        .then((m) => (globalMetrics = m));
 
       await session.playback.initialize();
       // A resolved initialize with no sequence is still a failed boot — the
@@ -142,7 +112,6 @@
   onDestroy(() => {
     modeRevision++;
     playback?.dispose();
-    metricsUnsubscribe?.();
   });
 
   async function handleModeChange(newMode: SpinnerMode) {
@@ -182,23 +151,6 @@
     }
 
     if (revision !== modeRevision) return;
-
-    // Release the metrics listener as soon as Infinite mode is left; the
-    // onDestroy cleanup stays as the fallback for leaving the page mid-mode.
-    if (newMode !== "infinite" && metricsUnsubscribe) {
-      metricsUnsubscribe();
-      metricsUnsubscribe = null;
-    }
-
-    // Subscribe to metrics updates when switching to infinite mode
-    if (newMode === "infinite" && session && !metricsUnsubscribe) {
-      metricsUnsubscribe = session.metricsRepository.subscribe((metrics) => {
-        globalMetrics = metrics;
-      });
-      session.metricsRepository.getMetrics().then((metrics) => {
-        globalMetrics = metrics;
-      });
-    }
 
     // Reset generated info when switching to library mode
     if (newMode === "library") {
@@ -280,7 +232,7 @@
   <title>Endless Spinner | The Kinetic Alphabet</title>
   <meta
     name="description"
-    content="Watch TKA sequences chain from one end state to the next in Library, Infinite, or Live mode."
+    content="Watch TKA LOOPs chain endlessly — generated on the spot or drawn from the library."
   />
 </svelte:head>
 
@@ -317,15 +269,19 @@
 
     <!-- Animation showcase -->
     <main class="showcase">
-      <!-- Mode-specific info display -->
+      <!-- Current sequence identity -->
       <div class="mode-info">
-        <Crossfade key={spinnerMode} fill>
+        <Crossfade
+          key={`${spinnerMode}:${playback?.currentSequence?.id ?? ""}`}
+          fill
+        >
           <div class="mode-info-layer">
-            {#if spinnerMode === "library"}
-              <LibraryModeInfo sequence={playback?.currentSequence ?? null} />
-            {:else if spinnerMode === "infinite"}
-              <InfiniteModeInfo sequenceInfo={currentGeneratedInfo} />
-            {/if}
+            <SpinnerNowPlaying
+              sequence={playback?.currentSequence ?? null}
+              generatedInfo={spinnerMode === "infinite"
+                ? currentGeneratedInfo
+                : null}
+            />
           </div>
         </Crossfade>
       </div>
@@ -410,14 +366,6 @@
           onCopy={handleCopy}
           onToggleHistory={() => (showHistory = !showHistory)}
         />
-
-        <SpinnerStatsBar
-          mode={spinnerMode}
-          libraryStats={stats}
-          {transitionCount}
-          {globalMetrics}
-          {sessionGeneratedCount}
-        />
       </div>
 
       {#if showHistory}
@@ -441,7 +389,7 @@
     {#if showDebugPanel}
       <EndlessSpinnerDebugPanel
         sequenceHistory={playback?.history ?? []}
-        {stats}
+        stats={debugStats}
         gridMode={playback?.gridMode ?? null}
         bind:isChainingEnabled
       />
@@ -582,11 +530,10 @@
       0 0 0 1px rgba(99, 102, 241, 0.04);
   }
 
-  /* Fixed-height stage sized to the TALLEST mode (Infinite with its badge
-     slot reserved), so switching modes or timed content can never move the
-     canvas and controls below. The Crossfade fills this box. */
+  /* Fixed-height stage keeps sequence and mode swaps from moving the canvas
+     and controls below. The Crossfade fills this box. */
   .mode-info {
-    height: 5.75rem;
+    height: 3.5rem;
     padding: 0 1rem;
     box-sizing: border-box;
   }
@@ -684,10 +631,9 @@
   }
 
   .transport-bar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: clamp(1rem, 2vw, 2rem);
+    justify-content: center;
     width: 100%;
     padding: 0.25rem;
     box-sizing: border-box;
@@ -856,13 +802,6 @@
   /* No 2600px step tier: the continuous root ramp above grows every rem
      measure on this page instead (a scale-only tier is redundant with it). */
 
-  @media (max-width: 760px) {
-    .transport-bar {
-      grid-template-columns: minmax(0, 1fr);
-      justify-items: center;
-    }
-  }
-
   @media (max-width: 600px) {
     .content {
       width: calc(100% - 1rem);
@@ -900,7 +839,6 @@
     }
 
     .mode-info {
-      height: 7.25rem;
       padding-inline: 0.375rem;
     }
 
@@ -923,9 +861,6 @@
       padding: 0.375rem;
     }
 
-    .transport-bar {
-      gap: 0.875rem;
-    }
   }
 
   @media (min-width: 700px) and (max-height: 600px) {
@@ -1021,10 +956,6 @@
       padding: 0.25rem;
     }
 
-    .transport-bar {
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 1rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -7,7 +7,7 @@
 
   interface Props {
     sequenceHistory: readonly PlaybackHistoryEntry[];
-    stats: SpinnerStats;
+    stats: SpinnerStats | null;
     gridMode: GridMode | null;
     isChainingEnabled: boolean;
   }
@@ -38,15 +38,15 @@
     <div class="debug-stats">
       <div class="debug-stat">
         <span>Played:</span>
-        <span>{stats.sequencesPlayed}</span>
+        <span>{stats?.sequencesPlayed ?? 0}</span>
       </div>
       <div class="debug-stat">
         <span>Direct matches:</span>
-        <span>{stats.directMatches}</span>
+        <span>{stats?.directMatches ?? 0}</span>
       </div>
       <div class="debug-stat">
         <span>Rotated:</span>
-        <span>{stats.rotatedMatches}</span>
+        <span>{stats?.rotatedMatches ?? 0}</span>
       </div>
       <div class="debug-stat">
         <span>Grid mode:</span>
