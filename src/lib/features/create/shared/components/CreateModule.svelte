@@ -238,14 +238,68 @@
   });
 
   let entryTutorialWasActive = false;
+  let tutorialWorkspacePrepared = false;
+  let restoreTutorialAfterViewerCloses = false;
+
+  function syncConstructWorkspaceUi(): void {
+    if (!constructTabState?.sequenceState) {
+      return;
+    }
+
+    const startPosition = constructTabState.sequenceState.selectedStartPosition;
+
+    constructTabState.setSelectedStartPosition(startPosition);
+    if (startPosition) {
+      constructTabState.startPositionStateService.setSelectedPosition(
+        startPosition
+      );
+    } else {
+      constructTabState.startPositionStateService.clearSelectedPosition();
+    }
+    constructTabState.syncPickerStateWithSequence();
+  }
+
+  function prepareTutorialWorkspace(): void {
+    if (tutorialWorkspacePrepared || !CreateModuleState) {
+      return;
+    }
+
+    tutorialWorkspacePrepared = true;
+    CreateModuleState.beginTutorialWorkspace();
+    syncConstructWorkspaceUi();
+  }
+
+  function finishTutorialWorkspace(): void {
+    if (!tutorialWorkspacePrepared || !CreateModuleState) {
+      return;
+    }
+
+    CreateModuleState.finishTutorialWorkspace();
+    syncConstructWorkspaceUi();
+    tutorialWorkspacePrepared = false;
+    restoreTutorialAfterViewerCloses = false;
+  }
 
   $effect(() => {
     const entryTutorialIsActive = appEntryState.isCreateTutorial();
+    const tutorialIsReady =
+      entryTutorialIsActive &&
+      CreateModuleState?.isPersistenceInitialized === true;
 
-    if (entryTutorialIsActive && !entryTutorialWasActive) {
+    if (tutorialIsReady && !tutorialWorkspacePrepared) {
       constructTutorialState.start();
+      prepareTutorialWorkspace();
     } else if (!entryTutorialIsActive && entryTutorialWasActive) {
-      constructTutorialState.reset();
+      const viewerOwnsCompletedTutorial =
+        constructTutorialState.status === "completed" &&
+        panelState.isExportPanelOpen;
+
+      if (viewerOwnsCompletedTutorial) {
+        restoreTutorialAfterViewerCloses = true;
+      } else {
+        finishTutorialWorkspace();
+        constructTutorialState.reset();
+      }
     }
 
     entryTutorialWasActive = entryTutorialIsActive;
@@ -256,12 +310,26 @@
       constructTutorialState.status === "dismissed" &&
       appEntryState.isCreateTutorial()
     ) {
+      finishTutorialWorkspace();
       appEntryState.skipToComplete();
     } else if (
       constructTutorialState.status === "completed" &&
       appEntryState.isCreateTutorial()
     ) {
+      if (panelState.isExportPanelOpen) {
+        restoreTutorialAfterViewerCloses = true;
+      } else {
+        finishTutorialWorkspace();
+      }
+      toast.success("Construct guide complete");
       appEntryState.completeEntry();
+    }
+  });
+
+  $effect(() => {
+    if (restoreTutorialAfterViewerCloses && !panelState.isExportPanelOpen) {
+      finishTutorialWorkspace();
+      constructTutorialState.reset();
     }
   });
 
@@ -408,7 +476,10 @@
         // and closing an untouched workspace leaves no empty cloud record.
         autosaver = new Autosaver();
         autosaver.startAutosave(
-          () => CreateModuleState?.sequenceState.currentSequence || null,
+          () =>
+            CreateModuleState?.isTutorialWorkspaceIsolated
+              ? null
+              : CreateModuleState?.sequenceState.currentSequence || null,
           sessionId,
           30000,
           (sequence) =>
@@ -491,6 +562,8 @@
 
     // Return cleanup function synchronously (required for Svelte 5 onMount)
     return () => {
+      finishTutorialWorkspace();
+
       if (checkIsMobile) {
         window.removeEventListener("resize", checkIsMobile);
       }
@@ -693,11 +766,6 @@
     handlers.handleOpenFilterPanel(panelState);
   }
 
-  function handleOpenSequenceActions() {
-    if (!handlers) return;
-    handlers.handleOpenSequenceActions(panelState);
-  }
-
   /**
    * Transfer sequence to Constructor workspace
    */
@@ -794,8 +862,6 @@
       bind:toolPanelElement
       onClearSequence={handleClearSequence}
       onViewSequence={handleOpenExportPanel}
-      onSequenceActionsClick={handleOpenSequenceActions}
-      onSaveToLibrary={() => panelState.openSaveToLibraryPanel()}
       onOptionSelected={handleOptionSelected}
       onOpenFilters={handleOpenFilterPanel}
       onCloseFilters={() => {

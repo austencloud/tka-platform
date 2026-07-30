@@ -11,6 +11,7 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
   } from "$lib/shared/mandala/domain/mandala-types";
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
+  import SaveToLibraryButton from "../../shared/components/buttons/SaveToLibraryButton.svelte";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
@@ -78,6 +79,7 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
   const isClearing = $derived.by(() => sequenceState.getIsClearing());
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
+  const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
 
   // Multi-select highlight: paint every batch-selected beat with the accent
   // ring via the existing StepCell `.highlighted` mechanism. Gold `.selected`
@@ -182,8 +184,8 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
 <div class="sequence-container">
   <div class="content-wrapper">
     <div class="label-and-beatframe-unit">
-      <!-- Top bar: word label only. Level + LOOP badges removed for a clean
-           header (classification still shown on cards / viewer / exports). -->
+      <!-- The leading header slot stays open for navigation. Save remains
+           beside the sequence name as the one document-level action. -->
       <div class="top-bar">
         <div class="word-label-area">
           <WordLabel
@@ -192,6 +194,15 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
             {letterSources}
             activeStepNumber={practiceStepNumber}
           />
+        </div>
+
+        <div class="save-area">
+          {#if canSaveToLibrary}
+            <SaveToLibraryButton
+              sequence={currentSequence}
+              onclick={() => panelState.openSaveToLibraryPanel()}
+            />
+          {/if}
         </div>
       </div>
 
@@ -260,17 +271,24 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     transition: all var(--duration-emphasis) ease-out;
   }
 
-  /* Top bar: centered word label only (level + LOOP badges removed). */
+  /* The empty leading track reserves the familiar navigation slot and keeps
+     the word centered while Save occupies the trailing track. */
   .top-bar {
-    display: flex;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns:
+      var(--min-touch-target, 44px)
+      minmax(0, 1fr)
+      var(--min-touch-target, 44px);
     align-items: center;
-    justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
     width: 100%;
     padding: 8px 12px;
     flex-shrink: 0;
   }
 
   .word-label-area {
+    grid-column: 2;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -278,6 +296,15 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     /* Constrain width to prevent overflow into sibling button zones */
     min-width: 0;
     overflow: visible;
+  }
+
+  .save-area {
+    grid-column: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
   }
 
   .step-grid-wrapper {

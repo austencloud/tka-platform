@@ -79,6 +79,7 @@
   const leftButtons = workspaceButtonsInZone("left");
   const centerButtons = workspaceButtonsInZone("center");
   const rightButtons = workspaceButtonsInZone("right");
+  const headerTrailingButtons = workspaceButtonsInZone("header-trailing");
   const gridButton = workspaceButtonsInZone("grid")[0];
   const meta = WORKSPACE_BUTTON_TUTORIAL;
 </script>
@@ -111,6 +112,11 @@
     <div class="workspace-panel">
       <div class="top-bar">
         <span class="word-label">{displayWord}</span>
+        <div class="header-actions header-trailing">
+          {#each headerTrailingButtons as entry (entry.id)}
+            {@render mockSpot(entry, "")}
+          {/each}
+        </div>
       </div>
 
       <div class="grid-area">
@@ -131,7 +137,7 @@
       </div>
 
       <!-- Mirrors the real ButtonPanel: [Undo, Clear] pinned left, Play
-           absolutely centered (can't drift), [Sequence Actions, Save] right. -->
+           absolutely centered (can't drift), [Sequence Actions, Share] right. -->
       <div class="button-bar">
         <div class="btn-group">
           {#each leftButtons as entry (entry.id)}
@@ -259,19 +265,31 @@
   }
 
   .top-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
     align-items: center;
-    justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
     padding: 10px 14px;
     flex-shrink: 0;
   }
 
   .word-label {
+    grid-column: 2;
     font-size: 1.05rem;
     font-weight: 600;
     color: var(--theme-text, #fff);
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-trailing {
+    grid-column: 3;
   }
 
   .grid-area {

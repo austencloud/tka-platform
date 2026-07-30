@@ -6,8 +6,8 @@
 
   Layout:
   - LEFT ZONE: Undo + Clear (corrective actions)
-  - CENTER ZONE: Export Panel
-  - RIGHT ZONE: Tools + Save (constructive actions)
+  - CENTER ZONE: Play
+  - RIGHT ZONE: Sequence Actions + Share
 
   Architecture:
   - Uses CreateModuleContext for state access
@@ -24,16 +24,17 @@
   import UndoButton from "./buttons/UndoButton.svelte";
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
-  import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
+  import ShareButton from "./buttons/ShareButton.svelte";
   import { workspaceButtonsInZone } from "../workspace-button-layout";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
   import {
     logConstructFullPlay,
     logConstructImmediateUndo,
   } from "$lib/features/create/construct/services/construct-analytics";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
-  const { CreateModuleState, constructTutorialState, panelState } =
+  const { CreateModuleState, constructTutorialState, panelState, layout } =
     getCreateModuleContext();
 
   // Zone membership + order come from the shared workspace button layout, so the
@@ -45,15 +46,11 @@
   // Props interface - only event handler callbacks
   const {
     onClearSequence,
-    onSequenceActionsClick,
     onViewSequence,
-    onSaveToLibrary,
     visible = true,
   }: {
     onClearSequence?: () => void;
-    onSequenceActionsClick?: () => void;
     onViewSequence?: () => void;
-    onSaveToLibrary?: () => void;
     visible?: boolean;
   } = $props();
 
@@ -66,7 +63,10 @@
   );
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
   const isExportPanelOpen = $derived(panelState.isExportPanelOpen);
-  const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
+  const canShareSequence = $derived(CreateModuleState.canShowActionButtons());
+  const useMobileShareSheet = $derived(
+    shareTarget.isMobile || !layout.shouldUseSideBySideLayout
+  );
   const isAssembleTab = $derived(navigationState.activeTab === "assemble");
   const currentSequence = $derived.by(() => {
     const tabState = CreateModuleState.getActiveTabSequenceState();
@@ -92,8 +92,8 @@
     constructTutorialState.recordFullPlay();
   }
 
-  // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)
-  // Note: SequenceActions is now in left zone, not center
+  // Count center-zone buttons to key the container (for smooth cross-fade on
+  // layout changes). Save is the only workspace action in the header.
   const centerZoneButtonCount = $derived(() => {
     let count = 0;
     if (showViewSequenceButton) count++;
@@ -155,7 +155,7 @@
         {/each}
       </div>
 
-      <!-- CENTER ZONE: Main action button (Export Panel) -->
+      <!-- CENTER ZONE: Primary Play action -->
       <div class="center-zone-wrapper">
         {#key centerZoneButtonCount()}
           <div
@@ -186,15 +186,17 @@
       <!-- RIGHT ZONE: order/membership from the shared layout -->
       <div class="right-zone">
         {#each rightButtons as btn (btn.id)}
-          {#if btn.id === "sequence-actions" && showSequenceActions && onSequenceActionsClick}
+          {#if btn.id === "sequence-actions" && showSequenceActions}
             <div transition:presenceTransition>
-              <SequenceActionsButton onclick={onSequenceActionsClick} />
+              <SequenceActionsButton
+                onclick={() => panelState.openSequenceActionsPanel()}
+              />
             </div>
-          {:else if btn.id === "save" && canSaveToLibrary && onSaveToLibrary}
+          {:else if btn.id === "share" && canShareSequence}
             <div transition:presenceTransition>
-              <SaveToLibraryButton
+              <ShareButton
                 sequence={currentSequence}
-                onclick={onSaveToLibrary}
+                useMobileSheet={useMobileShareSheet}
               />
             </div>
           {/if}
@@ -213,6 +215,7 @@
   }
 
   .button-panel {
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     align-items: flex-end;
@@ -262,7 +265,7 @@
     pointer-events: none;
   }
 
-  /* RIGHT ZONE: Tools + Save at right edge */
+  /* RIGHT ZONE: sequence transforms followed by Share at the outer edge */
   .right-zone {
     display: flex;
     align-items: center;
@@ -435,8 +438,8 @@
     }
   }
 
-  /* On SE-sized workspaces, the four corner actions step down to the
-     44px accessibility target while the 50px Play action keeps priority. */
+  /* One Share trigger keeps the five controls in a single row. The surrounding
+     controls step down to 44px while Play stays prominent. */
   @container button-panel (max-width: 390px) {
     .button-panel {
       --min-touch-target: 44px;
@@ -454,7 +457,8 @@
     .button-panel.assemble-layout {
       grid-template-areas:
         "left left left"
-        ". center right";
+        ". center ."
+        "right right right";
       row-gap: 4px;
     }
 
@@ -468,6 +472,7 @@
 
     .button-panel.assemble-layout .right-zone {
       grid-area: right;
+      justify-self: end;
     }
   }
 </style>

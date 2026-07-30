@@ -42,8 +42,6 @@
     // Event handlers
     onClearSequence,
     onViewSequence = undefined,
-    onSequenceActionsClick,
-    onSaveToLibrary = undefined,
     onOptionSelected,
     onOpenFilters,
     onCloseFilters,
@@ -62,8 +60,6 @@
     toolPanelElement?: HTMLElement | null;
     onClearSequence: () => void;
     onViewSequence?: () => void;
-    onSequenceActionsClick: () => void;
-    onSaveToLibrary?: () => void;
     onOptionSelected: (option: PictographData) => Promise<void>;
     onOpenFilters: () => void;
     onCloseFilters: () => void;
@@ -201,8 +197,6 @@
         <ButtonPanel
           {onClearSequence}
           {onViewSequence}
-          {onSequenceActionsClick}
-          {onSaveToLibrary}
         />
       </div>
     {/if}

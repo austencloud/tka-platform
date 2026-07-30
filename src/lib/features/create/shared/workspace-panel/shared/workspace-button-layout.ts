@@ -2,8 +2,9 @@
  * Workspace button layout — the single source of truth for which workspace
  * action buttons exist, which zone they live in, and their order.
  *
- * Consumed by BOTH:
- *  - `ButtonPanel.svelte` — renders the real buttons grouped by zone/order.
+ * Consumed by:
+ *  - `ButtonPanel.svelte` and `SequenceDisplay.svelte` — render the real
+ *    buttons in the bottom rail and workspace header.
  *  - the create tutorial's `ReadyStep.svelte` — renders a labelled diagram of
  *    the workspace.
  *
@@ -16,15 +17,22 @@ export type WorkspaceButtonId =
   | "clear"
   | "view"
   | "sequence-actions"
+  | "share"
   | "save"
   | "step-editor";
 
 /**
- * Zones map to the real ButtonPanel layout. `grid` is NOT a real button — the
- * user taps a step in the grid to edit it; it exists only so the tutorial can
- * label that affordance. ButtonPanel ignores the `grid` zone.
+ * Zones map to the real workspace layout. `header-trailing` holds Save beside
+ * the centered word. The leading header slot is deliberately reserved for
+ * navigation. `grid` is NOT a real button — the user taps a step in the grid
+ * to edit it; it exists only so the tutorial can label that affordance.
  */
-export type WorkspaceButtonZone = "left" | "center" | "right" | "grid";
+export type WorkspaceButtonZone =
+  | "header-trailing"
+  | "left"
+  | "center"
+  | "right"
+  | "grid";
 
 export interface WorkspaceButtonLayoutEntry {
   id: WorkspaceButtonId;
@@ -39,8 +47,9 @@ export const WORKSPACE_BUTTON_LAYOUT: WorkspaceButtonLayoutEntry[] = [
   { id: "clear", zone: "left", order: 2 },
   { id: "view", zone: "center", order: 3 },
   { id: "sequence-actions", zone: "right", order: 4 },
-  { id: "save", zone: "right", order: 5 },
-  { id: "step-editor", zone: "grid", order: 6 },
+  { id: "share", zone: "right", order: 5 },
+  { id: "save", zone: "header-trailing", order: 6 },
+  { id: "step-editor", zone: "grid", order: 7 },
 ];
 
 /** Buttons in a zone, in reading order. */
@@ -81,6 +90,11 @@ export const WORKSPACE_BUTTON_ICON: Record<
     icon: "fa-tools",
     iconType: "fa",
     actionLabel: "Sequence actions",
+  },
+  share: {
+    icon: "fa-share-nodes",
+    iconType: "fa",
+    actionLabel: "Share",
   },
   save: {
     icon: "fa-bookmark",
@@ -131,6 +145,12 @@ export const WORKSPACE_BUTTON_TUTORIAL: Record<
     label: "Sequence Actions",
     description: "Mirror, flip, rotate, and transform your sequence.",
     colorClass: "success",
+  },
+  share: {
+    label: "Share",
+    description:
+      "Share a card, send the sequence in TKA, copy a link, or download the card.",
+    colorClass: "info",
   },
   save: {
     label: "Save to Library",

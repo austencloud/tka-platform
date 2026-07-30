@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   sendImage: vi.fn(),
   showUserError: vi.fn(),
+  authDrawerShow: vi.fn(),
+  cancelSequenceShare: vi.fn(),
+  fullAccount: true,
 }));
 
 vi.mock("$lib/shared/application/get-error-handler", () => ({
@@ -31,7 +34,16 @@ vi.mock("$lib/shared/auth/services/guest-identity", () => ({
 }));
 
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-  authState: { user: { uid: "current-user" } },
+  authState: {
+    user: { uid: "current-user" },
+    get isFullAccount() {
+      return mocks.fullAccount;
+    },
+  },
+}));
+
+vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
+  authDrawerState: { show: mocks.authDrawerShow },
 }));
 
 vi.mock("$lib/shared/messaging/services/conversation-manager", () => ({
@@ -67,6 +79,7 @@ vi.mock("../../state/inbox-state.svelte", () => ({
     clearPendingNavigation() {
       mocks.inbox.shareAttachmentConversationId = null;
     },
+    cancelSequenceShare: mocks.cancelSequenceShare,
     // Mirrors the one field of openAttachmentShare this sheet consumes; the
     // real state module's own contract is covered by its unit tests.
     openAttachmentShare(
@@ -167,6 +180,58 @@ describe("SendAttachmentSheet", () => {
       cancel: vi.fn(),
     });
     mocks.showUserError.mockReset();
+    mocks.authDrawerShow.mockReset();
+    mocks.cancelSequenceShare.mockReset();
+    mocks.fullAccount = true;
+  });
+
+  it("renders and owns a transient Choreo Card preview", async () => {
+    const revokeObjectUrl = vi.spyOn(URL, "revokeObjectURL");
+    const payload = {
+      ...createPayload(),
+      sequencePreviewBlob: new Blob(
+        [
+          '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="green"/></svg>',
+        ],
+        { type: "image/svg+xml" }
+      ),
+    };
+    const screen = render(SendAttachmentSheet, {
+      attachment: { type: "sequence", payload },
+      onSent: vi.fn(),
+    });
+    let previewUrl = "";
+
+    await vi.waitFor(() => {
+      const preview = document.querySelector<HTMLImageElement>(".thumbnail-img");
+      expect(preview?.src).toMatch(/^blob:/);
+      previewUrl = preview?.src ?? "";
+    });
+
+    screen.unmount();
+    expect(revokeObjectUrl).toHaveBeenCalledWith(previewUrl);
+    revokeObjectUrl.mockRestore();
+  });
+
+  it("stops a guest send if account state changes while the sheet is open", async () => {
+    addGroupConversation();
+    mocks.fullAccount = false;
+    render(SendAttachmentSheet, {
+      attachment: { type: "sequence", payload: createPayload() },
+      onSent: vi.fn(),
+    });
+
+    await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+    await page.getByRole("button", { name: "Send sequence" }).click();
+
+    expect(mocks.cancelSequenceShare).toHaveBeenCalledOnce();
+    expect(mocks.authDrawerShow).toHaveBeenCalledWith(
+      "signup",
+      "share-sequence"
+    );
+    expect(mocks.ensureGuestIdentity).not.toHaveBeenCalled();
+    expect(mocks.createShortCode).not.toHaveBeenCalled();
+    expect(mocks.sendMessage).not.toHaveBeenCalled();
   });
 
   it("sends an attachment-only message to an existing group", async () => {

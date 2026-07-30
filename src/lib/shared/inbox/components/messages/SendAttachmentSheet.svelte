@@ -3,6 +3,7 @@
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -86,14 +87,29 @@
   const imagePreviewUrl = $derived(
     image ? URL.createObjectURL(image.file) : null
   );
+  const sequencePreviewUrl = $derived(
+    payload?.sequencePreviewBlob
+      ? URL.createObjectURL(payload.sequencePreviewBlob)
+      : null
+  );
+  const previewThumbnailUrl = $derived(
+    sequencePreviewUrl || payload?.sequenceThumbnail || null
+  );
 
   // Revoke on swap and on unmount; a leaked blob: URL pins the whole image in
-  // memory for the life of the tab.
+  // memory for the life of the tab. The send sheet owns both preview URLs so a
+  // caller can unmount without breaking a sheet that is already open.
   $effect(() => {
-    const url = imagePreviewUrl;
+    const urls = [imagePreviewUrl, sequencePreviewUrl].filter(
+      (url): url is string => !!url
+    );
     return () => {
-      if (url) URL.revokeObjectURL(url);
+      for (const url of urls) URL.revokeObjectURL(url);
     };
+  });
+
+  $effect(() => {
+    if (previewThumbnailUrl) thumbnailFailed = false;
   });
 
   const displayWord = $derived(
@@ -302,6 +318,11 @@
 
   async function send(): Promise<void> {
     if (destinationCount === 0 || phase !== "idle") return;
+    if (attachment.type === "sequence" && !authState.isFullAccount) {
+      inboxState.cancelSequenceShare();
+      authDrawerState.show("signup", "share-sequence");
+      return;
+    }
 
     const conversations = [...selectedConversations];
     const users = [...selectedUsers];
@@ -422,9 +443,9 @@
 >
   <article class="sequence-preview" aria-label="Attachment being shared">
     <div class="preview-thumbnail">
-      {#if payload && payload.sequenceThumbnail && !thumbnailFailed}
+      {#if payload && previewThumbnailUrl && !thumbnailFailed}
         <img
-          src={payload.sequenceThumbnail}
+          src={previewThumbnailUrl}
           alt=""
           class="thumbnail-img"
           onerror={() => {

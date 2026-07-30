@@ -1,5 +1,7 @@
 import type { SequenceSharePayload } from "../domain/models/sequence-share-payload";
 import type { PendingMessageAttachment } from "../domain/pending-message-attachment";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { inboxState } from "./inbox-state.svelte";
 export { buildSequenceSharePayload } from "../domain/build-sequence-share-payload";
 
@@ -22,6 +24,10 @@ export function buildThumbnailUrl(
 }
 
 export function openSendSequenceSheet(p: SequenceSharePayload): void {
+  if (!authState.isFullAccount) {
+    authDrawerState.show("signup", "share-sequence");
+    return;
+  }
   inboxState.openSequenceShare(p);
 }
 

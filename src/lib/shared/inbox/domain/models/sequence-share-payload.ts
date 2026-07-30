@@ -12,6 +12,12 @@ export interface SequenceSharePayload {
   sequenceCloudWord?: string;
   sequenceName?: string;
   sequenceThumbnail?: string;
+  /**
+   * A transient, locally rendered Choreo Card for the send sheet preview.
+   * This never becomes message metadata; sent messages only persist durable
+   * URLs already present on `sequence`.
+   */
+  sequencePreviewBlob?: Blob;
   sequenceAuthor?: string;
   sequenceStepCount?: number;
 }
