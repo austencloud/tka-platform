@@ -11,6 +11,12 @@
  *   --tab <tab>                      Captured tab (default: general)
  *   --subtasks <json>                JSON array of subtasks
  *   --user <austen|claude|email|uid> User profile (default: austen)
+ *   --status <new|in-progress|in-review|completed|archived>
+ *                                    Status to CREATE the item in (default: new).
+ *                                    For retroactive logging of work that shipped
+ *                                    before an item existed for it. Moving an
+ *                                    existing item still goes through
+ *                                    fetch-feedback.js and its transition guard.
  *
  * Examples:
  *   node scripts/submit-feedback.js "Fix login bug" "Users can't login with email"
@@ -72,6 +78,12 @@ function parseArgs() {
     console.error(
       "  --user <austen|claude|email|uid>          User profile (default: austen)"
     );
+    console.error(
+      "  --status <status>                         Status to CREATE in (default: new);"
+    );
+    console.error(
+      "                                            for logging already-finished work"
+    );
     console.error("");
     console.error("Examples:");
     console.error(
@@ -93,6 +105,21 @@ function parseArgs() {
     tab: "general",
     subtasks: null,
     user: "austen", // Default to Austen's profile
+    /**
+     * Status the item is BORN in. Almost always "new".
+     *
+     * The override exists for retroactive logging — work that shipped before any
+     * feedback item existed for it, which /done records after the fact. Walking
+     * such an item through new -> in-progress -> in-review -> completed writes
+     * four journal entries asserting a review history that never happened; the
+     * journal is append-only, so that fiction is permanent. Being born in its
+     * true state is both one call and one honest entry.
+     *
+     * This does NOT weaken the transition guard: moving an existing item still
+     * goes through fetch-feedback.js and its VALID_TRANSITIONS table. You have
+     * to ask for this explicitly, at creation, once.
+     */
+    status: "new",
   };
 
   // Parse options
@@ -120,6 +147,9 @@ function parseArgs() {
     } else if (args[i] === "--user" && args[i + 1]) {
       options.user = args[i + 1];
       i++;
+    } else if (args[i] === "--status" && args[i + 1]) {
+      options.status = args[i + 1];
+      i++;
     }
   }
 
@@ -137,6 +167,17 @@ function parseArgs() {
   if (!validPriorities.includes(options.priority)) {
     console.error(
       `❌ Error: Invalid priority "${options.priority}". Must be one of: ${validPriorities.join(", ")}`
+    );
+    process.exit(1);
+  }
+
+  // Validated against the SHARED status list rather than a local copy, so this
+  // flag can never introduce a state the board and the transition table do not
+  // know about.
+  const validStatuses = config.FEEDBACK_STATUSES;
+  if (!validStatuses.includes(options.status)) {
+    console.error(
+      `❌ Error: Invalid status "${options.status}". Must be one of: ${validStatuses.join(", ")}`
     );
     process.exit(1);
   }
@@ -221,7 +262,7 @@ async function submitFeedback(params) {
       capturedTab: params.tab,
 
       // Admin management
-      status: "new",
+      status: params.status,
 
       // Timestamps
       createdAt: Timestamp.now(),
