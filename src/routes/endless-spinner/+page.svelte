@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { flyFade } from "$lib/shared/transitions/motion";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -12,6 +11,7 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
+  import PracticeLanePane from "$lib/shared/sequence-viewer/components/PracticeLanePane.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Mode toggle and infinite generation
@@ -53,7 +53,7 @@
 
   // UI state
   let showDebugPanel = $state(false);
-  let viewMode = $state<"strip" | "grid">("grid");
+  let viewMode = $state<"strip" | "grid">("strip");
   let showHistory = $state(false);
 
   let spinnerMode = $state<SpinnerMode>("infinite");
@@ -274,7 +274,11 @@
       </div>
 
       <!-- Animation area -->
-      <div class="animation-area" class:with-grid={viewMode === "grid"}>
+      <div
+        class="animation-area"
+        class:strip-view={viewMode === "strip"}
+        class:grid-view={viewMode === "grid"}
+      >
         <div class="canvas-container">
           {#if animationReady}
             <AnimatorCanvas
@@ -320,28 +324,29 @@
           {/if}
         </div>
 
-        {#if viewMode === "grid" && playback?.animationState?.sequenceData}
-          <div
-            class="beat-grid-container"
-            in:flyFade={{ x: 50, y: 0, duration: 300 }}
-          >
-            <div class="beat-grid-header">
-              <span class="beat-grid-title"
-                >{t("landing_spinner_notation")}</span
-              >
-              <span class="beat-grid-count">
-                {t("landing_infinite_steps", {
-                  count: playback.animationState.sequenceData.steps.length,
-                })}
-              </span>
-            </div>
-            <div class="beat-grid-content">
-              <StepGrid
-                steps={playback.animationState.sequenceData.steps}
-                startPosition={playback.derivedStartPosition}
-                selectedStepNumber={currentStepNumber}
-              />
-            </div>
+        {#if playback?.animationState?.sequenceData}
+          <div class="playback-pane">
+            <Crossfade key={viewMode} fill>
+              {#if viewMode === "strip"}
+                <div class="strip-layer">
+                  <PracticeLanePane
+                    sequence={playback.animationState.sequenceData}
+                    currentStep={playback.animationState.currentStep}
+                    bpm={scope.settings.bpm}
+                    cellSize={88}
+                    onSeek={handleProgressBarSeek}
+                  />
+                </div>
+              {:else}
+                <div class="grid-layer themed-scrollbar">
+                  <StepGrid
+                    steps={playback.animationState.sequenceData.steps}
+                    startPosition={playback.derivedStartPosition}
+                    selectedStepNumber={currentStepNumber}
+                  />
+                </div>
+              {/if}
+            </Crossfade>
           </div>
         {/if}
       </div>
@@ -538,10 +543,8 @@
     justify-content: center;
   }
 
-  /* Animation area. On stacked (narrow) layouts the box dissolves into the
-     showcase column (display: contents) so the transport bar can slot in
-     right under the canvas — otherwise a tall canvas plus the notation grid
-     push play/pause a full screen below the fold on tablets and phones. */
+  /* Base (stacked: phones + tablet portrait). The area dissolves so the
+     transport can slot directly under the canvas (order set on children). */
   .animation-area {
     display: contents;
   }
@@ -551,16 +554,43 @@
     align-self: center;
   }
 
-  .transport-bar {
+  .playback-pane {
     order: 2;
+    width: 100%;
+    min-width: 0;
   }
 
-  .beat-grid-container {
+  .transport-bar {
     order: 3;
   }
 
   .showcase > :global(.history-panel) {
     order: 4;
+  }
+
+  .strip-layer,
+  .grid-layer {
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .grid-layer {
+    overflow-y: auto;
+    padding: clamp(0.5rem, 0.8vw, 0.875rem);
+  }
+
+  /* Stacked strip: a content-sized foot right under the canvas. */
+  .animation-area.strip-view + .transport-bar {
+    /* The strip needs no extra space between its foot and the transport. */
+  }
+
+  .animation-area.strip-view .playback-pane,
+  .strip-layer {
+    height: auto;
+  }
+
+  .animation-area.grid-view .playback-pane {
+    height: min(62dvh, 34rem);
   }
 
   .canvas-container {
@@ -576,51 +606,6 @@
     box-shadow:
       0 1rem 3rem rgba(0, 0, 0, 0.36),
       0 0 5rem rgba(99, 102, 241, 0.08);
-  }
-
-  .beat-grid-container {
-    width: 100%;
-    height: clamp(24rem, 62dvh, 44rem);
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.035));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: clamp(0.875rem, 1.2vw, 1.5rem);
-  }
-
-  .beat-grid-header {
-    min-height: 3.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    box-sizing: border-box;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .beat-grid-title {
-    color: var(--theme-text, rgba(255, 255, 255, 0.92));
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 650;
-    letter-spacing: 0.01em;
-  }
-
-  .beat-grid-count {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.52));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  .beat-grid-content {
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: clamp(0.5rem, 0.8vw, 0.875rem);
-    box-sizing: border-box;
   }
 
   .transport-bar {
@@ -759,15 +744,9 @@
 
   /* Responsive */
   @media (min-width: 1050px) {
-    /* Side-by-side canvas + notation. The area flexes into whatever height
-       the viewport leaves after the header, mode stage, and transport — so
-       the whole page fits a desktop screen with no scrollbar. The floor
-       keeps it usable on short windows (then the page scrolls instead of
-       crushing the canvas). */
+    /* Wide: side-by-side split filling the band. */
     .animation-area {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      justify-content: center;
       align-items: stretch;
       gap: clamp(0.75rem, 1.4vw, 1.5rem);
       width: 100%;
@@ -777,33 +756,32 @@
     }
 
     .canvas-container,
-    .beat-grid-container,
+    .playback-pane,
     .transport-bar {
       order: 0;
     }
 
     .canvas-container {
       align-self: auto;
-    }
-
-    .animation-area.with-grid {
-      grid-template-columns:
-        minmax(25rem, 0.92fr)
-        minmax(30rem, 1.08fr);
-    }
-
-    .canvas-container {
       width: 100%;
       height: 100%;
       aspect-ratio: auto;
     }
 
-    .animation-area:not(.with-grid) .canvas-container {
-      width: min(100%, 60rem);
+    .playback-pane {
+      height: 100%;
     }
 
-    .beat-grid-container {
-      height: 100%;
+    /* Strip view: big canvas, narrow read-ahead column. */
+    .animation-area.strip-view {
+      grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.6fr);
+    }
+
+    /* Grid view: canvas cedes room to the notation. */
+    .animation-area.grid-view {
+      grid-template-columns:
+        minmax(25rem, 0.92fr)
+        minmax(30rem, 1.08fr);
     }
   }
 
@@ -843,6 +821,7 @@
     .showcase {
       gap: 0.75rem;
       padding: 0.625rem;
+      padding-bottom: 5.5rem;
       border-radius: 1rem;
     }
 
@@ -851,22 +830,28 @@
     }
 
     .canvas-container {
-      width: 100%;
-      border-radius: 0.875rem;
+      width: 100vw;
+      margin-inline: calc(50% - 50vw);
+      border-radius: 0;
+      border-inline: none;
     }
 
-    .beat-grid-container {
-      height: min(75dvh, 34rem);
-      border-radius: 0.875rem;
+    .transport-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      padding: 0.5rem max(0.75rem, env(safe-area-inset-left))
+        calc(0.5rem + env(safe-area-inset-bottom))
+        max(0.75rem, env(safe-area-inset-right));
+      background: color-mix(in srgb, #05050b 88%, transparent);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
-    .beat-grid-header {
-      min-height: 2.75rem;
-      padding: 0.625rem 0.75rem;
-    }
-
-    .beat-grid-content {
-      padding: 0.375rem;
+    .debug-toggle {
+      bottom: 5.5rem;
     }
   }
 
@@ -921,11 +906,9 @@
       height: 2.25rem;
     }
 
-    /* Short-and-wide (folded phone landscape): canvas and notation go back
-       side by side, so the box must be a real grid again. */
+    /* Short-horizontal: side-by-side is mandatory. */
     .animation-area {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
       align-items: stretch;
       width: 100%;
       min-width: 0;
@@ -934,33 +917,28 @@
     }
 
     .canvas-container,
-    .beat-grid-container,
+    .playback-pane,
     .transport-bar {
       order: 0;
     }
 
     .canvas-container {
       align-self: auto;
-    }
-
-    .animation-area.with-grid {
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    }
-
-    .canvas-container,
-    .beat-grid-container {
       width: 100%;
       height: 100%;
       aspect-ratio: auto;
     }
 
-    .beat-grid-header {
-      min-height: 2.25rem;
-      padding: 0.375rem 0.625rem;
+    .playback-pane {
+      height: 100%;
     }
 
-    .beat-grid-content {
-      padding: 0.25rem;
+    .animation-area.strip-view {
+      grid-template-columns: minmax(0, 1.3fr) minmax(10rem, 0.7fr);
+    }
+
+    .animation-area.grid-view {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     }
   }
 
