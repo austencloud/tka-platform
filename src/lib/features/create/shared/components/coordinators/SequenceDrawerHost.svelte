@@ -137,6 +137,33 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
     CreateModuleState.sequenceState.currentSequence
   );
 
+  // The mobile static export must be ready before the Share tap. Rendering
+  // after that tap can consume WebKit's transient activation and prevent the
+  // native share sheet from opening.
+  $effect(() => {
+    const sequence = currentSequence;
+    const shouldPrepare =
+      isMobile &&
+      panelState.isExportPanelOpen &&
+      selectedFormat === "static" &&
+      !!sequence &&
+      !!exportOrchestrator;
+    const userInfo = {
+      displayName: authState.user?.displayName ?? null,
+    };
+
+    if (!shouldPrepare || !sequence || !exportOrchestrator) return;
+
+    void exportOrchestrator
+      .prepareStaticShare(sequence, userInfo)
+      .catch((error) => {
+        console.warn(
+          "[SequenceDrawerHost] Static share prewarm failed:",
+          error
+        );
+      });
+  });
+
   // Animation-specific derived values
   const isCircular = $derived.by(() => {
     const seq = animationPanelState.sequenceData;
@@ -656,6 +683,10 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
           }
         },
       });
+
+      if (result.canceled) {
+        return;
+      }
 
       if (result.success) {
         hapticService?.trigger("success");

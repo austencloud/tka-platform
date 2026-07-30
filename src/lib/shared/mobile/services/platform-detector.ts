@@ -10,6 +10,15 @@ export function detectPlatform(): Platform {
   if (typeof window === "undefined") return "desktop";
 
   const ua = navigator.userAgent.toLowerCase();
+  const isIPadOSDesktopUserAgent =
+    ua.includes("macintosh") && navigator.maxTouchPoints > 1;
+
+  // iPadOS asks Safari for a desktop-class user agent by default and can
+  // report a fine pointer + hover when a trackpad is attached. Identify it
+  // before the desktop capability gate so native sharing stays available.
+  if (/iphone|ipad|ipod/.test(ua) || isIPadOSDesktopUserAgent) {
+    return "ios";
+  }
 
   const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
   const hasHover = window.matchMedia("(hover: hover)").matches;
@@ -17,10 +26,6 @@ export function detectPlatform(): Platform {
 
   if (hasFinePointer && hasHover && isLargeScreen) {
     return "desktop";
-  }
-
-  if (/iphone|ipad|ipod/.test(ua)) {
-    return "ios";
   }
 
   if (/android/.test(ua)) {
@@ -50,10 +55,16 @@ export function detectInAppBrowser(): InAppBrowser {
   const ua = navigator.userAgent.toLowerCase();
 
   if (ua.includes("instagram")) return "instagram";
-  if (ua.includes("fban") || ua.includes("fbav") || ua.includes("fb_iab")) return "facebook";
+  if (ua.includes("fban") || ua.includes("fbav") || ua.includes("fb_iab"))
+    return "facebook";
   if (ua.includes("messenger")) return "messenger";
   if (ua.includes("twitter")) return "twitter";
-  if (ua.includes("tiktok") || ua.includes("bytedance") || ua.includes("musical_ly")) return "tiktok";
+  if (
+    ua.includes("tiktok") ||
+    ua.includes("bytedance") ||
+    ua.includes("musical_ly")
+  )
+    return "tiktok";
   if (ua.includes("snapchat")) return "snapchat";
   if (ua.includes("linkedin")) return "linkedin";
   if (ua.includes("pinterest")) return "pinterest";
@@ -68,10 +79,13 @@ export function isRunningAsStandalone(): boolean {
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
   const isFullscreen = window.matchMedia("(display-mode: fullscreen)").matches;
   const isMinimalUI = window.matchMedia("(display-mode: minimal-ui)").matches;
-  const iOSStandalone = (window.navigator as VendorNavigator).standalone === true;
+  const iOSStandalone =
+    (window.navigator as VendorNavigator).standalone === true;
   const isAndroidTWA = document.referrer.includes("android-app://");
 
-  return isStandalone || isFullscreen || isMinimalUI || iOSStandalone || isAndroidTWA;
+  return (
+    isStandalone || isFullscreen || isMinimalUI || iOSStandalone || isAndroidTWA
+  );
 }
 
 export function detectPlatformAndBrowser(): PlatformInfo {
@@ -83,7 +97,10 @@ export function detectPlatformAndBrowser(): PlatformInfo {
   };
 }
 
-export function supportsNativeInstallPrompt(platform: Platform, browser: Browser): boolean {
+export function supportsNativeInstallPrompt(
+  platform: Platform,
+  browser: Browser
+): boolean {
   if (platform === "android") {
     return ["chrome", "edge", "samsung"].includes(browser);
   }
@@ -95,7 +112,10 @@ export function supportsNativeInstallPrompt(platform: Platform, browser: Browser
   return false;
 }
 
-export function supportsPWAInstall(platform: Platform, browser: Browser): boolean {
+export function supportsPWAInstall(
+  platform: Platform,
+  browser: Browser
+): boolean {
   if (platform === "ios") return browser === "safari";
 
   if (platform === "android") {

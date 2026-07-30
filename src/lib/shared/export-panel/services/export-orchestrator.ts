@@ -18,10 +18,26 @@ import { getImageCompositionManager } from "$lib/shared/share/state/image-compos
 import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import { hashString } from "$lib/shared/foundation/services/content-hasher";
+import { shareBlobNatively } from "$lib/shared/foundation/services/file-downloader";
+
+interface PreparedStaticShare {
+  key: string;
+  blob: Blob;
+  filename: string;
+}
+
+type StaticExportOutcome = "completed" | "canceled";
 
 export class ExportOrchestrator {
   private exporting = false;
   private videoOrchestrator: IVideoExportOrchestrator | null = null;
+  private preparedStaticShare: PreparedStaticShare | null = null;
+  private staticShareInFlight: {
+    key: string;
+    token: object;
+    promise: Promise<PreparedStaticShare>;
+  } | null = null;
 
   constructor(private readonly sharer: Sharer) {}
 
@@ -50,9 +66,17 @@ export class ExportOrchestrator {
 
     try {
       switch (settings.format) {
-        case "static":
-          await this.exportStatic(sequence, options?.userInfo, options?.isMobile);
+        case "static": {
+          const outcome = await this.exportStatic(
+            sequence,
+            options?.userInfo,
+            options?.isMobile
+          );
+          if (outcome === "canceled") {
+            return { success: true, canceled: true };
+          }
           break;
+        }
 
         case "animation":
           if (!options?.animationDependencies) {
@@ -94,19 +118,55 @@ export class ExportOrchestrator {
   }
 
   /**
-   * Export sequence as static image
+   * Prepare the exact static image before the user taps Share.
+   *
+   * WebKit requires navigator.share() to run during the initiating gesture.
+   * Rendering after the tap can consume that activation, so the export panel
+   * warms this entry while its static preview is visible.
    */
-  private async exportStatic(
+  prepareStaticShare(
     sequence: SequenceData,
-    userInfo?: ExportUserInfo,
-    isMobile?: boolean
-  ): Promise<void> {
-    // Get user's saved image composition settings
+    userInfo?: ExportUserInfo
+  ): Promise<PreparedStaticShare> {
+    const shareOptions = this.buildStaticShareOptions(userInfo);
+    const key = this.getStaticShareKey(sequence, shareOptions);
+
+    if (this.preparedStaticShare?.key === key) {
+      return Promise.resolve(this.preparedStaticShare);
+    }
+    if (this.staticShareInFlight?.key === key) {
+      return this.staticShareInFlight.promise;
+    }
+
+    const token = {};
+    const promise = this.sharer
+      .getImageBlob(sequence, shareOptions)
+      .then((blob) => {
+        const prepared: PreparedStaticShare = {
+          key,
+          blob,
+          filename: this.sharer.generateFilename(sequence, shareOptions),
+        };
+        if (this.staticShareInFlight?.token === token) {
+          this.preparedStaticShare = prepared;
+        }
+        return prepared;
+      })
+      .finally(() => {
+        if (this.staticShareInFlight?.token === token) {
+          this.staticShareInFlight = null;
+        }
+      });
+
+    this.staticShareInFlight = { key, token, promise };
+    return promise;
+  }
+
+  private buildStaticShareOptions(userInfo?: ExportUserInfo): ShareOptions {
     const imageSettings = getImageCompositionManager();
     const compositionSettings = imageSettings.getSettings();
 
-    // Build share options from user settings
-    const shareOptions: ShareOptions = {
+    return {
       ...DEFAULT_SHARE_OPTIONS,
       format: "PNG",
       quality: 1.0,
@@ -125,13 +185,59 @@ export class ExportOrchestrator {
       showBirthday: compositionSettings.showBirthday,
       customNotesText: compositionSettings.customNotesText,
     };
+  }
 
-    // Use native share on mobile, download on desktop
-    if (isMobile) {
-      await this.sharer.shareViaDevice(sequence, shareOptions);
-    } else {
+  private getStaticShareKey(
+    sequence: SequenceData,
+    shareOptions: ShareOptions
+  ): string {
+    return hashString(
+      `${JSON.stringify(sequence)}\n${JSON.stringify(shareOptions)}`
+    );
+  }
+
+  /**
+   * Export sequence as a static image.
+   *
+   * On mobile, the native share promise is created before the first await so
+   * the browser still sees the current tap as its transient activation.
+   */
+  private async exportStatic(
+    sequence: SequenceData,
+    userInfo?: ExportUserInfo,
+    isMobile?: boolean
+  ): Promise<StaticExportOutcome> {
+    const shareOptions = this.buildStaticShareOptions(userInfo);
+
+    if (!isMobile) {
       await this.sharer.downloadImage(sequence, shareOptions);
+      return "completed";
     }
+
+    const key = this.getStaticShareKey(sequence, shareOptions);
+    const prepared =
+      this.preparedStaticShare?.key === key ? this.preparedStaticShare : null;
+
+    if (!prepared) {
+      void this.prepareStaticShare(sequence, userInfo);
+      throw new Error("Image is still preparing. Tap Share Image again.");
+    }
+
+    const shareOperation = shareBlobNatively(prepared.blob, prepared.filename, {
+      title: sequence.name || sequence.word || "TKA Sequence",
+      text: `TKA sequence: ${sequence.name || sequence.word || "Untitled"}`,
+    });
+    const result = await shareOperation;
+
+    if (result.status === "shared") return "completed";
+    if (result.status === "canceled") return "canceled";
+    if (result.status === "unavailable") {
+      throw new Error(
+        "Image sharing isn't available here. Use Download Card from the workspace share menu."
+      );
+    }
+
+    throw result.error;
   }
 
   /**

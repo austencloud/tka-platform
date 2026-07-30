@@ -5,6 +5,17 @@ import type {
 } from "./types";
 import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 
+export type NativeFileShareResult =
+  | { status: "shared"; filename: string }
+  | { status: "canceled"; filename: string }
+  | { status: "unavailable"; filename: string; error?: Error }
+  | { status: "failed"; filename: string; error: Error };
+
+export interface NativeFileShareOptions {
+  title?: string;
+  text?: string;
+}
+
 /** Anchor (<a download>) to disk. The terminal fallback for every path here. */
 function anchorDownload(blob: Blob, filename: string): Promise<DownloadResult> {
   return new Promise((resolve) => {
@@ -28,6 +39,133 @@ function anchorDownload(blob: Blob, filename: string): Promise<DownloadResult> {
       });
     }
   });
+}
+
+function createShareData(
+  blob: Blob,
+  filename: string,
+  options: NativeFileShareOptions
+): ShareData {
+  const file = new File([blob], filename, {
+    type: blob.type || "application/octet-stream",
+    lastModified: Date.now(),
+  });
+
+  return {
+    files: [file],
+    title: options.title,
+    text: options.text,
+  };
+}
+
+function errorFromUnknown(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === "object" && error !== null) {
+    const errorLike = error as { name?: unknown; message?: unknown };
+    const normalized = new Error(
+      typeof errorLike.message === "string" ? errorLike.message : String(error)
+    );
+    if (typeof errorLike.name === "string") {
+      normalized.name = errorLike.name;
+    }
+    return normalized;
+  }
+  return new Error(String(error));
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === "AbortError"
+    : typeof error === "object" &&
+        error !== null &&
+        "name" in error &&
+        error.name === "AbortError";
+}
+
+/** True when this browser advertises native file sharing. */
+export function supportsNativeFileShare(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function" &&
+    typeof File !== "undefined"
+  );
+}
+
+/**
+ * Checks the exact file payload without opening a share sheet.
+ *
+ * `canShare()` does not require transient activation, so callers can use this
+ * while rendering a menu and reserve the later click for `share()`.
+ */
+export function canNativeShareFile(blob: Blob, filename: string): boolean {
+  if (!supportsNativeFileShare()) return false;
+
+  try {
+    return navigator.canShare(createShareData(blob, filename, {}));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Opens the native share sheet and reports the outcome without downloading.
+ *
+ * The call to `navigator.share()` happens before this function reaches its
+ * first `await`. That preserves the click's transient activation on WebKit.
+ * Download is intentionally a separate, explicit user choice.
+ */
+export async function shareBlobNatively(
+  blob: Blob,
+  filename: string,
+  options: NativeFileShareOptions = {}
+): Promise<NativeFileShareResult> {
+  if (!supportsNativeFileShare()) {
+    return { status: "unavailable", filename };
+  }
+
+  let sharePromise: Promise<void>;
+  try {
+    const shareData = createShareData(blob, filename, options);
+    if (!navigator.canShare(shareData)) {
+      return { status: "unavailable", filename };
+    }
+
+    // Keep this call before the first await. Safari/WebKit consumes the
+    // initiating click's transient activation when the promise is created.
+    sharePromise = navigator.share(shareData);
+  } catch (error) {
+    if (isAbortError(error)) {
+      return { status: "canceled", filename };
+    }
+    return {
+      status: "failed",
+      filename,
+      error: errorFromUnknown(error),
+    };
+  }
+
+  try {
+    await sharePromise;
+    return { status: "shared", filename };
+  } catch (error) {
+    if (isAbortError(error)) {
+      return { status: "canceled", filename };
+    }
+    return {
+      status: "failed",
+      filename,
+      error: errorFromUnknown(error),
+    };
+  }
+}
+
+/** Explicitly downloads a blob. This never opens a native share sheet. */
+export function downloadBlobToDisk(
+  blob: Blob,
+  filename: string
+): Promise<DownloadResult> {
+  return anchorDownload(blob, filename);
 }
 
 /**
@@ -66,25 +204,16 @@ export async function downloadBlob(
 export async function shareOrDownloadBlob(
   blob: Blob,
   filename: string,
-  options: { title?: string; text?: string } = {}
+  options: NativeFileShareOptions = {}
 ): Promise<DownloadResult> {
   const isMobile = detectPlatform() !== "desktop";
-  if (isMobile && navigator.share && navigator.canShare) {
-    try {
-      const file = new File([blob], filename, { type: blob.type });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: options.title,
-          text: options.text,
-        });
-        return { success: true, filename, method: "share" };
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return { success: true, filename, method: "share", canceled: true };
-      }
-      // fall through to anchor download
+  if (isMobile) {
+    const result = await shareBlobNatively(blob, filename, options);
+    if (result.status === "shared") {
+      return { success: true, filename, method: "share" };
+    }
+    if (result.status === "canceled") {
+      return { success: true, filename, method: "share", canceled: true };
     }
   }
 

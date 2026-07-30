@@ -14,6 +14,7 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 /** Result of an export operation */
 export interface ExportResult {
   success: boolean;
+  canceled?: boolean;
   error?: string;
 }
 
@@ -60,4 +61,3 @@ export interface ExportUrlCallbacks {
   /** Called with restored state from URL (on initial load or back navigation) */
   onStateRestore: (state: URLAnimationState) => void;
 }
-

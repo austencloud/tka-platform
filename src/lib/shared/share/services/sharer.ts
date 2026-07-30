@@ -4,9 +4,16 @@ import type { ShareOptions } from "../domain/models/share-options";
 import { PreviewCache } from "./preview-cache";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import { buildCardRenderOptions } from "./card-render-options";
+import { hashString } from "$lib/shared/foundation/services/content-hasher";
+
+export const CARD_BLOB_CACHE_MAX_ENTRIES = 3;
+export const CARD_BLOB_CACHE_MAX_BYTES = 24 * 1024 * 1024;
 
 export class Sharer {
   private previewCache = new PreviewCache();
+  private cardBlobCache = new Map<string, Blob>();
+  private cardBlobCacheBytes = 0;
+  private cardBlobInFlight = new Map<string, Promise<Blob>>();
 
   constructor(private renderService: SequenceRenderer) {}
 
@@ -59,7 +66,10 @@ export class Sharer {
     options: ShareOptions,
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
-    const renderOptions = this.convertToRenderOptions(options, sequence.dateAdded);
+    const renderOptions = this.convertToRenderOptions(
+      options,
+      sequence.dateAdded
+    );
 
     return await this.renderService.renderSequenceToBlob(
       sequence,
@@ -93,11 +103,60 @@ export class Sharer {
       }),
     };
 
-    return await this.renderService.renderSequenceToBlob(
-      sequence,
-      renderOptions,
-      onProgress
+    const cacheKey = hashString(
+      `${JSON.stringify(sequence)}\n${JSON.stringify(renderOptions)}`
     );
+    const cached = this.cardBlobCache.get(cacheKey);
+    if (cached) {
+      // Refresh insertion order so the small cache keeps the cards used most
+      // recently by the workspace, viewer, and library save paths.
+      this.cardBlobCache.delete(cacheKey);
+      this.cardBlobCache.set(cacheKey, cached);
+      return cached;
+    }
+
+    const pending = this.cardBlobInFlight.get(cacheKey);
+    if (pending) return pending;
+
+    const renderPromise = this.renderService
+      .renderSequenceToBlob(sequence, renderOptions, onProgress)
+      .then((blob) => {
+        // A single pathological render must not pin more memory than the
+        // entire workspace cache budget. Callers still receive the blob; it is
+        // simply not retained.
+        if (blob.size > CARD_BLOB_CACHE_MAX_BYTES) {
+          return blob;
+        }
+
+        const replaced = this.cardBlobCache.get(cacheKey);
+        if (replaced) {
+          this.cardBlobCacheBytes -= replaced.size;
+          this.cardBlobCache.delete(cacheKey);
+        }
+
+        this.cardBlobCache.set(cacheKey, blob);
+        this.cardBlobCacheBytes += blob.size;
+
+        while (
+          this.cardBlobCache.size > CARD_BLOB_CACHE_MAX_ENTRIES ||
+          this.cardBlobCacheBytes > CARD_BLOB_CACHE_MAX_BYTES
+        ) {
+          const oldestKey = this.cardBlobCache.keys().next().value;
+          if (oldestKey === undefined) break;
+          const oldestBlob = this.cardBlobCache.get(oldestKey);
+          this.cardBlobCache.delete(oldestKey);
+          if (oldestBlob) {
+            this.cardBlobCacheBytes -= oldestBlob.size;
+          }
+        }
+        return blob;
+      })
+      .finally(() => {
+        this.cardBlobInFlight.delete(cacheKey);
+      });
+
+    this.cardBlobInFlight.set(cacheKey, renderPromise);
+    return renderPromise;
   }
 
   generateFilename(sequence: SequenceData, options: ShareOptions): string {
@@ -145,63 +204,16 @@ export class Sharer {
     return await this.previewCache.getCachedBlob(sequence, options);
   }
 
-  async shareViaDevice(
-    sequence: SequenceData,
-    options: ShareOptions
-  ): Promise<void> {
-    if (!navigator.share || !navigator.canShare) {
-      throw new Error(
-        "Sharing not available on this device. Use the download button to save the image."
-      );
-    }
-
-    const blob = await this.getImageBlob(sequence, options);
-
-    const filename = this.generateFilename(sequence, options);
-    const mimeType = this.getMimeType(options.format);
-
-    const file = new File([blob], filename, {
-      type: mimeType,
-      lastModified: Date.now(),
-    });
-
-    const shareData: ShareData = {
-      title: "TKA Sequence",
-      text: `Check out this TKA sequence: ${sequence.name || "Untitled"}`,
-      files: [file],
-    };
-
-    if (navigator.canShare(shareData)) {
-      await navigator.share(shareData);
-    } else {
-      await navigator.share({
-        title: "TKA Sequence",
-        text: `Check out this TKA sequence: ${sequence.name || "Untitled"}`,
-        url: window.location.href,
-      });
-    }
-  }
-
-  private getMimeType(format: string): string {
-    switch (format) {
-      case "PNG":
-        return "image/png";
-      case "JPEG":
-        return "image/jpeg";
-      case "WebP":
-        return "image/webp";
-      default:
-        return "image/png";
-    }
-  }
-
-  private convertToRenderOptions(shareOptions: ShareOptions, sequenceBirthDate?: Date) {
+  private convertToRenderOptions(
+    shareOptions: ShareOptions,
+    sequenceBirthDate?: Date
+  ) {
     const dateToUse = sequenceBirthDate ?? new Date();
 
     return {
       includeStartPosition: shareOptions.includeStartPosition,
       addStepNumbers: shareOptions.addStepNumbers,
-      addReversalSymbols: true, 
+      addReversalSymbols: true,
       addUserInfo: shareOptions.addUserInfo,
       addWord: shareOptions.addWord,
       combinedGrids: false,
@@ -225,7 +237,10 @@ export class Sharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.customNotesText || shareOptions.notes || "Created with Flow Arts Composer",
+      notes:
+        shareOptions.customNotesText ||
+        shareOptions.notes ||
+        "Created with Flow Arts Composer",
 
       showCreatorName: shareOptions.showCreatorName,
       showNotes: shareOptions.showNotes,
@@ -242,13 +257,13 @@ export class Sharer {
     return {
       includeStartPosition: shareOptions.includeStartPosition,
       addStepNumbers: shareOptions.addStepNumbers,
-      addReversalSymbols: true, 
+      addReversalSymbols: true,
       addUserInfo: shareOptions.addUserInfo,
       addWord: shareOptions.addWord,
       combinedGrids: false,
       addDifficultyLevel: shareOptions.addDifficultyLevel,
 
-      stepScale: 0.15, 
+      stepScale: 0.15,
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
@@ -266,15 +281,18 @@ export class Sharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.customNotesText || shareOptions.notes || "Created with Flow Arts Composer",
+      notes:
+        shareOptions.customNotesText ||
+        shareOptions.notes ||
+        "Created with Flow Arts Composer",
 
       showCreatorName: shareOptions.showCreatorName,
       showNotes: shareOptions.showNotes,
       showBirthday: shareOptions.showBirthday,
 
-      format: "JPEG" as const, 
-      quality: 0.4, 
-      scale: 0.15, 
+      format: "JPEG" as const,
+      quality: 0.4,
+      scale: 0.15,
       backgroundColor: shareOptions.backgroundColor,
     };
   }
