@@ -153,26 +153,9 @@
   }
 
   .inline-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.5em;
-    height: 1.5em;
-    margin: 0 0.15em;
-    vertical-align: -0.35em;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #6ea8fe) 18%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #6ea8fe) 35%, transparent);
-    border-radius: 50%;
+    display: inline;
+    margin: 0 0.1em;
     color: var(--theme-accent, #6ea8fe);
     font-size: 0.85em;
-  }
-
-  .inline-icon i {
-    font-size: 0.7em;
   }
 </style>
