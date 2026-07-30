@@ -83,7 +83,14 @@ describe("SequenceViewerShell host contract", () => {
   it("shell exists and exposes the host prop seam", () => {
     expect(shellSource).toContain("exportOverrides");
     expect(shellSource).toContain("openAppHref");
+    expect(shellSource).toContain("onAccountSignIn");
     expect(shellSource).toContain("startInSplit");
+  });
+
+  it("keeps the QR account entry inside the shared shell prop seam", () => {
+    expect(shellSource).toContain("authState.isFullAccount");
+    expect(shellSource).toContain("RobustAvatar");
+    expect(scanSource).toMatch(/onAccountSignIn=\{ctx\.openSignInPrompt\}/);
   });
 
   it("fits glyph titles at both scan entry and card-header boundaries", () => {

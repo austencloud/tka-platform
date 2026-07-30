@@ -30,6 +30,7 @@ Host deltas go through the prop seam, never through forked markup:
 | `onClose` | Host-specific dismiss (drawer close vs `goto`) |
 | `onRemix` | Override remix routing (/q → composer handoff) |
 | `openAppHref` | "Open TKA" target for standalone hosts |
+| `onAccountSignIn` | Guest sign-in / full-account avatar entry for standalone hosts |
 | `startInSplit` | Boot into split view (/q scan landing) |
 | `exportOverrides` | Host-owned export funnels (gated downloads on /q) |
 

@@ -2,17 +2,32 @@
 status: active
 value: 4
 effort: S
-remaining: "Body status: Active"
-depends_on: ""
+remaining: "Run the required Chrome DevTools MCP viewport and auth-state verification, then rerun the full check after the current unrelated endless-spinner type errors clear."
+depends_on: "external: Chrome DevTools MCP is not registered in this Codex session; the shared full check currently fails on unrelated endless-spinner changes."
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-29
 ---
 # /q Account Funnel — Download Gate + Sign-in Chip — Design
 
 **Date:** 2026-07-05
-**Status:** Active
+**Status:** Implemented; verification blocked
 **Author:** Claude (Fable 5) + Austen
+
+## 2026-07-29 reconciliation
+
+Commit `0f5e85a894` shipped the account gate and header entry. The later
+shared-shell extraction in `fcd3a516d8` retained the gate but dropped the
+header entry. This pass restores the entry through
+`SequenceViewerShell.onAccountSignIn`, keeps a fixed header slot across auth
+restoration, and adds regression coverage for the shell seam, download policy,
+URL handoff, and queue expiry.
+
+The focused funnel suite passes 24 of 24 tests. Required visual verification
+remains blocked because Chrome DevTools MCP is not registered in this Codex
+session. The shared full check also reports 15 errors from concurrent
+`endless-spinner` and animation-engine changes; none of its diagnostics point
+to the funnel files.
 
 ## Problem
 

@@ -5,6 +5,9 @@ describe("requiresFullAccount", () => {
   it("publish requires a full account", () => {
     expect(requiresFullAccount("publish")).toBe(true);
   });
+  it("scan downloads require a full account", () => {
+    expect(requiresFullAccount("download")).toBe(true);
+  });
   it.each(["save", "favorite", "remix", "sendTo"] as const)(
     "%s is allowed for anonymous guests",
     (type) => {

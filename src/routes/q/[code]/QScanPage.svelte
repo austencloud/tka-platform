@@ -1091,8 +1091,9 @@
           <!-- The one true viewer chrome, shared verbatim with the app drawer.
                Scan deltas ride in as props: close exits to the gallery, Remix
                runs the guest-friendly composer handoff, the title menu gains
-               Open TKA, and Download routes through the gated page pipeline
-               (account funnel + native share sheet). -->
+               Open TKA, the header carries the account entry, and Download
+               routes through the gated page pipeline (account funnel + native
+               share sheet). -->
           <ShellComponent
             {ctx}
             sequence={resolvedSeq!}
@@ -1101,6 +1102,7 @@
             onClose={closeViewer}
             onRemix={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
+            onAccountSignIn={ctx.openSignInPrompt}
             guideAction={{ label: "See it in the Guide", onSelect: seeInGuide }}
             exportOverrides={{
               onVideoExport: () => requestGatedExport(ctx, "video"),

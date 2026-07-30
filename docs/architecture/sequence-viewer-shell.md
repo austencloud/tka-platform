@@ -38,6 +38,7 @@ through shell props:
 - `onClose` — dismiss routing
 - `onRemix` — /q hands off to composer instead of in-app edit
 - `openAppHref` — "Open TKA" escape hatch for standalone hosts
+- `onAccountSignIn` — /q opens the shared account sign-in flow from its header
 - `startInSplit` — /q boots into split view
 - `exportOverrides` — /q's gated download funnel (sign-in gate for guests)
   replaces `ctx.handleExport`; omitted in-app

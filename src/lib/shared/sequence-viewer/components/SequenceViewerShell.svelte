@@ -11,6 +11,7 @@
   - onClose: drawer dismiss vs scan navigate-to-app
   - onRemix: scan overrides with its guest-friendly composer handoff
   - openAppHref: scan adds an "Open TKA" item to the title menu
+  - onAccountSignIn: scan adds its sign-in/avatar account entry
   - exportOverrides: scan routes Download through its gated page pipeline
   - startInSplit: scan force-resets persisted viewer mode to the split first
     impression
@@ -45,6 +46,7 @@
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
@@ -107,6 +109,8 @@
     onRemix?: () => void;
     /** Adds an "Open TKA" item to the title menu (scan funnel exit). */
     openAppHref?: string;
+    /** Adds the standalone host's sign-in/avatar entry to the shared header. */
+    onAccountSignIn?: () => void;
     /** One-shot reset to the split view on mount (scan first impression). */
     startInSplit?: boolean;
     exportOverrides?: ExportOverrides;
@@ -122,6 +126,7 @@
     onClose,
     onRemix,
     openAppHref,
+    onAccountSignIn,
     startInSplit = false,
     exportOverrides,
     guideAction = null,
@@ -167,6 +172,7 @@
   // actions into the title menu and collapse the rail to its icon presentation.
   const FULL_CHROME_MIN_WIDTH = 1080;
   const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
+  const hasAccountEntry = $derived(!!openAppHref && !!onAccountSignIn);
   const motionProfile = $derived(
     getSequenceMotionProfile(ctx.effectiveSequence ?? sequence)
   );
@@ -478,11 +484,18 @@
     if (onRemix) onRemix();
     else ctx.invokeGatedAction("remix", ctx.handleEdit);
   }
+  function recordOpenApp(source: "overflow" | "account_entry") {
+    captureScanAction("open_app", { source });
+    endScanViewerSession("open_app");
+  }
   function handleOpenApp() {
     if (!openAppHref) return;
-    captureScanAction("open_app");
-    endScanViewerSession("open_app");
+    recordOpenApp("overflow");
     void goto(openAppHref);
+  }
+  function handleAccountSignIn() {
+    captureScanAction("signin_from_chip");
+    onAccountSignIn?.();
   }
 
   function handleGuideAction(): void {
@@ -965,6 +978,12 @@
       aria-hidden="true"
     ></i>
   {/if}
+  {#if hasAccountEntry}
+    <i
+      class="fas fa-ellipsis-vertical drawer-title-compact-glyph"
+      aria-hidden="true"
+    ></i>
+  {/if}
 {/snippet}
 
 {#snippet overflowMenu(includeMotion: boolean)}
@@ -1018,6 +1037,7 @@
   class="drawer-viewer-container"
   class:landscape={isLandscape}
   class:practice-mobile={isMobile && ctx.practiceActive}
+  class:has-account-entry={hasAccountEntry}
 >
   <header class="drawer-header">
     <div class="drawer-header-left-actions">
@@ -1155,6 +1175,40 @@
     </div>
 
     <div class="drawer-header-right-actions">
+      {#if hasAccountEntry && openAppHref}
+        <!-- The slot keeps the same width across auth restoration, so replacing
+             "Sign in" with the avatar never nudges the title or close button. -->
+        <div class="account-entry-slot">
+          {#if authState.isFullAccount}
+            <a
+              class="account-entry-control avatar"
+              href={openAppHref}
+              aria-label="Open TKA"
+              title="Open TKA"
+              onclick={() => recordOpenApp("account_entry")}
+            >
+              <RobustAvatar
+                src={authState.user?.photoURL}
+                name={authState.user?.displayName ||
+                  authState.user?.email ||
+                  "Account"}
+                alt=""
+                size="sm"
+              />
+            </a>
+          {:else}
+            <button
+              type="button"
+              class="account-entry-control sign-in"
+              onclick={handleAccountSignIn}
+            >
+              <i class="fas fa-user" aria-hidden="true"></i>
+              <span>Sign in</span>
+            </button>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Card export settings can't be collapsed on desktop — they're
                required to configure the download. Only Download Animation
                keeps the hide/show toggle. -->
@@ -1564,6 +1618,7 @@
     overflow: visible;
     /* Lift the header so the title-trigger dropdown lands above the viewer body. */
     z-index: 20;
+    container: viewer-header / inline-size;
   }
 
   .drawer-header-title-group {
@@ -1604,6 +1659,14 @@
   }
   .drawer-title-caret.open {
     transform: rotate(180deg);
+  }
+
+  .drawer-title-compact-glyph {
+    display: none;
+    min-width: 1rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-base, 16px);
+    text-align: center;
   }
   @media (prefers-reduced-motion: reduce) {
     .drawer-title-caret {
@@ -1650,6 +1713,72 @@
     align-items: center;
     gap: 4px;
     margin-left: auto;
+  }
+
+  .account-entry-slot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    inline-size: 5.5rem;
+    block-size: var(--min-touch-target, 44px);
+    flex: 0 0 5.5rem;
+  }
+
+  .account-entry-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .account-entry-control.sign-in {
+    inline-size: 100%;
+    gap: 7px;
+    padding: 0 12px;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .account-entry-control.avatar {
+    border-color: transparent;
+    border-radius: 50%;
+    background: transparent;
+  }
+
+  .account-entry-control:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.28));
+  }
+
+  .account-entry-control:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* The account entry and close button need more room than the centered title
+     on the smallest phones. Keep the same menu in that center slot, but reduce
+     its visible trigger to the familiar overflow glyph before anything can
+     collide. */
+  @container viewer-header (max-width: 460px) {
+    .has-account-entry .drawer-header-title,
+    .has-account-entry .drawer-title-caret {
+      display: none;
+    }
+
+    .has-account-entry .drawer-title-compact-glyph {
+      display: block;
+    }
   }
 
   .header-action-btn {
