@@ -5,10 +5,10 @@
 The /q scan page and the in-app sequence-viewer drawer drifted apart for days:
 hand-rolled headers, a hardcoded navy palette shadowing the theme pipeline, a
 forked mobile breakpoint (960 vs 768), and export tabs running different layout
-rules. Austen (2026-07-02): *"didn't I just tell you that I want all of the same
+rules. Austen (2026-07-02): _"didn't I just tell you that I want all of the same
 things that exist in the actual sequence viewer drawer to exist in the QR page?
 ... you're still making this hand rolled header and you're absolutely refusing
-to fix the other variation so it does look exactly the same."*
+to fix the other variation so it does look exactly the same."_
 
 The fix was structural: ALL viewer chrome now lives in one shared component,
 rendered by both hosts, so the surfaces are identical by construction. This rule
@@ -25,14 +25,14 @@ workstation, delete dialog, all layout/breakpoint math, and all chrome CSS.
 
 Host deltas go through the prop seam, never through forked markup:
 
-| Prop | Purpose |
-|---|---|
-| `onClose` | Host-specific dismiss (drawer close vs `goto`) |
-| `onRemix` | Override remix routing (/q → composer handoff) |
-| `openAppHref` | "Open TKA" target for standalone hosts |
+| Prop              | Purpose                                                        |
+| ----------------- | -------------------------------------------------------------- |
+| `onClose`         | Host-specific dismiss (drawer close vs `goto`)                 |
+| `onRemix`         | Override remix routing (/q → composer handoff)                 |
+| `openAppHref`     | "Open TKA" target for standalone hosts                         |
 | `onAccountSignIn` | Guest sign-in / full-account avatar entry for standalone hosts |
-| `startInSplit` | Boot into split view (/q scan landing) |
-| `exportOverrides` | Host-owned export funnels (gated downloads on /q) |
+| `startInSplit`    | Boot into split view (/q scan landing)                         |
+| `exportOverrides` | Host-owned export funnels (gated downloads on /q)              |
 
 ## The Host Contract
 

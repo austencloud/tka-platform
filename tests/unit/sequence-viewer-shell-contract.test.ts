@@ -16,7 +16,10 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { isFirstScanRouteVisit } from "$lib/shared/qr/utils/scan-detection";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
 
 const SHELL_PATH =
   "src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
@@ -67,16 +70,16 @@ function importSpecifierLines(source: string): string[] {
 const shellSource = read(SHELL_PATH);
 const scanSource = read("src/routes/q/[code]/QScanPage.svelte");
 const drawerSource = read(
-  "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte",
+  "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte"
 );
 const sequenceRouteSource = read(
-  "src/routes/sequence/[id]/SequenceViewerPage.svelte",
+  "src/routes/sequence/[id]/SequenceViewerPage.svelte"
 );
 const cardHeaderSource = read(
   "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
 );
 const hostEntries = Object.entries(HOSTS).map(
-  ([name, rels]) => [name, rels.map(read).join("\n")] as const,
+  ([name, rels]) => [name, rels.map(read).join("\n")] as const
 );
 
 describe("SequenceViewerShell host contract", () => {
@@ -112,9 +115,11 @@ describe("SequenceViewerShell host contract", () => {
       // Declarations like `--theme-accent: #123;` shadow the :root values set
       // by applyThemeForBackground() for the whole subtree. Consuming them via
       // var(--theme-accent, fallback) is fine and does not match this pattern.
-      const declarations = source.match(/^\s*--(?:theme|semantic)-[\w-]+\s*:/gm);
+      const declarations = source.match(
+        /^\s*--(?:theme|semantic)-[\w-]+\s*:/gm
+      );
       expect(declarations ?? []).toEqual([]);
-    },
+    }
   );
 
   it.each(hostEntries)(
@@ -122,27 +127,27 @@ describe("SequenceViewerShell host contract", () => {
     (_name, source) => {
       const imports = importSpecifierLines(source).join("\n");
       const violations = CHROME_INTERNALS.filter((marker) =>
-        imports.includes(marker),
+        imports.includes(marker)
       );
       expect(violations).toEqual([]);
-    },
+    }
   );
 
   it.each(hostEntries)(
     "%s contains no shell-owned markup markers",
     (_name, source) => {
       const violations = SHELL_MARKUP_MARKERS.filter((marker) =>
-        source.includes(marker),
+        source.includes(marker)
       );
       expect(violations).toEqual([]);
-    },
+    }
   );
 
   it.each(hostEntries)(
     "%s uses the shared 768px mobile breakpoint",
     (_name, source) => {
       expect(source).toMatch(/<\s*768\b/);
-    },
+    }
   );
 
   // The counter increment and the scanEvents write moved behind

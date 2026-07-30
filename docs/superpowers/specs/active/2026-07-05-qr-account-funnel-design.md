@@ -8,6 +8,7 @@ plan_path: ""
 tags: []
 last_triaged: 2026-07-29
 ---
+
 # /q Account Funnel — Download Gate + Sign-in Chip — Design
 
 **Date:** 2026-07-05
@@ -60,15 +61,15 @@ infrastructure.
 
 ### Changes
 
-| File | Change |
-|---|---|
-| `pending-action-queue.ts` | `PendingActionType` += `"download"`; add to `VALID_TYPES` (enables `?pending=download` webview handoff). |
-| `gated-action-policy.ts` | `"download"` joins `FULL_ACCOUNT_ACTIONS`. Critical: outside this set, `invokeGatedAction` silently provisions an anonymous guest and runs the handler — no prompt, no funnel. Download must prompt. |
-| `auth-action-queue.svelte.ts` | `AuthActionQueueCallbacks` += `handleDownload: () => void`; replay switch gains `case "download"`. New `SignInReason = PendingActionType \| "account"` for the chip's non-action sheet open; `openSignInSheet(reason: SignInReason)`; `onSignInSheetPrimary` maps `"account"` → `null` for the webview handoff. |
-| `SignInSheet.svelte` | Copy records keyed by `SignInReason`. `download`: "Create a free account to download this sequence." `account`: "Sign in to save your scans and build your library." (+ webview variants). |
-| `SequenceViewerOrchestrator.svelte` | New optional prop `onGatedDownload?: (ctx) => void`, wired as the replay `handleDownload`. `OrchestratorContext` += `openSignInPrompt()` → `authQueue.openSignInSheet("account")` (the chip's hook). |
-| `ViewerHeader.svelte` | Scan profile `header-right`, all widths: signed-out (`!authState.isFullAccount`) → "Sign in" ghost CTA calling `ctx.openSignInPrompt()` (+ `qr_signin_from_chip` analytics); signed-in → `RobustAvatar` (sm) as a link to `openAppHref`, `aria-label="Open TKA"`. Reuses existing `.cta.ghost`; no new primitives. |
-| `/q/[code]/+page.svelte` | Header Download, AnimationPanel export, and card export route through `ctx.invokeGatedAction("download", realHandler)`. Page-local `pendingExportKind: "video" \| "card"` set before each gate call so post-sign-in replay resumes the right export; `onGatedDownload` reads it. `qr_download_gated` analytics on guest gate hit. |
+| File                                | Change                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pending-action-queue.ts`           | `PendingActionType` += `"download"`; add to `VALID_TYPES` (enables `?pending=download` webview handoff).                                                                                                                                                                                                                          |
+| `gated-action-policy.ts`            | `"download"` joins `FULL_ACCOUNT_ACTIONS`. Critical: outside this set, `invokeGatedAction` silently provisions an anonymous guest and runs the handler — no prompt, no funnel. Download must prompt.                                                                                                                              |
+| `auth-action-queue.svelte.ts`       | `AuthActionQueueCallbacks` += `handleDownload: () => void`; replay switch gains `case "download"`. New `SignInReason = PendingActionType \| "account"` for the chip's non-action sheet open; `openSignInSheet(reason: SignInReason)`; `onSignInSheetPrimary` maps `"account"` → `null` for the webview handoff.                   |
+| `SignInSheet.svelte`                | Copy records keyed by `SignInReason`. `download`: "Create a free account to download this sequence." `account`: "Sign in to save your scans and build your library." (+ webview variants).                                                                                                                                        |
+| `SequenceViewerOrchestrator.svelte` | New optional prop `onGatedDownload?: (ctx) => void`, wired as the replay `handleDownload`. `OrchestratorContext` += `openSignInPrompt()` → `authQueue.openSignInSheet("account")` (the chip's hook).                                                                                                                              |
+| `ViewerHeader.svelte`               | Scan profile `header-right`, all widths: signed-out (`!authState.isFullAccount`) → "Sign in" ghost CTA calling `ctx.openSignInPrompt()` (+ `qr_signin_from_chip` analytics); signed-in → `RobustAvatar` (sm) as a link to `openAppHref`, `aria-label="Open TKA"`. Reuses existing `.cta.ghost`; no new primitives.                |
+| `/q/[code]/+page.svelte`            | Header Download, AnimationPanel export, and card export route through `ctx.invokeGatedAction("download", realHandler)`. Page-local `pendingExportKind: "video" \| "card"` set before each gate call so post-sign-in replay resumes the right export; `onGatedDownload` reads it. `qr_download_gated` analytics on guest gate hit. |
 
 ### Flow (guest taps Download)
 
