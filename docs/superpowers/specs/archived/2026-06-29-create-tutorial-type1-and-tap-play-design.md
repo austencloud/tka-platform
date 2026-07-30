@@ -1,17 +1,24 @@
 ---
-status: active
+status: archived
 value: 4
 effort: M
-remaining: "Body status: Draft — awaiting user review"
+remaining: "The Type 1 grid shipped in 6bc88cf7d5 and remains current. The paused tap-to-play design shipped in 87ea44a136, then was intentionally replaced eight minutes later by autoplay, an always-visible Continue action, and a Back to card view in 20b6e964f5."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Create Tutorial — Type-1 Options + Tap-to-Play Polish
 
+> **Archived 2026-07-30:** Part A shipped in `6bc88cf7d5` and remains in
+> current source. Parts B and C shipped in `87ea44a136`, then the product
+> direction changed in `20b6e964f5`: the sequence now autoplays on entry,
+> Continue is always available, and the play step can switch back to the static
+> card. Keeping the earlier draft active would ask the queue to undo that later
+> decision.
+
 **Date:** 2026-06-29
-**Status:** Draft — awaiting user review
+**Status:** Archived — implemented, then partially superseded
 
 Three related changes to the Create tutorial flow, all surfaced together.
 
