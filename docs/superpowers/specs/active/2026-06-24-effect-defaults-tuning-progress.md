@@ -1,12 +1,12 @@
 ---
 status: active
 value: 4
-effort: M
-remaining: "Body status: 🟡 In progress — infrastructure complete, bloom substantially tuned, 15 effects pending"
-depends_on: ""
+effort: XL
+remaining: "Infrastructure and bloom tuning are complete. Remaining: build shared 1/sqrt(N) normalization for bloom/echo/pulse/zap, add the all-presets overview, then tune and visually verify 15 effect families in both Clean and Tunnel scenes. Resume with echo/pulse/zap after Chrome DevTools MCP is available."
+depends_on: "external: Chrome DevTools MCP is unavailable in this Codex session; every remaining tuning decision requires live Clean/Tunnel visual proof"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Effect Defaults Tuning Campaign — IN PROGRESS
 
@@ -143,3 +143,10 @@ deferred ("we'll deal with it").
 
 - Tuner harness design: `docs/superpowers/specs/active/2026-06-23-effect-tuner-design.md`
 - Preset + base-default editing design: `docs/superpowers/specs/2026-06-24-effect-tuner-preset-editing-design.md`
+
+## Queue re-triage (2026-07-30)
+
+Fifteen visual tuning passes, a shared renderer normalization change, an overview
+surface, and two-scene proof for every effect is XL residual scope. The previous
+M estimate made this campaign outrank completable work. No tuning was attempted
+without the required Chrome DevTools surface.
