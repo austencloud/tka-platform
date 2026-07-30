@@ -148,27 +148,41 @@
      eight lines under it read without any of them being annotated. */
   .legend {
     margin: 0 0 0.4rem;
-    padding-left: 1.9rem;
+    /* Centred with the block it labels, rather than indented to line up with a
+       left-pinned first column that no longer exists. */
+    text-align: center;
     font-size: 0.66rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.38));
   }
 
+  /*
+   * Centred in its column, and each line only as wide as the line.
+   *
+   * Stretched to the full track, the eight lines sat hard left with the rest of
+   * the panel empty beside them — the same dead space in one column that the
+   * missing second column caused in a wide one. A block of notation centred in
+   * its panel is a block of notation; the same block pinned left with 140px of
+   * nothing to its right is a layout that ran out.
+   */
   .lines {
     margin: 0;
     padding: 0;
     list-style: none;
     display: grid;
+    justify-items: center;
     gap: 0.06rem;
   }
 
   /*
-   * Short viewports — fold-open landscape, a squashed laptop window. Eight lines
-   * in one column do not go into a 200px pane: they ran under the footer, which
-   * is the notation being cut off on a page about notation. So the lines spread
-   * sideways instead, into however many columns the panel it is sitting in can
-   * actually hold.
+   * The lines spread sideways into however many columns the panel they sit in
+   * can actually hold — a function of the panel's width and nothing else.
+   *
+   * Gated on `max-height` this only fired on squashed windows, so a 500px-wide
+   * phone in portrait ran eight 200px lines down the left of a 500px panel with
+   * half the panel empty beside them. A column of lines does not become a
+   * better column of lines because the window is tall.
    *
    * A container query, not a media query, because that panel is a different
    * width in every mode — a 416px reading column in the guide, a ~700px one in
@@ -177,9 +191,42 @@
    * rather than auto-fit: with eight items, seven columns would strand the
    * eighth on a row of its own (.claude/rules/4k-native-layout.md).
    */
+  /*
+   * The steps: a line is about 10rem of tabular digits plus its 1.9rem index,
+   * so each threshold is (columns × 12rem) + gaps + the panel's own padding,
+   * rounded up. Sized off the CONTENT rather than off a round number, because
+   * `white-space: nowrap` means a column an inch too narrow does not wrap — it
+   * runs out the side of the panel.
+   */
+  @container notation (min-width: 24rem) {
+    .lines {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(4, auto);
+      grid-auto-flow: column;
+      column-gap: clamp(1rem, 3vw, 2.5rem);
+    }
+  }
+
+  @container notation (min-width: 34rem) {
+    .lines {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, auto);
+    }
+  }
+
+  /* Four before eight ever splits 5/3: two rows of four is the only other split
+     of eight that leaves no short column. Needs 4 lines plus 3 gaps of real
+     width, which is why it waits this long. */
+  @container notation (min-width: 46rem) {
+    .lines {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(2, auto);
+    }
+  }
+
+  /* Every millimetre of panel chrome is a millimetre the lines do not get in a
+     200px pane. The lines themselves keep their size. */
   @media (max-height: 32rem) {
-    /* Every millimetre of panel chrome is a millimetre the lines do not get in a
-       200px pane. The lines themselves keep their size. */
     .script {
       padding: 0.35rem 0.5rem 0.4rem;
     }
@@ -188,29 +235,13 @@
       margin-bottom: 0.25rem;
       font-size: 0.62rem;
     }
-
-    @container notation (min-width: 26rem) {
-      .lines {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-rows: repeat(4, auto);
-        grid-auto-flow: column;
-        column-gap: clamp(1rem, 3vw, 2.5rem);
-      }
-    }
-
-    @container notation (min-width: 40rem) {
-      .lines {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        grid-template-rows: repeat(3, auto);
-      }
-    }
   }
 
   /* Tight on purpose: all eight lines have to be in the tray at once, or this is
      back to being a caption for the frame on screen. */
   .lines li {
     display: grid;
-    grid-template-columns: 1.9rem minmax(0, 1fr);
+    grid-template-columns: 1.9rem auto;
     align-items: baseline;
     line-height: 1.35;
     /* Reserved so the active marker cannot shift the line when it appears. */

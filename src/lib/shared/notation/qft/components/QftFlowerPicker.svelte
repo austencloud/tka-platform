@@ -187,6 +187,39 @@
   }
 
   /*
+   * Short windows — fold-open landscape, a squashed laptop. Two axes of twelve
+   * plus a mode control is 311px of controls in a 245px pane, and a cell has
+   * exactly that. The 44px touch floor stays; what goes is the air around the
+   * preview, which is the part that was costing rows.
+   */
+  @media (max-height: 32rem) {
+    .picker {
+      gap: 0.25rem;
+    }
+
+    .axis-label {
+      font-size: 0.72rem;
+    }
+
+    .flower {
+      padding: 0.2rem 0.15rem;
+      gap: 0;
+    }
+
+    .flower svg {
+      max-width: 1.5rem;
+    }
+
+    .ratio {
+      font-size: 0.7rem;
+    }
+
+    .meta {
+      font-size: 0.56rem;
+    }
+  }
+
+  /*
    * One row of twelve once the column is wide enough for it.
    *
    * Two rows of six per axis, twice over, is 460px of picker above a pair of
@@ -199,7 +232,7 @@
    * where the axis is a perfectly roomy 644px — still wrapped to two rows and
    * pushed 500px of content off the bottom of the pane.
    */
-  @container flower-axis (min-width: 38rem) {
+  @container flower-axis (min-width: 34rem) {
     .row {
       grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 0.25rem;

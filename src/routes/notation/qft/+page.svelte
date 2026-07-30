@@ -972,13 +972,14 @@
       exactly while you drag a radius slider whose purpose is to change the
       thing you can then no longer see.
 
-      Transport above the tabs, because the transport is always live and the
-      tabs are a drawer handle. Every mode gets the same one, including the
-      guide: its eight moves are a tray like everything else now.
+      The transport is the app's floor: bottom-most, so it is in the same place
+      whether a tray is open or shut. Above the tabs it rode UP with the tray —
+      a play button sitting in the middle of the flower it controls, on bare
+      stage, with the chrome's surface starting below it. The drawer opens over
+      the drawing because you asked it to; the transport must not.
     -->
     {#if phone}
       <div class="bottom-chrome">
-        {@render transportRow()}
         <ControlDock
           tabs={dockTabs}
           activeTab={dockTab}
@@ -987,6 +988,7 @@
           labelMinWidth={0}
           trayMaxHeight="42vh"
         />
+        {@render transportRow()}
       </div>
     {/if}
   </main>
@@ -1422,23 +1424,36 @@
     gap: 0.5rem;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     /*
-     * Opaque, with only a short fade at the very top. A percentage-based fade
-     * looked right with the tray shut and fell apart with it open: the chrome
-     * grows to half the screen, so 18% of it left the transport sitting on
-     * bare stage with a transparent gap under it, reading as a floating card
-     * rather than as the bottom of the app.
+     * A defined edge, not a fade. The fade existed because the transport used
+     * to be the top element and its buttons carry their own borders; with the
+     * tab bar there instead, a 1.5rem fade cut the tabs in half. Opening a tray
+     * now reads as a drawer sliding out from under the app, which is what it is.
      */
-    background: linear-gradient(
-      to bottom,
-      transparent 0,
-      rgb(8 10 24 / 0.92) 1.5rem,
-      rgb(8 10 24 / 0.96) 100%
-    );
+    border-top: 1px solid var(--semantic-border-subtle, rgb(255 255 255 / 0.1));
+    background: rgb(8 10 24 / 0.94);
+    backdrop-filter: blur(12px);
   }
 
+  /*
+   * The same three zones as the wide footer: the play button on the centre line
+   * of the screen, the counter out at the edge. Stacked, the counter cost a
+   * 26px row of its own across the full width of a phone to say "6 / 8", on the
+   * one screen size where a row is expensive.
+   */
   .bottom-chrome .transport {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     padding-inline: var(--app-pad);
   }
+
+  /* Both explicitly in row 1: the counter is first in the markup and sits in
+     column 3, so sparse auto-placement pushed the buttons to a second row —
+     which is the row this was meant to reclaim. */
+  .bottom-chrome .transport > :global(.horizontal-transport-row) {
+    grid-area: 1 / 2;
+  }
+
 
   /*
    * The eight moves as a tray list. Two lines each, because the spec line is
@@ -1506,23 +1521,21 @@
    * stage again, which is the thing overlaying the chrome was meant to stop.
    */
   .app.docked .surface {
-    /* 10.5rem = 168px against a measured 161px of collapsed chrome — the
-       transport gave back its own card padding when the chrome became the
-       surface, so the old 11.5rem was reserving room for padding that no longer
-       exists. */
-    padding-bottom: 10.5rem;
+    /* 8.5rem = 136px against a measured 133px of collapsed chrome. It has come
+       down twice as the chrome lost boxes it did not need: its own card padding
+       when the chrome became the surface, then the counter's row when the
+       counter moved out to the edge of the transport's own. */
+    padding-bottom: 8.5rem;
   }
 
   /*
-   * A pill, because it sits above the chrome's own background and over the
-   * drawing. Tabular so the digits do not jitter as the step advances
-   * (.claude/rules/no-layout-shift.md).
+   * Out at the right edge, on the transport's own row. No pill: it used to sit
+   * over the drawing and needed its own backing to be legible; on the chrome's
+   * surface that backing is just a second box around two digits.
    */
   .bottom-chrome .counter {
-    justify-self: center;
-    padding: 0.1rem 0.6rem;
-    border-radius: 999px;
-    background: rgb(0 0 0 / 0.55);
+    grid-area: 1 / 3;
+    justify-self: end;
   }
 
   /*
@@ -1865,7 +1878,8 @@
      */
     /* The reading side carries two flower axes and a mode control at this
        height; the drawing can never be taller than a ~190px pane, so it gets
-       the smaller share of the width rather than an equal one. */
+       the smaller share of the width rather than an equal one. A drawing that
+       cannot be taller than 190px does not need 276px of width either. */
     .instrument.cell {
       grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
     }
@@ -1877,14 +1891,54 @@
       column-gap: clamp(0.75rem, 2vw, 1.5rem);
     }
 
+    /*
+     * Above the axes, not below them.
+     *
+     * Two axes of twelve plus a mode control is more than a 178px panel holds
+     * at any chip size a thumb can hit, so this tier scrolls. Underneath, what
+     * the fold cut was the mode control's label from its own control — a
+     * heading with nothing under it, which reads as broken rather than as
+     * scrollable. Above, the fold lands inside the chip grid, where a part-row
+     * of chips is its own invitation to scroll.
+     */
     .instrument.cell .control-panel .knob {
       grid-column: 1 / -1;
+      order: -1;
     }
 
     /* The petal counts are on the chips; the sentence restating them is not
        worth a row of a pane this short. */
     .instrument.cell .spec {
       display: none;
+    }
+  }
+
+  /*
+   * Wide AND short, with real width to spend: everything on one row — both axes
+   * and the mode control.
+   *
+   * Stacked, the mode control cost 89px of a pane with 178px to give and the
+   * panel ran 67px past the bottom. Across, it costs the height of the taller
+   * neighbour, which is nothing. The drawing gives up the width because it
+   * cannot use it: at this height it is capped at ~240px square, so everything
+   * past that on the left was empty box.
+   *
+   * Gated at 75rem because below it the third column takes the axes down to
+   * 26px chips — twelve traced flowers rendered as twelve dots, which is worse
+   * than a panel that scrolls.
+   */
+  @media (min-width: 75rem) and (max-height: 32rem) {
+    .instrument.cell {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 3.4fr);
+    }
+
+    .instrument.cell .control-panel {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      align-items: start;
+    }
+
+    .instrument.cell .control-panel .knob {
+      grid-column: auto;
     }
   }
 

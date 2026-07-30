@@ -770,7 +770,18 @@ h6 {
    See .claude/rules/4k-native-layout.md. */
 @media (min-width: 1680px) {
   html:has(.mkt-shell),
-  html:has(.legal-container),
+  html:has(.legal-container) {
+    font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
+  }
+}
+
+/* The QfT app takes the same ramp with a height floor on it.
+   Scrolling pages can spend a ramped rem on height and simply grow taller. The
+   instrument cannot: it fits itself to the window, so a 3840×412 window — a
+   wide screen with the window squashed — was asking it to lay out 24px type in
+   412px of height, and the notation ran under the footer. Above 45rem tall
+   there is room for the ramp; below it, the base scale is the whole point. */
+@media (min-width: 1680px) and (min-height: 45rem) {
   html:has(.qft-app) {
     font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
   }
