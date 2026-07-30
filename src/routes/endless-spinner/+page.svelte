@@ -152,6 +152,12 @@
   let currentStepNumber = $derived(
     Math.floor(playback?.animationState?.currentStep ?? 0)
   );
+
+  // One number that changes every time a fresh sequence lands — skip, natural
+  // chain-over, or a history replay. Everything that should visibly react to
+  // "new sequence" keys off this: the chips row, the notation pane, and the
+  // canvas pulse.
+  let swapKey = $derived(playback?.sequenceSwapCount ?? 0);
   $effect(() => {
     const swapCount = playback?.sequenceSwapCount ?? 0;
     const currentSequence = playback?.currentSequence ?? null;
@@ -362,6 +368,16 @@
               <span>{t("landing_spinner_loading")}</span>
             </div>
           {/if}
+
+          <!-- One-shot accent flash when a fresh sequence lands. The #key
+               remounts the overlay so the animation replays per swap; the
+               > 1 guard keeps the boot sequence from pulsing. Absolutely
+               positioned: it can never move the layout. -->
+          {#if animationReady && swapKey > 1}
+            {#key swapKey}
+              <div class="swap-pulse" aria-hidden="true"></div>
+            {/key}
+          {/if}
         </div>
 
         <!-- Notation column: identity chips over the lane. Grouped so the wide
@@ -370,10 +386,7 @@
         <div class="notation-col">
           <!-- Current sequence identity -->
           <div class="mode-info">
-            <Crossfade
-              key={`${spinnerMode}:${playback?.currentSequence?.id ?? ""}`}
-              fill
-            >
+            <Crossfade key={`${spinnerMode}:${swapKey}`} fill>
               <div class="mode-info-layer">
                 <SpinnerNowPlaying
                   sequence={playback?.currentSequence ?? null}
@@ -391,7 +404,10 @@
               bind:clientWidth={paneWidth}
               bind:clientHeight={paneHeight}
             >
-              <Crossfade key={viewMode} fill>
+              <!-- Keyed on the view AND the sequence: toggling views and a
+                   fresh sequence landing both read as one clean reel swap
+                   instead of cells silently repainting in place. -->
+              <Crossfade key={`${viewMode}:${swapKey}`} fill>
                 {#if viewMode === "strip"}
                   <div class="strip-layer">
                     <SpinnerStepLane
@@ -817,6 +833,43 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+  }
+
+  /* The "fresh sequence" beat: an accent frame blooms on the stage and
+     settles as the new reel crossfades in beside it. Inner glow only — the
+     card clips overflow, so an outer shadow would never show. */
+  .swap-pulse {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: 0;
+    border: 2px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
+    box-shadow: inset 0 0 3.5rem
+      color-mix(in srgb, var(--theme-accent, #6366f1) 32%, transparent);
+    animation: swap-pulse 640ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes swap-pulse {
+    0% {
+      opacity: 0;
+      transform: scale(1.02);
+    }
+    18% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .swap-pulse {
+      animation: none;
+    }
   }
 
   /* Responsive */
