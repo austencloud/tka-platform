@@ -350,8 +350,9 @@ export class ThumbnailRenderOrchestrator {
       this.metrics?.startStage(requestId, "static_manifest");
       const manifest = await getStaticManifest();
       assertRequestActive();
-      // Current format first (variant/prop/name_id_mode — mirrors cloud storage
-      // paths), legacy format second (prop/name_mode — pre-variant bundles).
+      // Current format first (variant/prop/name_id_renderer_mode — mirrors
+      // cloud storage paths), legacy shape second
+      // (prop/name_renderer_mode — pre-variant bundles).
       const staticKey = [this.buildStaticKey(key), this.buildLegacyStaticKey(key)]
         .find((candidate) => manifest.has(candidate));
 
@@ -584,7 +585,7 @@ export class ThumbnailRenderOrchestrator {
     };
   }
 
-  buildCloudKey(key: ThumbnailCacheKey) {
+  buildCloudKey(key: ThumbnailCacheKey): CloudThumbnailKey {
     return {
       sequenceName: key.inputs.sequenceName,
       sequenceId: key.inputs.sequenceId,
@@ -592,12 +593,13 @@ export class ThumbnailRenderOrchestrator {
       lightMode: key.inputs.lightMode,
       variant: key.inputs.variant,
       showQRCode: key.inputs.visibility?.showQRCode ?? false,
+      rendererVersion: key.rendererVersion,
     };
   }
 
   /**
    * Build key for static manifest lookup — current format.
-   * Format: {variant}/{propType}/{sequenceName}_{sequenceId}_{mode}
+   * Format: {variant}/{propType}/{sequenceName}_{sequenceId}_r{renderer}_{mode}
    * Mirrors the cloud storage path (sync-static-thumbnails.cjs downloads files
    * verbatim and derives manifest keys from the on-disk paths), so this must
    * stay in lockstep with getStoragePath() in cloud-thumbnail-cache.ts.
@@ -606,21 +608,26 @@ export class ThumbnailRenderOrchestrator {
     const modeSuffix = key.inputs.lightMode ? "_light" : "_dark";
     const idSuffix = key.inputs.sequenceId ? `_${key.inputs.sequenceId}` : "";
     const qrSuffix = key.inputs.visibility?.showQRCode ? "_qr" : "";
+    const rendererSuffix = `_r${key.rendererVersion}`;
     return `${key.inputs.variant}/${key.propKey}/${sanitizeForStaticPath(
       `${key.inputs.sequenceName}${idSuffix}`
-    )}${qrSuffix}${modeSuffix}`;
+    )}${qrSuffix}${rendererSuffix}${modeSuffix}`;
   }
 
   /**
-   * Legacy static key (pre-variant bundles): {propType}/{sequenceName}_{mode}.
-   * Old synced files (no variant folder, no sequence id) still live in
-   * /static/thumbnails/ — keep them reachable until the next full re-sync.
+   * Legacy static key shape (pre-variant bundles):
+   * {propType}/{sequenceName}_r{renderer}_{mode}.
+   *
+   * The renderer suffix is intentionally required here too. An unversioned
+   * fallback would bypass a renderer migration and immediately restore the
+   * stale raster this key is meant to invalidate.
    * The `_qr` suffix means QR-on requests never match a legacy (no-QR) file.
    */
   buildLegacyStaticKey(key: ThumbnailCacheKey): string {
     const modeSuffix = key.inputs.lightMode ? "_light" : "_dark";
     const qrSuffix = key.inputs.visibility?.showQRCode ? "_qr" : "";
-    return `${key.propKey}/${sanitizeForStaticPath(key.inputs.sequenceName)}${qrSuffix}${modeSuffix}`;
+    const rendererSuffix = `_r${key.rendererVersion}`;
+    return `${key.propKey}/${sanitizeForStaticPath(key.inputs.sequenceName)}${qrSuffix}${rendererSuffix}${modeSuffix}`;
   }
 
   /**

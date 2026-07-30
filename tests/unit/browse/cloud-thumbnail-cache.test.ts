@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { THUMBNAIL_RENDERER_VERSION } from "$lib/shared/browse/services/thumbnail-key-deriver";
 
 const mocks = vi.hoisted(() => {
   const auth = {
@@ -31,6 +32,7 @@ vi.mock("firebase/storage", () => ({
 
 import {
   clearMemoryCache,
+  getStoragePath,
   getUrl,
   markMissing,
   upload,
@@ -43,6 +45,7 @@ const key: CloudThumbnailKey = {
   propType: PropType.CLUB,
   lightMode: false,
   variant: "gallery",
+  rendererVersion: THUMBNAIL_RENDERER_VERSION,
 };
 
 beforeEach(() => {
@@ -102,6 +105,14 @@ describe("cloud-thumbnail-cache upload authorization", () => {
   });
 });
 
+describe("cloud-thumbnail-cache renderer versioning", () => {
+  it("folds the renderer version into the storage filename", () => {
+    expect(getStoragePath(key)).toBe(
+      "thumbnails/gallery/club/AAAA_sequence-1_r2_dark.webp"
+    );
+  });
+});
+
 describe("cloud-thumbnail-cache missing-object memory", () => {
   it("lets a confirmed 404 override a previously confirmed positive entry", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, status: 200 });
@@ -156,6 +167,7 @@ describe("cloud-thumbnail-cache missing-object memory", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await freshCache.loadManifest();
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("manifest.json?alt=media&v=3");
     const staleResult = await freshCache.getUrl({
       ...key,
       sequenceId: "stale-persisted",

@@ -9,6 +9,14 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export type ThumbnailVariant = "gallery" | "wordcard";
 
+/**
+ * Increment whenever shared thumbnail raster output changes.
+ *
+ * This token belongs in every cache identity, including the cloud filename.
+ * Otherwise a corrected renderer can keep receiving an older image forever.
+ */
+export const THUMBNAIL_RENDERER_VERSION = 2;
+
 export interface ThumbnailVisibilitySettings {
   showTKA?: boolean;
   showReversals?: boolean;
@@ -68,6 +76,9 @@ export interface ThumbnailRenderInput {
 }
 
 export interface ThumbnailCacheKey {
+  /** Raster renderer revision used to isolate incompatible cached images */
+  readonly rendererVersion: number;
+
   /** Hash of all inputs that affect visual output */
   readonly hash: string;
 
@@ -128,27 +139,32 @@ export function deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
   // every signed-in user — cacheable, but keyed apart from the no-QR card so a
   // guest's QR-less render can't overwrite it (and vice-versa).
   const qrSuffix = input.visibility?.showQRCode ? "_qr" : "";
-  const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}${idSuffix}${qrSuffix}_${mode}.webp`;
+  const rendererSuffix = `_r${THUMBNAIL_RENDERER_VERSION}`;
+  const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}${idSuffix}${qrSuffix}${rendererSuffix}_${mode}.webp`;
 
   // Compute hash of all inputs that affect visual output
-  const hashInput = usesDefaults
-    ? {
-        seq: input.sequenceName,
-        id: input.sequenceId ?? null,
-        prop: propKey,
-        mode,
-        variant: input.variant,
-        loop: input.loopType ?? null,
-        spl: input.startPositionLayout ?? "row",
-        // QR is part of the shareable class now (deterministic short code), so
-        // it must discriminate the key — QR-on and QR-off are distinct images.
-        qr: input.visibility?.showQRCode ?? false,
-      }
-    : buildFullHashInput(input);
+  const hashInput = {
+    renderer: THUMBNAIL_RENDERER_VERSION,
+    ...(usesDefaults
+      ? {
+          seq: input.sequenceName,
+          id: input.sequenceId ?? null,
+          prop: propKey,
+          mode,
+          variant: input.variant,
+          loop: input.loopType ?? null,
+          spl: input.startPositionLayout ?? "row",
+          // QR is part of the shareable class now (deterministic short code), so
+          // it must discriminate the key — QR-on and QR-off are distinct images.
+          qr: input.visibility?.showQRCode ?? false,
+        }
+      : buildFullHashInput(input)),
+  };
 
   const hash = computeHash(hashInput);
 
   return {
+    rendererVersion: THUMBNAIL_RENDERER_VERSION,
     hash,
     cloudPath,
     inputs: Object.freeze({ ...input }),

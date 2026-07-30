@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createCanvas } from "canvas";
+import {
+  BADGE_PADDING_SCALE,
+  BADGE_SIZE_SCALE,
+  LOOP_ICON_SIZE_SCALE,
+  LOOP_ICON_STRIP_OFFSET_SCALE,
+  computeLoopIconStripWidth,
+  renderHeader,
+  tokenizeGlyphWord,
+  type CompressedSegment,
+  type GlyphImageData,
+  type LOOPComponentId,
+} from "@tka/render-composition";
 import { calculateArrowRotation } from "../src/core/arrow-placement.js";
 import { convertToSequenceResult } from "../src/core/engine-generation-adapter.js";
 import {
@@ -10,6 +22,174 @@ import {
 import { getStandaloneRenderer } from "../src/core/standalone-renderer.js";
 import { renderWordHeader } from "../src/core/text-renderer.js";
 import { loadTkaGlyphImages } from "../src/core/tka-glyph-image-loader.js";
+
+const HEADER_GLYPH_HEIGHT_RATIO = 0.65;
+const HEADER_LETTER_GAP_RATIO = 0.04;
+
+interface PixelBounds {
+  left: number;
+  right: number;
+}
+
+interface DrawnImageBounds {
+  y: number;
+  height: number;
+}
+
+function findChangedPixelBounds(
+  rendered: ReturnType<typeof createCanvas>,
+  withoutWord: ReturnType<typeof createCanvas>
+): PixelBounds {
+  const renderedPixels = rendered
+    .getContext("2d")
+    .getImageData(0, 0, rendered.width, rendered.height).data;
+  const baselinePixels = withoutWord
+    .getContext("2d")
+    .getImageData(0, 0, withoutWord.width, withoutWord.height).data;
+  let left = rendered.width;
+  let right = -1;
+
+  for (let y = 0; y < rendered.height; y++) {
+    for (let x = 0; x < rendered.width; x++) {
+      const offset = (y * rendered.width + x) * 4;
+      const changed =
+        renderedPixels[offset] !== baselinePixels[offset] ||
+        renderedPixels[offset + 1] !== baselinePixels[offset + 1] ||
+        renderedPixels[offset + 2] !== baselinePixels[offset + 2] ||
+        renderedPixels[offset + 3] !== baselinePixels[offset + 3];
+
+      if (!changed) continue;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+    }
+  }
+
+  assert.notEqual(right, -1, "expected the rendered header to contain word pixels");
+  return { left, right };
+}
+
+function protectedWordBounds(
+  canvasWidth: number,
+  headerHeight: number,
+  loopComponents: Set<LOOPComponentId>
+): PixelBounds {
+  const badgeSize = headerHeight * BADGE_SIZE_SCALE;
+  const badgePadding = headerHeight * BADGE_PADDING_SCALE;
+  const breathingGap = headerHeight * HEADER_LETTER_GAP_RATIO;
+  const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
+  const stripWidth = computeLoopIconStripWidth(loopComponents, iconSize);
+  const rightIconZone =
+    badgePadding +
+    iconSize * LOOP_ICON_STRIP_OFFSET_SCALE +
+    stripWidth;
+
+  return {
+    left: badgePadding + badgeSize + breathingGap,
+    right: canvasWidth - rightIconZone - breathingGap,
+  };
+}
+
+async function renderRasterHeader(options: {
+  word: string;
+  compressedSegments?: CompressedSegment[];
+}): Promise<{
+  rendered: ReturnType<typeof createCanvas>;
+  withoutWord: ReturnType<typeof createCanvas>;
+  protectedBounds: PixelBounds;
+  drawnImages: DrawnImageBounds[];
+}> {
+  const canvasWidth = 900;
+  const headerHeight = 100;
+  const loopComponents = new Set<LOOPComponentId>([
+    "rotated",
+    "mirrored",
+    "flipped",
+  ]);
+  const glyphImages = await loadTkaGlyphImages(options.word, false);
+  assert.ok(glyphImages);
+
+  const rendered = createCanvas(canvasWidth, headerHeight);
+  const renderedContext = rendered.getContext("2d");
+  const drawnImages: DrawnImageBounds[] = [];
+  const originalDrawImage = renderedContext.drawImage.bind(renderedContext);
+  renderedContext.drawImage = ((
+    ...args: Parameters<typeof originalDrawImage>
+  ) => {
+    drawnImages.push({ y: args[2], height: args[4] });
+    return originalDrawImage(...args);
+  }) as typeof renderedContext.drawImage;
+
+  const sharedOptions = {
+    canvasWidth,
+    headerHeight,
+    difficultyLevel: 3,
+    showDifficultyBadge: true,
+    loopComponents,
+    darkMode: false,
+    glyphImages,
+    glyphImagesAreThemeColored: true,
+    compressedSegments: options.compressedSegments,
+  };
+
+  renderHeader(
+    renderedContext as unknown as globalThis.CanvasRenderingContext2D,
+    { ...sharedOptions, word: options.word }
+  );
+
+  const withoutWord = createCanvas(canvasWidth, headerHeight);
+  renderHeader(
+    withoutWord.getContext("2d") as unknown as globalThis.CanvasRenderingContext2D,
+    { ...sharedOptions, word: "" }
+  );
+
+  return {
+    rendered,
+    withoutWord,
+    protectedBounds: protectedWordBounds(
+      canvasWidth,
+      headerHeight,
+      loopComponents
+    ),
+    drawnImages,
+  };
+}
+
+function drawLegacyShortGlyphWord(
+  canvas: ReturnType<typeof createCanvas>,
+  word: string,
+  glyphImages: Map<string, GlyphImageData>
+): void {
+  const context = canvas.getContext("2d");
+  const availableHeight = canvas.height * HEADER_GLYPH_HEIGHT_RATIO;
+  const letterGap = canvas.height * HEADER_LETTER_GAP_RATIO;
+  const tokens = tokenizeGlyphWord(word);
+  let totalWidth = 0;
+
+  for (const token of tokens) {
+    const data = glyphImages.get(token);
+    if (!data) continue;
+    const scale = availableHeight / data.naturalHeight;
+    totalWidth += data.naturalWidth * scale + letterGap;
+  }
+  if (totalWidth > 0) totalWidth -= letterGap;
+
+  let cursorX = canvas.width / 2 - totalWidth / 2;
+  const glyphY = canvas.height / 2 - availableHeight / 2;
+  for (const token of tokens) {
+    const data = glyphImages.get(token);
+    if (!data) continue;
+    const scale = availableHeight / data.naturalHeight;
+    const glyphWidth = data.naturalWidth * scale;
+    context.drawImage(
+      data.image as never,
+      cursorX,
+      glyphY,
+      glyphWidth,
+      availableHeight
+    );
+    cursorX += glyphWidth + letterGap;
+  }
+}
 
 describe("MCP rendering boundaries", () => {
   it("uses the normal static rotation map and leaves direction to mirroring", () => {
@@ -285,5 +465,96 @@ describe("MCP rendering boundaries", () => {
 
     assert.equal(imageCount, 3);
     assert.ok(!drawnText.includes("ΣWΣ"));
+  });
+
+  it("keeps a fitting short-word raster byte-identical to the legacy layout", async () => {
+    const canvasWidth = 900;
+    const headerHeight = 100;
+    const word = "ABC";
+    const glyphImages = await loadTkaGlyphImages(word, false);
+    assert.ok(glyphImages);
+
+    const rendered = createCanvas(canvasWidth, headerHeight);
+    renderHeader(
+      rendered.getContext("2d") as unknown as globalThis.CanvasRenderingContext2D,
+      {
+        canvasWidth,
+        headerHeight,
+        word,
+        showDifficultyBadge: false,
+        darkMode: false,
+        glyphImages,
+        glyphImagesAreThemeColored: true,
+      }
+    );
+
+    const legacy = createCanvas(canvasWidth, headerHeight);
+    renderHeader(
+      legacy.getContext("2d") as unknown as globalThis.CanvasRenderingContext2D,
+      {
+        canvasWidth,
+        headerHeight,
+        word: "",
+        showDifficultyBadge: false,
+        darkMode: false,
+      }
+    );
+    drawLegacyShortGlyphWord(legacy, word, glyphImages);
+
+    const renderedPixels = rendered
+      .getContext("2d")
+      .getImageData(0, 0, canvasWidth, headerHeight).data;
+    const legacyPixels = legacy
+      .getContext("2d")
+      .getImageData(0, 0, canvasWidth, headerHeight).data;
+    assert.deepEqual(Buffer.from(renderedPixels), Buffer.from(legacyPixels));
+  });
+
+  it("fits a non-repeating long word between the badge and LOOP icon zones", async () => {
+    const result = await renderRasterHeader({
+      word: "W-Θ-OYEΩ-X-Ω-OZDΘ-",
+    });
+    const wordBounds = findChangedPixelBounds(
+      result.rendered,
+      result.withoutWord
+    );
+
+    assert.ok(
+      wordBounds.left >= Math.floor(result.protectedBounds.left),
+      `word begins at ${wordBounds.left}, inside the protected left zone ending at ${result.protectedBounds.left}`
+    );
+    assert.ok(
+      wordBounds.right <= Math.ceil(result.protectedBounds.right),
+      `word ends at ${wordBounds.right}, inside the protected right zone starting at ${result.protectedBounds.right}`
+    );
+    for (const image of result.drawnImages) {
+      assert.equal(image.y + image.height / 2, result.rendered.height / 2);
+    }
+  });
+
+  it("fits a compressed long word between the badge and LOOP icon zones", async () => {
+    const result = await renderRasterHeader({
+      word: "W-Θ-OYEΩ-W-Θ-OYEΩ-X-Ω-OZDΘ-",
+      compressedSegments: [
+        { tokens: ["W-", "Θ-", "O", "Y", "E", "Ω-"], repeat: 2 },
+        { tokens: ["X-", "Ω-", "O", "Z", "D", "Θ-"], repeat: 1 },
+      ],
+    });
+    const wordBounds = findChangedPixelBounds(
+      result.rendered,
+      result.withoutWord
+    );
+
+    assert.ok(
+      wordBounds.left >= Math.floor(result.protectedBounds.left),
+      `word begins at ${wordBounds.left}, inside the protected left zone ending at ${result.protectedBounds.left}`
+    );
+    assert.ok(
+      wordBounds.right <= Math.ceil(result.protectedBounds.right),
+      `word ends at ${wordBounds.right}, inside the protected right zone starting at ${result.protectedBounds.right}`
+    );
+    for (const image of result.drawnImages) {
+      assert.equal(image.y + image.height / 2, result.rendered.height / 2);
+    }
   });
 });

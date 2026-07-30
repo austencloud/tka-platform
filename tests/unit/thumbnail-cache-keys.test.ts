@@ -7,10 +7,12 @@
  *    (showMandala defaulted true in image-composition settings but false in
  *    the deriver, so every default-settings user keyed "non-default" and the
  *    static/cloud tiers + crowd uploads died for the whole population)
- *  - buildStaticKey must mirror the cloud storage path (variant + sequence id),
+ *  - buildStaticKey must mirror the cloud storage path (variant + sequence id
+ *    + renderer version),
  *    not the pre-variant legacy format — the synced manifest keys are derived
  *    from storage paths verbatim
- *  - the legacy key stays available as a fallback for old bundled files
+ *  - the legacy key shape stays available without allowing unversioned rasters
+ *    to cross a renderer migration
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -26,7 +28,10 @@ vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
   markMissing: vi.fn(),
 }));
 
-import { deriveKey } from "$lib/shared/browse/services/thumbnail-key-deriver";
+import {
+  THUMBNAIL_RENDERER_VERSION,
+  deriveKey,
+} from "$lib/shared/browse/services/thumbnail-key-deriver";
 import type { ThumbnailRenderInput } from "$lib/shared/browse/services/thumbnail-key-deriver";
 import { ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/thumbnail-render-orchestrator";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -107,14 +112,18 @@ describe("QR variant — distinct shareable cache paths", () => {
     const key = deriveKey(
       galleryInput({ visibility: { showQRCode: true, showMandala: true } })
     );
-    expect(orchestrator.buildStaticKey(key)).toBe("gallery/staff/AKE_seq-1_qr_dark");
+    expect(orchestrator.buildStaticKey(key)).toBe(
+      "gallery/staff/AKE_seq-1_qr_r2_dark"
+    );
   });
 
   it("buildStaticKey omits _qr for the no-QR card", () => {
     const key = deriveKey(
       galleryInput({ visibility: { showQRCode: false, showMandala: true } })
     );
-    expect(orchestrator.buildStaticKey(key)).toBe("gallery/staff/AKE_seq-1_dark");
+    expect(orchestrator.buildStaticKey(key)).toBe(
+      "gallery/staff/AKE_seq-1_r2_dark"
+    );
   });
 
   it("buildCloudKey carries showQRCode so the storage path separates variants", () => {
@@ -126,27 +135,36 @@ describe("QR variant — distinct shareable cache paths", () => {
     );
     expect(orchestrator.buildCloudKey(qrKey).showQRCode).toBe(true);
     expect(orchestrator.buildCloudKey(noQrKey).showQRCode).toBe(false);
+    expect(orchestrator.buildCloudKey(qrKey).rendererVersion).toBe(
+      THUMBNAIL_RENDERER_VERSION
+    );
   });
 
-  it("legacy static key never matches a no-QR bundle for a QR request", () => {
+  it("legacy static key cannot match an unversioned pre-fix bundle", () => {
     const qrKey = deriveKey(
       galleryInput({ visibility: { showQRCode: true, showMandala: true } })
     );
-    expect(orchestrator.buildLegacyStaticKey(qrKey)).toBe("staff/AKE_qr_dark");
+    expect(orchestrator.buildLegacyStaticKey(qrKey)).toBe(
+      "staff/AKE_qr_r2_dark"
+    );
   });
 });
 
 describe("buildStaticKey — mirrors the cloud storage path", () => {
   it("includes variant, prop, sequence id, and mode", () => {
     const key = deriveKey(galleryInput());
-    expect(orchestrator.buildStaticKey(key)).toBe("gallery/staff/AKE_seq-1_dark");
+    expect(orchestrator.buildStaticKey(key)).toBe(
+      "gallery/staff/AKE_seq-1_r2_dark"
+    );
   });
 
   it("uses _light suffix in light mode and omits the id suffix when absent", () => {
     const key = deriveKey(
       galleryInput({ sequenceId: undefined, lightMode: true })
     );
-    expect(orchestrator.buildStaticKey(key)).toBe("gallery/staff/AKE_light");
+    expect(orchestrator.buildStaticKey(key)).toBe(
+      "gallery/staff/AKE_r2_light"
+    );
   });
 
   it("sanitizes Windows-illegal characters the same way sync-static-thumbnails.cjs does", () => {
@@ -154,7 +172,7 @@ describe("buildStaticKey — mirrors the cloud storage path", () => {
       galleryInput({ sequenceName: "Sequence 11:46:02 PM", sequenceId: undefined })
     );
     expect(orchestrator.buildStaticKey(key)).toBe(
-      "gallery/staff/Sequence 11-46-02 PM_dark"
+      "gallery/staff/Sequence 11-46-02 PM_r2_dark"
     );
   });
 
@@ -168,8 +186,20 @@ describe("buildStaticKey — mirrors the cloud storage path", () => {
 });
 
 describe("buildLegacyStaticKey — pre-variant bundle fallback", () => {
-  it("uses the old prop/name_mode format with no variant or id", () => {
+  it("keeps the old prop/name format but requires the current renderer version", () => {
     const key = deriveKey(galleryInput());
-    expect(orchestrator.buildLegacyStaticKey(key)).toBe("staff/AKE_dark");
+    expect(orchestrator.buildLegacyStaticKey(key)).toBe("staff/AKE_r2_dark");
+  });
+});
+
+describe("renderer cache invalidation", () => {
+  it("folds the renderer version into local and cloud cache identities", () => {
+    const key = deriveKey(galleryInput());
+
+    expect(key.rendererVersion).toBe(THUMBNAIL_RENDERER_VERSION);
+    expect(key.hash).toBe("-rtelro");
+    expect(key.cloudPath).toBe(
+      "thumbnails/gallery/staff/AKE_seq-1_r2_dark.webp"
+    );
   });
 });

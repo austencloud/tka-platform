@@ -34,7 +34,7 @@ const staticKey = (() => {
   // Same construction as orchestrator.buildStaticKey — asserted below so the
   // test fails loudly if the formats ever drift apart.
   const key = deriveKey(input);
-  return `${key.inputs.variant}/${key.propKey}/${key.inputs.sequenceName}_${key.inputs.sequenceId}_dark`;
+  return `${key.inputs.variant}/${key.propKey}/${key.inputs.sequenceName}_${key.inputs.sequenceId}_r${key.rendererVersion}_dark`;
 })();
 
 function makeOrchestrator() {

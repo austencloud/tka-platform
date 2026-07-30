@@ -52,6 +52,29 @@ const DASH_GAP_SVG = 10;
 const DASH_RADIUS_SVG = 9.5;
 const ALPHA_BASELINE_SHIFT = 0.10;
 
+interface WordHorizontalBounds {
+  left: number;
+  right: number;
+}
+
+function fitWordToBounds(
+  totalWidth: number,
+  canvasWidth: number,
+  bounds: WordHorizontalBounds
+): { scale: number; cursorX: number } {
+  const availableWidth = Math.max(0, bounds.right - bounds.left);
+  if (totalWidth <= 0 || totalWidth <= availableWidth) {
+    return { scale: 1, cursorX: canvasWidth / 2 - totalWidth / 2 };
+  }
+
+  const scale = availableWidth / totalWidth;
+  const fittedWidth = totalWidth * scale;
+  return {
+    scale,
+    cursorX: bounds.left + (availableWidth - fittedWidth) / 2,
+  };
+}
+
 function isAlphaToken(token: string): boolean {
   return token === 'α';
 }
@@ -62,6 +85,7 @@ function renderGlyphWord(
   glyphImages: Map<string, GlyphImageData>,
   canvasWidth: number,
   headerHeight: number,
+  horizontalBounds: WordHorizontalBounds,
   darkMode: boolean,
   glyphImagesAreThemeColored: boolean,
 ): void {
@@ -90,23 +114,26 @@ function renderGlyphWord(
   if (totalWidth > 0) totalWidth -= letterGap;
 
   // Second pass: draw
-  let cursorX = canvasWidth / 2 - totalWidth / 2;
+  const widthFit = fitWordToBounds(totalWidth, canvasWidth, horizontalBounds);
+  const fittedGlyphHeight = availableH * widthFit.scale;
+  const fittedLetterGap = letterGap * widthFit.scale;
+  let cursorX = widthFit.cursorX;
   // Applied directly — no parent CSS invert filter in canvas context unlike TKAGlyph.svelte
   const dashColor = darkMode ? "#ffffff" : "#231f20";
 
   for (const token of tokens) {
     const data = glyphImages.get(token);
     if (!data) continue;
-    const scale = availableH / data.naturalHeight;
+    const scale = (availableH / data.naturalHeight) * widthFit.scale;
     const glyphW = data.naturalWidth * scale;
-    const baseGlyphY = verticalCenter - availableH / 2;
-    const glyphY = baseGlyphY + (isAlphaToken(token) ? availableH * ALPHA_BASELINE_SHIFT : 0);
+    const baseGlyphY = verticalCenter - fittedGlyphHeight / 2;
+    const glyphY = baseGlyphY + (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
 
     if (darkMode && !glyphImagesAreThemeColored) {
       ctx.save();
       ctx.filter = "invert(0.9)";
     }
-    ctx.drawImage(data.image, cursorX, glyphY, glyphW, availableH);
+    ctx.drawImage(data.image, cursorX, glyphY, glyphW, fittedGlyphHeight);
     if (darkMode && !glyphImagesAreThemeColored) {
       ctx.restore();
     }
@@ -121,9 +148,9 @@ function renderGlyphWord(
       ctx.roundRect(dashX, dashY, dashW, dashH, DASH_RADIUS_SVG * scale);
       ctx.fillStyle = dashColor;
       ctx.fill();
-      cursorX += glyphW + dashGap + dashW + letterGap;
+      cursorX += glyphW + dashGap + dashW + fittedLetterGap;
     } else {
-      cursorX += glyphW + letterGap;
+      cursorX += glyphW + fittedLetterGap;
     }
   }
 }
@@ -138,6 +165,7 @@ function renderCompressedGlyphWord(
   glyphImages: Map<string, GlyphImageData>,
   canvasWidth: number,
   headerHeight: number,
+  horizontalBounds: WordHorizontalBounds,
   darkMode: boolean,
   glyphImagesAreThemeColored: boolean,
 ): void {
@@ -170,37 +198,42 @@ function renderCompressedGlyphWord(
   }
 
   // Second pass: draw
-  let cursorX = canvasWidth / 2 - totalWidth / 2;
+  const widthFit = fitWordToBounds(totalWidth, canvasWidth, horizontalBounds);
+  const fittedGlyphHeight = availableH * widthFit.scale;
+  const fittedLetterGap = letterGap * widthFit.scale;
+  const fittedGroupGap = groupGap * widthFit.scale;
+  const fittedDotRadius = dotRadius * widthFit.scale;
+  let cursorX = widthFit.cursorX;
 
   for (let si = 0; si < segments.length; si++) {
     const seg = segments[si]!;
 
     if (si > 0) {
-      const dotX = cursorX + groupGap / 2;
+      const dotX = cursorX + fittedGroupGap / 2;
       ctx.save();
       ctx.globalAlpha = DOT_OPACITY;
       ctx.fillStyle = dotColor;
       ctx.beginPath();
-      ctx.arc(dotX, verticalCenter, dotRadius, 0, 2 * Math.PI);
+      ctx.arc(dotX, verticalCenter, fittedDotRadius, 0, 2 * Math.PI);
       ctx.fill();
       ctx.restore();
-      cursorX += groupGap;
+      cursorX += fittedGroupGap;
     }
 
     for (let ti = 0; ti < seg.tokens.length; ti++) {
       const token = seg.tokens[ti]!;
       const data = glyphImages.get(token);
       if (!data) continue;
-      const scale = availableH / data.naturalHeight;
+      const scale = (availableH / data.naturalHeight) * widthFit.scale;
       const glyphW = data.naturalWidth * scale;
-      const baseGlyphY = verticalCenter - availableH / 2;
-      const glyphY = baseGlyphY + (isAlphaToken(token) ? availableH * ALPHA_BASELINE_SHIFT : 0);
+      const baseGlyphY = verticalCenter - fittedGlyphHeight / 2;
+      const glyphY = baseGlyphY + (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
 
       if (darkMode && !glyphImagesAreThemeColored) {
         ctx.save();
         ctx.filter = "invert(0.9)";
       }
-      ctx.drawImage(data.image, cursorX, glyphY, glyphW, availableH);
+      ctx.drawImage(data.image, cursorX, glyphY, glyphW, fittedGlyphHeight);
       if (darkMode && !glyphImagesAreThemeColored) {
         ctx.restore();
       }
@@ -220,7 +253,7 @@ function renderCompressedGlyphWord(
         cursorX += glyphW;
       }
 
-      if (ti < seg.tokens.length - 1) cursorX += letterGap;
+      if (ti < seg.tokens.length - 1) cursorX += fittedLetterGap;
     }
   }
 }
@@ -269,13 +302,21 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
 
   // LOOP icon strip (right)
   const hasLoop = loopComponents && loopComponents.size > 0;
+  let rightIconZone = 0;
   if (hasLoop) {
     const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
     const stripWidth = computeLoopIconStripWidth(loopComponents, iconSize, overlayComponents);
     const rightEdge = canvasWidth - badgePadding;
     const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
+    rightIconZone = badgePadding + iconSize * LOOP_ICON_STRIP_OFFSET_SCALE + stripWidth;
     renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationPeriod, inversionPeriod, overlayComponents);
   }
+
+  const wordBreathingGap = headerHeight * LETTER_GAP_RATIO;
+  const wordHorizontalBounds = {
+    left: (showDifficultyBadge ? badgePadding + badgeSize : 0) + wordBreathingGap,
+    right: canvasWidth - rightIconZone - wordBreathingGap,
+  };
 
   // Word text (center)
   const finalFontSize = Math.max(10, Math.floor(headerHeight * HEADER_WORD_FONT_SCALE));
@@ -294,6 +335,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
         glyphImages,
         canvasWidth,
         headerHeight,
+        wordHorizontalBounds,
         darkMode,
         glyphImagesAreThemeColored,
       );
@@ -304,6 +346,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
         glyphImages,
         canvasWidth,
         headerHeight,
+        wordHorizontalBounds,
         darkMode,
         glyphImagesAreThemeColored,
       );

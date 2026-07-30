@@ -5,8 +5,9 @@
  * When a user encounters a prop type for the first time, they render it locally
  * and upload to Firebase Storage so future users get instant loading.
  *
- * Storage structure: thumbnails/{propType}/{sequenceName}_{mode}.webp
- * Example: thumbnails/club/Butterfly_dark.webp
+ * Storage structure:
+ * thumbnails/{variant}/{propType}/{sequenceName}_{id}_r{renderer}_{mode}.webp
+ * Example: thumbnails/gallery/club/Butterfly_public-1_r2_dark.webp
  *
  * This enables a "lazy generation" pattern where:
  * 1. First user to view a prop/sequence combo renders it locally
@@ -32,6 +33,8 @@ export interface CloudThumbnailKey {
    * QR image is identical for all signed-in users — cacheable, but stored at a
    * distinct `_qr` path so it never collides with the guest/no-QR card. */
   showQRCode?: boolean;
+  /** Raster renderer revision; prevents corrected output from hitting stale files */
+  rendererVersion: number;
 }
 
 export interface DeleteProgress {
@@ -59,7 +62,7 @@ const pendingUploads = new Map<string, Promise<string | null>>();
 let manifestLoaded = false;
 let manifestLoadPromise: Promise<number> | null = null;
 const MANIFEST_PATH = "thumbnails/manifest.json";
-const MANIFEST_CACHE_VERSION = 2;
+const MANIFEST_CACHE_VERSION = 3;
 
 // Firebase Storage bucket - single source of truth
 const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
@@ -259,7 +262,8 @@ export function getStoragePath(key: CloudThumbnailKey): string {
   const modeSuffix = key.lightMode ? "_light" : "_dark";
   const idSuffix = key.sequenceId ? `_${key.sequenceId}` : "";
   const qrSuffix = key.showQRCode ? "_qr" : "";
-  return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${idSuffix}${qrSuffix}${modeSuffix}.webp`;
+  const rendererSuffix = `_r${key.rendererVersion}`;
+  return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${idSuffix}${qrSuffix}${rendererSuffix}${modeSuffix}.webp`;
 }
 
 /**
@@ -272,7 +276,8 @@ function getCacheKey(key: CloudThumbnailKey): string {
   const modeSuffix = key.lightMode ? "_light" : "_dark";
   const idSuffix = key.sequenceId ? `_${key.sequenceId}` : "";
   const qrSuffix = key.showQRCode ? "_qr" : "";
-  return `${variant}/${key.propType}/${key.sequenceName}${idSuffix}${qrSuffix}${modeSuffix}`;
+  const rendererSuffix = `_r${key.rendererVersion}`;
+  return `${variant}/${key.propType}/${key.sequenceName}${idSuffix}${qrSuffix}${rendererSuffix}${modeSuffix}`;
 }
 
 /**
