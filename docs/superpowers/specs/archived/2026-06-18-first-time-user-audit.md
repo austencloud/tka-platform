@@ -1,14 +1,22 @@
 ---
-status: active
+status: archived
 value: 4
 effort: M
-remaining: "Body status: Code-level findings. Items marked ⏳ need runtime confirmation (browser or DevTools drive)."
-depends_on: ""
+remaining: "Superseded by the shipped guest-first onboarding design, which corrected this audit and records its P1 findings as shipped, plus the active first-session activation design for the remaining funnel work."
+depends_on: "2026-07-22-first-session-activation-design.md"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # First-Time User Audit — Multidimensional
+
+> **Archived 2026-07-30:** Superseded by
+> `shipped/2026-06-19-guest-first-onboarding-design.md`, the corrected concrete
+> form of this audit, and
+> `active/2026-07-22-first-session-activation-design.md`, which owns the
+> remaining save, account-preservation, and activation work. The later shipped
+> design records this audit's post-signup confirmation, landing sign-in,
+> viewer recovery, and guest-tab findings as completed.
 
 **Date:** 2026-06-18
 **Method:** 5 parallel codebase scouts (entry/routing, auth/signup, guest gating, create→save funnel, analytics) + spot verification.
