@@ -139,12 +139,19 @@ export class TipPositionBridge3D {
 		const finalQuat = rotation.multiply(horizontalQuat);
 		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
 
-		const positivePos = center.clone().add(this.tempAxis.clone().multiplyScalar(staffHalfLength));
-		const negativePos = center.clone().sub(this.tempAxis.clone().multiplyScalar(staffHalfLength));
+		const thumbEndPos = center
+			.clone()
+			.add(this.tempAxis.clone().multiplyScalar(staffHalfLength));
+		const pinkyEndPos = center
+			.clone()
+			.sub(this.tempAxis.clone().multiplyScalar(staffHalfLength));
 
+		// Effect assignments use the canonical logical order: Pinky/LEFT_END is
+		// tip 0, Thumb/RIGHT_END is tip 1. The staff mesh's positive axis points
+		// toward the thumb end, so its geometric endpoint order is the reverse.
 		const tips: TipPositionData3D[] = [
-			this.computeTipData(propIndex, 0, positivePos, deltaTime),
-			this.computeTipData(propIndex, 1, negativePos, deltaTime),
+			this.computeTipData(propIndex, 0, pinkyEndPos, deltaTime),
+			this.computeTipData(propIndex, 1, thumbEndPos, deltaTime),
 		];
 
 		return { tips, propIndex };

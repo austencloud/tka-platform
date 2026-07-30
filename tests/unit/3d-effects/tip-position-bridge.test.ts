@@ -42,6 +42,21 @@ describe("TipPositionBridge3D", () => {
 		expect(distance).toBeCloseTo(halfLen * 2, 4);
 	});
 
+	it("orders the rendered staff endpoints as Pinky then Thumb", () => {
+		const bridge = new TipPositionBridge3D();
+		const center = { x: 0, y: 0, z: 0 };
+		const result = bridge.update(
+			0,
+			makePropState(0, 0, 0),
+			center,
+			0.5,
+			1 / 60,
+		);
+
+		expect(result.tips[0].position.x).toBeCloseTo(0.5, 6);
+		expect(result.tips[1].position.x).toBeCloseTo(-0.5, 6);
+	});
+
 	it("computes velocity from position changes", () => {
 		const bridge = new TipPositionBridge3D();
 		const center1 = { x: 0, y: 1, z: 0 };
