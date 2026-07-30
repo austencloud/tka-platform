@@ -137,30 +137,6 @@ export async function initializeChildServices(
       }
     });
 
-  // Sync first-sequence-starter dismissal FROM cloud (SP3b) — suppresses a
-  // re-offered one-tap starter on a device where it was already dismissed or
-  // consumed elsewhere. Sibling of the app-entry sync above; same non-blocking
-  // shape so a failure here never stalls other boot sync. Only runs inside the
-  // if(user)-gated cascade — a no-uid visitor resolves locally via the state
-  // module's own no-uid branch, not here.
-  import("$lib/shared/onboarding/state/first-sequence-starter-state.svelte")
-    .then(async ({ firstSequenceStarterState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
-      await getFirestoreInstance();
-      await firstSequenceStarterState.syncFromCloud();
-    })
-    .catch(async (error) => {
-      console.warn("⚠️ [authState] First-sequence-starter sync failed:", error);
-      try {
-        const { firstSequenceStarterState } = await import(
-          "$lib/shared/onboarding/state/first-sequence-starter-state.svelte"
-        );
-        firstSequenceStarterState.markCloudSyncComplete();
-      } catch {
-        // Non-fatal; local resolution still carries eligibility
-      }
-    });
-
   // Initialize onboarding Firebase sync (non-blocking)
   import("$lib/shared/onboarding/config/storage-keys")
     .then(async (onboardingModule) => {

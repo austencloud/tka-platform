@@ -11,7 +11,9 @@ export const ONBOARDING_CAPABILITY_CONFIGS: FeatureFlagConfig[] = [
 	{
 		id: "capability:onboarding:first-session-activation",
 		name: "First-Session Activation",
-		description: "First-sequence starter and keep-on-first-save account nudge",
+		// The one-tap first-sequence starter this flag also gated was removed
+		// 2026-07-29; only the keep-on-first-save nudge remains behind it.
+		description: "Keep-on-first-save account nudge",
 		minimumRole: "user",
 		enabled: false,
 		category: "capability",

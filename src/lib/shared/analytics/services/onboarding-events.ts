@@ -82,30 +82,5 @@ export function logOnboardingGuestFirstSavePromptLogin(
   captureEvent("onboarding_guest_first_save_prompt_login", props);
 }
 
-// First-session activation, Part A — the one-tap "make your first sequence"
-// starter card (SP3b). shown → offered on an empty Construct; generated → the
-// user tapped Generate; kept → the sequence persisted; dismissed → "I'll build
-// my own" (or the Library-CTA rearm was declined).
-export function logOnboardingFirstSequenceStarterShown(
-  props: OnboardingEventProps = {}
-): void {
-  captureEvent("onboarding_first_sequence_starter_shown", props);
-}
-
-export function logOnboardingFirstSequenceStarterGenerated(
-  props: OnboardingEventProps = {}
-): void {
-  captureEvent("onboarding_first_sequence_starter_generated", props);
-}
-
-export function logOnboardingFirstSequenceStarterKept(
-  props: OnboardingEventProps = {}
-): void {
-  captureEvent("onboarding_first_sequence_starter_kept", props);
-}
-
-export function logOnboardingFirstSequenceStarterDismissed(
-  props: OnboardingEventProps = {}
-): void {
-  captureEvent("onboarding_first_sequence_starter_dismissed", props);
-}
+// The first-session starter (SP3b) and its four
+// onboarding_first_sequence_starter_* events were removed 2026-07-29.

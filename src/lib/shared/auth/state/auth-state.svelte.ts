@@ -754,17 +754,6 @@ export async function signOut(): Promise<void> {
       // Not loaded - that's ok
     }
 
-    // Same for the first-sequence-starter (SP3b), so an A→B account switch
-    // in-session re-resolves eligibility/dismissal against account B's cloud
-    // state instead of reusing account A's already-settled flag.
-    try {
-      const { firstSequenceStarterState } =
-        await import("../../onboarding/state/first-sequence-starter-state.svelte");
-      firstSequenceStarterState.resetCloudSync();
-    } catch {
-      // Not loaded - that's ok
-    }
-
     // Reset the post-save activation prompt (SP3) so a queued/visible prompt
     // from the outgoing session doesn't bleed into whoever signs in next.
     try {

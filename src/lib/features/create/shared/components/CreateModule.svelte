@@ -94,7 +94,6 @@
   import { UndoOperationType } from "../services/undo-manager";
   import PropUnlockCelebration from "$lib/shared/gamification/components/PropUnlockCelebration.svelte";
   import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
-  import { firstSequenceStarterState } from "$lib/shared/onboarding/state/first-sequence-starter-state.svelte";
   import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
 
@@ -472,23 +471,7 @@
         // build isn't interrupted. Skippable and self-suppressing after the
         // first decision (appEntryState persists it).
         if (!hasDeepLink && CreateModuleState.isWorkspaceEmpty()) {
-          // First-session activation (SP3b) owns the first-run moment when its
-          // flag is on and the one-tap starter is eligible (empty Construct +
-          // a resolved-empty library + not dismissed). Resolve eligibility
-          // FIRST so we don't flash the legacy tutorial in before the async
-          // library check settles, then share the exact same predicate the
-          // starter card gates on. Flag off ⇒ resolve() short-circuits and
-          // isEligible stays false ⇒ the legacy path runs unchanged.
-          let starterOwnsFirstRun = false;
-          try {
-            await firstSequenceStarterState.resolve();
-            starterOwnsFirstRun = firstSequenceStarterState.isEligible;
-          } catch {
-            starterOwnsFirstRun = false;
-          }
-          if (!starterOwnsFirstRun) {
-            appEntryState.offerCreateTutorial();
-          }
+          appEntryState.offerCreateTutorial();
         }
 
         // Detect if we're on mobile for responsive dialog rendering
