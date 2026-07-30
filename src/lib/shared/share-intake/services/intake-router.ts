@@ -1,5 +1,6 @@
 import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 import { openSendAttachmentSheet } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -65,7 +66,7 @@ export interface RouteResult {
 export async function routeIntake(
   classification: IntakeClassification,
   userId: string | null,
-  context: { receiptId: string }
+  context: { receiptId: string; targetConversationId?: string }
 ): Promise<RouteResult> {
   const cards: FiledCard[] = [];
   const unresolved: string[] = [];
@@ -113,7 +114,15 @@ export async function routeIntake(
   let opened: "card" | "picker" | null = null;
 
   const first = cards[0];
-  if (first) {
+  // An explicitly tapped share-sheet target beats cards-win. Tapping a face
+  // states a destination; a QR we found in the pixels only infers one, and
+  // Android's Direct Share guidance is to act on the chosen target rather than
+  // present a disambiguation UI. The inversion needs somewhere to send TO, so
+  // it only applies when the share actually carries a photo - a card-only share
+  // still opens the viewer.
+  const cardsSuppressed = Boolean(context.targetConversationId) && images.length > 0;
+
+  if (first && !cardsSuppressed) {
     // Trace 1.13. Throws on a hydration failure; the runner catches it and
     // keeps the record, which is why this is awaited rather than fired off.
     opened = "card";
@@ -138,9 +147,30 @@ export async function routeIntake(
     return { cards, unresolved, queued, problems, opened };
   }
 
+  if (cardsSuppressed) {
+    // A suppressed card must still be RECORDED. Nothing reaching the user and
+    // nothing saying why is the exact failure this feature was reviewed for.
+    for (const item of classification.items.filter(isCard)) {
+      queued.push(item.file);
+      problems.push({
+        name: item.code,
+        reason: "send-dropped",
+        detail: "a tapped share-sheet target took precedence",
+      });
+    }
+  }
+
   const [firstImage, ...rest] = images;
   if (firstImage) {
     opened = "picker";
+
+    // A shortcut can outlive its conversation (setLongLived keeps the face
+    // cached after removal). Falling back to the plain picker keeps the photo
+    // reachable; erroring would strand it.
+    const conversationId = await resolveTargetConversation(
+      context.targetConversationId
+    );
+
     openSendAttachmentSheet(
       {
         type: "image",
@@ -155,6 +185,7 @@ export async function routeIntake(
         // The picker carries the intake id so the SEND - not the open - is
         // what resolves the record (trace 2.14).
         receiptId: context.receiptId,
+        ...(conversationId ? { conversationId } : {}),
         ...(classification.residualText
           ? { note: classification.residualText }
           : {}),
@@ -180,6 +211,27 @@ export async function routeIntake(
   }
 
   return { cards, unresolved, queued, problems, opened };
+}
+
+/**
+ * Confirm the tapped conversation still exists, or return undefined so the send
+ * sheet opens on the plain picker.
+ *
+ * Uses the ConversationManager singleton's existing getConversation read rather
+ * than a new exists() helper - the manager already owns that document read, and
+ * it already swallows its own failures into null.
+ */
+async function resolveTargetConversation(
+  targetId: string | undefined
+): Promise<string | undefined> {
+  if (!targetId) return undefined;
+  try {
+    const conversation = await conversationService.getConversation(targetId);
+    return conversation ? targetId : undefined;
+  } catch {
+    // Never dead-end a share on a lookup failure; the photo is the point.
+    return undefined;
+  }
 }
 
 async function fileCard(

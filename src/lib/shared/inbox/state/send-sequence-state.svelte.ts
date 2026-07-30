@@ -37,7 +37,7 @@ export function openSendSequenceSheet(p: SequenceSharePayload): void {
  */
 export function openSendAttachmentSheet(
   attachment: PendingMessageAttachment,
-  options: { note?: string; receiptId?: string } = {}
+  options: { note?: string; receiptId?: string; conversationId?: string } = {}
 ): void {
   inboxState.openAttachmentShare(attachment, options);
 }

@@ -13,6 +13,7 @@ const {
   getShortCodeManager,
   saveSequence,
   toast,
+  getConversation,
 } = vi.hoisted(() => {
   const resolveForImport = vi.fn();
   return {
@@ -22,6 +23,11 @@ const {
     getShortCodeManager: vi.fn(() => ({ resolveForImport })),
     saveSequence: vi.fn(),
     toast: { info: vi.fn(), error: vi.fn() },
+    // The real seam is ConversationManager.getConversation(id): Promise<Conversation | null>
+    // exposed as the `conversationService` singleton. There is no
+    // `conversationExists` helper, and adding one would duplicate a read the
+    // manager already owns.
+    getConversation: vi.fn(),
   };
 });
 
@@ -43,6 +49,12 @@ vi.mock("$lib/features/library/get-library-save-service", () => ({
 }));
 
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({ toast }));
+
+vi.mock("$lib/shared/messaging/services/conversation-manager", () => ({
+  conversationService: {
+    getConversation: (...args: unknown[]) => getConversation(...args),
+  },
+}));
 
 import { routeIntake } from "$lib/shared/share-intake/services/intake-router";
 import type { IntakeClassification } from "$lib/shared/share-intake/domain/share-intake-models";
@@ -76,6 +88,8 @@ describe("routeIntake", () => {
     getShortCodeManager.mockReturnValue({ resolveForImport });
     toast.info.mockReset();
     toast.error.mockReset();
+    getConversation.mockReset();
+    getConversation.mockResolvedValue({ id: "conv_paul" });
   });
 
   it("opens the conversation picker for a plain image", async () => {
@@ -400,5 +414,87 @@ describe("routeIntake", () => {
     );
 
     expect(toast.info).not.toHaveBeenCalled();
+  });
+
+  it("pre-selects the tapped conversation for an image share", async () => {
+    await routeIntake(
+      classification({ items: [{ kind: "image", file: png("a.png") }] }),
+      "user-1",
+      { receiptId: "si_1", targetConversationId: "conv_paul" }
+    );
+
+    expect(openSendAttachmentSheet).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "image" }),
+      expect.objectContaining({ conversationId: "conv_paul" })
+    );
+  });
+
+  it("prefers an explicitly tapped person over a card in the same share", async () => {
+    // Cards normally win a mixed share. But tapping a face in the system sheet
+    // states a destination, and Android's own guidance is that a Direct Share
+    // tap must act on THAT target rather than show a disambiguation UI. So an
+    // explicit target inverts the rule - only when one is present.
+    resolveForImport.mockResolvedValue({
+      sequence: { id: "s1", word: "A" },
+      docBacked: true,
+    });
+
+    const result = await routeIntake(
+      classification({
+        items: [
+          { kind: "card", code: "AB12", file: png("card.png") },
+          { kind: "image", file: png("photo.png") },
+        ],
+      }),
+      "user-1",
+      { receiptId: "si_1", targetConversationId: "conv_paul" }
+    );
+
+    expect(result.opened).toBe("picker");
+    expect(openFiledCard).not.toHaveBeenCalled();
+    // The suppressed card is REPORTED, not silently dropped.
+    expect(result.queued).toHaveLength(1);
+    expect(result.problems).toContainEqual(
+      expect.objectContaining({ name: "AB12", reason: "send-dropped" })
+    );
+  });
+
+  it("still lets cards win when no target was tapped", async () => {
+    resolveForImport.mockResolvedValue({
+      sequence: { id: "s1", word: "A" },
+      docBacked: true,
+    });
+
+    const result = await routeIntake(
+      classification({
+        items: [
+          { kind: "card", code: "AB12", file: png("card.png") },
+          { kind: "image", file: png("photo.png") },
+        ],
+      }),
+      "user-1",
+      { receiptId: "si_1" }
+    );
+
+    expect(result.opened).toBe("card");
+    expect(openFiledCard).toHaveBeenCalled();
+  });
+
+  it("opens the plain picker when the tapped conversation is gone", async () => {
+    // The user left the group, or the shortcut outlived its conversation. The
+    // photo is what they care about; never dead-end on a stale id.
+    getConversation.mockResolvedValueOnce(null);
+
+    await routeIntake(
+      classification({ items: [{ kind: "image", file: png("a.png") }] }),
+      "user-1",
+      { receiptId: "si_1", targetConversationId: "conv_gone" }
+    );
+
+    const options = openSendAttachmentSheet.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    expect(options.conversationId).toBeUndefined();
   });
 });

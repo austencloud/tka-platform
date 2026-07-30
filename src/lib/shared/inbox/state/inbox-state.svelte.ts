@@ -249,7 +249,7 @@ class InboxState {
   /** Open the picker for any attachment the domain models. */
   openAttachmentShare(
     attachment: PendingMessageAttachment,
-    options: { note?: string; receiptId?: string } = {}
+    options: { note?: string; receiptId?: string; conversationId?: string } = {}
   ) {
     this.isOpen = true;
     this.activeTab = "messages";
@@ -257,7 +257,9 @@ class InboxState {
     this.shareAttachment = attachment;
     this.shareAttachmentNote = options.note ?? null;
     this.shareAttachmentReceiptId = options.receiptId ?? null;
-    this.pendingConversationId = null;
+    // Set by a Direct Share tap: the send sheet opens with this conversation
+    // already chosen, so the user's next tap is Send.
+    this.pendingConversationId = options.conversationId ?? null;
     this.pendingNotificationId = null;
     this.selectedConversation = null;
     this.messages = [];
