@@ -1,5 +1,15 @@
 # Endless Spinner 4K Standards Pass — Handoff (2026-07-28)
 
+> **Status 2026-07-29: SUPERSEDED.** The 4K pass landed as `6277d794a2`, and the
+> page was then rebuilt ground-up per
+> [`2026-07-29-endless-spinner-rebuild-design.md`](2026-07-29-endless-spinner-rebuild-design.md)
+> (plan: `docs/superpowers/plans/2026-07-29-endless-spinner-rebuild.md`). The
+> rebuild retired Live mode (its backend no longer exists), made Infinite the
+> default, and answered this document's remaining open questions: the route now
+> SHIPS in production builds (feature-flag promotion `804f29acb9`) and the
+> chrome-less navigation stays, with the button-styled Home link. Nothing here
+> remains actionable.
+
 ## Mission
 
 Bring `/endless-spinner` from its current repair/redesign pass to the codebase's shipping standard, including correct page-scoped animation state, continuous 4K scaling, stable mode changes, complete UX states, and the required responsive visual proof. Preserve the three source modes and the route-owned controls defined by the shipped [Endless Playback Unification design](shipped/2026-05-20-endless-playback-unification-design.md). Austen requested the source audit and Fable's second review on 2026-07-28.
