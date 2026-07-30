@@ -9,6 +9,7 @@
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { sequenceHasStepEditorContent } from "../../services/step-editor-availability";
 import type { PanelCoordinationState } from "../panel-coordination-state.svelte";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 
@@ -45,12 +46,13 @@ export function createAutoEditPanelEffect(
 
   return $effect.root(() => {
     $effect(() => {
-      const selectedStepNumbers =
-        CreateModuleState.sequenceState.selectedStepNumbers;
+      const sequenceState = CreateModuleState.getActiveTabSequenceState();
+      const selectedStepNumbers = sequenceState.selectedStepNumbers;
       const selectedCount = selectedStepNumbers.size ?? 0;
       const shouldAutoOpen = config.shouldAutoOpen?.() ?? true;
 
       if (
+        sequenceHasStepEditorContent(sequenceState.currentSequence) &&
         shouldAutoOpen &&
         selectedCount > 1 &&
         !panelState.isStepEditorPanelOpen
@@ -63,13 +65,11 @@ export function createAutoEditPanelEffect(
           .map((stepNumber) => {
             if (stepNumber === START_POSITION_BEAT_NUMBER) {
               // Beat 0 is the start position
-              return CreateModuleState.sequenceState.selectedStartPosition;
+              return sequenceState.selectedStartPosition;
             } else {
               // Steps are numbered 1, 2, 3... but stored in array at indices 0, 1, 2...
               const stepIndex = stepNumber - 1;
-              return CreateModuleState.sequenceState.currentSequence?.steps[
-                stepIndex
-              ];
+              return sequenceState.currentSequence?.steps[stepIndex];
             }
           })
           .filter(
@@ -108,9 +108,30 @@ export function createAutoStepEditorEffect(
   return $effect.root(() => {
     $effect(() => {
       // Get the sequence state fresh each time
-      const seqState = CreateModuleState.sequenceState;
+      const seqState = CreateModuleState.getActiveTabSequenceState();
+      const currentSequence = seqState.currentSequence;
       const selectedStepNumber = seqState.selectedStepNumber;
       const shouldAutoOpen = config.shouldAutoOpen?.() ?? true;
+
+      if (!sequenceHasStepEditorContent(currentSequence)) {
+        lastSelectedBeat = null;
+
+        // Persistence restores the editor flag and step selection separately.
+        // Wait until sequence hydration finishes before deciding they are stale,
+        // otherwise a valid saved workspace could lose its editor while loading.
+        if (CreateModuleState.isPersistenceInitialized) {
+          if (panelState.isStepEditorPanelOpen) {
+            panelState.closeStepEditorPanel();
+          }
+
+          if (seqState.isMultiSelectMode) {
+            seqState.exitMultiSelectMode();
+          } else if (selectedStepNumber !== null) {
+            seqState.clearSelection();
+          }
+        }
+        return;
+      }
 
       if (!shouldAutoOpen) {
         lastSelectedBeat = null;

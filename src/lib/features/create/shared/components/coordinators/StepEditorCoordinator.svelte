@@ -30,6 +30,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
+  import { sequenceHasStepEditorContent } from "../../services/step-editor-availability";
   import {
     MotionColor,
     MotionType,
@@ -58,10 +59,9 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   const hapticService: HapticFeedback = getHapticFeedback();
   const StepOperator: StepOperator = getStepOperator();
 
-  // Only show panel if the current tab supports it AND panel state says it's open
+  // Only supported build tabs can host the editor.
   const currentTab = $derived(navigationState.activeTab);
   const isTabSupported = $derived(SUPPORTED_TABS.has(currentTab));
-  const isOpen = $derived(panelState.isStepEditorPanelOpen && isTabSupported);
 
   // CRITICAL: Track the active tab's sequence state reactively
   // We need to access reactive properties directly to establish dependencies.
@@ -97,6 +97,11 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 
   // Get current sequence with explicit reactive tracking
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
+  const isOpen = $derived(
+    panelState.isStepEditorPanelOpen &&
+      isTabSupported &&
+      sequenceHasStepEditorContent(sequence)
+  );
 
   // CRITICAL FIX: Compute selectedStepData directly instead of using the getter
   // The getter on activeSequenceState is NOT reactive because it's a plain object getter.
