@@ -182,17 +182,44 @@
       (allowUndoAfterComplete || !isComplete)
   );
 
+  /** Friendly names for the four aims, matching OrientationCycler's labels so
+   *  the readout during a drag and the cycler below never disagree on words. */
+  const AIM_LABELS: Partial<Record<Orientation, string>> = {
+    [Orientation.IN]: "In",
+    [Orientation.OUT]: "Out",
+    [Orientation.CLOCK]: "Clock",
+    [Orientation.COUNTER]: "Counter",
+  };
+
   /** The prompt is split so the prop it names can carry that prop's colour.
    *  Which prop you are placing is the one thing the sentence has to land, and
    *  the board is already speaking in blue and red (`chip-primitives.md`, prop
    *  identity). `promptText` stays whole for assistive tech and tests. */
   const promptParts = $derived.by(() => {
-    const build = (noun: string, color: MotionColor, lead: string) => ({
+    const build = (
+      noun: string,
+      color: MotionColor,
+      lead: string,
+      aim: string | null = null
+    ) => ({
       lead,
       noun,
       color,
+      aim,
     });
     if (disabled) return null;
+    // A live drag owns the prompt: on touch the finger covers the point and its
+    // aim ticks, so the sentence above the board — the one spot a hand never
+    // occludes — is where the current aim reads back.
+    if (dragColor !== null && dragAim !== null) {
+      const noun = dragColor === MotionColor.BLUE ? blueNoun : redNoun;
+      return build(
+        noun,
+        dragColor,
+        "Aiming the",
+        AIM_LABELS[dragAim] ?? null
+      );
+    }
     if (activeColor === MotionColor.BLUE) {
       if (blueLocation !== null)
         return build(blueNoun, MotionColor.BLUE, "Choose a new location for the");
@@ -216,7 +243,7 @@
 
   const promptText = $derived(
     promptParts
-      ? `${promptParts.lead} ${promptParts.noun}`
+      ? `${promptParts.lead} ${promptParts.noun}${promptParts.aim ? `: ${promptParts.aim}` : ""}`
       : !disabled && isComplete
         ? "Position ready"
         : ""
@@ -435,6 +462,9 @@
 
     dragAim = aimed;
     pendingOrientation = { color: dragColor, orientation: aimed };
+    // Each snap to a new direction is a detent the thumb can feel — without it
+    // the only haptic lands on release, after the choosing is already over.
+    hapticService?.trigger("selection");
   }
 
   function handlePointerUp(event: PointerEvent) {
@@ -611,6 +641,7 @@
   class:disabled
   class:complete={isComplete}
   class:has-tray={renderTray}
+  class:aiming={dragColor !== null}
 >
   {#if promptText}
     <p class="prompt-text" data-testid="placement-prompt">
@@ -627,7 +658,8 @@
             class:blue={promptParts.color === MotionColor.BLUE}
             class:red={promptParts.color === MotionColor.RED}
             >{promptParts.noun}</span
-          >
+          >{#if promptParts.aim}:
+            <span class="prompt-aim">{promptParts.aim}</span>{/if}
         {:else}
           {promptText}
         {/if}
@@ -685,6 +717,24 @@
           {/if}
         {/each}
       </g>
+
+      <!-- Aim halo: while a drag is live, the prop being aimed wears a soft
+           ring in its own colour. The overlay sits ABOVE the pictograph, so
+           this is a blurred screen-blended ring rather than a filled disc —
+           it reads as light around the prop instead of paint over it. -->
+      {#if dragPoint && dragColor}
+        <circle
+          cx={dragPoint.x}
+          cy={dragPoint.y}
+          r="56"
+          fill="none"
+          class="aim-halo"
+          stroke={dragColor === MotionColor.RED
+            ? "var(--prop-red, #ef4444)"
+            : "var(--prop-blue, #3b82f6)"}
+          aria-hidden="true"
+        />
+      {/if}
 
       <!-- Aim ticks: the four directions this point can be aimed, drawn only
            while dragging so they teach the gesture without cluttering the
@@ -956,6 +1006,14 @@
     touch-action: none;
   }
 
+  .aim-halo {
+    stroke-width: 22;
+    filter: blur(9px);
+    mix-blend-mode: screen;
+    animation: halo-pulse 1.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
   .aim-tick {
     stroke-width: 6;
     stroke-linecap: round;
@@ -1070,6 +1128,12 @@
     font-weight: 750;
   }
 
+  .prompt-aim {
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   /* Lightened toward white rather than mixed with the body colour: mixing
      toward the text colour lands on a washed periwinkle that reads as LESS
      emphatic than the words around it, which is backwards for the one word the
@@ -1112,6 +1176,17 @@
 
     50% {
       opacity: 0.3;
+    }
+  }
+
+  @keyframes halo-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+
+    50% {
+      opacity: 0.8;
     }
   }
 
@@ -1284,6 +1359,21 @@
       justify-self: center;
     }
 
+    /* Mid-drag the shared row belongs to the aim readout — with both props
+       down this is exactly when the prompt is hidden, so re-aiming on a phone
+       had no readable feedback at all. The tray's buttons can't be pressed by
+       a finger that is busy dragging, so they lend the row rather than share
+       it (sharing would slide them sideways under a live gesture). The row's
+       reserved height never changes, so the board doesn't move. */
+    .placement-grid.complete.aiming .prompt-text {
+      display: flex;
+      grid-column: 1 / -1;
+    }
+
+    .placement-grid.complete.aiming .controls-tray {
+      display: none;
+    }
+
     /* Wording that survives the narrower slot. The accessible names on these
        buttons are unchanged. */
     .edit-button {
@@ -1315,6 +1405,11 @@
 
     .aim-tick {
       transition: none;
+    }
+
+    .aim-halo {
+      animation: none;
+      opacity: 0.55;
     }
   }
 </style>

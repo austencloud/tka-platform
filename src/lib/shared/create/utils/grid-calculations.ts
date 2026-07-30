@@ -412,3 +412,33 @@ export function calculateTimelineUnitSize(
 
   return Math.max(minSize, calculatedSize);
 }
+
+/**
+ * Clamp a width-based timeline unit size so `rowCount` rows fit the container
+ * height without scrolling. `rowCount` must count EVERY rendered cell row —
+ * including the start-position cell when the sequence has no steps yet, which
+ * renders one row all by itself. Skipping that case is how a start-only
+ * sequence got a width-sized tile taller than its wrapper on a Fold in
+ * portrait.
+ *
+ * @param widthBased - Unit size derived from available width
+ * @param containerHeight - Container height in pixels
+ * @param rowCount - Rendered cell rows (steps rows, or 1 for start-only)
+ * @param popReserve - Padding reserved per edge for the selection pop (default 16)
+ * @returns Unit size clamped to fit, never below the 48px touch floor
+ */
+export function clampTimelineUnitSizeToHeight(
+  widthBased: number,
+  containerHeight: number,
+  rowCount: number,
+  popReserve: number = 16
+): number {
+  if (containerHeight <= 0 || rowCount <= 0) return widthBased;
+
+  const gaps = (rowCount - 1) * 1;
+  const padding = 8;
+  const availableHeight = containerHeight - 2 * popReserve - gaps - padding;
+  const heightBased = Math.floor(availableHeight / rowCount);
+
+  return Math.max(48, Math.min(widthBased, heightBased));
+}

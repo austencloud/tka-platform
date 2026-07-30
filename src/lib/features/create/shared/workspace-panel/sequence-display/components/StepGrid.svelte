@@ -27,6 +27,7 @@
     calculateTimelineRowsByBeatCount,
     calculateTimelineUnitSize,
     calculateTimelinePadding,
+    clampTimelineUnitSizeToHeight,
   } from "$lib/shared/create/utils/grid-calculations";
   import { formatDurationCompact } from "../../../domain/models/duration-pattern-data";
   import WorkspaceGrid from "./WorkspaceGrid.svelte";
@@ -180,17 +181,18 @@
     const sizingWidth = Math.max(0, containerWidth - 2 * POP_RESERVE);
     const widthBased = calculateTimelineUnitSize(sizingWidth, totalUnits);
 
-    // Constrain by available height so all rows fit without scrolling
-    if (containerHeight > 0 && timelineRows.length > 0) {
-      const gaps = (timelineRows.length - 1) * 1;
-      const padding = 8;
-      const availableHeight =
-        containerHeight - 2 * POP_RESERVE - gaps - padding;
-      const heightBased = Math.floor(availableHeight / timelineRows.length);
-      return Math.max(48, Math.min(widthBased, heightBased));
-    }
-
-    return widthBased;
+    // Constrain by available height so all rows fit without scrolling. A
+    // start-position-only sequence has zero step rows but still renders the
+    // start column one cell tall — count it as a row, or the clamp is skipped
+    // and the width-based size overflows a short host (Fold portrait: a 354px
+    // tile in a 293px wrapper, clipping the props and the letter).
+    const rowCount = Math.max(timelineRows.length, hasStart ? 1 : 0);
+    return clampTimelineUnitSizeToHeight(
+      widthBased,
+      containerHeight,
+      rowCount,
+      POP_RESERVE
+    );
   });
 
   const timelinePadding = $derived.by(() => {
