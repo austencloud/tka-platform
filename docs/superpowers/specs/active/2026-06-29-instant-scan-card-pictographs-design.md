@@ -2,8 +2,8 @@
 status: active
 value: 4
 effort: M
-remaining: "All implementation phases are present in current source, including frame-aligned first-cell-painted and all-cells-stable marks. The 11 focused suites pass 47 tests. Close-out still needs the documented cold-browser and warm-browser scan-to-stable measurements, but Chrome DevTools MCP is unavailable in this Codex session. The shared full check is also blocked by seven unrelated errors in another session's untracked WorkspaceShareControl.svelte."
-depends_on: "external: Chrome DevTools MCP unavailable for throttled performance proof; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+remaining: "The throttled production-preview measurement is captured. Cold scan-to-stable was 14,613.4 ms and warm was 10,595.5 ms, so both provisional budgets fail. The cloud path is healthy: 11 cold cloud assets returned HTTP 200, the warm run used 11 IndexedDB blobs with zero cloud requests, and neither run had a failed cell. Remaining work is to remove the repeat shortcode resolve from the critical path, isolate the scan route from animation and unrelated module work, add cache read/decode/commit submarks, and rerun the budget."
+depends_on: "internal: cold and warm scan-to-stable budgets are not met"
 plan_path: "docs/superpowers/plans/2026-06-29-instant-scan-card-pictographs.md"
 tags: []
 last_triaged: 2026-07-30
@@ -11,7 +11,7 @@ last_triaged: 2026-07-30
 # Instant Scan-Card Pictographs — Design
 
 **Date:** 2026-06-29
-**Status:** Implemented; awaiting current throttled-budget and repository-check proof
+**Status:** Implemented; current throttled budgets are failing
 **Goal:** When someone scans a QR code, the Choreo card and its pictographs appear
 effectively instantly — no per-cell "stabilizing" while the scanner's phone
 rasterizes each pictograph. Backed by proper instrumentation and automated tests
@@ -37,9 +37,19 @@ so the win is measurable and regression-proof.
   this pass. It now marks the first committed cell on the next animation frame,
   and `all-cells-stable` uses the same frame boundary. Non-scan cards no longer
   create scan marks.
-- Eleven focused suites pass 47 tests. The remaining evidence is the cold-browser
-  and warm-browser DevTools budget recorded in
-  `docs/reference/scan-card-perf-budget.md`, plus a clean shared repository check.
+- Eleven focused suites pass 47 tests.
+- The shared repository check reports 0 errors and 5 warnings in four unrelated
+  files.
+- The 2026-07-30 Chrome 150 production-preview run used a 390 × 844 mobile
+  viewport, 4× CPU slowdown, and Slow 4G. Cold `scan-to-stable` measured
+  14,613.4 ms; warm measured 10,595.5 ms. Both provisional budgets failed.
+- Cloud acquisition behaved correctly. The cold run downloaded 11 canonical
+  cells with HTTP 200 responses. The warm run used 11 IndexedDB blobs and made
+  no cloud-cell requests. Neither run had a failed cell.
+- The measured warm critical path spent 4,443.7 ms resolving the short code and
+  5,911.4 ms between `card-mount` and `all-cells-stable`. Detailed stage data and
+  the next profiling targets are recorded in
+  `docs/reference/scan-card-perf-budget.md`.
 
 ---
 

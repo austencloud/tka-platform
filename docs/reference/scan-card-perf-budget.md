@@ -27,7 +27,7 @@ images** from a shared cloud store. The scanner never rasterizes them:
 The performance distinction is browser-local: a **warm-browser** scan reads
 IndexedDB, while a **cold-browser** scan downloads the verified WebPs.
 
-## Budgets (initial targets — refine against the Phase-0 baseline)
+## Budgets (initial targets; refine against the Phase-0 baseline)
 
 - **Warm browser** (cells in IndexedDB): `scan-to-stable` < 400 ms
 - **Cold browser** (empty IndexedDB, cells downloaded): < 1000 ms
@@ -56,7 +56,8 @@ their reactive updates commit.
      };
      return {
        scanToStable: e && s ? Math.round(e.startTime - s.startTime) : null,
-       stages: ["start", "shortcode-resolved", "hydrated", "card-mount", "all-cells-stable"]
+       stages: ["start", "shortcode-resolved", "hydrated", "card-mount",
+         "first-cell-painted", "all-cells-stable"]
          .map((n) => ({ n, t: stage(n) })),
      };
    }
@@ -76,15 +77,49 @@ their reactive updates commit.
   If this segment is large on a warm scan, the cloud probe is missing (check the
   hash alignment / that the sequence was actually warmed at publish).
 
-## Baseline (pre-cloud-tier) — TO CAPTURE
+## Historical baseline
 
-Run the procedure against `main` *before* the cloud tier was active (or with a
-sequence guaranteed unwarmed) and paste cold + warm `scan-to-stable` here.
+No pre-cloud-tier measurement was preserved before the cloud path became active.
+The current measurement cannot reconstruct that baseline without changing the
+implementation under test.
 
-## After (cloud tier live) — TO CAPTURE
+## Current measurement (cloud tier live)
 
-Paste cold + warm `scan-to-stable` after the feature is warmed. The warm number
-is the headline win (download vs rasterize).
+Measured 2026-07-30 from a production `pnpm run build:fast` build served over
+local HTTPS. Chrome 150 emulated a 390 × 844 mobile viewport at 2× device pixel
+ratio, 4× CPU slowdown, and Slow 4G. The short code was `B2ZM`.
+
+The cold run used a new origin. IndexedDB, Cache Storage, and service-worker
+registrations were empty before navigation. The warm run was a normal reload
+with 11 pictograph blobs present in IndexedDB.
+
+| Stage from `scan:start` | Cold browser | Warm browser |
+| --- | ---: | ---: |
+| `shortcode-resolved` | 7,019.3 ms | 4,443.7 ms |
+| `hydrated` | 8,460.2 ms | 4,664.9 ms |
+| `card-mount` | 8,493.8 ms | 4,684.1 ms |
+| `first-cell-painted` | 14,613.0 ms | 10,595.1 ms |
+| `all-cells-stable` | 14,613.4 ms | 10,595.5 ms |
+
+Both provisional budgets failed:
+
+- Cold: 14,613.4 ms against the 1,000 ms budget.
+- Warm: 10,595.5 ms against the 400 ms budget.
+
+The cloud contract itself held. The cold run fetched all 11 canonical cell
+assets from Firebase Storage with HTTP 200 responses and rendered no failed
+cells. The warm run made zero cloud-cell requests, read all 11 cells from
+IndexedDB, and rendered no failed cells. A second warm control with HTTP cache
+bypassed measured 11,241.4 ms.
+
+The largest measured segments are `start → shortcode-resolved` and
+`card-mount → all-cells-stable`. The warm reload spent 4,443.7 ms resolving the
+short code and 5,911.4 ms after card mount even though cell acquisition made no
+network requests. It also evaluated 168 cached local script resources. The next
+pass should separate IndexedDB open/read/decode/commit timing, keep animation
+and unrelated route modules off the card's critical path, and remove the
+network-bound shortcode resolve from repeat scans. Rerun this budget after
+those changes.
 
 ## Current integrity contract
 
