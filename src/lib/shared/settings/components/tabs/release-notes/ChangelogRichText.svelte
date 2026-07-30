@@ -10,7 +10,14 @@
   identically. Plain text passes through untouched — no @html anywhere.
 -->
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { toChangelogSegments } from "$lib/shared/versioning/domain/utils/changelog-rich-text";
+
+  type ChangelogAction = {
+    label: string;
+    href: string;
+    external: boolean;
+  };
 
   let {
     text,
@@ -21,12 +28,27 @@
     onNavigate?: () => void;
   } = $props();
 
+  function handleActionClick(event: MouseEvent, action: ChangelogAction): void {
+    const isModifiedClick =
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey;
+
+    if (action.external || event.defaultPrevented || isModifiedClick) return;
+
+    event.preventDefault();
+    void goto(action.href);
+    onNavigate?.();
+  }
+
   // Prose stays prose: link labels render as emphasized text inside the
   // sentence, and the links themselves drop below as a row of real buttons.
   // A verb phrase mid-sentence should never look like a button.
   const parts = $derived.by(() => {
     const raw = toChangelogSegments(text);
-    const actions: { label: string; href: string; external: boolean }[] = [];
+    const actions: ChangelogAction[] = [];
     for (const s of raw) {
       if (s.kind === "link" && !actions.some((a) => a.href === s.href)) {
         actions.push({
@@ -58,10 +80,7 @@
           href={action.href}
           target={action.external ? "_blank" : undefined}
           rel={action.external ? "noopener noreferrer" : undefined}
-          onclick={(e) => {
-            e.stopPropagation();
-            if (!action.external) onNavigate?.();
-          }}
+          onclick={(event) => handleActionClick(event, action)}
         >
           {action.label}
           <i
@@ -88,7 +107,11 @@
   /* The word the button refers to, emphasized but NOT interactive —
      the action row below is the click target. */
   .link-label {
-    color: color-mix(in srgb, var(--theme-accent, #6ea8fe) 70%, var(--theme-text, #fff));
+    color: color-mix(
+      in srgb,
+      var(--theme-accent, #6ea8fe) 70%,
+      var(--theme-text, #fff)
+    );
     font-weight: 600;
   }
 
