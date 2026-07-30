@@ -290,7 +290,21 @@
        * `minmax(0, 1fr)` the drawing is min(leftover width, pane height) by
        * construction: as large as the screen allows, never larger.
        */
-      grid-template-columns: minmax(0, 1fr) var(--read-w);
+      /*
+       * `minmax(0, auto)`, not `1fr`.
+       *
+       * As `1fr` the stage track took every pixel the reading column did not,
+       * and the drawing — square, capped by the pane's HEIGHT — floated in the
+       * middle of it: 370px of rail outside it and another 340px of gap between
+       * it and the table at 1920. The two halves of the page were being pushed
+       * apart by space that belonged on the outside. Sized to the drawing and
+       * centred as a pair, that leftover becomes one margin either side.
+       *
+       * The `0` min is what stops it running off the edge when the pane is too
+       * narrow to hold both at full size; plain `auto` cannot shrink.
+       */
+      grid-template-columns: minmax(0, auto) var(--read-w);
+      justify-content: center;
       align-items: center;
       column-gap: var(--col-gap);
     }
@@ -318,10 +332,13 @@
       width: auto;
     }
 
+    /* Square, so the box IS the drawing and the track above can size to it. */
     .box {
       flex: none;
       height: 100%;
-      width: 100%;
+      aspect-ratio: 1;
+      width: auto;
+      max-width: 100%;
       min-width: 0;
     }
 

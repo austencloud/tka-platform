@@ -12,7 +12,7 @@
  */
 
 import { normalizeLayers, type QftLayers } from "./qft-layers";
-import type { Convention, Spin } from "./qft-model";
+import type { Spin } from "./qft-model";
 import {
 	MODE_ORDER,
 	type VtgMode
@@ -35,7 +35,6 @@ export interface QftSession {
 	spin: Spin;
 	phase: number;
 	pendulum: boolean;
-	convention: Convention;
 	/** Continuous position in the eight-step cycle. */
 	cursor: number;
 	playing: boolean;
@@ -48,7 +47,6 @@ export interface QftSession {
 }
 
 const SPINS: Spin[] = ["inspin", "antispin"];
-const CONVENTIONS: Convention[] = ["charlie", "drex"];
 
 const num = (v: unknown, min: number, max: number, fallback: number): number =>
 	typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : fallback;
@@ -89,9 +87,6 @@ export function loadQftSession(moveCount: number): QftSession | null {
 		spin: SPINS.includes(s.spin as Spin) ? (s.spin as Spin) : "antispin",
 		phase: Math.floor(num(s.phase, 0, 7, 0)),
 		pendulum: s.pendulum === true,
-		convention: CONVENTIONS.includes(s.convention as Convention)
-			? (s.convention as Convention)
-			: "drex",
 		cursor: num(s.cursor, 0, 8, 0),
 		playing: s.playing !== false,
 		layers: normalizeLayers(s.layers)

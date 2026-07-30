@@ -93,7 +93,21 @@
   let spin = $state<Spin>(restored?.spin ?? "antispin");
   let phase = $state(restored?.phase ?? 0);
   let pendulum = $state(restored?.pendulum ?? false);
-  let convention = $state<Convention>(restored?.convention ?? "drex");
+  /**
+   * Drex's rule, everywhere, with no switch.
+   *
+   * Both rules were on screen as a toggle, and the model still implements both.
+   * But a notation reader should not have to know which one produced the row
+   * they are looking at — and the two disagree: Charlie's reads the tangent of
+   * the traced path and writes `n` where it does not land on the compass, so
+   * the same cell shows a direction under one rule and an out-of-resolution
+   * mark under the other. One convention, stated once, is the readable choice.
+   *
+   * The cost, stated plainly: `n` no longer appears anywhere, so a step whose
+   * true heading is off the eight-point compass now reads as a compass value.
+   * `directionCharlie` stays in the model for whenever that fact wants a home.
+   */
+  const CONVENTION: Convention = "drex";
 
   /*
    * Raw and unwrapped: a scrub backwards off zero runs negative for a few
@@ -131,7 +145,7 @@
     move.pendulum ? buildPendulum() : buildIncrements(move.knobs, "drex")
   );
   const instrumentIncrements = $derived(
-    pendulum ? buildPendulum() : buildIncrements(knobs, convention)
+    pendulum ? buildPendulum() : buildIncrements(knobs, CONVENTION)
   );
   const step = $derived(Math.floor(pos) % 8);
 
@@ -157,20 +171,14 @@
 
   const cell = $derived(realizationToHands(blueFlower, redFlower, vtgMode));
 
-  /*
-   * Charlie's convention rather than the instrument's toggle: his rule reads
-   * the tangent of the path the head actually traces, and an out-of-resolution
-   * step is a real fact about a flower that the reader should see. Drex's rule
-   * never returns `n`, which would quietly hide it.
-   */
   const blueHand = $derived({
     knobs: cell.blue,
-    increments: buildIncrements(cell.blue, convention),
+    increments: buildIncrements(cell.blue, CONVENTION),
     tone: "blue" as const,
   });
   const redHand = $derived({
     knobs: cell.red,
-    increments: buildIncrements(cell.red, convention),
+    increments: buildIncrements(cell.red, CONVENTION),
     tone: "red" as const,
   });
   const matrixHands = $derived([blueHand, redHand]);
@@ -467,7 +475,6 @@
     spin,
     phase,
     pendulum,
-    convention,
     /* Normalised: the raw cursor runs unbounded while playing and negative mid-scrub. */
     cursor: pos,
     playing,
@@ -491,7 +498,6 @@
       spin,
       phase,
       pendulum,
-      convention,
       playing,
       layers,
     ];
@@ -578,10 +584,6 @@
     { value: "antispin", label: "Antispin" },
   ];
 
-  const CONVENTION_OPTIONS: Array<{ value: Convention; label: string }> = [
-    { value: "charlie", label: "Charlie" },
-    { value: "drex", label: "Drex" },
-  ];
 </script>
 
 <svelte:head>
@@ -717,18 +719,6 @@
       </div>
     </div>
 
-    <div class="knob">
-      <span class="knob-label" id="convention-label">Direction convention</span>
-      <div class="fit">
-        <SegmentedControl
-          options={CONVENTION_OPTIONS}
-          value={convention}
-          onchange={(v) => (convention = v)}
-          size="sm"
-          ariaLabelledby="convention-label"
-        />
-      </div>
-    </div>
   </div>
 {/snippet}
 
@@ -2234,7 +2224,22 @@
        * either side at 3840 — the band has to grow with the screen, not just
        * the type inside it (.claude/rules/4k-native-layout.md).
        */
-      grid-template-columns: minmax(0, 1fr) clamp(26rem, 32vw, 46rem);
+      /*
+       * The stage track hugs the drawing rather than swallowing the leftover.
+       *
+       * As `1fr` it took every pixel the reading column did not, and the
+       * drawing — square, and capped by the pane's HEIGHT — sat in the middle
+       * of it. At 1920 that put 370px of rail outside the drawing and another
+       * 340px of gap between it and the table: the two halves of the page
+       * pushed apart by empty space that belonged on the outside. Sized to the
+       * drawing and centred as a pair, the same leftover becomes one margin
+       * either side of a composition instead of a hole in the middle of one.
+       *
+       * `minmax(0, auto)` rather than `auto`: the max is the drawing's square,
+       * the min is zero, so a pane too narrow for both shrinks the drawing
+       * instead of running off the side (which plain `auto` did, at 1440).
+       */
+      grid-template-columns: minmax(0, auto) clamp(26rem, 32vw, 46rem);
       /*
        * Two spacer rows so the reading column is CENTRED against the drawing.
        *
@@ -2273,13 +2278,19 @@
      * either leaving a band of empty sky at 4K or demanding height a squashed
      * window did not have. Spanning both rows of a `1fr auto` grid makes the
      * pane itself the measure (.claude/rules/4k-native-layout.md).
+     *
+     * Square, so the box IS the drawing and its track can size to it. The SVG
+     * letterboxes regardless, so where the track has to shrink below this the
+     * drawing simply comes out smaller rather than clipping.
      */
     .stage-box {
       grid-area: stage;
       align-self: stretch;
       height: 100%;
       min-height: 0;
-      width: 100%;
+      aspect-ratio: 1;
+      width: auto;
+      max-width: 100%;
       min-width: 0;
     }
 
