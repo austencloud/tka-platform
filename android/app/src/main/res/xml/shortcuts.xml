@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares which shares this app can be a Direct Share target for.
+
+  The MIME list MUST match the ACTION_SEND intent filter in AndroidManifest.xml.
+  If the manifest advertises a type this file omits, the app appears in the
+  share sheet as a plain app row but never with a person's face for that type.
+
+  The category MUST be byte-identical to CATEGORY in
+  TkaSharingShortcutsPlugin.java and SHARE_TARGET_CATEGORY in
+  sharing-shortcuts-publisher.ts. Mismatch = targets silently never appear.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <share-target android:targetClass="com.tkaflowarts.composer.MainActivity">
+    <data android:mimeType="image/jpeg" />
+    <data android:mimeType="image/png" />
+    <data android:mimeType="image/webp" />
+    <category android:name="com.tkaflowarts.composer.category.SHARE_TARGET" />
+  </share-target>
+</shortcuts>
