@@ -64,10 +64,20 @@ describe("planSheet (continuous flow)", () => {
     expect(pages[0].rows[1].cells[4].isSequenceStart).toBe(true);
   });
 
-  it("paginates at 6 rows per page", () => {
+  it("paginates at 6 rows per landscape page", () => {
     const pages = planSheet(Array.from({ length: 7 }, (_, i) => seq(`s${i}`, 8)), layout);
     expect(pages).toHaveLength(2);
     expect(pages[0].rows).toHaveLength(6);
     expect(pages[1].rows).toHaveLength(1);
+  });
+
+  it("fits eight compact rows on one portrait page", () => {
+    const pages = planSheet(
+      Array.from({ length: 8 }, (_, i) => seq(`s${i}`, 8)),
+      { ...layout, orientation: "portrait" },
+    );
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0].rows).toHaveLength(8);
   });
 });

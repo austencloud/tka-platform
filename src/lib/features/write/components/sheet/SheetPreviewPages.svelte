@@ -1120,9 +1120,6 @@
 
   /* Bands flow top-down; a growing note strip pushes later bands DOWN, never
      shifts a sibling sideways (no-layout-shift by construction). */
-  .bands {
-    margin-top: calc(8 * var(--pt));
-  }
   .band {
     display: grid;
     grid-template-columns: var(--rail-w) 1fr;

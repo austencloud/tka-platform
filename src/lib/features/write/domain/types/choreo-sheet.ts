@@ -78,7 +78,9 @@ export function createEmptyAnnotations(): ChoreoSheetAnnotations {
 
 export interface ChoreoSheetLayout {
   columns: number; // cells per row (default 8)
-  rowsPerPage: number; // rows per printed page (default 6)
+  /** Legacy landscape preset retained for saved-sheet compatibility. Printable
+   * row capacity is derived from the paper geometry and orientation. */
+  rowsPerPage: number;
   paperSize: PaperSize;
   showStepNumbers: boolean;
   groupSeparator: GroupSeparator;

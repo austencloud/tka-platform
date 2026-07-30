@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getSheetPageLayout } from "$lib/features/write/domain/sheet-page-layout";
+import { DEFAULT_SHEET_LAYOUT } from "$lib/features/write/domain/types/choreo-sheet";
 
 describe("getSheetPageLayout (letter landscape)", () => {
   const geo = getSheetPageLayout({ columns: 8, rowsPerPage: 6, paperSize: "letter", orientation: "landscape" });
@@ -15,5 +16,19 @@ describe("getSheetPageLayout (letter landscape)", () => {
     expect(geo.marginXPt).toBeCloseTo(18, 2);
     const gridH = geo.rows * geo.cellSizePt + (geo.rows - 1) * geo.gutterPt;
     expect(gridH).toBeLessThanOrEqual(geo.pageHeightPt - 2 * 18);
+  });
+});
+
+describe("getSheetPageLayout (letter portrait)", () => {
+  it("derives row capacity from the page instead of the saved landscape preset", () => {
+    const geo = getSheetPageLayout({
+      ...DEFAULT_SHEET_LAYOUT,
+      orientation: "portrait",
+      columns: 8,
+      rowsPerPage: 6,
+    });
+
+    expect(geo.rows).toBe(10);
+    expect(geo.cellsPerPage).toBe(80);
   });
 });

@@ -262,11 +262,31 @@ describe("planBands (row-aligned)", () => {
     const many = Array.from({ length: 40 }, (_, i) => seq(`s${i}`, 8));
     const pages = planBands({ sequences: many, geo, cues: [], notes: [] });
     expect(pages.length).toBeGreaterThan(1);
-    // every page's summed band height must not exceed usable height
+    // Every page's band height plus the gaps drawn between them must fit.
     for (const page of pages) {
       const sum = page.bands.reduce((h, b) => h + b.heightPt, 0);
-      expect(sum).toBeLessThanOrEqual(geo.usableHeightPt + 0.01);
+      const gaps = Math.max(0, page.bands.length - 1) * geo.interBandGutterPt;
+      expect(sum + gaps).toBeLessThanOrEqual(geo.usableHeightPt + 0.01);
     }
+  });
+
+  it("fits four compact annotated strips below the landscape title block", () => {
+    const compact = getSheetPageLayout({
+      ...base,
+      orientation: "landscape",
+      columns: 8,
+      showCueRail: false,
+      showNoteStrips: false,
+    });
+    const pages = planBands({
+      sequences: Array.from({ length: 4 }, (_, i) => seq(`s${i}`, 8)),
+      geo: compact,
+      cues: [],
+      notes: [],
+    });
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0].bands).toHaveLength(4);
   });
 
   it("leaves room for the page chrome — bands never run past the bottom margin", () => {
@@ -280,8 +300,9 @@ describe("planBands (row-aligned)", () => {
     for (const page of pages) {
       const chrome = pageChromePt(page.pageIndex, true);
       const sum = page.bands.reduce((h, b) => h + b.heightPt, 0);
+      const gaps = Math.max(0, page.bands.length - 1) * portrait.interBandGutterPt;
       expect(chrome).toBeGreaterThan(0);
-      expect(sum + chrome).toBeLessThanOrEqual(portrait.usableHeightPt + 0.01);
+      expect(sum + gaps + chrome).toBeLessThanOrEqual(portrait.usableHeightPt + 0.01);
     }
   });
 

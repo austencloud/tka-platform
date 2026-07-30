@@ -294,6 +294,7 @@ export async function buildChoreoSheetPDF(
 
       for (let bi = 0; bi < page.bands.length; bi++) {
         const band = page.bands[bi]!;
+        if (bi > 0) yUsed += geo.interBandGutterPt;
         const cellTopY = geo.pageHeightPt - geo.marginYPt - yUsed;
         const cellBottomY = cellTopY - geo.cellSizePt;
 

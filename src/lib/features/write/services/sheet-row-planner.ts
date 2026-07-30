@@ -17,7 +17,11 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { ChoreoSheetLayout } from "../domain/types/choreo-sheet";
-import { pageChromePt, type SheetPageGeometry } from "../domain/sheet-page-layout";
+import {
+  getSheetPageLayout,
+  pageChromePt,
+  type SheetPageGeometry,
+} from "../domain/sheet-page-layout";
 import { bandKey, type CueMark, type NoteMark, type BandKey } from "../domain/types/choreo-sheet";
 
 export interface SheetCell {
@@ -47,7 +51,8 @@ export function planSheet(
   seqs: readonly SequenceData[],
   layout: ChoreoSheetLayout
 ): SheetPage[] {
-  const { columns, rowsPerPage } = layout;
+  const { columns } = layout;
+  const rowsPerPage = getSheetPageLayout(layout).rows;
 
   // 1. Flatten every sequence's steps into one continuous cell stream. The
   //    stream order IS the act's step order, so the running index doubles as
@@ -136,11 +141,12 @@ export interface BandPlanInput {
   showTitleBlock?: boolean;
 }
 
-// Base band height: pictograph row + note strip + inter-band gutter. Grows in
+// Base band height: pictograph row + note strip. Grows in
 // half-line steps when a strip holds a full-width bullet + pinned rows that would
 // exceed one line; kept simple here (bullets and pins each cost one line).
 // Extra stacked cues (a merged band) cost a line each in the rail, which is only
-// taller than the pictograph row once several pile up.
+// taller than the pictograph row once several pile up. The inter-band gutter is
+// added by the paginator only BETWEEN bands, matching the preview and PDF.
 function estimateBandHeight(
   geo: SheetPageGeometry,
   notes: readonly ResolvedNote[],
@@ -149,7 +155,7 @@ function estimateBandHeight(
   const noteLines = notes.length === 0 ? 0 : Math.max(1, notes.length);
   const stripHeight = geo.stripBaseHeightPt > 0 ? Math.max(geo.stripBaseHeightPt, noteLines * geo.stripBaseHeightPt) : 0;
   const railHeight = cueCount > 1 ? cueCount * geo.railLineHeightPt : 0;
-  return Math.max(geo.cellSizePt, railHeight) + stripHeight + geo.interBandGutterPt;
+  return Math.max(geo.cellSizePt, railHeight) + stripHeight;
 }
 
 /**
@@ -275,14 +281,16 @@ export function planBands(input: BandPlanInput): SheetBandPage[] {
   let pageIndex = 0;
   let budget = budgetFor(0);
   for (const band of bands) {
-    if (current.length > 0 && used + band.heightPt > budget) {
+    const gap = current.length > 0 ? geo.interBandGutterPt : 0;
+    if (current.length > 0 && used + gap + band.heightPt > budget) {
       pages.push({ bands: current, pageIndex: pageIndex++ });
       current = [];
       used = 0;
       budget = budgetFor(pageIndex);
     }
+    const appliedGap = current.length > 0 ? geo.interBandGutterPt : 0;
     current.push(band);
-    used += band.heightPt;
+    used += appliedGap + band.heightPt;
   }
   if (current.length) pages.push({ bands: current, pageIndex: pageIndex++ });
   return pages;

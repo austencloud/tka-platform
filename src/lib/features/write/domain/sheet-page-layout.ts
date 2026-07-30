@@ -87,9 +87,13 @@ export function getSheetPageLayout(layout: GeometryInput): SheetPageGeometry {
   const cellSizePt = (usableW - (columns - 1) * GUTTER_PT) / columns;
   const stripBaseHeightPt = layout.showNoteStrips ? cellSizePt * STRIP_FACTOR : 0;
 
-  // Flow-branch fixed-row values (unchanged semantics) so today's dense sheet keeps
-  // rendering identically; the aligned branch ignores `rows` and packs by height.
-  const rows = layout.rowsPerPage;
+  // Flow pages use every whole square row that physically fits. `rowsPerPage`
+  // remains in saved layouts for backward compatibility, but treating its
+  // landscape preset as a portrait cap stranded rows on a second page.
+  const rows = Math.max(
+    1,
+    Math.floor((usableH + GUTTER_PT) / (cellSizePt + GUTTER_PT))
+  );
 
   return {
     pageWidthPt,
