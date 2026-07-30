@@ -159,7 +159,11 @@
             aria-label="Move left prop"
             onclick={() => grid?.moveProp(MotionColor.BLUE)}
           >
-            Move left
+            <!-- Two labels, one accessible name — same mechanism the grid's own
+                 tray uses. This column can be as narrow as 13rem, which is not
+                 enough for three full labels. -->
+            <span class="label-full" aria-hidden="true">Move left</span>
+            <span class="label-short" aria-hidden="true">Left</span>
           </button>
           <button
             class="move-button red"
@@ -168,7 +172,8 @@
             aria-label="Move right prop"
             onclick={() => grid?.moveProp(MotionColor.RED)}
           >
-            Move right
+            <span class="label-full" aria-hidden="true">Move right</span>
+            <span class="label-short" aria-hidden="true">Right</span>
           </button>
         {/if}
         {#if canUndo}
@@ -371,6 +376,12 @@
     gap: 8px;
     width: min(100%, 360px);
     min-height: var(--min-touch-target, 48px);
+    /* Its own size container, so the buttons inside can be asked how much room
+       the ROW has. Safe to contain here: this row only renders in the two-column
+       layout, where its width comes from the column's definite basis rather than
+       from its contents. Named, so the grid's own queries can't land on it. */
+    container-type: inline-size;
+    container-name: move-row;
   }
 
   .move-controls > * {
@@ -382,6 +393,11 @@
     min-height: var(--min-touch-target, 48px);
     padding: 8px 10px;
     white-space: nowrap;
+    /* Last-resort containment. The query below is what actually keeps the label
+       inside the button; without these two the overflow spilled across the
+       neighbouring button's border instead of being clipped. */
+    overflow: hidden;
+    text-overflow: ellipsis;
     border: 1.5px solid var(--theme-stroke);
     border-radius: 10px;
     background: var(--theme-card-bg);
@@ -436,6 +452,55 @@
     outline-offset: 2px;
   }
 
+  .label-short {
+    display: none;
+  }
+
+  /* Three full labels need about 19rem of row. This column bottoms out at 13rem,
+     which is where "Move left" started spilling out of its button. `em`, not px,
+     so the threshold tracks a boosted browser font instead of being outrun by
+     it. */
+  @container move-row (max-width: 21em) {
+    .move-button {
+      padding: 8px 6px;
+    }
+
+    .label-full {
+      display: none;
+    }
+
+    .label-short {
+      display: inline;
+    }
+  }
+
+  /* The big-screen tiers below step the button font without touching the root,
+     so the label outgrows a threshold pinned to root `em`. Each tier restates
+     the switch at the width its own type actually needs. */
+  @media (min-width: 1680px) {
+    @container move-row (max-width: 23em) {
+      .label-full {
+        display: none;
+      }
+
+      .label-short {
+        display: inline;
+      }
+    }
+  }
+
+  @media (min-width: 2600px) {
+    @container move-row (max-width: 27em) {
+      .label-full {
+        display: none;
+      }
+
+      .label-short {
+        display: inline;
+      }
+    }
+  }
+
   .orientation-controls :global(.orientation-cycler) {
     flex: 1;
   }
@@ -466,12 +531,10 @@
       flex-basis: clamp(20rem, 30cqw, 34rem);
     }
 
+    /* One width for the whole column. The move row used to take the full 100%
+       while its two neighbours capped at 32rem, so at 2560 it stuck out 32px
+       past the button below it. */
     .move-controls,
-    .apply-button,
-    .orientation-controls {
-      width: 100%;
-    }
-
     .apply-button,
     .orientation-controls {
       width: min(100%, 32rem);
@@ -479,6 +542,19 @@
 
     .apply-button {
       min-height: 3.5rem;
+      font-size: 1.05rem;
+    }
+
+    /* The move row was the one control in this column that never stepped: at
+       1920 it sat at 44px/14px between 46px cyclers and a 56px action button,
+       reading as a leftover from the phone layout. Same numbers the grid's own
+       tray uses at this seam. */
+    .move-controls {
+      min-height: 3.25rem;
+    }
+
+    .move-button {
+      min-height: 3.25rem;
       font-size: 1.05rem;
     }
   }
@@ -493,6 +569,7 @@
       max-width: min(100%, 52vmin);
     }
 
+    .move-controls,
     .apply-button,
     .orientation-controls {
       width: min(100%, 44rem);
@@ -502,6 +579,16 @@
       min-height: 4.5rem;
       font-size: 1.4rem;
       border-radius: 16px;
+    }
+
+    .move-controls {
+      min-height: 4rem;
+    }
+
+    .move-button {
+      min-height: 4rem;
+      font-size: 1.3rem;
+      border-radius: 14px;
     }
   }
 </style>

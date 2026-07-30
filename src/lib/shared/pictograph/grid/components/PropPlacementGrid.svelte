@@ -606,7 +606,12 @@
   onpointercancel={handleDragCancel}
 />
 
-<div class="placement-grid" class:disabled class:complete={isComplete}>
+<div
+  class="placement-grid"
+  class:disabled
+  class:complete={isComplete}
+  class:has-tray={renderTray}
+>
   {#if promptText}
     <p class="prompt-text" data-testid="placement-prompt">
       <!-- One wrapper, so the sentence lays out as inline text. Left as bare
@@ -1157,6 +1162,60 @@
     }
   }
 
+  /* NARROW host. The height query below covers the short-host row layout; this
+     one covers the case that actually clipped: three full labels need about
+     19rem of tray, and the tray is never wider than the board's column, so a
+     narrow column ellipsised "Move right" to "Move rig…". Asked in `em` rather
+     than px so a boosted browser font moves the threshold along with the text
+     instead of leaving it behind — which is how a Fold in portrait, with plenty
+     of height and a bumped font scale, still landed on clipped labels.
+
+     Queried against whatever size container the host declared (the builder
+     wraps the grid in one). A host with none — the Learn lesson grid — never
+     matches and keeps the full labels, which is right: Learn does not pass
+     `editAfterCompletion`, so its tray only ever holds "Undo". */
+  @container (max-width: 21em) {
+    .edit-button,
+    .undo-button {
+      padding: 8px 6px;
+    }
+
+    .label-full {
+      display: none;
+    }
+
+    .label-short {
+      display: inline;
+    }
+  }
+
+  /* The big-screen tiers above step the button font without touching the root,
+     so the label outgrows a threshold pinned to root `em`. Each tier restates
+     the switch at the width its own type actually needs. */
+  @media (min-width: 1680px) {
+    @container (max-width: 23em) {
+      .label-full {
+        display: none;
+      }
+
+      .label-short {
+        display: inline;
+      }
+    }
+  }
+
+  @media (min-width: 2600px) {
+    @container (max-width: 27em) {
+      .label-full {
+        display: none;
+      }
+
+      .label-short {
+        display: inline;
+      }
+    }
+  }
+
   /* Short host (a phone in portrait, a Fold in landscape, the composer's
      embedded pane). The prompt and the control tray are at their touch and
      legibility floors already, so the only slack left is the gaps between them
@@ -1176,6 +1235,21 @@
       grid-template-rows: auto 1fr;
       align-items: center;
       gap: 0.4rem 0.5rem;
+    }
+
+    /* The shared row is only as wide as the board beneath it, so a control in it
+       lands beside the board instead of out on the rail. Left at the full area
+       width, the tray was pinned to an edge the board never reaches — on a
+       near-square Fold that is ~120px of background, and "Undo" read as a button
+       belonging to nothing. What gets subtracted is the row this rule just
+       created; the board is bounded by the height left under it.
+
+       Only when this grid owns the tray. A host that renders the controls itself
+       leaves row one to a prompt that collapses to nothing once both props are
+       down, and subtracting a row that isn't there would just shrink the board. */
+    .placement-grid.has-tray {
+      width: min(100%, calc(100cqh - var(--min-touch-target, 48px) - 0.4rem));
+      margin-inline: auto;
     }
 
     .prompt-text {
