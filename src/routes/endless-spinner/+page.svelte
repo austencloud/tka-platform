@@ -11,7 +11,6 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
-  import PracticeLanePane from "$lib/shared/sequence-viewer/components/PracticeLanePane.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Mode toggle and infinite generation
@@ -28,6 +27,7 @@
   import SpinnerHistoryPanel from "./components/SpinnerHistoryPanel.svelte";
   import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
   import SpinnerNowPlaying from "./components/SpinnerNowPlaying.svelte";
+  import SpinnerStepLane from "./components/SpinnerStepLane.svelte";
   import {
     createSpinnerSession,
     type SpinnerSession,
@@ -54,6 +54,81 @@
   // UI state
   let showDebugPanel = $state(false);
   let viewMode = $state<"strip" | "grid">("strip");
+
+  // Side-by-side tiers size the square canvas hero from the stage row's height,
+  // so the card is exactly its (square) content and the notation column gets
+  // every remaining pixel of the band. CSS can't express that: aspect-ratio
+  // needs a definite height to transfer a width from, and neither a grid `auto`
+  // track nor a flex item's basis provides one before main-size resolution
+  // (both measured collapsing the card to ~2px). Measuring is exact and cannot
+  // loop — the row's height is the column's leftover and never depends on the
+  // canvas's width.
+  let stageHeight = $state(0);
+
+  // The read-ahead lane's cell size, derived from the pane box. The pane's size
+  // always comes from layout (a foot clamp when stacked, the column's leftover
+  // when side-by-side) and never from the cell, so measuring it cannot loop.
+  let paneWidth = $state(0);
+  let paneHeight = $state(0);
+  let rootFontPx = $state(16);
+  $effect(() => {
+    const read = () => {
+      rootFontPx =
+        parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    };
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  });
+
+  // Tall side-by-side tiers run the lane VERTICALLY so it fills the column
+  // beside the stage. Everything else runs it as a horizontal foot — including
+  // the short-horizontal (folded-phone landscape) tier, whose notation column is
+  // wide and only ~150px tall, where a vertical rail would show 66px cells.
+  // Same seam the CSS uses, so the strip's geometry matches the box it is given.
+  let laneVertical = $state(false);
+  $effect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function")
+      return;
+    const mq = window.matchMedia("(min-width: 1050px) and (min-height: 601px)");
+    laneVertical = mq.matches;
+    const on = () => (laneVertical = mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  });
+
+  // Horizontal-foot cell size (the vertical rail ignores it and derives its own
+  // from the column). ~4.5 cells across, capped by the pane's height via
+  // StepStrip's own geometry (1.32 hero scale + 3px frame border + 26px
+  // headroom) so the lane always fits its box, and by 10rem so it rides the root
+  // ramp without the foot's focus cell growing to rival the hero — at 12rem
+  // across 3 cells it reached 256px beside a 295px canvas on tablet.
+  // Grid view sizing for this route's pane shapes.
+  //
+  // Columns: the tall rail column fits exactly two step columns beside
+  // StepGrid's start column. Everywhere else StepGrid's own choice is right.
+  // (Asking for more than 4 in a sub-650px pane is pointless — it caps there.)
+  let gridColumnCount = $derived(laneVertical ? 2 : null);
+
+  // Any pane under StepGrid's 650px "narrow container" threshold must be
+  // width-sized and allowed to scroll. Left to fit its rows into the pane's
+  // height instead, it crushes cells to 44px on the folded-landscape pane
+  // (588×204) and 40px on a phone foot, then centres the shrunken grid in a
+  // pool of empty pane. A row threshold of 1 forces the width path.
+  let gridWidthSized = $derived(paneWidth > 0 && paneWidth < 650);
+
+  let laneCellSize = $derived(
+    Math.max(
+      48,
+      Math.round(
+        Math.min(
+          10 * rootFontPx,
+          (paneWidth || 320) / 4.5 - 6,
+          ((paneHeight || 180) - 29) / 1.32
+        )
+      )
+    )
+  );
 
   // A sequence's word IS its letter string. Library sequences carry it, but
   // generated ones ship with an empty/whitespace word — so fall back to
@@ -271,28 +346,15 @@
 
     <!-- Animation showcase -->
     <main class="showcase">
-      <!-- Current sequence identity -->
-      <div class="mode-info">
-        <Crossfade
-          key={`${spinnerMode}:${playback?.currentSequence?.id ?? ""}`}
-          fill
-        >
-          <div class="mode-info-layer">
-            <SpinnerNowPlaying
-              sequence={playback?.currentSequence ?? null}
-              generatedInfo={spinnerMode === "infinite"
-                ? currentGeneratedInfo
-                : null}
-            />
-          </div>
-        </Crossfade>
-      </div>
-
-      <!-- Animation area -->
+      <!-- Animation area. The chips row lives INSIDE it so the wide tier can
+           place it at the top of the notation column (side-by-side), while the
+           stacked tiers keep it as the first row above the canvas. -->
       <div
         class="animation-area"
         class:strip-view={viewMode === "strip"}
         class:grid-view={viewMode === "grid"}
+        bind:clientHeight={stageHeight}
+        style="--stage-h: {stageHeight}px"
       >
         <div class="canvas-container">
           {#if animationReady}
@@ -335,45 +397,76 @@
           {/if}
         </div>
 
-        {#if playback?.animationState?.sequenceData}
-          <div class="playback-pane">
-            <Crossfade key={viewMode} fill>
-              {#if viewMode === "strip"}
-                <div class="strip-layer">
-                  <PracticeLanePane
-                    sequence={playback.animationState.sequenceData}
-                    currentStep={playback.animationState.currentStep}
-                    bpm={scope.settings.bpm}
-                    cellSize={88}
-                    onSeek={handleProgressBarSeek}
-                  />
-                </div>
-              {:else}
-                <div class="grid-layer themed-scrollbar">
-                  <StepGrid
-                    steps={playback.animationState.sequenceData.steps}
-                    startPosition={playback.derivedStartPosition}
-                    selectedStepNumber={currentStepNumber}
-                  />
-                </div>
-              {/if}
+        <!-- Notation column: identity chips over the lane. Grouped so the wide
+             tier can stack them beside a full-height canvas; dissolves back to
+             the page flow (display: contents) in the stacked tiers. -->
+        <div class="notation-col">
+          <!-- Current sequence identity -->
+          <div class="mode-info">
+            <Crossfade
+              key={`${spinnerMode}:${playback?.currentSequence?.id ?? ""}`}
+              fill
+            >
+              <div class="mode-info-layer">
+                <SpinnerNowPlaying
+                  sequence={playback?.currentSequence ?? null}
+                  generatedInfo={spinnerMode === "infinite"
+                    ? currentGeneratedInfo
+                    : null}
+                />
+              </div>
             </Crossfade>
           </div>
-        {/if}
-      </div>
 
-      <div class="transport-bar">
-        <SpinnerControls
-          isPlaying={playback?.animationState?.isPlaying ?? false}
-          {animationReady}
-          {viewMode}
-          {showHistory}
-          onToggleView={() =>
-            (viewMode = viewMode === "grid" ? "strip" : "grid")}
-          onTogglePause={handleTogglePause}
-          onSkip={handleSkip}
-          onToggleHistory={() => (showHistory = !showHistory)}
-        />
+          {#if playback?.animationState?.sequenceData}
+            <div
+              class="playback-pane"
+              bind:clientWidth={paneWidth}
+              bind:clientHeight={paneHeight}
+            >
+              <Crossfade key={viewMode} fill>
+                {#if viewMode === "strip"}
+                  <div class="strip-layer">
+                    <SpinnerStepLane
+                      sequence={playback.animationState.sequenceData}
+                      currentStep={playback.animationState.currentStep}
+                      bpm={scope.settings.bpm}
+                      cellSize={laneCellSize}
+                      orientation={laneVertical ? "vertical" : "horizontal"}
+                      onSeek={handleProgressBarSeek}
+                    />
+                  </div>
+                {:else}
+                  <!-- Columns and sizing are chosen per pane shape — see
+                       gridColumnCount / gridWidthSized. -->
+                  <div class="grid-layer themed-scrollbar">
+                    <StepGrid
+                      steps={playback.animationState.sequenceData.steps}
+                      startPosition={playback.derivedStartPosition}
+                      selectedStepNumber={currentStepNumber}
+                      manualColumnCount={gridColumnCount}
+                      heightSizingRowThreshold={gridWidthSized ? 1 : undefined}
+                    />
+                  </div>
+                {/if}
+              </Crossfade>
+            </div>
+          {/if}
+
+          <div class="transport-bar">
+            <SpinnerControls
+              isPlaying={playback?.animationState?.isPlaying ?? false}
+              {animationReady}
+              {viewMode}
+              {showHistory}
+              onToggleView={() =>
+                (viewMode = viewMode === "grid" ? "strip" : "grid")}
+              onTogglePause={handleTogglePause}
+              onSkip={handleSkip}
+              onToggleHistory={() => (showHistory = !showHistory)}
+            />
+          </div>
+        </div>
       </div>
 
       {#if showHistory}
@@ -554,10 +647,15 @@
     justify-content: center;
   }
 
-  /* Base (stacked: phones + tablet portrait). The area dissolves so the
-     transport can slot directly under the canvas (order set on children). */
-  .animation-area {
+  /* Base (stacked: phones + tablet portrait). Both wrappers dissolve so the
+     rows land directly in the showcase column (order set on children). */
+  .animation-area,
+  .notation-col {
     display: contents;
+  }
+
+  .mode-info {
+    order: 0;
   }
 
   .canvas-container {
@@ -595,16 +693,19 @@
     justify-content: safe center;
   }
 
-  /* Stacked strip: a fixed-height foot right under the canvas. Definite, not
-     auto — PracticeLanePane switches its StepStrip to fill-height mode at
-     ≥768px (Practice mode's seam), and a fill-height strip inside an
-     auto-height box collapses to nothing on tablet portrait. */
+  /* Stacked strip foot: a definite band under the canvas. The lane sizes its
+     cells to fit this box (see laneCellSize), rather than the box being sized
+     from the cells — that direction is what keeps the measurement loop-free. */
   .animation-area.strip-view .playback-pane {
-    height: clamp(9.5rem, 19dvh, 13rem);
+    height: clamp(8rem, 22dvh, 15rem);
+    border-radius: clamp(0.625rem, 0.9vw, 1rem);
+    overflow: hidden;
   }
 
   .strip-layer {
     height: 100%;
+    display: flex;
+    align-items: center;
   }
 
   /* Tablet portrait: the stacked column must fit canvas + strip foot +
@@ -613,11 +714,18 @@
      strip foot, transport, gaps ≈ 36rem). */
   @media (min-width: 601px) and (max-width: 1049px) and (min-height: 601px) {
     /* Tablet PORTRAIT only — the min-height keeps folded-phone landscape
-       (short-horizontal tier) out of this budget math, whose dvh terms go
-       negative at 412px tall and crush the canvas to its floor. */
-    /* Both views share the cap, so toggling views never resizes the stage. */
+       (short-horizontal tier) out of this block.
+
+       The stacked column must fit canvas + chips + lane foot + transport in ONE
+       viewport, so the square canvas is sized from the height the fixed chrome
+       leaves (~42rem: header, chips row, lane foot, transport, gaps, padding).
+
+       It has to be a definite square, not `flex: 1` with a transferred width:
+       flexing the card's height collapsed AnimatorCanvas's own content box to
+       0×0 (measured — the stage rendered empty). Both views share the value, so
+       toggling views never resizes the stage. */
     .animation-area .canvas-container {
-      width: min(100%, 42rem, max(16rem, calc((100dvh - 36rem) * 0.75)));
+      width: min(100%, 42rem, max(16rem, calc(100dvh - 42rem)));
     }
 
     /* The notation pane gets what the budget leaves, scrolling inside
@@ -629,14 +737,21 @@
     }
   }
 
+  /* Stacked grid pane. 62dvh left a 16-step grid (~244px tall on a phone)
+     floating in a 414px box with ~85px of empty pane above and below it; 40dvh
+     is about what the card field actually occupies. It stays a definite height
+     because the Crossfade between views fills it. */
   .animation-area.grid-view .playback-pane {
-    height: min(62dvh, 34rem);
+    height: clamp(11rem, 40dvh, 22rem);
   }
 
   .canvas-container {
     position: relative;
     width: min(100%, 42rem);
-    aspect-ratio: 1 / 1.16;
+    /* AnimatorCanvas lays its content out as a SQUARE (measured: a 727×585 card
+       held 568×568 of content, wasting 159px of card width). Matching the card
+       to the content is what removes that pool. */
+    aspect-ratio: 1 / 1;
     justify-self: center;
     min-width: 0;
     overflow: hidden;
@@ -784,9 +899,53 @@
 
   /* Responsive */
   @media (min-width: 1050px) {
-    /* Wide: side-by-side split filling the band. */
-    .animation-area {
+    /* Compact product header: the stage owns the fold, so the title stops
+       being a 10rem centered stack. Home pill stays absolute at the left, so
+       the title band is inset past it. */
+    .header {
       display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "title mode"
+        "subtitle mode";
+      align-items: center;
+      column-gap: 2rem;
+      padding-left: 8.5rem;
+      margin-bottom: clamp(0.75rem, 1.6dvh, 1.25rem);
+      text-align: left;
+    }
+
+    .title {
+      grid-area: title;
+      font-size: clamp(1.75rem, 2.1vw, 2.5rem);
+    }
+
+    .subtitle {
+      grid-area: subtitle;
+      margin-top: 0.25rem;
+    }
+
+    .mode-toggle-container {
+      grid-area: mode;
+      margin-top: 0;
+    }
+
+    /* Wide: the canvas is a square hero at the full stage height; the notation
+       column takes everything the band has left, stacking chips over the lane.
+
+           ┌────────────┬──────────────┐
+           │            │  chips       │
+           │   canvas   ├──────────────┤
+           │            │  lane / grid │
+           └────────────┴──────────────┘
+                    transport
+
+       Flex, not grid: the hero's width is TRANSFERRED from its stretched height
+       by aspect-ratio, and a grid `auto` track resolves that contribution to
+       ~0 (measured: the card overflowed 250px past the panel). Flex sizes it
+       correctly. */
+    .animation-area {
+      display: flex;
       align-items: stretch;
       gap: clamp(0.75rem, 1.4vw, 1.5rem);
       width: 100%;
@@ -795,22 +954,91 @@
       min-height: 24rem;
     }
 
-    .canvas-container,
-    .playback-pane,
-    .transport-bar {
-      order: 0;
-    }
+    /* The stage card takes the band's leftover and fills its cell edge to edge;
+       AnimatorCanvas centres its square drawing inside it. Surplus width at this
+       aspect is unavoidable — a square drawing plus a rail cannot fill a
+       1720×~880 stage — so the card absorbs it as a player frame. Left
+       transparent instead (tried), the same surplus reads as two bare ~210px
+       bands of panel; boxed, the row is two full-height surfaces with no gap.
 
+       The card's width is identical in both views (the rail column's is), and
+       the drawing is height-bound, so a view switch cannot move it. */
     .canvas-container {
-      align-self: auto;
-      width: 100%;
-      height: 100%;
+      order: 0;
+      flex: 1 1 auto;
+      align-self: stretch;
+      width: auto;
+      height: auto;
+      min-width: 0;
       aspect-ratio: auto;
     }
 
-    .playback-pane,
-    .animation-area.grid-view .playback-pane {
-      height: 100%;
+    /* Three anchored rows own this column — identity at the top, notation in
+       the middle, controls at the foot. That is what keeps the column from
+       reading as one short lane adrift in a tall void: the shared StepStrip
+       pins its focus cell to half its container height, so a lane stretched to
+       a 775px column is 50% air by construction. */
+    /* One pane width has to serve both views — the hero's width is the band
+       minus this column, so a per-view width would slide the hero on a view
+       switch. Sized for the rail, which is the default view: a vertical
+       StepStrip sizes its cell to min(colW/1.32, colH/3.4), so a column much
+       wider than ~0.4 × its own height can only centre a thin ribbon of cells.
+
+       Widening it to suit grid view instead (41rem, StepGrid's narrow-container
+       threshold) was tried and looked worse everywhere: the rail ended up
+       marooned between two ~200px bands of bare panel and the hero lost 54px.
+       Grid view adapts to this column instead — see its props in the markup. */
+    .notation-col {
+      display: flex;
+      flex-direction: column;
+      /* Chips pin to the hero's top edge, controls to its bottom. Also keeps the
+         controls in place during a mode switch, when the pane unmounts for a beat
+         while the next sequence resolves — otherwise they jump up and back. */
+      justify-content: space-between;
+      flex: 0 0
+        clamp(20rem, calc((var(--stage-h, 40rem) - 9.5rem) * 0.5), 46rem);
+      min-width: 0;
+      min-height: 0;
+      gap: clamp(0.5rem, 0.9vw, 1rem);
+    }
+
+    .mode-info {
+      order: 0;
+      flex: 0 0 auto;
+      /* Left-aligned against the lane it labels. Centred over a 900px column
+         reads as two chips marooned in a void. */
+      padding: 0;
+    }
+
+    .mode-info-layer {
+      justify-content: flex-start;
+    }
+
+    .transport-bar {
+      order: 0;
+      flex: 0 0 auto;
+    }
+
+    /* Both views fill the column: the vertical rail runs its full height, and
+       grid view lays out a 2D card field. Match the base tier's 3-class
+       specificity, or the stacked strip foot's height wins here.  */
+    .showcase .animation-area.strip-view .playback-pane,
+    .showcase .animation-area.grid-view .playback-pane {
+      order: 0;
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 0;
+      border-radius: clamp(0.75rem, 1vw, 1.25rem);
+    }
+
+    /* Both panes are real surfaces here — a full-height rail and a scrolling
+       card field. Framing them makes the stage row read as two side-by-side
+       surfaces with no gap between them. */
+    .playback-pane {
+      border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+      border-radius: clamp(0.75rem, 1vw, 1.25rem);
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.18);
     }
 
     /* Side-by-side column: the strip fills the pane's full height again
@@ -818,30 +1046,6 @@
        left as auto here, the fill-height StepStrip collapses to nothing). */
     .strip-layer {
       height: 100%;
-    }
-
-    /* Strip view: the canvas stage is height-bound at laptop/1920 sizes, so
-       extra column width past its own height is dead margin — the surplus
-       goes to the read-ahead strip, where it becomes bigger cells. */
-    .animation-area.strip-view {
-      grid-template-columns: minmax(0, 0.8fr) minmax(16rem, 1fr);
-    }
-
-    /* Grid view: canvas cedes room to the notation. */
-    .animation-area.grid-view {
-      grid-template-columns:
-        minmax(25rem, 0.92fr)
-        minmax(30rem, 1.08fr);
-    }
-  }
-
-  /* Scale is the continuous root ramp's job (no scale-only step tier). This
-     tier exists to RECOMPOSE: above ~2600px the stage row is so tall that the
-     square canvas stops being height-bound — the strip-view columns rebalance
-     so the canvas takes the width its height can actually use. */
-  @media (min-width: 2600px) {
-    .animation-area.strip-view {
-      grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 1fr);
     }
   }
 
@@ -863,16 +1067,22 @@
     }
 
     .title {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
     }
 
+    /* Dropped, not shrunk: every pixel the header gives back is a pixel of the
+       read-ahead lane visible above the docked transport, and the title plus the
+       chips row already say what this page is. */
     .subtitle {
-      margin-top: 0.375rem;
-      font-size: var(--font-size-compact, 0.75rem);
+      display: none;
     }
 
     .mode-toggle-container {
-      margin-top: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .mode-info {
+      height: 2.5rem;
     }
 
     .showcase {
@@ -889,6 +1099,11 @@
     .canvas-container {
       width: 100vw;
       margin-inline: calc(50% - 50vw);
+      /* Not square. AnimatorCanvas's drawing is WIDTH-bound at this size, so the
+         first ~35px of card height below square costs nothing at all, and
+         trading a little more lifts the lane's focus cell above the docked
+         transport — the read-ahead is half of what this page is for. */
+      aspect-ratio: 1 / 0.8;
       border-radius: 0;
       border-inline: none;
     }
@@ -980,44 +1195,76 @@
       height: 2.25rem;
     }
 
-    /* Short-horizontal: side-by-side is mandatory. */
+    /* Short-horizontal: side-by-side is mandatory — stacking dies at 412px tall.
+       Same flex row as the wide tier (chips over lane over controls beside a
+       square hero), but the lane stays HORIZONTAL: this notation column is wide
+       and only ~150px tall, where a vertical rail would show 66px cells. */
     .animation-area {
-      display: grid;
+      display: flex;
       align-items: stretch;
       width: 100%;
       min-width: 0;
-      height: clamp(14rem, calc(100dvh - 11.75rem), 26rem);
+      /* Flex, not a dvh clamp: the clamp under-filled the panel and left a
+         ~40px band of empty surface under the transport. */
+      flex: 1 1 auto;
+      min-height: 12rem;
       gap: 0.625rem;
     }
 
-    .canvas-container,
-    .playback-pane,
-    .transport-bar {
-      order: 0;
-    }
-
     .canvas-container {
-      align-self: auto;
-      width: 100%;
-      height: 100%;
+      order: 0;
+      flex: 0 0 auto;
+      align-self: stretch;
+      /* Square and height-bound, so the notation column gets the rest of a very
+         wide, very short stage. */
+      width: var(--stage-h, 14rem);
+      max-width: 45%;
+      height: auto;
       aspect-ratio: auto;
     }
 
-    .playback-pane,
-    .animation-area.grid-view .playback-pane {
-      height: 100%;
+    .notation-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      gap: 0.375rem;
+    }
+
+    .mode-info {
+      order: 0;
+      flex: 0 0 auto;
+      padding: 0;
+    }
+
+    .mode-info-layer {
+      justify-content: flex-start;
+    }
+
+    .transport-bar {
+      order: 0;
+      flex: 0 0 auto;
+    }
+
+    .showcase .animation-area.strip-view .playback-pane,
+    .showcase .animation-area.grid-view .playback-pane {
+      order: 0;
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 0;
+      border-radius: 0.625rem;
+    }
+
+    .playback-pane {
+      border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.18);
     }
 
     .strip-layer {
       height: 100%;
-    }
-
-    .animation-area.strip-view {
-      grid-template-columns: minmax(0, 1.3fr) minmax(10rem, 0.7fr);
-    }
-
-    .animation-area.grid-view {
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     }
   }
 
