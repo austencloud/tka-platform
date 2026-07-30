@@ -119,12 +119,13 @@
   );
 
   // A Direct Share tap names the conversation before this sheet ever renders.
-  // Read it synchronously at init and consume it: InboxDrawer's pending-
-  // navigation effect reads the same field and would yank us out of this sheet
-  // into the thread view. Component init runs during the render pass, ahead of
-  // the drawer's effect flush, so this claim always lands first.
-  const directShareConversationId = inboxState.pendingConversationId;
-  if (directShareConversationId) inboxState.clearPendingNavigation();
+  //
+  // Reads shareAttachmentConversationId, NOT pendingConversationId. The latter
+  // means "navigate to this thread" and InboxDrawer owns it - its effect would
+  // pull us out of this sheet and drop the attachment. An earlier revision won
+  // that race by claiming the field at init; a dedicated field means there is no
+  // race to win.
+  const directShareConversationId = inboxState.shareAttachmentConversationId;
 
   // The conversation list may not have arrived yet on a cold share launch, so
   // resolve against it reactively rather than once.

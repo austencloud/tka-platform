@@ -81,6 +81,19 @@ class InboxState {
    */
   shareAttachmentReceiptId = $state<string | null>(null);
 
+  /**
+   * The conversation to pre-select in the send sheet, set when the user picked a
+   * person straight from the Android share sheet (a Direct Share target).
+   *
+   * Deliberately NOT `pendingConversationId`. That field already means "navigate
+   * to this conversation's thread" and InboxDrawer owns it: its effect clears it
+   * and calls selectConversation, which nulls shareAttachment and switches to
+   * the thread view. Routing a Direct Share through it opened the send sheet and
+   * then tore it down 50ms later, dropping the attachment. Two different
+   * intentions needed two fields; sharing one only worked by winning a race.
+   */
+  shareAttachmentConversationId = $state<string | null>(null);
+
   // Reply state - message being replied to
   replyToMessage = $state<Message | null>(null);
 
@@ -114,6 +127,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
   }
 
   close() {
@@ -127,6 +141,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.replyToMessage = null;
     this.editingMessage = null;
     this.typingUsers = [];
@@ -145,12 +160,14 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
   }
 
   selectConversation(conversation: Conversation) {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
   }
@@ -165,6 +182,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
   }
@@ -180,6 +198,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.currentView = "thread"; // Go directly to thread view
     this.isLoadingMessages = true; // Show loading state
     // InboxDrawer will detect pendingConversationId and load the conversation
@@ -196,6 +215,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     // InboxDrawer will detect pendingNotificationId and handle the action
   }
 
@@ -211,6 +231,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.selectedConversation = null;
     this.messages = [];
     this.currentView = "list";
@@ -223,6 +244,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.composeRecipientId = recipientId || null;
     this.composeRecipientName = recipientName || null;
     this.composeGroupMode = false;
@@ -233,6 +255,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.composeGroupMode = true;
     this.composeRecipientId = null;
     this.composeRecipientName = null;
@@ -257,6 +280,7 @@ class InboxState {
     this.shareAttachment = attachment;
     this.shareAttachmentNote = options.note ?? null;
     this.shareAttachmentReceiptId = options.receiptId ?? null;
+    this.shareAttachmentConversationId = options.conversationId ?? null;
     // Set by a Direct Share tap: the send sheet opens with this conversation
     // already chosen, so the user's next tap is Send.
     this.pendingConversationId = options.conversationId ?? null;
@@ -280,6 +304,7 @@ class InboxState {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
+    this.shareAttachmentConversationId = null;
     this.openToConversationById(conversationId);
   }
 

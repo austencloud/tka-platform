@@ -8,7 +8,7 @@ import { inboxState } from "../../state/inbox-state.svelte";
 
 const mocks = vi.hoisted(() => ({
   conversations: [] as Array<Record<string, unknown>>,
-  inbox: { pendingConversationId: null as string | null },
+  inbox: { shareAttachmentConversationId: null as string | null },
   createShortCode: vi.fn(),
   ensureGuestIdentity: vi.fn(),
   getOrCreateConversation: vi.fn(),
@@ -61,11 +61,11 @@ vi.mock("$lib/shared/user-search/services/user-searcher", () => ({
 vi.mock("../../state/inbox-state.svelte", () => ({
   inboxState: {
     conversations: mocks.conversations,
-    get pendingConversationId() {
-      return mocks.inbox.pendingConversationId;
+    get shareAttachmentConversationId() {
+      return mocks.inbox.shareAttachmentConversationId;
     },
     clearPendingNavigation() {
-      mocks.inbox.pendingConversationId = null;
+      mocks.inbox.shareAttachmentConversationId = null;
     },
     // Mirrors the one field of openAttachmentShare this sheet consumes; the
     // real state module's own contract is covered by its unit tests.
@@ -73,7 +73,7 @@ vi.mock("../../state/inbox-state.svelte", () => ({
       _attachment: unknown,
       options: { conversationId?: string } = {}
     ) {
-      mocks.inbox.pendingConversationId = options.conversationId ?? null;
+      mocks.inbox.shareAttachmentConversationId = options.conversationId ?? null;
     },
   },
 }));
@@ -117,7 +117,7 @@ function addDirectConversation(): void {
 describe("SendAttachmentSheet", () => {
   beforeEach(() => {
     mocks.conversations.length = 0;
-    mocks.inbox.pendingConversationId = null;
+    mocks.inbox.shareAttachmentConversationId = null;
     mocks.createShortCode.mockReset();
     mocks.createShortCode.mockResolvedValue({ code: "SHARE1" });
     mocks.ensureGuestIdentity.mockReset();
