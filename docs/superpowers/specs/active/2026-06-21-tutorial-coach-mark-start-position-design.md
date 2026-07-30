@@ -2,16 +2,17 @@
 status: active
 value: 3
 effort: S
-remaining: "Body status: Active (deferred implementation — immediate dupe-suppression shipped separately)"
-depends_on: ""
+remaining: "Supersession is verified. Move this spec to shipped after the shared full check is green."
+depends_on: "external: shared full check is blocked by another session's untracked WorkspaceShareControl.svelte type errors"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Create Tutorial — Coach-Mark the Real Start-Position Picker (Design)
 
 Date: 2026-06-21
-Status: Active (deferred implementation — immediate dupe-suppression shipped separately)
+Status: Closure ready 2026-07-30. Superseded by the live Construct guide; the
+queue move is blocked on an unrelated shared-check failure.
 
 ## Problem
 
@@ -94,3 +95,35 @@ caption it, and advance when the real selection fires.
   `src/lib/shared/onboarding/components/create-tutorial/steps/PickStartPositionStep.svelte`.
 - `never-hand-roll.md` (reuse a spotlight primitive if one exists),
   `visualization-routing.md` (verify on a real test page, not a mockup).
+
+## Closure (2026-07-30)
+
+Do not build this coach-mark. Commit `e2615015a2` replaced the production
+duplicate-picker wizard with `ConstructTutorialGuide.svelte`, an inline guide
+rendered beside the real Construct controls.
+
+The live path now works as follows:
+
+1. `MainApplication.svelte` shows the opt-in prompt.
+2. Accepting it moves `appEntryState` to `create-tutorial`.
+3. `CreateModule.svelte` starts `constructTutorialState`.
+4. `ConstructTabContent.svelte` renders the guide above the real
+   `StartPositionPicker`.
+5. Successful actions in the real workflow advance the guide through start
+   position, movement type, movement option, and full playback.
+
+The old `CreateTutorialWizard` and its embedded `PickStartPositionStep` remain
+reachable only from the dedicated test route and component tests. Removing that
+legacy test surface is separate dead-code work, not a reason to add another
+onboarding layer.
+
+Verification on 2026-07-30:
+
+- 19 unit tests passed across the Construct tutorial state, analytics, and app
+  entry state.
+- 2 Chromium component tests passed for the live guide, including its keyboard
+  dismissal and accessibility scan.
+- The full `npm run check` reached 7 errors and 5 warnings. All 7 errors are in
+  another session's untracked
+  `src/lib/features/create/shared/workspace-panel/shared/components/buttons/WorkspaceShareControl.svelte`.
+  This spec did not change that file.
