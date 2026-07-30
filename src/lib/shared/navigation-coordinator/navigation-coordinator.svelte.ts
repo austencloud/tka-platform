@@ -14,8 +14,17 @@
  * Uses the native ViewTransition type from lib.dom.d.ts when available
  */
 type DocumentWithViewTransition = Document & {
-  startViewTransition?: (callback: () => void | Promise<void>) => ViewTransition;
+  startViewTransition?: (
+    callback: () => void | Promise<void>
+  ) => ViewTransition;
 };
+
+function afterViewTransitionSettles(
+  transition: ViewTransition,
+  callback: () => void
+): void {
+  void transition.finished.then(callback, callback);
+}
 
 import type { ModuleId } from "../navigation/domain/types";
 import {
@@ -28,7 +37,10 @@ import { authState } from "../auth/state/auth-state.svelte";
 import { resolveAccessTier } from "../auth/domain/access-tier";
 import { isTabAccessible } from "../auth/domain/guest-access-config";
 import { isPremiumOrAbove } from "../auth/domain/models/user-role";
-import { featureFlagService, featureFlagState } from "../auth/services/post-hog-feature-flag-service.svelte";
+import {
+  featureFlagService,
+  featureFlagState,
+} from "../auth/services/post-hog-feature-flag-service.svelte";
 import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
@@ -274,10 +286,7 @@ export async function handleModuleChange(
   // Allow view transitions for most navigation
   // Exception: forceViewTransition (keyboard shortcuts) should always animate
   const shouldUseViewTransition =
-    isEnteringSettings ||
-    isExitingSettings ||
-    forceTransition ||
-    true; // Always use view transitions for module changes
+    isEnteringSettings || isExitingSettings || forceTransition || true; // Always use view transitions for module changes
 
   if (
     typeof doc.startViewTransition === "function" &&
@@ -296,12 +305,13 @@ export async function handleModuleChange(
         await switchModule(moduleId);
       });
 
-      transition.finished.finally(() => {
+      const finishSettingsEntry = (): void => {
         document.documentElement.classList.remove("settings-portal-enter");
         if (!shouldSkipHistory) {
           pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
         }
-      });
+      };
+      afterViewTransitionSettles(transition, finishSettingsEntry);
     } else if (isExitingSettings) {
       // EXITING SETTINGS - Portal collapse animation
       // Restore original entry point for consistent "pull out" to same spot
@@ -313,14 +323,15 @@ export async function handleModuleChange(
         await switchModule(moduleId);
       });
 
-      transition.finished.finally(() => {
+      const finishSettingsExit = (): void => {
         document.documentElement.classList.remove("settings-portal-exit");
         navigationCoordinator.previousModuleBeforeSettings = null;
         savePreviousModule(null);
         if (!shouldSkipHistory) {
           pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
         }
-      });
+      };
+      afterViewTransitionSettles(transition, finishSettingsExit);
     } else {
       // Module-to-module: horizontal slide
       document.documentElement.classList.remove(
@@ -336,7 +347,7 @@ export async function handleModuleChange(
         await switchModule(moduleId);
       });
 
-      transition.finished.finally(() => {
+      const finishModuleSlide = (): void => {
         document.documentElement.classList.remove(
           "module-slide-left",
           "module-slide-right"
@@ -344,7 +355,8 @@ export async function handleModuleChange(
         if (!shouldSkipHistory) {
           pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
         }
-      });
+      };
+      afterViewTransitionSettles(transition, finishModuleSlide);
     }
   } else {
     // Fallback for browsers without View Transitions
@@ -389,7 +401,10 @@ const TAB_ORDERS: Record<string, string[]> = {
 
 // Debug flag - enable via: window.__DEBUG_NAV__ = true
 function navDebug(...args: unknown[]) {
-  if (typeof window !== "undefined" && (window as unknown as Record<string, unknown>).__DEBUG_NAV__) {
+  if (
+    typeof window !== "undefined" &&
+    (window as unknown as Record<string, unknown>).__DEBUG_NAV__
+  ) {
     console.log("[NavCoord]", ...args);
   }
 }
@@ -416,7 +431,10 @@ export function handleSectionChange(
   // defaults to "user" before auth loads, which incorrectly blocks admin-only
   // tabs on page restore. The reactive moduleSections() will hide/redirect
   // once flags are loaded if the user truly lacks access.
-  if (featureFlagService.isInitialized && !featureFlagService.canAccessTab(module, sectionId)) {
+  if (
+    featureFlagService.isInitialized &&
+    !featureFlagService.canAccessTab(module, sectionId)
+  ) {
     console.warn(`⚠️ User does not have access to ${module}:${sectionId} tab`);
     navDebug("BLOCKED: Feature flag denied access");
     if (module === "create") {
@@ -466,7 +484,7 @@ export function handleSectionChange(
       updateState();
     });
 
-    transition.finished.finally(() => {
+    const finishTabSlide = (): void => {
       document.documentElement.classList.remove(
         "tab-slide-left",
         "tab-slide-right"
@@ -474,7 +492,8 @@ export function handleSectionChange(
       if (!shouldSkipHistory) {
         pushHistoryState(module as ModuleId, sectionId);
       }
-    });
+    };
+    afterViewTransitionSettles(transition, finishTabSlide);
   } else {
     // Fallback: instant switch for browsers without View Transitions
     updateState();
@@ -575,7 +594,7 @@ const CLEAN_URL_MODULES: Set<string> = new Set(["museum"]);
 function buildPath(moduleId: ModuleId, sectionId?: string) {
   // For clean-URL modules, omit the default section from the path
   if (CLEAN_URL_MODULES.has(moduleId)) {
-    const moduleDef = getModuleDefinitions().find(m => m.id === moduleId);
+    const moduleDef = getModuleDefinitions().find((m) => m.id === moduleId);
     const defaultSection = moduleDef?.sections?.[0]?.id;
     if (!sectionId || sectionId === defaultSection) {
       return `/${moduleId}`;
@@ -767,7 +786,9 @@ export function initializeNavigationHistory() {
     // mount a gated module. Skip the gate until feature flags initialize — role
     // defaults to "user" pre-auth and would wrongly block admins on page restore
     // (same timing guard as handleSectionChange).
-    const targetModuleDef = MODULE_DEFINITIONS.find((m) => m.id === pathNav.moduleId);
+    const targetModuleDef = MODULE_DEFINITIONS.find(
+      (m) => m.id === pathNav.moduleId
+    );
     const isGatedForNonAdmin =
       targetModuleDef?.adminOnly === true &&
       featureFlagService.isInitialized &&
