@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: S
-remaining: "Body status: Approved (Austen, \"go nuts\")"
-depends_on: ""
+remaining: "Implementation landed in fd182587b6 and current source matches every approved change. Close-out is blocked by two verification gates: Chrome DevTools MCP is unavailable in this Codex session for the required current modal/pill screenshots, and pnpm run check reports seven unrelated errors in another session's untracked WorkspaceShareControl.svelte. Once both clear, capture the gallery proof, rerun the full check, and move this spec to shipped."
+depends_on: "external: Chrome DevTools MCP unavailable; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Variation Picker Polish — Design
 
@@ -82,3 +82,10 @@ itself, the inline pill's cycle behavior.
 
 ## Verification
 BEFORE/AFTER screenshots of the modal and a pill card, plus `npm run check` green.
+
+## Reconciliation (2026-07-30)
+
+- Commit `fd182587b6` implemented the approved subtitle, removed the redundant author label, reused BaseModal's capped `data-animate` stagger, and narrowed the pill transition.
+- Current source still contains all four implementation changes, and both target files are clean in Git. No duplicate implementation is needed.
+- Per the testing skill, no component-rendering regression test is warranted for this visible-only polish; the required proof is the live modal and pill at the project viewport set.
+- That visual proof cannot be refreshed in this session because Chrome DevTools MCP is not registered. The full repository check also remains blocked by seven TypeScript errors, all in the unrelated untracked `WorkspaceShareControl.svelte`.
