@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -162,6 +163,12 @@ class AgentTerminalLauncher
         string agent = NormalizeAgent(GetRequired(args, "Agent"));
         string project = Path.GetFullPath(GetRequired(args, "Project"));
         if (!Directory.Exists(project)) throw new DirectoryNotFoundException("Project directory not found: " + project);
+        if (RequiresAdministrator(agent) && !IsAdministrator())
+        {
+            if (args.ContainsKey("ElevationAttempted"))
+                throw new InvalidOperationException("Windows did not grant Agent Hub an administrator token for Codex.");
+            return RelaunchAsAdministrator(agent, project, args);
+        }
 
         using (ColorLease lease = ClaimColor())
         {
@@ -183,6 +190,11 @@ class AgentTerminalLauncher
                         "-Agent", agent,
                         "-Project", project
                     };
+                    if (RequiresAdministrator(agent))
+                    {
+                        inner.Add("-RequireAdministrator");
+                        inner.Add("true");
+                    }
                     AddOptionalPair(inner, args, "Bat");
                     AddOptionalPair(inner, args, "Executable");
 
@@ -224,11 +236,14 @@ class AgentTerminalLauncher
 
         string agent = NormalizeAgent(GetRequired(args, "Agent"));
         string project = Path.GetFullPath(GetRequired(args, "Project"));
+        if (args.ContainsKey("RequireAdministrator") && !IsAdministrator())
+            throw new InvalidOperationException("The Codex terminal did not inherit an administrator token.");
         using (EventWaitHandle lease = EventWaitHandle.OpenExisting(LeaseName(colorIndex)))
         {
             using (EventWaitHandle ready = EventWaitHandle.OpenExisting(GetRequired(args, "ReadyEvent"))) ready.Set();
 
             Environment.SetEnvironmentVariable("TKA_AGENT_TERMINAL", "1");
+            if (IsAdministrator()) Environment.SetEnvironmentVariable("TKA_AGENT_ELEVATED", "1");
             Environment.SetEnvironmentVariable("TKA_AGENT_COLOR_SCHEME", SessionSchemeName(colorIndex));
             Environment.SetEnvironmentVariable(
                 "TKA_AGENT_TERMINAL_SESSION_PID",
@@ -238,6 +253,64 @@ class AgentTerminalLauncher
             try { Console.Title = InitialTitle; } catch { }
             return RunAgent(agent, project, args);
         }
+    }
+
+    static bool RequiresAdministrator(string agent)
+    {
+        return string.Equals(agent, "codex", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static bool IsAdministrator()
+    {
+        using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+        {
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+    }
+
+    static int RelaunchAsAdministrator(
+        string agent,
+        string project,
+        Dictionary<string, string> args
+    )
+    {
+        ProcessStartInfo psi = BuildElevationStartInfo(agent, project, args);
+        Process elevated = Process.Start(psi);
+        if (elevated == null) throw new InvalidOperationException("Windows did not start the elevated Agent Hub launcher.");
+        return 0;
+    }
+
+    static ProcessStartInfo BuildElevationStartInfo(
+        string agent,
+        string project,
+        Dictionary<string, string> args
+    )
+    {
+        var psi = new ProcessStartInfo(
+            Assembly.GetExecutingAssembly().Location,
+            JoinArguments(BuildElevationArguments(agent, project, args))
+        );
+        psi.WorkingDirectory = project;
+        psi.UseShellExecute = true;
+        psi.Verb = "runas";
+        return psi;
+    }
+
+    static List<string> BuildElevationArguments(
+        string agent,
+        string project,
+        Dictionary<string, string> args
+    )
+    {
+        var result = new List<string> {
+            "-Agent", agent,
+            "-Project", project,
+            "-ElevationAttempted", "true"
+        };
+        AddOptionalPair(result, args, "Bat");
+        AddOptionalPair(result, args, "Executable");
+        return result;
     }
 
     static int ApplyCurrentColor()
@@ -937,6 +1010,28 @@ class AgentTerminalLauncher
                 terminalArgs.IndexOf("--colorScheme \"Agent Hub Session 01\"", StringComparison.Ordinal) < 0 ||
                 terminalArgs.IndexOf("--useApplicationTitle", StringComparison.Ordinal) < 0)
                 throw new Exception("Windows Terminal arguments are missing the window, background-matched tab, color scheme, or live-title option.");
+            var elevationInput = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+                { "Bat", "C:\\project with spaces\\launchers\\start-codex.bat" }
+            };
+            string elevationArgs = JoinArguments(BuildElevationArguments(
+                "codex",
+                "C:\\project with spaces",
+                elevationInput
+            ));
+            ProcessStartInfo elevationStartInfo = BuildElevationStartInfo(
+                "codex",
+                "C:\\project with spaces",
+                elevationInput
+            );
+            if (!RequiresAdministrator("codex") ||
+                RequiresAdministrator("claude") ||
+                !elevationStartInfo.UseShellExecute ||
+                !string.Equals(elevationStartInfo.Verb, "runas", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(elevationStartInfo.WorkingDirectory, "C:\\project with spaces", StringComparison.OrdinalIgnoreCase) ||
+                elevationArgs.IndexOf("-ElevationAttempted true", StringComparison.Ordinal) < 0 ||
+                elevationArgs.IndexOf("\"C:\\project with spaces\"", StringComparison.Ordinal) < 0 ||
+                elevationArgs.IndexOf("\"C:\\project with spaces\\launchers\\start-codex.bat\"", StringComparison.Ordinal) < 0)
+                throw new Exception("Codex elevation policy or relaunch arguments are invalid.");
 
             int parsedColor;
             if (!TryParseSessionScheme("Agent Hub Session 04", out parsedColor) ||
@@ -950,6 +1045,7 @@ class AgentTerminalLauncher
 
             Console.WriteLine("PASS: all " + SessionColorCount + " session colors were unique, exhaustion-safe, and reusable after release.");
             Console.WriteLine("PASS: Windows Terminal window, background-matched tab, color scheme, live-title, and quoting arguments validated.");
+            Console.WriteLine("PASS: Codex requests Windows runas elevation and preserves project launcher arguments.");
             Console.WriteLine("PASS: inherited color parsing and live terminal background output validated.");
         }
         finally

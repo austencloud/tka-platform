@@ -146,6 +146,11 @@ project can customize how its agent starts (extra env, a wrapper binary, a
 status line) without touching agent-hub. If the bat is missing, the session
 host runs `claude` or `codex` from PATH.
 
+Codex launches request Windows administrator approval before the terminal
+opens. The terminal verifies its administrator token before starting Codex.
+Canceling the UAC prompt leaves no Codex session running. Claude keeps the
+normal user token.
+
 ## Troubleshooting
 
 **Nothing happens when I click a pin.** Check whether the host is alive:
