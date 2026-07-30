@@ -20,7 +20,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
-  import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";
+  import { claimPushPermissionPrompt } from "$lib/shared/push/services/push-permission-prompt-marker";
   import {
     startForegroundMessageListener,
     stopForegroundMessageListener,
@@ -120,7 +120,8 @@
   // permission and never registers an FCM token.
   $effect(() => {
     const messageCount = inboxState.totalUnreadCount;
-    if (messageCount > 0 && !pushPromptChecked && currentUserId) {
+    const userId = currentUserId;
+    if (messageCount > 0 && !pushPromptChecked && userId) {
       pushPromptChecked = true;
       void (async () => {
         const fcmTokenManager = getFCMTokenManager();
@@ -128,8 +129,8 @@
         if (!supported) return;
         const permission = await fcmTokenManager.getPermissionState();
         if (permission !== "default") return;
-        const dismissed = localStorage.getItem("tka-push-prompt-dismissed");
-        if (dismissed && Date.now() < parseInt(dismissed, 10)) return;
+        const shouldShow = await claimPushPermissionPrompt(userId);
+        if (!shouldShow || currentUserId !== userId) return;
         showPushPrompt = true;
       })();
     }

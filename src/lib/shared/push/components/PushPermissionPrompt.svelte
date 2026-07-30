@@ -3,12 +3,10 @@
 
   Contextual prompt shown when a user has unread messages but hasn't
   granted push notification permission. Slides up from the bottom
-  of the screen. Dismissible for 30 days via localStorage.
+  of the screen. The provider limits it to once per account.
 -->
 <script lang="ts">
-
-import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
-  import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";
+  import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
@@ -41,16 +39,15 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   }
 
   function handleNotNow() {
-    // Dismiss for 30 days
-    localStorage.setItem(
-      "tka-push-prompt-dismissed",
-      String(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    );
     onDismiss();
   }
 </script>
 
-<div class="push-prompt" role="alertdialog" aria-label="Enable push notifications">
+<div
+  class="push-prompt"
+  role="alertdialog"
+  aria-label="Enable push notifications"
+>
   <p class="prompt-text">
     Get notified when you receive messages, even when the app is closed?
   </p>
