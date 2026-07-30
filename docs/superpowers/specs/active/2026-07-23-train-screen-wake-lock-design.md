@@ -2,11 +2,11 @@
 status: active
 value: 4
 effort: S
-remaining: "Implementation and lifecycle tests are complete for viewer Practice, Train, and Meditation. Remaining: verify acquisition, reacquisition, session-end release, and actual screen auto-lock behavior on the target iPhone."
-depends_on: ""
+remaining: "Automated recheck passed all 16 wake-lock tests on 2026-07-29. The connected target runs iOS 26.5.2, and local plus production response policy permits the API. Remaining: start an elevated pymobiledevice3 tunneld bridge, then verify Practice and Train acquisition, background/restore reacquisition, post-stop release, and real Auto-Lock in Safari plus the Home Screen app."
+depends_on: "external: target iPhone verification requires an elevated pymobiledevice3 tunneld bridge and hands-on session control"
 plan_path: ""
 tags: ["practice", "train", "viewer", "mobile", "wake-lock", "device"]
-last_triaged: 2026-07-24
+last_triaged: 2026-07-29
 ---
 
 # Practice Screen Wake Lock: Design Spec
@@ -269,6 +269,20 @@ must not enter the global exception stream.
   manager.
 
 ## Verification
+
+### Revalidation, 2026-07-29
+
+- The focused Vitest run passed both files and all 16 tests:
+  `tests/unit/device/screen-wake-lock-manager.test.ts` and
+  `tests/unit/sequence-viewer/viewer-practice-wake-lock.test.ts`.
+- The local app returns a `Permissions-Policy` header that does not disable
+  `screen-wake-lock`. The public site omits that directive, so its default
+  same-origin allowlist applies.
+- The paired target iPhone reports iOS 26.5.2. Its framebuffer bridge could not
+  start because this Windows session is not elevated and no privileged
+  `pymobiledevice3` tunnel task is installed.
+- Device proof still needs hands-on session control. Do not infer real
+  Auto-Lock behavior from the fake-sentinel tests.
 
 ### Automated
 
