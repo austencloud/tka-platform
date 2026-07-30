@@ -1,5 +1,85 @@
 import { Vector3, Quaternion, Euler } from "three";
+import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PropTipPositions3D, TipPositionData3D } from "./types";
+
+export type TrailSourceId3D = "left-end" | "right-end" | "hand";
+
+export interface TrailSource3D {
+	sourceId: TrailSourceId3D;
+	effectTipIndex: 0 | 1;
+	position: { x: number; y: number; z: number };
+}
+
+/**
+ * Select the physical source positions used by 3D trails.
+ *
+ * The logical left/right end ordering matches the canonical 2D trail pipeline:
+ * tip 0 is the left end, tip 1 is the right end, and HAND uses one source at
+ * the prop center while retaining the right-end effect-assignment slot.
+ */
+export function resolveTrailSources3D(
+	trackingMode: TrackingMode,
+	tips: readonly TipPositionData3D[],
+	propCenter: { x: number; y: number; z: number },
+): TrailSource3D[] {
+	const leftTip = tips[0];
+	const rightTip = tips[1];
+
+	switch (trackingMode) {
+		case TrackingMode.LEFT_END:
+			return leftTip
+				? [
+						{
+							sourceId: "left-end",
+							effectTipIndex: 0,
+							position: leftTip.position,
+						},
+					]
+				: [];
+		case TrackingMode.RIGHT_END:
+			return rightTip
+				? [
+						{
+							sourceId: "right-end",
+							effectTipIndex: 1,
+							position: rightTip.position,
+						},
+					]
+				: [];
+		case TrackingMode.BOTH_ENDS:
+			return [
+				...(leftTip
+					? [
+							{
+								sourceId: "left-end" as const,
+								effectTipIndex: 0 as const,
+								position: leftTip.position,
+							},
+						]
+					: []),
+				...(rightTip
+					? [
+							{
+								sourceId: "right-end" as const,
+								effectTipIndex: 1 as const,
+								position: rightTip.position,
+							},
+						]
+					: []),
+			];
+		case TrackingMode.HAND:
+			return [
+				{
+					sourceId: "hand",
+					effectTipIndex: 1,
+					position: { ...propCenter },
+				},
+			];
+		default:
+			return [];
+	}
+}
+
 /**
  * Minimal prop state needed to compute tip positions.
  */

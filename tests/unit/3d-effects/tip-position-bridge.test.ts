@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { TipPositionBridge3D } from "$lib/shared/3d/effects/tip-position-bridge-3d";
+import {
+	resolveTrailSources3D,
+	TipPositionBridge3D,
+} from "$lib/shared/3d/effects/tip-position-bridge-3d";
+import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+import type { TipPositionData3D } from "$lib/shared/3d/effects/types";
 
 function makePropState(x: number, y: number, z: number) {
 	return {
@@ -126,5 +131,74 @@ describe("TipPositionBridge3D", () => {
 		);
 		expect(stationaryResult.tips[0].speed).toBeCloseTo(0, 4);
 		expect(movingResult.tips[0].speed).toBeGreaterThan(0);
+	});
+});
+
+describe("resolveTrailSources3D", () => {
+	const stationary = { x: 0, y: 0, z: 0 };
+	const tips: TipPositionData3D[] = [
+		{
+			position: { x: 1, y: 2, z: 3 },
+			velocity: stationary,
+			jerk: stationary,
+			speed: 0,
+		},
+		{
+			position: { x: -1, y: -2, z: -3 },
+			velocity: stationary,
+			jerk: stationary,
+			speed: 0,
+		},
+	];
+	const propCenter = { x: 10, y: 20, z: 30 };
+
+	it.each([
+		{
+			mode: TrackingMode.LEFT_END,
+			expected: [
+				{
+					sourceId: "left-end",
+					effectTipIndex: 0,
+					position: tips[0].position,
+				},
+			],
+		},
+		{
+			mode: TrackingMode.RIGHT_END,
+			expected: [
+				{
+					sourceId: "right-end",
+					effectTipIndex: 1,
+					position: tips[1].position,
+				},
+			],
+		},
+		{
+			mode: TrackingMode.BOTH_ENDS,
+			expected: [
+				{
+					sourceId: "left-end",
+					effectTipIndex: 0,
+					position: tips[0].position,
+				},
+				{
+					sourceId: "right-end",
+					effectTipIndex: 1,
+					position: tips[1].position,
+				},
+			],
+		},
+		{
+			mode: TrackingMode.HAND,
+			expected: [
+				{
+					sourceId: "hand",
+					effectTipIndex: 1,
+					position: propCenter,
+				},
+			],
+		},
+	])("selects the expected sources for $mode", ({ mode, expected }) => {
+		expect(resolveTrailSources3D(mode, tips, propCenter)).toEqual(expected);
 	});
 });

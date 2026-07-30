@@ -28,15 +28,24 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/charcoal-renderer-3d";
   import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
   import { DynamicLightManager, type LightHandle } from "./lighting/dynamic-light-manager";
-  import { TipPositionBridge3D } from "./tip-position-bridge-3d";
+  import {
+    resolveTrailSources3D,
+    TipPositionBridge3D,
+    type TrailSourceId3D,
+  } from "./tip-position-bridge-3d";
   import { PovStripRenderer3D } from "./poi/pov-strip-renderer-3d";
   import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import {
     resolveEffect,
     type TipEffectMap,
     type EffectType,
   } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import { TIER_CONFIGS, type QualityTierConfig } from "./types";
+  import {
+    TIER_CONFIGS,
+    type QualityTierConfig,
+    type TipPositionData3D,
+  } from "./types";
   import type { PropState3D } from "@austencloud/scene-3d";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -51,8 +60,9 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
   import { PROP_COLORS } from "@austencloud/scene-3d";
 
-  interface TipDatum {
-    position: Vector3 | null;
+  interface TrailDatum {
+    sourceId: TrailSourceId3D;
+    position: Vector3;
     effect: EffectType;
   }
 
@@ -244,16 +254,35 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     lightManager = new DynamicLightManager(parent, cfg);
   });
 
-  // Per-tip tracking: each prop has two tips (staff = 2 ends).
-  // Updated every frame inside useTask.
-  let blueTipData = $state<TipDatum[]>([
-    { position: null, effect: "none" },
-    { position: null, effect: "none" },
-  ]);
-  let redTipData = $state<TipDatum[]>([
-    { position: null, effect: "none" },
-    { position: null, effect: "none" },
-  ]);
+  // Trail sources are selected from the canonical tracking mode each frame.
+  // Stable source IDs prevent a mode switch from connecting two unrelated paths.
+  let blueTrailData = $state<TrailDatum[]>([]);
+  let redTrailData = $state<TrailDatum[]>([]);
+
+  function getTrailData(
+    propIndex: number,
+    tips: readonly TipPositionData3D[],
+    propCenter: { x: number; y: number; z: number },
+  ): TrailDatum[] {
+    return resolveTrailSources3D(
+      animationSettings.trail.trackingMode,
+      tips,
+      propCenter,
+    ).map((source) => ({
+      sourceId: source.sourceId,
+      position: new Vector3(
+        source.position.x,
+        source.position.y,
+        source.position.z,
+      ),
+      effect: resolveEffect(
+        propIndex,
+        source.effectTipIndex,
+        tipEffectMap,
+        globalTipEffectMap ?? {},
+      ),
+    }));
+  }
 
   // Mutable arrays for effect tips - updated directly in useTask, read by
   // renderers in the SAME frame tick (bypasses Svelte's batched prop updates).
@@ -427,7 +456,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
 
     if (visualBlueProp && blueRigCenter) {
       const result = tipBridge.update(0, visualBlueProp, blueRigCenter, staffHalfLength, dt);
-      blueTipData = result.tips.map((tip, tipIndex) => {
+      result.tips.forEach((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
           tipIndex,
@@ -492,16 +521,15 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
           });
         }
 
-        return {
-          position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-          effect,
-        };
       });
+      blueTrailData = getTrailData(0, result.tips, blueRigCenter);
+    } else {
+      blueTrailData = [];
     }
 
     if (visualRedProp && redRigCenter) {
       const result = tipBridge.update(1, visualRedProp, redRigCenter, staffHalfLength, dt);
-      redTipData = result.tips.map((tip, tipIndex) => {
+      result.tips.forEach((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,
           tipIndex,
@@ -565,11 +593,10 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
           });
         }
 
-        return {
-          position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-          effect,
-        };
       });
+      redTrailData = getTrailData(1, result.tips, redRigCenter);
+    } else {
+      redTrailData = [];
     }
 
     // LED rendering - direct imperative update in the same frame tick.
@@ -730,18 +757,12 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     updateEffectsFrame(delta);
   });
 
-  // Filter to only tips that have the "trails" effect assigned and a valid position.
+  // Filter to only selected sources that have the "trails" effect assigned.
   const blueTrailTips = $derived(
-    blueTipData.filter(
-      (t): t is TipDatum & { position: Vector3 } =>
-        t.effect === "trails" && t.position !== null,
-    ),
+    blueTrailData.filter((source) => source.effect === "trails"),
   );
   const redTrailTips = $derived(
-    redTipData.filter(
-      (t): t is TipDatum & { position: Vector3 } =>
-        t.effect === "trails" && t.position !== null,
-    ),
+    redTrailData.filter((source) => source.effect === "trails"),
   );
 
   onDestroy(() => {
@@ -756,7 +777,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   });
 </script>
 
-{#each blueTrailTips as tip, i (i)}
+{#each blueTrailTips as tip (tip.sourceId)}
   {@const resolvedTrails = resolveTrails3D(effectsState.trails)}
   <Trail3D
     tipPosition={tip.position}
@@ -773,7 +794,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   />
 {/each}
 
-{#each redTrailTips as tip, i (i)}
+{#each redTrailTips as tip (tip.sourceId)}
   {@const resolvedTrails = resolveTrails3D(effectsState.trails)}
   <Trail3D
     tipPosition={tip.position}
