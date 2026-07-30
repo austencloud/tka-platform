@@ -57,8 +57,10 @@ enabled = true
 js_repl = false
 
 [mcp_servers.chrome-devtools]
-command = "npx"
-args = ["chrome-devtools-mcp@latest", "--browserUrl=http://127.0.0.1:9222"]
+command = "cmd"
+args = ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
+env = { SystemRoot = 'C:\Windows', PROGRAMFILES = 'C:\Program Files' }
+startup_timeout_ms = 20_000
 
 [mcp_servers.flow-arts]
 command = "node"
