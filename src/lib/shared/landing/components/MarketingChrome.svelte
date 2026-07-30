@@ -62,6 +62,9 @@
   });
 
   const path = $derived(page.url.pathname);
+  const footerVariant = $derived(
+    path === "/" ? "compact" : path === "/about" ? "sitemap" : "full"
+  );
 
   // Named route morphs suppress the keyed content fade only while that exact
   // allowlisted navigation is active. Ordinary marketing navigation keeps the
@@ -112,7 +115,10 @@
     <!-- Persistent chrome like the header: outside the keyed crossfade, so it
          never re-fades between pages; below the growing stage, so it pins to
          the viewport bottom on short pages (sticky-footer flex column). -->
-    <SiteFooter />
+    <!-- The homepage already is a complete navigation surface. Interior pages
+         keep the sitemap; the host owns that route decision so SiteFooter also
+         remains safe for its independent GuideShell host. -->
+    <SiteFooter variant={footerVariant} />
   </div>
 </div>
 

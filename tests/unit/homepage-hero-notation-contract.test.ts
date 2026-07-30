@@ -30,6 +30,21 @@ const glossaryCard = readSource(
 );
 
 describe("homepage hero notation rail contract", () => {
+  it("makes opening Composer the primary hero action", () => {
+    expect(homeHero).toContain('class="composer-cta"');
+    expect(homeHero).toContain('href="/create"');
+    expect(homeHero).toContain("data-sveltekit-reload");
+    expect(homeHero).toContain("<span>Open Flow Arts Composer</span>");
+    expect(homeHero).toContain('cta_type: "open_composer"');
+    expect(homeHero).toContain("white-space: nowrap");
+    expect(homeHero).toContain("onReroll={handleReroll}");
+    expect(homeHero).toContain("rerolling={heroAct.rerolling}");
+    expect(homeHero).toContain('trackDemoInteraction("try_another")');
+    expect(homeHero).toContain("void heroAct.advanceNow()");
+    expect(homeHero).toContain('class="hero-actions"');
+    expect(homeHero).not.toContain("fa-rocket");
+  });
+
   it("reuses the shared StepStrip through the hero's lazy stage seam", () => {
     expect(homeHero).toContain("showNotationStrip={true}");
     expect(sequenceHero).toContain(
@@ -156,19 +171,15 @@ describe("homepage hero notation rail contract", () => {
     expect(launchpadGrid).toContain(
       "grid-template-rows: repeat(3, minmax(0, 1fr))"
     );
-    expect(launchpadGrid).toContain(
+    expect(launchpadGrid).not.toContain(
       "grid-template-columns: repeat(4, minmax(0, 1fr))"
     );
   });
 
-  it("recomposes narrow and short phone viewports without falling back to the tall stack", () => {
+  it("lets portrait phones scroll through a ranked launchpad instead of compressing the whole page", () => {
     const shortWideQuery = "(width >= 35rem) and (height < 500px)";
-    const compactPageQuery =
-      "@media (width < 35rem),\n    (width < 42rem) and (height >= 500px)";
-    const verticalRailQuery =
-      "(width < 42rem) and (height >= 500px)";
-    const tallPortraitQuery =
-      "@media (width < 42rem) and (min-height: 740px) and (orientation: portrait)";
+    const compactPageQuery = "(width < 42rem) and (height >= 500px)";
+    const verticalRailQuery = "(width < 42rem) and (height >= 500px)";
     const roomyPortraitQuery =
       "@media (width < 42rem) and (min-height: 56rem) and (orientation: portrait)";
 
@@ -195,8 +206,10 @@ describe("homepage hero notation rail contract", () => {
     for (const source of [landingPage, homeHero, sequenceHero, launchpadGrid]) {
       expect(source).toContain("(width >= 105rem) and (height >= 56.25rem)");
     }
-    for (const source of [landingPage, launchpadGrid, launchpadTile]) {
-      expect(source).toContain(tallPortraitQuery);
+    for (const source of [launchpadGrid, launchpadTile]) {
+      expect(source).toContain(
+        "@media (width < 35rem), (width < 42rem) and (height >= 500px)"
+      );
     }
     for (const source of [homeHero, launchpadGrid, launchpadTile]) {
       expect(source).toContain(roomyPortraitQuery);
@@ -208,29 +221,32 @@ describe("homepage hero notation rail contract", () => {
     expect(sequenceHero).toContain("orientation: notationOrientation");
     expect(launchpadGrid).toContain("grid-template-rows: minmax(0, 1fr) auto");
     expect(homeHero).toContain("--hero-demo-max-width: min(100%, 36svh)");
-    // 32svh, not the original 40svh. The demo was taking ~34% of the phone
-    // viewport, which left the launchpad below it as six equal 105px strips
-    // with no room to rank anything or carry a descriptor. Still pinned to an
-    // exact value so the budget cannot drift back silently.
-    expect(homeHero).toContain(
-      "--hero-demo-max-width: min(100%, clamp(12rem, 32svh, 17rem))"
-    );
-    expect(homeHero).toContain(
-      "--hero-demo-max-width: min(100%, clamp(17rem, 34svh, 21rem))"
-    );
+    expect(homeHero).toContain("--hero-demo-max-width: min(100%, 21rem)");
+    expect(homeHero).toContain("--hero-demo-max-width: min(100%, 22rem)");
+    expect(homeHero).toContain("min-height: calc(100svh - 4.25rem)");
     expect(homeHero).toContain("min-height: var(--min-touch-target, 44px)");
     expect(homeHero).toContain("font-size: var(--font-size-min, 0.875rem)");
-    expect(landingPage).toContain(
-      "--settings-home-compact-launchpad-min-height: 12.375rem"
+    expect(landingPage).not.toContain(
+      "--settings-home-compact-launchpad-min-height"
     );
-    expect(landingPage).toContain("align-items: center");
-    expect(launchpadGrid).toContain("grid-template-rows:\n        auto");
+    expect(landingPage).toContain("display: block");
+    expect(launchpadGrid).toContain("grid-template-rows: repeat(4, auto)");
+    expect(launchpadGrid).toContain(
+      ".launchpad.variant-home .bento :global(.tile.t-composer),\n    .launchpad.variant-home .bento :global(.tile.t-notation)"
+    );
+    expect(launchpadGrid).toContain(
+      "grid-template-columns: repeat(2, minmax(0, 1fr))"
+    );
     expect(launchpadGrid).toContain("--settings-home-tall-gap");
+    expect(launchpadTile).toContain(
+      "--settings-home-mobile-tile-height: 6.5rem"
+    );
+    expect(launchpadTile).toContain("--settings-home-mobile-tile-height: 8rem");
     expect(launchpadTile).toContain(
       ".tile.variant-home .card {\n      display: grid;\n      flex: 1 1 auto;\n      height: auto;"
     );
     expect(launchpadTile).toContain(
-      ".tile.variant-home .tile-link {\n      position: relative;\n      inset: auto;\n      display: block;\n      min-height: 2.75rem;"
+      ".tile.variant-home .tile-link {\n      position: relative;\n      inset: auto;\n      display: block;\n      min-height: var(--settings-home-mobile-tile-height);"
     );
     expect(launchpadTile).toContain(
       ".tile.variant-home .body,\n    .tile.variant-home .card:has(.chips) .body {\n      position: relative;"

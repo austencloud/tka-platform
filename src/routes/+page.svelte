@@ -266,45 +266,26 @@
     }
   }
 
-  /* The compact state owns every viewport below 35rem, plus the remaining
-     narrow portrait band below 42rem. At 35rem a short viewport moves to the
-     side-by-side state above; at 500px it moves back here. Range comparisons
-     make those seams exhaustive even when browser zoom produces fractional
-     CSS pixels. A hard launchpad floor preserves three touch rows plus the
-     utility row; shorter viewports scroll instead of shrinking controls. */
-  @media (width < 35rem),
-    (width < 42rem) and (height >= 500px) {
+  /* Phones use a real document flow. The previous one-viewport grid divided
+     whatever height remained after the hero among ten destinations, which
+     made a 375 × 667 screen read like a compressed site map. The hero now gets
+     a focused first screen and the launchpad follows at its natural height.
+     Short phone-landscape viewports still use the two-pane composition above. */
+  @media (width < 35rem), (width < 42rem) and (height >= 500px) {
     .content-layer {
-      --settings-home-compact-launchpad-min-height: 12.375rem;
-      display: grid;
-      grid-template-rows:
-        auto
-        minmax(var(--settings-home-compact-launchpad-min-height), 1fr);
-      align-items: stretch;
+      display: block;
       width: 100%;
       min-height: 100svh;
-      padding: 4.25rem 0.5rem 0.5rem;
+      padding: 4.25rem clamp(0.625rem, 3vw, 0.875rem) 1.25rem;
     }
 
     .launchpad-main {
       width: 100%;
-      height: 100%;
-      min-height: var(--settings-home-compact-launchpad-min-height);
+      height: auto;
+      min-height: 0;
       max-width: none;
       margin: 0;
       padding: 0;
-    }
-  }
-
-  /* Once mobile cards carry descriptions, their content owns the row height.
-     The main element still receives the rest of a tall screen from the outer
-     grid, so center the intrinsic launchpad inside that space. This keeps a
-     roomy phone balanced without stretching the cards or masking their copy. */
-  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
-    .launchpad-main {
-      display: grid;
-      align-items: center;
-      height: auto;
     }
   }
 

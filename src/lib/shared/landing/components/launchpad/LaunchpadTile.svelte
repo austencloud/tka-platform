@@ -16,7 +16,11 @@
   import { pressSpring } from "$lib/actions/press-spring";
   import { magnetic } from "$lib/actions/magnetic";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
-  import { hrefSlug, isProductionTileId, type LaunchpadTileDef } from "./launchpad-tiles";
+  import {
+    hrefSlug,
+    isProductionTileId,
+    type LaunchpadTileDef,
+  } from "./launchpad-tiles";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
   import {
@@ -68,7 +72,9 @@
     // than quietly widening the breakdown.
     trackLaunchpadClick({
       target: "tile",
-      tile_id: isProductionTileId(tile.id) ? (tile.id as LaunchpadTileId) : null,
+      tile_id: isProductionTileId(tile.id)
+        ? (tile.id as LaunchpadTileId)
+        : null,
     });
 
     if (
@@ -638,9 +644,10 @@
       padding: 0.8rem 0.9rem 0.8rem 3rem;
       background: linear-gradient(
         to right,
-        oklch(0.13 0.02 270 / 0.96) 0%,
-        oklch(0.13 0.02 270 / 0.82) 52%,
-        transparent 100%
+        oklch(0.13 0.02 270 / 0.98) 0%,
+        oklch(0.13 0.02 270 / 0.88) 40%,
+        oklch(0.13 0.02 270 / 0.42) 62%,
+        transparent 82%
       );
     }
     .tile.variant-home .card:has(.chips) .body {
@@ -664,7 +671,10 @@
     .tile.variant-home.t-faq .body p {
       max-width: 100%;
     }
-    .tile.variant-home.t-glossary .body h2,
+    .tile.variant-home.t-glossary .body h2 {
+      max-width: 100%;
+      white-space: nowrap;
+    }
     .tile.variant-home.t-glossary .body p {
       max-width: 48%;
     }
@@ -680,22 +690,32 @@
       font-size: var(--font-size-compact, 0.75rem);
     }
     .tile.variant-home .mandala-box {
-      inset: 0 0 0 auto;
-      width: auto;
+      inset: 0;
+      width: 100%;
       height: 100%;
-      aspect-ratio: 1;
-      opacity: 0.78;
+      aspect-ratio: auto;
+      justify-content: flex-end;
+      opacity: 0.96;
+      filter: saturate(1.12) brightness(1.06)
+        drop-shadow(0 0 0.65rem color-mix(in oklch, var(--c) 34%, transparent));
     }
     .tile.variant-home .mandala-box :global(.mandala-container) {
+      flex: 0 0 auto;
+      width: auto !important;
+      height: 100% !important;
+      aspect-ratio: 1;
       max-width: 100%;
       max-height: 100%;
     }
     .tile.variant-home .choreo-card-box {
       right: 2%;
       width: 5.25rem;
+      opacity: 0.96;
+      filter: saturate(1.06) brightness(1.04);
     }
     .tile.variant-home .pictograph-box {
-      opacity: 0.72;
+      opacity: 0.82;
+      filter: saturate(1.08) brightness(1.04);
     }
     .tile.variant-home .dictionary-box {
       inset: 0.75rem 0.75rem 0.75rem 52%;
@@ -703,6 +723,8 @@
     .tile.variant-home .guide-cover-box {
       right: 5%;
       width: 5rem;
+      opacity: 0.96;
+      filter: saturate(1.06) brightness(1.05);
     }
   }
 
@@ -752,7 +774,14 @@
       }
       .tile.variant-home .choreo-card-box,
       .tile.variant-home .guide-cover-box {
-        width: 4.25rem;
+        width: 4.75rem;
+      }
+      .tile.variant-home.t-glossary .dictionary-box {
+        display: none;
+      }
+      .tile.variant-home.t-glossary .body h2,
+      .tile.variant-home.t-glossary .body p {
+        max-width: 100%;
       }
     }
   }
@@ -844,9 +873,10 @@
       padding: 0.375rem 0.5rem 0.375rem 2.25rem;
       background: linear-gradient(
         to right,
-        oklch(0.13 0.02 270 / 0.96) 0%,
-        oklch(0.13 0.02 270 / 0.8) 54%,
-        transparent 100%
+        oklch(0.13 0.02 270 / 0.98) 0%,
+        oklch(0.13 0.02 270 / 0.9) 38%,
+        oklch(0.13 0.02 270 / 0.48) 58%,
+        transparent 78%
       );
     }
     .tile.variant-home .body h2,
@@ -866,11 +896,22 @@
       max-width: 100%;
     }
     .tile.variant-home .mandala-box {
-      inset: 0 0 0 auto;
-      width: auto;
+      inset: 0;
+      width: 100%;
       height: 100%;
+      aspect-ratio: auto;
+      justify-content: flex-end;
+      opacity: 0.95;
+      filter: saturate(1.14) brightness(1.07)
+        drop-shadow(0 0 0.65rem color-mix(in oklch, var(--c) 38%, transparent));
+    }
+    .tile.variant-home .mandala-box :global(.mandala-container) {
+      flex: 0 0 auto;
+      width: auto !important;
+      height: 100% !important;
       aspect-ratio: 1;
-      opacity: 0.7;
+      max-width: 100%;
+      max-height: 100%;
     }
     .tile.variant-home .choreo-card-box {
       right: 2%;
@@ -885,16 +926,24 @@
     }
   }
 
-  /* Tall portrait phones: give the tiles their meaning back.
-     The tier above reduces every tile to a bare noun — "Composer", "Glossary" —
-     which tells a first-time visitor nothing about which door leads where. The
-     bento's auto rows (see LaunchpadGrid) let the complete label and descriptor
-     establish card height. This switches the body from an absolute overlay to
-     normal flow, so overflow is structurally impossible: copy changes grow the
-     row and the page scrolls. Short and landscape phones keep label-only cards. */
-  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
+  /* Stacked phone cards participate in normal document flow. The previous
+     phone tier hid every descriptor and forced six equal fractional rows so
+     the whole site map could fit beside the hero. These role-sized cards keep
+     the important routes explanatory and let the page scroll. */
+  @media (width < 35rem), (width < 42rem) and (height >= 500px) {
     .tile.variant-home {
+      --settings-home-mobile-tile-height: 6.5rem;
       display: flex;
+    }
+    .tile.variant-home.t-composer {
+      --settings-home-mobile-tile-height: 8rem;
+    }
+    .tile.variant-home.t-notation {
+      --settings-home-mobile-tile-height: 7rem;
+    }
+    .tile.variant-home.t-faq,
+    .tile.variant-home.t-glossary {
+      --settings-home-mobile-tile-height: 4.5rem;
     }
     .tile.variant-home .card {
       display: grid;
@@ -905,16 +954,21 @@
       position: relative;
       inset: auto;
       display: block;
-      min-height: 2.75rem;
+      min-height: var(--settings-home-mobile-tile-height);
     }
     .tile.variant-home .body,
     .tile.variant-home .card:has(.chips) .body {
       position: relative;
       inset: auto;
-      min-height: 2.75rem;
+      min-height: var(--settings-home-mobile-tile-height);
+      padding: 0.625rem 0.625rem 0.625rem 2.25rem;
     }
-    .tile.variant-home .body h2 {
+    .tile.variant-home .body h2,
+    .tile.variant-home.s-2x2 .body h2,
+    .tile.variant-home.s-2x1 .body h2 {
       flex: 0 0 auto;
+      max-width: 80%;
+      font-size: 0.9375rem;
     }
     .tile.variant-home .body p {
       display: block;
@@ -922,47 +976,119 @@
       overflow: visible;
       -webkit-line-clamp: unset;
       line-clamp: unset;
-      max-width: 74%;
+      max-width: 78%;
       margin: 0.15rem 0 0;
       font-size: var(--font-size-compact, 0.75rem);
-      line-height: 1.25;
+      line-height: 1.3;
       color: var(--theme-text-dim, rgba(255, 255, 255, 0.66));
     }
-    /* Same intent as the desktop right-gutter rule, but capping the paragraph
-       instead of padding the whole body: a 184px tile has no room to spare, and
-       padding-right here squeezed "Choreo Cards" down to a wrapped "Cards".
-       The heading keeps the full width; only the descriptor stops at the card. */
     .tile.variant-home.t-choreo-cards .body p,
     .tile.variant-home.t-guide .body p {
-      max-width: 52%;
+      max-width: 56%;
+    }
+    .tile.variant-home.t-choreo-cards .body h2 {
+      max-width: 50%;
+    }
+    .tile.variant-home.t-composer .body,
+    .tile.variant-home.t-composer .card:has(.chips) .body {
+      background: linear-gradient(
+        to right,
+        oklch(0.13 0.02 270 / 0.98) 0%,
+        oklch(0.13 0.02 270 / 0.9) 36%,
+        oklch(0.13 0.02 270 / 0.4) 55%,
+        transparent 70%
+      );
+    }
+    .tile.variant-home.t-composer .mandala-box {
+      inset: -0.25rem -0.25rem -0.25rem 0;
+      width: auto;
+      height: auto;
+      opacity: 0.98;
+      filter: saturate(1.18) brightness(1.08)
+        drop-shadow(0 0 0.75rem color-mix(in oklch, var(--c) 42%, transparent));
+    }
+    .tile.variant-home.t-choreo-cards .choreo-card-box {
+      right: -0.15rem;
+      width: 4.75rem;
+      opacity: 0.9;
+      filter: saturate(1.08) brightness(1.06);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 50%);
+      mask-image: linear-gradient(to right, transparent, black 50%);
+    }
+    .tile.variant-home.t-guide .guide-cover-box {
+      right: 0.3rem;
+      width: 4.45rem;
+      opacity: 0.9;
+      filter: saturate(1.08) brightness(1.08);
+    }
+    .tile.variant-home.t-notation .pictograph-box {
+      right: 0.15rem;
+      opacity: 0.86;
+      filter: saturate(1.12) brightness(1.08);
+    }
+    .tile.variant-home.t-glossary .dictionary-box {
+      display: block;
+      inset: 0.45rem 0.35rem 0.45rem auto;
+      width: 4.75rem;
+      opacity: 0.72;
+      -webkit-mask-image: linear-gradient(to right, transparent, black 30%);
+      mask-image: linear-gradient(to right, transparent, black 30%);
+    }
+    .tile.variant-home.t-glossary .dictionary-box :global(.entry) {
+      justify-content: center;
+    }
+    .tile.variant-home.t-glossary .dictionary-box :global(.headword) {
+      justify-content: flex-end;
+      font-size: 1rem;
+      text-align: right;
+    }
+    .tile.variant-home.t-glossary .dictionary-box :global(.cat),
+    .tile.variant-home.t-glossary .dictionary-box :global(.def) {
+      display: none;
+    }
+    .tile.variant-home.t-faq .card::after {
+      content: "?";
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      z-index: 0;
+      color: var(--c);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 3.25rem;
+      font-weight: 700;
+      line-height: 1;
+      opacity: 0.2;
+      pointer-events: none;
+      translate: 0 -52%;
     }
   }
 
-  /* Tall phones only — these pair with the four-band bento in LaunchpadGrid,
-     which is gated to the same 740px height floor. Below it the grid stays
-     three rows and neither the full-width Composer nor the FAQ band exists. */
-  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
-    /* Composer owns the full first row, so its label leads at full size. */
+  /* The two full-width routes carry the strongest labels and explanations.
+     FAQ and Glossary are compact reference doors at the end of the group. */
+  @media (width < 35rem), (width < 42rem) and (height >= 500px) {
     .tile.variant-home.t-composer .body h2 {
       max-width: 100%;
       font-size: 1.1rem;
     }
     .tile.variant-home.t-composer .body p {
-      max-width: 58%;
+      max-width: 52%;
       font-size: 0.78rem;
     }
-    /* FAQ is the slim closing band: label only, centered, no descriptor. */
-    .tile.variant-home.t-faq .body {
-      padding-left: 0.5rem;
-      align-items: center;
-      justify-content: center;
-      background: none;
+    .tile.variant-home.t-notation .body h2 {
+      max-width: 100%;
+      font-size: 1rem;
     }
-    .tile.variant-home.t-faq .body p {
+    .tile.variant-home.t-notation .body p {
+      max-width: 60%;
+    }
+    .tile.variant-home.t-faq .body p,
+    .tile.variant-home.t-glossary .body p {
       display: none;
     }
-    .tile.variant-home.t-faq .mark {
-      display: none;
+    .tile.variant-home.t-faq .body h2,
+    .tile.variant-home.t-glossary .body h2 {
+      max-width: 62%;
+      font-size: 0.9375rem;
     }
   }
 
@@ -974,7 +1100,7 @@
       .tile.variant-home .tile-link,
       .tile.variant-home .body,
       .tile.variant-home .card:has(.chips) .body {
-        min-height: 3.25rem;
+        min-height: var(--settings-home-mobile-tile-height);
       }
       .tile.variant-home .body,
       .tile.variant-home .card:has(.chips) .body {

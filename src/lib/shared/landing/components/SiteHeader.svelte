@@ -535,7 +535,6 @@
         close();
       }}
     >
-      <i class="fas fa-rocket" aria-hidden="true"></i>
       <span>Open Flow Arts Composer</span>
     </a>
     {#if authReady && isFullAccount}

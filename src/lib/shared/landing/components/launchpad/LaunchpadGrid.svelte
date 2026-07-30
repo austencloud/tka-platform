@@ -320,9 +320,7 @@
   }
 
   /* When the right pane itself is narrow, two-up cards stop being useful.
-	   The container fallback becomes a compact six-button rail. The utility
-	   strip switches to two columns slightly sooner so its long labels never
-	   wrap inside four undersized segments. */
+	   The container fallback becomes a compact six-button rail. */
   @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     @container launchpad (max-width: 22rem) {
       .launchpad.variant-home .launchpad-group {
@@ -340,11 +338,6 @@
         grid-column: 1;
         grid-row: auto;
         min-height: 0;
-      }
-    }
-    @container launchpad (max-width: 38rem) {
-      .launchpad.variant-home .strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   }
@@ -369,7 +362,7 @@
       min-height: 0;
     }
     .launchpad.variant-home .strip {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.5rem;
     }
     .launchpad.variant-home .strip a {
@@ -381,8 +374,8 @@
   }
 
   /* Narrow widths and short heights share the compact 2 × 3 destination bento.
-     Four smaller utility links use one final row so every homepage route stays
-     available without stealing a second full band from the main tiles. */
+     Two deeper utility links use one final row without repeating the compact
+     footer or stealing a second full band from the main tiles. */
   @media (width < 42rem),
     (height < 500px),
     (width >= 105rem) and (height < 56.25rem) {
@@ -417,7 +410,7 @@
       min-height: 0;
     }
     .launchpad.variant-home .strip {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.375rem;
     }
     .launchpad.variant-home .strip a {
@@ -431,46 +424,71 @@
     }
   }
 
-  /* Portrait phones only: rank the bento instead of shipping six equal cards.
-     The tier above collapses every span to `auto`, so a 2x2 Composer reads
-     exactly like a 1x1 Glossary and nothing on screen says which one matters.
-     Four bands restore that: Composer takes the full first row as the primary
-     act, the two learn/hold destinations and the two reference ones pair off
-     beneath it, and FAQ closes as a slim full-width band above the strip.
-     Deliberately NOT applied to the phone-landscape tier next door — that one
-     has ~300px of block space and cannot afford a fourth row.
-
-     At this tier the text itself sizes each row. This is the important part:
-     descriptions are no longer absolutely positioned inside fractional tracks,
-     so a longer label or copy change grows the page instead of being clipped. */
-  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
+  /* Stacked phones use the same four-band hierarchy as the tablet bento, but
+     in natural document flow. Composer and Notation span both columns; product
+     and learning routes pair together; FAQ and Glossary close the primary
+     group. The two utility links form one deliberate closing row. The short
+     landscape split above stays height-locked. */
+  @media (width < 35rem), (width < 42rem) and (height >= 500px) {
     .launchpad.variant-home,
     .launchpad.variant-home .launchpad-group,
     .launchpad.variant-home .bento {
       height: auto;
     }
+    .launchpad.variant-home {
+      padding-block: clamp(0.75rem, 2.5svh, 1.25rem) 0.5rem;
+    }
     .launchpad.variant-home .launchpad-group {
       grid-template-rows: auto auto;
+      row-gap: 0.75rem;
     }
     .launchpad.variant-home .bento {
-      grid-template-rows:
-        auto
-        auto
-        auto
-        minmax(2.75rem, auto);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(4, auto);
+      grid-auto-rows: 0;
+      grid-auto-flow: row;
+      gap: 0.625rem;
+      margin: 0;
     }
     .launchpad.variant-home .bento :global(.tile) {
-      min-height: 2.75rem;
+      min-height: 0;
     }
     .launchpad.variant-home .bento :global(.tile.t-composer),
-    .launchpad.variant-home .bento :global(.tile.t-faq) {
+    .launchpad.variant-home .bento :global(.tile.t-notation) {
       grid-column: 1 / -1;
     }
     .launchpad.variant-home .bento :global(.tile.t-composer) {
       grid-row: 1;
     }
+    .launchpad.variant-home .bento :global(.tile.t-choreo-cards) {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .launchpad.variant-home .bento :global(.tile.t-guide) {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .launchpad.variant-home .bento :global(.tile.t-notation) {
+      grid-row: 3;
+    }
     .launchpad.variant-home .bento :global(.tile.t-faq) {
+      grid-column: 1;
       grid-row: 4;
+    }
+    .launchpad.variant-home .bento :global(.tile.t-glossary) {
+      grid-column: 2;
+      grid-row: 4;
+    }
+    .launchpad.variant-home .strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+    .launchpad.variant-home .strip a {
+      padding-inline: 0.5rem;
+    }
+    .launchpad.variant-home .strip h3 {
+      font-size: var(--font-size-min, 0.875rem);
+      line-height: 1.2;
     }
   }
 
@@ -559,22 +577,8 @@
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.6rem;
-  }
-  /* Four segments become two rows of two on narrower grids. These sit AFTER
-	   the base .strip rule on
-	   purpose — an earlier under-640 override lost the same-specificity
-	   cascade to the base block and was silently dead. */
-  @media (min-width: 641px) and (max-width: 1020px) {
-    .strip {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-  @media (max-width: 640px) {
-    .strip {
-      grid-template-columns: repeat(2, 1fr);
-    }
   }
   .strip li {
     margin: 0;

@@ -35,10 +35,9 @@
   // marketing surface — every visitor sees the act at the same tempo.
   const HERO_BPM = 60;
 
-  // Mirrors composer/+page.svelte's rerollHeroDemo: the dice button is the
-  // only reroll on this page, so the tracking call and the actual advance
-  // stay paired in one wrapper rather than threading a callback into
-  // SequenceHeroDemo (shared by 16+ files, per landing-analytics-taxonomy §5).
+  // The demo keeps playing on its own, but a visitor can replace the current
+  // sequence immediately. Tracking stays beside the action so the homepage
+  // and Composer demos report the same "try another" interaction.
   function handleReroll(): void {
     trackDemoInteraction("try_another");
     void heroAct.advanceNow();
@@ -69,16 +68,30 @@
     showWordHeader={true}
   />
 
-  <p class="hero-pointer">
-    New here? Start with
+  <nav class="hero-actions" aria-label="Start here">
+    <a
+      class="composer-cta"
+      href="/create"
+      data-sveltekit-reload
+      onclick={() =>
+        trackCtaClick("hero", {
+          cta_type: "open_composer",
+          destination: "/create",
+        })}
+    >
+      <span>Open Flow Arts Composer</span>
+    </a>
+
     <a
       href="/about"
       class="pointer-link"
       onclick={() =>
-        trackCtaClick("hero", { cta_type: "what_is_tka", destination: "/about" })}
-      >What is TKA?</a
+        trackCtaClick("hero", {
+          cta_type: "what_is_tka",
+          destination: "/about",
+        })}>What is TKA?</a
     >
-  </p>
+  </nav>
 </section>
 
 <style>
@@ -137,12 +150,51 @@
     color: oklch(0.72 0.02 270);
   }
 
-  .hero-pointer {
-    margin: 1.6rem 0 0;
-    font-size: clamp(0.9rem, 0.86rem + 0.1vw, 1rem);
-    color: oklch(0.66 0.02 270);
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-self: center;
+    justify-content: center;
+    gap: 0.75rem;
+    max-width: calc(100% - 2rem);
+    margin-top: clamp(1rem, 2.5svh, 1.5rem);
   }
 
+  .composer-cta {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    justify-content: center;
+    min-height: var(--min-touch-target, 44px);
+    box-sizing: border-box;
+    padding: 0 clamp(1rem, 5cqi, 1.4rem);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, #6f8cff, #8b6cff);
+    box-shadow: 0 4px 18px rgba(111, 140, 255, 0.4);
+    font-family: inherit;
+    font-size: clamp(0.95rem, 0.9rem + 0.12vw, 1.08rem);
+    font-weight: 650;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      filter 160ms ease;
+  }
+  .composer-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(111, 140, 255, 0.55);
+    filter: brightness(1.06);
+  }
+  .composer-cta:focus-visible {
+    outline: 2px solid oklch(0.88 0.08 275);
+    outline-offset: 3px;
+    box-shadow: 0 10px 30px rgba(111, 140, 255, 0.55);
+  }
   /* Standalone CTA (not inline prose): a visible pill, not a bare text link,
      per clickables-look-like-buttons. */
   .pointer-link {
@@ -150,7 +202,6 @@
     align-items: center;
     min-height: 44px;
     padding: 0.35em 0.9em;
-    margin-left: 0.15em;
     border-radius: 10px;
     background: oklch(0.3 0.04 270 / 0.18);
     border: 1px solid oklch(0.5 0.06 270 / 0.3);
@@ -169,15 +220,20 @@
   }
 
   @media (pointer: coarse) {
+    .composer-cta {
+      transform: none;
+    }
     .pointer-link {
       transform: none;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .composer-cta,
     .pointer-link {
       transition: none;
     }
+    .composer-cta:hover,
     .pointer-link:hover {
       transform: none;
     }
@@ -215,9 +271,8 @@
     .title-sub {
       font-size: clamp(0.9rem, 3.5cqi, 1.15rem);
     }
-    .hero-pointer {
+    .hero-actions {
       margin-top: clamp(0.75rem, 2svh, 1.25rem);
-      font-size: 0.9rem;
     }
   }
 
@@ -236,7 +291,7 @@
       margin-top: 0.35em;
       font-size: 0.9rem;
     }
-    .hero-pointer {
+    .hero-actions {
       margin-top: 0.5rem;
     }
   }
@@ -259,8 +314,11 @@
       margin-top: 0.2em;
       font-size: 0.8rem;
     }
-    .hero-pointer {
+    .hero-actions {
       margin-top: 0.25rem;
+    }
+    .composer-cta {
+      padding-inline: 0.9rem;
       font-size: 0.875rem;
     }
   }
@@ -287,41 +345,52 @@
       margin-top: 0.1em;
       font-size: var(--font-size-compact, 0.75rem);
     }
-    .hero-pointer {
+    .hero-actions {
+      margin-top: 0.25rem;
+    }
+    .composer-cta {
+      padding-inline: 0.75rem;
+      font-size: var(--font-size-min, 0.875rem);
+    }
+    .pointer-link {
       display: none;
     }
   }
 
-  /* Narrow screens stay in the compact hierarchy at every height. Below
-     500px the rail is removed by SequenceHeroDemo, so the same footprint gives
-     the square back its usable width while the page remains scroll-safe. */
-  @media (width < 35rem),
-    (width < 42rem) and (height >= 500px) {
+  /* Portrait phones get a focused first screen instead of sharing a fixed
+     height budget with the entire launchpad. Width now sizes the live example;
+     tying it to 32svh made the animation tiny on the exact 375 × 667 viewport
+     where it needs to explain the product. Content can grow and scroll when
+     text sizing or a shorter browser window needs more room. */
+  @media (width < 35rem), (width < 42rem) and (height >= 500px) {
     .home-hero {
-      min-height: 0;
-      padding: 0;
-      justify-content: flex-start;
-      /* 40svh -> 32svh. The demo was taking ~34% of the phone viewport, which
-         squeezed the launchpad below it into six equal 105px strips with no
-         room to rank anything. The reclaimed height pays for the first-read
-         link below and for Composer's full-width band in the bento. */
-      --hero-demo-max-width: min(100%, clamp(12rem, 32svh, 17rem));
+      min-height: calc(100svh - 4.25rem);
+      padding: clamp(0.75rem, 2.4svh, 1.25rem) 0 clamp(1rem, 3svh, 1.5rem);
+      justify-content: center;
+      --hero-demo-max-width: min(100%, 21rem);
     }
     .home-hero :global(.hero-demo.with-notation-strip) {
-      margin-top: 0.35rem;
+      margin-top: 0.75rem;
     }
     .title-main {
-      font-size: clamp(1.75rem, 9.5vw, 2.1rem);
+      max-width: none;
+      font-size: clamp(1.7rem, 8vw, 2.05rem);
+      white-space: nowrap;
     }
     .title-sub {
-      margin-top: 0.2em;
+      margin-top: 0.25em;
       font-size: var(--font-size-min, 0.875rem);
     }
-    /* Kept visible on phones. For a stranger this is the highest-value link on
-       the page — hiding it here removed the one door that explains the rest,
-       from exactly the audience most likely to need it. */
-    .hero-pointer {
-      margin-top: 0.5rem;
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: clamp(1rem, 2.5svh, 1.35rem);
+    }
+    .composer-cta {
+      padding-inline: 0.9rem;
       font-size: var(--font-size-min, 0.875rem);
     }
     .pointer-link {
@@ -330,12 +399,11 @@
     }
   }
 
-  /* Extra-tall phones have enough block space to give the live example its
-     intended visual weight. The width remains capped by the component, while
-     the height query prevents this larger stage from crowding shorter phones. */
+  /* Roomy phones can use the last sliver of available width without changing
+     the composition or introducing another breakpoint-driven layout. */
   @media (width < 42rem) and (min-height: 56rem) and (orientation: portrait) {
     .home-hero {
-      --hero-demo-max-width: min(100%, clamp(17rem, 34svh, 21rem));
+      --hero-demo-max-width: min(100%, 22rem);
     }
   }
 
@@ -357,7 +425,11 @@
     .title-sub {
       font-size: 1.3rem;
     }
-    .hero-pointer {
+    .composer-cta {
+      min-height: 3.25rem;
+      padding-inline: 1.8rem;
+    }
+    .hero-actions {
       font-size: 0.95rem;
     }
   }

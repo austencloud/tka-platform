@@ -13,7 +13,15 @@ const readSource = (path: string): string =>
 const domains = readSource("src/config/domains.ts");
 const rootLayout = readSource("src/routes/+layout.svelte");
 const homePage = readSource("src/routes/+page.svelte");
-const siteHeader = readSource("src/lib/shared/landing/components/SiteHeader.svelte");
+const siteHeader = readSource(
+	"src/lib/shared/landing/components/SiteHeader.svelte"
+);
+const siteFooter = readSource(
+	"src/lib/shared/landing/components/SiteFooter.svelte"
+);
+const marketingChrome = readSource(
+	"src/lib/shared/landing/components/MarketingChrome.svelte"
+);
 
 // --- Collect every href the homepage manifest links to ---------------------
 
@@ -27,7 +35,10 @@ function collectHrefs(): HrefEntry[] {
 	for (const tile of LAUNCHPAD_TILES) {
 		entries.push({ href: tile.href, source: `tile:${tile.id}` });
 		for (const chip of tile.chips ?? []) {
-			entries.push({ href: chip.href, source: `tile:${tile.id}>chip:${chip.label}` });
+			entries.push({
+				href: chip.href,
+				source: `tile:${tile.id}>chip:${chip.label}`,
+			});
 		}
 	}
 	for (const link of STRIP_LINKS) {
@@ -64,7 +75,7 @@ function extractArrayLiteral(source: string, arrayName: string): string[] {
 	const cleaned = stripLineComments(source);
 	// Matches: const NAME = [ ... ]  or  const NAME = new Set([ ... ])
 	const re = new RegExp(
-		`${arrayName}\\s*(?::[^=]+)?=\\s*(?:new Set\\()?\\[([\\s\\S]*?)\\]`,
+		`${arrayName}\\s*(?::[^=]+)?=\\s*(?:new Set\\()?\\[([\\s\\S]*?)\\]`
 	);
 	const match = cleaned.match(re);
 	if (!match) {
@@ -88,7 +99,11 @@ const marketingSubtrees = extractArrayLiteral(rootLayout, "MARKETING_SUBTREES");
 function resolvesInLandingMode(href: string): boolean {
 	if (landingPaths.includes(href)) return true;
 	if (marketingExact.includes(href)) return true;
-	if (marketingSubtrees.some((root) => href === root || href.startsWith(root + "/"))) {
+	if (
+		marketingSubtrees.some(
+			(root) => href === root || href.startsWith(root + "/")
+		)
+	) {
 		return true;
 	}
 	if (publicPathPrefixes.some((prefix) => href.startsWith(prefix))) return true;
@@ -107,7 +122,7 @@ describe("homepage public-links contract", () => {
 		for (const entry of hrefEntries) {
 			expect(
 				resolvesInLandingMode(entry.href),
-				`href "${entry.href}" (from ${entry.source}) does not resolve to landing mode via LANDING_PATHS, MARKETING_EXACT, MARKETING_SUBTREES, or PUBLIC_PATH_PREFIXES`,
+				`href "${entry.href}" (from ${entry.source}) does not resolve to landing mode via LANDING_PATHS, MARKETING_EXACT, MARKETING_SUBTREES, or PUBLIC_PATH_PREFIXES`
 			).toBe(true);
 		}
 	});
@@ -115,7 +130,10 @@ describe("homepage public-links contract", () => {
 	it("every linked route is a real page, not a redirect stub", () => {
 		for (const entry of hrefEntries) {
 			const cleanPath = entry.href.replace(/^\//, "");
-			const publicDir = resolve(process.cwd(), `src/routes/(public)/${cleanPath}`);
+			const publicDir = resolve(
+				process.cwd(),
+				`src/routes/(public)/${cleanPath}`
+			);
 			const rootDir = resolve(process.cwd(), `src/routes/${cleanPath}`);
 
 			const publicPageSvelte = resolve(publicDir, "+page.svelte");
@@ -132,7 +150,7 @@ describe("homepage public-links contract", () => {
 				const text = readFileSync(publicPageTs, "utf-8");
 				expect(
 					text,
-					`href "${entry.href}" (from ${entry.source}) resolves only to a +page.ts that redirects (3xx) — links a retired route`,
+					`href "${entry.href}" (from ${entry.source}) resolves only to a +page.ts that redirects (3xx) — links a retired route`
 				).not.toContain("redirect(3");
 				continue;
 			}
@@ -141,13 +159,13 @@ describe("homepage public-links contract", () => {
 				const text = readFileSync(rootPageTs, "utf-8");
 				expect(
 					text,
-					`href "${entry.href}" (from ${entry.source}) resolves only to a +page.ts that redirects (3xx) — links a retired route`,
+					`href "${entry.href}" (from ${entry.source}) resolves only to a +page.ts that redirects (3xx) — links a retired route`
 				).not.toContain("redirect(3");
 				continue;
 			}
 
 			expect.fail(
-				`href "${entry.href}" (from ${entry.source}) has no +page.svelte or +page.ts at src/routes/(public)/${cleanPath} or src/routes/${cleanPath}`,
+				`href "${entry.href}" (from ${entry.source}) has no +page.svelte or +page.ts at src/routes/(public)/${cleanPath} or src/routes/${cleanPath}`
 			);
 		}
 	});
@@ -171,7 +189,7 @@ describe("homepage public-links contract", () => {
 			"glossary",
 		]);
 		expect(LAUNCHPAD_TILES.find((tile) => tile.id === "guide")?.span).toBe(
-			"2x1",
+			"2x1"
 		);
 		expect(LAUNCHPAD_TILES.find((tile) => tile.id === "faq")).toMatchObject({
 			href: "/faq",
@@ -181,21 +199,39 @@ describe("homepage public-links contract", () => {
 		const occupiedCells = LAUNCHPAD_TILES.reduce(
 			(total, tile) =>
 				total + ({ "2x2": 4, "2x1": 2, "1x1": 1 } as const)[tile.span],
-			0,
+			0
 		);
 		expect(occupiedCells).toBe(12);
 		expect(STRIP_LINKS).toEqual([
-			{ label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
+			{
+				label: "Staff Choreography",
+				href: "/learn/staff-spinning-choreography",
+			},
 			{ label: "Software Roots", href: "/roots/software" },
-			{ label: "Support", href: "/support" },
-			{ label: "About", href: "/about" },
 		]);
 		expect(hrefEntries.some(({ href }) => href === "/notation/letters")).toBe(
-			false,
+			false
 		);
 		expect(siteHeader).toMatch(
-			/label:\s*"The LOOP Algebra",[\s\S]{0,120}href:\s*"\/notation\/loops"/,
+			/label:\s*"The LOOP Algebra",[\s\S]{0,120}href:\s*"\/notation\/loops"/
 		);
+	});
+
+	it("keeps the homepage compact and hands About directly to the sitemap", () => {
+		expect(marketingChrome).toContain(
+			'path === "/" ? "compact" : path === "/about" ? "sitemap" : "full"'
+		);
+		expect(marketingChrome).toContain("<SiteFooter variant={footerVariant} />");
+		expect(siteFooter).toContain('variant?: "full" | "compact" | "sitemap"');
+		expect(siteFooter).toContain('variant = "full"');
+		expect(siteFooter).toContain('class:sitemap={variant === "sitemap"}');
+		expect(siteFooter).toContain('{#if variant !== "sitemap"}');
+		expect(siteFooter).toContain('{#if variant !== "compact"}');
+		expect(siteFooter).toContain('<nav class="col col-static"');
+		expect(siteFooter).toContain('<details class="col col-disclosure">');
+		expect(siteFooter).toContain(".col-disclosure[open] .col-chevron");
+		expect(siteFooter).not.toContain("MediaQuery");
+		expect(siteFooter).not.toContain("disclosureMode");
 	});
 
 	it("no manifest string contains an em dash", () => {
@@ -208,7 +244,9 @@ describe("homepage public-links contract", () => {
 		strings.push(HERO_POINTER.prefix, HERO_POINTER.label);
 
 		for (const s of strings) {
-			expect(s, `string "${s}" contains an em dash (U+2014)`).not.toContain("—");
+			expect(s, `string "${s}" contains an em dash (U+2014)`).not.toContain(
+				"—"
+			);
 		}
 	});
 
@@ -224,7 +262,7 @@ describe("homepage public-links contract", () => {
 		]) {
 			expect(
 				homePage,
-				`+page.svelte still references retired section "${retired}"`,
+				`+page.svelte still references retired section "${retired}"`
 			).not.toContain(retired);
 		}
 	});

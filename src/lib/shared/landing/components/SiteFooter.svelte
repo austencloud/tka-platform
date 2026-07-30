@@ -1,17 +1,22 @@
 <script lang="ts">
   /**
-   * SiteFooter — the public site's sitemap footer, rendered once by
-   * MarketingChrome (persistent chrome, outside the route crossfade — same
-   * treatment as SiteHeader) and by the guide subtree layouts. Replaces the
-   * old LandingFooter, which each page had to remember to import; pages kept
-   * shipping without it (composer, the whole /shop subtree). Every column
-   * link is a page that previously had thin or no global-nav inbound links.
+   * SiteFooter owns three compositions of the same navigation: the full
+   * interior footer, the compact homepage footer, and a sitemap-only handoff
+   * for pages that already finish with their own brand and Composer action.
+   * MarketingChrome renders it outside the route crossfade, while the guide
+   * subtree uses the full default.
    *
    * Terms/Privacy keep LandingFooter's behavior: on narrow viewports they
    * open the in-place LegalSheet instead of navigating.
    */
   import LegalSheet from "$lib/shared/legal/components/LegalSheet.svelte";
   import { trackCtaClick } from "$lib/shared/analytics/landing-events";
+
+  let {
+    variant = "full",
+  }: {
+    variant?: "full" | "compact" | "sitemap";
+  } = $props();
 
   let sheetOpen = $state(false);
   let sheetType = $state<"terms" | "privacy">("terms");
@@ -84,39 +89,65 @@
   const year = new Date().getFullYear();
 </script>
 
-<footer class="site-footer">
-  <div class="inner">
-    <div class="cols">
-      <div class="brand">
-        <a href="/" class="wordmark" aria-label="The Kinetic Alphabet, Home"
-          >TKA</a
-        >
-        <p class="tagline">Notation for flow arts.</p>
-        <a
-          class="composer-cta"
-          href="/create"
-          data-sveltekit-reload
-          onclick={() =>
-            trackCtaClick("footer", {
-              cta_type: "open_composer",
-              destination: "/create",
-            })}
-        >
-          <i class="fas fa-rocket" aria-hidden="true"></i>
-          Open Flow Arts Composer
-        </a>
-      </div>
-
-      {#each COLUMNS as col}
-        <nav class="col" aria-label="{col.title} links">
-          <h2 class="col-title">{col.title}</h2>
-          <ul>
-            {#each col.links as link}
-              <li><a href={link.href}>{link.label}</a></li>
-            {/each}
-          </ul>
-        </nav>
+{#snippet columnLinks(col: FooterColumn)}
+  <div class="col-content">
+    <ul>
+      {#each col.links as link}
+        <li><a href={link.href}>{link.label}</a></li>
       {/each}
+    </ul>
+  </div>
+{/snippet}
+
+<footer
+  class="site-footer"
+  class:compact={variant === "compact"}
+  class:full={variant === "full"}
+  class:sitemap={variant === "sitemap"}
+>
+  <div class="inner">
+    <div
+      class:cols={variant !== "compact"}
+      class:compact-main={variant === "compact"}
+    >
+      {#if variant !== "sitemap"}
+        <div class="brand">
+          <a href="/" class="wordmark" aria-label="The Kinetic Alphabet, Home"
+            >TKA</a
+          >
+          <p class="tagline">Notation for flow arts.</p>
+          {#if variant === "full"}
+            <a
+              class="composer-cta"
+              href="/create"
+              data-sveltekit-reload
+              onclick={() =>
+                trackCtaClick("footer", {
+                  cta_type: "open_composer",
+                  destination: "/create",
+                })}
+            >
+              Open Flow Arts Composer
+            </a>
+          {/if}
+        </div>
+      {/if}
+
+      {#if variant !== "compact"}
+        {#each COLUMNS as col}
+          <nav class="col col-static" aria-label="{col.title} links">
+            <h2 class="col-title">{col.title}</h2>
+            {@render columnLinks(col)}
+          </nav>
+          <details class="col col-disclosure">
+            <summary class="col-toggle">
+              <span class="col-title">{col.title}</span>
+              <i class="fas fa-chevron-down col-chevron" aria-hidden="true"></i>
+            </summary>
+            {@render columnLinks(col)}
+          </details>
+        {/each}
+      {/if}
     </div>
 
     <div class="bottom">
@@ -147,7 +178,7 @@
 <style>
   .site-footer {
     position: relative;
-    margin-top: 72px;
+    margin-top: 4.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     /* Quiet grounding gradient so the columns read over any cosmic-canvas
        brightness without a hard panel edge. */
@@ -157,6 +188,12 @@
       rgba(8, 8, 20, 0.55)
     );
   }
+  .site-footer.compact {
+    margin-top: 1.5rem;
+  }
+  .site-footer.sitemap {
+    margin-top: 0;
+  }
 
   .inner {
     /* Same band as SiteHeader's .inner so the chrome edges align. */
@@ -164,11 +201,21 @@
     margin: 0 auto;
     padding: 48px 1.4rem 28px;
   }
+  .compact .inner {
+    padding: 1.5rem 1.4rem 1.25rem;
+  }
+  .sitemap .inner {
+    padding: 1.5rem 1.4rem 1.25rem;
+  }
 
   .cols {
     display: grid;
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+  .compact-main {
+    display: flex;
+    justify-content: center;
   }
 
   .brand {
@@ -176,6 +223,10 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+  .compact .brand {
+    align-items: center;
+    gap: 0.25rem;
   }
   .wordmark {
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
@@ -198,6 +249,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-height: var(--min-touch-target, 44px);
     margin-top: 6px;
     padding: 10px 18px;
     border-radius: 999px;
@@ -218,11 +270,6 @@
     color: #fff;
     outline: none;
   }
-  .composer-cta i {
-    color: #b8a6ff;
-    font-size: 0.85rem;
-  }
-
   .col-title {
     margin: 0 0 12px;
     font-size: 0.8rem;
@@ -230,6 +277,47 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #8f8bb0;
+  }
+  .col-disclosure {
+    display: none;
+  }
+  .col-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 1rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    list-style: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.18s ease;
+  }
+  .col-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .col-toggle .col-title {
+    margin: 0;
+  }
+  .col-toggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .col-toggle:focus-visible {
+    background: rgba(139, 108, 255, 0.12);
+    outline: 2px solid rgba(184, 166, 255, 0.9);
+    outline-offset: -2px;
+  }
+  .col-chevron {
+    color: #8f8bb0;
+    font-size: 0.75rem;
+    transition: transform 0.25s ease;
+  }
+  .col-disclosure[open] .col-chevron {
+    transform: rotate(180deg);
   }
   .col ul {
     list-style: none;
@@ -249,7 +337,11 @@
   .col a:hover,
   .col a:focus-visible {
     color: #fff;
-    outline: none;
+  }
+  .col a:focus-visible {
+    border-radius: 0.5rem;
+    outline: 2px solid rgba(184, 166, 255, 0.9);
+    outline-offset: 2px;
   }
 
   .bottom {
@@ -261,6 +353,13 @@
     padding-top: 22px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
+  .compact .bottom {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+  .sitemap .bottom {
+    margin-top: 2rem;
+  }
   .legal-line {
     margin: 0;
     font-size: 0.875rem;
@@ -271,26 +370,108 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 6px 26px;
+    gap: 0.375rem;
   }
   .bottom-links a {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.025));
     color: #9b97bd;
     text-decoration: none;
     font-size: 0.875rem;
-    transition: color 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      color 0.2s ease;
   }
   .bottom-links a:hover,
   .bottom-links a:focus-visible {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
     color: #fff;
-    outline: none;
+  }
+  .bottom-links a:focus-visible {
+    outline: 2px solid rgba(184, 166, 255, 0.9);
+    outline-offset: 2px;
   }
   .heart {
     font-size: 0.8rem;
     color: #ff8a9d;
+  }
+
+  /* Phones use native disclosure rows from first paint. The parallel static
+     navigation is only rendered visually above this breakpoint, so every link
+     remains usable with or without JavaScript and hydration cannot move the
+     footer. */
+  @media (max-width: 559px) {
+    .bottom-links {
+      display: grid;
+      grid-template-columns: repeat(4, max-content);
+      justify-content: space-between;
+      width: 100%;
+    }
+    .bottom-links a {
+      justify-content: center;
+      padding-inline: 0.75rem;
+      white-space: nowrap;
+    }
+    .full .inner {
+      padding-top: 2rem;
+    }
+    .sitemap .inner {
+      padding-top: 1.25rem;
+    }
+    .full .cols,
+    .sitemap .cols {
+      gap: 0.625rem;
+    }
+    .full .brand {
+      margin-bottom: 0.75rem;
+    }
+    .col-static {
+      display: none;
+    }
+    .col-disclosure {
+      display: block;
+    }
+    .full .col,
+    .sitemap .col {
+      overflow: clip;
+      border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
+      border-radius: 0.875rem;
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.025));
+    }
+    .full .col ul,
+    .sitemap .col ul {
+      padding: 0.25rem 0.5rem 0.5rem;
+    }
+    .full .col a,
+    .sitemap .col a {
+      display: flex;
+      align-items: center;
+      min-height: var(--min-touch-target, 44px);
+      padding: 0.625rem 0.5rem;
+      border-radius: 0.5rem;
+    }
+    .full .col a:hover,
+    .full .col a:focus-visible,
+    .sitemap .col a:hover,
+    .sitemap .col a:focus-visible {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  /* The labels still keep full-size touch targets on extra-narrow browsers,
+     but get two roomy rows instead of overflowing their pills. */
+  @media (max-width: 22.5rem) {
+    .bottom-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   /* ≥560px: the four link columns form a 2×2 grid under the brand block. */
@@ -316,8 +497,17 @@
       grid-template-columns: 1.6fr repeat(4, 1fr);
       gap: clamp(32px, 3.5vw, 84px);
     }
+    .sitemap .cols {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
     .brand {
       grid-column: auto;
+    }
+    .compact-main {
+      justify-content: flex-start;
+    }
+    .compact .brand {
+      align-items: flex-start;
     }
     .bottom {
       flex-direction: row;
@@ -354,6 +544,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .col a,
+    .col-toggle,
+    .col-chevron,
     .bottom-links a,
     .composer-cta {
       transition: none;
