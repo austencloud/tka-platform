@@ -10,8 +10,10 @@
 
   So it became a rail. Same data plus the fields the banner was dropping on the
   floor (joined, last active, location, pronouns, catdog), stacked vertically
-  beside the work rather than above it. When there is no work at all the parent
-  centres this and renders nothing else — see `centered`.
+  beside the work rather than above it. The parent renders it in the same column
+  whether or not the person has any work — an empty profile keeps both columns and
+  fills the other one with an invitation (`ProfileWorkEmpty`), so the page never
+  changes shape between people.
 
   Every optional field collapses. Location, bio, pronouns, Instagram and props
   are all sparse in real data; a rail that reserved space for each would be a
@@ -36,7 +38,6 @@
     onFollowersClick,
     onFollowingClick,
     collectionsCount,
-    centered = false,
   }: {
     userProfile: EnhancedUserProfile;
     currentUserId?: string | null;
@@ -57,14 +58,6 @@
      * zero that would claim this person has saved nothing.
      */
     collectionsCount?: number;
-    /**
-     * Stand alone as a centred card instead of anchoring a column.
-     *
-     * Set when the profile has no work, so this is the entire page. Centring is
-     * a content decision the parent owns, which is why it is a prop and not a
-     * container query — the rail's own width is identical in both cases.
-     */
-    centered?: boolean;
   } = $props();
 
   const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
@@ -100,7 +93,6 @@
 
 <div
   class="rail"
-  class:centered
   transition:fade={{ duration: 300 }}
   style:--profile-color={accentColor}
 >
@@ -292,19 +284,6 @@
     border-radius: 16px;
   }
 
-  /* Standing alone as the whole page rather than anchoring a column. Only the
-     interior alignment lives here — the card's WIDTH is the parent's decision,
-     because the connection section stacked beneath it has to match (one width
-     per page, 4k-native-layout.md).
-
-     `width: 100%` is load-bearing: `container-type: inline-size` above makes this
-     box size to its own contents whenever nothing hands it a width, which
-     collapsed the card to 58px. */
-  .rail.centered {
-    width: 100%;
-    text-align: center;
-  }
-
   .rail-ambient {
     position: absolute;
     inset: 0;
@@ -330,10 +309,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-  }
-
-  .centered .identity {
-    align-items: center;
   }
 
   /* 7.5em == the 120px passed to AvatarImage at the base root size, so nothing
@@ -389,10 +364,6 @@
     color: var(--theme-text-dim);
   }
 
-  .centered .handle {
-    justify-content: center;
-  }
-
   .pronouns {
     padding: 1px 8px;
     border: 1px solid var(--theme-stroke);
@@ -424,10 +395,6 @@
     color: var(--theme-text-dim);
   }
 
-  .centered .fact {
-    justify-content: center;
-  }
-
   .fact i {
     width: 1em;
     flex: 0 0 auto;
@@ -454,10 +421,6 @@
     gap: 6px;
     flex-wrap: wrap;
     align-items: center;
-  }
-
-  .centered .props-row {
-    justify-content: center;
   }
 
   .profile-prop-icon {
@@ -535,10 +498,6 @@
     width: fit-content;
   }
 
-  .centered .instagram-link {
-    margin-inline: auto;
-  }
-
   .instagram-link:hover {
     background: color-mix(in srgb, var(--instagram-brand) 20%, transparent);
     border-color: color-mix(in srgb, var(--instagram-brand) 40%, transparent);
@@ -612,10 +571,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .centered .actions {
-    justify-content: center;
   }
 
   .follow-button {

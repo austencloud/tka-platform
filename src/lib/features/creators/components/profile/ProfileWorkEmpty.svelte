@@ -1,0 +1,122 @@
+<!--
+  What fills the work column when there is nothing in it.
+
+  The first attempt at an empty profile dropped the column entirely and centred
+  the identity rail as a lone card. Austen (2026-07-29): "I'm not really a fan in
+  general of how we made it so that when somebody doesn't have content it just
+  loads the single vertical strip of their regular information we could have a
+  giant empty area on the right and encourage them to create content with action
+  buttons."
+
+  So the layout no longer changes shape at all — two columns for everyone — and
+  this panel is what the second column holds. On your own profile it is the
+  invitation. On someone else's it says plainly that they have not published
+  anything, and offers the gallery instead of a dead end.
+
+  Built on PanelState + PanelButton, which is the pattern this feature already
+  uses for its error state a few lines up in UserProfilePanel.
+-->
+<script lang="ts">
+  import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+
+  let {
+    isOwnProfile,
+    displayName,
+  }: {
+    isOwnProfile: boolean;
+    /** Used to name the person in the visitor copy. */
+    displayName?: string;
+  } = $props();
+
+  const who = $derived(displayName?.trim() || "This creator");
+
+  function goBuild(): void {
+    void handleModuleChange("create", "construct");
+  }
+
+  /**
+   * Navigates to the Generate tab. It does NOT generate anything — a one-tap
+   * starter that generated, loaded and auto-saved a sequence nobody asked for
+   * was removed from GenerateEmptyState on 2026-07-29 at Austen's direction.
+   * This is a door, not an action.
+   */
+  function goGenerate(): void {
+    void handleModuleChange("create", "generate");
+  }
+
+  function goGallery(): void {
+    void handleModuleChange("browse", "gallery");
+  }
+</script>
+
+<div class="work-empty">
+  {#if isOwnProfile}
+    <PanelState
+      type="empty"
+      icon="fa-wand-magic-sparkles"
+      title="Nothing on your profile yet"
+      message="Build a sequence and it shows up here."
+    />
+    <div class="actions">
+      <PanelButton variant="primary" onclick={goBuild}>
+        <i class="fas fa-pen-ruler" aria-hidden="true"></i>
+        Build a sequence
+      </PanelButton>
+      <PanelButton variant="secondary" onclick={goGenerate}>
+        <i class="fas fa-dice" aria-hidden="true"></i>
+        Generate one
+      </PanelButton>
+      <PanelButton variant="secondary" onclick={goGallery}>
+        <i class="fas fa-images" aria-hidden="true"></i>
+        See what others made
+      </PanelButton>
+    </div>
+  {:else}
+    <!-- No message line: "hasn't published anything yet" and "will show up here
+         when they publish" say the same thing twice, and the second one wrapped
+         mid-sentence inside PanelState's measure. -->
+    <PanelState
+      type="empty"
+      icon="fa-folder-open"
+      title="{who} hasn't published anything yet"
+    />
+    <div class="actions">
+      <PanelButton variant="secondary" onclick={goGallery}>
+        <i class="fas fa-images" aria-hidden="true"></i>
+        Browse the gallery
+      </PanelButton>
+    </div>
+  {/if}
+</div>
+
+<style>
+  /* Fills the column rather than floating a small notice in a large box — the
+     dead-space failure visual-verification-mandatory.md names. `min-height` in
+     `em` so it grows with the panel's type ramp at 4K instead of staying a
+     1080p-sized band in a 2600px layout. */
+  .work-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5em;
+    /* Generous on a desktop column, but capped against the viewport so a phone —
+       where this panel stacks BELOW an already-tall identity rail — does not get
+       400px of empty panel on a 667px screen. */
+    min-height: min(26em, 55vh);
+    height: 100%;
+    text-align: center;
+  }
+
+  /* Wraps rather than squeezing: three buttons fit one row on a desktop column
+     and stack on a phone, and each keeps the 44px floor PanelButton sets. */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75em;
+  }
+</style>

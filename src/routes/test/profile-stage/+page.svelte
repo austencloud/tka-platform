@@ -22,6 +22,7 @@
   import ProfileHeroSection from "$lib/features/creators/components/profile/ProfileHeroSection.svelte";
   import ProfileStage from "$lib/features/creators/components/profile/stage/ProfileStage.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+  import ProfileWorkEmpty from "$lib/features/creators/components/profile/ProfileWorkEmpty.svelte";
 
   const uid = $derived(authState.user?.uid ?? null);
 
@@ -46,6 +47,23 @@
       The same ProfileStage the live profile renders, on a bare page.
     </p>
   </header>
+
+  <!-- Both empty-work states, unconditionally. They are what the live profile's
+       second column holds when a person has made nothing, and the own-profile
+       variant is otherwise only reachable by being signed in as an account with
+       an empty library — which makes it the one part of this surface that cannot
+       be checked on the real page. Cheap to render, so it is always here. -->
+  <section class="empty-rig">
+    <h2>Empty work column — own profile</h2>
+    <div class="empty-slot">
+      <ProfileWorkEmpty isOwnProfile={true} />
+    </div>
+
+    <h2>Empty work column — someone else's profile</h2>
+    <div class="empty-slot">
+      <ProfileWorkEmpty isOwnProfile={false} displayName="Nicholas Leonardi" />
+    </div>
+  </section>
 
   {#if !uid}
     <PanelState
@@ -108,5 +126,31 @@
   .hero-slot {
     display: block;
     width: 100%;
+  }
+
+  .empty-rig {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  .empty-rig h2 {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim);
+  }
+
+  /* Approximates the live work column: a frosted panel the empty state fills.
+     Fixed height so the vertical centring is visible here the same way it is on
+     the real page, where the column stretches to match the identity rail. */
+  .empty-slot {
+    height: 30rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 16px;
+    padding: clamp(16px, 2cqi, 28px);
+    background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 90%, transparent);
   }
 </style>

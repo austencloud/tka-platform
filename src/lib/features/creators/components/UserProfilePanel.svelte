@@ -21,6 +21,7 @@
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import ProfileStage from "./profile/stage/ProfileStage.svelte";
+  import ProfileWorkEmpty from "./profile/ProfileWorkEmpty.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
@@ -287,11 +288,9 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     <ProfileHeaderBar onBack={handleBack} />
 
     <div class="profile-content">
-      <div
-        class="profile-layout"
-        class:has-aside={showAdmin}
-        class:no-work={!hasWork}
-      >
+      <!-- One composition for everyone. The work column is always here; what
+           changes is whether it holds bands or an invitation to fill it. -->
+      <div class="profile-layout" class:has-aside={showAdmin}>
         <!-- The person, not their work. Everything about them lives in this one
              column: identity, tenure, place, props, counts, and — when you are
              signed in looking at someone else — your connection to them, which
@@ -303,7 +302,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
             {isOwnProfile}
             {followInProgress}
             collectionsCount={savedTotal}
-            centered={!hasWork}
             onFollowToggle={handleFollowToggle}
             onFollowersClick={() => openFollowersModal("followers")}
             onFollowingClick={() => openFollowersModal("following")}
@@ -324,15 +322,17 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
              library and collections from the userId, so nothing upstream needs to
              fetch on its behalf.
 
-             Not rendered at all when there is no work. `hasWork` is settled
-             before this branch is ever evaluated (see the derivation above), so
-             there is no load to preserve and nothing to hide — the column simply
-             does not exist on an empty profile. -->
-        {#if hasWork}
-          <div class="work-area">
+             When there is nothing to show, the column holds ProfileWorkEmpty
+             instead — it is never removed. `hasWork` is settled before this
+             branch is evaluated (see the derivation above), so the choice is made
+             once and neither side ever swaps in after paint. -->
+        <div class="work-area">
+          {#if hasWork}
             <ProfileStage {userId} displayName={userProfile.displayName} />
-          </div>
-        {/if}
+          {:else}
+            <ProfileWorkEmpty {isOwnProfile} displayName={userProfile.displayName} />
+          {/if}
+        </div>
 
         {#if showAdmin}
           <aside class="profile-aside">
@@ -457,22 +457,14 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     flex: 0 0 auto;
   }
 
-  /* Nothing to sit beside, so the rail becomes the page: one centred column at a
-     card's width. The cap is here rather than inside the rail because the
-     connection section stacks beneath it and has to be the same width — a 544px
-     card over a 1720px panel reads as two unrelated pages. */
-  .profile-layout.no-work .rail-area {
-    /* `width: 100%` before the cap: auto inline margins make a grid item
-       shrink-to-fit, and the rail inside it is an inline-size container that then
-       sizes to its own text — the pair collapsed the column to 58px. */
-    width: 100%;
-    max-width: 34rem;
-    margin-inline: auto;
-  }
-
   .work-area {
     grid-area: work;
     min-width: 0;
+    /* Fills the row rather than stopping at its content, so the two columns end
+       together. Without it an empty profile put a 474px panel beside a 957px rail
+       and the right side just stopped halfway down. The rail opts out via
+       `align-self: start` in the wide tier below, since it is sticky. */
+    align-self: stretch;
     /* Sit above the sticky admin column so the gallery's sort popover can
        overlap it instead of being covered (both are backdrop-filter panels =
        separate stacking contexts). */
@@ -528,16 +520,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       grid-template-areas: "rail work aside";
     }
 
-    /* Nothing to sit beside: the rail becomes the page. One column, centred,
-       and the rail's own `centered` prop caps and centres its contents. */
-    .profile-layout.no-work,
-    .profile-layout.no-work.has-aside {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "rail"
-        "aside";
-    }
-
     /* Sticky so the person stays visible while their work scrolls, with its own
        scroll for the case where identity plus a connection section outgrows the
        viewport — otherwise the Follow button at its bottom would be unreachable. */
@@ -547,16 +529,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       align-self: start;
       max-height: 100dvh;
       overflow-y: auto;
-      /* Cancels the sticky scroll container on the empty-profile composition,
-         where the rail is the only thing on the page and has nothing to stick
-         against. */
       scrollbar-width: thin;
-    }
-
-    .profile-layout.no-work .rail-area {
-      position: static;
-      max-height: none;
-      overflow: visible;
     }
 
     .profile-aside {
