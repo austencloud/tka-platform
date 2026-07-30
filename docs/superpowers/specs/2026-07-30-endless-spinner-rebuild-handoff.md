@@ -17,8 +17,9 @@ Austen-driven polish rounds landed on top.
 
 ## Done — verified
 
-All on local `main`. Evidence commands were run 2026-07-29/30 against the tree
-at `052b821eda`.
+All on local `main`. Original evidence commands were run 2026-07-29/30 against
+the tree at `052b821eda`; the 2026-07-30 pickup audit re-ran the cited
+animation-engine suite against the later shared tree at `2058b3597e4e`.
 
 - **Live mode retired** — `c8ca4f731b` (16 files, −1,082 lines: broadcast
   repository/converter/schemas/models, `LiveModeInfo`, live branches in
@@ -31,6 +32,17 @@ at `052b821eda`.
   `CheckerboardCircleIcon`); existing store consumers render unchanged
   (optional props). Evidence: fast-check 0 diagnostics on the file + 3
   consumers.
+- **SpinnerNowPlaying preserves per-component periods**: pickup audit found
+  that the route passed only `rotationPeriod`, so a mixed-period `loopSpec`
+  could lose the quartered Inverted checkerboard even though `LoopChips`
+  supported it. Fixed in `6ea953e0c8`: the component now uses the registered
+  canonical LOOP display resolver and forwards both `rotationPeriod` and
+  `inversionPeriod`, with the existing metadata path retained as its boot
+  fallback. Evidence: the focused now-playing contract, mixed-period resolver
+  suite, and two spinner suites pass, 4 files / 18 tests; Prettier passes both
+  changed files. `check:fast` converted the spinner component with no
+  diagnostics, then exited nonzero on 19 unrelated errors in other sessions'
+  option-picker, pronunciation-recorder, and QR files.
 - **SpinnerNowPlaying replaces mode infos + stats** — `206686f3c6` (−655
   lines: `InfiniteModeInfo`, `LibraryModeInfo`, `SpinnerStatsBar` deleted).
   Chips driven by `LOOP_COMPONENT_MAP` via sequence `components`/`loopType`
@@ -73,9 +85,11 @@ at `052b821eda`.
   904×904; 904×783 → 472×525 / 455; fold → 265×318 / 248. Bands went from
   ~150px to the ~11px built-in inset.
 - **Test/check state** — animation-engine suite: 23 files / 210 tests PASS
-  with `--config tests/config/vitest.config.ts` (2026-07-29); the two spinner
-  suites 13/13 after every later commit. Full `npm run check` (2026-07-29,
-  post-`804f29acb9`): **0 errors**, 5 warnings all in unrelated files.
+  with `--config tests/config/vitest.config.ts` on both 2026-07-29 and the
+  2026-07-30 pickup audit; the two spinner suites remain 13/13. Full
+  `npm run check` (2026-07-29, post-`804f29acb9`): **0 errors**, 5 warnings all
+  in unrelated files. The later focused repair verification is recorded in the
+  per-component-period item above.
   Docs: spec `b25193b683`, plan `502e84663a` (+amendment), old 4K-audit
   handoff marked superseded `7f4b39bc2b`.
 
@@ -87,9 +101,10 @@ at `052b821eda`.
 - **Reduced-motion**: code-verified only (Crossfade primitive + pulse gate +
   StepStrip's own handling). DevTools MCP emulation doesn't expose
   `prefers-reduced-motion` toggling in this setup.
-- **Non-English locales**: ~30 new `landing_spinner_*` keys exist in
-  `messages/en.json` only; other locales fall back to English until the
-  translation pipeline runs.
+- **Non-English locales**: 24 `landing_spinner_*` keys exist in
+  `messages/en.json` only; `landing_spinner_mode_selection` is already present
+  in the other ten locale files. Everything else falls back to English until
+  the translation pipeline runs.
 
 ## In flight
 
@@ -167,6 +182,13 @@ via CF Pages (`reference_cf_pages_deploy_topology`). Pushing is Austen's call.
   component it kept reporting the dead file's diagnostics until its
   `maps/tsx/warnings` artifacts were removed. Its "converting" errors on
   loop-labeler/generate-cards files are tool artifacts, not code errors.
+- **Old generated inventories still name deleted spinner components.**
+  `scripts/component-manifest.json` was generated 2026-07-27 and
+  `scripts/ceremony-manifest.json` was generated 2026-05-31, so a literal
+  repo-wide grep still finds `LiveModeInfo`, `InfiniteModeInfo`,
+  `LibraryModeInfo`, `SpinnerStatsBar`, and `EndlessSpinnerDebugPanel` there.
+  Runtime source under `src/` is clean; regenerating either inventory would be
+  a broad unrelated diff.
 - **vitest 4 needs `--config tests/config/vitest.config.ts`** (jsdom setup) —
   bare runs fail 7 tests spuriously; `--reporter=basic` no longer exists.
 - **Verification rig**: own Chrome on :9222 with
