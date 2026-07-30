@@ -28,6 +28,7 @@
     bpm,
     cellSize,
     orientation = "horizontal",
+    anchor = "start",
     onSeek = null,
   }: {
     sequence: SequenceData | null | undefined;
@@ -40,6 +41,10 @@
     /** Vertical fills a tall column beside the stage (side-by-side tiers);
      *  horizontal is the foot under a stacked canvas. */
     orientation?: "horizontal" | "vertical";
+    /** Where the focus cell sits. The stacked foot centers it under the
+     *  canvas (the playing step lives directly beneath the stage); the
+     *  vertical rail keeps it near the top. */
+    anchor?: "start" | "center";
     /** Jump playback to a step (0 = start position, 1..N = steps). */
     onSeek?: ((stepNumber: number) => void) | null;
   } = $props();
@@ -69,7 +74,7 @@
     {fillHeight}
     stepPulse={true}
     onCellClick={onSeek}
-    anchor="start"
+    {anchor}
     loop={true}
   />
 </div>

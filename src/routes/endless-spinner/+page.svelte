@@ -87,7 +87,9 @@
   $effect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function")
       return;
-    const mq = window.matchMedia("(min-width: 1050px) and (min-height: 601px)");
+    const mq = window.matchMedia(
+      "(min-width: 1050px) and (min-height: 601px), (min-width: 601px) and (min-height: 601px) and (orientation: landscape)"
+    );
     laneVertical = mq.matches;
     const on = () => (laneVertical = mq.matches);
     mq.addEventListener("change", on);
@@ -416,6 +418,7 @@
                       bpm={scope.settings.bpm}
                       cellSize={laneCellSize}
                       orientation={laneVertical ? "vertical" : "horizontal"}
+                      anchor={laneVertical ? "start" : "center"}
                       onSeek={handleProgressBarSeek}
                     />
                   </div>
@@ -676,9 +679,11 @@
      transport in ONE viewport, so the canvas width is derived from the
      height budget left over after the fixed chrome (header, chips row,
      strip foot, transport, gaps ≈ 36rem). */
-  @media (min-width: 601px) and (max-width: 1049px) and (min-height: 601px) {
+  @media (min-width: 601px) and (max-width: 1049px) and (min-height: 601px) and (orientation: portrait) {
     /* Tablet PORTRAIT only — the min-height keeps folded-phone landscape
-       (short-horizontal tier) out of this block.
+       (short-horizontal tier) out of this block, and the orientation guard
+       keeps landscape mid-size windows (e.g. ~900×780) on the side-by-side
+       composition instead of a shrunken stacked column.
 
        The stacked column must fit canvas + chips + lane foot + transport in ONE
        viewport, so the square canvas is sized from the height the fixed chrome
@@ -873,7 +878,11 @@
   }
 
   /* Responsive */
-  @media (min-width: 1050px) {
+  @media (min-width: 1050px), (min-width: 601px) and (min-height: 601px) and (orientation: landscape) {
+    /* Side-by-side composition. Fires on real desktops (≥1050) AND on
+       landscape mid-size windows (601–1049 wide but wider than tall, e.g. a
+       ~900×780 restored window) — a stacked column there shrinks the canvas
+       into a pool of side margin. Matches the laneVertical matchMedia seam. */
     /* Compact product header: the stage owns the fold, so the title stops
        being a 10rem centered stack. Home pill stays absolute at the left, so
        the title band is inset past it. */
