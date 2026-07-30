@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { publish, clear, isNativePlatform } = vi.hoisted(() => ({
+const { publish, clear, isNativePlatform, httpGet } = vi.hoisted(() => ({
   publish: vi.fn(async () => ({ published: 0 })),
   clear: vi.fn(async () => undefined),
   isNativePlatform: vi.fn(() => true),
+  httpGet: vi.fn(async () => ({ status: 200, data: "QVZBVEFS" })),
 }));
 
 vi.mock("@capacitor/core", () => ({
   Capacitor: { isNativePlatform },
+  // Avatars are fetched over NATIVE http, not fetch(): the Google CDN does not
+  // grant CORS to the WebView origin, so fetch() rejects on device.
+  CapacitorHttp: { get: httpGet },
   registerPlugin: () => ({ publish, clear }),
 }));
 
@@ -22,21 +26,13 @@ function target(id: string, name: string, avatarUrl: string | null = null): Shar
   return { id, name, avatarUrl };
 }
 
-/** A 1x1 png, enough for the fetch path to produce bytes. */
-const PNG_BYTES = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
-
 beforeEach(() => {
   publish.mockClear();
   clear.mockClear();
   isNativePlatform.mockReturnValue(true);
   __resetPublisherForTests();
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => ({
-      ok: true,
-      arrayBuffer: async () => PNG_BYTES.buffer.slice(0) as ArrayBuffer,
-    }))
-  );
+  httpGet.mockReset();
+  httpGet.mockResolvedValue({ status: 200, data: "QVZBVEFS" });
 });
 
 describe("publishShareTargets", () => {
@@ -75,22 +71,37 @@ describe("publishShareTargets", () => {
     expect(publish).toHaveBeenCalledTimes(2);
   });
 
-  it("still publishes the person when the avatar fetch throws", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      throw new Error("offline");
-    }));
+  it("fetches the avatar over native http, not fetch()", async () => {
+    // The regression this pins: the WebView origin is https://localhost and
+    // avatars are lh3.googleusercontent.com urls. That CDN grants no CORS to
+    // that origin, so fetch() rejected and EVERY target fell back to initials
+    // on device while the unit tests stayed green against a stubbed fetch.
+    const globalFetch = vi.fn();
+    vi.stubGlobal("fetch", globalFetch);
+
+    await publishShareTargets([target("c1", "Paul", "https://cdn/paul.webp")]);
+
+    expect(httpGet).toHaveBeenCalledWith({
+      url: "https://cdn/paul.webp",
+      responseType: "blob",
+    });
+    expect(globalFetch).not.toHaveBeenCalled();
+  });
+
+  it("still publishes the person when the avatar request throws", async () => {
+    httpGet.mockRejectedValueOnce(new Error("offline"));
 
     await publishShareTargets([target("c1", "Paul", "https://cdn/paul.webp")]);
 
     const arg = publish.mock.calls[0]?.[0] as { targets: Array<Record<string, unknown>> };
     // A nameless gap in the sheet is worse than a generic icon. The icon falls
     // back to generated initials; jsdom has no canvas, so it is "" HERE only.
-    // The canvas case is covered by the next test.
+    // The canvas case is covered below.
     expect(arg.targets[0]).toMatchObject({ id: "c1" });
   });
 
-  it("still publishes the person when the avatar response is not ok", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, arrayBuffer: async () => new ArrayBuffer(0) })));
+  it("still publishes the person on a non-2xx avatar response", async () => {
+    httpGet.mockResolvedValueOnce({ status: 404, data: "" });
 
     await publishShareTargets([target("c1", "Paul", "https://cdn/paul.webp")]);
 
@@ -99,11 +110,9 @@ describe("publishShareTargets", () => {
   });
 
   it("generates an initials icon when there is no avatar", async () => {
-    // Verified on device 2026-07-30: Firestore participantInfo carries no avatar
-    // for these conversations, so EVERY target published icon=null and the sheet
-    // would show four identical app icons. jsdom has no canvas, so the drawing
-    // path is unreachable without this stub - which is exactly why the two tests
-    // above cannot be the only coverage.
+    // The fallback for a person who genuinely has no avatar url. jsdom has no
+    // canvas, so the drawing path is unreachable without this stub - which is
+    // exactly why the two tests above cannot be the only coverage of it.
     const fillText = vi.fn();
     const realCreate = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation((tag: string) => {

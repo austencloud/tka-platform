@@ -1,4 +1,4 @@
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor, CapacitorHttp, registerPlugin } from "@capacitor/core";
 import type { ShareTarget } from "../domain/share-target-selection";
 
 /**
@@ -42,23 +42,29 @@ function fingerprint(targets: ShareTarget[]): string {
   return JSON.stringify(targets.map((t) => [t.id, t.name, t.avatarUrl]));
 }
 
-function toBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
-
 /**
- * Fetch an avatar as base64. Done here rather than in Java because avatars sit
- * behind authed storage and the browser context already carries that; a Java
- * fetch would duplicate the auth logic for nothing.
+ * Fetch an avatar as base64, over NATIVE http.
+ *
+ * Not `fetch()`. The WebView's origin is https://localhost and avatars are
+ * Google CDN urls (lh3.googleusercontent.com/...); that CDN does not grant CORS
+ * to this origin, so fetch() rejects and every target silently fell back to
+ * initials. RobustAvatar gets away with the same urls because an <img> tag
+ * renders cross-origin images without CORS - fetch cannot.
+ *
+ * CapacitorHttp goes through the platform's HTTP stack, where CORS does not
+ * apply at all, and returns base64 directly for responseType "blob". Verified
+ * against real data 2026-07-30: participantInfo DOES carry avatar urls, so the
+ * empty icons were never missing data.
  */
 async function fetchIcon(url: string | null): Promise<string> {
   if (!url) return "";
   try {
-    const response = await fetch(url);
-    if (!response.ok) return "";
-    return toBase64(new Uint8Array(await response.arrayBuffer()));
+    const response = await CapacitorHttp.get({ url, responseType: "blob" });
+    if (response.status < 200 || response.status >= 300) return "";
+    const data: unknown = response.data;
+    if (typeof data !== "string" || data.length === 0) return "";
+    // Native returns bare base64; be tolerant of a data: url just in case.
+    return data.startsWith("data:") ? data.slice(data.indexOf(",") + 1) : data;
   } catch {
     // A missing face is better than a missing person.
     return "";
@@ -105,10 +111,14 @@ function initialsIcon(target: ShareTarget): string {
     ctx.fillRect(0, 0, size, size);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = `600 ${size * 0.42}px system-ui, sans-serif`;
+    // 0.28, not 0.42. createWithAdaptiveBitmap treats this as an ADAPTIVE icon,
+    // where only the centre 66/108 (~61%) of the bitmap is guaranteed visible -
+    // the launcher masks the rest away. At 0.42 two capitals overflowed that
+    // safe circle and the letters were clipped on both sides on device.
+    ctx.font = `600 ${size * 0.28}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(initialsOf(target.name), size / 2, size / 2 + size * 0.02);
+    ctx.fillText(initialsOf(target.name), size / 2, size / 2 + size * 0.01);
 
     // Square, not a circle: IconCompat.createWithAdaptiveBitmap masks it round.
     const dataUrl = canvas.toDataURL("image/png");
