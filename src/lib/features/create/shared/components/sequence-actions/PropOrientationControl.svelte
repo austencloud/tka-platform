@@ -12,9 +12,19 @@
     onOrientationChange: (orientation: string) => void;
     /** Enable interradial orientations (Level 6) */
     showInterradial?: boolean;
+    /** Restrict the control to the vocabulary allowed by its host. */
+    allowedOrientations?: readonly string[];
+    compact?: boolean;
   }
 
-  let { color, orientation, onOrientationChange, showInterradial = false }: Props = $props();
+  let {
+    color,
+    orientation,
+    onOrientationChange,
+    showInterradial = false,
+    allowedOrientations,
+    compact = false,
+  }: Props = $props();
 
   // Popover state for this prop
   let popoverOpen = $state(false);
@@ -39,8 +49,25 @@
     { value: "counterOut", label: "CCW·Out", icon: "fa-arrow-up-long" },
   ];
 
-  const orientationOptions = $derived(
+  const allOrientationOptions = $derived(
     showInterradial ? [...cardinalOptions, ...interradialOptions] : cardinalOptions
+  );
+  const orientationOptions = $derived(
+    allowedOrientations
+      ? allOrientationOptions.filter((option) =>
+          allowedOrientations.includes(option.value)
+        )
+      : allOrientationOptions
+  );
+  const visibleCardinalOptions = $derived(
+    cardinalOptions.filter((option) =>
+      orientationOptions.some((available) => available.value === option.value)
+    )
+  );
+  const visibleInterradialOptions = $derived(
+    interradialOptions.filter((option) =>
+      orientationOptions.some((available) => available.value === option.value)
+    )
   );
 
   const defaultOption: OrientationOpt = { value: "in", label: "In", icon: "fa-arrow-down" };
@@ -60,7 +87,12 @@
   ];
 
   function cycleOrientation(direction: "prev" | "next"): string {
-    const order = showInterradial ? fullCycleOrder : cardinalCycleOrder;
+    const fullOrder = showInterradial ? fullCycleOrder : cardinalCycleOrder;
+    const order = fullOrder.filter((value) =>
+      orientationOptions.some((option) => option.value === value)
+    );
+    if (order.length === 0) return orientation;
+
     const currentIndex = Math.max(0, order.indexOf(orientation));
     const len = order.length;
     if (direction === "next") {
@@ -91,6 +123,7 @@
   class="orientation-controls"
   class:blue={color === "blue"}
   class:red={color === "red"}
+  class:compact
 >
   {#if !popoverOpen}
     <!-- Normal view: toggle controls -->
@@ -127,8 +160,11 @@
     </div>
   {:else}
     <!-- Popover view: grid of orientation options -->
-    <div class="options-grid" class:expanded={showInterradial}>
-      {#each cardinalOptions as opt}
+    <div
+      class="options-grid"
+      class:expanded={visibleInterradialOptions.length > 0}
+    >
+      {#each visibleCardinalOptions as opt}
         <button
           class="option-btn"
           class:active={orientation === opt.value}
@@ -139,8 +175,8 @@
           <span>{opt.label}</span>
         </button>
       {/each}
-      {#if showInterradial}
-        {#each interradialOptions as opt}
+      {#if visibleInterradialOptions.length > 0}
+        {#each visibleInterradialOptions as opt}
           <button
             class="option-btn interradial"
             class:active={orientation === opt.value}
@@ -174,6 +210,10 @@
     justify-content: center;
     gap: 12px;
     width: 100%;
+  }
+
+  .orientation-controls.compact .toggle-row {
+    gap: 6px;
   }
 
   .arrow-btn {
@@ -210,6 +250,12 @@
     border: 1px solid;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
+  }
+
+  .orientation-controls.compact .orientation-display {
+    min-width: 76px;
+    max-width: 96px;
+    padding-inline: 8px;
   }
 
   .orientation-display i {

@@ -24,6 +24,7 @@ to three rows. Click opens the expanded overlay.
     handPathMode,
     motionTypeFilter,
     startEndOptions,
+    level = 3,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
     styleBaseline = PRODUCTION_STYLE_BASELINE,
@@ -41,6 +42,7 @@ to three rows. Click opens the expanded overlay.
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
     startEndOptions?: StartEndOptions;
+    level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
     /**
@@ -99,6 +101,7 @@ to three rows. Click opens the expanded overlay.
       handPathMode,
       motionTypeFilter,
       startEndOptions: startEndOptions ?? null,
+      level,
       gridMode,
       isFreeformMode,
       styleBaseline,

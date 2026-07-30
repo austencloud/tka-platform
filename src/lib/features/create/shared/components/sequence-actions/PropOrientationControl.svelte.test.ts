@@ -42,6 +42,44 @@ describe("PropOrientationControl", () => {
     expect(onOrientationChange).toHaveBeenCalledWith("counter");
   });
 
+  it("removes orientations outside the host's allowed vocabulary", async () => {
+    render(PropOrientationControl, {
+      color: "blue",
+      orientation: "in",
+      allowedOrientations: ["in", "out"],
+      onOrientationChange: vi.fn(),
+    });
+
+    await page.getByRole("button", { name: "Select blue orientation" }).click();
+
+    await expect
+      .element(page.getByRole("button", { name: "Set blue orientation to In" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("button", { name: "Set blue orientation to Out" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("button", { name: "Set blue orientation to CW" }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole("button", { name: "Set blue orientation to CCW" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("cycles only through the host's allowed vocabulary", async () => {
+    const onOrientationChange = vi.fn();
+    render(PropOrientationControl, {
+      color: "red",
+      orientation: "in",
+      allowedOrientations: ["in", "out"],
+      onOrientationChange,
+    });
+
+    await page.getByRole("button", { name: "Next red orientation" }).click();
+
+    expect(onOrientationChange).toHaveBeenCalledWith("out");
+  });
+
   it("tracks the controlled orientation prop on rerender", async () => {
     const screen = render(PropOrientationControl, {
       color: "blue",

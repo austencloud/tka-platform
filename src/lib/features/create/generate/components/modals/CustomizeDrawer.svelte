@@ -40,6 +40,7 @@
           handPathMode={overlayProps.handPathMode}
           motionTypeFilter={overlayProps.motionTypeFilter}
           startEndOptions={overlayProps.startEndOptions}
+          level={overlayProps.level}
           gridMode={overlayProps.gridMode}
           isFreeformMode={overlayProps.isFreeformMode}
           styleBaseline={overlayProps.styleBaseline}

@@ -68,6 +68,10 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   } from "./customize-summary";
   import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import {
+    clampStartOrientationToLevel,
+    startOrientationsForLevel,
+  } from "../../domain/level-orientation-policy";
 
   type AccordionSection = "style" | "startEnd";
 
@@ -76,6 +80,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     handPathMode,
     motionTypeFilter,
     startEndOptions,
+    level = 3,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
     styleBaseline = PRODUCTION_STYLE_BASELINE,
@@ -90,6 +95,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
     startEndOptions: StartEndOptions | null;
+    level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
     styleBaseline?: CustomizeStyleBaseline;
@@ -132,10 +138,19 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
   // ─── Local state for start orientation (blue + red, default In/In) ───
   let localBlueOri = $state<Orientation>(
-    untrack(() => startEndOptions)?.blueStartOrientation ?? Orientation.IN
+    clampStartOrientationToLevel(
+      untrack(() => startEndOptions)?.blueStartOrientation,
+      level
+    )
   );
   let localRedOri = $state<Orientation>(
-    untrack(() => startEndOptions)?.redStartOrientation ?? Orientation.IN
+    clampStartOrientationToLevel(
+      untrack(() => startEndOptions)?.redStartOrientation,
+      level
+    )
+  );
+  const availableStartOrientations = $derived(
+    startOrientationsForLevel(level)
   );
 
   // Compact orientation suffix for the section header — empty when In/In so the
@@ -420,12 +435,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
             <!-- Start orientation (blue + red, default In/In) -->
             <div class="ori-section">
-              <span class="ori-heading">Start Orientation</span>
+              <span class="ori-heading">Start Orientation · Level {level}</span>
               <div class="ori-row">
                 <span class="ori-color-label ori-blue">Blue</span>
                 <PropOrientationControl
                   color="blue"
                   orientation={localBlueOri}
+                  allowedOrientations={availableStartOrientations}
                   onOrientationChange={handleBlueOriChange}
                 />
               </div>
@@ -434,6 +450,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
                 <PropOrientationControl
                   color="red"
                   orientation={localRedOri}
+                  allowedOrientations={availableStartOrientations}
                   onOrientationChange={handleRedOriChange}
                 />
               </div>

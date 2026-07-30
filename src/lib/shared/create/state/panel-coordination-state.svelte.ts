@@ -143,6 +143,8 @@ export interface CustomizeOverlayProps {
   handPathMode: "smooth" | "mixed" | "choppy";
   motionTypeFilter: "no-dash" | "prefer-dash" | null;
   startEndOptions: StartEndOptions | null;
+  /** Generate vocabulary level active when the overlay opens. */
+  level: number;
   gridMode: GridMode;
   isFreeformMode: boolean;
   /**

@@ -19,6 +19,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
+import { clampStartOrientationToLevel } from "../domain/level-orientation-policy";
 
 // ===== Session-local Persistence (localStorage) =====
 const SESSION_STORAGE_KEY = "tka-start-end-session-options";
@@ -237,6 +238,30 @@ export function createStartEndOptionsState(
     return hadPositions;
   }
 
+  /**
+   * Keep persisted start orientations inside the vocabulary selected by Level.
+   * Returns whether either prop had to be normalized.
+   */
+  function normalizeOrientationsForLevel(level: number): boolean {
+    const blueStartOrientation = clampStartOrientationToLevel(
+      options.blueStartOrientation,
+      level
+    );
+    const redStartOrientation = clampStartOrientationToLevel(
+      options.redStartOrientation,
+      level
+    );
+    const changed =
+      blueStartOrientation !== options.blueStartOrientation ||
+      redStartOrientation !== options.redStartOrientation;
+
+    if (changed) {
+      updateOptions({ blueStartOrientation, redStartOrientation });
+    }
+
+    return changed;
+  }
+
   // Individual field setters
   function setStartPosition(position: PictographData | null) {
     updateOptions({ startPosition: position });
@@ -271,6 +296,7 @@ export function createStartEndOptionsState(
     setOptions,
     resetOptions,
     clearPositions,
+    normalizeOrientationsForLevel,
     clearSavedOptions: () => {
       saveBlockedPositions([]);
       clearSessionOptions();
