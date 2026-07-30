@@ -59,6 +59,23 @@ Parse the feedback ID from the submit output (`📋 Feedback ID: <id>`) for the
 the state an item is BORN in; moving an existing item still goes through
 `fetch-feedback.js` and its transition guard.
 
+## Amending an entry after the fact
+
+Text, priority and flags update WITHOUT a status transition — use these rather
+than walking a completed item back to `in-review` to fix its wording, which
+would write two journal entries recording a review that did not happen:
+
+```bash
+node scripts/fetch-feedback.js <id> description "..."
+node scripts/fetch-feedback.js <id> title "..."
+node scripts/fetch-feedback.js <id> resolution "..."
+node scripts/fetch-feedback.js <id> priority <low|medium|high>
+node scripts/fetch-feedback.js <id> internal-only true
+```
+
+Common need: you logged the item while implementing, so it has no commit SHA.
+`description` is how you add it.
+
 ## Writing the entry
 
 Put the root cause and the commit SHA in the description. For most of these the
