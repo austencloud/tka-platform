@@ -21,52 +21,59 @@
     onNavigate?: () => void;
   } = $props();
 
-  // Trailing punctuation after a chip ("...yourself].") would otherwise wrap
-  // onto its own line when the chip breaks; glue it to the chip instead.
-  const segments = $derived.by(() => {
+  // Prose stays prose: link labels render as emphasized text inside the
+  // sentence, and the links themselves drop below as a row of real buttons.
+  // A verb phrase mid-sentence should never look like a button.
+  const parts = $derived.by(() => {
     const raw = toChangelogSegments(text);
-    return raw.map((segment, i) => {
-      if (segment.kind === "link") {
-        const next = raw[i + 1];
-        const suffix =
-          next?.kind === "text"
-            ? (next.value.match(/^[.,!?;:)]+/)?.[0] ?? "")
-            : "";
-        return { ...segment, suffix };
+    const actions: { label: string; href: string; external: boolean }[] = [];
+    for (const s of raw) {
+      if (s.kind === "link" && !actions.some((a) => a.href === s.href)) {
+        actions.push({
+          label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
+          href: s.href,
+          external: s.external,
+        });
       }
-      if (segment.kind === "text" && raw[i - 1]?.kind === "link") {
-        return {
-          ...segment,
-          value: segment.value.replace(/^[.,!?;:)]+/, ""),
-        };
-      }
-      return segment;
-    });
+    }
+    return { segments: raw, actions };
   });
 </script>
 
 <span class="rich-text">
-  {#each segments as segment}
-    {#if segment.kind === "text"}{segment.value}{:else if segment.kind === "link"}<span
-        class="chip-glue"
-        ><a
-          class="entry-link"
-          href={segment.href}
-          target={segment.external ? "_blank" : undefined}
-          rel={segment.external ? "noopener noreferrer" : undefined}
+  <span class="prose">
+    {#each parts.segments as segment}
+      {#if segment.kind === "text"}{segment.value}{:else if segment.kind === "link"}<span
+          class="link-label">{segment.label}</span
+        >{:else}<span class="inline-icon" aria-hidden="true"
+          ><i class="fas {segment.name}"></i></span
+        >{/if}
+    {/each}
+  </span>
+  {#if parts.actions.length > 0}
+    <span class="action-row">
+      {#each parts.actions as action}
+        <a
+          class="action-btn"
+          href={action.href}
+          target={action.external ? "_blank" : undefined}
+          rel={action.external ? "noopener noreferrer" : undefined}
           onclick={(e) => {
             e.stopPropagation();
-            if (!segment.external) onNavigate?.();
+            if (!action.external) onNavigate?.();
           }}
-          >{segment.label}{#if segment.external}<i
-              class="fas fa-external-link-alt external-mark"
-              aria-hidden="true"
-            ></i>{/if}</a
-        >{segment.suffix}</span
-      >{:else}<span class="inline-icon" aria-hidden="true"
-        ><i class="fas {segment.name}"></i></span
-      >{/if}
-  {/each}
+        >
+          {action.label}
+          <i
+            class="fas {action.external
+              ? 'fa-external-link-alt'
+              : 'fa-angle-right'} action-mark"
+            aria-hidden="true"
+          ></i>
+        </a>
+      {/each}
+    </span>
+  {/if}
 </span>
 
 <style>
@@ -74,78 +81,75 @@
     display: inline;
   }
 
-  /* Chip + its trailing punctuation move as one unit across line breaks. */
-  .chip-glue {
-    white-space: nowrap;
+  .prose {
+    display: inline;
   }
 
-  /* Inline pill chip: reads as a button, flows inside the sentence.
-     Anchor semantics kept — it navigates. */
-  .entry-link {
-    position: relative;
+  /* The word the button refers to, emphasized but NOT interactive —
+     the action row below is the click target. */
+  .link-label {
+    color: color-mix(in srgb, var(--theme-accent, #6ea8fe) 70%, var(--theme-text, #fff));
+    font-weight: 600;
+  }
+
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  /* Real button: anchor with button appearance, 44px-friendly padding. */
+  .action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35em;
-    padding: 0.15em 0.65em;
-    margin: 0.1em 0.05em;
+    gap: 0.45em;
+    min-height: 32px;
+    padding: 5px 14px;
     background: color-mix(
       in srgb,
-      var(--theme-accent, #6ea8fe) 14%,
+      var(--theme-accent, #6ea8fe) 12%,
       transparent
     );
     border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #6ea8fe) 35%, transparent);
+      color-mix(in srgb, var(--theme-accent, #6ea8fe) 32%, transparent);
     border-radius: 999px;
     color: var(--theme-accent, #6ea8fe);
+    font-size: 0.92em;
     font-weight: 600;
+    line-height: 1.2;
     text-decoration: none;
-    white-space: normal; /* long labels wrap INSIDE the pill (chip-glue is nowrap) */
+    position: relative;
     transition:
       background 0.15s,
       border-color 0.15s,
       color 0.15s;
   }
 
-  /* Invisible hit-area extension so the effective touch target clears the
-     44px floor without inflating the line box. */
-  .entry-link::after {
+  /* Invisible hit-area extension: effective touch target clears 44px. */
+  .action-btn::after {
     content: "";
     position: absolute;
-    inset: -0.6em -0.3em;
+    inset: -7px 0;
   }
 
-  .entry-link:hover {
+  .action-btn:hover {
     background: color-mix(
       in srgb,
-      var(--theme-accent, #6ea8fe) 24%,
+      var(--theme-accent, #6ea8fe) 22%,
       transparent
     );
     border-color: color-mix(
       in srgb,
-      var(--theme-accent, #6ea8fe) 60%,
+      var(--theme-accent, #6ea8fe) 55%,
       transparent
     );
     color: color-mix(in srgb, var(--theme-accent, #6ea8fe) 75%, white);
   }
 
-  .entry-link::before {
-    content: "\f105"; /* fa-angle-right: "this takes you somewhere" */
-    font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
-    font-weight: 900;
+  .action-mark {
     font-size: 0.75em;
     opacity: 0.8;
-    order: 2;
-  }
-
-  .external-mark {
-    font-size: 0.7em;
-    opacity: 0.75;
-    order: 3;
-  }
-
-  /* External chips show the external mark instead of the chevron. */
-  .entry-link:has(.external-mark)::before {
-    content: none;
   }
 
   .inline-icon {
