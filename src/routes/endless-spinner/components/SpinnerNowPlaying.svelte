@@ -10,6 +10,10 @@
   import LoopChips from "$lib/features/store/components/LoopChips.svelte";
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import {
+    tryGetLoopDisplayResolver,
+    type LoopDisplay,
+  } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { GeneratedSequenceInfo } from "$lib/features/landing/domain/models/spinner-models";
 
@@ -22,23 +26,37 @@
     generatedInfo?: GeneratedSequenceInfo | null;
   } = $props();
 
-  // The sequence's own metadata is the primary source (library sequences
-  // carry components/loopType/period); the generator's settings are the
-  // fallback for generated sequences whose snapshot lacks them.
+  const EMPTY_LOOP_DISPLAY: LoopDisplay = {
+    components: new Set(),
+    period: 1,
+  };
+  const loopDisplay = $derived.by(() => {
+    const resolve = tryGetLoopDisplayResolver();
+    return sequence && resolve ? resolve(sequence) : EMPTY_LOOP_DISPLAY;
+  });
+
+  // A mixed LOOP can use one interval for rotation and another for inversion.
+  // The canonical resolver preserves both from loopSpec; the lightweight
+  // metadata path remains the fallback while app services are booting.
   const components = $derived.by((): string[] => {
+    if (loopDisplay.components.size > 0) return [...loopDisplay.components];
     if (sequence?.components?.length) return [...sequence.components];
     const loopType =
       sequence?.loopType ?? generatedInfo?.settings.loopType ?? null;
     return [...parseLoopComponents(loopType)];
   });
 
-  const rotationPeriod = $derived.by((): Period | undefined => {
+  const metadataPeriod = $derived.by((): Period | undefined => {
     if (sequence?.period === 4) return Period.QUARTERED;
     if (sequence?.period === 2) return Period.HALVED;
     return generatedInfo?.settings.period;
   });
+  const rotationPeriod = $derived(loopDisplay.rotationPeriod ?? metadataPeriod);
+  const inversionPeriod = $derived(
+    loopDisplay.inversionPeriod ?? metadataPeriod
+  );
 </script>
 
 {#if components.length > 0}
-  <LoopChips {components} {rotationPeriod} />
+  <LoopChips {components} {rotationPeriod} {inversionPeriod} />
 {/if}
