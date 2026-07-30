@@ -1,14 +1,19 @@
 ---
-status: active
+status: archived
 value: 3
-effort: S
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
-depends_on: ""
+effort: XL
+remaining: "Superseded by 2026-07-11-hardening-verification-reconciliation.md, which re-verified every finding, records landed fixes, and owns the remaining OPEN-SAFE and OPEN-FLAGGED work."
+depends_on: "2026-07-11-hardening-verification-reconciliation.md"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Titanium Hardening — Audit Wave 2 (2026-06-28)
+
+> **Archived 2026-07-30:** Superseded by
+> `active/2026-07-11-hardening-verification-reconciliation.md`. That ledger
+> re-verified these findings against current source, records the shipped fixes,
+> and is the canonical resume point for every residual item.
 
 Six adversarial auditors swept the pipelines the first wave didn't reach:
 pictograph/positioning, sequence-engine/generation, gamification, payments/commerce,
