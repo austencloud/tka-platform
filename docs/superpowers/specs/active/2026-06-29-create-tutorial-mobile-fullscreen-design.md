@@ -2,16 +2,16 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Draft — awaiting user review"
-depends_on: ""
+remaining: "Implementation landed in 5609c75ac1, the real-component verification route landed in e5ce0fbff2, and current source matches the approved fullscreen treatment across all four steps. Close-out is blocked by two verification gates: Chrome DevTools MCP is unavailable in this Codex session for the required current viewport screenshots, and pnpm run check reports seven unrelated errors in another session's untracked WorkspaceShareControl.svelte. Once both clear, capture the viewport proof, rerun the full check, and move this spec to shipped."
+depends_on: "external: Chrome DevTools MCP unavailable; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Create Tutorial — Mobile Fullscreen
 
 **Date:** 2026-06-29
-**Status:** Draft — awaiting user review
+**Status:** Implemented — awaiting current visual and repository-check proof
 
 ## Problem
 
@@ -147,3 +147,19 @@ Per project visualization-routing (test page with real components, never a mocku
 - Device-aware fitter must react to the new container size — it sizes off the
   container, so freeing both axes should just produce larger tiles; verify in the
   test page rather than assuming.
+
+## Reconciliation (2026-07-30)
+
+- Commit `5609c75ac1` implemented the ≤900px fullscreen wizard treatment and
+  compact `.step-header` wrapper across all four Create tutorial steps.
+- Commit `e5ce0fbff2` added the real-component `/test/tutorial-fullscreen`
+  verification route. Follow-ups `c1e34da9d1`, `5b338f1998`, and `40869a35a5`
+  corrected mobile dot alignment, option-grid centering, and short-viewport Ready
+  step overlap.
+- Current source retains the 900px breakpoint, `100dvh` layout, safe-area
+  padding, and all four `.step-header` wrappers. No duplicate implementation is
+  needed.
+- Fresh viewport proof cannot be captured in this session because Chrome DevTools
+  MCP is not registered. The full repository check also remains blocked by seven
+  TypeScript errors, all in the unrelated untracked
+  `WorkspaceShareControl.svelte`.
