@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: S
-remaining: "The trail envelope, focused tests, LOW/HIGH visual proof, and maximum-Coven stability proof are complete. Shipment is blocked by seven TypeScript errors in the unrelated in-flight WorkspaceShareControl.svelte. Rerun pnpm run check after that work is green, then move this spec to shipped."
-depends_on: ""
+remaining: "The trail envelope, focused tests, LOW/HIGH visual proof, and maximum-Coven stability proof are complete. A 2026-07-30 close-out check again found seven TypeScript errors, all in the unrelated untracked WorkspaceShareControl.svelte and none in trail files. Rerun pnpm run check after that share-control work is green, then move this spec to shipped."
+depends_on: "external: shared full check is blocked by another session's untracked WorkspaceShareControl.svelte type errors"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-29
+last_triaged: 2026-07-30
 ---
 # 3D Trail Parity — Design
 
@@ -123,3 +123,4 @@ One approved behavior is still absent: `Trail3D.svelte` mounts and unmounts its 
 - HIGH and LOW tier proof was captured with the shipping `PerformerRig`, `EffectOrchestrator3D`, `CovenStation`, and quality-tier override. The HIGH observation ran for 15.0 seconds with no new console errors or render timeouts. The LOW observation ran for 10.0 seconds with the same result.
 - The proof scene rendered one viewer rig beside the maximum Coven formation of six center rigs and six acolytes. Screenshots are saved at `test-results/visual/3d-trail-envelope-high.png` and `test-results/visual/3d-trail-envelope-low.png`.
 - The repository gate remains blocked. `pnpm run check` reported seven TypeScript errors, all in the unrelated in-flight `WorkspaceShareControl.svelte`; none were reported in the trail files changed here.
+- The 2026-07-30 close-out rerun produced the same seven errors and five warnings. Every error was still confined to `WorkspaceShareControl.svelte`, so the queue dependency is now explicit instead of letting this blocked close-out outrank executable work.
