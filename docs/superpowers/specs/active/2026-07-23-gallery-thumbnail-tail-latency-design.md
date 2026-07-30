@@ -2,11 +2,11 @@
 status: active
 value: 5
 effort: M
-remaining: "Instrumentation and safeguards are complete. Remaining: signed-in fan warm and static sync, target iPhone and desktop benchmark gates, injected-timeout screenshot and payload, and post-release production follow-up."
-depends_on: ""
+remaining: "Implementation recheck passed 13 focused files and 69 tests on 2026-07-29. Remaining in order: approved signed-in fan warm and static sync; approved browser capture of the injected timeout and stubbed payload; target iPhone and desktop benchmark gates; release; production timeout-count and warm-cache p95 follow-up."
+depends_on: "external: requires signed-in admin warm, explicit browser control, target iPhone and desktop benchmarks, then a released production cohort"
 plan_path: ""
 tags: ["browse", "thumbnails", "performance", "telemetry", "cache"]
-last_triaged: 2026-07-23
+last_triaged: 2026-07-29
 ---
 
 # Gallery Thumbnail Timeout Attribution and Cache Coverage: Design Spec
@@ -614,6 +614,9 @@ Verification completed in this checkout:
 - post-review targeted Svelte and TypeScript check: 0 errors and 0 warnings;
 - targeted production TypeScript ESLint: 0 errors;
 - scoped `git diff --check`: clean.
+
+Queue revalidation on 2026-07-29 passed 13 focused files and 69 tests. The
+project check completed with 0 errors and 5 existing warnings.
 
 This spec remains active because the following evidence requires signed-in
 cloud state, explicit browser-control permission, physical target devices, or a
