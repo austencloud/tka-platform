@@ -1,5 +1,19 @@
 # Touch drag-to-aim on the placement board — Handoff (2026-07-29)
 
+> **RESOLVED 2026-07-29, commit `96b7057b52`.** H1 confirmed via raw CDP
+> `Input.dispatchTouchEvent`: Chrome does not honour `touch-action: none` on
+> the SVG hit circle — a real drag got a `pointercancel` ~20px in (implicit
+> capture and all), prop placed, aim silently died. Fix: `touch-action: none`
+> on the HTML `.grid-wrapper`. Verified through the real input pipeline:
+> drag-north-from-North commits OUT to the parent + localStorage, tap+wobble
+> leaves orientation alone, zero cancels. Loose end #2 done too: a
+> `dispatchRealTouchDrag` vitest browser command (CDP touch via the playwright
+> provider, `tests/helpers/browser-commands/real-touch.ts`) plus a regression
+> test that fails with the fix reverted. Loose ends #3–#5 remain open. H2
+> (feedback under the finger) and H3 (16px dead zone / no hysteresis) remain
+> plausible polish items if the phone still feels imprecise — untestable in
+> emulation, need a real fat finger.
+
 ## Mission
 
 The Construct tab's **Build** path lets you place the two props on a grid and
