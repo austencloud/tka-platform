@@ -408,6 +408,30 @@
     if (dockTab && !dockTabs.some((t) => t.id === dockTab)) dockTab = null;
   });
 
+  /*
+   * The chrome's live height, which the stage reserves room for.
+   *
+   * Measured rather than a constant, because the chrome is a different height
+   * with a tray open. A constant reserve meant the tray opened OVER the drawing:
+   * you could read the eight lines of notation or you could watch the step they
+   * describe, never both, and the notation on its own is eight rows of digits.
+   * The step the animation is on is the only thing that makes a row mean
+   * anything, so the two have to be on screen together — which means the drawing
+   * gives up the height rather than being covered.
+   */
+  let chromeEl = $state<HTMLDivElement>();
+  let chromeH = $state(0);
+
+  $effect(() => {
+    const el = chromeEl;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry) chromeH = Math.ceil(entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
   const snapshot = (): QftSession => ({
     appMode,
     moveIndex,
@@ -877,7 +901,10 @@
     </nav>
   {/if}
 
-  <main class="surface">
+  <main
+    class="surface"
+    style:--chrome-h={phone && chromeH ? `${chromeH}px` : null}
+  >
     <Crossfade key={appMode === "guide" ? move.id : appMode} fill>
       {#if appMode === "matrix"}
         <!--
@@ -966,27 +993,32 @@
       One piece of bottom chrome, edge to edge, holding the transport and the
       dock together.
 
-      It is anchored to the bottom of the stage's own box and overlays it, so
-      the drawing never resizes when a tray opens — the failure the previous
-      in-flow version had, where opening Knobs shrank the stage to 123px
-      exactly while you drag a radius slider whose purpose is to change the
-      thing you can then no longer see.
+      Anchored to the bottom of the stage's box, and the stage reserves its
+      MEASURED height — so an open tray sits under the drawing rather than on
+      top of it. Both are on screen at once, which is the whole point: a row of
+      the notation only means something next to the step it describes.
+
+      That costs the drawing height while a tray is open, and the tray's cap is
+      what keeps the trade fair: 34vh, not the 42 it was, because 42 left a
+      375px phone with 175px of stage. At 34 the notation's eight lines still
+      fit the tray without scrolling and the drawing keeps ~230px — both
+      legible, which beats one of them large and the other behind it. The
+      earlier overlay avoided the resize and paid for it by hiding the subject.
 
       The transport is the app's floor: bottom-most, so it is in the same place
       whether a tray is open or shut. Above the tabs it rode UP with the tray —
       a play button sitting in the middle of the flower it controls, on bare
-      stage, with the chrome's surface starting below it. The drawer opens over
-      the drawing because you asked it to; the transport must not.
+      stage, with the chrome's surface starting below it.
     -->
     {#if phone}
-      <div class="bottom-chrome">
+      <div class="bottom-chrome" bind:this={chromeEl}>
         <ControlDock
           tabs={dockTabs}
           activeTab={dockTab}
           onTabSelect={selectDockTab}
           tray={dockTray}
           labelMinWidth={0}
-          trayMaxHeight="42vh"
+          trayMaxHeight="34vh"
         />
         {@render transportRow()}
       </div>
@@ -1515,17 +1547,25 @@
   }
 
   /*
-   * Room for the collapsed bottom chrome — transport plus tab bar — so the
-   * drawing is never underneath it. A constant rather than the dock's measured
-   * height: measured, the reserve would grow with the open tray and shrink the
-   * stage again, which is the thing overlaying the chrome was meant to stop.
+   * Room for the whole bottom chrome, whatever height it currently is, so the
+   * drawing is never underneath it — with a tray open OR shut.
+   *
+   * The measured height, not a constant. A constant only fits the collapsed
+   * bar, so every open tray covered the drawing, and the notation is worth
+   * nothing without the step it describes moving next to it.
+   *
+   * The fallback is the collapsed measurement (8.5rem = 136px against 133px),
+   * for the frame before the observer reports and for a no-JS render.
    */
   .app.docked .surface {
-    /* 8.5rem = 136px against a measured 133px of collapsed chrome. It has come
-       down twice as the chrome lost boxes it did not need: its own card padding
-       when the chrome became the surface, then the counter's row when the
-       counter moved out to the edge of the transport's own. */
-    padding-bottom: 8.5rem;
+    padding-bottom: var(--chrome-h, 8.5rem);
+    transition: padding-bottom 260ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app.docked .surface {
+      transition: none;
+    }
   }
 
   /*

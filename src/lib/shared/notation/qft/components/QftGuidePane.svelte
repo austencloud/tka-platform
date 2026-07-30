@@ -44,7 +44,7 @@
   }: Props = $props();
 </script>
 
-<div class="guide">
+<div class="guide" class:no-notation={!showNotation}>
   <!--
     One stage, computed. The 2011 diagrams used to sit beside this and drive the
     layout of every move, but they are not one visual language: two of them fill
@@ -178,6 +178,20 @@
     width: 100%;
     display: flex;
     flex-direction: column;
+  }
+
+  /*
+   * No floor when the notation is not in this pane.
+   *
+   * The floor exists to stop the table crushing the drawing. Where the table
+   * lives in the host's dock instead, there is nothing here to crush it — and
+   * the floor becomes the bug: it held 270px on a 375px phone while the pane
+   * had 237px to give, so the bottom 100px of the drawing was clipped behind
+   * the dock. Without it the drawing simply takes the pane, whatever the pane
+   * currently is.
+   */
+  .guide.no-notation .pair {
+    min-height: 0;
   }
 
   /*
@@ -369,6 +383,20 @@
      * so this is the one tier that drops it rather than clipping the notation.
      */
     .credit {
+      display: none;
+    }
+  }
+
+  /*
+   * The provenance line goes on the smallest screens.
+   *
+   * With the dock's table tray open, a 375px phone has 237px for the title, the
+   * drawing and this line — and this line's 26px is the least of the three. It
+   * says the same thing the About panel and the archive view both say, and the
+   * button beside it has already moved into the Moves tray at this size.
+   */
+  @media (max-width: 30rem) {
+    .guide.no-notation .credit {
       display: none;
     }
   }

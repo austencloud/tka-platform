@@ -270,6 +270,24 @@
     white-space: nowrap;
   }
 
+  /*
+   * A shade smaller on the narrowest phones.
+   *
+   * At full size the eight lines plus their key come to 237px, and the dock's
+   * tray caps at 227 — so the eighth line, the one that closes the cycle, was
+   * cut in half. Nine per cent off the type buys the whole cycle back and comes
+   * out of the panel, not out of the drawing above it.
+   */
+  @media (max-width: 26rem) {
+    .line {
+      font-size: 0.92rem;
+    }
+
+    .lines li {
+      line-height: 1.3;
+    }
+  }
+
   .term {
     font-weight: 600;
     color: var(--semantic-text-primary, rgb(255 255 255 / 0.92));
