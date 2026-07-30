@@ -24,12 +24,19 @@
     type QftKnobs,
   } from "$lib/shared/notation/qft/qft-model";
   import {
+    traceTrajectory,
+    trajectoryPosesAt,
+    trajectoryPropIndexAt,
+    type QftTrajectory,
+  } from "$lib/shared/notation/qft/qft-trajectory";
+  import {
     ALL_LAYERS,
     type QftLayers,
   } from "$lib/shared/notation/qft/qft-layers";
 
   interface Props {
-    knobs: QftKnobs;
+    knobs?: QftKnobs;
+    trajectory?: QftTrajectory;
     increments: QftIncrement[];
     /** Continuous position in the eight-step cycle. */
     cursor: number;
@@ -47,6 +54,7 @@
 
   let {
     knobs,
+    trajectory,
     increments,
     cursor,
     unit,
@@ -57,16 +65,33 @@
     uid = "solo",
   }: Props = $props();
 
+  const fallbackKnobs: QftKnobs = {
+    radius: 1,
+    downbeats: 1,
+    spin: "inspin",
+  };
+  const resolvedKnobs = $derived(knobs ?? fallbackKnobs);
+  const radius = $derived(trajectory?.radius ?? resolvedKnobs.radius);
   const step = $derived(Math.floor(cursor) % 8);
   const row = $derived(increments[step]);
 
   const poses = $derived(
-    pendulum ? pendulumPosesAt(cursor) : posesAt(knobs, cursor)
+    trajectory
+      ? trajectoryPosesAt(trajectory, cursor)
+      : pendulum
+        ? pendulumPosesAt(cursor)
+        : posesAt(resolvedKnobs, cursor)
   );
   const hand = $derived({ x: poses.hand.x * unit, y: poses.hand.y * unit });
   const head = $derived({ x: poses.head.x * unit, y: poses.head.y * unit });
 
-  const samples = $derived(pendulum ? tracePendulum() : tracePath(knobs));
+  const samples = $derived(
+    trajectory
+      ? traceTrajectory(trajectory)
+      : pendulum
+        ? tracePendulum()
+        : tracePath(resolvedKnobs)
+  );
 
   const trail = $derived(
     samples
@@ -226,7 +251,11 @@
    * one increment, which no angle measured off screen coordinates can express.
    */
   const indexAt = (u: number) =>
-    pendulum ? pendulumIndexAt(u) : propIndexAt(knobs, u);
+    trajectory
+      ? trajectoryPropIndexAt(trajectory, u)
+      : pendulum
+        ? pendulumIndexAt(u)
+        : propIndexAt(resolvedKnobs, u);
 
   const RADIANS_PER_POSITION = Math.PI / 4;
 
@@ -280,7 +309,10 @@
   const markerId = $derived(`qft-dart-head-${uid}`);
 </script>
 
-<g class="figure" style={`--figure-color: ${color}; --dart-color: ${dartColor};`}>
+<g
+  class="figure"
+  style={`--figure-color: ${color}; --dart-color: ${dartColor};`}
+>
   <defs>
     <marker
       id={markerId}
@@ -295,8 +327,8 @@
     </marker>
   </defs>
 
-  {#if layers.handPath && knobs.radius > 0.01}
-    <circle class="hand-path" cx="0" cy="0" r={knobs.radius * unit} />
+  {#if layers.handPath && radius > 0.01}
+    <circle class="hand-path" cx="0" cy="0" r={radius * unit} />
   {/if}
 
   <!-- Under the trail and the tether: this is ground, not a mark. -->
@@ -340,7 +372,7 @@
     an abstract slider value. Nothing to draw at radius 0 — the hand is the
     centre.
   -->
-  {#if layers.handPath && knobs.radius > 0.01 && !pendulum}
+  {#if layers.handPath && radius > 0.01 && !pendulum}
     <line class="arm" x1="0" y1="0" x2={hand.x} y2={hand.y} />
   {/if}
 

@@ -1,11 +1,16 @@
 <script lang="ts" module>
-  import type { QftIncrement, QftKnobs } from "$lib/shared/notation/qft/qft-model";
+  import type {
+    QftIncrement,
+    QftKnobs,
+  } from "$lib/shared/notation/qft/qft-model";
+  import type { QftTrajectory as QftHandTrajectory } from "$lib/shared/notation/qft/qft-trajectory";
 
   /** Which prop a figure is, and therefore what colour it wears. */
   export type QftTone = "accent" | "blue" | "red";
 
   export interface QftHand {
-    knobs: QftKnobs;
+    knobs?: QftKnobs;
+    trajectory?: QftHandTrajectory;
     increments: QftIncrement[];
     tone?: QftTone;
     pendulum?: boolean;
@@ -38,6 +43,11 @@
     PROP_LENGTH,
   } from "$lib/shared/notation/qft/qft-model";
   import {
+    traceTrajectory,
+    trajectoryPosesAt,
+    type QftTrajectory,
+  } from "$lib/shared/notation/qft/qft-trajectory";
+  import {
     ALL_LAYERS,
     type QftLayers,
   } from "$lib/shared/notation/qft/qft-layers";
@@ -46,6 +56,8 @@
   interface Props {
     /** Single-hand form: the guide and the instrument both use this. */
     knobs?: QftKnobs;
+    /** Per-step-rate form used by reversal patterns. */
+    trajectory?: QftTrajectory;
     increments?: QftIncrement[];
     /**
      * Multi-hand form. A matrix cell is two flowers, so the stage takes a list
@@ -104,6 +116,7 @@
 
   let {
     knobs,
+    trajectory,
     increments,
     hands,
     cursor,
@@ -124,7 +137,10 @@
   const figures = $derived<QftHand[]>(
     hands ?? [
       {
-        knobs: knobs ?? { radius: 1, downbeats: 1, spin: "inspin" },
+        knobs: trajectory
+          ? undefined
+          : (knobs ?? { radius: 1, downbeats: 1, spin: "inspin" }),
+        trajectory,
         increments: increments ?? [],
         tone: "accent",
         pendulum,
@@ -134,6 +150,11 @@
 
   /** Pixels per prop length. The head reaches radius + 1, so 2.5 at the widest. */
   const UNIT = 100;
+  const DEFAULT_KNOBS: QftKnobs = {
+    radius: 1,
+    downbeats: 1,
+    spin: "inspin",
+  };
   const HOME_BASE = [1, 2, 3, 4, 5, 6, 7, 8];
   const RING = PROP_LENGTH * UNIT;
 
@@ -176,11 +197,20 @@
 
     for (const figure of figures) {
       const swinging = figure.pendulum ?? false;
-      const samples = swinging ? tracePendulum() : tracePath(figure.knobs);
+      const figureKnobs = figure.knobs ?? DEFAULT_KNOBS;
+      const samples = figure.trajectory
+        ? traceTrajectory(figure.trajectory)
+        : swinging
+          ? tracePendulum()
+          : tracePath(figureKnobs);
       for (const p of samples) bump(p.x * UNIT, p.y * UNIT, HEAD_R);
 
       for (let k = 0; k < 8; k += 1) {
-        const at = swinging ? pendulumPosesAt(k) : posesAt(figure.knobs, k);
+        const at = figure.trajectory
+          ? trajectoryPosesAt(figure.trajectory, k)
+          : swinging
+            ? pendulumPosesAt(k)
+            : posesAt(figureKnobs, k);
         const h = { x: at.hand.x * UNIT, y: at.hand.y * UNIT };
         /* The prop's own compass rides the hand, so it reaches a prop length past it. */
         bump(h.x, h.y, PROP_LENGTH * UNIT + STROKE_R);
@@ -188,7 +218,10 @@
         const value = figure.increments[k]?.propDirDepart;
         if (value === undefined || value === "n") continue;
         /* The dart fires from the departure point and runs its full travel. */
-        const offset = pointAt(figure.increments[k]?.propDepart ?? 8, PROP_LENGTH);
+        const offset = pointAt(
+          figure.increments[k]?.propDepart ?? 8,
+          PROP_LENGTH
+        );
         const heading = pointAt(value, (DART_TRAVEL + DART_LENGTH) * UNIT);
         bump(
           h.x + offset.x * UNIT + heading.x,
@@ -263,6 +296,7 @@
   {#each figures as figure, i (i)}
     <QftFigure
       knobs={figure.knobs}
+      trajectory={figure.trajectory}
       increments={figure.increments}
       {cursor}
       unit={UNIT}
@@ -343,7 +377,10 @@
   }
 
   .point.origin circle {
-    fill: var(--origin-color, var(--semantic-text-primary, rgb(255 255 255 / 0.85)));
+    fill: var(
+      --origin-color,
+      var(--semantic-text-primary, rgb(255 255 255 / 0.85))
+    );
     stroke: #fff;
   }
 
