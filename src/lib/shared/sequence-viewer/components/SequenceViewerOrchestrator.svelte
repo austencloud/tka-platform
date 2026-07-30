@@ -36,6 +36,8 @@
     currentStepData: StartPositionData | StepData | null;
     highlightedStepIndex: number | null;
     animationLoading: boolean;
+    cardReady: boolean;
+    ensureInteractiveServices: () => void;
 
     playbackSource: PlaybackSource;
     videoPlaybackBeatIndex: number | null;
@@ -261,7 +263,10 @@
   import { createAuthActionQueue } from "./auth-action-queue.svelte";
   import { createFullscreenController } from "../state/fullscreen-controller.svelte";
   import { createLibraryActionHandler } from "../state/library-action-handler.svelte";
-  import { createViewerState } from "../state/viewer-state.svelte";
+  import {
+    createViewerState,
+    type ViewerMode,
+  } from "../state/viewer-state.svelte";
   import { createPracticeViewPrefs } from "$lib/shared/sequence-viewer/state/practice-view-prefs.svelte";
 
   interface Props {
@@ -281,6 +286,14 @@
     playOnOpen?: boolean;
     forceGuest?: boolean;
     initialRenderMode?: "2d" | "3d";
+    /** Initial shared-shell surface. Scan uses card so animation work stays out
+     *  of the first visible frame; other hosts retain persisted mode. */
+    initialViewerMode?: ViewerMode;
+    /** Hold animation/LAN services until the host promotes away from card. */
+    deferInteractiveStartup?: boolean;
+    /** Fires once the card has settled all of its cells. Progressive hosts use
+     *  this to reveal the full viewer without exposing placeholder frames. */
+    onCardReady?: () => void;
     initialBlueVisible?: boolean;
     initialRedVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
@@ -307,6 +320,9 @@
     playOnOpen = false,
     forceGuest = false,
     initialRenderMode,
+    initialViewerMode,
+    deferInteractiveStartup = false,
+    onCardReady,
     initialBlueVisible,
     initialRedVisible,
     initialActiveEffect,
@@ -380,6 +396,10 @@
   });
 
   const viewerState = createViewerState();
+  if (initialViewerMode) {
+    viewerState.setViewerMode(initialViewerMode);
+    viewerState.setExportContext(null);
+  }
   if (playOnOpen) {
     viewerState.enterExport("animation-export", "animation");
   }
@@ -415,12 +435,20 @@
 
   let cellsLoaded = $state(0);
   let totalCells = $state(0);
+  let cardReady = $state(false);
+  let cardReadyNotified = false;
   let autoplayReadyTimer: ReturnType<typeof setInterval> | null = null;
   const cloudBackedScan = getScanCardCloudProbe();
 
   function handleRenderProgress(loaded: number, total: number) {
     cellsLoaded = loaded;
     totalCells = total;
+    const ready = total > 0 && loaded >= total;
+    cardReady = ready;
+    if (ready && !cardReadyNotified) {
+      cardReadyNotified = true;
+      queueMicrotask(() => onCardReady?.());
+    }
   }
 
   let isSyncToggling = $state(false);
@@ -642,7 +670,7 @@
 
     playback.registerVisibilityObserver();
 
-    void loadServices();
+    if (!deferInteractiveStartup) ensureInteractiveServices();
   });
 
   onDestroy(() => {
@@ -739,6 +767,15 @@
       handleOpenInBrowser,
     });
   });
+
+  let servicesLoadPromise: Promise<void> | null = null;
+
+  function ensureInteractiveServices(): void {
+    if (animationServicesReady || servicesLoadPromise) return;
+    servicesLoadPromise = loadServices().finally(() => {
+      servicesLoadPromise = null;
+    });
+  }
 
   async function loadServices() {
     try {
@@ -1222,6 +1259,8 @@
     currentStepData,
     highlightedStepIndex,
     animationLoading,
+    cardReady,
+    ensureInteractiveServices,
     modalAnimationState,
 
     playbackSource,

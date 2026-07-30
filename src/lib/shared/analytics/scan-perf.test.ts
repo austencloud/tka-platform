@@ -3,6 +3,7 @@ import {
   _resetScanPerf,
   markScan,
   markScanAfterNextFrame,
+  markScanAfterPaint,
   reportScanToStable,
 } from "./scan-perf";
 
@@ -62,6 +63,30 @@ describe("scan-perf", () => {
 
     expect(
       performance.getEntriesByName("scan:first-cell-painted", "mark")
+    ).toHaveLength(1);
+  });
+
+  it("marks presented content on the frame after the commit frame", async () => {
+    const callbacks: FrameRequestCallback[] = [];
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn((callback: FrameRequestCallback) => {
+        callbacks.push(callback);
+        return callbacks.length;
+      })
+    );
+    markScan("start");
+
+    const painted = markScanAfterPaint("all-cells-stable");
+    callbacks.shift()!(16);
+    expect(
+      performance.getEntriesByName("scan:all-cells-stable", "mark")
+    ).toHaveLength(0);
+
+    callbacks.shift()!(32);
+    await painted;
+    expect(
+      performance.getEntriesByName("scan:all-cells-stable", "mark")
     ).toHaveLength(1);
   });
 });

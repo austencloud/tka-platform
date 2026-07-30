@@ -5,8 +5,8 @@ import {
   I18N_MESSAGES_WATCH_PATH,
 } from "./src/config/vite-dev-watch-policy";
 import { featureGatePlugin } from "./src/config/vite-plugin-feature-gate";
-import { museumPlacementPlugin } from './src/lib/features/museum/dev/museum-placement-plugin';
-import { composerPlacementPlugin } from './src/lib/shared/3d/scene-composer/persistence/composer-placement-plugin';
+import { museumPlacementPlugin } from "./src/lib/features/museum/dev/museum-placement-plugin";
+import { composerPlacementPlugin } from "./src/lib/shared/3d/scene-composer/persistence/composer-placement-plugin";
 import { sveltekit } from "@sveltejs/kit/vite";
 // Paraglide removed - using lightweight JSON-based i18n in $lib/shared/i18n/
 import { spawn, type ChildProcess } from "child_process";
@@ -45,7 +45,10 @@ const dictionaryPlugin = () => ({
             const baseDir = path.resolve("../../../desktop/data/dictionary");
             const filePath = path.resolve(baseDir, relativePath);
             // Prevent path traversal - filePath must stay within baseDir
-            if (!filePath.startsWith(baseDir + path.sep) && filePath !== baseDir) {
+            if (
+              !filePath.startsWith(baseDir + path.sep) &&
+              filePath !== baseDir
+            ) {
               res.writeHead(403);
               res.end("Forbidden");
               return;
@@ -244,7 +247,10 @@ const screenshotsPlugin = () => ({
   configureServer(server: ViteDevServer) {
     const capturesDir = path.resolve(dirname, "tests/screenshots/captures");
     const baselinesDir = path.resolve(dirname, "tests/screenshots/baselines");
-    const screenshotConfigPath = path.resolve(dirname, "tests/screenshots/screenshot.config.ts");
+    const screenshotConfigPath = path.resolve(
+      dirname,
+      "tests/screenshots/screenshot.config.ts"
+    );
 
     // Manifest endpoint — scans captures dir and returns structured metadata
     server.middlewares.use(
@@ -276,9 +282,7 @@ const screenshotsPlugin = () => ({
           const lastDash = base.lastIndexOf("--");
           const routeLabel = lastDash > 0 ? base.substring(0, lastDash) : base;
           const deviceSlug = lastDash > 0 ? base.substring(lastDash + 2) : "";
-          const hasBaseline = fs.existsSync(
-            path.join(baselinesDir, filename)
-          );
+          const hasBaseline = fs.existsSync(path.join(baselinesDir, filename));
 
           return { filename, routeLabel, deviceSlug, hasBaseline };
         });
@@ -286,7 +290,8 @@ const screenshotsPlugin = () => ({
         res.end(
           JSON.stringify({
             captures,
-            timestamp: latestMtime > 0 ? new Date(latestMtime).toISOString() : null,
+            timestamp:
+              latestMtime > 0 ? new Date(latestMtime).toISOString() : null,
           })
         );
       }
@@ -335,15 +340,21 @@ const screenshotsPlugin = () => ({
     // Serve capture PNGs
     server.middlewares.use(
       "/screenshots/captures",
-      (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) =>
-        servePng(capturesDir, req, res, next)
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => servePng(capturesDir, req, res, next)
     );
 
     // Serve baseline PNGs
     server.middlewares.use(
       "/screenshots/baselines",
-      (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) =>
-        servePng(baselinesDir, req, res, next)
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => servePng(baselinesDir, req, res, next)
     );
 
     // Validation: lowercase letters, digits, hyphens only (route labels use -- as separator)
@@ -399,7 +410,9 @@ const screenshotsPlugin = () => ({
               startedAt: job.startedAt,
               finishedAt: job.finishedAt,
               error: job.error,
-              ...(job.status === "completed" && { capturedFiles: job.capturedFiles }),
+              ...(job.status === "completed" && {
+                capturedFiles: job.capturedFiles,
+              }),
             })
           );
           return;
@@ -442,13 +455,19 @@ const screenshotsPlugin = () => ({
             // Type and format validation
             if (!Array.isArray(routes) || !Array.isArray(devices)) {
               res.statusCode = 400;
-              res.end(JSON.stringify({ error: "routes and devices must be arrays" }));
+              res.end(
+                JSON.stringify({ error: "routes and devices must be arrays" })
+              );
               return;
             }
 
             if (routes.length === 0 || devices.length === 0) {
               res.statusCode = 400;
-              res.end(JSON.stringify({ error: "routes and devices arrays are required" }));
+              res.end(
+                JSON.stringify({
+                  error: "routes and devices arrays are required",
+                })
+              );
               return;
             }
 
@@ -468,7 +487,9 @@ const screenshotsPlugin = () => ({
 
             if (safeRoutes.length === 0 || safeDevices.length === 0) {
               res.statusCode = 400;
-              res.end(JSON.stringify({ error: "Invalid route or device format" }));
+              res.end(
+                JSON.stringify({ error: "Invalid route or device format" })
+              );
               return;
             }
 
@@ -516,13 +537,11 @@ const screenshotsPlugin = () => ({
 
               // Collect filenames modified after job start for final count
               if (fs.existsSync(capturesDir)) {
-                const finalFiles = fs
-                  .readdirSync(capturesDir)
-                  .filter((f) => {
-                    if (!f.endsWith(".png")) return false;
-                    const stat = fs.statSync(path.join(capturesDir, f));
-                    return stat.mtimeMs >= job.startedAt;
-                  });
+                const finalFiles = fs.readdirSync(capturesDir).filter((f) => {
+                  if (!f.endsWith(".png")) return false;
+                  const stat = fs.statSync(path.join(capturesDir, f));
+                  return stat.mtimeMs >= job.startedAt;
+                });
                 job.completed = finalFiles.length;
                 job.capturedFiles = finalFiles;
               }
@@ -575,7 +594,11 @@ const slowRequestLogPlugin = () => ({
     const SLOW_MS = 3000;
     let inFlight = 0;
     server.middlewares.use(
-      (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => {
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
         if (req.headers.upgrade === "websocket") return next();
         const started = Date.now();
         inFlight++;
@@ -664,9 +687,26 @@ const packageJson = JSON.parse(
 //     the svelte chunk wasn't a leaf. Including them is what makes it one.)
 //  2. Route `@threejs-kit/instanced-sprite-mesh` into `vendor-three`, killing the
 //     only `vendor → vendor-three` back-edge.
+//  3. Keep SvelteKit's browser runtime out of the general `vendor` bucket.
+//     Every route imports `$app/state`/navigation; putting that small runtime in
+//     the same manual chunk as PostHog, Capacitor, QR styling, and other
+//     feature-only packages forced all of them onto even the SSR scan shell's
+//     critical path. `vendor-sveltekit` depends only on the Svelte/devalue leaf.
 // Verified acyclic via DIAG_CHUNKS — see scripts/.. build log (no "Circular chunk").
 const classifyChunk = (id: string): string | undefined => {
+  // Vite injects this virtual helper into every module with a dynamic import.
+  // If left unclassified Rollup hoists it into the most-shared manual chunk,
+  // which made a lightweight route import `vendor` solely for one tiny helper.
+  if (id.includes("vite/preload-helper")) return "vendor-sveltekit";
+
   if (id.includes("node_modules")) {
+    // Styles are extracted by Vite and should follow their importing feature.
+    // Assigning a package CSS module to the shared JS bucket leaves an
+    // `/* empty css */ import "vendor"` in the route chunk. That side-effect
+    // import made the root layout download every unrelated module in `vendor`
+    // just to apply the chip token stylesheet.
+    if (/\.css(?:$|\?)/.test(id)) return undefined;
+
     // (1) Svelte client runtime + its runtime-only deps → own LEAF chunk.
     // Must come first: threlte/app/three all import svelte, so it has to be
     // isolated below everyone else. `node_modules/svelte/` matches the core
@@ -682,6 +722,15 @@ const classifyChunk = (id: string): string | undefined => {
       id.includes("node_modules/devalue/")
     ) {
       return "vendor-svelte";
+    }
+    if (id.includes("node_modules/@sveltejs/kit/")) {
+      return "vendor-sveltekit";
+    }
+    // hooks.client needs only Capacitor's platform check. Keeping core in the
+    // general vendor bucket made that tiny startup dependency pull PostHog and
+    // every other unrelated package in the bucket into SvelteKit's app entry.
+    if (id.includes("node_modules/@capacitor/core/")) {
+      return "vendor-capacitor-core";
     }
     if (id.includes("fabric")) return "vendor-fabric";
     if (id.includes("pdfjs-dist")) return "vendor-pdf";
@@ -791,7 +840,10 @@ const devHttps =
 
 export default defineConfig(({ mode }) => ({
   esbuild: {
-    pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+    pure:
+      mode === "production"
+        ? ["console.log", "console.debug", "console.info"]
+        : [],
   },
   define: {
     __DEFINES__: JSON.stringify({}),
@@ -808,7 +860,11 @@ export default defineConfig(({ mode }) => ({
     {
       name: "fix-realtime-bpm-analyzer",
       enforce: "pre" as const,
-      resolveId(id: string, _importer: string | undefined, options?: { ssr?: boolean }) {
+      resolveId(
+        id: string,
+        _importer: string | undefined,
+        options?: { ssr?: boolean }
+      ) {
         if (id === "realtime-bpm-analyzer") {
           if (options?.ssr) {
             return { id: "realtime-bpm-analyzer", external: true };
@@ -816,11 +872,18 @@ export default defineConfig(({ mode }) => ({
           try {
             // import.meta.resolve returns a file:// URL; convert to OS path
             // @ts-expect-error -- import.meta.resolve is sync in Node 20+
-            const pkgUrl = import.meta.resolve("realtime-bpm-analyzer/package.json");
+            const pkgUrl = import.meta
+              .resolve("realtime-bpm-analyzer/package.json");
             const pkgPath = fileURLToPath(pkgUrl);
             return path.resolve(path.dirname(pkgPath), "dist", "index.esm.js");
           } catch {
-            return path.resolve(dirname, "node_modules", "realtime-bpm-analyzer", "dist", "index.esm.js");
+            return path.resolve(
+              dirname,
+              "node_modules",
+              "realtime-bpm-analyzer",
+              "dist",
+              "index.esm.js"
+            );
           }
         }
       },
@@ -893,7 +956,9 @@ export default defineConfig(({ mode }) => ({
               intoThree.push(cFrom + ": " + short(id) + " ==> " + short(dep));
         }
         console.log(
-          "\n##### DIAG edges INTO vendor-three (" + intoThree.length + ") #####"
+          "\n##### DIAG edges INTO vendor-three (" +
+            intoThree.length +
+            ") #####"
         );
         for (const e of [...new Set(intoThree)].sort()) console.log("  " + e);
         // simple cycle detection (DFS)
@@ -959,10 +1024,7 @@ export default defineConfig(({ mode }) => ({
 
     rollupOptions: {
       // Externalize server-only modules that can't be bundled
-      external: [
-        "@resvg/resvg-js",
-        /mcp-server/,
-      ],
+      external: ["@resvg/resvg-js", /mcp-server/],
       output: {
         // Strategic chunking — see classifyChunk() above the config for the
         // full rationale (incl. the 2026-06-16 vendor-three ⇄ vendor TDZ fix).
@@ -1028,10 +1090,7 @@ export default defineConfig(({ mode }) => ({
       // This virtual module doesn't exist in the worker Rollup context. Since these
       // dynamic imports are behind try/catch and never actually reached in worker
       // context, externalizing the unresolvable module lets the build succeed.
-      external: [
-        "__sveltekit/environment",
-        /^\$env\//,
-      ],
+      external: ["__sveltekit/environment", /^\$env\//],
     },
   },
   // ============================================================================
@@ -1062,7 +1121,6 @@ export default defineConfig(({ mode }) => ({
       "firebase/functions",
       "firebase/messaging",
       "firebase/analytics",
-
 
       // UI components (lightweight)
       "bits-ui",

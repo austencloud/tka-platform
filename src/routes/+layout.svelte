@@ -9,7 +9,6 @@
   import { reducedMotion } from "$lib/shared/transitions/motion";
   import { navigationMorphs } from "$lib/shared/transitions/navigation-morphs";
   import { runNamedRouteMorph } from "$lib/shared/transitions/named-route-morph-state.svelte";
-  import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import { getIabBannerHeight } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import type { LayoutData } from "./$types";
@@ -199,9 +198,21 @@
   });
 
   $effect(() => {
-    if (data?.geo) {
-      getPresenceTracker()?.setLocation(data.geo);
-    }
+    const geo = data?.geo;
+    if (!geo || typeof window === "undefined") return;
+
+    let cancelled = false;
+    void import("$lib/shared/presence/get-presence-tracker")
+      .then(({ getPresenceTracker }) => {
+        if (!cancelled) getPresenceTracker().setLocation(geo);
+      })
+      .catch((error) =>
+        console.warn("[Layout] Presence location update failed:", error)
+      );
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   // The in-app browser banner used to render only on /sequence/*, so that one

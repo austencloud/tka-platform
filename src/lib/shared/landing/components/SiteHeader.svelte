@@ -19,8 +19,7 @@
   import type { authState as AuthStateModule } from "../../auth/state/auth-state.svelte";
   import { trackCtaClick } from "$lib/shared/analytics/landing-events";
   import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
-  import { trackAuthModalOpened, type AuthCta } from "$lib/shared/analytics/auth-events";
-  import { clearAuthSubmissionBridge } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import type { AuthCta } from "$lib/shared/analytics/auth-events";
 
   let scrolled = $state(false);
   let mobileOpen = $state(false);
@@ -120,6 +119,8 @@
   }> | null>(null);
 
   async function openSignIn(cta: AuthCta) {
+    const { trackAuthModalOpened } =
+      await import("$lib/shared/analytics/auth-events");
     trackAuthModalOpened(analyticsRoute(), cta);
     accountOpen = false;
     mobileOpen = false;
@@ -146,7 +147,11 @@
   $effect(() => {
     if (authModalOpen && authApi?.isFullAccount) {
       authModalOpen = false;
-      clearAuthSubmissionBridge();
+      void import("$lib/shared/auth/services/auth-analytics-bridge")
+        .then(({ clearAuthSubmissionBridge }) => clearAuthSubmissionBridge())
+        .catch((error) =>
+          console.warn("[SiteHeader] Auth analytics cleanup failed:", error)
+        );
     }
   });
 
@@ -266,7 +271,9 @@
   // Some dropdown destinations live under another destination. On /notation/caps,
   // both /notation and /notation/caps match the current path, but the visitor is
   // only on the latter. Choosing the longest match keeps one clear location.
-  function getActiveItemHref(items: readonly { href: string }[]): string | null {
+  function getActiveItemHref(
+    items: readonly { href: string }[]
+  ): string | null {
     let activeHref: string | null = null;
     for (const item of items) {
       if (
@@ -433,8 +440,7 @@
         <button
           type="button"
           class="signin auth-slot"
-          onclick={() => openSignIn("header_desktop_signin")}
-          >Sign in</button
+          onclick={() => openSignIn("header_desktop_signin")}>Sign in</button
         >
       {/if}
       <a
@@ -445,8 +451,7 @@
           trackCtaClick("header_desktop", {
             cta_type: "open_composer",
             destination: "/create",
-          })}
-        >Open Flow Arts Composer</a
+          })}>Open Flow Arts Composer</a
       >
     </nav>
 
@@ -498,7 +503,10 @@
             <ul class="m-sub-inner">
               {#each entry.items as item}
                 <li>
-                  <a href={item.href} class:active={item.href === activeItemHref}>
+                  <a
+                    href={item.href}
+                    class:active={item.href === activeItemHref}
+                  >
                     <i
                       class="fas {item.icon} m-icon m-sub-icon"
                       aria-hidden="true"
@@ -553,8 +561,7 @@
       <button
         type="button"
         class="m-signin"
-        onclick={() => openSignIn("header_mobile_signin")}
-        >Sign in</button
+        onclick={() => openSignIn("header_mobile_signin")}>Sign in</button
       >
     {/if}
   </div>

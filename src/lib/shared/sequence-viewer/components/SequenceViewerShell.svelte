@@ -15,6 +15,8 @@
   - exportOverrides: scan routes Download through its gated page pipeline
   - startInSplit: scan force-resets persisted viewer mode to the split first
     impression
+  - startInCardThenSplit: scan presents the live card first, then promotes the
+    same shell to Side-by-Side after the card's painted frame
 
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
@@ -113,6 +115,8 @@
     onAccountSignIn?: () => void;
     /** One-shot reset to the split view on mount (scan first impression). */
     startInSplit?: boolean;
+    /** Present card mode first, then promote after its first stable paint. */
+    startInCardThenSplit?: boolean;
     exportOverrides?: ExportOverrides;
     /** Optional "See it in the Guide" action — host supplies the handler; the
      *  shell renders it in the overflow menu. Omitted → not shown. */
@@ -128,6 +132,7 @@
     openAppHref,
     onAccountSignIn,
     startInSplit = false,
+    startInCardThenSplit = false,
     exportOverrides,
     guideAction = null,
   }: Props = $props();
@@ -293,6 +298,7 @@
 
   // Named rail/select handlers shared by the rail and the mobile bottom bar.
   function selectSplitMode(c: OrchestratorContext, track = true) {
+    c.ensureInteractiveServices();
     const previousMode = c.viewerState.viewerMode;
     c.viewerState.exitExport();
     // Side-by-side is hard-coded to 2D + Card on every width — the comparison
@@ -313,6 +319,7 @@
     mode: ContentType,
     countIntent = true
   ) {
+    if (mode !== "card") c.ensureInteractiveServices();
     const previousMode = c.viewerState.viewerMode;
     if (mode === "animation") {
       c.viewerState.enterExport("animation-export", "animation");
@@ -353,7 +360,9 @@
   // export context would land mid-export instead of on the split first
   // impression. One-shot reset when the scan host mounts.
   onMount(() => {
-    if (startInSplit) {
+    if (startInCardThenSplit) {
+      captureScanViewerOpened("card");
+    } else if (startInSplit) {
       queueMicrotask(() => {
         selectSplitMode(ctx, false);
         captureScanViewerOpened("split");
@@ -361,6 +370,34 @@
     } else {
       captureScanViewerOpened(ctx.viewerState.viewerMode);
     }
+  });
+
+  let progressivePromotionScheduled = false;
+  $effect(() => {
+    if (
+      !startInCardThenSplit ||
+      progressivePromotionScheduled ||
+      !ctx.cardReady
+    ) {
+      return;
+    }
+
+    progressivePromotionScheduled = true;
+    let secondFrame = 0;
+    let promotionTimer: ReturnType<typeof setTimeout> | undefined;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        // Let the card's double-rAF performance mark land first, then activate
+        // animation services and the existing Side-by-Side surface.
+        promotionTimer = setTimeout(() => selectSplitMode(ctx, false), 0);
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame) cancelAnimationFrame(secondFrame);
+      if (promotionTimer !== undefined) clearTimeout(promotionTimer);
+    };
   });
 
   let deleteConfirmOpen = $state(false);

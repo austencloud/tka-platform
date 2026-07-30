@@ -10,6 +10,7 @@
   import { fade } from "svelte/transition";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { getScanCardCloudProbe } from "../scan-card-cloud-context";
 
   interface CellData {
     index: number;
@@ -36,9 +37,7 @@
     stepNumFontSize: number;
     hasMixedDurations: boolean;
     formatDuration: (d: number) => string;
-    getMotionSoloMotion: (cellIndex: number) =>
-      | MotionData
-      | undefined;
+    getMotionSoloMotion: (cellIndex: number) => MotionData | undefined;
     formatSoloTurns: (turns: number | "fl" | undefined | null) => string;
     shortOrientation: (ori: string | undefined | null) => string | null;
   }
@@ -62,6 +61,7 @@
   }: Props = $props();
 
   const isSwapMode = $derived(transitionMode === "swap");
+  const scanUsesHtmlStepNumbers = getScanCardCloudProbe();
 </script>
 
 {#if cell.renderFailed}
@@ -70,7 +70,14 @@
   </div>
 {:else if cell.isLoaded}
   {#if cell.fadeOutUrl}
-    <img class="cell-image cell-fade-old" class:fading={crossfadeActive} class:swap-out={isSwapMode && crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
+    <img
+      class="cell-image cell-fade-old"
+      class:fading={crossfadeActive}
+      class:swap-out={isSwapMode && crossfadeActive}
+      src={cell.fadeOutUrl}
+      alt=""
+      draggable="false"
+    />
   {/if}
   <img
     class="cell-image"
@@ -83,34 +90,70 @@
   />
   <!-- Normal-mode step numbers are baked into the cell image (see
        step-number-compositor) so they dissolve in lockstep with the pictograph
-       during crossfades. The HTML overlay remains only for cases the compositor
-       skips: the motion-solo step number and the start cell. -->
-  {#if showStepNumbers && (isMotionSoloMode || cell.index === -1)}<span class="step-number-overlay" class:dark-mode={activeDarkMode} style="font-size: {stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
-  {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
+       during crossfades. Scan cards skip that expensive bitmap rewrite and use
+       the same positioned HTML number; motion-solo and start cells already use
+       it everywhere. -->
+  {#if showStepNumbers && ((scanUsesHtmlStepNumbers && !isBrowseSoloMode) || isMotionSoloMode || cell.index === -1)}<span
+      class="step-number-overlay"
+      class:dark-mode={activeDarkMode}
+      style="font-size: {stepNumFontSize}px;"
+      transition:fade|local={{ duration: 150 }}>{cell.label}</span
+    >{/if}
+  {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span
+      class="duration-badge"
+      class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span
+    >{/if}
   {#if isMotionSoloMode || (isBrowseSoloMode && showStepNumbers)}
     {@const soloMotion = getMotionSoloMotion(cell.index)}
     {#if soloMotion}
-      <span class="solo-locations" class:browse={isBrowseSoloMode} class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
-        <span class="solo-loc-letter">{(soloMotion.startLocation ?? "").toLowerCase()}</span>
-        <img class="solo-loc-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
-        <span class="solo-loc-letter">{(soloMotion.endLocation ?? "").toLowerCase()}</span>
+      <span
+        class="solo-locations"
+        class:browse={isBrowseSoloMode}
+        class:dark-mode={activeDarkMode}
+        transition:fade|local={{ duration: 150 }}
+      >
+        <span class="solo-loc-letter"
+          >{(soloMotion.startLocation ?? "").toLowerCase()}</span
+        >
+        <img
+          class="solo-loc-arrow"
+          src="/images/arrow.svg"
+          alt="to"
+          aria-hidden="true"
+          draggable="false"
+        />
+        <span class="solo-loc-letter"
+          >{(soloMotion.endLocation ?? "").toLowerCase()}</span
+        >
       </span>
       {@const turnsLabel = formatSoloTurns(soloMotion.turns)}
       {#if turnsLabel}
         <span
           class="solo-turn-number"
           class:dark-mode={activeDarkMode}
-          style="color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
-          transition:fade|local={{ duration: 150 }}
-        >{turnsLabel}</span>
+          style="color: {soloColor === 'blue'
+            ? 'var(--prop-blue, #2196f3)'
+            : 'var(--prop-red, #f44336)'};"
+          transition:fade|local={{ duration: 150 }}>{turnsLabel}</span
+        >
       {/if}
       {#if isMotionSoloMode}
         {@const startOri = shortOrientation(soloMotion.startOrientation)}
         {@const endOri = shortOrientation(soloMotion.endOrientation)}
         {#if startOri && endOri}
-          <span class="solo-orientation" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+          <span
+            class="solo-orientation"
+            class:dark-mode={activeDarkMode}
+            transition:fade|local={{ duration: 150 }}
+          >
             <span class="solo-ori-letter">{startOri}</span>
-            <img class="solo-ori-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
+            <img
+              class="solo-ori-arrow"
+              src="/images/arrow.svg"
+              alt="to"
+              aria-hidden="true"
+              draggable="false"
+            />
             <span class="solo-ori-letter">{endOri}</span>
           </span>
         {/if}
@@ -142,7 +185,9 @@
     height: 100%;
     place-items: center;
     color: color-mix(in srgb, currentColor 62%, transparent);
-    font: 700 clamp(1rem, 10cqw, 2rem) / 1 Inter, sans-serif;
+    font:
+      700 clamp(1rem, 10cqw, 2rem) / 1 Inter,
+      sans-serif;
   }
 
   .cell-render-error span {
@@ -168,8 +213,12 @@
     animation: cellLoadIn var(--duration-fast, 150ms) ease;
   }
   @keyframes cellLoadIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   /* Cross-fade: old image fades out while new image fades in simultaneously.
@@ -256,7 +305,12 @@
     bottom: 2%;
     left: 50%;
     transform: translateX(-50%);
-    font-family: Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:
+      Inter,
+      "SF Pro Display",
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
     font-weight: 600;
     font-size: min(5.5cqw, 14px);
     line-height: 1;
@@ -351,7 +405,6 @@
     pointer-events: none;
     user-select: none;
   }
-
 
   /* Motion-solo orientation annotation - bottom-center, below the
      southernmost outer grid dot. Not bold; shares the arrow size with

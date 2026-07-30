@@ -26,8 +26,23 @@
  * Spec: docs/architecture/landing-analytics-taxonomy.md
  */
 
-import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import { withRoute } from "$lib/shared/analytics/analytics-context";
+
+/**
+ * Marketing chrome lives in the root layout, including on routes that never
+ * render it. Keep its recorder behind the event boundary so importing a typed
+ * wrapper does not put the PostHog SDK on every route's hydration path.
+ */
+function captureLandingEvent(
+  eventName: string,
+  properties?: Record<string, unknown>
+): void {
+  void import("$lib/shared/analytics/services/posthog")
+    .then(({ captureEvent }) => captureEvent(eventName, properties))
+    .catch((error) =>
+      console.warn(`[landing analytics] ${eventName} failed:`, error)
+    );
+}
 
 // --- Section scroll tracking (deduplicated) ---
 
@@ -42,7 +57,7 @@ export function trackSectionView(section: string, page: string): void {
   const key = `${page}::${section}`;
   if (viewedSections.has(key)) return;
   viewedSections.add(key);
-  captureEvent("landing_scroll_section", { section, page });
+  captureLandingEvent("landing_scroll_section", { section, page });
 }
 
 // --- CTA clicks ---
@@ -63,7 +78,7 @@ export function trackCtaClick(
     destination?: string;
   }
 ): void {
-  captureEvent("landing_cta_click", withRoute({ location, ...props }));
+  captureLandingEvent("landing_cta_click", withRoute({ location, ...props }));
 }
 
 // --- Demo interactions ---
@@ -78,11 +93,11 @@ export function trackDemoInteraction(
   action: DemoAction,
   props?: { prop_type?: string; is_playing?: boolean; page?: string }
 ): void {
-  captureEvent("landing_demo_interact", withRoute({ action, ...props }));
+  captureLandingEvent("landing_demo_interact", withRoute({ action, ...props }));
 }
 
 export function trackDemoVisible(): void {
-  captureEvent("landing_demo_visible");
+  captureLandingEvent("landing_demo_visible");
 }
 
 // --- Homepage launchpad ---
@@ -107,25 +122,28 @@ export function trackLaunchpadClick(props: {
   chip_id?: string | null;
   strip_id?: string | null;
 }): void {
-  captureEvent("landing_launchpad_click", withRoute({ ...props }));
+  captureLandingEvent("landing_launchpad_click", withRoute({ ...props }));
 }
 
 // --- Video ---
 
 export function trackVideoPlay(videoIndex: number): void {
-  captureEvent("landing_video_play", { video_index: videoIndex });
+  captureLandingEvent("landing_video_play", { video_index: videoIndex });
 }
 
 // --- Background picker ---
 
 export function trackBackgroundChange(backgroundType: string): void {
-  captureEvent("landing_background_change", {
+  captureLandingEvent("landing_background_change", {
     background_type: backgroundType,
   });
 }
 
 // --- Outbound links ---
 
-export function trackOutboundClick(destination: string, location: string): void {
-  captureEvent("landing_outbound_click", { destination, location });
+export function trackOutboundClick(
+  destination: string,
+  location: string
+): void {
+  captureLandingEvent("landing_outbound_click", { destination, location });
 }

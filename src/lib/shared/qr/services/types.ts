@@ -1,3 +1,6 @@
+import type { AuthoredHand } from "$lib/shared/foundation/domain/models/authored-hand";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
+
 // --- From CompositionalEncoder ---
 export const LOOP_TYPE_TAGS: Record<string, string> = {
   rotated: "sr",
@@ -17,7 +20,6 @@ export const TAG_TO_LOOP_TYPE: Record<string, string> = Object.fromEntries(
 /** Recipe prefix that signals compositional encoding (after the s~ inline prefix) */
 export const RECIPE_PREFIX = "r1:";
 
-
 export interface ICompositionalDecoder {
   /**
    * Decode a recipe-encoded string back to flat encoded format.
@@ -29,7 +31,6 @@ export interface ICompositionalDecoder {
   /** Check if a string uses recipe encoding. */
   isRecipeEncoded(encoded: string): boolean;
 }
-
 
 // --- From QRCodeGenerator ---
 export type QRDotsType =
@@ -138,9 +139,45 @@ export const DEFAULT_QR_STYLE: QRCodeStyle = {
   errorCorrectionLevel: "M",
 };
 
-
-
 // --- From ShortCodeManager ---
+/** Shape of a short-code record from Firestore or the static snapshot. */
+export interface ShortCodeData {
+  sequence: string;
+  sequenceId?: string;
+  ownerId?: string;
+  encoderHash?: string;
+  createdAt: string;
+  createdBy: string;
+  scanCount: number;
+  /** The sequence's word as printed on the card. */
+  sequenceName?: string;
+  /** Strict payload-derived word. Authoritative when present. */
+  payloadWord?: string;
+  /** Content-beat count of the payload at mint time. */
+  payloadStepCount?: number;
+  /** 2 = strict word payload; 3 = first-class solo payload. */
+  payloadSchemaVersion?: number;
+  payloadKind?: "word" | "solo";
+  /** Schema-3 solo title. Solo records never invent payloadWord. */
+  payloadTitle?: string;
+  payloadContentHash?: string;
+  authoredHand?: AuthoredHand;
+  sourceSoloPropId?: string;
+  soloData?: SoloPropData;
+  sourceSequenceId?: string;
+  sourceProjectionRevision?: number;
+  sequenceData?: Record<string, unknown>;
+  /** Self-contained sequence blob used by the no-network resolver path. */
+  encoded?: string;
+  deckId?: string;
+  deckName?: string;
+  bluePropType?: string;
+  redPropType?: string;
+  catDogMode?: boolean;
+  thumbnailUrl?: string;
+  ownerDisplayName?: string;
+}
+
 export interface ShortCodeRecord {
   /** The encoded sequence data (using SequenceEncoder format) */
   sequence: string;

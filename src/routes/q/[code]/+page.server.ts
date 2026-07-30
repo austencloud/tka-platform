@@ -1,6 +1,19 @@
 import type { PageServerLoad } from "./$types";
 import { env } from "$env/dynamic/public";
 import { parseCloudflareGeo } from "$lib/shared/presence/domain/models/presence-models";
+import {
+  fromFirestoreFields,
+  type FirestoreFields,
+} from "$lib/server/firestore/firestore-value-codec";
+import type { ShortCodeData } from "$lib/shared/qr/services/types";
+import {
+  isInlineEncoded,
+  parsePropsFromURL,
+} from "$lib/shared/navigation/services/sequence-encoder";
+import {
+  prepareScanPayload,
+  type PreparedScanPayload,
+} from "$lib/server/scan/scan-card-preparer";
 
 // Why REST instead of firebase-admin: the admin SDK never worked here. Its
 // credential/gRPC path doesn't run on Cloudflare's workerd runtime, so the
@@ -19,21 +32,39 @@ const PROJECT_ID = env.PUBLIC_FIREBASE_PROJECT_ID || "the-kinetic-alphabet";
 // SSR renders with or without meta — it must never hang on a slow lookup.
 const LOOKUP_TIMEOUT_MS = 2500;
 
-// Only the fields the OG tags read. Keeps the response small: shortcode docs
-// also carry `encoded` and sometimes an inline `sequenceData` blob.
-const META_FIELD_PATHS = [
+// Complete resolver/attribution shape, excluding write-only counters such as
+// dailyScans and lastScannedAt. `encoded` plus `sequenceData` are both retained:
+// legacy blobs need the embedded data to restore fields their wire format did
+// not preserve.
+const RECORD_FIELD_PATHS = [
+  "sequence",
+  "sequenceId",
+  "ownerId",
+  "encoderHash",
+  "createdAt",
+  "createdBy",
+  "scanCount",
+  "sequenceName",
+  "payloadWord",
+  "payloadStepCount",
+  "payloadSchemaVersion",
   "payloadKind",
   "payloadTitle",
-  "payloadWord",
-  "word",
-  "sequenceName",
+  "payloadContentHash",
   "authoredHand",
-  "ownerDisplayName",
-  "thumbnailUrl",
+  "sourceSoloPropId",
+  "soloData",
+  "sourceSequenceId",
+  "sourceProjectionRevision",
+  "sequenceData",
+  "encoded",
   "deckId",
   "deckName",
   "bluePropType",
   "redPropType",
+  "catDogMode",
+  "thumbnailUrl",
+  "ownerDisplayName",
 ] as const;
 
 interface ShortCodeMeta {
@@ -60,22 +91,49 @@ const EMPTY_META: ShortCodeMeta = {
   redPropType: null,
 };
 
-type FirestoreFields = Record<string, unknown>;
-
-/**
- * Firestore REST wraps every scalar in a typed envelope — a string field comes
- * back as `{ stringValue: "ABC" }`, not `"ABC"`. Missing fields are absent
- * entirely rather than null.
- */
-function readString(fields: FirestoreFields, key: string): string | null {
-  const field = fields[key];
-  if (!field || typeof field !== "object") return null;
-  const value = (field as { stringValue?: unknown }).stringValue;
+function readString(
+  record: Record<string, unknown>,
+  key: string
+): string | null {
+  const value = record[key];
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-async function fetchShortCodeMeta(code: string): Promise<ShortCodeMeta> {
-  const mask = META_FIELD_PATHS.map(
+function deriveMeta(record: ShortCodeData | null): ShortCodeMeta {
+  if (!record) return EMPTY_META;
+  const values = record as unknown as Record<string, unknown>;
+  const payloadKind =
+    readString(values, "payloadKind") === "solo" ? "solo" : "word";
+  const authoredHandValue = readString(values, "authoredHand");
+  const authoredHand =
+    authoredHandValue === "left" || authoredHandValue === "right"
+      ? authoredHandValue
+      : null;
+
+  return {
+    // Schema-3 solos carry a human title, never a fabricated TKA word.
+    // Schema-2 words and legacy records retain the historical fallbacks.
+    word:
+      (payloadKind === "solo"
+        ? readString(values, "payloadTitle")
+        : readString(values, "payloadWord")) ??
+      readString(values, "word") ??
+      readString(values, "sequenceName"),
+    payloadKind,
+    authoredHand,
+    creator: readString(values, "ownerDisplayName"),
+    thumbnailUrl: readString(values, "thumbnailUrl"),
+    deckId: readString(values, "deckId"),
+    deckName: readString(values, "deckName"),
+    bluePropType: readString(values, "bluePropType"),
+    redPropType: readString(values, "redPropType"),
+  };
+}
+
+async function fetchShortCodeRecord(
+  code: string
+): Promise<ShortCodeData | null> {
+  const mask = RECORD_FIELD_PATHS.map(
     (path) => `mask.fieldPaths=${encodeURIComponent(path)}`
   ).join("&");
   const url =
@@ -88,7 +146,7 @@ async function fetchShortCodeMeta(code: string): Promise<ShortCodeMeta> {
   });
 
   // An unknown code is a normal outcome (typo, retired card), not a failure.
-  if (response.status === 404) return EMPTY_META;
+  if (response.status === 404) return null;
 
   if (!response.ok) {
     throw new Error(
@@ -97,36 +155,37 @@ async function fetchShortCodeMeta(code: string): Promise<ShortCodeMeta> {
   }
 
   const doc = (await response.json()) as { fields?: FirestoreFields };
-  const fields = doc.fields ?? {};
-  const payloadKind =
-    readString(fields, "payloadKind") === "solo" ? "solo" : "word";
-  const authoredHandValue = readString(fields, "authoredHand");
-  const authoredHand =
-    authoredHandValue === "left" || authoredHandValue === "right"
-      ? authoredHandValue
-      : null;
+  const decoded = fromFirestoreFields(doc.fields ?? {});
 
-  return {
-    // Schema-3 solos carry a human title, never a fabricated TKA word.
-    // Schema-2 words and legacy records retain the historical fallbacks.
-    word:
-      (payloadKind === "solo"
-        ? readString(fields, "payloadTitle")
-        : readString(fields, "payloadWord")) ??
-      readString(fields, "word") ??
-      readString(fields, "sequenceName"),
-    payloadKind,
-    authoredHand,
-    creator: readString(fields, "ownerDisplayName"),
-    thumbnailUrl: readString(fields, "thumbnailUrl"),
-    deckId: readString(fields, "deckId"),
-    deckName: readString(fields, "deckName"),
-    bluePropType: readString(fields, "bluePropType"),
-    redPropType: readString(fields, "redPropType"),
-  };
+  // A malformed public document must not enter the client hydrator. Falling
+  // back to its Firestore/snapshot ladder retains the existing recovery path.
+  if (typeof decoded["sequence"] !== "string") return null;
+  return decoded as unknown as ShortCodeData;
 }
 
-export const load: PageServerLoad = async ({ params, request, platform }) => {
+function stripPreparedPayload(
+  record: ShortCodeData | null,
+  prepared: PreparedScanPayload | null
+): ShortCodeData | null {
+  if (!record || !prepared) return record;
+
+  // The hydrated sequence now carries the payload. Keep the small attribution
+  // envelope for analytics and later actions, but do not serialize a duplicate
+  // 30–100 KB embedded sequence into the HTML.
+  const {
+    sequenceData: _sequenceData,
+    soloData: _soloData,
+    ...clientRecord
+  } = record;
+  return clientRecord;
+}
+
+export const load: PageServerLoad = async ({
+  params,
+  request,
+  platform,
+  url,
+}) => {
   const cf = (platform as { cf?: Record<string, unknown> } | undefined)?.cf;
   const geo = parseCloudflareGeo(request.headers, cf) ?? {
     country: null,
@@ -136,19 +195,47 @@ export const load: PageServerLoad = async ({ params, request, platform }) => {
   };
 
   let meta: ShortCodeMeta = EMPTY_META;
+  let record: ShortCodeData | null = null;
+  let prepared: PreparedScanPayload | null = null;
+
+  if (!isInlineEncoded(params.code)) {
+    try {
+      record = await fetchShortCodeRecord(params.code);
+      meta = deriveMeta(record);
+    } catch (error) {
+      // Non-fatal: the page still renders and the client resolver takes over.
+      // But it must never be silent again — the empty catch that used to live
+      // here hid a total, permanent attribution outage. console.error survives
+      // the production build; console.log/debug/info are stripped (vite.config).
+      console.error(
+        `[q-ssr] shortcode lookup failed for "${params.code}":`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
 
   try {
-    meta = await fetchShortCodeMeta(params.code);
+    prepared = await prepareScanPayload(
+      params.code,
+      record,
+      parsePropsFromURL(url.searchParams)
+    );
   } catch (error) {
-    // Non-fatal: the page still renders and the client resolver takes over.
-    // But it must never be silent again — the empty catch that used to live
-    // here hid a total, permanent attribution outage. console.error survives
-    // the production build; console.log/debug/info are stripped (vite.config).
+    // Non-fatal: legacy/user-doc records retain the browser resolver. A broken
+    // self-contained payload is visible in server logs instead of silently
+    // regressing every scanner to a blank screen.
     console.error(
-      `[q-ssr] shortcode meta lookup failed for "${params.code}":`,
+      `[q-ssr] scan payload preparation failed for "${params.code}":`,
       error instanceof Error ? error.message : error
     );
   }
 
-  return { geo, meta };
+  return {
+    geo,
+    meta,
+    record: stripPreparedPayload(record, prepared),
+    preparedSequence: prepared?.sequence ?? null,
+    scanCard: prepared?.card ?? null,
+    preparedPropConfig: prepared?.propConfig ?? null,
+  };
 };

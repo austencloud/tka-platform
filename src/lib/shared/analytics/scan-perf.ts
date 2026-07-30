@@ -9,15 +9,26 @@
 
 export type ScanStage =
   | "start"
+  | "shortcode-resolve-start"
+  | "viewer-load-start"
+  | "bootstrap-ready"
   | "shortcode-resolved"
+  | "viewer-modules-ready"
   | "hydrated"
   | "card-mount"
+  | "card-component-mounted"
+  | "cell-cache-read-start"
+  | "cell-cache-read-end"
+  | "cell-decode-start"
+  | "cell-decode-end"
+  | "cell-dom-committed"
   | "first-cell-painted"
   | "all-cells-stable";
 
 const PREFIX = "scan:";
 let reported = false;
 const pendingFrameMarks = new Map<ScanStage, Promise<void>>();
+const pendingPaintMarks = new Map<ScanStage, Promise<void>>();
 
 function hasPerf(): boolean {
   return (
@@ -82,6 +93,49 @@ export function markScanAfterNextFrame(stage: ScanStage): Promise<void> {
 }
 
 /**
+ * Mark after the browser has had a frame in which to present the committed DOM.
+ *
+ * The first animation-frame callback runs before paint. Scheduling the mark in
+ * the following frame distinguishes Svelte's commit from the frame the user
+ * could actually see.
+ */
+export function markScanAfterPaint(stage: ScanStage): Promise<void> {
+  if (
+    !hasPerf() ||
+    (stage !== "start" &&
+      performance.getEntriesByName(`${PREFIX}start`, "mark").length === 0)
+  ) {
+    return Promise.resolve();
+  }
+
+  if (performance.getEntriesByName(`${PREFIX}${stage}`, "mark").length > 0) {
+    return Promise.resolve();
+  }
+
+  const pending = pendingPaintMarks.get(stage);
+  if (pending) return pending;
+
+  if (typeof requestAnimationFrame !== "function") {
+    markScan(stage);
+    return Promise.resolve();
+  }
+
+  const scheduled = new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        markScan(stage);
+        resolve();
+      });
+    });
+  }).finally(() => {
+    pendingPaintMarks.delete(stage);
+  });
+
+  pendingPaintMarks.set(stage, scheduled);
+  return scheduled;
+}
+
+/**
  * Compute scan-to-stable once both ends are marked. Returns the duration in ms,
  * or null if scan:start was never marked (non-scan route) or already reported.
  * Logs a per-stage table in dev.
@@ -120,9 +174,19 @@ export function reportScanToStable(): number | null {
 function logStageTable(total: number): void {
   const stages: ScanStage[] = [
     "start",
+    "shortcode-resolve-start",
+    "viewer-load-start",
+    "bootstrap-ready",
     "shortcode-resolved",
+    "viewer-modules-ready",
     "hydrated",
     "card-mount",
+    "card-component-mounted",
+    "cell-cache-read-start",
+    "cell-cache-read-end",
+    "cell-decode-start",
+    "cell-decode-end",
+    "cell-dom-committed",
     "first-cell-painted",
     "all-cells-stable",
   ];
@@ -141,4 +205,5 @@ function logStageTable(total: number): void {
 export function _resetScanPerf(): void {
   reported = false;
   pendingFrameMarks.clear();
+  pendingPaintMarks.clear();
 }

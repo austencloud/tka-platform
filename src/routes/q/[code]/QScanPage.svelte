@@ -27,7 +27,10 @@
     isInlineEncoded,
     parsePropsFromURL,
   } from "$lib/shared/navigation/services/sequence-encoder";
-  import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
+  import {
+    ShortCodeManager,
+    type ShortCodeData,
+  } from "$lib/shared/qr/services/short-code-manager";
   import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
@@ -130,10 +133,18 @@
         bluePropType: string | null;
         redPropType: string | null;
       };
+      record: ShortCodeData | null;
+      preparedSequence: SequenceData | null;
+      preparedPropConfig: {
+        bluePropType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType;
+        redPropType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType;
+        catDogMode: boolean;
+      } | null;
     };
+    onViewerReady?: () => void;
   }
 
-  const { data }: Props = $props();
+  const { data, onViewerReady }: Props = $props();
   const shortCode = $derived(page.params["code"]);
 
   type PageState =
@@ -746,27 +757,6 @@
       registerLoopDetector(loopDetector);
       registerLoopDisplayResolver(resolveLoopDisplay);
 
-      // The bare /q layout also skips initializeAppServices(), so the settings
-      // service is null — every updateSettings() (the scanned card's prop seed
-      // below AND the in-player prop picker) no-ops with a console warning.
-      // Idempotent init wires the singleton so prop changes actually apply.
-      await initializeAppServices();
-
-      // Chrome color parity: run the SAME background→theme pipeline
-      // MainApplication runs (sets --theme-* on :root), seeded from the
-      // scanner's persisted settings — a fresh guest gets the default
-      // background's theme. Without this the scan chrome renders the .page
-      // fallback palette and drifts from the app viewer's colors.
-      try {
-        await settingsService.loadSettings();
-        const { applyThemeForBackground } =
-          await import("$lib/shared/settings/utils/background-theme-calculator");
-        const bgType = settingsService.currentSettings?.backgroundType;
-        if (bgType) applyThemeForBackground(bgType);
-      } catch {
-        // Theme pipeline unavailable — component-level var fallbacks still render.
-      }
-
       // The bare /q layout also skips MainInterface, the only caller of
       // handleHMRInit(). Without it, NONE of the HMR resilience runs on this
       // route — a failed HMR apply (a dynamic import transiently resolving to
@@ -789,6 +779,7 @@
     if (!shortCode) {
       captureResolutionFailure("missing_code", "bootstrap");
       pageState = { kind: "error", message: "No short code provided" };
+      onViewerReady?.();
       return;
     }
 
@@ -796,20 +787,63 @@
       setProgress(8);
       trickleTo(30);
 
-      // Paint the word as a pulsing glyph loader ASAP — just this word's
-      // glyphs, before the heavy resolve + full glyph cache init below.
+      // Start every independent critical-path leg together. The server-loaded
+      // public shortcode record normally makes resolution local; the manager's
+      // Firestore/snapshot ladder remains the fallback when SSR had no record.
+      markScan("shortcode-resolve-start");
+      const resolutionPromise = (
+        data.preparedSequence
+          ? Promise.resolve({
+              sequence: data.preparedSequence,
+              record: data.record,
+            })
+          : shortCodeManager.resolveShortCodeWithRecord(shortCode, data.record)
+      ).then((resolution) => {
+        markScan("shortcode-resolved");
+        return resolution;
+      });
+
+      markScan("viewer-load-start");
+      const viewerModulesPromise = Promise.all([
+        import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
+        import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte"),
+      ]).then((modules) => {
+        markScan("viewer-modules-ready");
+        return modules;
+      });
+
+      // The bare /q layout skips initializeAppServices(). Run its settings/theme
+      // setup alongside resolve and module loading, then join it only before the
+      // viewer reads the prop settings.
+      const bootstrapPromise = (async () => {
+        await initializeAppServices();
+        try {
+          await settingsService.loadSettings();
+          const { applyThemeForBackground } =
+            await import("$lib/shared/settings/utils/background-theme-calculator");
+          const bgType = settingsService.currentSettings?.backgroundType;
+          if (bgType) applyThemeForBackground(bgType);
+        } catch {
+          // Theme pipeline unavailable — component-level var fallbacks still render.
+        }
+        markScan("bootstrap-ready");
+      })();
+
+      // Paint the word as a pulsing glyph loader when its small glyph subset
+      // arrives, but never hold shortcode hydration or the live card behind it.
       const baseLetters = wordBaseLetters(loaderWord);
       if (baseLetters.length > 0) {
-        try {
-          await getGlyphCache().loadGlyphsByLetter(baseLetters);
-          glyphsReady = true;
-        } catch {
-          /* leave glyphsReady false -> dots placeholder */
-        }
+        void getGlyphCache()
+          .loadGlyphsByLetter(baseLetters)
+          .then(() => {
+            glyphsReady = true;
+          })
+          .catch(() => {
+            /* leave glyphsReady false -> dots placeholder */
+          });
       }
 
-      // Heaviest phase: short-code resolve + full glyph cache + viewer chunk.
-      // No sub-progress available, so trickle toward 85 until it completes.
+      // The card is now waiting only on the already-started resolution leg.
       setProgress(35);
       trickleTo(85);
 
@@ -820,22 +854,10 @@
         !isInlineEncoded(shortCode) &&
         isFirstScanRouteVisit(shortCode, scanPrintId);
 
-      // Load the shortcode and viewer chunks concurrently. Scan-card cells are
-      // cloud-only, so the phone no longer initializes the complete render glyph
-      // cache or starts a local raster worker before first paint.
-      //
-      // resolveShortCodeWithRecord, not resolveShortCode: the record is the only
-      // client-side source of deck attribution, and it costs nothing extra —
-      // the resolver already fetched it and used to throw it away.
-      const [resolution, OrchestratorModule, ShellModule] = await Promise.all([
-        shortCodeManager.resolveShortCodeWithRecord(shortCode),
-        import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
-        import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte"),
-      ]);
+      const resolution = await resolutionPromise;
 
       const record = resolution.record;
       let seq = resolution.sequence;
-      markScan("shortcode-resolved");
       if (!seq) {
         stopTrickle();
         failedWhileOffline = !navigator.onLine;
@@ -854,9 +876,11 @@
       setProgress(88);
       trickleTo(96);
 
-      seq = await hydrateSequence(seq, {
-        loopDetector,
-      });
+      if (!data.preparedSequence) {
+        seq = await hydrateSequence(seq, {
+          loopDetector,
+        });
+      }
 
       scanInitialBpm = initialScanPlaybackBpm(shortCode, seq);
       resolvedSeq = seq;
@@ -871,11 +895,14 @@
       // The URL identifies the physical card that was scanned. The shortcode
       // record and sequence intent cover reconstructed links and older cards.
       // Keep blue and red independent so mixed-prop cards stay mixed.
-      const scanPropConfig = resolveScanPropConfig(
-        seq,
-        parsePropsFromURL(page.url.searchParams),
-        record
-      );
+      const scanPropConfig =
+        data.preparedPropConfig ??
+        resolveScanPropConfig(
+          seq,
+          parsePropsFromURL(page.url.searchParams),
+          record
+        );
+      await bootstrapPromise;
       updateScanAttribution({
         blueProp: String(scanPropConfig.bluePropType),
         redProp: String(scanPropConfig.redPropType),
@@ -886,6 +913,7 @@
         catDogMode: scanPropConfig.catDogMode,
       });
 
+      const [OrchestratorModule, ShellModule] = await viewerModulesPromise;
       OrchestratorComponent = OrchestratorModule.default;
       ShellComponent = ShellModule.default;
 
@@ -972,6 +1000,7 @@
         kind: "error",
         message: err instanceof Error ? err.message : "Failed to load sequence",
       };
+      onViewerReady?.();
     }
   });
 </script>
@@ -1077,8 +1106,11 @@
       sequence={resolvedSeq}
       isMobile={isViewerMobile}
       initialRenderMode="2d"
+      initialViewerMode="card"
+      deferInteractiveStartup
       initialBpm={scanInitialBpm}
       initialActiveEffect="trails"
+      onCardReady={onViewerReady}
       onBpmChange={handleScanBpmChange}
       onClose={closeViewer}
       onGatedDownload={(ctx) =>
@@ -1098,7 +1130,7 @@
             {ctx}
             sequence={resolvedSeq!}
             isMobile={isViewerMobile}
-            startInSplit
+            startInCardThenSplit
             onClose={closeViewer}
             onRemix={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}

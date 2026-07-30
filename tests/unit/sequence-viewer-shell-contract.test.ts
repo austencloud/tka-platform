@@ -88,6 +88,7 @@ describe("SequenceViewerShell host contract", () => {
     expect(shellSource).toContain("openAppHref");
     expect(shellSource).toContain("onAccountSignIn");
     expect(shellSource).toContain("startInSplit");
+    expect(shellSource).toContain("startInCardThenSplit");
   });
 
   it("keeps the QR account entry inside the shared shell prop seam", () => {

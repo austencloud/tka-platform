@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  fromFirestoreFields,
   hashPrivateValue,
   readFirestoreBoolean,
   readFirestoreInteger,
@@ -61,6 +62,53 @@ describe("Firestore REST value mapping", () => {
     expect(readFirestoreInteger(document, "label")).toBeNull();
     expect(readFirestoreBoolean(document, "enabled")).toBe(true);
     expect(readFirestoreBoolean(document, "label")).toBeNull();
+  });
+
+  it("decodes complete nested REST documents into serializable application data", () => {
+    expect(
+      fromFirestoreFields({
+        sequence: { stringValue: "B2ZM" },
+        scanCount: { integerValue: "12" },
+        ratio: { doubleValue: 1.5 },
+        createdAt: { timestampValue: "2026-07-27T12:00:00.000Z" },
+        enabled: { booleanValue: true },
+        optional: { nullValue: null },
+        tags: {
+          arrayValue: {
+            values: [{ stringValue: "scan" }, { integerValue: "2" }],
+          },
+        },
+        sequenceData: {
+          mapValue: {
+            fields: {
+              word: { stringValue: "B2ZM" },
+              props: { arrayValue: {} },
+            },
+          },
+        },
+        origin: {
+          geoPointValue: { latitude: 41.8781, longitude: -87.6298 },
+        },
+      })
+    ).toEqual({
+      sequence: "B2ZM",
+      scanCount: 12,
+      ratio: 1.5,
+      createdAt: "2026-07-27T12:00:00.000Z",
+      enabled: true,
+      optional: null,
+      tags: ["scan", 2],
+      sequenceData: { word: "B2ZM", props: [] },
+      origin: { latitude: 41.8781, longitude: -87.6298 },
+    });
+  });
+
+  it("preserves integers that JavaScript cannot represent exactly", () => {
+    expect(
+      fromFirestoreFields({
+        exactId: { integerValue: "9007199254740993" },
+      })
+    ).toEqual({ exactId: "9007199254740993" });
   });
 
   it("hashes private identifiers deterministically without retaining the input", async () => {

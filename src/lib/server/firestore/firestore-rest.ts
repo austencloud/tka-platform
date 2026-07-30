@@ -2,6 +2,20 @@ import { env } from "$env/dynamic/private";
 import { dev } from "$app/environment";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import {
+  toFirestoreFields,
+  type FirestoreFields,
+} from "./firestore-value-codec";
+
+export {
+  fromFirestoreFields,
+  fromFirestoreValue,
+  toFirestoreFields,
+  toFirestoreValue,
+  type FirestoreFields,
+  type FirestoreGeoPoint,
+  type FirestoreValue,
+} from "./firestore-value-codec";
 
 const FIRESTORE_HOST = "https://firestore.googleapis.com/v1";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -13,18 +27,6 @@ interface ServiceAccountCredentials {
   client_email: string;
   private_key: string;
 }
-
-export type FirestoreValue =
-  | { nullValue: null }
-  | { stringValue: string }
-  | { integerValue: string }
-  | { doubleValue: number }
-  | { booleanValue: boolean }
-  | { timestampValue: string }
-  | { arrayValue: { values?: FirestoreValue[] } }
-  | { mapValue: { fields?: FirestoreFields } };
-
-export type FirestoreFields = Record<string, FirestoreValue>;
 
 export interface FirestoreDocument {
   name: string;
@@ -159,52 +161,6 @@ async function signServiceAccountJwt(
   );
 
   return `${unsigned}.${encodeBase64Url(new Uint8Array(signature))}`;
-}
-
-export function toFirestoreValue(value: unknown): FirestoreValue {
-  if (value === null || value === undefined) return { nullValue: null };
-  if (typeof value === "string") return { stringValue: value };
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      throw new Error("Firestore cannot store a non-finite number");
-    }
-    return Number.isInteger(value)
-      ? { integerValue: String(value) }
-      : { doubleValue: value };
-  }
-  if (typeof value === "boolean") return { booleanValue: value };
-  if (value instanceof Date) {
-    return { timestampValue: value.toISOString() };
-  }
-  if (Array.isArray(value)) {
-    return {
-      arrayValue: {
-        ...(value.length > 0
-          ? { values: value.map((item) => toFirestoreValue(item)) }
-          : {}),
-      },
-    };
-  }
-  if (typeof value === "object") {
-    return {
-      mapValue: {
-        fields: toFirestoreFields(value as Record<string, unknown>),
-      },
-    };
-  }
-
-  throw new Error(`Unsupported Firestore value type: ${typeof value}`);
-}
-
-export function toFirestoreFields(
-  value: Record<string, unknown>
-): FirestoreFields {
-  const fields: FirestoreFields = {};
-  for (const [key, fieldValue] of Object.entries(value)) {
-    if (fieldValue === undefined) continue;
-    fields[key] = toFirestoreValue(fieldValue);
-  }
-  return fields;
 }
 
 export function readFirestoreString(

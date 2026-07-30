@@ -1,22 +1,9 @@
-import { browser } from "$app/environment";
-import { beginScanVisit } from "$lib/shared/analytics/scan-analytics";
 import type { PageLoad } from "./$types";
 
 /**
- * A universal load runs before SvelteKit commits a client-side navigation.
- * That gives the automatic history-change $pageview the scan join keys, while
- * the server load's lightweight metadata fills attribution immediately.
+ * Preserve the server payload without importing analytics into the initial
+ * route graph. QScanPage opens the visit after the server-rendered card is
+ * stable; loading PostHog before the first visual made the scanner download the
+ * entire general vendor chunk ahead of its pictographs.
  */
-export const load: PageLoad = ({ params, data }) => {
-  if (browser && params.code) {
-    beginScanVisit(params.code, {
-      sequenceWord: data.meta?.word ?? null,
-      deckId: data.meta?.deckId ?? null,
-      deckName: data.meta?.deckName ?? null,
-      blueProp: data.meta?.bluePropType ?? null,
-      redProp: data.meta?.redPropType ?? null,
-    });
-  }
-
-  return data;
-};
+export const load: PageLoad = ({ data }) => data;

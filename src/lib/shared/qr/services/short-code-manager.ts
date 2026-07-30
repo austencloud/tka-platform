@@ -25,10 +25,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import {
-  type SequenceData,
-  createSequenceData,
-} from "$lib/shared/foundation/domain/models/sequence-data";
+import { type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   deriveWordStatusFromSteps,
   IncompleteWordError,
@@ -46,17 +43,14 @@ import type {
   CreateShortCodeResult,
   ShortCodeURLOptions,
   ImportResolution,
+  ShortCodeData,
 } from "./types";
 import { ShortCodeCache, SHORT_CODE_CACHE_SCHEMA } from "./short-code-cache";
-import { graftPrefloatFromEmbedded } from "./prefloat-graft";
 import { assetFetch } from "$lib/shared/net/asset-fetch";
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
 import type { AuthoredHand } from "$lib/shared/foundation/domain/models/authored-hand";
-import {
-  getSequenceMotionProfile,
-  colorForAuthoredHand,
-} from "$lib/shared/foundation/services/sequence-motion-profile";
+import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
 import {
   extractBlueSoloProp,
   extractRedSoloProp,
@@ -65,6 +59,16 @@ import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-se
 import { hashSoloProp } from "$lib/shared/foundation/services/content-hasher";
 import { sha256Hex } from "$lib/shared/foundation/utils/canonical-digest";
 import { ShortCodeShareError } from "../domain/short-code-error";
+import {
+  SHORTCODE_PAYLOAD_SCHEMA_VERSION,
+  SOLO_SHORTCODE_PAYLOAD_SCHEMA_VERSION,
+  decodeWordShortCodePayload,
+  hydrateEmbeddedWordShortCodePayload,
+  hydrateSoloShortCodePayload,
+  verifyEncodedSoloPayload,
+} from "./short-code-payload-hydrator";
+
+export type { ShortCodeData } from "./types";
 
 const SHORTCODES_COLLECTION = "shortcodes";
 /** Content-addressed index: shortcodeHashes/{encoderHash} → { code }.
@@ -79,9 +83,6 @@ const MIN_CODE_LENGTH = 4;
  * derivation). Absent/1 = legacy records whose labels may be auto-names or
  * stale words; readers may re-derive from the payload.
  */
-const SHORTCODE_PAYLOAD_SCHEMA_VERSION = 2;
-const SOLO_SHORTCODE_PAYLOAD_SCHEMA_VERSION = 3;
-
 /** Firestore `in` query operand cap. Batch reads chunk to this. */
 const FIRESTORE_IN_LIMIT = 30;
 
@@ -250,65 +251,6 @@ async function firstTruthy<T>(
   });
 }
 
-/** Shape of a short code record from Firestore or the static snapshot */
-export interface ShortCodeData {
-  sequence: string;
-  sequenceId?: string;
-  ownerId?: string;
-  encoderHash?: string;
-  createdAt: string;
-  createdBy: string;
-  scanCount: number;
-  /** The sequence's word as printed on the card. Newer records carry it;
-   *  without it an imported copy would be nameless ("Shared Sequence"). */
-  sequenceName?: string;
-  /** Strict payload-derived word (parity-repair spec). Authoritative label:
-   *  readers prefer it over the `sequenceName`/`sequence` aliases. */
-  payloadWord?: string;
-  /** Content-beat count of the payload at mint time. */
-  payloadStepCount?: number;
-  /** 2 = strict payload-derived labels; absent/1 = legacy label semantics. */
-  payloadSchemaVersion?: number;
-  /** Discriminates first-class solo choreography from word-sequence records.
-   *  Absent records retain the historical word semantics. */
-  payloadKind?: "word" | "solo";
-  /** Schema-3 solo title. Solo records never invent payloadWord. */
-  payloadTitle?: string;
-  payloadContentHash?: string;
-  authoredHand?: AuthoredHand;
-  /** Present only when the payload came from a persisted soloProps record. */
-  sourceSoloPropId?: string;
-  /** Canonical fallback when the sequence codec cannot preserve the solo prop. */
-  soloData?: SoloPropData;
-  /** First-class provenance of the library sequence this code was minted
-   *  from (aliases the legacy `sequenceId`). */
-  sourceSequenceId?: string;
-  /** The owner's public projection revision at mint time, when known. */
-  sourceProjectionRevision?: number;
-  sequenceData?: Record<string, unknown>;
-  /** Self-contained "s~..." blob from SequenceEncoder.encodeForQR.
-   *  When present, the resolver can decode the sequence without any
-   *  cross-collection lookups - the primary path for static snapshot fallback. */
-  encoded?: string;
-  /** Deck attribution, stamped by `allocateCode` from ShortCodeURLOptions at
-   *  deck-composition time. Undeclared until 2026-07-20, which is why the scan
-   *  page had no client-side source for it and leaned entirely on SSR meta —
-   *  and SSR meta was null on every scan ever recorded. */
-  deckId?: string;
-  deckName?: string;
-  /** Prop values stored when the physical-card URL was created. Historical
-   * records may use either compact URL codes ("P") or full values ("poi"). */
-  bluePropType?: string;
-  redPropType?: string;
-  catDogMode?: boolean;
-  /** Read by the /q SSR loader's field mask for OG tags. No writer sets them
-   *  yet (nothing in this file, `scripts/create-shortcodes-batch.js`, or the
-   *  snapshot function emits either), so they are reserved rather than live —
-   *  declared here so the client shape matches what SSR already asks for. */
-  thumbnailUrl?: string;
-  ownerDisplayName?: string;
-}
-
 /**
  * A resolved short code plus the record it came from.
  *
@@ -331,23 +273,6 @@ export interface ShortCodeResolution {
  * compression prefixes (":") is not a word and yields "" (the import keeps its
  * decoded placeholder name).
  */
-function importedWord(data: ShortCodeData): string {
-  const candidate =
-    data.payloadWord || data.sequenceName || data.sequence || "";
-  if (!candidate || candidate.includes("|") || candidate.includes(":"))
-    return "";
-  return candidate;
-}
-
-function soloTitle(data: ShortCodeData): string {
-  return (
-    data.payloadTitle ||
-    data.sequenceName ||
-    data.sequence ||
-    `${data.authoredHand === "right" ? "Right" : "Left"}-hand choreography`
-  );
-}
-
 export class ShortCodeManager {
   private firestore: Firestore | null = null;
   /** Parsed snapshot maps, memoized PER SOURCE. The old single
@@ -680,7 +605,7 @@ export class ShortCodeManager {
 
     try {
       const encoded = await encodeSequenceForQR(viewSequence);
-      const verified = await this.verifyEncodedSolo(
+      const verified = await verifyEncodedSoloPayload(
         encoded,
         soloProp.contentHash,
         soloProp.steps.length,
@@ -747,123 +672,6 @@ export class ShortCodeManager {
     throw new Error(
       "Failed to generate a unique solo short code after exhausting all length tiers"
     );
-  }
-
-  private async verifyEncodedSolo(
-    encoded: string,
-    expectedContentHash: string,
-    expectedStepCount: number,
-    authoredHand: AuthoredHand,
-    sourceSoloPropId: string,
-    code: string
-  ): Promise<SequenceData | null> {
-    const decoded = await decodeSequenceFromQR(encoded);
-    const profile = getSequenceMotionProfile(decoded);
-    const expectedColor = colorForAuthoredHand(authoredHand);
-    if (
-      profile.kind !== "solo" ||
-      profile.color !== expectedColor ||
-      decoded.steps.length !== expectedStepCount
-    ) {
-      return null;
-    }
-    const extracted =
-      expectedColor === "blue"
-        ? extractBlueSoloProp(decoded)
-        : extractRedSoloProp(decoded);
-    if (extracted.contentHash !== expectedContentHash) return null;
-
-    const normalized = soloPropToSequence(
-      {
-        ...extracted,
-        id: sourceSoloPropId,
-        contentHash: expectedContentHash,
-        authoredHand,
-      },
-      authoredHand
-    );
-    return {
-      ...normalized,
-      id: code,
-      word: "",
-      metadata: {
-        ...normalized.metadata,
-        artifactKind: "solo-prop",
-        authoredHand,
-        soloPropContentHash: expectedContentHash,
-      },
-    };
-  }
-
-  private async hydrateSoloRecord(
-    code: string,
-    data: ShortCodeData
-  ): Promise<SequenceData | null> {
-    if (
-      data.payloadSchemaVersion !== SOLO_SHORTCODE_PAYLOAD_SCHEMA_VERSION ||
-      !data.payloadTitle ||
-      !data.payloadContentHash ||
-      !data.payloadStepCount ||
-      data.payloadWord !== undefined ||
-      data.sequenceData !== undefined ||
-      (data.authoredHand !== "left" && data.authoredHand !== "right")
-    ) {
-      return null;
-    }
-
-    if (data.encoded) {
-      try {
-        const decoded = await this.verifyEncodedSolo(
-          data.encoded,
-          data.payloadContentHash,
-          data.payloadStepCount,
-          data.authoredHand,
-          data.sourceSoloPropId ?? `shortcode-${code}`,
-          code
-        );
-        if (decoded) {
-          return {
-            ...decoded,
-            name: soloTitle(data),
-            displayName: soloTitle(data),
-            metadata: {
-              ...decoded.metadata,
-              ...(data.sourceSoloPropId && {
-                sourceSoloPropId: data.sourceSoloPropId,
-              }),
-            },
-          };
-        }
-      } catch {
-        // Fall through to the canonical embedded solo prop.
-      }
-    }
-
-    const soloData = data.soloData;
-    if (
-      !soloData ||
-      !Array.isArray(soloData.steps) ||
-      soloData.steps.length !== data.payloadStepCount ||
-      (data.sourceSoloPropId !== undefined &&
-        soloData.id !== data.sourceSoloPropId) ||
-      soloData.authoredHand !== data.authoredHand ||
-      hashSoloProp(soloData) !== data.payloadContentHash
-    ) {
-      return null;
-    }
-    const sequence = soloPropToSequence(
-      {
-        ...soloData,
-        contentHash: data.payloadContentHash,
-        name: soloTitle(data),
-        authoredHand: data.authoredHand,
-      },
-      data.authoredHand,
-      data.sourceSoloPropId
-        ? { sourceSoloPropId: data.sourceSoloPropId }
-        : undefined
-    );
-    return { ...sequence, id: code };
   }
 
   /**
@@ -1295,7 +1103,10 @@ export class ShortCodeManager {
    * thrown away on the way out. Callers that need attribution (deck id/name,
    * owner, stored props) take this variant instead of re-reading the doc.
    */
-  async resolveShortCodeWithRecord(code: string): Promise<ShortCodeResolution> {
+  async resolveShortCodeWithRecord(
+    code: string,
+    prefetchedRecord?: ShortCodeData | null
+  ): Promise<ShortCodeResolution> {
     // Inline-encoded offline code (s~...): self-contained, zero network. Stays
     // ahead of every network leg below — it resolves with the radio off. There
     // is no Firestore doc behind it, so there is no record to return.
@@ -1309,7 +1120,18 @@ export class ShortCodeManager {
       }
     }
 
-    const resolution = await this.resolveRecord(code);
+    // SvelteKit's /q server load already fetched this public document for its
+    // metadata. Reuse that complete, plain-data record when supplied so the
+    // browser does not repeat the Firestore read and snapshot race. A missing
+    // server record keeps the established multi-source recovery path intact.
+    const resolution: RecordResolution = prefetchedRecord
+      ? {
+          data: prefetchedRecord,
+          source: "server-load",
+          attempts: [{ source: "server-load", outcome: "hit", ms: 0 }],
+          elapsedMs: 0,
+        }
+      : await this.resolveRecord(code);
     if (!resolution.data) {
       this.reportResolveFailure(code, "record_not_found", resolution);
       return { sequence: null, record: null };
@@ -1357,7 +1179,7 @@ export class ShortCodeManager {
     const data = resolution.data;
 
     if (data.payloadKind === "solo") {
-      const soloSequence = await this.hydrateSoloRecord(code, data);
+      const soloSequence = await hydrateSoloShortCodePayload(code, data);
       if (soloSequence) {
         return { sequence: soloSequence, docBacked: false };
       }
@@ -1420,32 +1242,14 @@ export class ShortCodeManager {
 
     // Self-contained fallbacks — data exists but no referenceable doc.
     if (data.encoded) {
-      try {
-        const decoded = graftPrefloatFromEmbedded(
-          await decodeSequenceFromQR(data.encoded),
-          data.sequenceData
-        );
-        // The blob carries motion only — decoding names it "Shared Sequence"
-        // with an empty word. The record knows what the card actually says
-        // (sequenceName; older records put the word in `sequence`), so stamp
-        // it. Without this, the imported copy is unrecognizable in the
-        // library: a card labeled "SS" instead of its word.
-        const word = importedWord(data);
-        return {
-          sequence: {
-            ...decoded,
-            id: code,
-            ...(word && { word, name: word }),
-          } as SequenceData,
-          docBacked: false,
-        };
-      } catch {
-        // fall through
-      }
+      const decoded = await decodeWordShortCodePayload(code, data);
+      if (decoded) return { sequence: decoded, docBacked: false };
     }
     if (data.sequenceData) {
+      const embedded = hydrateEmbeddedWordShortCodePayload(code, data);
+      if (!embedded) return null;
       return {
-        sequence: createSequenceData({ id: code, ...data.sequenceData }),
+        sequence: embedded,
         docBacked: false,
       };
     }
@@ -1675,7 +1479,7 @@ export class ShortCodeManager {
     data: ShortCodeData
   ): Promise<SequenceData | null> {
     if (data.payloadKind === "solo") {
-      return this.hydrateSoloRecord(code, data);
+      return hydrateSoloShortCodePayload(code, data);
     }
 
     // Strategy 0: Self-contained encoded blob (zero Firestore dependency).
@@ -1686,20 +1490,8 @@ export class ShortCodeManager {
     // steps — the blob stays the renderer's source (it is the normalized,
     // orientation-correct shape; raw embedded steps are not renderable).
     if (data.encoded) {
-      try {
-        const decoded = graftPrefloatFromEmbedded(
-          await decodeSequenceFromQR(data.encoded),
-          data.sequenceData
-        );
-        const word = importedWord(data);
-        return {
-          ...decoded,
-          id: code,
-          ...(word && { word, name: word }),
-        } as SequenceData;
-      } catch (err) {
-        // encoded blob failed to decode — fall through to other strategies
-      }
+      const decoded = await decodeWordShortCodePayload(code, data);
+      if (decoded) return decoded;
     }
 
     // Strategy 1: Public index lookup by stored word + sequenceId
@@ -1760,7 +1552,7 @@ export class ShortCodeManager {
     // When a shortcode was created for a deck sequence, the essential fields
     // were stored inline so we can hydrate without searching deck collections.
     if (data.sequenceData) {
-      return createSequenceData({ id: code, ...data.sequenceData });
+      return hydrateEmbeddedWordShortCodePayload(code, data);
     }
 
     console.error(
