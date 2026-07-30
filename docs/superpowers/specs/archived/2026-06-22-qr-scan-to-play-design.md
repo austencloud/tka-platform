@@ -1,14 +1,21 @@
 ---
-status: active
+status: archived
 value: 4
 effort: M
-remaining: "Body status: active"
-depends_on: ""
+remaining: "Implemented in fd61bf5bfd, then intentionally revised: the centered play icon remains, the printed caption was removed in 97bc86ad4a, and current scan persistence/analytics are owned by the 2026-07-20 q-scan instrumentation ledger."
+depends_on: "2026-07-20-q-scan-instrumentation-ledger.md"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # QR "Scan to Play" — Play-Button QR + Scan Tracking Fix
+
+> **Archived 2026-07-30:** The original design shipped in `fd61bf5bfd`.
+> Follow-up `97bc86ad4a` intentionally centered the QR and removed the printed
+> caption, while retaining the embedded play icon. Commit `1ad895f9a4` then
+> moved scan persistence and activity reporting into the current `/q`
+> instrumentation architecture, tracked by
+> `active/2026-07-20-q-scan-instrumentation-ledger.md`.
 
 Date: 2026-06-22
 Status: active
