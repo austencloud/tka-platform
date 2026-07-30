@@ -17,14 +17,23 @@ export type ScanStage =
 
 const PREFIX = "scan:";
 let reported = false;
+const pendingFrameMarks = new Map<ScanStage, Promise<void>>();
 
 function hasPerf(): boolean {
-  return typeof performance !== "undefined" && typeof performance.mark === "function";
+  return (
+    typeof performance !== "undefined" && typeof performance.mark === "function"
+  );
 }
 
 /** Mark a scan stage boundary (idempotent per stage within a page load). */
 export function markScan(stage: ScanStage): void {
   if (!hasPerf()) return;
+  if (
+    stage !== "start" &&
+    performance.getEntriesByName(`${PREFIX}start`, "mark").length === 0
+  ) {
+    return;
+  }
   const name = `${PREFIX}${stage}`;
   if (performance.getEntriesByName(name, "mark").length > 0) return;
   try {
@@ -35,6 +44,44 @@ export function markScan(stage: ScanStage): void {
 }
 
 /**
+ * Mark a stage in the next animation frame, after reactive DOM updates have
+ * committed and immediately before the browser paints them.
+ */
+export function markScanAfterNextFrame(stage: ScanStage): Promise<void> {
+  if (
+    !hasPerf() ||
+    (stage !== "start" &&
+      performance.getEntriesByName(`${PREFIX}start`, "mark").length === 0)
+  ) {
+    return Promise.resolve();
+  }
+
+  if (performance.getEntriesByName(`${PREFIX}${stage}`, "mark").length > 0) {
+    return Promise.resolve();
+  }
+
+  const pending = pendingFrameMarks.get(stage);
+  if (pending) return pending;
+
+  if (typeof requestAnimationFrame !== "function") {
+    markScan(stage);
+    return Promise.resolve();
+  }
+
+  const scheduled = new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      markScan(stage);
+      resolve();
+    });
+  }).finally(() => {
+    pendingFrameMarks.delete(stage);
+  });
+
+  pendingFrameMarks.set(stage, scheduled);
+  return scheduled;
+}
+
+/**
  * Compute scan-to-stable once both ends are marked. Returns the duration in ms,
  * or null if scan:start was never marked (non-scan route) or already reported.
  * Logs a per-stage table in dev.
@@ -42,19 +89,29 @@ export function markScan(stage: ScanStage): void {
 export function reportScanToStable(): number | null {
   if (!hasPerf() || reported) return null;
   const startMarks = performance.getEntriesByName(`${PREFIX}start`, "mark");
-  const endMarks = performance.getEntriesByName(`${PREFIX}all-cells-stable`, "mark");
+  const endMarks = performance.getEntriesByName(
+    `${PREFIX}all-cells-stable`,
+    "mark"
+  );
   if (startMarks.length === 0 || endMarks.length === 0) return null;
 
   reported = true;
   let durationMs = 0;
   try {
-    const m = performance.measure(`${PREFIX}to-stable`, `${PREFIX}start`, `${PREFIX}all-cells-stable`);
+    const m = performance.measure(
+      `${PREFIX}to-stable`,
+      `${PREFIX}start`,
+      `${PREFIX}all-cells-stable`
+    );
     durationMs = m.duration;
   } catch {
     durationMs = endMarks[0]!.startTime - startMarks[0]!.startTime;
   }
 
-  if (typeof window !== "undefined" && /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
+  if (
+    typeof window !== "undefined" &&
+    /localhost|127\.0\.0\.1/.test(window.location.hostname)
+  ) {
     logStageTable(durationMs);
   }
   return durationMs;
@@ -62,21 +119,26 @@ export function reportScanToStable(): number | null {
 
 function logStageTable(total: number): void {
   const stages: ScanStage[] = [
-    "start", "shortcode-resolved", "hydrated", "card-mount", "first-cell-painted", "all-cells-stable",
+    "start",
+    "shortcode-resolved",
+    "hydrated",
+    "card-mount",
+    "first-cell-painted",
+    "all-cells-stable",
   ];
-  const start = performance.getEntriesByName(`${PREFIX}start`, "mark")[0]?.startTime ?? 0;
+  const start =
+    performance.getEntriesByName(`${PREFIX}start`, "mark")[0]?.startTime ?? 0;
   const rows: Record<string, { "t (ms)": number }> = {};
   for (const s of stages) {
     const e = performance.getEntriesByName(`${PREFIX}${s}`, "mark")[0];
     if (e) rows[s] = { "t (ms)": Math.round(e.startTime - start) };
   }
-  // eslint-disable-next-line no-console
   console.table(rows);
-  // eslint-disable-next-line no-console
   console.log(`[scan-perf] scan-to-stable = ${Math.round(total)}ms`);
 }
 
 /** Test-only reset of the one-shot guard. */
 export function _resetScanPerf(): void {
   reported = false;
+  pendingFrameMarks.clear();
 }

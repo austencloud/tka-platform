@@ -2,20 +2,44 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Active — approved design, pending implementation plan"
-depends_on: ""
-plan_path: ""
+remaining: "All implementation phases are present in current source, including frame-aligned first-cell-painted and all-cells-stable marks. The 11 focused suites pass 47 tests. Close-out still needs the documented cold-browser and warm-browser scan-to-stable measurements, but Chrome DevTools MCP is unavailable in this Codex session. The shared full check is also blocked by seven unrelated errors in another session's untracked WorkspaceShareControl.svelte."
+depends_on: "external: Chrome DevTools MCP unavailable for throttled performance proof; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+plan_path: "docs/superpowers/plans/2026-06-29-instant-scan-card-pictographs.md"
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-07-30
 ---
 # Instant Scan-Card Pictographs — Design
 
 **Date:** 2026-06-29
-**Status:** Active — approved design, pending implementation plan
+**Status:** Implemented; awaiting current throttled-budget and repository-check proof
 **Goal:** When someone scans a QR code, the Choreo card and its pictographs appear
 effectively instantly — no per-cell "stabilizing" while the scanner's phone
 rasterizes each pictograph. Backed by proper instrumentation and automated tests
 so the win is measurable and regression-proof.
+
+---
+
+## Reconciliation (2026-07-30)
+
+- The June 29 implementation landed the performance marks, canonical cloud key,
+  Firebase cell store, cloud tier, save warming, scan-route opt-in, and critical
+  path changes.
+- The production contract then became stricter. Commit `0a6d9afca4` fixed the
+  Storage rule and added an admin warm pass. Commit `1031928883` made scan-card
+  acquisition cloud-only and required QR creation to verify both card themes
+  before minting. Commits `93f134783c`, `d72100928b`, `193bb2241f`, and
+  `86ce42d01c` added legacy backfill, warm deduplication, held-step width parity,
+  and motion-visibility keys.
+- Current scans never crowd-source a personal-preference render. QR creation,
+  library saves, and the admin backfill own canonical uploads; scanners only
+  download verified assets.
+- The declared `first-cell-painted` stage was the one source-level gap found in
+  this pass. It now marks the first committed cell on the next animation frame,
+  and `all-cells-stable` uses the same frame boundary. Non-scan cards no longer
+  create scan marks.
+- Eleven focused suites pass 47 tests. The remaining evidence is the cold-browser
+  and warm-browser DevTools budget recorded in
+  `docs/reference/scan-card-perf-budget.md`, plus a clean shared repository check.
 
 ---
 

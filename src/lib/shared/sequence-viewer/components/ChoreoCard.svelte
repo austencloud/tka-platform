@@ -34,7 +34,10 @@
   import { compositeStepNumberOnBlob } from "../services/step-number-compositor";
   import { deriveCacheKey } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
-  import { markScan, reportScanToStable } from "$lib/shared/analytics/scan-perf";
+  import {
+    markScanAfterNextFrame,
+    reportScanToStable,
+  } from "$lib/shared/analytics/scan-perf";
   import { buildChoreoCardRenderKeys } from "$lib/shared/choreo-card/services/choreo-card-render-keys";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -996,6 +999,9 @@
       cells = updatedCells;
       loadedCount = hitCount;
       onRenderProgress?.(loadedCount, totalCellCount);
+      if (hitCount > 0) {
+        void markScanAfterNextFrame("first-cell-painted");
+      }
 
       // PHASE 2: for cells that missed IDB, render via the worker pool in
       // parallel. Each cell updates independently as it completes, so the user
@@ -1009,6 +1015,7 @@
               cells[cellArrayIndex] = { ...current, imageUrl, isLoaded: true };
               loadedCount++;
               onRenderProgress?.(loadedCount, totalCellCount);
+              void markScanAfterNextFrame("first-cell-painted");
             }
           } catch (err) {
             console.warn("[ChoreoCard] cell image failed for cell", task.cellIndex, err);
@@ -1042,11 +1049,11 @@
         URL.revokeObjectURL(url);
       }
 
-      // Instrumentation: the static grid is now stable. No-ops off the scan
-      // route (scan:start is only marked by /q/[code]). markScan is idempotent
-      // and reportScanToStable is one-shot, so this is safe to reach repeatedly.
-      markScan("all-cells-stable");
-      reportScanToStable();
+      // Align the terminal mark with the frame that presents the final cell.
+      // Do not hold rendering open for rAF, which browsers pause in hidden tabs.
+      void markScanAfterNextFrame("all-cells-stable").then(() => {
+        reportScanToStable();
+      });
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {

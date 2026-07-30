@@ -1,5 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { markScan, reportScanToStable, _resetScanPerf } from "./scan-perf";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  _resetScanPerf,
+  markScan,
+  markScanAfterNextFrame,
+  reportScanToStable,
+} from "./scan-perf";
 
 describe("scan-perf", () => {
   beforeEach(() => {
@@ -8,9 +13,16 @@ describe("scan-perf", () => {
     performance.clearMeasures();
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("returns null when scan:start was never marked", () => {
     markScan("all-cells-stable");
     expect(reportScanToStable()).toBeNull();
+    expect(
+      performance.getEntriesByName("scan:all-cells-stable", "mark")
+    ).toHaveLength(0);
   });
 
   it("measures start -> all-cells-stable when both marks exist", () => {
@@ -26,5 +38,30 @@ describe("scan-perf", () => {
     markScan("all-cells-stable");
     expect(reportScanToStable()).not.toBeNull();
     expect(reportScanToStable()).toBeNull();
+  });
+
+  it("coalesces duplicate frame-aligned marks", async () => {
+    const callbacks: FrameRequestCallback[] = [];
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    markScan("start");
+
+    const first = markScanAfterNextFrame("first-cell-painted");
+    const duplicate = markScanAfterNextFrame("first-cell-painted");
+
+    expect(requestFrame).toHaveBeenCalledTimes(1);
+    expect(
+      performance.getEntriesByName("scan:first-cell-painted", "mark")
+    ).toHaveLength(0);
+
+    callbacks[0]!(16);
+    await Promise.all([first, duplicate]);
+
+    expect(
+      performance.getEntriesByName("scan:first-cell-painted", "mark")
+    ).toHaveLength(1);
   });
 });

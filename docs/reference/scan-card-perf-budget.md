@@ -7,35 +7,37 @@ interactive); run before/after any change to the scan path or cell pipeline.
 ## What the feature does (so the numbers make sense)
 
 A scanned Choreo card renders its pictograph cells by **downloading pre-rendered
-images** from a shared cloud store instead of rasterizing each one on the
-scanner's phone:
+images** from a shared cloud store. The scanner never rasterizes them:
 
-- **On save/publish** (`warm-sequence-cells.ts`) every cell is rendered with the
-  canonical visibility set and uploaded to Firebase Storage at
+- **On save/publish** (`warm-sequence-cells.ts`) cells are warmed in the
+  background with canonical visibility and uploaded to Firebase Storage at
   `pictograph-cells/{hash}.webp` (`pictograph-cloud-cache.ts`).
+- **Before QR creation**, `QRCodeGenerator` strictly warms and reads back every
+  cell for the exact prop pair in both card themes. It does not mint the QR when
+  any canonical asset is missing.
 - **On scan** (`/q/[code]`) a Svelte context flips `probeCloud` on for the card's
-  cells (`scan-card-cloud-context.ts` → `ChoreoCard` → `renderCell`). Each cell
-  direct-probes its canonical URL: a hit downloads, a miss falls back to a local
-  worker render (and, only on the publish path, uploads).
+  cells (`scan-card-cloud-context.ts` → `ChoreoCard` → `renderCell`) and also
+  sets `cloudOnly`. Each cell direct-probes its canonical URL. A hit downloads;
+  a missing asset settles as unavailable and never launches the scanner's local
+  renderer.
 - The cloud hash is **device-independent** (`cloud-cell-key.ts` normalizes the
   8 per-device visibility prefs to `CANONICAL_CARD_VISIBILITY`), so every scanner
   of a given card computes the same hash and shares the same image.
 
-So: a **warm** scan (sequence was published after this shipped, or scanned before)
-should be download-bound; a **cold** scan (never-warmed sequence) falls back to
-local render — same as the old behavior.
+The performance distinction is browser-local: a **warm-browser** scan reads
+IndexedDB, while a **cold-browser** scan downloads the verified WebPs.
 
 ## Budgets (initial targets — refine against the Phase-0 baseline)
 
-- **Warm** (cells in the cloud / IndexedDB): `scan-to-stable` < 400 ms
-- **Cold** (first-ever scan, all cells render locally): < 1000 ms
+- **Warm browser** (cells in IndexedDB): `scan-to-stable` < 400 ms
+- **Cold browser** (empty IndexedDB, cells downloaded): < 1000 ms
 
 ## Stage marks
 
 `performance.mark` names (namespaced `scan:`), in order:
-`start → shortcode-resolved → hydrated → card-mount → all-cells-stable`.
-(`first-cell-painted` is a defined stage but not currently wired — add a mark at
-the first committed cell if per-cell granularity is needed.)
+`start → shortcode-resolved → hydrated → card-mount → first-cell-painted →
+all-cells-stable`. The two cell marks are aligned to animation frames after
+their reactive updates commit.
 
 ## Procedure (Chrome DevTools MCP — requires verbal permission to drive the browser)
 
@@ -59,17 +61,18 @@ the first committed cell if per-cell granularity is needed.)
      };
    }
    ```
-5. **Cold run:** in DevTools, clear site data (IndexedDB + the cloud-cell session
-   state is per-load anyway) and scan a sequence that has NOT been warmed, then
-   repeat. **Warm run:** scan a sequence saved after this shipped (or re-scan).
+5. **Cold-browser run:** clear site data, then scan a valid QR. **Warm-browser
+   run:** reload the same code without clearing IndexedDB.
 6. Record both numbers; fail a change if either exceeds its budget.
 
 ## Reading the stages
 
 - `start → shortcode-resolved`: Firebase/snapshot resolve + hydrate latency.
-- `shortcode-resolved → card-mount`: chunk parse + glyph init + template gate.
+- `shortcode-resolved → card-mount`: hydration, viewer chunk parse, and the
+  template gate.
 - `card-mount → all-cells-stable`: cell acquisition. With the cloud tier **warm**
-  this should be download-bound (small WebPs in parallel), NOT worker-render-bound.
+  this should be download-bound (small WebPs in parallel), not
+  worker-render-bound.
   If this segment is large on a warm scan, the cloud probe is missing (check the
   hash alignment / that the sequence was actually warmed at publish).
 
@@ -83,32 +86,16 @@ sequence guaranteed unwarmed) and paste cold + warm `scan-to-stable` here.
 Paste cold + warm `scan-to-stable` after the feature is warmed. The warm number
 is the headline win (download vs rasterize).
 
-## Known v1 limitations (documented, acceptable)
+## Current integrity contract
 
-- **Warming is dark-mode only.** The cloud hash includes `isDark`, and
-  `warmSequenceCells` warms `isDark: true`. A scanner whose device is in **light**
-  mode computes a different hash, misses, and cold-renders locally (the old
-  behavior). The scan page is dark-themed, so the majority render dark and hit.
-  To cover light too, warm both modes at publish (2× uploads) or force the scan
-  card dark.
-- **Cat/dog (different prop per hand) sequences.** The scan page seeds both hands
-  to one prop (`?bp` / `intendedProp.bluePropType`), while render-at-publish uses
-  `intendedProp.redPropType` for the red hand. So cat/dog cards can mismatch on
-  the prop and cold-render. Rare; seed `redPropType` from `intendedProp` on the
-  scan page to close it.
+- QR creation verifies dark and light assets before minting a short code.
+- Blue and red props, mixed-prop mode, motion visibility, and wide held-step
+  cells all participate in the canonical render contract.
+- The Scan Activity admin surface can backfill older short codes through the
+  same `warmSequenceCells` path.
 
-## Known follow-ups (measured, not guessed)
+## Measured follow-up
 
-- **Aggressive glyph-init defer.** The full glyph cache init is currently awaited
-  before card mount (it's only parallelized with the chunk import). Fully
-  deferring it would trim the critical path further, but a cold-scan local render
-  needs the glyph cache populated, so this must be gated on "warm scan" or made
-  safe — do it only if the `shortcode-resolved → card-mount` stage shows glyph
-  init is the bottleneck.
-- **Old-sequence backfill.** Sequences saved before render-at-publish shipped are
-  never warmed, so they cold-render on scan until re-saved. If the field numbers
-  show many cold scans, add a backfill that runs `warmSequenceCells` over the
-  public sequence index.
 - **R2 read-mirror.** If Firebase Storage egress/latency shows up in the field,
   publish an R2 mirror of `pictograph-cells/` and point reads at the CDN (see the
   design doc's migration trigger).
