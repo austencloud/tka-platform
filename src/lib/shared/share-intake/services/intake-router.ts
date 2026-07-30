@@ -227,6 +227,14 @@ async function resolveTargetConversation(
   if (!targetId) return undefined;
   try {
     const conversation = await conversationService.getConversation(targetId);
+    if (!conversation) {
+      // Distinguishes "the shortcut outlived its conversation" from "the id
+      // never arrived" when a tapped target lands in the plain picker. Without
+      // it the two failures look identical from the outside.
+      console.warn(
+        `[ShareIntake] Tapped target ${targetId} resolved to no conversation; falling back to the picker.`
+      );
+    }
     return conversation ? targetId : undefined;
   } catch {
     // Never dead-end a share on a lookup failure; the photo is the point.

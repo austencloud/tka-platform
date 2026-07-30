@@ -42,6 +42,7 @@ reopen boot-path work on the strength of that number.**
 | What appears in the sheet | Up to 4 recent 1:1 conversations, by last activity |
 | Tap behavior | Open TKA with the conversation pre-selected, one tap to send |
 | Groups | Excluded from v1 |
+| Recipients per share | **Many** (revised 2026-07-30, see below) |
 | Native strategy | Thin new plugin beside `@capgo/capacitor-share-target` |
 | Avatars | Fetched in TS, passed to Java as bytes |
 
@@ -128,6 +129,64 @@ untouched. The shortcut id rides the record exactly as `receiptId` already does.
    calls `openSendAttachmentSheet(attachment, { receiptId, conversationId })`.
 6. The send sheet opens with that conversation pre-selected. The user taps Send.
 7. Existing `completeShareIntake` deletes the record. Unchanged.
+
+## Amendment 2026-07-30: several recipients per share
+
+Originally out of scope. Austen: *"I think we should have a way to send it to
+multiple people at once I know that we said that was out of spec originally but
+let's put it in the spec because it's a natural continuation."* It is: the sheet
+already listed every recent conversation and made you pick exactly one, and the
+photo you just shared is usually the kind of thing more than one person wants.
+
+**Selection.** Tapping a conversation adds it; tapping it again removes it. Two
+or more chosen destinations render as removable chips in the slot that
+previously held the single selection, so who is on the list is always readable
+without opening anything. The Send button carries the count — "Send image to 3"
+— because "Send image" beside four selected people reads as sending to one.
+
+**Delivery** is sequential, not parallel: each image recipient is a full upload
+of the same bytes, and firing them at once on a phone uplink makes all of them
+slower. A sequence share mints ONE short code for the whole send rather than one
+per recipient.
+
+**Partial failure is a first-class outcome.** Recipients that succeeded keep
+their message; the ones that failed are named in a toast. Only a send where
+NOBODY received it takes the existing whole-send error path, and it rethrows the
+underlying error so the report keeps the real cause rather than a sentence we
+wrote. The sheet stays open in that case so the share is not lost.
+
+**After sending**, the drawer opens the thread only when there was exactly one
+recipient. For several it returns to the conversation list — dropping the user
+into an arbitrary one of four hides the other three.
+
+**Direct Share interaction:** a tapped share-sheet target pre-selects that one
+conversation and nothing else. The user can then add more before sending, which
+is strictly better than the original design's dead end.
+
+## Layout amendment 2026-07-30: the sheet at drawer widths
+
+The send sheet was a single narrow column at every width. Measured on the real
+device (`adb shell wm size` / `wm density`), the Z Fold inner display is
+1856x2160 at 420dpi — a **707 x 823 CSS viewport**, below the 768px mobile seam,
+so the drawer is already full width and was spending 707px on one column.
+
+The sheet now splits into two columns once its own container passes **42rem**:
+what you are sending on the left (preview, note, send), who it goes to on the
+right (full height, list always visible). That threshold lands on the Fold
+unfolded (44.2rem), a 2560 desktop drawer (44.8rem) and a 3840 one (64rem), and
+deliberately NOT on a 1920 desktop drawer (33.6rem), which stays single-column.
+
+Two traps worth recording, both found by measuring rather than by reading:
+
+1. **`container-type` belonged on a wrapper, not on the sheet.** An element is
+   never matched by the container query of the container it establishes. With
+   the property on the sheet, every `@container` rule targeting the sheet itself
+   was silently dropped and the two columns appeared only as *implicit*,
+   auto-sized grid tracks created by the descendant `grid-column: 2` rules. It
+   looked correct and could not be sized.
+2. **A `rem` threshold can collide with the test width.** 420px is exactly 42rem
+   whenever the root font size is 10px, so the "narrow" component tests were
+   quietly exercising the wide layout.
 
 ## Edge cases
 

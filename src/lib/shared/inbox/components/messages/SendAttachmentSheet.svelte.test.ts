@@ -114,8 +114,38 @@ function addDirectConversation(): void {
   });
 }
 
+/**
+ * The sheet's layout is driven by a CONTAINER query on its own width, not by
+ * the viewport, and the two layouts behave differently on purpose: narrow hides
+ * the destination list once you pick someone, wide keeps it on screen so you
+ * can pick more. The browser runner's viewport is wide, so a test that does not
+ * say which layout it means is silently testing only the wide one.
+ */
+function setSheetWidth(px: number): void {
+  // Sized directly rather than via the body: the runner mounts the component
+  // into its own wrapper, so constraining the body does not reliably reach the
+  // element that carries `container-type: inline-size`.
+  let style = document.getElementById("sheet-width-style");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "sheet-width-style";
+    document.head.appendChild(style);
+  }
+  // .sheet-shell, not .send-attachment-sheet: the shell is what carries
+  // `container-type`, and sizing the inner element would leave the container
+  // itself full-width and every container query resolving against that.
+  style.textContent = `.sheet-shell { width: ${px}px !important; }`;
+}
+
+// Deliberately clear of the 42rem seam in BOTH directions. 420px was the first
+// choice and it is exactly 42rem whenever the root font size is 10px, so the
+// query matched and the "narrow" cases were quietly running the wide layout.
+const NARROW = 340; // Phone / 1920-desktop drawer: single column.
+const WIDE = 900; // Fold unfolded / 2560+ drawer: two columns.
+
 describe("SendAttachmentSheet", () => {
   beforeEach(() => {
+    setSheetWidth(NARROW);
     mocks.conversations.length = 0;
     mocks.inbox.shareAttachmentConversationId = null;
     mocks.createShortCode.mockReset();
@@ -150,6 +180,10 @@ describe("SendAttachmentSheet", () => {
 
     await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
 
+    // Narrow layout: choosing collapses the browser. The node stays in the DOM
+    // now (the wide layout keeps it on screen) but display:none takes it out of
+    // the accessibility tree, so a role query stops finding it - which is the
+    // behaviour that actually matters here.
     await expect
       .element(page.getByRole("combobox", { name: "Search users" }))
       .not.toBeInTheDocument();
@@ -180,7 +214,7 @@ describe("SendAttachmentSheet", () => {
         }),
       ],
     });
-    expect(onSent).toHaveBeenCalledWith("group-1");
+    expect(onSent).toHaveBeenCalledWith(["group-1"]);
   });
 
   it("starts a direct conversation for a searched person and sends the note", async () => {
@@ -222,7 +256,7 @@ describe("SendAttachmentSheet", () => {
         content: "Try this one",
       })
     );
-    expect(onSent).toHaveBeenCalledWith("direct-1");
+    expect(onSent).toHaveBeenCalledWith(["direct-1"]);
   });
 
   it("surfaces a send failure and restores the send action", async () => {
@@ -278,14 +312,16 @@ describe("SendAttachmentSheet", () => {
     expect(mocks.sendImage).toHaveBeenCalledWith(
       expect.objectContaining({
         conversationId: "group-1",
-        messageId: "msg-1",
-        attachmentId: "att-1",
+        // Minted per recipient, not carried from the attachment: with several
+        // recipients each one is a distinct message.
+        messageId: expect.any(String),
+        attachmentId: expect.any(String),
         content: "from the share sheet",
       })
     );
     // An image never goes through the message writer; the sender owns the write.
     expect(mocks.sendMessage).not.toHaveBeenCalled();
-    expect(onSent).toHaveBeenCalledWith("group-1");
+    expect(onSent).toHaveBeenCalledWith(["group-1"]);
   });
 
   it("opens with the direct-share conversation already selected", async () => {
@@ -314,8 +350,11 @@ describe("SendAttachmentSheet", () => {
     await expect
       .element(page.getByRole("button", { name: "Send image" }))
       .toBeEnabled();
-    // Pre-selected, not merely enabled: the picker is gone and Paul is named.
-    await expect.element(page.getByText("Paul")).toBeInTheDocument();
+    // Pre-selected, not merely enabled: Paul is named in the destination slot
+    // and (narrow layout) the picker has collapsed.
+    await expect
+      .element(page.getByRole("button", { name: "Change" }))
+      .toBeVisible();
     await expect
       .element(page.getByRole("combobox", { name: "Search users" }))
       .not.toBeInTheDocument();
@@ -339,5 +378,138 @@ describe("SendAttachmentSheet", () => {
     await expect
       .element(page.getByRole("combobox", { name: "Search users" }))
       .toBeInTheDocument();
+  });
+
+  describe("multiple recipients", () => {
+    it("sends one share to every selected conversation", async () => {
+      setSheetWidth(WIDE);
+      addGroupConversation();
+      addDirectConversation();
+      const onSent = vi.fn();
+
+      render(SendAttachmentSheet, {
+        attachment: { type: "sequence", payload: createPayload() },
+        onSent,
+      });
+
+      await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+      await page.getByRole("button", { name: /Send to Paul/ }).click();
+
+      // The count IS the confirmation that both took.
+      await page.getByRole("button", { name: "Send sequence to 2" }).click();
+
+      await vi.waitFor(() => {
+        expect(mocks.sendMessage).toHaveBeenCalledTimes(2);
+      });
+
+      // One short code for the whole share, not one per recipient.
+      expect(mocks.createShortCode).toHaveBeenCalledOnce();
+      expect(mocks.sendMessage).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ conversationId: "group-1" })
+      );
+      expect(mocks.sendMessage).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ conversationId: "conv_paul" })
+      );
+      expect(onSent).toHaveBeenCalledWith(["group-1", "conv_paul"]);
+    });
+
+    it("takes a recipient back off the list when tapped again", async () => {
+      setSheetWidth(WIDE);
+      addGroupConversation();
+      addDirectConversation();
+
+      render(SendAttachmentSheet, {
+        attachment: { type: "sequence", payload: createPayload() },
+        onSent: vi.fn(),
+      });
+
+      await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+      await page.getByRole("button", { name: /Send to Paul/ }).click();
+      await expect
+        .element(page.getByRole("button", { name: "Send sequence to 2" }))
+        .toBeVisible();
+
+      await page.getByRole("button", { name: /Send to Paul/ }).click();
+
+      // Back to one: the label drops the count rather than saying "to 1".
+      await expect
+        .element(page.getByRole("button", { name: "Send sequence" }))
+        .toBeVisible();
+    });
+
+    it("removes a single recipient from its chip", async () => {
+      setSheetWidth(WIDE);
+      addGroupConversation();
+      addDirectConversation();
+
+      render(SendAttachmentSheet, {
+        attachment: { type: "sequence", payload: createPayload() },
+        onSent: vi.fn(),
+      });
+
+      await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+      await page.getByRole("button", { name: /Send to Paul/ }).click();
+      await page.getByRole("button", { name: "Remove Paul" }).click();
+
+      await expect
+        .element(page.getByRole("button", { name: "Send sequence" }))
+        .toBeVisible();
+    });
+
+    it("keeps the recipients that succeeded when one of them fails", async () => {
+      setSheetWidth(WIDE);
+      addGroupConversation();
+      addDirectConversation();
+      const onSent = vi.fn();
+      // Second delivery only. A partial failure must not discard the share for
+      // the people who DID receive it, and must not silently swallow the miss.
+      mocks.sendMessage
+        .mockResolvedValueOnce({ id: "message-1" })
+        .mockRejectedValueOnce(new Error("permission denied"));
+
+      render(SendAttachmentSheet, {
+        attachment: { type: "sequence", payload: createPayload() },
+        onSent,
+      });
+
+      await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+      await page.getByRole("button", { name: /Send to Paul/ }).click();
+      await page.getByRole("button", { name: "Send sequence to 2" }).click();
+
+      await vi.waitFor(() => {
+        expect(onSent).toHaveBeenCalledWith(["group-1"]);
+      });
+      // Not the whole-send error path: that would tell the user nothing went
+      // out when half of it did.
+      expect(mocks.showUserError).not.toHaveBeenCalled();
+    });
+
+    it("reports a whole-send failure when no recipient receives it", async () => {
+      setSheetWidth(WIDE);
+      addGroupConversation();
+      addDirectConversation();
+      const onSent = vi.fn();
+      mocks.sendMessage.mockRejectedValue(new Error("permission denied"));
+
+      render(SendAttachmentSheet, {
+        attachment: { type: "sequence", payload: createPayload() },
+        onSent,
+      });
+
+      await page.getByRole("button", { name: /Send to Tuesday Jam/ }).click();
+      await page.getByRole("button", { name: /Send to Paul/ }).click();
+      await page.getByRole("button", { name: "Send sequence to 2" }).click();
+
+      await vi.waitFor(() => {
+        expect(mocks.showUserError).toHaveBeenCalled();
+      });
+      expect(onSent).not.toHaveBeenCalled();
+      // The sheet stays usable so the share is not lost.
+      await expect
+        .element(page.getByRole("button", { name: "Send sequence to 2" }))
+        .toBeEnabled();
+    });
   });
 });

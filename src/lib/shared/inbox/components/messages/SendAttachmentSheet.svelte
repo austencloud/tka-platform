@@ -16,6 +16,7 @@
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import { onMount } from "svelte";
   import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ConversationItem from "./ConversationItem.svelte";
   import GroupAvatarStack from "./GroupAvatarStack.svelte";
@@ -24,7 +25,12 @@
     attachment: PendingMessageAttachment;
     /** Prefilled note. Share intake passes the shared text that was not a code. */
     initialNote?: string;
-    onSent: (conversationId: string) => void;
+    /**
+     * The conversations that actually received it, in send order. Plural
+     * because one share can now go to several people; a partial success
+     * reports only the ones that landed.
+     */
+    onSent: (conversationIds: string[]) => void;
   }
 
   type SelectedUser = {
@@ -45,8 +51,29 @@
   const MESSAGE_MAX = 500;
   const MAX_RECENT_CONVERSATIONS = 8;
 
-  let selectedConversation = $state<ConversationPreview | null>(null);
-  let selectedUser = $state<SelectedUser | null>(null);
+  // Multi-recipient: one share, N destinations. Kept as two lists rather than
+  // one union list because they resolve differently at send time - an existing
+  // conversation already has an id, a searched user needs one created.
+  let selectedConversations = $state<ConversationPreview[]>([]);
+  let selectedUsers = $state<SelectedUser[]>([]);
+
+  // The single-destination case is still THE common one, and the whole sheet
+  // used to be written against these two. Deriving them keeps that reading
+  // (avatar, name, subtitle) intact instead of special-casing length 1
+  // everywhere.
+  const selectedConversation = $derived(
+    selectedConversations.length === 1 && selectedUsers.length === 0
+      ? selectedConversations[0]!
+      : null
+  );
+  const selectedUser = $derived(
+    selectedUsers.length === 1 && selectedConversations.length === 0
+      ? selectedUsers[0]!
+      : null
+  );
+  const destinationCount = $derived(
+    selectedConversations.length + selectedUsers.length
+  );
   let message = $state(initialNote);
   let phase = $state<"idle" | "sending">("idle");
   let thumbnailFailed = $state(false);
@@ -77,9 +104,14 @@
       : (image?.file.name ?? "")
   );
   const kicker = $derived(attachment.type === "image" ? "Sending" : "Sharing");
-  const sendLabel = $derived(
-    attachment.type === "image" ? "Send image" : "Send sequence"
-  );
+  const sendLabel = $derived.by(() => {
+    const noun = attachment.type === "image" ? "image" : "sequence";
+    // The count is the confirmation. "Send image" while four people are
+    // selected reads as sending to one of them.
+    return destinationCount > 1
+      ? `Send ${noun} to ${destinationCount}`
+      : `Send ${noun}`;
+  });
   const recentConversations = $derived(
     inboxState.conversations
       .filter(
@@ -110,13 +142,31 @@
     if (selectedUser) return "New conversation";
     return "";
   });
-  const hasDestination = $derived(
-    selectedConversation !== null || selectedUser !== null
-  );
+  const hasDestination = $derived(destinationCount > 0);
   const canSend = $derived(hasDestination && phase === "idle");
   const excludeUserIds = $derived(
-    [currentUserId, selectedUser?.id].filter(Boolean) as string[]
+    [currentUserId, ...selectedUsers.map((user) => user.id)].filter(
+      Boolean
+    ) as string[]
   );
+
+  /** Avatar + label for each chosen destination, in selection order. */
+  const destinationChips = $derived([
+    ...selectedConversations.map((conversation) => ({
+      key: `c:${conversation.id}`,
+      name: conversationName(conversation),
+      avatar: conversation.otherParticipant?.avatar,
+      isGroup: conversation.type === "group",
+      remove: () => toggleConversation(conversation),
+    })),
+    ...selectedUsers.map((user) => ({
+      key: `u:${user.id}`,
+      name: user.displayName,
+      avatar: user.avatar,
+      isGroup: false,
+      remove: () => removeUser(user.id),
+    })),
+  ]);
 
   // A Direct Share tap names the conversation before this sheet ever renders.
   //
@@ -137,7 +187,11 @@
     );
     if (!match) return;
     preselectionApplied = true;
-    selectConversation(match);
+    // Not toggleConversation: this runs once on open, and a toggle would
+    // DESELECT the target if anything had already put it in the list.
+    if (!isConversationSelected(match.id)) {
+      selectedConversations = [...selectedConversations, match];
+    }
   });
 
   onMount(() => {
@@ -150,13 +204,22 @@
       : conversation.otherParticipant?.displayName || "Unknown";
   }
 
-  function selectConversation(conversation: ConversationPreview): void {
+  function isConversationSelected(id: string): boolean {
+    return selectedConversations.some((entry) => entry.id === id);
+  }
+
+  /** Tapping a row adds it; tapping it again takes it back off the list. */
+  function toggleConversation(conversation: ConversationPreview): void {
     if (phase !== "idle") return;
-    selectedConversation = conversation;
-    selectedUser = null;
-    searchUserId = "";
-    searchUserDisplay = "";
-    searchResetKey++;
+    hapticService?.trigger("selection");
+    selectedConversations = isConversationSelected(conversation.id)
+      ? selectedConversations.filter((entry) => entry.id !== conversation.id)
+      : [...selectedConversations, conversation];
+  }
+
+  function removeUser(id: string): void {
+    if (phase !== "idle") return;
+    selectedUsers = selectedUsers.filter((user) => user.id !== id);
   }
 
   function selectUser(user: {
@@ -166,21 +229,26 @@
     photoURL?: string;
   }): void {
     if (phase !== "idle") return;
-    selectedConversation = null;
-    selectedUser = {
-      id: user.uid,
-      displayName: user.displayName || user.username || "Unknown",
-      avatar: user.photoURL,
-    };
-    searchUserId = user.uid;
-    searchUserDisplay = user.displayName || user.username || "Unknown";
+    const displayName = user.displayName || user.username || "Unknown";
+    if (!selectedUsers.some((entry) => entry.id === user.uid)) {
+      selectedUsers = [
+        ...selectedUsers,
+        { id: user.uid, displayName, avatar: user.photoURL },
+      ];
+    }
+    // Clear the field rather than parking the name in it: the chosen person is
+    // now shown as a chip, and leaving the input filled makes searching for the
+    // NEXT recipient a delete-first chore.
+    searchUserId = "";
+    searchUserDisplay = "";
+    searchResetKey++;
   }
 
   function clearDestination(): void {
     if (phase !== "idle") return;
     hapticService?.trigger("selection");
-    selectedConversation = null;
-    selectedUser = null;
+    selectedConversations = [];
+    selectedUsers = [];
     searchUserId = "";
     searchUserDisplay = "";
     searchResetKey++;
@@ -197,51 +265,121 @@
     return created.conversation.id;
   }
 
+  /**
+   * Deliver the attachment to one already-resolved conversation.
+   *
+   * Split out of send() so the multi-recipient loop has one place to call and
+   * one place to fail. `sequenceAttachment` is built ONCE by the caller: the
+   * short code is a network write, and minting a fresh one per recipient would
+   * scatter N codes for a single share.
+   */
+  async function deliverTo(
+    conversationId: string,
+    sequenceAttachment: ReturnType<typeof buildSequenceMessageAttachment> | null
+  ): Promise<void> {
+    if (sequenceAttachment) {
+      await messagingService.sendMessage({
+        conversationId,
+        content: message.trim(),
+        attachments: [sequenceAttachment],
+      });
+      return;
+    }
+
+    // The image path is a Storage upload, not a message write:
+    // IMessageImageSender owns finalization and clears staging itself, and it
+    // needs the conversation id up front. Fresh message/attachment ids per
+    // recipient - these identify a MESSAGE, and each recipient gets their own.
+    await getMessageImageSender().send({
+      conversationId,
+      messageId: crypto.randomUUID(),
+      attachmentId: crypto.randomUUID(),
+      file: (attachment as Extract<PendingMessageAttachment, { type: "image" }>)
+        .file,
+      content: message.trim(),
+    }).promise;
+  }
+
   async function send(): Promise<void> {
-    const conversation = selectedConversation;
-    const user = selectedUser;
-    if ((!conversation && !user) || phase !== "idle") return;
+    if (destinationCount === 0 || phase !== "idle") return;
+
+    const conversations = [...selectedConversations];
+    const users = [...selectedUsers];
 
     phase = "sending";
 
     try {
       await ensureGuestIdentity();
 
-      let conversationId: string;
-
+      // Short code first, exactly as before: creating the conversation and THEN
+      // failing would leave an empty conversation behind. Built once for the
+      // whole send - see deliverTo.
+      let sequenceAttachment: ReturnType<
+        typeof buildSequenceMessageAttachment
+      > | null = null;
       if (attachment.type === "sequence") {
-        // Short code first, exactly as before: creating the conversation and
-        // THEN failing would leave an empty conversation behind.
         const { code } = await getShortCodeManager().createShortCode(
           attachment.payload.sequence,
           { embedSequenceData: true }
         );
-        const sequenceAttachment = buildSequenceMessageAttachment(
+        sequenceAttachment = buildSequenceMessageAttachment(
           attachment.payload.sequence,
           code
         );
-        conversationId = await resolveConversationId(conversation, user);
-        await messagingService.sendMessage({
-          conversationId,
-          content: message.trim(),
-          attachments: [sequenceAttachment],
-        });
-      } else {
-        // The image path is a Storage upload, not a message write:
-        // IMessageImageSender owns finalization and clears staging itself, and
-        // it needs the conversation id up front.
-        conversationId = await resolveConversationId(conversation, user);
-        await getMessageImageSender().send({
-          conversationId,
-          messageId: attachment.messageId,
-          attachmentId: attachment.attachmentId,
-          file: attachment.file,
-          content: message.trim(),
-        }).promise;
+      }
+
+      // Sequential, not Promise.all. Each image recipient is a full upload of
+      // the same bytes; firing four at once on a phone's uplink makes all four
+      // slower and starves the rest of the app.
+      const sentTo: string[] = [];
+      const failures: string[] = [];
+      let firstError: unknown = null;
+
+      const deliverOne = async (
+        label: string,
+        resolve: () => Promise<string>
+      ): Promise<void> => {
+        try {
+          const id = await resolve();
+          await deliverTo(id, sequenceAttachment);
+          sentTo.push(id);
+        } catch (caught) {
+          failures.push(label);
+          firstError ??= caught;
+          console.error("[SendAttachment] Delivery failed:", caught);
+        }
+      };
+
+      for (const conversation of conversations) {
+        await deliverOne(conversationName(conversation), () =>
+          resolveConversationId(conversation, null)
+        );
+      }
+      for (const user of users) {
+        await deliverOne(user.displayName, () =>
+          resolveConversationId(null, user)
+        );
+      }
+
+      // Nobody got it. Rethrow the UNDERLYING error rather than a summary, so
+      // the report keeps the real cause ("permission denied") in
+      // technicalDetails instead of a sentence we wrote.
+      if (sentTo.length === 0) {
+        throw firstError ?? new Error("Couldn't send to anyone you picked.");
+      }
+
+      // Some got it, some did not. Do NOT re-send silently and do NOT discard
+      // the share: name who missed out, and let the completed ones stand.
+      if (failures.length > 0) {
+        toast.error(
+          failures.length === 1
+            ? `Sent, but ${failures[0]} didn't get it.`
+            : `Sent to ${sentTo.length}, but ${failures.length} didn't get it.`
+        );
       }
 
       hapticService?.trigger("success");
-      onSent(conversationId);
+      onSent(sentTo);
     } catch (caught) {
       const failure =
         caught instanceof Error ? caught : new Error(String(caught));
@@ -266,6 +404,17 @@
   }
 </script>
 
+<!--
+  The container lives on this wrapper, NOT on the sheet.
+
+  An element is never matched by the container query of the container it
+  establishes - only its descendants are. With `container-type` on the sheet
+  itself, every @container rule targeting `.send-attachment-sheet` (the column
+  template, the row template, the column gap) was silently dropped, and the
+  two-column layout only appeared because the descendant `grid-column: 2` rules
+  created IMPLICIT, auto-sized tracks. It looked right and was unsizable.
+-->
+<div class="sheet-shell">
 <div
   class="send-attachment-sheet"
   class:destination-selected={hasDestination}
@@ -317,7 +466,49 @@
     </div>
 
     <div class="selected-slot" aria-live="polite">
-      {#if hasDestination}
+      {#if destinationCount > 1}
+        <!-- Two or more: chips, so every recipient is visible and individually
+             removable. A single "3 people" summary hides WHO, which is the one
+             thing worth double-checking before sending a photo. -->
+        <div class="selected-destination selected-many">
+          <div class="destination-chips">
+            {#each destinationChips as chip (chip.key)}
+              <span class="destination-chip">
+                {#if chip.isGroup}
+                  <span class="chip-avatar group-fallback" aria-hidden="true">
+                    <i class="fas fa-user-group"></i>
+                  </span>
+                {:else}
+                  <RobustAvatar
+                    src={chip.avatar}
+                    name={chip.name}
+                    alt=""
+                    customSize={28}
+                  />
+                {/if}
+                <span class="chip-name">{chip.name}</span>
+                <button
+                  type="button"
+                  class="chip-remove"
+                  onclick={chip.remove}
+                  disabled={phase === "sending"}
+                  aria-label={`Remove ${chip.name}`}
+                >
+                  <i class="fas fa-xmark" aria-hidden="true"></i>
+                </button>
+              </span>
+            {/each}
+          </div>
+          <button
+            type="button"
+            class="clear-destination"
+            onclick={clearDestination}
+            disabled={phase === "sending"}
+          >
+            Clear
+          </button>
+        </div>
+      {:else if hasDestination}
         <div class="selected-destination">
           <div class="selected-avatar">
             {#if selectedConversationIsGroup && selectedConversation}
@@ -369,12 +560,18 @@
       {/if}
     </div>
 
-    {#if !hasDestination}
-      <div
-        class="destination-browser"
-        inert={phase === "sending"}
-        aria-label="Share destinations"
-      >
+    <!--
+      Rendered unconditionally, then hidden by CSS in the narrow layout once a
+      destination is chosen. The wide (two-column) layout keeps the list on
+      screen next to the chosen destination, so switching recipient is one tap
+      instead of Change-then-repick - and the sheet's column count no longer
+      changes on select, which would have moved every element on the page.
+    -->
+    <div
+      class="destination-browser"
+      inert={phase === "sending"}
+      aria-label="Share destinations"
+    >
         {#if recentConversations.length > 0}
           <div class="destination-group">
             <h4>Recent conversations</h4>
@@ -383,8 +580,8 @@
                 <ConversationItem
                   {conversation}
                   selectionMode
-                  selected={selectedConversation?.id === conversation.id}
-                  onclick={() => selectConversation(conversation)}
+                  selected={isConversationSelected(conversation.id)}
+                  onclick={() => toggleConversation(conversation)}
                 />
               {/each}
             </div>
@@ -405,12 +602,11 @@
               placeholder="Search by name or email"
               inlineResults
               {excludeUserIds}
-              autofocus={recentConversations.length === 0}
+              autofocus={recentConversations.length === 0 && !hasDestination}
             />
           {/key}
         </div>
       </div>
-    {/if}
   </section>
 
   <div class="message-section">
@@ -445,10 +641,17 @@
     <span>{phase === "sending" ? "Sending…" : sendLabel}</span>
   </button>
 </div>
+</div>
 
 <style>
-  .send-attachment-sheet {
+  .sheet-shell {
     container-type: inline-size;
+    display: grid;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .send-attachment-sheet {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     gap: 0.875rem;
@@ -611,6 +814,77 @@
       var(--theme-accent, var(--semantic-info)) 55%,
       var(--theme-stroke)
     );
+  }
+
+  .selected-many {
+    align-items: start;
+    padding-block: 0.5rem;
+  }
+
+  .destination-chips {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .destination-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    max-width: 100%;
+    padding: 0.25rem 0.25rem 0.25rem 0.3rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, var(--semantic-info)) 14%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent, var(--semantic-info)) 42%,
+        transparent
+      );
+    border-radius: 999px;
+  }
+
+  .chip-name {
+    overflow: hidden;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 0.875rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chip-remove {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    /* Below the 44px floor on purpose: this is a secondary control INSIDE a
+       chip, and the chip row sits beside a full-size Clear button that does
+       the same job. Sizing it to 44px would make three recipients wrap to
+       three lines. */
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    cursor: pointer;
+  }
+
+  .chip-remove:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-text) 12%, transparent);
+    color: var(--theme-text);
+  }
+
+  .chip-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .selected-avatar,
@@ -812,6 +1086,35 @@
     opacity: 0.45;
   }
 
+  /* Narrow layout: choosing a destination collapses the browser, as before. */
+  .destination-selected .destination-browser {
+    display: none;
+  }
+
+  /* ...which leaves the destination section short while it still holds the
+     sheet's 1fr row, so the space the list used to occupy became a void
+     between the recipients and the note. Hand the slack to the note instead.
+
+     Bounded by an explicit max-width rather than left to be overridden by the
+     two-column block: both selectors carry one class plus Svelte's scope
+     class, so they tie on specificity and the winner is decided by source
+     order alone. That tie resolved the wrong way here and silently flattened
+     the note in the wide layout. */
+  @container (max-width: 41.999rem) {
+    .destination-selected {
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .destination-selected .message-section {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .destination-selected .message-input {
+      max-height: none;
+      height: 100%;
+    }
+  }
+
   @container (min-width: 34rem) {
     .sequence-preview {
       padding: 0.875rem;
@@ -819,6 +1122,81 @@
 
     .destination-group {
       padding: 0.875rem;
+    }
+  }
+
+  /*
+    Two columns once the sheet itself is wide enough to hold them.
+    A CONTAINER query, not a media query: this sheet lives in a drawer whose
+    width is set by --sheet-width, so viewport width says nothing useful about
+    how much room it actually has.
+
+    42rem (672px) is where the split starts paying off, and it lands on the
+    real hardware seams:
+      - Galaxy Z Fold unfolded is a 707x823 CSS viewport (1856x2160 @ 420dpi),
+        under the 768px mobile seam, so the drawer is already full-width -
+        44.2rem of sheet, and previously one narrow column down the middle.
+      - 2560 desktop -> drawer 717px (44.8rem) -> two columns.
+      - 3840 desktop -> drawer 1024px (64rem)  -> two columns.
+      - 1920 desktop -> drawer  537px (33.6rem) -> stays single, correctly.
+  */
+  @container (min-width: 42rem) {
+    .send-attachment-sheet {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      column-gap: 1rem;
+    }
+
+    /* Left column: what you are sending, and the act of sending it. */
+    .sequence-preview {
+      grid-row: 1;
+      grid-column: 1;
+      /* Stacked, so the image gets the column's full width instead of the
+         96px thumbnail slot it is squeezed into in the single-column form. */
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+    }
+
+    .preview-thumbnail {
+      /* Not 1:1. A phone screenshot is 9:19.5 and a 1:1 box letterboxed it
+         into two thick bars; 4:3 keeps landscape and portrait both readable
+         without the preview eating the whole column. Capped because at a
+         1024px drawer an uncapped 4:3 box is 324px tall and turns the preview
+         into the subject of the screen instead of a confirmation of it. */
+      aspect-ratio: 4 / 3;
+      max-height: 16rem;
+    }
+
+    .message-section {
+      grid-row: 2;
+      grid-column: 1;
+      /* Rows, so the textarea can take the slack. Pinning the send button to
+         the bottom of a tall column otherwise leaves a void between it and the
+         note - the space exists either way, so spend it on the input. */
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .message-input {
+      max-height: none;
+      height: 100%;
+    }
+
+    .send-button {
+      grid-row: 3;
+      grid-column: 1;
+      align-self: end;
+    }
+
+    /* Right column: who it goes to, full height, always visible. */
+    .destination-section,
+    .destination-selected .destination-section {
+      grid-row: 1 / -1;
+      grid-column: 2;
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .destination-selected .destination-browser {
+      display: block;
     }
   }
 
@@ -832,6 +1210,18 @@
       grid-template-columns: 2.5rem minmax(0, 1fr);
       gap: 0.5rem;
       padding: 0.25rem 0.5rem;
+    }
+
+    /* A wide-AND-short window (e.g. 2560x400) satisfies the two-column
+       container query as well as this block. These undo the parts of it that
+       assume vertical room; the grid-area overrides below do the rest. */
+    .preview-thumbnail {
+      aspect-ratio: 1;
+      max-height: none;
+    }
+
+    .message-input {
+      height: auto;
     }
 
     .preview-kicker,

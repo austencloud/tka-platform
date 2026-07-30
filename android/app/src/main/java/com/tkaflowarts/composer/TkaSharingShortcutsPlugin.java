@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.util.Log;
 
 import androidx.core.app.Person;
 import androidx.core.content.pm.ShortcutInfoCompat;
@@ -44,6 +45,8 @@ public class TkaSharingShortcutsPlugin extends Plugin {
      * one of the three means targets silently never appear, with no error
      * anywhere. A contract test pins all three (Task 3).
      */
+    private static final String TAG = "TkaSharingShortcuts";
+
     private static final String CATEGORY = "com.tkaflowarts.composer.category.SHARE_TARGET";
 
     /** The share sheet displays about four. Pushing more is wasted work. */
@@ -142,6 +145,19 @@ public class TkaSharingShortcutsPlugin extends Plugin {
         JSObject result = new JSObject();
         Intent intent = getActivity() == null ? null : getActivity().getIntent();
         String id = intent == null ? null : intent.getStringExtra(Intent.EXTRA_SHORTCUT_ID);
+
+        // Diagnostic, deliberately kept: whether the Sharesheet actually sets
+        // EXTRA_SHORTCUT_ID on a Direct Share tap is the one assumption in the
+        // design that no unit test can check and that adb cannot reproduce
+        // (am start cannot delegate a MediaStore read grant, so a simulated
+        // image share dies in the capgo plugin before this is ever called).
+        // When a target tap lands in the picker instead of a conversation,
+        // this line says immediately whether the id was missing or whether it
+        // arrived and something downstream dropped it.
+        Log.i(TAG, "consumeLaunchShortcutId: action=" + (intent == null ? "no-intent" : intent.getAction())
+            + " shortcutId=" + id
+            + " extras=" + (intent == null || intent.getExtras() == null
+                ? "none" : intent.getExtras().keySet()));
 
         if (id != null && intent != null) {
             intent.removeExtra(Intent.EXTRA_SHORTCUT_ID);

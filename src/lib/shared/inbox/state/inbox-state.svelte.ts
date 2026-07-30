@@ -280,10 +280,16 @@ class InboxState {
     this.shareAttachment = attachment;
     this.shareAttachmentNote = options.note ?? null;
     this.shareAttachmentReceiptId = options.receiptId ?? null;
-    this.shareAttachmentConversationId = options.conversationId ?? null;
     // Set by a Direct Share tap: the send sheet opens with this conversation
     // already chosen, so the user's next tap is Send.
-    this.pendingConversationId = options.conversationId ?? null;
+    this.shareAttachmentConversationId = options.conversationId ?? null;
+    // NOT pendingConversationId. That field means "navigate to this thread",
+    // and InboxDrawer's effect (InboxDrawer.svelte:84-92) acts on it 50ms after
+    // this returns: it calls handleConversationSelect, which switches
+    // currentView to "thread" and strands the attachment we just staged. The
+    // send sheet reads shareAttachmentConversationId instead, precisely so
+    // pre-selecting a destination cannot collide with navigating to one.
+    this.pendingConversationId = null;
     this.pendingNotificationId = null;
     this.selectedConversation = null;
     this.messages = [];
@@ -300,12 +306,24 @@ class InboxState {
     this.openAttachmentShare({ type: "sequence", payload });
   }
 
-  completeAttachmentShare(conversationId: string) {
+  /**
+   * @param conversationId The thread to open afterwards, or null to return to
+   * the conversation list. Null is the multi-recipient case: a share that went
+   * to four people has no single "the" thread, and picking one arbitrarily
+   * hides the other three.
+   */
+  completeAttachmentShare(conversationId: string | null) {
     this.shareAttachment = null;
     this.shareAttachmentNote = null;
     this.shareAttachmentReceiptId = null;
     this.shareAttachmentConversationId = null;
-    this.openToConversationById(conversationId);
+    if (conversationId) {
+      this.openToConversationById(conversationId);
+      return;
+    }
+    this.currentView = "list";
+    this.selectedConversation = null;
+    this.messages = [];
   }
 
   /**

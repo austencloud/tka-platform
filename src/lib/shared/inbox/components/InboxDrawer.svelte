@@ -242,10 +242,15 @@
     inboxState.cancelSequenceShare();
   }
 
-  async function handleSequenceSent(conversationId: string) {
+  async function handleSequenceSent(conversationIds: string[]) {
     // Read the id BEFORE completing — completeAttachmentShare clears it.
     const receiptId = inboxState.shareAttachmentReceiptId;
-    inboxState.completeAttachmentShare(conversationId);
+    // Open the thread only when there is exactly one, since that is the one
+    // the user is now "in". Dropping them into an arbitrary one of four is
+    // worse than returning to the list that shows all four updated.
+    inboxState.completeAttachmentShare(
+      conversationIds.length === 1 ? conversationIds[0]! : null
+    );
 
     // Null for an ordinary in-app share; there is no intake record behind it.
     if (!receiptId) return;

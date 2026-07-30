@@ -78,4 +78,20 @@ describe("inbox attachment share", () => {
     inboxState.completeAttachmentShare("conversation-1");
     expect(inboxState.shareAttachmentReceiptId).toBeNull();
   });
+
+  it("pre-selects a Direct Share destination without asking to navigate to it", () => {
+    // The two fields mean different things and only one of them is safe here.
+    // InboxDrawer.svelte:84-92 watches pendingConversationId and, 50ms later,
+    // calls handleConversationSelect - which switches currentView to "thread"
+    // and strands the attachment this call just staged. Writing BOTH fields
+    // (the shipped 2026-07-29 behaviour) meant a successful Direct Share tap
+    // dumped the user in the conversation with the photo gone.
+    inboxState.openAttachmentShare(imageAttachment(), {
+      conversationId: "conversation-1",
+    });
+
+    expect(inboxState.shareAttachmentConversationId).toBe("conversation-1");
+    expect(inboxState.pendingConversationId).toBeNull();
+    expect(inboxState.currentView).toBe("send-attachment");
+  });
 });
