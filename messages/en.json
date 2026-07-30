@@ -794,8 +794,6 @@
   "hall_of_shame_verifying": "Verifying...",
   "hall_of_shame_vote_for_this": "Vote for this",
   "landing_infinite_steps": "{count} steps",
-  "landing_spinner_copy_error": "Sequence data could not be copied.",
-  "landing_spinner_copy_sequence": "Copy sequence data",
   "landing_spinner_generated": "Generated",
   "landing_spinner_home": "Home",
   "landing_spinner_hide_history": "Hide sequence history",

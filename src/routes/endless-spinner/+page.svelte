@@ -25,7 +25,6 @@
   // Local extracted components and services
   import SpinnerControls from "./components/SpinnerControls.svelte";
   import SpinnerHistoryPanel from "./components/SpinnerHistoryPanel.svelte";
-  import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
   import SpinnerNowPlaying from "./components/SpinnerNowPlaying.svelte";
   import SpinnerStepLane from "./components/SpinnerStepLane.svelte";
   import {
@@ -49,10 +48,8 @@
   let playback = $derived(session?.playback ?? null);
   let animationReady = $state(false);
   let animationError = $state(false);
-  let isChainingEnabled = $state(true);
 
   // UI state
-  let showDebugPanel = $state(false);
   let viewMode = $state<"strip" | "grid">("strip");
 
   // Side-by-side tiers size the square canvas hero from the stage row's height,
@@ -155,12 +152,6 @@
   let currentStepNumber = $derived(
     Math.floor(playback?.animationState?.currentStep ?? 0)
   );
-  let debugStats = $derived.by(() => {
-    const swapCount = playback?.sequenceSwapCount ?? 0;
-    if (swapCount === 0) return null;
-    return session?.spinnerOrchestrator.getStats() ?? null;
-  });
-
   $effect(() => {
     const swapCount = playback?.sequenceSwapCount ?? 0;
     const currentSequence = playback?.currentSequence ?? null;
@@ -171,10 +162,6 @@
       spinnerMode === "infinite" && session
         ? session.infiniteGenerator.getInfoForSequence(currentSequence)
         : null;
-  });
-
-  $effect(() => {
-    playback?.setChainingEnabled(isChainingEnabled);
   });
 
   onMount(async () => {
@@ -250,26 +237,6 @@
 
   function handleSkip() {
     playback?.skip();
-  }
-
-  async function handleCopy(): Promise<boolean> {
-    if (!playback) return false;
-
-    const result = await playback.copyForAI();
-    if (result.success) return true;
-
-    const failure = result.error ?? new Error("Clipboard write failed");
-    getErrorHandler().showUserError({
-      message: t("landing_spinner_copy_error"),
-      technicalDetails: failure.message,
-      error: failure,
-      severity: "error",
-      context: {
-        module: "endless-spinner",
-        action: "copySequenceData",
-      },
-    });
-    return false;
   }
 
   function handleTogglePause() {
@@ -477,25 +444,6 @@
       {/if}
     </main>
 
-    <!-- Debug toggle -->
-    <button
-      type="button"
-      class="debug-toggle"
-      onclick={() => (showDebugPanel = !showDebugPanel)}
-    >
-      {showDebugPanel ? "Hide Debug" : "Debug"}
-    </button>
-
-    <!-- Debug panel -->
-    {#if showDebugPanel}
-      <EndlessSpinnerDebugPanel
-        sequenceHistory={playback?.history ?? []}
-        stats={debugStats}
-        gridMode={playback?.gridMode ?? null}
-        onCopy={handleCopy}
-        bind:isChainingEnabled
-      />
-    {/if}
   </div>
 </div>
 
@@ -871,32 +819,6 @@
     border: 0;
   }
 
-  /* Debug toggle */
-  .debug-toggle {
-    position: fixed;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    padding: 0.75rem 1.25rem;
-    min-height: var(--min-touch-target, 44px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 0.5rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all var(--duration-normal);
-  }
-
-  .debug-toggle:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
-  }
-
-  .debug-toggle:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
   /* Responsive */
   @media (min-width: 1050px) {
     /* Compact product header: the stage owns the fold, so the title stops
@@ -1159,16 +1081,6 @@
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
-    /* Into the docked bar's free right end. At `bottom: 5.5rem` it floated
-       directly on top of the moving read-ahead strip and covered a cell; the
-       transport's buttons are centred, so the space right of Skip is empty. */
-    .debug-toggle {
-      bottom: calc(0.75rem + env(safe-area-inset-bottom));
-      right: 0.5rem;
-      z-index: 6;
-      padding: 0.375rem 0.75rem;
-      font-size: 0.6875rem;
-    }
   }
 
   @media (min-width: 700px) and (max-height: 600px) {
