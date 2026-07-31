@@ -15,7 +15,7 @@ export type ThumbnailVariant = "gallery" | "wordcard";
  * This token belongs in every cache identity, including the cloud filename.
  * Otherwise a corrected renderer can keep receiving an older image forever.
  */
-export const THUMBNAIL_RENDERER_VERSION = 2;
+export const THUMBNAIL_RENDERER_VERSION = 3;
 
 export interface ThumbnailVisibilitySettings {
   showTKA?: boolean;
@@ -27,7 +27,7 @@ export interface ThumbnailVisibilitySettings {
   showQRCode?: boolean;
   /** Render as hand path visualization (HAND props, float arrows, no TKA) */
   handPathMode?: boolean;
-  /** Render LOOP mandalas in empty cells */
+  /** Render sequence mandalas in empty cells */
   showMandala?: boolean;
   /** Show blue motion (prop + arrow). Default: true */
   showBlueMotion?: boolean;
@@ -264,7 +264,7 @@ function checkInputUsesDefaults(
       showNonRadialPoints: false,
       handPointVisibility: "all" as const,
       showQRCode: false, // QR only in viewer/wordcard contexts, never grid cards
-      showMandala: true, // Product default: LOOP mandalas fill empty cells
+      showMandala: true, // Product default: sequence mandalas fill empty cells
     };
     // If any visibility setting differs from default, not using defaults
     if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
@@ -332,7 +332,7 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     showQRCode: input.visibility?.showQRCode,
     // Hand path visualization mode
     handPathMode: input.visibility?.handPathMode,
-    // LOOP mandalas in empty cells
+    // Sequence mandalas in empty cells
     showMandala: input.visibility?.showMandala,
     // Motion visibility (blue/red hand filtering)
     showBlueMotion: input.visibility?.showBlueMotion,

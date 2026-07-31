@@ -314,7 +314,10 @@ export async function paintCardFrontChrome(
     await deps.renderQRCode(ctx);
   }
 
-  if (options.visibilityOverrides?.showMandala && sequence.loopType) {
+  // The live ChoreoCard can draw a path mandala for any renderable sequence.
+  // Keep baked gallery/export images in parity instead of dropping the mandala
+  // just because the sequence is not classified as a LOOP.
+  if (options.visibilityOverrides?.showMandala) {
     await deps.renderMandalas(ctx);
   }
 

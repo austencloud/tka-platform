@@ -367,7 +367,7 @@ export class ThumbnailRenderer {
         showQRCode: input.visibility?.showQRCode ?? false,
         // Hand path visualization mode
         handPathMode: input.visibility?.handPathMode ?? false,
-        // LOOP mandalas in empty cells
+        // Sequence mandalas in empty cells
         showMandala: input.visibility?.showMandala ?? false,
       },
     };

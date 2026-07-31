@@ -83,7 +83,7 @@ export interface SequenceExportOptions {
     showQRCode?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
     handPathMode?: boolean;
-    /** Render LOOP mandalas in empty cells */
+    /** Render sequence mandalas in empty cells */
     showMandala?: boolean;
   };
 

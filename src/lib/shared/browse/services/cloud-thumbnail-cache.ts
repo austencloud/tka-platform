@@ -7,7 +7,7 @@
  *
  * Storage structure:
  * thumbnails/{variant}/{propType}/{sequenceName}_{id}_r{renderer}_{mode}.webp
- * Example: thumbnails/gallery/club/Butterfly_public-1_r2_dark.webp
+ * Example: thumbnails/gallery/club/Butterfly_public-1_r3_dark.webp
  *
  * This enables a "lazy generation" pattern where:
  * 1. First user to view a prop/sequence combo renders it locally
