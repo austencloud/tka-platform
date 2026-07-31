@@ -932,8 +932,8 @@
         Quantized Field Theory · Charlie Cushing, 2011
       </p>
       <p class="landing-lede">
-        Two flowers, spun together, draw a mandala. This reads them as poi
-        notation.
+        Pick a flower for each hand and set the timing between them. Every step
+        gets written out in Charlie's notation.
       </p>
 
       <div class="landing-actions">
@@ -1304,9 +1304,9 @@
       As published, the direction column has two variants: Charlie's, in which a
       direction that does not land on the eight-point compass is written <em
         >n</em
-      >, and Drex's, in which direction is always a right angle to the tether
-      and every cell resolves. The guide uses Drex's; the instrument offers
-      both.
+      >, and Drex's, in which direction is always a right angle to the tether.
+      Everything here reads Drex's, because every cell resolves under it —
+      Charlie's leaves gaps. The model still implements both.
     </p>
 
     <button type="button" class="close" onclick={() => (showInfo = false)}
