@@ -74,20 +74,14 @@ describe("LibraryBatchOperations delete counter integrity", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     firestoreMocks.updateDoc.mockResolvedValue(undefined);
-    firestoreMocks.deleteSequenceCompletely.mockResolvedValue({
-      ownerDeleted: true,
-    });
-    // "already-missing" is absent from this snapshot, so it never reaches a
-    // transaction and never counts against the profile total.
-    firestoreMocks.getDocs.mockResolvedValue({
-      docs: [
-        { id: "private-1", data: () => ({ visibility: "private" }) },
-        { id: "public-1", data: () => ({ visibility: "public" }) },
-      ],
-    });
+    firestoreMocks.deleteSequenceCompletely.mockImplementation(
+      async (_firestore, _userId, sequenceId) => ({
+        ownerDeleted: sequenceId !== "already-missing",
+      })
+    );
   });
 
-  it("gives each stored sequence its own transaction and skips ones already gone", async () => {
+  it("checks every requested id so an owner-missing public orphan can still be removed", async () => {
     const results = await makeOperations().operations.deleteSequences([
       "private-1",
       "public-1",
@@ -96,10 +90,23 @@ describe("LibraryBatchOperations delete counter integrity", () => {
 
     expect(
       firestoreMocks.deleteSequenceCompletely.mock.calls.map((call) => call[2])
-    ).toEqual(["private-1", "public-1"]);
+    ).toEqual(["private-1", "public-1", "already-missing"]);
     expect(results).toEqual([
-      { sequenceId: "private-1", status: "ok" },
-      { sequenceId: "public-1", status: "ok" },
+      {
+        sequenceId: "private-1",
+        status: "ok",
+        deletion: { ownerDeleted: true },
+      },
+      {
+        sequenceId: "public-1",
+        status: "ok",
+        deletion: { ownerDeleted: true },
+      },
+      {
+        sequenceId: "already-missing",
+        status: "ok",
+        deletion: { ownerDeleted: false },
+      },
     ]);
   });
 
@@ -125,7 +132,10 @@ describe("LibraryBatchOperations delete counter integrity", () => {
       .mockResolvedValueOnce({ ownerDeleted: true })
       .mockResolvedValueOnce({ ownerDeleted: false });
 
-    await makeOperations().operations.deleteSequences(["private-1", "public-1"]);
+    await makeOperations().operations.deleteSequences([
+      "private-1",
+      "public-1",
+    ]);
 
     expect(firestoreMocks.updateDoc).toHaveBeenCalledWith(
       { path: "users/user-1" },

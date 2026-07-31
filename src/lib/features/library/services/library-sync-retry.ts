@@ -22,6 +22,7 @@ import { IncompleteWordError } from "$lib/shared/foundation/services/word-derive
 import { SequenceNormalizationError } from "$lib/shared/library/services/sequence-persistence-normalizer";
 import { PublicDuplicateError } from "$lib/shared/library/services/public-sequence-persister";
 import { ContentModerationError } from "$lib/features/moderation/errors/content-moderation-error";
+import { isSequenceDeletionIntended } from "$lib/shared/library/services/sequence-persistence-coordinator";
 
 export type SequenceSyncStatus = "synced" | "pending" | "failed";
 
@@ -131,6 +132,7 @@ export async function retryPendingSyncs(): Promise<void> {
     const repo = getLibraryRepository();
 
     for (const sequence of stale) {
+      if (isSequenceDeletionIntended(sequence.id)) continue;
       const wasAlreadyFailed = sequence.syncStatus === "failed";
       try {
         await repo.saveSequenceWithMetadata(sequence, {
@@ -158,7 +160,8 @@ export async function retryPendingSyncs(): Promise<void> {
             await db.sequences.update(sequence.id, {
               syncStatus: "failed",
               pendingSyncMetadata: {
-                visibility: sequence.pendingSyncMetadata?.visibility ?? "public",
+                visibility:
+                  sequence.pendingSyncMetadata?.visibility ?? "public",
                 notes: sequence.pendingSyncMetadata?.notes ?? "",
                 blockedReason: permanent.code,
               },

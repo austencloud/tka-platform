@@ -86,6 +86,18 @@ export async function deleteSequence(id: string): Promise<void> {
   }
 }
 
+export async function deleteSequences(ids: readonly string[]): Promise<void> {
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  if (uniqueIds.length === 0) return;
+
+  try {
+    await db.sequences.bulkDelete(uniqueIds);
+  } catch (error) {
+    console.error("❌ Failed to delete sequences:", error);
+    throw error;
+  }
+}
+
 export async function loadAllSequences(): Promise<SequenceData[]> {
   return getAllSequences();
 }
@@ -107,7 +119,9 @@ export async function searchSequences(query: string): Promise<SequenceData[]> {
   }
 }
 
-export async function savePictograph(pictograph: PictographData): Promise<void> {
+export async function savePictograph(
+  pictograph: PictographData
+): Promise<void> {
   try {
     await db.pictographs.put(pictograph);
   } catch (error) {
@@ -116,7 +130,9 @@ export async function savePictograph(pictograph: PictographData): Promise<void> 
   }
 }
 
-export async function loadPictograph(id: string): Promise<PictographData | null> {
+export async function loadPictograph(
+  id: string
+): Promise<PictographData | null> {
   try {
     const pictograph = await db.pictographs.get(id);
     return pictograph ?? null;
@@ -126,7 +142,9 @@ export async function loadPictograph(id: string): Promise<PictographData | null>
   }
 }
 
-export async function getPictographsByLetter(letter: string): Promise<PictographData[]> {
+export async function getPictographsByLetter(
+  letter: string
+): Promise<PictographData[]> {
   try {
     return await db.pictographs.where("letter").equals(letter).toArray();
   } catch (error) {
@@ -167,7 +185,10 @@ export async function getActiveTab(): Promise<TabId | null> {
   }
 }
 
-export async function saveTabState(tabId: TabId, state: unknown): Promise<void> {
+export async function saveTabState(
+  tabId: TabId,
+  state: unknown
+): Promise<void> {
   try {
     await saveUserWork(UserWorkType.TAB_STATE, tabId, state);
   } catch (error) {
@@ -176,7 +197,9 @@ export async function saveTabState(tabId: TabId, state: unknown): Promise<void> 
   }
 }
 
-export async function loadTabState<T = unknown>(tabId: TabId): Promise<T | null> {
+export async function loadTabState<T = unknown>(
+  tabId: TabId
+): Promise<T | null> {
   try {
     return (await loadUserWork(UserWorkType.TAB_STATE, tabId)) as T | null;
   } catch (error) {
@@ -185,7 +208,9 @@ export async function loadTabState<T = unknown>(tabId: TabId): Promise<T | null>
   }
 }
 
-export async function saveBrowseState(state: CompleteBrowseState): Promise<void> {
+export async function saveBrowseState(
+  state: CompleteBrowseState
+): Promise<void> {
   try {
     await saveUserWork(UserWorkType.BROWSE_STATE, "browse", state);
   } catch (error) {
@@ -280,13 +305,7 @@ export async function clearAllData(): Promise<void> {
   try {
     await db.transaction(
       "rw",
-      [
-        db.sequences,
-        db.pictographs,
-        db.userWork,
-        db.userProjects,
-        db.settings,
-      ],
+      [db.sequences, db.pictographs, db.userWork, db.userProjects, db.settings],
       async () => {
         await db.sequences.clear();
         await db.pictographs.clear();

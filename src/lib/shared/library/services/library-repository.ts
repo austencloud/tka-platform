@@ -77,6 +77,17 @@ import {
   notifyLibrarySequenceAdded,
   notifyLibrarySequenceUpdated,
 } from "$lib/shared/library/library-events";
+import { removeSavedSequenceIds } from "$lib/shared/library/services/saved-sequence-ledger";
+import {
+  captureEvent,
+  captureException,
+} from "$lib/shared/analytics/services/posthog";
+import {
+  isSequenceDeletionIntended,
+  markSequenceLocalDeletionComplete,
+  runSequencePermanentDeletion,
+  runSequencePersistenceMutation,
+} from "$lib/shared/library/services/sequence-persistence-coordinator";
 import {
   LibraryRecycleBin,
   type RestoreSequenceResult,
@@ -755,10 +766,23 @@ export class LibraryRepository {
       tags: metadata.tags,
     };
 
-    return this.saveSequence(enrichedSequence, {
-      visibility: metadata.visibility,
-      notes: metadata.notes,
-    });
+    const persist = () => {
+      if (isSequenceDeletionIntended(sequence.id)) {
+        throw new LibraryError(
+          "Sequence is being permanently deleted",
+          "NOT_FOUND",
+          sequence.id
+        );
+      }
+      return this.saveSequence(enrichedSequence, {
+        visibility: metadata.visibility,
+        notes: metadata.notes,
+      });
+    };
+
+    return sequence.id
+      ? runSequencePersistenceMutation(sequence.id, persist)
+      : persist();
   }
 
   /**
@@ -1028,72 +1052,7 @@ export class LibraryRepository {
   }
 
   async deleteSequence(sequenceId: string): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const existing = await this.getSequence(sequenceId);
-
-    if (!existing) {
-      return; // Already deleted
-    }
-
-    // Fire-and-forget - deletes the public index doc so the card disappears
-    // from the community gallery on next load. Not awaited because the gallery
-    // only refreshes on an explicit reload anyway; awaiting it just slows down
-    // the delete. Errors are logged but not rethrown.
-    if (existing.visibility === "public" && this.publicIndexSyncer) {
-      this.publicIndexSyncer
-        .removeFromPublicIndex(sequenceId)
-        .catch((error) => {
-          this.reportError(
-            "Sequence deleted, but it may still appear in the community gallery.",
-            error,
-            "public-index-remove",
-            { sequenceId },
-            "warning"
-          );
-        });
-    } else if (existing.visibility === "public" && !this.publicIndexSyncer) {
-      console.warn(
-        "[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT be removed from the public gallery.",
-        { sequenceId }
-      );
-    }
-
-    // The private document and its denormalized profile count are one
-    // invariant. Commit them together so an offline transition or auth race
-    // cannot delete the sequence while leaving the count unchanged.
-    const deleteBatch = writeBatch(firestore);
-    deleteBatch.delete(doc(firestore, getUserSequencePath(userId, sequenceId)));
-    deleteBatch.set(
-      doc(firestore, `users/${userId}`),
-      {
-        sequenceCount: increment(-1),
-        lastActivityDate: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    // Await the local write so callers can safely reload data immediately after.
-    // trackWrite queues to Firestore's local cache first when persistence is
-    // available, so this does not wait for a server round trip.
-    try {
-      await trackWrite(() => deleteBatch.commit(), "library");
-    } catch (error) {
-      // Surface the failure instead of swallowing it. Callers optimistically
-      // remove the card and show a success toast; if the delete never landed,
-      // that fakes success and the doc reappears on the next reload. Rethrow so
-      // the caller can show an error and keep the card.
-      this.reportError(
-        "Failed to delete sequence. It may reappear on refresh.",
-        error,
-        "delete-sequence",
-        { sequenceId }
-      );
-      throw error;
-    }
-
-    // Notify listeners so caches can remove the entry immediately (success only)
-    notifyLibraryMutated(sequenceId);
+    await this.deleteSequences([sequenceId]);
   }
 
   async getSequences(
@@ -1527,7 +1486,116 @@ export class LibraryRepository {
   // ============================================================
 
   async deleteSequences(sequenceIds: string[]): Promise<BatchSequenceResult[]> {
-    return this.batchOps.deleteSequences(sequenceIds);
+    const uniqueIds = [...new Set(sequenceIds.filter(Boolean))];
+    if (uniqueIds.length === 0) return [];
+
+    return runSequencePermanentDeletion(uniqueIds, () =>
+      this.performPermanentDeletion(uniqueIds)
+    );
+  }
+
+  private async performPermanentDeletion(
+    uniqueIds: string[]
+  ): Promise<BatchSequenceResult[]> {
+    const userId = authState.effectiveUserId;
+    const cloudAttempted = !!userId;
+    const accountTier = authState.isFullAccount ? "account" : "guest";
+    captureEvent("library_sequence_delete_started", {
+      sequence_count: uniqueIds.length,
+      cloud_attempted: cloudAttempted,
+      account_tier: accountTier,
+    });
+
+    let cloudResults: BatchSequenceResult[] = [];
+    if (cloudAttempted) {
+      try {
+        cloudResults = await this.batchOps.deleteSequences(uniqueIds);
+      } catch (error) {
+        captureEvent("library_sequence_delete_failed", {
+          sequence_count: uniqueIds.length,
+          cloud_attempted: true,
+          account_tier: accountTier,
+          failure_stage: "cloud",
+        });
+        captureException(error, {
+          module: "library",
+          action: "delete-sequences",
+          failure_stage: "cloud",
+          sequence_count: uniqueIds.length,
+        });
+        throw error;
+      }
+    }
+
+    try {
+      if (typeof window !== "undefined") {
+        const { deleteSequences: deleteLocalSequences } =
+          await import("$lib/shared/persistence/services/dexie-persistence-service");
+        await deleteLocalSequences(uniqueIds);
+      }
+      removeSavedSequenceIds(userId, uniqueIds);
+      markSequenceLocalDeletionComplete(uniqueIds);
+    } catch (error) {
+      captureEvent("library_sequence_delete_failed", {
+        sequence_count: uniqueIds.length,
+        cloud_attempted: cloudAttempted,
+        account_tier: accountTier,
+        failure_stage: "local",
+      });
+      captureException(error, {
+        module: "library",
+        action: "delete-sequences",
+        failure_stage: "local",
+        sequence_count: uniqueIds.length,
+      });
+
+      const message = authState.isFullAccount
+        ? "The sequence was deleted from your account, but its offline copy remains on this device."
+        : "The sequence could not be deleted from this device.";
+      this.reportError(
+        message,
+        error,
+        "delete-sequences-local",
+        { sequenceCount: uniqueIds.length },
+        authState.isFullAccount ? "warning" : "error"
+      );
+      throw new LibraryError(
+        "Failed to delete local sequences",
+        "PERSIST_FAILED"
+      );
+    }
+
+    // Cloud-backed deletes already emitted this event. Repeating it is safe,
+    // and it is required for guest-only rows that never reached Firestore.
+    for (const sequenceId of uniqueIds) {
+      notifyLibraryMutated(sequenceId);
+    }
+
+    captureEvent("library_sequence_delete_completed", {
+      sequence_count: uniqueIds.length,
+      cloud_attempted: cloudAttempted,
+      cloud_completed_count: cloudResults.length,
+      owner_deleted_count: cloudResults.filter(
+        (result) => result.deletion?.ownerDeleted
+      ).length,
+      public_deleted_count: cloudResults.filter(
+        (result) => result.deletion?.publicDeleted
+      ).length,
+      hash_claims_deleted_count: cloudResults.reduce(
+        (count, result) => count + (result.deletion?.claimsDeleted ?? 0),
+        0
+      ),
+      collections_updated_count: cloudResults.reduce(
+        (count, result) => count + (result.deletion?.collectionsUpdated ?? 0),
+        0
+      ),
+      local_deleted_count: uniqueIds.length,
+      account_tier: accountTier,
+    });
+
+    return cloudAttempted
+      ? cloudResults
+      : uniqueIds.map((sequenceId) => ({ sequenceId, status: "ok" as const }));
   }
 
   async moveToCollection(

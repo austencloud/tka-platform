@@ -14,7 +14,13 @@ const firestoreMocks = vi.hoisted(() => {
     updateDoc: vi.fn(),
     firestoreGet: vi.fn(),
     notifyLibrarySequenceUpdated: vi.fn(),
+    notifyLibraryMutated: vi.fn(),
     showUserError: vi.fn(),
+    deleteSequences: vi.fn(),
+    deleteLocalSequences: vi.fn(),
+    removeSavedSequenceIds: vi.fn(),
+    captureEvent: vi.fn(),
+    captureException: vi.fn(),
   };
 });
 
@@ -44,6 +50,7 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
   authState: {
     effectiveUserId: "user-1",
     user: { uid: "user-1", displayName: "Test User" },
+    isFullAccount: true,
   },
 }));
 vi.mock("$lib/shared/application/get-error-handler", () => ({
@@ -92,7 +99,7 @@ vi.mock("$lib/shared/library/get-tag-migrator", () => ({
     vi.fn().mockResolvedValue({ sequenceTags: [], tagIds: [] }),
 }));
 vi.mock("$lib/shared/library/library-events", () => ({
-  notifyLibraryMutated: vi.fn(),
+  notifyLibraryMutated: firestoreMocks.notifyLibraryMutated,
   notifyLibrarySequenceAdded: vi.fn(),
   notifyLibrarySequenceUpdated: firestoreMocks.notifyLibrarySequenceUpdated,
 }));
@@ -100,7 +107,19 @@ vi.mock("$lib/shared/library/services/library-recycle-bin", () => ({
   LibraryRecycleBin: class {},
 }));
 vi.mock("$lib/shared/library/services/library-batch-operations", () => ({
-  LibraryBatchOperations: class {},
+  LibraryBatchOperations: class {
+    deleteSequences = firestoreMocks.deleteSequences;
+  },
+}));
+vi.mock("$lib/shared/persistence/services/dexie-persistence-service", () => ({
+  deleteSequences: firestoreMocks.deleteLocalSequences,
+}));
+vi.mock("$lib/shared/library/services/saved-sequence-ledger", () => ({
+  removeSavedSequenceIds: firestoreMocks.removeSavedSequenceIds,
+}));
+vi.mock("$lib/shared/analytics/services/posthog", () => ({
+  captureEvent: firestoreMocks.captureEvent,
+  captureException: firestoreMocks.captureException,
 }));
 
 import { LibraryRepository } from "$lib/shared/library/services/library-repository";
@@ -133,6 +152,19 @@ describe("LibraryRepository.saveSequence atomic persistence", () => {
       docs: [],
     });
     firestoreMocks.batch.commit.mockResolvedValue(undefined);
+    firestoreMocks.deleteSequences.mockResolvedValue([
+      {
+        sequenceId: "sequence-1",
+        status: "ok",
+        deletion: {
+          ownerDeleted: true,
+          publicDeleted: true,
+          claimsDeleted: 1,
+          collectionsUpdated: 2,
+        },
+      },
+    ]);
+    firestoreMocks.deleteLocalSequences.mockResolvedValue(undefined);
   });
 
   it("commits the sequence and profile counter in one batch", async () => {
@@ -224,29 +256,51 @@ describe("LibraryRepository.saveSequence atomic persistence", () => {
     expect(firestoreMocks.batch.commit).not.toHaveBeenCalled();
   });
 
-  it("commits a sequence deletion and profile decrement in one batch", async () => {
-    firestoreMocks.firestoreGet.mockResolvedValue({
-      ...makeSequence(),
-      visibility: "private",
-      ownerId: "user-1",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+  it("uses the complete cloud path and removes the durable local copy", async () => {
     const repository = new LibraryRepository(null as never);
 
     await repository.deleteSequence("sequence-1");
 
-    expect(firestoreMocks.batch.delete).toHaveBeenCalledWith({
-      path: "users/user-1/sequences/sequence-1",
-    });
-    expect(firestoreMocks.batch.set).toHaveBeenCalledWith(
-      { path: "users/user-1" },
-      {
-        sequenceCount: { incrementBy: -1 },
-        lastActivityDate: "server-timestamp",
-      },
-      { merge: true }
+    expect(firestoreMocks.deleteSequences).toHaveBeenCalledWith(["sequence-1"]);
+    expect(firestoreMocks.deleteLocalSequences).toHaveBeenCalledWith([
+      "sequence-1",
+    ]);
+    expect(firestoreMocks.removeSavedSequenceIds).toHaveBeenCalledWith(
+      "user-1",
+      ["sequence-1"]
     );
-    expect(firestoreMocks.batch.commit).toHaveBeenCalledOnce();
+    expect(firestoreMocks.captureEvent).toHaveBeenCalledWith(
+      "library_sequence_delete_completed",
+      expect.objectContaining({
+        sequence_count: 1,
+        cloud_attempted: true,
+        owner_deleted_count: 1,
+        public_deleted_count: 1,
+        hash_claims_deleted_count: 1,
+        collections_updated_count: 2,
+        local_deleted_count: 1,
+      })
+    );
+  });
+
+  it("rejects instead of reporting completion when local deletion fails", async () => {
+    firestoreMocks.deleteLocalSequences.mockRejectedValueOnce(
+      new Error("Dexie unavailable")
+    );
+    const repository = new LibraryRepository(null as never);
+
+    await expect(
+      repository.deleteSequence("sequence-local-failure")
+    ).rejects.toMatchObject({ code: "PERSIST_FAILED" });
+
+    expect(firestoreMocks.removeSavedSequenceIds).not.toHaveBeenCalled();
+    expect(firestoreMocks.captureEvent).toHaveBeenCalledWith(
+      "library_sequence_delete_failed",
+      expect.objectContaining({ failure_stage: "local" })
+    );
+    expect(firestoreMocks.captureEvent).not.toHaveBeenCalledWith(
+      "library_sequence_delete_completed",
+      expect.anything()
+    );
   });
 });

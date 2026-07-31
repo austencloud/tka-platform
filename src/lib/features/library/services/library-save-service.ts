@@ -43,6 +43,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 import { markSequenceSyncStatus } from "./library-sync-retry";
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import { recordSavedSequenceId } from "$lib/shared/library/services/saved-sequence-ledger";
+import { clearSequenceDeletionIntent } from "$lib/shared/library/services/sequence-persistence-coordinator";
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
@@ -214,6 +215,7 @@ export class LibrarySaveService {
       const cloneable = JSON.parse(JSON.stringify(sequenceToSave));
       await db.sequences.put(cloneable);
       persisted = true;
+      clearSequenceDeletionIntent(resolvedSequence.id);
     } catch (dexieError) {
       // Dexie is the guaranteed-persistence layer ("safe in local storage
       // before we ever touch Firestore"). If it fails, that guarantee is void —

@@ -27,7 +27,10 @@ import type {
   SequenceVisibility,
 } from "$lib/shared/library/domain/models/library-sequence";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
-import { deleteSequenceCompletely } from "$lib/shared/library/services/public-sequence-persister";
+import {
+  deleteSequenceCompletely,
+  type DeleteSequenceCompletelyResult,
+} from "$lib/shared/library/services/public-sequence-persister";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
 import {
   meetsCommunityMinimum,
@@ -46,6 +49,7 @@ export interface BatchSequenceResult {
   readonly sequenceId: string;
   readonly status: "ok" | "failed";
   readonly error?: unknown;
+  readonly deletion?: DeleteSequenceCompletelyResult;
 }
 
 /** Per-sequence transactions run this many at a time. Each touches distinct
@@ -100,15 +104,14 @@ export class LibraryBatchOperations {
     const CONCURRENCY = 8;
     for (let i = 0; i < uniqueIds.length; i += CONCURRENCY) {
       const results = await Promise.allSettled(
-        uniqueIds.slice(i, i + CONCURRENCY).map((collectionId) =>
-          updateDoc(
-            doc(
-              firestore,
-              getUserCollectionPath(userId, collectionId)
-            ),
-            { updatedAt: serverTimestamp() }
+        uniqueIds
+          .slice(i, i + CONCURRENCY)
+          .map((collectionId) =>
+            updateDoc(
+              doc(firestore, getUserCollectionPath(userId, collectionId)),
+              { updatedAt: serverTimestamp() }
+            )
           )
-        )
       );
 
       for (const result of results) {
@@ -130,12 +133,11 @@ export class LibraryBatchOperations {
 
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
-    const existingSequences = await this.loadExistingSequences(
-      firestore,
-      userId,
-      sequenceIds
-    );
-    const idsToDelete = sequenceIds.filter((id) => existingSequences.has(id));
+    // Run the authoritative transaction for every requested id, including an
+    // id whose owner document is already missing. The persister's ownership
+    // check makes that idempotent while still removing an orphaned public
+    // mirror or hash claim left by historical drift.
+    const idsToDelete = sequenceIds;
 
     // One transaction per sequence: owner doc + public mirror + owned hash
     // claims move together, so a mid-batch failure can never strand a public
@@ -157,7 +159,11 @@ export class LibraryBatchOperations {
         const sequenceId = chunk[index]!;
         if (outcome.status === "fulfilled") {
           if (outcome.value.ownerDeleted) ownerDeletedCount++;
-          results.push({ sequenceId, status: "ok" });
+          results.push({
+            sequenceId,
+            status: "ok",
+            deletion: outcome.value,
+          });
           notifyLibraryMutated(sequenceId);
         } else {
           results.push({
@@ -195,7 +201,7 @@ export class LibraryBatchOperations {
         `Failed to delete ${failures.length} of ${idsToDelete.length} sequences. Please try again.`,
         failures[0]!.error,
         "delete-sequences-batch",
-        { failedIds: failures.map((f) => f.sequenceId) }
+        { failedCount: failures.length }
       );
       throw new LibraryError("Failed to delete sequences", "NETWORK");
     }
@@ -411,9 +417,9 @@ export class LibraryBatchOperations {
       // an actionable user message, not a transport failure.
       const gateFailure = failures
         .map((f) => f.error)
-        .find(
-          (e) => e instanceof LibraryError && e.code === "INVALID_DATA"
-        ) as LibraryError | undefined;
+        .find((e) => e instanceof LibraryError && e.code === "INVALID_DATA") as
+        | LibraryError
+        | undefined;
       this.reportError(
         gateFailure
           ? gateFailure.message

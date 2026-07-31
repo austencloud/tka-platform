@@ -30,7 +30,8 @@ vi.mock("firebase/firestore", () => ({
       fn({
         get: (ref: unknown) => mocks.getDoc(ref),
         set: (ref: unknown, data: unknown) => void mocks.setDoc(ref, data),
-        update: (ref: unknown, data: unknown) => void mocks.updateDoc(ref, data),
+        update: (ref: unknown, data: unknown) =>
+          void mocks.updateDoc(ref, data),
         delete: (ref: unknown) => void mocks.deleteDoc(ref),
       })
   ),
@@ -65,7 +66,11 @@ describe("unpublishPublicSequence", () => {
     primeDocs({
       "publicSequences/seq-1": {
         exists: true,
-        data: { ownerId: "owner-1", contentHash: "h".repeat(64), contentHashVersion: 2 },
+        data: {
+          ownerId: "owner-1",
+          contentHash: "h".repeat(64),
+          contentHashVersion: 2,
+        },
       },
       [`publicSequenceHashes/${publicSequenceClaimId(2, "h".repeat(64))}`]: {
         exists: true,
@@ -85,7 +90,9 @@ describe("unpublishPublicSequence", () => {
       `publicSequenceHashes/${publicSequenceClaimId(2, "h".repeat(64))}`
     );
     const [ownerRef, stamps] = mocks.updateDoc.mock.calls[0]!;
-    expect((ownerRef as { path: string }).path).toBe("users/owner-1/sequences/seq-1");
+    expect((ownerRef as { path: string }).path).toBe(
+      "users/owner-1/sequences/seq-1"
+    );
     expect(stamps).toEqual({
       publicProjectionRevision: DELETE_FIELD,
       publicProjectionSchemaVersion: DELETE_FIELD,
@@ -99,7 +106,11 @@ describe("unpublishPublicSequence", () => {
     primeDocs({
       "publicSequences/seq-loser": {
         exists: true,
-        data: { ownerId: "owner-1", contentHash: "h".repeat(64), contentHashVersion: 2 },
+        data: {
+          ownerId: "owner-1",
+          contentHash: "h".repeat(64),
+          contentHashVersion: 2,
+        },
       },
       [`publicSequenceHashes/${publicSequenceClaimId(2, "h".repeat(64))}`]: {
         exists: true,
@@ -162,7 +173,11 @@ describe("updatePublicThumbnails", () => {
     )![1] as Record<string, unknown>;
 
     // Capped at the public preview limit.
-    expect(publicPatch["thumbnails"]).toEqual(["new-1.png", "new-2.png", "new-3.png"]);
+    expect(publicPatch["thumbnails"]).toEqual([
+      "new-1.png",
+      "new-2.png",
+      "new-3.png",
+    ]);
     // The digest describes the PATCHED stored document, not the stale one.
     const expectedDigest = await computeStoredProjectionDigest({
       ...stored,
@@ -173,7 +188,8 @@ describe("updatePublicThumbnails", () => {
 
     // Owner stamps move in the same transaction.
     const ownerPatch = mocks.updateDoc.mock.calls.find(
-      ([ref]) => (ref as { path: string }).path === "users/owner-1/sequences/seq-1"
+      ([ref]) =>
+        (ref as { path: string }).path === "users/owner-1/sequences/seq-1"
     )![1] as Record<string, unknown>;
     expect(ownerPatch["publicProjectionDigest"]).toBe(expectedDigest);
     expect(ownerPatch["publicProjectionRevision"]).toBe(4);
@@ -212,7 +228,9 @@ describe("updatePublicThumbnails", () => {
 
   it("reports an absent document instead of throwing NOT_FOUND", async () => {
     primeDocs({});
-    const result = await updatePublicThumbnails(FIRESTORE, "seq-gone", ["t.png"]);
+    const result = await updatePublicThumbnails(FIRESTORE, "seq-gone", [
+      "t.png",
+    ]);
     expect(result.status).toBe("absent");
     expect(mocks.updateDoc).not.toHaveBeenCalled();
   });
@@ -230,7 +248,11 @@ describe("deleteSequenceCompletely", () => {
       },
       "publicSequences/seq-1": {
         exists: true,
-        data: { ownerId: "owner-1", contentHash: HASH_A, contentHashVersion: 2 },
+        data: {
+          ownerId: "owner-1",
+          contentHash: HASH_A,
+          contentHashVersion: 2,
+        },
       },
       [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
         exists: true,
@@ -238,12 +260,17 @@ describe("deleteSequenceCompletely", () => {
       },
     });
 
-    const result = await deleteSequenceCompletely(FIRESTORE, "owner-1", "seq-1");
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "seq-1"
+    );
 
     expect(result).toEqual({
       ownerDeleted: true,
       publicDeleted: true,
       claimsDeleted: 1,
+      collectionsUpdated: 0,
     });
     const deleted = mocks.deleteDoc.mock.calls.map(
       ([ref]) => (ref as { path: string }).path
@@ -263,19 +290,27 @@ describe("deleteSequenceCompletely", () => {
       },
       "publicSequences/seq-1": {
         exists: true,
-        data: { ownerId: "owner-1", contentHash: HASH_A, contentHashVersion: 2 },
+        data: {
+          ownerId: "owner-1",
+          contentHash: HASH_A,
+          contentHashVersion: 2,
+        },
       },
       [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
         exists: true,
-        data: { sequenceId: "seq-1" },
+        data: { sequenceId: "seq-1", ownerId: "owner-1" },
       },
       [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_B)}`]: {
         exists: true,
-        data: { sequenceId: "seq-1" },
+        data: { sequenceId: "seq-1", ownerId: "owner-1" },
       },
     });
 
-    const result = await deleteSequenceCompletely(FIRESTORE, "owner-1", "seq-1");
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "seq-1"
+    );
 
     expect(result.claimsDeleted).toBe(2);
   });
@@ -307,13 +342,114 @@ describe("deleteSequenceCompletely", () => {
 
   it("reports an already-gone sequence without writing anything", async () => {
     primeDocs({});
-    const result = await deleteSequenceCompletely(FIRESTORE, "owner-1", "seq-gone");
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "seq-gone"
+    );
     expect(result).toEqual({
       ownerDeleted: false,
       publicDeleted: false,
       claimsDeleted: 0,
+      collectionsUpdated: 0,
     });
     expect(mocks.deleteDoc).not.toHaveBeenCalled();
+  });
+
+  it("removes an owned public orphan when the owner document is already gone", async () => {
+    primeDocs({
+      "publicSequences/seq-orphan": {
+        exists: true,
+        data: {
+          ownerId: "owner-1",
+          contentHash: HASH_A,
+          contentHashVersion: 2,
+        },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
+        exists: true,
+        data: { sequenceId: "seq-orphan", ownerId: "owner-1" },
+      },
+    });
+
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "seq-orphan"
+    );
+
+    expect(result).toEqual({
+      ownerDeleted: false,
+      publicDeleted: true,
+      claimsDeleted: 1,
+      collectionsUpdated: 0,
+    });
+    expect(
+      mocks.deleteDoc.mock.calls.map(([ref]) => (ref as { path: string }).path)
+    ).toEqual([
+      "publicSequences/seq-orphan",
+      `publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`,
+    ]);
+  });
+
+  it("never touches a public document or claim owned by another user", async () => {
+    primeDocs({
+      "publicSequences/shared-id": {
+        exists: true,
+        data: {
+          ownerId: "owner-2",
+          contentHash: HASH_A,
+          contentHashVersion: 2,
+        },
+      },
+      [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
+        exists: true,
+        data: { sequenceId: "shared-id", ownerId: "owner-2" },
+      },
+    });
+
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "shared-id"
+    );
+
+    expect(result).toEqual({
+      ownerDeleted: false,
+      publicDeleted: false,
+      claimsDeleted: 0,
+      collectionsUpdated: 0,
+    });
+    expect(mocks.deleteDoc).not.toHaveBeenCalled();
+  });
+
+  it("removes the deleted id from each owning collection in the same transaction", async () => {
+    primeDocs({
+      "users/owner-1/sequences/seq-1": {
+        exists: true,
+        data: { collectionIds: ["collection-1"] },
+      },
+      "users/owner-1/collections/collection-1": {
+        exists: true,
+        data: { sequenceIds: ["seq-1", "seq-2"], sequenceCount: 2 },
+      },
+    });
+
+    const result = await deleteSequenceCompletely(
+      FIRESTORE,
+      "owner-1",
+      "seq-1"
+    );
+
+    expect(result.collectionsUpdated).toBe(1);
+    expect(mocks.updateDoc).toHaveBeenCalledWith(
+      { path: "users/owner-1/collections/collection-1" },
+      {
+        sequenceIds: ["seq-2"],
+        sequenceCount: 1,
+        updatedAt: SERVER_TS,
+      }
+    );
   });
 });
 
@@ -328,7 +464,11 @@ describe("softDeleteSequenceEverywhere", () => {
       },
       "publicSequences/seq-1": {
         exists: true,
-        data: { ownerId: "owner-1", contentHash: HASH_A, contentHashVersion: 2 },
+        data: {
+          ownerId: "owner-1",
+          contentHash: HASH_A,
+          contentHashVersion: 2,
+        },
       },
       [`publicSequenceHashes/${publicSequenceClaimId(2, HASH_A)}`]: {
         exists: true,

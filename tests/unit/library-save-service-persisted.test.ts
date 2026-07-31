@@ -4,6 +4,7 @@ const dbPutMock = vi.fn();
 const dbGetMock = vi.fn().mockResolvedValue(undefined);
 const dbCountMock = vi.fn().mockResolvedValue(0);
 const dbUpdateMock = vi.fn().mockResolvedValue(1);
+const clearDeletionIntentMock = vi.fn();
 
 vi.mock("$lib/shared/persistence/database/tka-database", () => ({
   db: {
@@ -51,6 +52,13 @@ vi.mock("$lib/shared/library/services/sequence-content-hasher", () => ({
 vi.mock("$lib/features/library/services/library-sync-retry", () => ({
   markSequenceSyncStatus: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock(
+  "$lib/shared/library/services/sequence-persistence-coordinator",
+  () => ({
+    clearSequenceDeletionIntent: (...args: unknown[]) =>
+      clearDeletionIntentMock(...args),
+  })
+);
 // Keep the real, Firestore-touching library-state module out of the test: the
 // service's refreshLibraryState() dynamic-imports it after a successful save.
 vi.mock("$lib/features/library/state/library-state.svelte", () => ({
@@ -98,6 +106,7 @@ describe("LibrarySaveService.saveSequence - durable-save contract", () => {
     await expect(
       service.saveSequence(makeSequence(), makeOptions())
     ).rejects.toMatchObject({ code: "PERSIST_FAILED" });
+    expect(clearDeletionIntentMock).not.toHaveBeenCalled();
     dbPutMock.mockRejectedValueOnce(new Error("quota"));
     await expect(
       service.saveSequence(makeSequence(), makeOptions())
@@ -111,6 +120,8 @@ describe("LibrarySaveService.saveSequence - durable-save contract", () => {
     expect(result.persisted).toBe(true);
     expect(result.isGuest).toBe(false);
     expect(result.sequenceId).toBe("seq-1");
+    expect(clearDeletionIntentMock).toHaveBeenCalledOnce();
+    expect(clearDeletionIntentMock).toHaveBeenCalledWith("seq-1");
   });
 
   it("writes the sequence to Dexie (db.sequences.put) so a guest library can read it back", async () => {

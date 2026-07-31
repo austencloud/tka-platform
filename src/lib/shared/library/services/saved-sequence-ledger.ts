@@ -41,3 +41,21 @@ export function getSavedSequenceIds(uid: string | null | undefined): string[] {
     return [];
   }
 }
+
+export function removeSavedSequenceIds(
+  uid: string | null | undefined,
+  ids: readonly string[]
+): void {
+  if (!uid || ids.length === 0 || typeof window === "undefined") return;
+  try {
+    const removed = new Set(ids);
+    const remaining = getSavedSequenceIds(uid).filter((id) => !removed.has(id));
+    if (remaining.length === 0) {
+      localStorage.removeItem(PREFIX + uid);
+    } else {
+      localStorage.setItem(PREFIX + uid, JSON.stringify(remaining));
+    }
+  } catch {
+    // Storage can be blocked or full. The Dexie delete remains authoritative.
+  }
+}

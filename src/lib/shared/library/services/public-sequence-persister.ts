@@ -61,6 +61,7 @@ import { PUBLIC_PROJECTION_SCHEMA_VERSION } from "$lib/shared/foundation/domain/
 import type { NormalizedSequenceWrite } from "$lib/shared/library/services/sequence-persistence-normalizer";
 import {
   getPublicSequencePath,
+  getUserCollectionPath,
   getUserSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
 
@@ -129,7 +130,9 @@ export function readExistingPublicOwnedFields(
   const forkCount = finiteNumber(data["forkCount"]);
   const viewCount = finiteNumber(data["viewCount"]);
   const starCount = finiteNumber(data["starCount"]);
-  const publicProjectionRevision = finiteNumber(data["publicProjectionRevision"]);
+  const publicProjectionRevision = finiteNumber(
+    data["publicProjectionRevision"]
+  );
   const publicProjectionDigest =
     typeof data["publicProjectionDigest"] === "string"
       ? data["publicProjectionDigest"]
@@ -386,13 +389,15 @@ type DocRef = ReturnType<typeof doc>;
  * hash pair the stored documents carry. The public doc and the owner doc can
  * disagree on the hash (a stale mirror), in which case BOTH claims may be owned
  * by this sequence and both must be released. A claim whose `sequenceId` points
- * elsewhere is never touched. Reads only — call before any write.
+ * elsewhere, or whose owner differs from `expectedOwnerId`, is never touched.
+ * Reads only — call before any write.
  */
 async function collectOwnedClaimRefs(
   tx: { get: (ref: DocRef) => Promise<{ exists(): boolean; data(): unknown }> },
   firestore: Firestore,
   sequenceId: string,
-  sources: ReadonlyArray<Record<string, unknown> | undefined>
+  sources: ReadonlyArray<Record<string, unknown> | undefined>,
+  expectedOwnerId?: string
 ): Promise<DocRef[]> {
   const candidateIds = new Set<string>();
   for (const source of sources) {
@@ -405,11 +410,18 @@ async function collectOwnedClaimRefs(
 
   const owned: DocRef[] = [];
   for (const claimId of candidateIds) {
-    const candidateRef = doc(firestore, PUBLIC_SEQUENCE_HASH_COLLECTION, claimId);
+    const candidateRef = doc(
+      firestore,
+      PUBLIC_SEQUENCE_HASH_COLLECTION,
+      claimId
+    );
     const claimSnap = await tx.get(candidateRef);
+    const claim = claimSnap.exists()
+      ? (claimSnap.data() as PublicSequenceHashClaim)
+      : undefined;
     if (
-      claimSnap.exists() &&
-      (claimSnap.data() as PublicSequenceHashClaim).sequenceId === sequenceId
+      claim?.sequenceId === sequenceId &&
+      (!expectedOwnerId || claim.ownerId === expectedOwnerId)
     ) {
       owned.push(candidateRef);
     }
@@ -421,6 +433,7 @@ export interface DeleteSequenceCompletelyResult {
   readonly ownerDeleted: boolean;
   readonly publicDeleted: boolean;
   readonly claimsDeleted: number;
+  readonly collectionsUpdated: number;
 }
 
 /**
@@ -452,21 +465,59 @@ export async function deleteSequenceCompletely(
     const publicData = publicSnap.exists()
       ? (publicSnap.data() as Record<string, unknown>)
       : undefined;
+    const publicOwnedByUser = publicData?.["ownerId"] === userId;
 
-    const ownedClaims = await collectOwnedClaimRefs(tx, firestore, sequenceId, [
-      publicData,
-      ownerData,
-    ]);
+    const ownedClaims = await collectOwnedClaimRefs(
+      tx,
+      firestore,
+      sequenceId,
+      [publicOwnedByUser ? publicData : undefined, ownerData],
+      userId
+    );
+    const collectionIds = Array.isArray(ownerData?.["collectionIds"])
+      ? [
+          ...new Set(
+            (ownerData["collectionIds"] as unknown[]).filter(
+              (id): id is string => typeof id === "string" && id.length > 0
+            )
+          ),
+        ]
+      : [];
+    const collectionEntries = await Promise.all(
+      collectionIds.map(async (collectionId) => {
+        const ref = doc(firestore, getUserCollectionPath(userId, collectionId));
+        return { ref, snapshot: await tx.get(ref) };
+      })
+    );
 
     // --- writes -------------------------------------------------------------
     if (ownerSnap.exists()) tx.delete(ownerRef);
-    if (publicSnap.exists()) tx.delete(publicRef);
+    if (publicOwnedByUser) tx.delete(publicRef);
     for (const claimRef of ownedClaims) tx.delete(claimRef);
+    let collectionsUpdated = 0;
+    for (const { ref, snapshot } of collectionEntries) {
+      if (!snapshot.exists()) continue;
+      const data = snapshot.data() as Record<string, unknown>;
+      const sequenceIds = Array.isArray(data["sequenceIds"])
+        ? (data["sequenceIds"] as unknown[]).filter(
+            (id): id is string => typeof id === "string"
+          )
+        : [];
+      if (!sequenceIds.includes(sequenceId)) continue;
+      const remainingIds = sequenceIds.filter((id) => id !== sequenceId);
+      tx.update(ref, {
+        sequenceIds: remainingIds,
+        sequenceCount: remainingIds.length,
+        updatedAt: serverTimestamp(),
+      });
+      collectionsUpdated++;
+    }
 
     return {
       ownerDeleted: ownerSnap.exists(),
-      publicDeleted: publicSnap.exists(),
+      publicDeleted: publicOwnedByUser,
       claimsDeleted: ownedClaims.length,
+      collectionsUpdated,
     };
   });
 }
@@ -563,7 +614,8 @@ export async function updatePublicThumbnails(
     }
     const data = publicSnap.data() as Record<string, unknown>;
     const isSchemaTwo =
-      data["publicProjectionSchemaVersion"] === PUBLIC_PROJECTION_SCHEMA_VERSION;
+      data["publicProjectionSchemaVersion"] ===
+      PUBLIC_PROJECTION_SCHEMA_VERSION;
 
     if (!isSchemaTwo) {
       tx.update(publicRef, {
@@ -617,7 +669,11 @@ export async function updatePublicThumbnails(
       publicProjectionDigest: digest,
       publicProjectionRevision: revision,
     });
-    if (missingClaimRef && typeof hash === "string" && typeof version === "number") {
+    if (
+      missingClaimRef &&
+      typeof hash === "string" &&
+      typeof version === "number"
+    ) {
       const claim: PublicSequenceHashClaim = {
         sequenceId,
         ownerId: String(data["ownerId"] ?? ""),

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   recordSavedSequenceId,
   getSavedSequenceIds,
+  removeSavedSequenceIds,
 } from "$lib/shared/library/services/saved-sequence-ledger";
 
 beforeEach(() => localStorage.clear());
@@ -40,5 +41,26 @@ describe("saved-sequence-ledger", () => {
     expect(() => recordSavedSequenceId(null, "s1")).not.toThrow();
     expect(() => recordSavedSequenceId("uid-a", "")).not.toThrow();
     expect(getSavedSequenceIds("uid-a")).toEqual([]);
+  });
+
+  it("removes only the requested ids from one user's ledger", () => {
+    recordSavedSequenceId("uid-a", "s1");
+    recordSavedSequenceId("uid-a", "s2");
+    recordSavedSequenceId("uid-a", "s3");
+    recordSavedSequenceId("uid-b", "s2");
+
+    removeSavedSequenceIds("uid-a", ["s1", "s3"]);
+
+    expect(getSavedSequenceIds("uid-a")).toEqual(["s2"]);
+    expect(getSavedSequenceIds("uid-b")).toEqual(["s2"]);
+  });
+
+  it("removes the storage record when no saved ids remain", () => {
+    recordSavedSequenceId("uid-a", "s1");
+
+    removeSavedSequenceIds("uid-a", ["s1"]);
+
+    expect(getSavedSequenceIds("uid-a")).toEqual([]);
+    expect(localStorage.getItem("tka-saved-seq-ids:uid-a")).toBeNull();
   });
 });
