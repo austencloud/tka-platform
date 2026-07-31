@@ -1,16 +1,21 @@
 <script lang="ts">
   /**
-   * QfT Notation — one app, three modes.
+   * QfT Notation — one app, three modes, opening on the matrix.
    *
-   * Guide walks the eight canonical moves, each restored animation running
-   * beside a model that computes the same move from the published rules.
-   * Instrument unlocks the knobs. The step from watching to playing is one
-   * click, not one URL.
+   * Combine is the front door: TKA's shape matrix and QfT describe the same
+   * geometry, so any cell reads as a pair of QfT hands. Pick two flowers and a
+   * VTG mode and the stage draws the mandala, written in Charlie's notation.
+   * That is what a visitor came to do; the notation is how the result is
+   * spelled.
    *
-   * Matrix is the argument the other two set up: TKA's shape matrix and QfT
-   * describe the same geometry, so any of its cells can be read as a pair of
-   * QfT hands. Pick two flowers and a VTG mode and the stage draws the move in
-   * Charlie's notation, which is the form it was meant to be written in.
+   * Knobs unlocks the same hands as free parameters. Guide walks Cushing's
+   * eight canonical moves, each restored animation running beside a model that
+   * computes the same move from the published rules — the notation's
+   * provenance, one click away rather than the corridor in.
+   *
+   * A landing card stands in front of all of it on a first visit, because the
+   * bare instrument gives a stranger a compass, eight numbers and three tabs
+   * with no way in.
    *
    * No narrator and no pull-quotes: every label states a fact about the knob
    * values that produce the move. The sources are credited by link in the
@@ -20,6 +25,8 @@
    *         docs/superpowers/specs/2026-07-28-qft-shape-matrix-bridge-design.md
    * Sources: docs/reference/archive/qft-notation/README.md
    */
+  import { fade } from "svelte/transition";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -81,8 +88,27 @@
    */
   const restored = loadQftSession(GUIDE_MOVES.length);
 
-  let appMode = $state<AppMode>(restored?.appMode ?? "guide");
+  /*
+   * The matrix, not the guide.
+   *
+   * The page used to open on Cushing's first move and argue its way to the
+   * shape matrix at the end. It reads better the other way round: combining two
+   * flowers is the thing you came to do, and QfT is how the result is written
+   * down. The guide keeps every word — it is now where the notation's
+   * provenance lives rather than the corridor you walk in through.
+   */
+  let appMode = $state<AppMode>(restored?.appMode ?? "matrix");
   let moveIndex = $state(restored?.moveIndex ?? 0);
+
+  /*
+   * The landing card stands in front of the instrument on a first visit.
+   *
+   * Without it a stranger meets a compass, eight numbers and three unexplained
+   * tabs, with the only explanation behind a `?` they have no reason to press.
+   * Restore infers this from the presence of a stored session, so it shows once
+   * and never nags (see `QftSession.entered`).
+   */
+  let entered = $state(restored?.entered ?? false);
   let showInfo = $state(false);
   let showArchive = $state(false);
 
@@ -410,10 +436,20 @@
 
   /* Guide · Knobs · Matrix. On a docked phone this takes the row the guide's
      move chips vacate, so "which mode" stays visible without costing a row. */
+  /*
+   * Combine first, guide last — the reframe in the `appMode` initialiser,
+   * carried into the control.
+   *
+   * "Combine" rather than "Matrix": a stranger arrives from a button that said
+   * pick a combination, and a tab naming the thing they just clicked with a
+   * different word is the one piece of jargon in an otherwise plain row. The
+   * term "shape matrix" still does its work in the prose and the info panel,
+   * where there is enough context around it to land.
+   */
   const APP_MODE_OPTIONS = [
-    { value: "guide" as const, label: "Guide" },
+    { value: "matrix" as const, label: "Combine" },
     { value: "instrument" as const, label: "Knobs" },
-    { value: "matrix" as const, label: "Matrix" },
+    { value: "guide" as const, label: "Guide" },
   ];
 
   function goToMode(next: AppMode) {
@@ -465,6 +501,7 @@
   });
 
   const snapshot = (): QftSession => ({
+    entered,
     appMode,
     moveIndex,
     blueIndex,
@@ -488,6 +525,7 @@
    */
   $effect(() => {
     void [
+      entered,
       appMode,
       moveIndex,
       blueIndex,
@@ -861,10 +899,63 @@
   {/if}
 </div>
 
+{#if !entered}
+  <!--
+    The doorway.
+
+    A single enter/exit, not a crossfade: it appears once and leaves for good,
+    and there is no second state trading places with it. So `transition:fade`,
+    per .claude/rules/crossfade-primitive.md — wrapping it in `<Crossfade>`
+    would remount the instrument behind it, which is exactly the heavy-content
+    case that primitive tells you to stay away from.
+
+    It layers over the running app rather than replacing it, so the drawing is
+    already alive and warm the moment the card clears.
+  -->
+  <div class="landing qft-app" transition:fade={{ duration: DURATION.normal }}>
+    <div class="landing-card">
+      <h1>Quarters for Transitions</h1>
+      <p class="landing-attribution">Charlie Cushing · 2011</p>
+      <p class="landing-lede">
+        Two flowers, spun together, draw a mandala. This reads them as poi
+        notation.
+      </p>
+
+      <div class="landing-actions">
+        <button
+          type="button"
+          class="landing-primary"
+          onclick={() => (entered = true)}>Pick a combination</button
+        >
+        <button
+          type="button"
+          class="landing-secondary"
+          onclick={() => {
+            entered = true;
+            showInfo = true;
+          }}>What am I looking at?</button
+        >
+      </div>
+    </div>
+
+    <!--
+      The one deliberate route out, now that the top bar's chevron is gone.
+
+      Styled as a button rather than a text link: it is a standalone action, not
+      a reference inside a sentence, and a bare word floating under the card
+      reads as a caption (.claude/rules/clickables-look-like-buttons.md).
+    -->
+    <a class="landing-exit" href="/notation">
+      <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      <span>All notation</span>
+    </a>
+  </div>
+{/if}
+
 <!-- `qft-app` is the hook the root 4K ramp scopes to (src/app.css). This route
      opts out of MarketingChrome, which is what carries the ramp everywhere else
      on the public site, so it has to opt itself back in by name. -->
-<div class="app qft-app" class:docked={phone}>
+<div class="app qft-app" class:docked={phone} inert={!entered}>
   <!--
     Toggles rather than a SegmentedControl: in instrument mode NO move is
     selected, and a segmented indicator has nowhere to sit in that state
@@ -882,14 +973,21 @@
     in, was the thing that read as backwards.
   -->
   <div class="topbar">
-    <!-- Back plus a wordmark: on a wide screen a lone chevron in a corner does
-         not say what you are in, and the left third of the bar was empty. -->
+    <!--
+      The name, spelled out, with no back chevron.
+
+      A chevron implies "the place you came from", and this one was a fixed
+      `/notation` link — wrong for anyone arriving from the app, a QR scan or a
+      pasted link. Leaving is the browser's job; the landing card carries the
+      one deliberate route out. What the bar owes the reader instead is what
+      they are looking at, which "QfT" alone never said.
+    -->
     <div class="brand">
-      <a class="exit" href="/notation" aria-label="Leave the QfT app">
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-      </a>
       <span class="wordmark">
-        <span class="wordmark-name">QfT</span>
+        <span class="wordmark-name">
+          <span class="name-full">Quarters for Transitions</span>
+          <span class="name-short">QfT</span>
+        </span>
         <span class="wordmark-sub">Cushing · 2011</span>
       </span>
     </div>
@@ -1231,6 +1329,140 @@
       linear-gradient(180deg, #0b0a1a 0%, #10142e 45%, #0a1024 100%);
   }
 
+  /*
+   * The landing card.
+   *
+   * Over the app, not instead of it: the instrument mounts and starts running
+   * underneath, so `Pick a combination` reveals a warm drawing rather than
+   * booting one. `qft-app` is on this element too, so the 4K root ramp applies
+   * before the card clears as well as after (.claude/rules/4k-native-layout.md).
+   */
+  .landing {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    display: grid;
+    /* A spacer row under the card: it sits a little above centre, which reads
+       as deliberate where dead-centre reads as a dialog. */
+    grid-template-rows: 1fr auto 1.35fr;
+    justify-items: center;
+    padding: clamp(1.25rem, 3vw, 3rem);
+    background: rgb(6 8 20 / 0.82);
+    backdrop-filter: blur(10px);
+  }
+
+  .landing-card {
+    grid-row: 2;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    /* rem, so the ramp carries it at 4K instead of freezing it at 1080p
+       proportions. No reading cap: the lede is two lines. */
+    max-width: 46rem;
+    gap: 0.5rem;
+  }
+
+  .landing h1 {
+    margin: 0;
+    /* Fluid under the ramp as well as across it — this is the one piece of type
+       on the page that is allowed to be big. */
+    font-size: clamp(2rem, 6vw, 3.6rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--semantic-text-primary, #fff);
+  }
+
+  .landing-attribution {
+    margin: 0;
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.55));
+  }
+
+  .landing-lede {
+    margin: 0.9rem 0 0;
+    font-size: clamp(1.05rem, 1.9vw, 1.4rem);
+    line-height: 1.5;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.8));
+  }
+
+  .landing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.9rem;
+  }
+
+  /*
+   * Both actions are buttons, not text links — they are standalone calls to
+   * action, which is precisely the case
+   * .claude/rules/clickables-look-like-buttons.md covers. `width: auto` is
+   * stated because a stretched pair of short labels is the failure
+   * visual-verification-mandatory.md opens with.
+   */
+  .landing-primary,
+  .landing-secondary {
+    width: auto;
+    min-height: 2.75rem;
+    padding: 0.7rem 1.5rem;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .landing-primary {
+    border: 1px solid transparent;
+    background: var(--semantic-accent, #6c63ff);
+    color: #fff;
+  }
+
+  .landing-primary:hover {
+    background: var(--semantic-accent-strong, #8079ff);
+  }
+
+  .landing-secondary {
+    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.22));
+    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.3));
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.8));
+  }
+
+  .landing-secondary:hover {
+    border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
+    color: var(--semantic-text-primary, #fff);
+  }
+
+  .landing-exit {
+    grid-row: 3;
+    align-self: end;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 1.15rem;
+    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.18));
+    border-radius: 999px;
+    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.3));
+    font-size: 0.9rem;
+    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.7));
+    text-decoration: none;
+    transition:
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .landing-exit:hover {
+    border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
+    color: var(--semantic-text-primary, #fff);
+  }
+
   .app {
     /*
      * The whole viewport. This route opts out of the marketing chrome (see
@@ -1421,9 +1653,29 @@
   .wordmark {
     display: grid;
     line-height: 1.15;
-    /* Hidden below the tier where the bar has room for it — on a phone the mode
-       switch needs the width more than the title does. */
+    min-width: 0;
+  }
+
+  /*
+   * Two spellings, swapped by breakpoint rather than by script.
+   *
+   * The full name needs room the phone bar does not have, but the bar cannot go
+   * empty either now that the chevron is gone. Both spans exist in the markup
+   * and CSS picks one, so nothing measures or re-lays-out at runtime
+   * (.claude/rules/no-layout-shift.md).
+   */
+  .name-full {
     display: none;
+  }
+
+  @media (min-width: 48rem) {
+    .name-full {
+      display: inline;
+    }
+
+    .name-short {
+      display: none;
+    }
   }
 
   .wordmark-name {
@@ -1437,12 +1689,6 @@
     font-size: 0.7rem;
     letter-spacing: 0.04em;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.5));
-  }
-
-  @media (min-width: 48rem) {
-    .wordmark {
-      display: grid;
-    }
   }
 
   .topbar > .about {
@@ -1462,7 +1708,6 @@
     min-width: 0;
   }
 
-  .exit,
   .about {
     display: flex;
     align-items: center;
@@ -1483,7 +1728,6 @@
       color 140ms ease;
   }
 
-  .exit:hover,
   .about:hover {
     border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
     color: var(--semantic-text-primary, #fff);
@@ -1509,7 +1753,6 @@
       font-size: 0.95rem;
     }
 
-    .exit,
     .about {
       width: 3.2rem;
       height: 3.2rem;

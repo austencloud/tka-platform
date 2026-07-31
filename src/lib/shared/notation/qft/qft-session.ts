@@ -24,6 +24,19 @@ const KEY = "qft:session:v2";
 const AXIS_LENGTH = 12;
 
 export interface QftSession {
+	/**
+	 * Whether this visitor has been past the landing card.
+	 *
+	 * Stored explicitly, because the app saves a payload the moment it mounts —
+	 * including while the card is still up. Inferring this from the presence of
+	 * a payload would therefore mark every visitor entered within a frame, and
+	 * the card would never survive a reload.
+	 *
+	 * A payload written before this field existed has no value for it. Those are
+	 * read as entered: reaching that state at all means the page was used, and
+	 * showing the doorway to an existing reader is the worse error.
+	 */
+	entered: boolean;
 	appMode: "guide" | "instrument" | "matrix";
 	moveIndex: number;
 	/** Index into the twelve-flower matrix axis, per hand. */
@@ -74,10 +87,18 @@ export function loadQftSession(moveCount: number): QftSession | null {
 	const s = raw as Record<string, unknown>;
 
 	return {
+		/* Absent means a pre-landing payload, which counts as entered. */
+		entered: s.entered === undefined ? true : s.entered === true,
+		/*
+		 * Defaults to the matrix, not the guide. Combining two flowers is the
+		 * front door; the guide is where the notation's provenance lives. A
+		 * payload written before that flip carries an explicit `appMode`, so
+		 * nobody is moved out of the mode they left in.
+		 */
 		appMode:
-			s.appMode === "instrument" || s.appMode === "matrix"
-				? (s.appMode as "instrument" | "matrix")
-				: "guide",
+			s.appMode === "instrument" || s.appMode === "guide"
+				? (s.appMode as "instrument" | "guide")
+				: "matrix",
 		moveIndex: Math.floor(num(s.moveIndex, 0, moveCount - 1, 0)),
 		blueIndex: Math.floor(num(s.blueIndex, 0, AXIS_LENGTH - 1, 6)),
 		redIndex: Math.floor(num(s.redIndex, 0, AXIS_LENGTH - 1, 7)),
