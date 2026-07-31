@@ -18,6 +18,7 @@
     ChangelogCategory,
     ChangelogEntry,
   } from "$lib/shared/versioning/domain/models/version-models";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ContributorBadge from "./tabs/release-notes/ContributorBadge.svelte";
   import ChangelogRichText from "./tabs/release-notes/ChangelogRichText.svelte";
 
@@ -83,19 +84,17 @@
 
   // Total count for summary
   const totalChanges = $derived(version?.changelogEntries?.length ?? 0);
+  const categoryCount = $derived(Math.min(groupedChangelog.length, 3));
+  const layoutWidth = $derived(
+    totalChanges >= 8 || categoryCount === 3
+      ? "wide"
+      : totalChanges >= 4 || categoryCount === 2
+        ? "medium"
+        : "compact"
+  );
 
   function handleClose() {
     whatsNewState.close();
-  }
-
-  function handleBackdropClick() {
-    whatsNewState.dismiss();
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      whatsNewState.dismiss();
-    }
   }
 
   async function handleViewAllReleases() {
@@ -104,27 +103,16 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-{#if isOpen && version}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div
-    class="modal-overlay"
-    onclick={handleBackdropClick}
-    role="button"
-    tabindex="-1"
-    aria-label="Close"
+{#if version}
+  <BaseModal
+    open={isOpen}
+    size="fit"
+    animation="pop"
+    labelledBy="whats-new-title"
+    class="whats-new-modal layout-{layoutWidth}"
+    onclose={() => whatsNewState.dismiss()}
   >
-    <div
-      class="modal-container"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="whats-new-title"
-      tabindex="-1"
-    >
-      <!-- Header -->
+    {#snippet header()}
       <header class="modal-header">
         <div class="version-badge">
           <i class="fas fa-rocket" aria-hidden="true"></i>
@@ -146,74 +134,72 @@
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </header>
+    {/snippet}
 
-      <!-- Body -->
-      <div class="modal-body">
-        <!-- Category Cards -->
-        <div class="category-grid">
-          {#each groupedChangelog as group}
-            <div
-              class="category-card"
-              style="--cat-color: {group.color}; --cat-bg: {group.bgColor};"
-            >
-              <div class="category-header">
-                <div class="category-icon">
-                  <i
-                    class="fas {CATEGORY_ICONS[group.category]}"
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <h3>{CATEGORY_LABELS[group.category]}</h3>
-                <span class="category-count">{group.entries.length}</span>
+    <div class="release-body">
+      <div class="category-grid" data-category-count={categoryCount}>
+        {#each groupedChangelog as group}
+          <div
+            class="category-card"
+            style="--cat-color: {group.color}; --cat-bg: {group.bgColor};"
+          >
+            <div class="category-header">
+              <div class="category-icon">
+                <i
+                  class="fas {CATEGORY_ICONS[group.category]}"
+                  aria-hidden="true"
+                ></i>
               </div>
-              <ul class="category-list">
-                {#each group.entries as entry}
-                  <li>
-                    <ChangelogRichText
-                      text={entry.text}
-                      onNavigate={handleClose}
-                    />
-                    {#if entry.contributorIds?.length}
-                      <span class="entry-contributors">
-                        {#each entry.contributorIds as cid}
-                          {@const contrib = contributors.get(cid)}
-                          {#if contrib}
-                            <ContributorBadge contributor={contrib} />
-                          {/if}
-                        {/each}
-                      </span>
-                    {/if}
-                  </li>
-                {/each}
-              </ul>
+              <h3>{CATEGORY_LABELS[group.category]}</h3>
+              <span class="category-count">{group.entries.length}</span>
             </div>
-          {/each}
-        </div>
-
-        {#if version?.contributorIds?.length && contributors.size > 0}
-          <div class="contributors-footer">
-            <h4 class="contributors-title">Contributors</h4>
-            <div class="contributors-list">
-              {#each version.contributorIds as cid}
-                {@const contrib = contributors.get(cid)}
-                {#if contrib}
-                  <ContributorBadge contributor={contrib} size="md" />
-                {/if}
+            <ul class="category-list">
+              {#each group.entries as entry}
+                <li>
+                  <ChangelogRichText
+                    text={entry.text}
+                    onNavigate={handleClose}
+                  />
+                  {#if entry.contributorIds?.length}
+                    <span class="entry-contributors">
+                      {#each entry.contributorIds as cid}
+                        {@const contrib = contributors.get(cid)}
+                        {#if contrib}
+                          <ContributorBadge contributor={contrib} />
+                        {/if}
+                      {/each}
+                    </span>
+                  {/if}
+                </li>
               {/each}
-            </div>
+            </ul>
           </div>
-        {/if}
-
-        <!-- Empty state -->
-        {#if groupedChangelog.length === 0}
-          <div class="empty-state">
-            <i class="fas fa-box-open" aria-hidden="true"></i>
-            <p>No detailed changelog for this version.</p>
-          </div>
-        {/if}
+        {/each}
       </div>
 
-      <!-- Footer -->
+      {#if version?.contributorIds?.length && contributors.size > 0}
+        <div class="contributors-footer">
+          <h4 class="contributors-title">Contributors</h4>
+          <div class="contributors-list">
+            {#each version.contributorIds as cid}
+              {@const contrib = contributors.get(cid)}
+              {#if contrib}
+                <ContributorBadge contributor={contrib} size="md" />
+              {/if}
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      {#if groupedChangelog.length === 0}
+        <div class="empty-state">
+          <i class="fas fa-box-open" aria-hidden="true"></i>
+          <p>No detailed changelog for this version.</p>
+        </div>
+      {/if}
+    </div>
+
+    {#snippet footer()}
       <footer class="modal-footer">
         <button
           class="footer-btn secondary"
@@ -228,65 +214,63 @@
           Got it
         </button>
       </footer>
-    </div>
-  </div>
+    {/snippet}
+  </BaseModal>
 {/if}
 
 <style>
   /* ============================================================================
-     OVERLAY
-     ============================================================================ */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    z-index: var(--z-modal);
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  /* ============================================================================
      MODAL CONTAINER
      ============================================================================ */
-  .modal-container {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 45rem;
-    max-height: calc(100vh - 40px);
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  :global(dialog.base-modal.whats-new-modal[data-size="fit"]) {
+    --modal-backdrop-bg: rgba(0, 0, 0, 0.85);
+    --modal-backdrop-blur: 8px;
+    box-sizing: border-box;
+    width: min(
+      calc(
+        100vw - 2rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      ),
+      88rem
+    );
+    width: min(
+      calc(
+        100dvw - 2rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      ),
+      88rem
+    );
+    max-width: none;
+    max-height: calc(
+      var(--viewport-height, 100dvh) - 2rem - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    );
+    height: fit-content;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
-    overflow: hidden;
     box-shadow:
       0 24px 80px rgba(0, 0, 0, 0.6),
       0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  @keyframes slideUp {
-    from {
-      transform: translateY(24px) scale(0.96);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
+  :global(dialog.base-modal.whats-new-modal.layout-compact[data-size="fit"]) {
+    width: min(
+      calc(
+        100dvw - 2rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      ),
+      54rem
+    );
+  }
+
+  :global(dialog.base-modal.whats-new-modal.layout-medium[data-size="fit"]) {
+    width: min(
+      calc(
+        100dvw - 2rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      ),
+      76rem
+    );
   }
 
   /* ============================================================================
@@ -376,52 +360,23 @@
   /* ============================================================================
      BODY
      ============================================================================ */
-  .modal-body {
-    flex: 1;
-    overflow-y: auto;
+  .release-body {
+    container: release-notes / inline-size;
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-
-    /* Modern scrollbar styling */
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--theme-text) 20%, transparent)
-      transparent;
-  }
-
-  /* Webkit scrollbar for Chrome/Edge/Safari */
-  .modal-body::-webkit-scrollbar {
-    width: 10px;
-  }
-
-  .modal-body::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 10px;
-  }
-
-  .modal-body::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--theme-text) 20%, transparent);
-    border-radius: 10px;
-    border: 2px solid var(--theme-panel-bg);
-  }
-
-  .modal-body::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text) 30%, transparent);
-  }
-
-  .modal-body::-webkit-scrollbar-thumb:active {
-    background: color-mix(in srgb, var(--theme-text) 40%, transparent);
   }
 
   /* Category Grid */
   .category-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
 
   .category-card {
+    container: release-category / inline-size;
     padding: 16px;
     background: var(--cat-bg);
     border: 1.5px solid color-mix(in srgb, var(--cat-color) 20%, transparent);
@@ -476,7 +431,28 @@
     columns: 1;
   }
 
-  @media (min-width: 600px) {
+  @container release-notes (min-width: 42rem) {
+    .category-grid[data-category-count="2"],
+    .category-grid[data-category-count="3"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .category-grid[data-category-count="3"] > :last-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container release-notes (min-width: 68rem) {
+    .category-grid[data-category-count="3"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .category-grid[data-category-count="3"] > :last-child {
+      grid-column: auto;
+    }
+  }
+
+  @container release-category (min-width: 42rem) {
     .category-list {
       columns: 2;
       column-gap: 24px;
@@ -624,12 +600,41 @@
   /* Big-screen tiers (4k-native-layout: 1680 seam, second tier >= 2600).
      The modal grows with the canvas instead of floating as a phone column. */
   @media (min-width: 1680px) {
-    .modal-container {
-      max-width: 62rem;
+    :global(dialog.base-modal.whats-new-modal.layout-wide[data-size="fit"]) {
+      width: min(
+        calc(
+          100dvw - 3rem - env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ),
+        100rem
+      );
+    }
+
+    :global(dialog.base-modal.whats-new-modal.layout-medium[data-size="fit"]) {
+      width: min(
+        calc(
+          100dvw - 3rem - env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ),
+        86rem
+      );
+    }
+
+    :global(dialog.base-modal.whats-new-modal.layout-compact[data-size="fit"]) {
+      width: min(
+        calc(
+          100dvw - 3rem - env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ),
+        60rem
+      );
+    }
+
+    :global(dialog.base-modal.whats-new-modal[data-size="fit"]) {
       border-radius: 24px;
     }
 
-    .modal-body {
+    .release-body {
       padding: 32px;
       gap: 20px;
     }
@@ -659,14 +664,45 @@
 
   @media (min-width: 2600px) {
     /* 4K @ 100%: nothing scales for us here, so type and spacing step too. */
-    .modal-container {
-      max-width: 96rem;
+    :global(dialog.base-modal.whats-new-modal.layout-wide[data-size="fit"]) {
+      width: min(
+        calc(
+          100dvw - 5rem - env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ),
+        120rem
+      );
+    }
+
+    :global(dialog.base-modal.whats-new-modal.layout-medium[data-size="fit"]) {
+      width: min(
+        calc(
+          100dvw - 5rem - env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ),
+        104rem
+      );
+    }
+
+    :global(dialog.base-modal.whats-new-modal.layout-compact[data-size="fit"]) {
+      width: min(
+        calc(
+          100dvw - 5rem - env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ),
+        72rem
+      );
+    }
+
+    :global(dialog.base-modal.whats-new-modal[data-size="fit"]) {
       border-radius: 28px;
     }
 
-    .category-list {
-      columns: 3;
-      column-gap: 40px;
+    @container release-category (min-width: 90rem) {
+      .category-list {
+        columns: 3;
+        column-gap: 40px;
+      }
     }
 
     .category-list li {
@@ -713,7 +749,7 @@
       border-radius: 18px;
     }
 
-    .modal-body {
+    .release-body {
       padding: 40px;
       gap: 24px;
     }
@@ -725,8 +761,17 @@
   }
 
   @media (max-width: 540px) {
-    .modal-container {
-      max-height: calc(100vh - 20px);
+    :global(dialog.base-modal.whats-new-modal.layout-wide[data-size="fit"]),
+    :global(dialog.base-modal.whats-new-modal.layout-medium[data-size="fit"]),
+    :global(dialog.base-modal.whats-new-modal.layout-compact[data-size="fit"]) {
+      width: calc(
+        100dvw - 1rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      );
+      max-height: calc(
+        var(--viewport-height, 100dvh) - 1rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      );
       border-radius: 16px;
     }
 
@@ -735,7 +780,7 @@
       padding-right: 48px;
     }
 
-    .modal-body {
+    .release-body {
       padding: 16px;
     }
 
@@ -753,22 +798,90 @@
     }
   }
 
+  /* Wide-but-short devices get every usable vertical pixel and denser chrome.
+     The release text stays at the normal readable size; only surrounding space
+     is reduced before the body is allowed to scroll. */
+  @media (max-height: 600px) {
+    :global(dialog.base-modal.whats-new-modal.layout-wide[data-size="fit"]),
+    :global(dialog.base-modal.whats-new-modal.layout-medium[data-size="fit"]),
+    :global(dialog.base-modal.whats-new-modal.layout-compact[data-size="fit"]) {
+      width: calc(
+        100dvw - 0.75rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      );
+      max-height: calc(
+        var(--viewport-height, 100dvh) - 0.75rem -
+          env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+      );
+      border-radius: 14px;
+    }
+
+    .modal-header {
+      gap: 10px;
+      padding: 10px 14px;
+      padding-right: 52px;
+    }
+
+    .version-badge {
+      gap: 6px;
+      padding: 6px 10px;
+    }
+
+    .close-btn {
+      top: 9px;
+      right: 10px;
+      width: var(--min-touch-target);
+      height: var(--min-touch-target);
+    }
+
+    .release-body {
+      gap: 10px;
+      padding: 12px;
+    }
+
+    @container release-notes (min-width: 50rem) {
+      .category-grid[data-category-count="3"] {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .category-grid[data-category-count="3"] > :last-child {
+        grid-column: auto;
+      }
+    }
+
+    .category-grid {
+      gap: 10px;
+    }
+
+    .category-card {
+      padding: 12px;
+    }
+
+    .category-header {
+      margin-bottom: 8px;
+    }
+
+    .modal-footer {
+      gap: 10px;
+      padding: 8px 12px;
+    }
+
+    .footer-btn {
+      padding: 8px 14px;
+    }
+  }
+
   /* ============================================================================
      ACCESSIBILITY
      ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
-    .modal-overlay,
-    .modal-container {
-      animation: none;
-    }
-
     .footer-btn:hover {
       transform: none;
     }
   }
 
   @media (prefers-contrast: high) {
-    .modal-container {
+    :global(dialog.base-modal.whats-new-modal[data-size="fit"]) {
       border-width: 2px;
     }
 
