@@ -51,7 +51,8 @@ dragging across the centre. **Its prop-rate array is identical to the
 pendulum's; only hand radius differs (0 vs 1).**
 
 So the two are one preset family parameterised by the radius control this
-design is already adding. The extendulum costs no extra model work.
+design is already adding. The extendulum costs no extra model work — but it is
+unreachable today, because `buildPendulum()` hardcodes `radius: 0`.
 
 ## The design
 
@@ -83,13 +84,42 @@ interface QftHand {
 ```
 
 `propRate[8]` replaces the scalar `downbeats × spinSign`. `propIndexAt` becomes
-a prefix sum plus a fractional remainder instead of `rate · u + phase`. The
-three pendulum functions (`pendulumIndexAt`, `tracePendulum`, `buildPendulum`)
-are **deleted**, not joined by a fourth — a reversal stops being a special case
-and becomes an array whose entries change sign.
+a prefix sum plus a fractional remainder instead of `rate · u + phase`.
 
 A flower writes a constant-sign array. The pendulum writes a sign-changing one.
-Same representation, so the same code draws both.
+Same representation, so the same code draws both — and, more to the point, the
+same code *notates* both.
+
+### The pendulum gains notation; it does not lose it
+
+`buildPendulum()` (`qft-model.ts:279-294`) is today a hand-written duplicate of
+the notation table. It assembles `QftIncrement[]` itself rather than going
+through `buildIncrements()` like every other move, and hardcodes three values
+while doing it:
+
+```ts
+handDepart: 8,
+radius: 0,
+handArrive: 8,
+```
+
+So the pendulum is notated today, but by a parallel path whose hand can never
+leave position 8, whose radius is always 0, and which cannot be one half of a
+pair. That is exactly why the extendulum is currently impossible — same prop
+path, radius 1, and line 289 says 0.
+
+Moving the pendulum into `propRate` retires `pendulumIndexAt`,
+`tracePendulum` and `buildPendulum` as *code paths*, not as a move. What the
+change buys:
+
+1. The pendulum is written by the real notation pipeline instead of a bespoke
+   copy of it, so its table cannot drift from every other table.
+2. The extendulum becomes notatable at all.
+3. Either can be one hand of a two-hand pairing — **a TKA flower and a poi
+   reversal side by side in the same two tables, in the same notation.**
+
+(3) is the QfT↔TKA bridge this app exists to be, and it cannot be built while
+the pendulum lives outside the model.
 
 ### Reversal position is a derived validity rule, not a flag
 
