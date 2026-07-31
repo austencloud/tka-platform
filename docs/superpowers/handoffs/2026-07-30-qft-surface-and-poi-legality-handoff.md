@@ -118,7 +118,7 @@ on every connect. Now an absolute path in `args`. Memory:
 1. **Is extended-through-the-top a real poi move**, or does the swing family have
    one form (extended through the bottom, inverted through the top, as in the
    worked example)? This decides whether "which half extends" is a parameter.
-2. **Do the presets stay as two labelled sets** — the eight canonical moves, and
+2. **Do the presets stay as two labelled sets** — the eight canonical moves,
    the matrix — or become one flat library? The two-set version keeps the
    provenance visible, which is most of what the page argues.
 
