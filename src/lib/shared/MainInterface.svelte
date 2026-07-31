@@ -451,15 +451,17 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
     min-height: 0;
   }
 
-  /* Landscape mode - add left padding for side navigation */
+  /* Landscape mode - reserve the side navigation outside the content box.
+     Browse and other keep-alive modules use absolutely positioned hosts,
+     which can occupy a parent's padding box and end up underneath the nav. */
   .content-area.nav-landscape {
-    padding-left: 72px !important;
-    padding-left: max(72px, env(safe-area-inset-left)) !important;
+    margin-left: 72px !important;
+    margin-left: max(72px, env(safe-area-inset-left)) !important;
   }
 
-  /* Reset padding when desktop sidebar is visible */
+  /* Reset the mobile rail reservation when the desktop sidebar is visible */
   .main-interface.has-desktop-sidebar .content-area {
-    padding-left: 0 !important;
+    margin-left: 0 !important;
   }
 
   /* ============================================================================
