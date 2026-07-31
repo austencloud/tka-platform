@@ -21,13 +21,20 @@
   import { toMediaItems } from "../../services/gallery-item-adapter";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { MediaSpotlight, type MediaItem as SpotlightMediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
-  import { TagCreatorModal, TagPickerPanel } from "@austencloud/media-tagging-ui";
+  import {
+    MediaSpotlight,
+    type MediaItem as SpotlightMediaItem,
+    type SpotlightConfig,
+  } from "@austencloud/media-spotlight";
+  import {
+    TagCreatorModal,
+    TagPickerPanel,
+  } from "@austencloud/media-tagging-ui";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import GalleryGrid from "./GalleryGrid.svelte";
   import CaptureProgress from "./CaptureProgress.svelte";
   import UploadProgressCard from "./UploadProgress.svelte";
-  import SelectionToolbar from "./SelectionToolbar.svelte";
+  import SelectionToolbar from "$lib/shared/components/selection/SelectionToolbar.svelte";
   import TagSidebar from "./TagSidebar.svelte";
   import TagContextPanel from "./TagContextPanel.svelte";
   import { createGalleryTagFilterState } from "./state/gallery-tag-filter-state.svelte";
@@ -144,7 +151,10 @@
   // when columnMin is custom (no preset within range) activePreset is null, so
   // no segment shows selected and the indicator slides off — the intended
   // "none active" state for a fine-tuned size.
-  const SIZE_OPTIONS = SIZE_PRESETS.map((p) => ({ value: p.label, label: p.label }));
+  const SIZE_OPTIONS = SIZE_PRESETS.map((p) => ({
+    value: p.label,
+    label: p.label,
+  }));
   const sizeValue = $derived(activePreset ?? "");
 
   function setPresetByLabel(label: string) {
@@ -267,7 +277,9 @@
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   function formatRouteLabel(label: string): string {
-    return label.replace(/--/g, " / ").replace(/(^|\s)\w/g, (c) => c.toUpperCase());
+    return label
+      .replace(/--/g, " / ")
+      .replace(/(^|\s)\w/g, (c) => c.toUpperCase());
   }
 
   // Svelte action: move focus to the dialog when it mounts so keyboard users
@@ -351,7 +363,8 @@
         <h3>Gallery</h3>
         {#if !isLoading && hasItems}
           <span class="stats">
-            {stats.totalScreenshots} screenshots, {stats.routeCount} routes, {stats.deviceCount} devices
+            {stats.totalScreenshots} screenshots, {stats.routeCount} routes, {stats.deviceCount}
+            devices
           </span>
         {/if}
       </div>
@@ -373,7 +386,9 @@
           <button
             class="header-btn"
             class:active={selection.selectionMode}
-            onclick={selection.selectionMode ? selection.exitSelectionMode : selection.enterSelectionMode}
+            onclick={selection.selectionMode
+              ? selection.exitSelectionMode
+              : selection.enterSelectionMode}
           >
             <i class="fas fa-check-square"></i>
             {selection.selectionMode ? "Exit Select" : "Select"}
@@ -398,7 +413,9 @@
       <SelectionToolbar
         selectedCount={selection.selectedIds.size}
         totalCount={flatItems.length}
-        onTag={tagFilter.openTagPicker}
+        primaryLabel="Tag"
+        primaryIcon="fa-tags"
+        onPrimaryAction={tagFilter.openTagPicker}
         onSelectAll={selection.selectAll}
         onClearSelection={selection.clearSelection}
         onExitSelection={selection.exitSelectionMode}
@@ -416,7 +433,9 @@
     {:else if capture.capturePhase === "uploading" && capture.uploadProgress}
       <UploadProgressCard
         progress={capture.uploadProgress}
-        onRetry={capture.uploadProgress.phase === "failed" ? capture.retryUpload : undefined}
+        onRetry={capture.uploadProgress.phase === "failed"
+          ? capture.retryUpload
+          : undefined}
       />
     {/if}
 
@@ -427,7 +446,10 @@
           <SegmentedControl
             options={FILTERS}
             value={activeFilter}
-            onchange={(value) => { hapticService?.trigger("selection"); activeFilter = value; }}
+            onchange={(value) => {
+              hapticService?.trigger("selection");
+              activeFilter = value;
+            }}
             color="accent"
             size="sm"
           />
@@ -465,7 +487,10 @@
       <div class="state-message empty">
         <i class="fas fa-camera"></i>
         <h4>No screenshots in cloud storage</h4>
-        <p>Run the migration script or capture new screenshots to populate cloud storage.</p>
+        <p>
+          Run the migration script or capture new screenshots to populate cloud
+          storage.
+        </p>
       </div>
     {:else if tagFilteredModuleGroups.size === 0}
       <div class="state-message empty">
@@ -499,7 +524,7 @@
     open={tagFilter.sidebarOpen}
     tags={tagFilter.allTags}
     {mediaItems}
-    filteredMediaItems={filteredMediaItems}
+    {filteredMediaItems}
     activeTagIds={tagFilter.activeTagIds}
     excludeTagIds={tagFilter.excludeTagIds}
     tagMode={tagFilter.tagMode}
@@ -510,7 +535,9 @@
     onSetTagMode={tagFilter.setTagMode}
     onSetUntaggedOnly={tagFilter.setUntaggedOnly}
     onClearTags={tagFilter.clearTags}
-    onCreateTag={() => { tagFilter.showTagCreator = true; }}
+    onCreateTag={() => {
+      tagFilter.showTagCreator = true;
+    }}
   />
 </div>
 
@@ -521,7 +548,9 @@
     allTags={tagFilter.allTags}
     position={tagFilter.tagPanelPosition}
     onToggleTag={tagFilter.toggleTagOnScreenshot}
-    onCreateTag={() => { tagFilter.showTagCreator = true; }}
+    onCreateTag={() => {
+      tagFilter.showTagCreator = true;
+    }}
     onClose={tagFilter.closeTagPanel}
   />
 {/if}
@@ -531,7 +560,11 @@
   <!-- Backdrop: click-to-close is a deliberate modal-dismiss affordance; the
        keyboard path (Escape) lives on the focused dialog below, not here. -->
   <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-  <div class="tag-picker-backdrop" role="presentation" onclick={tagFilter.closeTagPicker}>
+  <div
+    class="tag-picker-backdrop"
+    role="presentation"
+    onclick={tagFilter.closeTagPicker}
+  >
     <div
       class="tag-picker-container"
       role="dialog"
@@ -540,7 +573,9 @@
       tabindex="-1"
       use:focusOnMount
       onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => { if (e.key === "Escape") tagFilter.closeTagPicker(); }}
+      onkeydown={(e) => {
+        if (e.key === "Escape") tagFilter.closeTagPicker();
+      }}
     >
       <TagPickerPanel
         allTags={tagFilter.allTags}
@@ -559,7 +594,9 @@
     tags={tagFilter.allTags}
     categoryLabels={{}}
     onCreate={tagFilter.createTag}
-    onClose={() => { tagFilter.showTagCreator = false; }}
+    onClose={() => {
+      tagFilter.showTagCreator = false;
+    }}
   />
 {/if}
 
@@ -569,7 +606,11 @@
   bind:currentIndex={spotlightIndex}
   bind:open={spotlightOpen}
   config={spotlightConfig}
-  callbacks={{ onclose: () => { spotlightOpen = false; } }}
+  callbacks={{
+    onclose: () => {
+      spotlightOpen = false;
+    },
+  }}
 />
 
 <style>
@@ -660,8 +701,16 @@
   }
 
   .header-btn.active {
-    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #3b82f6) 20%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #3b82f6) 40%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 

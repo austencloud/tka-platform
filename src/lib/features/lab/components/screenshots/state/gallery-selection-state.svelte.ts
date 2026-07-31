@@ -10,6 +10,7 @@ import type { HapticFeedback } from "$lib/shared/application/services/haptic-fee
 import type { ScreenshotTagController } from "../../../services/screenshot-tag-controller";
 import type { GalleryItem } from "../../../services/types";
 import type { MediaTag } from "@austencloud/media-tagging-types";
+import { createMultiSelectionState } from "$lib/shared/selection/state/create-multi-selection-state.svelte";
 
 export interface GallerySelectionDeps {
   getHapticService: () => HapticFeedback | null;
@@ -18,56 +19,49 @@ export interface GallerySelectionDeps {
 }
 
 export function createGallerySelectionState(deps: GallerySelectionDeps) {
-  let selectionMode = $state(false);
-  let selectedIds = $state<Set<string>>(new Set());
+  const selection = createMultiSelectionState({
+    getAllIds: () => deps.getFlatItems().map((item) => item.id),
+    onModeChange: () => deps.getHapticService()?.trigger("selection"),
+  });
 
   function enterSelectionMode() {
-    selectionMode = true;
-    deps.getHapticService()?.trigger("selection");
+    selection.enter();
   }
 
   function exitSelectionMode() {
-    selectionMode = false;
-    selectedIds = new Set();
-    deps.getHapticService()?.trigger("selection");
+    selection.exit();
   }
 
   function toggleSelection(itemId: string) {
-    const next = new Set(selectedIds);
-    if (next.has(itemId)) {
-      next.delete(itemId);
-    } else {
-      next.add(itemId);
-    }
-    selectedIds = next;
+    selection.toggle(itemId);
   }
 
   function selectAll() {
-    selectedIds = new Set(deps.getFlatItems().map((item) => item.id));
+    selection.selectAll();
   }
 
   function clearSelection() {
-    selectedIds = new Set();
+    selection.clear();
   }
 
   async function bulkApplyTag(tag: MediaTag) {
-    const ids = [...selectedIds];
+    const ids = [...selection.selectedIds];
     const controller = deps.getTagController();
     await controller?.addTagToScreenshots(tag.id, ids);
   }
 
   async function bulkRemoveTag(tag: MediaTag) {
-    const ids = [...selectedIds];
+    const ids = [...selection.selectedIds];
     const controller = deps.getTagController();
     await controller?.removeTagFromScreenshots(tag.id, ids);
   }
 
   return {
     get selectionMode() {
-      return selectionMode;
+      return selection.active;
     },
     get selectedIds() {
-      return selectedIds;
+      return selection.selectedIds;
     },
 
     enterSelectionMode,
