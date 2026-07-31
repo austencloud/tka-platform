@@ -23,10 +23,24 @@ their own copies drifted (dropdown popovers, stale search) within days.
 		engine,
 		isOpen = $bindable(false),
 		isMobile,
+		allowSearch = true,
+		allowShowAll = true,
+		title = "Filters",
+		chooserTitle,
+		chooserHint,
 	}: {
 		engine: BrowseEngine;
 		isOpen?: boolean;
 		isMobile: boolean;
+		/** Builder hosts save criteria, not transient text queries. */
+		allowSearch?: boolean;
+		/** Builder hosts require at least one criterion. */
+		allowShowAll?: boolean;
+		/** Host-specific drawer title. */
+		title?: string;
+		/** Host-specific chooser copy without duplicating the drill. */
+		chooserTitle?: string;
+		chooserHint?: string;
 	} = $props();
 
 	// Remount the drill per OPEN (fresh section state) — not per close, which
@@ -58,6 +72,16 @@ their own copies drifted (dropdown popovers, stale search) within days.
 		),
 	);
 	const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
+
+	function applySearch(query: string) {
+		engine.setSearch(query);
+		isOpen = false;
+	}
+
+	function showAllResults() {
+		engine.clearUserFilters();
+		isOpen = false;
+	}
 </script>
 
 <div style:--drawer-width={isMobile ? "100vw" : "min(480px, 44vw)"}>
@@ -69,12 +93,16 @@ their own copies drifted (dropdown popovers, stale search) within days.
 			if (!open) isOpen = false;
 		}}
 	>
-		<DrawerHeader title="Filters" onClose={() => (isOpen = false)} />
+		<DrawerHeader {title} onClose={() => (isOpen = false)} />
 		<div class="filter-sheet-content">
 			{#key epoch}
+				<!-- Search is absent in Smart Collection builders because the
+				     saved spec serializes filters, not text queries. -->
 				<GalleryDrill
 					variant="sheet"
 					pool={engine.allSequences}
+					{chooserTitle}
+					{chooserHint}
 					getCount={(type, value) => engine.getFilteredCount(type, value)}
 					onApply={(type, value, label, color) => {
 						engine.addFilter(type, value, label, color ?? "#6aa0ff");
@@ -100,16 +128,9 @@ their own copies drifted (dropdown popovers, stale search) within days.
 							if (key) engine.removeFilter(key);
 						}
 					}}
-					onSearch={(q) => {
-						// Applies like any drill pick: chip appears in the filter bar
-						// (dismiss there), sheet closes onto the results.
-						engine.setSearch(q);
-						isOpen = false;
-					}}
-					onShowAll={() => {
-						engine.clearUserFilters();
-						isOpen = false;
-					}}
+					onSearch={allowSearch ? applySearch : undefined}
+					showAll={allowShowAll}
+					onShowAll={allowShowAll ? showAllResults : undefined}
 				/>
 			{/key}
 		</div>

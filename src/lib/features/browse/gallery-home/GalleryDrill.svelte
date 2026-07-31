@@ -3,8 +3,8 @@
   app's InitialFilterChoiceWidget: a "series of presets" drill-down.
   Screen 1 = pick HOW to browse (a filter category). Screen 2 = pick the value
   (live counts, never a dead end). Then hand off to the real filtered grid.
-  "Show all" + search are always available (no gating). One dimension at a time
-  — mobile-first, no card wall, no horizontal scroll.
+  "Show all" + search appear when the host supports them. One dimension at a
+  time — mobile-first, no card wall, no horizontal scroll.
 
   Visual layer (2026-07-01 content-peek redesign): every visual carries data.
   Category tiles preview REAL sequences from their bucket (deterministic picks,
@@ -71,6 +71,12 @@
     ) => void;
     onShowAll?: () => void;
     onSearch?: (query: string) => void;
+    /** Some hosts require at least one saved criterion, so "Show all" would
+     * create an invalid state and should not be offered. */
+    showAll?: boolean;
+    /** Host-specific chooser copy without duplicating the drill surface. */
+    chooserTitle?: string;
+    chooserHint?: string;
     /** Loop-component values currently applied (e.g. "component:mirrored").
      * LOOP rows render active and toggle off on re-tap. */
     activeLoopValues?: ReadonlySet<string>;
@@ -92,6 +98,13 @@
     /** "page" = the gallery front door (with search). "sheet" = the grid's
      * filter bottom sheet — same filter categories, no search. */
     variant?: "page" | "sheet";
+    /** Persist the current sub-screen across remounts. Defaults to the page
+     * variant's behavior; transient builders opt out without inheriting the
+     * filter sheet's top-aligned layout. */
+    persistSection?: boolean;
+    /** Show the navigation-only Collections tile. Builders turn this off
+     * because every choice must add a valid rule criterion. */
+    showCollections?: boolean;
   }
   let {
     pool = [],
@@ -99,12 +112,20 @@
     onApply,
     onShowAll,
     onSearch,
+    showAll = true,
+    chooserTitle,
+    chooserHint,
     activeLoopValues,
     onToggleLoop,
     activeFamilyValues,
     onToggleFamily,
     variant = "page",
+    persistSection,
+    showCollections,
   }: Props = $props();
+
+  const shouldPersistSection = persistSection ?? variant === "page";
+  const shouldShowCollections = showCollections ?? variant === "page";
 
   type Section =
     | "chooser"
@@ -129,11 +150,11 @@
     "family",
     "max_turn_intensity",
   ];
-  /** Page variant restores its sub-screen across reload/HMR (sessionStorage);
-   * a stale/unknown stored value degrades to the chooser. Sheet always opens
-   * fresh — it's a transient drawer. */
+  /** Persistent hosts restore their sub-screen across reload/HMR
+   * (sessionStorage); a stale/unknown value degrades to the chooser. Transient
+   * hosts always open fresh. */
   function restoreSection(): Section {
-    if (variant !== "page") return "chooser";
+    if (!shouldPersistSection) return "chooser";
     const stored = getDrillSection();
     return stored && (SECTIONS as readonly string[]).includes(stored)
       ? (stored as Section)
@@ -141,7 +162,7 @@
   }
   let section = $state<Section>(restoreSection());
   $effect(() => {
-    if (variant === "page") setDrillSection(section);
+    if (shouldPersistSection) setDrillSection(section);
   });
   let query = $state("");
 
@@ -163,8 +184,8 @@
 
   // Legacy grid_mode_section values + descriptions (same grid SVGs, already in static/).
   const GRID_MODES = [
-    { value: "diamond", label: "Diamond", desc: "Cardinal points — N, E, S, W", img: "/images/grid/diamond_grid.svg" },
-    { value: "box", label: "Box", desc: "Diagonal points — NE, SE, SW, NW", img: "/images/grid/box_grid.svg" },
+    { value: "diamond", label: "Diamond", desc: "Cardinal points: N, E, S, W", img: "/images/grid/diamond_grid.svg" },
+    { value: "box", label: "Box", desc: "Diagonal points: NE, SE, SW, NW", img: "/images/grid/box_grid.svg" },
   ];
 
   // Loop structure — the same component catalog the LOOP filter chip exposes
@@ -499,18 +520,24 @@
       {#if section === "chooser"}
         <div class="drill-screen">
           <header class="drill-head">
-            <h2>{variant === "sheet" ? "Filter sequences" : "How do you want to browse?"}</h2>
+            <h2>
+              {chooserTitle ??
+                (variant === "sheet"
+                  ? "Filter sequences"
+                  : "How do you want to browse?")}
+            </h2>
             <p>
-              {variant === "sheet"
-                ? "Counts update with your current filters."
-                : "Pick one to narrow it down."}
+              {chooserHint ??
+                (variant === "sheet"
+                  ? "Counts update with your current filters."
+                  : "Pick one to narrow it down.")}
             </p>
           </header>
 
           <!-- hero-grid: single column on phones (identical to the old stacked
                flow), two-up on wide containers so the front door actually uses
                a desktop monitor instead of floating as a 520px ribbon. -->
-          <div class="hero-grid">
+          <div class="hero-grid" class:without-show-all={!showAll}>
             <button class="choice-tile" type="button" onclick={() => (section = "level")}>
               <span class="choice-main">
                 <span class="choice-title">By level</span>
@@ -548,18 +575,20 @@
             <!-- Show-all lives IN the hero rank: it's the main door, not a
                  footnote. Phone: third stacked tile (same order as before).
                  Two-up tier: spans the full row. Ultra-wide: third hero door. -->
-            <button class="choice-tile compact" type="button" onclick={() => onShowAll?.()}>
-              <span class="choice-main">
-                <span class="choice-title">Show all {pool.length} sequences</span>
-                <span class="choice-sub">The whole gallery, one grid</span>
-              </span>
-              <span class="peek-collage" aria-hidden="true">
-                {#each collageSlots as seq, i (i)}
-                  <SequencePeek sequence={seq} width={PEEK.collW} height={PEEK.collH} />
-                {/each}
-              </span>
-              <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
-            </button>
+            {#if showAll}
+              <button class="choice-tile compact" type="button" onclick={() => onShowAll?.()}>
+                <span class="choice-main">
+                  <span class="choice-title">Show all {pool.length} sequences</span>
+                  <span class="choice-sub">The whole gallery, one grid</span>
+                </span>
+                <span class="peek-collage" aria-hidden="true">
+                  {#each collageSlots as seq, i (i)}
+                    <SequencePeek sequence={seq} width={PEEK.collW} height={PEEK.collH} />
+                  {/each}
+                </span>
+                <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+              </button>
+            {/if}
           </div>
 
           {#if pool.length > 0}
@@ -709,7 +738,7 @@
                    in its own Browse sub-tab now, so this tile just switches to
                    it (the same nav seam the tab bar uses). Only the page front
                    door shows it — a filter sheet must never navigate away. -->
-              {#if variant === "page"}
+              {#if shouldShowCollections}
                 <button
                   class="mini-tile"
                   type="button"
@@ -815,7 +844,7 @@
               <button
                 class="letter-chip"
                 type="button"
-                aria-label="{v.value} — {v.count} sequences"
+                aria-label="{v.value}, {v.count} sequences"
                 onclick={() => onApply(BrowseFilterType.STARTING_LETTER, v.value, v.value)}
               >
                 <span class="letter-glyph">
@@ -936,7 +965,7 @@
         <div class="drill-screen">
           {@render valueHead(
             "Pick a LOOP type",
-            onToggleLoop ? "LOOPs stack — tap several to combine them." : undefined,
+            onToggleLoop ? "LOOPs stack. Tap several to combine them." : undefined,
           )}
           <div class="value-list">
             {#each loopValues as v (v.value)}
@@ -1957,6 +1986,11 @@
     .hero-grid {
       grid-template-columns: repeat(3, 1fr);
       gap: 1.1rem;
+    }
+    .hero-grid.without-show-all {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 1160px;
+      justify-self: center;
     }
     .choice-tile,
     .choice-tile.compact {

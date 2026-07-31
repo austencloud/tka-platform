@@ -40,6 +40,7 @@ header; "Edit rule" reopens the builder to change it.
 		getFoundingCollection,
 		toSyntheticCollection,
 	} from "$lib/features/browse/collections/config/founding-collections";
+	import SmartCollectionDetailSurface from "./SmartCollectionDetailSurface.svelte";
 
 	let {
 		collectionId,
@@ -52,11 +53,12 @@ header; "Edit rule" reopens the builder to change it.
 	} = $props();
 
 	let collection = $state<LibraryCollection | null>(null);
+	let loadState = $state<"loading" | "ready" | "error">("loading");
+	let reloadKey = $state(0);
 
 	const isFounding = $derived(!!collection && isFoundingId(collection.id));
 	const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
 	const spec = $derived(collection?.filterSpec ?? null);
-	const sourceLabel = $derived(spec?.source === "my-library" ? "My Library" : "Community");
 
 	// One ephemeral engine for this view; its source is fixed to the rule's pool.
 	// Rebuilt filters live in the engine — a rule edit clears + re-applies them.
@@ -66,7 +68,9 @@ header; "Edit rule" reopens the builder to change it.
 	// reflects here. A deleted (or non-smart) doc bails to the list.
 	$effect(() => {
 		const id = collectionId;
+		void reloadKey;
 		collection = null;
+		loadState = "loading";
 
 		// Founding collections are config-defined, not Firestore docs.
 		if (isFoundingId(id)) {
@@ -76,17 +80,34 @@ header; "Edit rule" reopens the builder to change it.
 				return;
 			}
 			collection = toSyntheticCollection(founding);
+			loadState = "ready";
 			return; // no subscription to tear down
 		}
 
-		const unsubscribe = subscribeToCollection(id, (col) => {
-			if (!col || col.kind !== "smart") {
-				onBack();
-				return;
-			}
-			collection = col;
-		});
-		return unsubscribe;
+		let unsubscribe = () => {};
+		const timeout = setTimeout(() => {
+			if (loadState === "loading") loadState = "error";
+		}, 10_000);
+
+		try {
+			unsubscribe = subscribeToCollection(id, (col) => {
+				clearTimeout(timeout);
+				if (!col || col.kind !== "smart") {
+					onBack();
+					return;
+				}
+				collection = col;
+				loadState = "ready";
+			});
+		} catch {
+			clearTimeout(timeout);
+			loadState = "error";
+		}
+
+		return () => {
+			clearTimeout(timeout);
+			unsubscribe();
+		};
 	});
 
 	// Build the engine once the first spec is known; re-apply filters whenever
@@ -98,6 +119,7 @@ header; "Edit rule" reopens the builder to change it.
 	});
 	$effect(() => {
 		const s = spec;
+		void reloadKey;
 		void specSignature; // re-run when the rule content changes
 		if (!s) return;
 		untrack(() => {
@@ -136,6 +158,25 @@ header; "Edit rule" reopens the builder to change it.
 			applySpecToEngine(engine, s);
 		});
 	});
+
+	const hasLoadError = $derived(
+		loadState === "error" ||
+			!!engine?.error ||
+			(loadState === "ready" && !!collection && !spec),
+	);
+	const resultsLoading = $derived(
+		loadState === "loading" ||
+			(loadState === "ready" && !!spec && (!engine || engine.isLoading)),
+	);
+	const liveMatchCount = $derived(
+		engine && !engine.isLoading && !engine.error ? engine.resultCount : null,
+	);
+
+	function retryLoad() {
+		engine?.destroy();
+		engine = null;
+		reloadKey += 1;
+	}
 
 	// Self-heal the rail's cached count: once the engine finishes loading, the
 	// live match count is authoritative. If the cached `sequenceCount` differs
@@ -234,71 +275,43 @@ header; "Edit rule" reopens the builder to change it.
 	}
 </script>
 
-<div class="collection-detail" style="--tile-color: {tileColor};">
-	<header class="detail-header">
-		{#if showBack}
-			<button type="button" class="back-btn" aria-label="Back to collections" onclick={onBack}>
-				<i class="fas fa-arrow-left" aria-hidden="true"></i>
-			</button>
-		{/if}
+<SmartCollectionDetailSurface
+	name={collection?.name}
+	description={collection?.description}
+	icon={collection?.icon}
+	color={tileColor}
+	{spec}
+	matchCount={liveMatchCount}
+	loading={resultsLoading}
+	error={hasLoadError}
+	readOnly={isFounding}
+	{showBack}
+	editing={renaming}
+	{onBack}
+	onEdit={collection && !isFounding ? () => (editOpen = true) : undefined}
+	onOptions={collection && !isFounding ? handleOptions : undefined}
+	onRetry={retryLoad}
+>
+	{#snippet titleEditor()}
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			type="text"
+			class="rename-field"
+			aria-label="Collection name"
+			bind:value={renameValue}
+			onkeydown={handleRenameKeydown}
+			onblur={() => void commitRename()}
+			maxlength="60"
+			autofocus
+		/>
+	{/snippet}
 
-		<span class="header-icon">
-			<i class={`fas ${collection?.icon ?? "fa-wand-magic-sparkles"}`} aria-hidden="true"></i>
-		</span>
-
-		{#if renaming}
-			<!-- svelte-ignore a11y_autofocus -->
-			<input
-				type="text"
-				class="rename-field"
-				aria-label="Collection name"
-				bind:value={renameValue}
-				onkeydown={handleRenameKeydown}
-				onblur={() => void commitRename()}
-				maxlength="60"
-				autofocus
-			/>
-		{:else}
-			<div class="header-text">
-				<h2 class="header-name">{collection?.name ?? ""}</h2>
-				<span class="header-count">
-					Smart · {sourceLabel}{#if engine} · {engine.resultCount} now{/if}
-				</span>
-			</div>
-		{/if}
-
-		{#if collection && !renaming && !isFounding}
-			<button type="button" class="edit-btn" onclick={() => (editOpen = true)}>
-				<i class="fas fa-sliders" aria-hidden="true"></i>
-				<span>Edit rule</span>
-			</button>
-			<button
-				type="button"
-				class="options-btn"
-				aria-label="Collection options"
-				onclick={handleOptions}
-			>
-				<i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
-			</button>
-		{/if}
-	</header>
-
-	{#if spec && spec.filters.length > 0}
-		<div class="rule-chips" aria-label="Rule">
-			{#each spec.filters as f (f.key)}
-				<span class="rule-chip" style="--chip-color: {f.chipColor};">{f.label}</span>
-			{/each}
-		</div>
-	{/if}
-
-	<div class="detail-body">
+	{#snippet children()}
 		{#if engine}
-			<!-- Read-only: the rule is shown as chips in the header and edited via
-			     "Edit rule". Hiding BrowsePanel's toolbar + filter bar stops the
-			     rule from being mutated in place (which would silently diverge from
-			     the saved rule) and drops the duplicate filter chips. The section
-			     rail stays on — it's read-only navigation (jump to letter / date /
-			     level), not rule mutation. -->
+			<!-- The saved rule is only changed through Edit rule. BrowsePanel's
+			     mutation controls stay hidden, while its section rail remains
+			     available as read-only navigation. Empty and error states are
+			     intercepted by SmartCollectionDetailSurface. -->
 			<BrowsePanel
 				{engine}
 				layout="compact"
@@ -308,8 +321,8 @@ header; "Edit rule" reopens the builder to change it.
 				onSelect={handleSelect}
 			/>
 		{/if}
-	</div>
-</div>
+	{/snippet}
+</SmartCollectionDetailSurface>
 
 <ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
 
@@ -341,127 +354,23 @@ header; "Edit rule" reopens the builder to change it.
 {/if}
 
 <style>
-	.collection-detail {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		min-height: 0;
-	}
-
-	.detail-header {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 10px 12px;
-		flex-shrink: 0;
-	}
-
-	.back-btn,
-	.options-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		flex-shrink: 0;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 12px;
-		color: var(--theme-text, white);
-		cursor: pointer;
-	}
-
-	.header-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 40px;
-		height: 40px;
-		flex-shrink: 0;
-		border-radius: 11px;
-		background: color-mix(in srgb, var(--tile-color) 20%, transparent);
-		color: var(--tile-color);
-		font-size: 16px;
-	}
-
-	.header-text {
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-		min-width: 0;
-	}
-
-	.header-name {
-		margin: 0;
-		font-size: clamp(16px, 2.4cqi, 20px);
-		font-weight: 700;
-		color: var(--theme-text, white);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.header-count {
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-		font-variant-numeric: tabular-nums;
-	}
-
-	.edit-btn {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		height: 44px;
-		padding: 0 16px;
-		flex-shrink: 0;
-		border: 1px solid color-mix(in srgb, var(--tile-color) 45%, transparent);
-		border-radius: 12px;
-		background: color-mix(in srgb, var(--tile-color) 18%, transparent);
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 600;
-		cursor: pointer;
-	}
-
 	.rename-field {
-		flex: 1;
+		width: 100%;
 		min-width: 0;
-		height: 44px;
+		height: 48px;
 		padding: 0 14px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid color-mix(in srgb, var(--tile-color) 45%, transparent);
+		border: 1.5px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
 		border-radius: 12px;
 		color: var(--theme-text, white);
 		font-size: var(--font-size-sm, 14px);
 		font-family: inherit;
 	}
 
-	.rule-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		padding: 0 12px 8px;
-		flex-shrink: 0;
-	}
-
-	.rule-chip {
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 12px;
-		min-height: 28px;
-		background: color-mix(in srgb, var(--chip-color) 12%, transparent);
-		border: 1px solid color-mix(in srgb, var(--chip-color) 30%, transparent);
-		border-radius: 100px;
-		color: var(--theme-text);
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	.detail-body {
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
+	.rename-field:focus-visible {
+		border-color: var(--theme-accent);
+		outline: none;
+		box-shadow: 0 0 0 3px
+			color-mix(in srgb, var(--theme-accent) 18%, transparent);
 	}
 </style>

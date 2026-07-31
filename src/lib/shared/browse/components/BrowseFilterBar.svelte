@@ -13,6 +13,7 @@ Reads from / writes to a headless BrowseEngine instance.
   import LengthFilterChip from "$lib/shared/browse/components/filter-chips/LengthFilterChip.svelte";
   import MaxTurnIntensityFilterChip from "$lib/shared/browse/components/filter-chips/MaxTurnIntensityFilterChip.svelte";
   import LOOPFilterChip from "$lib/shared/browse/components/filter-chips/LOOPFilterChip.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseEngine } from "../engine/types";
 
@@ -144,6 +145,11 @@ Reads from / writes to a headless BrowseEngine instance.
     if (engine.searchQuery.trim()) engine.setSearch("");
   }
 
+  function handleSaveSmart() {
+    hapticService?.trigger("selection");
+    onSaveSmart?.();
+  }
+
   // Active search renders as a dismissible chip alongside the filters — but
   // only in chipsOnly mode (the bottom-sheet pattern), where the gallery
   // toolbar carries no search input (the drill front door is the search
@@ -236,7 +242,7 @@ Reads from / writes to a headless BrowseEngine instance.
         <button
           class="chip-dismiss"
           type="button"
-          aria-label={t('browse_remove_filter', { label: activeSearch })}
+          aria-label={t('browse_remove_filter', { type: activeSearch })}
           onclick={handleDismissSearch}
         >
           <i class="fas fa-times" aria-hidden="true"></i>
@@ -259,7 +265,7 @@ Reads from / writes to a headless BrowseEngine instance.
           <button
             class="chip-dismiss"
             type="button"
-            aria-label={t('browse_remove_filter', { label: chip.label })}
+            aria-label={t('browse_remove_filter', { type: chip.label })}
             onclick={(e) => {
               e.stopPropagation();
               handleDismissChip(chip.key);
@@ -272,30 +278,26 @@ Reads from / writes to a headless BrowseEngine instance.
     {/each}
 
     {#if engine.hasActiveFilters || activeSearch}
-      <button
-        class="clear-all-btn"
-        type="button"
-        onclick={(e) => {
-          e.stopPropagation();
-          handleClearAll();
-        }}
-      >
-        {t('browse_clear_all')}
-      </button>
+      <FilterChipBase
+        label={t('browse_clear_all')}
+        icon="fas fa-xmark"
+        mode="action"
+        size="sm"
+        chipColor="var(--semantic-error)"
+        onclick={handleClearAll}
+      />
     {/if}
 
     {#if onSaveSmart && engine.hasActiveFilters}
-      <button
-        class="save-smart-btn"
-        type="button"
-        onclick={(e) => {
-          e.stopPropagation();
-          onSaveSmart?.();
-        }}
-      >
-        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        Save as Smart Collection
-      </button>
+      <FilterChipBase
+        label="Save as Smart Collection"
+        icon="fas fa-wand-magic-sparkles"
+        mode="action"
+        size="sm"
+        chipColor="var(--theme-accent)"
+        active
+        onclick={handleSaveSmart}
+      />
     {/if}
   </div>
 </div>
@@ -414,50 +416,6 @@ Reads from / writes to a headless BrowseEngine instance.
     transform: scale(0.9);
   }
 
-  .clear-all-btn {
-    padding: 4px var(--spacing-md, 12px);
-    min-height: 28px;
-    background: transparent;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 100px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition:
-      background var(--duration-fast, 150ms) ease,
-      color var(--duration-fast, 150ms) ease;
-  }
-
-  .clear-all-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
-    color: var(--semantic-error);
-    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
-  }
-
-  .save-smart-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px var(--spacing-md, 12px);
-    min-height: 28px;
-    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
-    border-radius: 100px;
-    color: var(--theme-text);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .save-smart-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent) 24%, transparent);
-  }
-
   @container gallery (min-width: 900px) {
     .browse-filter-bar {
       display: none;
@@ -471,8 +429,7 @@ Reads from / writes to a headless BrowseEngine instance.
 
   @media (prefers-reduced-motion: reduce) {
     .active-chip,
-    .chip-dismiss,
-    .clear-all-btn {
+    .chip-dismiss {
       animation: none;
       transition: none;
     }

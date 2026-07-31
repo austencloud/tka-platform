@@ -24,6 +24,7 @@ instead of showing an empty shell.
 <script lang="ts">
 	import { onMount, type Component } from "svelte";
 	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+	import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
@@ -33,6 +34,7 @@ instead of showing an empty shell.
 	import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
 	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
 	import CollectionCard from "./CollectionCard.svelte";
+	import CollectionAddTile from "./CollectionAddTile.svelte";
 	import CollectionDetailView from "./CollectionDetailView.svelte";
 	import SmartCollectionDetailView from "./SmartCollectionDetailView.svelte";
 	import SmartCollectionBuilderSheet from "./SmartCollectionBuilderSheet.svelte";
@@ -44,6 +46,7 @@ instead of showing an empty shell.
 	} from "$lib/features/browse/collections/config/founding-collections";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
 	const signedIn = $derived(!!authState.user);
 
@@ -100,6 +103,7 @@ instead of showing an empty shell.
 
 	// "New smart collection" opens the builder from scratch.
 	let smartBuilderOpen = $state(false);
+	let smartEditTarget = $state<LibraryCollection | null>(null);
 
 	// ── "All" shelf ──────────────────────────────────────────────────────────
 	// The library pile itself, pinned above Favorites (it's the superset).
@@ -357,6 +361,9 @@ instead of showing an empty shell.
 			collection={c}
 			selected={!!sel && sel.id === c.id && !sel.ownerId}
 			onOpen={() => openCollection(c.id, c.name)}
+			onEditRule={c.kind === "smart"
+				? () => (smartEditTarget = c)
+				: undefined}
 		/>
 	{/each}
 
@@ -384,20 +391,20 @@ instead of showing an empty shell.
 			</button>
 		</div>
 	{:else}
-		<button type="button" class="add-tile" onclick={() => (showInput = true)}>
-			<span class="add-icon">
-				<i class="fas fa-plus" aria-hidden="true"></i>
-			</span>
-			<span class="add-label">New collection</span>
-		</button>
+		<CollectionAddTile
+			label="New collection"
+			hint="Choose the sequences yourself"
+			icon="fa-plus"
+			onclick={() => (showInput = true)}
+		/>
 	{/if}
 
-	<button type="button" class="add-tile smart" onclick={() => (smartBuilderOpen = true)}>
-		<span class="add-icon">
-			<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-		</span>
-		<span class="add-label">New smart collection</span>
-	</button>
+	<CollectionAddTile
+		label="New Smart Collection"
+		hint="Build a live collection from filters"
+		icon="fa-wand-magic-sparkles"
+		onclick={() => (smartBuilderOpen = true)}
+	/>
 {/snippet}
 
 {#snippet artShelf(sel: { id: string; ownerId: string | null } | null)}
@@ -569,9 +576,23 @@ instead of showing an empty shell.
 				</span>
 				<p class="signed-out-title">Your library lives in your account</p>
 				<p class="signed-out-hint">
-					Sign in to keep every sequence you save in one place, organize them
-					into collections, and follow collections other people share.
+					Log in or create a free account to keep saved sequences together,
+					build Smart Collections, and follow collections other people share.
 				</p>
+				<div class="auth-actions">
+					<PanelButton
+						variant="primary"
+						onclick={() => authDrawerState.show("signup", "module:library")}
+					>
+						Create account
+					</PanelButton>
+					<PanelButton
+						variant="secondary"
+						onclick={() => authDrawerState.show("signin")}
+					>
+						Log in
+					</PanelButton>
+				</div>
 			</div>
 		{:else if loading && collections.length === 0}
 				<div class="card-grid" aria-hidden="true">
@@ -607,6 +628,15 @@ instead of showing an empty shell.
 
 {#if smartBuilderOpen}
 	<SmartCollectionBuilderSheet mode="create" onClose={() => (smartBuilderOpen = false)} />
+{/if}
+
+{#if smartEditTarget?.filterSpec}
+	<SmartCollectionBuilderSheet
+		mode="edit"
+		editCollectionId={smartEditTarget.id}
+		initialSpec={smartEditTarget.filterSpec}
+		onClose={() => (smartEditTarget = null)}
+	/>
 {/if}
 
 <style>
@@ -759,52 +789,6 @@ instead of showing an empty shell.
 		letter-spacing: 0.06em;
 	}
 
-	/* Add tile: dashed, quieter, same footprint as a collection card. */
-	.add-tile {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		min-height: 72px;
-		padding: 14px 16px;
-		text-align: left;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px dashed var(--theme-stroke, rgba(255, 255, 255, 0.16));
-		border-radius: 14px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-		cursor: pointer;
-		font: inherit;
-		transition:
-			background var(--duration-fast, 150ms) ease,
-			border-color var(--duration-fast, 150ms) ease;
-	}
-
-	.add-tile:hover {
-		border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
-		background: color-mix(in srgb, var(--theme-accent) 6%, var(--theme-card-bg));
-	}
-
-	.add-tile:focus-visible {
-		outline: 2px solid var(--theme-accent);
-		outline-offset: 2px;
-	}
-
-	.add-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		flex-shrink: 0;
-		border-radius: 12px;
-		background: color-mix(in srgb, var(--theme-text-dim, #888) 14%, transparent);
-		font-size: 15px;
-	}
-
-	.add-label {
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 600;
-	}
-
 	.new-tile-input {
 		display: flex;
 		align-items: center;
@@ -917,8 +901,15 @@ instead of showing an empty shell.
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
 	}
 
+	.auth-actions {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		margin-top: 6px;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		.add-tile,
 		.confirm-create {
 			transition: none;
 		}

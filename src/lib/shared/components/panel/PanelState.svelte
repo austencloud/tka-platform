@@ -5,6 +5,7 @@
    * Provides consistent state displays across panels.
    */
 
+  import type { Snippet } from "svelte";
   import PanelSpinner from "./PanelSpinner.svelte";
 
   type StateType = "loading" | "error" | "empty" | "info";
@@ -22,9 +23,19 @@
     onretry?: () => void;
     /** Dense variant: smaller padding/icon/title for inline empty states */
     compact?: boolean;
+    /** Optional action row, such as Retry or Edit rule. */
+    actions?: Snippet;
   }
 
-  let { type, title, message, icon, onretry, compact = false }: Props = $props();
+  let {
+    type,
+    title,
+    message,
+    icon,
+    onretry,
+    compact = false,
+    actions,
+  }: Props = $props();
 
   const defaultIcons: Record<StateType, string> = {
     loading: "",
@@ -66,6 +77,12 @@
 
   {#if type === "error" && onretry}
     <button class="panel-state__retry" onclick={onretry}> Try Again </button>
+  {/if}
+
+  {#if actions}
+    <div class="panel-state__actions">
+      {@render actions()}
+    </div>
   {/if}
 </div>
 
@@ -140,6 +157,14 @@
   .panel-state__retry:hover {
     background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
     border-color: var(--theme-stroke-strong);
+  }
+
+  .panel-state__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
   }
 
   @media (prefers-reduced-motion: reduce) {

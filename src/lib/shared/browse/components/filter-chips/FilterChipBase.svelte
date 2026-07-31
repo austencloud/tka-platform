@@ -27,6 +27,8 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     size?: "sm" | "md";
     expanded?: boolean;
     disabled?: boolean;
+    /** Accessible name when the visible label does not describe the action. */
+    ariaLabel?: string;
     children?: Snippet;
     onclick?: () => void;
   }
@@ -43,6 +45,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     size = "md",
     expanded = false,
     disabled = false,
+    ariaLabel,
     children,
     onclick,
   }: Props = $props();
@@ -72,7 +75,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   aria-pressed={mode === "toggle" ? active : undefined}
   aria-haspopup={mode === "dropdown" ? "listbox" : undefined}
   aria-expanded={mode === "dropdown" ? expanded : undefined}
-  aria-label="{label}{count != null ? ` (${count})` : ''}"
+  aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
   {disabled}
   {onclick}
   bind:this={chipEl}

@@ -8,12 +8,15 @@ buildFilterSpecFromEngine on save. Reused by every browse host that offers a
 my-library pool).
 -->
 <script lang="ts">
-	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-	import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
+	import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+	import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
 	import type { BrowseEngine } from "$lib/shared/browse/engine/types";
 	import { buildFilterSpecFromEngine } from "$lib/shared/browse/services/smart-filter-spec";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+	import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+	import SmartCollectionSaveForm from "./SmartCollectionSaveForm.svelte";
 
 	let {
 		engine,
@@ -25,130 +28,85 @@ my-library pool).
 
 	let name = $state("");
 	let saving = $state(false);
+	let wasOpen = false;
+
+	const spec = $derived.by(() => buildFilterSpecFromEngine(engine));
+	const modalOpen = $derived(show && !!authState.user);
 
 	$effect(() => {
-		// Reset the field each time the dialog opens.
-		if (show) {
+		if (show && !wasOpen) {
 			name = "";
 			saving = false;
+		}
+		wasOpen = show;
+
+		// Creating a Smart Collection writes to the account library. Route a
+		// signed-out attempt to the app's canonical account prompt instead of
+		// leaving an inert save dialog on screen.
+		if (show && authState.initialized && !authState.user) {
+			show = false;
+			authDrawerState.show("signup", "module:library");
 		}
 	});
 
 	async function save() {
 		const trimmed = name.trim();
-		if (!trimmed || saving) return;
+		if (!trimmed || saving || spec.filters.length === 0) return;
 		saving = true;
-		const spec = buildFilterSpecFromEngine(engine);
-		const created = await collectionsState.createSmart(trimmed, spec);
-		saving = false;
-		if (created) {
-			toast.success(`Smart collection "${created.name}" saved.`);
-			show = false;
-		}
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			void save();
-		} else if (e.key === "Escape") {
-			e.preventDefault();
-			show = false;
+		try {
+			const created = await collectionsState.createSmart(
+				trimmed,
+				spec,
+				engine.resultCount,
+			);
+			if (created) {
+				toast.success(`Smart Collection "${created.name}" saved.`);
+				show = false;
+			}
+		} finally {
+			saving = false;
 		}
 	}
 </script>
 
-<Drawer bind:isOpen={show} placement="bottom">
-	<DrawerHeader title="Save as Smart Collection" onClose={() => (show = false)} />
-	<div class="save-smart">
-		<p class="hint">
-			This saves your current filters as a rule. The collection stays up to
-			date on its own — new matching sequences show up automatically.
-		</p>
-		<div class="row">
-			<!-- svelte-ignore a11y_autofocus -->
-			<input
-				type="text"
-				class="name-field"
-				placeholder="Name this smart collection"
-				aria-label="Smart collection name"
-				bind:value={name}
-				onkeydown={handleKeydown}
-				maxlength="60"
-				autofocus
-			/>
-			<button
-				type="button"
-				class="save-btn"
-				onclick={save}
-				disabled={!name.trim() || saving}
-			>
-				<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-				<span>Save</span>
-			</button>
-		</div>
-	</div>
-</Drawer>
+<BaseModal
+	open={modalOpen}
+	size="fit"
+	animation="pop"
+	labelledBy="save-smart-collection-title"
+	class="save-smart-modal"
+	onclose={() => (show = false)}
+>
+	{#snippet header()}
+		<ModalHeader
+			id="save-smart-collection-title"
+			title="Save Smart Collection"
+			subtitle="Name the rule you built from these filters."
+			icon="fa-wand-magic-sparkles"
+			iconColor="var(--theme-accent, #8b6cff)"
+			onClose={() => (show = false)}
+		/>
+	{/snippet}
+
+	<SmartCollectionSaveForm
+		{spec}
+		matchCount={engine.resultCount}
+		bind:name
+		{saving}
+		autofocus
+		onSave={() => void save()}
+	/>
+</BaseModal>
 
 <style>
-	.save-smart {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-		padding: 16px;
-		max-width: 520px;
-		margin: 0 auto;
+	:global(dialog.base-modal.save-smart-modal[data-size="fit"]) {
+		width: min(600px, calc(100vw - 32px));
 	}
 
-	.hint {
-		margin: 0;
-		font-size: var(--font-size-sm, 14px);
-		line-height: 1.5;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-	}
-
-	.row {
-		display: flex;
-		gap: 8px;
-	}
-
-	.name-field {
-		flex: 1;
-		min-width: 0;
-		height: 44px;
-		padding: 0 14px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
-		border-radius: 12px;
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-family: inherit;
-	}
-
-	.name-field:focus {
-		outline: none;
-		border-color: color-mix(in srgb, var(--theme-accent) 70%, transparent);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 14%, transparent);
-	}
-
-	.save-btn {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		height: 44px;
-		padding: 0 18px;
-		flex-shrink: 0;
-		border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
-		border-radius: 12px;
-		background: color-mix(in srgb, var(--theme-accent) 22%, transparent);
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	.save-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
+	@media (max-width: 520px) {
+		:global(dialog.base-modal.save-smart-modal[data-size="fit"]) {
+			width: calc(100vw - 20px);
+			max-height: calc(100dvh - 20px);
+		}
 	}
 </style>

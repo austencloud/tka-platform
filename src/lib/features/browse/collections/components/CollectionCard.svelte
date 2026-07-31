@@ -21,6 +21,7 @@ first and only removes the folder — the sequences inside stay in the library.
 		ContextMenuState,
 	} from "$lib/shared/components/context-menu/context-menu-types";
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+	import CollectionCardSurface from "./CollectionCardSurface.svelte";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
 	let {
@@ -29,6 +30,7 @@ first and only removes the folder — the sequences inside stay in the library.
 		ownerName,
 		readonly: isReadonly = false,
 		onUnfollow,
+		onEditRule,
 		selected = false,
 		countLabel: countLabelOverride,
 	}: {
@@ -40,6 +42,8 @@ first and only removes the folder — the sequences inside stay in the library.
 		readonly?: boolean;
 		/** Followed collection: the kebab offers Unfollow instead of owner actions. */
 		onUnfollow?: () => void;
+		/** Smart Collection cards can open the rule editor directly from their menu. */
+		onEditRule?: () => void;
 		/** Desktop rail: this card is the collection currently showing in the detail pane. */
 		selected?: boolean;
 		/** Overrides the default "N sequences" text — e.g. the Art shelf's
@@ -48,7 +52,6 @@ first and only removes the folder — the sequences inside stay in the library.
 	} = $props();
 
 	const isSystem = $derived(isSystemCollection(collection));
-	const tileColor = $derived(collection.color ?? "var(--theme-accent)");
 	const isSmart = $derived(collection.kind === "smart");
 
 	let menuState: ContextMenuState = $state({ open: false });
@@ -75,6 +78,19 @@ first and only removes the folder — the sequences inside stay in the library.
 	});
 
 	const ownerMenuItems = (): ContextMenuEntry[] => [
+		...(isSmart && onEditRule
+			? [
+					{
+						id: "edit-rule",
+						label: "Edit rule",
+						icon: "fa-sliders",
+						action() {
+							menuState = { open: false };
+							onEditRule?.();
+						},
+					},
+				]
+			: []),
 		{
 			id: "rename",
 			label: "Rename",
@@ -171,16 +187,25 @@ first and only removes the folder — the sequences inside stay in the library.
 		if (ok && collection.isPublic) communityCollectionsState.invalidate();
 	}
 
-	function defaultCountLabel(n: number): string {
-		return `${n} ${n === 1 ? "sequence" : "sequences"}`;
-	}
 </script>
 
-{#if renaming}
-	<div class="collection-card rename-mode" style="--tile-color: {tileColor};">
-		<span class="tile-icon">
-			<i class={`fas ${collection.icon ?? "fa-folder"}`} aria-hidden="true"></i>
-		</span>
+<CollectionCardSurface
+	{collection}
+	{ownerName}
+	readonly={isReadonly}
+	{selected}
+	countLabel={countLabelOverride}
+	editing={renaming}
+	onOpen={() => {
+		getHapticFeedback()?.trigger("selection");
+		onOpen();
+	}}
+	onContextMenu={handleContextMenu}
+	onOptions={(!isSystem && !isReadonly) || onUnfollow
+		? handleKebab
+		: undefined}
+>
+	{#snippet editor()}
 		<!-- svelte-ignore a11y_autofocus -->
 		<input
 			type="text"
@@ -192,58 +217,17 @@ first and only removes the folder — the sequences inside stay in the library.
 			maxlength="60"
 			autofocus
 		/>
-	</div>
-{:else}
-	<div class="collection-card" class:selected style="--tile-color: {tileColor};">
-		<button
-			type="button"
-			class="card-main"
-			aria-current={selected ? "true" : undefined}
-			onclick={() => {
-				getHapticFeedback()?.trigger("selection");
-				onOpen();
-			}}
-			oncontextmenu={handleContextMenu}
-		>
-			<span class="tile-icon" class:has-cover={!!collection.coverImageUrl}>
-				{#if collection.coverImageUrl}
-					<img class="tile-cover-img" src={collection.coverImageUrl} alt="" />
-				{:else}
-					<i class={`fas ${collection.icon ?? "fa-folder"}`} aria-hidden="true"></i>
-				{/if}
-			</span>
-			<span class="tile-text">
-				<span class="tile-name">{collection.name}</span>
-				<span class="tile-count">
-					{countLabelOverride ?? defaultCountLabel(collection.sequenceCount)}{#if isSmart}
-						· <i class="fas fa-wand-magic-sparkles smart-badge" aria-hidden="true"></i> Smart{/if}{#if !isReadonly && collection.isPublic}
-						· <i class="fas fa-globe public-globe" aria-hidden="true"></i> Public{/if}
-				</span>
-				{#if ownerName}
-					<span class="tile-owner">by {ownerName}</span>
-				{/if}
-			</span>
-		</button>
-
-		{#if (!isSystem && !isReadonly) || onUnfollow}
-			<button
-				type="button"
-				class="kebab"
-				aria-label={`Options for ${collection.name}`}
-				onclick={handleKebab}
-			>
-				<i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
-			</button>
-		{/if}
-	</div>
-{/if}
+	{/snippet}
+</CollectionCardSurface>
 
 <ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
 
 <ConfirmDialog
 	bind:isOpen={deleteConfirmOpen}
 	title={`Delete "${collection.name}"?`}
-	message="The collection goes away, but every sequence in it stays in your library."
+	message={isSmart
+		? "The saved rule goes away. Every sequence it matched stays in its source."
+		: "The collection goes away, but every sequence in it stays in your library."}
 	confirmText="Delete"
 	cancelText="Keep"
 	variant="danger"
@@ -252,158 +236,6 @@ first and only removes the folder — the sequences inside stay in the library.
 />
 
 <style>
-	.collection-card {
-		display: flex;
-		align-items: stretch;
-		min-height: 72px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 14px;
-		overflow: hidden;
-		transition:
-			background var(--duration-fast, 150ms) ease,
-			border-color var(--duration-fast, 150ms) ease,
-			transform var(--duration-fast, 150ms) ease;
-	}
-
-	.collection-card:hover {
-		border-color: color-mix(in srgb, var(--tile-color) 45%, transparent);
-		background: color-mix(in srgb, var(--tile-color) 8%, var(--theme-card-bg));
-	}
-
-	.collection-card:active {
-		transform: scale(0.98);
-	}
-
-	/* Rail selection: the card whose collection fills the detail pane. A left
-	   accent bar + tint reads as "you are here" without stealing hover's job. */
-	.collection-card.selected {
-		border-color: color-mix(in srgb, var(--tile-color) 55%, transparent);
-		background: color-mix(in srgb, var(--tile-color) 12%, var(--theme-card-bg));
-		box-shadow: inset 3px 0 0 0 var(--tile-color);
-	}
-
-	.card-main {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		padding: 14px 16px;
-		text-align: left;
-		background: none;
-		border: none;
-		color: var(--theme-text, white);
-		cursor: pointer;
-		font: inherit;
-	}
-
-	.card-main:focus-visible {
-		outline: 2px solid var(--tile-color);
-		outline-offset: -2px;
-		border-radius: 14px;
-	}
-
-	.tile-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		flex-shrink: 0;
-		border-radius: 12px;
-		background: color-mix(in srgb, var(--tile-color) 20%, transparent);
-		color: var(--tile-color);
-		font-size: 17px;
-	}
-
-	/* Art cards (Tunnels / 3D Scenes) carry a poster thumbnail instead of a
-	   folder icon — the framed ring + tighter radius reads as "a piece" rather
-	   than "a container", the visual split the Library Art shelf is meant to
-	   teach (raw sequence folders vs. saved expressions of that data). */
-	.tile-icon.has-cover {
-		padding: 0;
-		border-radius: 10px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tile-color) 55%, transparent);
-		overflow: hidden;
-	}
-
-	.tile-cover-img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		border-radius: inherit;
-	}
-
-	.tile-text {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-	}
-
-	.tile-name {
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 600;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.tile-count {
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-		font-variant-numeric: tabular-nums;
-	}
-
-	.public-globe {
-		font-size: 10px;
-		color: color-mix(in srgb, var(--tile-color) 80%, white);
-	}
-
-	.smart-badge {
-		font-size: 10px;
-		color: color-mix(in srgb, var(--tile-color) 80%, white);
-	}
-
-	.tile-owner {
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.kebab {
-		flex-shrink: 0;
-		width: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: none;
-		border: none;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-		cursor: pointer;
-		transition: color var(--duration-fast, 150ms) ease;
-	}
-
-	.kebab:hover {
-		color: var(--theme-text, white);
-	}
-
-	.kebab:focus-visible {
-		outline: 2px solid var(--tile-color);
-		outline-offset: -2px;
-		border-radius: 10px;
-	}
-
-	.rename-mode {
-		align-items: center;
-		gap: 14px;
-		padding: 14px 16px;
-	}
-
 	.rename-field {
 		flex: 1;
 		min-width: 0;
@@ -423,13 +255,4 @@ first and only removes the folder — the sequences inside stay in the library.
 		box-shadow: 0 0 0 3px color-mix(in srgb, var(--tile-color) 14%, transparent);
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.collection-card,
-		.kebab {
-			transition: none;
-		}
-		.collection-card:active {
-			transform: none;
-		}
-	}
 </style>
