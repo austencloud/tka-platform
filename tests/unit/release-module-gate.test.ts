@@ -400,6 +400,22 @@ describe("auditChangelogEntries", () => {
     expect(result.accountCount).toBe(1);
   });
 
+  it("accepts an account-gated action inside a guest-visible tab", () => {
+    const result = auditChangelogEntries(
+      [
+        {
+          category: "added",
+          text: "Save generator setups after signing in.",
+          audience: "account",
+          surface: { module: "create", tab: "generate" },
+        },
+      ],
+      ctx
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.accountCount).toBe(1);
+  });
+
   it("rejects Fuse copy labeled as guest-visible", () => {
     const result = auditChangelogEntries(
       [

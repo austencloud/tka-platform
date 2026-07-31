@@ -568,10 +568,12 @@ export function auditChangelogEntries(
         productionModules,
         guestModuleAccess
       );
-      if (
-        (expectedAudience === "guest" || expectedAudience === "account") &&
-        entry.audience !== expectedAudience
-      ) {
+      // A guest-readable tab can still contain actions that require a full
+      // account, such as saving a cloud setup. The registry gives us the
+      // broadest audience for the surface, so only reject metadata that claims
+      // broader access than the surface allows. Account-only copy is checked
+      // separately below to ensure the restriction is stated plainly.
+      if (expectedAudience === "account" && entry.audience === "guest") {
         errors.push({
           index,
           message: `${label} says audience "${entry.audience}", but ${module}${tab ? `/${tab}` : ""} is "${expectedAudience}"`,
