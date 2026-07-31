@@ -59,10 +59,10 @@ index 188fbd8dc8..3f2f84005d 100644
                      || self.primary_thread_id.is_none()
                  {
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index 42dbcae5a4..550238b667 100644
+index b8b1bce2b4..fa460f25a5 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
-@@ -1999,6 +1999,18 @@ impl App {
+@@ -2016,6 +2016,18 @@ impl App {
                      .handle_start_side(tui, app_server, parent_thread_id, user_message)
                      .await;
              }
@@ -95,10 +95,10 @@ index d4beb21635..cb3417ad3e 100644
          active_thread_rx: None,
          primary_thread_id: None,
 diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
-index f044c45afb..d358d0a6db 100644
+index 970300b891..778a0bf978 100644
 --- a/codex-rs/tui/src/app/tests.rs
 +++ b/codex-rs/tui/src/app/tests.rs
-@@ -4655,6 +4655,8 @@ async fn make_test_app() -> App {
+@@ -4694,6 +4694,8 @@ async fn make_test_app() -> App {
          thread_event_listener_tasks: HashMap::new(),
          agent_navigation: AgentNavigationState::default(),
          side_threads: HashMap::new(),
@@ -107,7 +107,7 @@ index f044c45afb..d358d0a6db 100644
          active_thread_id: None,
          active_thread_rx: None,
          primary_thread_id: None,
-@@ -4722,6 +4724,8 @@ async fn make_test_app_with_channels() -> (
+@@ -4761,6 +4763,8 @@ async fn make_test_app_with_channels() -> (
              thread_event_listener_tasks: HashMap::new(),
              agent_navigation: AgentNavigationState::default(),
              side_threads: HashMap::new(),
@@ -507,7 +507,7 @@ index 0000000000..528154d575
 +    );
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index 0bb4990ff2..17a3097dcd 100644
+index 4f731958c3..1f4e827675 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
 @@ -188,6 +188,17 @@ pub(crate) enum AppEvent {
@@ -529,7 +529,7 @@ index 0bb4990ff2..17a3097dcd 100644
      SubmitThreadOp {
          thread_id: ThreadId,
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer.rs b/codex-rs/tui/src/bottom_pane/chat_composer.rs
-index 2404ad13ca..dc45705217 100644
+index 7ca6bb00c8..2ab6dc6b98 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer.rs
 @@ -549,6 +549,7 @@ impl ChatComposer {
@@ -540,17 +540,17 @@ index 2404ad13ca..dc45705217 100644
          )
      }
  
-@@ -738,6 +739,9 @@ impl ChatComposer {
- 
+@@ -739,6 +740,9 @@ impl ChatComposer {
      pub fn set_skill_mentions(&mut self, skills: Option<Vec<SkillMetadata>>) {
          self.skills = skills;
+         self.refresh_mentions_v2_popup_candidates();
 +        if matches!(self.popups.active, ActivePopup::Command(_)) {
 +            self.popups.active = ActivePopup::None;
 +        }
          self.sync_popups();
      }
  
-@@ -2847,6 +2851,16 @@ impl ChatComposer {
+@@ -2860,6 +2864,16 @@ impl ChatComposer {
          let original_pending_pastes = self.draft.pending_pastes.clone();
          let mut text_elements = original_text_elements.clone();
          let input_starts_with_space = original_input.starts_with(' ');
@@ -567,7 +567,7 @@ index 2404ad13ca..dc45705217 100644
          self.draft.recent_submission_mention_bindings.clear();
          self.draft.textarea.set_text_clearing_elements("");
          self.draft.is_bash_mode = false;
-@@ -2866,6 +2880,21 @@ impl ChatComposer {
+@@ -2879,6 +2893,21 @@ impl ChatComposer {
          // If there is neither text nor attachments, suppress submission entirely.
          text = text.trim().to_string();
          text_elements = Self::trim_text_elements(&expanded_input, &text, text_elements);
@@ -589,7 +589,7 @@ index 2404ad13ca..dc45705217 100644
  
          if slash_validation == SlashValidation::Immediate
              && let SubmissionValidation::UnknownCommand(name) = self
-@@ -2914,11 +2943,11 @@ impl ChatComposer {
+@@ -2927,11 +2956,11 @@ impl ChatComposer {
          if text.is_empty() && self.attachments.is_empty() {
              return None;
          }
@@ -604,7 +604,7 @@ index 2404ad13ca..dc45705217 100644
                  local_image_paths: self.attachments.local_image_paths(),
                  remote_image_urls: self.attachments.remote_image_urls(),
                  mention_bindings: original_mention_bindings,
-@@ -3122,6 +3151,9 @@ impl ChatComposer {
+@@ -3135,6 +3164,9 @@ impl ChatComposer {
          let command = self
              .slash_input()
              .bare_command(self.draft.textarea.text())?;
@@ -614,7 +614,7 @@ index 2404ad13ca..dc45705217 100644
          if self.reject_slash_command_if_unavailable(&command) {
              self.stage_slash_command_history(&command);
              self.record_pending_slash_command_history();
-@@ -3133,6 +3165,9 @@ impl ChatComposer {
+@@ -3146,6 +3178,9 @@ impl ChatComposer {
          Some(match command {
              SlashCommandItem::Builtin(cmd) => InputResult::Command(cmd),
              SlashCommandItem::ServiceTier(command) => InputResult::ServiceTierCommand(command),
@@ -624,7 +624,7 @@ index 2404ad13ca..dc45705217 100644
          })
      }
  
-@@ -3142,6 +3177,9 @@ impl ChatComposer {
+@@ -3155,6 +3190,9 @@ impl ChatComposer {
          let text = self.draft.textarea.text().to_string();
          let inline_command = self.slash_input().inline_command(&text)?;
          let command = inline_command.command;
@@ -634,7 +634,7 @@ index 2404ad13ca..dc45705217 100644
          if self.reject_slash_command_if_unavailable(&command) {
              self.stage_slash_command_history(&command);
              self.record_pending_slash_command_history();
-@@ -4252,7 +4290,10 @@ fn skill_description(skill: &SkillMetadata) -> Option<String> {
+@@ -4271,7 +4309,10 @@ fn skill_description(skill: &SkillMetadata) -> Option<String> {
  }
  
  fn is_mention_name_char(byte: u8) -> bool {
@@ -646,7 +646,7 @@ index 2404ad13ca..dc45705217 100644
  }
  
  fn ends_plaintext_at_mention(bytes: &[u8], index: usize) -> bool {
-@@ -4287,7 +4328,7 @@ fn starts_plaintext_at_mention(text: &str, index: usize) -> bool {
+@@ -4306,7 +4347,7 @@ fn starts_plaintext_at_mention(text: &str, index: usize) -> bool {
  }
  
  fn is_mention_name_char_char(ch: char) -> bool {
@@ -655,7 +655,7 @@ index 2404ad13ca..dc45705217 100644
  }
  
  fn find_next_mention_token_range(text: &str, token: &str, from: usize) -> Option<Range<usize>> {
-@@ -8914,6 +8955,9 @@ mod tests {
+@@ -9004,6 +9045,9 @@ mod tests {
                  Some(CommandItem::ServiceTier(command)) => {
                      panic!("expected model command, got service tier {command:?}")
                  }
@@ -665,7 +665,7 @@ index 2404ad13ca..dc45705217 100644
                  None => panic!("no selected command for '/mo'"),
              },
              _ => panic!("slash popup not active after typing '/mo'"),
-@@ -8996,6 +9040,9 @@ mod tests {
+@@ -9086,6 +9130,9 @@ mod tests {
                  Some(CommandItem::ServiceTier(command)) => {
                      panic!("expected resume command, got service tier {command:?}")
                  }
@@ -675,7 +675,7 @@ index 2404ad13ca..dc45705217 100644
                  None => panic!("no selected command for '/res'"),
              },
              _ => panic!("slash popup not active after typing '/res'"),
-@@ -9050,6 +9097,9 @@ mod tests {
+@@ -9140,6 +9187,9 @@ mod tests {
                  Some(CommandItem::ServiceTier(command)) => {
                      panic!("expected pets command, got service tier {command:?}")
                  }
@@ -685,7 +685,7 @@ index 2404ad13ca..dc45705217 100644
                  None => panic!("no selected command for '/pet'"),
              },
              _ => panic!("slash popup not active after typing '/pet'"),
-@@ -9104,6 +9154,9 @@ mod tests {
+@@ -9194,6 +9244,9 @@ mod tests {
                  Some(CommandItem::ServiceTier(command)) => {
                      panic!("expected btw command, got service tier {command:?}")
                  }
@@ -695,7 +695,7 @@ index 2404ad13ca..dc45705217 100644
                  None => panic!("no selected command for '/bt'"),
              },
              _ => panic!("slash popup not active after typing '/bt'"),
-@@ -9158,6 +9211,9 @@ mod tests {
+@@ -9248,6 +9301,9 @@ mod tests {
                  Some(CommandItem::ServiceTier(command)) => {
                      panic!("expected side command, got service tier {command:?}")
                  }
@@ -705,7 +705,7 @@ index 2404ad13ca..dc45705217 100644
                  None => panic!("no selected command for '/si'"),
              },
              _ => panic!("slash popup not active after typing '/si'"),
-@@ -9196,6 +9252,138 @@ mod tests {
+@@ -9286,6 +9342,138 @@ mod tests {
          );
      }
  
@@ -1909,7 +1909,7 @@ index c59a818851..2ec06766d7 100644
          match self.thread_rename_block_message.clone() {
              Some(message) => {
 diff --git a/codex-rs/tui/src/chatwidget/protocol.rs b/codex-rs/tui/src/chatwidget/protocol.rs
-index 9586f5fd7d..ad5643f17d 100644
+index 79e2c3fe6e..7635b05353 100644
 --- a/codex-rs/tui/src/chatwidget/protocol.rs
 +++ b/codex-rs/tui/src/chatwidget/protocol.rs
 @@ -228,7 +228,11 @@ impl ChatWidget {
@@ -1933,8 +1933,8 @@ index 9586f5fd7d..ad5643f17d 100644
 +            replay_kind.is_none() && !matches!(&notification.turn.status, TurnStatus::InProgress);
          match notification.turn.status {
              TurnStatus::Completed => {
-                 self.last_non_retry_error = None;
-@@ -280,6 +286,9 @@ impl ChatWidget {
+                 let last_agent_message =
+@@ -311,6 +317,9 @@ impl ChatWidget {
              }
              TurnStatus::InProgress => {}
          }
@@ -1961,7 +1961,7 @@ index 3d5f9cc1b6..a964345ae9 100644
  
  fn is_skill_path(path: &str) -> bool {
 diff --git a/codex-rs/tui/src/chatwidget/slash_dispatch.rs b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
-index 877d2a846c..b2779303c9 100644
+index e28cfd7043..9048a0f240 100644
 --- a/codex-rs/tui/src/chatwidget/slash_dispatch.rs
 +++ b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
 @@ -268,9 +268,20 @@ impl ChatWidget {
@@ -1986,7 +1986,7 @@ index 877d2a846c..b2779303c9 100644
              }
              SlashCommand::Model => {
                  self.open_model_popup();
-@@ -941,9 +952,13 @@ impl ChatWidget {
+@@ -951,9 +962,13 @@ impl ChatWidget {
          }
  
          let service_tier_commands = self.current_model_service_tier_commands();
@@ -2003,7 +2003,7 @@ index 877d2a846c..b2779303c9 100644
              self.add_info_message(
                  format!(
                      r#"Unrecognized command '/{name}'. Type "/" for a list of supported commands."#
-@@ -953,6 +968,30 @@ impl ChatWidget {
+@@ -963,6 +978,30 @@ impl ChatWidget {
              return QueueDrain::Continue;
          };
  
@@ -2034,7 +2034,7 @@ index 877d2a846c..b2779303c9 100644
          if rest.is_empty() {
              return match command {
                  SlashCommandItem::Builtin(cmd) => {
-@@ -963,6 +1002,9 @@ impl ChatWidget {
+@@ -973,6 +1012,9 @@ impl ChatWidget {
                      self.handle_service_tier_command_dispatch(command);
                      QueueDrain::Continue
                  }
@@ -2044,7 +2044,7 @@ index 877d2a846c..b2779303c9 100644
              };
          }
  
-@@ -1041,7 +1083,10 @@ impl ChatWidget {
+@@ -1051,7 +1093,10 @@ impl ChatWidget {
      }
  
      fn queued_command_drain_result(&self, cmd: SlashCommand) -> QueueDrain {
@@ -2191,7 +2191,7 @@ index 7120462330..baa0e06fb8 100644
                  Self::truncate_terminal_title_part(branch.clone(), /*max_chars*/ 32)
              }),
 diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
-index 04a303291c..7be977ef30 100644
+index 47d597db92..246dd74828 100644
 --- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 @@ -459,26 +459,27 @@ async fn queued_bare_rename_drains_next_input_after_name_update() {

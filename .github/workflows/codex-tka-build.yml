@@ -58,9 +58,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $tag = 'codex-tka-v0.145.0'
+          $tag = 'codex-tka-v0.146.0'
           gh release view $tag 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --title 'Codex TKA 0.145.0' --notes 'Pinned OpenAI Codex build with colored usage meters, concise generated names for bare /rename, exact manual terminal titles, and direct slash aliases for enabled skills.'
+            $notes = @'
+          OpenAI Codex 0.146.0 with TKA's colored usage meters, generated names for bare `/rename`, exact manual terminal titles, and direct slash aliases for enabled skills.
+
+          Upstream 0.146.0 adds names for `/new` and `/clear` sessions, thread pinning, paginated and temporary forks, Agent Plugins manifests, remote Code Mode over WebSocket, wider proxy coverage, live MCP and Apps refresh, Windows navigation and process-tree fixes, and better skill retention when context is tight.
+
+          Full upstream notes: https://github.com/openai/codex/releases/tag/rust-v0.146.0
+          '@
+            gh release create $tag --title 'Codex TKA 0.146.0' --notes $notes
           }
           gh release upload $tag codex-tka-windows-x64.zip codex-tka-windows-x64.zip.sha256 --clobber

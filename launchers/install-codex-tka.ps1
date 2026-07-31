@@ -14,8 +14,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$CodexVersion = '0.145.0'
-$UpstreamCommit = '25af12f7e61572b0bc18ddb1008be543b91519b0'
+$CodexVersion = '0.146.0'
+$UpstreamCommit = 'e363b08c9175ac1cbe5893615dd2cb9ddf95043b'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $PatchPath = Join-Path $RepoRoot 'patches\codex-tka-status-bars.patch'
 $TkaRoot = Join-Path $env:LOCALAPPDATA 'TKA\codex-tka'
