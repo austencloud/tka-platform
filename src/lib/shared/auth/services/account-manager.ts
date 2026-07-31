@@ -144,6 +144,18 @@ export class AccountManager {
       ) {
         throw new Error("Incorrect password");
       }
+      if (code === "auth/user-mismatch" && reauth.method === "google") {
+        const linkedGoogleEmail =
+          user.providerData.find(
+            ({ providerId }) => providerId === "google.com"
+          )?.email ?? user.email;
+        const signInHint = linkedGoogleEmail
+          ? ` Sign in as ${linkedGoogleEmail}.`
+          : "";
+        throw new Error(
+          `That Google account doesn't match this Flow Arts account.${signInHint}`
+        );
+      }
       // Surface a thrown precondition (missing email/password) as-is.
       if (e instanceof Error && !code) {
         throw e;

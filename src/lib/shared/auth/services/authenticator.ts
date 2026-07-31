@@ -306,6 +306,13 @@ export async function reauthenticateWithGoogle(): Promise<void> {
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
+  const linkedGoogleEmail =
+    currentUser.providerData.find(
+      ({ providerId }) => providerId === GoogleAuthProvider.PROVIDER_ID
+    )?.email ?? currentUser.email;
+  if (linkedGoogleEmail) {
+    provider.setCustomParameters({ login_hint: linkedGoogleEmail });
+  }
   notePopupCoop();
   await reauthenticateWithPopup(currentUser, provider);
 }
