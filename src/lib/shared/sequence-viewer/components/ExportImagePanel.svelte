@@ -22,6 +22,10 @@
     getInfoCellCount,
     type InfoCellChoice,
   } from "../services/info-cell-display";
+  import {
+    getStepColumnsForLayout,
+    type ResolvedAutoLayout,
+  } from "$lib/shared/render/services/container-aware-layout";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import {
     shareTarget,
@@ -35,6 +39,8 @@
     isExporting: boolean;
     layout?: PanelLayout;
     stepCount: number;
+    /** Measured winner from the live Download Card preview. */
+    resolvedAutoLayout?: ResolvedAutoLayout | null;
     onExport: () => void;
     onClose?: () => void;
     onSettingChange?: (
@@ -51,6 +57,7 @@
     isExporting,
     layout = "bottom",
     stepCount,
+    resolvedAutoLayout = null,
     onExport,
     onClose,
     onSettingChange,
@@ -132,9 +139,29 @@
     void compositionVersion;
     return imageComposition.includeStartPosition;
   });
+
+  // null = Auto. In Auto, columns and start placement are one layout decision;
+  // numeric columns reveal the manual placement controls below.
+  const currentColumnCount = $derived.by<number | null>(() => {
+    void compositionVersion;
+    return imageComposition.getColumnCountForStepCount(stepCount);
+  });
+
+  // Guests can't mint a scannable QR (it needs an account-owned short code), so
+  // QR is hidden from this panel entirely for them rather than shown-then-blocked.
+  const canQRCode = $derived(authState.isAuthenticated);
+  const automaticLayout = $derived.by(() => {
+    void compositionVersion;
+    return currentColumnCount === null &&
+      resolvedAutoLayout?.stepCount === stepCount
+      ? resolvedAutoLayout
+      : null;
+  });
   const startPosLayout = $derived.by(() => {
     void compositionVersion;
-    return imageComposition.getStartPositionLayoutForStepCount(stepCount);
+    return automaticLayout && automaticLayout.startPlacement !== "none"
+      ? automaticLayout.startPlacement
+      : imageComposition.getStartPositionLayoutForStepCount(stepCount);
   });
 
   // One-spot cards (a single empty info cell) route QR vs Mandala through one
@@ -145,7 +172,9 @@
       stepCount,
       includeStartPosition: imageComposition.includeStartPosition,
       startPositionLayout: startPosLayout,
-      columnCount: imageComposition.getColumnCountForStepCount(stepCount),
+      columnCount:
+        currentColumnCount ??
+        (automaticLayout ? getStepColumnsForLayout(automaticLayout) : null),
     });
   });
   const isOneSpot = $derived(infoCellCount === 1);
@@ -153,12 +182,9 @@
   // nowhere to render — hide the controls entirely rather than offer dead toggles.
   const hasInfoCell = $derived(infoCellCount >= 1);
 
-  // Guests can't mint a scannable QR (it needs an account-owned short code), so
-  // QR is hidden from this panel entirely for them rather than shown-then-blocked.
   // Same auth gate the card renderer uses (ChoreoCard / card-render-options), so
   // the panel and the output agree; with QR gone the freed info cell flows into
   // the mandala fill (resolveInfoCellDisplay forces guest QR off downstream).
-  const canQRCode = $derived(authState.isAuthenticated);
 
   // Text labels (not icons): they read at the same size as the sibling chips in
   // this panel (Word / Level / Grid …) and a tiny QR/asterisk glyph is cryptic.
@@ -269,15 +295,6 @@
     { label: "Auto", value: null },
     ...columnOptionsFor(stepCount).map((v) => ({ label: String(v), value: v })),
   ]);
-
-  // The rendered layout reads the per-step column override from the composition
-  // manager (ChoreoCard + choreo-card-layout-state). That is the authoritative
-  // store for what the user sees, so the control reflects and writes it.
-  // null = Auto = calculated layout.
-  const currentColumnCount = $derived.by<number | null>(() => {
-    void compositionVersion;
-    return imageComposition.getColumnCountForStepCount(stepCount);
-  });
 
   // The composition manager is the one owner for columns. It persists a choice
   // per sequence length; a missing choice remains Auto.
@@ -568,7 +585,7 @@
                       )
                     )}>Show</button
                 >
-                {#if showStartPos}
+                {#if showStartPos && currentColumnCount !== null}
                   <button
                     type="button"
                     class="rt-chip"
@@ -597,6 +614,12 @@
                     type="button"
                     class="rt-chip"
                     aria-pressed={currentColumnCount === option.value}
+                    aria-label={option.value === null
+                      ? "Auto columns and start placement"
+                      : `${option.label} columns`}
+                    title={option.value === null
+                      ? "Chooses columns and start placement"
+                      : undefined}
                     onclick={() => setColumns(option.value)}
                     >{option.label}</button
                   >
@@ -902,7 +925,7 @@
                 )}
               aria-pressed={showStartPos}>Show</button
             >
-            {#if showStartPos}
+            {#if showStartPos && currentColumnCount !== null}
               <button
                 type="button"
                 class="chip"
@@ -931,6 +954,12 @@
                 class:active={currentColumnCount === option.value}
                 onclick={() => setColumns(option.value)}
                 aria-pressed={currentColumnCount === option.value}
+                aria-label={option.value === null
+                  ? "Auto columns and start placement"
+                  : `${option.label} columns`}
+                title={option.value === null
+                  ? "Chooses columns and start placement"
+                  : undefined}
                 >{option.label}</button
               >
             {/each}

@@ -2,11 +2,8 @@ import { describe, it, expect } from "vitest";
 import { pickBestFitLayout, type BestFitInput } from "./container-aware-layout";
 
 /**
- * Auto layout picker: gap-penalized size, where the priced gap is a STEP-region
- * trailing empty (an unfilled last step row), NOT the start's own lane. Prefers
- * shapes with a full step region and the container-filling proportions; keeps a
- * much-bigger grid over a skinny one.
- * See docs/superpowers/specs/2026-07-10-auto-layout-full-grid-design.md.
+ * Auto layout picker: literal pictograph size is the primary objective.
+ * Trailing gaps only break sub-pixel ties, so a visibly larger cell always wins.
  */
 
 function input(overrides: Partial<BestFitInput>): BestFitInput {
@@ -22,7 +19,7 @@ function input(overrides: Partial<BestFitInput>): BestFitInput {
   };
 }
 
-describe("pickBestFitLayout — gap-penalized size (step-region gaps only)", () => {
+describe("pickBestFitLayout — maximum pictograph size", () => {
   it("8 + start + QR (portrait viewer panel): picks the 3×4 start-column, not the 2×5 start-row", () => {
     // The reported case: auto chose 2×5 with a start+QR top row; the wider 3×4
     // start-column fills the panel better and its step region is full.

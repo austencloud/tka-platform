@@ -23,6 +23,100 @@ const base = (over: Partial<BestFitInput>): BestFitInput => ({
 });
 
 describe("pickBestFitLayout", () => {
+  it("8-count Download Card in a tall preview uses a top row and larger cells", () => {
+    const r = pickBestFitLayout(
+      base({
+        stepCount: 8,
+        containerWidth: 744,
+        containerHeight: 1500,
+        showQRCode: true,
+      }),
+    )!;
+
+    expect(r).toEqual({
+      cols: 2,
+      rows: 5,
+      startPlacement: "row",
+      widthUnits: 2,
+    });
+
+    const chosenEdge = Math.min(
+      744 / r.cols,
+      1500 / cardHeightInCells(r.cols, r.rows, true, true),
+    );
+    const formerFixedEdge = Math.min(
+      744 / 5,
+      1500 / cardHeightInCells(5, 2, true, true),
+    );
+    expect(chosenEdge).toBeGreaterThan(formerFixedEdge);
+  });
+
+  it("8-count Download Card in a wide preview uses a left column when it wins", () => {
+    expect(
+      pickBestFitLayout(
+        base({
+          stepCount: 8,
+          containerWidth: 900,
+          containerHeight: 500,
+          showQRCode: true,
+        }),
+      ),
+    ).toEqual({
+      cols: 5,
+      rows: 2,
+      startPlacement: "column",
+      widthUnits: 5,
+    });
+  });
+
+  it("scores held-beat rows by their rendered duration width", () => {
+    const r = pickBestFitLayout(
+      base({
+        stepCount: 12,
+        stepDurations: [
+          1.5, 1.5, 1,
+          1, 1.5, 1.5,
+          1.5, 1.5, 1,
+          1, 1.5, 1.5,
+        ],
+        containerWidth: 1872,
+        containerHeight: 1249,
+        showQRCode: true,
+      }),
+    );
+
+    expect(r).toEqual({
+      cols: 4,
+      rows: 4,
+      startPlacement: "column",
+      widthUnits: 5,
+    });
+  });
+
+  it("moves a mixed-duration Start lane to the top when that makes pictographs larger", () => {
+    const r = pickBestFitLayout(
+      base({
+        stepCount: 12,
+        stepDurations: [
+          1.5, 1.5, 1,
+          1, 1.5, 1.5,
+          1.5, 1.5, 1,
+          1, 1.5, 1.5,
+        ],
+        containerWidth: 788,
+        containerHeight: 1104,
+        showQRCode: true,
+      }),
+    );
+
+    expect(r).toEqual({
+      cols: 3,
+      rows: 5,
+      startPlacement: "row",
+      widthUnits: 4,
+    });
+  });
+
   it("4-count in a tall/narrow container → 2 step columns, not a strip", () => {
     const r = pickBestFitLayout(base({ containerWidth: 400, containerHeight: 800 }))!;
     expect(r).not.toBeNull();
@@ -113,6 +207,43 @@ describe("cardHeightInCells", () => {
   });
   it("omits header/footer when hidden", () => {
     expect(cardHeightInCells(4, 3, false, false)).toBe(3);
+  });
+});
+
+describe("container-aware Auto coverage", () => {
+  it("returns valid, non-clipping geometry across lengths and preview shapes", () => {
+    const viewports = [
+      [744, 1500],
+      [900, 500],
+      [800, 800],
+    ] as const;
+
+    for (let stepCount = 1; stepCount <= 64; stepCount++) {
+      for (const [containerWidth, containerHeight] of viewports) {
+        const layout = pickBestFitLayout({
+          stepCount,
+          includeStartPosition: true,
+          containerWidth,
+          containerHeight,
+          showHeader: true,
+          showFooter: true,
+          showQRCode: stepCount > 1,
+        });
+        expect(
+          layout,
+          `missing ${containerWidth}×${containerHeight} layout for ${stepCount} steps`,
+        ).not.toBeNull();
+
+        const stepColumns =
+          layout!.startPlacement === "column" ? layout!.cols - 1 : layout!.cols;
+        const stepRows =
+          layout!.startPlacement === "row" ? layout!.rows - 1 : layout!.rows;
+        expect(
+          stepColumns * stepRows,
+          `clipped step region for ${stepCount} steps`,
+        ).toBeGreaterThanOrEqual(stepCount);
+      }
+    }
   });
 });
 

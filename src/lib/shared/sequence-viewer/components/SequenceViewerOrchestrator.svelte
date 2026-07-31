@@ -129,6 +129,15 @@
     exitFullscreen: () => void;
     handleFullscreenTap: () => void;
     handleExport: () => Promise<void>;
+    /** Measured Auto geometry from the active Download Card preview. */
+    resolvedCardAutoLayout:
+      | import("$lib/shared/render/services/container-aware-layout").ResolvedAutoLayout
+      | null;
+    setResolvedCardAutoLayout: (
+      layout:
+        | import("$lib/shared/render/services/container-aware-layout").ResolvedAutoLayout
+        | null
+    ) => void;
     handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     handleSyncToggle: () => Promise<void>;
     handleOpenInCompose: (
@@ -373,6 +382,27 @@
     viewer3DState,
     accessibilityHelper,
   });
+  let resolvedCardAutoLayout = $state<
+    | import("$lib/shared/render/services/container-aware-layout").ResolvedAutoLayout
+    | null
+  >(null);
+
+  function setResolvedCardAutoLayout(
+    layout:
+      | import("$lib/shared/render/services/container-aware-layout").ResolvedAutoLayout
+      | null
+  ): void {
+    const current = resolvedCardAutoLayout;
+    if (
+      current?.stepCount === layout?.stepCount &&
+      current?.cols === layout?.cols &&
+      current?.rows === layout?.rows &&
+      current?.startPlacement === layout?.startPlacement
+    ) {
+      return;
+    }
+    resolvedCardAutoLayout = layout;
+  }
 
   const imgComp = createImageCompositionSync();
 
@@ -944,7 +974,8 @@
       hapticService,
       playback.isPlayingLocal,
       playback.bpmLocal,
-      isHandPath
+      isHandPath,
+      resolvedCardAutoLayout
     );
   }
 
@@ -1411,6 +1442,8 @@
     exitFullscreen: fullscreen.exitFullscreen,
     handleFullscreenTap: fullscreen.handleFullscreenTap,
     handleExport,
+    resolvedCardAutoLayout,
+    setResolvedCardAutoLayout,
     handleCanvasReady: exportCoord.handleCanvasReady,
     handleSyncToggle,
     handleOpenInCompose,

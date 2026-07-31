@@ -39,6 +39,7 @@ const seq = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }] } as an
 describe("buildCardRenderOptions", () => {
   beforeEach(() => {
     ic._cols = 4;
+    ic._layout = "row";
     ic._choice = "qr";
     ic.showQRCode = true;
     ic.showMandala = true;
@@ -60,14 +61,78 @@ describe("buildCardRenderOptions", () => {
     expect(o.visibilityOverrides?.showTKA).toBeUndefined();
   });
 
-  it("adds the start column to the step-column count", () => {
+  it("converts manual STEP columns according to the chosen start placement", () => {
     ic._cols = 4;
     ic.includeStartPosition = true;
+    ic._layout = "row";
+    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBe(4);
+    ic._layout = "column";
     expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBe(5);
     ic.includeStartPosition = false;
     expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBe(4);
+  });
+
+  it("reuses the live preview's Auto columns and start placement", () => {
     ic._cols = null;
-    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBeUndefined();
+    ic._layout = "column";
+    const sequence = {
+      steps: Array.from({ length: 8 }, () => ({ letter: "A" })),
+    } as any;
+    const options = buildCardRenderOptions(sequence, {
+      darkMode: false,
+      userName: "",
+      resolvedAutoLayout: {
+        stepCount: 8,
+        cols: 2,
+        rows: 5,
+        startPlacement: "row",
+      },
+    });
+    expect(options.columnCount).toBe(2);
+    expect(options.startPositionLayout).toBe("row");
+  });
+
+  it("ignores a stale Auto result from a different sequence length", () => {
+    ic._cols = null;
+    ic._layout = "row";
+    const sequence = {
+      steps: Array.from({ length: 8 }, () => ({ letter: "A" })),
+    } as any;
+    const options = buildCardRenderOptions(sequence, {
+      darkMode: false,
+      userName: "",
+      resolvedAutoLayout: {
+        stepCount: 12,
+        cols: 4,
+        rows: 4,
+        startPlacement: "column",
+      },
+    });
+    expect(options.columnCount).toBeUndefined();
+    expect(options.startPositionLayout).toBe("row");
+  });
+
+  it("reuses the measured Auto shape for mixed-duration cards", () => {
+    ic._cols = null;
+    ic._layout = "row";
+    const mixed = {
+      steps: Array.from({ length: 12 }, (_, index) => ({
+        letter: "A",
+        duration: index === 0 ? 2 : 1,
+      })),
+    } as any;
+    const options = buildCardRenderOptions(mixed, {
+      darkMode: false,
+      userName: "",
+      resolvedAutoLayout: {
+        stepCount: 12,
+        cols: 4,
+        rows: 4,
+        startPlacement: "column",
+      },
+    });
+    expect(options.columnCount).toBe(4);
+    expect(options.startPositionLayout).toBe("column");
   });
 
   it("forces QR off for a one-count card even when the global QR toggle is on", () => {
@@ -82,7 +147,7 @@ describe("buildCardRenderOptions", () => {
   });
 
   it("one-spot 4-count + both on + choice 'mandala' resolves to mandala only", () => {
-    // 4 steps, auto layout (row) -> exactly one info cell -> contention.
+    // The fallback Auto table gives 4 steps one info cell before the preview reports.
     const fourStep = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }, { letter: "D" }] } as any;
     ic._cols = null; // auto layout table, not a 4-column override
     ic._layout = "row";

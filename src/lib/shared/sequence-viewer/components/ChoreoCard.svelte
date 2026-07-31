@@ -59,6 +59,11 @@
 
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import {
+    getStepColumnsForLayout,
+    pickBestFitLayout,
+    type ResolvedAutoLayout,
+  } from "$lib/shared/render/services/container-aware-layout";
 
   // Extracted sub-components
   import CardHeader from "./CardHeader.svelte";
@@ -142,6 +147,8 @@
     // setting via compositionManager). Embedded contexts (landing page,
     // marketing previews) need a fixed layout independent of viewer prefs.
     startPositionLayoutOverride?: "row" | "column" | null;
+    /** Reports the measured Auto winner so Download Card can reuse it for PNG export. */
+    onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
   }
 
   const {
@@ -177,6 +184,7 @@
     hideSoloHeader = false,
     onContextMenu,
     startPositionLayoutOverride = null,
+    onAutoLayoutResolved,
   }: Props = $props();
 
   // Long-press state for touch context menu
@@ -319,19 +327,46 @@
   // One-spot info-cell resolution: when a card has a single empty info cell and
   // both QR + mandala are on, the user's per-length choice decides the cell.
   // resolveInfoCellDisplay is a no-op in every other case, so multi-cell cards
-  // and marketing cards (mandala-only) are unaffected. The layout is computed
-  // here independently (not via layoutState) to avoid a reactive dependency cycle.
+  // and marketing cards (mandala-only) are unaffected. The live Auto winner is
+  // recomputed with the same pure picker used by layoutState; keeping this
+  // independent avoids a cycle (effective QR/mandala visibility feeds the
+  // mandala layout that layoutState owns).
   const effectiveInfoCell = $derived.by(() => {
     void compositionVersion;
     const sc = sequence?.steps?.length ?? 0;
+    const compositionColumns =
+      columnCount ??
+      compositionManager.getColumnCountForStepCount(sc);
+    const automaticLayout =
+      startPositionLayoutOverride === null &&
+      compositionColumns === null &&
+      (forceContain || sc <= 16) &&
+      containerRawWidth > 0 &&
+      containerRawHeight > 0
+        ? pickBestFitLayout({
+            stepCount: sc,
+            stepDurations: sequence.steps.map((step) => step.duration ?? 1),
+            includeStartPosition,
+            containerWidth: containerRawWidth,
+            containerHeight: containerRawHeight,
+            showHeader,
+            showFooter,
+            showQRCode: sc > 1 && showQRCode && authState.isAuthenticated,
+          })
+        : null;
     const spl =
-      startPositionLayoutOverride ??
-      compositionManager.getStartPositionLayoutForStepCount(sc);
+      automaticLayout && automaticLayout.startPlacement !== "none"
+        ? automaticLayout.startPlacement
+        : startPositionLayoutOverride ??
+          compositionManager.getStartPositionLayoutForStepCount(sc);
+    const infoCellColumns =
+      compositionColumns ??
+      (automaticLayout ? getStepColumnsForLayout(automaticLayout) : null);
     return resolveInfoCellDisplay({
       stepCount: sc,
       includeStartPosition,
       startPositionLayout: spl,
-      columnCount, // STEP columns (null = auto), same convention as renderAllCells
+      columnCount: infoCellColumns,
       showQRCode,
       showMandala,
       infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(sc),
@@ -614,6 +649,8 @@
     showHeader,
     showFooter,
     showQRCode: effShowQRCode,
+    autoLayoutReservesQRCode:
+      sequence.steps.length > 1 && showQRCode && authState.isAuthenticated,
     showMandala: effShowMandala,
     forceContain,
     // These feed ONLY the mandala placement (which color fills the info cell).
@@ -649,6 +686,25 @@
   const footerFontSize = $derived(layoutState.footerFontSize);
   const footerMargin = $derived(layoutState.footerMargin);
   const qrGridPosition = $derived(layoutState.qrGridPosition);
+
+  // Download Card has a real preview frame while the canvas compositor does
+  // not. Publish the measured winner once per geometry change so the eventual
+  // PNG uses these exact columns and start placement.
+  let lastReportedAutoLayoutKey = "";
+  $effect(() => {
+    const report = onAutoLayoutResolved;
+    if (!report) {
+      lastReportedAutoLayoutKey = "";
+      return;
+    }
+    const fit = layoutState.autoFit;
+    const key = fit
+      ? `${sequence.steps.length}:${fit.cols}:${fit.rows}:${fit.startPlacement}:${fit.widthUnits ?? fit.cols}`
+      : "none";
+    if (key === lastReportedAutoLayoutKey) return;
+    lastReportedAutoLayoutKey = key;
+    report(fit ? { ...fit, stepCount: sequence.steps.length } : null);
+  });
 
   // Filtered cells based on includeStartPosition.
   const visibleCells = $derived.by(() => {
@@ -911,7 +967,12 @@
           maxStepUnits = Math.max(maxStepUnits, row.totalDuration);
         }
         durationColCount =
-          maxStepUnits + (includeStartPosition && spl === "column" ? 1 : 0);
+          includeStartPosition && spl === "column"
+            ? maxStepUnits + 1
+            : Math.max(maxStepUnits, includeStartPosition && effShowQRCode ? 2 : 1);
+        if (includeStartPosition && spl === "column" && effShowQRCode) {
+          rws = Math.max(rws, 2);
+        }
       } else {
         durationRows = [];
         durationColCount = 0;
@@ -1010,8 +1071,9 @@
       // containerElement is the sole source of truth for container size.
       // Reading it eagerly during a view-switch transition measures mid-layout
       // and produces tiny cells.
-      if (containedWidth && cols > 0) {
-        const newCw = containedWidth / cols;
+      const widthUnits = layoutState.containModel.cols;
+      if (containedWidth && widthUnits > 0) {
+        const newCw = containedWidth / widthUnits;
         if (Math.abs(newCw - cellWidth) > 0.5) cellWidth = newCw;
       }
 
@@ -1667,20 +1729,15 @@
   function updateCellWidth() {
     if (suppressCellWidthUpdates) return;
 
-    // Divide by effectiveColumns (the same live derivation the grid template
-    // renders from), NOT the `columns` state copy. On a cold scan the container
-    // is measured mid-render: the table layout (e.g. 4 cols for 12 steps) is
-    // replaced by the container-aware fit (7 cols) while cellWidth updates are
-    // suppressed, and the one post-render update ran before `columns` caught
-    // up — locking cellWidth at the 4-col size. Header/footer heights scale
-    // from cellWidth but the contain box assumes the correct proportions, so
-    // the oversized chrome squeezed the grid and clipped the bottom row.
-    const cols = effectiveColumns;
-    if (previewStackElement && cols > 0) {
+    // Use physical pictograph units, not just structural columns. A held beat
+    // can span 1.5 or 2 units, and the header/footer must scale from the same
+    // base unit as those wider cells.
+    const widthUnits = layoutState.containModel.cols;
+    if (previewStackElement && widthUnits > 0) {
       const stackWidth = previewStackElement.clientWidth;
       if (stackWidth < 1) return;
-      const newCellWidth = Number.isFinite(stackWidth / cols)
-        ? stackWidth / cols
+      const newCellWidth = Number.isFinite(stackWidth / widthUnits)
+        ? stackWidth / widthUnits
         : 0;
       if (Math.abs(newCellWidth - cellWidth) > 0.5) {
         cellWidth = newCellWidth;
@@ -2171,6 +2228,7 @@
         {hasMixedDurations}
         {durationRows}
         {durationColCount}
+        {startPositionLayout}
         {includeStartPosition}
         {needsScroll}
         {showHighlight}

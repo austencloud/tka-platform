@@ -14,6 +14,7 @@
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
   import type { SplitConfig } from "../services/viewer-state-persistence";
+  import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
@@ -126,6 +127,8 @@
     onQrPlayClick?: () => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
+    /** Receives Auto geometry from whichever card pane is currently visible. */
+    onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
     onPlaybackToggle?: () => void;
     onSystemPlaybackChange?: (
       playing: boolean,
@@ -212,6 +215,7 @@
     onQrPlayClick,
     onCanvasReady,
     onChoreoCardContextMenu,
+    onAutoLayoutResolved,
     onPlaybackToggle,
     onSystemPlaybackChange,
     onProgressBarSeek,
@@ -672,6 +676,9 @@
           catDogModeEnabled={propRendering.catDogModeEnabled}
           {rerenderTrigger}
           onContextMenu={onChoreoCardContextMenu}
+          onAutoLayoutResolved={_cardLeft.shown
+            ? onAutoLayoutResolved
+            : undefined}
         />
       </div>
     {/if}
@@ -850,6 +857,9 @@
             catDogModeEnabled={propRendering.catDogModeEnabled}
             {rerenderTrigger}
             onContextMenu={onChoreoCardContextMenu}
+            onAutoLayoutResolved={_cardRight.shown
+              ? onAutoLayoutResolved
+              : undefined}
           />
         </div>
       {/if}

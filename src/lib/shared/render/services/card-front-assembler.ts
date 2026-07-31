@@ -74,11 +74,16 @@ export function computeCardFrontLayout(
   let rows: number;
   if (options.columnCount != null && options.columnCount > 0) {
     columns = options.columnCount;
-    const startCol = (options.includeStartPosition ?? false) ? 1 : 0;
-    const stepsPerRowLocal = columns - startCol;
-    const firstRowSteps = Math.min(stepsPerRowLocal, stepCount);
-    const remaining = stepCount - firstRowSteps;
-    rows = 1 + (remaining > 0 ? Math.ceil(remaining / stepsPerRowLocal) : 0);
+    const includesStart = options.includeStartPosition ?? false;
+    const startPositionLayout = options.startPositionLayout ?? "row";
+    if (includesStart && startPositionLayout === "row") {
+      rows = 1 + Math.ceil(stepCount / columns);
+    } else {
+      const startColumns =
+        includesStart && startPositionLayout === "column" ? 1 : 0;
+      const stepsPerRowLocal = Math.max(1, columns - startColumns);
+      rows = Math.max(1, Math.ceil(stepCount / stepsPerRowLocal));
+    }
   } else {
     [columns, rows] = calculateLayout(
       stepCount,

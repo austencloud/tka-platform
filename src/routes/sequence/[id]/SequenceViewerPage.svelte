@@ -668,6 +668,9 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
+                onAutoLayoutResolved={isImageExportActive
+                  ? ctx.setResolvedCardAutoLayout
+                  : undefined}
                 onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                 practiceActive={ctx.practiceActive}
                 practiceRunning={ctx.practiceRunning}
@@ -723,6 +726,7 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}
                       stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                      resolvedAutoLayout={ctx.resolvedCardAutoLayout}
                       onExport={ctx.handleExport}
                       onClose={ctx.exitEditMode}
                     />

@@ -69,6 +69,7 @@
     durationRows: TimelineRow[];
     durationColCount: number;
     includeStartPosition: boolean;
+    startPositionLayout: "row" | "column";
     needsScroll: boolean;
     showHighlight: boolean;
     highlightedStepIndex: number | null;
@@ -118,6 +119,7 @@
     durationRows,
     durationColCount,
     includeStartPosition,
+    startPositionLayout,
     needsScroll,
     showHighlight,
     highlightedStepIndex,
@@ -258,12 +260,18 @@
 {/snippet}
 
 {#if hasMixedDurations && durationRows.length > 0}
-  <!-- Duration-aware layout: start position as fixed column barrier, step rows to the right -->
+  <!-- Duration-aware layout: Auto can place Start above or beside the timeline. -->
   {@const startCell = cells.find(c => c.index === -1)}
-  {@const stepMaxUnits = durationColCount - (includeStartPosition ? 1 : 0)}
+  {@const startInColumn = includeStartPosition && startPositionLayout === "column"}
+  {@const stepMaxUnits = durationColCount - (startInColumn ? 1 : 0)}
   {#if needsScroll}
     <div class="grid-scroll-container themed-scrollbar" use:bindGridScrollRef>
-      <div class="duration-layout" class:dark-mode={activeDarkMode} style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
+      <div
+        class="duration-layout"
+        class:start-row={includeStartPosition && startPositionLayout === "row"}
+        class:dark-mode={activeDarkMode}
+        style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};"
+      >
         {#if includeStartPosition && startCell}
           <div class="duration-start-col" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
             {@render startCellBlock(startCell)}
@@ -344,7 +352,12 @@
       </div>
     </div>
   {:else}
-    <div class="duration-layout" class:dark-mode={activeDarkMode} style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
+    <div
+      class="duration-layout"
+      class:start-row={includeStartPosition && startPositionLayout === "row"}
+      class:dark-mode={activeDarkMode}
+      style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};"
+    >
       {#if includeStartPosition && startCell}
         <div class="duration-start-col" class:dark-mode={activeDarkMode}>
           {@render startCellBlock(startCell)}
@@ -699,6 +712,32 @@
     width: 100%;
     height: auto;
     display: block;
+  }
+
+  /* A top Start lane uses the same one-unit square as the timeline cells.
+     QR parks at the far edge, matching the uniform-grid row placement. */
+  .duration-layout.start-row {
+    flex-direction: column;
+  }
+
+  .duration-layout.start-row .duration-start-col {
+    flex: 0 0 auto;
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .duration-layout.start-row .duration-start-col .pictograph-cell {
+    flex: 0 0 calc(1 / var(--max-units, 5) * 100%);
+    width: calc(1 / var(--max-units, 5) * 100%);
+  }
+
+  .duration-layout.start-row .duration-start-col .qr-cell {
+    margin-left: auto;
+  }
+
+  .duration-layout.start-row .duration-steps-area {
+    flex: 0 0 auto;
+    width: 100%;
   }
 
   /* Steps area: fills remaining width, stacks rows vertically */

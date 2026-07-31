@@ -1405,6 +1405,9 @@
                 ? undefined
                 : () => playFromQr(ctx)}
               onCanvasReady={ctx.handleCanvasReady}
+              onAutoLayoutResolved={isImageExportActive
+                ? ctx.setResolvedCardAutoLayout
+                : undefined}
               {rerenderTrigger}
               onChoreoCardContextMenu={(x, y) =>
                 choreoCardMenuHost?.openContextMenu(x, y)}
@@ -1556,6 +1559,7 @@
                   exportOptions={ctx.exportOptions}
                   isExporting={cardBusy}
                   stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                  resolvedAutoLayout={ctx.resolvedCardAutoLayout}
                   layout={effectiveMobile ? "bottom" : "sidebar"}
                   onExport={handleCardExport}
                   onSettingChange={handleCardSettingChange}
@@ -1580,6 +1584,7 @@
               exportOptions={ctx.exportOptions}
               isExporting={cardBusy}
               stepCount={ctx.effectiveSequence.steps?.length ?? 0}
+              resolvedAutoLayout={ctx.resolvedCardAutoLayout}
               layout="bottom"
               onExport={handleCardExport}
               onClose={handleUnfocusPane}

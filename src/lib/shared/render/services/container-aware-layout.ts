@@ -6,9 +6,9 @@
  * placement) that renders the ChoreoCard as large as possible — cells are
  * square, so maximizing the cell edge maximizes the card area.
  *
- * Pure / DOM-free / deterministic. Used only where a live container exists
- * (the interactive viewer). Export, print, and gallery thumbnails keep the
- * deterministic table (no container, reproducible baked aspect ratios).
+ * Pure / DOM-free / deterministic. Interactive viewers supply their live
+ * container. Export callers can pass the winning layout through to the PNG
+ * renderer so the downloaded card preserves the preview's geometry.
  *
  * The grid-shape formulas here mirror `renderAllCells` and
  * `calculateGridPosition` exactly, so a best-fit layout and the cells rendered
@@ -17,6 +17,7 @@
  */
 
 import { HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR } from "@tka/render-composition";
+import { calculateTimelineRowsByBeatCount } from "$lib/shared/create/utils/grid-calculations";
 
 export type StartPlacement = "row" | "column" | "none";
 
@@ -27,10 +28,26 @@ export interface FitLayout {
   rows: number;
   /** Where the start cell sits. "none" when the start position is excluded. */
   startPlacement: StartPlacement;
+  /**
+   * Physical width in square pictograph units. Uniform grids use `cols`.
+   * Held beats can be wider than one unit, so their visual width can differ
+   * from the structural column count used to group steps.
+   */
+  widthUnits?: number;
+}
+
+/** A measured Auto winner tied to the sequence length it was evaluated for. */
+export interface ResolvedAutoLayout extends FitLayout {
+  stepCount: number;
 }
 
 export interface BestFitInput {
   stepCount: number;
+  /**
+   * Optional duration for each step. When any duration differs from 1, Auto
+   * scores the same proportional timeline rows the card renders.
+   */
+  stepDurations?: readonly number[];
   includeStartPosition: boolean;
   /** Raw container width in px (NOT the aspect-fitted contained width). */
   containerWidth: number;
@@ -44,20 +61,6 @@ export interface BestFitInput {
 
 /** Cell-edge ties within this many px are treated as equal (stability + float noise). */
 const CELL_EDGE_EPSILON = 0.5;
-
-/**
- * Each empty cell costs this fraction of the best achievable cell edge. A shape
- * with more gaps must render at least this much bigger (per extra gap) to win —
- * so a marginally-bigger-but-gappy grid loses to a full one, while a much-bigger
- * grid can still justify a gap. The gap it prices is the STEP-REGION trailing
- * empty (an unfilled last step row), NOT the start's own lane — see
- * `stepTrailingEmpties`. Tuned against real cases in a portrait viewer panel:
- * 8 + start + QR → 3×4 start-column (full step region) over the skinnier 2×5;
- * 12 + start + QR → the container-filling 4×4; 8 no-start (square) → 3×3. The
- * usable band is ~0.10–0.15; 0.12 sits in the middle.
- * See docs/superpowers/specs/2026-07-10-auto-layout-full-grid-design.md.
- */
-const GAP_PENALTY_FRACTION = 0.12;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -136,8 +139,9 @@ interface Candidate {
   cols: number;
   rows: number;
   startPlacement: StartPlacement;
+  widthUnits: number;
   cellEdge: number;
-  /** Unfilled cells in the last STEP row (start lane excluded) — the priced gap. */
+  /** Unfilled cells in the last STEP row (start lane excluded). */
   stepTrailing: number;
   /** Total empty cells incl. start-lane holes — a soft tiebreak only. */
   wasted: number;
@@ -145,27 +149,24 @@ interface Candidate {
 }
 
 /**
- * True when `a` is a strictly better fit than `b`, given the best achievable
- * cell edge across all candidates (used to price gaps).
+ * True when `a` is a strictly better fit than `b`.
  *
- * Objective (see 2026-07-10-auto-layout-full-grid-design.md): maximize a
- * gap-penalized score — `cellEdge - GAP_PENALTY_FRACTION * bestEdge * stepTrailing`.
- * Each STEP-region trailing gap docks a fixed fraction of the biggest possible
- * cell, so a marginally-bigger grid with an unfilled last step row loses to a
- * full one, while a much-bigger grid can still earn a gap. Start-lane holes are
- * NOT priced here (they host the mandala / are structural) — only demoted to a
- * tiebreak via `wasted`. Ties break on raw cell edge (within CELL_EDGE_EPSILON),
- * then fewer total empties, then balance (closest to square).
+ * The primary objective is literal pictograph size: maximize the square cell
+ * edge. Only candidates within the sub-pixel stability band use geometry
+ * tiebreakers: fewer trailing step gaps, fewer total empty cells, then balance.
+ * Exact rotational ties put Start in the left column because the header and
+ * footer already form horizontal bands.
  */
-function isBetter(a: Candidate, b: Candidate, bestEdge: number): boolean {
-  const penalty = GAP_PENALTY_FRACTION * bestEdge;
-  const scoreA = a.cellEdge - penalty * a.stepTrailing;
-  const scoreB = b.cellEdge - penalty * b.stepTrailing;
-  if (Math.abs(scoreA - scoreB) > CELL_EDGE_EPSILON) return scoreA > scoreB;
+function isBetter(a: Candidate, b: Candidate): boolean {
   if (a.cellEdge > b.cellEdge + CELL_EDGE_EPSILON) return true;
   if (b.cellEdge > a.cellEdge + CELL_EDGE_EPSILON) return false;
+  if (a.stepTrailing !== b.stepTrailing) return a.stepTrailing < b.stepTrailing;
   if (a.wasted !== b.wasted) return a.wasted < b.wasted;
-  return a.balance < b.balance;
+  if (a.balance !== b.balance) return a.balance < b.balance;
+  if (a.startPlacement !== b.startPlacement) {
+    return a.startPlacement === "column";
+  }
+  return false;
 }
 
 /**
@@ -177,6 +178,7 @@ function isBetter(a: Candidate, b: Candidate, bestEdge: number): boolean {
 export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
   const {
     stepCount,
+    stepDurations,
     includeStartPosition,
     containerWidth,
     containerHeight,
@@ -192,47 +194,110 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
     ? ["row", "column"]
     : ["none"];
 
+  const durations = Array.from(
+    { length: stepCount },
+    (_, index) => stepDurations?.[index] ?? 1,
+  );
+  const hasMixedDurations = durations.some(
+    (duration) => Math.abs(duration - 1) > 0.001,
+  );
+  const durationSteps = hasMixedDurations
+    ? durations.map((duration) => ({ duration }))
+    : null;
   const usedCells = stepCount + (includeStartPosition ? 1 : 0);
   const candidates: Candidate[] = [];
 
   for (let sc = 1; sc <= stepCount; sc++) {
     for (const placement of placements) {
-      const { cols, rows } = gridShape(stepCount, sc, includeStartPosition, placement);
+      let cols: number;
+      let rows: number;
+      let widthUnits: number;
+
+      if (durationSteps) {
+        const timelineRows = calculateTimelineRowsByBeatCount(
+          durationSteps,
+          sc,
+        );
+        const maxStepUnits = Math.max(
+          1,
+          ...timelineRows.map((row) => row.totalDuration),
+        );
+
+        if (!includeStartPosition || placement === "none") {
+          cols = sc;
+          rows = timelineRows.length;
+          widthUnits = maxStepUnits;
+        } else if (placement === "row") {
+          cols = sc;
+          rows = timelineRows.length + 1;
+          // Start and QR occupy opposite ends of the top lane.
+          widthUnits = Math.max(maxStepUnits, showQRCode ? 2 : 1);
+        } else {
+          cols = sc + 1;
+          // QR sits below Start in the left lane.
+          rows = Math.max(timelineRows.length, showQRCode ? 2 : 1);
+          widthUnits = maxStepUnits + 1;
+        }
+      } else {
+        const shape = gridShape(
+          stepCount,
+          sc,
+          includeStartPosition,
+          placement,
+        );
+        cols = shape.cols;
+        rows = shape.rows;
+        widthUnits = cols;
+      }
 
       // The QR code is functional (the scan target), so it must have a reserved
       // empty slot. Row placement parks it at (cols, 1); column at (1, rows).
-      if (showQRCode && includeStartPosition) {
+      if (showQRCode && includeStartPosition && !durationSteps) {
         if (placement === "row" && cols < 2) continue;
         if (placement === "column" && rows < 2) continue;
       }
 
-      const heightCells = cardHeightInCells(cols, rows, showHeader, showFooter);
-      const cellEdge = Math.min(containerWidth / cols, containerHeight / heightCells);
+      const heightCells = cardHeightInCells(
+        widthUnits,
+        rows,
+        showHeader,
+        showFooter,
+      );
+      const cellEdge = Math.min(
+        containerWidth / widthUnits,
+        containerHeight / heightCells,
+      );
 
       candidates.push({
         cols,
         rows,
         startPlacement: placement,
+        widthUnits,
         cellEdge,
         stepTrailing: stepTrailingEmpties(cols, rows, stepCount, includeStartPosition, placement),
         wasted: cols * rows - usedCells,
-        balance: Math.abs(cols - rows),
+        balance: Math.abs(widthUnits - rows),
       });
     }
   }
 
   if (candidates.length === 0) return null;
 
-  // Gaps are priced as a fraction of the biggest achievable cell, so the pass
-  // below needs the best raw edge before it can score.
-  let bestEdge = 0;
-  for (const c of candidates) if (c.cellEdge > bestEdge) bestEdge = c.cellEdge;
-
   let best: Candidate | null = null;
-  for (const c of candidates) if (!best || isBetter(c, best, bestEdge)) best = c;
+  for (const c of candidates) if (!best || isBetter(c, best)) best = c;
 
   if (!best) return null;
-  return { cols: best.cols, rows: best.rows, startPlacement: best.startPlacement };
+  return {
+    cols: best.cols,
+    rows: best.rows,
+    startPlacement: best.startPlacement,
+    widthUnits: best.widthUnits,
+  };
+}
+
+/** Convert a complete Auto layout back to the panel's STEP-column convention. */
+export function getStepColumnsForLayout(layout: FitLayout): number {
+  return layout.startPlacement === "column" ? layout.cols - 1 : layout.cols;
 }
 
 /**
@@ -240,7 +305,7 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
  * width and scrolls vertically, so the column count is chosen from width alone:
  * a wider container shows more (smaller-scroll) columns, a narrower one fewer.
  * Returns the legacy default of 5 when the width is not yet known, preserving
- * behavior for export/forceContain and the first pre-measure frame.
+ * the first pre-measure frame.
  */
 export function pickScrollColumns(
   containerWidth: number,

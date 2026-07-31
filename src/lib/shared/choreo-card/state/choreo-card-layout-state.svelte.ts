@@ -37,6 +37,8 @@ export interface ChoreoCardLayoutDeps {
   readonly showFooter: boolean;
   /** Whether QR code is visible */
   readonly showQRCode: boolean;
+  /** Whether Auto must reserve an info cell for the requested QR setting */
+  readonly autoLayoutReservesQRCode: boolean;
   /** Whether mandalas are enabled */
   readonly showMandala: boolean;
   /** Force contain mode */
@@ -75,38 +77,38 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const isLongSequence = $derived((getDeps().sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
   const needsScroll = $derived(!getDeps().forceContain && isLongSequence);
 
-  // Container-aware "Auto" layout. When the card is on Auto (no manual/composition
-  // column override), is a uniform grid, isn't a long scroll sequence, and the
-  // live container has been measured, pick the columns×rows + start placement that
-  // renders the card largest in that container. Returns null in every other case,
-  // so the derivations below fall back to the static table. This is the ONLY seam
-  // that consults the container — export/print/thumbnail have no container, get
-  // null here, and stay on the deterministic table.
+  const usesAutomaticColumns = $derived.by(() => {
+    const deps = getDeps();
+    void deps.compositionVersion;
+    const stepCount = deps.sequence?.steps?.length ?? 0;
+    if (stepCount < 1) return false;
+    if (deps.startPositionLayoutOverride) return false;
+    if (deps.columnCount !== null && deps.columnCount > 0) return false;
+    return compositionManager.getColumnCountForStepCount(stepCount) === null;
+  });
+
+  // Container-aware "Auto" layout. Download Card is force-contained, so it
+  // evaluates every column count and both start placements against the actual
+  // preview frame. Scrolling cards keep their width-driven path; contained long
+  // cards are eligible because they must choose one complete grid.
   const autoFit = $derived.by<FitLayout | null>(() => {
     const deps = getDeps();
     void deps.compositionVersion;
     const stepCount = deps.sequence?.steps?.length ?? 0;
-    if (stepCount < 1) return null;
-    // Export / print previews (forceContain) keep the deterministic table so the
-    // on-screen preview matches the compositor-rendered PNG, which uses the table.
-    if (deps.forceContain) return null;
-    if (deps.hasMixedDurations) return null; // uniform grids only
-    if (deps.columnCount !== null && deps.columnCount > 0) return null; // manual override
-    if (stepCount >= 4 && compositionManager.getColumnCountForStepCount(stepCount) !== null) {
-      return null; // per-length composition override
-    }
-    if (isLongSequence) return null; // scroll path handled below
+    if (!usesAutomaticColumns) return null;
+    if (isLongSequence && !deps.forceContain) return null; // scroll path handled below
     const cw = deps.containerWidth;
     const ch = deps.containerHeight;
     if (!(cw > 0) || !(ch > 0)) return null; // not measured yet → table fallback
     return pickBestFitLayout({
       stepCount,
+      stepDurations: deps.sequence.steps.map((step) => step.duration ?? 1),
       includeStartPosition: deps.includeStartPosition,
       containerWidth: cw,
       containerHeight: ch,
       showHeader: deps.showHeader,
       showFooter: deps.showFooter,
-      showQRCode: deps.showQRCode,
+      showQRCode: deps.autoLayoutReservesQRCode,
     });
   });
 
@@ -114,13 +116,13 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   // "column" puts start in a left column. On Auto the best-fit picker chooses
   // placement for the container; otherwise the composition setting applies.
   const startPositionLayout = $derived.by<"row" | "column">(() => {
-    const af = autoFit;
     const deps = getDeps();
+    if (deps.startPositionLayoutOverride) return deps.startPositionLayoutOverride;
+    const af = autoFit;
     if (af && deps.includeStartPosition && af.startPlacement !== "none") {
       return af.startPlacement;
     }
     void deps.compositionVersion;
-    if (deps.startPositionLayoutOverride) return deps.startPositionLayoutOverride;
     const stepCount = deps.sequence?.steps?.length ?? 0;
     if (stepCount === 0) return compositionManager.startPositionLayout;
     return compositionManager.getStartPositionLayoutForStepCount(stepCount);
@@ -140,15 +142,14 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     if (deps.columnCount !== null && deps.columnCount > 0) {
       return deps.includeStartPosition && spl === "column" ? deps.columnCount + 1 : deps.columnCount;
     }
-    // Check per-length column count from global composition settings (4+ steps only)
-    if (stepCount >= 4) {
-      const compositionCols = compositionManager.getColumnCountForStepCount(stepCount);
-      if (compositionCols !== null && compositionCols > 0) {
-        return deps.includeStartPosition && spl === "column" ? compositionCols + 1 : compositionCols;
-      }
+    // Check the per-length column count from global composition settings.
+    const compositionCols = compositionManager.getColumnCountForStepCount(stepCount);
+    if (compositionCols !== null && compositionCols > 0) {
+      return deps.includeStartPosition && spl === "column" ? compositionCols + 1 : compositionCols;
     }
-    // Long sequences: width-adaptive columns while scrolling; fixed 5 for the
-    // export/forceContain (deterministic) path and the pre-measure frame.
+    // Long scrolling sequences adapt to width. A contained card only reaches
+    // this five-column fallback before its container has been measured; Auto
+    // replaces it with the exhaustive winner immediately afterward.
     if (isLongSequence) {
       if (needsScroll && deps.containerWidth > 0) return pickScrollColumns(deps.containerWidth);
       return 5;
@@ -168,8 +169,8 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     const stepCount = seq.steps.length;
     const cols = baseColumns;
     const spl = startPositionLayout;
-    const hasCompositionOverride = stepCount >= 4
-      && compositionManager.getColumnCountForStepCount(stepCount) !== null;
+    const hasCompositionOverride =
+      compositionManager.getColumnCountForStepCount(stepCount) !== null;
 
     if (cols > 0 && (deps.columnCount !== null || isLongSequence || hasCompositionOverride)) {
       if (deps.includeStartPosition && spl === "row") {
@@ -228,14 +229,16 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   // content from disagreeing (the disagreement is what clips grid rows).
   const containModel = $derived.by(() => {
     const deps = getDeps();
-    const cols = effectiveColumns || 1;
-    const rowHeightInCellUnits = (deps.hasMixedDurations && deps.durationColCount > 0)
-      ? effectiveColumns / deps.durationColCount
-      : 1;
+    const cols =
+      autoFit?.widthUnits ??
+      (deps.hasMixedDurations && deps.durationColCount > 0
+        ? deps.durationColCount
+        : effectiveColumns) ??
+      1;
     const hfScale = cols >= 3 ? 1 : cols / 3;
     return {
       cols,
-      gridHeightUnits: effectiveRows * rowHeightInCellUnits,
+      gridHeightUnits: effectiveRows,
       headerUnits: deps.showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0,
       footerUnits: deps.showFooter ? (1 / FOOTER_HEIGHT_DIVISOR) * hfScale : 0,
       // scaledHeaderHeight never renders below this (0 = floor not in play:
@@ -257,7 +260,7 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const headerFooterRefWidth = $derived.by(() => {
     const cw = getDeps().cellWidth;
     if (!cw || !Number.isFinite(cw)) return 0;
-    const cols = effectiveColumns || 1;
+    const cols = containModel.cols;
     if (cols >= 3) return cw;
     return cw * cols / 3;
   });
@@ -321,6 +324,8 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   return {
     get isLongSequence() { return isLongSequence; },
     get needsScroll() { return needsScroll; },
+    get usesAutomaticColumns() { return usesAutomaticColumns; },
+    get autoFit() { return autoFit; },
     get startPositionLayout() { return startPositionLayout; },
     get baseColumns() { return baseColumns; },
     get baseRows() { return baseRows; },

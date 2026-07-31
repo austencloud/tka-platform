@@ -15,6 +15,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+import {
+  getStepColumnsForLayout,
+  type ResolvedAutoLayout,
+} from "$lib/shared/render/services/container-aware-layout";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 import { resolveInfoCellDisplay } from "$lib/shared/sequence-viewer/services/info-cell-display";
@@ -36,6 +40,12 @@ export interface CardRenderOptionsInput {
    * single-hand path view.
    */
   isHandPath?: boolean;
+  /**
+   * Winning geometry measured by the live Download Card preview. Auto has no
+   * fixed shape: the compositor reuses this result so the PNG matches the card
+   * the user configured.
+   */
+  resolvedAutoLayout?: ResolvedAutoLayout | null;
 }
 
 /**
@@ -55,14 +65,32 @@ export function buildCardRenderOptions(
   // land on the start position. One-count cards never carry a QR (matches the
   // canvas backstop in findEmptyCellForQR and the gallery thumbnail gate).
   const oneCount = stepCount <= 1;
+  const isAuthenticated = !!getAuthSync().currentUser;
 
-  // The panel's column chip stores STEP columns; the assembler wants the total
-  // including the start-position column, so add +1 when start is shown.
+  // Auto owns both axes: it chooses the total grid columns and whether the start
+  // consumes a row or a column. The live Download Card preview evaluates the
+  // container; the export path consumes that exact winner.
   const stepColumns = ic.getColumnCountForStepCount(stepCount);
+  const automaticLayout =
+    stepColumns === null &&
+    input.resolvedAutoLayout?.stepCount === stepCount
+      ? input.resolvedAutoLayout
+      : null;
+  const startPositionLayout =
+    automaticLayout && automaticLayout.startPlacement !== "none"
+      ? automaticLayout.startPlacement
+      : ic.getStartPositionLayoutForStepCount(stepCount);
+
   const columnCount =
     stepColumns != null
-      ? stepColumns + (ic.includeStartPosition ? 1 : 0)
-      : undefined;
+      ? stepColumns +
+        (ic.includeStartPosition && startPositionLayout === "column" ? 1 : 0)
+      : automaticLayout
+        ? automaticLayout.cols
+        : undefined;
+  const infoCellStepColumns =
+    stepColumns ??
+    (automaticLayout ? getStepColumnsForLayout(automaticLayout) : null);
 
   // One-spot info-cell resolution: a card with a single empty info cell + both QR
   // and mandala on routes through the user's per-length choice. No-op otherwise,
@@ -70,17 +98,17 @@ export function buildCardRenderOptions(
   const effectiveInfoCell = resolveInfoCellDisplay({
     stepCount,
     includeStartPosition: ic.includeStartPosition,
-    startPositionLayout: ic.getStartPositionLayoutForStepCount(stepCount),
-    columnCount: ic.getColumnCountForStepCount(stepCount), // STEP columns
+    startPositionLayout,
+    columnCount: infoCellStepColumns,
     showQRCode: oneCount ? false : ic.showQRCode,
     showMandala: ic.showMandala,
     infoCellChoice: ic.getInfoCellChoiceForStepCount(stepCount),
-    isAuthenticated: !!getAuthSync().currentUser,
+    isAuthenticated,
   });
 
   return {
     includeStartPosition: ic.includeStartPosition,
-    startPositionLayout: ic.getStartPositionLayoutForStepCount(stepCount),
+    startPositionLayout,
     columnCount,
     addStepNumbers: ic.addStepNumbers,
     addWord: ic.addWord,

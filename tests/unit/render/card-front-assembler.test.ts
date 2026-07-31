@@ -33,6 +33,46 @@ describe("computeCardFrontLayout", () => {
     expect(layout.stepsPerRow).toBe(layout.columns - 1);
   });
 
+  it("does not reserve a phantom column for a row-mode start", () => {
+    const seq = {
+      steps: Array.from({ length: 12 }, () => ({ letter: "A" })),
+      startPosition: {},
+    } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      {
+        includeStartPosition: true,
+        startPositionLayout: "row",
+        columnCount: 4,
+      },
+      {} as any
+    );
+    expect(layout.columns).toBe(4);
+    expect(layout.rows).toBe(4);
+    expect(layout.startRow).toBe(1);
+    expect(layout.stepsPerRow).toBe(4);
+  });
+
+  it("reserves one of the explicit columns for a column-mode start", () => {
+    const seq = {
+      steps: Array.from({ length: 12 }, () => ({ letter: "A" })),
+      startPosition: {},
+    } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      {
+        includeStartPosition: true,
+        startPositionLayout: "column",
+        columnCount: 4,
+      },
+      {} as any
+    );
+    expect(layout.columns).toBe(4);
+    expect(layout.rows).toBe(4);
+    expect(layout.startColumn).toBe(1);
+    expect(layout.stepsPerRow).toBe(3);
+  });
+
   // Regression: the download-card export dropped the LOOP/Header toggle, so a
   // looped sequence always drew the loop label + its header band even with the
   // header turned off in the preview. The contract: showLoopGlyph:false must

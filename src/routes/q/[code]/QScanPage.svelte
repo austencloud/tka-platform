@@ -509,6 +509,7 @@
         darkMode: ic.darkMode,
         userName: ic.userName,
         isHandPath: ic.handPathMode ?? false,
+        resolvedAutoLayout: ctx.resolvedCardAutoLayout,
       });
       await sequenceModalExporter.exportImage(
         renderOptions,

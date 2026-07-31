@@ -22,6 +22,7 @@ import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-key
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
+import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import { sanitizeFilename, shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
@@ -270,6 +271,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     isPlayingLocal: boolean,
     bpmLocal: number,
     isHandPath: boolean,
+    resolvedAutoLayout: ResolvedAutoLayout | null,
   ) {
     const exportType: ExportType | null =
       editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null;
@@ -479,6 +481,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         darkMode: exportOptions.imageDarkMode,
         userName: authState.user?.displayName ?? "",
         isHandPath,
+        resolvedAutoLayout,
       });
       await sequenceModalExporter.exportImage(
         renderOptions,
