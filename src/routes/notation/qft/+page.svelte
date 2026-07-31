@@ -25,6 +25,7 @@
    *         docs/superpowers/specs/2026-07-28-qft-shape-matrix-bridge-design.md
    * Sources: docs/reference/archive/qft-notation/README.md
    */
+  import { untrack } from "svelte";
   import { fade } from "svelte/transition";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -109,6 +110,19 @@
    * and never nags (see `QftSession.entered`).
    */
   let entered = $state(restored?.entered ?? false);
+
+  /*
+   * Dismissing the card destroys the button that had focus, and focus would
+   * otherwise fall back to the document — so a keyboard user's next Tab starts
+   * from the top of the page instead of from the app they just opened. Move it
+   * to the mode control, which is the first thing they would reach for.
+   */
+  function enterApp() {
+    entered = true;
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(".topbar .segment")?.focus();
+    });
+  }
   let showInfo = $state(false);
   let showArchive = $state(false);
 
@@ -539,7 +553,15 @@
       playing,
       layers,
     ];
-    saveQftSession(snapshot());
+    /*
+     * `untrack`, because the explicit list above is not the whole story.
+     * `snapshot()` reads `pos` for the cursor, and calling it inside the effect
+     * made `pos` a dependency too — so this "discrete state" effect was in fact
+     * re-running and writing to localStorage on every animation frame, which is
+     * exactly what the comment above says it avoids. Untracking the call keeps
+     * the declared list as the real trigger set.
+     */
+    saveQftSession(untrack(() => snapshot()));
   });
 
   /*
@@ -628,7 +650,7 @@
   <title>QfT Notation — Flow Arts Composer</title>
   <meta
     name="description"
-    content="Charlie Cushing's 2011 poi notation, written up by Drex, running beside a model that computes the same moves from the published rules."
+    content="Charlie Cushing's QfT poi notation, written up by Drex in 2011, running beside a model that computes the same moves from the published rules."
   />
 </svelte:head>
 
@@ -928,8 +950,10 @@
         corrections this archive forces" §1.
       -->
       <h1>QfT Notation</h1>
+      <!-- No date on Charlie's name: the archive dates Drex's write-up, not
+           Charlie's devising of the system. -->
       <p class="landing-attribution">
-        Quantized Field Theory · Charlie Cushing, 2011
+        Quantized Field Theory · Charlie Cushing
       </p>
       <p class="landing-lede">
         Pick a flower for each hand and set the timing between them. Every step
@@ -940,16 +964,16 @@
         <button
           type="button"
           class="landing-primary"
-          onclick={() => (entered = true)}>Pick a combination</button
+          onclick={enterApp}>Pick a combination</button
         >
-        <button
-          type="button"
-          class="landing-secondary"
-          onclick={() => {
-            entered = true;
-            showInfo = true;
-          }}>What am I looking at?</button
-        >
+        <!--
+          No "What am I looking at?" here.
+
+          Arriving from a release-note link, the reader has not seen anything
+          yet, so the question has no referent — and the app's top bar already
+          carries a `?` opening the same panel, eight pixels behind this card.
+          The question belongs where there is something to look at.
+        -->
       </div>
     </div>
 
@@ -1225,8 +1249,13 @@
     <header class="archive-head">
       <div>
         <h2>The 2011 diagrams</h2>
+        <!--
+          No creator named. The guide does not say who drew these, which the
+          About panel states outright — so naming one here contradicted the
+          page's own note two panels away.
+        -->
         <p class="archive-note">
-          By Drex, from <a
+          From <a
             href="https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
             rel="noreferrer"
             target="_blank">A Beginner's Guide to Prop QFT Notation</a
@@ -1420,8 +1449,7 @@
    * stated because a stretched pair of short labels is the failure
    * visual-verification-mandatory.md opens with.
    */
-  .landing-primary,
-  .landing-secondary {
+  .landing-primary {
     width: auto;
     min-height: 2.75rem;
     padding: 0.7rem 1.5rem;
@@ -1443,17 +1471,6 @@
 
   .landing-primary:hover {
     background: var(--semantic-accent-strong, #8079ff);
-  }
-
-  .landing-secondary {
-    border: 1px solid var(--semantic-border, rgb(255 255 255 / 0.22));
-    background: var(--semantic-surface-raised, rgb(0 0 0 / 0.3));
-    color: var(--semantic-text-secondary, rgb(255 255 255 / 0.8));
-  }
-
-  .landing-secondary:hover {
-    border-color: var(--semantic-border-strong, rgb(255 255 255 / 0.4));
-    color: var(--semantic-text-primary, #fff);
   }
 
   .landing-exit {

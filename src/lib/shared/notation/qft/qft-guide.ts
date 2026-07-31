@@ -113,13 +113,34 @@ export const SOURCES = [
 	}
 ];
 
+/*
+ * Every date here is one a source actually carries, and no more.
+ *
+ * The previous version dated Charlie's devising of QfT to 2011, credited the
+ * video chapters to November 2011, and put the unanswered forum question in
+ * 2022. None of the three is in the archive. What the archive has is two Drex
+ * post URLs (2011/05/18 for the guide, 2011/11/02 for the videos write-up) and
+ * the statement that a horizontal-plane question went unanswered for eleven
+ * years without saying when it was asked. Inferring the rest is how the
+ * "Quarters for Transitions" fabrication happened, one layer up.
+ *
+ * Source: docs/reference/archive/qft-notation/README.md
+ */
 export const TIMELINE = [
-	{ when: "2011", what: "Charlie Cushing devises QfT. Drex writes up the notation." },
-	{ when: "May 2011", what: "The guide is posted to Home of Poi and to Drex's blog." },
-	{ when: "Nov 2011", what: "Charlie publishes ten video chapters covering the full formula." },
-	{ when: "2022", what: "A forum question about horizontal-plane moves goes unanswered." },
+	{
+		when: "before 2011",
+		what: "Charlie Cushing devises QfT. The guide credits him with it and gives no date."
+	},
+	{
+		when: "May 2011",
+		what: "Drex publishes the write-up on his blog. The same post runs on Home of Poi."
+	},
+	{
+		when: "Nov 2011",
+		what: "Drex posts that Charlie's ten video chapters are easier to watch."
+	},
 	{
 		when: "since",
-		what: "No further published work. The forum's images stop loading; the blog's still serve."
+		what: "The promised written follow-ups have not been found. A forum question about horizontal-plane moves went unanswered for eleven years. The forum's images stop loading; the blog's still serve."
 	}
 ];
