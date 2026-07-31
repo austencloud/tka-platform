@@ -46,6 +46,7 @@ import {
   getUserCollectionPath,
   getPublicSequencePath,
   getUserSequencePath,
+  LIBRARY_LIMITS,
 } from "$lib/shared/library/data/firestore-paths";
 import {
   getAuthenticatedUserId,
@@ -844,15 +845,215 @@ export async function reorderSequences(
   }
 }
 
+export interface BulkCollectionAddResult {
+  requestedCount: number;
+  addedCount: number;
+  alreadyPresentCount: number;
+}
+
+// Each transaction writes one collection document plus one owner document per
+// sequence. Keeping chunks well below Firestore's request ceiling also keeps
+// retries affordable when another device edits the same collection.
+const BULK_COLLECTION_CHUNK_SIZE = 200;
+
 export async function addSequencesToCollection(
   collectionId: string,
-  sequenceIds: string[]
-): Promise<void> {
-  await Promise.all(
-    sequenceIds.map((sequenceId) =>
-      addSequenceToCollection(collectionId, sequenceId)
-    )
+  sequenceIds: readonly string[]
+): Promise<BulkCollectionAddResult> {
+  const uniqueIds = [...new Set(sequenceIds)];
+  if (uniqueIds.length === 0) {
+    return { requestedCount: 0, addedCount: 0, alreadyPresentCount: 0 };
+  }
+
+  const firestore = await getFirestoreInstance();
+  const userId = getAuthenticatedUserId();
+  const collectionRef = doc(
+    firestore,
+    getUserCollectionPath(userId, collectionId)
   );
+  let committedCount = 0;
+
+  try {
+    const initialSnapshot = await getDoc(collectionRef);
+    if (!initialSnapshot.exists()) {
+      throw new CollectionError(
+        "Collection not found",
+        "NOT_FOUND",
+        collectionId
+      );
+    }
+
+    const initial = mapDocToCollection(initialSnapshot.data(), collectionId);
+    if (initial.kind === "smart") {
+      throw new CollectionError(
+        "Cannot modify members of a smart collection",
+        "INVALID_OPERATION",
+        collectionId
+      );
+    }
+
+    const initialIds = new Set(initial.sequenceIds);
+    const idsToAdd = uniqueIds.filter((id) => !initialIds.has(id));
+    const available =
+      LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION - initialIds.size;
+    if (idsToAdd.length > available) {
+      throw new CollectionError(
+        `"${initial.name}" has room for ${Math.max(0, available)} more ${available === 1 ? "sequence" : "sequences"}.`,
+        "INVALID_OPERATION",
+        collectionId
+      );
+    }
+
+    if (initial.isPublic) {
+      await ensurePublicMembers(firestore, userId, idsToAdd);
+    }
+
+    for (
+      let offset = 0;
+      offset < idsToAdd.length;
+      offset += BULK_COLLECTION_CHUNK_SIZE
+    ) {
+      const chunk = idsToAdd.slice(offset, offset + BULK_COLLECTION_CHUNK_SIZE);
+      let chunkCommitted = false;
+
+      for (let attempt = 0; attempt < 3 && !chunkCommitted; attempt++) {
+        try {
+          const addedInChunk = await runTransaction(
+            firestore,
+            async (transaction) => {
+              const collectionSnapshot = await transaction.get(collectionRef);
+              if (!collectionSnapshot.exists()) {
+                throw new CollectionError(
+                  "Collection not found",
+                  "NOT_FOUND",
+                  collectionId
+                );
+              }
+
+              const current = mapDocToCollection(
+                collectionSnapshot.data(),
+                collectionId
+              );
+              if (current.kind === "smart") {
+                throw new CollectionError(
+                  "Cannot modify members of a smart collection",
+                  "INVALID_OPERATION",
+                  collectionId
+                );
+              }
+
+              const currentIds = new Set(current.sequenceIds);
+              const missingIds = chunk.filter((id) => !currentIds.has(id));
+              if (missingIds.length === 0) return 0;
+
+              if (
+                currentIds.size + missingIds.length >
+                LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION
+              ) {
+                const room =
+                  LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION - currentIds.size;
+                throw new CollectionError(
+                  `"${current.name}" has room for ${Math.max(0, room)} more ${room === 1 ? "sequence" : "sequences"}.`,
+                  "INVALID_OPERATION",
+                  collectionId
+                );
+              }
+
+              // Every read happens before the first write. Private collections
+              // accept a public foreign sequence id, so a missing owner doc is
+              // valid and simply has no reverse membership field to update.
+              const ownerSnapshots = current.isPublic
+                ? await Promise.all(
+                    missingIds.map((sequenceId) =>
+                      verifyPublicMemberInTransaction(
+                        transaction,
+                        firestore,
+                        userId,
+                        sequenceId
+                      )
+                    )
+                  )
+                : await Promise.all(
+                    missingIds.map((sequenceId) =>
+                      transaction.get(
+                        doc(firestore, getUserSequencePath(userId, sequenceId))
+                      )
+                    )
+                  );
+
+              const nextIds = [
+                ...new Set([...current.sequenceIds, ...missingIds]),
+              ];
+              transaction.update(collectionRef, {
+                sequenceIds: nextIds,
+                sequenceCount: nextIds.length,
+                updatedAt: serverTimestamp(),
+              });
+
+              ownerSnapshots.forEach((snapshot, index) => {
+                if (!snapshot.exists()) return;
+                const sequenceId = missingIds[index]!;
+                const existingCollectionIds = Array.isArray(
+                  snapshot.data()["collectionIds"]
+                )
+                  ? (snapshot.data()["collectionIds"] as string[])
+                  : [];
+                transaction.update(
+                  doc(firestore, getUserSequencePath(userId, sequenceId)),
+                  {
+                    collectionIds: existingCollectionIds.includes(collectionId)
+                      ? existingCollectionIds
+                      : [...existingCollectionIds, collectionId],
+                    updatedAt: serverTimestamp(),
+                  }
+                );
+              });
+
+              return missingIds.length;
+            }
+          );
+
+          committedCount += addedInChunk;
+          chunkCommitted = true;
+        } catch (error) {
+          if (error instanceof PublicMemberNotReadyError && attempt < 2) {
+            await ensurePublicMembers(firestore, userId, chunk);
+            continue;
+          }
+          throw error;
+        }
+      }
+    }
+
+    return {
+      requestedCount: uniqueIds.length,
+      addedCount: committedCount,
+      alreadyPresentCount: uniqueIds.length - committedCount,
+    };
+  } catch (error) {
+    console.error(
+      "[CollectionManager] Failed to add sequences to collection:",
+      error
+    );
+    if (committedCount > 0) {
+      toast.error(
+        `Added ${committedCount} ${committedCount === 1 ? "sequence" : "sequences"}, but couldn't finish. Try again to add the rest.`
+      );
+    } else if (
+      error instanceof CollectionError &&
+      error.code === "INVALID_OPERATION"
+    ) {
+      toast.error(error.message);
+    } else {
+      toast.error("Failed to add sequences to collection. Please try again.");
+    }
+    if (error instanceof CollectionError) throw error;
+    throw new CollectionError(
+      "Failed to add sequences to collection",
+      "NETWORK",
+      collectionId
+    );
+  }
 }
 
 // ============================================================

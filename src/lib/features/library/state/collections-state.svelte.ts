@@ -7,23 +7,24 @@ import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
 import {
-	subscribeToCollections,
-	addSequenceToCollection,
-	removeSequenceFromCollection,
-	createUserCollection,
-	createSmartUserCollection,
-	updateCollectionFilterSpec,
-	syncSmartCollectionCount,
-	ensureSystemCollections,
-	updateCollection,
-	deleteCollection,
+  subscribeToCollections,
+  addSequenceToCollection,
+  addSequencesToCollection,
+  removeSequenceFromCollection,
+  createUserCollection,
+  createSmartUserCollection,
+  updateCollectionFilterSpec,
+  syncSmartCollectionCount,
+  ensureSystemCollections,
+  updateCollection,
+  deleteCollection,
 } from "$lib/shared/library/services/collection-manager";
 import { setCollectionMembershipResolver } from "$lib/shared/browse/services/browse-filter";
 import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
 import {
-	readOwnMirror,
-	writeOwnMirror,
+  readOwnMirror,
+  writeOwnMirror,
 } from "$lib/features/library/services/collection-cache-mirror";
 
 /**
@@ -37,250 +38,337 @@ import {
  * truth for membership. Mirrors the shape of mandala-collection-state.
  */
 class CollectionsState {
-	collections = $state<LibraryCollection[]>([]);
-	// True until the first snapshot lands, so pickers show skeletons instead of
-	// mistaking "not loaded yet" for "you have no collections".
-	loading = $state(false);
+  collections = $state<LibraryCollection[]>([]);
+  // True until the first snapshot lands, so pickers show skeletons instead of
+  // mistaking "not loaded yet" for "you have no collections".
+  loading = $state(false);
 
-	private unsubscribe: (() => void) | null = null;
-	private startedFor: string | null = null;
+  private unsubscribe: (() => void) | null = null;
+  private startedFor: string | null = null;
 
-	/**
-	 * Idempotently begin (or restart for a new user) the live subscription.
-	 * Safe to call on every picker open: no-op when unauthenticated or already
-	 * live for the current user.
-	 */
-	ensureStarted(): void {
-		const uid = authState.user?.uid ?? null;
-		if (!uid || this.startedFor === uid) return;
+  /**
+   * Idempotently begin (or restart for a new user) the live subscription.
+   * Safe to call on every picker open: no-op when unauthenticated or already
+   * live for the current user.
+   */
+  ensureStarted(): void {
+    const uid = authState.user?.uid ?? null;
+    if (!uid || this.startedFor === uid) return;
 
-		this.teardown();
-		this.startedFor = uid;
+    this.teardown();
+    this.startedFor = uid;
 
-		// Synchronous paint: seed from the local mirror before Firestore even
-		// initializes. A non-empty seed means we have something to show, so skip
-		// the skeleton; the live snapshot reconciles it moments later.
-		const seed = readOwnMirror(uid) ?? [];
-		this.collections = seed;
-		this.loading = seed.length === 0;
+    // Synchronous paint: seed from the local mirror before Firestore even
+    // initializes. A non-empty seed means we have something to show, so skip
+    // the skeleton; the live snapshot reconciles it moments later.
+    const seed = readOwnMirror(uid) ?? [];
+    this.collections = seed;
+    this.loading = seed.length === 0;
 
-		// Favorites has to exist so it can anchor the picker's first chip; the
-		// subscription reports it the moment it's created. Fire-and-forget.
-		ensureSystemCollections().catch((err) =>
-			console.error("[collections-state] ensureSystemCollections failed:", err),
-		);
+    // Favorites has to exist so it can anchor the picker's first chip; the
+    // subscription reports it the moment it's created. Fire-and-forget.
+    ensureSystemCollections().catch((err) =>
+      console.error("[collections-state] ensureSystemCollections failed:", err)
+    );
 
-		this.unsubscribe = subscribeToCollections((cols) => {
-			this.collections = cols;
-			this.loading = false;
-			writeOwnMirror(uid, cols);
-		});
-	}
+    this.unsubscribe = subscribeToCollections((cols) => {
+      this.collections = cols;
+      this.loading = false;
+      writeOwnMirror(uid, cols);
+    });
+  }
 
-	teardown(): void {
-		this.unsubscribe?.();
-		this.unsubscribe = null;
-		this.startedFor = null;
-		this.collections = [];
-		this.loading = false;
-	}
+  teardown(): void {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.startedFor = null;
+    this.collections = [];
+    this.loading = false;
+  }
 
-	isIn(sequenceId: string, collectionId: string): boolean {
-		const c = this.collections.find((col) => col.id === collectionId);
-		return !!c && c.sequenceIds.includes(sequenceId);
-	}
+  isIn(sequenceId: string, collectionId: string): boolean {
+    const c = this.collections.find((col) => col.id === collectionId);
+    return !!c && c.sequenceIds.includes(sequenceId);
+  }
 
-	/**
-	 * Toggle membership with a live write. The manager surfaces its own error
-	 * toast; on failure latency compensation reverts the snapshot, so we only
-	 * swallow the thrown error here. Guards the per-collection cap up front.
-	 *
-	 * A removal offers an Undo: taking a sequence out makes its card disappear
-	 * from whatever grid you're looking at, which is disorienting enough to
-	 * deserve a way back. Adds are self-evident and stay silent.
-	 */
-	async toggle(sequenceId: string, collectionId: string): Promise<void> {
-		const c = this.collections.find((col) => col.id === collectionId);
-		if (!c) return;
+  /**
+   * Toggle membership with a live write. The manager surfaces its own error
+   * toast; on failure latency compensation reverts the snapshot, so we only
+   * swallow the thrown error here. Guards the per-collection cap up front.
+   *
+   * A removal offers an Undo: taking a sequence out makes its card disappear
+   * from whatever grid you're looking at, which is disorienting enough to
+   * deserve a way back. Adds are self-evident and stay silent.
+   */
+  async toggle(sequenceId: string, collectionId: string): Promise<void> {
+    const c = this.collections.find((col) => col.id === collectionId);
+    if (!c) return;
 
-		// Smart collections derive members from a rule — there's nothing to
-		// hand-toggle. (The picker hides them, so this is belt-and-braces.)
-		if (c.kind === "smart") return;
+    // Smart collections derive members from a rule — there's nothing to
+    // hand-toggle. (The picker hides them, so this is belt-and-braces.)
+    if (c.kind === "smart") return;
 
-		const isMember = c.sequenceIds.includes(sequenceId);
-		if (!isMember && c.sequenceCount >= LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION) {
-			toast.error(`"${c.name}" is full (${LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION} max).`);
-			return;
-		}
+    const isMember = c.sequenceIds.includes(sequenceId);
+    if (
+      !isMember &&
+      c.sequenceCount >= LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION
+    ) {
+      toast.error(
+        `"${c.name}" is full (${LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION} max).`
+      );
+      return;
+    }
 
-		try {
-			if (isMember) {
-				await removeSequenceFromCollection(collectionId, sequenceId);
-				showToast({
-					message: `Removed from "${c.name}"`,
-					type: "info",
-					duration: 6000,
-					action: {
-						label: "Undo",
-						onClick: () => {
-							void addSequenceToCollection(collectionId, sequenceId).catch(() => {
-								// manager already toasted
-							});
-						},
-					},
-				});
-			} else {
-				await addSequenceToCollection(collectionId, sequenceId);
-			}
-		} catch {
-			// manager already toasted; the subscription stays authoritative.
-		}
-	}
+    try {
+      if (isMember) {
+        await removeSequenceFromCollection(collectionId, sequenceId);
+        showToast({
+          message: `Removed from "${c.name}"`,
+          type: "info",
+          duration: 6000,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void addSequenceToCollection(collectionId, sequenceId).catch(
+                () => {
+                  // manager already toasted
+                }
+              );
+            },
+          },
+        });
+      } else {
+        await addSequenceToCollection(collectionId, sequenceId);
+      }
+    } catch {
+      // manager already toasted; the subscription stays authoritative.
+    }
+  }
 
-	/**
-	 * Create a new empty collection, guarding the per-user cap (system
-	 * collections don't count against it). Returns null when blocked or on
-	 * failure (the manager toasts its own error).
-	 */
-	async create(name: string): Promise<LibraryCollection | null> {
-		const trimmed = name.trim();
-		if (!trimmed) return null;
+  /**
+   * Add a gallery selection to one manual collection. Existing members are
+   * ignored, so retrying after a partial network failure is safe.
+   */
+  async addMany(
+    sequenceIds: readonly string[],
+    collectionId: string
+  ): Promise<boolean> {
+    const c = this.collections.find((col) => col.id === collectionId);
+    if (!c || c.kind === "smart") return false;
 
-		const userCount = this.collections.filter((c) => !c.systemType).length;
-		if (userCount >= LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER) {
-			toast.error(`Collection limit reached (${LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER} max).`);
-			return null;
-		}
+    const uniqueIds = [...new Set(sequenceIds)];
+    const memberIds = new Set(c.sequenceIds);
+    const missingCount = uniqueIds.filter((id) => !memberIds.has(id)).length;
+    if (missingCount === 0) {
+      toast.info(
+        `All ${uniqueIds.length} ${uniqueIds.length === 1 ? "sequence is" : "sequences are"} already in "${c.name}".`
+      );
+      return true;
+    }
 
-		try {
-			return await createUserCollection(trimmed);
-		} catch {
-			return null;
-		}
-	}
+    const available =
+      LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION - memberIds.size;
+    if (missingCount > available) {
+      toast.error(
+        `"${c.name}" has room for ${Math.max(0, available)} more ${available === 1 ? "sequence" : "sequences"}.`
+      );
+      return false;
+    }
 
-	/**
-	 * Create a Smart Collection from a saved filter rule, guarding the per-user
-	 * cap (same as `create`). Returns null when blocked or on failure.
-	 */
-	async createSmart(
-		name: string,
-		filterSpec: SmartFilterSpec,
-		initialCount = 0,
-	): Promise<LibraryCollection | null> {
-		const trimmed = name.trim();
-		if (!trimmed) return null;
+    try {
+      const result = await addSequencesToCollection(collectionId, uniqueIds);
+      if (result.addedCount > 0) {
+        toast.success(
+          `Added ${result.addedCount} ${result.addedCount === 1 ? "sequence" : "sequences"} to "${c.name}".`
+        );
+      }
+      return true;
+    } catch {
+      // The manager reports the actionable failure and keeps retries
+      // idempotent. Leave selection mode open so the user can retry.
+      return false;
+    }
+  }
 
-		const userCount = this.collections.filter((c) => !c.systemType).length;
-		if (userCount >= LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER) {
-			toast.error(`Collection limit reached (${LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER} max).`);
-			return null;
-		}
+  /**
+   * Create a new empty collection, guarding the per-user cap (system
+   * collections don't count against it). Returns null when blocked or on
+   * failure (the manager toasts its own error).
+   */
+  async create(name: string): Promise<LibraryCollection | null> {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
 
-		try {
-			return await createSmartUserCollection(trimmed, filterSpec, initialCount);
-		} catch {
-			return null; // manager already toasted
-		}
-	}
+    const userCount = this.collections.filter((c) => !c.systemType).length;
+    if (userCount >= LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER) {
+      toast.error(
+        `Collection limit reached (${LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER} max).`
+      );
+      return null;
+    }
 
-	/**
-	 * Replace a Smart Collection's rule (Edit rule). Pass the new rule's live
-	 * match count so the cached preview restamps. Returns false on failure.
-	 */
-	async updateFilterSpec(
-		collectionId: string,
-		filterSpec: SmartFilterSpec,
-		matchCount?: number,
-	): Promise<boolean> {
-		try {
-			await updateCollectionFilterSpec(collectionId, filterSpec, matchCount);
-			return true;
-		} catch {
-			return false; // manager already toasted
-		}
-	}
+    try {
+      return await createUserCollection(trimmed);
+    } catch {
+      return null;
+    }
+  }
 
-	/**
-	 * Best-effort restamp of a Smart Collection's cached count from a freshly
-	 * derived live count (the detail view calls this once its engine loads).
-	 * Silent on failure.
-	 */
-	async syncSmartCount(collectionId: string, matchCount: number): Promise<void> {
-		await syncSmartCollectionCount(collectionId, matchCount);
-	}
+  /**
+   * Create a Smart Collection from a saved filter rule, guarding the per-user
+   * cap (same as `create`). Returns null when blocked or on failure.
+   */
+  async createSmart(
+    name: string,
+    filterSpec: SmartFilterSpec,
+    initialCount = 0
+  ): Promise<LibraryCollection | null> {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
 
-	/**
-	 * Rename a collection. Returns false when the name is empty or the write
-	 * fails — the manager blocks system collections (Favorites can't be
-	 * renamed) and toasts its own error, so callers only need the boolean.
-	 */
-	async rename(collectionId: string, name: string): Promise<boolean> {
-		const trimmed = name.trim();
-		if (!trimmed) return false;
-		try {
-			await updateCollection(collectionId, { name: trimmed });
-			return true;
-		} catch {
-			return false; // manager already toasted
-		}
-	}
+    const userCount = this.collections.filter((c) => !c.systemType).length;
+    if (userCount >= LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER) {
+      toast.error(
+        `Collection limit reached (${LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER} max).`
+      );
+      return null;
+    }
 
-	/**
-	 * Publish or unpublish a collection. Public collections appear in
-	 * Browse > Collections > Community for everyone; private ones are yours
-	 * alone. Returns false when the write fails (manager toasts).
-	 */
-	async setPublic(collectionId: string, isPublic: boolean): Promise<boolean> {
-		// Smart collections are private-only in v1 — refuse publishing them.
-		const c = this.collections.find((col) => col.id === collectionId);
-		if (c?.kind === "smart") return false;
+    try {
+      return await createSmartUserCollection(trimmed, filterSpec, initialCount);
+    } catch {
+      return null; // manager already toasted
+    }
+  }
 
-		// Publishing requires a full account (firestore.rules denies a guest
-		// write that sets isPublic == true). Un-publishing (isPublic === false)
-		// stays open to guests — nobody but a full user could have published in
-		// the first place, so this only ever fires on the publish direction.
-		// Route to the signup drawer instead of firing a write the rules will
-		// reject, so the guest sees an explained nudge, not a silent failure.
-		if (isPublic && !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)) {
-			toast.info(AUTH_NUDGE_TEXTS["edit-community"]);
-			authDrawerState.show("signup");
-			return false;
-		}
+  /**
+   * Replace a Smart Collection's rule (Edit rule). Pass the new rule's live
+   * match count so the cached preview restamps. Returns false on failure.
+   */
+  async updateFilterSpec(
+    collectionId: string,
+    filterSpec: SmartFilterSpec,
+    matchCount?: number
+  ): Promise<boolean> {
+    try {
+      await updateCollectionFilterSpec(collectionId, filterSpec, matchCount);
+      return true;
+    } catch {
+      return false; // manager already toasted
+    }
+  }
 
-		try {
-			await updateCollection(collectionId, { isPublic });
-			return true;
-		} catch {
-			return false; // manager already toasted
-		}
-	}
+  /**
+   * Best-effort restamp of a Smart Collection's cached count from a freshly
+   * derived live count (the detail view calls this once its engine loads).
+   * Silent on failure.
+   */
+  async syncSmartCount(
+    collectionId: string,
+    matchCount: number
+  ): Promise<void> {
+    await syncSmartCollectionCount(collectionId, matchCount);
+  }
 
-	/**
-	 * Delete a collection. The manager cascades membership cleanup and refuses
-	 * system collections (Favorites is permanent), toasting its own error.
-	 * The sequences themselves are untouched — only the folder goes away.
-	 */
-	async remove(collectionId: string): Promise<boolean> {
-		try {
-			await deleteCollection(collectionId);
-			return true;
-		} catch {
-			return false; // manager already toasted
-		}
-	}
+  /**
+   * Rename a collection. Returns false when the name is empty or the write
+   * fails — the manager blocks system collections (Favorites can't be
+   * renamed) and toasts its own error, so callers only need the boolean.
+   */
+  async rename(collectionId: string, name: string): Promise<boolean> {
+    const trimmed = name.trim();
+    if (!trimmed) return false;
+    try {
+      await updateCollection(collectionId, { name: trimmed });
+      return true;
+    } catch {
+      return false; // manager already toasted
+    }
+  }
 
-	/** Create a collection and immediately file a sequence into it (live). */
-	async createAndAdd(name: string, sequenceId: string): Promise<LibraryCollection | null> {
-		const created = await this.create(name);
-		if (!created) return null;
-		try {
-			await addSequenceToCollection(created.id, sequenceId);
-		} catch {
-			// manager already toasted.
-		}
-		return created;
-	}
+  /**
+   * Publish or unpublish a collection. Public collections appear in
+   * Browse > Collections > Community for everyone; private ones are yours
+   * alone. Returns false when the write fails (manager toasts).
+   */
+  async setPublic(collectionId: string, isPublic: boolean): Promise<boolean> {
+    // Smart collections are private-only in v1 — refuse publishing them.
+    const c = this.collections.find((col) => col.id === collectionId);
+    if (c?.kind === "smart") return false;
+
+    // Publishing requires a full account (firestore.rules denies a guest
+    // write that sets isPublic == true). Un-publishing (isPublic === false)
+    // stays open to guests — nobody but a full user could have published in
+    // the first place, so this only ever fires on the publish direction.
+    // Route to the signup drawer instead of firing a write the rules will
+    // reject, so the guest sees an explained nudge, not a silent failure.
+    if (
+      isPublic &&
+      !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)
+    ) {
+      toast.info(AUTH_NUDGE_TEXTS["edit-community"]);
+      authDrawerState.show("signup");
+      return false;
+    }
+
+    try {
+      await updateCollection(collectionId, { isPublic });
+      return true;
+    } catch {
+      return false; // manager already toasted
+    }
+  }
+
+  /**
+   * Delete a collection. The manager cascades membership cleanup and refuses
+   * system collections (Favorites is permanent), toasting its own error.
+   * The sequences themselves are untouched — only the folder goes away.
+   */
+  async remove(collectionId: string): Promise<boolean> {
+    try {
+      await deleteCollection(collectionId);
+      return true;
+    } catch {
+      return false; // manager already toasted
+    }
+  }
+
+  /** Create a collection and immediately file a sequence into it (live). */
+  async createAndAdd(
+    name: string,
+    sequenceId: string
+  ): Promise<LibraryCollection | null> {
+    const created = await this.create(name);
+    if (!created) return null;
+    try {
+      await addSequenceToCollection(created.id, sequenceId);
+    } catch {
+      // manager already toasted.
+    }
+    return created;
+  }
+
+  /** Create a collection and file the current gallery selection into it. */
+  async createAndAddMany(
+    name: string,
+    sequenceIds: readonly string[]
+  ): Promise<LibraryCollection | null> {
+    const created = await this.create(name);
+    if (!created) return null;
+    try {
+      const result = await addSequencesToCollection(created.id, sequenceIds);
+      if (result.addedCount > 0) {
+        toast.success(
+          `Added ${result.addedCount} ${result.addedCount === 1 ? "sequence" : "sequences"} to "${created.name}".`
+        );
+      }
+      return created;
+    } catch {
+      // The empty collection remains visible as a retry target, and the
+      // manager has already explained why the filing step failed.
+      return null;
+    }
+  }
 }
 
 export const collectionsState = new CollectionsState();
@@ -290,14 +378,14 @@ export const collectionsState = new CollectionsState();
 // startup fallback for a persisted filter while the global listener's first
 // snapshot is still resolving.
 setCollectionMembershipResolver((collectionId) => {
-	const own = collectionsState.collections.find((c) => c.id === collectionId);
-	if (own) return new Set(own.sequenceIds);
-	const community = communityCollectionsState.items.find(
-		(item) => item.collection.id === collectionId,
-	);
-	if (community) return new Set(community.collection.sequenceIds);
-	const followed = followedCollectionsState.items.find(
-		(i) => i.collection.id === collectionId,
-	);
-	return followed ? new Set(followed.collection.sequenceIds) : undefined;
+  const own = collectionsState.collections.find((c) => c.id === collectionId);
+  if (own) return new Set(own.sequenceIds);
+  const community = communityCollectionsState.items.find(
+    (item) => item.collection.id === collectionId
+  );
+  if (community) return new Set(community.collection.sequenceIds);
+  const followed = followedCollectionsState.items.find(
+    (i) => i.collection.id === collectionId
+  );
+  return followed ? new Set(followed.collection.sequenceIds) : undefined;
 });

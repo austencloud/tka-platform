@@ -1,6 +1,5 @@
 <script lang="ts">
-
-import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+  import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     createVirtualizer,
@@ -21,7 +20,6 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-
 
   /**
    * The virtualizer needs to know each row's height before it renders.
@@ -51,11 +49,18 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     allowQR = true,
     collectionContext,
     selectedIds,
+    selectionMode = false,
+    onSelectionStart,
+    onSelectionToggle,
     variationSource,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: BrowseThumbnailProvider | null;
-    onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
+    onAction?: (
+      action: string,
+      sequence: SequenceData,
+      variations?: SequenceData[]
+    ) => void;
     pinchColumnOverride?: number;
     onGridReady?: (api: VirtualGridApi) => void;
     handPathMode?: boolean;
@@ -71,9 +76,16 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
      * surfaces. */
     allowQR?: boolean;
     /** When rendering a collection's members: adds "Remove from this collection" to each card's menu */
-    collectionContext?: { id: string; name: string; onRemove: (sequenceId: string) => void };
+    collectionContext?: {
+      id: string;
+      name: string;
+      onRemove: (sequenceId: string) => void;
+    };
     /** Picker hosts: ids to render with the selected outline. */
     selectedIds?: ReadonlySet<string>;
+    selectionMode?: boolean;
+    onSelectionStart?: (sequence: SequenceData) => void;
+    onSelectionToggle?: (sequence: SequenceData) => void;
     /** Full (un-collapsed) list to build the variation map from. When the host
      * passes a word-deduped `sequences` list, the map MUST come from the full
      * list or every card sees exactly one variation and the collapsed ones
@@ -131,7 +143,14 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     if (containerWidth === 0) return 2;
 
     if (pinchColumnOverride !== undefined) {
-      const maxForWidth = containerWidth < 480 ? 2 : containerWidth < 800 ? 3 : containerWidth < 1200 ? 4 : 5;
+      const maxForWidth =
+        containerWidth < 480
+          ? 2
+          : containerWidth < 800
+            ? 3
+            : containerWidth < 1200
+              ? 4
+              : 5;
       return Math.max(2, Math.min(maxForWidth, pinchColumnOverride));
     }
 
@@ -151,7 +170,8 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
   function estimateRowHeight(rowIndex: number): number {
     if (containerWidth === 0) return 200;
     const colGap = 16;
-    const cardWidth = (containerWidth - (columnCount - 1) * colGap) / columnCount;
+    const cardWidth =
+      (containerWidth - (columnCount - 1) * colGap) / columnCount;
 
     const startIdx = rowIndex * columnCount;
     const endIdx = Math.min(startIdx + columnCount, sequences.length);
@@ -162,7 +182,10 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
       if (steps > maxSteps) maxSteps = steps;
     }
 
-    const aspectRatio = calculateGalleryAspectRatio(maxSteps, compositionManager.startPositionLayout);
+    const aspectRatio = calculateGalleryAspectRatio(
+      maxSteps,
+      compositionManager.startPositionLayout
+    );
     return cardWidth / aspectRatio;
   }
 
@@ -310,7 +333,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     });
 
     // Listen for scroll events (for sidebar active tracking)
-    scrollElement.addEventListener("scroll", handleScrollEvent, { passive: true });
+    scrollElement.addEventListener("scroll", handleScrollEvent, {
+      passive: true,
+    });
 
     // Expose API for sidebar scroll control
     if (onGridReady) {
@@ -318,7 +343,10 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
         scrollToSequenceIndex: (index: number) => {
           const rowIndex = Math.floor(index / columnCount);
           if (currentVirtualizer) {
-            currentVirtualizer.scrollToIndex(rowIndex, { align: "start", behavior: "smooth" });
+            currentVirtualizer.scrollToIndex(rowIndex, {
+              align: "start",
+              behavior: "smooth",
+            });
           }
         },
         subscribeToScroll: (callback: () => void) => {
@@ -424,6 +452,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
               {allowQR}
               {collectionContext}
               {selectedIds}
+              {selectionMode}
+              {onSelectionStart}
+              {onSelectionToggle}
             />
           </div>
         {/each}

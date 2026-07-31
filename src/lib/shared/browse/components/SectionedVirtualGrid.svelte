@@ -56,7 +56,11 @@
     thumbnailService: BrowseThumbnailProvider | null;
     /** The single external scroll container (BrowsePanel's `.panel-content`). */
     scrollElement: HTMLElement | null;
-    onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
+    onAction?: (
+      action: string,
+      sequence: SequenceData,
+      variations?: SequenceData[]
+    ) => void;
     eager?: boolean;
     handPathMode?: boolean;
     showBlueMotion?: boolean;
@@ -64,6 +68,9 @@
     addWord?: boolean;
     addDifficultyLevel?: boolean;
     selectedIds?: ReadonlySet<string>;
+    selectionMode?: boolean;
+    onSelectionStart?: (sequence: SequenceData) => void;
+    onSelectionToggle?: (sequence: SequenceData) => void;
     /** Imperative API for the sidebar's section jump. */
     onGridReady?: (api: SectionedGridApi) => void;
     /** Reports the section title at the top of the viewport (sidebar highlight). */
@@ -82,6 +89,9 @@
     addWord = true,
     addDifficultyLevel = true,
     selectedIds,
+    selectionMode = false,
+    onSelectionStart,
+    onSelectionToggle,
     onGridReady,
     onActiveSectionChange,
   }: Props = $props();
@@ -95,7 +105,11 @@
     catDogMode: settingsService.settings.catDogMode,
   });
   const isCatDog = $derived(
-    isCatDogMode(propSettings.bluePropType, propSettings.redPropType, propSettings.catDogMode)
+    isCatDogMode(
+      propSettings.bluePropType,
+      propSettings.redPropType,
+      propSettings.catDogMode
+    )
   );
 
   const visibilityManager = getAnimationVisibilityManager();
@@ -136,19 +150,42 @@
 
   // ── Flatten sections into a typed, windowable item stream ──────────────
   type Item =
-    | { type: "banner"; key: string; sectionTitle: string; level: number; levelTotal: number }
-    | { type: "header"; key: string; sectionTitle: string; label: string; count: number; hideSteps: boolean; isLevel: boolean }
-    | { type: "row"; key: string; sectionTitle: string; sequences: SequenceData[]; isLevel: boolean };
+    | {
+        type: "banner";
+        key: string;
+        sectionTitle: string;
+        level: number;
+        levelTotal: number;
+      }
+    | {
+        type: "header";
+        key: string;
+        sectionTitle: string;
+        label: string;
+        count: number;
+        hideSteps: boolean;
+        isLevel: boolean;
+      }
+    | {
+        type: "row";
+        key: string;
+        sectionTitle: string;
+        sequences: SequenceData[];
+        isLevel: boolean;
+      };
 
   const stepsRedundant = $derived(engine.activeFilters.has("length"));
 
   const flat = $derived.by(() => {
     const secs = engine.sections as SequenceSection[];
     const cols = engine.columnCount;
-    const isLevel = secs.length > 0 && secs.every((s) => typeof s.level === "number");
+    const isLevel =
+      secs.length > 0 && secs.every((s) => typeof s.level === "number");
 
     const totals = new Map<number, number>();
-    if (isLevel) for (const s of secs) totals.set(s.level!, (totals.get(s.level!) ?? 0) + s.count);
+    if (isLevel)
+      for (const s of secs)
+        totals.set(s.level!, (totals.get(s.level!) ?? 0) + s.count);
 
     const items: Item[] = [];
     const headerIndexByTitle = new Map<string, number>();
@@ -227,7 +264,10 @@
       const steps = seq?.steps?.length || seq?.sequenceLength || 4;
       if (steps > maxSteps) maxSteps = steps;
     }
-    const aspect = calculateGalleryAspectRatio(maxSteps, compositionManager.startPositionLayout);
+    const aspect = calculateGalleryAspectRatio(
+      maxSteps,
+      compositionManager.startPositionLayout
+    );
     return cardWidth / aspect + ROW_SPACING;
   }
 
@@ -320,7 +360,9 @@
     currentVirtualizer?.measureElement(node);
     // Card thumbnails can settle to a different height after mount (aspect
     // finalization / async cells); keep the measured size in sync.
-    const ro = new ResizeObserver(() => currentVirtualizer?.measureElement(node));
+    const ro = new ResizeObserver(() =>
+      currentVirtualizer?.measureElement(node)
+    );
     ro.observe(node);
     return { destroy: () => ro.disconnect() };
   }
@@ -338,7 +380,8 @@
           // still-unmeasured sections above the target, so it lands short. Each
           // jump measures more en route; re-jump a couple frames to converge on
           // the exact position. Instant (not smooth) so each correction is crisp.
-          const jump = () => currentVirtualizer?.scrollToIndex(idx, { align: "start" });
+          const jump = () =>
+            currentVirtualizer?.scrollToIndex(idx, { align: "start" });
           jump();
           requestAnimationFrame(() => {
             jump();
@@ -414,7 +457,8 @@
         for (const vi of rows) {
           const it = flat.items[vi.index];
           if (it?.type !== "row") continue;
-          for (const seq of it.sequences) cellPreWarmer.preWarmSequence(seq, "background");
+          for (const seq of it.sequences)
+            cellPreWarmer.preWarmSequence(seq, "background");
         }
       }, 150);
     });
@@ -423,7 +467,11 @@
     if (preWarmTimer) clearTimeout(preWarmTimer);
   });
 
-  function handleAction(action: string, sequence: SequenceData, variations?: SequenceData[]) {
+  function handleAction(
+    action: string,
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ) {
     onAction(action, sequence, variations);
   }
   function handleHover(seq: SequenceData) {
@@ -462,7 +510,11 @@
           </div>
         {:else if it.type === "header"}
           <div class="header-wrap" class:under-level={it.isLevel}>
-            <SectionHeader title={it.label} count={it.count} hideSteps={it.hideSteps} />
+            <SectionHeader
+              title={it.label}
+              count={it.count}
+              hideSteps={it.hideSteps}
+            />
           </div>
         {:else}
           <div
@@ -476,7 +528,8 @@
               <ChoreoCardThumbnail
                 {sequence}
                 variations={seqVariations}
-                onPrimaryAction={(seq) => handleAction("view-detail", seq, seqVariations)}
+                onPrimaryAction={(seq) =>
+                  handleAction("view-detail", seq, seqVariations)}
                 onHover={handleHover}
                 bluePropType={propSettings.bluePropType}
                 redPropType={propSettings.redPropType}
@@ -489,6 +542,9 @@
                 {addWord}
                 {addDifficultyLevel}
                 {selectedIds}
+                {selectionMode}
+                {onSelectionStart}
+                {onSelectionToggle}
               />
             {/each}
           </div>

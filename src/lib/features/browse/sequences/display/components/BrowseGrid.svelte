@@ -41,6 +41,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     eager = false,
     onGridReady,
     collectionContext,
+    selectedIds,
+    selectionMode = false,
+    onSelectionToggle,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -60,6 +63,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
     onGridReady?: (api: VirtualGridApi) => void;
     /** When rendering a collection's members: adds "Remove from this collection" to each card's menu */
     collectionContext?: { id: string; name: string; onRemove: (sequenceId: string) => void };
+    selectedIds?: ReadonlySet<string>;
+    selectionMode?: boolean;
+    onSelectionToggle?: (sequence: SequenceData) => void;
   }>();
 
   const useVirtualization = $derived(
@@ -207,7 +213,17 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
 <div bind:this={containerRef}>
 {#if useVirtualization}
   <!-- 🚀 VIRTUALIZED: Large flat list with 50+ items -->
-  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} {onGridReady} {collectionContext} />
+  <VirtualizedSequenceGrid
+    {sequences}
+    {thumbnailService}
+    {onAction}
+    {pinchColumnOverride}
+    {onGridReady}
+    {collectionContext}
+    {selectedIds}
+    {selectionMode}
+    {onSelectionToggle}
+  />
 {:else if showSections && sections.length > 0}
   <!-- Section-based organization (desktop app style) -->
   <div class="sections-container">
@@ -243,6 +259,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
                 {lightMode}
                 {eager}
                 {collectionContext}
+                {selectedIds}
+                {selectionMode}
+                {onSelectionToggle}
               />
             {/each}
           </div>
@@ -277,6 +296,9 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
         {lightMode}
         {eager}
         {collectionContext}
+        {selectedIds}
+        {selectionMode}
+        {onSelectionToggle}
       />
     {/each}
   </div>

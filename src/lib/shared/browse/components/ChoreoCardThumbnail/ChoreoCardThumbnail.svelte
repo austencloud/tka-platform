@@ -19,7 +19,10 @@ Variation support:
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
-  import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import type {
+    ContextMenuEntry,
+    ContextMenuState,
+  } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -28,7 +31,7 @@ Variation support:
     buildSequenceSharePayload,
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { claimViewTransitionName } from "$lib/shared/transitions/view-transition-name-registry";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
@@ -62,6 +65,9 @@ Variation support:
     allowQR = true,
     collectionContext,
     selectedIds,
+    selectionMode = false,
+    onSelectionStart,
+    onSelectionToggle,
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -104,6 +110,11 @@ Variation support:
      * variation (the pill cycles it), not the base card — taps act on the
      * displayed sequence, so the outline must follow it. Overrides `selected`. */
     selectedIds?: ReadonlySet<string>;
+    /** Personal-library batch selection. A touch/pen long-press enters the
+     * mode; once active, normal taps toggle the displayed variation. */
+    selectionMode?: boolean;
+    onSelectionStart?: (sequence: SequenceData) => void;
+    onSelectionToggle?: (sequence: SequenceData) => void;
   } = $props();
 
   // Track which variation is currently displayed.
@@ -122,7 +133,9 @@ Variation support:
   });
 
   // Total count for the pill
-  const variationCount = $derived(variations.length > 1 ? variations.length : 0);
+  const variationCount = $derived(
+    variations.length > 1 ? variations.length : 0
+  );
 
   // Cycle to next variation
   function handleCycleVariation() {
@@ -131,8 +144,101 @@ Variation support:
     }
   }
 
-  function handlePrimaryAction() {
+  function handlePrimaryAction(event: MouseEvent) {
+    if (longPressFired) {
+      event.preventDefault();
+      longPressFired = false;
+      if (clickSuppressionTimer !== null) {
+        clearTimeout(clickSuppressionTimer);
+        clickSuppressionTimer = null;
+      }
+      return;
+    }
+
+    if (selectionMode && onSelectionToggle) {
+      onSelectionToggle(displayedSequence);
+      return;
+    }
+
+    // Desktop parity with photo galleries: a modified click can start a
+    // selection without asking users to hold down a mouse button.
+    if (
+      onSelectionStart &&
+      (event.shiftKey || event.ctrlKey || event.metaKey)
+    ) {
+      onSelectionStart(displayedSequence);
+      return;
+    }
+
     onPrimaryAction(displayedSequence);
+  }
+
+  const LONG_PRESS_MS = 500;
+  const LONG_PRESS_MOVE_TOLERANCE_SQ = 100;
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let clickSuppressionTimer: ReturnType<typeof setTimeout> | null = null;
+  let longPressOrigin: { x: number; y: number } | null = null;
+  let longPressFired = false;
+  let isLongPressing = $state(false);
+  let lastPointerType: string | undefined;
+
+  function cancelSelectionLongPress(): void {
+    if (longPressTimer !== null) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+    longPressOrigin = null;
+    isLongPressing = false;
+  }
+
+  function handleSelectionPointerDown(event: PointerEvent): void {
+    lastPointerType = event.pointerType;
+    if (
+      !onSelectionStart ||
+      selectionMode ||
+      event.button !== 0 ||
+      event.pointerType === "mouse"
+    ) {
+      return;
+    }
+
+    // The variation pill owns its own tap. Holding it should not select the
+    // whole card underneath.
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("button") !== event.currentTarget
+    ) {
+      return;
+    }
+
+    cancelSelectionLongPress();
+    longPressFired = false;
+    longPressOrigin = { x: event.clientX, y: event.clientY };
+    isLongPressing = true;
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      longPressOrigin = null;
+      isLongPressing = false;
+      longPressFired = true;
+      onSelectionStart(displayedSequence);
+
+      // Some mobile browsers suppress the compatibility click after a hold.
+      // Expire the guard so the next deliberate tap is never swallowed.
+      clickSuppressionTimer = setTimeout(() => {
+        longPressFired = false;
+        clickSuppressionTimer = null;
+      }, 800);
+    }, LONG_PRESS_MS);
+  }
+
+  function handleSelectionPointerMove(event: PointerEvent): void {
+    if (!longPressOrigin) return;
+    const dx = event.clientX - longPressOrigin.x;
+    const dy = event.clientY - longPressOrigin.y;
+    if (dx * dx + dy * dy > LONG_PRESS_MOVE_TOLERANCE_SQ) {
+      cancelSelectionLongPress();
+    }
   }
 
   // Debounced hover handler - avoids pre-warming during fast scroll-past
@@ -151,6 +257,7 @@ Variation support:
       clearTimeout(hoverTimer);
       hoverTimer = null;
     }
+    cancelSelectionLongPress();
   }
 
   // Reset to this card's own position ONLY when the base sequence identity changes
@@ -169,7 +276,7 @@ Variation support:
     });
   });
 
-  // ── Context menu (admin-only) ──────────────────────────────────────
+  // ── Context menu ───────────────────────────────────────────────────
   let contextMenuState: ContextMenuState = $state({ open: false });
 
   let removeConfirmOpen = $state(false);
@@ -184,8 +291,9 @@ Variation support:
     if (!seq) return;
     const myUid = authState.user?.uid;
     const isOwner = !!myUid && seq.ownerId === myUid;
+    const isPersonalLibrary = !!onSelectionStart;
     try {
-      if (isOwner) {
+      if (isOwner || isPersonalLibrary) {
         await getLibraryRepository().deleteSequence(seq.id);
       } else {
         const res = await adminDeleteSequence(seq.ownerId ?? "", seq.id);
@@ -196,10 +304,10 @@ Variation support:
       // Drives the browse engine's onLibraryMutated listener: removes the card
       // from the reactive grid state and the loader cache immediately.
       notifyLibraryMutated(seq.id);
-      toast.success("Removed from library");
+      toast.success("Sequence permanently deleted");
     } catch (err) {
-      console.error("Remove from library failed:", err);
-      toast.error("Failed to remove sequence");
+      console.error("Permanent delete failed:", err);
+      toast.error("Sequence wasn't deleted. Try again.");
     } finally {
       removeConfirmOpen = false;
       removeTarget = null;
@@ -211,7 +319,11 @@ Variation support:
     closeContextMenu();
     const propType = seq.intendedProp?.bluePropType ?? bluePropType ?? "staff";
     // Cloud thumbnails are keyed by sequence.word (not .name) - matches PropAwareThumbnail
-    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, propType, false);
+    const thumbnailUrl = buildThumbnailUrl(
+      seq.word || seq.name,
+      propType,
+      false
+    );
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
   }
 
@@ -232,63 +344,65 @@ Variation support:
 
     const myUid = authState.user?.uid;
     const isOwner = !!myUid && seq.ownerId === myUid;
+    const isPersonalLibrary = !!onSelectionStart;
     // Owner-only: filing into a collection is filing YOUR sequence into YOUR
     // collection. Admins viewing someone else's card don't get this (that would
     // reference a foreign sequence id — out of scope until save-to-library-first).
-    if (isOwner) {
-      items.push(
-        { type: "separator" } as ContextMenuEntry,
-        {
-          id: "add-to-collection",
-          label: "Collections…",
-          icon: "fa-folder-plus",
-          action() {
-            closeContextMenu();
-            openCollectionPicker({
-              sequenceId: seq.id,
-              sequenceLabel: seq.name,
-              currentCollectionId: collectionContext?.id ?? null,
-            });
-          },
+    if (isOwner || isPersonalLibrary) {
+      items.push({ type: "separator" } as ContextMenuEntry, {
+        id: "add-to-collection",
+        label: "Collections…",
+        icon: "fa-folder-plus",
+        action() {
+          closeContextMenu();
+          openCollectionPicker({
+            sequenceId: seq.id,
+            sequenceLabel: seq.name,
+            currentCollectionId: collectionContext?.id ?? null,
+          });
         },
-      );
+      });
     }
     if (collectionContext) {
       const ctx = collectionContext;
-      items.push(
-        { type: "separator" } as ContextMenuEntry,
-        {
-          id: "remove-from-collection",
-          label: `Remove from "${ctx.name}"`,
-          icon: "fa-folder-minus",
-          action() {
-            closeContextMenu();
-            ctx.onRemove(seq.id);
-          },
+      items.push({ type: "separator" } as ContextMenuEntry, {
+        id: "remove-from-collection",
+        label: `Remove from "${ctx.name}"`,
+        icon: "fa-folder-minus",
+        action() {
+          closeContextMenu();
+          ctx.onRemove(seq.id);
         },
-      );
+      });
     }
-    if (isOwner || featureFlagService.isAdmin) {
-      items.push(
-        { type: "separator" } as ContextMenuEntry,
-        {
-          id: "remove-from-library",
-          label: "Remove from library",
-          icon: "fa-trash",
-          danger: true,
-          action() {
-            closeContextMenu();
-            removeTarget = seq;
-            removeConfirmOpen = true;
-          },
+    if (isOwner || isPersonalLibrary || featureFlagService.isAdmin) {
+      items.push({ type: "separator" } as ContextMenuEntry, {
+        id: "remove-from-library",
+        label: "Delete permanently",
+        icon: "fa-trash",
+        danger: true,
+        action() {
+          closeContextMenu();
+          removeTarget = seq;
+          removeConfirmOpen = true;
         },
-      );
+      });
     }
     return items;
   });
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
+    const pointerType =
+      "pointerType" in e
+        ? String((e as PointerEvent).pointerType)
+        : lastPointerType;
+    if (
+      onSelectionStart &&
+      (longPressFired || (pointerType && pointerType !== "mouse"))
+    ) {
+      return;
+    }
     contextMenuState = { open: true, x: e.clientX, y: e.clientY };
   }
 
@@ -297,7 +411,7 @@ Variation support:
   }
 
   const isSelected = $derived(
-    selectedIds ? selectedIds.has(displayedSequence.id) : selected,
+    selectedIds ? selectedIds.has(displayedSequence.id) : selected
   );
 
   // ── Shared-element morph name ──────────────────────────────────────
@@ -319,16 +433,36 @@ Variation support:
       morphName = undefined;
     };
   });
+
+  onDestroy(() => {
+    cancelSelectionLongPress();
+    if (clickSuppressionTimer !== null) {
+      clearTimeout(clickSuppressionTimer);
+    }
+    if (hoverTimer !== null) {
+      clearTimeout(hoverTimer);
+    }
+  });
 </script>
 
 <button
   class="choreo-card"
   class:selected={isSelected}
+  class:selection-mode={selectionMode}
+  class:long-pressing={isLongPressing}
   class:light-mode={lightMode}
   onclick={handlePrimaryAction}
   oncontextmenu={handleContextMenu}
+  onpointerdown={handleSelectionPointerDown}
+  onpointermove={handleSelectionPointerMove}
+  onpointerup={cancelSelectionLongPress}
+  onpointercancel={cancelSelectionLongPress}
   onpointerenter={handlePointerEnter}
   onpointerleave={handlePointerLeave}
+  aria-pressed={selectionMode ? isSelected : undefined}
+  aria-label={selectionMode
+    ? `${isSelected ? "Deselect" : "Select"} ${displayedSequence.name || displayedSequence.word || "sequence"}`
+    : undefined}
 >
   <!-- view-transition-name enables Google Photos-style morph animation to
        /sequence/[id]. Undefined on any duplicate copy of this sequence that is
@@ -358,6 +492,19 @@ Variation support:
 
   <SyncStatusBadge status={displayedSequence.syncStatus} />
 
+  {#if selectionMode || isLongPressing}
+    <span
+      class="selection-indicator"
+      class:checked={isSelected}
+      class:pressing={isLongPressing}
+      aria-hidden="true"
+    >
+      {#if isSelected}
+        <i class="fas fa-check"></i>
+      {/if}
+    </span>
+  {/if}
+
   <VariationPill
     currentIndex={currentVariationIndex}
     totalCount={variationCount}
@@ -365,17 +512,24 @@ Variation support:
   />
 </button>
 
-<ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeContextMenu} />
+<ContextMenu
+  menuState={contextMenuState}
+  items={contextMenuItems}
+  onClose={closeContextMenu}
+/>
 
 <ConfirmDialog
   bind:isOpen={removeConfirmOpen}
-  title="Remove from library?"
-  message="This permanently removes this sequence. It can't be undone."
-  confirmText="Remove"
+  title="Permanently delete this sequence?"
+  message="This removes the sequence from your library, this device, and the community gallery. It can't be undone."
+  confirmText="Delete permanently"
   cancelText="Keep"
   variant="danger"
   onConfirm={performRemove}
-  onCancel={() => { removeConfirmOpen = false; removeTarget = null; }}
+  onCancel={() => {
+    removeConfirmOpen = false;
+    removeTarget = null;
+  }}
 />
 
 <style>
@@ -395,6 +549,8 @@ Variation support:
     container-name: choreo-card;
 
     cursor: pointer;
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
     transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -418,6 +574,61 @@ Variation support:
   .choreo-card.selected {
     outline: 2px solid color-mix(in srgb, var(--semantic-info) 80%, transparent);
     outline-offset: 2px;
+  }
+
+  .choreo-card.selection-mode.selected {
+    outline-color: var(--theme-accent);
+    box-shadow: inset 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent) 82%, transparent);
+  }
+
+  .choreo-card.long-pressing {
+    transform: scale(0.985);
+  }
+
+  .selection-indicator {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(28px, 12cqw, 40px);
+    aspect-ratio: 1;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    border-radius: 50%;
+    background: rgba(8, 10, 16, 0.72);
+    color: var(--theme-text-on-accent, #fff);
+    font-size: clamp(11px, 4.5cqw, 16px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .selection-indicator.checked {
+    border-color: var(--theme-accent);
+    background: var(--theme-accent);
+    transform: scale(1.06);
+  }
+
+  .selection-indicator.pressing {
+    animation: selection-hold 500ms linear both;
+  }
+
+  @keyframes selection-hold {
+    from {
+      box-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.42),
+        inset 0 0 0 0 var(--theme-accent);
+    }
+    to {
+      box-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.42),
+        inset 0 0 0 14px var(--theme-accent);
+    }
   }
 
   /* Light mode: transparent background, images handle their own bg */
@@ -453,6 +664,12 @@ Variation support:
     .choreo-card:hover,
     .choreo-card:active {
       transform: none;
+    }
+    .selection-indicator {
+      transition: none;
+    }
+    .selection-indicator.pressing {
+      animation: none;
     }
   }
 </style>

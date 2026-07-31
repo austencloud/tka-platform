@@ -83,6 +83,7 @@ vi.mock("$lib/shared/library/services/collection-firestore-mapper", () => {
 
 import {
   addSequenceToCollection,
+  addSequencesToCollection,
   createSmartUserCollection,
   createUserCollection,
   deleteCollection,
@@ -204,6 +205,66 @@ describe("collection-manager profile count", () => {
     );
     expect(mocks.transaction.update).toHaveBeenCalledWith(
       { path: "users/user-1/sequences/sequence-1" },
+      {
+        collectionIds: ["collection-1"],
+        updatedAt: "server-timestamp",
+      }
+    );
+  });
+
+  it("adds a selection with one collection transaction and reverse memberships", async () => {
+    const collectionData = {
+      name: "Inventions",
+      kind: "manual",
+      sequenceIds: ["existing"],
+      sequenceCount: 99,
+    };
+    mocks.getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => collectionData,
+    });
+    mocks.transaction.get.mockImplementation(async (ref: { path: string }) =>
+      ref.path.endsWith("/collections/collection-1")
+        ? {
+            exists: () => true,
+            data: () => collectionData,
+          }
+        : {
+            exists: () => true,
+            data: () => ({ collectionIds: [] }),
+          }
+    );
+
+    const result = await addSequencesToCollection("collection-1", [
+      "existing",
+      "sequence-2",
+      "sequence-3",
+      "sequence-3",
+    ]);
+
+    expect(result).toEqual({
+      requestedCount: 3,
+      addedCount: 2,
+      alreadyPresentCount: 1,
+    });
+    expect(mocks.runTransaction).toHaveBeenCalledOnce();
+    expect(mocks.transaction.update).toHaveBeenCalledWith(
+      { path: "users/user-1/collections/collection-1" },
+      {
+        sequenceIds: ["existing", "sequence-2", "sequence-3"],
+        sequenceCount: 3,
+        updatedAt: "server-timestamp",
+      }
+    );
+    expect(mocks.transaction.update).toHaveBeenCalledWith(
+      { path: "users/user-1/sequences/sequence-2" },
+      {
+        collectionIds: ["collection-1"],
+        updatedAt: "server-timestamp",
+      }
+    );
+    expect(mocks.transaction.update).toHaveBeenCalledWith(
+      { path: "users/user-1/sequences/sequence-3" },
       {
         collectionIds: ["collection-1"],
         updatedAt: "server-timestamp",

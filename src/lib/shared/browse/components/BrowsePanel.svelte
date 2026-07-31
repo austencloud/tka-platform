@@ -14,6 +14,7 @@
   import BrowseGrid from "./BrowseGrid.svelte";
   import type { SectionedGridApi } from "./SectionedVirtualGrid.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import SelectionToolbar from "$lib/shared/components/selection/SelectionToolbar.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
@@ -47,6 +48,19 @@
      * Never shown for a filter-zero empty state — that state's fix is
      * "Clear all filters", not a new-content action. */
     emptyAction?: { label: string; onClick: () => void };
+    /** Optional personal-library multi-selection controller. The gallery stays
+     * generic; the host owns what the primary batch action does. */
+    selection?: {
+      readonly active: boolean;
+      readonly selectedIds: ReadonlySet<string>;
+      enter: (sequence?: SequenceData) => void;
+      toggle: (sequence: SequenceData) => void;
+      selectAll: () => void;
+      clear: () => void;
+      exit: () => void;
+      openPrimaryAction: () => void;
+      openDangerAction?: () => void;
+    };
   }
 
   let {
@@ -67,13 +81,14 @@
     warming = false,
     onSaveSmart,
     emptyAction,
+    selection,
   }: Props = $props();
 
-  const showToolbar = $derived(toolbarOverride ?? (layout !== "minimal"));
-  const showFilterBar = $derived(filterBarOverride ?? (layout !== "minimal"));
-  const showSidebar = $derived(sidebarOverride ?? (layout === "fullpage"));
+  const showToolbar = $derived(toolbarOverride ?? layout !== "minimal");
+  const showFilterBar = $derived(filterBarOverride ?? layout !== "minimal");
+  const showSidebar = $derived(sidebarOverride ?? layout === "fullpage");
   const showSourceToggle = $derived(sourceToggleOverride ?? false);
-  const isEager = $derived(eagerOverride ?? (layout !== "fullpage"));
+  const isEager = $derived(eagerOverride ?? layout !== "fullpage");
   const disableVirtualization = $derived(layout === "minimal");
 
   let thumbnailService: BrowseThumbnailProvider | null = $state(null);
@@ -92,22 +107,34 @@
   const isInitializing = $derived(engine.isLoading);
   // `!warming` short-circuits FIRST so the filtered-set read (which triggers the
   // filter/sort/section compute) is skipped during the instant-tap warm frame.
-  const isEmpty = $derived(!warming && !isInitializing && !engine.error && engine.sequences.length === 0);
-  const hasSequences = $derived(!warming && !isInitializing && !engine.error && engine.sequences.length > 0);
+  const isEmpty = $derived(
+    !warming &&
+      !isInitializing &&
+      !engine.error &&
+      engine.sequences.length === 0
+  );
+  const hasSequences = $derived(
+    !warming && !isInitializing && !engine.error && engine.sequences.length > 0
+  );
 
   const emptyMessage = $derived(
     engine.hasActiveFilters
-      ? t('browse_no_sequences')
+      ? t("browse_no_sequences")
       : engine.source === "my-library"
-        ? t('browse_no_sequences_saved')
-        : t('browse_no_sequences_found')
+        ? t("browse_no_sequences_saved")
+        : t("browse_no_sequences_found")
   );
 
   $effect((): void | (() => void) => {
-    if (isInitializing || warming) { showSkeleton = true; skeletonFading = false; }
-    else if (showSkeleton) {
+    if (isInitializing || warming) {
+      showSkeleton = true;
+      skeletonFading = false;
+    } else if (showSkeleton) {
       skeletonFading = true;
-      const timer = setTimeout(() => { showSkeleton = false; skeletonFading = false; }, 300);
+      const timer = setTimeout(() => {
+        showSkeleton = false;
+        skeletonFading = false;
+      }, 300);
       return () => clearTimeout(timer);
     }
   });
@@ -175,7 +202,9 @@
       return;
     }
     if (!contentEl) return;
-    const el = contentEl.querySelector(`[data-section="${CSS.escape(sectionTitle)}"]`) as HTMLElement;
+    const el = contentEl.querySelector(
+      `[data-section="${CSS.escape(sectionTitle)}"]`
+    ) as HTMLElement;
     if (!el) return;
     const containerRect = contentEl.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
@@ -204,7 +233,11 @@
     updateActiveSection();
   }
 
-  function handleAction(action: string, sequence: SequenceData, variations?: SequenceData[]) {
+  function handleAction(
+    action: string,
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ) {
     if (action === "view-detail" && onSelect) {
       onSelect(sequence, variations);
     }
@@ -216,7 +249,9 @@
     if (layout === "fullpage" && contentEl) {
       pinchController = new PinchZoomGridController();
       pinchController.setColumnCount(engine.columnCount);
-      pinchController.setOnStateChange((state) => engine.setColumns(state.columns));
+      pinchController.setOnStateChange((state) =>
+        engine.setColumns(state.columns)
+      );
       pinchController.attach(contentEl);
     }
   });
@@ -227,7 +262,13 @@
   });
 </script>
 
-<div class="browse-panel" class:fullpage={layout === "fullpage"} class:compact={layout === "compact"} class:minimal={layout === "minimal"} bind:this={containerEl}>
+<div
+  class="browse-panel"
+  class:fullpage={layout === "fullpage"}
+  class:compact={layout === "compact"}
+  class:minimal={layout === "minimal"}
+  bind:this={containerEl}
+>
   {#if title}
     <div class="panel-title">
       <h3>{title}</h3>
@@ -235,14 +276,33 @@
   {/if}
 
   {#if showToolbar}
-    <BrowseToolbar
-      {engine}
-      showSourceToggle={showSourceToggle}
-      {onBack}
-      {backLabel}
-      hideSearch={hideToolbarSearch}
-      {onOpenFilters}
-    />
+    {#if selection?.active}
+      <SelectionToolbar
+        selectedCount={selection.selectedIds.size}
+        totalCount={engine.sequences.length}
+        primaryLabel="Collections"
+        primaryIcon="fa-folder-plus"
+        onPrimaryAction={selection.openPrimaryAction}
+        dangerLabel={selection.openDangerAction
+          ? "Delete permanently"
+          : undefined}
+        dangerIcon={selection.openDangerAction ? "fa-trash" : undefined}
+        onDangerAction={selection.openDangerAction}
+        onSelectAll={selection.selectAll}
+        onClearSelection={selection.clear}
+        onExitSelection={selection.exit}
+      />
+    {:else}
+      <BrowseToolbar
+        {engine}
+        {showSourceToggle}
+        {onBack}
+        {backLabel}
+        hideSearch={hideToolbarSearch}
+        {onOpenFilters}
+        onEnterSelection={selection ? () => selection.enter() : undefined}
+      />
+    {/if}
   {/if}
 
   {#if showFilterBar}
@@ -263,10 +323,18 @@
       </div>
     {:else if isEmpty}
       <div class="empty-state" role="status">
-        <i class="fas {engine.hasActiveFilters ? 'fa-filter' : 'fa-inbox'} empty-icon" aria-hidden="true"></i>
+        <i
+          class="fas {engine.hasActiveFilters
+            ? 'fa-filter'
+            : 'fa-inbox'} empty-icon"
+          aria-hidden="true"
+        ></i>
         <p class="empty-message">{emptyMessage}</p>
         {#if engine.hasActiveFilters}
-          <button class="clear-filters-btn" onclick={() => engine.clearUserFilters()}>
+          <button
+            class="clear-filters-btn"
+            onclick={() => engine.clearUserFilters()}
+          >
             <i class="fas fa-times" aria-hidden="true"></i>
             Clear all filters
           </button>
@@ -281,7 +349,11 @@
     {:else}
       <div class="grid-with-sidebar">
         {#if showSidebar}
-          <BrowseSidebar {engine} {activeSection} onScrollToSection={scrollToSection} />
+          <BrowseSidebar
+            {engine}
+            {activeSection}
+            onScrollToSection={scrollToSection}
+          />
         {/if}
         {#if hasSequences}
           <div class="grid-area">
@@ -291,7 +363,14 @@
               onAction={handleAction}
               {disableVirtualization}
               eager={isEager}
-              {selectedIds}
+              selectedIds={selection?.selectedIds ?? selectedIds}
+              selectionMode={selection?.active ?? false}
+              onSelectionStart={selection
+                ? (sequence) => selection.enter(sequence)
+                : undefined}
+              onSelectionToggle={selection
+                ? (sequence) => selection.toggle(sequence)
+                : undefined}
               scrollElement={contentEl}
               onSectionGridReady={(api) => (sectionApi = api)}
               onActiveSectionChange={(title) => (activeSection = title)}
@@ -339,9 +418,16 @@
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  .panel-content::-webkit-scrollbar { width: 6px; }
-  .panel-content::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-  .panel-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  .panel-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  .panel-content::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  .panel-content::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
 
   .grid-with-sidebar {
     display: flex;
@@ -391,7 +477,10 @@
     color: var(--semantic-error);
   }
 
-  .error-state p { margin: 0; text-align: center; }
+  .error-state p {
+    margin: 0;
+    text-align: center;
+  }
 
   .error-state button {
     padding: var(--spacing-sm) var(--spacing-md);
@@ -413,8 +502,17 @@
     color: var(--theme-text-dim);
   }
 
-  .empty-icon { font-size: 2rem; opacity: 0.5; margin-bottom: var(--spacing-sm, 8px); }
-  .empty-message { margin: 0; font-size: var(--font-size-base, 16px); color: var(--theme-text, #ffffff); font-weight: 500; }
+  .empty-icon {
+    font-size: 2rem;
+    opacity: 0.5;
+    margin-bottom: var(--spacing-sm, 8px);
+  }
+  .empty-message {
+    margin: 0;
+    font-size: var(--font-size-base, 16px);
+    color: var(--theme-text, #ffffff);
+    font-weight: 500;
+  }
 
   .clear-filters-btn {
     display: inline-flex;
@@ -422,7 +520,11 @@
     gap: var(--spacing-xs, 4px);
     margin-top: var(--spacing-sm, 8px);
     padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      transparent
+    );
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     color: var(--theme-text, #ffffff);
@@ -432,6 +534,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .skeleton-overlay, .clear-filters-btn { transition: none; }
+    .skeleton-overlay,
+    .clear-filters-btn {
+      transition: none;
+    }
   }
 </style>

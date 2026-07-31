@@ -17,6 +17,7 @@
   import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
   import LengthFilterChip from "$lib/shared/browse/components/filter-chips/LengthFilterChip.svelte";
   import LOOPFilterChip from "$lib/shared/browse/components/filter-chips/LOOPFilterChip.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import type { SequenceSource } from "../engine/types";
 
@@ -33,6 +34,9 @@
     /** Bottom-sheet filter pattern: renders a Filters pill (with active-count
      * badge) and hides the inline selector chips — the sheet owns them. */
     onOpenFilters?: () => void;
+    /** Enters multi-selection mode. Kept host-owned because only personal
+     * library surfaces can file a selection into collections. */
+    onEnterSelection?: () => void;
   }
 
   let {
@@ -42,10 +46,11 @@
     backLabel = "Start here",
     hideSearch = false,
     onOpenFilters,
+    onEnterSelection,
   }: Props = $props();
 
   const activeUserFilterCount = $derived(
-    engine.allFilterChips.filter((c) => !c.locked).length,
+    engine.allFilterChips.filter((c) => !c.locked).length
   );
 
   // ---------------------------------------------------------------------------
@@ -60,10 +65,30 @@
   }
 
   const SORT_OPTIONS: SortOption[] = [
-    { id: BrowseSortMethod.ALPHABETICAL, label: "A-Z", shortLabel: "A-Z", icon: "fa-font" },
-    { id: BrowseSortMethod.DATE_ADDED, label: "Recent", shortLabel: "Recent", icon: "fa-clock" },
-    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: "Level", shortLabel: "Level", icon: "fa-signal" },
-    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: "Length", shortLabel: "Length", icon: "fa-ruler" },
+    {
+      id: BrowseSortMethod.ALPHABETICAL,
+      label: "A-Z",
+      shortLabel: "A-Z",
+      icon: "fa-font",
+    },
+    {
+      id: BrowseSortMethod.DATE_ADDED,
+      label: "Recent",
+      shortLabel: "Recent",
+      icon: "fa-clock",
+    },
+    {
+      id: BrowseSortMethod.DIFFICULTY_LEVEL,
+      label: "Level",
+      shortLabel: "Level",
+      icon: "fa-signal",
+    },
+    {
+      id: BrowseSortMethod.SEQUENCE_LENGTH,
+      label: "Length",
+      shortLabel: "Length",
+      icon: "fa-ruler",
+    },
   ];
 
   let sortOpen = $state(false);
@@ -77,16 +102,23 @@
   const isHandsMode = $derived(engine.viewMode.subject === "hands");
 
   const visibleSortOptions = $derived(
-    isHandsMode ? SORT_OPTIONS.filter((o) => o.id !== BrowseSortMethod.DIFFICULTY_LEVEL) : SORT_OPTIONS
+    isHandsMode
+      ? SORT_OPTIONS.filter((o) => o.id !== BrowseSortMethod.DIFFICULTY_LEVEL)
+      : SORT_OPTIONS
   );
 
   const currentSortOption = $derived.by((): SortOption => {
-    return visibleSortOptions.find((o) => o.id === engine.sortMethod) ?? visibleSortOptions[0]!;
+    return (
+      visibleSortOptions.find((o) => o.id === engine.sortMethod) ??
+      visibleSortOptions[0]!
+    );
   });
 
   function openSort() {
     sortOpen = true;
-    focusedIndex = visibleSortOptions.findIndex((o) => o.id === engine.sortMethod);
+    focusedIndex = visibleSortOptions.findIndex(
+      (o) => o.id === engine.sortMethod
+    );
     if (focusedIndex < 0) focusedIndex = 0;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -106,7 +138,8 @@
 
   function focusSortOptionAt(index: number) {
     if (!sortPopoverEl) return;
-    const options = sortPopoverEl.querySelectorAll<HTMLButtonElement>('[role="option"]');
+    const options =
+      sortPopoverEl.querySelectorAll<HTMLButtonElement>('[role="option"]');
     options[index]?.focus();
   }
 
@@ -137,7 +170,9 @@
       }
       case "ArrowUp": {
         event.preventDefault();
-        const prev = (focusedIndex - 1 + visibleSortOptions.length) % visibleSortOptions.length;
+        const prev =
+          (focusedIndex - 1 + visibleSortOptions.length) %
+          visibleSortOptions.length;
         focusedIndex = prev;
         focusSortOptionAt(prev);
         break;
@@ -167,7 +202,8 @@
   function handlePointerDownOutside(event: PointerEvent) {
     if (!sortOpen) return;
     const target = event.target as Node;
-    if (sortTriggerEl?.contains(target) || sortPopoverEl?.contains(target)) return;
+    if (sortTriggerEl?.contains(target) || sortPopoverEl?.contains(target))
+      return;
     closeSort();
   }
 
@@ -194,17 +230,35 @@
 
   function handleLevelSelect(level: number | null) {
     if (level == null) engine.removeFilter("difficulty");
-    else engine.addFilter(BrowseFilterType.DIFFICULTY, level, `Level ${level}`, "var(--semantic-info)");
+    else
+      engine.addFilter(
+        BrowseFilterType.DIFFICULTY,
+        level,
+        `Level ${level}`,
+        "var(--semantic-info)"
+      );
   }
 
   function handleFavoritesToggle(active: boolean) {
-    if (active) engine.addFilter(BrowseFilterType.FAVORITES, true, "Favorites", "#ec4899");
+    if (active)
+      engine.addFilter(
+        BrowseFilterType.FAVORITES,
+        true,
+        "Favorites",
+        "#ec4899"
+      );
     else engine.removeFilter("favorites");
   }
 
   function handleLengthSelect(length: number | null) {
     if (length == null) engine.removeFilter("length");
-    else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} steps`, "#f59e0b");
+    else
+      engine.addFilter(
+        BrowseFilterType.LENGTH,
+        length,
+        `${length} steps`,
+        "#f59e0b"
+      );
   }
 
   // Loop filters live under composite keys ("cap_type:<value>") so several can
@@ -212,7 +266,8 @@
   // single-select semantics replace all loop filters on change).
   const activeLoopComponent = $derived.by(() => {
     for (const f of engine.activeFilters.values()) {
-      if (f.type === BrowseFilterType.LOOP_TYPE && !f.locked) return f.value as string;
+      if (f.type === BrowseFilterType.LOOP_TYPE && !f.locked)
+        return f.value as string;
     }
     return null;
   });
@@ -234,20 +289,33 @@
     else {
       engine.removeFilter("cap_type");
       const label = value.startsWith("component:")
-        ? value.slice("component:".length).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        ? value
+            .slice("component:".length)
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())
         : value;
-      engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, LOOP_FILTER_COLORS[value] ?? "#8b5cf6");
+      engine.addFilter(
+        BrowseFilterType.LOOP_TYPE,
+        value,
+        label,
+        LOOP_FILTER_COLORS[value] ?? "#8b5cf6"
+      );
     }
   }
 
   // Active filters the selector chips don't cover (drill picks: letter,
   // position, owner, recent…) plus locked constraints — rendered as
   // dismissible chips inline, mirroring BrowseFilterBar's merged row.
-  const SELECTOR_TYPES = new Set(["difficulty", "favorites", "length", "cap_type"]);
+  const SELECTOR_TYPES = new Set([
+    "difficulty",
+    "favorites",
+    "length",
+    "cap_type",
+  ]);
   const extraChips = $derived(
     engine.allFilterChips.filter(
-      (chip) => chip.locked || !SELECTOR_TYPES.has(String(chip.type)),
-    ),
+      (chip) => chip.locked || !SELECTOR_TYPES.has(String(chip.type))
+    )
   );
 
   function handleDismissChip(typeKey: string) {
@@ -282,7 +350,12 @@
 <div class="browse-toolbar">
   <!-- 0. Leading back pill -->
   {#if onBack}
-    <button type="button" class="back-pill" onclick={onBack} aria-label={backLabel}>
+    <button
+      type="button"
+      class="back-pill"
+      onclick={onBack}
+      aria-label={backLabel}
+    >
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
       <span class="back-pill-label">{backLabel}</span>
     </button>
@@ -325,7 +398,10 @@
       aria-expanded={sortOpen}
       aria-label="Sort by {currentSortOption.label}"
     >
-      <i class="fas fa-arrow-down-short-wide sort-trigger-icon" aria-hidden="true"></i>
+      <i
+        class="fas fa-arrow-down-short-wide sort-trigger-icon"
+        aria-hidden="true"
+      ></i>
       <span class="sort-trigger-label">{currentSortOption.shortLabel}</span>
       <i
         class="fas fa-chevron-down sort-chevron"
@@ -341,7 +417,9 @@
         bind:this={sortPopoverEl}
         role="listbox"
         aria-label="Sort options"
-        aria-activedescendant={focusedIndex >= 0 ? `sort-opt-${focusedIndex}` : undefined}
+        aria-activedescendant={focusedIndex >= 0
+          ? `sort-opt-${focusedIndex}`
+          : undefined}
         onkeydown={handleSortKeydown}
         tabindex="-1"
       >
@@ -379,7 +457,9 @@
       class="filters-pill"
       onclick={onOpenFilters}
       aria-label="Filters — {engine.resultCount}
-        {engine.resultCount === 1 ? 'sequence' : 'sequences'}{activeUserFilterCount > 0
+        {engine.resultCount === 1
+        ? 'sequence'
+        : 'sequences'}{activeUserFilterCount > 0
         ? `, ${activeUserFilterCount} active`
         : ''}"
     >
@@ -401,74 +481,89 @@
 
   <!-- 4. Inline filter chips (wide screens only; sheet pattern replaces them) -->
   {#if !onOpenFilters}
-  <span class="toolbar-divider" aria-hidden="true"></span>
-  <div class="inline-filters" role="toolbar" aria-label="Filter options">
-    {#if !isHandsMode}
-      <LevelFilterChip
-        {activeLevel}
-        onSelect={handleLevelSelect}
-        getFilteredCount={engine.getFilteredCount.bind(engine)}
+    <span class="toolbar-divider" aria-hidden="true"></span>
+    <div class="inline-filters" role="toolbar" aria-label="Filter options">
+      {#if !isHandsMode}
+        <LevelFilterChip
+          {activeLevel}
+          onSelect={handleLevelSelect}
+          getFilteredCount={engine.getFilteredCount.bind(engine)}
+        />
+      {/if}
+      <FavoritesFilterChip
+        active={isFavoritesActive}
+        onToggle={handleFavoritesToggle}
       />
-    {/if}
-    <FavoritesFilterChip
-      active={isFavoritesActive}
-      onToggle={handleFavoritesToggle}
-    />
-    {#if !hasLengthConstraint}
-      <LengthFilterChip
-        {activeLength}
-        availableLengths={engine.availableLengths as number[]}
-        onSelect={handleLengthSelect}
-        getFilteredCount={engine.getFilteredCount.bind(engine)}
+      {#if !hasLengthConstraint}
+        <LengthFilterChip
+          {activeLength}
+          availableLengths={engine.availableLengths as number[]}
+          onSelect={handleLengthSelect}
+          getFilteredCount={engine.getFilteredCount.bind(engine)}
+        />
+      {/if}
+      <LOOPFilterChip
+        activeValue={activeLoopComponent}
+        loopTypeCounts={engine.loopTypeCounts}
+        onSelect={handleLoopSelect}
       />
-    {/if}
-    <LOOPFilterChip
-      activeValue={activeLoopComponent}
-      loopTypeCounts={engine.loopTypeCounts}
-      onSelect={handleLoopSelect}
+
+      <!-- Keyed by map key, not type — stacked loop filters share a type. -->
+      {#each extraChips as chip (chip.key)}
+        <span class="active-chip" style="--chip-color: {chip.chipColor};">
+          {#if chip.locked}
+            <i class="fas fa-lock chip-lock" aria-hidden="true"></i>
+          {/if}
+          <span class="chip-label">{chip.label}</span>
+          {#if !chip.locked}
+            <button
+              class="chip-dismiss"
+              type="button"
+              aria-label="Remove filter {chip.label}"
+              onclick={(e) => {
+                e.stopPropagation();
+                handleDismissChip(chip.key);
+              }}
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          {/if}
+        </span>
+      {/each}
+
+      {#if engine.hasActiveFilters}
+        <button
+          class="clear-all-btn"
+          type="button"
+          onclick={(e) => {
+            e.stopPropagation();
+            handleClearAll();
+          }}
+        >
+          Clear all
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  {#if onEnterSelection}
+    <FilterChipBase
+      label="Select"
+      icon="fas fa-circle-check"
+      mode="action"
+      size="sm"
+      onclick={onEnterSelection}
     />
-
-    <!-- Keyed by map key, not type — stacked loop filters share a type. -->
-    {#each extraChips as chip (chip.key)}
-      <span class="active-chip" style="--chip-color: {chip.chipColor};">
-        {#if chip.locked}
-          <i class="fas fa-lock chip-lock" aria-hidden="true"></i>
-        {/if}
-        <span class="chip-label">{chip.label}</span>
-        {#if !chip.locked}
-          <button
-            class="chip-dismiss"
-            type="button"
-            aria-label="Remove filter {chip.label}"
-            onclick={(e) => {
-              e.stopPropagation();
-              handleDismissChip(chip.key);
-            }}
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        {/if}
-      </span>
-    {/each}
-
-    {#if engine.hasActiveFilters}
-      <button
-        class="clear-all-btn"
-        type="button"
-        onclick={(e) => {
-          e.stopPropagation();
-          handleClearAll();
-        }}
-      >
-        Clear all
-      </button>
-    {/if}
-  </div>
   {/if}
 
   <!-- 4b. Grid zoom (fine pointers only — touch users pinch). Makes the
        hidden Ctrl+scroll density control discoverable on desktop. -->
-  <div class="zoom-control" role="group" aria-label="Grid density" title="Grid density (Ctrl+scroll also works)">
+  <div
+    class="zoom-control"
+    role="group"
+    aria-label="Grid density"
+    title="Grid density (Ctrl+scroll also works)"
+  >
     <button
       type="button"
       class="zoom-btn"
@@ -504,7 +599,9 @@
        Sheet-pattern hosts carry the count inside the Filters pill instead. -->
   {#if !onOpenFilters}
     <span class="result-count" aria-live="polite" aria-atomic="true">
-      {engine.resultCount}<span class="result-count-word">&nbsp;{engine.resultCount === 1 ? "sequence" : "sequences"}</span>
+      {engine.resultCount}<span class="result-count-word"
+        >&nbsp;{engine.resultCount === 1 ? "sequence" : "sequences"}</span
+      >
     </span>
   {/if}
 </div>
@@ -624,7 +721,11 @@
   .sort-trigger:hover {
     background: color-mix(in srgb, var(--theme-text) 6%, var(--theme-card-bg));
     color: var(--theme-text);
-    border-color: color-mix(in srgb, var(--theme-stroke) 80%, var(--theme-text));
+    border-color: color-mix(
+      in srgb,
+      var(--theme-stroke) 80%,
+      var(--theme-text)
+    );
   }
 
   .sort-trigger:active {
@@ -632,7 +733,11 @@
   }
 
   .sort-trigger.open {
-    background: color-mix(in srgb, var(--theme-accent) 12%, var(--theme-card-bg));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 12%,
+      var(--theme-card-bg)
+    );
     border-color: var(--theme-accent);
     color: var(--theme-text);
   }
@@ -654,7 +759,8 @@
   .sort-chevron {
     font-size: 10px;
     opacity: 0.5;
-    transition: transform var(--duration-fast, 150ms) cubic-bezier(0.34, 1.2, 0.64, 1);
+    transition: transform var(--duration-fast, 150ms)
+      cubic-bezier(0.34, 1.2, 0.64, 1);
   }
 
   .sort-chevron.rotated {
@@ -764,9 +870,17 @@
   }
 
   @keyframes checkPop {
-    0% { transform: scale(0); opacity: 0; }
-    60% { transform: scale(1.2); }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   /* ---- Inline filters (wide only) ---- */
@@ -780,7 +894,9 @@
     scrollbar-width: none;
   }
 
-  .inline-filters::-webkit-scrollbar { display: none; }
+  .inline-filters::-webkit-scrollbar {
+    display: none;
+  }
 
   .inline-filters :global(button),
   .inline-filters :global(.filter-chip) {
@@ -819,7 +935,11 @@
 
   .filters-pill:hover {
     color: var(--theme-text);
-    border-color: color-mix(in srgb, var(--theme-stroke) 80%, var(--theme-text));
+    border-color: color-mix(
+      in srgb,
+      var(--theme-stroke) 80%,
+      var(--theme-text)
+    );
   }
 
   .filters-pill:focus-visible {
@@ -931,8 +1051,12 @@
   }
 
   @container gallery (min-width: 900px) {
-    .inline-filters { display: flex; }
-    .toolbar-divider { display: block; }
+    .inline-filters {
+      display: flex;
+    }
+    .toolbar-divider {
+      display: block;
+    }
   }
 
   /* ---- Grid zoom (fine pointers only) ---- */

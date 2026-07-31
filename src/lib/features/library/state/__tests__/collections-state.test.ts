@@ -2,39 +2,41 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
 const mocks = vi.hoisted(() => ({
-	addSequenceToCollection: vi.fn(),
-	removeSequenceFromCollection: vi.fn(),
-	createUserCollection: vi.fn(),
-	ensureSystemCollections: vi.fn(),
-	subscribeToCollections: vi.fn(() => () => {}),
-	updateCollection: vi.fn(),
-	deleteCollection: vi.fn(),
-	toastError: vi.fn(),
-	toastInfo: vi.fn(),
-	authDrawerShow: vi.fn(),
+  addSequenceToCollection: vi.fn(),
+  addSequencesToCollection: vi.fn(),
+  removeSequenceFromCollection: vi.fn(),
+  createUserCollection: vi.fn(),
+  ensureSystemCollections: vi.fn(),
+  subscribeToCollections: vi.fn(() => () => {}),
+  updateCollection: vi.fn(),
+  deleteCollection: vi.fn(),
+  toastError: vi.fn(),
+  toastInfo: vi.fn(),
+  authDrawerShow: vi.fn(),
 }));
 
 vi.mock("$lib/shared/library/services/collection-manager", () => ({
-	addSequenceToCollection: mocks.addSequenceToCollection,
-	removeSequenceFromCollection: mocks.removeSequenceFromCollection,
-	createUserCollection: mocks.createUserCollection,
-	ensureSystemCollections: mocks.ensureSystemCollections,
-	subscribeToCollections: mocks.subscribeToCollections,
-	updateCollection: mocks.updateCollection,
-	deleteCollection: mocks.deleteCollection,
+  addSequenceToCollection: mocks.addSequenceToCollection,
+  addSequencesToCollection: mocks.addSequencesToCollection,
+  removeSequenceFromCollection: mocks.removeSequenceFromCollection,
+  createUserCollection: mocks.createUserCollection,
+  ensureSystemCollections: mocks.ensureSystemCollections,
+  subscribeToCollections: mocks.subscribeToCollections,
+  updateCollection: mocks.updateCollection,
+  deleteCollection: mocks.deleteCollection,
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
-	toast: { error: mocks.toastError, success: vi.fn(), info: mocks.toastInfo },
+  toast: { error: mocks.toastError, success: vi.fn(), info: mocks.toastInfo },
 }));
 // Publishing requires a full account (setPublic routes guests to the signup
 // drawer instead of firing a write firestore.rules would deny). Default this
 // mock to a signed-in full user so the delegate path is what gets exercised;
 // the guest branch overrides these per-test.
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-	authState: { user: null, isAuthenticated: true, isAnonymous: false },
+  authState: { user: null, isAuthenticated: true, isAnonymous: false },
 }));
 vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
-	authDrawerState: { show: mocks.authDrawerShow },
+  authDrawerState: { show: mocks.authDrawerShow },
 }));
 
 import { collectionsState } from "../collections-state.svelte";
@@ -43,150 +45,209 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 // authState above is the vi.mock plain object; the production type marks the tier
 // flags readonly, so cast to a mutable view to reset/flip them between tests.
 const mutableAuth = authState as unknown as {
-	isAuthenticated: boolean;
-	isAnonymous: boolean;
+  isAuthenticated: boolean;
+  isAnonymous: boolean;
 };
 
-function col(id: string, name: string, opts: Partial<LibraryCollection> = {}): LibraryCollection {
-	return {
-		id,
-		name,
-		ownerId: "u1",
-		sequenceIds: [],
-		sequenceCount: 0,
-		isPublic: false,
-		sortOrder: 0,
-		icon: "fa-folder",
-		createdAt: new Date(),
-		updatedAt: new Date(),
-		...opts,
-	};
+function col(
+  id: string,
+  name: string,
+  opts: Partial<LibraryCollection> = {}
+): LibraryCollection {
+  return {
+    id,
+    name,
+    ownerId: "u1",
+    sequenceIds: [],
+    sequenceCount: 0,
+    isPublic: false,
+    sortOrder: 0,
+    icon: "fa-folder",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...opts,
+  };
 }
 
 beforeEach(() => {
-	vi.clearAllMocks();
-	mocks.addSequenceToCollection.mockResolvedValue(undefined);
-	mocks.removeSequenceFromCollection.mockResolvedValue(undefined);
-	mocks.createUserCollection.mockImplementation(async (name: string) => col("new", name));
-	mocks.updateCollection.mockResolvedValue(undefined);
-	mocks.deleteCollection.mockResolvedValue(undefined);
-	// Reset the auth tier so a guest-branch test cannot leak into the next one.
-	mutableAuth.isAuthenticated = true;
-	mutableAuth.isAnonymous = false;
-	collectionsState.collections = [];
-	collectionsState.loading = false;
+  vi.clearAllMocks();
+  mocks.addSequenceToCollection.mockResolvedValue(undefined);
+  mocks.addSequencesToCollection.mockResolvedValue({
+    requestedCount: 2,
+    addedCount: 2,
+    alreadyPresentCount: 0,
+  });
+  mocks.removeSequenceFromCollection.mockResolvedValue(undefined);
+  mocks.createUserCollection.mockImplementation(async (name: string) =>
+    col("new", name)
+  );
+  mocks.updateCollection.mockResolvedValue(undefined);
+  mocks.deleteCollection.mockResolvedValue(undefined);
+  // Reset the auth tier so a guest-branch test cannot leak into the next one.
+  mutableAuth.isAuthenticated = true;
+  mutableAuth.isAnonymous = false;
+  collectionsState.collections = [];
+  collectionsState.loading = false;
 });
 
 describe("collectionsState", () => {
-	it("isIn reflects membership", () => {
-		collectionsState.collections = [col("c1", "A", { sequenceIds: ["s1"], sequenceCount: 1 })];
-		expect(collectionsState.isIn("s1", "c1")).toBe(true);
-		expect(collectionsState.isIn("s2", "c1")).toBe(false);
-		expect(collectionsState.isIn("s1", "missing")).toBe(false);
-	});
+  it("isIn reflects membership", () => {
+    collectionsState.collections = [
+      col("c1", "A", { sequenceIds: ["s1"], sequenceCount: 1 }),
+    ];
+    expect(collectionsState.isIn("s1", "c1")).toBe(true);
+    expect(collectionsState.isIn("s2", "c1")).toBe(false);
+    expect(collectionsState.isIn("s1", "missing")).toBe(false);
+  });
 
-	it("toggle adds a sequence when it is not yet a member", async () => {
-		collectionsState.collections = [col("c1", "A")];
-		await collectionsState.toggle("s1", "c1");
-		expect(mocks.addSequenceToCollection).toHaveBeenCalledWith("c1", "s1");
-		expect(mocks.removeSequenceFromCollection).not.toHaveBeenCalled();
-	});
+  it("toggle adds a sequence when it is not yet a member", async () => {
+    collectionsState.collections = [col("c1", "A")];
+    await collectionsState.toggle("s1", "c1");
+    expect(mocks.addSequenceToCollection).toHaveBeenCalledWith("c1", "s1");
+    expect(mocks.removeSequenceFromCollection).not.toHaveBeenCalled();
+  });
 
-	it("toggle removes a sequence when it is already a member", async () => {
-		collectionsState.collections = [col("c1", "A", { sequenceIds: ["s1"], sequenceCount: 1 })];
-		await collectionsState.toggle("s1", "c1");
-		expect(mocks.removeSequenceFromCollection).toHaveBeenCalledWith("c1", "s1");
-		expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
-	});
+  it("toggle removes a sequence when it is already a member", async () => {
+    collectionsState.collections = [
+      col("c1", "A", { sequenceIds: ["s1"], sequenceCount: 1 }),
+    ];
+    await collectionsState.toggle("s1", "c1");
+    expect(mocks.removeSequenceFromCollection).toHaveBeenCalledWith("c1", "s1");
+    expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
+  });
 
-	it("toggle blocks an add when the collection is full and toasts", async () => {
-		collectionsState.collections = [col("c1", "A", { sequenceCount: 500 })];
-		await collectionsState.toggle("s1", "c1");
-		expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
-		expect(mocks.toastError).toHaveBeenCalled();
-	});
+  it("toggle blocks an add when the collection is full and toasts", async () => {
+    collectionsState.collections = [col("c1", "A", { sequenceCount: 500 })];
+    await collectionsState.toggle("s1", "c1");
+    expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalled();
+  });
 
-	it("create blocks at the per-user cap, excluding system collections", async () => {
-		const many = Array.from({ length: 100 }, (_, i) => col(`c${i}`, `C${i}`));
-		collectionsState.collections = [col("fav", "Favorites", { systemType: "favorites" }), ...many];
-		const result = await collectionsState.create("New");
-		expect(result).toBeNull();
-		expect(mocks.createUserCollection).not.toHaveBeenCalled();
-		expect(mocks.toastError).toHaveBeenCalled();
-	});
+  it("adds a selection through the collection manager once", async () => {
+    collectionsState.collections = [
+      col("c1", "A", { sequenceIds: ["s1"], sequenceCount: 1 }),
+    ];
+    const ok = await collectionsState.addMany(["s1", "s2", "s3"], "c1");
 
-	it("create trims the name and delegates under the cap", async () => {
-		collectionsState.collections = [col("fav", "Favorites", { systemType: "favorites" })];
-		const result = await collectionsState.create("  Poi  ");
-		expect(mocks.createUserCollection).toHaveBeenCalledWith("Poi");
-		expect(result?.name).toBe("Poi");
-	});
+    expect(ok).toBe(true);
+    expect(mocks.addSequencesToCollection).toHaveBeenCalledWith("c1", [
+      "s1",
+      "s2",
+      "s3",
+    ]);
+  });
 
-	it("create ignores an empty name", async () => {
-		const result = await collectionsState.create("   ");
-		expect(result).toBeNull();
-		expect(mocks.createUserCollection).not.toHaveBeenCalled();
-	});
+  it("blocks a bulk add that would exceed the collection cap", async () => {
+    const existingIds = Array.from({ length: 499 }, (_, i) => `old-${i}`);
+    collectionsState.collections = [
+      col("c1", "A", {
+        sequenceIds: existingIds,
+        sequenceCount: existingIds.length,
+      }),
+    ];
 
-	it("rename trims the name and delegates to the manager", async () => {
-		const ok = await collectionsState.rename("c1", "  Fans  ");
-		expect(ok).toBe(true);
-		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { name: "Fans" });
-	});
+    const ok = await collectionsState.addMany(["new-1", "new-2"], "c1");
+    expect(ok).toBe(false);
+    expect(mocks.addSequencesToCollection).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      '"A" has room for 1 more sequence.'
+    );
+  });
 
-	it("rename ignores an empty name", async () => {
-		const ok = await collectionsState.rename("c1", "   ");
-		expect(ok).toBe(false);
-		expect(mocks.updateCollection).not.toHaveBeenCalled();
-	});
+  it("create blocks at the per-user cap, excluding system collections", async () => {
+    const many = Array.from({ length: 100 }, (_, i) => col(`c${i}`, `C${i}`));
+    collectionsState.collections = [
+      col("fav", "Favorites", { systemType: "favorites" }),
+      ...many,
+    ];
+    const result = await collectionsState.create("New");
+    expect(result).toBeNull();
+    expect(mocks.createUserCollection).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalled();
+  });
 
-	it("rename returns false when the manager rejects (e.g. system collection)", async () => {
-		mocks.updateCollection.mockRejectedValue(new Error("Cannot rename system collection"));
-		const ok = await collectionsState.rename("fav", "Nope");
-		expect(ok).toBe(false);
-	});
+  it("create trims the name and delegates under the cap", async () => {
+    collectionsState.collections = [
+      col("fav", "Favorites", { systemType: "favorites" }),
+    ];
+    const result = await collectionsState.create("  Poi  ");
+    expect(mocks.createUserCollection).toHaveBeenCalledWith("Poi");
+    expect(result?.name).toBe("Poi");
+  });
 
-	it("setPublic delegates the visibility flip to the manager", async () => {
-		const ok = await collectionsState.setPublic("c1", true);
-		expect(ok).toBe(true);
-		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { isPublic: true });
-	});
+  it("create ignores an empty name", async () => {
+    const result = await collectionsState.create("   ");
+    expect(result).toBeNull();
+    expect(mocks.createUserCollection).not.toHaveBeenCalled();
+  });
 
-	it("setPublic returns false when the manager rejects", async () => {
-		mocks.updateCollection.mockRejectedValue(new Error("network"));
-		const ok = await collectionsState.setPublic("c1", true);
-		expect(ok).toBe(false);
-	});
+  it("rename trims the name and delegates to the manager", async () => {
+    const ok = await collectionsState.rename("c1", "  Fans  ");
+    expect(ok).toBe(true);
+    expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { name: "Fans" });
+  });
 
-	// firestore.rules deny a guest write that sets isPublic == true, so setPublic
-	// nudges to signup rather than firing a write that would fail silently.
-	it("setPublic nudges a guest to sign up instead of writing", async () => {
-		mutableAuth.isAnonymous = true;
-		const ok = await collectionsState.setPublic("c1", true);
-		expect(ok).toBe(false);
-		expect(mocks.updateCollection).not.toHaveBeenCalled();
-		expect(mocks.toastInfo).toHaveBeenCalled();
-		expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
-	});
+  it("rename ignores an empty name", async () => {
+    const ok = await collectionsState.rename("c1", "   ");
+    expect(ok).toBe(false);
+    expect(mocks.updateCollection).not.toHaveBeenCalled();
+  });
 
-	// Un-publishing stays open to guests — only a full user could have published
-	// in the first place, so the guard fires on the publish direction only.
-	it("setPublic lets a guest un-publish", async () => {
-		mutableAuth.isAnonymous = true;
-		const ok = await collectionsState.setPublic("c1", false);
-		expect(ok).toBe(true);
-		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { isPublic: false });
-	});
+  it("rename returns false when the manager rejects (e.g. system collection)", async () => {
+    mocks.updateCollection.mockRejectedValue(
+      new Error("Cannot rename system collection")
+    );
+    const ok = await collectionsState.rename("fav", "Nope");
+    expect(ok).toBe(false);
+  });
 
-	it("remove delegates to the manager and reports success", async () => {
-		const ok = await collectionsState.remove("c1");
-		expect(ok).toBe(true);
-		expect(mocks.deleteCollection).toHaveBeenCalledWith("c1");
-	});
+  it("setPublic delegates the visibility flip to the manager", async () => {
+    const ok = await collectionsState.setPublic("c1", true);
+    expect(ok).toBe(true);
+    expect(mocks.updateCollection).toHaveBeenCalledWith("c1", {
+      isPublic: true,
+    });
+  });
 
-	it("remove returns false when the manager rejects", async () => {
-		mocks.deleteCollection.mockRejectedValue(new Error("Cannot delete system collection"));
-		const ok = await collectionsState.remove("fav");
-		expect(ok).toBe(false);
-	});
+  it("setPublic returns false when the manager rejects", async () => {
+    mocks.updateCollection.mockRejectedValue(new Error("network"));
+    const ok = await collectionsState.setPublic("c1", true);
+    expect(ok).toBe(false);
+  });
+
+  // firestore.rules deny a guest write that sets isPublic == true, so setPublic
+  // nudges to signup rather than firing a write that would fail silently.
+  it("setPublic nudges a guest to sign up instead of writing", async () => {
+    mutableAuth.isAnonymous = true;
+    const ok = await collectionsState.setPublic("c1", true);
+    expect(ok).toBe(false);
+    expect(mocks.updateCollection).not.toHaveBeenCalled();
+    expect(mocks.toastInfo).toHaveBeenCalled();
+    expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
+  });
+
+  // Un-publishing stays open to guests — only a full user could have published
+  // in the first place, so the guard fires on the publish direction only.
+  it("setPublic lets a guest un-publish", async () => {
+    mutableAuth.isAnonymous = true;
+    const ok = await collectionsState.setPublic("c1", false);
+    expect(ok).toBe(true);
+    expect(mocks.updateCollection).toHaveBeenCalledWith("c1", {
+      isPublic: false,
+    });
+  });
+
+  it("remove delegates to the manager and reports success", async () => {
+    const ok = await collectionsState.remove("c1");
+    expect(ok).toBe(true);
+    expect(mocks.deleteCollection).toHaveBeenCalledWith("c1");
+  });
+
+  it("remove returns false when the manager rejects", async () => {
+    mocks.deleteCollection.mockRejectedValue(
+      new Error("Cannot delete system collection")
+    );
+    const ok = await collectionsState.remove("fav");
+    expect(ok).toBe(false);
+  });
 });

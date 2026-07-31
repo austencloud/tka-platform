@@ -33,6 +33,12 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { loadSoloLibrarySequences } from "$lib/features/browse/shared/services/solo-library-sequence-loader";
+  import { createMultiSelectionState } from "$lib/shared/selection/state/create-multi-selection-state.svelte";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { openCollectionPickerForSequences } from "$lib/features/library/state/collection-picker-state.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // The desktop split view keeps the collection rail visible, so it passes no
   // onBack — BrowsePanel then omits the back pill entirely.
@@ -45,6 +51,98 @@ the gallery's, and the source is pinned to my-library with no toggle.
     sections: true,
     loadSoloLibrarySequences,
   });
+
+  const selectionState = createMultiSelectionState({
+    getAllIds: () => engine.sequences.map((sequence) => sequence.id),
+    onModeChange: () => getHapticFeedback()?.trigger("selection"),
+  });
+
+  // BrowsePanel owns the shared toolbar/card wiring; this view owns the one
+  // library-specific outcome: filing the selected sequence ids together.
+  const selection = {
+    get active() {
+      return selectionState.active;
+    },
+    get selectedIds() {
+      return selectionState.selectedIds;
+    },
+    enter(sequence?: SequenceData) {
+      selectionState.enter(sequence?.id);
+    },
+    toggle(sequence: SequenceData) {
+      selectionState.toggle(sequence.id);
+      getHapticFeedback()?.trigger("selection");
+    },
+    selectAll() {
+      selectionState.selectAll();
+      getHapticFeedback()?.trigger("selection");
+    },
+    clear() {
+      selectionState.clear();
+      getHapticFeedback()?.trigger("selection");
+    },
+    exit() {
+      selectionState.exit();
+    },
+    openPrimaryAction() {
+      if (selectionState.selectedCount === 0) return;
+      openCollectionPickerForSequences({
+        sequenceIds: [...selectionState.selectedIds],
+        onComplete: () => selectionState.exit(),
+      });
+    },
+    openDangerAction() {
+      if (selectionState.selectedCount === 0) return;
+      deleteTargets = [...selectionState.selectedIds];
+      deleteConfirmOpen = true;
+    },
+  };
+
+  let deleteConfirmOpen = $state(false);
+  let deleteTargets = $state<string[]>([]);
+  let isDeleting = $state(false);
+
+  const deleteTitle = $derived(
+    deleteTargets.length === 1
+      ? "Permanently delete this sequence?"
+      : `Permanently delete ${deleteTargets.length} sequences?`
+  );
+  const deleteMessage = $derived(
+    deleteTargets.length === 1
+      ? "This removes the sequence from your library, this device, and the community gallery. It can't be undone."
+      : "This removes the selected sequences from your library, this device, and the community gallery. It can't be undone."
+  );
+
+  async function deleteSelectedSequences(): Promise<void> {
+    if (isDeleting || deleteTargets.length === 0) return;
+    const ids = [...deleteTargets];
+    isDeleting = true;
+
+    try {
+      await getLibraryRepository().deleteSequences(ids);
+      toast.success(
+        ids.length === 1
+          ? "Sequence permanently deleted"
+          : `${ids.length} sequences permanently deleted`
+      );
+      selectionState.exit();
+      deleteTargets = [];
+    } catch (error) {
+      console.error("[AllLibraryView] Permanent delete failed:", error);
+      toast.error(
+        ids.length === 1
+          ? "Sequence wasn't deleted. Try again."
+          : "Some sequences weren't deleted. Try again."
+      );
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  function cancelDelete(): void {
+    deleteConfirmOpen = false;
+    deleteTargets = [];
+  }
 
   let isSideBySide = $state(false);
   const isMobile = $derived(!isSideBySide);
@@ -109,6 +207,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
     onOpenFilters={() => (isFilterSheetOpen = true)}
     onSaveSmart={() => (smartSaveOpen = true)}
     {emptyAction}
+    {selection}
   />
 </div>
 
@@ -147,6 +246,17 @@ the gallery's, and the source is pinned to my-library with no toggle.
   variations={pickerState.variations}
   onSelect={openViewer}
   onClose={closeVariationPicker}
+/>
+
+<ConfirmDialog
+  bind:isOpen={deleteConfirmOpen}
+  title={deleteTitle}
+  message={deleteMessage}
+  confirmText="Delete permanently"
+  cancelText="Keep"
+  variant="danger"
+  onConfirm={deleteSelectedSequences}
+  onCancel={cancelDelete}
 />
 
 <style>

@@ -11,6 +11,7 @@ batched Firestore reads return them shuffled. If the collection disappears or
 becomes private while open, we bail back to the list instead of showing a ghost.
 -->
 <script lang="ts">
+	import { untrack } from "svelte";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 	import { isSystemCollection } from "$lib/shared/library/domain/models/collection";
 	import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
@@ -37,6 +38,13 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 	import AddSequencesSheet from "./AddSequencesSheet.svelte";
 	import ScanCardSheet from "./ScanCardSheet.svelte";
 	import { consumePendingScanIntent } from "$lib/features/browse/state/pending-scan-intent.svelte";
+	import SelectionToolbar from "$lib/shared/components/selection/SelectionToolbar.svelte";
+	import { createMultiSelectionState } from "$lib/shared/selection/state/create-multi-selection-state.svelte";
+	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+	import { openCollectionPickerForSequences } from "$lib/features/library/state/collection-picker-state.svelte";
+	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+	import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 	let {
 		collectionId,
@@ -70,6 +78,11 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 	let firstSnapshotSeen = $state(false);
 	let memberLoadEpoch = 0;
 
+	const selectionState = createMultiSelectionState({
+		getAllIds: () => members.map((member) => member.id),
+		onModeChange: () => getHapticFeedback()?.trigger("selection"),
+	});
+
 	const isSystem = $derived(!!collection && isSystemCollection(collection));
 	const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
 
@@ -80,6 +93,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 		collection = null;
 		members = [];
 		loadingMembers = true;
+		untrack(() => selectionState.exit());
 		memberLoadEpoch++;
 
 		if (owner) {
@@ -230,6 +244,95 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 		void collectionsState.toggle(sequenceId, collectionId);
 	}
 
+	function toggleSelection(sequence: SequenceData): void {
+		selectionState.toggle(sequence.id);
+		getHapticFeedback()?.trigger("selection");
+	}
+
+	function selectAllMembers(): void {
+		selectionState.selectAll();
+		getHapticFeedback()?.trigger("selection");
+	}
+
+	function clearSelection(): void {
+		selectionState.clear();
+		getHapticFeedback()?.trigger("selection");
+	}
+
+	function openSelectedCollections(): void {
+		if (selectionState.selectedCount === 0) return;
+		openCollectionPickerForSequences({
+			sequenceIds: [...selectionState.selectedIds],
+			onComplete: () => selectionState.exit(),
+		});
+	}
+
+	let sequenceDeleteConfirmOpen = $state(false);
+	let sequenceDeleteTargets = $state<string[]>([]);
+	let deletingSequences = $state(false);
+
+	const sequenceDeleteTitle = $derived(
+		sequenceDeleteTargets.length === 1
+			? "Permanently delete this sequence?"
+			: `Permanently delete ${sequenceDeleteTargets.length} sequences?`,
+	);
+	const sequenceDeleteMessage = $derived(
+		sequenceDeleteTargets.length === 1
+			? "This removes the sequence from your library, this device, and the community gallery. It can't be undone."
+			: "This removes the selected sequences from your library, this device, and the community gallery. It can't be undone.",
+	);
+
+	function openSequenceDelete(): void {
+		const selectedIds = [...selectionState.selectedIds];
+		if (selectedIds.length === 0) return;
+
+		const currentUserId = authState.effectiveUserId;
+		const includesSharedSequence = selectedIds.some((sequenceId) => {
+			const member = members.find((sequence) => sequence.id === sequenceId);
+			return !!member?.ownerId && member.ownerId !== currentUserId;
+		});
+		if (includesSharedSequence) {
+			toast.info(
+				"Shared sequences can be filed into your collections, but only your own sequences can be permanently deleted.",
+			);
+			return;
+		}
+
+		sequenceDeleteTargets = selectedIds;
+		sequenceDeleteConfirmOpen = true;
+	}
+
+	async function deleteSelectedSequences(): Promise<void> {
+		if (deletingSequences || sequenceDeleteTargets.length === 0) return;
+		const ids = [...sequenceDeleteTargets];
+		deletingSequences = true;
+
+		try {
+			await getLibraryRepository().deleteSequences(ids);
+			toast.success(
+				ids.length === 1
+					? "Sequence permanently deleted"
+					: `${ids.length} sequences permanently deleted`,
+			);
+			selectionState.exit();
+			sequenceDeleteTargets = [];
+		} catch (error) {
+			console.error("[CollectionDetail] Permanent delete failed:", error);
+			toast.error(
+				ids.length === 1
+					? "Sequence wasn't deleted. Try again."
+					: "Some sequences weren't deleted. Try again.",
+			);
+		} finally {
+			deletingSequences = false;
+		}
+	}
+
+	function cancelSequenceDelete(): void {
+		sequenceDeleteConfirmOpen = false;
+		sequenceDeleteTargets = [];
+	}
+
 	// Build-from-inside: the add-sequences browser overlay.
 	let addSheetOpen = $state(false);
 	// File physical cards: the camera scan sheet. A phone that arrived via the
@@ -245,29 +348,48 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 	let renameValue = $state("");
 	let deleteConfirmOpen = $state(false);
 
-	const menuItems: ContextMenuEntry[] = $derived.by(() => [
-		{
-			id: "rename",
-			label: "Rename",
-			icon: "fa-pen",
-			action() {
-				menuState = { open: false };
-				renameValue = collection?.name ?? "";
-				renaming = true;
+	const menuItems: ContextMenuEntry[] = $derived.by(() => {
+		const items: ContextMenuEntry[] = [
+			{
+				id: "select-sequences",
+				label: "Select sequences",
+				icon: "fa-check-double",
+				disabled: loadingMembers || members.length === 0,
+				action() {
+					menuState = { open: false };
+					selectionState.enter();
+				},
 			},
-		},
-		{ type: "separator" } as ContextMenuEntry,
-		{
-			id: "delete",
-			label: "Delete collection",
-			icon: "fa-trash",
-			danger: true,
-			action() {
-				menuState = { open: false };
-				deleteConfirmOpen = true;
-			},
-		},
-	]);
+		];
+
+		if (!isSystem) {
+			items.push(
+				{
+					id: "rename",
+					label: "Rename",
+					icon: "fa-pen",
+					action() {
+						menuState = { open: false };
+						renameValue = collection?.name ?? "";
+						renaming = true;
+					},
+				},
+				{ type: "separator" },
+				{
+					id: "delete",
+					label: "Delete collection",
+					icon: "fa-trash",
+					danger: true,
+					action() {
+						menuState = { open: false };
+						deleteConfirmOpen = true;
+					},
+				},
+			);
+		}
+
+		return items;
+	});
 
 	function handleOptions(e: MouseEvent) {
 		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -321,7 +443,22 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 </script>
 
 <div class="collection-detail" style="--tile-color: {tileColor};">
-	<header class="detail-header">
+	{#if selectionState.active}
+		<SelectionToolbar
+			selectedCount={selectionState.selectedCount}
+			totalCount={members.length}
+			primaryLabel="Collections"
+			primaryIcon="fa-folder-plus"
+			onPrimaryAction={openSelectedCollections}
+			dangerLabel="Delete permanently"
+			dangerIcon="fa-trash"
+			onDangerAction={openSequenceDelete}
+			onSelectAll={selectAllMembers}
+			onClearSelection={clearSelection}
+			onExitSelection={selectionState.exit}
+		/>
+	{:else}
+		<header class="detail-header">
 		{#if showBack}
 			<button type="button" class="back-btn" aria-label="Back to collections" onclick={onBack}>
 				<i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -379,6 +516,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 			<button
 				type="button"
 				class="add-btn"
+				aria-label="Add"
 				onclick={() => (addSheetOpen = true)}
 			>
 				<i class="fas fa-plus" aria-hidden="true"></i>
@@ -387,6 +525,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 			<button
 				type="button"
 				class="scan-btn"
+				aria-label="Scan"
 				onclick={() => (scanSheetOpen = true)}
 			>
 				<i class="fas fa-qrcode" aria-hidden="true"></i>
@@ -394,7 +533,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 			</button>
 		{/if}
 
-		{#if collection && !isSystem && !renaming && !foreignOwnerId}
+		{#if collection && !renaming && !foreignOwnerId}
 			<button
 				type="button"
 				class="options-btn"
@@ -404,7 +543,8 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 				<i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
 			</button>
 		{/if}
-	</header>
+		</header>
+	{/if}
 
 	<div class="detail-body">
 		{#if loadingMembers}
@@ -451,6 +591,9 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 				sequences={members}
 				thumbnailService={null}
 				onAction={handleSequenceAction}
+				selectedIds={selectionState.selectedIds}
+				selectionMode={selectionState.active}
+				onSelectionToggle={toggleSelection}
 				collectionContext={foreignOwnerId
 					? undefined
 					: {
@@ -476,6 +619,17 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 	onCancel={() => (deleteConfirmOpen = false)}
 />
 
+<ConfirmDialog
+	bind:isOpen={sequenceDeleteConfirmOpen}
+	title={sequenceDeleteTitle}
+	message={sequenceDeleteMessage}
+	confirmText="Delete permanently"
+	cancelText="Keep"
+	variant="danger"
+	onConfirm={deleteSelectedSequences}
+	onCancel={cancelSequenceDelete}
+/>
+
 {#if addSheetOpen && !foreignOwnerId}
 	<AddSequencesSheet {collectionId} onClose={() => (addSheetOpen = false)} />
 {/if}
@@ -490,6 +644,8 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
+		container-type: inline-size;
+		container-name: gallery;
 	}
 
 	.detail-header {
@@ -615,7 +771,9 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 		display: flex;
 		flex-direction: column;
 		gap: 1px;
+		flex: 1 1 auto;
 		min-width: 0;
+		overflow: hidden;
 	}
 
 	.header-name {
@@ -629,9 +787,34 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 	}
 
 	.header-count {
+		display: block;
+		min-width: 0;
+		overflow: hidden;
 		font-size: var(--font-size-compact, 12px);
+		line-height: 1.2;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		font-variant-numeric: tabular-nums;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	@container gallery (max-width: 520px) {
+		.detail-header {
+			gap: 8px;
+			padding-inline: 8px;
+		}
+
+		.add-btn,
+		.scan-btn {
+			width: 44px;
+			padding: 0;
+			justify-content: center;
+		}
+
+		.add-btn span,
+		.scan-btn span {
+			display: none;
+		}
 	}
 
 	.rename-field {

@@ -22,12 +22,21 @@
   interface Props {
     engine: BrowseEngine;
     thumbnailService: BrowseThumbnailProvider | null;
-    onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
+    onAction?: (
+      action: string,
+      sequence: SequenceData,
+      variations?: SequenceData[]
+    ) => void;
     disableVirtualization?: boolean;
     eager?: boolean;
     onGridReady?: (api: VirtualGridApi) => void;
     /** Picker hosts: ids to render with the selected outline. */
     selectedIds?: ReadonlySet<string>;
+    /** Personal-library batch selection. Long-press starts it; taps toggle
+     * cards once active. */
+    selectionMode?: boolean;
+    onSelectionStart?: (sequence: SequenceData) => void;
+    onSelectionToggle?: (sequence: SequenceData) => void;
     /** Shared external scroll element for the sectioned virtual grid
      * (BrowsePanel's `.panel-content`). */
     scrollElement?: HTMLElement | null;
@@ -45,6 +54,9 @@
     eager = false,
     onGridReady,
     selectedIds,
+    selectionMode = false,
+    onSelectionStart,
+    onSelectionToggle,
     scrollElement = null,
     onSectionGridReady,
     onActiveSectionChange,
@@ -93,10 +105,12 @@
 
   // Motion visibility: in "combined" mode show both, in "solo" mode show only the selected color
   const showBlueMotion = $derived(
-    engine.viewMode.granularity === "combined" || engine.viewMode.color === "blue"
+    engine.viewMode.granularity === "combined" ||
+      engine.viewMode.color === "blue"
   );
   const showRedMotion = $derived(
-    engine.viewMode.granularity === "combined" || engine.viewMode.color === "red"
+    engine.viewMode.granularity === "combined" ||
+      engine.viewMode.color === "red"
   );
 
   // Word/difficulty only meaningful with both props visible
@@ -161,6 +175,9 @@
     {addWord}
     {addDifficultyLevel}
     {selectedIds}
+    {selectionMode}
+    {onSelectionStart}
+    {onSelectionToggle}
   />
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: virtualized (level banners + letter headers + word rows) -->
@@ -176,6 +193,9 @@
     {addWord}
     {addDifficultyLevel}
     {selectedIds}
+    {selectionMode}
+    {onSelectionStart}
+    {onSelectionToggle}
     onGridReady={onSectionGridReady}
     {onActiveSectionChange}
   />
@@ -191,7 +211,8 @@
       <ChoreoCardThumbnail
         {sequence}
         variations={seqVariations}
-        onPrimaryAction={(seq) => handleSequenceAction("view-detail", seq, seqVariations)}
+        onPrimaryAction={(seq) =>
+          handleSequenceAction("view-detail", seq, seqVariations)}
         onHover={handleSequenceHover}
         bluePropType={propSettings.bluePropType}
         redPropType={propSettings.redPropType}
@@ -202,6 +223,9 @@
         {showBlueMotion}
         {showRedMotion}
         {selectedIds}
+        {selectionMode}
+        {onSelectionStart}
+        {onSelectionToggle}
       />
     {/each}
   </div>
