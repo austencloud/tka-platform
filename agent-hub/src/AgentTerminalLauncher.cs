@@ -186,7 +186,7 @@ class AgentTerminalLauncher
     static int LaunchTerminal(Dictionary<string, string> args)
     {
         string agent = NormalizeAgent(GetRequired(args, "Agent"));
-        string project = Path.GetFullPath(GetRequired(args, "Project"));
+        string project = SanitizeProjectPath(GetRequired(args, "Project"));
         if (!Directory.Exists(project)) throw new DirectoryNotFoundException("Project directory not found: " + project);
 
         using (ColorLease lease = ClaimColor())
@@ -249,7 +249,7 @@ class AgentTerminalLauncher
             throw new ArgumentException("Invalid terminal color lease index.");
 
         string agent = NormalizeAgent(GetRequired(args, "Agent"));
-        string project = Path.GetFullPath(GetRequired(args, "Project"));
+        string project = SanitizeProjectPath(GetRequired(args, "Project"));
         using (EventWaitHandle lease = EventWaitHandle.OpenExisting(LeaseName(colorIndex)))
         {
             using (EventWaitHandle ready = EventWaitHandle.OpenExisting(GetRequired(args, "ReadyEvent"))) ready.Set();
@@ -1096,6 +1096,25 @@ class AgentTerminalLauncher
         return value;
     }
 
+    // Explorer expands a context-menu %1/%V verbatim, so a folder whose path ends
+    // in a backslash (drive roots, and %V in some shell views) produces
+    // -Project "E:\" on the command line. CommandLineToArgvW reads that trailing
+    // \" as an escaped quote, not a closing one, so the argument arrives carrying
+    // a literal quote plus whatever followed it -- and Path.GetFullPath rejects it
+    // with "Illegal characters in path". Recover the real directory instead of
+    // failing the launch: everything before the stray quote is the path.
+    static string SanitizeProjectPath(string value)
+    {
+        string path = value;
+        int stray = path.IndexOf('"');
+        if (stray >= 0) path = path.Substring(0, stray);
+        path = path.Trim();
+        // "E:" alone means "current directory on E:", never the drive root.
+        if (path.Length == 2 && path[1] == ':') path += Path.DirectorySeparatorChar;
+        if (path.Length == 0) throw new ArgumentException("Missing -Project.");
+        return Path.GetFullPath(path);
+    }
+
     static void AddOptionalPair(List<string> destination, Dictionary<string, string> args, string name)
     {
         string value;
@@ -1240,6 +1259,14 @@ class AgentTerminalLauncher
                 terminalArgs.IndexOf("--colorScheme \"Agent Hub Session 01\"", StringComparison.Ordinal) < 0 ||
                 terminalArgs.IndexOf("--useApplicationTitle", StringComparison.Ordinal) < 0)
                 throw new Exception("Windows Terminal arguments are missing the window, background-matched tab, color scheme, or live-title option.");
+
+            string mangled = SanitizeProjectPath(
+                "C:\\Windows\" -Executable C:\\tools\\claude.exe"
+            );
+            if (!string.Equals(mangled, "C:\\Windows", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(SanitizeProjectPath("C:\""), "C:\\", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(SanitizeProjectPath("C:\\Windows"), "C:\\Windows", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Trailing-backslash project paths from Explorer were not recovered.");
 
             int parsedColor;
             if (!TryParseSessionScheme("Agent Hub Session 04", out parsedColor) ||

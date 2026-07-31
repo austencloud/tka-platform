@@ -178,10 +178,15 @@ $iconRef = "$nodeExe,0"
 
 # Agent Hub owns cross-CLI color leasing when installed. The direct Windows
 # Terminal fallback keeps this context menu usable on machines without it.
+#
+# -Project goes LAST on purpose. Explorer expands %1/%V verbatim, so a folder
+# path ending in a backslash turns the closing quote into an escaped one and the
+# argument swallows everything after it. Keeping the path last means only the
+# path itself is affected, and the launcher recovers it.
 $agentTerminal = Join-Path $env:LOCALAPPDATA 'AgentHub\bin\AgentTerminalLauncher.exe'
 if (Test-Path -LiteralPath $agentTerminal) {
-    $dirCommand = "`"$agentTerminal`" -Agent codex -Project `"%1`" -Executable `"$codexCmd`""
-    $bgCommand  = "`"$agentTerminal`" -Agent codex -Project `"%V`" -Executable `"$codexCmd`""
+    $dirCommand = "`"$agentTerminal`" -Agent codex -Executable `"$codexCmd`" -Project `"%1`""
+    $bgCommand  = "`"$agentTerminal`" -Agent codex -Executable `"$codexCmd`" -Project `"%V`""
 } else {
     $dirCommand = "wt.exe -d `"%1`" cmd /k `"$codexCmd`" --dangerously-bypass-approvals-and-sandbox"
     $bgCommand  = "wt.exe -d `"%V`" cmd /k `"$codexCmd`" --dangerously-bypass-approvals-and-sandbox"
