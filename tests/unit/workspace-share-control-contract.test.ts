@@ -16,6 +16,13 @@ const shareControlSource = readFileSync(
   ),
   "utf8"
 );
+const sharedShareMenuSource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/shared/share/components/ShareActionMenu.svelte"
+  ),
+  "utf8"
+);
 const sendSequenceStateSource = readFileSync(
   resolve(
     process.cwd(),
@@ -26,16 +33,16 @@ const sendSequenceStateSource = readFileSync(
 
 describe("Create workspace share control contract", () => {
   it("uses one Share trigger for the desktop menu and mobile sheet", () => {
-    expect(shareControlSource).toContain(
-      'data-testid="workspace-share-button"'
-    );
-    expect(shareControlSource).toContain('aria-label="Share sequence"');
+    expect(shareControlSource).toContain('testId="workspace-share-button"');
+    expect(shareControlSource).toContain('ariaLabel="Share sequence"');
+    expect(sharedShareMenuSource).toContain("data-testid={testId}");
     expect(shareControlSource).not.toContain("More share options");
     expect(shareControlSource).not.toContain("workspace-share-options-button");
-    expect(shareControlSource).toContain("<DropdownMenu.Root");
-    expect(shareControlSource).toContain("<Drawer");
-    expect(shareControlSource).toContain('role="status"');
-    expect(shareControlSource).toContain('aria-live="polite"');
+    expect(shareControlSource).toContain("<ShareActionMenu");
+    expect(sharedShareMenuSource).toContain("<DropdownMenu.Root");
+    expect(sharedShareMenuSource).toContain("<Drawer");
+    expect(sharedShareMenuSource).toContain('role="status"');
+    expect(sharedShareMenuSource).toContain('aria-live="polite"');
   });
 
   it("keeps one ordered action model across both presentations", () => {
@@ -96,8 +103,10 @@ describe("Create workspace share control contract", () => {
     expect(shareButtonSource).toContain(
       "if (!requireFullAccount() || controlDisabled) return"
     );
-    expect(shareControlSource).toContain("if (!hasFullAccount)");
-    expect(shareControlSource).toContain("onGuestShare()");
+    expect(shareControlSource).toContain("canOpen={hasFullAccount}");
+    expect(shareControlSource).toContain("onBlockedOpen={onGuestShare}");
+    expect(sharedShareMenuSource).toContain("if (!canOpen)");
+    expect(sharedShareMenuSource).toContain("onBlockedOpen()");
   });
 
   it("prepares signed-in actions on open and preserves fresh browser gestures", () => {
@@ -134,15 +143,15 @@ describe("Create workspace share control contract", () => {
   });
 
   it("uses scoped styling and current accessibility media queries", () => {
-    expect(shareControlSource).toContain(".workspace-share-trigger");
-    expect(shareControlSource).toContain(
-      ".workspace-share-sheet-action:focus-visible"
+    expect(sharedShareMenuSource).toContain(".share-action-trigger");
+    expect(sharedShareMenuSource).toContain(
+      ".share-action-sheet-item:focus-visible"
     );
-    expect(shareControlSource).toContain("@media (prefers-contrast: more)");
-    expect(shareControlSource).toContain("@media (forced-colors: active)");
-    expect(shareControlSource).toContain(
+    expect(sharedShareMenuSource).toContain("@media (prefers-contrast: more)");
+    expect(sharedShareMenuSource).toContain("@media (forced-colors: active)");
+    expect(sharedShareMenuSource).toContain(
       "@media (prefers-reduced-motion: reduce)"
     );
-    expect(shareControlSource).not.toContain("prefers-contrast: high");
+    expect(sharedShareMenuSource).not.toContain("prefers-contrast: high");
   });
 });

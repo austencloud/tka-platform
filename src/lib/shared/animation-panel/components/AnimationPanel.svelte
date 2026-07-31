@@ -1,7 +1,7 @@
 <!--
   AnimationPanel.svelte
 
-  Unified Download Animation panel with pill-nav section switcher.
+  Unified animation export panel with pill-nav section switcher.
 
   - Mobile (layout="bottom"): pill bar + download button at bottom.
     Tapping a pill opens a RailBentoSheet with that section's body.
@@ -122,7 +122,7 @@
   }: Props = $props();
 
   const exportButtonLabel = $derived(
-    renderMode === "3d" ? "Record Scene" : "Download Animation"
+    renderMode === "3d" ? "Record Scene" : "Export Animation"
   );
 
   // Export is host-optional: both the state manager and the handler must be

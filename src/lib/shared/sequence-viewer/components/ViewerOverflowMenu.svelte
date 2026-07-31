@@ -1,18 +1,19 @@
 <!--
   ViewerOverflowMenu.svelte
 
-  Three-dot overflow menu for secondary sequence viewer actions.
-  Opens a popover above the trigger with labeled action buttons.
-  WAI-ARIA menu pattern with keyboard navigation.
+  Secondary sequence-viewer actions. Bits UI owns menu focus, keyboard
+  navigation, outside-click dismissal, and viewport collision handling.
 -->
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { goto } from "$app/navigation";
+  import { DropdownMenu } from "bits-ui";
+  import type { Snippet } from "svelte";
+  import type { HTMLButtonAttributes } from "svelte/elements";
+  import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
   import {
     shareTarget,
     saveActionLabel,
   } from "$lib/shared/mobile/share-action.svelte";
-  import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   type OverflowOpenReason = "trigger" | "item" | "backdrop" | "escape" | "tab";
 
@@ -29,20 +30,7 @@
     onVideoUpload?: () => void;
     variant?: "header" | "footer";
     dropDown?: boolean;
-    /**
-     * Horizontal edge the popover aligns to. 'left' when the trigger sits at the
-     * screen's left edge; 'center' drops the popover centred under the trigger
-     * (used when the header title itself is the trigger).
-     */
     align?: "left" | "right" | "center";
-    /**
-     * Custom trigger content. When provided, the trigger button renders this
-     * snippet (a transparent title-style row) instead of the three-dot glyph, so
-     * the header title can BE the menu trigger. Open/close, backdrop, keyboard
-     * nav, and the item model are unchanged. Omit for the default three-dot.
-     * `hasMenu` is false when there are no items to open — the caller hides the
-     * chevron in that case so a dead title doesn't advertise a dropdown.
-     */
     trigger?: Snippet<[{ isOpen: boolean; hasMenu: boolean }]>;
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
@@ -50,26 +38,16 @@
     onSave?: () => void;
     onRemix?: () => void;
     onSendTo?: () => void;
-    /** Label for the onRemix item. Defaults to "Remix". */
     remixLabel?: string;
-    /** Download the current sequence (QR scan funnel). Renders a Download item. */
     onDownload?: () => void;
-    /** Swap the Download item to a spinner + "Preparing…" while an export runs. */
     downloadBusy?: boolean;
-    /** Open the wider app from a guest surface (QR scan funnel). */
     onOpenApp?: () => void;
-    /** Label for the onOpenApp item. Defaults to "Open TKA". */
     openAppLabel?: string;
     onCopyData?: () => void;
     copyDataFeedback?: boolean;
-    /** "See it in the Guide" action — maps the sequence to a guide destination
-     *  and navigates there (QR scan → codex/chapter handoff). */
     onGuideAction?: () => void;
-    /** Label for the onGuideAction item. Defaults to "See it in the Guide". */
     guideActionLabel?: string;
-    /** When set, a "View in coven hub" item deep-links to /coven?seq=<id>. */
     sequenceId?: string;
-    /** When set, a Left/Right motion-visibility chip row renders atop the menu. */
     motionVisibility?: {
       showBlue: boolean;
       showRed: boolean;
@@ -77,6 +55,15 @@
       onToggleRed: () => void;
     };
     onOpenChange?: (open: boolean, reason: OverflowOpenReason) => void;
+  }
+
+  interface MenuItem {
+    label: string;
+    icon: string;
+    action: () => void;
+    className?: string;
+    dividerBefore?: boolean;
+    disabled?: boolean;
   }
 
   let {
@@ -115,69 +102,34 @@
   }: Props = $props();
 
   let isOpen = $state(false);
-  let triggerEl: HTMLButtonElement | null = $state(null);
-  let menuEl: HTMLDivElement | null = $state(null);
+  let pendingCloseReason: Exclude<OverflowOpenReason, "trigger"> = "backdrop";
 
-  function toggle() {
-    if (!hasMenu) return;
-    isOpen = !isOpen;
-    onOpenChange?.(isOpen, "trigger");
-    if (isOpen) {
-      requestAnimationFrame(() => {
-        const firstItem =
-          menuEl?.querySelector<HTMLButtonElement>('[role="menuitem"]');
-        firstItem?.focus();
-      });
-    }
+  const menuAlign = $derived(
+    align === "left" ? "start" : align === "right" ? "end" : "center"
+  );
+
+  function asButtonAttributes(props: unknown): HTMLButtonAttributes {
+    return props as HTMLButtonAttributes;
   }
 
-  function close(reason: Exclude<OverflowOpenReason, "trigger">) {
-    if (!isOpen) return;
-    isOpen = false;
-    onOpenChange?.(false, reason);
-    triggerEl?.focus();
+  function handleOpenChange(nextOpen: boolean): void {
+    const reason = nextOpen ? "trigger" : pendingCloseReason;
+    isOpen = nextOpen;
+    onOpenChange?.(nextOpen, reason);
+    if (!nextOpen) pendingCloseReason = "backdrop";
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (!isOpen || !menuEl) return;
-
-    const items = Array.from(
-      menuEl.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
-    );
-    const currentIndex = items.indexOf(
-      document.activeElement as HTMLButtonElement
-    );
-
-    if (e.key === "Escape") {
-      e.preventDefault();
-      close("escape");
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-      items[next]?.focus();
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      const prev = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-      items[prev]?.focus();
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      close("tab");
-    }
+  function noteTriggerClick(): void {
+    if (isOpen) pendingCloseReason = "backdrop";
   }
 
-  function handleItemClick(action: (() => void) | undefined) {
-    action?.();
-    close("item");
+  function handleItemSelect(action: () => void): void {
+    pendingCloseReason = "item";
+    action();
   }
 
-  let menuItems = $derived.by(() => {
-    const items: Array<{
-      label: string;
-      icon: string;
-      action: () => void;
-      className?: string;
-      dividerBefore?: boolean;
-    }> = [];
+  const menuItems = $derived.by((): MenuItem[] => {
+    const items: MenuItem[] = [];
 
     if (onFavoriteToggle) {
       items.push({
@@ -211,8 +163,6 @@
       });
     }
     if (onDownload) {
-      // Mobile opens the native share sheet, so the item reads "Share" there and
-      // "Download" on desktop — matching shareOrDownloadBlob's actual behavior.
       items.push({
         label: downloadBusy ? "Preparing…" : saveActionLabel(),
         icon: downloadBusy
@@ -221,6 +171,7 @@
             ? "fa-share-nodes"
             : "fa-download",
         action: onDownload,
+        disabled: downloadBusy,
       });
     }
     if (onOpenApp) {
@@ -308,86 +259,79 @@
     return items;
   });
 
-  let hasItems = $derived(menuItems.length > 0);
-  // The menu can open only when it has items (or the motion row). A title trigger
-  // still RENDERS with no items so the header title never disappears — it just
-  // isn't interactive (chevron hidden by the caller, toggle no-ops).
-  let hasMenu = $derived(hasItems || !!motionVisibility);
-  let shouldRender = $derived(hasMenu || !!trigger);
+  const hasItems = $derived(menuItems.length > 0);
+  const hasMenu = $derived(hasItems || !!motionVisibility);
+  const shouldRender = $derived(hasMenu || !!trigger);
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if shouldRender}
-  <div
-    class="overflow-wrapper"
-    class:drop-down={dropDown}
-    class:align-left={align === "left"}
-    class:align-center={align === "center"}
-    class:title-trigger={!!trigger}
-    onkeydown={handleKeydown}
-  >
-    <button
-      bind:this={triggerEl}
-      type="button"
-      class="overflow-trigger"
-      class:header-variant={variant === "header" && !trigger}
-      class:title-variant={!!trigger}
-      class:static={!!trigger && !hasMenu}
-      onclick={toggle}
-      aria-haspopup={hasMenu ? "menu" : undefined}
-      aria-expanded={hasMenu ? isOpen : undefined}
-      aria-label="More actions"
-    >
-      {#if trigger}
-        {@render trigger({ isOpen, hasMenu })}
-      {:else}
-        <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
-      {/if}
-    </button>
+  <div class="overflow-wrapper" class:title-trigger={!!trigger}>
+    {#if hasMenu}
+      <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
+        <DropdownMenu.Trigger onclick={noteTriggerClick}>
+          {#snippet child({ props })}
+            {@const triggerProps = asButtonAttributes(props)}
+            <button
+              {...triggerProps}
+              type="button"
+              class="overflow-trigger"
+              class:header-variant={variant === "header" && !trigger}
+              class:title-variant={!!trigger}
+              aria-label="More actions"
+            >
+              {#if trigger}
+                {@render trigger({ isOpen, hasMenu })}
+              {:else}
+                <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
+              {/if}
+            </button>
+          {/snippet}
+        </DropdownMenu.Trigger>
 
-    {#if isOpen && hasMenu}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="overflow-backdrop"
-        onclick={() => close("backdrop")}
-        onkeydown={() => {}}
-      ></div>
-
-      <div
-        bind:this={menuEl}
-        class="overflow-popover"
-        role="menu"
-        aria-label="More actions"
-      >
-        {#if motionVisibility}
-          <div class="motion-vis-section">
-            <span class="motion-vis-label">Motion</span>
-            <MotionColorChips
-              showBlue={motionVisibility.showBlue}
-              showRed={motionVisibility.showRed}
-              onToggleBlue={motionVisibility.onToggleBlue}
-              onToggleRed={motionVisibility.onToggleRed}
-            />
-          </div>
-          {#if hasItems}
-            <div class="menu-divider"></div>
-          {/if}
-        {/if}
-        {#each menuItems as item}
-          {#if item.dividerBefore}
-            <div class="menu-divider"></div>
-          {/if}
-          <button
-            type="button"
-            role="menuitem"
-            class="overflow-item {item.className ?? ''}"
-            onclick={() => handleItemClick(item.action)}
-            tabindex={-1}
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            side={dropDown ? "bottom" : "top"}
+            align={menuAlign}
+            sideOffset={8}
+            collisionPadding={12}
+            class="viewer-overflow-popover"
+            aria-label="More actions"
           >
-            <i class="fas {item.icon}" aria-hidden="true"></i>
-            <span>{item.label}</span>
-          </button>
-        {/each}
+            {#if motionVisibility}
+              <div class="motion-vis-section">
+                <span class="motion-vis-label">Motion</span>
+                <MotionColorChips
+                  showBlue={motionVisibility.showBlue}
+                  showRed={motionVisibility.showRed}
+                  onToggleBlue={motionVisibility.onToggleBlue}
+                  onToggleRed={motionVisibility.onToggleRed}
+                />
+              </div>
+              {#if hasItems}
+                <DropdownMenu.Separator class="viewer-overflow-divider" />
+              {/if}
+            {/if}
+
+            {#each menuItems as item}
+              {#if item.dividerBefore}
+                <DropdownMenu.Separator class="viewer-overflow-divider" />
+              {/if}
+              <DropdownMenu.Item
+                class="viewer-overflow-item {item.className ?? ''}"
+                disabled={item.disabled}
+                textValue={item.label}
+                onSelect={() => handleItemSelect(item.action)}
+              >
+                <i class="fas {item.icon}" aria-hidden="true"></i>
+                <span>{item.label}</span>
+              </DropdownMenu.Item>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    {:else if trigger}
+      <div class="overflow-trigger title-variant static">
+        {@render trigger({ isOpen: false, hasMenu: false })}
       </div>
     {/if}
   </div>
@@ -398,32 +342,41 @@
     position: relative;
   }
 
+  .overflow-wrapper.title-trigger {
+    max-width: 100%;
+  }
+
   .overflow-trigger {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    padding: 0;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 50%;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 16px;
     cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
+    font-size: 16px;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
   @media (hover: hover) and (pointer: fine) {
     .overflow-trigger:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
       color: var(--theme-text, white);
     }
   }
 
   .overflow-trigger:active {
-    transform: scale(0.9);
+    transform: scale(0.94);
     transition-duration: 0ms;
   }
 
@@ -432,148 +385,141 @@
     outline-offset: 2px;
   }
 
-  .overflow-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 99;
-  }
-
-  .overflow-popover {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    right: 0;
-    z-index: 100;
-    min-width: 180px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    padding: 4px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  }
-
-  .overflow-wrapper.drop-down .overflow-popover {
-    bottom: auto;
-    top: calc(100% + 8px);
-  }
-
-  .overflow-wrapper.align-left .overflow-popover {
-    right: auto;
-    left: 0;
-  }
-
-  /* Centred under the trigger — used when the header title itself is the trigger. */
-  .overflow-wrapper.align-center .overflow-popover {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  /* Title-as-trigger: the button is a transparent inline row (title text + chevron)
-     rather than the three-dot circle. It carries the 44px touch floor. */
   .overflow-trigger.title-variant {
     width: auto;
     height: auto;
+    max-width: 100%;
     min-height: var(--min-touch-target, 44px);
-    padding: 2px 8px;
     gap: 8px;
+    padding: 2px 8px;
+    border: none;
     border-radius: 10px;
     background: none;
-    border: none;
     color: var(--theme-text, #fff);
   }
+
   @media (hover: hover) and (pointer: fine) {
     .overflow-trigger.title-variant:hover {
       background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
       color: var(--theme-text, #fff);
     }
   }
+
   .overflow-trigger.title-variant:active {
     transform: none;
   }
-  /* No items to open: the title still shows, but reads as plain text. */
+
   .overflow-trigger.title-variant.static {
     cursor: default;
   }
+
   .overflow-trigger.title-variant.static:hover {
     background: none;
   }
 
-  .overflow-item {
+  .overflow-trigger.header-variant {
+    width: auto;
+    height: auto;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border: none;
+    border-radius: 8px;
+    background: none;
+  }
+
+  :global(.viewer-overflow-popover) {
+    z-index: var(--z-dropdown, 1000);
+    min-width: 12rem;
+    max-width: calc(100vw - 24px);
+    max-height: min(70dvh, 32rem);
+    overflow-y: auto;
+    padding: 4px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 12px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.4));
+    outline: none;
+    transform-origin: var(--bits-dropdown-menu-content-transform-origin);
+  }
+
+  :global(.viewer-overflow-popover[data-state="open"]) {
+    animation: viewer-overflow-enter 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  :global(.viewer-overflow-item) {
+    box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 10px;
     width: 100%;
-    height: 44px;
+    min-height: var(--min-touch-target, 44px);
+    gap: 10px;
     padding: 0 12px;
-    border-radius: 8px;
-    background: transparent;
     border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    border-radius: var(--radius-sm, 8px);
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    cursor: pointer;
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
-    cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    user-select: none;
     white-space: nowrap;
   }
 
-  .overflow-item i {
-    width: 20px;
-    text-align: center;
-    font-size: 14px;
-  }
-
-  .overflow-item:hover,
-  .overflow-item:focus {
+  :global(.viewer-overflow-item[data-highlighted]) {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, white);
-    outline: none;
   }
 
-  .overflow-item.delete {
+  :global(.viewer-overflow-item[data-disabled]) {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  :global(.viewer-overflow-item i) {
+    width: 20px;
+    flex: 0 0 20px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  :global(.viewer-overflow-item.delete) {
     color: var(--semantic-error, #ef4444);
   }
 
-  .overflow-item.delete:hover,
-  .overflow-item.delete:focus {
-    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .overflow-item.copied {
-    color: var(--semantic-success, #22c55e);
-  }
-
-  .overflow-item.favorited {
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .overflow-item.save {
-    color: var(--semantic-success, #22c55e);
-  }
-
-  .overflow-item.remix {
-    color: var(--semantic-warning, #f59e0b);
-  }
-
-  .overflow-item.practice-active {
-    color: var(--semantic-error, #f87171);
-  }
-
-  .overflow-item.practice-active:hover,
-  .overflow-item.practice-active:focus {
+  :global(.viewer-overflow-item.delete[data-highlighted]) {
     background: color-mix(
       in srgb,
       var(--semantic-error, #ef4444) 10%,
       transparent
     );
+    color: var(--semantic-error, #ef4444);
+  }
+
+  :global(.viewer-overflow-item.copied) {
+    color: var(--semantic-success, #22c55e);
+  }
+
+  :global(.viewer-overflow-item.favorited) {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  :global(.viewer-overflow-item.save) {
+    color: var(--semantic-success, #22c55e);
+  }
+
+  :global(.viewer-overflow-item.remix) {
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  :global(.viewer-overflow-item.practice-active) {
     color: var(--semantic-error, #f87171);
   }
 
-  .menu-divider {
+  :global(.viewer-overflow-divider) {
     height: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     margin: 4px 8px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .motion-vis-section {
@@ -584,9 +530,9 @@
   }
 
   .motion-vis-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .motion-vis-section :global(.motion-color-chips) {
@@ -597,22 +543,53 @@
     flex: 1;
   }
 
-  .overflow-trigger.header-variant {
-    width: auto;
-    height: auto;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    border-radius: 8px;
-    background: none;
-    border: none;
+  @keyframes viewer-overflow-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .overflow-trigger,
+    :global(.viewer-overflow-popover) {
+      border-width: 2px;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .overflow-trigger {
+      border: 2px solid ButtonText;
+      background: Canvas;
+      color: ButtonText;
+      forced-color-adjust: auto;
+    }
+
+    :global(.viewer-overflow-item) {
+      color: ButtonText;
+    }
+
+    :global(.viewer-overflow-item[data-highlighted]) {
+      background: Highlight;
+      color: HighlightText;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .overflow-trigger {
       transition: none;
     }
+
     .overflow-trigger:active {
       transform: none;
+    }
+
+    :global(.viewer-overflow-popover[data-state="open"]) {
+      animation: none;
     }
   }
 </style>

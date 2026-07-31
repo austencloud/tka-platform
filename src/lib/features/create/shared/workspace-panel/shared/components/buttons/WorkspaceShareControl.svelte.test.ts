@@ -87,18 +87,22 @@ describe("WorkspaceShareControl", () => {
     );
 
     const trigger = page.getByRole("button", { name: "Share sequence" });
-    await expect.element(trigger).not.toHaveAttribute("aria-haspopup");
+    await expect.element(trigger).toHaveAttribute("aria-haspopup", "dialog");
     await trigger.click();
 
     const sheet = page.getByRole("dialog", { name: "Share sequence" });
     await expect.element(sheet).toBeInTheDocument();
 
     expect(
-      Array.from(
-        document.querySelectorAll(".workspace-share-sheet-action")
-      ).map((item) => item.textContent?.trim())
+      Array.from(document.querySelectorAll(".share-action-sheet-item")).map(
+        (item) => item.textContent?.trim()
+      )
     ).toEqual(["Send Sequence", "Share Card…", "Copy Link", "Download Card"]);
 
+    await page.getByRole("button", { name: "Close share options" }).click();
+    await expect.element(trigger).toHaveFocus();
+
+    await trigger.click();
     await page.getByRole("button", { name: "Send Sequence" }).click();
     expect(onSendSequence).toHaveBeenCalledOnce();
   });

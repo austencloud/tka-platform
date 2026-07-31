@@ -78,6 +78,9 @@ const sequenceRouteSource = read(
 const cardHeaderSource = read(
   "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
 );
+const overflowMenuSource = read(
+  "src/lib/shared/sequence-viewer/components/ViewerOverflowMenu.svelte"
+);
 const hostEntries = Object.entries(HOSTS).map(
   ([name, rels]) => [name, rels.map(read).join("\n")] as const
 );
@@ -95,6 +98,52 @@ describe("SequenceViewerShell host contract", () => {
     expect(shellSource).toContain("authState.isFullAccount");
     expect(shellSource).toContain("RobustAvatar");
     expect(scanSource).toMatch(/onAccountSignIn=\{ctx\.openSignInPrompt\}/);
+  });
+
+  it("uses one shared Share control and keeps Send inside it", () => {
+    expect(shellSource).toContain(
+      'from "$lib/shared/share/components/ShareActionMenu.svelte"'
+    );
+    expect(shellSource).toContain('testId="viewer-share-button"');
+    expect(shellSource).toContain("containDesktopMenu={true}");
+    expect(shellSource).toContain('label: "Share Sequence…"');
+    expect(shellSource).toContain('label: "Send in TKA"');
+    expect(shellSource).toMatch(
+      /label:\s*shareLinkCopied\s*\?\s*"Copied"\s*:\s*"Copy Link"/
+    );
+    expect(shellSource).not.toContain('class="header-action-btn utility send"');
+
+    const menuStart = shellSource.indexOf("{#snippet overflowMenu");
+    const menuEnd = shellSource.indexOf("{/snippet}", menuStart);
+    const menuWiring = shellSource.slice(menuStart, menuEnd);
+    expect(menuWiring).not.toContain("onSendTo={handleSendTo}");
+  });
+
+  it("does not duplicate wide header actions in the More menu", () => {
+    const menuStart = shellSource.indexOf("{#snippet overflowMenu");
+    const menuEnd = shellSource.indexOf("{/snippet}", menuStart);
+    const menuWiring = shellSource.slice(menuStart, menuEnd);
+
+    expect(menuWiring).toMatch(
+      /onFavoriteToggle=\{compactChrome\s*&&\s*headerActions\.onFavoriteToggle/
+    );
+    expect(menuWiring).toMatch(
+      /onSave=\{compactChrome\s*&&\s*headerActions\.onSave/
+    );
+    expect(menuWiring).toMatch(
+      /onRemix=\{compactChrome\s*&&\s*\(onRemix\s*\?\?\s*headerActions\.onRemix\)/
+    );
+  });
+
+  it("uses Bits UI for the explicit More menu", () => {
+    expect(overflowMenuSource).toContain(
+      'import { DropdownMenu } from "bits-ui"'
+    );
+    expect(overflowMenuSource).toContain("<DropdownMenu.Content");
+    expect(overflowMenuSource).not.toContain("overflow-backdrop");
+    expect(overflowMenuSource).not.toContain(
+      "querySelectorAll<HTMLButtonElement>"
+    );
   });
 
   it("fits glyph titles at both scan entry and card-header boundaries", () => {

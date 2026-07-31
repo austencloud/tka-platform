@@ -21,7 +21,7 @@
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { fade, slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { goto } from "$app/navigation";
@@ -44,7 +44,6 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { saveActionVerb } from "$lib/shared/mobile/share-action.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -89,6 +88,8 @@
     ViewerControlValue,
   } from "../domain/viewer-control-analytics";
   import { scanPropProperties } from "$lib/shared/analytics/scan-prop-attribution";
+  import ShareActionMenu from "$lib/shared/share/components/ShareActionMenu.svelte";
+  import type { ShareActionMenuItem } from "$lib/shared/share/domain/models/share-action-menu";
 
   /** Host-owned export pipeline (the scan page's gated share-sheet flow).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
@@ -178,6 +179,7 @@
   const FULL_CHROME_MIN_WIDTH = 1080;
   const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
   const hasAccountEntry = $derived(!!openAppHref && !!onAccountSignIn);
+  const accountCrowded = $derived(hasAccountEntry && bodyWidth < 460);
   const motionProfile = $derived(
     getSequenceMotionProfile(ctx.effectiveSequence ?? sequence)
   );
@@ -252,6 +254,39 @@
   });
 
   let copyClaudeFeedback = $state(false);
+  let shareMenuOpen = $state(false);
+  let shareLinkCopied = $state(false);
+  let shareLinkFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  type ViewerShareActionId = "share-sequence" | "send-sequence" | "copy-link";
+
+  const shareActions = $derived.by((): ShareActionMenuItem[] => [
+    {
+      id: "share-sequence",
+      label: "Share Sequence…",
+      icon: "fa-share-nodes",
+      section: "share",
+    },
+    {
+      id: "send-sequence",
+      label: "Send in TKA",
+      icon: "fa-paper-plane",
+      section: "share",
+    },
+    {
+      id: "copy-link",
+      label: shareLinkCopied ? "Copied" : "Copy Link",
+      icon: shareLinkCopied ? "fa-check" : "fa-link",
+      section: "share",
+      tone: shareLinkCopied ? "success" : "default",
+      closeOnSelect: false,
+    },
+  ]);
+  const shareStatusMessage = $derived(shareLinkCopied ? "Link copied." : "");
+
+  onDestroy(() => {
+    if (shareLinkFeedbackTimer) clearTimeout(shareLinkFeedbackTimer);
+  });
 
   async function handleCopyForClaude() {
     if (!sequence) return;
@@ -288,6 +323,38 @@
     openSendSequenceSheet(
       buildSequenceSharePayload({ ...sequence, thumbnailUrl })
     );
+  }
+
+  function handleShareSequence(): void {
+    captureScanAction("share");
+    ctx.handleShare();
+  }
+
+  async function handleCopyShareLink(): Promise<void> {
+    captureScanAction("copy_link");
+    const copied = await ctx.handleCopyLink();
+    if (!copied) return;
+
+    shareLinkCopied = true;
+    if (shareLinkFeedbackTimer) clearTimeout(shareLinkFeedbackTimer);
+    shareLinkFeedbackTimer = setTimeout(() => {
+      shareLinkCopied = false;
+      shareLinkFeedbackTimer = null;
+    }, 1800);
+  }
+
+  function handleShareActionSelect(actionId: string): void {
+    switch (actionId as ViewerShareActionId) {
+      case "share-sequence":
+        handleShareSequence();
+        break;
+      case "send-sequence":
+        handleSendTo();
+        break;
+      case "copy-link":
+        void handleCopyShareLink();
+        break;
+    }
   }
 
   function handleSendToStickerLab() {
@@ -465,8 +532,8 @@
   const showInlineProgress = $derived(
     exportOverrides?.showInlineProgress ?? true
   );
-  // The premium export ring over the whole viewer body — the "lovely export
-  // screen" for the standard Download Animation. A host that suppresses the
+  // The premium export ring over the whole viewer body for the standard
+  // animation export. A host that suppresses the
   // inline bar (showInlineProgress=false) does so because it renders its OWN
   // takeover (the scan page), so the shell renders one only when it hasn't.
   // 2D only — 3D export progress lives in Recording3DOverlay.
@@ -998,9 +1065,9 @@
           {isVideoExportActive
             ? ctx.renderMode === "3d"
               ? "Record Scene"
-              : `${saveActionVerb()} Animation`
+              : "Animation Export"
             : isImageExportActive
-              ? `${saveActionVerb()} Card`
+              ? "Card Export"
               : "Upload Video"}
         {:else}
           Sequence Viewer
@@ -1010,14 +1077,8 @@
   </span>
   {#if hasMenu}
     <i
-      class="fas fa-chevron-down drawer-title-caret"
+      class="fas fa-ellipsis-vertical drawer-title-more-glyph"
       class:open={isOpen}
-      aria-hidden="true"
-    ></i>
-  {/if}
-  {#if hasAccountEntry}
-    <i
-      class="fas fa-ellipsis-vertical drawer-title-compact-glyph"
       aria-hidden="true"
     ></i>
   {/if}
@@ -1030,13 +1091,14 @@
     align="center"
     trigger={titleTrigger}
     isFavorite={headerActions.isFavorite}
-    onFavoriteToggle={headerActions.onFavoriteToggle
+    onFavoriteToggle={compactChrome && headerActions.onFavoriteToggle
       ? handleFavoriteToggle
       : undefined}
     isSaved={headerActions.isSaved}
-    onSave={headerActions.onSave ? handleSave : undefined}
-    onRemix={(onRemix ?? headerActions.onRemix) ? handleRemix : undefined}
-    onSendTo={handleSendTo}
+    onSave={compactChrome && headerActions.onSave ? handleSave : undefined}
+    onRemix={compactChrome && (onRemix ?? headerActions.onRemix)
+      ? handleRemix
+      : undefined}
     onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
     copyDataFeedback={copyClaudeFeedback}
     onVideoUpload={headerActions.onVideoUpload
@@ -1076,7 +1138,7 @@
   class:practice-mobile={isMobile && ctx.practiceActive}
   class:has-account-entry={hasAccountEntry}
 >
-  <header class="drawer-header">
+  <header class="drawer-header" class:compact-chrome={compactChrome}>
     <div class="drawer-header-left-actions">
       <!-- Both action sets stay mounted and crossfade so entering
                practice doesn't flash buttons in/out. inert removes the
@@ -1103,8 +1165,10 @@
         inert={ctx.practiceActive}
       >
         {#if compactChrome}
-          <!-- Icon-only when the centered title and the full action row no
-                   longer have separate lanes. The title menu keeps every action. -->
+          <!-- Compact chrome keeps Practice visible and moves the engagement
+               actions into the explicit More menu. On narrow scan surfaces,
+               More joins this left cluster so the account controls cannot
+               collide with the centered header slot. -->
           <button
             type="button"
             class="header-action-btn practice icon-only"
@@ -1113,6 +1177,9 @@
           >
             <i class="fas fa-dumbbell" aria-hidden="true"></i>
           </button>
+          {#if accountCrowded}
+            {@render overflowMenu(canToggleMotionVisibility)}
+          {/if}
         {:else}
           <button
             type="button"
@@ -1153,17 +1220,6 @@
 
           <button
             type="button"
-            class="header-action-btn utility send"
-            onclick={handleSendTo}
-            aria-label="Send sequence"
-            title="Send sequence"
-          >
-            <i class="fas fa-paper-plane" aria-hidden="true"></i>
-            <span>Send</span>
-          </button>
-
-          <button
-            type="button"
             class="header-action-btn practice"
             onclick={handleEnterPractice}
             aria-label="Practice"
@@ -1180,21 +1236,6 @@
               onToggleRed={() => handleMotionToggle("red")}
             />
           {/if}
-
-          {#if authState.isAdmin}
-            <button
-              type="button"
-              class="header-action-btn utility"
-              onclick={handleCopyForClaude}
-              aria-label="Copy sequence data for Claude"
-              title="Copy for Claude"
-            >
-              <i
-                class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}"
-                aria-hidden="true"
-              ></i>
-            </button>
-          {/if}
         {/if}
       </div>
     </div>
@@ -1205,9 +1246,11 @@
           <span class="drawer-header-title-text">Practice Mode</span>
         </div>
       {:else}
-        <!-- The centered title IS the overflow-menu trigger: title +
-                 chevron opens the actions menu below the header. -->
-        {@render overflowMenu(compactChrome && canToggleMotionVisibility)}
+        <!-- The title's visible ellipsis identifies this as the More menu.
+             Wide layouts omit actions already shown as buttons. -->
+        {#if !accountCrowded}
+          {@render overflowMenu(compactChrome && canToggleMotionVisibility)}
+        {/if}
       {/if}
     </div>
 
@@ -1247,7 +1290,7 @@
       {/if}
 
       <!-- Card export settings can't be collapsed on desktop — they're
-               required to configure the download. Only Download Animation
+               required to configure the download. Only Animation Export
                keeps the hide/show toggle. -->
       {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
         <button
@@ -1263,6 +1306,22 @@
           <i class="fas fa-sliders" aria-hidden="true"></i>
         </button>
       {/if}
+
+      <ShareActionMenu
+        bind:open={shareMenuOpen}
+        actions={shareActions}
+        useMobileSheet={isMobile}
+        disabled={!ctx.hasSequence}
+        ariaLabel="Share sequence"
+        sheetTitle="Share sequence"
+        tooltip="Share sequence"
+        testId="viewer-share-button"
+        idBase="viewer-share"
+        menuSide="bottom"
+        containDesktopMenu={true}
+        statusMessage={shareStatusMessage}
+        onActionSelect={handleShareActionSelect}
+      />
 
       <button
         type="button"
@@ -1667,17 +1726,35 @@
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    /* The title group hosts the menu trigger now, so it must accept clicks. */
+    /* The title group hosts the explicit More trigger when secondary actions
+       exist, so it must accept clicks. */
     pointer-events: auto;
     overflow: visible;
   }
 
   .drawer-header-title {
+    min-width: 0;
+    overflow: hidden;
     font-size: var(--font-size-base, 16px);
     font-weight: 600;
     line-height: 1.2;
     color: var(--theme-text, #ffffff);
+    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .drawer-header-title-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Compact chrome reserves a mirrored right-action gutter so its centered
+     title/More target cannot overlap Share or Close on narrow phones. */
+  .drawer-header.compact-chrome .drawer-header-title-group {
+    max-width: calc(
+      100% - 2 * (12px + 2 * var(--min-touch-target, 44px) + 4px + 4px)
+    );
   }
 
   .takeover-title-text {
@@ -1687,26 +1764,20 @@
     letter-spacing: 0.01em;
   }
 
-  /* Chevron affordance beside the clickable title; rotates when the menu opens. */
-  .drawer-title-caret {
-    font-size: 11px;
+  /* A familiar overflow glyph makes the title menu discoverable without
+     presenting the title itself as a mystery button. */
+  .drawer-title-more-glyph {
+    font-size: var(--font-size-base, 16px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform 180ms ease;
+    transition: color 150ms ease;
     flex-shrink: 0;
   }
-  .drawer-title-caret.open {
-    transform: rotate(180deg);
+  .drawer-title-more-glyph.open {
+    color: var(--theme-accent, #a78bfa);
   }
 
-  .drawer-title-compact-glyph {
-    display: none;
-    min-width: 1rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-base, 16px);
-    text-align: center;
-  }
   @media (prefers-reduced-motion: reduce) {
-    .drawer-title-caret {
+    .drawer-title-more-glyph {
       transition: none;
     }
   }
@@ -1803,18 +1874,12 @@
     outline-offset: 2px;
   }
 
-  /* The account entry and close button need more room than the centered title
-     on the smallest phones. Keep the same menu in that center slot, but reduce
-     its visible trigger to the familiar overflow glyph before anything can
-     collide. */
+  /* The account entry and close button need more room than the title on the
+     smallest phones. The More trigger moves to the left cluster in markup; hide
+     its title text there so the trigger stays a compact overflow button. */
   @container viewer-header (max-width: 460px) {
-    .has-account-entry .drawer-header-title,
-    .has-account-entry .drawer-title-caret {
+    .has-account-entry .drawer-header-title {
       display: none;
-    }
-
-    .has-account-entry .drawer-title-compact-glyph {
-      display: block;
     }
   }
 
@@ -1885,13 +1950,6 @@
       var(--theme-stroke, transparent)
     );
     color: var(--theme-accent, #a78bfa);
-  }
-
-  .header-action-btn.send {
-    gap: 8px;
-    padding: 0 14px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
   }
 
   /* Practice entry — labeled accent CTA. Tinted accent fill (no border, like

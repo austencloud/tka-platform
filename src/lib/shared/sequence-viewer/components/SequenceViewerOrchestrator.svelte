@@ -138,6 +138,7 @@
     handleSave: () => void;
     handleVideoUpload: () => Promise<void>;
     handleShare: () => void;
+    handleCopyLink: () => Promise<boolean>;
     handleDelete: () => Promise<void>;
     handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
     invokeGatedAction: (
@@ -1076,9 +1077,7 @@
     enterEditMode("video-upload");
   }
 
-  function handleShare() {
-    hapticService?.trigger("selection");
-
+  function getViewerShareDetails() {
     let shareUrl = browser ? window.location.href : "";
 
     if (sequence) {
@@ -1115,40 +1114,85 @@
       }
     }
 
-    const activityMetadata = {
-      sequenceId: sequence?.id,
-      sequenceWord: sequence?.word,
-      sequenceLength: sequence?.steps.length,
+    const sequenceName =
+      sequence?.displayName ||
+      sequence?.intendedWord ||
+      sequence?.word ||
+      sequence?.name ||
+      "Sequence";
+
+    return {
+      url: shareUrl,
+      title: sequenceName,
+      text: `TKA sequence: ${sequenceName}`,
+      activityMetadata: {
+        sequenceId: sequence?.id,
+        sequenceWord: sequence?.word,
+        sequenceLength: sequence?.steps.length,
+      },
     };
+  }
+
+  async function copyViewerLink(
+    shareMethod: "clipboard" | "viewer_copy_link"
+  ): Promise<boolean> {
+    const details = getViewerShareDetails();
+
+    if (
+      typeof navigator === "undefined" ||
+      typeof navigator.clipboard?.writeText !== "function"
+    ) {
+      showToast("Clipboard access is unavailable", "error");
+      return false;
+    }
+
+    try {
+      await navigator.clipboard.writeText(details.url);
+      showToast("Link copied to clipboard", "success");
+      void logShareAction("link_copy", {
+        ...details.activityMetadata,
+        shareMethod,
+      });
+      return true;
+    } catch (error) {
+      console.error("[SequenceViewer] Link copy failed:", error);
+      showToast("Could not copy link", "error");
+      return false;
+    }
+  }
+
+  function handleShare() {
+    hapticService?.trigger("selection");
+    const details = getViewerShareDetails();
 
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator
         .share({
-          title: sequence?.word || "Sequence",
-          text: `Check out this TKA sequence: ${sequence?.word || ""}`,
-          url: shareUrl,
+          title: details.title,
+          text: details.text,
+          url: details.url,
         })
         .then(() => {
           void logShareAction("sequence_share", {
-            ...activityMetadata,
+            ...details.activityMetadata,
             shareMethod: "native_link_share",
           });
         })
-        .catch(() => {});
-    } else if (typeof navigator !== "undefined") {
-      navigator.clipboard
-        .writeText(shareUrl)
-        .then(() => {
-          showToast("Link copied to clipboard", "success");
-          void logShareAction("link_copy", {
-            ...activityMetadata,
-            shareMethod: "clipboard",
-          });
-        })
-        .catch(() => {
-          showToast("Could not copy link", "error");
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return;
+          }
+          console.error("[SequenceViewer] Native share failed:", error);
+          showToast("Could not open share options", "error");
         });
+    } else if (typeof navigator !== "undefined") {
+      void copyViewerLink("clipboard");
     }
+  }
+
+  function handleCopyLink(): Promise<boolean> {
+    hapticService?.trigger("selection");
+    return copyViewerLink("viewer_copy_link");
   }
 
   function handleOpenInBrowser(pendingType: PendingActionType | null = null) {
@@ -1374,6 +1418,7 @@
     handleSave: libraryActions.handleSave,
     handleVideoUpload,
     handleShare,
+    handleCopyLink,
     handleDelete: libraryActions.handleDelete,
     handleOpenInBrowser,
     invokeGatedAction: (
