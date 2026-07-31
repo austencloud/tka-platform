@@ -147,7 +147,7 @@ afterEach(() => {
 });
 
 describe("ButtonPanel narrow geometry", () => {
-  it("keeps five controls in one centered row at 320 CSS pixels", async () => {
+  it("keeps four controls in one centered row at 320 CSS pixels", async () => {
     const screen = render(ButtonPanel, {
       props: {
         onClearSequence: vi.fn(),
@@ -164,7 +164,6 @@ describe("ButtonPanel narrow geometry", () => {
     const containerBounds = screen.container.getBoundingClientRect();
     const play = rect("Play sequence");
     const buttons = [
-      rect("Nothing to Undo"),
       rect("Clear sequence"),
       play,
       rect("Sequence actions"),

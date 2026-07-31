@@ -267,6 +267,7 @@ Card-based architecture with integrated Generate button:
       onWordInput={(v) => spellModeState.setInputWord(v)}
       onWordSubmit={() => handleGenerate(null)}
       {isMobile}
+      isDesktopLayout={isDesktop}
       onOpenWordInput={() => spellModeState.openWordInput()}
       {favoriteState}
     />
@@ -408,6 +409,7 @@ Card-based architecture with integrated Generate button:
     width: 100%;
     overflow: visible;
     gap: 0;
+    --settings-panel-inline-inset: 0.25rem;
   }
 
   .generate-panel-inner {
@@ -435,14 +437,14 @@ Card-based architecture with integrated Generate button:
      to prevent the generate panel from looking too stretched */
   @container generate-panel (min-width: 700px) {
     .generate-panel-inner {
-      padding-inline: min(8cqi, 64px);
+      --settings-panel-inline-inset: min(8cqi, 64px);
     }
   }
 
   /* Very wide landscape displays: more aggressive padding */
   @container generate-panel (min-aspect-ratio: 1.5) and (min-width: 800px) {
     .generate-panel-inner {
-      padding: 6px min(10cqi, 96px);
+      --settings-panel-inline-inset: min(10cqi, 96px);
     }
   }
 

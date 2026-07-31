@@ -45,12 +45,10 @@ Delegates ALL logic to services (SRP compliant)
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
-  import {
-    DEFAULT_DIFFICULTY_STYLE,
-    DIFFICULTY_LEVELS,
-  } from "$lib/shared/config/difficulty-styles";
+  import { DifficultyLevel as SharedDifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   // Card components
+  import LevelCard from "./cards/LevelCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
@@ -78,6 +76,7 @@ Delegates ALL logic to services (SRP compliant)
     onWordInput,
     onWordSubmit,
     isMobile = false,
+    isDesktopLayout = false,
     onOpenWordInput,
     favoriteState,
   } = $props<{
@@ -93,6 +92,7 @@ Delegates ALL logic to services (SRP compliant)
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
     isMobile?: boolean;
+    isDesktopLayout?: boolean;
     onOpenWordInput?: () => void;
     favoriteState: FavoriteState;
   }>();
@@ -114,8 +114,12 @@ Delegates ALL logic to services (SRP compliant)
   let selectedLevel = $derived(
     Math.min(3, Math.max(1, Number(config.level) || 1)) as LevelNumber
   );
-  let selectedLevelStyle = $derived(
-    DIFFICULTY_LEVELS[selectedLevel] ?? DEFAULT_DIFFICULTY_STYLE
+  let levelCardLevel = $derived(
+    selectedLevel === 1
+      ? SharedDifficultyLevel.BEGINNER
+      : selectedLevel === 2
+        ? SharedDifficultyLevel.INTERMEDIATE
+        : SharedDifficultyLevel.ADVANCED
   );
   let allowedIntensityValues = $derived(
     currentLevel && loopParamProvider
@@ -312,6 +316,16 @@ Delegates ALL logic to services (SRP compliant)
   function handleLevelSelect(level: LevelNumber) {
     if (!loopParamProvider) return;
     handleLevelChange(loopParamProvider.numberToDifficulty(level));
+  }
+
+  function handleLevelCardChange(level: SharedDifficultyLevel) {
+    const levelNumber =
+      level === SharedDifficultyLevel.BEGINNER
+        ? 1
+        : level === SharedDifficultyLevel.INTERMEDIATE
+          ? 2
+          : 3;
+    handleLevelSelect(levelNumber);
   }
 
   // Event handlers - safe because we check loopParamProvider exists
@@ -574,85 +588,90 @@ Delegates ALL logic to services (SRP compliant)
 
 <div
   class="card-settings-container"
+  data-desktop-layout={isDesktopLayout}
   style="--header-font-size: {headerFontSize}"
 >
-  <div
-    class="level-toolbar"
-    data-level={selectedLevel}
-    style="--selected-level-bg: {selectedLevelStyle.cssBg};"
-  >
-    <span class="level-label">Level</span>
+  <div class="level-toolbar">
     <div class="level-selector-slot">
       <LevelSelector
         value={selectedLevel}
-        compact
         onchange={handleLevelSelect}
         ariaLabel="Generation difficulty level"
       />
     </div>
-    <span class="level-spacer" aria-hidden="true">Level</span>
   </div>
 
-  <div class="card-grid" data-level={selectedLevel}>
-    {#each cards as card (card.id)}
-      <div
-        class="card-wrapper"
-        data-card-id={card.id}
-        style:grid-column="span {card.gridColumnSpan}"
-        animate:flip={{ duration: 300, easing: quintOut }}
-      >
-        {#if card.id === "length"}
-          <LengthCard
-            {...card.props as ComponentProps<typeof LengthCard>}
-            color={cardColors.length.color}
-            shadowColor={cardColors.length.shadowColor}
-            onStepCapExceeded={() => {
-              showStepCapNudge = true;
-            }}
-          />
-        {:else if card.id === "word-input"}
-          <WordInputCard
-            {...card.props as ComponentProps<typeof WordInputCard>}
-            color={cardColors.mode.color}
-            shadowColor={cardColors.mode.shadowColor}
-            {isMobile}
-            onOpenOverlay={onOpenWordInput}
-          />
-        {:else if card.id === "grid-mode"}
-          <GridModeCard
-            {...card.props as ComponentProps<typeof GridModeCard>}
-            color={cardColors.gridMode.color}
-            shadowColor={cardColors.gridMode.shadowColor}
-          />
-        {:else if card.id === "turn-intensity"}
-          <!-- TurnIntensityCard declares shadowColor but no color prop. -->
-          <TurnIntensityCard
-            {...card.props as ComponentProps<typeof TurnIntensityCard>}
-            shadowColor={cardColors.turnIntensity.shadowColor}
-          />
-        {:else if card.id === "customize"}
-          <CustomizeCard
-            {...card.props as ComponentProps<typeof CustomizeCard>}
-            color={cardColors.customize.color}
-            shadowColor={cardColors.customize.shadowColor}
-          />
-        {:else if card.id === "loop"}
-          <ConsolidatedLOOPCard
-            {...card.props as ComponentProps<typeof ConsolidatedLOOPCard>}
-          />
-        {:else if card.id === "preset"}
-          <PresetCard
-            {...card.props as ComponentProps<typeof PresetCard>}
-            color={cardColors.favorite.color}
-            shadowColor={cardColors.favorite.shadowColor}
-          />
-        {:else if card.id === "generate-button"}
-          <GenerateButtonCard
-            {...card.props as ComponentProps<typeof GenerateButtonCard>}
-          />
-        {/if}
+  <div class="card-grid-stage">
+    <div class="card-grid" data-level={selectedLevel}>
+      <div class="compact-level-card" data-card-id="level">
+        <LevelCard
+          currentLevel={levelCardLevel}
+          onLevelChange={handleLevelCardChange}
+          gridColumnSpan={6}
+          {headerFontSize}
+        />
       </div>
-    {/each}
+
+      {#each cards as card (card.id)}
+        <div
+          class="card-wrapper"
+          data-card-id={card.id}
+          style:grid-column="span {card.gridColumnSpan}"
+          animate:flip={{ duration: 300, easing: quintOut }}
+        >
+          {#if card.id === "length"}
+            <LengthCard
+              {...card.props as ComponentProps<typeof LengthCard>}
+              color={cardColors.length.color}
+              shadowColor={cardColors.length.shadowColor}
+              onStepCapExceeded={() => {
+                showStepCapNudge = true;
+              }}
+            />
+          {:else if card.id === "word-input"}
+            <WordInputCard
+              {...card.props as ComponentProps<typeof WordInputCard>}
+              color={cardColors.mode.color}
+              shadowColor={cardColors.mode.shadowColor}
+              {isMobile}
+              onOpenOverlay={onOpenWordInput}
+            />
+          {:else if card.id === "grid-mode"}
+            <GridModeCard
+              {...card.props as ComponentProps<typeof GridModeCard>}
+              color={cardColors.gridMode.color}
+              shadowColor={cardColors.gridMode.shadowColor}
+            />
+          {:else if card.id === "turn-intensity"}
+            <!-- TurnIntensityCard declares shadowColor but no color prop. -->
+            <TurnIntensityCard
+              {...card.props as ComponentProps<typeof TurnIntensityCard>}
+              shadowColor={cardColors.turnIntensity.shadowColor}
+            />
+          {:else if card.id === "customize"}
+            <CustomizeCard
+              {...card.props as ComponentProps<typeof CustomizeCard>}
+              color={cardColors.customize.color}
+              shadowColor={cardColors.customize.shadowColor}
+            />
+          {:else if card.id === "loop"}
+            <ConsolidatedLOOPCard
+              {...card.props as ComponentProps<typeof ConsolidatedLOOPCard>}
+            />
+          {:else if card.id === "preset"}
+            <PresetCard
+              {...card.props as ComponentProps<typeof PresetCard>}
+              color={cardColors.favorite.color}
+              shadowColor={cardColors.favorite.shadowColor}
+            />
+          {:else if card.id === "generate-button"}
+            <GenerateButtonCard
+              {...card.props as ComponentProps<typeof GenerateButtonCard>}
+            />
+          {/if}
+        </div>
+      {/each}
+    </div>
   </div>
 
   <BaseModal
@@ -693,15 +712,12 @@ Delegates ALL logic to services (SRP compliant)
     display: flex;
     flex-direction: column;
 
-    /* Fill available space UP TO max dimensions - don't expand beyond sensible size */
+    /* The selector owns the same pinned header zone as Construct. The recipe
+       below gets its own centered stage, so changing tabs never moves Level. */
     flex: 1 1 auto;
     width: 100%;
-    /* Mobile: use full width; Desktop: constrain to 550px */
     max-width: 100%;
-    /* max-height applied conditionally below - not on mobile stacked layouts */
     margin: 0 auto; /* Center horizontally */
-    /* Mobile: minimal horizontal padding */
-    padding-inline: 0.25rem;
     align-self: stretch; /* Default: fill vertical space (mobile stacked) */
 
     /* Responsive gap - scales with respects device setting as max */
@@ -726,124 +742,147 @@ Delegates ALL logic to services (SRP compliant)
   }
 
   .level-toolbar {
-    position: relative;
-    isolation: isolate;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
     flex: 0 0 auto;
-    min-height: 56px;
-    padding: 6px 10px;
-    overflow: hidden;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-stroke-strong) 76%, transparent);
-    border-radius: 16px;
-    background:
-      linear-gradient(
-        135deg,
-        rgba(3, 7, 15, 0.78) 0%,
-        rgba(3, 7, 15, 0.58) 100%
-      ),
-      var(--selected-level-bg);
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.12),
-      0 1px 2px var(--theme-shadow),
-      0 4px 10px color-mix(in srgb, var(--theme-shadow) 58%, transparent),
-      inset 0 1px 0 var(--theme-stroke-strong);
-  }
-
-  .level-toolbar::after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0 0 42%;
-    border-radius: 16px 16px 0 0;
+    width: 100%;
+    padding: 12px 16px 14px;
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--theme-text) 16%, transparent),
-      transparent
+      rgba(255, 255, 255, 0.045) 0%,
+      rgba(255, 255, 255, 0) 100%
     );
-    pointer-events: none;
-  }
-
-  .level-label,
-  .level-spacer {
-    position: relative;
-    z-index: 1;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .level-spacer {
-    visibility: hidden;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .level-selector-slot {
-    position: relative;
-    z-index: 1;
-    grid-column: 2;
-    justify-self: center;
-    width: 100%;
-    max-width: 420px;
+    width: auto;
+    max-width: 100%;
     min-width: 0;
   }
 
-  .level-selector-slot :global(.level-selector) {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+  .compact-level-card {
+    display: none;
+  }
+
+  .card-grid-stage {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
     width: 100%;
+    min-height: 0;
+    padding-inline: var(--settings-panel-inline-inset, 0.25rem);
   }
 
-  .level-toolbar .level-selector-slot :global(.level-selector .lvl) {
-    width: 100%;
-    min-width: 0;
-    height: var(--min-touch-target, 44px);
-    padding: 0;
-    border-color: color-mix(
-      in srgb,
-      var(--lvl-accent) 34%,
-      var(--theme-stroke)
-    );
-    border-radius: 12px;
-    background:
-      linear-gradient(180deg, rgba(3, 7, 15, 0.68), rgba(3, 7, 15, 0.82)),
-      var(--lvl-bg);
-    box-shadow:
-      0 1px 2px var(--theme-shadow),
-      inset 0 1px 0 color-mix(in srgb, var(--theme-text) 10%, transparent);
-  }
+  /* This is the same full LevelSelector used by Construct whenever its names
+     fit. A wide screen can still leave Generate in a narrow split pane, so the
+     picker responds to this panel rather than the viewport. */
+  @container settings-grid (width < 630px) {
+    .level-toolbar {
+      display: none;
+    }
 
-  .level-toolbar
-    .level-selector-slot
-    :global(.level-selector .lvl:hover:not(.selected)) {
-    background:
-      linear-gradient(180deg, rgba(3, 7, 15, 0.52), rgba(3, 7, 15, 0.68)),
-      var(--lvl-bg);
-  }
+    .compact-level-card {
+      container: generate-card / size;
+      display: flex;
+      grid-column: 1 / -1;
+      min-width: 0;
+      min-height: 0;
+    }
 
-  .level-toolbar .level-selector-slot :global(.level-selector .lvl.selected) {
-    border-color: color-mix(in srgb, var(--lvl-accent) 82%, white 8%);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--theme-text) 12%, transparent),
-        rgba(0, 0, 0, 0.08)
-      ),
-      var(--lvl-bg);
-    box-shadow:
-      0 2px 6px var(--theme-shadow),
-      0 5px 16px -8px var(--lvl-accent),
-      inset 0 1px 0 color-mix(in srgb, var(--theme-text) 42%, transparent);
+    .compact-level-card > :global(*) {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    /* The shared landscape stepper normally has a taller card. Tighten only
+       its line boxes here so Level, the numeral, and the level name each own a
+       distinct band inside this intentionally shallow row. */
+    .compact-level-card :global(.card-header) {
+      padding-block: 1px;
+    }
+
+    .compact-level-card :global(.landscape-value),
+    .compact-level-card :global(.card-description) {
+      line-height: 1;
+    }
+
+    .card-grid {
+      --compact-level-row: clamp(60px, 10cqh, 68px);
+    }
+
+    .card-settings-container:not([data-desktop-layout="true"])
+      .card-grid[data-level="1"] {
+      grid-template-rows:
+        var(--compact-level-row)
+        repeat(3, minmax(0, 1fr));
+      grid-auto-rows: unset;
+    }
+
+    .card-settings-container:not([data-desktop-layout="true"])
+      .card-grid[data-level="2"],
+    .card-settings-container:not([data-desktop-layout="true"])
+      .card-grid[data-level="3"] {
+      grid-template-rows:
+        var(--compact-level-row)
+        repeat(4, minmax(0, 1fr));
+      grid-auto-rows: unset;
+    }
+
+    /* A side-by-side workspace is desktop even when its settings column is
+       narrow. Keep Construct's three explicit choices here, but stack each
+       badge over its name so the longest label gets honest room. */
+    .card-settings-container[data-desktop-layout="true"] .level-toolbar {
+      display: flex;
+      flex-basis: 64px;
+      min-height: 64px;
+    }
+
+    .card-settings-container[data-desktop-layout="true"] .compact-level-card {
+      display: none;
+    }
+
+    .card-settings-container[data-desktop-layout="true"] .level-selector-slot {
+      width: 100%;
+    }
+
+    .card-settings-container[data-desktop-layout="true"]
+      .level-selector-slot
+      :global(.level-selector) {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--settings-gap);
+      width: 100%;
+    }
+
+    .card-settings-container[data-desktop-layout="true"]
+      .level-selector-slot
+      :global(.level-selector .lvl) {
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      height: 60px;
+      padding: 3px 6px;
+    }
+
+    .card-settings-container[data-desktop-layout="true"]
+      .level-selector-slot
+      :global(.level-selector .name) {
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+      font-size: var(--font-size-compact, 12px);
+      line-height: 1.05;
+      text-align: center;
+      white-space: normal;
+    }
   }
 
   .card-grid {
     display: grid;
     flex: 1 1 auto;
+    width: 100%;
     min-height: 0;
     gap: var(--settings-gap);
 
@@ -871,14 +910,41 @@ Delegates ALL logic to services (SRP compliant)
 
   /* Level 2 and 3 add a fourth row. When the panel is shallow, the Grid /
      Turn Intensity row needs more room than the single-action Generate row. */
-  @container settings-grid (height < 560px) {
+  @container settings-grid (width >= 630px) and (height < 560px) {
     .card-grid[data-level="2"],
     .card-grid[data-level="3"] {
       grid-template-rows:
         minmax(0, 1fr)
         minmax(0, 1.15fr)
         minmax(0, 0.95fr)
-        minmax(52px, 0.72fr);
+        minmax(48px, 0.72fr);
+      grid-auto-rows: unset;
+    }
+  }
+
+  @container settings-grid (width < 630px) and (height < 560px) {
+    .card-settings-container:not([data-desktop-layout="true"])
+      .card-grid[data-level="2"],
+    .card-settings-container:not([data-desktop-layout="true"])
+      .card-grid[data-level="3"] {
+      grid-template-rows:
+        var(--compact-level-row)
+        minmax(0, 1fr)
+        minmax(0, 1.15fr)
+        minmax(0, 0.95fr)
+        minmax(48px, 0.72fr);
+      grid-auto-rows: unset;
+    }
+
+    .card-settings-container[data-desktop-layout="true"]
+      .card-grid[data-level="2"],
+    .card-settings-container[data-desktop-layout="true"]
+      .card-grid[data-level="3"] {
+      grid-template-rows:
+        minmax(0, 1fr)
+        minmax(0, 1.15fr)
+        minmax(0, 0.95fr)
+        minmax(48px, 0.72fr);
       grid-auto-rows: unset;
     }
   }
@@ -900,6 +966,29 @@ Delegates ALL logic to services (SRP compliant)
     }
   }
 
+  /* On short phones the sequence still owns the upper half of the composer,
+     leaving roughly 44–53px per settings row. Collapse the shared header's
+     padding instead of letting its title overlap the card's value. LOOP keeps
+     its readable label here; the accessible name still carries every detail. */
+  @container generate-card (height < 64px) {
+    .card-wrapper :global(.card-header) {
+      padding-block: 0;
+    }
+
+    .card-wrapper :global(.card-title) {
+      line-height: 1;
+    }
+
+    .card-wrapper[data-card-id="customize"] :global(.customize-card),
+    .card-wrapper[data-card-id="loop"] :global(.loop-consolidated-card) {
+      padding-block: 3px;
+    }
+
+    .card-wrapper[data-card-id="loop"] :global(.loop-icon-row) {
+      display: none;
+    }
+  }
+
   .card-wrapper > :global(*) {
     flex: 1;
     min-height: 0;
@@ -915,13 +1004,59 @@ Delegates ALL logic to services (SRP compliant)
    * to decide stacked vs side-by-side, not orientation.
    */
 
-  /* Desktop (side-by-side layout): constrain height and center */
+  /* Desktop mirrors Construct: controls stay pinned at the panel top while the
+     content gets a separately centered stage below them. */
   @media (min-width: 1024px) {
     .card-settings-container {
+      max-width: none;
+      max-height: none;
+      align-self: stretch;
+    }
+
+    .card-grid-stage {
+      align-items: center;
+    }
+
+    .card-grid {
+      flex: 0 1 auto;
+      height: 100%;
       max-width: min(750px, 95%);
-      max-height: min(65%, 750px);
-      padding-inline: 0; /* Remove mobile padding on desktop */
-      align-self: center; /* Center vertically when height is constrained */
+      max-height: calc(
+        var(--settings-generate-panel-max-height, min(65cqh, 750px)) - 48px -
+          var(--settings-gap)
+      );
+    }
+  }
+
+  /* Create is used natively on 4K displays and TVs. Past the shared 1680 seam,
+     grow the complete recipe rather than marooning a 750px phone-sized grid in
+     the middle of the settings half. The second tier also scales the selector
+     itself, whose fixed rem dimensions otherwise stay tiny across the room. */
+  @media (min-width: 1680px) {
+    .card-grid {
+      max-width: min(56rem, 95%);
+      max-height: calc(
+        var(--settings-generate-panel-max-height, min(70cqh, 56rem)) - 3.5rem -
+          var(--settings-gap)
+      );
+    }
+
+    .card-settings-container {
+      --card-text-size: clamp(24px, 1.5vw, 38px);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .card-grid {
+      max-width: min(74rem, 92%);
+      max-height: calc(
+        var(--settings-generate-panel-max-height, min(72cqh, 70rem)) - 4.5rem -
+          var(--settings-gap)
+      );
+    }
+
+    .card-settings-container {
+      --card-text-size: clamp(30px, 1.25vw, 48px);
     }
   }
 

@@ -23,8 +23,18 @@
     /** Optional per-lane, period-aligned "cell can't take effect" mask
      *  (reversals: beat isn't spinning). Lane order matches laneColors. */
     inertMask?: boolean[][];
+    /** Reflows the controls into horizontal rows when a wide, short drawer
+     *  provides less height than the standard stacked editor needs. */
+    fitAvailableHeight?: boolean;
   }
-  let { binding, sequenceLength, value, onChange, inertMask }: Props = $props();
+  let {
+    binding,
+    sequenceLength,
+    value,
+    onChange,
+    inertMask,
+    fitAvailableHeight = false,
+  }: Props = $props();
 
   const periods = $derived(divisorsUpTo(sequenceLength));
   const period = $derived(value[0]?.length ?? 1);
@@ -95,7 +105,11 @@
   );
 </script>
 
-<div class="pse">
+<div
+  class="pse"
+  class:fit-available-height={fitAvailableHeight}
+  class:single-lane={binding.lanes === 1}
+>
   <div class="axis">
     <div class="axis-row">
       <span class="axis-lbl">Length</span>
@@ -177,4 +191,111 @@
   .seg-wrap { width: max-content; max-width: 100%; }
   :global(.pse .seg-wrap .segmented-control) { width: max-content; }
   :global(.pse .seg-wrap .segment) { min-width: 56px; padding: 0 16px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* A foldable portrait drawer is wide enough for full controls but only about
+     half a screen tall. Keep every target at least 44px and use that width to
+     put each editing axis on one row, so Result and Apply stay visible. */
+  @container sequence-action-subview (min-width: 600px) and (max-height: 540px) {
+    .pse.fit-available-height {
+      gap: 4px;
+      margin: 0;
+    }
+
+    .pse.fit-available-height > .axis {
+      display: grid;
+      grid-template-columns: 4rem minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      margin: 0;
+    }
+
+    .pse.fit-available-height > .axis:first-child {
+      grid-template-columns: minmax(0, 1fr) max-content;
+    }
+
+    .pse.fit-available-height .axis-row {
+      margin: 0;
+    }
+
+    .pse.fit-available-height .axis > .axis-lbl {
+      margin: 0;
+    }
+
+    .pse.fit-available-height .chips {
+      flex-wrap: nowrap;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .pse.fit-available-height .chips :global(.filter-chip) {
+      min-width: 0;
+      padding: 6px 4px;
+      gap: 2px;
+    }
+
+    .pse.fit-available-height .amt-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .pse.fit-available-height.single-lane .amt-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pse.fit-available-height .amt-row {
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .pse.fit-available-height .amt-lane {
+      width: 2rem;
+      flex-basis: 2rem;
+    }
+
+    .pse.fit-available-height .seg-wrap :global(.segment) {
+      min-width: 42px;
+      padding-inline: 8px;
+      font-size: var(--font-size-sm, 14px);
+    }
+
+    .pse.fit-available-height .result {
+      margin: 0;
+    }
+
+    .pse.fit-available-height .result :global(.pbs) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pse.fit-available-height.single-lane .result :global(.pbs) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pse.fit-available-height .result :global(.pbs-lane) {
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .pse.fit-available-height .result :global(.pbs-label) {
+      width: 2rem;
+      flex-basis: 2rem;
+    }
+
+    .pse.fit-available-height .result :global(.pbs-steps) {
+      gap: 4px;
+    }
+
+    .pse.fit-available-height .result :global(.pbs-cell) {
+      height: var(--min-touch-target, 44px);
+      border-radius: 8px;
+    }
+
+    .pse.fit-available-height .result :global(.pbs-cell .v) {
+      font-size: var(--font-size-sm, 14px);
+    }
+  }
 </style>

@@ -47,7 +47,8 @@ function deriveLoopMinOverride(
  * Grid is 6 columns. Cards auto-wrap to new rows when a row fills up.
  *
  *   Row 1: Word(2) + Preset(2) + Length(2) = 6
- *   Level: shared selector in the fixed toolbar above this grid
+ *   Level: desktop selector above the grid; compact stepper is injected by
+ *          CardBasedSettingsContainer as its own shallow grid row
  *   Row 2 (beginner): GridMode(2) + Customize(2) + LOOP(2) = 6
  *   Row 2 (non-beginner): GridMode(3) + TurnIntensity(3) = 6
  *   Row 3 (beginner): Generate(6)

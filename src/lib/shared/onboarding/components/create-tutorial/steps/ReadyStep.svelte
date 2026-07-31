@@ -65,17 +65,18 @@
 
   const beatSteps = $derived<StepData[]>(
     createTutorialState.steps.map((step, i) =>
-      pictographDataToStepData(step, step.id ?? `tutorial-beat-${i}`),
-    ),
+      pictographDataToStepData(step, step.id ?? `tutorial-beat-${i}`)
+    )
   );
 
   const displayWord = $derived(
-    createTutorialState.steps.map((b) => b.letter ?? "").join(""),
+    createTutorialState.steps.map((b) => b.letter ?? "").join("")
   );
 
   // The diagram below is built entirely from the shared workspace button layout
   // (the same source ButtonPanel renders from), so it can never drift.
   const LAYOUT = [...WORKSPACE_BUTTON_LAYOUT].sort((a, b) => a.order - b.order);
+  const headerLeadingButtons = workspaceButtonsInZone("header-leading");
   const leftButtons = workspaceButtonsInZone("left");
   const centerButtons = workspaceButtonsInZone("center");
   const rightButtons = workspaceButtonsInZone("right");
@@ -111,6 +112,11 @@
   <div class="workspace-mockup desktop-only">
     <div class="workspace-panel">
       <div class="top-bar">
+        <div class="header-actions header-leading">
+          {#each headerLeadingButtons as entry (entry.id)}
+            {@render mockSpot(entry, "")}
+          {/each}
+        </div>
         <span class="word-label">{displayWord}</span>
         <div class="header-actions header-trailing">
           {#each headerTrailingButtons as entry (entry.id)}
@@ -122,10 +128,7 @@
       <div class="grid-area">
         {#if beatSteps.length > 0}
           {#await import("$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte") then mod}
-            <mod.default
-              steps={beatSteps}
-              startPosition={startPositionStep}
-            />
+            <mod.default steps={beatSteps} startPosition={startPositionStep} />
           {/await}
         {/if}
 
@@ -136,8 +139,8 @@
         </div>
       </div>
 
-      <!-- Mirrors the real ButtonPanel: [Undo, Clear] pinned left, Play
-           absolutely centered (can't drift), [Sequence Actions, Share] right. -->
+      <!-- Mirrors the real ButtonPanel: Clear pinned left, Play absolutely
+           centered (can't drift), [Sequence Actions, Share] right. -->
       <div class="button-bar">
         <div class="btn-group">
           {#each leftButtons as entry (entry.id)}
@@ -160,7 +163,9 @@
     <div class="legend-panel">
       {#each LAYOUT as entry (entry.id)}
         <div class="legend-item">
-          <span class="legend-badge {meta[entry.id].colorClass}">{entry.order}</span>
+          <span class="legend-badge {meta[entry.id].colorClass}"
+            >{entry.order}</span
+          >
           <div class="legend-text">
             <strong>{meta[entry.id].label}</strong>
             <span class="legend-desc">{meta[entry.id].description}</span>
@@ -184,9 +189,7 @@
             {@render glyph(entry.id, 15)}
           </span>
           <span class="accordion-label">{meta[entry.id].label}</span>
-          <i
-            class="fas fa-chevron-down accordion-chevron"
-            aria-hidden="true"
+          <i class="fas fa-chevron-down accordion-chevron" aria-hidden="true"
           ></i>
         </div>
         {#if expandedIndex === i}
@@ -257,7 +260,8 @@
   .workspace-panel {
     display: flex;
     flex-direction: column;
-    border: 1px solid color-mix(in srgb, var(--semantic-info, #38bdf8) 25%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-info, #38bdf8) 25%, transparent);
     border-radius: 12px;
     overflow: hidden;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
@@ -292,6 +296,10 @@
     grid-column: 3;
   }
 
+  .header-leading {
+    grid-column: 1;
+  }
+
   .grid-area {
     flex: 1;
     min-height: 0;
@@ -308,8 +316,13 @@
     align-items: center;
     gap: 8px;
     padding: 6px 14px;
-    background: color-mix(in srgb, var(--semantic-info, #38bdf8) 20%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-info, #38bdf8) 35%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-info, #38bdf8) 20%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-info, #38bdf8) 35%, transparent);
     border-radius: 20px;
     color: var(--semantic-info, #38bdf8);
     font-size: 0.8rem;
@@ -324,8 +337,13 @@
   }
 
   @keyframes tap-hint-pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .button-bar {
@@ -417,7 +435,11 @@
   }
 
   .mock-button.error {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 80%,
+      transparent
+    );
     border: 1px solid
       color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
@@ -435,21 +457,31 @@
   }
 
   @keyframes button-glow-accent {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 4px 12px
         color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 40%, transparent);
     }
     50% {
       box-shadow:
         0 4px 16px
-          color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 60%, transparent),
+          color-mix(
+            in srgb,
+            var(--theme-accent-strong, #8b5cf6) 60%,
+            transparent
+          ),
         0 0 28px
-          color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 35%, transparent);
+          color-mix(
+            in srgb,
+            var(--theme-accent-strong, #8b5cf6) 35%,
+            transparent
+          );
     }
   }
 
   @keyframes button-glow-success {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 4px 12px
         color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
     }
@@ -463,7 +495,8 @@
   }
 
   @keyframes button-glow-error {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 4px 12px
         color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
     }

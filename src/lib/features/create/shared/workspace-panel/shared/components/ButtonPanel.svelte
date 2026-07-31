@@ -5,7 +5,7 @@
   Pure orchestration component - composes individual button components.
 
   Layout:
-  - LEFT ZONE: Undo + Clear (corrective actions)
+  - LEFT ZONE: Clear (destructive action)
   - CENTER ZONE: Play
   - RIGHT ZONE: Sequence Actions + Share
 
@@ -21,17 +21,13 @@
   import { PresenceAnimation } from "../../../../../../shared/ui-animation/animations.svelte";
   import { getCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import ClearSequencePanelButton from "./buttons/ClearSequenceButton.svelte";
-  import UndoButton from "./buttons/UndoButton.svelte";
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
   import ShareButton from "./buttons/ShareButton.svelte";
   import { workspaceButtonsInZone } from "../workspace-button-layout";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
-  import {
-    logConstructFullPlay,
-    logConstructImmediateUndo,
-  } from "$lib/features/create/construct/services/construct-analytics";
+  import { logConstructFullPlay } from "$lib/features/create/construct/services/construct-analytics";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, constructTutorialState, panelState, layout } =
@@ -77,12 +73,6 @@
     constructTutorialState.isActive &&
       constructTutorialState.stage === "play-sequence"
   );
-
-  function handleUndoAction() {
-    if (isConstructTab) {
-      logConstructImmediateUndo();
-    }
-  }
 
   function handleFullSequencePlay() {
     onViewSequence?.();
@@ -135,19 +125,10 @@
       class:assemble-layout={isAssembleTab}
       transition:fade={{ duration: 200 }}
     >
-      <!-- LEFT ZONE: order/membership from the shared layout -->
+      <!-- LEFT ZONE: destructive document actions -->
       <div class="left-zone">
         {#each leftButtons as btn (btn.id)}
-          {#if btn.id === "undo"}
-            <div transition:presenceTransition>
-              <UndoButton {CreateModuleState} onAction={handleUndoAction} />
-            </div>
-            {#if isAssembleTab}
-              <div transition:presenceTransition>
-                <UndoButton {CreateModuleState} direction="redo" />
-              </div>
-            {/if}
-          {:else if btn.id === "clear" && canClearSequence && onClearSequence}
+          {#if btn.id === "clear" && canClearSequence && onClearSequence}
             <div transition:presenceTransition>
               <ClearSequencePanelButton onclick={onClearSequence} />
             </div>
@@ -231,7 +212,7 @@
     pointer-events: none;
   }
 
-  /* LEFT ZONE: Undo + Clear at left edge */
+  /* LEFT ZONE: Clear at the left edge */
   .left-zone {
     display: flex;
     align-items: center;

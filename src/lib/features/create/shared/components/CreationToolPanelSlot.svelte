@@ -20,7 +20,6 @@
   // are deferred via LazyMount — only the active build-mode tab's chunk loads.
   // Construct is the default tab so ConstructTabContent stays eager. This keeps
   // ~400 files out of the Create module's first-paint graph (see scripts/trace-create-three.cjs).
-  import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import {
     logConstructStartPositionCompleted,
     type StartPositionPath,
@@ -42,7 +41,6 @@
   // Derive values from context
   const isSideBySideLayout = () => layout.shouldUseSideBySideLayout;
   const isFilterPanelOpen = $derived(panelState.isFilterPanelOpen);
-  const showDesktopSidebar = $derived(desktopSidebarState.isVisible);
 
   // Derived state for which panel to show
   // Read directly from navigationState for proper reactivity
@@ -232,7 +230,7 @@
               active
               props={{
                 sequenceState: createModuleState.getActiveTabSequenceState(),
-                isDesktop: showDesktopSidebar,
+                isDesktop: isSideBySideLayout(),
               }}
             />
           {:else if activeToolPanel === "assemble"}

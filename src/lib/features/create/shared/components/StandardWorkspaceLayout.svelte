@@ -8,9 +8,9 @@
    * Domain: Create module - Layout
    */
 
-
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
+  import UndoButton from "../workspace-panel/shared/components/buttons/UndoButton.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   // CreationWorkspaceArea (85-file subtree) only renders once a sequence exists,
   // so its chunk is deferred via LazyMount — empty/first-paint Create loads skip it.
@@ -21,6 +21,8 @@
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
+  import { UndoOperationType } from "../services/undo-manager";
+  import { logConstructImmediateUndo } from "../../construct/services/construct-analytics";
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 
@@ -100,7 +102,8 @@
   // Assemble tab: collapse tool panel when sequence is complete
   const isAssembleComplete = $derived(
     navigationState.activeTab === "assemble" &&
-    CreateModuleState.assembleTabState?.assembleBuilderState?.phase === "complete"
+      CreateModuleState.assembleTabState?.assembleBuilderState?.phase ===
+        "complete"
   );
 
   // Fuse tab: hides workspace entirely (Fuse owns its own full-width layout)
@@ -110,6 +113,18 @@
   const shouldShowWorkspace = $derived(
     !isInputMode && !isFuseTab && (hasWorkspaceContent || isAssembleTab)
   );
+  const showClearRecovery = $derived(
+    !hasWorkspaceContent &&
+      CreateModuleState.sequenceState.currentSequence === null &&
+      CreateModuleState.undoController?.nextUndoEntry?.type ===
+        UndoOperationType.CLEAR_SEQUENCE
+  );
+
+  function handleWorkspaceUndo() {
+    if (navigationState.activeTab === "construct") {
+      logConstructImmediateUndo();
+    }
+  }
 
   // Color border based on active CREATE tab (for visual workspace distinction)
   const workspaceBorderColor = $derived.by(() => {
@@ -148,7 +163,6 @@
 
     return () => resizeObserver.disconnect();
   });
-
 </script>
 
 <div
@@ -165,6 +179,7 @@
     bind:this={workspaceContainerRef}
     class="workspace-container"
     class:workspace-collapsed={!shouldShowWorkspace}
+    class:assemble-workspace={isAssembleTab}
     style:--workspace-border-color={workspaceBorderColor}
   >
     <!-- Workspace Content Area -->
@@ -191,20 +206,29 @@
       {/if}
     </div>
 
+    {#if shouldShowWorkspace}
+      <div class="workspace-history-actions">
+        <UndoButton {CreateModuleState} onAction={handleWorkspaceUndo} />
+        {#if isAssembleTab}
+          <UndoButton {CreateModuleState} direction="redo" />
+        {/if}
+      </div>
+    {/if}
+
     <!-- Button Panel - Shows when workspace is visible -->
     {#if shouldShowWorkspace}
       <div class="button-panel-wrapper" bind:this={buttonPanelElement}>
-        <ButtonPanel
-          {onClearSequence}
-          {onViewSequence}
-        />
+        <ButtonPanel {onClearSequence} {onViewSequence} />
       </div>
     {/if}
 
     <!-- Build Another overlay - shown when assemble sequence is complete.
          Positioned above the ButtonPanel using its measured height. -->
     {#if isAssembleComplete}
-      <div class="build-another-overlay" style:bottom="{buttonPanelHeight + 16}px">
+      <div
+        class="build-another-overlay"
+        style:bottom="{buttonPanelHeight + 16}px"
+      >
         <button class="build-another-btn" onclick={onClearSequence}>
           <i class="fas fa-plus" aria-hidden="true"></i>
           <span>Build Another</span>
@@ -214,19 +238,34 @@
   </div>
 
   <!-- Tool Panel -->
-  <div class="tool-panel-container" bind:this={toolPanelElement}>
-    {#if !hasWorkspaceContent && isGeneratorTab}
-      <GenerateEmptyState />
+  <div
+    class="tool-panel-container"
+    class:has-clear-recovery={showClearRecovery}
+    bind:this={toolPanelElement}
+  >
+    {#if showClearRecovery}
+      <div class="clear-recovery-action">
+        <UndoButton {CreateModuleState} />
+      </div>
     {/if}
-    <CreationToolPanelSlot
-      bind:toolPanelRef
-      {onOptionSelected}
-      onPracticeStepIndexChange={(index) => {
-        panelState.setPracticeStepIndex(index);
-      }}
-      {onOpenFilters}
-      {onCloseFilters}
-    />
+
+    <div
+      class="tool-panel-content"
+      class:has-generate-empty={!hasWorkspaceContent && isGeneratorTab}
+    >
+      {#if !hasWorkspaceContent && isGeneratorTab}
+        <GenerateEmptyState />
+      {/if}
+      <CreationToolPanelSlot
+        bind:toolPanelRef
+        {onOptionSelected}
+        onPracticeStepIndexChange={(index) => {
+          panelState.setPracticeStepIndex(index);
+        }}
+        {onOpenFilters}
+        {onCloseFilters}
+      />
+    </div>
   </div>
 </div>
 
@@ -306,6 +345,22 @@
       border-color 300ms ease;
   }
 
+  .workspace-container.assemble-workspace {
+    --workspace-leading-actions-width: calc(
+      var(--min-touch-target, 44px) * 2 + var(--settings-spacing-sm, 8px)
+    );
+  }
+
+  .workspace-history-actions {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    z-index: 161;
+    display: flex;
+    gap: var(--settings-spacing-sm, 8px);
+    pointer-events: auto;
+  }
+
   /* Collapsed state - invisible but still in layout flow */
   .workspace-container.workspace-collapsed {
     opacity: 0;
@@ -359,6 +414,58 @@
     position: relative;
     container-type: size;
     container-name: tool-panel;
+    --settings-generate-panel-max-height: min(65cqh, 750px);
+    --settings-generate-panel-half-max-height: min(32.5cqh, 375px);
+  }
+
+  @media (min-width: 1680px) {
+    .tool-panel-container {
+      --settings-generate-panel-max-height: min(70cqh, 56rem);
+      --settings-generate-panel-half-max-height: min(35cqh, 28rem);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .tool-panel-container {
+      --settings-generate-panel-max-height: min(72cqh, 70rem);
+      --settings-generate-panel-half-max-height: min(36cqh, 35rem);
+    }
+  }
+
+  .tool-panel-container.has-clear-recovery {
+    --picker-leading-action-offset: calc(
+      var(--min-touch-target, 48px) + var(--settings-spacing-sm, 8px)
+    );
+  }
+
+  .tool-panel-content {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* On stacked empty Generate screens the hint owns real space above the
+     settings. The routed panel used to keep height: 100%, which added the
+     hint's height on top and pushed Generate underneath the mobile nav. */
+  .tool-panel-content.has-generate-empty {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tool-panel-content.has-generate-empty > :global(.tool-panel-wrapper) {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .clear-recovery-action {
+    position: absolute;
+    top: clamp(6px, 1.5cqh, 14px);
+    left: clamp(6px, 1.5cqw, 18px);
+    z-index: 160;
+    pointer-events: auto;
   }
 
   /* Short viewports on Generate tab: give the tool panel a bit more room
@@ -369,7 +476,6 @@
       grid-template-rows: 5fr 4fr;
     }
   }
-
 
   /* Build Another overlay - appears over workspace when assemble is complete */
   .build-another-overlay {
@@ -390,7 +496,11 @@
     padding: 12px 24px;
     border-radius: 14px;
     border: 1.5px solid var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-panel-bg, rgba(18, 18, 28, 0.98)));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
@@ -402,7 +512,11 @@
   }
 
   .build-another-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-panel-bg, rgba(18, 18, 28, 0.98)));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 30%,
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
   }
 
   .build-another-btn:focus-visible {

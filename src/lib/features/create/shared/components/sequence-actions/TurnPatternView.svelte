@@ -84,6 +84,7 @@
       sequenceLength={seqLen}
       value={strip}
       onChange={(v) => (strip = v)}
+      fitAvailableHeight
     />
     <button class="apply-btn turn" onclick={applyStrip} disabled={!sequence}>
       Apply to sequence
@@ -130,5 +131,25 @@
   .apply-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @container sequence-action-subview (min-width: 600px) and (max-height: 540px) {
+    .pattern-view-body {
+      padding: 6px 10px;
+    }
+
+    .pattern-view-inner {
+      height: 100%;
+      margin: 0 auto;
+      gap: 4px;
+      justify-content: safe center;
+    }
+
+    .apply-btn {
+      flex: 0 0 var(--min-touch-target, 44px);
+      min-height: var(--min-touch-target, 44px);
+      margin: 0;
+      border-radius: 10px;
+    }
   }
 </style>

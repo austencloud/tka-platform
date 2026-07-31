@@ -26,6 +26,7 @@
 
   interface Props {
     hasSequence: boolean;
+    fillAvailableHeight?: boolean;
     hasSelection: boolean;
     isTransforming: boolean;
     canExtend?: boolean;
@@ -52,6 +53,7 @@
 
   let {
     hasSequence,
+    fillAvailableHeight = false,
     hasSelection = false,
     isTransforming,
     canExtend = false,
@@ -153,7 +155,7 @@
   }
 </script>
 
-<div class="mobile-toolbar">
+<div class="mobile-toolbar" class:fill-available-height={fillAvailableHeight}>
   <!-- Segmented category tabs -->
   <div class="category-tabs" role="tablist" aria-label="Action categories">
     {#each categories as cat}
@@ -214,6 +216,23 @@
     gap: 6px;
     flex-shrink: 0;
     padding: 4px 8px 8px;
+  }
+
+  .mobile-toolbar.fill-available-height {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: min(100%, 40rem);
+    align-self: center;
+    justify-content: center;
+    container-type: size;
+  }
+
+  .mobile-toolbar.fill-available-height .action-grid {
+    grid-auto-rows: clamp(
+      calc(var(--min-touch-target) * 1.5),
+      18cqh,
+      calc(var(--min-touch-target) * 2)
+    );
   }
 
   /* Segmented category tabs */

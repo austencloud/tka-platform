@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
-import type { SequenceState } from "../../../state/sequence-state-orchestrator.svelte";
+  import type { SequenceState } from "../../../state/sequence-state-orchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
@@ -49,7 +49,6 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     /** Optional: When provided for spell tab, enables original vs bridge letter styling */
     letterSources?: LetterSource[] | null;
   }>();
-
 
   const logger = createComponentLogger("SequenceDisplay");
 
@@ -184,8 +183,8 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
 <div class="sequence-container">
   <div class="content-wrapper">
     <div class="label-and-beatframe-unit">
-      <!-- The leading header slot stays open for navigation. Save remains
-           beside the sequence name as the one document-level action. -->
+      <!-- The leading header track is occupied by the workspace-level history
+           action. Save remains opposite it so the sequence name stays centered. -->
       <div class="top-bar">
         <div class="word-label-area">
           <WordLabel
@@ -271,15 +270,15 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     transition: all var(--duration-emphasis) ease-out;
   }
 
-  /* The empty leading track reserves the familiar navigation slot and keeps
-     the word centered while Save occupies the trailing track. */
+  /* Equal action tracks keep the word centered while the workspace history
+     action and Save occupy the two stable document-level positions. */
   .top-bar {
     box-sizing: border-box;
     display: grid;
     grid-template-columns:
-      var(--min-touch-target, 44px)
+      var(--workspace-leading-actions-width, var(--min-touch-target, 44px))
       minmax(0, 1fr)
-      var(--min-touch-target, 44px);
+      var(--workspace-leading-actions-width, var(--min-touch-target, 44px));
     align-items: center;
     gap: var(--settings-spacing-sm, 8px);
     width: 100%;
@@ -303,6 +302,7 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     display: flex;
     align-items: center;
     justify-content: center;
+    justify-self: center;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
   }

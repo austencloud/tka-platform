@@ -23,6 +23,8 @@ export class ResponsiveLayoutManager {
   ) {}
 
   initialize(): void {
+    if (this.viewportUnsubscribe) return;
+
     // Subscribe to viewport changes and notify listeners
     this.viewportUnsubscribe = this.viewportService.onViewportChange(() => {
       this.notifyLayoutChange();
@@ -116,6 +118,10 @@ export class ResponsiveLayoutManager {
   }
 
   onLayoutChange(callback: (config: LayoutConfiguration) => void): () => void {
+    // Most feature consumers subscribe directly instead of going through
+    // Create's layout-effects wrapper. Start the shared viewport listener here
+    // so rotation and window resizing reach every subscriber.
+    this.initialize();
     this.layoutChangeCallbacks.add(callback);
 
     // Return unsubscribe function

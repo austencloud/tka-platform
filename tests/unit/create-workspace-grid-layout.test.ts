@@ -30,6 +30,13 @@ const sequenceDisplaySource = readFileSync(
   ),
   "utf8"
 );
+const standardWorkspaceSource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/features/create/shared/components/StandardWorkspaceLayout.svelte"
+  ),
+  "utf8"
+);
 const drawerLauncherSource = readFileSync(
   resolve(
     process.cwd(),
@@ -123,7 +130,10 @@ describe("Create workspace action rail contract", () => {
     expect(drawerLauncherSource).toContain("playOnOpen: true");
   });
 
-  it("keeps five mobile controls below a balanced workspace header", () => {
+  it("keeps recovery in the leading header and four controls below it", () => {
+    expect(
+      workspaceButtonsInZone("header-leading").map((button) => button.id)
+    ).toEqual(["undo"]);
     expect(workspaceButtonsInZone("right").map((button) => button.id)).toEqual([
       "sequence-actions",
       "share",
@@ -142,7 +152,11 @@ describe("Create workspace action rail contract", () => {
     );
     expect(buttonPanelSource).toContain("<SequenceActionsButton");
     expect(buttonPanelSource).toContain("<ShareButton");
+    expect(buttonPanelSource).not.toContain("<UndoButton");
     expect(buttonPanelSource).not.toContain("<SaveToLibraryButton");
+    expect(standardWorkspaceSource).toContain("<UndoButton");
+    expect(standardWorkspaceSource).toContain('direction="redo"');
+    expect(sequenceDisplaySource).not.toContain("<UndoButton");
     expect(sequenceDisplaySource).not.toContain("<SequenceActionsButton");
     expect(sequenceDisplaySource).toContain("<SaveToLibraryButton");
   });

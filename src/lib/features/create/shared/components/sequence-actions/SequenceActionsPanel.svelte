@@ -22,6 +22,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { UndoOperationType } from "../../services/undo-manager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
@@ -96,9 +97,17 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   const isMobileLayout = $derived(!isSideBySideLayout);
 
+  // Medium-width stacked windows have room to keep the sequence visible above
+  // the actions. Compact phones still use the full-screen editing surface.
+  const useWorkspaceContextLayout = $derived(
+    !isSideBySideLayout && viewportWidth >= BREAKPOINTS.PORTRAIT_MOBILE
+  );
+
   // Compact mode for mobile portrait - horizontal icon+text layout
   // Applies to most mobile widths, disabled at tablet/desktop widths
-  const useCompactMode = $derived(!isSideBySideLayout && viewportWidth < 600);
+  const useCompactMode = $derived(
+    !isSideBySideLayout && viewportWidth < BREAKPOINTS.PORTRAIT_MOBILE
+  );
 
   // Panel height for drawer content
   const panelHeight = $derived(
@@ -221,6 +230,22 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     if (!show) {
       hasRestoredSubDrawer = false;
     }
+  });
+
+  // The workspace controls intentionally float above ordinary drawers. In the
+  // context-preserving layout they are not relevant, so hide them while the
+  // lower actions surface is open and restore them on close or resize.
+  const workspaceContextBodyClass = "sequence-actions-workspace-context";
+  $effect(() => {
+    if (typeof document === "undefined") return;
+
+    if (isOpen && useWorkspaceContextLayout) {
+      document.body.classList.add(workspaceContextBodyClass);
+    } else {
+      document.body.classList.remove(workspaceContextBodyClass);
+    }
+
+    return () => document.body.classList.remove(workspaceContextBodyClass);
   });
 
   // Beat selection state (for displaying in beat grid)
@@ -710,7 +735,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   bind:isOpen
   panelName="sequence-actions"
   combinedPanelHeight={panelHeight}
-  fullHeightOnMobile={true}
+  fullHeightOnMobile={!useWorkspaceContextLayout}
   showHandle={true}
   closeOnBackdrop={true}
   focusTrap={false}
@@ -718,7 +743,11 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   ariaLabel="Sequence actions panel"
   onClose={handleClose}
 >
-  <div class="editor-panel" class:help-active={helpMode === "selecting"}>
+  <div
+    class="editor-panel"
+    class:help-active={helpMode === "selecting"}
+    class:workspace-context={useWorkspaceContextLayout}
+  >
     {#if subView}
       <!-- Inline drill-down: sub-view swaps the panel content in place -->
       <div class="view-layer" transition:sharedAxis|local={{ x: 30 }}>
@@ -835,7 +864,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     {/if}
 
     <!-- Beat grid display: shows on mobile, takes all available space -->
-    {#if hasSequence && isSideBySideLayout === false && sequence}
+    {#if hasSequence && isSideBySideLayout === false && sequence && !useWorkspaceContextLayout}
       <div class="step-grid-wrapper" class:dimmed={helpMode === "selecting"}>
         <StepGridSection
           steps={sequence.steps}
@@ -859,6 +888,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
       <!-- Mobile: compact toolbar with category tabs -->
       <MobileActionToolbar
         {hasSequence}
+        fillAvailableHeight={useWorkspaceContextLayout}
         {hasSelection}
         {isTransforming}
         {canExtend}
@@ -964,6 +994,13 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     position: relative;
   }
 
+  :global(body.sequence-actions-workspace-context .button-panel-wrapper),
+  :global(body.sequence-actions-workspace-context .workspace-history-actions) {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   /* Each navigation layer fills the panel and stacks, so the outgoing and
      incoming views overlap during the shared-axis transition (no reflow jump). */
   .view-layer {
@@ -1062,6 +1099,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    container: sequence-action-subview / size;
   }
 
   .header-actions {

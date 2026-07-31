@@ -21,6 +21,7 @@ Controls moved below the grid for better UX
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
   import BuildStartPosition from "./BuildStartPosition.svelte";
+  import GridModeToggle from "../../shared/components/GridModeToggle.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
   import {
@@ -178,18 +179,37 @@ Controls moved below the grid for better UX
       }
 
       // Restore per-hand orientation preferences (with legacy fallback)
-      const validOrientations = [Orientation.IN, Orientation.CLOCK, Orientation.OUT, Orientation.COUNTER] as string[];
+      const validOrientations = [
+        Orientation.IN,
+        Orientation.CLOCK,
+        Orientation.OUT,
+        Orientation.COUNTER,
+      ] as string[];
 
-      if (prefs.blueOrientation && validOrientations.includes(prefs.blueOrientation)) {
-        void pickerState.setBlueOrientation(prefs.blueOrientation as Orientation);
-      } else if (prefs.orientation && validOrientations.includes(prefs.orientation)) {
+      if (
+        prefs.blueOrientation &&
+        validOrientations.includes(prefs.blueOrientation)
+      ) {
+        void pickerState.setBlueOrientation(
+          prefs.blueOrientation as Orientation
+        );
+      } else if (
+        prefs.orientation &&
+        validOrientations.includes(prefs.orientation)
+      ) {
         // Legacy: single orientation applied to blue
         void pickerState.setBlueOrientation(prefs.orientation as Orientation);
       }
 
-      if (prefs.redOrientation && validOrientations.includes(prefs.redOrientation)) {
+      if (
+        prefs.redOrientation &&
+        validOrientations.includes(prefs.redOrientation)
+      ) {
         void pickerState.setRedOrientation(prefs.redOrientation as Orientation);
-      } else if (prefs.orientation && validOrientations.includes(prefs.orientation)) {
+      } else if (
+        prefs.orientation &&
+        validOrientations.includes(prefs.orientation)
+      ) {
         // Legacy: single orientation applied to red
         void pickerState.setRedOrientation(prefs.orientation as Orientation);
       }
@@ -235,10 +255,6 @@ Controls moved below the grid for better UX
   const viewModeLabel = $derived(
     showAdvancedPicker ? "Simple" : "All Variations"
   );
-  const gridModeLabel = $derived(
-    pickerState.currentGridMode === GridMode.DIAMOND ? "Box" : "Diamond"
-  );
-
   // Expose state for parent components
   export function isShowingAdvanced() {
     return showAdvancedPicker;
@@ -302,12 +318,9 @@ Controls moved below the grid for better UX
   }
 
   // Handle grid mode change
-  async function handleGridModeToggle() {
-    hapticService?.trigger("selection");
-    const newMode =
-      pickerState.currentGridMode === GridMode.DIAMOND
-        ? GridMode.BOX
-        : GridMode.DIAMOND;
+  async function handleGridModeChange(newMode: GridMode) {
+    if (pickerState.currentGridMode === newMode) return;
+
     await pickerState.loadPositions(newMode);
     await pickerState.loadAllVariations(newMode);
     persistPreferences();
@@ -373,6 +386,9 @@ Controls moved below the grid for better UX
             {initialRedLocation}
             onBlueOrientationChange={handleBlueOrientationChange}
             onRedOrientationChange={handleRedOrientationChange}
+            onGridModeChange={lockedGridMode === undefined
+              ? handleGridModeChange
+              : undefined}
             onApply={handlePositionSelect}
           />
         {:else if showAdvancedPicker}
@@ -403,9 +419,8 @@ Controls moved below the grid for better UX
   </div>
 
   <!-- Controls Footer - below grid (hidden when embedded, e.g. the create tutorial) -->
-  {#if !embedded}
-  <div class="controls-footer">
-    {#if pickerPath === "presets"}
+  {#if !embedded && pickerPath === "presets"}
+    <div class="controls-footer">
       <div class="orientation-controls">
         <OrientationCycler
           orientation={pickerState.blueOrientation}
@@ -419,10 +434,8 @@ Controls moved below the grid for better UX
           color="red"
         />
       </div>
-    {/if}
 
-    <div class="mode-controls">
-      {#if pickerPath === "presets"}
+      <div class="mode-controls">
         <button
           class="control-button"
           onclick={handleToggleView}
@@ -453,36 +466,15 @@ Controls moved below the grid for better UX
           </svg>
           <span class="control-label">{viewModeLabel}</span>
         </button>
-      {/if}
 
-      {#if lockedGridMode === undefined}
-        <button
-          class="control-button"
-          onclick={handleGridModeToggle}
-          aria-label={`Switch to ${gridModeLabel} grid`}
-        >
-        <svg
-          class="control-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          {#if pickerState.currentGridMode === GridMode.DIAMOND}
-            <!-- Box icon -->
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-          {:else}
-            <!-- Diamond icon -->
-            <polygon points="12 2 22 12 12 22 2 12" />
-          {/if}
-        </svg>
-          <span class="control-label">{gridModeLabel}</span>
-        </button>
-      {/if}
+        {#if lockedGridMode === undefined}
+          <GridModeToggle
+            currentGridMode={pickerState.currentGridMode}
+            onGridModeChange={handleGridModeChange}
+          />
+        {/if}
+      </div>
     </div>
-  </div>
   {/if}
 </div>
 
@@ -505,7 +497,8 @@ Controls moved below the grid for better UX
        grid container and flips PictographGrid's aspect-ratio rule from column
        to row on tall screens (Fold). */
     margin: 0;
-    padding: clamp(20px, 9vh, 80px) 1rem 0;
+    padding: clamp(20px, 9vh, 80px)
+      calc(1rem + var(--picker-leading-action-offset, 0px)) 0;
     /* Match the Generate tab hint exactly: Playfair serif, soft shadow, one line.
        cqi tracks .start-pos-picker's width (container-type: inline-size) so the
        line scales to fit and never wraps. */
@@ -545,23 +538,24 @@ Controls moved below the grid for better UX
   @media (max-height: 620px) and (min-width: 60rem) {
     .start-pos-picker.build-path {
       display: grid;
-      /* The right column is bounded so the left stays above the builder's own
-         31rem row-mode threshold — that inner rule is what puts the orientation
-         controls beside the board rather than under it. */
-      grid-template-columns: minmax(0, 1fr) clamp(14rem, 22vw, 32rem);
+      /* Title and method share one compact header row. The builder then owns the
+         full width below it, rather than being squeezed beside a mostly empty
+         header column. */
+      grid-template-columns: minmax(0, 1fr) clamp(18rem, 38vw, 32rem);
       grid-template-areas:
-        "view hint"
-        "view sel"
-        "view footer";
-      grid-template-rows: auto auto 1fr;
+        "hint sel"
+        "view view";
+      grid-template-rows: auto minmax(0, 1fr);
       column-gap: clamp(12px, 2vw, 48px);
+      row-gap: 6px;
       padding: 8px 12px;
       box-sizing: border-box;
     }
 
     .start-pos-picker.build-path .workspace-hint {
       grid-area: hint;
-      padding: 0;
+      align-self: center;
+      padding: 0 0 0 var(--picker-leading-action-offset, 0px);
       /* The nowrap that keeps this on one line across the full width would
          overflow a 17rem column. */
       white-space: normal;
@@ -572,24 +566,14 @@ Controls moved below the grid for better UX
     .start-pos-picker.build-path .path-selector {
       grid-area: sel;
       width: 100%;
-      margin: 8px 0 0;
+      height: fit-content;
+      margin: 0;
+      align-self: center;
     }
 
     .start-pos-picker.build-path .picker-view {
       grid-area: view;
       align-self: stretch;
-    }
-
-    .start-pos-picker.build-path .controls-footer {
-      grid-area: footer;
-      align-self: start;
-      flex-direction: column;
-      max-width: none;
-      padding: 8px 0 0;
-    }
-
-    .start-pos-picker.build-path .mode-controls {
-      width: 100%;
     }
   }
 
@@ -607,13 +591,12 @@ Controls moved below the grid for better UX
     }
   }
 
-  .start-pos-picker.build-path .controls-footer {
-    padding-block: 8px;
-  }
-
   .path-selector {
     flex-shrink: 0;
-    width: min(calc(100% - 24px), 360px);
+    width: min(
+      calc(100% - 24px - var(--picker-leading-action-offset, 0px)),
+      360px
+    );
     margin: 10px auto 4px;
   }
 
@@ -705,6 +688,12 @@ Controls moved below the grid for better UX
   /* Make orientation cyclers stretch to fill their row equally */
   .orientation-controls :global(.orientation-cycler) {
     flex: 1;
+  }
+
+  .mode-controls :global(.grid-mode-toggle) {
+    flex: 1;
+    min-width: 0;
+    border-radius: 12px;
   }
 
   .control-button {
@@ -849,6 +838,11 @@ Controls moved below the grid for better UX
 
   /* Narrow container: compact buttons but keep labels */
   @container (max-width: 500px) {
+    .path-selector {
+      margin-right: 12px;
+      margin-left: calc(12px + var(--picker-leading-action-offset, 0px));
+    }
+
     .control-button {
       padding: 8px 12px;
     }

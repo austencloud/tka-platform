@@ -80,9 +80,7 @@
         </div>
       </div>
     {:else}
-      <p class="workspace-hint">
-        Tap Generate to create your sequence
-      </p>
+      <p class="workspace-hint">Tap Generate to create your sequence</p>
     {/if}
   </Crossfade>
 </div>
@@ -97,6 +95,24 @@
     justify-items: center;
     margin-top: clamp(2.5rem, 11vmin, 6.5rem);
     padding: 0 1rem;
+  }
+
+  /* Keep the hint above the centered settings without putting it back in flow.
+     Both elements inherit the same max-height contract from their common panel,
+     so the 1680 and 2600 scale tiers cannot drift into an overlap. */
+  @media (min-width: 1024px) {
+    .empty-state {
+      position: absolute;
+      z-index: 1;
+      right: 0;
+      bottom: calc(
+        50cqh +
+          var(--settings-generate-panel-half-max-height, min(32.5cqh, 375px)) +
+          clamp(32px, 4cqh, 48px)
+      );
+      left: 0;
+      margin-top: 0;
+    }
   }
 
   /* Hint — preserved verbatim from StandardWorkspaceLayout so the non-first-run
@@ -150,5 +166,17 @@
     margin-top: 10px;
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  @media (min-width: 1680px) {
+    .workspace-hint {
+      font-size: clamp(2rem, 1.5vw, 2.5rem);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .workspace-hint {
+      font-size: clamp(2.5rem, 1.25vw, 3.5rem);
+    }
   }
 </style>

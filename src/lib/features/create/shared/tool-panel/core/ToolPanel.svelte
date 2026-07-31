@@ -295,7 +295,10 @@
               />
             {/if}
           {:else if activeToolPanel === "generate"}
-            <GeneratePanel sequenceState={createModuleState.sequenceState} />
+            <GeneratePanel
+              sequenceState={createModuleState.sequenceState}
+              isDesktop={isSideBySideLayout()}
+            />
           {/if}
         </div>
       </Crossfade>

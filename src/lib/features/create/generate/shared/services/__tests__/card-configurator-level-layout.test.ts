@@ -37,7 +37,7 @@ function descriptor(
 }
 
 describe("Generate card layout by level", () => {
-  it("keeps Level out of the card grid and balances the three Level 1 settings", () => {
+  it("keeps Level out of the descriptor list and balances the three Level 1 settings", () => {
     const cards = buildCardDescriptors(
       makeConfig(1),
       DifficultyLevel.BEGINNER,

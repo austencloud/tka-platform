@@ -67,8 +67,7 @@
 
     if (direction === "redo") return "Redo Last Action";
 
-    const lastEntry =
-      CreateModuleState.undoHistory[CreateModuleState.undoHistory.length - 1];
+    const lastEntry = CreateModuleState.undoController?.nextUndoEntry ?? null;
     if (lastEntry?.metadata?.description) {
       return `Undo ${lastEntry.metadata.description}`;
     }
@@ -91,8 +90,7 @@
 
     if (direction === "redo") return "Redo last action";
 
-    const lastEntry =
-      CreateModuleState.undoHistory[CreateModuleState.undoHistory.length - 1];
+    const lastEntry = CreateModuleState.undoController?.nextUndoEntry ?? null;
     if (lastEntry?.metadata?.description) {
       return `Undo: ${lastEntry.metadata.description}`;
     }
@@ -134,7 +132,11 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all
+      var(
+        --transition-normal,
+        var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1)
+      );
     font-size: var(--font-size-lg);
     color: var(--theme-text);
 

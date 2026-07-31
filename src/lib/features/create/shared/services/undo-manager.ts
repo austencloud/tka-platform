@@ -295,9 +295,7 @@ export class UndoManager {
    * Check if there are undoable entries for a specific tab
    */
   canUndoForSection(activeSection: string): boolean {
-    return this._undoHistory.some(
-      (e) => e.beforeState.activeSection === activeSection
-    );
+    return this.getLastUndoEntry(activeSection) !== null;
   }
 
   /**
@@ -369,26 +367,34 @@ export class UndoManager {
   }
 
   /**
-   * Get description of last undoable action.
-   * If activeSection is provided, returns description of the last entry from that tab.
+   * Get the entry that Undo would restore next.
+   * If activeSection is provided, entries from other Create tabs are skipped.
    */
-  getLastUndoDescription(activeSection?: string | null): string | null {
+  getLastUndoEntry(activeSection?: string | null): UndoHistoryEntry | null {
     if (!this.canUndo) {
       return null;
     }
 
-    let lastEntry;
-    if (activeSection) {
-      for (let i = this._undoHistory.length - 1; i >= 0; i--) {
-        if (this._undoHistory[i]!.beforeState.activeSection === activeSection) {
-          lastEntry = this._undoHistory[i];
-          break;
-        }
-      }
-    } else {
-      lastEntry = this._undoHistory[this._undoHistory.length - 1];
+    if (!activeSection) {
+      return this._undoHistory[this._undoHistory.length - 1] ?? null;
     }
 
+    for (let i = this._undoHistory.length - 1; i >= 0; i--) {
+      const entry = this._undoHistory[i];
+      if (entry?.beforeState.activeSection === activeSection) {
+        return entry;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get description of last undoable action.
+   * If activeSection is provided, returns description of the last entry from that tab.
+   */
+  getLastUndoDescription(activeSection?: string | null): string | null {
+    const lastEntry = this.getLastUndoEntry(activeSection);
     if (!lastEntry) {
       return null;
     }

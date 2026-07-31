@@ -16,6 +16,7 @@
     type Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import GridModeToggle from "../../shared/components/GridModeToggle.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import { getStartPositionDisplayLabel } from "../services/start-position-display-label";
 
@@ -30,6 +31,7 @@
     showCenter = false,
     onBlueOrientationChange,
     onRedOrientationChange,
+    onGridModeChange,
     onApply,
     onApplyPlacement,
   } = $props<{
@@ -43,6 +45,7 @@
     showCenter?: boolean;
     onBlueOrientationChange: (orientation: Orientation) => void | Promise<void>;
     onRedOrientationChange: (orientation: Orientation) => void | Promise<void>;
+    onGridModeChange?: (gridMode: GridMode) => void | Promise<void>;
     onApply?: (position: PictographData) => void | Promise<void>;
     onApplyPlacement?: (
       placement: StartPositionPlacement
@@ -62,7 +65,7 @@
   let builderWidth = $state(0);
   let builderHeight = $state(0);
   const isRowLayout = $derived(
-    builderWidth >= 496 &&
+    builderWidth >= 600 &&
       builderHeight > 0 &&
       builderWidth / builderHeight >= 1.25
   );
@@ -251,11 +254,21 @@
         />
       </div>
 
+      {#if onGridModeChange}
+        <div class="grid-mode-control">
+          <GridModeToggle
+            currentGridMode={gridMode}
+            onGridModeChange={(mode) => void onGridModeChange(mode)}
+          />
+        </div>
+      {/if}
+
       <!-- The button names what it will do. A separate "You built α1" caption said
          the same thing one row higher, and that row cost the board more height
          than the sentence was worth on a phone. -->
       <button
         class="apply-button"
+        class:full-width={!onGridModeChange}
         disabled={!canApply || isApplying}
         onclick={handleApply}
       >
@@ -271,10 +284,11 @@
 
 <style>
   .position-builder {
+    --builder-support-width: clamp(15rem, 28cqw, 24rem);
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 8px clamp(12px, 3vmin, 28px);
+    padding: 8px 12px;
     box-sizing: border-box;
     container-type: size;
   }
@@ -304,12 +318,28 @@
   }
 
   .builder-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+    /* The stacked board is height-bound on short screens. Keeping its controls
+       on the same rail stops two short labels from stretching across empty
+       space and makes the board read as the primary target. */
+    width: min(100%, 22.5rem);
     flex-shrink: 0;
+  }
+
+  .orientation-controls {
+    grid-column: 1 / -1;
+  }
+
+  .grid-mode-control,
+  .apply-button {
+    min-width: 0;
+  }
+
+  .apply-button.full-width {
+    grid-column: 1 / -1;
   }
 
   /* Wide AND genuinely short — the composer's embedded pane, a Fold in
@@ -326,11 +356,10 @@
      it. A square board can only ever spend height, so on any wide host the
      width belongs to the controls.
 
-     31rem, not 34: a size container reports its CONTENT box, so this element's
-     own horizontal padding comes off the number the query sees. At 34rem the
-     picker's two-column mode handed the builder a 559px column and the rule
-     still missed by 9px, which left the board stacked and tiny. */
-  @container (min-aspect-ratio: 5 / 4) and (min-width: 31rem) {
+     The script sees the padded 600px client box. A size query sees the content
+     box, which is exactly 24px narrower here, so 36rem is the matching CSS-side
+     threshold. Below that, the board and control card stay stacked. */
+  @container (min-aspect-ratio: 5 / 4) and (min-width: 36rem) {
     .builder-layout {
       flex-direction: row;
       align-items: stretch;
@@ -343,23 +372,33 @@
        board; left to flex it claimed the whole row and stranded the controls at
        the far edge with a canyon between them. */
     .placement-area {
-      flex: 0 0 auto;
-      width: min(100%, 100cqh);
-      min-width: 0;
+      flex: 1 1 24rem;
+      width: auto;
+      max-width: 100cqh;
+      min-width: 15rem;
       height: 100%;
     }
 
     .builder-controls {
-      flex: 0 1 clamp(13rem, 38cqw, 24rem);
-      justify-content: center;
-      min-width: 0;
-    }
-
-    /* Side by side, the two cyclers split a ~200px column and the arrows crowd
-       the word between them. The column has height to spare, so they stack. */
-    .orientation-controls {
+      flex: 0 1 var(--builder-support-width);
+      display: flex;
       flex-direction: column;
-      width: 100%;
+      align-items: stretch;
+      align-self: center;
+      gap: 10px;
+      width: auto;
+      min-width: 15rem;
+      padding: clamp(14px, 2.25cqw, 28px);
+      box-sizing: border-box;
+      border: 1.5px solid var(--theme-stroke);
+      border-radius: 18px;
+      background: color-mix(
+        in srgb,
+        var(--theme-panel-bg, rgba(18, 18, 28, 0.98)) 94%,
+        transparent
+      );
+      box-shadow: 0 12px 32px
+        color-mix(in srgb, var(--theme-shadow, black) 44%, transparent);
     }
 
     /* The prompt sits in the narrow left column here, where it wrapped to two
@@ -394,7 +433,7 @@
   }
 
   .apply-button {
-    width: min(100%, 360px);
+    width: 100%;
     min-height: var(--min-touch-target, 48px);
     padding: 10px 18px;
     border: 1.5px solid
@@ -411,7 +450,7 @@
     display: flex;
     align-items: stretch;
     gap: 8px;
-    width: min(100%, 360px);
+    width: 100%;
   }
 
   /* Reserved whether or not it currently holds buttons, so the controls below
@@ -419,7 +458,7 @@
   .move-controls {
     display: flex;
     gap: 8px;
-    width: min(100%, 360px);
+    width: 100%;
     min-height: var(--min-touch-target, 48px);
     /* Its own size container, so the buttons inside can be asked how much room
        the ROW has. Safe to contain here: this row only renders in the two-column
@@ -550,6 +589,16 @@
     flex: 1;
   }
 
+  .grid-mode-control {
+    display: flex;
+    width: 100%;
+  }
+
+  .grid-mode-control :global(.grid-mode-toggle) {
+    width: 100%;
+    border-radius: 12px;
+  }
+
   .apply-button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
@@ -564,7 +613,7 @@
      grow with the shell instead of staying phone-sized on a 4K display. */
   @media (min-width: 1680px) {
     .position-builder {
-      gap: 1rem;
+      --builder-support-width: clamp(20rem, 30cqw, 34rem);
       /* The shared content band. Left to span a 4K display the board and its
          controls drift to opposite edges with a canyon between them; centred in
          the band they read as one composed pair. */
@@ -572,17 +621,15 @@
       margin-inline: auto;
     }
 
-    .builder-controls {
-      flex-basis: clamp(20rem, 30cqw, 34rem);
-    }
-
     /* One width for the whole column. The move row used to take the full 100%
        while its two neighbours capped at 32rem, so at 2560 it stuck out 32px
        past the button below it. */
     .move-controls,
     .apply-button,
-    .orientation-controls {
+    .orientation-controls,
+    .grid-mode-control {
       width: min(100%, 32rem);
+      align-self: center;
     }
 
     .apply-button {
@@ -605,6 +652,10 @@
   }
 
   @media (min-width: 2600px) {
+    .position-builder {
+      --builder-support-width: clamp(28rem, 24cqw, 44rem);
+    }
+
     /* A square board can always spend more height than anyone needs. Past this
        it stops being a better target and becomes a bigger black field, and it
        starves the controls beside it. Bounded to the viewport's short side so
@@ -616,7 +667,8 @@
 
     .move-controls,
     .apply-button,
-    .orientation-controls {
+    .orientation-controls,
+    .grid-mode-control {
       width: min(100%, 44rem);
     }
 

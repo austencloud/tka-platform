@@ -191,6 +191,53 @@
     outline-offset: 2px;
   }
 
+  /* Construct and Generate share this control, including its big-screen scale.
+     Keeping the ramp here prevents either route from growing a private version
+     that jumps in size when the user switches tabs. */
+  @media (min-width: 1680px) {
+    .level-selector {
+      gap: 0.75rem;
+    }
+
+    .lvl {
+      width: 14rem;
+      height: 3.5rem;
+    }
+
+    .numeral {
+      width: 2.1rem;
+      height: 2.1rem;
+      font-size: 1.2rem;
+    }
+
+    .name {
+      font-size: 0.92rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .level-selector {
+      gap: 1rem;
+    }
+
+    .lvl {
+      width: 18rem;
+      height: 4.5rem;
+      gap: 0.8rem;
+      border-radius: 16px;
+    }
+
+    .numeral {
+      width: 2.75rem;
+      height: 2.75rem;
+      font-size: 1.55rem;
+    }
+
+    .name {
+      font-size: 1.15rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .lvl,
     .numeral,

@@ -293,6 +293,12 @@ export function createUndoController({
     get redoHistory() {
       return historySuspended ? [] : UndoManager.redoHistory;
     },
+    get nextUndoEntry() {
+      void undoChangeCounter;
+      return historySuspended
+        ? null
+        : UndoManager.getLastUndoEntry(getActiveSection());
+    },
     getTimeline() {
       void undoChangeCounter;
       return historySuspended ? [] : UndoManager.getTimeline();

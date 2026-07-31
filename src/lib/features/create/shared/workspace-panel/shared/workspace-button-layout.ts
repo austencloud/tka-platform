@@ -22,12 +22,13 @@ export type WorkspaceButtonId =
   | "step-editor";
 
 /**
- * Zones map to the real workspace layout. `header-trailing` holds Save beside
- * the centered word. The leading header slot is deliberately reserved for
- * navigation. `grid` is NOT a real button — the user taps a step in the grid
- * to edit it; it exists only so the tutorial can label that affordance.
+ * Zones map to the real workspace layout. Undo occupies the familiar leading
+ * navigation position, while `header-trailing` holds Save beside the centered
+ * word. `grid` is NOT a real button — the user taps a step in the grid to edit
+ * it; it exists only so the tutorial can label that affordance.
  */
 export type WorkspaceButtonZone =
+  | "header-leading"
   | "header-trailing"
   | "left"
   | "center"
@@ -43,7 +44,7 @@ export interface WorkspaceButtonLayoutEntry {
 
 /** THE source of truth. Order = left-to-right reading order across the panel. */
 export const WORKSPACE_BUTTON_LAYOUT: WorkspaceButtonLayoutEntry[] = [
-  { id: "undo", zone: "left", order: 1 },
+  { id: "undo", zone: "header-leading", order: 1 },
   { id: "clear", zone: "left", order: 2 },
   { id: "view", zone: "center", order: 3 },
   { id: "sequence-actions", zone: "right", order: 4 },
