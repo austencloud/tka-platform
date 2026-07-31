@@ -22,6 +22,7 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import { engineAlignScale } from "$lib/shared/mandala/services/engine-align";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
   import type { LiveSlots, Medium } from "./live-slots.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -140,12 +141,12 @@
    * standalone collection tiles below simply don't pass them, so they keep the
    * standard. Two contexts, two correct answers, no migration.
    */
-  const seqPropTypes = $derived.by(() => {
-    const intent = (sequence as Record<string, any> | null)?.creatorIntent?.propConfig;
-    return {
-      blue: (intent?.bluePropType as string | undefined) ?? "staff",
-      red: (intent?.redPropType as string | undefined) ?? "staff",
-    };
+  // Both halves of the composite use the same reactive prop pair. The player
+  // used to inherit the selected props while the mandala floor defaulted to a
+  // saved intent or staff, so clubs could animate over a two-ended staff path.
+  const seqPropTypes = $derived({
+    blue: settingsService.settings.bluePropType ?? "staff",
+    red: settingsService.settings.redPropType ?? "staff",
   });
 
   /** Outermost tip distance for a prop, in the engine's prop-local units. */
@@ -281,6 +282,8 @@
                 active
                 props={{
                   sequence,
+                  bluePropType: seqPropTypes.blue,
+                  redPropType: seqPropTypes.red,
                   autoPlay: true,
                   showControls: false,
                   chrome: "minimal",
