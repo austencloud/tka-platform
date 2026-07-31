@@ -10,9 +10,15 @@ import type { SequenceStep } from "../../../src/core/types/sequence-engine-types
 function step(n: number, letter: string, sp: string, ep: string, blue: any, red: any): SequenceStep {
   return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { blue, red } } as unknown as SequenceStep;
 }
-const m = (motionType: string, rotationDirection: string, startLocation: string, endLocation: string) => ({
+const m = (
+  motionType: string,
+  rotationDirection: string,
+  startLocation: string,
+  endLocation: string,
+  turns = 0,
+) => ({
   motionType, rotationDirection, startLocation, endLocation,
-  startOrientation: "in", endOrientation: "in", turns: 0, color: "blue",
+  startOrientation: "in", endOrientation: "in", turns, color: "blue",
 });
 
 // Deviation from the plan's literal seed: the plan's makeSeed() ends at
@@ -73,6 +79,38 @@ describe("overlay inversion", () => {
       expect(overlaid[i]!.motions.blue.startOrientation).toBe(overlaid[i - 1]!.motions.blue.endOrientation);
       expect(overlaid[i]!.motions.red.startOrientation).toBe(overlaid[i - 1]!.motions.red.endOrientation);
     }
+  });
+
+  it("inverts the swapped source hand's rotating dash", () => {
+    const dashSeed = [
+      step(
+        0,
+        "",
+        "alpha1",
+        "alpha1",
+        m("static", "noRotation", "s", "s"),
+        m("static", "noRotation", "n", "n"),
+      ),
+      step(
+        1,
+        "Φ-",
+        "alpha1",
+        "alpha5",
+        m("dash", "noRotation", "s", "n"),
+        m("dash", "cw", "n", "s", 0.5),
+      ),
+    ];
+
+    const overlaid = executeSymmetricSpec(dashSeed, spec([
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.SWAPPED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 2, mode: "overlay" }],
+    ]));
+
+    const transformedBlue = overlaid[2]!.motions.blue;
+    expect(transformedBlue.motionType).toBe("dash");
+    expect(transformedBlue.turns).toBe(0.5);
+    expect(transformedBlue.rotationDirection).toBe("cw");
   });
 
   it("throws when letter count is not divisible by the overlay period", () => {

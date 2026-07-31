@@ -2,8 +2,8 @@
  * Overlay inversion — applies INVERTED in place over a completed sequence.
  *
  * Partition the letter steps into `period` equal blocks; on odd blocks flip
- * motionType pro<->anti and rotationDirection cw<->ccw (dash/static motions
- * are untouched by construction — their rotationDirection stays put too).
+ * motionType pro<->anti and rotationDirection cw<->ccw. Dash and static
+ * motions keep their motionType, but any active prop rotation still flips.
  * Hand locations are never touched, so positions and closure are preserved.
  * The orientation chain is recomputed forward from the start position.
  * Letters are NOT re-derived here — callers (SequenceBuilder) own letter
@@ -28,7 +28,6 @@ function flipRot(rotationDirection: string): string {
 }
 
 function invertMotion(motion: MotionData): MotionData {
-  if (motion.motionType !== "pro" && motion.motionType !== "anti") return motion;
   return {
     ...motion,
     motionType: invertType(motion.motionType) as MotionData["motionType"],
