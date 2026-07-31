@@ -914,8 +914,23 @@
   -->
   <div class="landing qft-app" transition:fade={{ duration: DURATION.normal }}>
     <div class="landing-card">
-      <h1>Quarters for Transitions</h1>
-      <p class="landing-attribution">Charlie Cushing · 2011</p>
+      <!--
+        "QfT Notation", not "Quantized Field Theory", as the title.
+
+        The expansion is real and sourced, but it names Charlie's broader
+        concept; the notation is one application of it, in Drex's words —
+        "Charlie's Quantized Field Theory for poi and one of its applications:
+        notation for props". Titling the page with the theory would claim more
+        than it delivers. The expansion goes on the line under it, which is
+        where a first-time reader needs it and where it stays accurate.
+
+        Source: docs/reference/archive/qft-notation/README.md, "Catalog
+        corrections this archive forces" §1.
+      -->
+      <h1>QfT Notation</h1>
+      <p class="landing-attribution">
+        Quantized Field Theory · Charlie Cushing, 2011
+      </p>
       <p class="landing-lede">
         Two flowers, spun together, draw a mandala. This reads them as poi
         notation.
@@ -985,7 +1000,7 @@
     <div class="brand">
       <span class="wordmark">
         <span class="wordmark-name">
-          <span class="name-full">Quarters for Transitions</span>
+          <span class="name-full">QfT Notation</span>
           <span class="name-short">QfT</span>
         </span>
         <span class="wordmark-sub">Cushing · 2011</span>
@@ -1258,8 +1273,10 @@
     <h2>QfT Notation</h2>
     <p>
       A poi notation devised by Charlie Cushing and written up by Ben
-      "DrexFactor" Drexler in 2011. The guide was posted to the Home of Poi
-      forum and to Drex's blog. The forum's copy has since lost every image; the
+      "DrexFactor" Drexler in 2011. QfT is Quantized Field Theory — Charlie's
+      broader idea, of which this notation is, in Drex's words, "one of its
+      applications: notation for props." Charlie writes it QfT; Drex writes
+      QFT. The guide was posted to the Home of Poi forum and to Drex's blog. The forum's copy has since lost every image; the
       blog still serves them. Each move here runs against a model that computes
       the same move from the published rules.
     </p>
