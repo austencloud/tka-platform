@@ -2,11 +2,11 @@
 status: backlog
 value: 2
 effort: XS
-remaining: "Core shipped (Phases 1-3, 4.1, Firestore rule). Residual: shame-queue-manager admin writes log to console with no user toast (P3); collection-manager P0 write paths now guarded (2026-05-31). Phase 4 step 3 (2-week errorTelemetry monitoring → promote count>10 to showUserError) is a runtime activity, not code."
-depends_on: ""
+remaining: "Code complete. Phase 4 step 3 is a runtime activity: monitor errorTelemetry for two weeks and promote recurring user-facing failures with count >10. Authenticated admin verification of the moderation failure toasts is also outstanding."
+depends_on: "external: two-week production errorTelemetry window and authenticated admin failure-path verification"
 plan_path: ""
 tags: ["error-handling", "telemetry", "infrastructure", "reliability"]
-last_triaged: 2026-05-31
+last_triaged: 2026-08-01
 ---
 # Error Boundary System — Design Spec
 
@@ -27,6 +27,15 @@ last_triaged: 2026-05-31
 > Residual (low priority): `shame-queue-manager.ts` admin moderation writes catch + `console.error`
 > but show no user toast — defensible as P3 (admin/internal) per the framework below. Phase 4 step 3
 > is the monitoring loop, which is inherently a future runtime activity.
+
+> **Residual closed 2026-08-01:** `ShameQueuePanel.svelte` now handles each moderation write
+> failure at the operation boundary. Approve, reject, hide, feature, and unfeature failures use
+> the shared `ErrorHandler` warning tier, which keeps the queue visible, shows an action-specific
+> toast, and sends deduplicated telemetry. The only remaining work is the production monitoring
+> window and authenticated failure-path verification.
+>
+> Static proof: `tests/unit/shame-queue-error-boundary-contract.test.ts` passes 5/5 checks, and
+> the Svelte compiler accepts `ShameQueuePanel.svelte` with zero warnings.
 
 **Date:** 2026-05-23
 **Status:** Backlog
@@ -59,7 +68,7 @@ Three specific gaps:
 
 | Component | Path | Role |
 |---|---|---|
-| `ErrorHandler` | `src/lib/shared/application/services/implementations/ErrorHandler.ts` | Singleton service. Routes errors to modal (error/critical) or toast (warning/info). Reports warnings to `errorTelemetry` collection. Submits bug reports to `feedback` collection. |
+| `ErrorHandler` | `src/lib/shared/application/services/error-handler.ts` | Singleton service. Routes errors to modal (error/critical) or toast (warning/info). Reports warnings to `errorTelemetry` collection. Submits bug reports to `feedback` collection. |
 | `ErrorModal` | `src/lib/shared/error/components/ErrorModal.svelte` | Full-screen overlay. Copy-all, Report Bug with user comment, two-column layout on desktop. Mounted in `MainApplication.svelte`. |
 | `ErrorToast` | `src/lib/shared/error/components/ErrorToast.svelte` | Bottom-right stacking toasts. Progress bar, pause-on-hover, max 3 visible, "+N more" badge. Mounted in `MainApplication.svelte`. |
 | `ErrorScreen` | `src/lib/shared/foundation/ui/ErrorScreen.svelte` | Styled full-page error with `glass-surface` class, SVG X icon, Retry and Go Home buttons, expandable technical details. Takes `error: string` and `onRetry` callback. |
@@ -67,7 +76,7 @@ Three specific gaps:
 | `error-toast-state.svelte.ts` | `src/lib/shared/error/state/error-toast-state.svelte.ts` | Toast queue state. Pause/resume timers, stacking compression. |
 | `error-telemetry-reporter.ts` | `src/lib/shared/error/services/error-telemetry-reporter.ts` | Writes to Firestore `errorTelemetry` collection with 24h dedup window. Key = `message::module::action`. |
 | `error-models.ts` | `src/lib/shared/error/domain/error-models.ts` | `AppError`, `ErrorContext`, `ShowErrorOptions`, `ErrorReportData` types. |
-| `getErrorHandler()` | `src/lib/shared/application/getErrorHandler.ts` | Browser-only singleton factory. |
+| `getErrorHandler()` | `src/lib/shared/application/get-error-handler.ts` | Browser-only singleton factory. |
 | `scripts/error-telemetry.js` | `scripts/error-telemetry.js` | CLI: `list`, `recent`, `resolve <key>`, `stats` subcommands. |
 
 ## Design
@@ -280,6 +289,7 @@ Allow unauthenticated creates because errors can happen before auth initializes 
 | `src/hooks.client.ts` | Add production `unhandledrejection` listener with telemetry |
 | `src/lib/shared/firestore/firestore-crud.ts` | Add optional `onError` callback to CRUD functions, default to `reportErrorTelemetry` |
 | `firestore.rules` | Add `errorTelemetry` collection rules |
+| `src/lib/features/admin/components/ShameQueuePanel.svelte` | Keep the moderation queue usable after write failures and route action-specific warnings through the shared toast and telemetry boundary |
 
 ## Out of Scope
 

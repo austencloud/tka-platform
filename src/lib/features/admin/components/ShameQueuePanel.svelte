@@ -5,17 +5,15 @@
   Shows pending queue with approve/reject actions.
 -->
 <script lang="ts">
-
-import {
+  import {
     getPendingQueue,
-    getPendingCount,
     approveEntry,
     rejectEntry,
     setEntryFeatured,
     setEntryHidden,
-    reportEntry,
     getReportedEntries,
   } from "$lib/features/hall-of-shame/services/shame-queue-manager";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount } from "svelte";
   import type {
     HallOfShameEntry,
@@ -75,6 +73,27 @@ import {
     }
   }
 
+  function showModerationFailure(
+    message: string,
+    caught: unknown,
+    action: string
+  ): void {
+    const failure =
+      caught instanceof Error ? caught : new Error(String(caught));
+
+    getErrorHandler().showUserError({
+      message,
+      technicalDetails: failure.message,
+      error: failure,
+      severity: "warning",
+      context: {
+        module: "admin",
+        tab: "hall-of-shame",
+        action,
+      },
+    });
+  }
+
   async function handleApprove(entry: HallOfShameEntry) {
     if (!currentUser) return;
 
@@ -93,8 +112,11 @@ import {
       );
       categoryOverride = null;
     } catch (e) {
-      console.error("[ShameQueuePanel] Failed to approve:", e);
-      error = "Failed to approve entry";
+      showModerationFailure(
+        "Couldn't approve this entry. Try again.",
+        e,
+        "approveEntry"
+      );
     } finally {
       processingId = null;
     }
@@ -135,8 +157,11 @@ import {
       );
       closeRejectModal();
     } catch (e) {
-      console.error("[ShameQueuePanel] Failed to reject:", e);
-      error = "Failed to reject entry";
+      showModerationFailure(
+        "Couldn't reject this entry. Try again.",
+        e,
+        "rejectEntry"
+      );
     } finally {
       processingId = null;
     }
@@ -155,8 +180,11 @@ import {
         (e) => e.id !== entry.id
       );
     } catch (e) {
-      console.error("[ShameQueuePanel] Failed to hide:", e);
-      error = "Failed to hide entry";
+      showModerationFailure(
+        "Couldn't hide this entry. Try again.",
+        e,
+        "setEntryHidden"
+      );
     } finally {
       processingId = null;
     }
@@ -179,8 +207,11 @@ import {
         e.id === entry.id ? { ...e, featured } : e
       );
     } catch (e) {
-      console.error("[ShameQueuePanel] Failed to update featured:", e);
-      error = "Failed to update featured status";
+      showModerationFailure(
+        `Couldn't ${featured ? "feature" : "unfeature"} this entry. Try again.`,
+        e,
+        "setEntryFeatured"
+      );
     } finally {
       processingId = null;
     }
