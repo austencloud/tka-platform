@@ -4,20 +4,21 @@ import {
 	createVillageWorld,
 	createAvatarEntity,
 } from "$lib/features/village/engine/village-world";
+import type * as SequenceMutatorModule from "$lib/features/village/services/sequence-mutator";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import { createDefaultConfig } from "$lib/features/village/engine/village-config";
-import type { ISequenceMutator } from "$lib/features/village/services/contracts/ISequenceMutator";
 import type {
 	LearnedSequence,
 	VillageEventMap,
 	VillageEventKey,
 } from "$lib/features/village/domain/village-types";
 
-function makeMockMutator(): ISequenceMutator {
+type SequenceMutator = typeof SequenceMutatorModule;
+
+function makeMockMutator(): SequenceMutator {
 	return {
 		tryInventFrom: vi.fn().mockReturnValue({
 			success: true,
-			sequence: null,
 			mutationType: "mirror",
 			inventedId: `invented-${Math.random().toString(36).slice(2, 6)}`,
 		}),
@@ -127,12 +128,10 @@ describe("RecombinationSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeInventor(world);
 
-		const mutator: ISequenceMutator = {
+		const mutator: SequenceMutator = {
 			tryInventFrom: vi.fn().mockReturnValue({
 				success: false,
-				sequence: null,
-				mutationType: "mirror",
-				inventedId: "",
+				reason: "invalid-source",
 			}),
 		};
 		const { emitter, events } = makeEmitter();

@@ -11,9 +11,13 @@ export type MutationType =
 	| "swap"
 	| "invert"
 	| "rewind";
-export interface MutationResult {
-	success: boolean;
-	mutationType: MutationType;
-	inventedId: string;
-}
-
+export type MutationResult =
+	| {
+			success: true;
+			mutationType: MutationType;
+			inventedId: string;
+	  }
+	| {
+			success: false;
+			reason: "invalid-source";
+	  };

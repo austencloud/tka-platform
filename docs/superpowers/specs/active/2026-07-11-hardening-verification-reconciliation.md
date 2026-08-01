@@ -3,8 +3,9 @@ title: Hardening Findings — Verified Reconciliation (2026-07-11)
 status: active
 value: 4
 effort: M
-depends_on: ""
-remaining: "Ship the OPEN-SAFE batch; get Austen sign-off on the OPEN-FLAGGED batch."
+remaining: "The OPEN-SAFE batch is complete. Remaining OPEN-FLAGGED items require Austen's domain, payment-policy, live-runtime, device, PDF, or visual gates before implementation."
+depends_on: "external: Austen sign-off and the named domain, payment, runtime, device, PDF, and visual verification gates"
+last_triaged: 2026-08-01
 ---
 
 # Hardening Findings — Verified Reconciliation
@@ -37,6 +38,18 @@ current as of 2026-07-11.
 - `15d1ffb` — eager `sharer` singleton removed; browser-guarded `getSharer()` (S4).
 - `93be9db` — **F1 loop-executor validation sets** fixed + regression tests (was OPEN-FLAGGED; resolved by canonical `LOOPValidator` + UI `loop-validator` grounding + MCP `validate_loop_options` + negative-control tests).
 
+### Completed 2026-08-01
+
+- **S5:** moved the prop-collection suite into the default unit-test graph and
+  made its expectations follow `PROP_LOCKING_ENABLED`, including the disabled
+  policy's no-pick-debt behavior.
+- **S7:** made `MutationResult` a discriminated success/failure result, added an
+  invalid-source failure path, replaced the removed test-only mutator contract,
+  and added direct mutator coverage.
+- Verification: 3 focused files, 14 tests passed. The post-edit fast check found
+  no diagnostics in these files; its 7 errors and 3 warnings are in unrelated
+  files currently being edited by other sessions.
+
 ## Confirmed ALREADY-FIXED (do not re-report as open)
 
 Verified corrected in live code; the source findings docs are stale on these:
@@ -53,7 +66,7 @@ Verified corrected in live code; the source findings docs are stale on these:
 ## OPEN-SAFE — autonomous, typecheck/test-verifiable (tonight's fix backlog)
 
 Ranked by real value (skip cosmetic/premature per `feedback_shiny_object_guard`).
-**Status: S1, S2, S3, S4, S6 SHIPPED this session (see commits above). S5, S7 remain.**
+**Status: S1 through S7 are complete.**
 
 | # | Finding | file:line | Fix | Size |
 |---|---|---|---|---|
