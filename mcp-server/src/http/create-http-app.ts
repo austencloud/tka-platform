@@ -14,7 +14,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import type { Express, Request } from "express";
+import type { Express, Request, RequestHandler } from "express";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -118,7 +118,9 @@ export function createHttpApp({
 		resource: config.resourceUrl.href,
 		authorization_servers: [config.issuer],
 		bearer_methods_supported: ["header"],
-		scopes_supported: [config.requiredScope],
+		// Advertising a scope the AS cannot issue makes a client request one and
+		// be refused, so an empty requiredScope publishes no scopes at all.
+		...(config.requiredScope ? { scopes_supported: [config.requiredScope] } : {}),
 	};
 	app.use(metadataPath, metadataHandler(metadata));
 	if (metadataPath !== "/.well-known/oauth-protected-resource") {
@@ -127,11 +129,30 @@ export function createHttpApp({
 	}
 
 	// (3) Auth ahead of any allocation. requiredScope is enforced by the SDK.
+	//
+	// requireBearerAuth only ever reads `Authorization`. When a proxy terminates
+	// the OAuth flow (Cloudflare Access), the verifiable JWT arrives on its own
+	// header and `Authorization` holds an opaque token the JWKS verifier can do
+	// nothing with — so the configured header is promoted first. Copying rather
+	// than mutating in place keeps the original visible for logging, and this
+	// runs only when the deployment asked for a non-default header, so a plain
+	// bearer deployment is byte-for-byte unchanged.
+	const promoteToken: RequestHandler | undefined =
+		config.tokenHeader === "authorization"
+			? undefined
+			: (req, _res, next) => {
+					const raw = req.headers[config.tokenHeader];
+					const token = Array.isArray(raw) ? raw[0] : raw;
+					if (token) req.headers.authorization = `Bearer ${token}`;
+					next();
+				};
+
 	app.all(
 		"/mcp",
+		...(promoteToken ? [promoteToken] : []),
 		requireBearerAuth({
 			verifier,
-			requiredScopes: [config.requiredScope],
+			requiredScopes: config.requiredScope ? [config.requiredScope] : [],
 			resourceMetadataUrl: metadataUrl,
 		}),
 		async (req, res) => {

@@ -408,3 +408,6 @@ tests/render-parity/.artifacts/
 
 # worktree-automerge opt-out sentinel — a per-worktree local marker, never committed
 .automerge-skip
+
+# MCP HTTP authorization config — names a specific Cloudflare Zero Trust org/app
+mcp-server/deploy/auth.local.cmd

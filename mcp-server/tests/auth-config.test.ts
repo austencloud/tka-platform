@@ -39,11 +39,26 @@ describe("resolveAuthConfig", () => {
 		expect(c.resourceUrl.href).toBe("https://mcp.example.com/mcp");
 	});
 
+	it("omits the required scope when the AS does not issue scopes", () => {
+		// Cloudflare Access assertions carry no `scope` claim. Demanding one
+		// there rejects every otherwise-valid token, which is how this server
+		// would look "secured" while being unusable.
+		const env: Record<string, string | undefined> = { ...valid };
+		delete env.MCP_AUTH_REQUIRED_SCOPE;
+		expect(resolveAuthConfig(env).requiredScope).toBe("");
+	});
+
+	it("defaults the token header to authorization and lowercases an override", () => {
+		expect(resolveAuthConfig(valid).tokenHeader).toBe("authorization");
+		expect(
+			resolveAuthConfig({ ...valid, MCP_AUTH_TOKEN_HEADER: "Cf-Access-Jwt-Assertion" }).tokenHeader,
+		).toBe("cf-access-jwt-assertion");
+	});
+
 	it.each([
 		"MCP_AUTH_ISSUER",
 		"MCP_AUTH_RESOURCE_URL",
 		"MCP_AUTH_JWKS_URI",
-		"MCP_AUTH_REQUIRED_SCOPE",
 	])("throws when %s is missing", (missing) => {
 		const env: Record<string, string | undefined> = { ...valid };
 		delete env[missing];

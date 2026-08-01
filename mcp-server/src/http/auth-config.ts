@@ -23,8 +23,19 @@ export type AuthConfig = {
 	 */
 	audience: string;
 	jwksUri: URL;
-	/** Scope a token must carry to use this server at all. */
+	/**
+	 * Scope a token must carry to use this server at all. Empty means the AS
+	 * does not express scopes — true of a Cloudflare Access assertion, which is
+	 * already the output of an Access policy rather than a delegated grant.
+	 */
 	requiredScope: string;
+	/**
+	 * Header carrying the JWT, lowercased. Defaults to `authorization` (bearer).
+	 * A reverse proxy that terminates the OAuth flow itself hands the origin a
+	 * different header — Cloudflare Access uses `cf-access-jwt-assertion`, and
+	 * the token in `Authorization` at that point is opaque and unverifiable.
+	 */
+	tokenHeader: string;
 	/** Host header allowlist, lowercased. */
 	allowedHosts: string[];
 };
@@ -86,7 +97,16 @@ export function resolveAuthConfig(env: Env): AuthConfig {
 
 	const resourceUrl = parseUrl(required(env, "MCP_AUTH_RESOURCE_URL"), "MCP_AUTH_RESOURCE_URL");
 	const jwksUri = parseUrl(required(env, "MCP_AUTH_JWKS_URI"), "MCP_AUTH_JWKS_URI", { allowQuery: true });
-	const requiredScope = required(env, "MCP_AUTH_REQUIRED_SCOPE");
+
+	// Optional, unlike the three above. Those three ARE the refusal to run
+	// unauthenticated; a scope is a further restriction on an already-verified
+	// token, and an AS that does not issue scopes (Cloudflare Access) cannot
+	// satisfy one. Requiring it there would reject every valid token instead.
+	const scopeRaw = env.MCP_AUTH_REQUIRED_SCOPE?.trim() ?? "";
+	if (scopeRaw) rejectPlaceholder(scopeRaw, "MCP_AUTH_REQUIRED_SCOPE");
+	const requiredScope = scopeRaw;
+
+	const tokenHeader = (env.MCP_AUTH_TOKEN_HEADER?.trim() || "authorization").toLowerCase();
 
 	const audienceRaw = env.MCP_AUTH_AUDIENCE?.trim();
 	if (audienceRaw) rejectPlaceholder(audienceRaw, "MCP_AUTH_AUDIENCE");
@@ -104,7 +124,7 @@ export function resolveAuthConfig(env: Env): AuthConfig {
 			? configuredHosts
 			: [resourceUrl.hostname.toLowerCase(), "localhost", "127.0.0.1"];
 
-	return { issuer: issuerRaw, resourceUrl, audience, jwksUri, requiredScope, allowedHosts };
+	return { issuer: issuerRaw, resourceUrl, audience, jwksUri, requiredScope, tokenHeader, allowedHosts };
 }
 
 /** 0 means "HTTP disabled". A malformed value is an error, never a silent disable. */

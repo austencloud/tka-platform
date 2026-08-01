@@ -48,6 +48,56 @@ Public URL: `https://mcp.tkaflowarts.com/mcp`
 
 ---
 
+## Part 2b — Authorization (REQUIRED — the service will not start without it)
+
+Since `0472386f94`, enabling `MCP_HTTP_PORT` without auth config is a fatal
+startup error. There is no unauthenticated fallback, so a missing config
+crash-loops the service until NSSM parks it as `PAUSED` and the tunnel 502s.
+
+Cloudflare Access is the authorization server. It fronts the tunnel, runs the
+OAuth flow with claude.ai, resolves the client's opaque token, and forwards a
+signed JWT to the origin on `Cf-Access-Jwt-Assertion`. The origin verifies that
+JWT against Access's JWKS — so a request that bypassed Access has no valid token
+and is refused, and Cloudflare is never the only thing standing in front.
+
+**Dashboard (one-time):**
+
+1. Zero Trust → **Access controls → AI controls → Add an MCP server**.
+   Server URL `https://mcp.tkaflowarts.com/mcp`. Add a policy that allows your
+   own email.
+2. In that application's **Advanced settings**, enable **Managed OAuth**. This is
+   what lets claude.ai register itself; Access-for-SaaS OIDC has no dynamic
+   client registration and would force a manually-pasted client ID.
+3. Copy the application's **AUD tag** (Application Configuration → additional
+   settings) and your team name from the team domain
+   `https://<team>.cloudflareaccess.com`.
+
+**Then create `deploy\auth.local.cmd`** (gitignored, never committed):
+
+```bat
+@echo off
+set MCP_AUTH_ISSUER=https://<team>.cloudflareaccess.com
+set MCP_AUTH_JWKS_URI=https://<team>.cloudflareaccess.com/cdn-cgi/access/certs
+set MCP_AUTH_RESOURCE_URL=https://mcp.tkaflowarts.com/mcp
+set MCP_AUTH_AUDIENCE=<the AUD tag>
+set MCP_AUTH_TOKEN_HEADER=Cf-Access-Jwt-Assertion
+set MCP_ALLOWED_HOSTS=mcp.tkaflowarts.com,localhost,127.0.0.1
+```
+
+`MCP_AUTH_REQUIRED_SCOPE` is deliberately unset: an Access assertion carries no
+`scope` claim, and demanding one rejects every valid token. The three URLs above
+are what make the transport authenticated; they are not optional.
+
+| Variable | Meaning |
+|---|---|
+| `MCP_AUTH_ISSUER` | Compared byte-for-byte against `iss`. No trailing slash for Access. |
+| `MCP_AUTH_JWKS_URI` | Access signing keys. They rotate every 6 weeks; `jose` refetches on an unknown `kid`. |
+| `MCP_AUTH_RESOURCE_URL` | This server's canonical public `/mcp` URL (RFC 9728 identifier). |
+| `MCP_AUTH_AUDIENCE` | The Access AUD tag. Without it the audience defaults to the resource URL, which Access does not send, and every token is rejected. |
+| `MCP_AUTH_TOKEN_HEADER` | Where the verifiable JWT arrives. Default `authorization`; Access needs the override. |
+
+---
+
 ## Part 3 — Point claude.ai at the new URL
 
 1. Open claude.ai → Settings → Integrations.
@@ -79,10 +129,20 @@ Both `curl` calls should return `Flow Arts Knowledge MCP Server`.
 After changing code in `mcp-server\src\`:
 
 ```powershell
-Restart-Service FlowArtsKnowledgeMCP
+Restart-Service FlowArtsKnowledgeMCP    # needs an ELEVATED shell
 ```
 
 No rebuild needed — it runs via `tsx` on source.
+
+**If it comes back as `Paused`, it is crash-looping, not idle.** NSSM parks a
+service that keeps exiting. `Get-Service` shows `Paused`, nothing listens on
+:3333, and claude.ai reports a sign-in/registration failure rather than a
+connection error. The actual cause is always in `deploy\logs\mcp-stderr.log`:
+
+```powershell
+sc.exe query FlowArtsKnowledgeMCP          # STATE : 7 PAUSED
+Get-Content .\logs\mcp-stderr.log -Tail 20
+```
 
 ---
 

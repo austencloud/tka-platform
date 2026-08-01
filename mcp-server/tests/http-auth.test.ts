@@ -13,6 +13,7 @@ const config: AuthConfig = {
 	audience: "https://mcp.example.com/mcp",
 	jwksUri: new URL("https://as.example.com/.well-known/jwks.json"),
 	requiredScope: "mcp:use",
+	tokenHeader: "authorization",
 	allowedHosts: ["mcp.example.com", "localhost", "127.0.0.1"],
 };
 
@@ -110,6 +111,56 @@ describe("health and discovery", () => {
 			.options("/.well-known/oauth-protected-resource/mcp")
 			.set("Origin", "https://anywhere.example.com");
 		expect(res.status).toBeLessThan(300);
+	});
+});
+
+describe("proxy-terminated auth (Cloudflare Access)", () => {
+	// The live deployment runs in this mode: Access resolves the client's opaque
+	// token and hands the origin a verifiable JWT on its own header, so a server
+	// that only reads Authorization 401s every authenticated request.
+	function buildProxied() {
+		return createHttpApp({
+			config: { ...config, requiredScope: "", tokenHeader: "cf-access-jwt-assertion" },
+			verifier,
+			createMcpServer: () => new McpServer({ name: "test", version: "0.0.0" }),
+			sweep: false,
+		});
+	}
+
+	let proxied: HttpApp;
+	beforeEach(() => {
+		proxied = buildProxied();
+	});
+	afterEach(async () => {
+		await proxied?.shutdown();
+	});
+
+	it("accepts a token on the configured header", async () => {
+		const res = await request(proxied.app)
+			.post("/mcp")
+			.set("Accept", ACCEPT)
+			.set("Cf-Access-Jwt-Assertion", NO_SCOPE)
+			.send(INITIALIZE);
+		expect(res.status).toBe(200);
+	});
+
+	it("still rejects a caller that presents no token at all", async () => {
+		const res = await request(proxied.app).post("/mcp").set("Accept", ACCEPT).send(INITIALIZE);
+		expect(res.status).toBe(401);
+	});
+
+	it("still rejects an invalid token on that header", async () => {
+		const res = await request(proxied.app)
+			.post("/mcp")
+			.set("Accept", ACCEPT)
+			.set("Cf-Access-Jwt-Assertion", "forged")
+			.send(INITIALIZE);
+		expect(res.status).toBe(401);
+	});
+
+	it("publishes no scopes_supported when the AS issues none", async () => {
+		const res = await request(proxied.app).get("/.well-known/oauth-protected-resource/mcp");
+		expect(res.body.scopes_supported).toBeUndefined();
 	});
 });
 
