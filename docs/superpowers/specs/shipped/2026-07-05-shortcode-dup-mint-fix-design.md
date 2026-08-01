@@ -1,26 +1,23 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: M
-remaining: "DRIFT 2026-07-25 — likely shipped. Body says 'Approved approach (C) — spec for implementation', but all 5 commits touching its named files are topical shortcode fixes, src/lib/shared/qr/services/short-code-manager.ts carries the content-hash logic, and the one-code-per-hash invariant is recorded in memory (reference_shortcode_dedup_invariant) as established. Confirm approach C specifically landed before implementing."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Shortcode Duplicate-Mint Fix — Design
 
 **Date:** 2026-07-05
-**Status:** Approved approach (C) — spec for implementation
+**Status:** Shipped and verified 2026-08-01
 **Problem owner:** Austen (reported: same sequence showed two different short codes in two browsers)
 
-> **DRIFT WARNING (2026-07-25) — this spec's status line may be stale.**
-> The one-code-per-hash invariant this spec proposes is recorded as established,
-> and `src/lib/shared/qr/services/short-code-manager.ts` carries content-hash
-> logic. Every commit touching this spec's named files is a topical shortcode fix.
->
-> **Confirm whether approach (C) specifically landed before implementing it.**
-> Re-minting duplicate short codes is destructive to existing printed cards.
+> **Queue closeout (2026-08-01):** Approach C is live. The production corpus,
+> an authenticated browser run, an independent Admin SDK query, and the focused
+> QR suite all agree on one code per encoder hash. No duplicate group has formed
+> since the post-rollout cutoff.
 
 
 ## Problem
@@ -208,3 +205,34 @@ as of 2026-07-02) — diff against deployed rules before pushing.
 | `firestore.rules` | `shortcodeHashes/{hash}` block |
 | `scripts/backfill-shortcode-hash-index.mjs` | new admin backfill (from audit script) |
 | `src/lib/shared/qr/services/__tests__/short-code-manager.test.ts` | new race/determinism tests |
+
+## Verification closeout
+
+Production was queried before and after an authenticated browser run on
+2026-08-01.
+
+- The baseline contained 20,361 shortcode documents, 19,223 distinct hashes,
+  and the same 1,044 legacy duplicate groups recorded on 2026-07-05.
+- Target code `PUFR` had one matching shortcode document and a
+  `shortcodeHashes` claim pointing to `PUFR`. Its cache key was absent from the
+  test browser before the viewer opened.
+- Opening the public sequence resolved the deployed URL to `?v=PUFR`, populated
+  the browser cache with `PUFR`, and rendered the enabled 200×200 QR image.
+- The independent post-run query still found one matching shortcode document
+  and the same `PUFR` claim. No second code was created for the target hash.
+- Production continued receiving real mints during the check. The corpus grew
+  from 20,361 to 20,363 documents while the duplicate-group count stayed at
+  1,044. One observed concurrent mint, `CC3U`, had exactly one code document and
+  a matching hash claim.
+- The latest event that created a duplicate group remains
+  `2026-07-05T23:35:16.772Z`. The audit found zero duplicate-group creation
+  events from `2026-07-06T00:00:00.000Z` onward.
+- The focused QR suite passed 83 tests across 11 files, including the original
+  same-tab race, transaction retry, deterministic legacy selection, cache, and
+  resolution paths. `npm run check` reported 0 errors and 0 warnings.
+- No shortcode or QR console errors appeared. Existing missing-thumbnail 404s
+  and a reviewer-profile name validation message were unrelated to shortcode
+  allocation and did not interrupt the tested flow.
+
+The reviewer account was signed out afterward, its task-created cache entry was
+removed, and the task-owned browser tab was closed.
