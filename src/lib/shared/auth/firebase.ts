@@ -17,6 +17,7 @@
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import {
+  connectAuthEmulator,
   getAuth,
   initializeAuth,
   type Auth,
@@ -40,8 +41,61 @@ import { shouldAvoidIndexedDbPersistence } from "./services/indexeddb-persistenc
 import type { Functions } from "firebase/functions";
 import type { Unsubscribe } from "firebase/firestore";
 import { browser } from "$app/environment";
+import { env } from "$env/dynamic/public";
+import { resolveFirebaseEmulatorConfig } from "./firebase-emulator-config";
 
 const debug = createComponentLogger("Firebase");
+
+type FirebaseEmulatorProduct =
+  | "auth"
+  | "firestore"
+  | "database"
+  | "storage"
+  | "functions";
+
+interface FirebaseEmulatorConnectionState {
+  projectId: string;
+  products: Set<string>;
+}
+
+const firebaseEmulatorConfig = resolveFirebaseEmulatorConfig({
+  dev: import.meta.env.DEV,
+  browserUrl: browser ? window.location.href : undefined,
+  enabledValue: env.PUBLIC_USE_FIREBASE_EMULATORS,
+  projectIdValue: env.PUBLIC_FIREBASE_EMULATOR_PROJECT_ID,
+});
+
+const firebaseEmulatorGlobal = globalThis as typeof globalThis & {
+  __TKA_FIREBASE_EMULATOR_CONNECTIONS__?: FirebaseEmulatorConnectionState;
+};
+
+function connectFirebaseProductToEmulator(
+  product: FirebaseEmulatorProduct,
+  connect: () => void
+): void {
+  if (!browser || !firebaseEmulatorConfig.enabled) return;
+
+  const state =
+    (firebaseEmulatorGlobal.__TKA_FIREBASE_EMULATOR_CONNECTIONS__ ??= {
+      projectId: firebaseEmulatorConfig.projectId,
+      products: new Set<string>(),
+    });
+
+  if (state.projectId !== firebaseEmulatorConfig.projectId) {
+    throw new Error(
+      "Firebase emulator project changed without a full page reload."
+    );
+  }
+
+  const connectionKey = `${app.name}:${product}`;
+  if (state.products.has(connectionKey)) return;
+
+  connect();
+  state.products.add(connectionKey);
+  debug.info(
+    `${product} connected to ${firebaseEmulatorConfig.projectId} emulator`
+  );
+}
 
 // ============================================================================
 // FIREBASE CONFIGURATION
@@ -52,16 +106,26 @@ const debug = createComponentLogger("Firebase");
  * Uses hardcoded values for reliable deployment across environments.
  * authDomain is resolved per environment — see resolveAuthDomain (auth-domain.ts).
  */
-const firebaseConfig = {
-  apiKey: "AIzaSyDKUM9pf0e_KgFjW1OBKChvrU75SnR12v4",
-  authDomain: resolveAuthDomain(),
-  databaseURL: "https://the-kinetic-alphabet-default-rtdb.firebaseio.com",
-  projectId: "the-kinetic-alphabet",
-  storageBucket: "the-kinetic-alphabet.firebasestorage.app",
-  messagingSenderId: "664225703033",
-  appId: "1:664225703033:web:62e6c1eebe4fff3ef760a8",
-  measurementId: "G-CQH94GGM6B",
-};
+const firebaseConfig = firebaseEmulatorConfig.enabled
+  ? {
+      apiKey: "demo-api-key",
+      authDomain: "localhost",
+      databaseURL: `https://${firebaseEmulatorConfig.projectId}-default-rtdb.firebaseio.com`,
+      projectId: firebaseEmulatorConfig.projectId,
+      storageBucket: `${firebaseEmulatorConfig.projectId}.appspot.com`,
+      messagingSenderId: "000000000000",
+      appId: "1:000000000000:web:0000000000000000000000",
+    }
+  : {
+      apiKey: "AIzaSyDKUM9pf0e_KgFjW1OBKChvrU75SnR12v4",
+      authDomain: resolveAuthDomain(),
+      databaseURL: "https://the-kinetic-alphabet-default-rtdb.firebaseio.com",
+      projectId: "the-kinetic-alphabet",
+      storageBucket: "the-kinetic-alphabet.firebasestorage.app",
+      messagingSenderId: "664225703033",
+      appId: "1:664225703033:web:62e6c1eebe4fff3ef760a8",
+      measurementId: "G-CQH94GGM6B",
+    };
 
 // ============================================================================
 // HMR MANAGER
@@ -264,6 +328,14 @@ function initAuthWithPersistence(): Auth {
 
 export const auth: Auth = initAuthWithPersistence();
 
+connectFirebaseProductToEmulator("auth", () =>
+  connectAuthEmulator(
+    auth,
+    `http://${firebaseEmulatorConfig.host}:${firebaseEmulatorConfig.authPort}`,
+    { disableWarnings: true }
+  )
+);
+
 // Register with HMR manager
 hmrManager.setAuth(auth);
 
@@ -370,6 +442,7 @@ export async function getFirestoreInstance(): Promise<Firestore> {
 
 async function initializeFirestore(): Promise<Firestore> {
   const {
+    connectFirestoreEmulator,
     getFirestore,
     initializeFirestore: initFs,
     memoryLocalCache,
@@ -399,6 +472,14 @@ async function initializeFirestore(): Promise<Firestore> {
       firestoreInstance = getFirestore(app);
       debug.warn("Firestore reused existing instance (dev)");
     }
+
+    connectFirebaseProductToEmulator("firestore", () =>
+      connectFirestoreEmulator(
+        firestoreInstance!,
+        firebaseEmulatorConfig.host,
+        firebaseEmulatorConfig.firestorePort
+      )
+    );
 
     hmrManager.setFirestore(firestoreInstance);
     return firestoreInstance;
@@ -577,8 +658,16 @@ export async function getDatabaseInstance(): Promise<Database> {
   }
 
   databaseInitPromise = (async () => {
-    const { getDatabase } = await import("firebase/database");
+    const { connectDatabaseEmulator, getDatabase } =
+      await import("firebase/database");
     databaseInstance = getDatabase(app);
+    connectFirebaseProductToEmulator("database", () =>
+      connectDatabaseEmulator(
+        databaseInstance!,
+        firebaseEmulatorConfig.host,
+        firebaseEmulatorConfig.databasePort
+      )
+    );
     hmrManager.setDatabase(databaseInstance);
     debug.success("Realtime Database lazy-loaded");
     return databaseInstance;
@@ -620,8 +709,17 @@ if (typeof window !== "undefined") {
  * Get Firebase Storage instance (lazy)
  */
 export async function getStorageInstance(): Promise<FirebaseStorage> {
-  const { getStorage } = await import("firebase/storage");
-  return getStorage(app);
+  const { connectStorageEmulator, getStorage } =
+    await import("firebase/storage");
+  const storage = getStorage(app);
+  connectFirebaseProductToEmulator("storage", () =>
+    connectStorageEmulator(
+      storage,
+      firebaseEmulatorConfig.host,
+      firebaseEmulatorConfig.storagePort
+    )
+  );
+  return storage;
 }
 
 // ============================================================================
@@ -645,8 +743,16 @@ export async function getFunctionsInstance(): Promise<Functions> {
   }
 
   functionsInitPromise = (async () => {
-    const { getFunctions } = await import("firebase/functions");
+    const { connectFunctionsEmulator, getFunctions } =
+      await import("firebase/functions");
     functionsInstance = getFunctions(app);
+    connectFirebaseProductToEmulator("functions", () =>
+      connectFunctionsEmulator(
+        functionsInstance!,
+        firebaseEmulatorConfig.host,
+        firebaseEmulatorConfig.functionsPort
+      )
+    );
     return functionsInstance;
   })();
 

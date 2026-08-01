@@ -1,18 +1,24 @@
 ---
-status: active
+status: shipped
 value: 4
 effort: M
-remaining: "Body status: Active"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Add-to-Collection UX — Design
 
 **Date:** 2026-06-30
-**Status:** Active
+**Status:** Shipped and verified 2026-08-01
 **Author:** Austen Cloud (brainstormed with Claude)
+
+> **Queue closeout (2026-08-01):** The original two entry points shipped, as
+> did the later bulk-filing flow. Commits `4c88446fbc`, `eaf01e4618`, and
+> `8ff93ea9cc` contain the feature and picker-lifetime fix. The closeout added
+> an opt-in, demo-project-only Firebase emulator harness so all write paths
+> could be exercised without touching production data.
 
 ## Problem
 
@@ -72,10 +78,10 @@ Rejected alternatives:
 2. **Save dialog** — `SaveToLibraryDialog` replaces its placeholder with the
    inline picker; chosen collections are written into `collectionIds` at save.
 
-### Deferred (reuse the same picker)
+### Follow-on scope (reuse the same picker)
 
-- **Phase 2 — Bulk:** selection mode in `BrowseGrid` + a toolbar "Add N to…"
-  that opens the sheet with multiple sequence ids.
+- **Phase 2 — Bulk (shipped):** selection mode in `BrowseGrid` + a toolbar
+  "Add N to…" that opens the sheet with multiple sequence ids.
 - **Phase 3 — Build-from-inside:** a real Collections view (library
   `activeSection: "collections"`) where opening a collection shows its sequences
   and a "＋ Add sequences" affordance reuses the sheet in reverse.
@@ -240,3 +246,34 @@ Reuse (no change): `collection-manager.ts`, `Drawer.svelte`,
 4. No checkboxes, no layout shift on toggle/expand, 44px targets, works on
    mobile (bottom sheet) and desktop (right drawer).
 5. `npm run check` clean; component + unit tests green.
+
+## Verification closeout — 2026-08-01
+
+The feature was exercised in a disposable Firebase project named
+`demo-tka-add-to-collection`. The browser used an emulator-created account and
+throwaway sequence; teardown then removed the Auth account and all Firestore
+and Realtime Database data. No remote Firebase mutation appeared in the network
+log.
+
+- **Save-time filing:** created `Bedtime QA`, saved a one-step sequence into it,
+  and queried both sides of the relationship. The sequence listed the
+  collection, the collection listed the sequence, and `sequenceCount` was 1.
+- **Single-card filing:** opened the owned card menu, selected `Nightstand`, and
+  queried the same reciprocal relationship with `sequenceCount` 1.
+- **Collection creation:** created collections through the shipped UI rather
+  than seeding them directly.
+- **Mobile bulk filing:** at 412×960 touch emulation, selected the sequence and
+  filed it into Favorites. The success toast appeared and both Firestore sides
+  matched with `sequenceCount` 1.
+- **Visual/runtime:** the desktop picker was inspected at 1920×1080; the mobile
+  library was inspected at 412×960 with zero horizontal overflow. After the
+  emulator CSP adjustment, the browser console had no warnings or errors.
+- **Automated proof:** 14 focused tests passed across emulator isolation and
+  collection membership/count behavior. `npm run check` completed with 0
+  errors and 0 warnings. `git diff --check` was clean.
+
+One existing `collections-state` retry was stopped during module import by the
+shared install resolving `protobufjs` 7.5.4 (`util.Long.fromNumber is not a
+function`), so none of that file's tests executed on the final retry. The same
+18 tests had passed earlier in the work before the shared dependency state
+changed; the final runtime checks above directly exercised the affected writes.
