@@ -113,14 +113,17 @@ are what make the transport authenticated; they are not optional.
 # Service status
 Get-Service FlowArtsKnowledgeMCP, cloudflared
 
-# Local health
+# Local health — the only one that returns the plain string
 curl http://localhost:3333/
 
-# Public health (after Part 2)
-curl https://mcp.tkaflowarts.com/
+# Public — Access answers BEFORE the tunnel, so this is a 401 challenge, not the
+# health string. A 502 here means the origin is down; a 401 means it is working.
+curl -i https://mcp.tkaflowarts.com/mcp
 ```
 
-Both `curl` calls should return `Flow Arts Knowledge MCP Server`.
+The public 401 must carry `WWW-Authenticate: Bearer ... resource_metadata=...`.
+`Server-Timing: cfOrigin;dur=0` confirms Access refused it at the edge without
+ever reaching the tunnel.
 
 ---
 
