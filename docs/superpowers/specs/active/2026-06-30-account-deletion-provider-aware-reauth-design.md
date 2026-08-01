@@ -2,17 +2,31 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Active"
-depends_on: ""
+remaining: "Implementation is in main and focused tests pass (2 files, 3 tests on 2026-08-01). Remaining: destructive live proof on disposable Google, Facebook, Instagram, and password accounts, including cancellation, wrong-account guidance, deletion, and sign-out."
+depends_on: "external: disposable test accounts plus authorization for destructive live deletion"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
+
 # Provider-Aware Account-Deletion Reauthentication — Design
 
 **Date:** 2026-06-30
-**Status:** Active
+**Status:** Implemented; destructive live verification blocked
 **Author:** Claude (brainstormed with Austen)
+
+## Reconciliation: 2026-08-01
+
+The provider-aware path is present in `main`. The implementation now covers
+Google, Facebook, Instagram, and password reauthentication, prevents in-app
+self-deletion for admins, records an optional exit reason, and clears local auth
+state after deletion. The latest Google-account targeting repair is covered by
+`account-manager-delete-account.test.ts` and
+`google-reauthentication.test.ts`; both files passed on 2026-08-01 (3 tests).
+
+The remaining acceptance gate deletes real authentication records and cannot be
+run against Austen's account. Keep this spec active until disposable accounts
+and destructive-test authorization are available.
 
 ## Problem
 
@@ -38,7 +52,7 @@ confirmation barrier.
 ## Non-Goals (flagged, not built)
 
 - **Change/Set Password for passwordless accounts.** `changePassword()` has the
-  same password-only flaw and can't let a passwordless user *set* a first
+  same password-only flaw and can't let a passwordless user _set_ a first
   password (it demands a current one). `authenticator.ts` already exports
   `linkEmailPassword()` for exactly this. Tracked as a follow-up; not in this
   change.
@@ -116,12 +130,12 @@ calls these.
 
 ## Files
 
-| File | Change |
-|---|---|
-| `src/lib/shared/auth/services/authenticator.ts` | Add `reauthenticateWithGoogle`, `reauthenticateWithFacebook` |
-| `src/lib/shared/auth/services/account-manager.ts` | `DeleteReauth` type; `deleteAccount(reauth)` provider-aware; error mapping |
+| File                                                                      | Change                                                                            |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `src/lib/shared/auth/services/authenticator.ts`                           | Add `reauthenticateWithGoogle`, `reauthenticateWithFacebook`                      |
+| `src/lib/shared/auth/services/account-manager.ts`                         | `DeleteReauth` type; `deleteAccount(reauth)` provider-aware; error mapping        |
 | `src/lib/shared/navigation/components/profile-settings/DangerZone.svelte` | `providerIds` prop; OAuth buttons vs password field; updated validity + signature |
-| `src/lib/shared/settings/components/tabs/ProfileTab.svelte` | Pass `providerIds`; adapt `handleDeleteAccount` signature |
+| `src/lib/shared/settings/components/tabs/ProfileTab.svelte`               | Pass `providerIds`; adapt `handleDeleteAccount` signature                         |
 
 ## Error Handling
 

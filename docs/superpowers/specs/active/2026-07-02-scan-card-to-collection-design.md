@@ -3,10 +3,10 @@ status: active
 value: 4
 effort: M
 remaining: "Collection scanner unimplemented; carrier and scan-purpose semantics now depend on the 2026-07-27 official production-ledger design."
-depends_on: ""
+depends_on: "2026-07-27-official-card-production-ledger-design.md"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Scan a Physical Card into a Collection — Design
 

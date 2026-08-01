@@ -2,13 +2,21 @@
 status: active
 value: 4
 effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
-depends_on: ""
+remaining: "All pre-clip work is implemented: validation tooling, scorecard, tracker hardening, confidence propagation, and correction UI. On 2026-08-01 the full prop-tracking suite passed (11 files, 82 tests) and the repository check reported 0 errors and 0 warnings. Remaining: run the lab against a labeled real clip, compare the detected strip with ground truth, and harden only the failures reality exposes."
+depends_on: "external: Austen-provided real performance clip plus its ground-truth sequence and interactive calibration"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Fable Spec — Real-Flow Notation: Validate + Robust Perception Core (THE MOONSHOT)
+
+## Reconciliation: 2026-08-01
+
+The 2026-07-05 progress section remains accurate. All 11 prop-tracking test
+files passed on 2026-08-01 (82 tests), and the full repository check reported 0
+errors and 0 warnings. No code task remains before the physical verification
+gate. The separate Skel2TKA pipeline also keeps its early phases behind human
+visual-acceptance gates, so synthetic results cannot close this spec.
 
 **Date:** 2026-07-03 · **Autonomy: FULL AUTO on code (tracker, harness, UI); CHECKPOINT for real-clip validation** (Austen must shoot/provide a ground-truth clip — physical dependency) · Index: `2026-07-03-fable-dispatch-index.md`
 

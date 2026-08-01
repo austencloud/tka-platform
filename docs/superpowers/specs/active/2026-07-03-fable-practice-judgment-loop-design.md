@@ -2,11 +2,11 @@
 status: active
 value: 4
 effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
-depends_on: ""
+remaining: "Unimplemented. This live judgment loop consumes the real-flow perception core, whose synthetic validation tooling is complete but whose real-clip validation remains open. Start only after that prerequisite is validated, then require Austen's physical camera test for game-feel acceptance."
+depends_on: "2026-07-03-fable-real-flow-notation-validation-design.md"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Fable Spec — Practice Judgment Loop (Learn-by-Doing)
 

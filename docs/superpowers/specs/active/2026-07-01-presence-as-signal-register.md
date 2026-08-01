@@ -2,11 +2,11 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: BLOCKING INPUT for every adoption slice. A slice may not flip a `.motions` type"
-depends_on: ""
+remaining: "This is a migration gate and reference register, not an implementation target. Before any StepData-to-Step adoption slice flips `.motions` from partial to required, choose and implement an explicit per-hand absence encoding, then disposition every touched register entry with a guard test, re-encoding, or verified no-op."
+depends_on: "internal: explicit per-hand absence encoding for canonical Step motions"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Presence-as-Signal Register — StepData→Step Migration Gate
 

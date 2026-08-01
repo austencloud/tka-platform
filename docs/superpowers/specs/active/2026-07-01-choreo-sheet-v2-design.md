@@ -2,17 +2,32 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Active"
-depends_on: ""
+remaining: "Implementation is in main. On 2026-08-01, all 8 sheet-focused files passed (83 tests) and the full repository check reported 0 errors and 0 warnings. Remaining: authenticated browser proof for docked picking and collection filtering, continuity markers and loop status, responsive behavior, plus preview-to-PDF outline and break-marker parity."
+depends_on: "external: explicit authenticated Chrome control for the Write module and visual PDF review"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Choreo Sheet v2 — Continuity, Collections, Inline Picker, Cell Outlines
 
 **Date:** 2026-07-01
-**Status:** Active
+**Status:** Implemented; authenticated browser and PDF proof pending
 **Supersedes/extends:** `2026-06-30-choreo-sheet-design.md`
+
+## Reconciliation: 2026-08-01
+
+All named deliverables are present in `main`: continuity normalization and
+status, collection-aware picking, inline dock behavior, preview cell outlines
+and break markers, and the matching PDF draw path. Subsequent Write work has
+also expanded the sheet beyond this design.
+
+Verification on 2026-08-01:
+
+- Every `sheet-*.test.ts` file: 8 files, 83 tests passed.
+- `pnpm run check`: 0 errors and 0 warnings.
+
+The remaining acceptance items are visual and authenticated. Keep this spec
+active until the current Write surface and an exported PDF are inspected.
 
 ## Problem
 

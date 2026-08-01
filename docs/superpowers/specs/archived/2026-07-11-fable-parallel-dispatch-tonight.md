@@ -1,14 +1,18 @@
 ---
-status: active
+status: archived
 value: 4
 effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Fable Parallel Dispatch — Tonight (2026-07-11, 9pm–12am)
+
+> **Archived 2026-08-01:** This was a single-night coordination memo. Its
+> three-hour window is over, and the 2026-07-25 triage ledger already records it
+> as spent. Live work remains tracked by the referenced feature specs.
 
 **Purpose:** three concurrent Fable 5 sessions for a 3-hour window, structured
 around **Austen's attention**: one **hero session he actively drives**

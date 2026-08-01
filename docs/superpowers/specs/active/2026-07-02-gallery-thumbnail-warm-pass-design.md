@@ -2,17 +2,32 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: Approved, pre-implementation"
-depends_on: ""
+remaining: "Implementation is in main: warmer service and tests, toolbar controls, full-control admin route, and dead server endpoint removal. On 2026-08-01 the focused warmer suite passed (9 tests) and the full repository check reported 0 errors and 0 warnings. Remaining: authorize and run a signed-in admin warm, regenerate and sync the manifest, then prove warmed cloud/static counts and the absence of warmed-key 404s."
+depends_on: "external: authorization for signed-in admin writes to the thumbnail cache and manifest/static sync"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Gallery Thumbnail Warm Pass — Design
 
 **Date:** 2026-07-02
-**Status:** Approved, pre-implementation
+**Status:** Implemented; production-backed warm and sync pending
 **Author:** Claude + Austen
+
+## Reconciliation: 2026-08-01
+
+Every named code deliverable is present in `main`, and the dead
+`/api/batch-render` endpoint is gone. The warmer has since received production
+hardening for cache behavior and timeout attribution.
+
+Verification on 2026-08-01:
+
+- `gallery-thumbnail-warmer.test.ts`: 9 tests passed.
+- `pnpm run check`: 0 errors and 0 warnings.
+
+The remaining work writes to the shared thumbnail cache and then changes the
+checked-in static cache. It stays blocked until that production-backed run is
+authorized.
 
 ## Problem
 
