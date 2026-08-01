@@ -12,7 +12,9 @@ export class MusicPlayer {
   private currentAudio: HTMLAudioElement | null = null;
   private initialized = false;
   private errorListener: ((message: string) => void) | null = null;
-  private timeListener: ((currentMs: number, durationMs: number) => void) | null = null;
+  private timeListener:
+    | ((currentMs: number, durationMs: number) => void)
+    | null = null;
   private loadedListener: ((durationMs: number) => void) | null = null;
   private endedListener: (() => void) | null = null;
   private currentFilename: string | undefined;
@@ -20,7 +22,9 @@ export class MusicPlayer {
   constructor() {}
 
   /** Playback position/duration updates (ms). Pass null to clear. */
-  onTimeUpdate(listener: ((currentMs: number, durationMs: number) => void) | null): void {
+  onTimeUpdate(
+    listener: ((currentMs: number, durationMs: number) => void) | null
+  ): void {
     this.timeListener = listener;
   }
 
@@ -84,16 +88,7 @@ export class MusicPlayer {
   cleanup(): void {
     if (this.currentAudio) {
       this.currentAudio.pause();
-      this.currentAudio.removeEventListener(
-        "loadedmetadata",
-        this.handleLoadedMetadata
-      );
-      this.currentAudio.removeEventListener(
-        "timeupdate",
-        this.handleTimeUpdate
-      );
-      this.currentAudio.removeEventListener("ended", this.handleEnded);
-      this.currentAudio.removeEventListener("error", this.handleError);
+      this.teardownAudioEventListeners();
       this.currentAudio = null;
     }
 
@@ -103,6 +98,7 @@ export class MusicPlayer {
     }
 
     this.initialized = false;
+    this.currentFilename = undefined;
   }
 
   async play(track: string): Promise<void> {
@@ -112,6 +108,7 @@ export class MusicPlayer {
       // Stop current audio if playing
       if (this.currentAudio) {
         this.currentAudio.pause();
+        this.teardownAudioEventListeners();
       }
 
       // Create new audio element
@@ -197,7 +194,10 @@ export class MusicPlayer {
 
   private teardownAudioEventListeners(): void {
     if (!this.currentAudio) return;
-    this.currentAudio.removeEventListener("loadedmetadata", this.handleLoadedMetadata);
+    this.currentAudio.removeEventListener(
+      "loadedmetadata",
+      this.handleLoadedMetadata
+    );
     this.currentAudio.removeEventListener("timeupdate", this.handleTimeUpdate);
     this.currentAudio.removeEventListener("ended", this.handleEnded);
     this.currentAudio.removeEventListener("error", this.handleError);
@@ -214,7 +214,10 @@ export class MusicPlayer {
 
   private handleTimeUpdate = (): void => {
     if (!this.currentAudio) return;
-    this.timeListener?.(this.currentAudio.currentTime * 1000, this.durationMs());
+    this.timeListener?.(
+      this.currentAudio.currentTime * 1000,
+      this.durationMs()
+    );
   };
 
   private handleEnded = (): void => {

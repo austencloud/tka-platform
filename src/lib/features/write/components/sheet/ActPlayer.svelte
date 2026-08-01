@@ -40,15 +40,29 @@
   let objectUrl: string | null = null;
 
   onMount(() => {
-    music.onError((m) => (musicState = { ...musicState, error: m, isLoading: false }));
+    music.onError(
+      (m) => (musicState = { ...musicState, error: m, isLoading: false })
+    );
     music.onLoadedMetadata(
-      (durMs) => (musicState = { ...musicState, duration: durMs, isLoaded: true, isLoading: false }),
+      (durMs) =>
+        (musicState = {
+          ...musicState,
+          duration: durMs,
+          isLoaded: true,
+          isLoading: false,
+        })
     );
     music.onTimeUpdate(
       (curMs, durMs) =>
-        (musicState = { ...musicState, currentTime: curMs, duration: durMs || musicState.duration }),
+        (musicState = {
+          ...musicState,
+          currentTime: curMs,
+          duration: durMs || musicState.duration,
+        })
     );
-    music.onEnded(() => (musicState = { ...musicState, isPlaying: false, currentTime: 0 }));
+    music.onEnded(
+      () => (musicState = { ...musicState, isPlaying: false, currentTime: 0 })
+    );
   });
 
   onDestroy(() => {
@@ -56,6 +70,10 @@
     music.onTimeUpdate(null);
     music.onLoadedMetadata(null);
     music.onEnded(null);
+    // Closing the dock must stop the loaded track. The player is a module-level
+    // singleton, so removing callbacks alone leaves its audio playing after the
+    // controls disappear.
+    music.cleanup();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
   });
 
@@ -96,7 +114,12 @@
 <aside class="act-player" aria-label="Play act" transition:dockSlide>
   <div class="dock-head">
     <span class="dock-title">Play act</span>
-    <button type="button" class="dock-close" aria-label="Close player" onclick={() => onClose?.()}>
+    <button
+      type="button"
+      class="dock-close"
+      aria-label="Close player"
+      onclick={() => onClose?.()}
+    >
       <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </div>

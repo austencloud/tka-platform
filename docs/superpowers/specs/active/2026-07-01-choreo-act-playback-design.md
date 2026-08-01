@@ -2,16 +2,34 @@
 status: active
 value: 4
 effort: M
-remaining: "Body status: approved (design), implementing"
-depends_on: ""
+remaining: "Implementation is in main. On 2026-08-01, 31 focused act, sheet-parity, and music-lifecycle tests passed and the full repository check reported 0 errors and 0 warnings. The singleton audio lifecycle was repaired so closing the dock stops playback. Remaining: authenticated browser proof for opening/closing the dock, loading a track, transport/seek/end behavior, mutual exclusion with the other docks, and responsive layout."
+depends_on: "external: explicit authenticated Chrome control for the Write module plus a disposable local audio file"
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Choreo Sheet — Act Playback (design)
 
 **Date:** 2026-07-01
-**Status:** approved (design), implementing
+**Status:** Implemented; authenticated browser proof pending
+
+## Reconciliation: 2026-08-01
+
+The act builder, music service, dock, state derivation, toolbar toggle, dock
+mutual exclusion, and persisted open preference are present in `main`.
+`music-player.test.ts` now covers listener delivery, replacement-track cleanup,
+singleton cleanup, and the legacy `play(track)` path. Closing `ActPlayer` also
+cleans up the singleton before revoking its object URL, so a hidden dock cannot
+leave music playing.
+
+Verification on 2026-08-01:
+
+- `music-player.test.ts`, `sheet-act-sequence.test.ts`, and
+  `sheet-band-planner.test.ts`: 3 files, 31 tests passed.
+- `pnpm run check`: 0 errors and 0 warnings.
+
+The remaining gate is interactive and authenticated. Keep this spec active
+until the current UI is exercised in the Write module with a local audio file.
 
 ## Goal
 
