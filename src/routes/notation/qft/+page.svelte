@@ -955,9 +955,15 @@
       <p class="landing-attribution">
         Quantized Field Theory · Charlie Cushing
       </p>
+      <!--
+        One sentence per line. Left as flowing text the break landed wherever
+        the width ran out — "Every step / gets written out" — which splits a
+        sentence across lines and reads as two ragged fragments rather than two
+        statements.
+      -->
       <p class="landing-lede">
-        Pick a flower for each hand and set the timing between them. Every step
-        gets written out in Charlie's notation.
+        <span>Pick a flower for each hand and set the timing between them.</span
+        ><span>Every step gets written out in Charlie's notation.</span>
       </p>
 
       <div class="landing-actions">
@@ -1432,6 +1438,14 @@
     font-size: clamp(1.05rem, 1.9vw, 1.4rem);
     line-height: 1.5;
     color: var(--semantic-text-secondary, rgb(255 255 255 / 0.8));
+  }
+
+  /* Each sentence owns its line. On a phone a sentence may still wrap within
+     its own block, which is fine — what must not happen is one sentence
+     spilling into the next line's space. */
+  .landing-lede span {
+    display: block;
+    text-wrap: pretty;
   }
 
   .landing-actions {
