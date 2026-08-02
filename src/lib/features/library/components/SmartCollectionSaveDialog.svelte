@@ -8,105 +8,116 @@ buildFilterSpecFromEngine on save. Reused by every browse host that offers a
 my-library pool).
 -->
 <script lang="ts">
-	import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-	import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
-	import type { BrowseEngine } from "$lib/shared/browse/engine/types";
-	import { buildFilterSpecFromEngine } from "$lib/shared/browse/services/smart-filter-spec";
-	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
-	import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-	import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-	import SmartCollectionSaveForm from "./SmartCollectionSaveForm.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import type { BrowseEngine } from "$lib/shared/browse/engine/types";
+  import { buildFilterSpecFromEngine } from "$lib/shared/browse/services/smart-filter-spec";
+  import { suggestSmartCollectionName } from "$lib/shared/browse/services/smart-collection-name";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import SmartCollectionSaveForm from "./SmartCollectionSaveForm.svelte";
 
-	let {
-		engine,
-		show = $bindable(false),
-	}: {
-		engine: BrowseEngine;
-		show?: boolean;
-	} = $props();
+  let {
+    engine,
+    show = $bindable(false),
+  }: {
+    engine: BrowseEngine;
+    show?: boolean;
+  } = $props();
 
-	let name = $state("");
-	let saving = $state(false);
-	let wasOpen = false;
+  let name = $state("");
+  let usingSuggestion = $state(true);
+  let saving = $state(false);
+  let wasOpen = false;
 
-	const spec = $derived.by(() => buildFilterSpecFromEngine(engine));
-	const modalOpen = $derived(show && !!authState.user);
+  const spec = $derived.by(() => buildFilterSpecFromEngine(engine));
+  const suggestedName = $derived(
+    suggestSmartCollectionName(
+      spec,
+      collectionsState.collections.map((collection) => collection.name)
+    )
+  );
+  const modalOpen = $derived(show && !!authState.user);
 
-	$effect(() => {
-		if (show && !wasOpen) {
-			name = "";
-			saving = false;
-		}
-		wasOpen = show;
+  $effect(() => {
+    if (show && !wasOpen) {
+      name = "";
+      usingSuggestion = true;
+      saving = false;
+    }
+    wasOpen = show;
 
-		// Creating a Smart Collection writes to the account library. Route a
-		// signed-out attempt to the app's canonical account prompt instead of
-		// leaving an inert save dialog on screen.
-		if (show && authState.initialized && !authState.user) {
-			show = false;
-			authDrawerState.show("signup", "module:library");
-		}
-	});
+    // Creating a Smart Collection writes to the account library. Route a
+    // signed-out attempt to the app's canonical account prompt instead of
+    // leaving an inert save dialog on screen.
+    if (show && authState.initialized && !authState.user) {
+      show = false;
+      authDrawerState.show("signup", "module:library");
+    }
+  });
 
-	async function save() {
-		const trimmed = name.trim();
-		if (!trimmed || saving || spec.filters.length === 0) return;
-		saving = true;
-		try {
-			const created = await collectionsState.createSmart(
-				trimmed,
-				spec,
-				engine.resultCount,
-			);
-			if (created) {
-				toast.success(`Smart Collection "${created.name}" saved.`);
-				show = false;
-			}
-		} finally {
-			saving = false;
-		}
-	}
+  async function save() {
+    const trimmed = name.trim() || suggestedName;
+    if (saving || spec.filters.length === 0) return;
+    saving = true;
+    try {
+      const created = await collectionsState.createSmart(
+        trimmed,
+        spec,
+        engine.resultCount
+      );
+      if (created) {
+        toast.success(`Smart Collection "${created.name}" saved.`);
+        show = false;
+      }
+    } finally {
+      saving = false;
+    }
+  }
 </script>
 
 <BaseModal
-	open={modalOpen}
-	size="fit"
-	animation="pop"
-	labelledBy="save-smart-collection-title"
-	class="save-smart-modal"
-	onclose={() => (show = false)}
+  open={modalOpen}
+  size="fit"
+  animation="pop"
+  labelledBy="save-smart-collection-title"
+  class="save-smart-modal"
+  onclose={() => (show = false)}
 >
-	{#snippet header()}
-		<ModalHeader
-			id="save-smart-collection-title"
-			title="Save Smart Collection"
-			subtitle="Name the rule you built from these filters."
-			icon="fa-wand-magic-sparkles"
-			iconColor="var(--theme-accent, #8b6cff)"
-			onClose={() => (show = false)}
-		/>
-	{/snippet}
+  {#snippet header()}
+    <ModalHeader
+      id="save-smart-collection-title"
+      title="Save Smart Collection"
+      subtitle="The name follows the filters until you change it."
+      icon="fa-wand-magic-sparkles"
+      iconColor="var(--theme-accent, #8b6cff)"
+      onClose={() => (show = false)}
+    />
+  {/snippet}
 
-	<SmartCollectionSaveForm
-		{spec}
-		matchCount={engine.resultCount}
-		bind:name
-		{saving}
-		autofocus
-		onSave={() => void save()}
-	/>
+  <SmartCollectionSaveForm
+    {spec}
+    matchCount={engine.resultCount}
+    bind:name
+    {suggestedName}
+    bind:usingSuggestion
+    {saving}
+    autofocus
+    onSave={() => void save()}
+  />
 </BaseModal>
 
 <style>
-	:global(dialog.base-modal.save-smart-modal[data-size="fit"]) {
-		width: min(600px, calc(100vw - 32px));
-	}
+  :global(dialog.base-modal.save-smart-modal[data-size="fit"]) {
+    width: min(600px, calc(100vw - 32px));
+  }
 
-	@media (max-width: 520px) {
-		:global(dialog.base-modal.save-smart-modal[data-size="fit"]) {
-			width: calc(100vw - 20px);
-			max-height: calc(100dvh - 20px);
-		}
-	}
+  @media (max-width: 520px) {
+    :global(dialog.base-modal.save-smart-modal[data-size="fit"]) {
+      width: calc(100vw - 20px);
+      max-height: calc(100dvh - 20px);
+    }
+  }
 </style>

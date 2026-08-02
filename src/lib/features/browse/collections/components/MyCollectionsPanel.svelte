@@ -588,7 +588,7 @@ instead of showing an empty shell.
 					</PanelButton>
 					<PanelButton
 						variant="secondary"
-						onclick={() => authDrawerState.show("signin")}
+						onclick={() => authDrawerState.show("signin", "module:library")}
 					>
 						Log in
 					</PanelButton>

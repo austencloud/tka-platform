@@ -1,528 +1,1600 @@
 <script lang="ts">
-  /**
-   * Smart Collection interface gallery.
-   *
-   * The production flow spans a filter bar, modal, full-height builder, rail
-   * card, and live detail pane. This page renders the real presentation
-   * components together so narrow, long-copy, loading, error, empty, personal,
-   * and built-in states can be inspected in one document. The production
-   * builder can also be opened over the gallery to exercise its real Drawer,
-   * engine, filter drill, and responsive placement.
-   */
-  import SmartCollectionRuleSummary from "$lib/features/library/components/SmartCollectionRuleSummary.svelte";
-  import SmartCollectionSaveForm from "$lib/features/library/components/SmartCollectionSaveForm.svelte";
-  import SmartCollectionDetailSurface from "$lib/features/browse/collections/components/SmartCollectionDetailSurface.svelte";
-  import SmartCollectionBuilderSheet from "$lib/features/browse/collections/components/SmartCollectionBuilderSheet.svelte";
-  import CollectionCardSurface from "$lib/features/browse/collections/components/CollectionCardSurface.svelte";
+  import { page } from "$app/state";
+  import { onMount } from "svelte";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import type {
-    LibraryCollection,
-    SmartFilterSpec,
-  } from "$lib/shared/library/domain/models/collection";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import SmartCollectionReviewFrame from "./_components/SmartCollectionReviewFrame.svelte";
 
-  const communityRule: SmartFilterSpec = {
-    source: "community",
-    filters: [
+  type ReviewStatus = "not-reviewed" | "approved" | "needs-changes";
+
+  const REVIEW_STEPS = [
+    {
+      id: "entry",
+      title: "Find the entry point",
+      hint: "Compare standard and Smart Collection creation in the library rail.",
+      icon: "fa-door-open",
+    },
+    {
+      id: "builder-start",
+      title: "Start the rule",
+      hint: "The empty builder should focus attention on choosing the first filter.",
+      icon: "fa-filter-circle-plus",
+    },
+    {
+      id: "builder-refine",
+      title: "Refine the rule",
+      hint: "The rule and matching sequences should remain readable together.",
+      icon: "fa-wand-magic-sparkles",
+    },
+    {
+      id: "summary",
+      title: "Read the rule back",
+      hint: "Source, sorting, filters, and the live count should scan as one receipt.",
+      icon: "fa-receipt",
+    },
+    {
+      id: "save",
+      title: "Confirm and save",
+      hint: "Check the suggested name and a custom name before saving.",
+      icon: "fa-floppy-disk",
+    },
+    {
+      id: "cards",
+      title: "Return to the library",
+      hint: "Personal and built-in cards should explain why membership changes.",
+      icon: "fa-folder-tree",
+    },
+    {
+      id: "detail",
+      title: "Open the collection",
+      hint: "Review empty, loading, error, and built-in detail states.",
+      icon: "fa-table-cells-large",
+    },
+  ] as const;
+
+  type ReviewStepId = (typeof REVIEW_STEPS)[number]["id"];
+
+  interface ReviewDecision {
+    status: ReviewStatus;
+    note: string;
+  }
+
+  type ReviewDecisions = Record<ReviewStepId, ReviewDecision>;
+
+  interface PreviewViewport {
+    id: string;
+    label: string;
+    shortLabel: string;
+    width: number;
+    height: number;
+    scale: number;
+  }
+
+  interface VariantOption {
+    value: string;
+    label: string;
+    shortLabel?: string;
+  }
+
+  const VIEWPORTS = [
+    {
+      id: "phone",
+      label: "Phone 375 × 667",
+      shortLabel: "Phone",
+      width: 375,
+      height: 667,
+      scale: 0.88,
+    },
+    {
+      id: "fold",
+      label: "Fold landscape 960 × 412",
+      shortLabel: "Fold",
+      width: 960,
+      height: 412,
+      scale: 0.75,
+    },
+    {
+      id: "tablet",
+      label: "Tablet 820 × 1180",
+      shortLabel: "Tablet",
+      width: 820,
+      height: 1180,
+      scale: 0.62,
+    },
+    {
+      id: "desktop",
+      label: "Desktop 1440 × 900",
+      shortLabel: "1440",
+      width: 1440,
+      height: 900,
+      scale: 0.58,
+    },
+    {
+      id: "desktop-hd",
+      label: "Desktop 1920 × 1080",
+      shortLabel: "1920",
+      width: 1920,
+      height: 1080,
+      scale: 0.46,
+    },
+    {
+      id: "desktop-qhd",
+      label: "Desktop 2560 × 1440",
+      shortLabel: "2560",
+      width: 2560,
+      height: 1440,
+      scale: 0.35,
+    },
+    {
+      id: "4k",
+      label: "4K 3840 × 2160",
+      shortLabel: "4K",
+      width: 3840,
+      height: 2160,
+      scale: 0.29,
+    },
+  ] satisfies PreviewViewport[];
+
+  const VARIANT_OPTIONS: Record<ReviewStepId, VariantOption[]> = {
+    entry: [],
+    "builder-start": [
       {
-        key: "difficulty",
-        type: "difficulty",
-        value: 1,
-        label: "Level 1",
-        chipColor: "#36c3ff",
+        value: "start-chooser",
+        label: "Starting choices",
+        shortLabel: "Start",
+      },
+      { value: "start-more", label: "More filters", shortLabel: "More" },
+      { value: "start-level", label: "Pick a level", shortLabel: "Level" },
+      { value: "start-length", label: "Pick a length", shortLabel: "Length" },
+      {
+        value: "start-letter",
+        label: "Pick a starting letter",
+        shortLabel: "Letters",
       },
       {
-        key: "length",
-        type: "length",
-        value: 8,
-        label: "8 steps",
-        chipColor: "#f59e0b",
+        value: "start-position",
+        label: "Pick a start position",
+        shortLabel: "Position",
       },
       {
-        key: "cap_type:component:mirrored",
-        type: "cap_type",
-        value: "component:mirrored",
-        label: "Mirrored",
-        chipColor: "#a970ff",
+        value: "start-gridmode",
+        label: "Pick a grid mode",
+        shortLabel: "Grid",
+      },
+      { value: "start-loop", label: "Pick LOOP types", shortLabel: "LOOPs" },
+      { value: "start-author", label: "Pick a creator", shortLabel: "Creator" },
+      {
+        value: "start-family",
+        label: "Pick Timing and Direction",
+        shortLabel: "T&D",
+      },
+      {
+        value: "start-max_turn_intensity",
+        label: "Pick max turn intensity",
+        shortLabel: "Turns",
       },
     ],
-    sortMethod: "alphabetical",
-    sortDirection: "asc",
-  };
-
-  const libraryRule: SmartFilterSpec = {
-    source: "my-library",
-    filters: [
+    "builder-refine": [
+      { value: "focused", label: "Focused result set", shortLabel: "Focused" },
+      { value: "dense", label: "Dense result set", shortLabel: "Dense" },
       {
-        key: "favorites",
-        type: "favorites",
-        value: true,
-        label: "Favorites",
-        chipColor: "#ec4899",
+        value: "filter-chooser",
+        label: "Choose a filter",
+        shortLabel: "Filters",
+      },
+      { value: "filter-level", label: "Pick a level", shortLabel: "Level" },
+      { value: "filter-length", label: "Pick a length", shortLabel: "Length" },
+      {
+        value: "filter-letter",
+        label: "Pick a starting letter",
+        shortLabel: "Letters",
       },
       {
-        key: "max_turn_intensity",
-        type: "max_turn_intensity",
-        value: 2,
-        label: "No more than 2 turns in any motion",
-        chipColor: "#22c55e",
+        value: "filter-position",
+        label: "Pick a start position",
+        shortLabel: "Position",
+      },
+      {
+        value: "filter-gridmode",
+        label: "Pick a grid mode",
+        shortLabel: "Grid",
+      },
+      { value: "filter-loop", label: "Pick LOOP types", shortLabel: "LOOPs" },
+      {
+        value: "filter-author",
+        label: "Pick a creator",
+        shortLabel: "Creator",
+      },
+      {
+        value: "filter-family",
+        label: "Pick Timing and Direction",
+        shortLabel: "T&D",
+      },
+      {
+        value: "filter-max_turn_intensity",
+        label: "Pick max turn intensity",
+        shortLabel: "Turns",
       },
     ],
-    sortMethod: "date",
-    sortDirection: "desc",
+    summary: [
+      { value: "community", label: "Community rule", shortLabel: "Community" },
+      { value: "library", label: "My Library rule", shortLabel: "My Library" },
+      { value: "counting", label: "Counting matches", shortLabel: "Counting" },
+    ],
+    save: [
+      {
+        value: "empty",
+        label: "Suggested name",
+        shortLabel: "Suggested",
+      },
+      { value: "long", label: "Custom name", shortLabel: "Custom" },
+    ],
+    cards: [
+      { value: "personal", label: "Personal rule", shortLabel: "Personal" },
+      { value: "built-in", label: "Built-in rule", shortLabel: "Built in" },
+      { value: "long", label: "Long collection name", shortLabel: "Long name" },
+    ],
+    detail: [
+      { value: "empty", label: "Empty personal rule", shortLabel: "Empty" },
+      { value: "loading", label: "Loading matches", shortLabel: "Loading" },
+      { value: "error", label: "Connection error", shortLabel: "Error" },
+      {
+        value: "built-in",
+        label: "Empty built-in rule",
+        shortLabel: "Built in",
+      },
+    ],
   };
 
-  const personalCard: LibraryCollection = {
-    id: "smart-personal-preview",
-    name: "Level 1 practice",
-    description: "Sequences for the next practice session",
-    ownerId: "preview-user",
-    sequenceIds: [],
-    sequenceCount: 127,
-    color: "#8b6cff",
-    icon: "fa-wand-magic-sparkles",
-    isPublic: false,
-    sortOrder: 0,
-    kind: "smart",
-    filterSpec: communityRule,
-    createdAt: new Date(2026, 6, 30),
-    updatedAt: new Date(2026, 6, 30),
-  };
-
-  const builtInCard: LibraryCollection = {
-    ...personalCard,
-    id: "founding-preview",
-    name: "TKA Core Level 1",
-    description: "Maintained by TKA",
-    sequenceCount: 48,
-    color: "#36c3ff",
-    systemType: "founding",
-  };
-
-  let saveName = $state("");
-  let longSaveName = $state(
-    "Workshop combinations that stay within the Level 2 turn limit"
+  const STORAGE_KEY = "tka-smart-collection-review-v1";
+  const isFrame = $derived(page.url.searchParams.get("frame") === "1");
+  const frameSurface = $derived(
+    page.url.searchParams.get("surface") ?? "entry"
   );
-  let builderOpen = $state(false);
+  const frameVariant = $derived(
+    page.url.searchParams.get("variant") ?? "default"
+  );
+
+  function createEmptyDecisions(): ReviewDecisions {
+    return Object.fromEntries(
+      REVIEW_STEPS.map((step) => [
+        step.id,
+        { status: "not-reviewed", note: "" },
+      ])
+    ) as ReviewDecisions;
+  }
+
+  function createInitialVariants(): Record<ReviewStepId, string> {
+    return Object.fromEntries(
+      REVIEW_STEPS.map((step) => [
+        step.id,
+        VARIANT_OPTIONS[step.id][0]?.value ?? "default",
+      ])
+    ) as Record<ReviewStepId, string>;
+  }
+
+  function isReviewStatus(value: unknown): value is ReviewStatus {
+    return (
+      value === "not-reviewed" ||
+      value === "approved" ||
+      value === "needs-changes"
+    );
+  }
+
+  let activeStepIndex = $state(0);
+  let viewportId = $state("phone");
+  let decisions = $state<ReviewDecisions>(createEmptyDecisions());
+  let selectedVariants = $state<Record<ReviewStepId, string>>(
+    createInitialVariants()
+  );
+  let finalApproved = $state(false);
+  let reviewLoaded = $state(false);
+  let storageAvailable = $state(true);
+
+  const activeStep = $derived(REVIEW_STEPS[activeStepIndex] ?? REVIEW_STEPS[0]);
+  const activeDecision = $derived(decisions[activeStep.id]);
+  const activeVariants = $derived(VARIANT_OPTIONS[activeStep.id]);
+  const selectedViewport = $derived(
+    VIEWPORTS.find((viewport) => viewport.id === viewportId) ?? VIEWPORTS[0]!
+  );
+  const approvedCount = $derived(
+    REVIEW_STEPS.filter((step) => decisions[step.id].status === "approved")
+      .length
+  );
+  const changesCount = $derived(
+    REVIEW_STEPS.filter((step) => decisions[step.id].status === "needs-changes")
+      .length
+  );
+  const allApproved = $derived(approvedCount === REVIEW_STEPS.length);
+  const finalGatePassed = $derived(allApproved && finalApproved);
+  const frameSource = $derived(
+    `/test/smart-collections?frame=1&surface=${activeStep.id}&variant=${selectedVariants[activeStep.id]}`
+  );
+
+  onMount(() => {
+    // This route intentionally runs in landing-lite mode. A Vite process that
+    // was already running before the route was registered can retain the app
+    // boot screen from its startup HTML, so the review surface clears it once
+    // the real component tree has mounted.
+    document.getElementById("app-loading")?.remove();
+
+    if (isFrame) return;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const stored = JSON.parse(raw) as {
+          activeStepId?: unknown;
+          viewportId?: unknown;
+          decisions?: Partial<Record<ReviewStepId, Partial<ReviewDecision>>>;
+          selectedVariants?: Partial<Record<ReviewStepId, string>>;
+          finalApproved?: unknown;
+        };
+        const restoredDecisions = createEmptyDecisions();
+        const restoredVariants = createInitialVariants();
+
+        for (const step of REVIEW_STEPS) {
+          const storedDecision = stored.decisions?.[step.id];
+          if (isReviewStatus(storedDecision?.status)) {
+            restoredDecisions[step.id].status = storedDecision.status;
+          }
+          if (typeof storedDecision?.note === "string") {
+            restoredDecisions[step.id].note = storedDecision.note;
+          }
+
+          const storedVariant = stored.selectedVariants?.[step.id];
+          if (
+            typeof storedVariant === "string" &&
+            VARIANT_OPTIONS[step.id].some(
+              (option) => option.value === storedVariant
+            )
+          ) {
+            restoredVariants[step.id] = storedVariant;
+          }
+        }
+
+        decisions = restoredDecisions;
+        selectedVariants = restoredVariants;
+        finalApproved =
+          stored.finalApproved === true &&
+          REVIEW_STEPS.every(
+            (step) => restoredDecisions[step.id].status === "approved"
+          );
+
+        const restoredStepIndex = REVIEW_STEPS.findIndex(
+          (step) => step.id === stored.activeStepId
+        );
+        if (restoredStepIndex >= 0) activeStepIndex = restoredStepIndex;
+
+        if (
+          typeof stored.viewportId === "string" &&
+          VIEWPORTS.some((viewport) => viewport.id === stored.viewportId)
+        ) {
+          viewportId = stored.viewportId;
+        }
+      }
+    } catch {
+      storageAvailable = false;
+    }
+
+    reviewLoaded = true;
+  });
+
+  $effect(() => {
+    if (isFrame || !reviewLoaded) return;
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          activeStepId: activeStep.id,
+          viewportId,
+          decisions,
+          selectedVariants,
+          finalApproved,
+        })
+      );
+      storageAvailable = true;
+    } catch {
+      storageAvailable = false;
+    }
+  });
+
+  function selectStep(stepId: ReviewStepId) {
+    const nextIndex = REVIEW_STEPS.findIndex((step) => step.id === stepId);
+    if (nextIndex >= 0) activeStepIndex = nextIndex;
+  }
+
+  function setCurrentStatus(status: ReviewStatus) {
+    decisions[activeStep.id].status = status;
+    finalApproved = false;
+  }
+
+  function approveAndContinue() {
+    setCurrentStatus("approved");
+    if (activeStepIndex < REVIEW_STEPS.length - 1) activeStepIndex += 1;
+  }
+
+  function markNeedsChanges() {
+    setCurrentStatus("needs-changes");
+  }
+
+  function updateCurrentNote(note: string) {
+    decisions[activeStep.id].note = note;
+  }
+
+  function resetReview() {
+    if (
+      !window.confirm("Clear every Smart Collection review decision and note?")
+    ) {
+      return;
+    }
+
+    decisions = createEmptyDecisions();
+    selectedVariants = createInitialVariants();
+    activeStepIndex = 0;
+    viewportId = "phone";
+    finalApproved = false;
+  }
+
+  function statusLabel(status: ReviewStatus): string {
+    switch (status) {
+      case "approved":
+        return "Approved";
+      case "needs-changes":
+        return "Needs changes";
+      default:
+        return "Not reviewed";
+    }
+  }
+
+  function statusIcon(status: ReviewStatus): string {
+    switch (status) {
+      case "approved":
+        return "fa-check";
+      case "needs-changes":
+        return "fa-triangle-exclamation";
+      default:
+        return "fa-circle";
+    }
+  }
+
+  function reviewSummary(): string {
+    const gate = finalGatePassed
+      ? "Approved"
+      : changesCount > 0
+        ? "Blocked by requested changes"
+        : "Awaiting approval";
+    const steps = REVIEW_STEPS.flatMap((step, index) => {
+      const decision = decisions[step.id];
+      return [
+        `## ${index + 1}. ${step.title}`,
+        `Status: ${statusLabel(decision.status)}`,
+        `Notes: ${decision.note.trim() || "None"}`,
+        "",
+      ];
+    });
+
+    return [
+      "# Smart Collection redesign review",
+      `Final gate: ${gate}`,
+      "",
+      ...steps,
+    ].join("\n");
+  }
 </script>
 
 <svelte:head>
-  <title>Smart Collection interface gallery</title>
+  <title
+    >{isFrame
+      ? "Smart Collection review frame"
+      : "Smart Collection design review"}</title
+  >
 </svelte:head>
 
-<main class="gallery">
-  <header class="gallery-head">
-    <div>
-      <span class="kicker">Production component gallery</span>
-      <h1>Smart Collections</h1>
-      <p>
-        Real components at the widths and states that are difficult to reach
-        reliably through account data.
-      </p>
-    </div>
-    <PanelButton variant="primary" onclick={() => (builderOpen = true)}>
-      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-      Open production builder
-    </PanelButton>
-  </header>
-
-  <section class="gallery-section">
-    <div class="section-head">
-      <div>
-        <span class="kicker">Rule receipt</span>
-        <h2>One rule, four container widths</h2>
+{#if isFrame}
+  <SmartCollectionReviewFrame surface={frameSurface} variant={frameVariant} />
+{:else}
+  <main class="review-page">
+    <header class="review-header">
+      <div class="review-heading">
+        <span class="eyebrow">Design review</span>
+        <h1>Smart Collections</h1>
+        <p>Approve each production surface before the final gate opens.</p>
       </div>
-      <p>Long criteria wrap. Counts reserve their space.</p>
-    </div>
 
-    <div class="width-row">
-      {#each [{ label: "Phone rail · 320px", width: 320 }, { label: "Phone detail · 375px", width: 375 }, { label: "Tablet pane · 560px", width: 560 }, { label: "Desktop pane · 820px", width: 820 }] as frame (frame.label)}
-        <article class="frame">
-          <h3>{frame.label}</h3>
-          <div class="frame-body" style:width={`${frame.width}px`}>
-            <SmartCollectionRuleSummary
-              spec={frame.width < 500 ? libraryRule : communityRule}
-              matchCount={frame.width === 375 ? null : 127}
-              compact={frame.width === 320}
-            />
+      <div class="header-actions">
+        <span class="review-progress">
+          <strong>{approvedCount}</strong> of {REVIEW_STEPS.length} approved
+        </span>
+        <CopyForAIButton
+          getData={reviewSummary}
+          variant="icon-text"
+          size="md"
+          idleIcon="fa-clipboard-list"
+          ariaLabel="Copy Smart Collection review summary"
+          labels={{
+            idle: "Copy review summary",
+            loading: "Preparing summary",
+            success: "Review copied",
+            error: "Copy failed",
+          }}
+          class="review-copy"
+        />
+      </div>
+    </header>
+
+    <div class="review-layout">
+      <aside class="review-rail">
+        <div class="rail-head">
+          <div>
+            <span>Review steps</span>
+            <small>
+              {storageAvailable
+                ? "Saved on this device"
+                : "Saved until this tab closes"}
+            </small>
           </div>
-        </article>
-      {/each}
+          {#if changesCount > 0}
+            <span class="change-count">{changesCount} open</span>
+          {/if}
+        </div>
+
+        <nav aria-label="Smart Collection review steps">
+          <ol class="step-list">
+            {#each REVIEW_STEPS as step, index (step.id)}
+              {@const decision = decisions[step.id]}
+              <li>
+                <button
+                  type="button"
+                  class="step-button"
+                  class:active={activeStep.id === step.id}
+                  data-status={decision.status}
+                  onclick={() => selectStep(step.id)}
+                  aria-current={activeStep.id === step.id ? "step" : undefined}
+                >
+                  <span class="step-index">{index + 1}</span>
+                  <span class="step-copy">
+                    <strong>{step.title}</strong>
+                    <span class="step-status">
+                      <i
+                        class="fas {statusIcon(decision.status)}"
+                        aria-hidden="true"
+                      ></i>
+                      {statusLabel(decision.status)}
+                    </span>
+                  </span>
+                  <i class="fas fa-chevron-right step-arrow" aria-hidden="true"
+                  ></i>
+                </button>
+              </li>
+            {/each}
+          </ol>
+        </nav>
+
+        <section
+          class="final-gate"
+          class:ready={allApproved}
+          class:passed={finalGatePassed}
+        >
+          <span class="gate-icon">
+            <i
+              class="fas {finalGatePassed
+                ? 'fa-check'
+                : allApproved
+                  ? 'fa-lock-open'
+                  : 'fa-lock'}"
+              aria-hidden="true"
+            ></i>
+          </span>
+          <div>
+            <h2>Final gate</h2>
+            <p>
+              {#if finalGatePassed}
+                Redesign approved.
+              {:else if allApproved}
+                Every step is approved.
+              {:else}
+                {REVIEW_STEPS.length - approvedCount} steps still need approval.
+              {/if}
+            </p>
+          </div>
+
+          {#if finalGatePassed}
+            <div class="gate-result">
+              <i class="fas fa-circle-check" aria-hidden="true"></i>
+              Approval recorded
+            </div>
+          {:else}
+            <PanelButton
+              variant="primary"
+              fullWidth
+              disabled={!allApproved}
+              onclick={() => (finalApproved = true)}
+            >
+              <i class="fas fa-stamp" aria-hidden="true"></i>
+              Approve redesign
+            </PanelButton>
+          {/if}
+        </section>
+
+        <PanelButton variant="secondary" fullWidth onclick={resetReview}>
+          <i class="fas fa-rotate-left" aria-hidden="true"></i>
+          Reset review
+        </PanelButton>
+      </aside>
+
+      <section class="review-workspace" aria-labelledby="active-step-title">
+        <header class="step-head">
+          <div class="step-title">
+            <span>Step {activeStepIndex + 1} of {REVIEW_STEPS.length}</span>
+            <h2 id="active-step-title">{activeStep.title}</h2>
+            <p>{activeStep.hint}</p>
+          </div>
+          <span class="current-status" data-status={activeDecision.status}>
+            <i
+              class="fas {statusIcon(activeDecision.status)}"
+              aria-hidden="true"
+            ></i>
+            {statusLabel(activeDecision.status)}
+          </span>
+        </header>
+
+        <div class="review-toolbar">
+          <div class="control-group viewport-control">
+            <span id="review-viewport-label">Preview viewport</span>
+            <div class="viewport-options-scroll">
+              <SegmentedControl
+                options={VIEWPORTS.map((viewport) => ({
+                  value: viewport.id,
+                  label: viewport.label,
+                  shortLabel: viewport.shortLabel,
+                }))}
+                value={viewportId}
+                onchange={(value) => (viewportId = value)}
+                color="accent"
+                size="sm"
+                semantics="radiogroup"
+                ariaLabelledby="review-viewport-label"
+              />
+            </div>
+          </div>
+
+          {#if activeVariants.length > 0}
+            <div
+              class="control-group state-control"
+              class:many-states={activeVariants.length > 4}
+            >
+              <span id="review-state-label">Component state</span>
+              <div class="state-options-scroll">
+                <SegmentedControl
+                  options={activeVariants}
+                  value={selectedVariants[activeStep.id]}
+                  onchange={(value) =>
+                    (selectedVariants[activeStep.id] = value)}
+                  color="accent"
+                  size="sm"
+                  semantics="radiogroup"
+                  ariaLabelledby="review-state-label"
+                />
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <section
+          class="preview-panel"
+          aria-label="Production component preview"
+        >
+          <header class="preview-head">
+            <span>{selectedViewport.label}</span>
+            <span>{Math.round(selectedViewport.scale * 100)}% review scale</span
+            >
+          </header>
+          <div class="preview-scroll">
+            <div
+              class="viewport-shell"
+              style={`--frame-width: ${selectedViewport.width}px; --frame-height: ${selectedViewport.height}px; --frame-scale: ${selectedViewport.scale}; --display-width: ${selectedViewport.width * selectedViewport.scale}px; --display-height: ${selectedViewport.height * selectedViewport.scale}px;`}
+            >
+              {#key `${activeStep.id}-${selectedVariants[activeStep.id]}`}
+                <iframe
+                  src={frameSource}
+                  title={`${activeStep.title}, ${selectedViewport.label}`}
+                  width={selectedViewport.width}
+                  height={selectedViewport.height}
+                ></iframe>
+              {/key}
+            </div>
+          </div>
+        </section>
+
+        <section class="decision-panel" data-status={activeDecision.status}>
+          <label for="review-note">
+            <span>Review notes</span>
+            <textarea
+              id="review-note"
+              rows="3"
+              value={activeDecision.note}
+              placeholder={activeDecision.status === "needs-changes"
+                ? "Describe the change that blocks approval"
+                : "Optional notes for this step"}
+              oninput={(event) => updateCurrentNote(event.currentTarget.value)}
+            ></textarea>
+          </label>
+
+          <div class="decision-actions">
+            <PanelButton
+              variant="secondary"
+              disabled={activeStepIndex === 0}
+              onclick={() =>
+                (activeStepIndex = Math.max(0, activeStepIndex - 1))}
+            >
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+              Previous
+            </PanelButton>
+
+            <div class="decision-choices">
+              <div
+                class="needs-action"
+                class:active={activeDecision.status === "needs-changes"}
+              >
+                <PanelButton variant="secondary" onclick={markNeedsChanges}>
+                  <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                  Needs changes
+                </PanelButton>
+              </div>
+              <div class="approve-action">
+                <PanelButton variant="primary" onclick={approveAndContinue}>
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                  {activeStepIndex < REVIEW_STEPS.length - 1
+                    ? "Approve and continue"
+                    : "Approve step"}
+                </PanelButton>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
     </div>
-  </section>
-
-  <section class="gallery-section">
-    <div class="section-head">
-      <div>
-        <span class="kicker">Save</span>
-        <h2>Name and confirm the rule</h2>
-      </div>
-      <p>The same form sits inside the production modal.</p>
-    </div>
-
-    <div class="surface-grid save-grid">
-      <article class="frame">
-        <h3>Phone · empty name</h3>
-        <div class="save-frame phone">
-          <SmartCollectionSaveForm
-            spec={communityRule}
-            matchCount={127}
-            bind:name={saveName}
-            inputId="smart-collection-name-phone"
-            onSave={() => {}}
-          />
-        </div>
-      </article>
-      <article class="frame">
-        <h3>Desktop · long name</h3>
-        <div class="save-frame desktop">
-          <SmartCollectionSaveForm
-            spec={libraryRule}
-            matchCount={8}
-            bind:name={longSaveName}
-            inputId="smart-collection-name-desktop"
-            onSave={() => {}}
-          />
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section class="gallery-section">
-    <div class="section-head">
-      <div>
-        <span class="kicker">Library rail</span>
-        <h2>Personal and built-in cards</h2>
-      </div>
-      <p>The metadata states why membership changes.</p>
-    </div>
-
-    <div class="card-widths">
-      <article class="frame">
-        <h3>Narrow rail · 300px</h3>
-        <div class="card-stack narrow">
-          <CollectionCardSurface
-            collection={personalCard}
-            onOpen={() => {}}
-            onOptions={() => {}}
-          />
-          <CollectionCardSurface
-            collection={builtInCard}
-            readonly
-            onOpen={() => {}}
-          />
-        </div>
-      </article>
-      <article class="frame">
-        <h3>Card grid · 520px</h3>
-        <div class="card-stack wide">
-          <CollectionCardSurface
-            collection={{
-              ...personalCard,
-              name: "Favorites with a very long turn-intensity criterion for workshops",
-              sequenceCount: 8,
-              filterSpec: libraryRule,
-            }}
-            onOpen={() => {}}
-            onOptions={() => {}}
-          />
-          <CollectionCardSurface
-            collection={builtInCard}
-            readonly
-            onOpen={() => {}}
-          />
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section class="gallery-section">
-    <div class="section-head">
-      <div>
-        <span class="kicker">Detail pane</span>
-        <h2>Every non-grid state</h2>
-      </div>
-      <p>Personal rules recover. Built-in rules stay read-only.</p>
-    </div>
-
-    <div class="detail-matrix">
-      <article class="frame">
-        <h3>Phone · empty personal rule</h3>
-        <div class="detail-frame phone-detail">
-          <SmartCollectionDetailSurface
-            name="Level 1 practice"
-            color="#8b6cff"
-            spec={communityRule}
-            matchCount={0}
-            onBack={() => {}}
-            onEdit={() => {}}
-            onOptions={() => {}}
-          />
-        </div>
-      </article>
-
-      <article class="frame">
-        <h3>Handheld landscape · loading</h3>
-        <div class="detail-frame landscape-detail">
-          <SmartCollectionDetailSurface
-            name="Workshop favorites"
-            color="#ec4899"
-            spec={libraryRule}
-            matchCount={null}
-            loading
-            onBack={() => {}}
-            onEdit={() => {}}
-            onOptions={() => {}}
-          />
-        </div>
-      </article>
-
-      <article class="frame">
-        <h3>Tablet · connection error</h3>
-        <div class="detail-frame tablet-detail">
-          <SmartCollectionDetailSurface
-            name="Level 1 practice"
-            color="#8b6cff"
-            spec={communityRule}
-            matchCount={null}
-            error
-            showBack={false}
-            onEdit={() => {}}
-            onOptions={() => {}}
-            onRetry={() => {}}
-          />
-        </div>
-      </article>
-
-      <article class="frame">
-        <h3>Desktop · empty built-in rule</h3>
-        <div class="detail-frame desktop-detail">
-          <SmartCollectionDetailSurface
-            name="TKA Core Level 1"
-            description="Maintained by TKA."
-            color="#36c3ff"
-            spec={communityRule}
-            matchCount={0}
-            readOnly
-            showBack={false}
-          />
-        </div>
-      </article>
-    </div>
-  </section>
-</main>
-
-{#if builderOpen}
-  <SmartCollectionBuilderSheet
-    mode="create"
-    onClose={() => (builderOpen = false)}
-  />
+  </main>
 {/if}
 
 <style>
   :global(body) {
     margin: 0;
-    background: #0d1017;
+    background: #0b0d13;
   }
 
-  .gallery {
-    min-height: 100vh;
-    padding: clamp(20px, 3vw, 56px);
+  .review-page {
+    min-height: 100dvh;
+    padding: clamp(16px, 2.5vw, 48px);
     background:
       radial-gradient(
-        circle at 15% 0%,
-        rgba(139, 108, 255, 0.11),
-        transparent 26rem
+        circle at 8% 0%,
+        rgba(139, 108, 255, 0.14),
+        transparent 28rem
       ),
-      #0d1017;
+      #0b0d13;
     color: var(--theme-text, #f7f8fb);
     font-family: system-ui, sans-serif;
+    --theme-panel-bg: #11141c;
+    --theme-card-bg: rgba(255, 255, 255, 0.045);
+    --theme-card-hover-bg: rgba(255, 255, 255, 0.075);
+    --theme-stroke: rgba(255, 255, 255, 0.11);
+    --theme-stroke-strong: rgba(255, 255, 255, 0.2);
+    --theme-text: #f7f8fb;
+    --theme-text-dim: rgba(235, 239, 248, 0.66);
+    --theme-accent: #8b6cff;
+    --semantic-success: #36c879;
+    --semantic-warning: #f2ad3b;
+    --min-touch-target: 44px;
+    --font-size-compact: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
   }
 
-  .gallery-head,
-  .section-head {
+  .review-header,
+  .review-layout {
+    width: min(100%, var(--shell-w, min(1720px, 92vw)));
+    margin-inline: auto;
+  }
+
+  .review-header {
     display: flex;
     align-items: end;
     justify-content: space-between;
     gap: 24px;
+    margin-bottom: clamp(20px, 3vw, 38px);
   }
 
-  .gallery-head {
-    width: min(100%, var(--shell-w, min(1720px, 92vw)));
-    margin: 0 auto clamp(34px, 5vw, 70px);
-  }
-
-  .gallery-head h1,
-  .section-head h2 {
+  .review-heading h1 {
     margin: 4px 0 0;
-    letter-spacing: -0.025em;
+    font-size: clamp(34px, 4vw, 62px);
+    letter-spacing: -0.035em;
+    line-height: 1;
   }
 
-  .gallery-head h1 {
-    font-size: clamp(32px, 5vw, 64px);
+  .review-heading p {
+    margin: 10px 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
   }
 
-  .section-head h2 {
-    font-size: clamp(22px, 3vw, 34px);
-  }
-
-  .gallery-head p,
-  .section-head p {
-    max-width: 520px;
-    margin: 8px 0 0;
-    color: #9da7b8;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .section-head > p {
-    text-align: right;
-  }
-
-  .kicker {
-    color: #9b8cff;
-    font-size: 12px;
+  .eyebrow,
+  .step-title > span,
+  .control-group > span {
+    color: color-mix(in srgb, var(--theme-accent) 76%, white);
+    font-size: var(--font-size-compact);
     font-weight: 750;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .gallery-section {
-    width: min(100%, var(--shell-w, min(1720px, 92vw)));
-    margin: 0 auto 72px;
-  }
-
-  .section-head {
-    margin-bottom: 20px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .width-row,
-  .surface-grid,
-  .card-widths,
-  .detail-matrix {
+  .header-actions {
     display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
     flex-wrap: wrap;
-    align-items: start;
-    gap: 24px;
   }
 
-  .frame {
-    min-width: 0;
+  .review-progress {
+    display: inline-flex;
+    min-height: var(--min-touch-target);
+    align-items: center;
+    padding: 0 16px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
   }
 
-  .frame h3 {
-    margin: 0 0 8px;
-    color: #9da7b8;
-    font-size: 12px;
-    font-weight: 650;
-    letter-spacing: 0.04em;
+  .review-progress strong {
+    margin-right: 4px;
+    color: var(--theme-text);
   }
 
-  .frame-body,
-  .save-frame,
-  .card-stack,
-  .detail-frame {
-    max-width: calc(100vw - 40px);
-    overflow: hidden;
-    border: 1px solid #2c3443;
-    border-radius: 16px;
-    background: var(--theme-panel-bg, #151923);
-    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+  .header-actions :global(.review-copy) {
+    min-width: 190px;
   }
 
-  .frame-body {
-    padding: 12px;
-  }
-
-  .save-grid {
+  .review-layout {
     display: grid;
-    grid-template-columns: minmax(320px, 420px) minmax(520px, 660px);
+    grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(18px, 2.4vw, 36px);
   }
 
-  .save-grid > .frame {
+  .review-rail {
+    display: flex;
+    position: sticky;
+    top: 20px;
+    min-width: 0;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .rail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-inline: 4px;
+  }
+
+  .rail-head > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .rail-head span {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+  }
+
+  .rail-head small {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .change-count {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
+    color: var(--semantic-warning);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step-list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+    gap: 8px;
+    list-style: none;
+  }
+
+  .step-button {
+    display: grid;
     width: 100%;
+    min-height: 68px;
+    grid-template-columns: 34px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 13px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
-  .save-frame.phone {
-    width: min(375px, 100%);
+  .step-button:hover {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
   }
 
-  .save-frame.desktop {
-    width: min(640px, 100%);
+  .step-button.active {
+    border-color: color-mix(in srgb, var(--theme-accent) 72%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 10%,
+      var(--theme-card-bg)
+    );
+    box-shadow: inset 3px 0 0 var(--theme-accent);
   }
 
-  .card-stack {
+  .step-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .step-index {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step-button[data-status="approved"] .step-index {
+    border-color: color-mix(in srgb, var(--semantic-success) 54%, transparent);
+    background: color-mix(in srgb, var(--semantic-success) 12%, transparent);
+    color: var(--semantic-success);
+  }
+
+  .step-button[data-status="needs-changes"] .step-index {
+    border-color: color-mix(in srgb, var(--semantic-warning) 54%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning) 12%, transparent);
+    color: var(--semantic-warning);
+  }
+
+  .step-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .step-copy strong {
+    overflow: hidden;
+    font-size: var(--font-size-sm);
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .step-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .step-status i {
+    width: 12px;
+    font-size: 8px;
+    text-align: center;
+  }
+
+  .step-button[data-status="approved"] .step-status {
+    color: var(--semantic-success);
+  }
+
+  .step-button[data-status="needs-changes"] .step-status {
+    color: var(--semantic-warning);
+  }
+
+  .step-arrow {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .final-gate {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px 12px;
+    padding: 14px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 15px;
+    background: var(--theme-panel-bg);
+  }
+
+  .final-gate.ready {
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+  }
+
+  .final-gate.passed {
+    border-color: color-mix(in srgb, var(--semantic-success) 56%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success) 7%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .gate-icon {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    grid-row: 1;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+  }
+
+  .ready .gate-icon {
+    color: var(--theme-accent);
+  }
+
+  .passed .gate-icon {
+    color: var(--semantic-success);
+  }
+
+  .final-gate h2 {
+    margin: 0;
+    font-size: var(--font-size-base);
+  }
+
+  .final-gate p {
+    margin: 3px 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.35;
+  }
+
+  .final-gate > :global(.panel-btn),
+  .gate-result {
+    grid-column: 1 / -1;
+  }
+
+  .gate-result {
+    display: flex;
+    min-height: var(--min-touch-target);
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--semantic-success) 13%, transparent);
+    color: var(--semantic-success);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+  }
+
+  .review-workspace {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 20px;
+    background: var(--theme-panel-bg);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  }
+
+  .step-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: clamp(18px, 2vw, 28px);
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  .step-title h2 {
+    margin: 5px 0 0;
+    font-size: clamp(24px, 2.4vw, 36px);
+    letter-spacing: -0.025em;
+  }
+
+  .step-title p {
+    margin: 7px 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
+  }
+
+  .current-status {
+    display: inline-flex;
+    min-width: 132px;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 12px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .current-status[data-status="approved"] {
+    border-color: color-mix(in srgb, var(--semantic-success) 44%, transparent);
+    color: var(--semantic-success);
+  }
+
+  .current-status[data-status="needs-changes"] {
+    border-color: color-mix(in srgb, var(--semantic-warning) 48%, transparent);
+    color: var(--semantic-warning);
+  }
+
+  .review-toolbar {
+    display: flex;
+    align-items: end;
+    gap: 16px;
+    padding: 14px clamp(16px, 2vw, 24px);
+    border-bottom: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-card-bg) 68%, transparent);
+  }
+
+  .control-group {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .viewport-control {
+    width: min(100%, 660px);
+    flex: 1 1 520px;
+  }
+
+  .state-control {
+    width: min(100%, 440px);
+    flex: 1 1 340px;
+  }
+
+  .review-toolbar:has(.state-control.many-states) {
+    flex-wrap: wrap;
+  }
+
+  .state-control.many-states {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .state-options-scroll {
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .state-control.many-states .state-options-scroll :global(.segmented-control) {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .state-control.many-states .state-options-scroll :global(.segment) {
+    min-width: 76px;
+  }
+
+  .preview-panel {
+    border-bottom: 1px solid var(--theme-stroke);
+    background: #080a0f;
+  }
+
+  .preview-head {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .preview-head span:first-child {
+    color: var(--theme-text);
+    font-weight: 650;
+  }
+
+  .preview-scroll {
+    display: flex;
+    max-height: min(72dvh, 900px);
+    overflow: auto;
+    padding: clamp(12px, 2vw, 26px);
+  }
+
+  .viewport-shell {
+    width: var(--display-width);
+    height: var(--display-height);
+    flex: 0 0 auto;
+    margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: clamp(10px, 1vw, 18px);
+    background: #0b0d13;
+    box-shadow: 0 16px 52px rgba(0, 0, 0, 0.48);
+  }
+
+  .viewport-shell iframe {
+    display: block;
+    width: var(--frame-width);
+    height: var(--frame-height);
+    border: 0;
+    transform: scale(var(--frame-scale));
+    transform-origin: top left;
+  }
+
+  .decision-panel {
+    display: grid;
+    gap: 14px;
+    padding: clamp(16px, 2vw, 24px);
+    background: color-mix(in srgb, var(--theme-card-bg) 48%, transparent);
+  }
+
+  .decision-panel[data-status="needs-changes"] {
+    box-shadow: inset 4px 0 0 var(--semantic-warning);
+  }
+
+  .decision-panel[data-status="approved"] {
+    box-shadow: inset 4px 0 0 var(--semantic-success);
+  }
+
+  .decision-panel label {
     display: flex;
     flex-direction: column;
+    gap: 7px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-weight: 650;
+  }
+
+  .decision-panel textarea {
+    width: 100%;
+    min-height: 86px;
+    resize: vertical;
+    padding: 12px 14px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
+    outline: none;
+    background: #0b0d13;
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 400;
+    line-height: 1.45;
+  }
+
+  .decision-panel textarea::placeholder {
+    color: var(--theme-text-dim);
+  }
+
+  .decision-panel textarea:focus-visible {
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent) 16%, transparent);
+  }
+
+  .decision-actions,
+  .decision-choices {
+    display: flex;
+    align-items: center;
     gap: 10px;
-    padding: 12px;
   }
 
-  .card-stack.narrow {
-    width: 300px;
+  .decision-actions {
+    justify-content: space-between;
   }
 
-  .card-stack.wide {
-    width: 520px;
+  .needs-action,
+  .approve-action {
+    display: flex;
   }
 
-  .detail-matrix {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .needs-action :global(.panel-btn) {
+    min-width: 148px;
   }
 
-  .detail-matrix > .frame {
-    width: 100%;
+  .needs-action.active :global(.panel-btn) {
+    border-color: var(--semantic-warning);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning) 12%,
+      var(--theme-card-bg)
+    );
+    color: var(--semantic-warning);
   }
 
-  .detail-frame {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .phone-detail {
-    width: 375px;
-    height: 667px;
-  }
-
-  .landscape-detail {
-    width: min(960px, 100%);
-    height: 412px;
-  }
-
-  .tablet-detail {
-    width: 820px;
-    height: 720px;
-  }
-
-  .desktop-detail {
-    width: min(100%, 1160px);
-    height: 680px;
+  .approve-action :global(.panel-btn) {
+    min-width: 202px;
   }
 
   @media (max-width: 900px) {
-    .gallery-head,
-    .section-head {
+    .review-header {
       align-items: stretch;
       flex-direction: column;
     }
 
-    .section-head > p {
-      text-align: left;
+    .header-actions {
+      justify-content: flex-start;
     }
 
-    .save-grid,
-    .detail-matrix {
-      display: flex;
+    .review-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .review-rail {
+      position: static;
+    }
+
+    .step-list {
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 2px 2px 8px;
+      scroll-snap-type: x proximity;
+    }
+
+    .step-list li {
+      min-width: min(250px, 76vw);
+      scroll-snap-align: start;
+    }
+
+    .final-gate {
+      grid-template-columns: 40px minmax(0, 1fr) minmax(190px, 0.55fr);
+      align-items: center;
+    }
+
+    .final-gate > :global(.panel-btn),
+    .gate-result {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .review-toolbar {
+      align-items: stretch;
       flex-direction: column;
     }
 
-    .width-row > .frame,
-    .surface-grid > .frame,
-    .card-widths > .frame,
-    .detail-matrix > .frame {
+    .viewport-control,
+    .state-control {
       width: 100%;
+      flex: none;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .review-page {
+      padding: 12px;
+    }
+
+    .review-heading h1 {
+      font-size: 34px;
+    }
+
+    .header-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .review-progress,
+    .header-actions :global(.review-copy) {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .final-gate {
+      grid-template-columns: 40px minmax(0, 1fr);
+    }
+
+    .final-gate > :global(.panel-btn),
+    .gate-result {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+
+    .review-workspace {
+      border-radius: 16px;
+    }
+
+    .step-head {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .current-status {
+      align-self: flex-start;
+    }
+
+    .review-toolbar {
+      padding: 12px;
+    }
+
+    .viewport-options-scroll {
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+    }
+
+    .viewport-options-scroll :global(.segmented-control) {
+      min-width: 330px;
+    }
+
+    .preview-scroll {
+      padding: 10px;
+    }
+
+    .decision-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .decision-actions > :global(.panel-btn) {
+      width: 100%;
+    }
+
+    .decision-choices {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .needs-action,
+    .approve-action,
+    .needs-action :global(.panel-btn),
+    .approve-action :global(.panel-btn) {
+      width: 100%;
+    }
+  }
+
+  @media (min-width: 700px) and (max-height: 520px) {
+    .review-page {
+      padding: 10px 14px 18px;
+    }
+
+    .review-header {
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .review-heading h1 {
+      font-size: 32px;
+    }
+
+    .review-heading p {
+      display: none;
+    }
+
+    .review-layout {
+      grid-template-columns: 250px minmax(0, 1fr);
+    }
+
+    .review-rail {
+      position: sticky;
+      top: 10px;
+      max-height: calc(100dvh - 20px);
+      overflow-y: auto;
+    }
+
+    .step-list {
+      flex-direction: column;
+      overflow: visible;
+      padding: 0;
+    }
+
+    .step-list li {
+      min-width: 0;
+    }
+
+    .step-button {
+      min-height: 54px;
+      grid-template-columns: 28px minmax(0, 1fr) 14px;
+      padding: 7px 9px;
+    }
+
+    .step-index {
+      width: 26px;
+      height: 26px;
+    }
+
+    .final-gate {
+      grid-template-columns: 34px minmax(0, 1fr);
+    }
+
+    .final-gate > :global(.panel-btn),
+    .gate-result {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+
+    .step-head {
+      padding: 14px 16px;
+    }
+
+    .step-title h2 {
+      font-size: 24px;
+    }
+
+    .review-toolbar {
+      padding: 8px 12px;
+    }
+
+    .preview-scroll {
+      max-height: 300px;
+    }
+  }
+
+  @media (min-width: 1680px) {
+    .review-layout {
+      grid-template-columns: minmax(320px, 370px) minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .review-page {
+      --font-size-compact: clamp(12px, 0.38vw, 16px);
+      --font-size-sm: clamp(14px, 0.44vw, 18px);
+      --font-size-base: clamp(16px, 0.5vw, 20px);
+      --min-touch-target: clamp(44px, 1.35vw, 56px);
+    }
+
+    .review-layout {
+      grid-template-columns: minmax(400px, 470px) minmax(0, 1fr);
+    }
+
+    .step-button {
+      min-height: 84px;
+      grid-template-columns: 46px minmax(0, 1fr) 20px;
+      padding: 14px 16px;
+    }
+
+    .step-index {
+      width: 42px;
+      height: 42px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-button {
+      transition: none;
     }
   }
 </style>

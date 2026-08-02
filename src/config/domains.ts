@@ -41,6 +41,9 @@ const PUBLIC_PATH_PREFIXES = [
   "/sequence/",
   "/profile/",
   "/demo",
+  // Focused production-component review. It owns a bare layout and must not
+  // boot module persistence, which would treat `/test` as an invalid app tab.
+  "/test/smart-collections",
   "/store",
   "/shop",
   "/about",

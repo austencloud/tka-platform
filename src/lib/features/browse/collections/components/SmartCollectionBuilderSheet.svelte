@@ -1,714 +1,1247 @@
 <!--
 SmartCollectionBuilderSheet.svelte
 
-Build (or edit) a Smart Collection's rule. Same drill → filter → preview
-scaffold as AddSequencesSheet, but the preview grid is read-only and the
-footer names + saves the rule (create) or updates it (edit). Reuses the shared
-browse engine so every filter the gallery offers is available here for free.
+The historical filename remains because several collection entry points import
+it, but the surface itself is now a focused modal workspace. The rule stays in
+one rail while the live matching grid gets the rest of the canvas.
 -->
 <script lang="ts">
-	import { onMount, onDestroy } from "svelte";
-	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-	import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
-	import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
-	import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
-	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
-	import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
-	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
-	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
-	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
-	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
-	import {
-		applySpecToEngine,
-		buildFilterSpecFromEngine,
-	} from "$lib/shared/browse/services/smart-filter-spec";
-	import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
-	import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-	import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-	import PanelState from "$lib/shared/components/panel/PanelState.svelte";
-	import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { onMount } from "svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+  import {
+    applySpecToEngine,
+    buildFilterSpecFromEngine,
+  } from "$lib/shared/browse/services/smart-filter-spec";
+  import { suggestSmartCollectionName } from "$lib/shared/browse/services/smart-collection-name";
+  import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import PanelState from "$lib/shared/components/panel/PanelState.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import SmartCollectionNameField from "$lib/features/library/components/SmartCollectionNameField.svelte";
 
-	let {
-		mode,
-		editCollectionId,
-		initialSpec,
-		onClose,
-	}: {
-		mode: "create" | "edit";
-		/** Required in edit mode: the collection whose rule is being changed. */
-		editCollectionId?: string;
-		/** Edit mode: seed the engine with the existing rule. */
-		initialSpec?: SmartFilterSpec;
-		onClose: () => void;
-	} = $props();
+  type FilterPickerSection =
+    | "chooser"
+    | "more"
+    | "level"
+    | "length"
+    | "letter"
+    | "position"
+    | "gridmode"
+    | "author"
+    | "loop"
+    | "family"
+    | "max_turn_intensity";
 
-	// Ephemeral engine — both sources available so the builder can target the
-	// community pool or the user's own library. Inject the canonical T&D alphabet
-	// into the community pool (same as the main gallery / BrowseModule) so a rule
-	// built against it previews the real matches instead of an empty grid.
-	const engine = createBrowseEngine({
-		persistKey: null,
-		initialSource: initialSpec?.source ?? "community",
-		minColumns: 2,
-		extraCommunitySequences: loadCanonicalTnDSequences,
-	});
+  let {
+    mode,
+    editCollectionId,
+    initialSpec,
+    initialFilterSection,
+    onClose,
+  }: {
+    mode: "create" | "edit";
+    /** Required in edit mode: the collection whose rule is being changed. */
+    editCollectionId?: string;
+    /** Edit mode: seed the engine with the existing rule. */
+    initialSpec?: SmartFilterSpec;
+    /** Design-review entry point for opening a real filter drill directly. */
+    initialFilterSection?: FilterPickerSection;
+    onClose: () => void;
+  } = $props();
 
-	let drawerOpen = $state(false);
-	let isSideBySide = $state(false);
-	let layoutUnsubscribe: (() => void) | null = null;
-	const placement = $derived(isSideBySide ? "right" : "bottom");
+  // New Smart Collections search the full community catalog. A creator filter
+  // covers the useful personal-library case without making everyone choose a
+  // source before they can define the rule. Existing library-scoped rules keep
+  // their saved source while editing so opening one never broadens it silently.
+  const engine = createBrowseEngine({
+    persistKey: null,
+    initialSource: initialSpec?.source ?? "community",
+    minColumns: 2,
+    extraCommunitySequences: loadCanonicalTnDSequences,
+  });
 
-	let name = $state("");
-	let saving = $state(false);
+  let modalOpen = $state(false);
+  let name = $state("");
+  let usingSuggestedName = $state(true);
+  let saving = $state(false);
+  let hasCommitted = $state(false);
+  let filterPickerOpen = $state(
+    Boolean(initialFilterSection) || !initialSpec?.filters.length
+  );
+  let mobilePreviewOpen = $state(false);
+  let discardConfirmOpen = $state(false);
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
+  let closeScheduled = false;
 
-	const SOURCE_OPTIONS = [
-		{ value: "community", label: "Community" },
-		{ value: "my-library", label: "My Library" },
-	] as const;
+  const currentSpec = $derived.by(() => buildFilterSpecFromEngine(engine));
+  const suggestedName = $derived(
+    suggestSmartCollectionName(
+      currentSpec,
+      collectionsState.collections.map((collection) => collection.name)
+    )
+  );
+  const currentSpecSignature = $derived(JSON.stringify(currentSpec));
+  const initialSpecSignature = JSON.stringify(initialSpec ?? null);
+  const isDirty = $derived(
+    !hasCommitted &&
+      (mode === "create"
+        ? engine.hasActiveFilters || !usingSuggestedName
+        : currentSpecSignature !== initialSpecSignature)
+  );
+  const canSave = $derived(engine.hasActiveFilters && !saving);
+  const matchStatus = $derived(
+    engine.error
+      ? "Matches unavailable"
+      : engine.isLoading
+        ? "Checking matches"
+        : `${engine.resultCount} ${engine.resultCount === 1 ? "match" : "matches"}`
+  );
+  const loopKeyByValue = $derived(
+    new Map(
+      [...engine.activeFilters]
+        .filter(
+          ([, filter]) =>
+            filter.type === BrowseFilterType.LOOP_TYPE && !filter.locked
+        )
+        .map(([key, filter]) => [String(filter.value), key])
+    )
+  );
+  const activeLoopValues = $derived(new Set(loopKeyByValue.keys()));
+  const familyKeyByValue = $derived(
+    new Map(
+      [...engine.activeFilters]
+        .filter(
+          ([, filter]) =>
+            filter.type === BrowseFilterType.TND_FAMILY && !filter.locked
+        )
+        .map(([key, filter]) => [String(filter.value), key])
+    )
+  );
+  const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
 
-	const currentSpec = $derived.by(() => buildFilterSpecFromEngine(engine));
-	const canSave = $derived(
-		engine.hasActiveFilters &&
-			(mode === "edit" || name.trim().length > 0) &&
-			!saving,
-	);
-	const matchStatus = $derived(
-		engine.error
-			? "Matches unavailable"
-			: engine.isLoading
-				? "Checking matches"
-				: `${engine.resultCount} ${engine.resultCount === 1 ? "match" : "matches"}`,
-	);
+  onMount(() => {
+    if (initialSpec) applySpecToEngine(engine, initialSpec);
+    engine.initialize();
+    requestAnimationFrame(() => (modalOpen = true));
 
-	onMount(() => {
-		if (initialSpec) applySpecToEngine(engine, initialSpec);
-		engine.initialize();
+    return () => {
+      engine.destroy();
+      if (closeTimer !== null) clearTimeout(closeTimer);
+    };
+  });
 
-		isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
-		layoutUnsubscribe = responsiveLayoutManager.onLayoutChange(() => {
-			isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
-		});
+  const CLOSE_ANIMATION_MS = 220;
+  function finishClose() {
+    if (closeScheduled) return;
+    closeScheduled = true;
+    modalOpen = false;
+    closeTimer = setTimeout(onClose, CLOSE_ANIMATION_MS);
+  }
 
-		browseScrollState.hideUI();
-		requestAnimationFrame(() => (drawerOpen = true));
+  function requestClose() {
+    if (isDirty) {
+      discardConfirmOpen = true;
+      return;
+    }
+    finishClose();
+  }
 
-		return () => {
-			engine.destroy();
-			browseScrollState.showUI();
-		};
-	});
+  function discardAndClose() {
+    discardConfirmOpen = false;
+    hasCommitted = true;
+    finishClose();
+  }
 
-	onDestroy(() => layoutUnsubscribe?.());
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (event.key !== "Escape" || !modalOpen || discardConfirmOpen) return;
+    if (filterPickerOpen && engine.hasActiveFilters) {
+      event.preventDefault();
+      filterPickerOpen = false;
+      return;
+    }
+    if (!isDirty) return;
+    event.preventDefault();
+    discardConfirmOpen = true;
+  }
 
-	const CLOSE_ANIMATION_MS = 300;
-	function requestClose() {
-		if (!drawerOpen) return;
-		drawerOpen = false;
-		setTimeout(onClose, CLOSE_ANIMATION_MS);
-	}
-
-	let filterSheetOpen = $state(false);
-	let previewExpanded = $state(false);
-
-	async function save() {
-		const trimmed = name.trim();
-		if (!engine.hasActiveFilters) {
-			toast.error("Add at least one filter to define the rule.");
-			return;
-		}
-		if (mode === "create" && !trimmed) {
-			toast.error("Name this Smart Collection.");
-			return;
-		}
-		if (saving) return;
-		saving = true;
-		const matchCount = engine.resultCount;
-		let ok = false;
-		if (mode === "edit" && editCollectionId) {
-			ok = await collectionsState.updateFilterSpec(
-				editCollectionId,
-				currentSpec,
-				matchCount,
-			);
-		} else {
-			ok = !!(await collectionsState.createSmart(
-				trimmed,
-				currentSpec,
-				matchCount,
-			));
-		}
-		saving = false;
-		if (ok) {
-			toast.success(
-				mode === "edit"
-					? "Rule updated."
-					: `Smart Collection "${trimmed}" saved.`,
-			);
-			requestClose();
-		}
-	}
+  async function save() {
+    const trimmed = name.trim() || suggestedName;
+    if (!engine.hasActiveFilters) {
+      toast.error("Add at least one filter to define the rule.");
+      return;
+    }
+    if (saving) return;
+    saving = true;
+    const matchCount = engine.resultCount;
+    let ok = false;
+    if (mode === "edit" && editCollectionId) {
+      ok = await collectionsState.updateFilterSpec(
+        editCollectionId,
+        currentSpec,
+        matchCount
+      );
+    } else {
+      ok = !!(await collectionsState.createSmart(
+        trimmed,
+        currentSpec,
+        matchCount
+      ));
+    }
+    saving = false;
+    if (ok) {
+      hasCommitted = true;
+      toast.success(
+        mode === "edit"
+          ? "Rule updated."
+          : `Smart Collection "${trimmed}" saved.`
+      );
+      finishClose();
+    }
+  }
 </script>
 
-<Drawer
-	isOpen={drawerOpen}
-	{placement}
-	closeOnBackdrop={true}
-	closeOnEscape={true}
-	dismissible={true}
-	showHandle={placement === "bottom"}
-	ariaLabel={mode === "edit" ? "Edit rule" : "New smart collection"}
-	class="smart-builder-drawer"
-	onOpenChange={(open) => {
-		if (!open) requestClose();
-	}}
+<svelte:window onkeydown={handleWindowKeydown} />
+
+<BaseModal
+  bind:open={modalOpen}
+  size="full"
+  animation="pop"
+  closeOnBackdrop={false}
+  closeOnEscape={!isDirty}
+  labelledBy="smart-builder-title"
+  class="smart-builder-modal"
+  onclose={finishClose}
 >
-	<div class="sheet-content">
-		<div class="builder-header">
-			<DrawerHeader
-				title={mode === "edit" ? "Edit Smart Collection" : "New Smart Collection"}
-				subtitle={mode === "edit"
-					? "Change the source or filters."
-					: "Name it, then add one or more filters."}
-				icon="fa-wand-magic-sparkles"
-				iconColor="var(--theme-accent)"
-				onClose={requestClose}
-			/>
-		</div>
+  {#snippet header()}
+    <ModalHeader
+      id="smart-builder-title"
+      title={mode === "edit" ? "Edit Smart Collection" : "New Smart Collection"}
+      subtitle={mode === "edit"
+        ? "Change the rule and review the matches."
+        : "Pick filters. Review the matches."}
+      icon="fa-wand-magic-sparkles"
+      iconColor="var(--theme-accent, #8b6cff)"
+      onClose={requestClose}
+    />
+  {/snippet}
 
-		<div class="rule-setup" class:rule-selected={engine.hasActiveFilters}>
-			{#if mode === "create"}
-				<label class="field-group" for="smart-builder-name">
-					<span>Collection name</span>
-					<input
-						id="smart-builder-name"
-						name="smart-collection-name"
-						type="text"
-						class="name-field"
-						placeholder="Example: Level 1 practice"
-						aria-label="Smart Collection name"
-						bind:value={name}
-						maxlength="60"
-						autocomplete="off"
-					/>
-				</label>
-			{/if}
+  <div
+    class="workspace-shell"
+    class:first-filter-focus={!engine.hasActiveFilters}
+    class:filter-picker-open={filterPickerOpen}
+    class:mobile-preview-open={mobilePreviewOpen}
+  >
+    <aside class="rule-pane" aria-label="Smart Collection rule">
+      {#if mode === "create" && engine.hasActiveFilters}
+        <div class="identity-setup">
+          <SmartCollectionNameField
+            inputId="smart-builder-name"
+            {suggestedName}
+            bind:name
+            bind:usingSuggestion={usingSuggestedName}
+            onEnter={() => {
+              if (canSave) void save();
+            }}
+          />
+        </div>
+      {/if}
 
-			<div class="field-group source-field">
-				<span id="smart-source-label">Look for matches in</span>
-				<SegmentedControl
-					options={[...SOURCE_OPTIONS]}
-					value={engine.source}
-					onchange={(source) => void engine.setSource(source)}
-					color="accent"
-					semantics="radiogroup"
-					ariaLabelledby="smart-source-label"
-				/>
-			</div>
-		</div>
+      <div class="rule-work-area">
+        {#if filterPickerOpen || !engine.hasActiveFilters}
+          <div class="filter-picker-shell">
+            <div class="filter-picker-content">
+              <GalleryDrill
+                variant="sheet"
+                pool={engine.allSequences}
+                persistSection={false}
+                showCollections={false}
+                showAll={false}
+                fluidWideCanvas
+                progressiveSecondaryChoices
+                unifiedFilterChooser={engine.hasActiveFilters}
+                adaptiveValueLayout
+                initialSection={initialFilterSection}
+                chooserTitle={engine.hasActiveFilters
+                  ? "Add a filter"
+                  : "What should this collection match?"}
+                chooserHint={engine.hasActiveFilters
+                  ? "The current rule stays applied."
+                  : "Pick one starting point. You can add more next."}
+                getCount={(type, value) => engine.getFilteredCount(type, value)}
+                onApply={(type, value, label, color) => {
+                  engine.addFilter(type, value, label, color ?? "#6aa0ff");
+                  filterPickerOpen = false;
+                }}
+                {activeLoopValues}
+                onToggleLoop={(value, label, color, nowActive) => {
+                  if (nowActive) {
+                    engine.addFilter(
+                      BrowseFilterType.LOOP_TYPE,
+                      value,
+                      label,
+                      color
+                    );
+                  } else {
+                    const key = loopKeyByValue.get(value);
+                    if (key) engine.removeFilter(key);
+                  }
+                }}
+                {activeFamilyValues}
+                onToggleFamily={(familyId, label, color, nowActive) => {
+                  if (nowActive) {
+                    engine.addFilter(
+                      BrowseFilterType.TND_FAMILY,
+                      familyId,
+                      label,
+                      color
+                    );
+                  } else {
+                    const key = familyKeyByValue.get(familyId);
+                    if (key) engine.removeFilter(key);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        {:else}
+          <section
+            class="rule-summary"
+            aria-labelledby="smart-filter-step-title"
+          >
+            <div class="rule-copy">
+              <h3 id="smart-filter-step-title">Filters</h3>
+              <p>All filters must match.</p>
+            </div>
 
-		<div class="panel-body">
-			{#if !engine.hasActiveFilters}
-				<div class="drill-host">
-					<GalleryDrill
-						pool={engine.allSequences}
-						persistSection={false}
-						showCollections={false}
-						showAll={false}
-						chooserTitle="Add the first filter"
-						chooserHint="Choose one way to narrow the collection."
-						getCount={(type, value) => engine.getFilteredCount(type, value)}
-						onApply={(type, value, label, color) => {
-							engine.addFilter(type, value, label, color ?? "#6aa0ff");
-						}}
-					/>
-				</div>
-			{:else}
-				<section class="filter-step" aria-labelledby="smart-filter-step-title">
-					<header class="filter-step-head">
-						<div class="filter-step-copy">
-							<span class="step-label">Filters</span>
-							<h3 id="smart-filter-step-title">What belongs here</h3>
-							<p>Every filter below must match.</p>
-						</div>
-						<div class="filter-step-action">
-							<PanelButton
-								variant="primary"
-								onclick={() => {
-									previewExpanded = false;
-									filterSheetOpen = true;
-								}}
-							>
-								<i class="fas fa-plus" aria-hidden="true"></i>
-								Add another filter
-							</PanelButton>
-						</div>
-					</header>
+            <div
+              class="applied-filters"
+              role="list"
+              aria-label="Applied filters"
+            >
+              {#each currentSpec.filters as filter (filter.key)}
+                <span role="listitem">
+                  <FilterChipBase
+                    label={filter.label}
+                    icon="fas fa-xmark"
+                    active
+                    mode="action"
+                    size="sm"
+                    chipColor={filter.chipColor}
+                    ariaLabel={`Remove ${filter.label} filter`}
+                    onclick={() => {
+                      engine.removeFilter(filter.key);
+                      if (!engine.hasActiveFilters) {
+                        filterPickerOpen = true;
+                        mobilePreviewOpen = false;
+                      }
+                    }}
+                  />
+                </span>
+              {/each}
+            </div>
 
-					<div class="applied-filters" role="list" aria-label="Applied filters">
-						{#each currentSpec.filters as filter (filter.key)}
-							<span role="listitem">
-								<FilterChipBase
-									label={filter.label}
-									icon="fas fa-xmark"
-									active
-									mode="action"
-									size="sm"
-									chipColor={filter.chipColor}
-									ariaLabel={`Remove ${filter.label} filter`}
-									onclick={() => {
-										engine.removeFilter(filter.key);
-										if (!engine.hasActiveFilters) previewExpanded = false;
-									}}
-								/>
-							</span>
-						{/each}
-					</div>
-				</section>
+            <div class="rule-actions">
+              <PanelButton
+                variant="secondary"
+                fullWidth
+                onclick={() => (filterPickerOpen = true)}
+              >
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                Add filter
+              </PanelButton>
 
-				<section
-					class="preview-stage"
-					class:preview-collapsed={!previewExpanded}
-					aria-label="Matching sequence preview"
-				>
-					{#if previewExpanded}
-						<header class="preview-head">
-							<div>
-								<span class="step-label">Live preview</span>
-								<h3>{matchStatus}</h3>
-							</div>
-							<PanelButton
-								variant="secondary"
-								ariaLabel="Hide matching sequence preview"
-								onclick={() => (previewExpanded = false)}
-							>
-								<i class="fas fa-eye-slash" aria-hidden="true"></i>
-								Hide preview
-							</PanelButton>
-						</header>
-						<div class="preview-grid">
-							<BrowsePanel
-								{engine}
-								layout="compact"
-								showToolbar={false}
-								showFilterBar={false}
-							/>
-						</div>
-					{:else if engine.error}
-						<PanelState
-							type="error"
-							title="Couldn't update the matches"
-							message="Check your connection, then try again."
-							onretry={() => engine.refresh()}
-							compact
-						/>
-					{:else if engine.isLoading}
-						<PanelState
-							type="loading"
-							title="Checking the filters"
-							message="The match count will update when the source is ready."
-							compact
-						/>
-					{:else}
-						<PanelState
-							type="info"
-							icon="fa-eye"
-							compact
-							title={`${engine.resultCount} ${
-								engine.resultCount === 1
-									? "sequence matches this rule"
-									: "sequences match this rule"
-							}`}
-						>
-							{#snippet actions()}
-								<PanelButton
-									variant="secondary"
-									onclick={() => (previewExpanded = true)}
-								>
-									<i class="fas fa-eye" aria-hidden="true"></i>
-									Show matching sequences
-								</PanelButton>
-							{/snippet}
-						</PanelState>
-					{/if}
-				</section>
-			{/if}
-		</div>
+              <div class="mobile-preview-action">
+                <PanelButton
+                  variant="secondary"
+                  fullWidth
+                  ariaLabel={`Preview ${engine.resultCount} ${engine.resultCount === 1 ? "match" : "matches"}`}
+                  onclick={() => (mobilePreviewOpen = true)}
+                >
+                  <i class="fas fa-eye" aria-hidden="true"></i>
+                  Preview {engine.resultCount}
+                </PanelButton>
+              </div>
+            </div>
+          </section>
+        {/if}
+      </div>
+    </aside>
 
-		<footer class="save-footer">
-			<p>
-				{#if !engine.hasActiveFilters}
-					Add a filter to continue.
-				{:else if mode === "create" && !name.trim()}
-					Add a name to save.
-				{:else}
-					{engine.resultCount}
-					{engine.resultCount === 1 ? "sequence matches" : "sequences match"} now.
-				{/if}
-			</p>
-			<PanelButton
-				variant="primary"
-				disabled={!canSave}
-				onclick={() => void save()}
-			>
-				<i
-					class={`fas ${saving ? "fa-circle-notch fa-spin" : "fa-wand-magic-sparkles"}`}
-					aria-hidden="true"
-				></i>
-				{saving
-					? "Saving"
-					: mode === "edit"
-						? "Save rule"
-						: "Save Smart Collection"}
-			</PanelButton>
-		</footer>
+    <section class="preview-pane" aria-labelledby="smart-preview-title">
+      <header class="preview-head">
+        <div class="mobile-preview-back">
+          <PanelButton
+            variant="secondary"
+            ariaLabel="Back to filters"
+            onclick={() => (mobilePreviewOpen = false)}
+          >
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            Filters
+          </PanelButton>
+        </div>
+        <div class="preview-title">
+          <span class="step-label">Live preview</span>
+          <h3 id="smart-preview-title" aria-live="polite">{matchStatus}</h3>
+        </div>
+        <div
+          class="preview-mode"
+          aria-label="Sequence cards are a preview only"
+        >
+          <i class="fas fa-eye" aria-hidden="true"></i>
+          <span>Preview only</span>
+        </div>
+      </header>
 
-		<GalleryFilterSheet
-			{engine}
-			bind:isOpen={filterSheetOpen}
-			isMobile={placement === "bottom"}
-			allowSearch={false}
-			allowShowAll={false}
-			title="Add another filter"
-			chooserTitle="Choose what to filter by"
-			chooserHint="Your current filters stay applied."
-		/>
-	</div>
-</Drawer>
+      <div class="preview-content">
+        {#if !engine.hasActiveFilters}
+          <PanelState
+            type="info"
+            icon="fa-filter"
+            title="Choose a filter to start"
+            message="Matching sequences will appear here."
+          />
+        {:else if engine.error}
+          <PanelState
+            type="error"
+            title="Couldn't update the matches"
+            message="Check your connection, then try again."
+            onretry={() => engine.refresh()}
+          />
+        {:else if engine.isLoading}
+          <PanelState
+            type="loading"
+            title="Checking the filters"
+            message="The preview will update when the sequences are ready."
+          />
+        {:else if engine.resultCount === 0}
+          <PanelState
+            type="info"
+            icon="fa-filter-circle-xmark"
+            title="No sequences match"
+            message="Remove a filter or choose a different value."
+          />
+        {:else}
+          <BrowsePanel
+            {engine}
+            layout="compact"
+            showToolbar={false}
+            showFilterBar={false}
+          />
+        {/if}
+      </div>
+    </section>
+  </div>
+
+  {#snippet footer()}
+    <footer
+      class="save-footer"
+      class:first-filter-focus={!engine.hasActiveFilters}
+      class:filter-picker-active={filterPickerOpen && engine.hasActiveFilters}
+    >
+      {#if filterPickerOpen && engine.hasActiveFilters}
+        <div class="return-to-rule-action">
+          <PanelButton
+            variant="secondary"
+            fullWidth
+            onclick={() => (filterPickerOpen = false)}
+          >
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            Return to rule
+          </PanelButton>
+        </div>
+      {:else}
+        <div class="cancel-action">
+          <PanelButton variant="secondary" onclick={requestClose}>
+            Cancel
+          </PanelButton>
+        </div>
+        <p class="save-status">
+          {#if !engine.hasActiveFilters}
+            Choose one option to continue.
+          {/if}
+        </p>
+        {#if engine.hasActiveFilters}
+          <div class="save-action">
+            <PanelButton
+              variant="primary"
+              disabled={!canSave}
+              onclick={() => void save()}
+            >
+              <i
+                class={`fas ${saving ? "fa-circle-notch fa-spin" : "fa-wand-magic-sparkles"}`}
+                aria-hidden="true"
+              ></i>
+              {saving
+                ? "Saving"
+                : mode === "edit"
+                  ? "Save rule"
+                  : "Save Smart Collection"}
+            </PanelButton>
+          </div>
+        {/if}
+      {/if}
+    </footer>
+  {/snippet}
+</BaseModal>
+
+<BaseModal
+  bind:open={discardConfirmOpen}
+  size="sm"
+  animation="pop"
+  closeOnBackdrop={true}
+  closeOnEscape={true}
+  labelledBy="discard-smart-builder-title"
+  class="smart-builder-discard-modal"
+  onclose={() => (discardConfirmOpen = false)}
+>
+  {#snippet header()}
+    <ModalHeader
+      id="discard-smart-builder-title"
+      title={mode === "edit" ? "Discard changes?" : "Discard this draft?"}
+      icon="fa-triangle-exclamation"
+      iconColor="var(--semantic-warning, #f59e0b)"
+      showClose={false}
+    />
+  {/snippet}
+
+  <p class="discard-message">
+    {mode === "edit"
+      ? "The rule will return to its last saved version."
+      : "The filters and any name changes in this draft will be lost."}
+  </p>
+
+  {#snippet footer()}
+    <div class="discard-actions">
+      <PanelButton
+        variant="secondary"
+        onclick={() => (discardConfirmOpen = false)}
+      >
+        Keep editing
+      </PanelButton>
+      <PanelButton variant="primary" onclick={discardAndClose}>
+        Discard
+      </PanelButton>
+    </div>
+  {/snippet}
+</BaseModal>
 
 <style>
-	:global(.smart-builder-drawer[data-placement="bottom"]) {
-		height: 92dvh;
-		--sheet-max-height: 92dvh;
-	}
+  :global(dialog.base-modal.smart-builder-modal[data-size="full"]) {
+    width: min(94vw, 175rem);
+    height: min(
+      92dvh,
+      calc(
+        var(--viewport-height, 100dvh) - 2rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    max-height: min(
+      92dvh,
+      calc(
+        var(--viewport-height, 100dvh) - 2rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: clamp(1rem, 1.2vw, 1.5rem);
+  }
 
-	:global(.smart-builder-drawer[data-placement="right"]) {
-		--sheet-width: min(clamp(760px, 42vw, 1760px), 94vw);
-	}
+  :global(dialog.smart-builder-modal .modal-content-wrapper) {
+    height: 100%;
+  }
 
-	.sheet-content {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		min-height: 0;
-		overflow: hidden;
-	}
+  :global(dialog.smart-builder-modal .modal-body) {
+    min-height: 0;
+  }
 
-	.builder-header {
-		flex: 0 0 auto;
-	}
+  :global(dialog.smart-builder-modal .modal-body) {
+    display: flex;
+    overflow: hidden;
+  }
 
-	.rule-setup {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 12px;
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		flex-shrink: 0;
-		background: color-mix(
-			in srgb,
-			var(--theme-panel-bg, #11131a) 92%,
-			transparent
-		);
-	}
+  .workspace-shell {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: clamp(22rem, 28%, 30rem) minmax(0, 1fr);
+    overflow: hidden;
+    background: var(--theme-panel-bg, #11131a);
+    container-type: inline-size;
+    container-name: smart-builder;
+  }
 
-	.field-group {
-		display: flex;
-		min-width: 0;
-		flex-direction: column;
-		gap: 6px;
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 650;
-	}
+  .rule-pane,
+  .preview-pane {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-	.name-field {
-		width: 100%;
-		min-width: 0;
-		height: var(--min-touch-target, 44px);
-		padding: 0 14px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
-		border-radius: 12px;
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-family: inherit;
-	}
+  .rule-pane {
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 48%,
+      var(--theme-panel-bg, #11131a)
+    );
+  }
 
-	.name-field::placeholder {
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.52));
-	}
+  /* Before a rule exists there is nothing meaningful to preview. Give the
+     first decision the full workspace; the split editor arrives with the
+     first result set. */
+  .workspace-shell.first-filter-focus {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-	.name-field:focus-visible {
-		border-color: var(--theme-accent);
-		outline: none;
-		box-shadow: 0 0 0 3px
-			color-mix(in srgb, var(--theme-accent) 16%, transparent);
-	}
+  .workspace-shell.first-filter-focus .rule-pane {
+    border-right: 0;
+  }
 
-	.panel-body {
-		flex: 1;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-	}
+  .workspace-shell.first-filter-focus .preview-pane {
+    display: none;
+  }
 
-	.drill-host {
-		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
-	}
+  .identity-setup {
+    display: grid;
+    flex: 0 0 auto;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #11131a) 94%,
+      transparent
+    );
+  }
 
-	.filter-step {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		flex: 0 0 auto;
-		gap: 12px 16px;
-		padding: 14px 16px;
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		background: color-mix(
-			in srgb,
-			var(--theme-accent) 6%,
-			var(--theme-panel-bg, #11131a)
-		);
-	}
+  /* Adding a filter is its own decision. The name remains unchanged but leaves
+     the canvas until the user returns to the rule. */
+  .workspace-shell.filter-picker-open:not(.first-filter-focus) .identity-setup {
+    display: none;
+  }
 
-	.filter-step-head {
-		display: contents;
-	}
+  .rule-work-area,
+  .filter-picker-shell,
+  .filter-picker-content {
+    flex: 1;
+    min-height: 0;
+  }
 
-	.filter-step-copy {
-		min-width: 0;
-	}
+  .rule-work-area,
+  .filter-picker-shell {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-	.step-label {
-		display: block;
-		margin-bottom: 2px;
-		color: var(--theme-accent);
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 750;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
+  .filter-picker-content {
+    overflow: hidden;
+  }
 
-	.filter-step h3,
-	.preview-head h3 {
-		margin: 0;
-		color: var(--theme-text, white);
-		font-size: var(--font-size-base, 16px);
-		font-weight: 700;
-	}
+  .workspace-shell.first-filter-focus
+    .filter-picker-content
+    :global(.drill-screen.screen-chooser) {
+    justify-content: safe center;
+  }
 
-	.filter-step p {
-		margin: 3px 0 0;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-		font-size: var(--font-size-sm, 14px);
-	}
+  .rule-summary {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem 1rem;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
 
-	.filter-step-action {
-		display: flex;
-		grid-column: 2;
-		grid-row: 1;
-		align-items: center;
-	}
+  .rule-copy {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.625rem;
+  }
 
-	.applied-filters {
-		display: flex;
-		grid-column: 1 / -1;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
+  .step-label {
+    display: block;
+    margin-bottom: 0.125rem;
+    color: var(--theme-accent, #8b6cff);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
 
-	.preview-stage {
-		display: flex;
-		flex: 1;
-		min-height: 0;
-		flex-direction: column;
-		overflow: hidden;
-	}
+  .rule-copy h3,
+  .preview-head h3 {
+    margin: 0;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-base, 16px);
+    font-weight: 700;
+  }
 
-	.preview-stage.preview-collapsed {
-		flex: 0 0 auto;
-		border-bottom: 1px solid
-			var(--theme-stroke, rgba(255, 255, 255, 0.1));
-	}
+  .rule-copy p {
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.4;
+  }
 
-	.preview-head {
-		display: flex;
-		flex: 0 0 auto;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 10px 16px;
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-	}
+  .applied-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: var(--settings-spacing-sm, 8px);
+  }
 
-	.preview-grid {
-		flex: 1;
-		min-height: 0;
-	}
+  .rule-actions {
+    display: grid;
+    gap: var(--settings-spacing-sm, 8px);
+    padding-top: 0.25rem;
+  }
 
-	.save-footer {
-		display: flex;
-		flex: 0 0 auto;
-		align-items: center;
-		justify-content: flex-end;
-		gap: 16px;
-		padding: 12px 16px;
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		background: color-mix(
-			in srgb,
-			var(--theme-panel-bg, #11131a) 96%,
-			transparent
-		);
-	}
+  .mobile-preview-action,
+  .mobile-preview-back {
+    display: none;
+  }
 
-	.save-footer p {
-		min-width: 0;
-		flex: 1;
-		margin: 0;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-		font-size: var(--font-size-sm, 14px);
-		font-variant-numeric: tabular-nums;
-		line-height: 1.35;
-		text-align: right;
-	}
+  .preview-pane {
+    background: color-mix(in srgb, var(--theme-panel-bg, #11131a) 97%, black);
+  }
 
-	@media (max-width: 560px) {
-		.rule-setup {
-			grid-template-columns: 1fr;
-			gap: 10px;
-			padding: 10px 12px;
-		}
+  .preview-head {
+    display: flex;
+    min-height: 4rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 5%,
+      var(--theme-panel-bg, #11131a)
+    );
+  }
 
-		.rule-setup.rule-selected {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			align-items: end;
-			gap: 8px;
-			padding: 8px 10px;
-		}
+  .preview-head h3,
+  .save-status {
+    font-variant-numeric: tabular-nums;
+  }
 
-		.rule-selected .field-group {
-			gap: 4px;
-			font-size: var(--font-size-compact, 12px);
-		}
+  .preview-title {
+    min-width: 0;
+  }
 
-		.save-footer {
-			gap: 10px;
-			padding: 10px 12px;
-		}
+  .preview-mode {
+    display: inline-flex;
+    min-height: 2rem;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 650;
+    white-space: nowrap;
+  }
 
-		.save-footer p {
-			max-width: 120px;
-			font-size: var(--font-size-compact, 12px);
-		}
+  .preview-mode i {
+    color: var(--theme-accent, #8b6cff);
+  }
 
-		.save-footer :global(.panel-btn) {
-			flex: 1;
-		}
+  .preview-content {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
 
-		.filter-step {
-			grid-template-columns: 1fr;
-			gap: 10px;
-			padding: 12px;
-		}
+  .preview-content > :global(.browse-panel),
+  .preview-content > :global(.panel-state) {
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+  }
 
-		.filter-step-action {
-			grid-column: 1;
-			grid-row: auto;
-		}
+  .save-footer {
+    display: grid;
+    grid-template-columns: auto minmax(8rem, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #11131a) 96%,
+      transparent
+    );
+  }
 
-		.filter-step-action :global(.panel-btn) {
-			width: 100%;
-		}
+  .save-footer.first-filter-focus {
+    grid-template-columns: auto minmax(8rem, 1fr);
+  }
 
-		.preview-head {
-			padding: 8px 12px;
-		}
-	}
+  .save-footer.filter-picker-active {
+    display: flex;
+    justify-content: flex-start;
+  }
 
-	@media (min-width: 700px) and (max-height: 520px) {
-		:global(.smart-builder-drawer[data-placement="bottom"]) {
-			height: 100dvh;
-			--sheet-max-height: 100dvh;
-		}
+  .return-to-rule-action {
+    display: flex;
+    width: min(100%, 14rem);
+  }
 
-		.sheet-content {
-			display: grid;
-			grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
-			grid-template-rows: auto minmax(0, 1fr) auto;
-		}
+  .save-status {
+    min-width: 0;
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.35;
+    text-align: right;
+  }
 
-		.builder-header {
-			grid-column: 1 / -1;
-			grid-row: 1;
-		}
+  .cancel-action,
+  .save-action {
+    display: flex;
+  }
 
-		.builder-header :global(.drawer-header) {
-			padding: 8px 14px;
-		}
+  .discard-message {
+    margin: 0;
+    padding: 1.5rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.55;
+    text-align: center;
+  }
 
-		.builder-header :global(.drawer-header-subtitle) {
-			display: none;
-		}
+  .discard-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
 
-		.rule-setup {
-			grid-column: 1;
-			grid-row: 2;
-			grid-template-columns: 1fr;
-			align-content: start;
-			overflow-y: auto;
-			padding: 8px 10px;
-			border-right: 1px solid
-				var(--theme-stroke, rgba(255, 255, 255, 0.1));
-			border-bottom: 0;
-		}
+  .discard-actions :global(.panel-btn--primary) {
+    border-color: var(--semantic-error, #ef4444);
+    background: var(--semantic-error, #ef4444);
+  }
 
-		.panel-body {
-			grid-column: 2;
-			grid-row: 2;
-		}
+  @media (max-width: 900px), (max-width: 1100px) and (max-height: 600px) {
+    :global(dialog.base-modal.smart-builder-modal[data-size="full"]) {
+      width: 100%;
+      height: var(--viewport-height, 100dvh);
+      max-height: var(--viewport-height, 100dvh);
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+    }
 
-		.save-footer {
-			grid-column: 1 / -1;
-			grid-row: 3;
-			padding: 8px 12px;
-		}
-	}
+    .workspace-shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
 
-	@media (min-width: 2600px) and (min-height: 720px) {
-		.sheet-content {
-			--font-size-compact: clamp(12px, 0.38vw, 16px);
-			--font-size-sm: clamp(14px, 0.44vw, 18px);
-			--font-size-base: clamp(16px, 0.5vw, 20px);
-			--font-size-md: var(--font-size-base);
-			--font-size-lg: clamp(18px, 0.56vw, 22px);
-			--font-size-xl: clamp(20px, 0.66vw, 26px);
-			--font-size-2xl: clamp(24px, 0.78vw, 32px);
-			--min-touch-target: clamp(44px, 1.35vw, 56px);
-		}
+    .rule-pane {
+      border-right: 0;
+    }
 
-		.builder-header :global(.drawer-header) {
-			padding: clamp(20px, 0.7vw, 28px) clamp(24px, 0.85vw, 34px);
-		}
+    .preview-pane {
+      display: none;
+    }
 
-		.rule-setup {
-			gap: clamp(12px, 0.45vw, 18px);
-			padding: clamp(12px, 0.55vw, 22px) clamp(16px, 0.75vw, 30px);
-		}
+    .workspace-shell.mobile-preview-open .rule-pane {
+      display: none;
+    }
 
-		.field-group {
-			gap: clamp(6px, 0.24vw, 10px);
-		}
+    .workspace-shell.mobile-preview-open .preview-pane {
+      display: flex;
+    }
 
-		.name-field {
-			padding-inline: clamp(14px, 0.5vw, 20px);
-			border-radius: clamp(12px, 0.36vw, 15px);
-		}
+    .mobile-preview-action,
+    .mobile-preview-back {
+      display: block;
+    }
+  }
 
-		.save-footer {
-			gap: clamp(16px, 0.55vw, 22px);
-			padding: clamp(12px, 0.5vw, 20px) clamp(16px, 0.75vw, 30px);
-		}
-	}
+  @media (max-width: 900px) {
+    .rule-actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mobile-preview-action :global(.panel-btn) {
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  @media (min-width: 700px) and (max-width: 900px) and (min-height: 720px) {
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open) {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-pane {
+      display: flex;
+      grid-row: 1;
+      overflow: visible;
+      border-right: 0;
+      border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-work-area {
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-summary {
+      display: grid;
+      height: auto;
+      grid-template-columns: auto minmax(0, 1fr) minmax(11rem, 14rem);
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      overflow: visible;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-actions {
+      display: block;
+      padding-top: 0;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .mobile-preview-action,
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .mobile-preview-back {
+      display: none;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .preview-pane {
+      display: flex;
+      min-height: 0;
+      grid-row: 2;
+    }
+  }
+
+  @media (min-width: 780px) and (max-width: 1100px) and (max-height: 600px) {
+    .rule-summary {
+      display: grid;
+      grid-template-columns:
+        minmax(10rem, 14rem) minmax(0, 1fr)
+        minmax(12rem, 15rem);
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      overflow: hidden;
+    }
+
+    .rule-actions {
+      align-content: center;
+      align-self: stretch;
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    .filter-picker-content :global(.drill.sheet) {
+      gap: 0.5rem;
+      padding: 0.25rem 1rem 0.5rem;
+    }
+
+    .filter-picker-content :global(.drill-screen) {
+      gap: 0.5rem;
+    }
+
+    .filter-picker-content :global(.drill-head h2) {
+      font-size: 1.15rem;
+    }
+
+    .filter-picker-content :global(.drill-head p) {
+      display: none;
+    }
+
+    .filter-picker-content :global(.choice-tile) {
+      height: 5.5rem;
+      min-height: 5.5rem;
+      max-height: 5.5rem;
+      padding: 0.6rem 2rem 0.6rem 1rem;
+      border-radius: 0.875rem;
+    }
+  }
+
+  @media (min-width: 700px) and (max-width: 1100px) and (max-height: 520px) {
+    :global(dialog.smart-builder-modal .modal-header) {
+      gap: 0.625rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    :global(dialog.smart-builder-modal .header-subtitle) {
+      display: none;
+    }
+
+    :global(dialog.smart-builder-modal .header-title) {
+      font-size: 1.1rem;
+    }
+
+    .filter-picker-content :global(.drill.sheet) {
+      gap: 0.5rem;
+      padding: 0.375rem 1rem 0.5rem;
+    }
+
+    .filter-picker-content :global(.choice-tile) {
+      height: 6.5rem;
+      min-height: 6.5rem;
+      max-height: 6.5rem;
+    }
+
+    .save-footer,
+    .save-footer.first-filter-focus {
+      min-height: 3.5rem;
+      padding: 0.375rem 0.75rem;
+    }
+  }
+
+  @media (max-width: 560px) {
+    :global(dialog.smart-builder-modal .close-btn) {
+      width: var(--min-touch-target, 44px);
+      height: var(--min-touch-target, 44px);
+      min-width: var(--min-touch-target, 44px);
+      min-height: var(--min-touch-target, 44px);
+    }
+
+    .identity-setup {
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    .identity-setup {
+      gap: 0.625rem;
+      padding: 0.625rem 0.75rem 0.25rem;
+      border-bottom: 0;
+      background: transparent;
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.drill.sheet) {
+      padding: 0.375rem 0.75rem 0.625rem;
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.drill-screen) {
+      gap: 0.625rem;
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.drill-head h2) {
+      font-size: 1.15rem;
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.drill-head p) {
+      font-size: 0.8rem;
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.choice-tile) {
+      min-height: 96px;
+      padding-block: 0.625rem;
+    }
+
+    .workspace-shell.filter-picker-open:not(.first-filter-focus)
+      .filter-picker-content
+      :global(.drill.sheet) {
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem 0.625rem;
+    }
+
+    .workspace-shell.filter-picker-open:not(.first-filter-focus)
+      .filter-picker-content
+      :global(.drill-screen) {
+      gap: 0.625rem;
+    }
+
+    .workspace-shell.filter-picker-open:not(.first-filter-focus)
+      .filter-picker-content
+      :global(.drill-head h2) {
+      font-size: 1.1rem;
+    }
+
+    .workspace-shell.filter-picker-open:not(.first-filter-focus)
+      .filter-picker-content
+      :global(.drill-head p) {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .rule-summary {
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    .preview-head {
+      padding-inline: 0.75rem;
+    }
+
+    .preview-mode {
+      display: none;
+    }
+
+    .save-footer,
+    .save-footer.first-filter-focus {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.625rem 0.75rem
+        calc(0.625rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .save-footer:not(.first-filter-focus) .save-status {
+      display: none;
+    }
+
+    .cancel-action {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .save-action {
+      min-width: 0;
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .save-footer.first-filter-focus .save-status {
+      grid-column: 2;
+      grid-row: 1;
+      font-size: var(--font-size-compact, 12px);
+      text-align: right;
+    }
+
+    .save-footer.filter-picker-active {
+      display: flex;
+      padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .return-to-rule-action {
+      width: 100%;
+    }
+
+    .cancel-action :global(.panel-btn),
+    .save-action :global(.panel-btn) {
+      width: 100%;
+    }
+
+    .save-action :global(.panel-btn) {
+      white-space: nowrap;
+    }
+
+    .discard-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .discard-actions :global(.panel-btn) {
+      width: 100%;
+    }
+  }
+
+  @media (min-width: 2600px) and (min-height: 720px) {
+    :global(dialog.base-modal.smart-builder-modal[data-size="full"]) {
+      width: 94vw;
+      max-width: none;
+      border-radius: 2rem;
+      --font-size-compact: clamp(14px, 0.42vw, 18px);
+      --font-size-min: clamp(16px, 0.46vw, 20px);
+      --font-size-sm: clamp(17px, 0.48vw, 21px);
+      --font-size-base: clamp(18px, 0.52vw, 22px);
+      --font-size-lg: clamp(20px, 0.58vw, 25px);
+      --min-touch-target: clamp(56px, 1.7vw, 68px);
+    }
+
+    .workspace-shell {
+      --font-size-compact: clamp(14px, 0.42vw, 18px);
+      --font-size-sm: clamp(17px, 0.48vw, 21px);
+      --font-size-base: clamp(18px, 0.52vw, 22px);
+      --font-size-md: var(--font-size-base);
+      --font-size-lg: clamp(20px, 0.58vw, 25px);
+      --font-size-xl: clamp(25px, 0.72vw, 30px);
+      --font-size-2xl: clamp(30px, 0.86vw, 36px);
+      --min-touch-target: clamp(56px, 1.7vw, 68px);
+      grid-template-columns: 34rem minmax(0, 1fr);
+    }
+
+    :global(dialog.smart-builder-modal .modal-header) {
+      gap: 1.25rem;
+      padding: 1.7rem 2rem;
+    }
+
+    :global(dialog.smart-builder-modal .header-icon),
+    :global(dialog.smart-builder-modal .close-btn) {
+      width: 4rem;
+      height: 4rem;
+      min-width: 4rem;
+      min-height: 4rem;
+      border-radius: 1rem;
+    }
+
+    :global(dialog.smart-builder-modal .header-title) {
+      font-size: 1.75rem;
+    }
+
+    :global(dialog.smart-builder-modal .header-subtitle) {
+      margin-top: 0.3rem;
+      font-size: var(--font-size-min, 18px);
+    }
+
+    .identity-setup,
+    .rule-summary {
+      padding: 1.5rem;
+    }
+
+    .preview-head,
+    .save-footer {
+      padding-inline: 2rem;
+    }
+
+    .save-footer {
+      padding-block: 1.1rem;
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.drill-head h2) {
+      font-size: clamp(2rem, 1.15vw, 2.75rem);
+    }
+
+    .workspace-shell.first-filter-focus
+      .filter-picker-content
+      :global(.drill-head p) {
+      font-size: clamp(1.1rem, 0.58vw, 1.4rem);
+    }
+  }
 </style>
