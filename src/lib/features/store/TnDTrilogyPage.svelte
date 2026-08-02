@@ -5,6 +5,10 @@
   real color-coded printed cards fan + element legend, and buys the resolved
   SKU. The all-three package renders as a visible option, gated until it has a
   price.
+
+  Chrome (back link, title, price, CTA, assurances, cross-sell, page states)
+  belongs to ShopProductShell. This file brings the volumes, the fan, and the
+  pickers.
 -->
 <script lang="ts">
   import "./styles/config-page.css";
@@ -12,11 +16,12 @@
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
+  import ShopProductShell from "./components/shell/ShopProductShell.svelte";
   import DeckFanCover from "./components/DeckFanCover.svelte";
-  import BuyButton from "./components/BuyButton.svelte";
   import PropPicker from "./components/PropPicker.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
   import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
+  import { deriveCrossSell } from "./domain/catalog-listings";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { prewarmCovers } from "./services/cover-front-renderer";
@@ -60,6 +65,22 @@
     selected ? formatUsd(activePriceCents(selected, now)) : "$30"
   );
 
+  // The rest of the line, minus every volume of this trilogy.
+  const crossSell = $derived(
+    deriveCrossSell(store.products, { currentHref: "/shop/tnd-trilogy" })
+  );
+
+  const ASSURANCES = [
+    {
+      icon: "fas fa-box-open",
+      text: "Free laminated quick-reference sheet and deck box included",
+    },
+    {
+      icon: "fas fa-hand-holding-heart",
+      text: "Beta run: printed and cut by hand in Chicago, small batches",
+    },
+  ];
+
   // "TKA 1: Learning Letters" -> ["TKA 1", "Learning Letters"]
   const nameParts = (name: string): [string, string] => {
     const i = name.indexOf(":");
@@ -81,201 +102,131 @@
   }
 </script>
 
-<div class="config-page store-config-page">
-  <main class="config-content">
-    <a href="/shop" class="back-button">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i> Shop
-    </a>
-
-    {#if store.error}
-      <div class="error">{store.error}</div>
-    {:else if store.isLoading && volumes.length === 0}
-      <div class="loading">Loading the trilogy...</div>
-    {:else if selected}
-      <div class="config-layout">
-        <!-- ============ preview column ============ -->
-        <div class="preview-column">
-          <div class="preview-box">
-            <Crossfade key={`${selected.id}|${propType}`}>
-              <div class="preview-inner">
-                <!-- All six element families, always. -->
-                <DeckFanCover
-                  cards={selected.coverCards ?? []}
-                  deckName={selected.name}
-                  {propType}
-                  cardWidth={150}
-                  maxCardWidth={280}
-                  exactCount={Math.min(6, (selected.coverCards ?? []).length)}
-                  viewTransitionName="shop-fan-tnd-trilogy"
-                />
-                <p class="preview-desc">{selected.description}</p>
-              </div>
-            </Crossfade>
-          </div>
-
-          <div class="legend" aria-label="Element color legend">
-            {#each TND_ELEMENTS as el (el.familyId)}
-              <span class="legend-item">
-                <span class="legend-dot" style:--c={el.accentColor}></span>
-                <span>{el.name}</span>
-              </span>
-            {/each}
-          </div>
-        </div>
-
-        <!-- ============ choices column ============ -->
-        <div class="info-column">
-          <span class="eyebrow">The trilogy</span>
-          <h1>Timing &amp; Direction</h1>
-          <p class="meta">
-            Three volumes, one system: every card color-coded by its timing and
-            direction family.
-          </p>
-
-          <div class="field">
-            <span class="field-label" id="volume-label">Volume</span>
-            <div class="volume-grid" role="radiogroup" aria-labelledby="volume-label">
-              {#each volumes as volume (volume.id)}
-                {@const active = volume.id === selected.id}
-                {@const [num, title] = nameParts(volume.name)}
-                <button
-                  type="button"
-                  id="volume-{volume.id}"
-                  class="volume-option"
-                  class:active
-                  role="radio"
-                  aria-checked={active}
-                  tabindex={active ? 0 : -1}
-                  onclick={() => (selectedId = volume.id)}
-                  onkeydown={onPickerKeydown}
-                >
-                  <span class="volume-num">{num}</span>
-                  <span class="volume-title">{title}</span>
-                  <span class="volume-meta">{volume.cardCount} cards · {formatUsd(activePriceCents(volume, now))}</span>
-                </button>
-              {/each}
-              <!-- Package option: visible so the offer is legible, gated until priced. -->
-              <div class="volume-option package" aria-disabled="true">
-                <span class="volume-num">All three</span>
-                <span class="volume-title">The complete trilogy</span>
-                <span class="volume-meta">bundle pricing coming soon</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <span class="field-label" id="prop-label">Prop</span>
-            <PropPicker
-              value={propType}
-              onchange={(p) => {
-                propType = p;
-                trackPropSelected("tnd-trilogy", selected?.id, p);
-              }}
+<ShopProductShell
+  family={"Timing & Direction"}
+  eyebrow="The trilogy"
+  title={"Timing & Direction"}
+  tagline="Three volumes, one system: every card color-coded by its timing and direction family."
+  mediaHeight="clamp(320px, 34vw, 430px)"
+  product={selected ?? undefined}
+  {propType}
+  listing="tnd-trilogy"
+  price={selected ? price : undefined}
+  checkoutError={store.checkoutError}
+  {crossSell}
+  assurances={ASSURANCES}
+  loading={store.isLoading && volumes.length === 0}
+  loadingLabel="Loading the trilogy..."
+  error={store.error ??
+    (!store.isLoading && !selected ? "The trilogy isn't available right now." : null)}
+>
+  {#snippet media()}
+    {#if selected}
+      <div class="stage">
+        <Crossfade key={`${selected.id}|${propType}`}>
+          <div class="stage-inner">
+            <!-- All six element families, always. -->
+            <DeckFanCover
+              cards={selected.coverCards ?? []}
+              deckName={selected.name}
+              {propType}
+              cardWidth={150}
+              maxCardWidth={280}
+              exactCount={Math.min(6, (selected.coverCards ?? []).length)}
+              viewTransitionName="shop-fan-tnd-trilogy"
             />
+            <p class="stage-desc">{selected.description}</p>
           </div>
+        </Crossfade>
 
-          <p class="price">{price}</p>
-          {#if selected && preorderWindowOpen(selected, now)}
-            <PreorderPriceNote product={selected} />
-          {/if}
-
-          <BuyButton listing="tnd-trilogy" product={selected} {propType} />
-          {#if store.checkoutError}
-            <p class="checkout-error" role="alert">{store.checkoutError}</p>
-          {/if}
-
-          <ul class="assurance">
-            <li><i class="fas fa-box-open" aria-hidden="true"></i> Free laminated quick-reference sheet and deck box included</li>
-            <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Beta run: printed and cut by hand in Chicago, small batches</li>
-          </ul>
+        <div class="legend" aria-label="Element color legend">
+          {#each TND_ELEMENTS as el (el.familyId)}
+            <span class="legend-item">
+              <span class="legend-dot" style:--c={el.accentColor}></span>
+              <span>{el.name}</span>
+            </span>
+          {/each}
         </div>
       </div>
-    {:else}
-      <div class="error">The trilogy isn't available right now.</div>
     {/if}
-  </main>
-</div>
+  {/snippet}
+
+  {#snippet configurator()}
+    {#if selected}
+      <div class="field">
+        <span class="field-label" id="volume-label">Volume</span>
+        <div class="volume-grid" role="radiogroup" aria-labelledby="volume-label">
+          {#each volumes as volume (volume.id)}
+            {@const active = volume.id === selected.id}
+            {@const [num, title] = nameParts(volume.name)}
+            <button
+              type="button"
+              id="volume-{volume.id}"
+              class="volume-option"
+              class:active
+              role="radio"
+              aria-checked={active}
+              tabindex={active ? 0 : -1}
+              onclick={() => (selectedId = volume.id)}
+              onkeydown={onPickerKeydown}
+            >
+              <span class="volume-num">{num}</span>
+              <span class="volume-title">{title}</span>
+              <span class="volume-meta">{volume.cardCount} cards · {formatUsd(activePriceCents(volume, now))}</span>
+            </button>
+          {/each}
+          <!-- Package option: visible so the offer is legible, gated until priced. -->
+          <div class="volume-option package" aria-disabled="true">
+            <span class="volume-num">All three</span>
+            <span class="volume-title">The complete trilogy</span>
+            <span class="volume-meta">bundle pricing coming soon</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="prop-label">Prop</span>
+        <PropPicker
+          value={propType}
+          onchange={(p) => {
+            propType = p;
+            trackPropSelected("tnd-trilogy", selected?.id, p);
+          }}
+        />
+      </div>
+    {/if}
+  {/snippet}
+
+  {#snippet priceNote()}
+    {#if selected && preorderWindowOpen(selected, now)}
+      <PreorderPriceNote product={selected} />
+    {/if}
+  {/snippet}
+</ShopProductShell>
 
 <style>
-  /* .config-page root chrome (min-height/padding-top/background/color) lives in
-     the shared src/lib/features/store/styles/config-page.css, scoped under the
-     .store-config-page marker class added to this root div above. */
-
-  .config-content {
-    /* Lean vertical padding so the configurator fits a 4K viewport unscrolled
-       (matches LoopDeckConfiguratorPage). */
-    max-width: var(--shell-w, min(1720px, 92vw));
-    margin: 0 auto;
-    padding: 28px 24px 44px;
+  /* ---------- preview stage ---------- */
+  /* The stage BOX is the shell's (border, radius, padding, reserved height).
+     This is only what goes inside it. */
+  .stage {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  /* Shared .back-button properties live in config-page.css; margin-bottom and
-     transition differ enough page-to-page (and interact with the
-     prefers-reduced-motion override below) that they stay local everywhere. */
-  .back-button {
-    margin-bottom: 24px;
-    transition: background 0.2s, border-color 0.2s;
-  }
-
-  .config-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: clamp(28px, 4vw, 56px);
-    align-items: start;
-  }
-
-  @media (max-width: 860px) {
-    .config-layout {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Wide screens: stretch the preview stage to the info column's height and
-     center the fan in it — kills the dead air under the preview box. The
-     legend keeps its slot under the stage. */
-  @media (min-width: 1400px) {
-    .config-layout {
-      align-items: stretch;
-    }
-    .preview-column {
-      display: flex;
-      flex-direction: column;
-    }
-    .preview-box {
-      flex: 1;
-      display: grid;
-      align-content: center;
-    }
-  }
-
-  /* ---------- preview ---------- */
-  /* border-radius/border/padding are byte-identical with
-     LoopDeckConfiguratorPage + StarterPackPage's .preview-box and live in
-     config-page.css. */
-  .preview-box {
-    background: radial-gradient(
-      circle at 50% 38%,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.015)
-    );
-    /* Reserve for the tallest volume swap (no-layout-shift), but scale down on
-       phones — a flat 430px left ~150px of dead air under the description. */
-    min-height: clamp(320px, 34vw, 430px);
-  }
-
-  .preview-inner {
+  .stage-inner {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
 
-  .preview-desc {
+  .stage-desc {
     font-size: var(--font-size-min, 14px);
     line-height: 1.65;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
     margin: 0;
     text-align: center;
-    max-width: 56ch;
     align-self: center;
   }
 
@@ -302,32 +253,9 @@
     border: 1px solid rgba(255, 255, 255, 0.35);
   }
 
-  /* ---------- info ---------- */
-  .info-column {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  /* Shared .eyebrow properties (font-weight/text-transform/color) live in
-     config-page.css; font-size and letter-spacing vary per page. */
-  .eyebrow {
-    font-size: var(--font-size-compact, 12px);
-    letter-spacing: 0.12em;
-  }
-
-  /* h1's font-size/font-weight/margin/letter-spacing are byte-identical with
-     LoopDeckConfiguratorPage + StarterPackPage and live in config-page.css. */
-
-  .meta {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    margin: 0;
-  }
-
-  /* .field/.field-label are byte-identical with StarterPackPage and live in
+  /* ---------- volume picker ---------- */
+  /* .field/.field-label are shared with StarterPackPage and live in
      config-page.css. */
-
   .volume-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -383,16 +311,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* .price, .checkout-error, .assurance (container + icon), and .loading/.error
-     are byte-identical across all four configurator pages and live fully in
-     config-page.css. .assurance li's font-size/color vary per page. */
-  .assurance li {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.66));
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .back-button,
     .volume-option {
       transition: none;
     }
