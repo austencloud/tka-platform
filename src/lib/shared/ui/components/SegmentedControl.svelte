@@ -206,6 +206,7 @@
 
 <style>
   .segmented-control {
+    --segmented-selected-ink: white;
     display: flex;
     position: relative;
     /* Fallbacks: this control also renders on marketing-chrome pages (shop
@@ -243,15 +244,15 @@
   }
 
   .indicator[data-tone="blue"] {
-    background: var(--prop-blue, #2e8bf0);
+    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 45%, black);
   }
 
   .indicator[data-tone="red"] {
-    background: var(--prop-red, #ed1c24);
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 45%, black);
   }
 
   .indicator[data-tone="accent"] {
-    background: var(--theme-accent, #8b6cff);
+    background: color-mix(in srgb, var(--theme-accent, #8b6cff) 45%, black);
   }
 
   .compact .indicator {
@@ -374,7 +375,9 @@
   }
 
   .segment.selected {
-    color: var(--theme-text-on-accent, white);
+    /* The selected fill is deliberately deepened above, so white ink clears
+       AA across the accent, blue, and red tones, including orange #ea580c. */
+    color: var(--segmented-selected-ink);
   }
 
   .segment i {

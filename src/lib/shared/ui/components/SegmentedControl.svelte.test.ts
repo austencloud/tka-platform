@@ -10,9 +10,33 @@ const OPTIONS = [
   { value: "c", label: "Gamma" },
 ];
 
+function contrastRatio(foreground: string, background: string): number {
+  const luminance = (hex: string) => {
+    const channels = hex
+      .replace("#", "")
+      .match(/.{2}/g)!
+      .map((channel) => parseInt(channel, 16) / 255)
+      .map((channel) =>
+        channel <= 0.04045
+          ? channel / 12.92
+          : ((channel + 0.055) / 1.055) ** 2.4
+      );
+    return (
+      0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!
+    );
+  };
+  const lighter = Math.max(luminance(foreground), luminance(background));
+  const darker = Math.min(luminance(foreground), luminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 describe("SegmentedControl", () => {
   it("marks exactly the selected option as pressed", async () => {
-    render(SegmentedControl, { options: OPTIONS, value: "a", onchange: vi.fn() });
+    render(SegmentedControl, {
+      options: OPTIONS,
+      value: "a",
+      onchange: vi.fn(),
+    });
     await expect
       .element(page.getByRole("button", { name: "Alpha" }))
       .toHaveAttribute("aria-pressed", "true");
@@ -61,14 +85,18 @@ describe("SegmentedControl", () => {
     await screen.rerender({ options: GROWN, value: "a", onchange });
 
     // Arrival rendered, survivor kept its selection.
-    await expect.element(page.getByRole("button", { name: "Delta" })).toBeInTheDocument();
+    await expect
+      .element(page.getByRole("button", { name: "Delta" }))
+      .toBeInTheDocument();
     await expect
       .element(page.getByRole("button", { name: "Alpha" }))
       .toHaveAttribute("aria-pressed", "true");
 
     // Shrinking back drops it again — no orphaned node left behind by the key.
     await screen.rerender({ options: OPTIONS, value: "a", onchange });
-    expect(page.getByRole("button", { name: "Delta" }).elements()).toHaveLength(0);
+    expect(page.getByRole("button", { name: "Delta" }).elements()).toHaveLength(
+      0
+    );
   });
 
   // Icon-only options (the picker's All/Continuous filter) drop the visible
@@ -119,6 +147,22 @@ describe("SegmentedControl", () => {
     expect(
       document.querySelector<HTMLElement>(".indicator")?.dataset.tone
     ).toBe("red");
+  });
+
+  it("uses AA ink on the selected orange accent", async () => {
+    render(SegmentedControl, {
+      options: OPTIONS,
+      value: "a",
+      onchange: vi.fn(),
+      color: "accent",
+    });
+    const control = document.querySelector<HTMLElement>(".segmented-control");
+    control?.style.setProperty("--theme-accent", "#ea580c");
+    control?.style.setProperty("--segmented-selected-ink", "#ffffff");
+
+    const selected = page.getByRole("button", { name: "Alpha" }).element();
+    expect(getComputedStyle(selected).color).toBe("rgb(255, 255, 255)");
+    expect(contrastRatio("#ffffff", "#692705")).toBeGreaterThanOrEqual(7);
   });
 
   it("supports an automatically activated tablist with roving keyboard focus", async () => {
@@ -217,7 +261,11 @@ describe("SegmentedControl", () => {
   });
 
   it("has no AAA a11y violations", async () => {
-    render(SegmentedControl, { options: OPTIONS, value: "a", onchange: vi.fn() });
+    render(SegmentedControl, {
+      options: OPTIONS,
+      value: "a",
+      onchange: vi.fn(),
+    });
     await expectNoA11yViolations();
   });
 });

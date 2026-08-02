@@ -74,7 +74,7 @@
   .panel-btn--primary {
     background: var(--theme-accent);
     border: 1px solid var(--theme-accent);
-    color: white;
+    color: var(--theme-text-on-accent, white);
   }
 
   .panel-btn--primary:hover:not(:disabled) {
