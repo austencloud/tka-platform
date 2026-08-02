@@ -5,7 +5,7 @@
   DeckFanCover print pipeline the /shop hero and configurators use — what the
   fan shows IS what prints and ships. Cards are sourced from the live product
   catalog (loadActiveProducts → one cover per LOOP flavor, a varied hand),
-  matching StorePage.svelte's heroCards and the /shop/choreography-cards page.
+  matching the fans the shop's own product pages deal.
 
   Mounted via LazyMount only when the Learn section nears the viewport, so the
   deal-in flourish lands on arrival and the prerendered HTML stays lean. Until

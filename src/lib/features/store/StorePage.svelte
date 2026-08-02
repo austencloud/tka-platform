@@ -157,7 +157,7 @@
         <a class="hero-cta" href="/shop/loop-deck">
           Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>
-        <a class="hero-cta secondary" href="/shop/choreography-cards">
+        <a class="hero-cta secondary" href="/shop/loop-deck">
           See what's on a card
         </a>
       </div>

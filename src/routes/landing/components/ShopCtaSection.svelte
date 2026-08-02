@@ -16,11 +16,12 @@
       <span>Physical decks of flow arts choreography.</span>
       <span>Each card holds a sequence you can scan and play.</span>
     </p>
-    <!-- Points at the explainer, not the gated /shop — the shop hasn't launched,
-         so the useful destination is the page that says what the cards are. -->
-    <a class="cta-link" href="/shop/choreography-cards">
+    <!-- Points at the catalog. /shop used to be a locked door, so this pointed
+         at the explainer instead; the door is open and the explainer retired
+         into the product pages. -->
+    <a class="cta-link" href="/shop">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
-      <span>See how they work</span>
+      <span>See the decks</span>
     </a>
   </div>
 </section>

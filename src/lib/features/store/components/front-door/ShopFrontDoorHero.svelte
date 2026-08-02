@@ -25,7 +25,11 @@
 </script>
 
 <section class="hero">
-  <div class="copy">
+  <!-- The launchpad's Choreo Cards tile morphs into this block. The name moved
+       here when /shop/choreography-cards retired and the tile started pointing
+       at the catalog; without a participant on this end the tile morph would
+       degrade to a cut (tests/unit/landing-route-morph.test.ts holds the pair). -->
+  <div class="copy" style:view-transition-name="launchpad-choreo-cards">
     <p class="kicker">The Kinetic Alphabet <span aria-hidden="true">·</span> Printed line</p>
     <h1>Every card is a <em>sequence.</em></h1>
     <p class="lede">Scan it and it moves.</p>

@@ -22,8 +22,10 @@ const readSource = (path: string): string =>
 // allowed to live in.
 const routeSourceByPath: Record<string, string[]> = {
   "/composer": ["src/routes/(public)/composer/+page.svelte"],
-  "/shop/choreography-cards": [
-    "src/routes/(public)/shop/choreography-cards/+page.svelte",
+  // The Choreo Cards tile lands on the catalog now; its morph participant is
+  // the front door's hero copy block.
+  "/shop": [
+    "src/lib/features/store/components/front-door/ShopFrontDoorHero.svelte",
   ],
   "/guide": ["src/routes/(public)/guide/+page.svelte"],
   "/notation": [
@@ -79,7 +81,12 @@ describe("landing route morph allowlist", () => {
     ).toBe(true);
   });
 
-  it("allows only the shop index and generic product-detail route", () => {
+  // Bespoke product routes joined the pair in 21d0bcba85: every shipped
+  // product has its own route rather than going through /shop/[productId], so
+  // a route-id test matched nothing real and no shop transition ever started.
+  // The assertion below still guarded the old, narrower rule and had been red
+  // since that commit.
+  it("pairs the shop index with every product route, bespoke or generic", () => {
     const shop = location("/shop", "/(public)/shop");
     const product = location(
       "/shop/level-1-guide",
@@ -93,6 +100,10 @@ describe("landing route morph allowlist", () => {
         shop,
         location("/shop/loop-deck", "/(public)/shop/loop-deck")
       )
+    ).toBe(true);
+    // /shop/success carries no product art, so it stays out of the pair.
+    expect(
+      navigationMorphs(shop, location("/shop/success", "/(public)/shop/success"))
     ).toBe(false);
   });
 
@@ -261,8 +272,10 @@ describe("landing shared-element contract", () => {
     );
     const composer = readSource("src/routes/(public)/composer/+page.svelte");
     const notation = readSource("src/routes/(public)/notation/+page.svelte");
+    // The Choreo Cards tile lands on /shop now; the print pipeline behind the
+    // front door's card art is the media that has to stay out of the morph.
     const choreoCards = readSource(
-      "src/routes/(public)/shop/choreography-cards/+page.svelte"
+      "src/lib/features/store/components/front-door/ShopEntryArt.svelte"
     );
     const anatomyExplainer = readSource(
       "src/lib/features/store/components/CardAnatomyExplainer.svelte"
@@ -294,7 +307,7 @@ describe("landing shared-element contract", () => {
     expect(composer).toContain("showWordHeader={true}");
     expect(composer).toContain('loadPriority="immediate"');
     expect(sequenceHero).toContain(".with-notation-strip .demo-media");
-    expect(choreoCards).toContain("runAfterNamedRouteMorphIdle(async () =>");
+    expect(choreoCards).toContain("runAfterNamedRouteMorphIdle(() =>");
     expect(anatomyExplainer).toContain("use:activateCardsWhenNear");
     expect(anatomyExplainer).toContain("deferUntilIdle: true");
     expect(anatomyExplainer).toContain(

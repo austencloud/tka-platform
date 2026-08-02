@@ -32,6 +32,7 @@
     GATHER_MS as FAN_GATHER_MS,
   } from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import CardAnatomyExplainer from "./components/CardAnatomyExplainer.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
   import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -529,6 +530,11 @@
     deriveCrossSell(store.products, { currentHref: "/shop/loop-deck" })
   );
 
+  // A real LOOP card for the anatomy diagram. Deliberately NOT taken from the
+  // fan: the fan re-deals on every dial change, and the diagram is a labeled
+  // teaching aid, not a preview — it should stay put while the buyer configures.
+  const anatomyCard = $derived(flavorSkus[0]?.coverCards?.[0]);
+
   const ASSURANCES = [
     { icon: "fas fa-calendar-check", text: "Preorder now. Decks ship October 1." },
     {
@@ -750,6 +756,30 @@
         />
       {/if}
     {/if}
+  {/snippet}
+
+  <!-- Absorbed from the retired /shop/choreography-cards explainer: the card
+       anatomy diagram and what the printed QR does. It sits on the product
+       pages now, where someone is deciding whether to buy this deck. -->
+  {#snippet howItWorks()}
+    <span class="section-kicker">How it works</span>
+    <h2 class="section-title">What's on the card</h2>
+    <p class="section-body">
+      Every card in the deck holds one sequence. Scan the code in the corner and that
+      sequence opens in the app, where you can watch it with any prop at any speed,
+      save it to your catalog, and practice it a step at a time.
+    </p>
+    <p class="section-body">
+      A LOOP Deck is generated, not curated: 54 sequences dealt from the dials you
+      picked, so the deck you order is not the deck anyone else gets.
+    </p>
+    <p class="section-hint">
+      Tap or point at any part of the card, or any row in the list. Its match lights up.
+    </p>
+    <CardAnatomyExplainer card={anatomyCard} showShuffle={false} />
+    <p class="section-note">
+      That QR code is live. Scan it with your phone and this card's sequence opens.
+    </p>
   {/snippet}
 </ShopProductShell>
 

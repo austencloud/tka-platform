@@ -33,6 +33,46 @@
   color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 }
 
+/* ---------- section grammar ---------- */
+/* The heading voice for the shell's below-the-fold slots (how it works,
+   details). Snippets are compiled in the HOST's scope, so scoped styles in
+   ShopProductShell cannot reach them — this plain stylesheet is what keeps two
+   product pages' sections from drifting into two different typographies. The
+   shell imports it, so every host has the grammar whether or not it imports
+   the file itself. */
+.shop-product-shell .section-kicker {
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b8a6ff;
+}
+.shop-product-shell .section-title {
+  font-family: var(--page-title-font, "Fraunces", Georgia, serif);
+  font-style: italic;
+  font-weight: 700;
+  font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.shop-product-shell .section-body {
+  margin: 0;
+  font-size: var(--font-size-min, 14px);
+  line-height: 1.65;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+  max-width: 62ch;
+}
+/* An instruction for the diagram directly under it (how to drive it), and the
+   quiet note that closes a section. Both centre on the thing they describe. */
+.shop-product-shell .section-hint,
+.shop-product-shell .section-note {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-min, 14px);
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+}
+
 /* ---------- fixed spec line ---------- */
 /* The beta run's unchangeable facts, printed under the price on both LOOP
    pages. Information, not dead buttons. */

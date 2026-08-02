@@ -367,7 +367,7 @@
               </p>
             </div>
             <div class="hero-ctas cards-ctas">
-              <a href="/shop/choreography-cards" class="cta-button">
+              <a href="/shop/loop-deck" class="cta-button">
                 <span>See how Choreo Cards work</span>
                 <i class="fas fa-arrow-right" aria-hidden="true"></i>
               </a>

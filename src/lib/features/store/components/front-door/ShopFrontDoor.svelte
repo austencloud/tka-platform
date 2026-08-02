@@ -151,10 +151,16 @@
           move, share a link anyone can scan.
         </p>
       </div>
-      <a class="onward-cta" href="/composer">
-        Open the Composer
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      </a>
+      <!-- Two ways out for a non-buyer: the tool, and the free reading path the
+           retired explainer page used to point at. Both are buttons, not text
+           links (clickables-look-like-buttons.md). -->
+      <div class="onward-actions">
+        <a class="onward-cta" href="/composer">
+          Open the Composer
+          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        <a class="onward-cta secondary" href="/guide">Read the free guide</a>
+      </div>
     </section>
   </div>
 </div>
@@ -278,6 +284,12 @@
     max-width: 52ch;
   }
 
+  .onward-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
   .onward-cta {
     display: inline-flex;
     align-items: center;
@@ -302,6 +314,16 @@
   .onward-cta:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
+  }
+
+  /* The second path is real, not the headline one: same shape, less weight. */
+  .onward-cta.secondary {
+    background: transparent;
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.78));
+  }
+  .onward-cta.secondary:hover {
+    color: inherit;
   }
 
   @media (prefers-reduced-motion: reduce) {

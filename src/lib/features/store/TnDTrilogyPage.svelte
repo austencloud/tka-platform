@@ -19,6 +19,7 @@
   import ShopProductShell from "./components/shell/ShopProductShell.svelte";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import PropPicker from "./components/PropPicker.svelte";
+  import CardAnatomyExplainer from "./components/CardAnatomyExplainer.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
   import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import { deriveCrossSell } from "./domain/catalog-listings";
@@ -80,6 +81,11 @@
       text: "Beta run: printed and cut by hand in Chicago, small batches",
     },
   ];
+
+  // The anatomy diagram runs on a real card from the volume in view, so the
+  // parts it labels are the parts of the deck being bought. Absent (catalog
+  // still loading), the explainer falls back to its own catalog example.
+  const anatomyCard = $derived(selected?.coverCards?.[0]);
 
   // "TKA 1: Learning Letters" -> ["TKA 1", "Learning Letters"]
   const nameParts = (name: string): [string, string] => {
@@ -201,6 +207,30 @@
     {#if selected && preorderWindowOpen(selected, now)}
       <PreorderPriceNote product={selected} />
     {/if}
+  {/snippet}
+
+  <!-- Absorbed from the retired /shop/choreography-cards explainer: the card
+       anatomy diagram and what the printed QR does. It sits on the product
+       pages now, where someone is deciding whether to buy this deck. -->
+  {#snippet howItWorks()}
+    <span class="section-kicker">How it works</span>
+    <h2 class="section-title">What's on the card</h2>
+    <p class="section-body">
+      Every card in the trilogy holds one sequence. Scan the code in the corner and
+      that sequence opens in the app, where you can watch it with any prop at any
+      speed, save it to your catalog, and practice it a step at a time.
+    </p>
+    <p class="section-body">
+      The trilogy is the curated half of the line: organized by timing and direction,
+      the same in every copy, so you can learn it and reference it deliberately.
+    </p>
+    <p class="section-hint">
+      Tap or point at any part of the card, or any row in the list. Its match lights up.
+    </p>
+    <CardAnatomyExplainer card={anatomyCard} showShuffle={false} />
+    <p class="section-note">
+      That QR code is live. Scan it with your phone and this card's sequence opens.
+    </p>
   {/snippet}
 </ShopProductShell>
 

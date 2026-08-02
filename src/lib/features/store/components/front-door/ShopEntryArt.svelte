@@ -11,6 +11,8 @@
 -->
 <script lang="ts">
   import { browser } from "$app/environment";
+  import { onMount } from "svelte";
+  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import type { CoverCard, Product } from "../../domain/models/product";
 
   interface Props {
@@ -40,9 +42,17 @@
     exactCount,
     bookWidth = "clamp(6rem, 42%, 11rem)",
   }: Props = $props();
+
+  // The launchpad's Choreo Cards tile morphs into this page, and the print
+  // pipeline (canvas + workers) is exactly the work that stutters a morph's
+  // final frame. Hold it until the transition and one idle turn have cleared.
+  // Until then the page renders what the server sent, so nothing moves.
+  let artReady = $state(false);
+  onMount(() => runAfterNamedRouteMorphIdle(() => (artReady = true)));
+  const ready = $derived(browser && artReady);
 </script>
 
-{#if cards.length && browser}
+{#if cards.length && ready}
   {#await import("../DeckFanCover.svelte") then { default: DeckFanCover }}
     <DeckFanCover
       {cards}
@@ -54,7 +64,7 @@
       {exactCount}
     />
   {/await}
-{:else if product.type === "guide" && browser}
+{:else if product.type === "guide" && ready}
   {#await import("../BookCoverArt.svelte") then { default: BookCoverArt }}
     <BookCoverArt width={bookWidth} />
   {/await}

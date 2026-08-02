@@ -35,6 +35,11 @@
 </script>
 
 <script lang="ts">
+  // Scoped under .shop-product-shell, so it can only match inside this shell.
+  // Carries the patterns host snippets need but scoped styles can't reach them
+  // (a snippet compiles in its host's scope): the labeled field, the spec line,
+  // and the section grammar the how-it-works and details slots share.
+  import "../../styles/config-page.css";
   import type { Snippet } from "svelte";
   import type { Product } from "../../domain/models/product";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
