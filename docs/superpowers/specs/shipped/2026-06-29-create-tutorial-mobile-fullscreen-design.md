@@ -2,11 +2,11 @@
 status: active
 value: 4
 effort: M
-remaining: "Implementation landed in 5609c75ac1, the real-component verification route landed in e5ce0fbff2, and current source matches the approved fullscreen treatment across all four steps. Close-out is blocked by two verification gates: Chrome DevTools MCP is unavailable in this Codex session for the required current viewport screenshots, and pnpm run check reports seven unrelated errors in another session's untracked WorkspaceShareControl.svelte. Once both clear, capture the viewport proof, rerun the full check, and move this spec to shipped."
-depends_on: "external: Chrome DevTools MCP unavailable; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+remaining: ""
+depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-30
+last_triaged: 2026-08-01
 ---
 # Create Tutorial — Mobile Fullscreen
 
@@ -163,3 +163,12 @@ Per project visualization-routing (test page with real components, never a mocku
   MCP is not registered. The full repository check also remains blocked by seven
   TypeScript errors, all in the unrelated untracked
   `WorkspaceShareControl.svelte`.
+
+## Close-out (2026-08-01)
+
+Viewport proof captured this session on the real-component route
+/test/tutorial-fullscreen via Chrome DevTools MCP: 1440x900 keeps the carded
+desktop treatment (unchanged); 375x667 and 414x896 render the fullscreen wizard
+with Back/Skip, heading, and level pills clear of content and the bottom action
+bar unobstructed (verified on step 1 pick-start and step 2 add-step). Full
+svelte-check: 0 errors, 0 warnings; the WorkspaceShareControl blocker was stale.

@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: S
-remaining: "Implementation landed in fd182587b6 and current source matches every approved change. Close-out is blocked by two verification gates: Chrome DevTools MCP is unavailable in this Codex session for the required current modal/pill screenshots, and pnpm run check reports seven unrelated errors in another session's untracked WorkspaceShareControl.svelte. Once both clear, capture the gallery proof, rerun the full check, and move this spec to shipped."
-depends_on: "external: Chrome DevTools MCP unavailable; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+remaining: ""
+depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-30
+last_triaged: 2026-08-01
 ---
 # Variation Picker Polish — Design
 
@@ -89,3 +89,14 @@ BEFORE/AFTER screenshots of the modal and a pill card, plus `npm run check` gree
 - Current source still contains all four implementation changes, and both target files are clean in Git. No duplicate implementation is needed.
 - Per the testing skill, no component-rendering regression test is warranted for this visible-only polish; the required proof is the live modal and pill at the project viewport set.
 - That visual proof cannot be refreshed in this session because Chrome DevTools MCP is not registered. The full repository check also remains blocked by seven TypeScript errors, all in the unrelated untracked `WorkspaceShareControl.svelte`.
+
+## Close-out (2026-08-01)
+
+Live proof captured this session via Chrome DevTools MCP on :5173. The
+Variations drawer at 1440x900 shows the "Choose a variation" subtitle under the
+title, no author line (card footers carry authorship), and the staggered card
+grid. The gallery card pill renders correctly ("1/5", cycles on tap). Full
+svelte-check: 0 errors, 0 warnings; the WorkspaceShareControl blocker was stale
+(file committed in 0d36fe77fa / ce62cb4b75). Residual: no mobile drawer frame —
+the emulated mobile browse home would not switch to the gallery grid this
+session, and the sheet behavior is BaseModal-owned, untouched by this polish.
