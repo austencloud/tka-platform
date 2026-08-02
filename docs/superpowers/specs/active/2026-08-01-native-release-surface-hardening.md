@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: M
+remaining: 'Entire spec unimplemented as of 2026-08-02. Verified: the "View in coven hub" action is still live at ViewerOverflowMenu.svelte:240, src/routes/coven/ still exists, and src/config/vite-plugin-feature-gate.ts references neither getDisabledRoutePatterns nor BUILD_COVEN — so production and Capacitor bundles still ship the unfinished /coven route and the /test/* page implementations. getDisabledRoutePatterns() exists at feature-flags.ts:432 but has no consumer.'
+depends_on: ""
+plan_path: ""
+tags: [security, build, native, capacitor, release-gating]
+last_triaged: 2026-08-02
+---
 # Native Release Surface Hardening
 
 **Status:** Approved for implementation on 2026-08-01

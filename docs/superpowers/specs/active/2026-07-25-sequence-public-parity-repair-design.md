@@ -1,3 +1,13 @@
+---
+status: active
+value: 5
+effort: XL
+remaining: 'Phase 1 landed (public-sequence-index model, public-index-syncer, library-save-service, library-sync-retry, plus the Fable 5 hardening round). Phases 2-5 open: dual-compatible writer, dry-run + repair tooling, tighten Firestore rules, scheduled audit. Named-but-absent files are Phase 2+ deliverables (public-artifact-projector, public-projection-preparer, library-batch-operations, library-recycle-bin). The Opus 5 review this spec asked for HAS happened (2026-07-25): 16 of 16 spot-checked claims held and all 26 referenced paths exist, so queue this as implementation, not review.'
+depends_on: ""
+plan_path: ""
+tags: [firestore, sequences, public-index, data-integrity, parity]
+last_triaged: 2026-08-02
+---
 # Sequence/Public Parity Repair
 
 > Status: **reviewed and accepted; Phase 1 in progress**

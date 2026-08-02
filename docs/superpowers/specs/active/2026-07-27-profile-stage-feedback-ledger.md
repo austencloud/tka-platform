@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: 'Living direction ledger for Profile-as-a-Stage, not a build spec — the Settled table must not be relitigated. Open: item 12 (word header on top of EVERY medium, not just the animation canvas) in progress; ProfileShowcase/ProfileTabs unreferenced but not safe to delete until other consumers are checked; black quads in the 3D scene preview (particle sprites failing to texture); stored 3D-scene names wrong in Firestore (FPsi repeated, wants a data repair not just render-time simplification); collection visibility field + rules and pin/unpin UI never started, so Showcase is auto-picked because nothing writes PinnedItem. Items 1, 4 and 7 are closed.'
+depends_on: ""
+plan_path: ""
+tags: [profile, creators, feedback-ledger, direction]
+last_triaged: 2026-08-02
+---
 # Profile as a Stage — Feedback Ledger
 
 Every piece of direction Austen has given on this feature, in his terms, so a
