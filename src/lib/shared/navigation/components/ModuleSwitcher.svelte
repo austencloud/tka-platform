@@ -20,6 +20,7 @@
   import { inboxState } from "../../inbox/state/inbox-state.svelte";
   import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
   import { supportModalState } from "../../support/state/support-modal-state.svelte";
+  import { whatsNewState } from "../../settings/state/whats-new-state.svelte";
 
   let {
     // Current state
@@ -121,6 +122,11 @@
     closeDrawer();
   }
 
+  function handleWhatsNew() {
+    closeDrawer();
+    void whatsNewState.openManual();
+  }
+
   function handleProfileTap() {
     hapticService?.trigger("selection");
     onModuleChange?.("settings" as ModuleId);
@@ -208,7 +214,7 @@
             ? handleProfileTap
             : closeDrawer}
       />
-      <div class="account-footer-actions">
+      <div class="account-footer-actions" class:full-account={isFullAccount}>
         {#if isFullAccount}
           <button class="drawer-action inbox" onclick={handleInboxClick}>
             <div class="drawer-action-icon-wrapper">
@@ -223,6 +229,14 @@
         <button class="drawer-action" onclick={handleAccountSettings}>
           <i class="fas fa-cog" aria-hidden="true"></i>
           <span>Settings</span>
+        </button>
+        <button
+          class="drawer-action release-notes"
+          onclick={handleWhatsNew}
+          aria-label="Open release notes"
+        >
+          <i class="fas fa-gift" aria-hidden="true"></i>
+          <span>Release Notes</span>
         </button>
         <button
           class="drawer-action support"
@@ -528,7 +542,7 @@
     justify-content: center;
     gap: 5px;
     flex: 1;
-    box-sizing: border-box; /* padding+border inside the flex share, so 4-across fits the row */
+    box-sizing: border-box; /* Keep padding and borders inside each equal share. */
     min-width: 0; /* allow equal narrow columns to shrink without overflow */
     min-height: var(--min-touch-target, 50px);
     padding: 8px 4px;
@@ -542,11 +556,15 @@
     transition: all var(--duration-fast) ease;
   }
 
-  /* Label sits under the icon — compact, single line, no overflow */
+  /* Every label reserves two lines so icons stay aligned when Release Notes
+     wraps in the five-button signed-in footer. */
   .drawer-action > span {
     font-size: var(--font-size-compact, 12px);
-    line-height: 1;
-    white-space: nowrap;
+    line-height: 1.05;
+    min-height: 2.1em;
+    display: grid;
+    place-items: center;
+    text-align: center;
   }
 
   .drawer-action:hover {
@@ -600,6 +618,14 @@
     border-color: color-mix(in srgb, #f472b6 40%, transparent);
   }
 
+  .drawer-action.release-notes i {
+    color: var(--theme-accent);
+  }
+
+  .drawer-action.release-notes:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+  }
+
   /* ============================================================================
      ACCOUNT FOOTER ACTIONS - Inline row of quick actions
      ============================================================================ */
@@ -607,6 +633,27 @@
     display: flex;
     align-items: stretch;
     gap: 8px;
+  }
+
+  /* A 280px landscape drawer cannot hold five useful columns. Three actions
+     stay on the first row; Support and Sign Out sit centered beneath them. */
+  @media (max-height: 600px) and (orientation: landscape) {
+    .account-footer-actions.full-account {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .account-footer-actions.full-account .drawer-action {
+      grid-column: span 2;
+    }
+
+    .account-footer-actions.full-account .drawer-action.support {
+      grid-column: 2 / span 2;
+    }
+
+    .account-footer-actions.full-account .drawer-action.sign-out {
+      grid-column: 4 / span 2;
+    }
   }
 
   .drawer-action-icon-wrapper {

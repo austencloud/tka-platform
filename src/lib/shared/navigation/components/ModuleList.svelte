@@ -851,6 +851,27 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     }
   }
 
+  /* Three stacked modules should share the space that remains between the
+     drawer header and account footer. Viewport-sized cards ignore that chrome
+     and push the last card below the footer on narrow, tall phones. */
+  @media (max-width: 399.98px) and (orientation: portrait) {
+    .module-section[data-module-count="3"] {
+      flex: 1 1 0;
+      min-height: 0;
+    }
+
+    .module-section[data-module-count="3"] .module-grid.layout-few {
+      flex: 1 1 0;
+      min-height: 0;
+      grid-auto-rows: minmax(72px, 1fr);
+      align-content: stretch;
+    }
+
+    .module-section[data-module-count="3"] .module-cell {
+      min-height: 72px;
+    }
+  }
+
   /* ============================================================================
      SCALED CONTENT FOR LARGER CELLS
      Icons and labels grow proportionally with cell size

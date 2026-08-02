@@ -539,6 +539,7 @@
      ============================================================================ */
   .modal-footer {
     display: flex;
+    justify-content: flex-end;
     gap: 12px;
     padding: 16px 24px;
     border-top: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -546,11 +547,13 @@
   }
 
   .footer-btn {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    inline-size: auto;
+    min-inline-size: 12rem;
     min-height: var(--min-touch-target);
     padding: 12px 20px;
     border-radius: 12px;
@@ -561,6 +564,7 @@
   }
 
   .footer-btn.primary {
+    min-inline-size: 14rem;
     background: linear-gradient(
       135deg,
       var(--theme-accent) 0%,
@@ -755,8 +759,13 @@
     }
 
     .footer-btn {
+      min-inline-size: 15rem;
       font-size: 1.1rem;
       padding: 16px 24px;
+    }
+
+    .footer-btn.primary {
+      min-inline-size: 18rem;
     }
   }
 
@@ -789,12 +798,19 @@
     }
 
     .modal-footer {
+      justify-content: stretch;
       padding: 12px 16px;
     }
 
     .footer-btn {
+      flex: 1 1 0;
+      min-inline-size: 0;
       padding: 10px 16px;
       font-size: var(--font-size-sm);
+    }
+
+    .footer-btn.primary {
+      min-inline-size: 0;
     }
   }
 
