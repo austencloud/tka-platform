@@ -25,8 +25,8 @@
   const description = $derived(
     displayWord
       ? isSolo
-        ? `${displayWord}${data.meta?.creator ? ` by ${data.meta.creator}` : ""}. Watch and practice this one-hand flow choreography.`
-        : `"${displayWord}"${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""}. Watch, practice, and remix this flow arts choreography sequence.`
+        ? `${displayWord}${data.meta?.creator ? `, submitted by ${data.meta.creator}` : ""}. Watch and practice this one-hand flow choreography.`
+        : `"${displayWord}"${data.meta?.creator ? `, submitted by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""}. Watch, practice, and remix this flow arts choreography sequence.`
       : "Watch and practice a flow arts choreography sequence."
   );
   const canonical = $derived(`https://tkaflowarts.com/q/${page.params.code}`);

@@ -89,15 +89,15 @@ export function buildSequenceSeo(
   const indexable = isSequenceIndexable(meta);
   const sequenceLabel = displayWord ? `"${displayWord}"` : "this sequence";
   const stepLabel = stepCount ? `${stepCount}-step ` : "";
-  const creatorLabel = creator ? ` by ${creator}` : "";
+  const submitterLabel = creator ? `, submitted by ${creator}` : "";
   const deckLabel = indexable && deckName ? ` released in ${deckName}` : "";
   const canonical = `${SITE_URL}/sequence/${encodeURIComponent(routeId)}`;
   const heading = displayWord
     ? `${displayWord} flow arts sequence`
     : "Flow arts sequence";
   const description = indexable
-    ? `View and practice ${sequenceLabel}, a ${stepLabel}flow arts sequence${creatorLabel}${deckLabel}. Open its animated notation in Flow Arts Composer.`
-    : `Open and practice ${sequenceLabel}, a ${stepLabel}flow arts sequence${creatorLabel}, in Flow Arts Composer.`;
+    ? `View and practice ${sequenceLabel}, a ${stepLabel}flow arts sequence${submitterLabel}${deckLabel}. Open its animated notation in Flow Arts Composer.`
+    : `Open and practice ${sequenceLabel}, a ${stepLabel}flow arts sequence${submitterLabel}, in Flow Arts Composer.`;
   const ogImage = meta.thumbnailUrl ?? DEFAULT_OG_IMAGE;
 
   return {
@@ -122,7 +122,7 @@ export function buildSequenceSeo(
           url: canonical,
           image: ogImage,
           inLanguage: "en-US",
-          creator,
+          contributor: creator,
           isPartOf: {
             "@id": `${SITE_URL}/composer#software`,
           },

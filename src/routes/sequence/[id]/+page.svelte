@@ -34,7 +34,7 @@
         <dl>
           {#if data.meta.creator}
             <div>
-              <dt>Creator</dt>
+              <dt>Submitted by</dt>
               <dd>{data.meta.creator}</dd>
             </div>
           {/if}

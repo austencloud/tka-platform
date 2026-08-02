@@ -45,12 +45,13 @@ describe("sequence route indexing", () => {
     );
     expect(seo.title).toBe("A Flow Arts Sequence | Flow Arts Composer");
     expect(seo.description).toContain("4-step flow arts sequence");
+    expect(seo.description).toContain("submitted by TKA System");
     expect(seo.description).toContain(curatedMeta.deckName);
     expect(seo.jsonLd).toMatchObject({
       "@type": "CreativeWork",
       "@id": `${seo.canonical}#sequence`,
       url: seo.canonical,
-      creator: curatedMeta.creator,
+      contributor: curatedMeta.creator,
       isPartOf: {
         "@id": "https://tkaflowarts.com/composer#software",
       },
