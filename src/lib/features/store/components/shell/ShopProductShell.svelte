@@ -65,6 +65,12 @@
     /** Reserved height of the media stage. Pages whose art is a different shape
      *  override it; the default suits a card fan. */
     mediaHeight?: string;
+    /** Set false when the page brings its own stage box. The LOOP configurator
+     *  and the Deck Architect paint bespoke stages (nebula wash, clipped payoff
+     *  overlays, a fixed height their card maths reads back), and nesting one
+     *  inside the shell's frame double-borders it. The region still holds its
+     *  place in the hero grid; it just stops drawing a box. */
+    mediaFrame?: boolean;
 
     // ── configurator + buy cluster ──
     /** Dials, volume pickers, prop pickers — whatever this product configures.
@@ -88,6 +94,12 @@
     assurances?: readonly ShopAssurance[];
 
     // ── sections below the fold ──
+    /** A configurator too wide for the info column, given the full band right
+     *  under the hero. The Deck Architect's recipe builder is the case: eight
+     *  slice cards, each carrying its own tile board, which read as a cramped
+     *  list squeezed beside the buy cluster. Products whose dials fit the info
+     *  column use `configurator` and leave this empty. */
+    workbench?: Snippet;
     /** Card anatomy, the scannable QR, how a deck is used. */
     howItWorks?: Snippet;
     /** Specs, contents, everything a buyer checks before committing. */
@@ -115,6 +127,7 @@
     tagline,
     media,
     mediaHeight = "clamp(20rem, 26vw, 30rem)",
+    mediaFrame = true,
     configurator,
     price,
     priceNote,
@@ -127,6 +140,7 @@
     cta,
     checkoutError = null,
     assurances = [],
+    workbench,
     howItWorks,
     details,
     crossSell = [],
@@ -181,7 +195,7 @@
       <p class="state loading">{loadingLabel}</p>
     {:else}
       <section class="hero">
-        <div class="hero-media" style:--media-h={mediaHeight}>
+        <div class="hero-media" class:framed={mediaFrame} style:--media-h={mediaHeight}>
           {@render media?.()}
         </div>
 
@@ -225,6 +239,10 @@
           </div>
         </div>
       </section>
+
+      {#if workbench}
+        <section class="shell-section">{@render workbench()}</section>
+      {/if}
 
       {#if howItWorks}
         <section class="shell-section">{@render howItWorks()}</section>
@@ -341,7 +359,7 @@
     .hero {
       align-items: stretch;
     }
-    .hero-media {
+    .hero-media.framed {
       display: grid;
       align-content: center;
     }
@@ -351,6 +369,12 @@
     min-height: var(--media-h, clamp(20rem, 26vw, 30rem));
     display: grid;
     place-items: center;
+  }
+
+  /* The default stage box. A host that paints its own stage passes
+     mediaFrame={false} and gets a plain block instead, so its box is the only
+     one on screen. */
+  .hero-media.framed {
     border-radius: 1.25rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     padding: clamp(1rem, 2.5vw, 2rem);
@@ -359,6 +383,11 @@
       rgba(255, 255, 255, 0.05),
       rgba(255, 255, 255, 0.015)
     );
+  }
+
+  .hero-media:not(.framed) {
+    display: block;
+    min-height: 0;
   }
 
   .hero-info {
