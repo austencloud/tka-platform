@@ -53,6 +53,15 @@ export function shortCodeSoloTitle(data: ShortCodeData): string {
   );
 }
 
+function ownerFieldsFromRecord(
+  data: ShortCodeData
+): Pick<SequenceData, "ownerId" | "ownerDisplayName"> {
+  return {
+    ...(data.ownerId && { ownerId: data.ownerId }),
+    ...(data.ownerDisplayName && { ownerDisplayName: data.ownerDisplayName }),
+  };
+}
+
 /**
  * Decode the normalized word blob and conservatively restore mint-time
  * prefloat testimony from its embedded companion.
@@ -72,6 +81,7 @@ export async function decodeWordShortCodePayload(
     return {
       ...decoded,
       id: code,
+      ...ownerFieldsFromRecord(data),
       ...(word && { word, name: word }),
     } as SequenceData;
   } catch {
@@ -88,7 +98,25 @@ export function hydrateEmbeddedWordShortCodePayload(
   data: ShortCodeData
 ): SequenceData | null {
   if (!data.sequenceData) return null;
-  return createSequenceData({ id: code, ...data.sequenceData });
+
+  const embedded = createSequenceData({
+    ...data.sequenceData,
+    id: code,
+    ...ownerFieldsFromRecord(data),
+  });
+  if (
+    embedded.steps.length === 0 ||
+    (data.payloadStepCount !== undefined &&
+      embedded.steps.length !== data.payloadStepCount)
+  ) {
+    return null;
+  }
+
+  const word = shortCodeImportedWord(data) || embedded.word;
+  return {
+    ...embedded,
+    ...(word && { word, name: word }),
+  };
 }
 
 export async function verifyEncodedSoloPayload(
@@ -228,8 +256,12 @@ export async function hydrateSelfContainedShortCodePayload(
     return hydrateSoloShortCodePayload(code, data);
   }
 
+  // The embedded copy is the sequence exactly as it existed when the link was
+  // created. Prefer it whenever it is complete; the compact blob deliberately
+  // omits fields that can be derived later, and displaying that lean form can
+  // make a valid saved sequence look unnamed or non-circular.
   return (
-    (await decodeWordShortCodePayload(code, data)) ??
-    hydrateEmbeddedWordShortCodePayload(code, data)
+    hydrateEmbeddedWordShortCodePayload(code, data) ??
+    (await decodeWordShortCodePayload(code, data))
   );
 }

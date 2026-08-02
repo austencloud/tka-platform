@@ -76,6 +76,39 @@ describe("resolveShortCodeWithRecord", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("uses an exact embedded copy before the lean encoded blob", async () => {
+    const manager = makeManager(null);
+    const { sequence } = await manager.resolveShortCodeWithRecord("AB3D", {
+      sequence: "V",
+      payloadWord: "V",
+      payloadStepCount: 1,
+      ownerId: "owner-1",
+      ownerDisplayName: "Sequence Owner",
+      sequenceData: {
+        id: "source-sequence-id",
+        word: "V",
+        isCircular: true,
+        loopType: "rotated",
+        steps: [{ id: "embedded-step", letter: "V" }],
+      },
+      encoded: "s~lean-blob",
+      createdAt: "2026-07-30T00:00:00.000Z",
+      createdBy: "owner-1",
+      scanCount: 0,
+    });
+
+    expect(sequence).toMatchObject({
+      id: "AB3D",
+      name: "V",
+      word: "V",
+      ownerId: "owner-1",
+      ownerDisplayName: "Sequence Owner",
+      isCircular: true,
+      loopType: "rotated",
+    });
+    expect(sequence?.steps[0]?.id).toBe("embedded-step");
+  });
+
   it("hands back the deck attribution the scan page needs", async () => {
     // The whole point: deck_id was structurally null on every scan ever
     // recorded because the client discarded this record and leaned on SSR

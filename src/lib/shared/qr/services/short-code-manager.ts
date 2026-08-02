@@ -64,6 +64,7 @@ import {
   SOLO_SHORTCODE_PAYLOAD_SCHEMA_VERSION,
   decodeWordShortCodePayload,
   hydrateEmbeddedWordShortCodePayload,
+  hydrateSelfContainedShortCodePayload,
   hydrateSoloShortCodePayload,
   verifyEncodedSoloPayload,
 } from "./short-code-payload-hydrator";
@@ -1478,23 +1479,16 @@ export class ShortCodeManager {
     code: string,
     data: ShortCodeData
   ): Promise<SequenceData | null> {
-    if (data.payloadKind === "solo") {
-      return hydrateSoloShortCodePayload(code, data);
-    }
+    // Strategy 0: Data carried by the record itself. The shared resolver keeps
+    // the exact embedded copy ahead of the lean encoded blob, while retaining
+    // the blob as the zero-network fallback used by skinny offline snapshots.
+    const selfContained = await hydrateSelfContainedShortCodePayload(
+      code,
+      data
+    );
+    if (selfContained) return selfContained;
 
-    // Strategy 0: Self-contained encoded blob (zero Firestore dependency).
-    // Preferred path - fastest, and the only strategy that survives a full
-    // Firestore outage when resolving from the static snapshot. The legacy
-    // wire format drops float prefloat data, so when the record also carries
-    // the embedded mint-time copy, graft those fields back onto the decoded
-    // steps — the blob stays the renderer's source (it is the normalized,
-    // orientation-correct shape; raw embedded steps are not renderable).
-    if (data.encoded) {
-      const decoded = await decodeWordShortCodePayload(code, data);
-      if (decoded) return decoded;
-    }
-
-    // Strategy 1: Public index lookup by stored word + sequenceId
+    // Strategy 2: Public index lookup by stored word + sequenceId
     try {
       const fullSequence = await this.browseLoader.loadFullSequenceData(
         data.sequence,
@@ -1507,7 +1501,7 @@ export class ShortCodeManager {
       // Public index lookup failed — fall through
     }
 
-    // Strategy 2: The stored word may be expanded (e.g., "AAKEAAKEAAKEAAKE").
+    // Strategy 3: The stored word may be expanded (e.g., "AAKEAAKEAAKEAAKE").
     // Try using sequenceId as the word - it often matches the simplified form.
     if (data.sequenceId && data.sequenceId !== data.sequence) {
       try {
@@ -1523,7 +1517,7 @@ export class ShortCodeManager {
       }
     }
 
-    // Strategy 3: Direct Firestore load (requires ownerId + sequenceId)
+    // Strategy 4: Direct Firestore load (requires ownerId + sequenceId)
     if (data.ownerId && data.sequenceId) {
       try {
         const firestore = await this.ensureFirestore();
@@ -1546,13 +1540,6 @@ export class ShortCodeManager {
       }
     } else {
       // Skipping direct load — missing ownerId or sequenceId
-    }
-
-    // Strategy 4: Embedded sequence data (deck sequences without ownerId).
-    // When a shortcode was created for a deck sequence, the essential fields
-    // were stored inline so we can hydrate without searching deck collections.
-    if (data.sequenceData) {
-      return hydrateEmbeddedWordShortCodePayload(code, data);
     }
 
     console.error(

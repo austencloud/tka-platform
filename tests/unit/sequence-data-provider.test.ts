@@ -1,0 +1,128 @@
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+
+import { loopDetector } from "$lib/shared/create/services/loop-detector";
+import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+import { decodeSequenceFromQR } from "$lib/shared/navigation/services/sequence-encoder";
+import type { ShortCodeData } from "$lib/shared/qr/services/types";
+import {
+  decodeWordShortCodePayload,
+  hydrateSelfContainedShortCodePayload,
+} from "$lib/shared/qr/services/short-code-payload-hydrator";
+import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+
+vi.mock("$lib/shared/create/get-sequence-repository", () => ({
+  getSequenceRepository: () => ({ getSequence: vi.fn() }),
+}));
+vi.mock("$lib/shared/browse/get-browse-loader", () => ({
+  getBrowseLoader: () => ({ loadFullSequenceData: vi.fn() }),
+}));
+vi.mock("$lib/shared/sequence-viewer/services/cell-pre-warmer", () => ({
+  cellPreWarmer: { preWarmSequence: vi.fn() },
+}));
+
+const AR18_ENCODED =
+  "s~r1:sr:bbc58ece:q1:HYPQN1Z0M/2Q 5Q:66VH93T9PYLH500QP5N9O*N$+VUSGQSUYCI3 AL.FE5A00";
+const ENCODED_B2ZM =
+  "s~r1:sm:f2938653:q1:HYPQN1Z0M/2Q 5Q:66VH93T9PYLH504WU/L92IGQSUG54HJCJQILD2JEQS+MO:9YE1U33FNO5*Q$ZMWDNXZ9PI5B32+80QLL8PR";
+const B2ZM_WORD = "Λ-γYΘγΛ-γYΘγ";
+
+function shortCodeRecord(
+  overrides: Partial<ShortCodeData> = {}
+): ShortCodeData {
+  return {
+    sequence: B2ZM_WORD,
+    payloadWord: B2ZM_WORD,
+    encoded: ENCODED_B2ZM,
+    createdAt: "2026-07-30T00:00:00.000Z",
+    createdBy: "test",
+    scanCount: 0,
+    ...overrides,
+  };
+}
+
+function injectRealCsvData(): void {
+  const root = resolve(__dirname, "../..");
+  const read = (filename: string) =>
+    readFileSync(resolve(root, "static/data/pictographs", filename), "utf8");
+  Object.assign(window, {
+    csvData: {
+      diamondData: read("DiamondPictographDataframe.csv"),
+      boxData: read("BoxPictographDataframe.csv"),
+      skewedData: read("SkewedPictographDataframe.csv"),
+    },
+  });
+}
+
+describe("sequence data provider", () => {
+  beforeAll(() => {
+    injectRealCsvData();
+    registerLoopDetector(loopDetector);
+  });
+
+  it("fully hydrates a lean full-motion sequence before the viewer uses it", async () => {
+    const decoded = await decodeSequenceFromQR(AR18_ENCODED);
+
+    expect(decoded.steps).toHaveLength(8);
+    expect(decoded.steps.every((step) => step.letter === null)).toBe(true);
+    expect(decoded.word).toBe("");
+    expect(decoded.loopType).toBeUndefined();
+
+    const hydrated = await hydrateSequence({
+      ...decoded,
+      id: "AR18-regression",
+    });
+
+    expect(hydrated.steps.map((step) => step.letter)).toEqual([
+      "V",
+      "Λ-",
+      "V",
+      "Λ-",
+      "V",
+      "Λ-",
+      "V",
+      "Λ-",
+    ]);
+    expect(hydrated.word).toBe("VΛ-VΛ-VΛ-VΛ-");
+    expect(hydrated.loopType).toBe("rotated");
+    expect(hydrated.isCircular).toBe(true);
+    expect(hydrated.gridMode).toBe("diamond");
+  });
+});
+
+describe("short-code payload selection", () => {
+  it("prefers the exact embedded sequence over a lean encoded copy", async () => {
+    const decoded = await decodeWordShortCodePayload("B2ZM", shortCodeRecord());
+    expect(decoded).not.toBeNull();
+
+    const embeddedSteps = decoded!.steps.map((step, index) => ({
+      ...step,
+      letter: index === 0 ? "V" : step.letter,
+    }));
+    const sequence = await hydrateSelfContainedShortCodePayload(
+      "B2ZM",
+      shortCodeRecord({
+        payloadStepCount: embeddedSteps.length,
+        ownerId: "owner-1",
+        sequenceData: {
+          id: "source-sequence-id",
+          steps: embeddedSteps,
+          word: B2ZM_WORD,
+          isCircular: true,
+          loopType: "rotated",
+        },
+      })
+    );
+
+    expect(sequence).toMatchObject({
+      id: "B2ZM",
+      name: B2ZM_WORD,
+      word: B2ZM_WORD,
+      ownerId: "owner-1",
+      isCircular: true,
+      loopType: "rotated",
+    });
+    expect(sequence?.steps[0]?.letter).toBe("V");
+  });
+});
