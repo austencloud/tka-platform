@@ -7,7 +7,7 @@
    */
 
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { messagingService } from "../../../messaging/services/messenger";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -26,12 +26,14 @@
     MessageImageSendHandle,
     MessageImageSendProgress,
   } from "$lib/shared/messaging/services/contracts/IMessageImageSender";
+  import type { Message } from "$lib/shared/messaging/domain/models/message-models";
 
   interface Props {
     conversationId: string;
+    lastEditableMessage?: Message;
   }
 
-  let { conversationId }: Props = $props();
+  let { conversationId, lastEditableMessage }: Props = $props();
 
   let messageText = $state("");
   let isSending = $state(false);
@@ -40,6 +42,8 @@
   let pendingAttachment = $state<PendingMessageAttachment | null>(null);
   let attachmentProgress = $state<MessageImageSendProgress | null>(null);
   let imageSendHandle: MessageImageSendHandle | null = null;
+  let activeEditId: string | null = null;
+  let draftBeforeEdit: string | null = null;
 
   // Typing indicator debounce
   let typingTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -69,24 +73,53 @@
     };
   });
 
-  // When entering edit mode, populate with the message content
+  function resizeInput(): void {
+    if (!inputElement) return;
+    inputElement.style.height = "auto";
+    inputElement.style.height = Math.min(inputElement.scrollHeight, 120) + "px";
+  }
+
+  function focusInputAtEnd(): void {
+    if (!inputElement) return;
+    inputElement.focus();
+    inputElement.setSelectionRange(messageText.length, messageText.length);
+    resizeInput();
+  }
+
+  // Editing temporarily borrows the composer. The draft and any attachment
+  // waiting underneath come back when the edit is saved or cancelled.
   $effect(() => {
-    if (inboxState.editingMessage) {
-      pendingAttachment = null;
-      attachmentProgress = null;
-      messageText = inboxState.editingMessage.content;
-      // Focus input when entering edit mode
-      const focusTimer = setTimeout(() => inputElement?.focus(), 50);
+    const editingMessage = inboxState.editingMessage;
+
+    if (editingMessage && editingMessage.id !== activeEditId) {
+      if (activeEditId === null) {
+        draftBeforeEdit = untrack(() => messageText);
+      }
+      activeEditId = editingMessage.id;
+      messageText = editingMessage.content;
+
+      if (typingTimeout) clearTimeout(typingTimeout);
+      messagingService.setTyping(conversationId, false).catch(() => {});
+
+      const focusTimer = setTimeout(focusInputAtEnd, 50);
       return () => clearTimeout(focusTimer);
     }
+
+    if (!editingMessage && activeEditId !== null) {
+      activeEditId = null;
+      messageText = draftBeforeEdit ?? "";
+      draftBeforeEdit = null;
+
+      const restoreTimer = setTimeout(resizeInput, 0);
+      return () => clearTimeout(restoreTimer);
+    }
+
     return undefined;
   });
 
   // Auto-resize textarea and update typing indicator
-  function handleInput(event: Event) {
-    const textarea = event.target as HTMLTextAreaElement;
-    textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+  function handleInput() {
+    resizeInput();
 
     // Update typing indicator (debounced)
     if (!inboxState.isEditing) {
@@ -107,8 +140,8 @@
     // Cancel edit on Escape
     if (event.key === "Escape") {
       if (inboxState.isEditing) {
+        event.preventDefault();
         inboxState.clearEditingMessage();
-        messageText = "";
         return;
       }
       if (inboxState.isReplying) {
@@ -120,6 +153,21 @@
         attachmentProgress = null;
         return;
       }
+    }
+
+    // Matches the established desktop chat shortcut: Up from an empty
+    // composer opens the most recent message you can edit.
+    if (
+      event.key === "ArrowUp" &&
+      messageText.length === 0 &&
+      !inboxState.isEditing &&
+      !inboxState.isReplying &&
+      !pendingAttachment &&
+      lastEditableMessage
+    ) {
+      event.preventDefault();
+      inboxState.setEditingMessage(lastEditableMessage);
+      return;
     }
 
     // Send/save on Enter (without Shift)
@@ -249,30 +297,29 @@
 
   async function saveEdit() {
     const text = messageText.trim();
-    if (!text || isSending || !inboxState.editingMessage) return;
-
-    hapticService?.trigger("selection");
-
     const editingMessage = inboxState.editingMessage;
-
-    // Don't save if content hasn't changed
-    if (text === editingMessage.content) {
-      inboxState.clearEditingMessage();
-      messageText = "";
+    const canBeEmpty = Boolean(editingMessage?.attachments?.length);
+    if (
+      (!text && !canBeEmpty) ||
+      isSending ||
+      !editingMessage ||
+      text === editingMessage.content
+    ) {
       return;
     }
+
+    hapticService?.trigger("selection");
 
     isSending = true;
     try {
       await messagingService.editMessage(
-        conversationId,
+        editingMessage.conversationId,
         editingMessage.id,
         text
       );
 
       hapticService?.trigger("success");
       inboxState.clearEditingMessage();
-      messageText = "";
 
       sendSuccess = true;
       if (successTimeout) clearTimeout(successTimeout);
@@ -289,18 +336,23 @@
 
   function cancelEdit() {
     inboxState.clearEditingMessage();
-    messageText = "";
-    if (inputElement) {
-      inputElement.style.height = "auto";
-    }
   }
 
   // Derive button state
-  const canSend = $derived(
-    (messageText.trim().length > 0 || pendingAttachment !== null) && !isSending
-  );
   const isEditing = $derived(inboxState.isEditing);
   const isReplying = $derived(inboxState.isReplying);
+  const canSend = $derived.by(() => {
+    if (isSending) return false;
+
+    const text = messageText.trim();
+    if (!isEditing) {
+      return text.length > 0 || pendingAttachment !== null;
+    }
+
+    const editingMessage = inboxState.editingMessage;
+    if (!editingMessage || text === editingMessage.content) return false;
+    return text.length > 0 || Boolean(editingMessage.attachments?.length);
+  });
 </script>
 
 <div class="message-composer" class:editing={isEditing}>
@@ -351,6 +403,7 @@
     <textarea
       bind:this={inputElement}
       bind:value={messageText}
+      name="message"
       oninput={handleInput}
       onkeydown={handleKeydown}
       placeholder={isEditing ? "Edit your message..." : "Type a message..."}
@@ -428,8 +481,9 @@
   }
 
   .cancel-edit-button {
-    padding: 4px 12px;
-    font-size: var(--font-size-compact, 12px);
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 12px;
+    font-size: var(--font-size-min, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -457,7 +511,7 @@
   textarea {
     grid-column: 2;
     grid-row: 2;
-    min-height: var(--min-touch-target);
+    min-height: var(--min-touch-target, 44px);
     max-height: 120px;
     padding: 14px 16px;
     background: var(--theme-card-bg);
@@ -505,8 +559,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     padding: 0;
     background: var(--theme-accent, var(--semantic-info));
     border: none;

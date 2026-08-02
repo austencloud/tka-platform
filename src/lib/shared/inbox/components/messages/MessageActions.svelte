@@ -22,11 +22,7 @@
   const LONG_PRESS_MS = 400;
   const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "👎"];
 
-  let {
-    message,
-    isOwn,
-    children,
-  } = $props<{
+  let { message, isOwn, children } = $props<{
     message: Message;
     isOwn: boolean;
     children: Snippet;
@@ -35,8 +31,12 @@
   let showReactions = $state(false);
   let showMoreMenu = $state(false);
   let showDeleteConfirm = $state(false);
+  let menuOpensAbove = $state(false);
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let wrapperEl: HTMLDivElement | undefined = $state();
+  let reactionBarEl: HTMLDivElement | undefined = $state();
+  let moreButtonEl: HTMLButtonElement | undefined = $state();
+  let moreMenuEl: HTMLDivElement | undefined = $state();
 
   let hapticService: HapticFeedback | undefined;
 
@@ -61,7 +61,9 @@
   });
 
   const isMobile = $derived(!layoutState.isSideBySideLayout);
-  const isAuthenticated = $derived(authState.isAuthenticated && !authState.loading);
+  const isAuthenticated = $derived(
+    authState.isAuthenticated && !authState.loading
+  );
   const canEdit = $derived(isOwn && !message.isDeleted);
   const canDelete = $derived(isOwn && !message.isDeleted);
 
@@ -72,6 +74,7 @@
     longPressTimer = setTimeout(() => {
       hapticService?.trigger("selection");
       showReactions = true;
+      showMoreMenu = true;
     }, LONG_PRESS_MS);
   }
 
@@ -105,6 +108,7 @@
     event.preventDefault();
     hapticService?.trigger("selection");
     showReactions = true;
+    showMoreMenu = true;
   }
 
   // Copy message text to clipboard
@@ -174,9 +178,7 @@
       lines.push(
         "",
         "### Reactions",
-        ...msg.reactions.map(
-          (r) => `- ${r.emoji}: ${r.userIds.length} user(s)`
-        )
+        ...msg.reactions.map((r) => `- ${r.emoji}: ${r.userIds.length} user(s)`)
       );
     }
 
@@ -184,9 +186,7 @@
       lines.push(
         "",
         "### Attachments",
-        ...msg.attachments.map(
-          (a) => `- ${a.type}: ${a.name || a.url}`
-        )
+        ...msg.attachments.map((a) => `- ${a.type}: ${a.name || a.url}`)
       );
     }
 
@@ -213,6 +213,81 @@
     return undefined;
   });
 
+  function getVerticalCollisionBounds(element: HTMLElement): {
+    top: number;
+    bottom: number;
+  } {
+    let ancestor = element.parentElement;
+
+    while (ancestor) {
+      const styles = getComputedStyle(ancestor);
+      const clipsVertically = [styles.overflow, styles.overflowY].some(
+        (value) => /auto|scroll|hidden|clip/.test(value)
+      );
+
+      if (clipsVertically) {
+        const rect = ancestor.getBoundingClientRect();
+        return {
+          top: Math.max(0, rect.top),
+          bottom: Math.min(window.innerHeight, rect.bottom),
+        };
+      }
+
+      ancestor = ancestor.parentElement;
+    }
+
+    return { top: 0, bottom: window.innerHeight };
+  }
+
+  function updateMenuPlacement(
+    reactionBar: HTMLDivElement,
+    menu: HTMLDivElement
+  ): void {
+    const barRect = reactionBar.getBoundingClientRect();
+    // offsetHeight is layout-sized and unaffected by the bar's pop animation.
+    // getBoundingClientRect() would measure the transient scale and can choose
+    // the wrong side while the menu is opening.
+    const menuHeight = menu.offsetHeight;
+    const bounds = getVerticalCollisionBounds(reactionBar);
+    const requiredSpace = menuHeight + 8;
+    const spaceAbove = barRect.top - bounds.top;
+    const spaceBelow = bounds.bottom - barRect.bottom;
+
+    menuOpensAbove = spaceBelow < requiredSpace && spaceAbove >= requiredSpace;
+  }
+
+  $effect(() => {
+    const reactionBar = reactionBarEl;
+    const menu = moreMenuEl;
+
+    if (!showMoreMenu || !reactionBar || !menu) {
+      menuOpensAbove = false;
+      return;
+    }
+
+    let placementFrame = requestAnimationFrame(() =>
+      updateMenuPlacement(reactionBar, menu)
+    );
+    menu
+      .querySelector<HTMLButtonElement>('[role="menuitem"]')
+      ?.focus({ preventScroll: true });
+    const handleLayoutChange = () => {
+      cancelAnimationFrame(placementFrame);
+      placementFrame = requestAnimationFrame(() =>
+        updateMenuPlacement(reactionBar, menu)
+      );
+    };
+
+    window.addEventListener("resize", handleLayoutChange);
+    document.addEventListener("scroll", handleLayoutChange, true);
+
+    return () => {
+      cancelAnimationFrame(placementFrame);
+      window.removeEventListener("resize", handleLayoutChange);
+      document.removeEventListener("scroll", handleLayoutChange, true);
+    };
+  });
+
   // Actions
   async function handleReaction(emoji: string) {
     showReactions = false;
@@ -229,7 +304,11 @@
     }
 
     try {
-      await messagingService.toggleReaction(message.conversationId, message.id, emoji);
+      await messagingService.toggleReaction(
+        message.conversationId,
+        message.id,
+        emoji
+      );
     } catch (error) {
       console.error("Failed to add reaction:", error);
       toast.error("Failed to add reaction");
@@ -238,6 +317,46 @@
 
   function handleMoreClick() {
     showMoreMenu = !showMoreMenu;
+  }
+
+  function handleMenuKeydown(event: KeyboardEvent): void {
+    const menu = event.currentTarget as HTMLElement;
+    const items = Array.from(
+      menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
+    );
+    const activeIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement
+    );
+    let nextIndex: number | undefined;
+
+    if (event.key === "ArrowDown") {
+      nextIndex = activeIndex < items.length - 1 ? activeIndex + 1 : 0;
+    } else if (event.key === "ArrowUp") {
+      nextIndex = activeIndex > 0 ? activeIndex - 1 : items.length - 1;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = items.length - 1;
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      showMoreMenu = false;
+      requestAnimationFrame(() => moreButtonEl?.focus({ preventScroll: true }));
+      return;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    if (nextIndex !== undefined) {
+      items[nextIndex]?.focus({ preventScroll: true });
+    }
+  }
+
+  function handleMenuFocusout(event: FocusEvent): void {
+    const menu = event.currentTarget as HTMLElement;
+    if (!menu.contains(event.relatedTarget as Node | null)) {
+      showMoreMenu = false;
+    }
   }
 
   function handleReply() {
@@ -295,7 +414,7 @@
 
   <!-- Floating reaction bar (Facebook Messenger style) -->
   {#if showReactions && !message.isDeleted}
-    <div class="reaction-bar" class:own={isOwn}>
+    <div class="reaction-bar" class:own={isOwn} bind:this={reactionBarEl}>
       <!-- Emoji reactions with staggered animation -->
       {#each REACTIONS as emoji, i}
         <button
@@ -314,8 +433,11 @@
         type="button"
         class="more-btn"
         class:active={showMoreMenu}
+        bind:this={moreButtonEl}
         onclick={handleMoreClick}
         aria-label="More options"
+        aria-haspopup="menu"
+        aria-expanded={showMoreMenu}
       >
         <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
       </button>
@@ -325,29 +447,63 @@
 
       <!-- More menu dropdown -->
       {#if showMoreMenu}
-        <div class="more-menu">
-          <button type="button" class="menu-item" onclick={handleReply}>
+        <div
+          class="more-menu"
+          class:above={menuOpensAbove}
+          bind:this={moreMenuEl}
+          role="menu"
+          tabindex="-1"
+          aria-label="Message actions"
+          onkeydown={handleMenuKeydown}
+          onfocusout={handleMenuFocusout}
+        >
+          <button
+            type="button"
+            class="menu-item"
+            role="menuitem"
+            onclick={handleReply}
+          >
             <i class="fa-solid fa-reply" aria-hidden="true"></i>
             Reply
           </button>
-          <button type="button" class="menu-item" onclick={handleCopyText}>
+          <button
+            type="button"
+            class="menu-item"
+            role="menuitem"
+            onclick={handleCopyText}
+          >
             <i class="fa-solid fa-copy" aria-hidden="true"></i>
             Copy
           </button>
           {#if authState.isAdmin}
-            <button type="button" class="menu-item" onclick={handleCopyForAI}>
+            <button
+              type="button"
+              class="menu-item"
+              role="menuitem"
+              onclick={handleCopyForAI}
+            >
               <i class="fa-solid fa-robot" aria-hidden="true"></i>
               Copy for AI
             </button>
           {/if}
           {#if canEdit}
-            <button type="button" class="menu-item" onclick={handleEdit}>
+            <button
+              type="button"
+              class="menu-item"
+              role="menuitem"
+              onclick={handleEdit}
+            >
               <i class="fa-solid fa-pen" aria-hidden="true"></i>
               Edit
             </button>
           {/if}
           {#if canDelete}
-            <button type="button" class="menu-item danger" onclick={handleDeleteRequest}>
+            <button
+              type="button"
+              class="menu-item danger"
+              role="menuitem"
+              onclick={handleDeleteRequest}
+            >
               <i class="fa-solid fa-trash" aria-hidden="true"></i>
               Delete
             </button>
@@ -391,7 +547,8 @@
     border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 100;
-    animation: bar-pop var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: bar-pop var(--duration-normal)
+      cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
 
   .reaction-bar.own {
@@ -442,7 +599,8 @@
     transition: transform var(--duration-fast) ease;
     padding: 0;
     opacity: 0;
-    animation: emoji-pop var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: emoji-pop var(--duration-normal)
+      cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     animation-delay: var(--delay);
   }
 
@@ -504,6 +662,12 @@
     z-index: 101;
   }
 
+  .more-menu.above {
+    top: auto;
+    bottom: calc(100% + 8px);
+    animation-name: menu-slide-up;
+  }
+
   .reaction-bar.own .more-menu {
     right: auto;
     left: 0;
@@ -513,6 +677,17 @@
     from {
       opacity: 0;
       transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes menu-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
     }
     to {
       opacity: 1;

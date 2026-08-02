@@ -170,6 +170,9 @@ class InboxState {
     this.shareAttachmentConversationId = null;
     this.selectedConversation = conversation;
     this.currentView = "thread";
+    this.replyToMessage = null;
+    this.editingMessage = null;
+    this.typingUsers = [];
   }
 
   /**
@@ -362,6 +365,15 @@ class InboxState {
 
   setMessages(messages: Message[]) {
     this.messages = messages;
+
+    if (this.editingMessage) {
+      const current = messages.find(
+        (message) => message.id === this.editingMessage?.id
+      );
+      if (!current || current.isDeleted) {
+        this.editingMessage = null;
+      }
+    }
   }
 
   setNotifications(notifications: UserNotification[]) {

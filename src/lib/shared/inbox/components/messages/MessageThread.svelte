@@ -137,6 +137,19 @@
     }
     return null;
   });
+
+  const lastEditableOwnMessage = $derived.by(() => {
+    if (!currentUserId) return undefined;
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message?.senderId === currentUserId && !message.isDeleted) {
+        return message;
+      }
+    }
+
+    return undefined;
+  });
 </script>
 
 <div class="message-thread">
@@ -179,7 +192,10 @@
 
   <!-- Composer -->
   {#if conversation?.id}
-    <MessageComposer conversationId={conversation.id} />
+    <MessageComposer
+      conversationId={conversation.id}
+      lastEditableMessage={lastEditableOwnMessage}
+    />
   {/if}
 </div>
 
