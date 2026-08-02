@@ -2,8 +2,8 @@
 status: active
 value: 3
 effort: XS
-remaining: "Commit 9dfe3bdb86 is present, and the shared bubble content path covers plain, group, edited, and attachment-caption text. Remaining: with explicit browser and messaging permission, verify those variants in a signed-in Inbox at narrow and wide widths, including escaped markup and compact previews."
-depends_on: "external: signed-in Inbox verification requires explicit browser-control permission plus approval to send and edit test messages"
+remaining: ""
+depends_on: ""
 plan_path: ""
 tags: ["inbox", "messaging", "css", "text-rendering"]
 last_triaged: 2026-07-29
@@ -174,3 +174,35 @@ dependency.
 - [W3C CSS Text Module Level 3](https://www.w3.org/TR/css-text-3/#white-space-property)
   defines how segment breaks and preserved whitespace participate in line
   wrapping.
+
+### Closed 2026-08-02 — browser verification complete
+
+Verified against the real `MessageBubble` in Chrome DevTools MCP at
+`/test/message-multiline`, a harness added this session that mounts the live
+component against one fixture per acceptance criterion. This avoids sending
+live messages to another person while exercising the identical render path.
+
+Measured on `p.content` (the rule the fix landed on): `white-space: pre-wrap`
+and `overflow-wrap: break-word` on **all eight** fixtures, and no fixture
+overflows its bubble at either width.
+
+| Criterion | Fixture | Measured |
+|---|---|---|
+| Single Shift+Enter = one break | `Line one\nLine two` | 2 line heights |
+| Two newlines = blank line | 2 paragraphs | 3 line heights (gap rendered) |
+| Edited renders identically | 3 paragraphs, `editedAt` set | 5 line heights + `(edited)` |
+| Own / received / group parity | all three | identical 2-line render |
+| Caption preserves breaks | image + 2-line caption | 2 line heights under card |
+| Long unbroken text wraps | 90-char token | wraps, no bubble overflow |
+| Markup escaped | `<b>`, `<script>`, `& < > " '` | shown literally as text |
+| Previews stay compact | — | `ReplyPreview.svelte:89` and `ConversationItem.svelte:245,275` retain `nowrap` |
+
+Narrow width (18rem stage) re-measured: every bubble contains its content,
+zero overflow. Full-page screenshot reviewed at 1920.
+
+No data-rewrite risk: `9dfe3bdb86` adds exactly one CSS declaration to
+`MessageBubble.svelte` (plus an unrelated composer iOS-zoom fix). No write path
+is touched, so stored Firestore content keeps its original newlines by
+construction.
+
+`npm run check`: **0 errors, 0 warnings** (2026-08-02).
