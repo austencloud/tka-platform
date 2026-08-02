@@ -206,6 +206,29 @@ The task-owned Vite server used port 5174. It should be treated as ephemeral. Po
 - Browser interaction requires the repository's shared Chrome process and current permission rules. Visual verification is mandatory after implementation; preserve the task-owned-tab discipline.
 - Domain claims and any sequence changes require `flow-arts` MCP evidence.
 
+## Post-handoff direction (2026-08-02, Austen, after review of this handoff)
+
+- **Scene reuse means systems and atmosphere tech, not wholesale scenes.**
+  Confirmed intention: pull the proven engines from existing 3D scenes into the
+  habitat bays — the ocean scene's water shaders/caustics for Water, Ember's
+  fire/ember particle systems for Fire, lunar lighting language for Moon,
+  forest (or possibly desert) vocabulary for Earth — while keeping the
+  continuous cave fiction, gates, and habitat program of this handoff.
+- **Immersive thresholds are wanted.** "I do love the idea of walking into a
+  room and suddenly being underwater somehow" — design each bay's approach as
+  a transition chamber the visitor passes through, compatible with the
+  approach/occlusion layer already specified above.
+- **Pedagogical arc across the six rooms.** By the time the visitor exits the
+  sixth room they should clearly understand the six modes, having been shown
+  each mode's letter variations as hand paths in that mode's room — e.g. Water
+  presents A, B, C; Earth presents G, H, I. The concepts should feel clear by
+  accumulation. (Letter↔mode groupings must be verified through the flow-arts
+  MCP at spec time, per standing rules; the pictographs themselves stay
+  pre-alphabetic per the decisions above — presentation must not print Latin
+  letter names on cave walls.)
+- **One room at a time stands.** Austen explicitly endorsed the vertical-slice
+  sequencing; do not broad-brush all six rooms at once.
+
 ## Verification method for the rebuild
 
 Before calling the vertical slice done, provide all of the following in the same work session:
