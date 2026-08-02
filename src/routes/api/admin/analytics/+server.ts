@@ -3,7 +3,7 @@
  * Keeps the PostHog Personal API Key server-side.
  *
  * POST /api/admin/analytics
- * Per-user: { type: "engagement" | "activity" | "content" | "sessions", userId: string, period?, limit? }
+ * Per-user: { type: "engagement" | "activity" | "content" | "sessions" | "session-events", userId: string, period?, limit?, sessionId? }
  * Global: Pulse queries plus { type: "seo-scorecard" | "seo-history" }
  *
  * Requires admin role.
@@ -15,6 +15,7 @@ import { env } from "$env/dynamic/private";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { logAdminAction } from "$lib/server/security/audit-logger";
+import { getAdminAuth } from "$lib/server/firebaseAdmin";
 
 const POSTHOG_API_BASE = "https://us.i.posthog.com/api";
 
@@ -23,6 +24,7 @@ type QueryType =
   | "activity"
   | "content"
   | "sessions"
+  | "session-events"
   | "pulse-overview"
   | "pulse-breakdown"
   | "pulse-feed"
@@ -87,7 +89,7 @@ function getProjectId(): string {
   return env.POSTHOG_PROJECT_ID;
 }
 
-function getPeriodInterval(period: TimePeriod): string {
+function getPeriodInterval(period: Exclude<TimePeriod, "all">): string {
   switch (period) {
     case "today":
       return "1 day";
@@ -95,9 +97,13 @@ function getPeriodInterval(period: TimePeriod): string {
       return "7 day";
     case "month":
       return "30 day";
-    case "all":
-      return "365 day";
   }
+}
+
+function periodFilter(period: TimePeriod): string {
+  return period === "all"
+    ? ""
+    : `AND timestamp > now() - interval ${getPeriodInterval(period)}`;
 }
 
 /** Escape a value for safe interpolation into a HogQL single-quoted string literal. */
@@ -107,7 +113,7 @@ function escapeHogQL(value: string): string {
 
 async function executeHogQLQuery(
   query: string
-): Promise<{ results: unknown[][] } | null> {
+): Promise<{ results: unknown[][] }> {
   const projectId = getProjectId();
 
   const response = await fetch(
@@ -134,24 +140,41 @@ async function executeHogQLQuery(
     throw error(502, `PostHog API error: ${response.status}`);
   }
 
-  return await response.json();
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw error(502, "PostHog returned an invalid response");
+  }
+  const results = (payload as Record<string, unknown>).results;
+  if (!Array.isArray(results) || results.some((row) => !Array.isArray(row))) {
+    throw error(502, "PostHog returned invalid query results");
+  }
+  return { results: results as unknown[][] };
 }
 
-function buildEngagementQuery(userId: string): string {
+function buildEngagementQuery(userId: string, period: TimePeriod): string {
   const safeId = escapeHogQL(userId);
   return `
     SELECT
-      max(timestamp) as last_active,
-      count(distinct $session_id) as sessions_count
-    FROM events
-    WHERE distinct_id = '${safeId}'
-      AND timestamp > now() - interval 30 day
+      max(ended_at) as last_active,
+      count() as sessions_count,
+      coalesce(avg(duration_ms), 0) as avg_duration_ms,
+      coalesce(sum(duration_ms), 0) as total_duration_ms
+    FROM (
+      SELECT
+        min(timestamp) as started_at,
+        max(timestamp) as ended_at,
+        dateDiff('millisecond', min(timestamp), max(timestamp)) as duration_ms
+      FROM events
+      WHERE distinct_id = '${safeId}'
+        AND "$session_id" IS NOT NULL
+        ${periodFilter(period)}
+      GROUP BY "$session_id"
+    )
   `;
 }
 
 function buildActivityQuery(userId: string, period: TimePeriod): string {
   const safeId = escapeHogQL(userId);
-  const interval = getPeriodInterval(period);
   // Derive module from the first URL path segment of pageview events.
   // Works with existing autocapture data without custom properties.
   return `
@@ -160,7 +183,7 @@ function buildActivityQuery(userId: string, period: TimePeriod): string {
       count() as event_count
     FROM events
     WHERE distinct_id = '${safeId}'
-      AND timestamp > now() - interval ${interval}
+      ${periodFilter(period)}
       AND event = '$pageview'
       AND properties."$current_url" IS NOT NULL
     GROUP BY module
@@ -170,7 +193,7 @@ function buildActivityQuery(userId: string, period: TimePeriod): string {
   `;
 }
 
-function buildContentQuery(userId: string): string {
+function buildContentQuery(userId: string, period: TimePeriod): string {
   const safeId = escapeHogQL(userId);
   return `
     SELECT
@@ -178,6 +201,7 @@ function buildContentQuery(userId: string): string {
       count() as count
     FROM events
     WHERE distinct_id = '${safeId}'
+      ${periodFilter(period)}
       AND event IN (
         'sequence_create',
         'sequence_save',
@@ -189,7 +213,11 @@ function buildContentQuery(userId: string): string {
   `;
 }
 
-function buildSessionsQuery(userId: string, limit: number): string {
+function buildSessionsQuery(
+  userId: string,
+  period: TimePeriod,
+  limit: number
+): string {
   const safeId = escapeHogQL(userId);
   // Derive modules from pageview URLs instead of properties.module
   return `
@@ -208,15 +236,256 @@ function buildSessionsQuery(userId: string, limit: number): string {
             )
           )
         )
-      ) as modules
+      ) as modules,
+      count() as event_count,
+      countIf(event = '$exception') as exception_count,
+      countIf(event IN (
+        'sequence_create',
+        'sequence_save',
+        'sequence_export',
+        'sequence_share',
+        'collection_create'
+      )) as content_action_count,
+      argMinIf(
+        path(properties."$current_url"),
+        timestamp,
+        event = '$pageview' AND properties."$current_url" IS NOT NULL
+      ) as entry_path,
+      argMaxIf(
+        path(properties."$current_url"),
+        timestamp,
+        event = '$pageview' AND properties."$current_url" IS NOT NULL
+      ) as exit_path,
+      argMax(properties."$browser", timestamp) as browser,
+      argMax(properties."$os", timestamp) as operating_system,
+      argMax(properties."$device_type", timestamp) as device_type
     FROM events
     WHERE distinct_id = '${safeId}'
       AND "$session_id" IS NOT NULL
-      AND timestamp > now() - interval 30 day
+      ${periodFilter(period)}
     GROUP BY "$session_id"
     ORDER BY started_at DESC
     LIMIT ${Math.min(limit, 50)}
   `;
+}
+
+function buildSessionEventsQuery(
+  userId: string,
+  sessionId: string,
+  limit: number
+): string {
+  const safeUserId = escapeHogQL(userId);
+  const safeSessionId = escapeHogQL(sessionId);
+  return `
+    SELECT
+      toString(uuid) as event_id,
+      toString(timestamp) as occurred_at,
+      event,
+      if(
+        properties."$current_url" IS NULL,
+        '',
+        path(properties."$current_url")
+      ) as route,
+      coalesce(
+        properties."$el_text",
+        properties."$event_type",
+        ''
+      ) as detail,
+      properties."$exception_list" as exception_list,
+      properties."$exception_type" as exception_type,
+      properties."$exception_message" as exception_message
+    FROM events
+    WHERE distinct_id = '${safeUserId}'
+      AND "$session_id" = '${safeSessionId}'
+    ORDER BY timestamp ASC
+    LIMIT ${Math.min(limit, 500)}
+  `;
+}
+
+function asFiniteNumber(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw error(502, `PostHog returned an invalid ${field}`);
+  }
+  return value;
+}
+
+function requireRowWidth(row: unknown[], width: number, field: string): void {
+  if (row.length < width) {
+    throw error(502, `PostHog returned an incomplete ${field}`);
+  }
+}
+
+function asNullableIso(value: unknown, field: string): string | null {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
+    throw error(502, `PostHog returned an invalid ${field}`);
+  }
+  return value;
+}
+
+function asNullableString(value: unknown, field: string): string | null {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string") {
+    throw error(502, `PostHog returned an invalid ${field}`);
+  }
+  return value;
+}
+
+function exceptionFromRow(
+  listValue: unknown,
+  typeValue: unknown,
+  messageValue: unknown
+): { type: string | null; message: string | null } | null {
+  const directType = asNullableString(typeValue, "exception type");
+  const directMessage = asNullableString(messageValue, "exception message");
+  if (directType || directMessage) {
+    return { type: directType, message: directMessage };
+  }
+  if (listValue == null || listValue === "") return null;
+
+  let parsed: unknown = listValue;
+  if (typeof parsed === "string") {
+    const serialized = parsed;
+    try {
+      parsed = JSON.parse(serialized) as unknown;
+    } catch {
+      return { type: null, message: serialized };
+    }
+  }
+  const first = Array.isArray(parsed) ? parsed[0] : parsed;
+  if (!first || typeof first !== "object" || Array.isArray(first)) return null;
+  const item = first as Record<string, unknown>;
+  return {
+    type:
+      typeof item.type === "string"
+        ? item.type
+        : typeof item.name === "string"
+          ? item.name
+          : null,
+    message:
+      typeof item.value === "string"
+        ? item.value
+        : typeof item.message === "string"
+          ? item.message
+          : null,
+  };
+}
+
+export function _perUserResult(
+  type: QueryType,
+  rows: unknown[][],
+  projectId?: string
+): unknown {
+  if (type === "engagement") {
+    if (rows.length !== 1) {
+      throw error(502, "PostHog returned invalid engagement rows");
+    }
+    const row = rows[0]!;
+    requireRowWidth(row, 4, "engagement row");
+    return {
+      lastActiveAt: asNullableIso(row[0], "last activity"),
+      memberSince: null,
+      sessionsCount: asFiniteNumber(row[1], "session count"),
+      avgSessionDuration: asFiniteNumber(row[2], "average session duration"),
+      totalTimeSpent: asFiniteNumber(row[3], "total session duration"),
+    };
+  }
+  if (type === "activity") {
+    const parsed = rows.map((row) => {
+      requireRowWidth(row, 2, "activity row");
+      if (typeof row[0] !== "string" || !row[0])
+        throw error(502, "PostHog returned an invalid module");
+      return {
+        module: row[0],
+        eventCount: asFiniteNumber(row[1], "event count"),
+      };
+    });
+    const total = parsed.reduce((sum, item) => sum + item.eventCount, 0);
+    return parsed.map((item) => ({
+      ...item,
+      percentage: total ? Math.round((item.eventCount / total) * 100) : 0,
+    }));
+  }
+  if (type === "content") {
+    const counts: Record<string, number> = {};
+    for (const row of rows) {
+      requireRowWidth(row, 2, "content row");
+      if (typeof row[0] !== "string")
+        throw error(502, "PostHog returned an invalid event name");
+      counts[row[0]] = asFiniteNumber(row[1], "content event count");
+    }
+    return {
+      sequencesCreated: counts.sequence_create ?? 0,
+      sequencesSaved: counts.sequence_save ?? 0,
+      sequencesExported: counts.sequence_export ?? 0,
+      collectionsCreated: counts.collection_create ?? 0,
+      sequencesShared: counts.sequence_share ?? 0,
+    };
+  }
+  if (type === "sessions") {
+    return rows.map((row) => {
+      requireRowWidth(row, 13, "session row");
+      if (typeof row[0] !== "string" || !row[0])
+        throw error(502, "PostHog returned an invalid session ID");
+      const startedAt = asNullableIso(row[1], "session start");
+      if (!startedAt)
+        throw error(502, "PostHog returned a session without a start time");
+      if (
+        !Array.isArray(row[4]) ||
+        row[4].some((module) => typeof module !== "string")
+      ) {
+        throw error(502, "PostHog returned invalid session modules");
+      }
+      return {
+        sessionId: row[0],
+        startedAt,
+        endedAt: asNullableIso(row[2], "session end"),
+        duration: asFiniteNumber(row[3], "session duration"),
+        modules: row[4].filter(Boolean),
+        eventCount: asFiniteNumber(row[5], "session event count"),
+        exceptionCount: asFiniteNumber(row[6], "session exception count"),
+        contentActionCount: asFiniteNumber(
+          row[7],
+          "session content action count"
+        ),
+        entryPath: asNullableString(row[8], "session entry path"),
+        exitPath: asNullableString(row[9], "session exit path"),
+        browser: asNullableString(row[10], "session browser"),
+        operatingSystem: asNullableString(row[11], "session operating system"),
+        deviceType: asNullableString(row[12], "session device type"),
+        postHogUrl: projectId
+          ? `https://us.posthog.com/project/${encodeURIComponent(projectId)}/replay/${encodeURIComponent(row[0])}`
+          : null,
+      };
+    });
+  }
+  if (type === "session-events") {
+    return rows.map((row) => {
+      requireRowWidth(row, 8, "session event row");
+      if (typeof row[0] !== "string" || !row[0]) {
+        throw error(502, "PostHog returned an invalid session event ID");
+      }
+      const timestamp = asNullableIso(row[1], "session event timestamp");
+      if (!timestamp) {
+        throw error(
+          502,
+          "PostHog returned a session event without a timestamp"
+        );
+      }
+      if (typeof row[2] !== "string" || !row[2]) {
+        throw error(502, "PostHog returned an invalid session event name");
+      }
+      return {
+        eventId: row[0],
+        timestamp,
+        event: row[2],
+        path: asNullableString(row[3], "session event path"),
+        detail: asNullableString(row[4], "session event detail"),
+        exception: exceptionFromRow(row[5], row[6], row[7]),
+      };
+    });
+  }
+  return rows;
 }
 
 // --- Global Pulse queries (site-wide, not per-user) ---
@@ -384,40 +653,68 @@ export const POST: RequestHandler = async (event) => {
 
     stage = "read_request";
     const body = await event.request.json();
-    const { type, userId, period, limit, dimension } = body as {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw error(400, "Analytics request body must be an object");
+    }
+    const { type, userId, period, limit, dimension, sessionId } = body as {
       type: QueryType;
       userId?: string;
       period?: TimePeriod;
       limit?: number;
       dimension?: PulseDimension;
+      sessionId?: string;
     };
     const isGlobal = GLOBAL_QUERY_TYPES.has(type);
     if (!type || (!isGlobal && !userId)) {
       throw error(400, "type and userId are required");
     }
 
-    // Validate userId - Firebase UIDs are alphanumeric, typically 28 chars
+    const periods: TimePeriod[] = ["today", "week", "month", "all"];
+    if (period !== undefined && !periods.includes(period)) {
+      throw error(400, "Invalid analytics period");
+    }
+    if (
+      limit !== undefined &&
+      (!Number.isInteger(limit) ||
+        limit < 1 ||
+        limit >
+          (type === "session-events" ? 500 : type === "pulse-feed" ? 100 : 50))
+    ) {
+      throw error(400, "Invalid analytics limit");
+    }
+
     if (
       !isGlobal &&
-      (typeof userId !== "string" || !/^[a-zA-Z0-9]{1,128}$/.test(userId))
+      (typeof userId !== "string" || userId.length === 0 || userId.length > 128)
     ) {
       throw error(400, "Invalid userId format");
+    }
+    if (
+      type === "session-events" &&
+      (typeof sessionId !== "string" ||
+        sessionId.length === 0 ||
+        sessionId.length > 128)
+    ) {
+      throw error(400, "session-events requires a valid sessionId");
     }
 
     stage = "build_query";
     let query: string;
     switch (type) {
       case "engagement":
-        query = buildEngagementQuery(userId!);
+        query = buildEngagementQuery(userId!, period ?? "week");
         break;
       case "activity":
         query = buildActivityQuery(userId!, period ?? "week");
         break;
       case "content":
-        query = buildContentQuery(userId!);
+        query = buildContentQuery(userId!, period ?? "week");
         break;
       case "sessions":
-        query = buildSessionsQuery(userId!, limit ?? 10);
+        query = buildSessionsQuery(userId!, period ?? "week", limit ?? 10);
+        break;
+      case "session-events":
+        query = buildSessionEventsQuery(userId!, sessionId!, limit ?? 500);
         break;
       case "pulse-overview":
         query = buildPulseOverviewQuery();
@@ -454,16 +751,40 @@ export const POST: RequestHandler = async (event) => {
     stage = "posthog";
     const result = await executeHogQLQuery(query);
 
+    const rows = result.results;
+    let data = isGlobal
+      ? rows
+      : _perUserResult(
+          type,
+          rows,
+          type === "sessions" ? getProjectId() : undefined
+        );
+    if (type === "engagement" && userId) {
+      const userRecord = await getAdminAuth().getUser(userId);
+      data = {
+        ...(data as Record<string, unknown>),
+        memberSince: userRecord.metadata.creationTime ?? null,
+      };
+    }
+
     stage = "audit";
-    logAdminAction({
+    await logAdminAction({
       uid: caller.uid,
       action: "analytics_query",
       target: userId ?? "global",
-      metadata: { queryType: type, ...(period != null && { period }) },
+      metadata: {
+        queryType: type,
+        ...(period != null && { period }),
+        ...(sessionId != null && { sessionId }),
+      },
       ip: event.getClientAddress(),
     });
-
-    return json({ success: true, type, results: result?.results ?? [] });
+    return json({
+      success: true,
+      type,
+      data,
+      ...(isGlobal ? { results: rows } : {}),
+    });
   } catch (err: unknown) {
     return safeAnalyticsFailure(err, stage);
   }

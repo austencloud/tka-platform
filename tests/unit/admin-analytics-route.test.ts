@@ -1,0 +1,351 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  requireAdmin: vi.fn(),
+  withRateLimit: vi.fn(),
+  logAdminAction: vi.fn(),
+  getUser: vi.fn(),
+}));
+vi.mock("$lib/server/auth/requireAdmin", () => ({
+  requireAdmin: mocks.requireAdmin,
+}));
+vi.mock("$lib/server/security/withRateLimit", () => ({
+  withRateLimit: mocks.withRateLimit,
+}));
+vi.mock("$lib/server/security/rate-limiter", () => ({
+  RATE_LIMITS: { ADMIN: {} },
+}));
+vi.mock("$lib/server/security/audit-logger", () => ({
+  logAdminAction: mocks.logAdminAction,
+}));
+vi.mock("$lib/server/firebaseAdmin", () => ({
+  getAdminAuth: () => ({ getUser: mocks.getUser }),
+}));
+
+import {
+  _perUserResult,
+  POST,
+} from "../../src/routes/api/admin/analytics/+server";
+
+function event(body: unknown) {
+  return {
+    request: new Request("https://example.test/api/admin/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+    getClientAddress: () => "127.0.0.1",
+  };
+}
+
+function upstream(results: unknown[][], status = 200) {
+  return new Response(
+    status === 200 ? JSON.stringify({ results }) : "upstream failed",
+    {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+}
+
+describe("admin analytics endpoint", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.POSTHOG_PERSONAL_API_KEY = "secret";
+    process.env.POSTHOG_PROJECT_ID = "project";
+    mocks.requireAdmin.mockResolvedValue({ uid: "admin" });
+    mocks.withRateLimit.mockResolvedValue(null);
+    mocks.getUser.mockResolvedValue({
+      metadata: { creationTime: "2025-01-01T00:00:00Z" },
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("loads as a valid SvelteKit route and returns named activity data", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        upstream([
+          ["browse", 3],
+          ["create", 1],
+        ])
+      )
+    );
+    const response = await POST(
+      event({ type: "activity", userId: "uid", period: "week" }) as never
+    );
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      data: [
+        { module: "browse", eventCount: 3, percentage: 75 },
+        { module: "create", eventCount: 1, percentage: 25 },
+      ],
+    });
+    expect(mocks.logAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({ uid: "admin", target: "uid" })
+    );
+  });
+
+  it("treats All Time as unbounded instead of a 365-day approximation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(upstream([]));
+    vi.stubGlobal("fetch", fetchMock);
+    await POST(
+      event({ type: "activity", userId: "uid", period: "all" }) as never
+    );
+    const requestBody = JSON.parse(
+      String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)
+    ) as { query: { query: string } };
+    expect(requestBody.query.query).not.toContain("365 day");
+    expect(requestBody.query.query).not.toContain(
+      "timestamp > now() - interval"
+    );
+  });
+
+  it("applies the selected window to every per-user metric query", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(upstream([[null, 0, 0, 0]]))
+      .mockResolvedValueOnce(upstream([]))
+      .mockResolvedValueOnce(upstream([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await POST(
+      event({ type: "engagement", userId: "uid", period: "month" }) as never
+    );
+    await POST(
+      event({ type: "content", userId: "uid", period: "month" }) as never
+    );
+    await POST(
+      event({ type: "sessions", userId: "uid", period: "month" }) as never
+    );
+
+    for (const call of fetchMock.mock.calls) {
+      const requestBody = JSON.parse(String((call[1] as RequestInit).body)) as {
+        query: { query: string };
+      };
+      expect(requestBody.query.query).toContain(
+        "timestamp > now() - interval 30 day"
+      );
+    }
+  });
+
+  it("rejects invalid periods and limits before contacting PostHog", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const badPeriod = await POST(
+      event({ type: "activity", userId: "uid", period: "forever" }) as never
+    );
+    const badLimit = await POST(
+      event({ type: "sessions", userId: "uid", limit: 0 }) as never
+    );
+    expect(badPeriod.status).toBe(400);
+    expect(badLimit.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a bounded session ID before loading an event trail", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await POST(
+      event({ type: "session-events", userId: "uid", limit: 100 }) as never
+    );
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("uses Auth creation time for membership rather than earliest analytics data", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(upstream([["2026-07-31T12:00:00Z", 2, 10, 20]]))
+    );
+    const response = await POST(
+      event({ type: "engagement", userId: "uid" }) as never
+    );
+    await expect(response.json()).resolves.toMatchObject({
+      data: { memberSince: "2025-01-01T00:00:00Z", sessionsCount: 2 },
+    });
+  });
+
+  it("accepts path-safe custom Firebase UIDs", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(upstream([])));
+
+    const response = await POST(
+      event({
+        type: "activity",
+        userId: "tenant:sky.v2",
+        period: "week",
+      }) as never
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("returns earned 400 and upstream 502 failures without fake analytics", async () => {
+    const invalid = await POST(
+      event({ type: "activity", userId: "x".repeat(129) }) as never
+    );
+    expect(invalid.status).toBe(400);
+    await expect(invalid.json()).resolves.toMatchObject({
+      success: false,
+      code: "read_request",
+    });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(upstream([], 503)));
+    const failed = await POST(
+      event({ type: "sessions", userId: "uid" }) as never
+    );
+    expect(failed.status).toBe(502);
+    await expect(failed.json()).resolves.toMatchObject({
+      success: false,
+      code: "posthog",
+    });
+  });
+
+  it("rejects malformed PostHog result envelopes instead of inventing zeros", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(upstream({ results: "bad" } as never))
+        .mockResolvedValueOnce(upstream(["not-a-row"] as never))
+    );
+
+    const malformedResults = await POST(
+      event({ type: "engagement", userId: "uid" }) as never
+    );
+    const malformedRow = await POST(
+      event({ type: "engagement", userId: "uid" }) as never
+    );
+    expect(malformedResults.status).toBe(502);
+    expect(malformedRow.status).toBe(502);
+  });
+
+  it("waits for the analytics audit attempt before returning success", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(upstream([])));
+    let releaseAudit: (() => void) | undefined;
+    mocks.logAdminAction.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseAudit = resolve;
+        })
+    );
+
+    let settled = false;
+    const responsePromise = POST(
+      event({ type: "activity", userId: "uid", period: "week" }) as never
+    ).then((response) => {
+      settled = true;
+      return response;
+    });
+    await vi.waitFor(() => expect(mocks.logAdminAction).toHaveBeenCalled());
+    expect(settled).toBe(false);
+    releaseAudit?.();
+    expect((await responsePromise).status).toBe(200);
+  });
+
+  it("returns the rate limiter response before contacting PostHog", async () => {
+    const blocked = new Response("blocked", { status: 429 });
+    mocks.withRateLimit.mockResolvedValue(blocked);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(
+      await POST(event({ type: "sessions", userId: "uid" }) as never)
+    ).toBe(blocked);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("admin analytics row transformations", () => {
+  it("preserves empty activity and rejects malformed sessions", () => {
+    expect(_perUserResult("activity", [])).toEqual([]);
+    expect(() =>
+      _perUserResult("sessions", [["id", "bad", null, 1, []]])
+    ).toThrow();
+    expect(() =>
+      _perUserResult("sessions", [["id", null, null, 1, []]])
+    ).toThrow();
+  });
+
+  it("rejects missing, short, and null numeric cells", () => {
+    expect(() => _perUserResult("engagement", [])).toThrow();
+    expect(() => _perUserResult("engagement", [[null, 1, 2]])).toThrow();
+    expect(() => _perUserResult("engagement", [[null, 1, null, 3]])).toThrow();
+    expect(() => _perUserResult("activity", [["browse"]])).toThrow();
+    expect(() =>
+      _perUserResult("content", [["sequence_save", null]])
+    ).toThrow();
+    expect(() =>
+      _perUserResult("sessions", [["id", "2026-07-31T12:00:00Z", null, 1]])
+    ).toThrow();
+  });
+
+  it("maps session diagnostics and a direct PostHog handoff", () => {
+    expect(
+      _perUserResult(
+        "sessions",
+        [
+          [
+            "session-1",
+            "2026-07-31T12:00:00Z",
+            "2026-07-31T12:04:00Z",
+            240_000,
+            ["browse", "create"],
+            18,
+            2,
+            1,
+            "/browse",
+            "/create",
+            "Chrome",
+            "Windows",
+            "Desktop",
+          ],
+        ],
+        "project"
+      )
+    ).toEqual([
+      {
+        sessionId: "session-1",
+        startedAt: "2026-07-31T12:00:00Z",
+        endedAt: "2026-07-31T12:04:00Z",
+        duration: 240_000,
+        modules: ["browse", "create"],
+        eventCount: 18,
+        exceptionCount: 2,
+        contentActionCount: 1,
+        entryPath: "/browse",
+        exitPath: "/create",
+        browser: "Chrome",
+        operatingSystem: "Windows",
+        deviceType: "Desktop",
+        postHogUrl: "https://us.posthog.com/project/project/replay/session-1",
+      },
+    ]);
+  });
+
+  it("extracts the first PostHog exception from a session event", () => {
+    expect(
+      _perUserResult("session-events", [
+        [
+          "event-1",
+          "2026-07-31T12:01:00Z",
+          "$exception",
+          "/create",
+          "",
+          JSON.stringify([{ type: "TypeError", value: "No gesture found" }]),
+          null,
+          null,
+        ],
+      ])
+    ).toEqual([
+      {
+        eventId: "event-1",
+        timestamp: "2026-07-31T12:01:00Z",
+        event: "$exception",
+        path: "/create",
+        detail: null,
+        exception: { type: "TypeError", message: "No gesture found" },
+      },
+    ]);
+  });
+});

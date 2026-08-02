@@ -1,270 +1,272 @@
-/**
- * PostHog User Analytics Implementation
- *
- * Fetches user analytics via the server-side proxy at /api/admin/analytics.
- * The proxy handles PostHog API authentication so the personal API key
- * stays server-side.
- *
- * Falls back to mock data when the API is unavailable or returns errors.
- */
-
-import { browser } from "$app/environment";
+/** Strict client for the named per-user analytics contracts. */
 import { auth } from "$lib/shared/auth/firebase";
-import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "./types";
+import type {
+  ContentMetrics,
+  ModuleActivityBreakdown,
+  PostHogSessionEvent,
+  PostHogSessionSummary,
+  TimePeriod,
+  UserEngagementSummary,
+} from "./types";
 
-const POSTHOG_PROJECT_ID = "299320";
+type QueryType =
+  | "engagement"
+  | "activity"
+  | "content"
+  | "sessions"
+  | "session-events";
+
+export class AnalyticsResponseError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number
+  ) {
+    super(message);
+    this.name = "AnalyticsResponseError";
+  }
+}
 
 export class PostHogUserAnalytics {
-  private available: boolean | null = null;
-
-  isAvailable(): boolean {
-    return browser && this.available !== false;
-  }
-
-  async getEngagementSummary(userId: string): Promise<UserEngagementSummary> {
-    try {
-      // Fetch engagement basics and sessions in parallel
-      const [engData, sessions] = await Promise.all([
-        this.query("engagement", userId),
-        this.query("sessions", userId, { limit: 50 }),
-      ]);
-
-      if (engData.results?.length > 0) {
-        const [lastActive, sessionsCount] = engData.results[0] as [string, number];
-
-        // Compute duration from sessions data (duration is index 3, in ms)
-        let totalDurationMs = 0;
-        if (sessions.results?.length > 0) {
-          for (const row of sessions.results) {
-            totalDurationMs += (row[3] as number) || 0;
-          }
-        }
-
-        const count = sessionsCount || 0;
-        const avgDuration = count > 0 ? totalDurationMs / count : 0;
-
-        this.available = true;
-        return {
-          lastActiveAt: lastActive,
-          memberSince: null,
-          sessionsCount: count,
-          avgSessionDuration: avgDuration,
-          totalTimeSpent: totalDurationMs,
-        };
-      }
-    } catch (err) {
-      console.error("[PostHogUserAnalytics] Engagement query failed:", err);
-    }
-
-    return this.getMockEngagementSummary();
+  async getEngagementSummary(
+    userId: string,
+    period: TimePeriod,
+    signal?: AbortSignal
+  ): Promise<UserEngagementSummary> {
+    return parseEngagement(
+      await this.query("engagement", userId, { period }, signal)
+    );
   }
 
   async getActivityBreakdown(
     userId: string,
-    period: TimePeriod
+    period: TimePeriod,
+    signal?: AbortSignal
   ): Promise<ModuleActivityBreakdown[]> {
-    try {
-      const data = await this.query("activity", userId, { period });
-
-      if (data.results?.length > 0) {
-        const total = data.results.reduce(
-          (sum: number, r: unknown[]) => sum + (r[1] as number),
-          0
-        );
-
-        this.available = true;
-        return data.results.map((r: unknown[]) => ({
-          module: r[0] as string,
-          eventCount: r[1] as number,
-          percentage:
-            total > 0 ? Math.round(((r[1] as number) / total) * 100) : 0,
-        }));
-      }
-    } catch (err) {
-      console.error("[PostHogUserAnalytics] Activity query failed:", err);
-    }
-
-    return this.getMockActivityBreakdown();
+    const data = await this.query("activity", userId, { period }, signal);
+    if (!Array.isArray(data))
+      throw new AnalyticsResponseError(
+        "Analytics returned an invalid activity response"
+      );
+    return data.map(parseActivity);
   }
 
-  async getContentMetrics(userId: string): Promise<ContentMetrics> {
-    try {
-      const data = await this.query("content", userId);
-
-      if (data.results) {
-        const metrics: ContentMetrics = {
-          sequencesCreated: 0,
-          sequencesSaved: 0,
-          sequencesExported: 0,
-          collectionsCreated: 0,
-          sequencesShared: 0,
-        };
-
-        for (const [event, count] of data.results) {
-          switch (event) {
-            case "sequence_create":
-              metrics.sequencesCreated = count as number;
-              break;
-            case "sequence_save":
-              metrics.sequencesSaved = count as number;
-              break;
-            case "sequence_export":
-              metrics.sequencesExported = count as number;
-              break;
-            case "collection_create":
-              metrics.collectionsCreated = count as number;
-              break;
-            case "sequence_share":
-              metrics.sequencesShared = count as number;
-              break;
-          }
-        }
-
-        this.available = true;
-        return metrics;
-      }
-    } catch (err) {
-      console.error("[PostHogUserAnalytics] Content query failed:", err);
-    }
-
-    return this.getMockContentMetrics();
+  async getContentMetrics(
+    userId: string,
+    period: TimePeriod,
+    signal?: AbortSignal
+  ): Promise<ContentMetrics> {
+    return parseContent(
+      await this.query("content", userId, { period }, signal)
+    );
   }
 
   async getRecentSessions(
     userId: string,
-    limit = 10
+    period: TimePeriod,
+    limit = 10,
+    signal?: AbortSignal
   ): Promise<PostHogSessionSummary[]> {
-    try {
-      const data = await this.query("sessions", userId, { limit });
-
-      if (data.results?.length > 0) {
-        this.available = true;
-        return data.results.map((r: unknown[]) => {
-          const sessionId = r[0] as string;
-          const modules = (r[4] as string[]).filter((m) => m != null);
-
-          return {
-            sessionId,
-            startedAt: new Date(r[1] as string),
-            endedAt: r[2] ? new Date(r[2] as string) : null,
-            duration: r[3] as number,
-            modules,
-            replayUrl: this.getSessionReplayUrl(sessionId),
-            hasRecording: true,
-          };
-        });
-      }
-    } catch (err) {
-      console.error("[PostHogUserAnalytics] Sessions query failed:", err);
-    }
-
-    return this.getMockRecentSessions(limit);
+    const data = await this.query(
+      "sessions",
+      userId,
+      { period, limit },
+      signal
+    );
+    if (!Array.isArray(data))
+      throw new AnalyticsResponseError(
+        "Analytics returned an invalid sessions response"
+      );
+    return data.map(parseSession);
   }
 
-  getSessionReplayUrl(sessionId: string): string {
-    return `https://us.posthog.com/project/${POSTHOG_PROJECT_ID}/replay/${sessionId}`;
-  }
-
-  /**
-   * Call the server-side analytics proxy.
-   * Throws on non-2xx responses so callers fall back to mock data.
-   */
-  private async query(
-    type: string,
+  async getSessionEvents(
     userId: string,
-    extra?: Record<string, unknown>
-  ): Promise<{ results: unknown[][] }> {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error("Not signed in");
-    }
-    const token = await user.getIdToken();
+    sessionId: string,
+    signal?: AbortSignal
+  ): Promise<PostHogSessionEvent[]> {
+    const data = await this.query(
+      "session-events",
+      userId,
+      { sessionId, limit: 500 },
+      signal
+    );
+    if (!Array.isArray(data))
+      throw new AnalyticsResponseError(
+        "Analytics returned an invalid session event response"
+      );
+    return data.map(parseSessionEvent);
+  }
 
+  private async query(
+    type: QueryType,
+    userId: string,
+    extra: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<unknown> {
+    const user = auth.currentUser;
+    if (!user) throw new AnalyticsResponseError("Admin session expired", 401);
+    const token = await user.getIdToken();
     const response = await fetch("/api/admin/analytics", {
       method: "POST",
+      signal,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type, userId, ...extra }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Analytics proxy returned ${response.status}`);
+    const body = (await response.json().catch(() => null)) as {
+      success?: boolean;
+      message?: string;
+      data?: unknown;
+    } | null;
+    if (!response.ok || body?.success !== true) {
+      throw new AnalyticsResponseError(
+        body?.message || `Analytics request failed (${response.status})`,
+        response.status
+      );
     }
-
-    const body = await response.json();
-
-    if (!body.success) {
-      throw new Error(body.message ?? "Unknown error");
-    }
-
-    return { results: body.results };
+    if (!("data" in body))
+      throw new AnalyticsResponseError("Analytics response omitted data");
+    return body.data;
   }
+}
 
-  // ============================================
-  // Mock data for when the API is unavailable
-  // ============================================
+function record(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new AnalyticsResponseError(`Analytics returned invalid ${label}`);
+  return value as Record<string, unknown>;
+}
 
-  private getMockEngagementSummary(): UserEngagementSummary {
-    const now = new Date();
+function number(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0)
+    throw new AnalyticsResponseError(`Analytics returned invalid ${label}`);
+  return value;
+}
+
+function nullableDate(value: unknown, label: string): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value)))
+    throw new AnalyticsResponseError(`Analytics returned invalid ${label}`);
+  return value;
+}
+
+function requiredDate(value: unknown, label: string): string {
+  const date = nullableDate(value, label);
+  if (date === null)
+    throw new AnalyticsResponseError(`Analytics omitted ${label}`);
+  return date;
+}
+
+function parseEngagement(value: unknown): UserEngagementSummary {
+  const item = record(value, "engagement data");
+  return {
+    lastActiveAt: nullableDate(item.lastActiveAt, "last activity"),
+    memberSince: nullableDate(item.memberSince, "membership date"),
+    sessionsCount: number(item.sessionsCount, "session count"),
+    avgSessionDuration: number(item.avgSessionDuration, "average duration"),
+    totalTimeSpent: number(item.totalTimeSpent, "total duration"),
+  };
+}
+
+function parseActivity(value: unknown): ModuleActivityBreakdown {
+  const item = record(value, "activity item");
+  if (typeof item.module !== "string" || !item.module)
+    throw new AnalyticsResponseError("Analytics returned invalid module data");
+  return {
+    module: item.module,
+    eventCount: number(item.eventCount, "event count"),
+    percentage: number(item.percentage, "activity percentage"),
+  };
+}
+
+function parseContent(value: unknown): ContentMetrics {
+  const item = record(value, "content metrics");
+  return {
+    sequencesCreated: number(item.sequencesCreated, "created count"),
+    sequencesSaved: number(item.sequencesSaved, "saved count"),
+    sequencesExported: number(item.sequencesExported, "exported count"),
+    collectionsCreated: number(item.collectionsCreated, "collection count"),
+    sequencesShared: number(item.sequencesShared, "shared count"),
+  };
+}
+
+function parseSession(value: unknown): PostHogSessionSummary {
+  const item = record(value, "session");
+  if (typeof item.sessionId !== "string" || !item.sessionId)
+    throw new AnalyticsResponseError("Analytics returned invalid session ID");
+  if (
+    !Array.isArray(item.modules) ||
+    item.modules.some((module) => typeof module !== "string")
+  )
+    throw new AnalyticsResponseError(
+      "Analytics returned invalid session modules"
+    );
+  return {
+    sessionId: item.sessionId,
+    startedAt: new Date(requiredDate(item.startedAt, "session start")),
+    endedAt:
+      item.endedAt === null
+        ? null
+        : new Date(nullableDate(item.endedAt, "session end")!),
+    duration: number(item.duration, "session duration"),
+    modules: item.modules as string[],
+    eventCount: number(item.eventCount, "session event count"),
+    exceptionCount: number(item.exceptionCount, "session exception count"),
+    contentActionCount: number(
+      item.contentActionCount,
+      "session content action count"
+    ),
+    entryPath: nullableString(item.entryPath, "session entry path"),
+    exitPath: nullableString(item.exitPath, "session exit path"),
+    browser: nullableString(item.browser, "session browser"),
+    operatingSystem: nullableString(
+      item.operatingSystem,
+      "session operating system"
+    ),
+    deviceType: nullableString(item.deviceType, "session device type"),
+    postHogUrl: nullableString(item.postHogUrl, "PostHog session URL"),
+  };
+}
+
+function nullableString(value: unknown, label: string): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string")
+    throw new AnalyticsResponseError(`Analytics returned invalid ${label}`);
+  return value || null;
+}
+
+function parseSessionEvent(value: unknown): PostHogSessionEvent {
+  const item = record(value, "session event");
+  if (typeof item.eventId !== "string" || !item.eventId)
+    throw new AnalyticsResponseError(
+      "Analytics returned invalid session event ID"
+    );
+  if (typeof item.event !== "string" || !item.event)
+    throw new AnalyticsResponseError(
+      "Analytics returned invalid session event name"
+    );
+  const exception = item.exception;
+  if (exception !== null) {
+    const parsedException = record(exception, "session exception");
     return {
-      lastActiveAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-      memberSince: new Date(
-        now.getTime() - 90 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      sessionsCount: 4,
-      avgSessionDuration: 12 * 60 * 1000,
-      totalTimeSpent: 48 * 60 * 1000,
+      eventId: item.eventId,
+      timestamp: new Date(requiredDate(item.timestamp, "event timestamp")),
+      event: item.event,
+      path: nullableString(item.path, "event path"),
+      detail: nullableString(item.detail, "event detail"),
+      exception: {
+        type: nullableString(parsedException.type, "exception type"),
+        message: nullableString(parsedException.message, "exception message"),
+      },
     };
   }
-
-  private getMockActivityBreakdown(): ModuleActivityBreakdown[] {
-    return [
-      { module: "browse", percentage: 60, eventCount: 120 },
-      { module: "create", percentage: 30, eventCount: 60 },
-      { module: "learn", percentage: 10, eventCount: 20 },
-    ];
-  }
-
-  private getMockContentMetrics(): ContentMetrics {
-    return {
-      sequencesCreated: 12,
-      sequencesSaved: 8,
-      sequencesExported: 3,
-      collectionsCreated: 1,
-      sequencesShared: 2,
-    };
-  }
-
-  private getMockRecentSessions(limit: number): PostHogSessionSummary[] {
-    const now = new Date();
-    const mockSessionData = [
-      { hoursAgo: 2, duration: 12, modules: ["browse", "create"] },
-      { hoursAgo: 26, duration: 18, modules: ["create", "learn"] },
-      { hoursAgo: 72, duration: 5, modules: ["browse"] },
-      { hoursAgo: 120, duration: 25, modules: ["create", "browse", "learn"] },
-      { hoursAgo: 168, duration: 8, modules: ["settings", "browse"] },
-    ];
-
-    return mockSessionData.slice(0, limit).map((data, i) => {
-      const startedAt = new Date(
-        now.getTime() - data.hoursAgo * 60 * 60 * 1000
-      );
-      const endedAt = new Date(
-        startedAt.getTime() + data.duration * 60 * 1000
-      );
-      const sessionId = `mock-session-${i}-${Date.now()}`;
-
-      return {
-        sessionId,
-        startedAt,
-        endedAt,
-        duration: data.duration * 60 * 1000,
-        modules: data.modules,
-        replayUrl: this.getSessionReplayUrl(sessionId),
-        hasRecording: true,
-      };
-    });
-  }
+  return {
+    eventId: item.eventId,
+    timestamp: new Date(requiredDate(item.timestamp, "event timestamp")),
+    event: item.event,
+    path: nullableString(item.path, "event path"),
+    detail: nullableString(item.detail, "event detail"),
+    exception: null,
+  };
 }

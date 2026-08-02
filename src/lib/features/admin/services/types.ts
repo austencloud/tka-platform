@@ -2,6 +2,8 @@
  * Co-exported types from retired interface contracts.
  */
 
+import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
+
 // === From IAuditLogger ===
 
 export type AuditActionType =
@@ -45,7 +47,7 @@ export interface CachedUserMetadata {
   /** Attribution record captured at signup + any self-reported updates. Null for older accounts. */
   attribution: Record<string, unknown> | null;
   /** Persistent last-known IP location (admin view). */
-  lastLocation?: import("$lib/shared/presence/domain/models/presence-models").PresenceLocation | null;
+  lastLocation?: PresenceLocation | null;
 }
 export interface CachedAnnouncement {
   id: string;
@@ -196,10 +198,33 @@ export interface PostHogSessionSummary {
   duration: number;
   /** Modules visited during session */
   modules: string[];
-  /** URL for PostHog session replay */
-  replayUrl: string | null;
-  /** Whether session recording is available */
-  hasRecording: boolean;
+  /** Total analytics events captured during the session */
+  eventCount: number;
+  /** Captured PostHog exception events */
+  exceptionCount: number;
+  /** Save, create, export, share, and collection actions */
+  contentActionCount: number;
+  /** First and last page routes observed during the session */
+  entryPath: string | null;
+  exitPath: string | null;
+  /** Last observed client context */
+  browser: string | null;
+  operatingSystem: string | null;
+  deviceType: string | null;
+  /** Direct handoff to the session in PostHog */
+  postHogUrl: string | null;
+}
+
+export interface PostHogSessionEvent {
+  eventId: string;
+  timestamp: Date;
+  event: string;
+  path: string | null;
+  detail: string | null;
+  exception: {
+    type: string | null;
+    message: string | null;
+  } | null;
 }
 
 export type TimePeriod = "today" | "week" | "month" | "all";

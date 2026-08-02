@@ -1,767 +1,1140 @@
-<!--
-  UserActivityAnalytics.svelte
-
-  Displays aggregated PostHog analytics for a user in the admin detail modal.
-  Shows engagement summary, activity breakdown, content metrics, and recent sessions.
--->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { untrack } from "svelte";
+  import AdminActionButton from "$lib/shared/admin/components/AdminActionButton.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { getPostHogUserAnalytics } from "$lib/features/admin/get-post-hog-user-analytics";
-  import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../services/types";
-import type { PostHogUserAnalytics } from "../services/post-hog-user-analytics";
+  import { buildUserAnalyticsSignals } from "../domain/user-analytics-insights";
+  import type {
+    ContentMetrics,
+    ModuleActivityBreakdown,
+    PostHogSessionSummary,
+    TimePeriod,
+    UserEngagementSummary,
+  } from "../services/types";
+  import UserSessionInspector from "./UserSessionInspector.svelte";
 
   interface Props {
     userId: string;
+    userDisplayName?: string | null;
+    userUsername?: string | null;
+    userEmail?: string | null;
     compact?: boolean;
   }
 
-  let { userId, compact = false }: Props = $props();
+  type Section = "engagement" | "activity" | "content" | "sessions";
 
-  // Service
-  let analyticsService: PostHogUserAnalytics | null = null;
+  let {
+    userId,
+    userDisplayName = null,
+    userUsername = null,
+    userEmail = null,
+    compact = false,
+  }: Props = $props();
 
-  // Data state
+  const periodOptions: Array<{ value: TimePeriod; label: string }> = [
+    { value: "today", label: "Today" },
+    { value: "week", label: "7 days" },
+    { value: "month", label: "30 days" },
+    { value: "all", label: "All time" },
+  ];
+
+  let selectedPeriod = $state<TimePeriod>("week");
   let engagement = $state<UserEngagementSummary | null>(null);
   let activityBreakdown = $state<ModuleActivityBreakdown[]>([]);
   let contentMetrics = $state<ContentMetrics | null>(null);
   let recentSessions = $state<PostHogSessionSummary[]>([]);
+  let syncedUserId = "";
 
-  // Loading states
-  let isLoadingEngagement = $state(true);
-  let isLoadingActivity = $state(true);
-  let isLoadingContent = $state(true);
-  let isLoadingSessions = $state(true);
-
-  // UI state
-  let selectedPeriod = $state<TimePeriod>("week");
-  let isApiAvailable = $state(false);
-
-  // Load all data when component mounts or userId changes
-  $effect(() => {
-    if (userId) {
-      loadAllData(userId);
-    }
+  let loading = $state<Record<Section, boolean>>({
+    engagement: true,
+    activity: true,
+    content: true,
+    sessions: true,
+  });
+  let errors = $state<Record<Section, string | null>>({
+    engagement: null,
+    activity: null,
+    content: null,
+    sessions: null,
   });
 
-  async function loadAllData(uid: string) {
-    analyticsService = getPostHogUserAnalytics();
+  const requestVersions: Record<Section, number> = {
+    engagement: 0,
+    activity: 0,
+    content: 0,
+    sessions: 0,
+  };
+  const controllers = new Map<Section, AbortController>();
 
-    if (!analyticsService) {
-      isLoadingEngagement = false;
-      isLoadingActivity = false;
-      isLoadingContent = false;
-      isLoadingSessions = false;
-      return;
+  const signals = $derived(
+    buildUserAnalyticsSignals({
+      engagement,
+      activity: activityBreakdown,
+      content: contentMetrics,
+      sessions: recentSessions,
+    })
+  );
+  const hasInsightData = $derived(
+    engagement !== null ||
+      activityBreakdown.length > 0 ||
+      contentMetrics !== null ||
+      recentSessions.length > 0
+  );
+  const isRefreshing = $derived(Object.values(loading).some(Boolean));
+
+  $effect(() => {
+    const uid = userId;
+    const period = selectedPeriod;
+    const limit = compact ? 6 : 10;
+    if (!uid) return;
+
+    if (uid !== syncedUserId) {
+      syncedUserId = uid;
+      untrack(resetSnapshot);
     }
 
-    // Load all data in parallel, then check if the API was reachable
-    await Promise.all([
-      loadEngagement(uid),
-      loadActivityBreakdown(uid, selectedPeriod),
-      loadContentMetrics(uid),
-      loadRecentSessions(uid),
-    ]);
+    loadAll(uid, period, limit);
+    return abortAll;
+  });
 
-    // Update banner after queries complete (service tracks whether API responded)
-    isApiAvailable = analyticsService.isAvailable();
+  function resetSnapshot() {
+    engagement = null;
+    activityBreakdown = [];
+    contentMetrics = null;
+    recentSessions = [];
   }
 
-  async function loadEngagement(uid: string) {
-    isLoadingEngagement = true;
+  function abortAll() {
+    for (const controller of controllers.values()) controller.abort();
+    controllers.clear();
+  }
+
+  function loadAll(uid: string, period: TimePeriod, limit: number) {
+    const analytics = getPostHogUserAnalytics();
+    void loadSection(
+      "engagement",
+      (signal) => analytics.getEngagementSummary(uid, period, signal),
+      (value) => (engagement = value)
+    );
+    void loadSection(
+      "activity",
+      (signal) => analytics.getActivityBreakdown(uid, period, signal),
+      (value) => (activityBreakdown = value)
+    );
+    void loadSection(
+      "content",
+      (signal) => analytics.getContentMetrics(uid, period, signal),
+      (value) => (contentMetrics = value)
+    );
+    void loadSection(
+      "sessions",
+      (signal) => analytics.getRecentSessions(uid, period, limit, signal),
+      (value) => (recentSessions = value)
+    );
+  }
+
+  async function loadSection<T>(
+    section: Section,
+    load: (signal: AbortSignal) => Promise<T>,
+    assign: (value: T) => void
+  ): Promise<void> {
+    controllers.get(section)?.abort();
+    const controller = new AbortController();
+    controllers.set(section, controller);
+    const version = ++requestVersions[section];
+
+    loading[section] = true;
+    errors[section] = null;
     try {
-      engagement = await analyticsService!.getEngagementSummary(uid);
-    } catch (error) {
-      console.error("[UserActivityAnalytics] Failed to load engagement:", error);
-      engagement = null;
+      const value = await load(controller.signal);
+      if (version === requestVersions[section] && !controller.signal.aborted) {
+        assign(value);
+      }
+    } catch (cause) {
+      if (version !== requestVersions[section] || controller.signal.aborted) {
+        return;
+      }
+      errors[section] =
+        cause instanceof Error ? cause.message : "Analytics request failed";
     } finally {
-      isLoadingEngagement = false;
+      if (version === requestVersions[section] && !controller.signal.aborted) {
+        loading[section] = false;
+      }
+      if (controllers.get(section) === controller) controllers.delete(section);
     }
   }
 
-  async function loadActivityBreakdown(uid: string, period: TimePeriod) {
-    isLoadingActivity = true;
-    try {
-      activityBreakdown = await analyticsService!.getActivityBreakdown(uid, period);
-    } catch (error) {
-      console.error("[UserActivityAnalytics] Failed to load activity:", error);
-      activityBreakdown = [];
-    } finally {
-      isLoadingActivity = false;
+  function retry(section: Section) {
+    const uid = userId;
+    const period = selectedPeriod;
+    if (!uid) return;
+    const analytics = getPostHogUserAnalytics();
+
+    if (section === "engagement") {
+      void loadSection(
+        section,
+        (signal) => analytics.getEngagementSummary(uid, period, signal),
+        (value) => (engagement = value)
+      );
+    } else if (section === "activity") {
+      void loadSection(
+        section,
+        (signal) => analytics.getActivityBreakdown(uid, period, signal),
+        (value) => (activityBreakdown = value)
+      );
+    } else if (section === "content") {
+      void loadSection(
+        section,
+        (signal) => analytics.getContentMetrics(uid, period, signal),
+        (value) => (contentMetrics = value)
+      );
+    } else {
+      void loadSection(
+        section,
+        (signal) =>
+          analytics.getRecentSessions(uid, period, compact ? 6 : 10, signal),
+        (value) => (recentSessions = value)
+      );
     }
   }
 
-  async function loadContentMetrics(uid: string) {
-    isLoadingContent = true;
-    try {
-      contentMetrics = await analyticsService!.getContentMetrics(uid);
-    } catch (error) {
-      console.error("[UserActivityAnalytics] Failed to load content metrics:", error);
-      contentMetrics = null;
-    } finally {
-      isLoadingContent = false;
-    }
-  }
-
-  async function loadRecentSessions(uid: string) {
-    isLoadingSessions = true;
-    try {
-      recentSessions = await analyticsService!.getRecentSessions(uid, compact ? 3 : 5);
-    } catch (error) {
-      console.error("[UserActivityAnalytics] Failed to load sessions:", error);
-      recentSessions = [];
-    } finally {
-      isLoadingSessions = false;
-    }
-  }
-
-  async function handlePeriodChange(period: TimePeriod) {
-    selectedPeriod = period;
-    if (analyticsService && userId) {
-      await loadActivityBreakdown(userId, period);
-    }
-  }
-
-  function openSessionReplay(session: PostHogSessionSummary) {
-    if (session.replayUrl) {
-      window.open(session.replayUrl, "_blank", "noopener,noreferrer");
-    }
-  }
-
-  // Format helpers
   function formatRelativeTime(isoString: string | null): string {
     if (!isoString) return "Never";
-
     const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-    const diffMonths = Math.floor(diffDays / 30);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-    return `${diffMonths} month${diffMonths > 1 ? "s" : ""} ago`;
-  }
-
-  function formatMemberDuration(isoString: string | null): string {
-    if (!isoString) return "Unknown";
-
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffMonths / 12);
-
-    if (diffYears > 0) return `${diffYears} year${diffYears > 1 ? "s" : ""}`;
-    if (diffMonths > 0) return `${diffMonths} month${diffMonths > 1 ? "s" : ""}`;
-    return `${diffDays} day${diffDays > 1 ? "s" : ""}`;
-  }
-
-  function formatDuration(ms: number): string {
-    const minutes = Math.floor(ms / 60000);
+    const diffMs = Math.max(0, Date.now() - date.getTime());
+    const minutes = Math.floor(diffMs / 60_000);
     const hours = Math.floor(minutes / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m`;
-    }
-    return `${minutes} min`;
+    const days = Math.floor(hours / 24);
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 30) return `${days}d ago`;
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
   }
 
-  function formatSessionTime(date: Date): string {
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    const timeStr = date.toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-
-    if (isToday) return `Today ${timeStr}`;
-    if (isYesterday) return `Yesterday ${timeStr}`;
-
-    return date.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-    }) + " " + timeStr;
+  function formatDuration(milliseconds: number): string {
+    const totalSeconds = Math.max(0, Math.round(milliseconds / 1000));
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+    const minutes = Math.floor(totalSeconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
   }
 
-  function getModuleColor(module: string): string {
+  function periodLabel(period: TimePeriod): string {
+    return periodOptions.find((option) => option.value === period)?.label ?? "";
+  }
+
+  function moduleColor(module: string): string {
     const colors: Record<string, string> = {
-      browse: "#3b82f6",
-      create: "#22c55e",
-      learn: "#f59e0b",
-      train: "#ec4899",
-      compose: "#8b5cf6",
-      settings: "#6b7280",
+      browse: "var(--semantic-info)",
+      create: "var(--semantic-success)",
+      learn: "var(--semantic-warning)",
+      train: "var(--theme-accent)",
+      compose: "var(--prop-blue)",
+      settings: "var(--theme-text-dim)",
     };
-    return colors[module] || "#64748b";
+    return colors[module.toLowerCase()] ?? "var(--theme-accent)";
   }
 
-  function getPeriodLabel(period: TimePeriod): string {
-    switch (period) {
-      case "today":
-        return "Today";
-      case "week":
-        return "This Week";
-      case "month":
-        return "This Month";
-      case "all":
-        return "All Time";
-    }
+  function titleCase(value: string): string {
+    return value
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (character) => character.toUpperCase());
   }
 </script>
 
 <div class="analytics-container" class:compact>
-  <!-- API Status Banner (only show if using mock data) -->
-  {#if !isApiAvailable}
-    <div class="api-status-banner">
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      <span>Using sample data. Connect PostHog API for live metrics.</span>
+  <header class="analytics-toolbar">
+    <div class="toolbar-copy">
+      <span class="toolbar-kicker">Behavior window</span>
+      <strong>{periodLabel(selectedPeriod)}</strong>
+      {#if isRefreshing && hasInsightData}
+        <span class="refreshing" role="status" aria-live="polite">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Refreshing
+        </span>
+      {/if}
     </div>
-  {/if}
-
-  <!-- Engagement Summary -->
-  <section class="analytics-section engagement-section">
-    <h4 class="section-title">
-      <i class="fas fa-chart-line" aria-hidden="true"></i>
-      Engagement Summary
-    </h4>
-    {#if isLoadingEngagement}
-      <div class="loading-placeholder">
-        <div class="skeleton-row"></div>
-        <div class="skeleton-row"></div>
-      </div>
-    {:else if engagement}
-      <div class="engagement-grid">
-        <div class="engagement-item">
-          <span class="engagement-label">Last active</span>
-          <span class="engagement-value">{formatRelativeTime(engagement.lastActiveAt)}</span>
-        </div>
-        <div class="engagement-item">
-          <span class="engagement-label">Member for</span>
-          <span class="engagement-value">{formatMemberDuration(engagement.memberSince)}</span>
-        </div>
-        <div class="engagement-item">
-          <span class="engagement-label">Sessions (30d)</span>
-          <span class="engagement-value">{engagement.sessionsCount}</span>
-        </div>
-        <div class="engagement-item">
-          <span class="engagement-label">Avg session</span>
-          <span class="engagement-value">{formatDuration(engagement.avgSessionDuration)}</span>
-        </div>
-      </div>
-    {:else}
-      <div class="empty-state-inline">
-        <span>No engagement data available</span>
-      </div>
-    {/if}
-  </section>
-
-  <!-- Activity Breakdown -->
-  <section class="analytics-section activity-section">
-    <div class="section-header">
-      <h4 class="section-title">
-        <i class="fas fa-chart-pie" aria-hidden="true"></i>
-        Activity Breakdown
-      </h4>
-      <select
-        class="period-select"
-        bind:value={selectedPeriod}
-        onchange={() => handlePeriodChange(selectedPeriod)}
-      >
-        <option value="today">Today</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-        <option value="all">All Time</option>
-      </select>
+    <div class="period-control">
+      <SegmentedControl
+        options={periodOptions}
+        value={selectedPeriod}
+        onchange={(period) => (selectedPeriod = period)}
+        semantics="radiogroup"
+        color="accent"
+        size="sm"
+        ariaLabel="Analytics window"
+      />
     </div>
-    {#if isLoadingActivity}
-      <div class="loading-placeholder">
-        <div class="skeleton-bar"></div>
-        <div class="skeleton-bar"></div>
-        <div class="skeleton-bar"></div>
+  </header>
+
+  <section class="signals-section" aria-labelledby="signals-title">
+    <div class="section-heading">
+      <div>
+        <h3 id="signals-title">
+          <i class="fas fa-bolt" aria-hidden="true"></i>
+          What stands out
+        </h3>
+        <p>Computed from the selected window and loaded sessions.</p>
       </div>
-    {:else if activityBreakdown.length > 0}
-      <div class="activity-bars">
-        {#each activityBreakdown as activity}
-          <div class="activity-row">
-            <span class="activity-module">{activity.module}</span>
-            <div class="activity-bar-container">
-              <div
-                class="activity-bar"
-                style="width: {activity.percentage}%; background-color: {getModuleColor(activity.module)}"
-              ></div>
-            </div>
-            <span class="activity-percent">{activity.percentage}%</span>
-          </div>
+    </div>
+    {#if !hasInsightData && isRefreshing}
+      <div class="signals-grid" aria-label="Loading behavior signals">
+        {#each [0, 1, 2] as item (item)}
+          <div class="signal-card skeleton-card"></div>
         {/each}
       </div>
     {:else}
-      <div class="empty-state-inline">
-        <span>No activity in {getPeriodLabel(selectedPeriod).toLowerCase()}</span>
+      <div class="signals-grid">
+        {#each signals as signal (signal.id)}
+          {#if signal.id === "exceptions" && loading.sessions && recentSessions.length === 0}
+            <article
+              class="signal-card skeleton-card"
+              role="status"
+              aria-label="Loading session diagnostics"
+            ></article>
+          {:else}
+            <article class="signal-card" data-tone={signal.tone}>
+              <span class="signal-icon" aria-hidden="true">
+                <i class="fas {signal.icon}"></i>
+              </span>
+              <div>
+                <strong>{signal.title}</strong>
+                <p>{signal.detail}</p>
+              </div>
+            </article>
+          {/if}
+        {/each}
       </div>
     {/if}
   </section>
 
-  <!-- Content Metrics -->
-  {#if !compact}
-    <section class="analytics-section content-section">
-      <h4 class="section-title">
-        <i class="fas fa-layer-group" aria-hidden="true"></i>
-        Content Metrics
-      </h4>
-      {#if isLoadingContent}
-        <div class="loading-placeholder">
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
+  <div class="dashboard-grid">
+    <section
+      class="analytics-card engagement-card"
+      aria-labelledby="engagement-title"
+    >
+      <div class="section-heading">
+        <div>
+          <h3 id="engagement-title">
+            <i class="fas fa-chart-line" aria-hidden="true"></i>
+            Engagement
+          </h3>
+          <p>Frequency and time spent</p>
         </div>
-      {:else if contentMetrics}
-        <div class="content-grid">
-          <div class="content-item">
-            <span class="content-value">{contentMetrics.sequencesCreated}</span>
-            <span class="content-label">Created</span>
+      </div>
+      {#if loading.engagement && !engagement}
+        <div
+          class="skeleton-grid"
+          role="status"
+          aria-label="Loading engagement"
+        >
+          {#each [0, 1, 2, 3] as item (item)}<div
+              class="skeleton-block"
+            ></div>{/each}
+        </div>
+      {:else if errors.engagement && !engagement}
+        <div class="inline-state error" role="alert">
+          <span>{errors.engagement}</span>
+          <AdminActionButton
+            variant="secondary"
+            icon="fa-rotate-right"
+            onclick={() => retry("engagement")}>Retry</AdminActionButton
+          >
+        </div>
+      {:else if engagement}
+        <div class="metric-grid">
+          <div class="metric featured">
+            <span>Last active</span>
+            <strong>{formatRelativeTime(engagement.lastActiveAt)}</strong>
           </div>
-          <div class="content-item">
-            <span class="content-value">{contentMetrics.sequencesSaved}</span>
-            <span class="content-label">Saved</span>
+          <div class="metric">
+            <span>Sessions</span>
+            <strong>{engagement.sessionsCount}</strong>
           </div>
-          <div class="content-item">
-            <span class="content-value">{contentMetrics.sequencesExported}</span>
-            <span class="content-label">Exported</span>
+          <div class="metric">
+            <span>Average</span>
+            <strong>{formatDuration(engagement.avgSessionDuration)}</strong>
           </div>
-          <div class="content-item">
-            <span class="content-value">{contentMetrics.collectionsCreated}</span>
-            <span class="content-label">Collections</span>
+          <div class="metric">
+            <span>Total time</span>
+            <strong>{formatDuration(engagement.totalTimeSpent)}</strong>
           </div>
         </div>
+        {#if errors.engagement}
+          <button class="stale-warning" onclick={() => retry("engagement")}
+            >Refresh failed. Showing earlier data.</button
+          >
+        {/if}
       {:else}
-        <div class="empty-state-inline">
-          <span>No content metrics available</span>
+        <div class="inline-state">No engagement data in this window.</div>
+      {/if}
+    </section>
+
+    <section
+      class="analytics-card activity-card"
+      aria-labelledby="activity-title"
+    >
+      <div class="section-heading">
+        <div>
+          <h3 id="activity-title">
+            <i class="fas fa-chart-simple" aria-hidden="true"></i>
+            Module mix
+          </h3>
+          <p>Share of captured page views</p>
+        </div>
+      </div>
+      {#if loading.activity && activityBreakdown.length === 0}
+        <div
+          class="bar-skeletons"
+          role="status"
+          aria-label="Loading module mix"
+        >
+          {#each [72, 48, 32, 18] as width (width)}
+            <div><span></span><i style="--skeleton-width: {width}%"></i></div>
+          {/each}
+        </div>
+      {:else if errors.activity && activityBreakdown.length === 0}
+        <div class="inline-state error" role="alert">
+          <span>{errors.activity}</span>
+          <AdminActionButton
+            variant="secondary"
+            icon="fa-rotate-right"
+            onclick={() => retry("activity")}>Retry</AdminActionButton
+          >
+        </div>
+      {:else if activityBreakdown.length > 0}
+        <div class="activity-bars">
+          {#each activityBreakdown as activity (activity.module)}
+            <div class="activity-row">
+              <div class="activity-label">
+                <strong>{titleCase(activity.module)}</strong>
+                <span>{activity.eventCount} views</span>
+              </div>
+              <div class="activity-track" aria-hidden="true">
+                <div
+                  class="activity-fill"
+                  style="--bar-width: {activity.percentage}%; --bar-color: {moduleColor(
+                    activity.module
+                  )}"
+                ></div>
+              </div>
+              <strong class="activity-percent">{activity.percentage}%</strong>
+            </div>
+          {/each}
+        </div>
+        {#if errors.activity}
+          <button class="stale-warning" onclick={() => retry("activity")}
+            >Refresh failed. Showing earlier data.</button
+          >
+        {/if}
+      {:else}
+        <div class="inline-state">
+          No page views in {periodLabel(selectedPeriod).toLowerCase()}.
         </div>
       {/if}
     </section>
-  {/if}
 
-  <!-- Recent Sessions -->
-  <section class="analytics-section sessions-section">
-    <h4 class="section-title">
-      <i class="fas fa-history" aria-hidden="true"></i>
-      Recent Sessions
-    </h4>
-    {#if isLoadingSessions}
-      <div class="loading-placeholder">
-        <div class="skeleton-session"></div>
-        <div class="skeleton-session"></div>
+    <section
+      class="analytics-card content-card"
+      aria-labelledby="content-title"
+    >
+      <div class="section-heading">
+        <div>
+          <h3 id="content-title">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            Content actions
+          </h3>
+          <p>Concrete creation and library events</p>
+        </div>
       </div>
-    {:else if recentSessions.length > 0}
-      <div class="sessions-list">
-        {#each recentSessions as session}
-          <div class="session-item">
-            <div class="session-info">
-              <span class="session-time">{formatSessionTime(session.startedAt)}</span>
-              <span class="session-duration">{formatDuration(session.duration)}</span>
-              <span class="session-modules">
-                {session.modules.slice(0, 3).join(", ")}
-                {#if session.modules.length > 3}
-                  +{session.modules.length - 3}
-                {/if}
-              </span>
-            </div>
-            {#if session.hasRecording}
-              <button
-                class="replay-btn"
-                onclick={() => openSessionReplay(session)}
-                title="Watch session replay in PostHog"
-              >
-                <i class="fas fa-play" aria-hidden="true"></i>
-                <span class="replay-label">Replay</span>
-              </button>
-            {/if}
+      {#if loading.content && !contentMetrics}
+        <div
+          class="content-list"
+          role="status"
+          aria-label="Loading content actions"
+        >
+          {#each [0, 1, 2, 3, 4] as item (item)}<div
+              class="content-row skeleton-line"
+            ></div>{/each}
+        </div>
+      {:else if errors.content && !contentMetrics}
+        <div class="inline-state error" role="alert">
+          <span>{errors.content}</span>
+          <AdminActionButton
+            variant="secondary"
+            icon="fa-rotate-right"
+            onclick={() => retry("content")}>Retry</AdminActionButton
+          >
+        </div>
+      {:else if contentMetrics}
+        <div class="content-list">
+          <div class="content-row">
+            <span><i class="fas fa-plus" aria-hidden="true"></i>Created</span
+            ><strong>{contentMetrics.sequencesCreated}</strong>
           </div>
-        {/each}
+          <div class="content-row">
+            <span><i class="fas fa-bookmark" aria-hidden="true"></i>Saved</span
+            ><strong>{contentMetrics.sequencesSaved}</strong>
+          </div>
+          <div class="content-row">
+            <span
+              ><i class="fas fa-file-export" aria-hidden="true"
+              ></i>Exported</span
+            ><strong>{contentMetrics.sequencesExported}</strong>
+          </div>
+          <div class="content-row">
+            <span
+              ><i class="fas fa-share-nodes" aria-hidden="true"></i>Shared</span
+            ><strong>{contentMetrics.sequencesShared}</strong>
+          </div>
+          <div class="content-row">
+            <span
+              ><i class="fas fa-folder-plus" aria-hidden="true"
+              ></i>Collections</span
+            ><strong>{contentMetrics.collectionsCreated}</strong>
+          </div>
+        </div>
+        {#if errors.content}
+          <button class="stale-warning" onclick={() => retry("content")}
+            >Refresh failed. Showing earlier data.</button
+          >
+        {/if}
+      {:else}
+        <div class="inline-state">No content actions in this window.</div>
+      {/if}
+    </section>
+
+    <section
+      class="analytics-card sessions-card"
+      aria-labelledby="sessions-title"
+    >
+      <div class="section-heading sessions-heading">
+        <div>
+          <h3 id="sessions-title">
+            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+            Sessions
+          </h3>
+          <p>Open one to inspect routes, events, and exceptions.</p>
+        </div>
+        {#if recentSessions.length > 0}<span class="result-count"
+            >{recentSessions.length} loaded</span
+          >{/if}
       </div>
-    {:else}
-      <div class="empty-state-inline">
-        <i class="fas fa-clock" aria-hidden="true"></i>
-        <span>No recent sessions</span>
-      </div>
-    {/if}
-  </section>
+      {#if loading.sessions && recentSessions.length === 0}
+        <div
+          class="session-skeletons"
+          role="status"
+          aria-label="Loading sessions"
+        >
+          {#each [0, 1, 2, 3] as item (item)}<div
+              class="skeleton-session"
+            ></div>{/each}
+        </div>
+      {:else if errors.sessions && recentSessions.length === 0}
+        <div class="inline-state error" role="alert">
+          <span>{errors.sessions}</span>
+          <AdminActionButton
+            variant="secondary"
+            icon="fa-rotate-right"
+            onclick={() => retry("sessions")}>Retry</AdminActionButton
+          >
+        </div>
+      {:else if recentSessions.length > 0}
+        {#key `${userId}:${selectedPeriod}`}
+          <UserSessionInspector
+            {userId}
+            {userDisplayName}
+            {userUsername}
+            {userEmail}
+            sessions={recentSessions}
+          />
+        {/key}
+        {#if errors.sessions}
+          <button class="stale-warning" onclick={() => retry("sessions")}
+            >Refresh failed. Showing earlier data.</button
+          >
+        {/if}
+      {:else}
+        <div class="inline-state empty-sessions">
+          <i class="fas fa-moon" aria-hidden="true"></i>
+          <strong>No sessions in this window</strong>
+          <span>Choose a wider range to look further back.</span>
+        </div>
+      {/if}
+    </section>
+  </div>
 </div>
 
 <style>
   .analytics-container {
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 1rem;
+    min-width: 0;
   }
 
-  .analytics-container.compact {
-    gap: 16px;
-  }
-
-  /* API Status Banner */
-  .api-status-banner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: color-mix(in srgb, var(--semantic-info) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-info) 30%, transparent);
-    border-radius: 8px;
-    font-size: var(--font-size-sm);
-    color: var(--semantic-info);
-  }
-
-  .api-status-banner i {
-    font-size: 14px;
-  }
-
-  /* Section Styling */
-  .analytics-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .section-header {
+  .analytics-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 1rem;
+    padding: 0.25rem 0;
   }
 
-  .section-title {
+  .toolbar-copy {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.375rem 0.625rem;
+    min-width: 0;
+  }
+
+  .toolbar-kicker,
+  .refreshing,
+  .result-count {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .toolbar-kicker {
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+  }
+
+  .toolbar-copy strong {
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+  }
+
+  .refreshing {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .period-control {
+    width: min(100%, 26rem);
+    min-width: 20rem;
+  }
+
+  .signals-section,
+  .analytics-card {
+    min-width: 0;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.875rem;
+    background: color-mix(in srgb, var(--theme-card-bg) 88%, transparent);
+  }
+
+  .signals-section {
+    padding: 1rem;
+  }
+
+  .section-heading,
+  .sessions-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .section-heading h3 {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     margin: 0;
+    color: var(--theme-text);
     font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 650;
   }
 
-  .section-title i {
-    font-size: 14px;
+  .section-heading h3 i {
     color: var(--theme-accent);
   }
 
-  /* Period Select */
-  .period-select {
-    padding: 4px 8px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 6px;
-    font-size: var(--font-size-sm);
-    color: var(--theme-text);
-    cursor: pointer;
+  .section-heading p {
+    margin: 0.25rem 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.4;
   }
 
-  .period-select:hover {
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .period-select:focus {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 1px;
-  }
-
-  /* Engagement Grid */
-  .engagement-grid {
+  .signals-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+    margin-top: 0.875rem;
   }
 
-  .engagement-item {
+  .signal-card {
+    --signal-color: var(--theme-text-dim);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 4.5rem;
+    padding: 0.75rem;
+    border: 1px solid
+      color-mix(in srgb, var(--signal-color) 24%, var(--theme-stroke));
+    border-radius: 0.75rem;
+    background: color-mix(
+      in srgb,
+      var(--signal-color) 6%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .signal-card[data-tone="info"] {
+    --signal-color: var(--semantic-info);
+  }
+
+  .signal-card[data-tone="success"] {
+    --signal-color: var(--semantic-success);
+  }
+
+  .signal-card[data-tone="warning"] {
+    --signal-color: var(--semantic-warning);
+  }
+
+  .signal-card[data-tone="danger"] {
+    --signal-color: var(--semantic-error);
+  }
+
+  .signal-icon {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    background: color-mix(in srgb, var(--signal-color) 14%, transparent);
+    color: var(--signal-color);
+  }
+
+  .signal-card strong {
+    display: block;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-weight: 650;
+  }
+
+  .signal-card p {
+    margin: 0.25rem 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.35;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "engagement"
+      "activity"
+      "content"
+      "sessions";
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .analytics-card {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 12px;
-    background: var(--theme-card-bg);
+    gap: 0.875rem;
+    padding: 1rem;
+  }
+
+  .engagement-card {
+    grid-area: engagement;
+  }
+
+  .activity-card {
+    grid-area: activity;
+  }
+
+  .content-card {
+    grid-area: content;
+  }
+
+  .sessions-card {
+    grid-area: sessions;
+    container-type: inline-size;
+  }
+
+  .metric-grid,
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 4.75rem;
+    padding: 0.75rem;
     border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
+    border-radius: 0.625rem;
+    background: var(--theme-panel-bg);
   }
 
-  .engagement-label {
-    font-size: var(--font-size-compact);
+  .metric.featured {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent) 30%,
+      var(--theme-stroke)
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 6%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .metric span {
     color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
   }
 
-  .engagement-value {
-    font-size: var(--font-size-base);
-    font-weight: 600;
+  .metric strong {
     color: var(--theme-text);
+    font-size: var(--font-size-lg);
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Activity Bars */
   .activity-bars {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 10px;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 12rem;
   }
 
   .activity-row {
     display: grid;
-    grid-template-columns: 80px 1fr 40px;
+    grid-template-columns: minmax(5.5rem, 0.35fr) minmax(7rem, 1fr) 3rem;
     align-items: center;
-    gap: 10px;
+    gap: 0.75rem;
   }
 
-  .activity-module {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text);
-    text-transform: capitalize;
-  }
-
-  .activity-bar-container {
-    height: 20px;
-    background: var(--theme-card-bg);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-
-  .activity-bar {
-    height: 100%;
-    border-radius: 10px;
-    transition: width 0.3s ease;
-  }
-
-  .activity-percent {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    text-align: right;
-  }
-
-  /* Content Grid */
-  .content-grid {
+  .activity-label {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    min-width: 0;
+    gap: 0.15rem;
   }
 
-  .content-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-  }
-
-  .content-value {
-    font-size: 1.5rem;
-    font-weight: 700;
+  .activity-label strong {
+    overflow: hidden;
     color: var(--theme-text);
-  }
-
-  .content-label {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-  }
-
-  /* Sessions List */
-  .sessions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .session-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 14px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    transition: border-color var(--duration-fast) ease;
-  }
-
-  .session-item:hover {
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .session-info {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 16px;
-  }
-
-  .session-time {
     font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--theme-text);
-  }
-
-  .session-duration {
-    font-size: var(--font-size-sm);
-    color: var(--theme-accent);
     font-weight: 600;
-    padding: 2px 8px;
-    background: var(--theme-accent-bg);
-    border-radius: 6px;
-  }
-
-  .session-modules {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
-  .replay-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--theme-accent-bg);
-    border: 1px solid var(--theme-accent);
-    border-radius: 8px;
-    color: var(--theme-accent);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .replay-btn:hover {
-    background: var(--theme-accent);
-    color: white;
+  .activity-label span {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
   }
 
-  .replay-btn:focus-visible {
+  .activity-track {
+    height: 0.75rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--theme-panel-bg);
+    box-shadow: inset 0 0 0 1px var(--theme-stroke);
+  }
+
+  .activity-fill {
+    width: var(--bar-width);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--bar-color);
+    transition: width var(--duration-normal) ease;
+  }
+
+  .activity-percent {
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .content-list,
+  .session-skeletons,
+  .bar-skeletons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .content-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: var(--min-touch-target);
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.625rem;
+    background: var(--theme-panel-bg);
+  }
+
+  .content-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+  }
+
+  .content-row span i {
+    width: 1rem;
+    color: var(--theme-accent);
+    text-align: center;
+  }
+
+  .content-row strong {
+    color: var(--theme-text);
+    font-size: var(--font-size-base);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .result-count {
+    flex: none;
+    padding: 0.3rem 0.5rem;
+    border-radius: 999px;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+  }
+
+  .inline-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 9rem;
+    padding: 1rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    text-align: center;
+  }
+
+  .inline-state.error {
+    color: var(--semantic-error);
+  }
+
+  .empty-sessions i {
+    color: var(--theme-accent);
+    font-size: var(--font-size-xl);
+  }
+
+  .empty-sessions strong {
+    color: var(--theme-text);
+  }
+
+  .stale-warning {
+    min-height: var(--min-touch-target);
+    padding: 0.5rem;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning) 35%, transparent);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--semantic-warning) 8%, transparent);
+    color: var(--semantic-warning);
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--font-size-compact);
+  }
+
+  .stale-warning:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
-  .replay-btn i {
-    font-size: 10px;
-  }
-
-  /* Loading States */
-  .loading-placeholder {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .skeleton-row {
-    height: 48px;
+  .skeleton-card,
+  .skeleton-block,
+  .skeleton-line,
+  .skeleton-session,
+  .bar-skeletons span,
+  .bar-skeletons i {
     background: linear-gradient(
       90deg,
-      var(--theme-card-bg) 0%,
+      var(--theme-panel-bg) 0%,
       var(--theme-card-hover-bg) 50%,
-      var(--theme-card-bg) 100%
+      var(--theme-panel-bg) 100%
     );
     background-size: 200% 100%;
-    border-radius: 8px;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer var(--duration-emphasis) infinite;
   }
 
-  .skeleton-bar {
-    height: 20px;
-    background: linear-gradient(
-      90deg,
-      var(--theme-card-bg) 0%,
-      var(--theme-card-hover-bg) 50%,
-      var(--theme-card-bg) 100%
-    );
-    background-size: 200% 100%;
-    border-radius: 10px;
-    animation: shimmer 1.5s infinite;
+  .skeleton-card {
+    border-color: var(--theme-stroke);
+  }
+
+  .skeleton-block {
+    min-height: 4.75rem;
+    border-radius: 0.625rem;
+  }
+
+  .skeleton-line {
+    border: 0;
   }
 
   .skeleton-session {
-    height: 52px;
-    background: linear-gradient(
-      90deg,
-      var(--theme-card-bg) 0%,
-      var(--theme-card-hover-bg) 50%,
-      var(--theme-card-bg) 100%
-    );
-    background-size: 200% 100%;
-    border-radius: 10px;
-    animation: shimmer 1.5s infinite;
+    min-height: 5.25rem;
+    border-radius: 0.75rem;
+  }
+
+  .bar-skeletons {
+    justify-content: center;
+    min-height: 12rem;
+  }
+
+  .bar-skeletons > div {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .bar-skeletons span {
+    height: 1rem;
+    border-radius: 0.25rem;
+  }
+
+  .bar-skeletons i {
+    display: block;
+    width: var(--skeleton-width);
+    height: 0.75rem;
+    border-radius: 999px;
   }
 
   @keyframes shimmer {
-    0% {
+    from {
       background-position: 200% 0;
     }
-    100% {
+    to {
       background-position: -200% 0;
     }
   }
 
-  /* Empty States */
-  .empty-state-inline {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 20px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm);
+  @container (min-width: 38rem) {
+    .signals-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
-  .empty-state-inline i {
-    font-size: 16px;
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .engagement-grid {
-      grid-template-columns: repeat(2, 1fr);
+  @container (min-width: 54rem) {
+    .dashboard-grid {
+      grid-template-columns: minmax(18rem, 0.75fr) minmax(0, 1.25fr);
+      grid-template-areas:
+        "engagement activity"
+        "content activity"
+        "sessions sessions";
     }
 
-    .content-grid {
-      grid-template-columns: repeat(2, 1fr);
+    .activity-card {
+      align-self: stretch;
+    }
+  }
+
+  @container (min-width: 70rem) {
+    .dashboard-grid {
+      grid-template-columns: minmax(18rem, 0.78fr) minmax(28rem, 1.28fr) minmax(
+          24rem,
+          1fr
+        );
+      grid-template-areas:
+        "engagement activity sessions"
+        "content content sessions";
+    }
+
+    .sessions-card {
+      align-self: stretch;
+    }
+
+    .content-list {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .analytics-container,
+    .dashboard-grid {
+      gap: 1.5rem;
+    }
+
+    .signals-section,
+    .analytics-card {
+      padding: 1.5rem;
+      border-radius: 1.125rem;
+    }
+
+    .signals-grid {
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .signal-card {
+      min-height: 6rem;
+      padding: 1rem;
+    }
+
+    .metric {
+      min-height: 6.5rem;
+      padding: 1rem;
+    }
+
+    .content-row {
+      padding: 0.875rem 1rem;
+    }
+  }
+
+  @container (max-width: 38rem) {
+    .analytics-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .period-control {
+      width: 100%;
+      min-width: 0;
     }
 
     .activity-row {
-      grid-template-columns: 60px 1fr 36px;
+      grid-template-columns: minmax(4.75rem, 0.4fr) minmax(5rem, 1fr) 2.5rem;
+      gap: 0.5rem;
+    }
+  }
+
+  @container (max-width: 24rem) {
+    .metric-grid,
+    .skeleton-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .replay-label {
+    .activity-label span {
       display: none;
     }
-
-    .replay-btn {
-      padding: 8px;
-    }
   }
 
-  @media (max-width: 480px) {
-    .session-info {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-    }
-  }
-
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .skeleton-row,
-    .skeleton-bar,
-    .skeleton-session {
+    .skeleton-card,
+    .skeleton-block,
+    .skeleton-line,
+    .skeleton-session,
+    .bar-skeletons span,
+    .bar-skeletons i {
       animation: none;
     }
 
-    .activity-bar {
+    .activity-fill {
       transition: none;
     }
   }
