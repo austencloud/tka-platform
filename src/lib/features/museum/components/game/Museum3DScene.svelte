@@ -19,6 +19,7 @@
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
   import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
+  import DrownedGalleryGraybox from "./DrownedGalleryGraybox.svelte";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -214,6 +215,11 @@
   const hasLobbyPresentation = lobbyPresentation !== undefined;
   const hasVulcanCaveSlice = grid.wings.some(
     (wing) => wing.id === "cave-water"
+  );
+  // Phase-1 graybox for the Drowned Gallery. Remove with the component when the
+  // authored GLB shell lands (see DrownedGalleryGraybox.svelte).
+  const hasDrownedGallery = grid.wings.some(
+    (wing) => wing.id === "cave-water-sump"
   );
 
   // ── Progressive mount: break heavy sub-components into stages so the
@@ -1630,6 +1636,10 @@
     currentRoomId={currentPlayerRoomId}
     visible={props.visible !== false}
   />
+{/if}
+
+{#if hasDrownedGallery}
+  <DrownedGalleryGraybox {grid} />
 {/if}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->

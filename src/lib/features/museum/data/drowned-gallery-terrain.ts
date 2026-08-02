@@ -22,7 +22,7 @@ export const POOL_BOTTOM_Y = -5.0;
 export const DOME_APEX_Y = 9.5;
 
 /** Elevation of the corridor stubs that bridge approach → sump → grotto. */
-const CORRIDOR_SURFACING_Y = -2.2;
+export const CORRIDOR_SURFACING_Y = -2.2;
 
 const TILE = 0.5;
 
@@ -135,12 +135,14 @@ export function buildDrownedGalleryLayout(
     alcoves,
     waterPlanes: [
       pool,
-      // sump water: covers sump + the corridor gaps north and south of it
+      // Sump water: covers the sump, both corridor gaps, a little way into the
+      // grotto, and up to the point on the approach ramp that meets the
+      // waterline. North is decreasing z, so the grotto is the low-z end.
       {
         minX: sump.minX - 1,
-        minZ: approach.minZ - 1.5,
+        minZ: grotto.maxZ - 0.5,
         maxX: sump.maxX + 1,
-        maxZ: grotto.minZ + 0.5,
+        maxZ: approach.minZ,
       },
     ],
     causewayProbe: { x: grotto.minX + gw * 0.5, z: pool.maxZ + 2.0 },

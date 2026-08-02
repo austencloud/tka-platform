@@ -30,6 +30,8 @@
     centerZ: number;
     width: number;
     depth: number;
+    /** Rooms with an authored shell supply their own dressing. */
+    suppressed: boolean;
   }
 
   interface RockPlacement {
@@ -101,7 +103,14 @@
   const rockWideC = useGltf("/models/vegetation/rock/rock_largeC.glb");
   const rockTall = useGltf("/models/vegetation/rock/rock_tallC.glb");
 
-  const caveRooms = rooms.filter((room) => room.theme === "cave");
+  // Rooms dressed by an authored shell or graybox own their own rocks, floor
+  // discs, and dust — the generic cave dressing would double up inside them.
+  const isSuppressed = (room: WingRegion) =>
+    room.roomPresentation?.suppressTileGeometry === true;
+
+  const caveRooms = rooms.filter(
+    (room) => room.theme === "cave" && !isSuppressed(room)
+  );
   const chambers: ScenicChamber[] = MODE_ORDER.flatMap((id) => {
     const room = rooms.find((candidate) => candidate.id === id);
     if (!room) return [];
@@ -110,6 +119,7 @@
       {
         id,
         ...mood,
+        suppressed: isSuppressed(room),
         centerX: (room.bounds.x + (room.bounds.width - 1) / 2) * TILE_SIZE,
         centerZ: (room.bounds.y + (room.bounds.height - 1) / 2) * TILE_SIZE,
         width: Math.max(1, (room.bounds.width - 2) * TILE_SIZE),
@@ -332,38 +342,40 @@
 {/each}
 
 {#each chambers as chamber (chamber.id)}
-  <T.Mesh
-    position={[chamber.centerX, 0.026, chamber.centerZ]}
-    rotation={[-Math.PI / 2, 0, 0]}
-  >
-    <T.CircleGeometry
-      args={[Math.min(chamber.width, chamber.depth) * 0.34, 36]}
-    />
-    <T.MeshBasicMaterial
-      color={chamber.color}
-      transparent
-      opacity={0.075}
-      depthWrite={false}
-      toneMapped={false}
-    />
-  </T.Mesh>
+  {#if !chamber.suppressed}
+    <T.Mesh
+      position={[chamber.centerX, 0.026, chamber.centerZ]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      <T.CircleGeometry
+        args={[Math.min(chamber.width, chamber.depth) * 0.34, 36]}
+      />
+      <T.MeshBasicMaterial
+        color={chamber.color}
+        transparent
+        opacity={0.075}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </T.Mesh>
 
-  <T.Group position={[chamber.centerX, 2.35, chamber.centerZ]}>
-    <FallingParticles
-      type="dust"
-      count={18}
-      area={{
-        width: Math.min(chamber.width, 4.5),
-        height: 3.8,
-        depth: Math.min(chamber.depth, 4.5),
-      }}
-      speed={0.025}
-      colors={[chamber.particleColor, chamber.color]}
-      sizeRange={[0.006, 0.016]}
-      spin={false}
-      enabled={visible}
-    />
-  </T.Group>
+    <T.Group position={[chamber.centerX, 2.35, chamber.centerZ]}>
+      <FallingParticles
+        type="dust"
+        count={18}
+        area={{
+          width: Math.min(chamber.width, 4.5),
+          height: 3.8,
+          depth: Math.min(chamber.depth, 4.5),
+        }}
+        speed={0.025}
+        colors={[chamber.particleColor, chamber.color]}
+        sizeRange={[0.006, 0.016]}
+        spin={false}
+        enabled={visible}
+      />
+    </T.Group>
+  {/if}
 {/each}
 
 {#each moodLights as light, index (index)}

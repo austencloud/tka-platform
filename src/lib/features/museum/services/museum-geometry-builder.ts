@@ -457,12 +457,43 @@ export function bucketMuseumTilesByRoom(grid: MuseumGrid): PerRoomBuckets {
     }
   }
 
+  // The corridor connecting two tile-suppressed rooms is suppressed too —
+  // otherwise its floor renders on the museum datum, roofing over a room whose
+  // authored shell sits metres below it. Each span is the bounding box of a
+  // pair of suppressed wings; a corridor tile inside one is routed to that
+  // wing's bucket (which never builds tile geometry) instead of the corridor.
+  const suppressedWings = grid.wings.filter(
+    (wing) => wing.roomPresentation?.suppressTileGeometry
+  );
+  const suppressedSpans: { x0: number; y0: number; x1: number; y1: number; wingId: string }[] = [];
+  for (let i = 0; i < suppressedWings.length; i++) {
+    for (let j = i + 1; j < suppressedWings.length; j++) {
+      const a = suppressedWings[i].bounds;
+      const b = suppressedWings[j].bounds;
+      suppressedSpans.push({
+        x0: Math.min(a.x, b.x),
+        y0: Math.min(a.y, b.y),
+        x1: Math.max(a.x + a.width, b.x + b.width),
+        y1: Math.max(a.y + a.height, b.y + b.height),
+        wingId: suppressedWings[i].id,
+      });
+    }
+  }
+  function suppressedSpanFor(key: string): string | undefined {
+    if (suppressedSpans.length === 0) return undefined;
+    const { x, y } = parseTileKey(key);
+    for (const span of suppressedSpans) {
+      if (x >= span.x0 && x < span.x1 && y >= span.y0 && y < span.y1) return span.wingId;
+    }
+    return undefined;
+  }
+
   // Split tiles into per-wing maps and a corridor map
   const wingTiles = new Map<string, Map<string, MuseumTile>>();
   const corridorTiles = new Map<string, MuseumTile>();
 
   for (const [key, tile] of grid.tiles) {
-    const wingId = tileToWing.get(key);
+    const wingId = tileToWing.get(key) ?? suppressedSpanFor(key);
     if (wingId) {
       let wt = wingTiles.get(wingId);
       if (!wt) { wt = new Map(); wingTiles.set(wingId, wt); }
