@@ -4,7 +4,8 @@
 
   interface Props {
     tile: MuseumTile;
-    tileSize: number;
+    /** Pixel size for game views. Omit when a parent CSS grid owns sizing. */
+    tileSize?: number;
   }
 
   let { tile, tileSize }: Props = $props();
@@ -13,12 +14,17 @@
   let materialClass = $derived(tile.material ? `material-${tile.material}` : "");
 
   // Show a label when the tile is large enough to fit text legibly
-  let showLabel = $derived(tileSize >= 28);
+  let showLabel = $derived((tileSize ?? 0) >= 28);
+  let tileStyle = $derived(
+    tileSize === undefined
+      ? "width: 100%; height: 100%;"
+      : `width: ${tileSize}px; height: ${tileSize}px;`,
+  );
 </script>
 
 <div
   class="museum-tile {meta.cssClass} {materialClass}"
-  style="width: {tileSize}px; height: {tileSize}px;"
+  style={tileStyle}
   role="presentation"
 >
   {#if meta.icon}

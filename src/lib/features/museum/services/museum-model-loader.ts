@@ -10,60 +10,12 @@
  */
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import type { Group } from "three";
-import type { MuseumModelDefinition, MuseumModelRole } from "./types";
-
-// ── Role-to-model mapping ──
-// These are the 5 proof-of-concept models chosen from the 140-model
-// Kenney Furniture Kit (CC0). Scale and yOffset are tuned for the
-// museum's world space where 1 unit = 1 meter.
-//
-// Kenney models use 1 unit ≈ 1 meter natively. The museum world also
-// uses 1 unit = 1 meter (TILE_SIZE = 0.5 means each tile is 0.5m).
-// So scale ≈ 1.0 gives correct real-world proportions against 4.5m
-// walls and 1.6m eye height.
-
-const MODEL_BASE = "/assets/museum/models/furniture";
-
-// Scale factors computed from actual GLB bounding box measurements:
-// bench.glb native: 0.40 x 0.47 x 0.20m → target ~0.5m tall = scale 1.1
-// tableCoffee.glb native: 0.66 x 0.23 x 0.40m → target ~0.7m tall = scale 3.0
-// bookcaseClosedWide.glb native: 0.80 x 0.79 x 0.25m → target ~1.8m tall = scale 2.3
-// lampRoundFloor.glb native: 0.15 x 0.86 x 0.18m → target ~1.6m tall = scale 1.9
-// pottedPlant.glb native: 0.21 x 0.54 x 0.24m → target ~0.8m tall = scale 1.5
-
-const ROLE_DEFINITIONS: Record<MuseumModelRole, MuseumModelDefinition> = {
-  bench: {
-    // Native 0.47m tall → 2.5x = 1.18m (seat height, correct for bench)
-    path: `${MODEL_BASE}/bench.glb`,
-    scale: 2.5,
-    yOffset: 0,
-  },
-  pedestal: {
-    // Native 0.23m tall → 3.5x = 0.8m (waist-height display surface)
-    path: `${MODEL_BASE}/tableCoffee.glb`,
-    scale: 3.5,
-    yOffset: 0,
-  },
-  bookshelf: {
-    // Native 0.79m tall → 2.5x = 1.98m (head-height bookshelf)
-    path: `${MODEL_BASE}/bookcaseClosedWide.glb`,
-    scale: 2.5,
-    yOffset: 0,
-  },
-  lamp: {
-    // Native 0.86m tall → 2.0x = 1.72m (standing lamp)
-    path: `${MODEL_BASE}/lampRoundFloor.glb`,
-    scale: 2.0,
-    yOffset: 0,
-  },
-  plant: {
-    // Native 0.54m tall → 2.0x = 1.08m (potted plant)
-    path: `${MODEL_BASE}/pottedPlant.glb`,
-    scale: 2.0,
-    yOffset: 0,
-  },
-};
+import { Box3, Color, Vector3, type Group, type Material, type Mesh } from "three";
+import type { MuseumFurnitureRole } from "../domain/museum-grid-types";
+import {
+  getFurnitureObjectByRole,
+  MUSEUM_FURNITURE_OBJECTS,
+} from "../domain/placeable-object-registry";
 
 export class MuseumModelLoader {
   private loader = new GLTFLoader();
@@ -76,9 +28,20 @@ export class MuseumModelLoader {
 
   // ── Public API ──
 
-  async load(role: MuseumModelRole): Promise<Group> {
-    const def = ROLE_DEFINITIONS[role];
-    return this.loadByPath(def.path, def.scale, def.yOffset);
+  async load(role: MuseumFurnitureRole, tintLift = 0): Promise<Group> {
+    const def = getFurnitureObjectByRole(role);
+    if (!def) {
+      throw new Error(`No 3D furniture model is registered for role "${role}"`);
+    }
+    const model = await this.loadByPath(
+      def.modelPath,
+      def.scale,
+      def.mountHeight
+    );
+    if (def.materialTint) {
+      this.tintMaterials(model, def.materialTint, tintLift);
+    }
+    return model;
   }
 
   async loadByPath(
@@ -107,7 +70,7 @@ export class MuseumModelLoader {
   }
 
   async preloadAll(): Promise<void> {
-    const roles = Object.keys(ROLE_DEFINITIONS) as MuseumModelRole[];
+    const roles = MUSEUM_FURNITURE_OBJECTS.map((object) => object.furnitureRole);
     await Promise.all(roles.map((role) => this.load(role)));
   }
 
@@ -129,6 +92,34 @@ export class MuseumModelLoader {
 
   // ── Internals ──
 
+  private tintMaterials(group: Group, tint: string, tintLift: number): void {
+    const normalizedLift = Math.max(0, Math.min(1, tintLift));
+    const tintColor = new Color(tint);
+    const readableTint = tintColor
+      .clone()
+      .multiplyScalar(1 + normalizedLift * 1.4);
+    group.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      const source = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      const tinted = source.map((material: Material) => {
+        const clone = material.clone() as Material & {
+          color?: Color;
+          roughness?: number;
+        };
+        clone.color?.multiply(tintColor);
+        // Unlit Kenney materials ignore scene lights, so lobby presentation can
+        // recover their authored hue at a readable midtone.
+        clone.color?.lerp(readableTint, normalizedLift);
+        if (clone.roughness !== undefined) clone.roughness = 0.82;
+        return clone;
+      });
+      mesh.material = Array.isArray(mesh.material) ? tinted : tinted[0]!;
+    });
+  }
+
   private async fetchAndPrepare(
     path: string,
     scale: number,
@@ -137,10 +128,15 @@ export class MuseumModelLoader {
     const gltf = await this.loader.loadAsync(path);
     const scene = gltf.scene;
 
-    // Apply scale and vertical offset to the root group so
-    // callers only need to set position.x / position.z.
+    // Normalize each asset around its semantic placement point. Kenney GLBs use
+    // inconsistent corner-based origins, which otherwise offsets the rendered
+    // object from the authored tile and its collision footprint.
     scene.scale.setScalar(scale);
-    scene.position.y = yOffset;
+    scene.updateWorldMatrix(true, true);
+    const bounds = new Box3().setFromObject(scene, true);
+    const center = bounds.getCenter(new Vector3());
+    scene.position.set(-center.x, yOffset - bounds.min.y, -center.z);
+    scene.updateWorldMatrix(true, true);
 
     return scene;
   }

@@ -80,6 +80,75 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  lobby: {
+    exhibits: {
+      "lobby-first-pictograph": {
+        plaque: {
+          title: "Primary Kinetic Notation",
+          subtitle: "Orientation Plate 01",
+          body:
+            "This diagram is the standard visual unit used throughout the archive. " +
+            "Visitors are asked to observe the indicated positions without imitating them. " +
+            "Repeated exposure may produce an inaccurate sense that the movement can be " +
+            "performed safely. It cannot. Continue to the historical galleries for " +
+            "documented examples.",
+          barter: "Department of Rotational Affairs · Reference 1-A",
+        },
+        sequenceId: "gallery-spiral-seq",
+      },
+      "lobby-reception": {
+        plaque: {
+          title: "Reception",
+          subtitle: "Visitor Hours: By Appointment Only",
+          body:
+            "Please check in with the front desk before proceeding. " +
+            "Unauthorized access beyond the lobby is prohibited. " +
+            "All personal effects must be declared.",
+          barter: "Department of Rotational Affairs",
+        },
+      },
+      "lobby-gift-shop-frontage": {
+        plaque: {
+          title: "Museum Shop",
+          subtitle: "Closed",
+          body:
+            "Catalog orders may be submitted at reception. Items displayed behind the " +
+            "glass remain property of the Department until a numbered receipt has been " +
+            "issued. Visitors returning from the galleries must present all carried " +
+            "objects for comparison before departure.",
+          barter: "Inventory review in progress",
+        },
+      },
+      "lobby-bulletin": {
+        plaque: {
+          title: "Staff Notice Board",
+          body:
+            "ALL STAFF: Badge access updated effective 11/14/1998. " +
+            "Please collect new credentials from Room 114. " +
+            "Fire drill scheduled for Friday. Attendance mandatory.",
+          barter: "- Facilities Management",
+        },
+      },
+      "lobby-guest-book": {
+        plaque: {
+          title: "Guest Book",
+          subtitle: "Please sign in",
+          body:
+            "All visitors must register with the front desk. " +
+            "A valid government-issued ID is required for access " +
+            "beyond the main gallery. Bags will be searched.",
+          barter: "Form 7741-A: Visitor Registration",
+        },
+      },
+    },
+    performers: {
+      "lobby-telekinetic-formation": {
+        autoPlay: true,
+        sequenceId: "gallery-spiral-seq",
+      },
+    },
+  },
+
   "vulcan-cave": {
     exhibits: {
       "cave-lascaux-1": {

@@ -28,7 +28,11 @@ const DIR_VECTORS: Record<string, { dx: number; dy: number }> = {
   west: { dx: -1, dy: 0 },
 };
 
-export function computeLayout(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): LayoutResult {
+export function computeLayout(
+  rooms: RoomNode[],
+  edges: RoomEdge[],
+  config: GridConfig
+): LayoutResult {
   const mainPath = extractMainPath(rooms, edges);
   const sideEdges = edges.filter((e) => e.type !== "main-path");
   const roomMap = new Map(rooms.map((r) => [r.id, r]));
@@ -146,11 +150,20 @@ export function computeLayout(rooms: RoomNode[], edges: RoomEdge[], config: Grid
   };
 }
 
-function createPlacedRoom(room: RoomNode, x: number, y: number, w: number, h: number): PlacedRoom {
+function createPlacedRoom(
+  room: RoomNode,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): PlacedRoom {
   return {
     id: room.id,
     name: room.name,
-    x, y, w, h,
+    x,
+    y,
+    w,
+    h,
     material: room.material,
     theme: room.theme,
     description: room.description,
@@ -158,6 +171,8 @@ function createPlacedRoom(room: RoomNode, x: number, y: number, w: number, h: nu
     walls: room.walls,
     performers: room.performers,
     furniture: room.furniture,
+    spawn: room.spawn,
+    roomPresentation: room.roomPresentation,
   };
 }
 
@@ -192,7 +207,10 @@ function shiftAllRoomsToPositive(placed: Map<string, PlacedRoom>): void {
  * This converges reliably even when the path folds back on itself,
  * because no single room absorbs the full displacement.
  */
-function resolveAllOverlaps(placed: Map<string, PlacedRoom>, gap: number): void {
+function resolveAllOverlaps(
+  placed: Map<string, PlacedRoom>,
+  gap: number
+): void {
   const roomList = Array.from(placed.values());
   const maxIterations = 500;
 
@@ -240,7 +258,9 @@ function resolveAllOverlaps(placed: Map<string, PlacedRoom>, gap: number): void 
 }
 
 function roomsOverlap(a: PlacedRoom, b: PlacedRoom): boolean {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  return (
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+  );
 }
 
 /**

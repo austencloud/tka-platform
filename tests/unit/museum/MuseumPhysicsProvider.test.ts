@@ -62,6 +62,14 @@ function makeStandardGrid(): MuseumGrid {
 	return makeTestGrid([...floorTiles, wallTile]);
 }
 
+function makeOpenGrid(size = 9): MuseumGrid {
+	const tiles: [number, number, MuseumTile["type"]][] = [];
+	for (let x = 0; x < size; x++) {
+		for (let y = 0; y < size; y++) tiles.push([x, y, "floor"]);
+	}
+	return makeTestGrid(tiles);
+}
+
 describe("MuseumPhysicsProvider", () => {
 	describe("basic movement", () => {
 		it("walk into open floor changes position", () => {
@@ -198,6 +206,69 @@ describe("MuseumPhysicsProvider", () => {
 			const pos = provider.getPlayerPosition();
 			// Should not reach or pass the wall center (1.0)
 			expect(pos.x).toBeLessThan(1.0);
+		});
+	});
+
+	describe("authored object collision", () => {
+		it("blocks movement through registered furniture footprints", () => {
+			const grid = makeOpenGrid();
+			grid.furniture.push({
+				id: "reception-desk",
+				role: "desk",
+				tileX: 4,
+				tileY: 4,
+				rotationY: 0,
+			});
+			const provider = new MuseumPhysicsProvider(grid, TILE_SIZE, {
+				x: 1,
+				y: 0,
+				z: 2,
+			});
+
+			provider.movePlayer({ x: 1, y: 0, z: 0 }, DT);
+
+			expect(provider.getPlayerPosition().x).toBe(1);
+		});
+
+		it("honors furniture rotation when checking an oriented footprint", () => {
+			const grid = makeOpenGrid();
+			grid.furniture.push({
+				id: "rotated-desk",
+				role: "desk",
+				tileX: 4,
+				tileY: 4,
+				rotationY: Math.PI / 2,
+			});
+			const provider = new MuseumPhysicsProvider(grid, TILE_SIZE, {
+				x: 2,
+				y: 0,
+				z: 1,
+			});
+
+			provider.movePlayer({ x: 0, y: 0, z: 1 }, DT);
+
+			expect(provider.getPlayerPosition().z).toBe(1);
+		});
+
+		it("keeps a circular clear zone around the kinetic sculpture", () => {
+			const grid = makeOpenGrid();
+			grid.performers.push({
+				id: "lobby-telekinetic-formation",
+				tileX: 4,
+				tileY: 4,
+				facing: "south",
+				autoPlay: true,
+				collisionRadiusTiles: 3,
+			});
+			const provider = new MuseumPhysicsProvider(grid, TILE_SIZE, {
+				x: 0.5,
+				y: 0,
+				z: 2,
+			});
+
+			provider.movePlayer({ x: 1.5, y: 0, z: 0 }, DT);
+
+			expect(provider.getPlayerPosition().x).toBe(0.5);
 		});
 	});
 

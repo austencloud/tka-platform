@@ -115,9 +115,32 @@ function stampWall(
   const wallDoors: DoorPosition[] = [];
 
   const { minMargin } = wallDef;
-  // +1 skips the corner tile, then minMargin of padding
-  let cursor = geo.wallStart + 1 + minMargin;
   const wallEnd = geo.wallStart + geo.roomDim - 1; // last tile (opposite corner)
+  const contentWidth = wallDef.segments.reduce(
+    (total, segment) => total + computeSegmentWidth(segment),
+    0,
+  );
+  // Both corners and both declared margins stay clear. wallContentEnd is
+  // exclusive so a segment can end immediately before the trailing margin.
+  const wallContentStart = geo.wallStart + 1 + minMargin;
+  const wallContentEnd = wallEnd - minMargin;
+  const availableWidth = wallContentEnd - wallContentStart;
+
+  if (contentWidth > availableWidth) {
+    throw new Error(
+      `Segments on ${wallName} wall of room "${room.id}" exceed available wall length. ` +
+      `Need ${contentWidth} tiles, but only ${availableWidth} are available after margins.`,
+    );
+  }
+
+  const slack = availableWidth - contentWidth;
+  const alignmentOffset =
+    wallDef.alignment === "end"
+      ? slack
+      : wallDef.alignment === "center"
+        ? Math.floor(slack / 2)
+        : 0;
+  let cursor = wallContentStart + alignmentOffset;
 
   for (const segment of wallDef.segments) {
     const width = computeSegmentWidth(segment);
@@ -152,14 +175,6 @@ function stampWall(
     }
 
     cursor += width;
-  }
-
-  // Validate: cursor + trailing margin must not exceed the wall end
-  if (cursor + minMargin > wallEnd) {
-    throw new Error(
-      `Segments on ${wallName} wall of room "${room.id}" exceed available wall length. ` +
-      `Cursor at ${cursor}, need ${minMargin} margin, but wall ends at ${wallEnd}.`,
-    );
   }
 
   return { wallResult, wallDoors };

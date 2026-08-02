@@ -15,26 +15,55 @@ export type TileType =
   | "pedestal"
   | "trigger"
   | "corridor"
-  | "rope"          // Barrier - visible, solid, not interactable (VTG Wing rope-off)
-  | "scaffolding"   // Construction Zone - visible clutter, solid
-  | "sign"             // Readable sign - interactable, not solid
+  | "rope" // Barrier - visible, solid, not interactable (VTG Wing rope-off)
+  | "scaffolding" // Construction Zone - visible clutter, solid
+  | "sign" // Readable sign - interactable, not solid
   | "sequence-screen"; // TV screen showing sequence bartage - solid, interactable
 
 export type FloorMaterial = "stone" | "marble" | "wood" | "dirt" | "sandstone";
 export type Direction = "north" | "south" | "east" | "west";
+export type MuseumFurnitureRole =
+  | "bench"
+  | "pedestal"
+  | "bookshelf"
+  | "lamp"
+  | "plant"
+  | "desk"
+  | "desk-chair"
+  | "trashcan"
+  | "coat-rack"
+  | "rug"
+  | "scaffolding"
+  | "sign";
+
+export type MuseumFormationPresentation = "ritual" | "sculpture";
 export type WingTheme =
-  | "cave"          // Wing 1: Ancient Origins - torchlight, stone
-  | "classical"     // Wing 2: Egypt/Greece - oil lamps, warm
-  | "renaissance"   // Wing 3: Da Vinci - natural light, studio
-  | "industrial"    // Wing 4: Victorian - gas lamps, brass
-  | "digital"       // Wing 5: CRT glow, fluorescent
+  | "cave" // Wing 1: Ancient Origins - torchlight, stone
+  | "classical" // Wing 2: Egypt/Greece - oil lamps, warm
+  | "renaissance" // Wing 3: Da Vinci - natural light, studio
+  | "industrial" // Wing 4: Victorian - gas lamps, brass
+  | "digital" // Wing 5: CRT glow, fluorescent
   | "institutional" // Wing 6: Suppression - sterile, bureaucratic
-  | "gallery"       // Wing 7: Vessel Hall - spotlights
-  | "modern"        // Wing 8: Modern Vessel - dramatic
-  | "futuristic"    // Futures Chamber
-  | "outdoor"       // Ending rooms
-  | "construction"  // Construction Zone / Janitor's Closet
-  | "retail";       // Gift Shop
+  | "gallery" // Wing 7: Vessel Hall - spotlights
+  | "modern" // Wing 8: Modern Vessel - dramatic
+  | "futuristic" // Futures Chamber
+  | "outdoor" // Ending rooms
+  | "construction" // Construction Zone / Janitor's Closet
+  | "retail"; // Gift Shop
+
+/** Optional authored visual layer mounted over a room's tile-built structure. */
+export interface MuseumRoomPresentation {
+  modelPath: string;
+  ceilingModelPath?: string;
+  emissiveBoost?: number;
+  atmosphere?: {
+    type: "dust";
+    count: number;
+    speed: number;
+    colors: string[];
+    sizeRange: [number, number];
+  };
+}
 
 export interface MuseumTile {
   type: TileType;
@@ -75,6 +104,7 @@ export interface WingRegion {
   bounds: { x: number; y: number; width: number; height: number };
   theme: WingTheme;
   description?: string;
+  roomPresentation?: MuseumRoomPresentation;
 }
 
 export interface ExhibitDefinition {
@@ -99,11 +129,17 @@ export interface PerformerDefinition {
   facing: Direction;
   sequenceId?: string;
   autoPlay: boolean;
+  /** Presentation variant used by telekinetic formations. */
+  presentation?: MuseumFormationPresentation;
+  /** Uniform visual scale for formation-style performers. */
+  scale?: number;
+  /** Circular collision footprint around the performer, expressed in tiles. */
+  collisionRadiusTiles?: number;
 }
 
 export interface FurnitureDefinition {
   id: string;
-  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant" | "scaffolding" | "sign";
+  role: MuseumFurnitureRole;
   tileX: number;
   tileY: number;
   rotationY: number;
@@ -178,7 +214,11 @@ export function createEmptyGrid(width: number, height: number): MuseumGrid {
     tileScale: 0.5,
     tiles: new Map(),
     wings: [],
-    spawn: { x: Math.floor(width / 2), y: Math.floor(height / 2), facing: "north" },
+    spawn: {
+      x: Math.floor(width / 2),
+      y: Math.floor(height / 2),
+      facing: "north",
+    },
     exhibits: [],
     performers: [],
     triggers: [],

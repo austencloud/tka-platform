@@ -6,6 +6,7 @@
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
   import { tileKey } from "../../domain/museum-grid-types";
   import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
+  import type { RoomEdge } from "../../domain/layout-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { SOLID_TYPES } from "../../services/museum-physics-provider";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
@@ -20,6 +21,8 @@
 
   interface Props {
     grid: MuseumGrid;
+    /** Room graph edges consumed by the 3D corridor streamer. */
+    edges?: RoomEdge[];
     /** Called with 0-1 progress as assets load */
     onLoadProgress?: (progress: number) => void;
     /** Called when all assets AND geometry are ready - scene is fully interactive */
@@ -28,6 +31,10 @@
     onBuildStage?: (stage: string) => void;
     /** Start directly in FPS/3rd-person mode (skip top-down flip) */
     startInFps?: boolean;
+    initialCameraMode?: "first-person" | "third-person";
+    cameraModePersistenceKey?: string;
+    /** Session-storage key for preserving camera state across HMR. */
+    persistenceKey?: string;
     /** Fired when the player enters a new wing (or leaves all wings). */
     onWingChange?: (wingId: string | null) => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause the scene */
@@ -50,11 +57,22 @@
      * museum, where it is a no-op and behavior is identical.
      */
     onExhibitFocus?: (refId: string | null) => void;
+    /** Optional route-level back action. Defaults to the existing app navigation. */
+    onBack?: () => void;
+    backAriaLabel?: string;
   }
 
   const props: Props = $props();
   // Destructure non-reactive props; grid is accessed via props.grid in $derived/$effect for reactivity
   const startInFps = props.startInFps ?? false;
+
+  function handleBack(): void {
+    if (props.onBack) {
+      props.onBack();
+      return;
+    }
+    handleModuleChange("create" as ModuleId);
+  }
 
   // useProgress hooks into Three.js DefaultLoadingManager globally.
   // Every texture and GLTF model automatically reports here.
@@ -127,7 +145,7 @@
   });
 
   const TILE_SIZE = 0.5;
-  const HMR_KEY = "museum-hmr-state";
+  const HMR_KEY = props.persistenceKey ?? "museum-hmr-state";
 
   // ── HMR state restore ──
   // sessionStorage survives Vite HMR remounts but clears on tab close - perfect for this.
@@ -531,6 +549,7 @@
     <Canvas>
       <Museum3DScene
         grid={props.grid}
+        edges={props.edges}
         visible={props.visible}
         userSequenceData={props.userSequenceData}
         plaquePictographs={props.plaquePictographs}
@@ -544,6 +563,8 @@
         onBuildStage={props.onBuildStage}
         onGeometryReady={handleGeometryReady}
         initialFpsActive={viewMode !== "top-down"}
+        initialCameraMode={props.initialCameraMode}
+        cameraModePersistenceKey={props.cameraModePersistenceKey}
         initialPlayerPos={savedHmrState ? { x: savedHmrState.playerWorldX, z: savedHmrState.playerWorldZ } : undefined}
         initialPlayerYaw={savedHmrState?.playerYaw}
       />
@@ -557,7 +578,11 @@
 
   <!-- Back button (top-left, non-editor mode) -->
   {#if !museum3dEditorState.editorActive && !showPanel}
-    <button class="museum-back-btn" onclick={() => handleModuleChange('create' as ModuleId)} aria-label="Back to app">
+    <button
+      class="museum-back-btn"
+      onclick={handleBack}
+      aria-label={props.backAriaLabel ?? "Back to app"}
+    >
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
     </button>
   {/if}
@@ -653,6 +678,8 @@
 
 <style>
   .museum-container {
+    --museum-hud-edge: clamp(1rem, 0.5rem + 0.5vw, 2.25rem);
+    --museum-hud-button: clamp(2.5rem, 1.5rem + 1vw, 4rem);
     width: 100%;
     height: 100%;
     position: relative;
@@ -667,16 +694,16 @@
   /* Back button - top-left circle, takes you out of the museum */
   .museum-back-btn {
     position: absolute;
-    top: 16px;
-    left: 16px;
-    width: 40px;
-    height: 40px;
+    top: calc(var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px));
+    left: var(--museum-hud-edge);
+    width: var(--museum-hud-button);
+    height: var(--museum-hud-button);
     border-radius: 50%;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
     color: rgba(255, 255, 255, 0.7);
-    font-size: 16px;
+    font-size: clamp(1rem, 0.7rem + 0.3vw, 1.5rem);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -693,18 +720,20 @@
   /* Wing label */
   .wing-label {
     position: absolute;
-    top: 16px;
-    left: 66px;
+    top: calc(var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px));
+    left: calc(var(--museum-hud-edge) + var(--museum-hud-button) + 0.625rem);
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 14px;
+    min-height: var(--museum-hud-button);
+    padding: clamp(0.5rem, 0.35rem + 0.15vw, 0.8rem)
+      clamp(0.875rem, 0.55rem + 0.3vw, 1.4rem);
     background: rgba(18, 18, 28, 0.85);
     border: 1px solid var(--museum-gold-15);
     border-radius: 8px;
     color: var(--museum-gold-80);
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 14px;
+    font-size: clamp(0.875rem, 0.625rem + 0.25vw, 1.375rem);
     pointer-events: none;
     z-index: 10;
     animation: fade-in 0.3s ease;
@@ -718,18 +747,19 @@
   /* Interaction prompt */
   .interaction-prompt {
     position: absolute;
-    bottom: 60px;
+    bottom: clamp(3.75rem, 2.5rem + 1vw, 6.5rem);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: clamp(0.5rem, 0.35rem + 0.15vw, 0.8rem)
+      clamp(1rem, 0.65rem + 0.3vw, 1.5rem);
     background: rgba(18, 18, 28, 0.9);
     border: 1.5px solid var(--museum-gold-25);
     border-radius: 8px;
     color: var(--museum-gold-80);
-    font-size: 14px;
+    font-size: clamp(0.875rem, 0.625rem + 0.25vw, 1.375rem);
     pointer-events: none;
     z-index: 10;
     animation: fade-in 0.2s ease;
@@ -754,14 +784,14 @@
   /* Controls hint */
   .controls-hint {
     position: absolute;
-    bottom: 16px;
-    right: 16px;
+    bottom: var(--museum-hud-edge);
+    right: var(--museum-hud-edge);
     z-index: 10;
     pointer-events: none;
   }
 
   .hint-text {
-    font-size: 12px;
+    font-size: clamp(0.75rem, 0.55rem + 0.2vw, 1.125rem);
     color: rgba(255, 255, 255, 0.2);
   }
 
@@ -868,5 +898,24 @@
     background: rgba(140, 200, 140, 0.14);
     border-color: rgba(140, 200, 140, 0.35);
     color: rgba(140, 200, 140, 0.9);
+  }
+
+  @media (max-width: 40rem) {
+    .wing-label {
+      max-width: calc(100vw - var(--museum-hud-edge) * 3 - var(--museum-hud-button));
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .controls-hint {
+      right: 0.75rem;
+      left: 0.75rem;
+      text-align: center;
+    }
+
+    .hint-text {
+      font-size: 0.68rem;
+    }
   }
 </style>

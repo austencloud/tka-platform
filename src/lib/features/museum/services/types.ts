@@ -3,7 +3,11 @@
  */
 
 import type { RoomNode, RoomEdge, ValidationResult } from "../domain/layout-types";
-import type { MuseumGrid, ExhibitDefinition } from "../domain/museum-grid-types";
+import type {
+  MuseumGrid,
+  ExhibitDefinition,
+  MuseumFurnitureRole,
+} from "../domain/museum-grid-types";
 import type { RoomDefinition } from "$lib/shared/3d/indoor/domain/room-types";
 
 // === From IMuseumDesignValidator ===
@@ -34,12 +38,7 @@ export interface MuseumModelDefinition {
   yOffset: number;
 }
 
-export type MuseumModelRole =
-  | "bench"
-  | "pedestal"
-  | "bookshelf"
-  | "lamp"
-  | "plant";
+export type MuseumModelRole = MuseumFurnitureRole;
 
 
 // === From IMuseumRoomSerializer ===

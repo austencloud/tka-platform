@@ -14,6 +14,7 @@
 
 import type { PhysicsProvider, Vector3 } from "$lib/shared/3d/camera/types";
 import type { MuseumGrid } from "../domain/museum-grid-types";
+import { getFurnitureObjectByRole } from "../domain/placeable-object-registry";
 
 export const SOLID_TYPES = new Set([
 	"wall",
@@ -34,9 +35,25 @@ const COLLISION_RADIUS = 0.15;
 // so that 0.85 + 0.75 = 1.6m. This matches the Rapier capsule center convention.
 const STANDING_Y = 0.85;
 
+interface FurnitureCollider {
+	x: number;
+	z: number;
+	rotationY: number;
+	halfWidth: number;
+	halfDepth: number;
+}
+
+interface PerformerCollider {
+	x: number;
+	z: number;
+	radius: number;
+}
+
 export class MuseumPhysicsProvider implements PhysicsProvider {
 	private position: Vector3;
 	private velocity: Vector3 = { x: 0, y: 0, z: 0 };
+	private furnitureColliders: FurnitureCollider[];
+	private performerColliders: PerformerCollider[];
 
 	/** When true, movePlayer ignores XZ - animation drives XZ via applyRootMotion instead. */
 	rootMotionEnabled = false;
@@ -47,6 +64,51 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 		spawnPosition: Vector3
 	) {
 		this.position = { x: spawnPosition.x, y: STANDING_Y, z: spawnPosition.z };
+		this.furnitureColliders = grid.furniture.flatMap((placement) => {
+			const footprint = getFurnitureObjectByRole(placement.role)?.collisionHalfExtents;
+			if (!footprint) return [];
+			return [{
+				x: placement.tileX * tileSize,
+				z: placement.tileY * tileSize,
+				rotationY: placement.rotationY,
+				halfWidth: footprint[0],
+				halfDepth: footprint[1],
+			}];
+		});
+		this.performerColliders = grid.performers.flatMap((performer) => {
+			if (!performer.collisionRadiusTiles) return [];
+			return [{
+				x: performer.tileX * tileSize,
+				z: performer.tileY * tileSize,
+				radius: performer.collisionRadiusTiles * tileSize,
+			}];
+		});
+	}
+
+	private collidesWithAuthoredObject(worldX: number, worldZ: number): boolean {
+		for (const collider of this.furnitureColliders) {
+			const dx = worldX - collider.x;
+			const dz = worldZ - collider.z;
+			const cos = Math.cos(collider.rotationY);
+			const sin = Math.sin(collider.rotationY);
+			const localX = cos * dx - sin * dz;
+			const localZ = sin * dx + cos * dz;
+			if (
+				Math.abs(localX) <= collider.halfWidth + COLLISION_RADIUS &&
+				Math.abs(localZ) <= collider.halfDepth + COLLISION_RADIUS
+			) {
+				return true;
+			}
+		}
+
+		for (const collider of this.performerColliders) {
+			const dx = worldX - collider.x;
+			const dz = worldZ - collider.z;
+			const radius = collider.radius + COLLISION_RADIUS;
+			if (dx * dx + dz * dz <= radius * radius) return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -54,6 +116,8 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	 * Tests a small collision disc around the position to prevent corner clipping.
 	 */
 	private isWalkableAt(worldX: number, worldZ: number): boolean {
+		if (this.collidesWithAuthoredObject(worldX, worldZ)) return false;
+
 		const offsets = [
 			{ x: COLLISION_RADIUS, z: 0 },
 			{ x: -COLLISION_RADIUS, z: 0 },

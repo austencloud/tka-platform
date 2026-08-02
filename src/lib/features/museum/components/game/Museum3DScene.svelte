@@ -2,19 +2,19 @@
   import { untrack } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { PCFSoftShadowMap } from "three";
-  import {
-    Vector3,
-    Raycaster,
-    Matrix3,
-  } from "three";
+  import { Vector3, Raycaster, Matrix3 } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import type { RoomEdge } from "../../domain/layout-types";
   import { tileKey } from "../../domain/museum-grid-types";
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import type { AvatarState } from "@austencloud/camera-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/museum-physics-provider";
+  import {
+    createMuseumPhysicsProvider,
+    MuseumPhysicsProvider,
+  } from "../../services/museum-physics-provider";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
@@ -25,19 +25,35 @@
   import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";
   import { preloadVillageAvatarModels } from "../../services/museum-village-manager";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
+  import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
+  import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
 
   // Start preloading village avatar models immediately - they'll be cached
   // by the time the player reaches the Room of Collaboration
   preloadVillageAvatarModels();
-  import { createTorchInstance, type TorchMaterials } from "../../services/torch-material-cache";
+  import {
+    createTorchInstance,
+    type TorchMaterials,
+  } from "../../services/torch-material-cache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
-  import PlacementGhost from '../editor/PlacementGhost.svelte';
-  import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
-  import { createPortalConfig, PortalProximityChecker } from "../../services/museum-portals";
+  import PlacementGhost from "../editor/PlacementGhost.svelte";
+  import {
+    preloadAllFixtureModels,
+    addTorchToScene,
+    removeTorchFromScene,
+  } from "./MuseumTorch3D.svelte";
+  import {
+    createPortalConfig,
+    PortalProximityChecker,
+  } from "../../services/museum-portals";
   import { MuseumEditorPlacement } from "../../services/museum-editor-placement";
-  import { createEmptyPool, recomputeNearbyRoomLights as recomputeNearbyLightsFromPool, type RoomLightSlot } from "../../services/museum-room-light-pool";
+  import {
+    createEmptyPool,
+    recomputeNearbyRoomLights as recomputeNearbyLightsFromPool,
+    type RoomLightSlot,
+  } from "../../services/museum-room-light-pool";
   import { MuseumAtmosphere } from "../../services/museum-atmosphere";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
@@ -57,7 +73,10 @@
   import { MuseumCameraFlipController } from "../../services/museum-camera-flip-controller";
   import type { CameraFlipState } from "../../services/museum-camera-flip-controller";
   import { MuseumGeometryStreamer } from "../../services/museum-geometry-streamer";
-  import { MuseumProximityRenderer, PROXIMITY_MAX_MOUNTS_PER_FRAME } from "../../services/museum-proximity-renderer";
+  import {
+    MuseumProximityRenderer,
+    PROXIMITY_MAX_MOUNTS_PER_FRAME,
+  } from "../../services/museum-proximity-renderer";
   import { MuseumPlayerController } from "../../services/museum-player-controller";
   import { resolveScene, resolveRenderer } from "../resolve-threlte-scene";
 
@@ -82,20 +101,37 @@
 
   // Facing direction string → yaw angle for performer stations
   const FACING_TO_YAW: Record<string, number> = {
-    north: Math.PI, south: 0, east: Math.PI / 2, west: -Math.PI / 2,
+    north: Math.PI,
+    south: 0,
+    east: Math.PI / 2,
+    west: -Math.PI / 2,
   };
 
   interface Props {
     grid: MuseumGrid;
+    /** Room graph edges used by the geometry streamer for authored corridors. */
+    edges?: RoomEdge[];
     flipRequested: number;
     /** Keys currently held by the player (from parent's keyboard handler) */
     heldKeys?: Set<string>;
     /** Top-down camera height above the player (controlled by parent for zoom) */
     topDownHeight?: number;
     /** Callback: fires every frame with the player's current world position + facing */
-    onPlayerUpdate?: (worldX: number, worldZ: number, tileX: number, tileY: number, facing: string, inFPS: boolean, yaw: number) => void;
+    onPlayerUpdate?: (
+      worldX: number,
+      worldZ: number,
+      tileX: number,
+      tileY: number,
+      facing: string,
+      inFPS: boolean,
+      yaw: number
+    ) => void;
     /** If true on mount, skip top-down init and go straight to FPS (used for HMR restore) */
     initialFpsActive?: boolean;
+    /** Preferred game-camera mode when no route-specific preference has been saved. */
+    initialCameraMode?: "first-person" | "third-person";
+    /** Session-storage key used to isolate camera preferences between experiences. */
+    cameraModePersistenceKey?: string;
     /** Override spawn position (used for HMR restore) */
     initialPlayerPos?: { x: number; z: number };
     /** Override initial yaw (used for HMR restore) */
@@ -148,7 +184,28 @@
   // ── Tile scale: each tile = 0.5m in world space ──
   const TILE_SIZE = 0.5;
 
-
+  // Tile geometry owns walkability and collision. These room-authored GLBs add
+  // trim, fixtures, and environmental detail without changing the floor plan.
+  const authoredRooms = grid.wings.flatMap((wing) => {
+    if (!wing.roomPresentation) return [];
+    const centerX = (wing.bounds.x + (wing.bounds.width - 1) / 2) * TILE_SIZE;
+    const centerZ = (wing.bounds.y + (wing.bounds.height - 1) / 2) * TILE_SIZE;
+    return [
+      {
+        id: wing.id,
+        presentation: wing.roomPresentation,
+        position: [centerX, 0, centerZ] as [number, number, number],
+        atmospherePosition: [centerX, 2.1, centerZ] as [number, number, number],
+        atmosphereArea: {
+          width: Math.max(TILE_SIZE, (wing.bounds.width - 2) * TILE_SIZE),
+          height: 4,
+          depth: Math.max(TILE_SIZE, (wing.bounds.height - 2) * TILE_SIZE),
+        },
+      },
+    ];
+  });
+  const lobbyPresentation = authoredRooms.find(({ id }) => id === "lobby");
+  const hasLobbyPresentation = lobbyPresentation !== undefined;
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -210,7 +267,7 @@
       }
     }
 
-    for (const furn of (grid.furniture ?? [])) {
+    for (const furn of grid.furniture ?? []) {
       const override = allOverrides[`furniture-${furn.id}`];
       if (override) {
         furn.tileX = Math.round(override.x / TILE_SIZE);
@@ -236,10 +293,15 @@
     return resolveScene(threlteCtx);
   }
 
-  const editorPlacement = new MuseumEditorPlacement(grid, TILE_SIZE, getSceneObj, {
-    add: addTorchToScene,
-    remove: removeTorchFromScene,
-  });
+  const editorPlacement = new MuseumEditorPlacement(
+    grid,
+    TILE_SIZE,
+    getSceneObj,
+    {
+      add: addTorchToScene,
+      remove: removeTorchFromScene,
+    }
+  );
 
   // Apply any persisted overrides on mount (from previous editor sessions).
   // Must use untrack: applyEditorOverrides reads+writes grid.performers/exhibits
@@ -278,7 +340,7 @@
   function bridgeRaycast(
     origin?: { x: number; y: number; z: number },
     direction?: { x: number; y: number; z: number },
-    maxDistance = 100,
+    maxDistance = 100
   ): import("$lib/shared/3d/debug/game-bridge-types").RaycastResult {
     const scene = resolveScene(threlteCtx);
     if (!scene) return { hit: false };
@@ -312,7 +374,10 @@
     let normal: { x: number; y: number; z: number } | undefined;
     if (first.face) {
       _rayNormalMat.getNormalMatrix(first.object.matrixWorld);
-      _rayNormal.copy(first.face.normal).applyMatrix3(_rayNormalMat).normalize();
+      _rayNormal
+        .copy(first.face.normal)
+        .applyMatrix3(_rayNormalMat)
+        .normalize();
       normal = { x: _rayNormal.x, y: _rayNormal.y, z: _rayNormal.z };
     }
     return {
@@ -329,6 +394,7 @@
   const maxExtent = Math.max(grid.width, grid.height) * TILE_SIZE;
   const spawnWorldX = initialPlayerPos?.x ?? grid.spawn.x * TILE_SIZE;
   const spawnWorldZ = initialPlayerPos?.z ?? grid.spawn.y * TILE_SIZE;
+  const spawnYaw = initialPlayerYaw ?? FACING_TO_YAW[grid.spawn.facing] ?? 0;
 
   // ── Portal system ──
   const portalConfig = createPortalConfig(grid, TILE_SIZE);
@@ -338,7 +404,7 @@
   const cameraFlip = new MuseumCameraFlipController(
     spawnWorldX,
     spawnWorldZ,
-    props.topDownHeight ?? 12,
+    props.topDownHeight ?? 12
   );
 
   // ── Flip animation state ──
@@ -356,20 +422,26 @@
   let fpsActive = $state(initialFpsActive);
 
   // Track the user's preferred 3D camera mode so flipping back to 3D restores it.
-  const CAMERA_MODE_HMR_KEY = "museum-last-camera-mode";
+  const CAMERA_MODE_HMR_KEY =
+    props.cameraModePersistenceKey ?? "museum-last-camera-mode";
   function loadLastCameraMode(): CameraMode {
     try {
       const raw = sessionStorage.getItem(CAMERA_MODE_HMR_KEY);
       if (raw === "THIRD_PERSON") return CameraMode.THIRD_PERSON;
-    } catch { /* sessionStorage unavailable */ }
-    return CameraMode.FIRST_PERSON;
+      if (raw === "FIRST_PERSON") return CameraMode.FIRST_PERSON;
+    } catch {
+      /* sessionStorage unavailable */
+    }
+    return props.initialCameraMode === "third-person"
+      ? CameraMode.THIRD_PERSON
+      : CameraMode.FIRST_PERSON;
   }
   let lastCameraMode: CameraMode = $state(loadLastCameraMode());
 
   // Avatar state for UnifiedCameraController (follows the established pattern)
   // Yaw and pitch persist across flip cycles so the player's view direction is restored.
-  let playerYaw = $state(initialPlayerYaw ?? 0);
-  let targetPlayerYaw = $state(initialPlayerYaw ?? 0);
+  let playerYaw = $state(spawnYaw);
+  let targetPlayerYaw = $state(spawnYaw);
   let playerPitch = $state(0);
 
   // External rotation override for the game bridge (AI debug). When set to a
@@ -381,7 +453,7 @@
   // Snapshot of yaw/pitch at the moment we enter FPS mode.
   // Passed as initialYaw/initialPitch to UCC - these must NOT update while UCC is mounted,
   // or UCC's $effect.pre will reset yaw/pitch every frame, creating a feedback loop.
-  let fpsInitialYaw = $state(initialPlayerYaw ?? 0);
+  let fpsInitialYaw = $state(spawnYaw);
   let fpsInitialPitch = $state(0);
   let isMoving = $state(false);
   let isCrouching = $state(false);
@@ -400,7 +472,9 @@
       if (e.code === "Space" && fpsActive && playerGrounded) {
         playerJumpRequested = true;
         // Clear after one full animation frame so Avatar3D's update loop reads it
-        requestAnimationFrame(() => { playerJumpRequested = false; });
+        requestAnimationFrame(() => {
+          playerJumpRequested = false;
+        });
       }
     }
     window.addEventListener("keydown", onJumpKey);
@@ -409,12 +483,24 @@
   const ROTATION_SPEED = 12;
 
   const avatarState: AvatarState = {
-    get position() { return playerPosition; },
-    get facingAngle() { return playerYaw; },
-    get isMoving() { return isMoving; },
-    get isCrouching() { return isCrouching; },
-    set isCrouching(v: boolean) { isCrouching = v; },
-    get moveDirection() { return moveDir; },
+    get position() {
+      return playerPosition;
+    },
+    get facingAngle() {
+      return playerYaw;
+    },
+    get isMoving() {
+      return isMoving;
+    },
+    get isCrouching() {
+      return isCrouching;
+    },
+    set isCrouching(v: boolean) {
+      isCrouching = v;
+    },
+    get moveDirection() {
+      return moveDir;
+    },
     setMoveInput(input: { x: number; z: number }) {
       moveDir = input;
       isMoving = input.x !== 0 || input.z !== 0;
@@ -422,7 +508,9 @@
     updateMovement(_delta: number, _cameraAngle: number) {
       // Handled by physics provider
     },
-    setFacingAngle(angle: number) { targetPlayerYaw = angle; },
+    setFacingAngle(angle: number) {
+      targetPlayerYaw = angle;
+    },
     snapFacingAngle(angle: number) {
       playerYaw = angle;
       targetPlayerYaw = angle;
@@ -441,14 +529,19 @@
   };
 
   // Physics provider for grid-based wall collision
-  const physicsProvider = createMuseumPhysicsProvider(
-    grid,
-    TILE_SIZE,
-    { x: spawnWorldX, y: 0, z: spawnWorldZ }
-  ) as MuseumPhysicsProvider;
+  const physicsProvider = createMuseumPhysicsProvider(grid, TILE_SIZE, {
+    x: spawnWorldX,
+    y: 0,
+    z: spawnWorldZ,
+  }) as MuseumPhysicsProvider;
 
   // Player controller - handles movement, portals, void recovery
-  const playerCtrl = new MuseumPlayerController(grid, TILE_SIZE, physicsProvider, portalChecker);
+  const playerCtrl = new MuseumPlayerController(
+    grid,
+    TILE_SIZE,
+    physicsProvider,
+    portalChecker
+  );
 
   // Root motion disabled - code-driven movement for responsive controls.
   // The root motion infrastructure is preserved for future A/B testing.
@@ -458,7 +551,12 @@
   // untrack prevents reactive tracking — this is a one-shot init, not a live binding.
   $effect(() => {
     untrack(() => {
-      cameraFlip.syncFpsFromPlayer(physicsProvider.getPlayerPosition(), playerYaw, playerPitch, camera);
+      cameraFlip.syncFpsFromPlayer(
+        physicsProvider.getPlayerPosition(),
+        playerYaw,
+        playerPitch,
+        camera
+      );
     });
   });
 
@@ -467,7 +565,12 @@
   function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
     for (const wing of grid.wings) {
       const b = wing.bounds;
-      if (tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height) {
+      if (
+        tileX >= b.x &&
+        tileX < b.x + b.width &&
+        tileY >= b.y &&
+        tileY < b.y + b.height
+      ) {
         return wing.theme;
       }
     }
@@ -481,7 +584,11 @@
     const theme = getWingThemeAt(tileX, tileZ);
     const wingChanged = atmosphere.update(theme, fpsActive, delta);
     if (wingChanged) {
-      roomLightPool = recomputeNearbyLightsFromPool(tileX * TILE_SIZE, tileZ * TILE_SIZE, roomLights);
+      roomLightPool = recomputeNearbyLightsFromPool(
+        tileX * TILE_SIZE,
+        tileZ * TILE_SIZE,
+        roomLights
+      );
     }
   }
 
@@ -530,12 +637,24 @@
       const batch = pendingMounts.splice(0, PROXIMITY_MAX_MOUNTS_PER_FRAME);
       for (const mount of batch) {
         switch (mount.category) {
-          case "plaque": visiblePlaques = [...visiblePlaques, mount.item]; break;
-          case "performer": visiblePerformers = [...visiblePerformers, mount.item]; break;
-          case "exhibitLight": visibleExhibitLights = [...visibleExhibitLights, mount.item]; break;
-          case "ceilingLight": visibleCeilingLights = [...visibleCeilingLights, mount.item]; break;
-          case "sunlight": visibleSunlights = [...visibleSunlights, mount.item]; break;
-          case "furniture": visibleFurniture = [...visibleFurniture, mount.item]; break;
+          case "plaque":
+            visiblePlaques = [...visiblePlaques, mount.item];
+            break;
+          case "performer":
+            visiblePerformers = [...visiblePerformers, mount.item];
+            break;
+          case "exhibitLight":
+            visibleExhibitLights = [...visibleExhibitLights, mount.item];
+            break;
+          case "ceilingLight":
+            visibleCeilingLights = [...visibleCeilingLights, mount.item];
+            break;
+          case "sunlight":
+            visibleSunlights = [...visibleSunlights, mount.item];
+            break;
+          case "furniture":
+            visibleFurniture = [...visibleFurniture, mount.item];
+            break;
         }
       }
     }
@@ -552,7 +671,12 @@
       flipState.initialized = true;
       if (initialFpsActive) {
         cameraPreferences.setModeForDestination("museum", lastCameraMode);
-        cameraFlip.syncFpsFromPlayer(physicsProvider.getPlayerPosition(), playerYaw, playerPitch, camera);
+        cameraFlip.syncFpsFromPlayer(
+          physicsProvider.getPlayerPosition(),
+          playerYaw,
+          playerPitch,
+          camera
+        );
       }
       cameraFlip.initializeCamera(camera, initialFpsActive);
       onReady?.();
@@ -584,7 +708,15 @@
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
       geometryStreamer.updateStreaming(fpsTileX, fpsTileZ, fpsActive);
       currentPlayerRoomId = geometryStreamer.currentPlayerRoomId;
-      props.onPlayerUpdate?.(fpsResult.position.x, fpsResult.position.z, fpsTileX, fpsTileZ, playerCtrl.yawToFacing(playerYaw), true, playerYaw);
+      props.onPlayerUpdate?.(
+        fpsResult.position.x,
+        fpsResult.position.z,
+        fpsTileX,
+        fpsTileZ,
+        playerCtrl.yawToFacing(playerYaw),
+        true,
+        playerYaw
+      );
       return;
     }
 
@@ -595,14 +727,18 @@
       physicsProvider.getPlayerPosition(),
       playerYaw,
       playerPitch,
-      camera,
+      camera
     );
     animating = flipState.animating;
 
     // ── Top-down WASD movement (when not animating) ──
     if (!animating) {
       const keys = props.heldKeys ?? new Set<string>();
-      const moveResult = playerCtrl.updateTopDownMovement(keys, delta, playerYaw);
+      const moveResult = playerCtrl.updateTopDownMovement(
+        keys,
+        delta,
+        playerYaw
+      );
       playerSpeed = moveResult.speed;
       playerYaw = moveResult.playerYaw;
 
@@ -620,7 +756,11 @@
       playerPosition.z = moveResult.position.z;
 
       // Smooth camera follow + zoom
-      cameraFlip.updateTopDownFollow(camera, moveResult.position, props.topDownHeight ?? 12);
+      cameraFlip.updateTopDownFollow(
+        camera,
+        moveResult.position,
+        props.topDownHeight ?? 12
+      );
 
       // Report to parent
       const tileX = Math.round(moveResult.position.x / TILE_SIZE);
@@ -628,18 +768,35 @@
       updateAtmosphere(tileX, tileZ, delta);
       geometryStreamer.updateStreaming(tileX, tileZ, fpsActive);
       currentPlayerRoomId = geometryStreamer.currentPlayerRoomId;
-      props.onPlayerUpdate?.(moveResult.position.x, moveResult.position.z, tileX, tileZ, playerCtrl.yawToFacing(playerYaw), false, playerYaw);
+      props.onPlayerUpdate?.(
+        moveResult.position.x,
+        moveResult.position.z,
+        tileX,
+        tileZ,
+        playerCtrl.yawToFacing(playerYaw),
+        false,
+        playerYaw
+      );
       return;
     }
 
     // ── Flip animation ──
-    const result = cameraFlip.updateFlipAnimation(camera, delta, flipState, playerYaw, playerPitch);
+    const result = cameraFlip.updateFlipAnimation(
+      camera,
+      delta,
+      flipState,
+      playerYaw,
+      playerPitch
+    );
     flipState = result;
     animating = result.animating;
 
     if (result.justEnteredFps) {
       lastCameraMode = CameraMode.FIRST_PERSON;
-      cameraPreferences.setModeForDestination("museum", CameraMode.FIRST_PERSON);
+      cameraPreferences.setModeForDestination(
+        "museum",
+        CameraMode.FIRST_PERSON
+      );
       fpsInitialYaw = result.fpsInitialYaw!;
       fpsInitialPitch = result.fpsInitialPitch!;
       fpsActive = true;
@@ -686,10 +843,15 @@
         // Switch to third-person via camera preferences - UCC reacts automatically
         // via its $effect.pre that syncs mode from cameraPreferences
         lastCameraMode = CameraMode.THIRD_PERSON;
-        cameraPreferences.setModeForDestination("museum", CameraMode.THIRD_PERSON);
+        cameraPreferences.setModeForDestination(
+          "museum",
+          CameraMode.THIRD_PERSON
+        );
         try {
           sessionStorage.setItem(CAMERA_MODE_HMR_KEY, "THIRD_PERSON");
-        } catch { /* non-critical */ }
+        } catch {
+          /* non-critical */
+        }
         props.onViewModeChange?.("third-person");
       }
     }
@@ -702,11 +864,10 @@
     if (reset !== lastResetCount) {
       lastResetCount = reset;
       playerCtrl.resetToSpawn();
-      // Face north - looking down the hallway toward the cave
-      playerYaw = Math.PI;
-      targetPlayerYaw = Math.PI;
+      playerYaw = spawnYaw;
+      targetPlayerYaw = spawnYaw;
       if (fpsActive) {
-        fpsInitialYaw = Math.PI;
+        fpsInitialYaw = spawnYaw;
         fpsInitialPitch = 0;
         fpsActive = false;
         requestAnimationFrame(() => {
@@ -725,73 +886,105 @@
     if (typeof window === "undefined" || !import.meta.env.DEV) return;
     if (gameBridgeInitialized) return;
 
-    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge, isGameBridgeEnabled, shouldConnectGameBridge }) => {
-      // Opt-in only — see isGameBridgeEnabled. Skip silently otherwise.
-      if (!isGameBridgeEnabled()) return;
-      gameBridgeInitialized = true;
+    import("$lib/shared/3d/debug/game-bridge").then(
+      async ({
+        initGameBridge,
+        isGameBridgeEnabled,
+        shouldConnectGameBridge,
+      }) => {
+        // Opt-in only — see isGameBridgeEnabled. Skip silently otherwise.
+        if (!isGameBridgeEnabled()) return;
+        gameBridgeInitialized = true;
 
-      const bridge = initGameBridge({
-        physics: {
-          getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
-          getPlayerVelocity: () => physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
-          isGrounded: () => physicsProvider?.isGrounded() ?? false,
-          movePlayer: (movement, deltaTime) => physicsProvider?.movePlayer(movement, deltaTime),
-          teleportPlayer: (position) => physicsProvider?.teleport?.(position),
-          raycast: (origin, direction, maxDistance) =>
-            bridgeRaycast(origin, direction, maxDistance),
-        },
-        camera: {
-          getMode: () => fpsActive
-            ? (lastCameraMode === CameraMode.THIRD_PERSON ? "third_person" : "first_person")
-            : "orbit",
-          setMode: (mode: string) => {
-            if (mode === "first_person") {
-              lastCameraMode = CameraMode.FIRST_PERSON;
-              if (!fpsActive) { fpsActive = true; }
-            } else if (mode === "third_person") {
-              lastCameraMode = CameraMode.THIRD_PERSON;
-              if (!fpsActive) { fpsActive = true; }
-            } else if (mode === "orbit" && fpsActive) {
-              fpsActive = false;
-            }
+        const bridge = initGameBridge(
+          {
+            physics: {
+              getPlayerPosition: () =>
+                physicsProvider?.getPlayerPosition() ?? null,
+              getPlayerVelocity: () =>
+                physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
+              isGrounded: () => physicsProvider?.isGrounded() ?? false,
+              movePlayer: (movement, deltaTime) =>
+                physicsProvider?.movePlayer(movement, deltaTime),
+              teleportPlayer: (position) =>
+                physicsProvider?.teleport?.(position),
+              raycast: (origin, direction, maxDistance) =>
+                bridgeRaycast(origin, direction, maxDistance),
+            },
+            camera: {
+              getMode: () =>
+                fpsActive
+                  ? lastCameraMode === CameraMode.THIRD_PERSON
+                    ? "third_person"
+                    : "first_person"
+                  : "orbit",
+              setMode: (mode: string) => {
+                if (mode === "first_person") {
+                  lastCameraMode = CameraMode.FIRST_PERSON;
+                  if (!fpsActive) {
+                    fpsActive = true;
+                  }
+                } else if (mode === "third_person") {
+                  lastCameraMode = CameraMode.THIRD_PERSON;
+                  if (!fpsActive) {
+                    fpsActive = true;
+                  }
+                } else if (mode === "orbit" && fpsActive) {
+                  fpsActive = false;
+                }
+              },
+              getYaw: () => playerYaw,
+              getPitch: () => playerPitch,
+              setYaw: (yaw: number) => {
+                playerYaw = yaw;
+                externalYaw = yaw;
+              },
+              // Pitch is owned by UCC in FPS mode; push through the external
+              // override so look-up/down works from the bridge.
+              setPitch: (pitch: number) => {
+                playerPitch = pitch;
+                externalPitch = pitch;
+              },
+            },
+            playback: {
+              getPerformerManager: () => null,
+              getSpeed: () => 1,
+              setSpeed: () => {},
+            },
           },
-          getYaw: () => playerYaw,
-          getPitch: () => playerPitch,
-          setYaw: (yaw: number) => { playerYaw = yaw; externalYaw = yaw; },
-          // Pitch is owned by UCC in FPS mode; push through the external
-          // override so look-up/down works from the bridge.
-          setPitch: (pitch: number) => { playerPitch = pitch; externalPitch = pitch; },
-        },
-        playback: {
-          getPerformerManager: () => null,
-          getSpeed: () => 1,
-          setSpeed: () => {},
-        },
-      }, { debug: true });
+          { debug: true }
+        );
 
-      // Only open the WebSocket when the MCP controller is actually running —
-      // otherwise an absent server spams reconnects. Direct driving via
-      // window.__gameBridge needs no socket.
-      if (shouldConnectGameBridge()) {
-        try {
-          await bridge.connect();
-        } catch {
-          // MCP Game Bridge not available
+        // Only open the WebSocket when the MCP controller is actually running —
+        // otherwise an absent server spams reconnects. Direct driving via
+        // window.__gameBridge needs no socket.
+        if (shouldConnectGameBridge()) {
+          try {
+            await bridge.connect();
+          } catch {
+            // MCP Game Bridge not available
+          }
         }
       }
-    });
+    );
 
     return () => {
-      import("$lib/shared/3d/debug/game-bridge").then(({ destroyGameBridge }) => {
-        destroyGameBridge();
-      });
+      import("$lib/shared/3d/debug/game-bridge").then(
+        ({ destroyGameBridge }) => {
+          destroyGameBridge();
+        }
+      );
     };
   });
 
   // ── Per-room geometry streaming (delegated to MuseumGeometryStreamer) ──
   let geometryReady = $state(false);
 
-  const geometryStreamer = new MuseumGeometryStreamer(grid, MUSEUM_EDGES, TILE_SIZE);
+  const geometryStreamer = new MuseumGeometryStreamer(
+    grid,
+    props.edges ?? MUSEUM_EDGES,
+    TILE_SIZE
+  );
 
   // Proximity renderer
   const proximityRenderer = new MuseumProximityRenderer(grid);
@@ -816,8 +1009,8 @@
   let useSpotLights = $state(false);
 
   // ── Imperative mesh management ──
-  const allSceneMeshes: BatchedMesh[] = [];        // for cleanup on destroy
-  const ceilingChunkRefs: BatchedMeshData[] = [];  // toggle per-instance visibility with fpsActive
+  const allSceneMeshes: BatchedMesh[] = []; // for cleanup on destroy
+  const ceilingChunkRefs: BatchedMeshData[] = []; // toggle per-instance visibility with fpsActive
 
   /** Add a room chunk's meshes to the Three.js scene */
   function addChunkToScene(chunk: RoomChunk): void {
@@ -841,7 +1034,7 @@
     }
     if (chunk.ceilingMesh) {
       const cm = chunk.ceilingMesh;
-      for (const id of (cm.instanceIds ?? [])) {
+      for (const id of cm.instanceIds ?? []) {
         cm.mesh.setVisibleAt(id, false);
       }
       sceneObj.add(cm.mesh);
@@ -886,7 +1079,10 @@
 
     // Mount fixtures for currently loaded rooms
     props.onBuildStage?.("Mounting fixtures");
-    const lobbyChunks = [geometryStreamer.corridorChunk, ...geometryStreamer.activeRoomChunks.values()].filter(Boolean) as RoomChunk[];
+    const lobbyChunks = [
+      geometryStreamer.corridorChunk,
+      ...geometryStreamer.activeRoomChunks.values(),
+    ].filter(Boolean) as RoomChunk[];
     const initTorches: TorchPosition[] = [];
     const initExhibitLights: LightPosition[] = [];
     const initCeilingLights: LightPosition[] = [];
@@ -901,11 +1097,14 @@
     visibleCeilingLights = initCeilingLights;
     visibleSunlights = initSunlights;
     visibleTorches = initTorches;
-    visiblePlaques = proximityRenderer.getAllPlaquePlacements(geometryStreamer.corridorChunk, geometryStreamer.activeRoomChunks);
+    visiblePlaques = proximityRenderer.getAllPlaquePlacements(
+      geometryStreamer.corridorChunk,
+      geometryStreamer.activeRoomChunks
+    );
     useSpotLights = visiblePlaques.length > 0 && visiblePlaques.length < 20;
     visiblePerformers = grid.performers;
     visibleFurniture = grid.furniture ?? [];
-    await new Promise<void>(r => setTimeout(r, 0));
+    await new Promise<void>((r) => setTimeout(r, 0));
 
     // Signal ready
     geometryReady = true;
@@ -917,10 +1116,14 @@
   // Collaboration room center - for positioning the live Village sim
   const collabWing = $derived(grid.wings.find((w) => w.id === "collaboration"));
   const collabCenterX = $derived(
-    collabWing ? (collabWing.bounds.x + collabWing.bounds.width / 2) * TILE_SIZE : 0,
+    collabWing
+      ? (collabWing.bounds.x + collabWing.bounds.width / 2) * TILE_SIZE
+      : 0
   );
   const collabCenterZ = $derived(
-    collabWing ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE : 0,
+    collabWing
+      ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE
+      : 0
   );
   // Track which room the player is in (updated by streamer each frame)
   let currentPlayerRoomId = $state<string | null>(null);
@@ -931,7 +1134,8 @@
     for (const { mesh } of chunk.floorMeshes) mesh.visible = visible;
     for (const { mesh } of chunk.wallMeshes) mesh.visible = visible;
     if (chunk.kitWalls) chunk.kitWalls.visible = visible;
-    if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = visible && fpsActive;
+    if (chunk.ceilingMesh)
+      chunk.ceilingMesh.mesh.visible = visible && fpsActive;
     if (chunk.pedestalMesh) chunk.pedestalMesh.visible = visible;
     if (chunk.signMesh) chunk.signMesh.visible = visible;
   }
@@ -969,17 +1173,24 @@
   type PendingMount =
     | { category: "plaque"; item: PlaquePlacement }
     | { category: "performer"; item: (typeof grid.performers)[number] }
-    | { category: "exhibitLight" | "ceilingLight" | "sunlight"; item: LightPosition }
-    | { category: "furniture"; item: NonNullable<typeof grid.furniture>[number] }
+    | {
+        category: "exhibitLight" | "ceilingLight" | "sunlight";
+        item: LightPosition;
+      }
+    | {
+        category: "furniture";
+        item: NonNullable<typeof grid.furniture>[number];
+      }
     | { category: "torch"; item: TorchPosition };
   let pendingMounts: PendingMount[] = [];
 
   // Torch light set - derived from visible torches, capped at MAX_POINT_LIGHTS
   const torchLightSet = $derived.by(() => {
-    const withLight = visibleTorches.length <= MAX_POINT_LIGHTS
-      ? visibleTorches
-      : visibleTorches.slice(0, MAX_POINT_LIGHTS);
-    return new Set(withLight.map(t => `${t.x},${t.z}`));
+    const withLight =
+      visibleTorches.length <= MAX_POINT_LIGHTS
+        ? visibleTorches
+        : visibleTorches.slice(0, MAX_POINT_LIGHTS);
+    return new Set(withLight.map((t) => `${t.x},${t.z}`));
   });
 
   // Room lights from all active chunks (updates as rooms load/unload)
@@ -1034,9 +1245,13 @@
           // attempt to set camera.position directly gets smoothed
           // over on the next update tick.
           controls.setLookAt(
-            saved.x, saved.y, saved.z,
-            saved.targetX, saved.targetY, saved.targetZ,
-            false,
+            saved.x,
+            saved.y,
+            saved.z,
+            saved.targetX,
+            saved.targetY,
+            saved.targetZ,
+            false
           );
         } else {
           // First time: orbit target is 5m ahead of the player's gaze.
@@ -1045,7 +1260,7 @@
             playerPosition.x + Math.sin(playerYaw) * lookAheadDist,
             1.2,
             playerPosition.z + Math.cos(playerYaw) * lookAheadDist,
-            false,
+            false
           );
         }
 
@@ -1087,19 +1302,27 @@
   id="museum-player"
   bluePropState={null}
   redPropState={null}
-  position={{ x: playerPosition.x, y: playerPosition.y - 0.85 + 0.001, z: playerPosition.z }}
+  position={{
+    x: playerPosition.x,
+    y: playerPosition.y - 0.85 + 0.001,
+    z: playerPosition.z,
+  }}
   facingAngle={playerYaw}
   isActive={false}
-  isMoving={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON ? isMoving : false}
+  isMoving={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON
+    ? isMoving
+    : false}
   moveSpeed={playerSpeed}
   moveDirection={moveDir}
   enableLocomotion={true}
   enableRootMotion={false}
   isGrounded={playerGrounded}
   verticalVelocity={playerVerticalVelocity}
-  isCrouching={isCrouching}
+  {isCrouching}
   isJumpRequested={playerJumpRequested}
-  visible={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON && !museum3dEditorState.editorActive}
+  visible={fpsActive &&
+    lastCameraMode === CameraMode.THIRD_PERSON &&
+    !museum3dEditorState.editorActive}
 />
 
 <!-- UnifiedCameraController: always mounted, enabled only in FPS mode.
@@ -1114,8 +1337,8 @@
   moveSpeed={3}
   initialYaw={fpsInitialYaw}
   initialPitch={fpsInitialPitch}
-  externalYaw={externalYaw}
-  externalPitch={externalPitch}
+  {externalYaw}
+  {externalPitch}
   allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
   disableModeToggle={true}
   onModeChange={(mode: CameraMode) => {
@@ -1123,10 +1346,17 @@
     if (mode === CameraMode.FIRST_PERSON || mode === CameraMode.THIRD_PERSON) {
       lastCameraMode = mode;
       try {
-        sessionStorage.setItem(CAMERA_MODE_HMR_KEY, mode === CameraMode.THIRD_PERSON ? "THIRD_PERSON" : "FIRST_PERSON");
-      } catch { /* non-critical */ }
+        sessionStorage.setItem(
+          CAMERA_MODE_HMR_KEY,
+          mode === CameraMode.THIRD_PERSON ? "THIRD_PERSON" : "FIRST_PERSON"
+        );
+      } catch {
+        /* non-critical */
+      }
       // Report to parent so DimensionFlipProof's viewMode stays in sync
-      props.onViewModeChange?.(mode === CameraMode.THIRD_PERSON ? "third-person" : "first-person");
+      props.onViewModeChange?.(
+        mode === CameraMode.THIRD_PERSON ? "third-person" : "first-person"
+      );
     }
   }}
   onRotationChange={(newYaw: number, newPitch: number) => {
@@ -1139,7 +1369,13 @@
      Pre-warm behind loading overlay absorbs the shader compilation cost.
      Bloom off in top-down avoids the render target switch that causes 8s stall.
      spawnPosition gives the pre-warm a second render from FPS perspective. -->
-<MuseumPostProcessing {geometryReady} {fpsActive} {animating} spawnPosition={{ x: spawnWorldX, z: spawnWorldZ }} visible={props.visible} />
+<MuseumPostProcessing
+  {geometryReady}
+  {fpsActive}
+  {animating}
+  spawnPosition={{ x: spawnWorldX, z: spawnWorldZ }}
+  visible={props.visible}
+/>
 
 <!-- Per-room ambient fill lights - fixed pool of MAX_ROOM_LIGHTS slots.
      Slots are always mounted (no shader recompilation). Unused slots have intensity=0. -->
@@ -1153,12 +1389,31 @@
   />
 {/each}
 
-<!-- Global baseline - dim enough that rooms define their own character,
-     bright enough that corridors and doorways aren't pitch black -->
-<T.AmbientLight intensity={0.15} color="#c8b890" />
-<T.HemisphereLight intensity={0.3} color="#fff8e0" groundColor="#2a2015" />
-<!-- Interim key light so sealed walls read with form until baked GLB kits land -->
-<T.DirectionalLight intensity={0.55} position={[12, 20, 8]} color="#fff4e2" castShadow={false} />
+<!-- Global baseline keeps circulation and dark furniture readable while the
+     authored fixtures and kinetic sculpture still carry the brightest values. -->
+<T.AmbientLight intensity={hasLobbyPresentation ? 0.24 : 0.15} color="#c8b890" />
+<T.HemisphereLight
+  intensity={hasLobbyPresentation ? 0.42 : 0.3}
+  color="#fff8e0"
+  groundColor={hasLobbyPresentation ? "#3b3024" : "#2a2015"}
+/>
+<!-- Low directional key keeps sealed corridors legible without flattening room lighting. -->
+<T.DirectionalLight
+  intensity={hasLobbyPresentation ? 0.36 : 0.3}
+  position={[12, 20, 8]}
+  color="#fff4e2"
+  castShadow={false}
+/>
+{#if hasLobbyPresentation}
+  <!-- A visitor-side fill reveals the brown seating and reception furniture
+       without competing with the sculpture or the authored ceiling fixtures. -->
+  <T.DirectionalLight
+    intensity={0.2}
+    position={[-10, 8, -12]}
+    color="#d8bea0"
+    castShadow={false}
+  />
+{/if}
 
 <!-- Floor, wall, ceiling, pedestal, sign meshes are added directly to the Three.js
      scene via scene.add() during init - NOT through Svelte templates. This eliminates
@@ -1167,7 +1422,10 @@
 
 <!-- Exhibit plaques: individually textured with readable content -->
 {#each visiblePlaques as plaque (plaque.refId)}
-  {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
+  {@const plaqueOverride =
+    overrideVersion >= 0
+      ? museumEditorOverrides.get(`plaque-${plaque.refId}`)
+      : null}
   <MuseumPlaque3D
     worldX={plaqueOverride?.x ?? plaque.worldX}
     worldZ={plaqueOverride?.z ?? plaque.worldZ}
@@ -1178,7 +1436,12 @@
     size={plaque.size}
     refId={plaque.refId}
     generator={(content, size, refId) =>
-      generatePlaqueCanvas(content, size, refId, props.plaquePictographs?.get(refId ?? ""))}
+      generatePlaqueCanvas(
+        content,
+        size,
+        refId,
+        props.plaquePictographs?.get(refId ?? "")
+      )}
   />
 {/each}
 {#each visibleExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
@@ -1205,12 +1468,16 @@
 
 <!-- Ceiling fluorescent lights - cold white overhead wash for institutional rooms -->
 {#each visibleCeilingLights as cLight, i (`${cLight.x},${cLight.z},${i}`)}
-  <T.PointLight
+  <T.SpotLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
-    intensity={2.5}
-    color="#e8ecf0"
-    distance={12}
-    decay={1.5}
+    target-position={[cLight.x, 0, cLight.z]}
+    intensity={4.2}
+    color="#f1ead8"
+    distance={8}
+    angle={0.72}
+    penumbra={0.92}
+    decay={2}
+    castShadow={false}
   />
 {/each}
 
@@ -1246,9 +1513,11 @@
     wallOffsetZ={torch.wallOffsetZ}
     wingTheme={torch.wingTheme}
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
-    materials={createTorchInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
+    materials={createTorchInstance(
+      FIXTURE_REGISTRY[torch.wingTheme].lightColor
+    )}
     castShadow={false}
-    playerPosition={playerPosition}
+    {playerPosition}
     visible={props.visible}
   />
 {/each}
@@ -1265,17 +1534,25 @@
   {#if villageEmbedMounted && performer.id.startsWith("collab-")}
     <!-- Skip: replaced by MuseumVillageEmbed -->
   {:else if performer.id.includes("telekinetic-formation")}
-    {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
+    {@const posOverride =
+      overrideVersion >= 0
+        ? museumEditorOverrides.get(`performer-station-${performer.id}`)
+        : null}
     <TelekineticFormation3D
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
       worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}
+      presentation={performer.presentation}
+      scale={performer.scale}
       userSequenceDataMap={props.userSequenceData}
     />
   {:else}
-    {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
+    {@const posOverride =
+      overrideVersion >= 0
+        ? museumEditorOverrides.get(`performer-station-${performer.id}`)
+        : null}
     <MuseumPerformerStation3D
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
@@ -1294,13 +1571,55 @@
      Always visible - sits inside room walls, only seen when looking in. -->
 {#if villageEmbedMounted}
   {@const nearCollab = currentPlayerRoomId === "collaboration"}
-  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} showLabels={nearCollab} visible={props.visible} />
+  <MuseumVillageEmbed
+    centerX={collabCenterX}
+    centerZ={collabCenterZ}
+    showLabels={nearCollab}
+    visible={props.visible}
+  />
 {/if}
 
 <!-- Pedestal + sign meshes managed imperatively via scene.add() -->
 
+<!-- Authored room dressing remains a removable visual layer over the shared
+     tile geometry, so collision and floor-plan validation stay authoritative. -->
+{#each authoredRooms as room (room.id)}
+  <GltfAsset
+    url={room.presentation.modelPath}
+    position={room.position}
+    emissiveBoost={room.presentation.emissiveBoost}
+  />
+  {#if room.presentation.ceilingModelPath}
+    <T.Group visible={fpsActive}>
+      <GltfAsset
+        url={room.presentation.ceilingModelPath}
+        position={room.position}
+        emissiveBoost={room.presentation.emissiveBoost}
+      />
+    </T.Group>
+  {/if}
+  {#if room.presentation.atmosphere}
+    <T.Group position={room.atmospherePosition}>
+      <FallingParticles
+        type={room.presentation.atmosphere.type}
+        count={room.presentation.atmosphere.count}
+        area={room.atmosphereArea}
+        speed={room.presentation.atmosphere.speed}
+        colors={room.presentation.atmosphere.colors}
+        sizeRange={room.presentation.atmosphere.sizeRange}
+        spin={false}
+        enabled={props.visible !== false}
+      />
+    </T.Group>
+  {/if}
+{/each}
+
 <!-- GLTF furniture models (Kenney CC0 kit) -->
-<MuseumFurniture placements={visibleFurniture} tileSize={TILE_SIZE} />
+<MuseumFurniture
+  placements={visibleFurniture}
+  tileSize={TILE_SIZE}
+  materialTintLift={hasLobbyPresentation ? 1 : 0}
+/>
 
 <!-- Mirrors - placed in rooms that historically feature them -->
 {#each grid.wings as wing}
@@ -1345,7 +1664,7 @@
     destRotation={portalConfig.orangeRot}
     color="#0088ff"
     label="Gallery"
-    playerPosition={playerPosition}
+    {playerPosition}
     visible={props.visible}
   />
   <MuseumPortal
@@ -1355,7 +1674,7 @@
     destRotation={portalConfig.blueRot}
     color="#ff8800"
     label="Cave"
-    playerPosition={playerPosition}
+    {playerPosition}
     visible={props.visible}
   />
 {/if}

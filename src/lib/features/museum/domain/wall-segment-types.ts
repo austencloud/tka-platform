@@ -57,6 +57,8 @@ export type WallSegment =
 export type WallDefinition = {
 	segments: WallSegment[];
 	minMargin: number;
+	/** How the authored segment run uses any spare wall length. */
+	alignment?: "start" | "center" | "end";
 };
 
 // ── Dimension computation ──

@@ -10,8 +10,12 @@
 	}
 	const { currentRoomName, placedCount = 0 }: Props = $props();
 
-	const fixtures = $derived(PLACEABLE_OBJECTS.filter((o) => o.category === 'fixture'));
-	const furniture = $derived(PLACEABLE_OBJECTS.filter((o) => o.category === 'furniture'));
+	const fixtures = $derived(
+		PLACEABLE_OBJECTS.filter((o) => o.category === 'fixture' && o.editorEnabled !== false)
+	);
+	const furniture = $derived(
+		PLACEABLE_OBJECTS.filter((o) => o.category === 'furniture' && o.editorEnabled !== false)
+	);
 
 	function isSelected(def: PlaceableObjectDef): boolean {
 		return museum3dEditorState.placementDef?.id === def.id;

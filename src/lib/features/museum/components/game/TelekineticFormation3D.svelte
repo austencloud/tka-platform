@@ -10,6 +10,8 @@
     worldZ: number;
     sequenceId?: string;
     autoPlay?: boolean;
+    presentation?: "ritual" | "sculpture";
+    scale?: number;
     /**
      * Optional injection map for resolving a sequenceId to a user's PRIVATE
      * library sequence. Checked BEFORE MUSEUM_EXHIBIT_SEQUENCES. Undefined in
@@ -41,6 +43,8 @@
   worldX={props.worldX}
   worldZ={props.worldZ}
   {sequence}
-  effectId="led"
+  effectId={props.presentation === "sculpture" ? "trails" : "led"}
   autoPlay={props.autoPlay ?? true}
+  presentation={props.presentation}
+  scale={props.scale}
 />

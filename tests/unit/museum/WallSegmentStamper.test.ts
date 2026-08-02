@@ -185,4 +185,64 @@ describe("WallSegmentStamper", () => {
 		expect(tiles.get(tileKey(3, 11))?.type).toBe("rope");
 		expect(tiles.get(tileKey(4, 11))?.type).toBe("rope");
 	});
+
+	it("centers a segment run when the wall has spare length", () => {
+		const room = makeRoom({
+			x: 10,
+			y: 20,
+			w: 20,
+			h: 12,
+			walls: {
+				north: emptyWall(),
+				south: {
+					segments: [{ type: "door", edgeId: "street->lobby", width: 6 }],
+					minMargin: 1,
+					alignment: "center",
+				},
+				east: emptyWall(),
+				west: emptyWall(),
+			},
+		});
+
+		const tiles = new Map<string, MuseumTile>();
+		const result = stampRoom(tiles, room, []);
+
+		// Available run is X=12..27 (16 tiles). A centered 6-tile door starts at 17.
+		for (let x = 17; x <= 22; x++) {
+			expect(tiles.get(tileKey(x, 31))?.type).toBe("door");
+		}
+		expect(result.doorPositions[0]).toMatchObject({ x: 20, y: 31 });
+	});
+
+	it("end-aligns a segment run without consuming the trailing margin", () => {
+		const room = makeRoom({
+			x: 0,
+			y: 0,
+			w: 18,
+			h: 12,
+			walls: {
+				north: {
+					segments: [
+						{ type: "gap", minTiles: 2 },
+						{ type: "door", edgeId: "lobby->cave", width: 5 },
+					],
+					minMargin: 1,
+					alignment: "end",
+				},
+				south: emptyWall(),
+				east: emptyWall(),
+				west: emptyWall(),
+			},
+		});
+
+		const tiles = new Map<string, MuseumTile>();
+		const result = stampRoom(tiles, room, []);
+
+		// Corner 17 and trailing margin 16 stay clear; the door occupies 11..15.
+		for (let x = 11; x <= 15; x++) {
+			expect(tiles.get(tileKey(x, 0))?.type).toBe("door");
+		}
+		expect(tiles.has(tileKey(16, 0))).toBe(false);
+		expect(result.doorPositions[0]).toMatchObject({ x: 13, y: 0 });
+	});
 });
