@@ -37,6 +37,8 @@
     persistenceKey?: string;
     /** Fired when the player enters a new wing (or leaves all wings). */
     onWingChange?: (wingId: string | null) => void;
+    /** Fired when the camera crosses the terrain waterline (underwater state). */
+    onSubmergedChange?: (submerged: boolean) => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause the scene */
     visible?: boolean;
     /**
@@ -561,6 +563,7 @@
         onPlayerUpdate={handlePlayerUpdate}
         onViewModeChange={handleViewModeChange}
         onBuildStage={props.onBuildStage}
+        onSubmergedChange={props.onSubmergedChange}
         onGeometryReady={handleGeometryReady}
         initialFpsActive={viewMode !== "top-down"}
         initialCameraMode={props.initialCameraMode}

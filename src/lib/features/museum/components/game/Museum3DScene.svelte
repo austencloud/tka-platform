@@ -150,6 +150,8 @@
     onBuildStage?: (stage: string) => void;
     /** Called when async geometry build completes - all meshes are ready to render */
     onGeometryReady?: () => void;
+    /** Fires when the camera crosses the terrain waterline (underwater state). */
+    onSubmergedChange?: (submerged: boolean) => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause per-frame work */
     visible?: boolean;
     /**
@@ -634,6 +636,22 @@
     cameraFlip.snapTopDownToPlayer(pos);
   }
 
+  // ── Waterline submersion ──
+  // Eye height is position.y + 0.75 (UCC first-person offset). Rooms without a
+  // terrain program never call the callback, so every other museum surface pays
+  // one boolean check per frame.
+  let wasSubmerged = false;
+  function updateSubmersion(): void {
+    const terrain = grid.terrain;
+    if (!terrain || !props.onSubmergedChange) return;
+    const eyeY = physicsProvider.getPlayerPosition().y + 0.75;
+    const submerged = eyeY < terrain.waterlineY;
+    if (submerged !== wasSubmerged) {
+      wasSubmerged = submerged;
+      props.onSubmergedChange(submerged);
+    }
+  }
+
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera - we don't touch it.
   useTask((delta) => {
@@ -680,6 +698,9 @@
     if (proximityRenderer.shouldRecompute(currentTX, currentTY)) {
       proximityRenderer.recomputeVisibility(currentTX, currentTY);
     }
+
+    // Waterline crossing (runs before the mode-specific early returns below)
+    updateSubmersion();
 
     // First frame: initialize camera
     if (!flipState.initialized) {
