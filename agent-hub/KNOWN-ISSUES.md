@@ -106,6 +106,31 @@ worth it - the bar is zero visible artifacts.
 The off-screen WPF prewarm (`Prewarm()`) is unrelated and stays. It only realizes
 the chooser window, fonts, and layout at startup.
 
+## 3. Resolved: terminal tints could turn black
+
+The color lease was healthy. The live console palette was not. On Windows
+Terminal 1.24.11911.0, a disposable window launched with
+`--colorScheme "Agent Hub Session 01"` still reported ANSI palette entry 0 as
+the stock `#0C0C0C` three seconds after startup. The assigned scheme defines
+that entry as `#002A2C`. A TUI that paints ANSI-black cells therefore covers the
+tinted background with stock black.
+
+`AgentTerminalSession.exe` now reads palette entry 0 before starting Claude or
+Codex. It writes the assigned background and ANSI-black value when they differ,
+then checks every two seconds while the agent is alive. Healthy checks are
+read-only. Each repair is recorded in
+`%LOCALAPPDATA%\AgentHub\terminal-color-recoveries.log` with the observed color
+and settings timestamps.
+
+The resident `AgentTerminalColorWatchdog.exe` checks all discoverable sessions
+every five seconds. It covers terminals opened with an older session helper;
+new sessions also monitor themselves so elevated consoles do not depend on a
+lower-integrity process.
+
+The installer also compares the Terminal fragment before writing it. An
+unchanged install no longer touches `settings.json`, because that reloads every
+open Terminal window and can discard per-tab appearance state.
+
 ## Diagnostic tools
 
 `diag/` holds the scripts used to investigate the double pop. They were written

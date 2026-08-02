@@ -30,9 +30,9 @@ $ManagedSkillPaths = @(
     }
 )
 
-Get-Process AgentChooserHost -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process AgentChooserHost, AgentTerminalColorWatchdog -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 300
-Write-Host "stopped host"
+Write-Host "stopped host and terminal color watchdog"
 
 foreach ($p in @($StartupLnk, $StartMenu, $ShortcutDir, $TerminalFragmentDir)) {
     if (Test-Path $p) { Remove-Item $p -Recurse -Force; Write-Host "removed $p" }
@@ -44,6 +44,12 @@ foreach ($skillPath in $ManagedSkillPaths) {
         Remove-Item -LiteralPath $skillPath -Recurse -Force
         Write-Host "removed $skillPath"
     }
+}
+
+$pm2Task = Get-ScheduledTask -TaskName 'Agent Hub PM2 resurrect' -ErrorAction SilentlyContinue
+if ($pm2Task) {
+    Unregister-ScheduledTask -TaskName $pm2Task.TaskName -Confirm:$false
+    Write-Host "removed scheduled task $($pm2Task.TaskName)"
 }
 
 if (Test-Path $InstallDir) {
