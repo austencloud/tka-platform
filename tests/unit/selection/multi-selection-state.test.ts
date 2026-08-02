@@ -48,4 +48,17 @@ describe("createMultiSelectionState", () => {
     selection.selectAll();
     expect([...selection.selectedIds]).toEqual(["c"]);
   });
+
+  it("drops only the ids completed by a batch action", () => {
+    const selection = createMultiSelectionState({
+      getAllIds: () => ["a", "b", "c"],
+    });
+    selection.enter();
+    selection.selectAll();
+
+    selection.removeIds(["a", "c"]);
+
+    expect([...selection.selectedIds]).toEqual(["b"]);
+    expect(selection.active).toBe(true);
+  });
 });

@@ -12,12 +12,18 @@
     primaryLabel: string;
     primaryIcon: string;
     onPrimaryAction: () => void;
+    secondaryLabel?: string;
+    secondaryIcon?: string;
+    onSecondaryAction?: () => void;
     dangerLabel?: string;
     dangerIcon?: string;
     onDangerAction?: () => void;
     onSelectAll: () => void;
     onExitSelection: () => void;
     onClearSelection?: () => void;
+    showClearAction?: boolean;
+    primaryBusy?: boolean;
+    actionsDisabled?: boolean;
   }
 
   let {
@@ -26,18 +32,32 @@
     primaryLabel,
     primaryIcon,
     onPrimaryAction,
+    secondaryLabel,
+    secondaryIcon,
+    onSecondaryAction,
     dangerLabel,
     dangerIcon,
     onDangerAction,
     onSelectAll,
     onExitSelection,
     onClearSelection,
+    showClearAction = true,
+    primaryBusy = false,
+    actionsDisabled = false,
   }: Props = $props();
 
   const allSelected = $derived(selectedCount === totalCount && totalCount > 0);
+  const hasSecondary = $derived(
+    !!secondaryLabel && !!secondaryIcon && !!onSecondaryAction
+  );
 </script>
 
-<div class="selection-toolbar" role="toolbar" aria-label="Selection actions">
+<div
+  class="selection-toolbar"
+  class:has-secondary={hasSecondary}
+  role="toolbar"
+  aria-label="Selection actions"
+>
   <div class="toolbar-status">
     <button
       type="button"
@@ -74,7 +94,7 @@
       </span>
     </button>
 
-    {#if onClearSelection && !allSelected}
+    {#if showClearAction && onClearSelection && !allSelected}
       <button
         type="button"
         class="toolbar-button clear-button"
@@ -91,19 +111,36 @@
       type="button"
       class="toolbar-button primary-button"
       onclick={onPrimaryAction}
-      disabled={selectedCount === 0}
+      disabled={selectedCount === 0 || actionsDisabled}
       aria-label={primaryLabel}
+      aria-busy={primaryBusy || undefined}
     >
-      <i class="fas {primaryIcon}" aria-hidden="true"></i>
+      <i
+        class="fas {primaryBusy ? 'fa-circle-notch fa-spin' : primaryIcon}"
+        aria-hidden="true"
+      ></i>
       <span>{primaryLabel}</span>
     </button>
+
+    {#if hasSecondary}
+      <button
+        type="button"
+        class="toolbar-button secondary-button"
+        onclick={onSecondaryAction}
+        disabled={selectedCount === 0 || actionsDisabled}
+        aria-label={secondaryLabel}
+      >
+        <i class="fas {secondaryIcon}" aria-hidden="true"></i>
+        <span>{secondaryLabel}</span>
+      </button>
+    {/if}
 
     {#if onDangerAction && dangerLabel && dangerIcon}
       <button
         type="button"
         class="toolbar-button danger-button"
         onclick={onDangerAction}
-        disabled={selectedCount === 0}
+        disabled={selectedCount === 0 || actionsDisabled}
         aria-label={dangerLabel}
       >
         <i class="fas {dangerIcon}" aria-hidden="true"></i>
@@ -184,6 +221,12 @@
       transform var(--duration-fast, 150ms) ease;
   }
 
+  .toolbar-button > i {
+    width: 1em;
+    flex: 0 0 1em;
+    text-align: center;
+  }
+
   .icon-button {
     width: var(--min-touch-target, 48px);
     padding: 0;
@@ -261,6 +304,7 @@
     .select-all-button,
     .clear-button,
     .primary-button,
+    .secondary-button,
     .danger-button {
       width: var(--min-touch-target, 48px);
       padding: 0;
@@ -269,7 +313,27 @@
     .select-all-button .button-label,
     .clear-button .button-label,
     .primary-button span,
+    .secondary-button span,
     .danger-button span {
+      display: none;
+    }
+  }
+
+  @container gallery (max-width: 900px) {
+    .selection-toolbar.has-secondary .select-all-button,
+    .selection-toolbar.has-secondary .clear-button,
+    .selection-toolbar.has-secondary .primary-button,
+    .selection-toolbar.has-secondary .secondary-button,
+    .selection-toolbar.has-secondary .danger-button {
+      width: var(--min-touch-target, 48px);
+      padding: 0;
+    }
+
+    .selection-toolbar.has-secondary .select-all-button .button-label,
+    .selection-toolbar.has-secondary .clear-button .button-label,
+    .selection-toolbar.has-secondary .primary-button span,
+    .selection-toolbar.has-secondary .secondary-button span,
+    .selection-toolbar.has-secondary .danger-button span {
       display: none;
     }
   }

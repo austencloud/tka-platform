@@ -44,6 +44,14 @@ export function createMultiSelectionState(
     selectedIds = new Set();
   }
 
+  function removeIds(ids: readonly string[]): void {
+    if (ids.length === 0) return;
+    const removed = new Set(ids);
+    selectedIds = new Set(
+      [...selectedIds].filter((sequenceId) => !removed.has(sequenceId))
+    );
+  }
+
   return {
     get active() {
       return active;
@@ -59,6 +67,7 @@ export function createMultiSelectionState(
     toggle,
     selectAll,
     clear,
+    removeIds,
   };
 }
 
