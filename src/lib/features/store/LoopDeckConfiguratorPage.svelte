@@ -581,6 +581,7 @@
                   interactive={false}
                   deal
                   {dealNonce}
+                  viewTransitionName="shop-fan-loop-deck"
                 />
                 <p class="preview-desc">{previewDesc}</p>
               </div>

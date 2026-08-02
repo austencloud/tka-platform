@@ -12,8 +12,13 @@ type RouteLocation = {
   route: { id: string | null };
 };
 
-const SHOP_INDEX_ROUTE_ID = "/(public)/shop";
-const SHOP_PRODUCT_ROUTE_ID = "/(public)/shop/[productId]";
+const SHOP_INDEX_PATH = "/shop";
+
+/**
+ * Shop paths that live under /shop but are not a product, so a morph from the
+ * index would have no shared participant to match.
+ */
+const SHOP_NON_PRODUCT_PATHS = new Set(["/shop/success"]);
 
 function isRouteWithin(pathname: string, root: string): boolean {
   return pathname === root || pathname.startsWith(`${root}/`);
@@ -35,8 +40,18 @@ export function navigationMorphs(
     isRouteWithin(x, "/browse") && isRouteWithin(y, "/sequence");
   if (sequencePair(a, b) || sequencePair(b, a)) return true;
 
+  // Match on path, not route id. Every shipped product has its own bespoke
+  // route (/shop/loop-deck, /shop/tnd-trilogy, ...) rather than going through
+  // the generic /shop/[productId] fallback, so an exact route-id pair matched
+  // nothing real and no transition ever started for shop navigation. A path
+  // test covers the bespoke routes and the fallback alike, and keeps covering
+  // them as products are added.
+  const isShopProduct = (x: RouteLocation): boolean =>
+    isRouteWithin(x.url.pathname, SHOP_INDEX_PATH) &&
+    x.url.pathname !== SHOP_INDEX_PATH &&
+    !SHOP_NON_PRODUCT_PATHS.has(x.url.pathname);
   const shopProductPair = (x: RouteLocation, y: RouteLocation): boolean =>
-    x.route.id === SHOP_INDEX_ROUTE_ID && y.route.id === SHOP_PRODUCT_ROUTE_ID;
+    x.url.pathname === SHOP_INDEX_PATH && isShopProduct(y);
   if (shopProductPair(from, to) || shopProductPair(to, from)) return true;
 
   const launchpadPair = (x: string, y: string): boolean =>

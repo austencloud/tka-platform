@@ -79,6 +79,12 @@
         `aria-hidden`/`inert` decorative shell is dropped). Used by the composer
         promo fan to open the "what's on the card" explainer. */
     onCardClick?: (card: CoverCard) => void;
+    /** Shared-element name for the shop grid → product-page morph. Set the
+        SAME value on the grid tile's fan and on that product page's hero fan;
+        the browser then morphs the fan's size and position between the two.
+        Must be unique per snapshot, so exactly one visible fan may carry a
+        given name at a time. Omit for decorative fans. */
+    viewTransitionName?: string;
   }
   let {
     cards,
@@ -95,6 +101,7 @@
     dealNonce = 0,
     face = "front",
     onCardClick,
+    viewTransitionName,
   }: Props = $props();
 
   // Accessible label for the clickable card — the simplified word (repeated
@@ -254,6 +261,7 @@
   inert={(inert && !onCardClick) || undefined}
   aria-hidden={onCardClick ? undefined : "true"}
   style:--overlap="{-Math.round(cardW * 0.52)}px"
+  style:view-transition-name={viewTransitionName}
 >
   <!-- Key carries the slot index: catalog sequence ids repeat across flavor
        catalogs, so a sampled variety hand can hold two cards with the same

@@ -106,6 +106,7 @@
                   cardWidth={150}
                   maxCardWidth={280}
                   exactCount={Math.min(6, (selected.coverCards ?? []).length)}
+                  viewTransitionName="shop-fan-tnd-trilogy"
                 />
                 <p class="preview-desc">{selected.description}</p>
               </div>

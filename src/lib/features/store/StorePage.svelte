@@ -221,6 +221,7 @@
                     deckName="LOOP Deck"
                     cardWidth={132}
                     maxCardWidth={235}
+                    viewTransitionName="shop-fan-loop-deck"
                   />
                 </div>
                 <div class="deck-info">
@@ -259,6 +260,7 @@
                     cardWidth={110}
                     maxCardWidth={235}
                     exactCount={Math.min(6, tndTileCards.length)}
+                    viewTransitionName="shop-fan-tnd-trilogy"
                   />
                 </div>
                 <div class="deck-info">
