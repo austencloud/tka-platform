@@ -15,8 +15,22 @@ Already closed this session:
 ## Block A — Austen's hands (batch these; ~2.5 hours total)
 
 ### A1. Stripe block (~1 hr) — unblocks 65 points of shop specs
-- [ ] **Rotate the exposed credentials** — ATTEMPTED 2026-08-02 ~01:00-01:40 CDT,
-      blocked by Stripe itself. Findings that survive to the retry:
+- [x] **ROTATION CORE DONE 2026-08-02 ~10:30 CDT.** New restricted key created by
+      Austen (morning, challenge state cleared), signing secret rolled with 24h
+      grace via SMS verification, both values in `firebase-functions/.env`
+      (clipboard flow, never displayed). Deployed clean:
+      `createMerchCheckout`, `handleMerchWebhook`, `createDonationCheckout`
+      updated + **`createCartCheckout` created (first deploy — production
+      finally has the function every buy surface calls)**. Zero
+      warnings/errors in function logs post-deploy.
+- [ ] **Revoke the old exposed `sk_live`** — after confirming the
+      firestore-stripe-payments extension uses its own key (Firebase console →
+      Extensions → config). Then /apikeys → Standard keys → Secret key → ⋯ →
+      roll/expire now.
+- [ ] Rotate `BREVO_API_KEY` (same .env, exposed same way): new key at
+      app.brevo.com/settings/keys/api → .env → deploy `sendMagicLink` → delete old.
+- [ ] Original attempt record (2026-08-02 ~01:00-01:40 CDT), kept for the
+      incident file — blocked by Stripe itself. Findings that survived:
       - Exposure: `firebase-functions/.env` full `sk_live_` passed through the
         2026-07-27 audit transcript. Never in git; gitignored. Secret key
         last-used = Jul 27 (the audit itself) — nothing else uses it, and the
