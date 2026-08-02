@@ -260,6 +260,36 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
 
     expect(undefinedPaths).toEqual([]);
   });
+
+  it("converts Admin SDK timestamps to Dates before the deep-clean pass", async () => {
+    const birthday = new Date("2026-07-08T12:13:03.787Z");
+    class AdminTimestampFixture {
+      readonly _seconds = Math.floor(birthday.getTime() / 1000);
+      readonly _nanoseconds = (birthday.getTime() % 1000) * 1_000_000;
+
+      toDate(): Date {
+        return new Date(birthday);
+      }
+    }
+    const adminTimestamp = new AdminTimestampFixture();
+    const source = {
+      ...buildCompositionOnlySequence("ABCD"),
+      // Migration tooling reads this class from firebase-admin. Treating it as
+      // a plain object turns it into {_seconds, _nanoseconds}, which Firestore
+      // then stores as a map and the Favorites reader rejects.
+      birthday: adminTimestamp as unknown as Date,
+      metadata: {
+        migratedAt: adminTimestamp,
+      },
+    } as SequenceData;
+
+    const result = await normalizeSequenceForPersistence(source);
+
+    expect(result.ownerData.birthday).toEqual(birthday);
+    expect(result.ownerData.birthday).toBeInstanceOf(Date);
+    expect(result.ownerData.metadata?.["migratedAt"]).toEqual(birthday);
+    expect(result.ownerData.metadata?.["migratedAt"]).toBeInstanceOf(Date);
+  });
 });
 
 // ---------------------------------------------------------------------------

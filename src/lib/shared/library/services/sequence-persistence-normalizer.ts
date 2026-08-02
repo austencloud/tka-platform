@@ -407,27 +407,39 @@ export async function trySequenceNormalization<T extends SequenceData>(
  *
  * Semantics match the canonical helper otherwise: recurse into plain objects,
  * map over arrays, and leave `Date` instances intact (a `Date` has no own
- * enumerable keys, so recursing into one would flatten it to `{}`).
+ * enumerable keys, so recursing into one would flatten it to `{}`). Firestore
+ * timestamps get converted through their shared `toDate()` contract first.
+ * Browser and Admin timestamps are different classes, so an `instanceof`
+ * check would protect one write path while leaving the other corruptible.
  */
+function normalizePersistenceValue(value: unknown): unknown {
+  if (value instanceof Date) return value;
+
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof value.toDate === "function"
+  ) {
+    const date = (value as { toDate(): unknown }).toDate();
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+      throw new TypeError("Timestamp-like value returned an invalid Date");
+    }
+    return date;
+  }
+
+  if (Array.isArray(value)) return value.map(normalizePersistenceValue);
+  if (value !== null && typeof value === "object") {
+    return stripUndefinedDeep(value as Record<string, unknown>);
+  }
+  return value;
+}
+
 function stripUndefinedDeep<T extends Record<string, unknown>>(obj: T): T {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      result[key] = value.map((item) =>
-        item !== null && typeof item === "object" && !Array.isArray(item) && !(item instanceof Date)
-          ? stripUndefinedDeep(item as Record<string, unknown>)
-          : item
-      );
-    } else if (
-      value !== null &&
-      typeof value === "object" &&
-      !(value instanceof Date)
-    ) {
-      result[key] = stripUndefinedDeep(value as Record<string, unknown>);
-    } else {
-      result[key] = value;
-    }
+    result[key] = normalizePersistenceValue(value);
   }
   return result as T;
 }
