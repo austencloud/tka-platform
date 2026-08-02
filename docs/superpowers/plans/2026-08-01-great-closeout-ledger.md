@@ -78,13 +78,30 @@ Already closed this session:
 
 ## Block B — Agent-runnable once authorized (each closes a spec)
 
-- [ ] `qr-account-funnel` (16): DevTools viewport + auth-state verification, rerun check
-- [ ] `inbox-multiline-message-rendering` (15): signed-in Inbox verification, send/edit test messages
+**Austen authorized signed-in browser control + disposable test writes on
+2026-08-02.** Batch run started same day; results below.
+
+- [~] `qr-account-funnel` (16): 5 of 6 criteria PASS in DevTools MCP (isolated
+      guest context for signed-out cases, default context for signed-in). Check
+      is 0 errors / 0 warnings. **Only criterion 2 left** — the live Google
+      popup sign-in and auto-resume, which needs Austen's own credentials.
+      ~30 seconds: open `/q/003N` in incognito → Export Animation → sign in →
+      confirm the export starts with no second tap.
+- [x] `inbox-multiline-message-rendering` (15) → shipped in `c18f6d0265`. All
+      eight acceptance criteria measured against the real `MessageBubble` via a
+      new `/test/message-multiline` harness (avoids messaging a real person):
+      `pre-wrap` + `break-word` on every fixture, no overflow at either width,
+      markup escaped, previews still `nowrap`. Fix is one CSS line → no
+      data-rewrite risk.
 - [ ] `choreo-act-playback` (12): authenticated Write-module run + disposable audio file
 - [ ] `choreo-sheet-v2` (12): authenticated Write-module run + visual PDF review
 - [ ] `gallery-thumbnail-warm-pass` (12): signed-in admin warm + manifest/static sync
-- [ ] `shop-transitions` (16): stale env blocker ("Chrome connector cannot initialize")
-      — retry in a fresh session with the standard launcher; likely just closes
+- [!] `shop-transitions` (16): **verified and FAILED** (`a9e5d18506`). The
+      "Chrome connector" blocker was stale and does not reproduce. Real finding:
+      the shop was restructured into bespoke per-product routes, so
+      `ProductDetailPage` (the only destination declaring a
+      `view-transition-name`) is unreachable and NO product morphs. Section 2
+      was never implemented. Reopened as design work — do not re-verify.
 - [x] `variation-picker-polish` (12) → shipped in `e97ff714b5` (live modal + pill proof this session)
 - [x] `create-tutorial-mobile-fullscreen` (12) → shipped in `e97ff714b5` (viewport proof on /test/tutorial-fullscreen)
 
