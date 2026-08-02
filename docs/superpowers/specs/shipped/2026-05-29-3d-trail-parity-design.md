@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: S
-remaining: "The trail envelope, focused tests, LOW/HIGH visual proof, and maximum-Coven stability proof are complete. A 2026-07-30 close-out check again found seven TypeScript errors, all in the unrelated untracked WorkspaceShareControl.svelte and none in trail files. Rerun pnpm run check after that share-control work is green, then move this spec to shipped."
-depends_on: "external: shared full check is blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+remaining: ""
+depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-30
+last_triaged: 2026-08-01
 ---
 # 3D Trail Parity — Design
 

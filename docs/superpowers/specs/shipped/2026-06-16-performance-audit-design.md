@@ -2,11 +2,11 @@
 status: active
 value: 4
 effort: M
-remaining: "The audit deliverable and its three scoped fixes are complete. The audited Firestore-gated video hero is no longer the live home route; src/routes/+page.svelte mounts HomeHero, which has no video path. The remaining systemic three.js boot-weld work belongs in a dedicated package/performance follow-up: installed @austencloud/scene-3d 0.1.6 still lacks sideEffects metadata and useful deep exports. Move this audit to shipped after that follow-up is recorded and the shared full check is green."
-depends_on: "external: @austencloud/scene-3d tree-shaking release/follow-up; shared full check blocked by another session's untracked WorkspaceShareControl.svelte type errors"
+remaining: ""
+depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-30
+last_triaged: 2026-08-01
 ---
 # Performance Audit (Boot JS + Landing LCP) — Design
 
