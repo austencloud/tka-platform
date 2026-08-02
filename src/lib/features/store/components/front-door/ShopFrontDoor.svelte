@@ -39,12 +39,17 @@
   // arrives. A failed fetch simply leaves the server list in place.
   let fullProducts = $state<Product[] | null>(null);
   const catalog = $derived(fullProducts ?? products);
+  // An empty shelf and a broken fetch look identical from the grid's side, and
+  // they are not the same message: one asks the reader to retry, the other
+  // tells them there is nothing to retry for.
+  let loadFailed = $state(false);
 
   onMount(async () => {
     try {
       const { getProductLoader } = await import("../../get-product-loader");
       fullProducts = await getProductLoader().loadActiveProducts();
     } catch (e) {
+      loadFailed = true;
       console.error("[shop] catalog load failed:", e);
     }
   });
@@ -97,12 +102,7 @@
 
   {#if entries.length > 0}
     <div class="band filter-band">
-      <ShopShelfFilter
-        {entries}
-        value={activeShelf}
-        onchange={(next) => (shelf = next)}
-        controls={CATALOG_ID}
-      />
+      <ShopShelfFilter {entries} value={activeShelf} onchange={(next) => (shelf = next)} />
     </div>
   {/if}
 
@@ -114,8 +114,13 @@
       style:--cols-wide={wideColumns}
       style:--cols-mid={midColumns}
     >
-      {#if entries.length === 0}
+      {#if entries.length === 0 && loadFailed}
         <p class="empty">The catalog isn't loading right now. Try again in a moment.</p>
+      {:else if entries.length === 0}
+        <p class="empty">
+          The shop is being restocked. Leave an email below and you'll hear when products
+          land.
+        </p>
       {:else}
         <div class="grid" class:odd={visible.length % 2 === 1}>
           {#each visible as entry (entry.href)}

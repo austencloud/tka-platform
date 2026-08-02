@@ -27,6 +27,10 @@
   // Structured data for the catalog. Offers are attached only once the shop can
   // actually take an order — advertising a price we can't charge would be the
   // same lie the status chips exist to prevent.
+  //
+  // The serialized JSON is injected with {@html}, so a "<" anywhere in product
+  // copy would close the script tag early. "<" is the same character to a
+  // JSON parser and inert to an HTML tokenizer.
   const jsonLd = $derived(
     JSON.stringify({
       "@context": "https://schema.org",
@@ -49,7 +53,7 @@
                   "@type": "Offer",
                   price: (entry.priceCents / 100).toFixed(2),
                   priceCurrency: "USD",
-                  availability: entry.product.preorder
+                  availability: entry.offer.preorder
                     ? "https://schema.org/PreOrder"
                     : "https://schema.org/InStock",
                   url: `${SITE}${entry.href}`,
@@ -58,7 +62,7 @@
             : {}),
         },
       })),
-    })
+    }).replace(/</g, "\\u003c")
   );
 </script>
 

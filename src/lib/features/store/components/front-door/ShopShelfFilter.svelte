@@ -7,6 +7,10 @@
   for — a row of independent toggles could represent "Decks and Books at once",
   a state this filter does not have, and would lose the sliding indicator.
 
+  It is a radiogroup, not a tablist. Tabs promise a tabpanel per tab; this is
+  one grid that re-filters, which is what every other filter row in the app
+  (CreatorsPanel, the smart-collections filters) uses radiogroup for.
+
   It sticks under the site header so the shelf you picked stays reachable while
   you scroll the grid.
 -->
@@ -20,11 +24,9 @@
     /** "all" or a shelf label ("Deck", "Book", …). */
     value: string;
     onchange: (value: string) => void;
-    /** Id of the grid this filter drives, for the tab relationship. */
-    controls: string;
   }
 
-  let { entries, value, onchange, controls }: Props = $props();
+  let { entries, value, onchange }: Props = $props();
 
   // Shelf order is a merchandising decision, not whatever order the catalog
   // happens to load in: the printed decks are the flagship shelf and lead, and
@@ -41,7 +43,6 @@
       label: "All",
       count: entries.length,
       id: "shop-shelf-all",
-      controls,
       ariaLabel: `All products, ${entries.length}`,
     },
     ...shelves.map((shelf) => {
@@ -52,7 +53,6 @@
         label,
         count,
         id: `shop-shelf-${shelf.toLowerCase()}`,
-        controls,
         ariaLabel: `${label}, ${count}`,
       };
     }),
@@ -69,7 +69,7 @@
       {value}
       {onchange}
       color="accent"
-      semantics="tabs"
+      semantics="radiogroup"
       ariaLabel="Filter the catalog by shelf"
     />
   </div>

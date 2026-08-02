@@ -104,6 +104,37 @@ describe("deriveCatalogEntries", () => {
     expect(loop?.priceCents).toBe(3500);
   });
 
+  it("speaks for the group's offer with a SKU a shopper can buy", () => {
+    // The cover-only row leads on sortOrder and is marked preorder; the SKU
+    // that actually carries the price is not. The tile's status chip and the
+    // schema.org offer both read `offer`, so they must land on the priced one.
+    const coverOnly = product({
+      id: "loop-flavor-cover",
+      listing: "loop-deck",
+      stripePriceId: "",
+      preorder: true,
+      sortOrder: 0,
+    });
+    const loop = deriveCatalogEntries([...CATALOG, coverOnly]).find(
+      (e) => e.href === "/shop/loop-deck"
+    );
+    expect(loop?.product.id).toBe("loop-flavor-cover");
+    expect(loop?.offer.id).toBe("loop-a");
+    expect(loop?.offer.stripePriceId).toBeTruthy();
+  });
+
+  it("falls back to the lead SKU when the group has nothing buyable", () => {
+    const unbuyable = product({
+      id: "unbuyable",
+      name: "Unbuyable Deck",
+      stripePriceId: "",
+      sortOrder: 41,
+    });
+    const entry = deriveCatalogEntries([unbuyable]).find((e) => e.href === "/shop/unbuyable");
+    expect(entry?.offer.id).toBe("unbuyable");
+    expect(entry?.offer).toBe(entry?.product);
+  });
+
   it("still shows a list price when nothing in the group is published yet", () => {
     const unpublished = product({
       id: "solo",

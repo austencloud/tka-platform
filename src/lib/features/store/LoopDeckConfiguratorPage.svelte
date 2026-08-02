@@ -25,7 +25,7 @@
   import ShopProductShell from "./components/shell/ShopProductShell.svelte";
   import ShopPurchaseCta from "./components/shell/ShopPurchaseCta.svelte";
   import { deriveCrossSell } from "./domain/catalog-listings";
-  import { resolvePurchaseState, SALES_LIVE } from "./domain/purchase-state";
+  import { purchaseCtaLabel, resolvePurchaseState, SALES_LIVE } from "./domain/purchase-state";
   import DeckFanCover, {
     DEAL_MS as FAN_DEAL_MS,
     DEAL_STAGGER as FAN_DEAL_STAGGER,
@@ -530,6 +530,15 @@
     buySku !== null && resolvePurchaseState(buySku, SALES_LIVE) !== "notify"
   );
 
+  // The dock is the same offer as the primary CTA, so it reads from the same
+  // resolver instead of hard-coding "Preorder now" — a hard-coded preorder
+  // label survives the day the deck actually ships and starts lying.
+  const dockCtaLabel = $derived(
+    customSku
+      ? purchaseCtaLabel(resolvePurchaseState(customSku, SALES_LIVE))
+      : purchaseCtaLabel("preorder")
+  );
+
   const crossSell = $derived(
     deriveCrossSell(store.products, { currentListing: "loop-deck" })
   );
@@ -581,7 +590,7 @@
     ? {
         label: activePack ? activePack.name : "Custom",
         price,
-        ctaLabel: store.isCheckingOut ? "Opening..." : "Preorder now",
+        ctaLabel: store.isCheckingOut ? "Opening..." : dockCtaLabel,
         disabled: store.isCheckingOut,
         onclick: () => store.startCheckout(customSku.id, propType, loopConfig),
       }

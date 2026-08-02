@@ -19,7 +19,10 @@
 
   let { entry }: Props = $props();
 
-  const state = $derived(resolvePurchaseState(entry.product, SALES_LIVE));
+  // The offer SKU, not the art lead: a cover-only row leads the LOOP group on
+  // sortOrder, and reading availability off it labelled a tile "In stock"
+  // beside a price that came from the SKU behind it.
+  const state = $derived(resolvePurchaseState(entry.offer, SALES_LIVE));
 
   // What the shopper can do with this today, said plainly.
   const statusLabel = $derived(

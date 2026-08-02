@@ -234,7 +234,22 @@ export function renderCoverFront(
   const sizeOpts = previewSizeOpts(deck.maxWidthPx);
   // Size + QR ride the cache key so preview and full-res renders never collide.
   const sizeTag = sizeOpts ? `p${sizeOpts.canvasWidth}` : "full";
-  const key = `${seq.id ?? seq.word ?? "?"}|${card.accentColor ?? "-"}|${card.footerCenter ?? "-"}|${propType}|${sizeTag}`;
+  // Every input that changes the pixels is in the key. deckId and deckName feed
+  // the QR and its attribution, and the icon/tint/complement paint the frame:
+  // two decks sharing a sequence used to hand each other the other's artwork
+  // and the other's QR because none of that was named here.
+  const key = [
+    seq.id ?? seq.word ?? "?",
+    card.accentColor ?? "-",
+    card.darkComplement ?? "-",
+    card.iconPath ?? "-",
+    card.tintOpacity ?? "-",
+    card.footerCenter ?? "-",
+    propType,
+    deck.deckId ?? "-",
+    deck.deckName ?? "-",
+    sizeTag,
+  ].join("|");
   const cached = urlCache.get(key);
   if (cached) return cached;
 

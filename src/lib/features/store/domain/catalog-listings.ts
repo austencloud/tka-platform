@@ -85,9 +85,17 @@ export interface CatalogEntry {
   /** True when the entry covers several BUYABLE SKUs at different prices, so
    *  the price reads "from $30" instead of claiming one exact number. */
   readonly priceIsFrom: boolean;
-  /** Lowest-sortOrder SKU in the group — the one whose cover art and preorder
-   *  status represent the entry. */
+  /** Lowest-sortOrder SKU in the group — the one whose cover art, copy, and
+   *  shelf represent the entry. */
   readonly product: Product;
+  /** The SKU the entry's OFFER speaks for: availability, preorder, status.
+   *  A cover-only row (no `stripePriceId`) can lead a group on sortOrder while
+   *  the SKU that carries the price sits behind it — the LOOP deck's flavor
+   *  rows are exactly that. Reading availability off the lead then said
+   *  "In stock" for a row nobody can buy, next to a price taken from a
+   *  different SKU. Buyable SKUs answer that question; a group with none of
+   *  them falls back to the lead. */
+  readonly offer: Product;
   /** Real printed card fronts this entry's art box fans. Empty means the art
    *  falls back to a cover image or the printed guide's cover. */
   readonly artCards: readonly CoverCard[];
@@ -186,6 +194,9 @@ export function deriveCatalogEntries(products: readonly Product[]): CatalogEntry
     if (!lead) continue;
     const listingName = lead.listing ? LISTING_ROUTES[lead.listing]?.name : undefined;
     const { cents, isFrom } = groupPrice(sorted, now);
+    // Same rule the price already follows (groupPrice): an offer comes from a
+    // SKU that can actually be charged.
+    const offer = sorted.find((p) => p.stripePriceId) ?? lead;
     entries.push({
       href,
       name: listingName ?? lead.name,
@@ -194,6 +205,7 @@ export function deriveCatalogEntries(products: readonly Product[]): CatalogEntry
       priceCents: cents,
       priceIsFrom: isFrom,
       product: lead,
+      offer,
       artCards: artCardsFor(lead, sorted, products),
     });
   }

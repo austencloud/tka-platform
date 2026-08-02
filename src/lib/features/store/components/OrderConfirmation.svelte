@@ -19,13 +19,17 @@
   // bought isn't readable client-side here. The whole line is the right rail.
   const crossSell = $derived(deriveCrossSell(catalog, { limit: 3 }));
 
-  // Funnel step 5 — the step that did not exist at all before this. The session
-  // id comes off the query string Stripe redirects back with; it is available
-  // client-side here, so success/+page.ts needs no load(). trackPurchaseCompleted
-  // owns the per-session dedupe, so a refresh or a bookmarked /shop/success
-  // can't inflate the conversion rate.
+  // Stripe redirects back with its checkout session id on the query string. No
+  // id means this page was opened directly — a bookmark, a back button, a
+  // shared link — and not by a completed checkout.
+  const sessionId = $derived(page.url.searchParams.get("session_id"));
+
+  // Funnel step 5 — the step that did not exist at all before this. Only a
+  // redirect carrying a session id counts as a purchase: the per-session
+  // dedupe is keyed on that id, so a null one would slip past it and every
+  // direct visit would post another conversion.
   onMount(() => {
-    trackPurchaseCompleted(page.url.searchParams.get("session_id"));
+    if (sessionId) trackPurchaseCompleted(sessionId);
 
     void getProductLoader()
       .loadActiveProducts()
@@ -38,16 +42,27 @@
 <div class="confirmation-page">
   <main class="confirmation-band">
     <section class="receipt">
-      <div class="success-icon">
-        <i class="fas fa-check-circle" aria-hidden="true"></i>
-      </div>
-      <h1>Order Confirmed</h1>
-      <p>Your order is on its way. You'll get a receipt from Stripe at the email you provided.</p>
-      <p class="note">Orders are packed and shipped within a few business days.</p>
+      {#if sessionId}
+        <div class="success-icon">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+        </div>
+        <h1>Order Confirmed</h1>
+        <p>Your order is on its way. You'll get a receipt from Stripe at the email you provided.</p>
+        <p class="note">Orders are packed and shipped within a few business days.</p>
+      {:else}
+        <!-- Nothing here confirms an order, so nothing here says one happened.
+             The page can't ask Stripe about a session it wasn't given. -->
+        <span class="kicker">Order status</span>
+        <h1>No recent order found</h1>
+        <p>If you just completed checkout, the receipt is in your email.</p>
+      {/if}
       <a href="/shop" class="back-link">Back to the shop</a>
     </section>
 
-    <ShopCrossSellRail entries={crossSell} title="While it ships" />
+    <ShopCrossSellRail
+      entries={crossSell}
+      title={sessionId ? "While it ships" : "From the line"}
+    />
   </main>
 </div>
 
@@ -86,6 +101,18 @@
     font-size: 4rem;
     color: var(--semantic-success, #22c55e);
     margin-bottom: 1.5rem;
+  }
+
+  /* Stands in for the checkmark when there is no order: the block keeps its
+     shape, so the page doesn't jump between the two states. */
+  .kicker {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #b8a6ff;
   }
 
   h1 {
