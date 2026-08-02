@@ -226,12 +226,12 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // The Drowned Gallery's three waterline alcoves, west → east.
   "cave-water": {
     performers: {
-      "cave-water-automaton": {
-        autoPlay: true,
-        sequenceId: "cave-water-seq",
-      },
+      "cave-water-a": { autoPlay: true, sequenceId: "cave-water-seq-a" },
+      "cave-water-b": { autoPlay: true, sequenceId: "cave-water-seq-b" },
+      "cave-water-c": { autoPlay: true, sequenceId: "cave-water-seq-c" },
     },
   },
 

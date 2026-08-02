@@ -268,4 +268,32 @@ describe("drowned gallery rooms", () => {
   it("still validates as a connected plan", () => {
     expect(plan.validation.valid).toBe(true);
   });
+
+  it("autoplays a distinct looping sequence at each grotto alcove", () => {
+    const grottoPerformers = plan.grid.performers.filter((p) =>
+      p.id.startsWith("cave-water-")
+    );
+    expect(grottoPerformers.map((p) => p.sequenceId)).toEqual([
+      "cave-water-seq-a",
+      "cave-water-seq-b",
+      "cave-water-seq-c",
+    ]);
+    expect(grottoPerformers.every((p) => p.autoPlay)).toBe(true);
+  });
+
+  it("has a looping base-letter sequence per grotto performer", async () => {
+    const { MUSEUM_EXHIBIT_SEQUENCES } = await import(
+      "$lib/features/museum/data/museum-exhibit-sequences"
+    );
+    for (const [id, letter] of [
+      ["cave-water-seq-a", "A"],
+      ["cave-water-seq-b", "B"],
+      ["cave-water-seq-c", "C"],
+    ] as const) {
+      const seq = MUSEUM_EXHIBIT_SEQUENCES[id];
+      expect(seq, id).toBeDefined();
+      expect(seq.steps).toHaveLength(4);
+      for (const step of seq.steps) expect(step.letter).toBe(letter);
+    }
+  });
 });
