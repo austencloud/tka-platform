@@ -1,5 +1,9 @@
 {
-  "permissions": {},
+  "permissions": {
+    "deny": [
+      "mcp__chrome-devtools__resize_page"
+    ]
+  },
   "hooks": {
     "PostToolUse": [],
     "PreToolUse": [

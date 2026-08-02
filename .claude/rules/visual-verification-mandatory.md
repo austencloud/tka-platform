@@ -79,13 +79,12 @@ instruction like every other.
 Skipping a viewport is allowed only when the change provably cannot reach it
 (e.g. a desktop-only pane), and you say which you skipped and why.
 
-**Reaching a real 3840 viewport needs `--force-device-scale-factor=1`.** Windows
-runs Austen's 4K display at 200%, so a normally-launched Chrome maxes out at a
-1920 CSS viewport and `resize_page(3840, …)` cannot exceed the physical screen.
-The flag makes one physical pixel one CSS pixel, giving a genuine 3840 viewport.
-Expect Chrome's OWN UI (tabs, URL bar) to render at half physical size in that
-window — that is the flag working, not a bug, and it is worth saying so out loud
-if Austen sees the window, because it looks broken.
+**Keep the visible browser at normal Windows display scaling.** Never launch it
+with `--force-device-scale-factor`; that shrinks Chrome's tabs, URL bar, and all
+page content to an unreadable size. Chrome DevTools MCP now exposes per-page
+device-metric emulation. `emulate(viewport: "3840x2160x1")` produces a real 3840
+CSS viewport and screenshot without changing the operating-system window. Clear
+the viewport emulation after the verification pass.
 
 ## Which Browser Tool (settled 2026-07-26)
 
@@ -96,9 +95,9 @@ in the tool schemas, not in taste:
 | | Chrome DevTools MCP | Claude in Chrome |
 |---|---|---|
 | Screenshot cost | `format: "webp", quality: 70` — ~4x cheaper than PNG | `computer` screenshot takes **no format/quality params**. Full fidelity, every frame. |
-| Viewport | `resize_page(w, h)` sets the **page** dimensions — 3840×2160 is a real 3840 CSS viewport | `resize_window(w, h)` sizes the **OS window**; tab strip and URL bar eat the top, and it cannot exceed the physical screen |
+| Viewport | `emulate(viewport: "<w>x<h>x1")` sets per-page device metrics, including a real 3840×2160 CSS viewport | `resize_window(w, h)` sizes the **OS window**; tab strip and URL bar eat the top, and it cannot exceed the physical screen |
 | Cheap measurement | `evaluate_script` returns JSON — ten element widths for a rounding error, no image | built around visual coordinates |
-| Session | your own instance, `--user-data-dir=C:\Users\Austen\.claude\chrome-profile` | drives Austen's signed-in Chrome |
+| Session | dedicated persistent instance from `scripts/launch-chrome-debug.ps1`; manual sign-in survives restarts | drives Austen's everyday Chrome |
 | Scoping | `uid` screenshots one element; `filePath` writes the image to disk instead of into context | full-viewport frames only |
 
 Claude in Chrome is for *acting* in Austen's live browser — external dashboards
@@ -107,15 +106,23 @@ point, per global `CLAUDE.md` → Web Browsing. It stays there.
 
 **The canonical loop:**
 
-1. Launch own Chrome with `--force-device-scale-factor=1` (see the note above —
-   required to reach a real 3840 viewport).
-2. `resize_page` per viewport from the table above.
+1. Start or reuse the dedicated browser with
+   `pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank`.
+   The launcher reuses one shared window, preserves its last manual placement,
+   and must be the only way agents start Chrome. Do not pass
+   `--force-device-scale-factor`.
+2. Open a task-owned page in the default browser context, in the background for
+   screenshot-only checks. Keep its returned page ID and provide that `pageId`
+   to every page-scoped tool instead of relying on `select_page`. Then call
+   `emulate` with `<width>x<height>x1` for each viewport in the table.
 3. `evaluate_script` returning measured numbers — control widths, column counts,
    computed font sizes. Catches the 1765px-button class of bug precisely, for
    near-zero tokens.
 4. `take_screenshot` `format: "webp", quality: 70` to judge composition, which
    numbers cannot.
-5. Fix, reload, repeat until the frame is right.
+5. Fix, reload, repeat until the frame is right. Clear viewport emulation and
+   close only the task-owned page when the pass is complete. Never close or
+   resize the shared browser window.
 
 Measure to confirm arithmetic; screenshot to confirm composition. Neither
 replaces the other.
@@ -162,8 +169,9 @@ frames costs less than the message asking whether to take them.
 - Using Claude in Chrome to verify your own diff, or driving Austen's
   signed-in window for it. DevTools MCP, own instance.
 - Taking a screenshot without `format: "webp", quality: 70`.
-- A viewport sweep done with `resize_window` (OS window) instead of
-  `resize_page` (page dimensions) — the two are not the same size.
+- Launching the visible browser with `--force-device-scale-factor`, or doing a
+  viewport sweep by resizing the operating-system window instead of using
+  per-page `emulate`.
 - Delegating the visual judgment to a subagent or workflow that also cannot see
   the page. Design fan-outs produce documents, not pixels; build it yourself and
   look at it (`fable-routing.md` → Workflow Cost Discipline).

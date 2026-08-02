@@ -91,18 +91,33 @@ launch, and one pass over finished work beats a frame after every edit. The
 trigger list and the required viewport set live in
 `.claude/rules/visual-verification-mandatory.md`.
 
-Launch your own instance; never drive the user's signed-in window:
+Start or reuse the dedicated persistent instance. It uses normal Windows
+display scaling and keeps manual Google/Firebase authentication across sessions:
 
-```
-Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList `
-  '--remote-debugging-port=9222','--user-data-dir=C:\Users\Austen\.claude\chrome-profile', `
-  '--force-device-scale-factor=1','about:blank'
+```powershell
+pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank
 ```
 
-Then `new_page` → `https://localhost:5173/<route>` (HTTPS — the dev server is
-HTTP/2), `resize_page` per viewport, `take_screenshot`. Prefer
-`format: "webp", quality: 70` — a full-quality PNG is ~4x the tokens for no
-extra signal, which is what made screenshots feel unaffordable.
+This is one shared process and window for every agent. Never launch Chrome
+directly. The launcher serializes simultaneous starts, reuses the active
+process, and lets Chrome restore the last manually chosen window size and
+position.
+
+Open a task-owned tab with `new_page(..., background: true)`, retain its returned
+page ID, and pass that `pageId` to every page-scoped tool. Do not depend on
+`select_page` or the active tab. Use the default browser context so authentication
+is shared. Bring the tab forward only when Austen must interact with it. Clear
+emulation and close only the task-owned tab at the end; never close the shared
+browser.
+
+Never pass `--force-device-scale-factor` to the visible browser. Load
+`https://localhost:5173/<route>` (HTTPS; the dev server is HTTP/2), `emulate`
+each viewport as `<width>x<height>x1`, and `take_screenshot`. Prefer
+`format: "webp", quality: 70`. A full-quality PNG is ~4x the tokens for no extra
+signal, which is what made screenshots feel unaffordable.
+Historical plans and handoffs that mention direct Chrome launches,
+`--force-device-scale-factor`, or `resize_page` are stale and do not override
+this section.
 
 Still ask first for: anything that MUTATES data (submitting forms, deleting,
 purchasing, sending), anything touching the user's own signed-in session, and

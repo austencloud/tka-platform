@@ -58,9 +58,10 @@ js_repl = false
 
 [mcp_servers.chrome-devtools]
 command = "cmd"
-args = ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
+args = ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222", "--experimentalPageIdRouting"]
 env = { SystemRoot = 'C:\Windows', PROGRAMFILES = 'C:\Program Files' }
 startup_timeout_ms = 20_000
+disabled_tools = ["resize_page"]
 
 [mcp_servers.flow-arts]
 command = "node"

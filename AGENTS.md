@@ -119,6 +119,33 @@ Port 5173 is the user's VS Code dev server (hooks block `npm run dev`, `kill-por
 
 Playwright is gone. Chrome DevTools MCP is the only browser tool.
 
+Start or reuse the dedicated, persistent browser target with:
+
+```powershell
+pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank
+```
+
+This is one shared browser process and window for every agent. Never launch
+Chrome directly. The launcher serializes simultaneous calls, reuses the active
+process, and leaves window geometry alone so Chrome restores Austen's last
+manual size and position.
+
+Each agent opens a task-owned tab with `new_page(..., background: true)`, keeps
+the returned page ID, and supplies that `pageId` to every page-scoped tool. Do
+not depend on `select_page` or the globally active tab. Bring a tab forward only
+when Austen must interact with it. Use the default browser context so the tab
+shares the persistent authentication state. When finished, clear emulation and
+close only the task-owned tab; never close the shared browser.
+
+The visible browser must use normal Windows display scaling. Never launch it
+with `--force-device-scale-factor`. Use the MCP `emulate` tool for exact test
+viewports such as `3840x2160x1`; viewport testing must not resize or shrink the
+Chrome window. The dedicated profile preserves manual Google and Firebase
+authentication across sessions without exposing Austen's everyday Chrome.
+Historical plans and handoffs that mention direct Chrome launches,
+`--force-device-scale-factor`, or `resize_page` are stale and do not override
+this section.
+
 Ask the user first before any verification browser use. A user looking at their screen and saying "yes it works" costs ~10 tokens; a screenshot costs ~15,000.
 
 Interactive DevTools commands (`navigate_page`, `click`, `type_text`, `fill`) require **explicit verbal permission** in the current conversation. "Test this yourself" or "Take control of the browser" counts; silence doesn't.
