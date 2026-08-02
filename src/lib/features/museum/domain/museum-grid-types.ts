@@ -71,6 +71,13 @@ export interface MuseumRoomPresentation {
   suppressTileGeometry?: boolean;
 }
 
+/** Optional per-plan terrain: floor elevation + walk blocking beyond tile types. */
+export interface MuseumTerrainProgram {
+  waterlineY: number;
+  elevationAt(worldX: number, worldZ: number): number;
+  blockedAt(worldX: number, worldZ: number): boolean;
+}
+
 export interface MuseumTile {
   type: TileType;
   material?: FloorMaterial;
@@ -89,6 +96,8 @@ export interface MuseumGrid {
   performers: PerformerDefinition[];
   triggers: TriggerDefinition[];
   furniture: FurnitureDefinition[];
+  /** Optional terrain program (elevation + blocking). Attached by floor-plan builders. */
+  terrain?: MuseumTerrainProgram;
 }
 
 export interface MuseumGridSerialized {

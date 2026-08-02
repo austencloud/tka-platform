@@ -8,6 +8,7 @@ import { tileKey } from "../domain/museum-grid-types";
 import type { WallDefinition } from "../domain/wall-segment-types";
 import { buildMuseumGrid } from "../services/museum-grid-builder";
 import type { MuseumGridBuildResult } from "../services/types";
+import { createDrownedGalleryTerrain } from "./drowned-gallery-terrain";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -694,6 +695,11 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
       height: room.bounds.height - 2,
     } satisfies MuseumFloorPlanZone;
   });
+
+  // Elevation + water blocking for the Drowned Gallery. Physics reads it for
+  // ground clamping; the graybox layer reads the same layout for its meshes.
+  const terrain = createDrownedGalleryTerrain(build.grid);
+  if (terrain) build.grid.terrain = terrain;
 
   const totalInteriorTiles = build.grid.wings.reduce(
     (sum, wing) => sum + (wing.bounds.width - 2) * (wing.bounds.height - 2),
