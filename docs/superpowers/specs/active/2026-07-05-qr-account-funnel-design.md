@@ -2,8 +2,8 @@
 status: active
 value: 4
 effort: S
-remaining: "Verified 2026-08-02: criteria 1, 3, 4, 5, 6 all pass in Chrome DevTools MCP (see Verification results below) and the full check is 0 errors / 0 warnings. Only criterion 2 is open — the live Google popup sign-in and automatic export resume. It needs Austen's own credentials, which an agent cannot enter. Thirty-second task: open /q/<code> signed out (incognito), tap Export Animation, sign in with Google, confirm the export starts with no second tap."
-depends_on: "external: criterion 2 requires Austen to complete one Google popup sign-in; agents cannot enter his credentials"
+remaining: "Criteria 1, 3, 4, 5, 6 verified 2026-08-02; check is 0 errors / 0 warnings. Criterion 2 turned out to be BROKEN, not merely unverified: Austen tried the live popup and it dead-ended. Root cause was the sheet's fire-and-forget One Tap call, fixed in a0b1835945 by replacing SignInSheet with the shared AuthModal (see 2026-08-02-viewer-auth-surface-unification-design.md). A real Google OAuth popup now opens where zero opened before. Still open: one live end-to-end sign-in with Austen's own credentials to confirm the export auto-resumes after the popup completes — the popup launch is proven, the post-auth replay is not."
+depends_on: "external: one live Google sign-in with Austen's credentials to confirm the post-auth export resume"
 plan_path: ""
 tags: []
 last_triaged: 2026-07-29
