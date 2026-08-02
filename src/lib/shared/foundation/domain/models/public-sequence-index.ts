@@ -18,6 +18,7 @@
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
 import type { StepPairingData } from "$lib/shared/foundation/domain/models/step-pairing-data";
 import type { CreatorIntent } from "$lib/shared/foundation/domain/models/creator-intent";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /**
  * PublicSequenceIndex - Self-contained public sequence for Browse
@@ -63,6 +64,9 @@ export interface PublicSequenceIndex {
 
   /** Numeric difficulty level (1-5). Preferred over difficultyLevel string. */
   readonly level?: number;
+
+  /** Grid used by the sequence's positions. */
+  readonly gridMode?: GridMode;
 
   /** LOOP type label (e.g., "rotated", "mirrored+swapped", "freeform", null for non-LOOP) */
   readonly loopType?: string | null;

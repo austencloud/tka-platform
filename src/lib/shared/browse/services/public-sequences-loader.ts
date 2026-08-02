@@ -334,6 +334,7 @@ export class PublicSequencesLoader {
       sequenceLength: data.sequenceLength,
       level: data.level ?? this.difficultyStringToLevel(data.difficultyLevel),
       difficultyLevel: data.difficultyLevel,
+      gridMode: data.gridMode,
       loopType: data.loopType as SequenceData["loopType"],
       period: data.period,
       components: doc.components,

@@ -57,6 +57,19 @@
   } from "$lib/features/browse/shared/services/gallery-view-persister";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
+  type Section =
+    | "chooser"
+    | "more"
+    | "level"
+    | "length"
+    | "letter"
+    | "position"
+    | "gridmode"
+    | "author"
+    | "loop"
+    | "family"
+    | "max_turn_intensity";
+
   interface Props {
     pool?: readonly SequenceData[];
     /** Live count of results if this filter value were applied. */
@@ -67,7 +80,7 @@
       type: BrowseFilterType,
       value: string | number,
       label: string,
-      color?: string,
+      color?: string
     ) => void;
     onShowAll?: () => void;
     onSearch?: (query: string) => void;
@@ -83,7 +96,12 @@
     /** Sheet: toggle a loop component in place — the sheet stays open so
      * LOOPs STACK (a sequence can be mirrored AND swapped). When absent,
      * LOOP rows fall back to onApply like every other category. */
-    onToggleLoop?: (value: string, label: string, color: string, nowActive: boolean) => void;
+    onToggleLoop?: (
+      value: string,
+      label: string,
+      color: string,
+      nowActive: boolean
+    ) => void;
     /** TnD family ids currently applied (e.g. "split-same"). Family rows
      * render active and toggle off on re-tap. */
     activeFamilyValues?: ReadonlySet<string>;
@@ -93,7 +111,7 @@
       familyId: string,
       label: string,
       color: string,
-      nowActive: boolean,
+      nowActive: boolean
     ) => void;
     /** "page" = the gallery front door (with search). "sheet" = the grid's
      * filter bottom sheet — same filter categories, no search. */
@@ -105,6 +123,24 @@
     /** Show the navigation-only Collections tile. Builders turn this off
      * because every choice must add a valid rule criterion. */
     showCollections?: boolean;
+    /** Opt into a fluid native-4K canvas. Full-screen focused workflows use
+     * this; standard gallery and drawer hosts keep their established scale. */
+    fluidWideCanvas?: boolean;
+    /** Short landscape screens cannot show the full chooser without turning
+     * it into a tiny wall. Opt in to one explicit door for secondary filters,
+     * then reveal those choices on their own screen. */
+    progressiveSecondaryChoices?: boolean;
+    /** Present every available filter category as one decision canvas. Smart
+     * Collection refinement uses this after the first rule exists: the user
+     * already asked to add a filter, so another "More" step adds no clarity. */
+    unifiedFilterChooser?: boolean;
+    /** Recompose each value screen by its option count so fixed-height modal
+     * hosts can keep the current decision visible without defaulting to a
+     * vertical list. The base gallery keeps its established browse layout. */
+    adaptiveValueLayout?: boolean;
+    /** Review and test surfaces can open a real drill screen directly. Normal
+     * production hosts omit this and always begin at the chooser. */
+    initialSection?: Section;
   }
   let {
     pool = [],
@@ -122,24 +158,19 @@
     variant = "page",
     persistSection,
     showCollections,
+    fluidWideCanvas = false,
+    progressiveSecondaryChoices = false,
+    unifiedFilterChooser = false,
+    adaptiveValueLayout = false,
+    initialSection,
   }: Props = $props();
 
   const shouldPersistSection = persistSection ?? variant === "page";
   const shouldShowCollections = showCollections ?? variant === "page";
 
-  type Section =
-    | "chooser"
-    | "level"
-    | "length"
-    | "letter"
-    | "position"
-    | "gridmode"
-    | "author"
-    | "loop"
-    | "family"
-    | "max_turn_intensity";
   const SECTIONS: readonly Section[] = [
     "chooser",
+    "more",
     "level",
     "length",
     "letter",
@@ -154,6 +185,12 @@
    * (sessionStorage); a stale/unknown value degrades to the chooser. Transient
    * hosts always open fresh. */
   function restoreSection(): Section {
+    if (
+      initialSection &&
+      (SECTIONS as readonly string[]).includes(initialSection)
+    ) {
+      return initialSection;
+    }
     if (!shouldPersistSection) return "chooser";
     const stored = getDrillSection();
     return stored && (SECTIONS as readonly string[]).includes(stored)
@@ -161,10 +198,19 @@
       : "chooser";
   }
   let section = $state<Section>(restoreSection());
+  let returnSection = $state<"chooser" | "more">("chooser");
   $effect(() => {
     if (shouldPersistSection) setDrillSection(section);
   });
   let query = $state("");
+
+  function openSection(
+    next: Exclude<Section, "chooser" | "more">,
+    returnTo: "chooser" | "more" = "chooser"
+  ) {
+    returnSection = returnTo;
+    section = next;
+  }
 
   const LEVELS = [1, 2, 3];
 
@@ -177,15 +223,40 @@
 
   // Legacy starting_position_section values + descriptions, verbatim.
   const POSITIONS = [
-    { value: "alpha", label: "Alpha", desc: "Hands apart.", img: "/images/position_images/alpha.png" },
-    { value: "beta", label: "Beta", desc: "Hands together.", img: "/images/position_images/beta.png" },
-    { value: "gamma", label: "Gamma", desc: "Hands form a right angle.", img: "/images/position_images/gamma.png" },
+    {
+      value: "alpha",
+      label: "Alpha",
+      desc: "Hands apart.",
+      img: "/images/position_images/alpha.png",
+    },
+    {
+      value: "beta",
+      label: "Beta",
+      desc: "Hands together.",
+      img: "/images/position_images/beta.png",
+    },
+    {
+      value: "gamma",
+      label: "Gamma",
+      desc: "Hands form a right angle.",
+      img: "/images/position_images/gamma.png",
+    },
   ];
 
   // Legacy grid_mode_section values + descriptions (same grid SVGs, already in static/).
   const GRID_MODES = [
-    { value: "diamond", label: "Diamond", desc: "Cardinal points: N, E, S, W", img: "/images/grid/diamond_grid.svg" },
-    { value: "box", label: "Box", desc: "Diagonal points: NE, SE, SW, NW", img: "/images/grid/box_grid.svg" },
+    {
+      value: "diamond",
+      label: "Diamond",
+      desc: "Cardinal points: N, E, S, W",
+      img: "/images/grid/diamond_grid.svg",
+    },
+    {
+      value: "box",
+      label: "Box",
+      desc: "Diagonal points: NE, SE, SW, NW",
+      img: "/images/grid/box_grid.svg",
+    },
   ];
 
   // Loop structure — the same component catalog the LOOP filter chip exposes
@@ -235,10 +306,10 @@
       value: lvl,
       label: `Level ${lvl}`,
       count: getCount(BrowseFilterType.DIFFICULTY, lvl),
-    })).filter((v) => v.count > 0),
+    })).filter((v) => v.count > 0)
   );
   const maxLevelCount = $derived(
-    Math.max(1, ...levelValues.map((v) => v.count)),
+    Math.max(1, ...levelValues.map((v) => v.count))
   );
 
   const lengthValues = $derived.by(() => {
@@ -257,7 +328,7 @@
       .filter((v) => v.count >= 3);
   });
   const maxLengthCount = $derived(
-    Math.max(1, ...lengthValues.map((v) => v.count)),
+    Math.max(1, ...lengthValues.map((v) => v.count))
   );
 
   const maxTurnIntensityValues = $derived.by(() => {
@@ -276,7 +347,7 @@
       .filter((v) => v.count > 0);
   });
   const maxTurnIntensityCount = $derived(
-    Math.max(1, ...maxTurnIntensityValues.map((v) => v.count)),
+    Math.max(1, ...maxTurnIntensityValues.map((v) => v.count))
   );
 
   const letterValues = $derived(
@@ -285,17 +356,17 @@
         value: letter,
         count: getCount(BrowseFilterType.STARTING_LETTER, letter),
       }))
-      .filter((v) => v.count > 0),
+      .filter((v) => v.count > 0)
   );
 
   const positionValues = $derived(
     POSITIONS.map((p) => ({
       ...p,
       count: getCount(BrowseFilterType.STARTING_POSITION, p.value),
-    })).filter((v) => v.count > 0),
+    })).filter((v) => v.count > 0)
   );
   const maxPositionCount = $derived(
-    Math.max(1, ...positionValues.map((v) => v.count)),
+    Math.max(1, ...positionValues.map((v) => v.count))
   );
 
   // Real start-position pictographs (alpha/beta/gamma) keyed by position value —
@@ -311,7 +382,9 @@
   const startPosPictographs = $derived.by(() => {
     const map = new Map<string, PictographData>();
     if (!browser) return map;
-    for (const pd of startPositionManager.getDefaultStartPositions(GridMode.DIAMOND)) {
+    for (const pd of startPositionManager.getDefaultStartPositions(
+      GridMode.DIAMOND
+    )) {
       const key = LETTER_TO_POSITION[pd.letter as string];
       if (key) map.set(key, pd);
     }
@@ -322,10 +395,10 @@
     GRID_MODES.map((g) => ({
       ...g,
       count: getCount(BrowseFilterType.GRID_MODE, g.value),
-    })).filter((v) => v.count > 0),
+    })).filter((v) => v.count > 0)
   );
   const maxGridModeCount = $derived(
-    Math.max(1, ...gridModeValues.map((v) => v.count)),
+    Math.max(1, ...gridModeValues.map((v) => v.count))
   );
 
   // Keep APPLIED values in the list even at count 0 — counts compose with the
@@ -336,11 +409,9 @@
     LOOP_OPTIONS.map((o) => ({
       ...o,
       count: getCount(BrowseFilterType.LOOP_TYPE, o.value),
-    })).filter((v) => v.count > 0 || (activeLoopValues?.has(v.value) ?? false)),
+    })).filter((v) => v.count > 0 || (activeLoopValues?.has(v.value) ?? false))
   );
-  const maxLoopCount = $derived(
-    Math.max(1, ...loopValues.map((v) => v.count)),
-  );
+  const maxLoopCount = $derived(Math.max(1, ...loopValues.map((v) => v.count)));
 
   // Timing & Direction — the six families as a real, composable catalog
   // filter (contains-semantics, derived per step from arc geometry). Same
@@ -354,10 +425,12 @@
       color: el.accentColor,
       icon: el.iconPath,
       count: getCount(BrowseFilterType.TND_FAMILY, el.familyId),
-    })).filter((v) => v.count > 0 || (activeFamilyValues?.has(v.value) ?? false)),
+    })).filter(
+      (v) => v.count > 0 || (activeFamilyValues?.has(v.value) ?? false)
+    )
   );
   const maxFamilyCount = $derived(
-    Math.max(1, ...familyValues.map((v) => v.count)),
+    Math.max(1, ...familyValues.map((v) => v.count))
   );
 
   // Most-prolific first: with a skewed catalog the ordering itself says
@@ -369,10 +442,10 @@
         count: getCount(BrowseFilterType.OWNER, name),
       }))
       .filter((v) => v.count > 0)
-      .sort((a, b) => b.count - a.count),
+      .sort((a, b) => b.count - a.count)
   );
   const maxCreatorCount = $derived(
-    Math.max(1, ...creatorValues.map((v) => v.count)),
+    Math.max(1, ...creatorValues.map((v) => v.count))
   );
   // Each creator's row is fronted by their own work — a bare name + count on
   // a wide screen reads as an unfinished list, not a choice.
@@ -383,25 +456,30 @@
   // The Creator mini tile fronts the top three creators' actual faces — every
   // other tile previews real data (real cards, real dots, real glyphs); a
   // generic fa-users icon was the one clip-art holdout.
-  const creatorTopThree = $derived(creatorValues.slice(0, 3).map((v) => v.value));
+  const creatorTopThree = $derived(
+    creatorValues.slice(0, 3).map((v) => v.value)
+  );
 
   // Single-value categories apply directly from the chooser (legacy behavior
   // for Favorites / Most Recent). Hidden at zero — never a dead end.
   const recentCount = $derived(getCount(BrowseFilterType.RECENT, "recent"));
   const favoritesCount = $derived(
-    getCount(BrowseFilterType.FAVORITES, "favorites"),
+    getCount(BrowseFilterType.FAVORITES, "favorites")
   );
 
   // Dots on the "Structure" mini tile: one per loop component actually present
   // in the catalog, wearing its canonical color (rotated variants share one).
   const loopDotColors = $derived(
-    [...new Set(loopValues.map((v) => v.color))].slice(0, 4),
+    [...new Set(loopValues.map((v) => v.color))].slice(0, 4)
   );
 
   // Glyph sample on the "Starting letter" mini tile: the first three real
   // letters of the catalog, rendered as actual TKA glyphs.
   const letterSample = $derived(
-    letterValues.slice(0, 3).map((v) => v.value).join(""),
+    letterValues
+      .slice(0, 3)
+      .map((v) => v.value)
+      .join("")
   );
 
   // Deterministic content peeks — same real sequences every visit.
@@ -414,7 +492,7 @@
   const lengthSub = $derived(
     lengthPair.min !== undefined && lengthPair.max !== undefined
       ? `${lengthPair.min} to ${lengthPair.max} steps`
-      : "Short to long",
+      : "Short to long"
   );
 
   // Fixed per-slot tilts (deterministic; random tilt reads as instability).
@@ -423,31 +501,132 @@
   // Peek art scales with the layout tier (the CSS container queries widen the
   // tiles past 900px / 1600px, but SequencePeek's box is a prop — phone-sized
   // art inside desktop tiles reads as an afterthought). Same thresholds as the
-  // @container rules so art and layout switch together. Thumbnails come from
-  // the 1024px static/cloud renders, so bigger boxes stay sharp.
+  // @container rules so art and layout switch together. Native-4K canvases
+  // add one final art tier once the host itself is at least 2600px wide.
+  // Thumbnails come from the 1024px static/cloud renders, so bigger boxes stay
+  // sharp.
   const PEEK_TIERS = {
-    base: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 44, collH: 34, levelW: 62, levelH: 56, creatorW: 44, creatorH: 54, badge: "18px" },
+    base: {
+      fanW: 76,
+      fanH: 92,
+      shortW: 56,
+      shortH: 84,
+      longW: 118,
+      longH: 84,
+      collW: 44,
+      collH: 34,
+      levelW: 62,
+      levelH: 56,
+      creatorW: 44,
+      creatorH: 54,
+      letterH: 26,
+      badge: "18px",
+    },
     // Mid (640–899): hero tiles sit two-up at ~350px — NARROWER than the
     // phone's full-width tiles, so fan/pair art stays base-sized. Only the
     // collage grows: show-all spans the full row there, and the 2x2 stamp
     // reads as an afterthought in it (the CSS lays it out 4-across).
-    mid: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 52, collH: 40, levelW: 62, levelH: 56, creatorW: 44, creatorH: 54, badge: "18px" },
+    mid: {
+      fanW: 76,
+      fanH: 92,
+      shortW: 56,
+      shortH: 84,
+      longW: 118,
+      longH: 84,
+      collW: 52,
+      collH: 40,
+      levelW: 62,
+      levelH: 56,
+      creatorW: 44,
+      creatorH: 54,
+      letterH: 30,
+      badge: "18px",
+    },
     // Level-screen art jumps hardest with width: on the desktop monument
     // columns a mini card is unreadable filler — at 150/200px the word and the
     // motions actually read, so the art argues for the level instead of
     // decorating it.
-    wide: { fanW: 112, fanH: 136, shortW: 82, shortH: 122, longW: 172, longH: 122, collW: 60, collH: 46, levelW: 150, levelH: 140, creatorW: 58, creatorH: 72, badge: "24px" },
-    ultra: { fanW: 132, fanH: 160, shortW: 96, shortH: 144, longW: 204, longH: 144, collW: 84, collH: 64, levelW: 200, levelH: 186, creatorW: 72, creatorH: 90, badge: "28px" },
+    wide: {
+      fanW: 112,
+      fanH: 136,
+      shortW: 82,
+      shortH: 122,
+      longW: 172,
+      longH: 122,
+      collW: 60,
+      collH: 46,
+      levelW: 150,
+      levelH: 140,
+      creatorW: 58,
+      creatorH: 72,
+      letterH: 36,
+      badge: "24px",
+    },
+    ultra: {
+      fanW: 132,
+      fanH: 160,
+      shortW: 96,
+      shortH: 144,
+      longW: 204,
+      longH: 144,
+      collW: 84,
+      collH: 64,
+      levelW: 200,
+      levelH: 186,
+      creatorW: 72,
+      creatorH: 90,
+      letterH: 44,
+      badge: "28px",
+    },
+    cinema: {
+      fanW: 198,
+      fanH: 240,
+      shortW: 144,
+      shortH: 216,
+      longW: 306,
+      longH: 216,
+      collW: 126,
+      collH: 96,
+      levelW: 300,
+      levelH: 279,
+      creatorW: 108,
+      creatorH: 135,
+      letterH: 60,
+      badge: "42px",
+    },
   } as const;
   let drillWidth = $state(0);
   const PEEK = $derived(
-    drillWidth >= 1600
-      ? PEEK_TIERS.ultra
-      : drillWidth >= 900
-        ? PEEK_TIERS.wide
-        : drillWidth >= 640
-          ? PEEK_TIERS.mid
-          : PEEK_TIERS.base,
+    fluidWideCanvas && drillWidth >= 2600
+      ? PEEK_TIERS.cinema
+      : drillWidth >= 1600
+        ? PEEK_TIERS.ultra
+        : drillWidth >= 900
+          ? PEEK_TIERS.wide
+          : drillWidth >= 640
+            ? PEEK_TIERS.mid
+            : PEEK_TIERS.base
+  );
+  const levelPeekWidth = $derived(
+    adaptiveValueLayout && drillWidth >= 640 && drillWidth < 900
+      ? 120
+      : adaptiveValueLayout && drillWidth >= 480 && drillWidth < 640
+        ? 104
+        : PEEK.levelW
+  );
+  const levelPeekHeight = $derived(
+    adaptiveValueLayout && drillWidth >= 640 && drillWidth < 900
+      ? 112
+      : adaptiveValueLayout && drillWidth >= 480 && drillWidth < 640
+        ? 97
+        : PEEK.levelH
+  );
+  const letterGlyphHeight = $derived(
+    adaptiveValueLayout && drillWidth < 640
+      ? 30
+      : adaptiveValueLayout
+        ? PEEK.letterH
+        : 26
   );
 
   function submitSearch(event: Event) {
@@ -458,7 +637,12 @@
 
   function pickLoop(v: { value: string; label: string; color: string }) {
     if (onToggleLoop) {
-      onToggleLoop(v.value, v.label, v.color, !(activeLoopValues?.has(v.value) ?? false));
+      onToggleLoop(
+        v.value,
+        v.label,
+        v.color,
+        !(activeLoopValues?.has(v.value) ?? false)
+      );
     } else {
       onApply(BrowseFilterType.LOOP_TYPE, v.value, v.label, v.color);
     }
@@ -466,14 +650,214 @@
 
   function pickFamily(v: { value: string; label: string; color: string }) {
     if (onToggleFamily) {
-      onToggleFamily(v.value, v.label, v.color, !(activeFamilyValues?.has(v.value) ?? false));
+      onToggleFamily(
+        v.value,
+        v.label,
+        v.color,
+        !(activeFamilyValues?.has(v.value) ?? false)
+      );
     } else {
       onApply(BrowseFilterType.TND_FAMILY, v.value, v.label, v.color);
     }
   }
 </script>
 
-<div class="drill" class:sheet={variant === "sheet"} bind:clientWidth={drillWidth}>
+{#snippet secondaryChoices(returnTo: "chooser" | "more")}
+  {#if letterValues.length > 1}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("letter", returnTo)}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <TKAWordGlyph word={letterSample} height={20} darkMode />
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Starting letter</span>
+        <span class="mini-sub">{letterValues.length} letters</span>
+      </span>
+    </button>
+  {/if}
+  <!-- A one-value category is a dead-end picker (its only value equals the
+       whole catalog), so require at least two real values. -->
+  {#if positionValues.length > 1}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("position", returnTo)}
+    >
+      <span class="mini-art plate" aria-hidden="true">
+        <img
+          src={positionValues[0]?.img}
+          alt=""
+          width="32"
+          height="32"
+          loading="lazy"
+        />
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Start position</span>
+        <span class="mini-sub">Alpha, beta, gamma</span>
+      </span>
+    </button>
+  {/if}
+  {#if gridModeValues.length > 1}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("gridmode", returnTo)}
+    >
+      <span class="mini-art plate" aria-hidden="true">
+        {#each gridModeValues as g (g.value)}
+          <img src={g.img} alt="" width="20" height="20" loading="lazy" />
+        {/each}
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Grid mode</span>
+        <span class="mini-sub">Diamond or box</span>
+      </span>
+    </button>
+  {/if}
+  <!-- Structure filters can narrow the catalog with one value. -->
+  {#if loopValues.length > 0}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("loop", returnTo)}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <span class="element-dots">
+          {#each loopDotColors as color (color)}
+            <span class="element-dot" style:background={color}></span>
+          {/each}
+        </span>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">LOOPs</span>
+        <span class="mini-sub">Mirrored, rotated, swapped…</span>
+      </span>
+    </button>
+  {/if}
+  {#if creatorValues.length > 1}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("author", returnTo)}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <span class="avatar-cluster">
+          {#each creatorTopThree as name (name)}
+            <RobustAvatar
+              class="cluster-avatar"
+              src={creatorAvatars.get(name)?.avatarUrl}
+              googleId={creatorAvatars.get(name)?.ownerId}
+              {name}
+              alt=""
+              customSize={26}
+            />
+          {/each}
+        </span>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Creator</span>
+        <span class="mini-sub">{creatorValues.length} creators</span>
+      </span>
+    </button>
+  {/if}
+  {#if recentCount > 0}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() =>
+        onApply(BrowseFilterType.RECENT, "recent", "Recently added")}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <i class="fas fa-clock-rotate-left"></i>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Recently added</span>
+        <span class="mini-sub">Last 30 days · {recentCount}</span>
+      </span>
+    </button>
+  {/if}
+  {#if favoritesCount > 0}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() =>
+        onApply(BrowseFilterType.FAVORITES, "favorites", "Favorites")}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <i class="fas fa-heart"></i>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Favorites</span>
+        <span class="mini-sub">{favoritesCount} saved</span>
+      </span>
+    </button>
+  {/if}
+  {#if familyValues.length > 0}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("family", returnTo)}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <span class="element-dots">
+          {#each TND_ELEMENTS as el (el.familyId)}
+            <span class="element-dot" style:background={el.accentColor}></span>
+          {/each}
+        </span>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Timing &amp; Direction</span>
+        <span class="mini-sub">The six families</span>
+      </span>
+    </button>
+  {/if}
+  {#if maxTurnIntensityValues.length > 1}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => openSection("max_turn_intensity", returnTo)}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <i class="fas fa-arrows-spin"></i>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Max turn intensity</span>
+        <span class="mini-sub">{maxTurnIntensityValues.length} levels</span>
+      </span>
+    </button>
+  {/if}
+  <!-- Collections is navigation, not a filter. Builder hosts disable it. -->
+  {#if shouldShowCollections}
+    <button
+      class="mini-tile"
+      type="button"
+      onclick={() => navigationState.setActiveTab("collections")}
+    >
+      <span class="mini-art" aria-hidden="true">
+        <i class="fas fa-folder"></i>
+      </span>
+      <span class="mini-main">
+        <span class="mini-title">Collections</span>
+        <span class="mini-sub">Curated by the community</span>
+      </span>
+    </button>
+  {/if}
+{/snippet}
+
+<div
+  class="drill"
+  data-section={section}
+  class:sheet={variant === "sheet"}
+  class:fluid-wide-canvas={fluidWideCanvas}
+  class:progressive-secondary-choices={progressiveSecondaryChoices}
+  class:unified-filter-chooser={unifiedFilterChooser}
+  class:adaptive-value-layout={adaptiveValueLayout}
+  bind:clientWidth={drillWidth}
+>
   <!-- Search renders wherever the host wires it — the page front door AND the
        filter sheet (the grid toolbar carries no search input; the sheet is the
        grid's complete find-surface). -->
@@ -498,8 +882,10 @@
       <button
         class="head-back"
         type="button"
-        onclick={() => (section = "chooser")}
-        aria-label="Back to browse options"
+        onclick={() => (section = returnSection)}
+        aria-label={returnSection === "more"
+          ? "Back to more filters"
+          : "Back to browse options"}
       >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         <!-- Icon-only reads as an anonymous circle when the wide stage strands
@@ -518,7 +904,7 @@
          is the sized box; layers fill it and each screen scrolls itself. -->
     <Crossfade key={section} duration={DURATION.normal} fill>
       {#if section === "chooser"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-chooser">
           <header class="drill-head">
             <h2>
               {chooserTitle ??
@@ -534,230 +920,187 @@
             </p>
           </header>
 
-          <!-- hero-grid: single column on phones (identical to the old stacked
-               flow), two-up on wide containers so the front door actually uses
-               a desktop monitor instead of floating as a 520px ribbon. -->
-          <div class="hero-grid" class:without-show-all={!showAll}>
-            <button class="choice-tile" type="button" onclick={() => (section = "level")}>
-              <span class="choice-main">
-                <span class="choice-title">By level</span>
-                <span class="choice-sub">Beginner to advanced</span>
-              </span>
-              <span class="peek-fan" aria-hidden="true">
-                {#each LEVELS as lvl, i (lvl)}
-                  <SequencePeek
-                    sequence={levelReps.get(lvl)}
-                    width={PEEK.fanW}
-                    height={PEEK.fanH}
-                    tilt={FAN_TILTS[i]}
-                  >
-                    {#snippet overlay()}
-                      <DifficultyBadge level={lvl} size={PEEK.badge} />
-                    {/snippet}
-                  </SequencePeek>
-                {/each}
-              </span>
-              <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
-            </button>
-
-            <button class="choice-tile" type="button" onclick={() => (section = "length")}>
-              <span class="choice-main">
-                <span class="choice-title">By length</span>
-                <span class="choice-sub">{lengthSub}</span>
-              </span>
-              <span class="peek-fan pair" aria-hidden="true">
-                <SequencePeek sequence={lengthPair.short} width={PEEK.shortW} height={PEEK.shortH} tilt={-3} />
-                <SequencePeek sequence={lengthPair.long} width={PEEK.longW} height={PEEK.longH} tilt={3} />
-              </span>
-              <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
-            </button>
-
-            <!-- Show-all lives IN the hero rank: it's the main door, not a
-                 footnote. Phone: third stacked tile (same order as before).
-                 Two-up tier: spans the full row. Ultra-wide: third hero door. -->
-            {#if showAll}
-              <button class="choice-tile compact" type="button" onclick={() => onShowAll?.()}>
-                <span class="choice-main">
-                  <span class="choice-title">Show all {pool.length} sequences</span>
-                  <span class="choice-sub">The whole gallery, one grid</span>
+          {#if unifiedFilterChooser}
+            <!-- Refinement is already a focused "add a filter" task. Put every
+                 available category in one consistent canvas instead of making
+                 two categories privileged and hiding the rest behind More. -->
+            <div class="mini-grid unified-choice-grid">
+              <button
+                class="mini-tile primary-filter-choice"
+                type="button"
+                onclick={() => openSection("level")}
+              >
+                <span class="mini-art" aria-hidden="true">
+                  <i class="fas fa-signal"></i>
                 </span>
-                <span class="peek-collage" aria-hidden="true">
-                  {#each collageSlots as seq, i (i)}
-                    <SequencePeek sequence={seq} width={PEEK.collW} height={PEEK.collH} />
+                <span class="mini-main">
+                  <span class="mini-title">Level</span>
+                  <span class="mini-sub">Beginner to advanced</span>
+                </span>
+              </button>
+
+              <button
+                class="mini-tile primary-filter-choice"
+                type="button"
+                onclick={() => openSection("length")}
+              >
+                <span class="mini-art" aria-hidden="true">
+                  <i class="fas fa-ruler-horizontal"></i>
+                </span>
+                <span class="mini-main">
+                  <span class="mini-title">Length</span>
+                  <span class="mini-sub">{lengthSub}</span>
+                </span>
+              </button>
+
+              {@render secondaryChoices("chooser")}
+            </div>
+          {:else}
+            <!-- hero-grid: single column on phones (identical to the old stacked
+                 flow), two-up on wide containers so the front door actually uses
+                 a desktop monitor instead of floating as a 520px ribbon. -->
+            <div class="hero-grid" class:without-show-all={!showAll}>
+              <button
+                class="choice-tile"
+                type="button"
+                onclick={() => openSection("level")}
+              >
+                <span class="choice-main">
+                  <span class="choice-title">By level</span>
+                  <span class="choice-sub">Beginner to advanced</span>
+                </span>
+                <span
+                  class="secondary-door-art compact-door-art"
+                  aria-hidden="true"
+                >
+                  <i class="fas fa-signal"></i>
+                </span>
+                <span class="peek-fan" aria-hidden="true">
+                  {#each LEVELS as lvl, i (lvl)}
+                    <SequencePeek
+                      sequence={levelReps.get(lvl)}
+                      width={PEEK.fanW}
+                      height={PEEK.fanH}
+                      tilt={FAN_TILTS[i]}
+                    >
+                      {#snippet overlay()}
+                        <DifficultyBadge level={lvl} size={PEEK.badge} />
+                      {/snippet}
+                    </SequencePeek>
                   {/each}
                 </span>
-                <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+                <i class="fas fa-chevron-right drill-chev" aria-hidden="true"
+                ></i>
               </button>
-            {/if}
-          </div>
 
-          {#if pool.length > 0}
-            <p class="more-head">More ways to browse</p>
-            <div class="mini-grid">
-              {#if letterValues.length > 1}
-                <button class="mini-tile" type="button" onclick={() => (section = "letter")}>
-                  <span class="mini-art" aria-hidden="true">
-                    <TKAWordGlyph word={letterSample} height={20} darkMode />
+              <button
+                class="choice-tile"
+                type="button"
+                onclick={() => openSection("length")}
+              >
+                <span class="choice-main">
+                  <span class="choice-title">By length</span>
+                  <span class="choice-sub">{lengthSub}</span>
+                </span>
+                <span
+                  class="secondary-door-art compact-door-art"
+                  aria-hidden="true"
+                >
+                  <i class="fas fa-ruler-horizontal"></i>
+                </span>
+                <span class="peek-fan pair" aria-hidden="true">
+                  <SequencePeek
+                    sequence={lengthPair.short}
+                    width={PEEK.shortW}
+                    height={PEEK.shortH}
+                    tilt={-3}
+                  />
+                  <SequencePeek
+                    sequence={lengthPair.long}
+                    width={PEEK.longW}
+                    height={PEEK.longH}
+                    tilt={3}
+                  />
+                </span>
+                <i class="fas fa-chevron-right drill-chev" aria-hidden="true"
+                ></i>
+              </button>
+
+              <!-- Show-all lives IN the hero rank: it's the main door, not a
+                   footnote. Phone: third stacked tile (same order as before).
+                   Two-up tier: spans the full row. Ultra-wide: third hero door. -->
+              {#if showAll}
+                <button
+                  class="choice-tile compact"
+                  type="button"
+                  onclick={() => onShowAll?.()}
+                >
+                  <span class="choice-main">
+                    <span class="choice-title"
+                      >Show all {pool.length} sequences</span
+                    >
+                    <span class="choice-sub">The whole gallery, one grid</span>
                   </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Starting letter</span>
-                    <span class="mini-sub">{letterValues.length} letters</span>
-                  </span>
-                </button>
-              {/if}
-              <!-- A one-value category is a dead-end picker (its only value
-                   = the whole catalog) — require at least two real values. -->
-              {#if positionValues.length > 1}
-                <button class="mini-tile" type="button" onclick={() => (section = "position")}>
-                  <span class="mini-art plate" aria-hidden="true">
-                    <img src={positionValues[0]?.img} alt="" width="32" height="32" loading="lazy" />
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Start position</span>
-                    <span class="mini-sub">Alpha, beta, gamma</span>
-                  </span>
-                </button>
-              {/if}
-              {#if gridModeValues.length > 1}
-                <button class="mini-tile" type="button" onclick={() => (section = "gridmode")}>
-                  <span class="mini-art plate" aria-hidden="true">
-                    {#each gridModeValues as g (g.value)}
-                      <img src={g.img} alt="" width="20" height="20" loading="lazy" />
+                  <span class="peek-collage" aria-hidden="true">
+                    {#each collageSlots as seq, i (i)}
+                      <SequencePeek
+                        sequence={seq}
+                        width={PEEK.collW}
+                        height={PEEK.collH}
+                      />
                     {/each}
                   </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Grid mode</span>
-                    <span class="mini-sub">Diamond or box</span>
-                  </span>
+                  <i class="fas fa-chevron-right drill-chev" aria-hidden="true"
+                  ></i>
                 </button>
               {/if}
-              <!-- Structure filters to a subset even with one value, so no
-                   two-value gate like the categories above. (loopValues
-                   already retains applied-at-zero values, so the tile can't
-                   disappear while a structure filter is active.) -->
-              {#if loopValues.length > 0}
-                <button class="mini-tile" type="button" onclick={() => (section = "loop")}>
-                  <span class="mini-art" aria-hidden="true">
-                    <span class="element-dots">
-                      {#each loopDotColors as color (color)}
-                        <span class="element-dot" style:background={color}></span>
-                      {/each}
-                    </span>
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">LOOPs</span>
-                    <span class="mini-sub">Mirrored, rotated, swapped…</span>
-                  </span>
-                </button>
-              {/if}
-              {#if creatorValues.length > 1}
-                <button class="mini-tile" type="button" onclick={() => (section = "author")}>
-                  <span class="mini-art" aria-hidden="true">
-                    <span class="avatar-cluster">
-                      {#each creatorTopThree as name (name)}
-                        <RobustAvatar
-                          class="cluster-avatar"
-                          src={creatorAvatars.get(name)?.avatarUrl}
-                          googleId={creatorAvatars.get(name)?.ownerId}
-                          {name}
-                          alt=""
-                          customSize={26}
-                        />
-                      {/each}
-                    </span>
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Creator</span>
-                    <span class="mini-sub">{creatorValues.length} creators</span>
-                  </span>
-                </button>
-              {/if}
-              {#if recentCount > 0}
+
+              {#if progressiveSecondaryChoices && pool.length > 0}
                 <button
-                  class="mini-tile"
+                  class="choice-tile secondary-door"
                   type="button"
-                  onclick={() => onApply(BrowseFilterType.RECENT, "recent", "Recently added")}
+                  onclick={() => {
+                    returnSection = "chooser";
+                    section = "more";
+                  }}
                 >
-                  <span class="mini-art" aria-hidden="true">
-                    <i class="fas fa-clock-rotate-left"></i>
+                  <span class="choice-main">
+                    <span class="choice-title">More filters</span>
+                    <span class="choice-sub"
+                      >Letter, position, LOOPs, and more</span
+                    >
                   </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Recently added</span>
-                    <span class="mini-sub">Last 30 days · {recentCount}</span>
+                  <span class="secondary-door-art" aria-hidden="true">
+                    <i class="fas fa-sliders"></i>
                   </span>
-                </button>
-              {/if}
-              {#if favoritesCount > 0}
-                <button
-                  class="mini-tile"
-                  type="button"
-                  onclick={() => onApply(BrowseFilterType.FAVORITES, "favorites", "Favorites")}
-                >
-                  <span class="mini-art" aria-hidden="true">
-                    <i class="fas fa-heart"></i>
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Favorites</span>
-                    <span class="mini-sub">{favoritesCount} saved</span>
-                  </span>
-                </button>
-              {/if}
-              <!-- Real composable filter (families derived per step from
-                   arc geometry) — available in page AND sheet, like LOOPs. -->
-              {#if familyValues.length > 0}
-                <button class="mini-tile" type="button" onclick={() => (section = "family")}>
-                  <span class="mini-art" aria-hidden="true">
-                    <span class="element-dots">
-                      {#each TND_ELEMENTS as el (el.familyId)}
-                        <span class="element-dot" style:background={el.accentColor}></span>
-                      {/each}
-                    </span>
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Timing &amp; Direction</span>
-                    <span class="mini-sub">The six families</span>
-                  </span>
-                </button>
-              {/if}
-              {#if maxTurnIntensityValues.length > 1}
-                <button
-                  class="mini-tile"
-                  type="button"
-                  onclick={() => (section = "max_turn_intensity")}
-                >
-                  <span class="mini-art" aria-hidden="true">
-                    <i class="fas fa-arrows-spin"></i>
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Max turn intensity</span>
-                    <span class="mini-sub">{maxTurnIntensityValues.length} levels</span>
-                  </span>
-                </button>
-              {/if}
-              <!-- Discovery, not a filter: community-collection browsing lives
-                   in its own Browse sub-tab now, so this tile just switches to
-                   it (the same nav seam the tab bar uses). Only the page front
-                   door shows it — a filter sheet must never navigate away. -->
-              {#if shouldShowCollections}
-                <button
-                  class="mini-tile"
-                  type="button"
-                  onclick={() => navigationState.setActiveTab("collections")}
-                >
-                  <span class="mini-art" aria-hidden="true">
-                    <i class="fas fa-folder"></i>
-                  </span>
-                  <span class="mini-main">
-                    <span class="mini-title">Collections</span>
-                    <span class="mini-sub">Curated by the community</span>
-                  </span>
+                  <i class="fas fa-chevron-right drill-chev" aria-hidden="true"
+                  ></i>
                 </button>
               {/if}
             </div>
+
+            {#if pool.length > 0}
+              <div class="inline-secondary-choices">
+                <p class="more-head">More ways to browse</p>
+                <div class="mini-grid">
+                  {@render secondaryChoices("chooser")}
+                </div>
+              </div>
+            {/if}
           {/if}
         </div>
+      {:else if section === "more"}
+        <div class="drill-screen screen-more">
+          {@render valueHead(
+            "More filters",
+            "Choose another way to narrow the collection."
+          )}
+          <div class="mini-grid">
+            {@render secondaryChoices("more")}
+          </div>
+        </div>
       {:else if section === "level"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-level">
           {@render valueHead("Pick a level")}
           <div class="value-list">
             {#each levelValues as v (v.value)}
@@ -767,12 +1110,15 @@
                 type="button"
                 style:background={style?.cssBg}
                 style:color={style?.text ?? "#000"}
-                onclick={() => onApply(BrowseFilterType.DIFFICULTY, v.value, v.label)}
+                onclick={() =>
+                  onApply(BrowseFilterType.DIFFICULTY, v.value, v.label)}
               >
                 <span class="value-numeral">{v.value}</span>
                 <span class="value-main">
                   <span class="value-label">Level {v.value}</span>
-                  <span class="value-desc on-gradient">{LEVEL_DESCRIPTIONS[v.value]}</span>
+                  <span class="value-desc on-gradient"
+                    >{LEVEL_DESCRIPTIONS[v.value]}</span
+                  >
                   <span class="density-bar on-gradient">
                     <span
                       class="density-fill"
@@ -781,20 +1127,25 @@
                   </span>
                 </span>
                 <span class="value-count">{v.count}</span>
-                <SequencePeek sequence={levelReps.get(v.value)} width={PEEK.levelW} height={PEEK.levelH} />
+                <SequencePeek
+                  sequence={levelReps.get(v.value)}
+                  width={levelPeekWidth}
+                  height={levelPeekHeight}
+                />
               </button>
             {/each}
           </div>
         </div>
       {:else if section === "length"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-length">
           {@render valueHead("Pick a length")}
           <div class="value-list">
             {#each lengthValues as v (v.value)}
               <button
                 class="length-row monument"
                 type="button"
-                onclick={() => onApply(BrowseFilterType.LENGTH, v.value, v.label)}
+                onclick={() =>
+                  onApply(BrowseFilterType.LENGTH, v.value, v.label)}
               >
                 <span class="value-numeral small">{v.value}</span>
                 <span class="value-main">
@@ -812,14 +1163,19 @@
           </div>
         </div>
       {:else if section === "max_turn_intensity"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-max-turns">
           {@render valueHead("Pick a max turn intensity")}
           <div class="value-list">
             {#each maxTurnIntensityValues as v (v.value)}
               <button
                 class="length-row monument"
                 type="button"
-                onclick={() => onApply(BrowseFilterType.MAX_TURN_INTENSITY, v.value, v.label)}
+                onclick={() =>
+                  onApply(
+                    BrowseFilterType.MAX_TURN_INTENSITY,
+                    v.value,
+                    v.label
+                  )}
               >
                 <span class="value-numeral small">≤{v.value}</span>
                 <span class="value-main">
@@ -837,7 +1193,7 @@
           </div>
         </div>
       {:else if section === "letter"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-letter">
           {@render valueHead("Pick a starting letter")}
           <div class="letter-grid">
             {#each letterValues as v (v.value)}
@@ -845,10 +1201,15 @@
                 class="letter-chip"
                 type="button"
                 aria-label="{v.value}, {v.count} sequences"
-                onclick={() => onApply(BrowseFilterType.STARTING_LETTER, v.value, v.value)}
+                onclick={() =>
+                  onApply(BrowseFilterType.STARTING_LETTER, v.value, v.value)}
               >
-                <span class="letter-glyph">
-                  <TKAWordGlyph word={v.value} height={26} darkMode />
+                <span class="letter-glyph" style:height="{letterGlyphHeight}px">
+                  <TKAWordGlyph
+                    word={v.value}
+                    height={letterGlyphHeight}
+                    darkMode
+                  />
                 </span>
                 <span class="letter-count">{v.count}</span>
               </button>
@@ -863,7 +1224,8 @@
               <button
                 class="length-row tall monument"
                 type="button"
-                onclick={() => onApply(BrowseFilterType.STARTING_POSITION, v.value, v.label)}
+                onclick={() =>
+                  onApply(BrowseFilterType.STARTING_POSITION, v.value, v.label)}
               >
                 <span class="value-pictograph" aria-hidden="true">
                   {#if startPosPictographs.get(v.value)}
@@ -899,7 +1261,9 @@
               <button
                 class="length-row tall creator-row"
                 type="button"
-                onclick={() => onApply(BrowseFilterType.OWNER, v.value, v.value)}
+                aria-label={`${v.value}, ${v.count} sequences`}
+                onclick={() =>
+                  onApply(BrowseFilterType.OWNER, v.value, v.value)}
               >
                 <RobustAvatar
                   class="creator-avatar"
@@ -907,10 +1271,10 @@
                   googleId={creatorAvatars.get(v.value)?.ownerId}
                   name={v.value}
                   alt=""
-                  customSize={44}
+                  customSize={adaptiveValueLayout && drillWidth < 640 ? 36 : 44}
                 />
                 <span class="value-main">
-                  <span class="value-label">{v.value}</span>
+                  <span class="value-label" title={v.value}>{v.value}</span>
                   <span class="density-bar">
                     <span
                       class="density-fill"
@@ -943,9 +1307,17 @@
               <button
                 class="length-row tall monument"
                 type="button"
-                onclick={() => onApply(BrowseFilterType.GRID_MODE, v.value, v.label)}
+                onclick={() =>
+                  onApply(BrowseFilterType.GRID_MODE, v.value, v.label)}
               >
-                <img class="value-img plate" src={v.img} alt="" width="56" height="56" loading="lazy" />
+                <img
+                  class="value-img plate"
+                  src={v.img}
+                  alt=""
+                  width="56"
+                  height="56"
+                  loading="eager"
+                />
                 <span class="value-main">
                   <span class="value-label">{v.label}</span>
                   <span class="value-desc">{v.desc}</span>
@@ -962,10 +1334,12 @@
           </div>
         </div>
       {:else if section === "loop"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-loop">
           {@render valueHead(
             "Pick a LOOP type",
-            onToggleLoop ? "LOOPs stack. Tap several to combine them." : undefined,
+            onToggleLoop
+              ? "LOOPs stack. Tap several to combine them."
+              : undefined
           )}
           <div class="value-list">
             {#each loopValues as v (v.value)}
@@ -978,7 +1352,11 @@
                 aria-pressed={onToggleLoop ? isOn : undefined}
                 onclick={() => pickLoop(v)}
               >
-                <span class="loop-icon" style:color={v.color} aria-hidden="true">
+                <span
+                  class="loop-icon"
+                  style:color={v.color}
+                  aria-hidden="true"
+                >
                   <i class="fas {v.icon}"></i>
                 </span>
                 <span class="value-main">
@@ -1004,12 +1382,10 @@
           </div>
         </div>
       {:else if section === "family"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-family">
           {@render valueHead(
             "Pick a family",
-            onToggleFamily
-              ? "Timing is how far apart the hands are; direction is whether they rotate the same way or opposite ways. Tap several to combine them."
-              : "Timing is how far apart the hands are; direction is whether they rotate the same way or opposite ways.",
+            onToggleFamily ? "Tap several to combine families." : undefined
           )}
           <div class="value-list">
             {#each familyValues as v (v.value)}
@@ -1019,10 +1395,18 @@
                 class:loop-active={isOn}
                 style:--row-color={v.color}
                 type="button"
+                aria-label={`${v.label}, ${v.element}, ${v.count} sequences`}
                 aria-pressed={onToggleFamily ? isOn : undefined}
                 onclick={() => pickFamily(v)}
               >
-                <img class="value-img family-icon" src={v.icon} alt="" width="44" height="44" loading="lazy" />
+                <img
+                  class="value-img family-icon"
+                  src={v.icon}
+                  alt=""
+                  width="44"
+                  height="44"
+                  loading="lazy"
+                />
                 <span class="value-main">
                   <span class="value-label">
                     {v.label}
@@ -1222,6 +1606,31 @@
   .choice-tile.compact {
     min-height: 84px;
   }
+  .secondary-door {
+    display: none;
+  }
+  .secondary-door-art {
+    display: flex;
+    width: 3.25rem;
+    height: 3.25rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.25rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+    border-radius: 1rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 14%,
+      transparent
+    );
+    color: var(--theme-accent, #6366f1);
+    font-size: 1.15rem;
+  }
+  .compact-door-art {
+    display: none;
+  }
   .choice-main {
     flex: 1;
     min-width: 0;
@@ -1282,10 +1691,16 @@
     color: var(--theme-text-muted, #9aa6b8);
     text-align: center;
   }
+  .inline-secondary-choices {
+    display: contents;
+  }
   .mini-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.6rem;
+  }
+  .screen-more .mini-grid {
+    width: 100%;
   }
   .mini-tile {
     display: flex;
@@ -1300,7 +1715,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #e8edf6);
     cursor: pointer;
-    transition: border-color 0.16s ease, transform 0.16s ease;
+    transition:
+      border-color 0.16s ease,
+      transform 0.16s ease;
   }
   .mini-tile:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
@@ -1394,7 +1811,9 @@
     border-radius: 16px;
     border: 1px solid rgba(0, 0, 0, 0.35);
     cursor: pointer;
-    transition: transform 0.16s ease, filter 0.16s ease;
+    transition:
+      transform 0.16s ease,
+      filter 0.16s ease;
   }
   .level-tile:hover {
     transform: translateY(-1px);
@@ -1419,7 +1838,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #e8edf6);
     cursor: pointer;
-    transition: border-color 0.16s ease, transform 0.16s ease;
+    transition:
+      border-color 0.16s ease,
+      transform 0.16s ease;
   }
   .length-row:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
@@ -1599,7 +2020,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #e8edf6);
     cursor: pointer;
-    transition: border-color 0.16s ease, transform 0.16s ease;
+    transition:
+      border-color 0.16s ease,
+      transform 0.16s ease;
   }
   .letter-chip:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
@@ -1888,10 +2311,18 @@
     }
     /* Monument order: rank numeral → showcase card → description → count.
        (DOM keeps the phone row order; flex `order` re-stacks the column.) */
-    .level-tile .value-numeral { order: 1; }
-    .level-tile :global(.peek) { order: 2; }
-    .level-tile .value-main { order: 3; }
-    .level-tile .value-count { order: 4; }
+    .level-tile .value-numeral {
+      order: 1;
+    }
+    .level-tile :global(.peek) {
+      order: 2;
+    }
+    .level-tile .value-main {
+      order: 3;
+    }
+    .level-tile .value-count {
+      order: 4;
+    }
     .level-tile .value-main {
       align-items: center;
       gap: 0.45rem;
@@ -1968,8 +2399,8 @@
      Past 1600px the two-up tier starts leaving real acreage unused, so the
      chooser becomes a three-door hub: level / length / show-all as equal hero
      panels in one row, with the ultra PEEK art tier filling them. The stage
-     itself widens to ~1760px — wider still just stretches travel distance
-     between choices without adding information. */
+     then grows fluidly with its host and caps at 2496px, so 4K canvases gain
+     useful scale without turning choices into edge-to-edge targets. */
   @container drill (min-width: 1600px) {
     .drill-stage {
       max-width: 1760px;
@@ -2026,6 +2457,41 @@
     .element-dot {
       width: 10px;
       height: 10px;
+    }
+
+    /* A focused full-screen host can opt into a band that grows through the
+       three 4K tiers. The default page and sheet geometry stays untouched. */
+    .drill.fluid-wide-canvas .drill-stage {
+      max-width: clamp(110rem, 80cqw, 156rem);
+    }
+    .drill.fluid-wide-canvas .hero-grid.without-show-all {
+      max-width: clamp(72.5rem, 65cqw, 146rem);
+      align-self: center;
+      justify-self: auto;
+    }
+    .drill.fluid-wide-canvas .choice-tile,
+    .drill.fluid-wide-canvas .choice-tile.compact {
+      min-height: clamp(13.5rem, 12cqw, 20rem);
+      padding: clamp(1.3rem, 1.1cqw, 2.2rem) clamp(2.6rem, 2cqw, 4rem)
+        clamp(1.3rem, 1.1cqw, 2.2rem) clamp(1.7rem, 1.4cqw, 2.8rem);
+      border-radius: clamp(1.5rem, 1.1cqw, 2rem);
+    }
+    .drill.fluid-wide-canvas .choice-title {
+      font-size: clamp(1.45rem, 1.05cqw, 2rem);
+    }
+    .drill.fluid-wide-canvas .choice-sub {
+      font-size: clamp(1rem, 0.72cqw, 1.35rem);
+    }
+    .drill.fluid-wide-canvas .mini-tile {
+      min-height: clamp(5.75rem, 5cqw, 8.5rem);
+      padding: clamp(0.9rem, 0.72cqw, 1.35rem) clamp(1.1rem, 0.9cqw, 1.7rem);
+      border-radius: clamp(1rem, 0.7cqw, 1.5rem);
+    }
+    .drill.fluid-wide-canvas .mini-title {
+      font-size: clamp(1.05rem, 0.78cqw, 1.4rem);
+    }
+    .drill.fluid-wide-canvas .mini-sub {
+      font-size: clamp(0.82rem, 0.58cqw, 1.05rem);
     }
 
     .value-list {
@@ -2093,6 +2559,1693 @@
     }
     .monument .value-label {
       font-size: 1.15rem;
+    }
+  }
+
+  /* The secondary hub earns its canvas at each size instead of preserving the
+     compact rows used when these choices sit beneath the primary doors. */
+  @container drill (min-width: 640px) and (max-width: 899.98px) {
+    .drill.progressive-secondary-choices .screen-more {
+      gap: 1.25rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.875rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-tile {
+      min-height: clamp(7.5rem, 12dvh, 9.5rem);
+      padding: 1rem 1.125rem;
+      border-radius: 1.125rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-art {
+      min-width: 3.25rem;
+      height: 3.25rem;
+      font-size: 1.15rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-title {
+      font-size: 1rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-sub {
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(7) {
+      grid-column: 1 / -1;
+      width: calc(50% - 0.4375rem);
+      justify-self: center;
+    }
+  }
+
+  @container drill (min-width: 900px) {
+    .drill.progressive-secondary-choices .screen-more {
+      gap: 1.5rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-tile {
+      min-height: clamp(9rem, 17dvh, 11rem);
+      padding: 1.25rem;
+      border-radius: 1.25rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-art {
+      min-width: 3.5rem;
+      height: 3.5rem;
+      font-size: 1.25rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-title {
+      font-size: 1.1rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-sub {
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    /* Seven choices form a balanced 4 + 3 composition instead of leaving the
+       final row visibly pinned to one side. */
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child) {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > .mini-tile {
+      grid-column: span 2;
+    }
+
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(5) {
+      grid-column: 2 / span 2;
+      grid-row: 2;
+    }
+  }
+
+  @container drill (min-width: 1600px) {
+    .drill.progressive-secondary-choices .screen-more .mini-grid {
+      gap: 1.25rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-tile {
+      min-height: clamp(10rem, 17dvh, 16rem);
+      padding: 1.5rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-art {
+      min-width: 4rem;
+      height: 4rem;
+      font-size: 1.4rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-title {
+      font-size: 1.2rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-sub {
+      font-size: 0.92rem;
+    }
+  }
+
+  @container drill (min-width: 2200px) {
+    .drill.progressive-secondary-choices .screen-more .mini-grid,
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > .mini-tile,
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(5) {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(7) {
+      grid-column: 2;
+    }
+  }
+
+  @container drill (min-width: 2600px) {
+    .drill.progressive-secondary-choices .screen-more .mini-grid {
+      gap: 1.5rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-tile {
+      min-height: clamp(14rem, 18dvh, 22rem);
+      padding: 2rem;
+      border-radius: 1.75rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-art {
+      min-width: 6rem;
+      height: 6rem;
+      font-size: 1.9rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-title {
+      font-size: 1.65rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-sub {
+      font-size: 1.15rem;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .drill.progressive-secondary-choices .inline-secondary-choices {
+      display: none;
+    }
+
+    .drill.progressive-secondary-choices .secondary-door {
+      display: flex;
+    }
+
+    .drill.progressive-secondary-choices .screen-more {
+      justify-content: flex-start;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-tile {
+      min-height: 5.25rem;
+      padding: 0.65rem 0.7rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-art {
+      min-width: 2.75rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-title {
+      line-height: 1.2;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-sub {
+      display: none;
+    }
+
+    .drill.progressive-secondary-choices
+      .screen-more
+      .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(7) {
+      grid-column: 1 / -1;
+      width: calc(50% - 0.3125rem);
+      justify-self: center;
+    }
+  }
+
+  /* Short landscape is a different information problem, not a smaller
+     desktop. Keep the two common doors and replace the clipped secondary wall
+     with one explicit next step. The opt-in class protects every established
+     GalleryDrill host. */
+  @media (min-width: 700px) and (max-height: 520px) {
+    .drill.progressive-secondary-choices .inline-secondary-choices {
+      display: none;
+    }
+
+    .drill.progressive-secondary-choices .secondary-door {
+      display: flex;
+    }
+
+    .drill.progressive-secondary-choices .hero-grid.without-show-all {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      max-width: none;
+      align-self: stretch;
+    }
+
+    .drill.progressive-secondary-choices .drill-stage {
+      max-width: none;
+    }
+
+    .drill.progressive-secondary-choices .secondary-door-art {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 0.75rem;
+    }
+
+    .drill.progressive-secondary-choices .compact-door-art {
+      display: flex;
+    }
+
+    .drill.progressive-secondary-choices .hero-grid .peek-fan {
+      display: none;
+    }
+
+    .drill.progressive-secondary-choices .screen-more {
+      justify-content: flex-start;
+      gap: 1.25rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-tile {
+      min-height: 3.25rem;
+      padding: 0.45rem 0.6rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-art {
+      min-width: 2.25rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-title {
+      font-size: 0.84rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-more .mini-sub {
+      font-size: 0.7rem;
+    }
+
+    .drill.progressive-secondary-choices .drill-screen > .drill-head.with-back,
+    .drill.progressive-secondary-choices .drill-screen > .value-list,
+    .drill.progressive-secondary-choices .drill-screen > .letter-grid {
+      max-width: none;
+    }
+
+    .drill.progressive-secondary-choices .value-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .drill.progressive-secondary-choices .screen-length > .value-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .drill.progressive-secondary-choices .screen-gridmode > .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 40rem;
+    }
+
+    .drill.progressive-secondary-choices .value-list.creator-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: none;
+    }
+
+    .drill.progressive-secondary-choices .level-tile {
+      min-height: 5.5rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.875rem;
+      text-align: left;
+    }
+
+    .drill.progressive-secondary-choices .level-tile :global(.peek) {
+      display: none;
+    }
+
+    .drill.progressive-secondary-choices .level-tile .value-numeral {
+      min-width: 2.25rem;
+      font-size: 2rem;
+    }
+
+    .drill.progressive-secondary-choices .level-tile .value-main {
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .drill.progressive-secondary-choices .level-tile .value-label,
+    .drill.progressive-secondary-choices .level-tile .value-count {
+      font-size: 0.9rem;
+    }
+
+    .drill.progressive-secondary-choices .level-tile .value-desc {
+      font-size: 0.72rem;
+    }
+
+    .drill.progressive-secondary-choices .length-row.monument {
+      min-height: 3.5rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 0.75rem;
+      text-align: left;
+    }
+
+    .drill.progressive-secondary-choices .monument .value-main {
+      align-items: flex-start;
+      gap: 0.2rem;
+    }
+
+    .drill.progressive-secondary-choices .monument .value-img,
+    .drill.progressive-secondary-choices .monument .value-img.family-icon,
+    .drill.progressive-secondary-choices .monument .value-pictograph {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .drill.progressive-secondary-choices .monument .value-numeral.small {
+      font-size: 1.75rem;
+    }
+
+    .drill.progressive-secondary-choices .monument .loop-icon {
+      font-size: 1.5rem;
+    }
+
+    .drill.progressive-secondary-choices .monument .value-label,
+    .drill.progressive-secondary-choices .monument .value-count {
+      font-size: 0.84rem;
+    }
+
+    .drill.progressive-secondary-choices .creator-row {
+      min-height: 3.5rem;
+      padding: 0.45rem 0.65rem;
+    }
+
+    .drill.progressive-secondary-choices .letter-grid {
+      grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+      gap: 0.45rem;
+    }
+
+    .drill.progressive-secondary-choices .letter-chip {
+      min-height: 3.25rem;
+    }
+  }
+
+  /* ── Smart Collection decision canvas ─────────────────────────────
+     The standard Gallery front door remains editorial and progressive. A
+     Smart Collection refinement is a different job: the user has explicitly
+     asked to add one filter inside a fixed-height workspace. Its opt-in canvas
+     therefore shows every available category together and recomposes value
+     choices by their real cardinality. Scrolling remains a safety fallback for
+     an unusually large live catalog, not the default navigation mechanism. */
+  .drill.unified-filter-chooser .screen-chooser {
+    justify-content: safe center;
+    overflow-y: auto;
+  }
+
+  .unified-choice-grid {
+    width: min(100%, 72rem);
+    flex: 0 1 auto;
+    align-self: center;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(5.5rem, auto);
+  }
+
+  .unified-choice-grid .mini-tile {
+    min-height: 5.5rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+  }
+
+  .unified-choice-grid .mini-main {
+    flex: 0 1 auto;
+    align-items: center;
+  }
+
+  .unified-choice-grid .mini-art {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 38%, transparent);
+    border-radius: 0.8rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 12%,
+      transparent
+    );
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .unified-choice-grid .mini-art.plate {
+    background: #fff;
+  }
+
+  .unified-choice-grid:has(> :nth-child(2):last-child),
+  .unified-choice-grid:has(> :nth-child(4):last-child),
+  .unified-choice-grid:has(> :nth-child(8):last-child),
+  .unified-choice-grid:has(> :nth-child(10):last-child) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .unified-choice-grid:has(> :nth-child(5):last-child) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .unified-choice-grid:has(> :nth-child(5):last-child) > .mini-tile {
+    grid-column: span 2;
+  }
+
+  .unified-choice-grid:has(> :nth-child(5):last-child) > :last-child {
+    grid-column: 2 / span 2;
+  }
+
+  .unified-choice-grid:has(> :nth-child(7):last-child) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .unified-choice-grid:has(> :nth-child(7):last-child) > .mini-tile {
+    grid-column: span 2;
+  }
+
+  .unified-choice-grid:has(> :nth-child(7):last-child) > :last-child {
+    grid-column: 3 / span 2;
+  }
+
+  .drill.adaptive-value-layout
+    .drill-screen:not(.screen-chooser):not(.screen-more) {
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .drill.adaptive-value-layout .screen-more {
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .drill.adaptive-value-layout .screen-more > .mini-grid {
+    width: min(100%, 90rem);
+    flex: 1 1 0;
+    min-height: 0;
+    align-self: center;
+    align-content: center;
+    grid-auto-rows: minmax(44px, auto);
+  }
+
+  .drill.adaptive-value-layout .screen-more .mini-tile {
+    height: auto;
+    min-height: 44px;
+  }
+
+  .drill.adaptive-value-layout .drill-head.with-back {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    width: min(100%, var(--decision-band-width, 90rem));
+    max-width: var(--decision-band-width, 90rem);
+    flex: 0 0 auto;
+    align-self: center;
+    padding-bottom: 0.25rem;
+    background: var(--theme-panel-bg, #11131a);
+  }
+
+  .drill.adaptive-value-layout .value-list,
+  .drill.adaptive-value-layout .letter-grid {
+    display: grid;
+    width: min(100%, var(--decision-band-width, 90rem));
+    max-width: var(--decision-band-width, 90rem);
+    flex: 1 1 0;
+    min-height: 0;
+    align-self: center;
+    align-content: center;
+    gap: 0.5rem;
+  }
+
+  /* The grid diagram is the choice, so it owns the card. The old 44px plate
+     made Diamond and Box look like tiny decorative icons instead of spatial
+     examples the user could compare. */
+  .drill.adaptive-value-layout .screen-gridmode .value-img.plate {
+    width: clamp(5.5rem, 24cqw, 9rem);
+    height: clamp(5.5rem, 24cqw, 9rem);
+    padding: clamp(0.4rem, 1.5cqw, 0.75rem);
+    border-radius: 1rem;
+  }
+
+  .drill.adaptive-value-layout .screen-gridmode .value-label {
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .drill.adaptive-value-layout .screen-gridmode .value-desc {
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.3;
+  }
+
+  .drill.adaptive-value-layout .level-tile,
+  .drill.adaptive-value-layout .length-row.monument {
+    height: auto;
+    min-height: 44px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem;
+    border-radius: 1rem;
+    text-align: center;
+  }
+
+  .drill.adaptive-value-layout .screen-level,
+  .drill.adaptive-value-layout .screen-positions {
+    --decision-band-width: 96rem;
+  }
+
+  .drill.adaptive-value-layout .screen-gridmode {
+    --decision-band-width: 64rem;
+  }
+
+  .drill.adaptive-value-layout .screen-letter {
+    --decision-band-width: 104rem;
+  }
+
+  .drill.adaptive-value-layout .level-tile .value-main,
+  .drill.adaptive-value-layout .monument .value-main {
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .drill.adaptive-value-layout .level-tile .density-bar,
+  .drill.adaptive-value-layout .monument .density-bar {
+    margin-inline: auto;
+  }
+
+  .drill.adaptive-value-layout .length-row.monument {
+    position: relative;
+  }
+
+  .drill.adaptive-value-layout .loop-check {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+  }
+
+  @container drill (max-width: 639.98px) {
+    .drill.unified-filter-chooser {
+      padding: 0.35rem 0.75rem 0.6rem;
+    }
+
+    .drill.unified-filter-chooser .drill-screen {
+      gap: 0.55rem;
+    }
+
+    .unified-choice-grid {
+      gap: 0.35rem;
+      grid-auto-rows: minmax(3.25rem, auto);
+    }
+
+    .unified-choice-grid .mini-tile {
+      min-height: 3.25rem;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.45rem;
+      padding: 0.3rem 0.45rem;
+      border-radius: 0.75rem;
+      text-align: left;
+    }
+
+    .unified-choice-grid .mini-art {
+      width: 2rem;
+      min-width: 2rem;
+      height: 2rem;
+      border-radius: 0.6rem;
+    }
+
+    .unified-choice-grid .mini-main {
+      flex: 1;
+      min-width: 0;
+      align-items: flex-start;
+    }
+
+    .unified-choice-grid .mini-title {
+      width: 100%;
+      overflow: hidden;
+      font-size: var(--font-size-sm, 14px);
+      line-height: 1.15;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .unified-choice-grid .mini-sub {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      font-size: var(--font-size-compact, 12px);
+      line-height: 1.2;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Nine is the common Community catalog and earns the full 3 × 3 canvas.
+       Even-sized alternatives keep two equal columns and fill vertically. */
+    .unified-choice-grid:has(> :nth-child(2):last-child),
+    .unified-choice-grid:has(> :nth-child(4):last-child),
+    .unified-choice-grid:has(> :nth-child(8):last-child),
+    .unified-choice-grid:has(> :nth-child(10):last-child) {
+      grid-auto-rows: minmax(3.25rem, auto);
+    }
+
+    .drill.adaptive-value-layout .drill-screen {
+      gap: 0.45rem;
+    }
+
+    .drill.adaptive-value-layout .drill-head h2 {
+      font-size: 1.05rem;
+    }
+
+    .drill.adaptive-value-layout .drill-head p {
+      font-size: 0.72rem;
+      line-height: 1.25;
+      text-wrap: balance;
+    }
+
+    .drill.adaptive-value-layout .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: minmax(44px, auto);
+    }
+
+    .drill.adaptive-value-layout .screen-level > .value-list,
+    .drill.adaptive-value-layout .screen-positions > .value-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout
+      .screen-max-turns
+      > .value-list:has(> :nth-child(6):last-child) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(5):last-child)
+      > :last-child,
+    .drill.adaptive-value-layout
+      .screen-loop
+      > .value-list:has(> :nth-child(7):last-child)
+      > :last-child,
+    .drill.adaptive-value-layout
+      .screen-creator
+      > .value-list:has(> :nth-child(7):last-child)
+      > :last-child {
+      width: calc(50% - 0.25rem);
+      grid-column: 1 / -1;
+      justify-self: center;
+    }
+
+    .drill.adaptive-value-layout .screen-letter > .letter-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-auto-rows: minmax(44px, 3.25rem);
+      align-content: space-evenly;
+      gap: 0.35rem;
+    }
+
+    .drill.adaptive-value-layout .screen-letter > .letter-grid > * {
+      grid-column: span 2;
+    }
+
+    /* The live catalog currently has 46 letters. Center its final four while
+       retaining six equal-width targets on every complete row. */
+    .drill.adaptive-value-layout
+      .screen-letter
+      > .letter-grid:has(> :nth-child(46):last-child)
+      > :nth-child(43) {
+      grid-column: 3 / span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-letter
+      > .letter-grid:has(> :nth-child(46):last-child)
+      > :nth-child(44) {
+      grid-column: 5 / span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-letter
+      > .letter-grid:has(> :nth-child(46):last-child)
+      > :nth-child(45) {
+      grid-column: 7 / span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-letter
+      > .letter-grid:has(> :nth-child(46):last-child)
+      > :nth-child(46) {
+      grid-column: 9 / span 2;
+    }
+
+    .drill.adaptive-value-layout .letter-chip {
+      height: 100%;
+      min-height: 44px;
+      gap: 0;
+      padding: 0.25rem;
+      border-radius: 0.55rem;
+    }
+
+    /* The glyph is the decision. Counts remain in the accessible name but do
+       not steal the 44px phone target's visual area. */
+    .drill.adaptive-value-layout .letter-count {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .level-tile {
+      padding: 0.55rem 0.35rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-numeral {
+      min-width: 0;
+      font-size: 2rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-label,
+    .drill.adaptive-value-layout .monument .value-label,
+    .drill.adaptive-value-layout .level-tile .value-count,
+    .drill.adaptive-value-layout .monument .value-count {
+      font-size: 0.8rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-desc,
+    .drill.adaptive-value-layout .monument .value-desc {
+      font-size: 0.66rem;
+      line-height: 1.2;
+    }
+
+    .drill.adaptive-value-layout .monument .value-numeral.small {
+      min-width: 0;
+      font-size: 1.9rem;
+    }
+
+    .drill.adaptive-value-layout .monument .value-pictograph {
+      width: 4.25rem;
+      height: 4.25rem;
+    }
+
+    .drill.adaptive-value-layout .monument .value-img,
+    .drill.adaptive-value-layout .monument .value-img.family-icon {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+
+    .drill.adaptive-value-layout .monument .loop-icon {
+      width: auto;
+      font-size: 1.65rem;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .value-desc {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .creator-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout .creator-row {
+      height: 100%;
+      min-height: 44px;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    .drill.adaptive-value-layout .creator-row .value-main {
+      align-items: center;
+    }
+
+    .drill.adaptive-value-layout .creator-fan {
+      display: none;
+    }
+
+    /* The phone builder has one job per screen. Bounded catalogs use a
+       composition sized to their real option count, so the full decision is
+       visible without turning the modal body into a scrolling list. */
+    .drill.adaptive-value-layout .screen-length,
+    .drill.adaptive-value-layout .screen-loop,
+    .drill.adaptive-value-layout .screen-family,
+    .drill.adaptive-value-layout .screen-max-turns {
+      overflow-y: hidden;
+    }
+
+    .drill.adaptive-value-layout .screen-length > .value-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-auto-rows: minmax(6.5rem, 7rem);
+      align-content: center;
+      gap: 0.45rem;
+    }
+
+    /* Seven live lengths form a centered 4 + 3 composition. All seven cards
+       keep exactly the same width, unlike the old 3 + 2 + 2 arrangement. */
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(7):last-child) {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(7):last-child)
+      > * {
+      grid-column: span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(7):last-child)
+      > :nth-child(5) {
+      grid-column: 2 / span 2;
+      grid-row: 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(7):last-child)
+      > :nth-child(6) {
+      grid-column: 4 / span 2;
+      grid-row: 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(7):last-child)
+      > :nth-child(7) {
+      grid-column: 6 / span 2;
+      grid-row: 2;
+    }
+
+    .drill.adaptive-value-layout .screen-length .length-row.monument {
+      height: 100%;
+      gap: 0.2rem;
+      padding: 0.4rem 0.25rem;
+      border-radius: 0.8rem;
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode > .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: minmax(13rem, 15rem);
+      align-content: center;
+      gap: 0.65rem;
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode .length-row.monument {
+      height: 100%;
+      gap: 0.65rem;
+      padding: 0.8rem 0.5rem;
+      border-radius: 1rem;
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode .value-main {
+      flex: 0 1 auto;
+      gap: 0.35rem;
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode .density-bar {
+      max-width: 6rem;
+      height: 5px;
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode .value-count {
+      font-size: var(--font-size-sm, 14px);
+    }
+
+    .drill.adaptive-value-layout .screen-length .value-main {
+      flex: 0 1 auto;
+      gap: 0.2rem;
+    }
+
+    .drill.adaptive-value-layout .screen-length .value-numeral.small {
+      font-size: 1.65rem;
+    }
+
+    .drill.adaptive-value-layout .screen-length .value-label,
+    .drill.adaptive-value-layout .screen-length .value-count {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .drill.adaptive-value-layout .screen-length .density-bar {
+      max-width: 3rem;
+      height: 4px;
+    }
+
+    /* LOOP names need horizontal room more than poster-sized icons. Seven
+       compact rows keep the labels intact and every composable choice visible. */
+    .drill.adaptive-value-layout .screen-loop > .value-list {
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: minmax(44px, 2.9rem);
+      align-content: center;
+      gap: 0.35rem;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .length-row.monument {
+      height: 100%;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.75rem;
+      text-align: left;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .loop-icon {
+      width: 2rem;
+      font-size: 1.25rem;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .value-main {
+      align-items: stretch;
+      gap: 0.2rem;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .value-label {
+      overflow: hidden;
+      font-size: var(--font-size-compact, 12px);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .density-bar {
+      max-width: none;
+      height: 4px;
+    }
+
+    .drill.adaptive-value-layout .screen-loop .value-count {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .drill.adaptive-value-layout .screen-loop .loop-check {
+      position: static;
+      width: 1rem;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-loop
+      > .value-list:has(> :nth-child(7):last-child)
+      > :last-child {
+      width: 100%;
+      grid-column: auto;
+      justify-self: stretch;
+    }
+
+    /* Creator names are the decision. A full-width row gives long names one
+       stable line, while the avatar and count keep each target scannable. */
+    .drill.adaptive-value-layout .screen-creator > .creator-list {
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: minmax(44px, 3rem);
+      align-content: center;
+      gap: 0.35rem;
+    }
+
+    .drill.adaptive-value-layout .screen-creator .creator-row {
+      width: 100%;
+      height: 100%;
+      min-height: 44px;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.6rem;
+      padding: 0.25rem 0.6rem;
+      text-align: left;
+    }
+
+    .drill.adaptive-value-layout .screen-creator .creator-row .value-main {
+      align-items: stretch;
+      gap: 0.2rem;
+    }
+
+    .drill.adaptive-value-layout .screen-creator .value-label {
+      width: 100%;
+      overflow: hidden;
+      font-size: var(--font-size-compact, 12px);
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .drill.adaptive-value-layout .screen-creator .density-bar {
+      max-width: none;
+      height: 4px;
+    }
+
+    .drill.adaptive-value-layout .screen-creator .value-count {
+      margin-left: auto;
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .drill.adaptive-value-layout
+      .screen-creator
+      > .creator-list:has(> :nth-child(7):last-child)
+      > :last-child {
+      width: 100%;
+      grid-column: auto;
+      justify-self: stretch;
+    }
+
+    /* The six Timing & Direction families are a stable 2 × 3 set. The icons
+       carry their elemental identity; repeating WATER / EARTH / etc. only
+       crowds the action label on a phone. */
+    .drill.adaptive-value-layout .screen-family > .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: minmax(5.25rem, 5.5rem);
+      align-content: center;
+      gap: 0.45rem;
+    }
+
+    .drill.adaptive-value-layout .screen-family .length-row.monument {
+      height: 100%;
+      gap: 0.2rem;
+      padding: 0.35rem;
+      border-radius: 0.8rem;
+    }
+
+    .drill.adaptive-value-layout .screen-family .value-img.family-icon {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .drill.adaptive-value-layout .screen-family .value-main {
+      gap: 0.2rem;
+    }
+
+    .drill.adaptive-value-layout .screen-family .element-tag {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .screen-family .value-label,
+    .drill.adaptive-value-layout .screen-family .value-count {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .drill.adaptive-value-layout .screen-family .density-bar {
+      max-width: 4rem;
+      height: 4px;
+    }
+
+    /* Six turn ceilings stay in a stable 3 × 2 grid from first paint. This
+       avoids the transient two-column overflow that could flash a scrollbar
+       while the live counts arrived. */
+    .drill.adaptive-value-layout .screen-max-turns > .value-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: minmax(5.5rem, 6rem);
+      align-content: center;
+      gap: 0.4rem;
+    }
+
+    .drill.adaptive-value-layout .screen-max-turns .length-row.monument {
+      height: 100%;
+      gap: 0.25rem;
+      padding: 0.4rem 0.2rem;
+      border-radius: 0.8rem;
+    }
+
+    .drill.adaptive-value-layout .screen-max-turns .value-numeral.small {
+      font-size: 1.5rem;
+    }
+
+    .drill.adaptive-value-layout .screen-max-turns .value-main {
+      flex: 0 1 auto;
+      gap: 0.2rem;
+    }
+
+    .drill.adaptive-value-layout .screen-max-turns .value-label,
+    .drill.adaptive-value-layout .screen-max-turns .value-count {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .drill.adaptive-value-layout .screen-max-turns .density-bar {
+      max-width: 3rem;
+      height: 4px;
+    }
+  }
+
+  @container drill (min-width: 640px) {
+    .drill.unified-filter-chooser .drill-stage,
+    .drill.adaptive-value-layout .drill-stage {
+      max-width: none;
+    }
+
+    .drill.adaptive-value-layout .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: minmax(7rem, auto);
+    }
+
+    .drill.adaptive-value-layout .screen-level > .value-list,
+    .drill.adaptive-value-layout .screen-positions > .value-list,
+    .drill.adaptive-value-layout .screen-max-turns > .value-list,
+    .drill.adaptive-value-layout .screen-family > .value-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout .screen-creator > .creator-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: none;
+    }
+
+    .drill.adaptive-value-layout .screen-letter > .letter-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-auto-rows: minmax(4rem, auto);
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-tile {
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-main {
+      flex: 0 1 auto;
+      align-items: center;
+    }
+  }
+
+  @container drill (min-width: 900px) {
+    .unified-choice-grid {
+      width: min(100%, clamp(64rem, 78cqw, 94rem));
+      gap: 1rem;
+      grid-auto-rows: minmax(8rem, auto);
+    }
+
+    .unified-choice-grid .mini-tile {
+      gap: 0.8rem;
+      padding: 1.1rem;
+      border-radius: 1.25rem;
+    }
+
+    .unified-choice-grid .mini-art {
+      width: 3.5rem;
+      min-width: 3.5rem;
+      height: 3.5rem;
+      font-size: 1.2rem;
+    }
+
+    .unified-choice-grid .mini-title {
+      font-size: 1.05rem;
+    }
+
+    .unified-choice-grid .mini-sub {
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(5):last-child) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(5):last-child)
+      > * {
+      grid-column: span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-length
+      > .value-list:has(> :nth-child(5):last-child)
+      > :nth-child(4) {
+      grid-column: 2 / span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-loop
+      > .value-list:has(> :nth-child(7):last-child) {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout
+      .screen-loop
+      > .value-list:has(> :nth-child(7):last-child)
+      > * {
+      grid-column: span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-loop
+      > .value-list:has(> :nth-child(7):last-child)
+      > :nth-child(5) {
+      grid-column: 2 / span 2;
+    }
+
+    .drill.adaptive-value-layout .screen-letter > .letter-grid {
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      grid-auto-rows: minmax(4.5rem, auto);
+    }
+
+    .drill.adaptive-value-layout {
+      --decision-band-width: clamp(64rem, 78cqw, 96rem);
+    }
+
+    .drill.adaptive-value-layout .screen-more {
+      --decision-band-width: clamp(68rem, 80cqw, 100rem);
+    }
+
+    .drill.adaptive-value-layout .screen-more > .mini-grid {
+      width: min(100%, var(--decision-band-width));
+      grid-auto-rows: minmax(9rem, auto);
+    }
+
+    .drill.adaptive-value-layout .screen-level,
+    .drill.adaptive-value-layout .screen-positions {
+      --decision-band-width: clamp(64rem, 78cqw, 96rem);
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode {
+      --decision-band-width: clamp(48rem, 56cqw, 64rem);
+    }
+
+    .drill.adaptive-value-layout .screen-letter {
+      --decision-band-width: clamp(68rem, 82cqw, 104rem);
+    }
+
+    .drill.adaptive-value-layout .level-tile {
+      min-height: clamp(17rem, 19cqw, 27rem);
+    }
+
+    .drill.adaptive-value-layout .length-row.monument {
+      min-height: clamp(9.5rem, 11cqw, 17rem);
+    }
+  }
+
+  @container drill (min-width: 1600px) {
+    .drill.unified-filter-chooser .unified-choice-grid {
+      width: min(100%, clamp(90rem, 70cqw, 132rem));
+      grid-auto-rows: minmax(10rem, auto);
+    }
+
+    .drill.unified-filter-chooser .unified-choice-grid .mini-tile {
+      min-height: clamp(10rem, 7cqw, 13rem);
+    }
+
+    .drill.adaptive-value-layout {
+      --decision-band-width: clamp(90rem, 72cqw, 132rem);
+    }
+
+    .drill.adaptive-value-layout .screen-more,
+    .drill.adaptive-value-layout .screen-level,
+    .drill.adaptive-value-layout .screen-positions {
+      --decision-band-width: clamp(100rem, 70cqw, 150rem);
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode {
+      --decision-band-width: clamp(64rem, 48cqw, 90rem);
+    }
+
+    .drill.adaptive-value-layout .screen-letter {
+      --decision-band-width: clamp(96rem, 76cqw, 150rem);
+    }
+
+    /* Seven choices read as a centered 4 + 3 set at every desktop width. The
+       older 4K rule changed this to 3 + 3 + 1, which wasted a full row. */
+    .drill.adaptive-value-layout
+      .screen-more
+      > .mini-grid:has(> :nth-child(7):last-child) {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-auto-rows: minmax(12rem, auto);
+    }
+
+    .drill.adaptive-value-layout
+      .screen-more
+      > .mini-grid:has(> :nth-child(7):last-child)
+      > .mini-tile {
+      grid-column: span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-more
+      > .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(5) {
+      grid-column: 2 / span 2;
+      grid-row: 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-more
+      > .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(6) {
+      grid-column: 4 / span 2;
+      grid-row: 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-more
+      > .mini-grid:has(> :nth-child(7):last-child)
+      > :nth-child(7) {
+      grid-column: 6 / span 2;
+      grid-row: 2;
+    }
+
+    .drill.adaptive-value-layout .level-tile {
+      min-height: clamp(21rem, 16cqw, 31rem);
+    }
+
+    .drill.adaptive-value-layout .length-row.monument {
+      min-height: clamp(11rem, 9cqw, 19rem);
+    }
+  }
+
+  @container drill (min-width: 2600px) {
+    .drill.unified-filter-chooser .unified-choice-grid,
+    .drill.adaptive-value-layout .screen-more > .mini-grid {
+      gap: 1.5rem;
+    }
+
+    .drill.unified-filter-chooser .unified-choice-grid .mini-art {
+      width: 5rem;
+      min-width: 5rem;
+      height: 5rem;
+      font-size: 1.75rem;
+    }
+
+    .drill.unified-filter-chooser .unified-choice-grid .mini-title {
+      font-size: 1.55rem;
+    }
+
+    .drill.unified-filter-chooser .unified-choice-grid .mini-sub {
+      font-size: 1.05rem;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-tile {
+      min-height: clamp(14rem, 9cqw, 20rem);
+      gap: 1rem;
+      padding: 1.75rem;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-art {
+      min-width: 6.5rem;
+      height: 6.5rem;
+      font-size: 2.1rem;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-title {
+      font-size: 1.85rem;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-sub {
+      font-size: 1.25rem;
+      line-height: 1.35;
+    }
+
+    .drill.adaptive-value-layout .level-tile {
+      gap: 0.85rem;
+      padding: 2rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-numeral {
+      font-size: 5.25rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-label,
+    .drill.adaptive-value-layout .monument .value-label {
+      font-size: 1.65rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-desc,
+    .drill.adaptive-value-layout .monument .value-desc {
+      font-size: 1.1rem;
+      line-height: 1.35;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-count,
+    .drill.adaptive-value-layout .monument .value-count {
+      font-size: 1.4rem;
+    }
+  }
+
+  /* Portrait tablets should follow their long axis. Three-choice screens use
+     one substantial vertical stack instead of a short strip surrounded by
+     unused height. The same cards stay multi-column in landscape. */
+  @media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+    .drill.adaptive-value-layout .screen-level,
+    .drill.adaptive-value-layout .screen-positions {
+      --decision-band-width: 34rem;
+    }
+
+    .drill.adaptive-value-layout .screen-level > .value-list,
+    .drill.adaptive-value-layout .screen-positions > .value-list {
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: minmax(clamp(9rem, 14dvh, 12rem), auto);
+      gap: 0.875rem;
+    }
+
+    .drill.adaptive-value-layout .screen-level .level-tile,
+    .drill.adaptive-value-layout .screen-positions .length-row.monument {
+      min-height: clamp(9rem, 14dvh, 12rem);
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      text-align: left;
+    }
+
+    .drill.adaptive-value-layout .screen-level .value-main,
+    .drill.adaptive-value-layout .screen-positions .value-main {
+      flex: 1;
+      align-items: flex-start;
+    }
+
+    .drill.adaptive-value-layout .screen-level .density-bar,
+    .drill.adaptive-value-layout .screen-positions .density-bar {
+      margin-inline: 0;
+    }
+
+    .drill.adaptive-value-layout .screen-level .value-count,
+    .drill.adaptive-value-layout .screen-positions .value-count {
+      margin-left: auto;
+      font-size: 1rem;
+    }
+
+    .drill.adaptive-value-layout .screen-level .level-tile :global(.peek) {
+      order: -1;
+      flex: 0 0 auto;
+    }
+
+    .drill.adaptive-value-layout .screen-positions .value-pictograph {
+      width: 6rem;
+      height: 6rem;
+    }
+  }
+
+  /* A desktop rule rail can be phone-width but is not phone-height. When it
+     has the vertical room, keep three-choice pickers as readable rows rather
+     than crushing them into three tiny columns at the far left of a 4K modal. */
+  @media (min-height: 840px) {
+    @container drill (max-width: 639.98px) {
+      .drill.adaptive-value-layout .screen-level,
+      .drill.adaptive-value-layout .screen-positions {
+        --decision-band-width: 28rem;
+      }
+
+      .drill.adaptive-value-layout .screen-level > .value-list,
+      .drill.adaptive-value-layout .screen-positions > .value-list {
+        grid-template-columns: minmax(0, 1fr);
+        grid-auto-rows: minmax(clamp(8.5rem, 15dvh, 13rem), auto);
+        gap: 0.65rem;
+      }
+
+      .drill.adaptive-value-layout .screen-level .level-tile,
+      .drill.adaptive-value-layout .screen-positions .length-row.monument {
+        min-height: clamp(8.5rem, 15dvh, 13rem);
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        text-align: left;
+      }
+
+      .drill.adaptive-value-layout .screen-level .value-main,
+      .drill.adaptive-value-layout .screen-positions .value-main {
+        flex: 1;
+        align-items: flex-start;
+      }
+
+      .drill.adaptive-value-layout .screen-level .density-bar,
+      .drill.adaptive-value-layout .screen-positions .density-bar {
+        margin-inline: 0;
+      }
+
+      .drill.adaptive-value-layout .screen-level .value-count,
+      .drill.adaptive-value-layout .screen-positions .value-count {
+        margin-left: auto;
+      }
+
+      .drill.adaptive-value-layout .screen-level .level-tile :global(.peek) {
+        order: -1;
+        flex: 0 0 auto;
+      }
+
+      .drill.adaptive-value-layout .screen-positions .value-pictograph {
+        width: 5.5rem;
+        height: 5.5rem;
+      }
+    }
+  }
+
+  /* Fold landscape is the one case where vertical fill and tap size compete.
+     Use balanced horizontal bands, while keeping every option on the canvas. */
+  @media (min-width: 700px) and (max-height: 520px) {
+    .drill.unified-filter-chooser .screen-chooser {
+      gap: 0.45rem;
+    }
+
+    .drill.unified-filter-chooser .drill-head p {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-tile {
+      flex-direction: row;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .drill.adaptive-value-layout .screen-more .mini-main {
+      flex: 1;
+      align-items: flex-start;
+    }
+
+    .drill.unified-filter-chooser .unified-choice-grid,
+    .drill.unified-filter-chooser
+      .unified-choice-grid:has(> :nth-child(9):last-child) {
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(44px, 1fr));
+      grid-auto-rows: minmax(44px, 1fr);
+      gap: 0.45rem;
+    }
+
+    .unified-choice-grid > .mini-tile {
+      grid-column: span 2;
+      flex-direction: row;
+      gap: 0.45rem;
+      padding: 0.4rem 0.55rem;
+      text-align: left;
+    }
+
+    .unified-choice-grid > .mini-tile .mini-main {
+      align-items: flex-start;
+    }
+
+    .unified-choice-grid > .mini-tile .mini-sub {
+      display: none;
+    }
+
+    .unified-choice-grid:has(> :nth-child(9):last-child) > :nth-child(6) {
+      grid-column: 2 / span 2;
+    }
+
+    .unified-choice-grid:has(> :nth-child(8):last-child) > :nth-child(6) {
+      grid-column: 3 / span 2;
+    }
+
+    .unified-choice-grid:has(> :nth-child(7):last-child) > :nth-child(6) {
+      grid-column: 4 / span 2;
+    }
+
+    .unified-choice-grid:has(> :nth-child(6):last-child) > :nth-child(6) {
+      grid-column: 5 / span 2;
+    }
+
+    .drill.adaptive-value-layout .drill-head p {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .value-list,
+    .drill.adaptive-value-layout .screen-length > .value-list,
+    .drill.adaptive-value-layout .screen-max-turns > .value-list,
+    .drill.adaptive-value-layout .screen-family > .value-list {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-auto-rows: minmax(44px, 1fr);
+      gap: 0.4rem;
+    }
+
+    .drill.adaptive-value-layout .screen-level > .value-list,
+    .drill.adaptive-value-layout .screen-positions > .value-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout .screen-gridmode > .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout .screen-loop > .value-list {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout .screen-loop > .value-list > * {
+      grid-column: span 2;
+    }
+
+    .drill.adaptive-value-layout
+      .screen-loop
+      > .value-list:has(> :nth-child(7):last-child)
+      > :nth-child(5) {
+      grid-column: 2 / span 2;
+    }
+
+    .drill.adaptive-value-layout .screen-creator > .creator-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .drill.adaptive-value-layout .screen-letter > .letter-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-auto-rows: minmax(44px, 1fr);
+      gap: 0.25rem;
+    }
+
+    .drill.adaptive-value-layout .level-tile,
+    .drill.adaptive-value-layout .length-row.monument {
+      min-height: 44px;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: 0.75rem;
+      text-align: left;
+    }
+
+    .drill.adaptive-value-layout .level-tile .value-main,
+    .drill.adaptive-value-layout .monument .value-main {
+      align-items: flex-start;
+    }
+
+    .drill.adaptive-value-layout .level-tile :global(.peek),
+    .drill.adaptive-value-layout .screen-loop .value-desc {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .monument .value-pictograph,
+    .drill.adaptive-value-layout .monument .value-img,
+    .drill.adaptive-value-layout .monument .value-img.family-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .drill.adaptive-value-layout .creator-fan {
+      display: none;
+    }
+
+    .drill.adaptive-value-layout .letter-chip {
+      min-height: 44px;
+      padding: 0.2rem;
+    }
+
+    .drill.adaptive-value-layout .letter-count {
+      display: none;
     }
   }
 </style>
