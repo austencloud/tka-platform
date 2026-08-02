@@ -11,6 +11,8 @@ import {
   addSequenceToCollection,
   addSequencesToCollection,
   removeSequenceFromCollection,
+  removeSequencesFromCollection,
+  type BulkCollectionRemoveResult,
   createUserCollection,
   createSmartUserCollection,
   updateCollectionFilterSpec,
@@ -191,6 +193,76 @@ class CollectionsState {
   }
 
   /**
+   * Remove one selection from a manual collection. The manager reports the
+   * exact committed ids, so Undo remains correct even when a later Firestore
+   * chunk fails after an earlier one succeeded.
+   */
+  async removeMany(
+    sequenceIds: readonly string[],
+    collectionId: string
+  ): Promise<BulkCollectionRemoveResult | null> {
+    const c = this.collections.find((col) => col.id === collectionId);
+    if (!c || c.kind === "smart") return null;
+
+    try {
+      const result = await removeSequencesFromCollection(
+        collectionId,
+        sequenceIds
+      );
+      const removedCount = result.removedSequenceIds.length;
+      const unprocessedCount = result.unprocessedSequenceIds.length;
+
+      if (removedCount === 0) {
+        if (unprocessedCount > 0) {
+          toast.error(
+            unprocessedCount === 1
+              ? "One sequence couldn't be removed. Try again."
+              : `${unprocessedCount} sequences couldn't be removed. Try again.`
+          );
+        } else if (result.requestedCount > 0) {
+          toast.info(
+            result.requestedCount === 1
+              ? `Already removed from "${c.name}"`
+              : `Those sequences are already out of "${c.name}".`
+          );
+        }
+        return result;
+      }
+
+      const removedLabel =
+        removedCount === 1 ? "1 sequence" : `${removedCount} sequences`;
+      const message =
+        unprocessedCount > 0
+          ? `Removed ${removedLabel} from "${c.name}". ${unprocessedCount} ${unprocessedCount === 1 ? "sequence" : "sequences"} couldn't be removed.`
+          : removedCount === 1
+            ? `Removed from "${c.name}"`
+            : `Removed ${removedLabel} from "${c.name}"`;
+
+      showToast({
+        message,
+        type: unprocessedCount > 0 ? "error" : "info",
+        duration: unprocessedCount > 0 ? 8000 : 6000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void addSequencesToCollection(
+              collectionId,
+              result.removedSequenceIds
+            ).catch(() => {
+              // The manager already gives the user a retryable error.
+            });
+          },
+        },
+      });
+
+      return result;
+    } catch {
+      // The manager already gives the user a retryable error.
+      return null;
+    }
+  }
+
+  /**
    * Create a new empty collection, guarding the per-user cap (system
    * collections don't count against it). Returns null when blocked or on
    * failure (the manager toasts its own error).
@@ -307,7 +379,7 @@ class CollectionsState {
       !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)
     ) {
       toast.info(AUTH_NUDGE_TEXTS["edit-community"]);
-      authDrawerState.show("signup");
+      authDrawerState.show("signup", "edit-community");
       return false;
     }
 

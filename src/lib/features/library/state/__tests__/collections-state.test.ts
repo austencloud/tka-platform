@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   addSequenceToCollection: vi.fn(),
   addSequencesToCollection: vi.fn(),
   removeSequenceFromCollection: vi.fn(),
+  removeSequencesFromCollection: vi.fn(),
   createUserCollection: vi.fn(),
   ensureSystemCollections: vi.fn(),
   subscribeToCollections: vi.fn(() => () => {}),
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   deleteCollection: vi.fn(),
   toastError: vi.fn(),
   toastInfo: vi.fn(),
+  showToast: vi.fn(),
   authDrawerShow: vi.fn(),
 }));
 
@@ -19,6 +21,7 @@ vi.mock("$lib/shared/library/services/collection-manager", () => ({
   addSequenceToCollection: mocks.addSequenceToCollection,
   addSequencesToCollection: mocks.addSequencesToCollection,
   removeSequenceFromCollection: mocks.removeSequenceFromCollection,
+  removeSequencesFromCollection: mocks.removeSequencesFromCollection,
   createUserCollection: mocks.createUserCollection,
   ensureSystemCollections: mocks.ensureSystemCollections,
   subscribeToCollections: mocks.subscribeToCollections,
@@ -27,6 +30,7 @@ vi.mock("$lib/shared/library/services/collection-manager", () => ({
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
   toast: { error: mocks.toastError, success: vi.fn(), info: mocks.toastInfo },
+  showToast: mocks.showToast,
 }));
 // Publishing requires a full account (setPublic routes guests to the signup
 // drawer instead of firing a write firestore.rules would deny). Default this
@@ -37,6 +41,9 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
 }));
 vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
   authDrawerState: { show: mocks.authDrawerShow },
+}));
+vi.mock("$lib/shared/auth/firebase", () => ({
+  getFirestoreInstance: vi.fn().mockResolvedValue({}),
 }));
 
 import { collectionsState } from "../collections-state.svelte";
@@ -78,6 +85,12 @@ beforeEach(() => {
     alreadyPresentCount: 0,
   });
   mocks.removeSequenceFromCollection.mockResolvedValue(undefined);
+  mocks.removeSequencesFromCollection.mockResolvedValue({
+    requestedCount: 2,
+    removedSequenceIds: ["s1", "s2"],
+    alreadyAbsentSequenceIds: [],
+    unprocessedSequenceIds: [],
+  });
   mocks.createUserCollection.mockImplementation(async (name: string) =>
     col("new", name)
   );
@@ -154,6 +167,66 @@ describe("collectionsState", () => {
     );
   });
 
+  it("removes a selection once and restores the committed ids through Undo", async () => {
+    collectionsState.collections = [
+      col("c1", "Poi Combos", {
+        sequenceIds: ["s1", "s2"],
+        sequenceCount: 2,
+      }),
+    ];
+
+    const result = await collectionsState.removeMany(["s1", "s2", "s2"], "c1");
+
+    expect(result?.removedSequenceIds).toEqual(["s1", "s2"]);
+    expect(mocks.removeSequencesFromCollection).toHaveBeenCalledWith("c1", [
+      "s1",
+      "s2",
+      "s2",
+    ]);
+    expect(mocks.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Removed 2 sequences from "Poi Combos"',
+        type: "info",
+        action: expect.objectContaining({ label: "Undo" }),
+      })
+    );
+
+    const toastConfig = mocks.showToast.mock.calls[0]![0] as {
+      action: { onClick: () => void };
+    };
+    toastConfig.action.onClick();
+    expect(mocks.addSequencesToCollection).toHaveBeenCalledWith("c1", [
+      "s1",
+      "s2",
+    ]);
+  });
+
+  it("reports a partial removal and returns the unfinished ids", async () => {
+    collectionsState.collections = [
+      col("c1", "Poi Combos", {
+        sequenceIds: ["s1", "s2"],
+        sequenceCount: 2,
+      }),
+    ];
+    mocks.removeSequencesFromCollection.mockResolvedValueOnce({
+      requestedCount: 2,
+      removedSequenceIds: ["s1"],
+      alreadyAbsentSequenceIds: [],
+      unprocessedSequenceIds: ["s2"],
+    });
+
+    const result = await collectionsState.removeMany(["s1", "s2"], "c1");
+
+    expect(result?.unprocessedSequenceIds).toEqual(["s2"]);
+    expect(mocks.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          'Removed 1 sequence from "Poi Combos". 1 sequence couldn\'t be removed.',
+        type: "error",
+      })
+    );
+  });
+
   it("create blocks at the per-user cap, excluding system collections", async () => {
     const many = Array.from({ length: 100 }, (_, i) => col(`c${i}`, `C${i}`));
     collectionsState.collections = [
@@ -223,7 +296,10 @@ describe("collectionsState", () => {
     expect(ok).toBe(false);
     expect(mocks.updateCollection).not.toHaveBeenCalled();
     expect(mocks.toastInfo).toHaveBeenCalled();
-    expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
+    expect(mocks.authDrawerShow).toHaveBeenCalledWith(
+      "signup",
+      "edit-community"
+    );
   });
 
   // Un-publishing stays open to guests — only a full user could have published

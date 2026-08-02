@@ -222,7 +222,8 @@ Two modes:
               }`
             : undefined}
           aria-busy={busy || undefined}
-          disabled={addingCollectionId !== null}
+          disabled={addingCollectionId !== null || allBulkMembers}
+          title={allBulkMembers ? "Already in this collection" : undefined}
           onclick={() => handleCollectionPress(c)}
         >
           <span class="tile-icon">

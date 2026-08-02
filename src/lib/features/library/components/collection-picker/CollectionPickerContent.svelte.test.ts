@@ -105,6 +105,31 @@ describe("CollectionPickerContent (bulk mode)", () => {
     await page.getByRole("button", { name: /Teaching/ }).click();
     expect(onBulkComplete).not.toHaveBeenCalled();
   });
+
+  it("disables a collection that already contains the whole selection", async () => {
+    stub.collections = [
+      col("c1", "Poi Combos", {
+        sequenceIds: ["s1", "s2"],
+        sequenceCount: 2,
+      }),
+    ];
+    const onBulkComplete = vi.fn();
+    render(CollectionPickerContent, {
+      mode: "bulk",
+      sequenceIds: ["s1", "s2"],
+      onBulkComplete,
+    });
+
+    await expect
+      .element(
+        page.getByRole("button", {
+          name: /Poi Combos, all 2 already here/,
+        })
+      )
+      .toBeDisabled();
+    expect(stub.addMany).not.toHaveBeenCalled();
+    expect(onBulkComplete).not.toHaveBeenCalled();
+  });
 });
 
 describe("CollectionPickerContent (select mode)", () => {

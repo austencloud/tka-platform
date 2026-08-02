@@ -259,12 +259,38 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 		getHapticFeedback()?.trigger("selection");
 	}
 
-	function openSelectedCollections(): void {
+	function openAddSelectedToCollection(): void {
 		if (selectionState.selectedCount === 0) return;
 		openCollectionPickerForSequences({
 			sequenceIds: [...selectionState.selectedIds],
 			onComplete: () => selectionState.exit(),
 		});
+	}
+
+	let removingSelected = $state(false);
+
+	async function removeSelectedFromCollection(): Promise<void> {
+		if (removingSelected || selectionState.selectedCount === 0) return;
+		const selectedIds = [...selectionState.selectedIds];
+		removingSelected = true;
+
+		try {
+			const result = await collectionsState.removeMany(selectedIds, collectionId);
+			if (!result) return;
+
+			selectionState.removeIds([
+				...result.removedSequenceIds,
+				...result.alreadyAbsentSequenceIds,
+			]);
+			if (
+				result.unprocessedSequenceIds.length === 0 ||
+				selectionState.selectedCount === 0
+			) {
+				selectionState.exit();
+			}
+		} finally {
+			removingSelected = false;
+		}
 	}
 
 	let sequenceDeleteConfirmOpen = $state(false);
@@ -447,14 +473,20 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 		<SelectionToolbar
 			selectedCount={selectionState.selectedCount}
 			totalCount={members.length}
-			primaryLabel="Collections"
-			primaryIcon="fa-folder-plus"
-			onPrimaryAction={openSelectedCollections}
+			primaryLabel="Remove from this collection"
+			primaryIcon="fa-folder-minus"
+			onPrimaryAction={removeSelectedFromCollection}
+			primaryBusy={removingSelected}
+			secondaryLabel="Add to collection…"
+			secondaryIcon="fa-folder-plus"
+			onSecondaryAction={openAddSelectedToCollection}
 			dangerLabel="Delete permanently"
 			dangerIcon="fa-trash"
 			onDangerAction={openSequenceDelete}
 			onSelectAll={selectAllMembers}
 			onClearSelection={clearSelection}
+			showClearAction={false}
+			actionsDisabled={removingSelected}
 			onExitSelection={selectionState.exit}
 		/>
 	{:else}

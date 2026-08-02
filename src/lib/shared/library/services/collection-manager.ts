@@ -845,8 +845,8 @@ export interface BulkCollectionAddResult {
 }
 
 // Each transaction writes one collection document plus one owner document per
-// sequence. Keeping chunks well below Firestore's request ceiling also keeps
-// retries affordable when another device edits the same collection.
+// sequence. Keeping membership changes well below Firestore's request ceiling
+// also keeps retries affordable when another device edits the same collection.
 const BULK_COLLECTION_CHUNK_SIZE = 200;
 
 export async function addSequencesToCollection(
@@ -1043,6 +1043,192 @@ export async function addSequencesToCollection(
     if (error instanceof CollectionError) throw error;
     throw new CollectionError(
       "Failed to add sequences to collection",
+      "NETWORK",
+      collectionId
+    );
+  }
+}
+
+export interface BulkCollectionRemoveResult {
+  requestedCount: number;
+  removedSequenceIds: string[];
+  alreadyAbsentSequenceIds: string[];
+  unprocessedSequenceIds: string[];
+}
+
+/**
+ * Remove a selection from one collection while keeping the collection document
+ * and every available owner sequence's reverse membership in sync. A private
+ * collection can contain someone else's public sequence, so a missing owner
+ * document is valid and does not block the collection removal.
+ */
+export async function removeSequencesFromCollection(
+  collectionId: string,
+  sequenceIds: readonly string[]
+): Promise<BulkCollectionRemoveResult> {
+  const uniqueIds = [...new Set(sequenceIds)];
+  if (uniqueIds.length === 0) {
+    return {
+      requestedCount: 0,
+      removedSequenceIds: [],
+      alreadyAbsentSequenceIds: [],
+      unprocessedSequenceIds: [],
+    };
+  }
+
+  const firestore = await getFirestoreInstance();
+  const userId = getAuthenticatedUserId();
+  const collectionRef = doc(
+    firestore,
+    getUserCollectionPath(userId, collectionId)
+  );
+  const removedSequenceIds: string[] = [];
+  const alreadyAbsentSequenceIds: string[] = [];
+
+  try {
+    for (
+      let offset = 0;
+      offset < uniqueIds.length;
+      offset += BULK_COLLECTION_CHUNK_SIZE
+    ) {
+      const chunk = uniqueIds.slice(
+        offset,
+        offset + BULK_COLLECTION_CHUNK_SIZE
+      );
+      const chunkResult = await runTransaction(
+        firestore,
+        async (transaction) => {
+          const collectionSnapshot = await transaction.get(collectionRef);
+          if (!collectionSnapshot.exists()) {
+            throw new CollectionError(
+              "Collection not found",
+              "NOT_FOUND",
+              collectionId
+            );
+          }
+
+          const current = mapDocToCollection(
+            collectionSnapshot.data(),
+            collectionId
+          );
+          if (current.kind === "smart") {
+            throw new CollectionError(
+              "Cannot modify members of a smart collection",
+              "INVALID_OPERATION",
+              collectionId
+            );
+          }
+
+          const currentIds = new Set(current.sequenceIds);
+          const presentIds = chunk.filter((sequenceId) =>
+            currentIds.has(sequenceId)
+          );
+          const absentIds = chunk.filter(
+            (sequenceId) => !currentIds.has(sequenceId)
+          );
+          if (presentIds.length === 0) {
+            return {
+              removedSequenceIds: [] as string[],
+              alreadyAbsentSequenceIds: absentIds,
+            };
+          }
+
+          // Firestore requires every transaction read to finish before its first
+          // write. Owner documents may be absent for saved public sequences.
+          const ownerSnapshots = await Promise.all(
+            presentIds.map((sequenceId) =>
+              transaction.get(
+                doc(firestore, getUserSequencePath(userId, sequenceId))
+              )
+            )
+          );
+          const removedIds = new Set(presentIds);
+          const nextIds = current.sequenceIds.filter(
+            (sequenceId) => !removedIds.has(sequenceId)
+          );
+
+          transaction.update(collectionRef, {
+            sequenceIds: nextIds,
+            sequenceCount: nextIds.length,
+            updatedAt: serverTimestamp(),
+          });
+
+          ownerSnapshots.forEach((snapshot, index) => {
+            if (!snapshot.exists()) return;
+            const sequenceId = presentIds[index]!;
+            const existingCollectionIds = Array.isArray(
+              snapshot.data()["collectionIds"]
+            )
+              ? (snapshot.data()["collectionIds"] as string[])
+              : [];
+            const nextCollectionIds = existingCollectionIds.filter(
+              (id) => id !== collectionId
+            );
+            if (nextCollectionIds.length === existingCollectionIds.length) {
+              return;
+            }
+            transaction.update(
+              doc(firestore, getUserSequencePath(userId, sequenceId)),
+              {
+                collectionIds: nextCollectionIds,
+                updatedAt: serverTimestamp(),
+              }
+            );
+          });
+
+          return {
+            removedSequenceIds: presentIds,
+            alreadyAbsentSequenceIds: absentIds,
+          };
+        }
+      );
+
+      removedSequenceIds.push(...chunkResult.removedSequenceIds);
+      alreadyAbsentSequenceIds.push(...chunkResult.alreadyAbsentSequenceIds);
+    }
+
+    return {
+      requestedCount: uniqueIds.length,
+      removedSequenceIds,
+      alreadyAbsentSequenceIds,
+      unprocessedSequenceIds: [],
+    };
+  } catch (error) {
+    console.error(
+      "[CollectionManager] Failed to remove sequences from collection:",
+      error
+    );
+
+    const processedIds = new Set([
+      ...removedSequenceIds,
+      ...alreadyAbsentSequenceIds,
+    ]);
+    if (processedIds.size > 0) {
+      // Earlier chunks are already committed. Return their exact ids so the UI
+      // can offer Undo and leave only the unfinished selection active.
+      return {
+        requestedCount: uniqueIds.length,
+        removedSequenceIds,
+        alreadyAbsentSequenceIds,
+        unprocessedSequenceIds: uniqueIds.filter(
+          (sequenceId) => !processedIds.has(sequenceId)
+        ),
+      };
+    }
+
+    if (
+      error instanceof CollectionError &&
+      error.code === "INVALID_OPERATION"
+    ) {
+      toast.error(error.message);
+    } else {
+      toast.error(
+        "Failed to remove sequences from collection. Please try again."
+      );
+    }
+    if (error instanceof CollectionError) throw error;
+    throw new CollectionError(
+      "Failed to remove sequences from collection",
       "NETWORK",
       collectionId
     );

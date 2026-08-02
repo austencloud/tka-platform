@@ -8,6 +8,7 @@ plan_path: ""
 tags: []
 last_triaged: 2026-07-25
 ---
+
 # My Collections Tab — Design (2026-07-01)
 
 ## Problem
@@ -109,3 +110,16 @@ activity first, browsable signed-out.
   aggregation once creator count makes N+1 reads hurt).
 - Member reordering UI (`reorderSequences` exists in the manager).
 - Collection cover thumbnails (see amendment 5).
+
+## Addendum (2026-08-01): contextual multi-select removal
+
+Selection mode inside an owned collection exposes the action implied by that
+context: **Remove from this collection**. It is a neutral, undoable membership
+change. **Delete permanently** stays separate and keeps its confirmation.
+
+The selection toolbar keeps batch filing as **Add to collection…** because its
+picker is intentionally one-way in bulk mode. A collection that already contains
+the whole selection is marked as such and disabled instead of accepting a no-op
+that closes the picker. The direct removal path uses the collection manager's
+chunked Firestore membership transactions and returns the exact committed ids so
+Undo and partial failures remain accurate.
