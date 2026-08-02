@@ -564,10 +564,19 @@ function getSharedGeometries() {
 export async function buildRoomChunk(
   buckets: MuseumGeometryDryRun,
   wingId: string,
-  wing: { bounds: { x: number; y: number; width: number; height: number }; theme: WingTheme } | null,
+  wing: {
+    bounds: { x: number; y: number; width: number; height: number };
+    theme: WingTheme;
+    roomPresentation?: { suppressTileGeometry?: boolean };
+  } | null,
 ): Promise<RoomChunk> {
   const { floorGeo, wallGeo, pedestalGeo, signGeo } = getSharedGeometries();
   const dummy = new Object3D();
+
+  // Rooms dressed by an authored shell (GLB or graybox) skip their tile
+  // floors, walls, and ceiling. Collision still comes from the tile grid, and
+  // fixtures + the room light stay so the authored shell keeps its ambience.
+  const suppressTiles = wing?.roomPresentation?.suppressTileGeometry === true;
 
   /** Create a BatchedMesh from a geometry + positions array */
   function buildBatch(
@@ -595,6 +604,7 @@ export async function buildRoomChunk(
   // Floor batches - one per material bucket
   const floorMeshes: BatchedMeshData[] = [];
   for (const [, bucket] of buckets.floorBuckets) {
+    if (suppressTiles) break;
     if (bucket.positions.length === 0) continue;
     const texturePack = bucket.floorMaterial ? FLOOR_TEXTURE_MAP[bucket.floorMaterial] : undefined;
     const material = texturePack
@@ -613,7 +623,9 @@ export async function buildRoomChunk(
   const wallMeshes: BatchedMeshData[] = [];
   let kitWalls: import("three").Object3D | null = null;
 
-  if (wing) {
+  if (suppressTiles) {
+    // No tile walls: the authored shell owns this room's envelope.
+  } else if (wing) {
     // Reconstruct wall tile coords from the bucketed world positions, tracking
     // their extent. The room rect is derived from the actual wall tiles, not
     // wing.bounds — a room's walls can be inset from the wing rectangle, and
@@ -663,8 +675,10 @@ export async function buildRoomChunk(
   // All rooms share identical ceiling appearance, so we cache the material
   // (same pattern as floor/wall PBR cache) instead of creating one per room.
   const allFloorPositions: { x: number; z: number }[] = [];
-  for (const [, bucket] of buckets.floorBuckets) {
-    for (const pos of bucket.positions) allFloorPositions.push(pos);
+  if (!suppressTiles) {
+    for (const [, bucket] of buckets.floorBuckets) {
+      for (const pos of bucket.positions) allFloorPositions.push(pos);
+    }
   }
   let ceilingMesh: BatchedMeshData | null = null;
   if (allFloorPositions.length > 0) {
