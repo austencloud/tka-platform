@@ -15,9 +15,30 @@ Already closed this session:
 ## Block A — Austen's hands (batch these; ~2.5 hours total)
 
 ### A1. Stripe block (~1 hr) — unblocks 65 points of shop specs
-- [ ] **Rotate the exposed credentials** (found by the shop audit; see
-      `specs/active/2026-06-26-shop-operations-go-live-design.md`). Everything
-      shop-related resumes only after this.
+- [ ] **Rotate the exposed credentials** — ATTEMPTED 2026-08-02 ~01:00-01:40 CDT,
+      blocked by Stripe itself. Findings that survive to the retry:
+      - Exposure: `firebase-functions/.env` full `sk_live_` passed through the
+        2026-07-27 audit transcript. Never in git; gitignored. Secret key
+        last-used = Jul 27 (the audit itself) — nothing else uses it, and the
+        payments extension almost certainly has its own key (verify its config
+        before revoking anyway).
+      - Plan: create restricted key (One-time payments template, name
+        "TKA Firebase Functions") → clipboard → .env (never displayed) → one
+        deploy of createMerchCheckout/handleMerchWebhook/createCartCheckout/
+        createDonationCheckout/sendMagicLink → verify logs → revoke old sk →
+        roll whsec (24h grace) + new Brevo key, same deploy pattern.
+      - Blocker: dashboard key-management is in a stuck email-verification
+        challenge state (started ~01:06). Create key / Create secret key
+        buttons no-op CLIENT-SIDE (zero network on click, confirmed in two
+        separate browser profiles). One challenge email was consumed
+        successfully; subsequent link opens raced and failed; Stripe then
+        stopped opening any key dialog. The Workbench dock overlay was ALSO
+        eating clicks early on — close it first next time (X, top-right of dock).
+      - Resume: wait for challenge expiry (hours) or fresh sign-in, then:
+        /apikeys → close Workbench dock if open → Create restricted key wizard →
+        "Powering an integration" → One-time payments → name → Create key →
+        exactly ONE "Send verification" → open ONLY the newest Gmail link in the
+        SAME browser → Copy → clipboard flow. One driver for the whole loop.
 - [ ] Clear the Stripe payout requirement
 - [ ] Complete Stripe Tax registration
 - [ ] Register the webhook event (Stripe Dashboard) for `shop-spin-up`
