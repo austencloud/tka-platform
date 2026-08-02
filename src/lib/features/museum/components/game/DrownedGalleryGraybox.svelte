@@ -461,8 +461,8 @@
         id: `alcove-light-${i}`,
         pos: [a.x, SHELF_Y + 1.8, a.z],
         color: FIRELIGHT,
-        intensity: 2.2,
-        distance: 7,
+        intensity: 3.6,
+        distance: 10,
       });
       pictographDiscs.push({
         id: `alcove-glyph-${i}`,
@@ -558,10 +558,17 @@
     lights.push(
       {
         id: "pool-fill",
-        pos: [cx(pool), 6, cz(pool)],
+        pos: [cx(pool), 5, cz(pool)],
         color: "#7fd8ff",
-        intensity: 1.6,
-        distance: 22,
+        intensity: 2.6,
+        distance: 30,
+      },
+      {
+        id: "dome-fill",
+        pos: [cx(grotto), 8, cz(grotto)],
+        color: "#5a7a8a",
+        intensity: 1.2,
+        distance: 34,
       },
       {
         id: "surfacing-fill",
@@ -569,6 +576,45 @@
         color: FIRELIGHT,
         intensity: 1.1,
         distance: 11,
+      },
+      {
+        // Waterfall glow at the plunge point
+        id: "waterfall-glow",
+        pos: [pool.minX + 1.2, WATERLINE_Y + 1.2, pool.minZ + 1.6],
+        color: "#bfe9ff",
+        intensity: 2.4,
+        distance: 12,
+      },
+      {
+        // Last warm light behind the visitor at the approach mouth
+        id: "approach-entry",
+        pos: [cx(approach), 2.2, approach.maxZ - 1.5],
+        color: "#8a6a4a",
+        intensity: 0.9,
+        distance: 9,
+      },
+      {
+        // Cool water-glow pulling the visitor down the approach
+        id: "approach-waterglow",
+        pos: [cx(approach), 0.8, approach.minZ + 1],
+        color: "#4a8aa8",
+        intensity: 1.4,
+        distance: 11,
+      },
+      {
+        // Underwater half-light through the sump
+        id: "sump-light-south",
+        pos: [cx(sump), -1.2, sump.maxZ - 3],
+        color: "#2a7a9a",
+        intensity: 1.4,
+        distance: 9,
+      },
+      {
+        id: "sump-light-north",
+        pos: [cx(sump), -1.2, sump.minZ + 3],
+        color: "#2a7a9a",
+        intensity: 1.4,
+        distance: 9,
       }
     );
   }
@@ -603,6 +649,8 @@
       />
       <T.MeshStandardMaterial
         color={WATER}
+        emissive={WATER}
+        emissiveIntensity={0.85}
         transparent
         opacity={0.55}
         roughness={0.15}
