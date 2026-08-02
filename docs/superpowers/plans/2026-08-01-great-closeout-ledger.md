@@ -23,12 +23,12 @@ Already closed this session:
       updated + **`createCartCheckout` created (first deploy — production
       finally has the function every buy surface calls)**. Zero
       warnings/errors in function logs post-deploy.
-- [ ] **Revoke the old exposed `sk_live`** — after confirming the
-      firestore-stripe-payments extension uses its own key (Firebase console →
-      Extensions → config). Then /apikeys → Standard keys → Secret key → ⋯ →
-      roll/expire now.
-- [ ] Rotate `BREVO_API_KEY` (same .env, exposed same way): new key at
-      app.brevo.com/settings/keys/api → .env → deploy `sendMagicLink` → delete old.
+- [x] **Old exposed `sk_live` revoked** by Austen in the Stripe dashboard
+      (2026-08-02). Exposure window closed.
+- [x] **`BREVO_API_KEY` rotated** (2026-08-02): new key "TKA Composer 2026-08"
+      generated, banked to .env via clipboard flow (89 chars, never displayed),
+      `sendMagicLink` deployed successfully, old "TKA Composer" key deleted in
+      Brevo (deletion toast confirmed). **All credential rotation done.**
 - [ ] Original attempt record (2026-08-02 ~01:00-01:40 CDT), kept for the
       incident file — blocked by Stripe itself. Findings that survived:
       - Exposure: `firebase-functions/.env` full `sk_live_` passed through the
