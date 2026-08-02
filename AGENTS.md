@@ -72,6 +72,31 @@ Correct pattern: investigate → narrow to 1-2 informed options → either decid
 
 This rule is load-bearing: model 4.7 has regressed on this specific behavior vs 4.6. Austen will call it out every time.
 
+## Approval Gate Before Implementation
+
+Treat requests to investigate, assess, brainstorm, recommend, or explain what
+could be done as read-only work. Conditional language such as "if I let you,"
+"what would you do," or "start looking" does not authorize edits, commits,
+deployments, or other state changes.
+
+Complete the investigation without asking questions that repository evidence
+can answer. Then present:
+
+1. the recommended outcome and why it is the best target;
+2. the proposed scope, including affected systems or files;
+3. the implementation plan, risks, and verification method; and
+4. any spec or plan document that should govern non-trivial work.
+
+Wait for Austen's explicit approval in the current conversation before starting
+non-trivial implementation. "Run autonomously" means execute the approved plan
+to completion; it does not skip the approval gate. A queue command may rank and
+drift-check the next item, but `PICK AND GO` must stop after presenting the
+recommended plan until Austen approves it.
+
+A direct instruction to make a clearly bounded, trivial change is sufficient
+authorization for that exact change. State the intended edit before making it.
+Do not expand it into adjacent cleanup or unrelated queue work.
+
 ## Writing Style (Real-World Copy)
 
 The fire jam test: would Austen say this out loud? State what it does. Be specific. Cut redundancy. Check features exist. No first person without a signature. Vary sentence length.
