@@ -126,12 +126,51 @@ visitors today.
 ## Execution Ledger
 
 - [x] Recon: shop surface map (session)
-- [ ] Recon digests: smart-collections strategy; store module inventory
-- [ ] Direction mockups (2–3) → Austen picks
-- [ ] Phase 1: `ShopProductShell` + product status model
-- [ ] Phase 2: `/shop` catalog front door (ungated) + waitlist band
-- [ ] Phase 3: re-seat 4 PDPs + `[productId]` + success page (cross-sell rail)
-- [ ] Phase 4: choreography-cards absorption + 301; nav/footer/launchpad rewiring
-- [ ] Phase 5: 7-viewport visual loop until frame-perfect
-- [ ] Phase 6: Codex review, `npm run check`, scoped commits
-- [ ] Update this spec with chosen direction + shipped state
+- [x] Recon digests: smart-collections strategy; store module inventory
+- [x] Direction mockups (3) → Austen picked the hybrid (C hero + B grid)
+- [x] Phase 1: `ShopProductShell` + purchase-state resolver — `a422744d68`
+- [x] Phase 2: `/shop` catalog front door (ungated) + waitlist band — `0beba28088`
+- [x] Phase 3: re-seat 5 surfaces + success rail — `8ac5104819..801094ba52` (7 commits)
+- [x] Phase 4: explainer absorption + 308 redirect + nav rewire — `c0df410868`
+- [x] Phase 5: review harness (`b75732fbae`) + Fable 7-viewport loop → fix batch `395c25d85b`
+- [x] Phase 6: Codex second view (15 findings → 8 fixed `4b1bd29c89`, 7 deferred below);
+      full `npm run check` green (0 errors / 0 warnings); scoped commits throughout
+- [x] Spec updated with chosen direction + shipped state
+
+## Shipped state (2026-08-02, local commits — NOT pushed)
+
+All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
+the ungated shop live; Austen sequences that. Blocking the push, deliberately:
+
+1. `SiteHeader.svelte`, `SiteFooter.svelte`, `launchpad-tiles.ts` (+ `sitemap.xml/+server.ts`,
+   `test/landing-directions/*`) hold BOTH our shop nav rewiring AND another session's
+   uncommitted "Notation→History" relabel — left uncommitted per
+   `commit-only-your-own-changes.md`. The committed `landing-route-morph.test.ts` expects the
+   new launchpad tile href, so those files and that test must land in the same push.
+2. `SALES_LIVE` remains `false` (`src/lib/features/store/domain/purchase-state.ts`) until
+   Stripe payout + tax registration are done; every CTA renders notify-mode. Flip is a
+   one-line change.
+
+## Deferred follow-ups (from the Codex review round + build)
+
+- `Date.now()` captured once in catalog-listings / LoopDeckConfiguratorPage / TnDTrilogyPage:
+  preorder pricing won't cross the Sept 30 cutoff while a tab stays open. Low urgency.
+- `cover-front-renderer.ts`: bootstrap failure permanently resolves (no retry); cached blob
+  URLs never revoked (session-length leak). Pre-existing service behavior.
+- `StorePage.svelte` orphaned (only a route-morph test reads it); deleting it strands
+  `BakeCoversButton.svelte`, which needs an admin route home first.
+- `PropPicker`/`ShopPropPicker` fork (pre-existing).
+- Mobile: floating cart button overlaps the "Custom" difficulty chip on /shop/loop-deck at
+  375 (pre-existing, outside shop files).
+
+## Decisions Austen owns
+
+- Three "Chicago" claims render on shop surfaces: Deck Architect product description
+  ("Hand-cut and packed in Chicago" — Firestore data), and the assurance lines on
+  LOOP/T&D/Architect PDPs ("printed and cut by hand in Chicago, small batches" — page copy
+  predating this work). Confirm true, or say the word and they come out.
+- Duplicate Firestore doc `products/prod_UsGN7MufXHI8VI` ("LOOP Deck", no `listing`):
+  code now dedupes it, but the prod data doc should be fixed or deleted (not touched).
+- T&D Trilogy shelves under **Decks** (its SKUs are `type: physical-deck`), so chips read
+  All 5 · Decks 3 · Books 1 · Bundles 1. If the trilogy belongs under "Books" as the
+  teaching line, that's a product-data change, not a layout change.
