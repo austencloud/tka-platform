@@ -5,7 +5,6 @@
 
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
 import type { PinnedItem } from "./pinned-item";
 
 /**
@@ -48,10 +47,6 @@ export interface UserProfile {
   // Profile accent color (hex, e.g. "#8b5cf6") for avatar ring and cards
   profileColor?: string;
 
-  /** Coarse IP-derived last-known location (city/country), shown on creator
-   * cards. Public, approximate — not precise geolocation. */
-  location?: PresenceLocation | null;
-
   /** Pinned showcase items (1-6, any content type) */
   pinnedItems?: PinnedItem[];
 
@@ -60,14 +55,6 @@ export interface UserProfile {
   isDisabled?: boolean;
   isHidden?: boolean;
 
-  // Warning-related fields
-  hasActiveWarning?: boolean;
-  lastWarningAt?: Date;
-  lastWarningReportId?: string;
-
-  // Admin-only fields (never shown to users)
-  adminLabel?: string; // Quick identifier (e.g., "Jake from Tuesday jam")
-  adminNotes?: string;
 }
 
 export interface EnhancedUserProfile extends UserProfile {

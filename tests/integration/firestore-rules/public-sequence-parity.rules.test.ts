@@ -457,6 +457,9 @@ describe("admin unpublish allowance", () => {
     return testEnv
       .authenticatedContext(ADMIN_UID, {
         firebase: { sign_in_provider: "password" },
+        role: "admin",
+        admin: true,
+        isAdmin: true,
       })
       .firestore(SDK_SETTINGS);
   }

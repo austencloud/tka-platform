@@ -77,8 +77,315 @@ function fullCtx() {
 function adminCtx() {
   return testEnv.authenticatedContext(ADMIN_UID, {
     firebase: { sign_in_provider: "password" },
+    role: "admin",
+    admin: true,
+    isAdmin: true,
   });
 }
+
+describe("user profile privilege boundaries", () => {
+  async function seedProfiles() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, `users/${FULL_UID}`), {
+        publicProfileVersion: 2,
+        displayName: "Full User",
+        bio: "Original",
+        role: "user",
+        isAdmin: false,
+      });
+      await setDoc(doc(db, `users/${ADMIN_UID}`), {
+        publicProfileVersion: 2,
+        displayName: "Admin",
+        role: "admin",
+        isAdmin: true,
+      });
+    });
+  }
+
+  it("allows owner public-profile edits but rejects role escalation", async () => {
+    await seedProfiles();
+    const ref = doc(fullCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`);
+
+    await assertSucceeds(updateDoc(ref, { bio: "Updated" }));
+    await assertFails(updateDoc(ref, { role: "admin", isAdmin: true }));
+    await assertFails(updateDoc(ref, { adminNotes: "read private note" }));
+    await assertFails(updateDoc(ref, { followerCount: 999999 }));
+  });
+
+  it("rejects privileged fields during owner profile creation", async () => {
+    const uid = "new-full-user";
+    const db = testEnv
+      .authenticatedContext(uid, { firebase: { sign_in_provider: "password" } })
+      .firestore(SDK_SETTINGS);
+
+    await assertSucceeds(
+      setDoc(doc(db, `users/${uid}`), {
+        publicProfileVersion: 2,
+        displayName: "Safe profile",
+      })
+    );
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deleteDoc(doc(context.firestore(SDK_SETTINGS), `users/${uid}`));
+    });
+    await assertFails(
+      setDoc(doc(db, `users/${uid}`), {
+        publicProfileVersion: 2,
+        displayName: "Self Promoted",
+        role: "admin",
+        isAdmin: true,
+      })
+    );
+    await assertFails(
+      setDoc(doc(db, `users/${uid}`), {
+        publicProfileVersion: 2,
+        displayName: "Inflated creator",
+        sequenceCount: 999999,
+        collectionCount: 999999,
+      })
+    );
+  });
+
+  it("keeps privileged profile mutations available to administrators", async () => {
+    await seedProfiles();
+    const ref = doc(adminCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`);
+    await assertSucceeds(updateDoc(ref, { role: "tester", isAdmin: false }));
+  });
+
+  it("does not trust an admin-looking public profile without signed claims", async () => {
+    await seedProfiles();
+    const ref = doc(fullCtx().firestore(SDK_SETTINGS), `users/${ADMIN_UID}`);
+    await assertFails(updateDoc(ref, { role: "tester", isAdmin: false }));
+  });
+
+  it("blocks legacy private fields from public reads until server migration", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(SDK_SETTINGS), `users/${FULL_UID}`), {
+        displayName: "Legacy User",
+        adminLabel: "Tuesday jam",
+        adminNotes: "Private note",
+      });
+    });
+    await assertFails(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+          `users/${FULL_UID}`
+        )
+      )
+    );
+    await assertSucceeds(
+      getDoc(doc(adminCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`))
+    );
+    await assertFails(
+      getDocs(
+        collection(
+          testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+          "users"
+        )
+      )
+    );
+    await assertFails(
+      updateDoc(doc(fullCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`), {
+        publicProfileVersion: 2,
+      })
+    );
+  });
+
+  it("keeps migrated public profiles queryable", async () => {
+    await seedProfiles();
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(
+            testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+            "users"
+          ),
+          where("publicProfileVersion", "==", 2)
+        )
+      )
+    );
+  });
+
+  it("denies public user lists that do not constrain the migration marker", async () => {
+    await seedProfiles();
+    await assertFails(
+      getDocs(
+        collection(
+          testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+          "users"
+        )
+      )
+    );
+  });
+
+  it("denies marked profiles containing email, location, or unknown fields", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, "users/private-email"), {
+        publicProfileVersion: 2,
+        displayName: "Email",
+        email: "private@example.test",
+      });
+      await setDoc(doc(db, "users/private-location"), {
+        publicProfileVersion: 2,
+        displayName: "Location",
+        lastLocation: { lat: 1, lng: 2 },
+      });
+      await setDoc(doc(db, "users/private-unknown"), {
+        publicProfileVersion: 2,
+        displayName: "Unknown",
+        secretAnswer: "private",
+      });
+    });
+    const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+    await assertFails(getDoc(doc(db, "users/private-email")));
+    await assertFails(getDoc(doc(db, "users/private-location")));
+    await assertFails(getDoc(doc(db, "users/private-unknown")));
+    const ownerDb = testEnv
+      .authenticatedContext("private-create", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+    await assertFails(
+      setDoc(doc(ownerDb, "users/private-create"), {
+        publicProfileVersion: 2,
+        displayName: "Unsafe",
+        secretAnswer: "private",
+      })
+    );
+  });
+
+  it("keeps private admin metadata inaccessible to every client", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(SDK_SETTINGS), `userAdminMetadata/${FULL_UID}`),
+        { adminNotes: "Private note" }
+      );
+    });
+    await assertFails(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+          `userAdminMetadata/${FULL_UID}`
+        )
+      )
+    );
+    await assertFails(
+      getDoc(
+        doc(adminCtx().firestore(SDK_SETTINGS), `userAdminMetadata/${FULL_UID}`)
+      )
+    );
+  });
+});
+
+describe("protected user document boundaries", () => {
+  async function seedProtectedDocuments() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, `userPrivateProfiles/${FULL_UID}`), {
+        email: "owner@example.test",
+        lastLocation: { city: "Chicago" },
+      });
+      await setDoc(
+        doc(db, `users/${FULL_UID}/settings/notificationPreferences`),
+        { notificationPreferences: { push: true } }
+      );
+      await setDoc(doc(db, `users/${FULL_UID}/settings/featureOverrides`), {
+        enabledFeatures: ["beta"],
+        disabledFeatures: [],
+      });
+      await setDoc(doc(db, `users/${FULL_UID}/moderation/status`), {
+        hasActiveWarning: true,
+        lastWarningReportId: "report-1",
+      });
+    });
+  }
+
+  it("limits private profiles to the owner and admin reads", async () => {
+    await seedProtectedDocuments();
+    const path = `userPrivateProfiles/${FULL_UID}`;
+    const owner = fullCtx().firestore(SDK_SETTINGS);
+    const other = anonCtx().firestore(SDK_SETTINGS);
+    const admin = adminCtx().firestore(SDK_SETTINGS);
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+
+    await assertSucceeds(getDoc(doc(owner, path)));
+    await assertSucceeds(updateDoc(doc(owner, path), { email: "new@test.io" }));
+    await assertFails(updateDoc(doc(owner, path), { adminNotes: "no" }));
+    await assertFails(getDoc(doc(other, path)));
+    await assertFails(updateDoc(doc(other, path), { email: "no@test.io" }));
+    await assertFails(getDoc(doc(signedOut, path)));
+    await assertSucceeds(getDoc(doc(admin, path)));
+    await assertFails(updateDoc(doc(admin, path), { email: "admin@test.io" }));
+  });
+
+  it("keeps settings private and scopes admin writes to feature overrides", async () => {
+    await seedProtectedDocuments();
+    const notifications = `users/${FULL_UID}/settings/notificationPreferences`;
+    const overrides = `users/${FULL_UID}/settings/featureOverrides`;
+    const owner = fullCtx().firestore(SDK_SETTINGS);
+    const other = anonCtx().firestore(SDK_SETTINGS);
+    const admin = adminCtx().firestore(SDK_SETTINGS);
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+
+    await assertSucceeds(getDoc(doc(owner, notifications)));
+    await assertSucceeds(
+      updateDoc(doc(owner, notifications), {
+        notificationPreferences: { push: false },
+      })
+    );
+    await assertFails(getDoc(doc(other, notifications)));
+    await assertFails(getDoc(doc(signedOut, notifications)));
+    await assertSucceeds(getDoc(doc(admin, notifications)));
+    await assertFails(
+      updateDoc(doc(admin, notifications), {
+        notificationPreferences: { push: false },
+      })
+    );
+    await assertSucceeds(
+      updateDoc(doc(admin, overrides), {
+        enabledFeatures: [],
+        disabledFeatures: ["beta"],
+      })
+    );
+    await assertFails(
+      updateDoc(doc(owner, overrides), {
+        enabledFeatures: ["beta", "premium"],
+      })
+    );
+  });
+
+  it("lets owners acknowledge warnings without controlling moderation state", async () => {
+    await seedProtectedDocuments();
+    const path = `users/${FULL_UID}/moderation/status`;
+    const owner = fullCtx().firestore(SDK_SETTINGS);
+    const other = anonCtx().firestore(SDK_SETTINGS);
+    const admin = adminCtx().firestore(SDK_SETTINGS);
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+
+    await assertSucceeds(getDoc(doc(owner, path)));
+    await assertSucceeds(
+      updateDoc(doc(owner, path), { hasActiveWarning: false })
+    );
+    await assertFails(updateDoc(doc(owner, path), { hasActiveWarning: true }));
+    await assertFails(
+      setDoc(doc(owner, `users/${FULL_UID}/moderation/new-status`), {
+        hasActiveWarning: false,
+      })
+    );
+    await assertFails(getDoc(doc(other, path)));
+    await assertFails(getDoc(doc(signedOut, path)));
+    await assertSucceeds(getDoc(doc(admin, path)));
+    await assertSucceeds(
+      updateDoc(doc(admin, path), {
+        hasActiveWarning: true,
+        lastWarningReportId: "report-2",
+      })
+    );
+    await assertSucceeds(deleteDoc(doc(admin, path)));
+  });
+});
 
 describe("anonymous guests: own data", () => {
   it("can write their own sequence", async () => {
@@ -176,6 +483,54 @@ describe("anonymous guests: community write paths are denied", () => {
     const db = anonCtx().firestore(SDK_SETTINGS);
     await assertFails(
       setDoc(doc(db, `hallOfShameReports/r1`), { reporterId: ANON_UID })
+    );
+  });
+});
+
+describe("Hall of Shame age verification", () => {
+  async function seedApprovedEntry() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(SDK_SETTINGS), "hallOfShame/approved-entry"),
+        {
+          ownerId: "another-user",
+          status: "approved",
+          hidden: false,
+        }
+      );
+    });
+  }
+
+  it("accepts age verification from the owner-private profile", async () => {
+    await seedApprovedEntry();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(SDK_SETTINGS), `userPrivateProfiles/${FULL_UID}`),
+        { ageVerifiedAt: new Date() }
+      );
+    });
+
+    await assertSucceeds(
+      getDoc(
+        doc(fullCtx().firestore(SDK_SETTINGS), "hallOfShame/approved-entry")
+      )
+    );
+  });
+
+  it("does not trust a legacy public age-verification field", async () => {
+    await seedApprovedEntry();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(SDK_SETTINGS), `users/${FULL_UID}`), {
+        publicProfileVersion: 2,
+        displayName: "Legacy Verified User",
+        ageVerifiedAt: new Date(),
+      });
+    });
+
+    await assertFails(
+      getDoc(
+        doc(fullCtx().firestore(SDK_SETTINGS), "hallOfShame/approved-entry")
+      )
     );
   });
 });
@@ -627,6 +982,50 @@ describe("messaging attachments", () => {
     });
   }
 
+  async function seedMessage(
+    options: {
+      id?: string;
+      content?: string;
+      attachments?: Array<Record<string, unknown>> | null;
+      editHistory?: Array<{ content: string; editedAt: Date }> | null;
+      isDeleted?: boolean;
+    } = {}
+  ) {
+    const {
+      id = "message-1",
+      content = "Original message",
+      attachments = null,
+      editHistory = null,
+      isDeleted = false,
+    } = options;
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(
+          context.firestore(SDK_SETTINGS),
+          `conversations/${CONVERSATION}/messages/${id}`
+        ),
+        {
+          senderId: SENDER,
+          senderName: "Sender",
+          content,
+          createdAt: new Date("2026-07-31T12:00:00Z"),
+          readBy: [SENDER],
+          attachments,
+          editHistory,
+          isDeleted,
+        }
+      );
+    });
+  }
+
+  function messageRef(uid: string, id = "message-1") {
+    return doc(
+      messageCtx(uid).firestore(SDK_SETTINGS),
+      `conversations/${CONVERSATION}/messages/${id}`
+    );
+  }
+
   it("keeps direct-message membership immutable", async () => {
     await seedConversation();
     const conversationRef = doc(
@@ -667,6 +1066,126 @@ describe("messaging attachments", () => {
         attachments: [
           { type: "image", storagePath: "message-images/fake/fake/fake.webp" },
         ],
+      })
+    );
+  });
+
+  it("lets the sender edit text while appending the previous version", async () => {
+    await seedConversation();
+    await seedMessage();
+    const editedAt = new Date("2026-07-31T12:05:00Z");
+
+    await assertSucceeds(
+      updateDoc(messageRef(SENDER), {
+        content: "Corrected message",
+        editedAt,
+        editHistory: [{ content: "Original message", editedAt }],
+      })
+    );
+
+    await assertFails(
+      updateDoc(messageRef(RECIPIENT), {
+        content: "Recipient rewrite",
+        editedAt,
+        editHistory: [{ content: "Original message", editedAt }],
+      })
+    );
+  });
+
+  it("keeps edit history append-only", async () => {
+    await seedConversation();
+    const firstEditAt = new Date("2026-07-31T12:05:00Z");
+    await seedMessage({
+      content: "Second version",
+      editHistory: [{ content: "Original message", editedAt: firstEditAt }],
+    });
+    const secondEditAt = new Date("2026-07-31T12:10:00Z");
+
+    await assertSucceeds(
+      updateDoc(messageRef(SENDER), {
+        content: "Final version",
+        editedAt: secondEditAt,
+        editHistory: [
+          { content: "Original message", editedAt: firstEditAt },
+          { content: "Second version", editedAt: secondEditAt },
+        ],
+      })
+    );
+
+    await seedMessage({
+      id: "message-2",
+      content: "Second version",
+      editHistory: [{ content: "Original message", editedAt: firstEditAt }],
+    });
+    await assertFails(
+      updateDoc(messageRef(SENDER, "message-2"), {
+        content: "History rewrite",
+        editedAt: secondEditAt,
+        editHistory: [
+          { content: "Fabricated original", editedAt: firstEditAt },
+          { content: "Second version", editedAt: secondEditAt },
+        ],
+      })
+    );
+  });
+
+  it("rejects empty plain-text edits but allows clearing an attachment caption", async () => {
+    await seedConversation();
+    await seedMessage();
+    const editedAt = new Date("2026-07-31T12:05:00Z");
+
+    await assertFails(
+      updateDoc(messageRef(SENDER), {
+        content: "",
+        editedAt,
+        editHistory: [{ content: "Original message", editedAt }],
+      })
+    );
+    await assertFails(
+      updateDoc(messageRef(SENDER), {
+        content: "x".repeat(2001),
+        editedAt,
+        editHistory: [{ content: "Original message", editedAt }],
+      })
+    );
+
+    await seedMessage({
+      id: "message-2",
+      content: "Photo caption",
+      attachments: [{ type: "image", storagePath: "message-images/x.webp" }],
+    });
+    await assertSucceeds(
+      updateDoc(messageRef(SENDER, "message-2"), {
+        content: "",
+        editedAt,
+        editHistory: [{ content: "Photo caption", editedAt }],
+      })
+    );
+  });
+
+  it("allows the fixed delete tombstone and prevents restoring deleted messages", async () => {
+    await seedConversation();
+    await seedMessage();
+
+    await assertSucceeds(
+      updateDoc(messageRef(SENDER), {
+        content: "[Message deleted]",
+        isDeleted: true,
+      })
+    );
+
+    const editedAt = new Date("2026-07-31T12:05:00Z");
+    await assertFails(
+      updateDoc(messageRef(SENDER), {
+        content: "Restored message",
+        editedAt,
+        editHistory: [{ content: "[Message deleted]", editedAt }],
+      })
+    );
+    await assertFails(
+      updateDoc(messageRef(SENDER), {
+        content: "Restored message",
+        isDeleted: false,
       })
     );
   });
@@ -831,6 +1350,7 @@ describe("generator setups: private saved configs", () => {
   it("denies signed-out setup reads without changing public Favorite reads", async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `users/${FULL_UID}`), {
+        publicProfileVersion: 2,
         favoriteConfig: {
           sourceSetupId: "s1",
           config: {},
@@ -841,13 +1361,9 @@ describe("generator setups: private saved configs", () => {
         config: {},
       });
     });
-    const signedOut = testEnv
-      .unauthenticatedContext()
-      .firestore(SDK_SETTINGS);
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
 
     await assertFails(getDoc(doc(signedOut, setupPath(FULL_UID))));
-    await assertSucceeds(
-      getDoc(doc(signedOut, `users/${FULL_UID}`))
-    );
+    await assertSucceeds(getDoc(doc(signedOut, `users/${FULL_UID}`)));
   });
 });

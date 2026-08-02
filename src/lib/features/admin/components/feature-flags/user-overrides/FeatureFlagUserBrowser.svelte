@@ -11,7 +11,17 @@
    * - Beautiful avatar-colored cards
    */
 
-  import { collection, getDocs, query, orderBy, limit, startAfter, type DocumentSnapshot } from "firebase/firestore";
+  import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    orderBy,
+    limit,
+    startAfter,
+    type DocumentSnapshot,
+  } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserFeatureOverrides } from "$lib/shared/auth/domain/models/feature-flag";
@@ -21,7 +31,9 @@
   import RoleFilterButtons from "$lib/shared/community/components/RoleFilterButtons.svelte";
   import OverrideUserCard from "./OverrideUserCard.svelte";
 
-  type UserWithOverrides = UserProfile & { featureOverrides?: UserFeatureOverrides };
+  type UserWithOverrides = UserProfile & {
+    featureOverrides?: UserFeatureOverrides;
+  };
   type RoleFilter = UserRole | "all";
 
   const PAGE_SIZE = 50;
@@ -64,11 +76,7 @@
       const usersRef = collection(firestore, "users");
 
       // Build paginated query
-      let q = query(
-        usersRef,
-        orderBy("displayName"),
-        limit(PAGE_SIZE)
-      );
+      let q = query(usersRef, orderBy("displayName"), limit(PAGE_SIZE));
 
       if (!initial && lastDoc) {
         q = query(
@@ -81,20 +89,34 @@
 
       const snapshot = await getDocs(q);
 
-      const newUsers = snapshot.docs.map((doc) => {
-        const data = doc.data();
+      const [overrideDocs, privateDocs] = await Promise.all([
+        Promise.all(
+          snapshot.docs.map((user) =>
+            getDoc(doc(firestore, `users/${user.id}/settings/featureOverrides`))
+          )
+        ),
+        Promise.all(
+          snapshot.docs.map((user) =>
+            getDoc(doc(firestore, "userPrivateProfiles", user.id))
+          )
+        ),
+      ]);
+      const newUsers = snapshot.docs.map((user, index) => {
+        const data = user.data();
         return {
-          id: doc.id,
+          id: user.id,
           username: data["username"] || "",
           displayName: data["displayName"] || "Unknown User",
           avatar: data["photoURL"] || undefined,
-          email: data["email"] || "",
+          email: privateDocs[index]?.data()?.["email"] || "",
           sequenceCount: data["sequenceCount"] ?? 0,
           collectionCount: data["collectionCount"] ?? 0,
           followerCount: data["followerCount"] ?? 0,
           joinedDate: data["createdAt"]?.toDate() ?? new Date(),
           role: data["role"] || "user",
-          featureOverrides: data["featureOverrides"],
+          featureOverrides: overrideDocs[index]?.data() as
+            | UserFeatureOverrides
+            | undefined,
         } as UserWithOverrides;
       });
 
@@ -403,7 +425,11 @@
   }
 
   .overrides-section .section-count {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      transparent
+    );
     color: var(--theme-accent, #6366f1);
   }
 

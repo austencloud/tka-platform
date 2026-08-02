@@ -91,16 +91,11 @@ describe("loadPersonal migration commit", () => {
     });
 
     expect(result.sharedSetupId).toBe("legacy-favorite");
-    expect(result.setups.map((setup) => setup.id)).toEqual([
-      "legacy-favorite",
-    ]);
+    expect(result.setups.map((setup) => setup.id)).toEqual(["legacy-favorite"]);
     expect(harness.batch.set).toHaveBeenCalledTimes(1);
-    expect(harness.batch.update).toHaveBeenCalledWith(
-      expect.anything(),
-      {
-        "favoriteConfig.sourceSetupId": "legacy-favorite",
-      }
-    );
+    expect(harness.batch.update).toHaveBeenCalledWith(expect.anything(), {
+      "favoriteConfig.sourceSetupId": "legacy-favorite",
+    });
   });
 
   it("orders the first mutation after a pending migration", async () => {
@@ -171,19 +166,32 @@ describe("shared batches", () => {
     await deleteSetup("u1", "s1", true);
 
     expect(harness.batch.delete).toHaveBeenCalledTimes(1);
-    expect(harness.batch.update).toHaveBeenCalledWith(
-      expect.anything(),
-      { favoriteConfig: "__DELETE__" }
-    );
+    expect(harness.batch.update).toHaveBeenCalledWith(expect.anything(), {
+      favoriteConfig: "__DELETE__",
+    });
     expect(harness.batch.commit).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("loadCommunity", () => {
-  it("rejects read failures instead of returning an empty list", async () => {
-    harness.firestoreList.mockRejectedValue(
-      new Error("permission-denied")
+  it("queries only migrated public profiles", async () => {
+    harness.firestoreList.mockResolvedValue([]);
+
+    await loadCommunity();
+
+    expect(harness.firestoreList).toHaveBeenCalledWith(
+      "users",
+      expect.anything(),
+      expect.objectContaining({
+        where: expect.arrayContaining([
+          { field: "publicProfileVersion", op: "==", value: 2 },
+        ]),
+      })
     );
+  });
+
+  it("rejects read failures instead of returning an empty list", async () => {
+    harness.firestoreList.mockRejectedValue(new Error("permission-denied"));
 
     await expect(loadCommunity()).rejects.toThrow("permission-denied");
   });

@@ -128,25 +128,32 @@ service cloud.firestore {
         );
     }
 
-    // Check if user is an admin (supports both old isAdmin boolean and new role field)
+    // Privilege is granted only by Firebase Auth custom claims. Public profile
+    // fields are a display projection and must never be an authorization source.
     function isAdmin() {
-      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return isAuthenticated()
-        && (userData.role == 'admin' || userData.isAdmin == true);
+      return !isAuthenticated() ? false
+        : ((request.auth.token.keys().hasAny(['admin'])
+              ? request.auth.token.admin == true : false)
+          || (request.auth.token.keys().hasAny(['isAdmin'])
+              ? request.auth.token.isAdmin == true : false)
+          || (request.auth.token.keys().hasAny(['role'])
+              ? request.auth.token.role == 'admin' : false));
     }
 
     // Check if user is at least tester level
     function isTester() {
-      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return isAuthenticated()
-        && (userData.role == 'admin' || userData.role == 'tester' || userData.isAdmin == true);
+      return !isAuthenticated() ? false
+        : (isAdmin()
+          || (request.auth.token.keys().hasAny(['role'])
+              ? request.auth.token.role == 'tester' : false));
     }
 
     // Check if user is at least premium level
     function isPremium() {
-      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return isAuthenticated()
-        && (userData.role == 'admin' || userData.role == 'tester' || userData.role == 'premium' || userData.isAdmin == true);
+      return !isAuthenticated() ? false
+        : (isTester()
+          || (request.auth.token.keys().hasAny(['role'])
+              ? request.auth.token.role == 'premium' : false));
     }
 
     // -------------------------------------------------------------------------
@@ -174,8 +181,9 @@ service cloud.firestore {
 
     // Check if user has verified their age (18+) for Hall of Shame access
     function isAgeVerified() {
-      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return isAuthenticated() && userData.ageVerifiedAt != null;
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/userPrivateProfiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/userPrivateProfiles/$(request.auth.uid)).data.ageVerifiedAt != null;
     }
 
     // ============================================================================
@@ -310,15 +318,80 @@ service cloud.firestore {
     // - Private data (messages, settings, drafts) uses auth-gated rules
     // -------------------------------------------------------------------------
 
+    // Server-only private metadata. Admin clients use the authenticated API;
+    // Admin SDK access bypasses rules for migration and mutation.
+    match /userAdminMetadata/{userId} {
+      allow read, write: if false;
+    }
+
     // User profiles - PUBLIC browsing allowed for everyone (even unauthenticated)
     // Users can only edit their own profile data
     match /users/{userId} {
-      // ANYONE can read public profile data (no authentication required)
-      // See above documentation for security rationale
-      allow read: if true;
+      // Fields an account owner may maintain directly as part of their public
+      // profile or client-auth synchronization. Privilege, moderation,
+      // counters owned by server workflows, and private admin metadata are
+      // deliberately absent.
+      function ownerProfileFields() {
+        return [
+          'displayName', 'name', 'username', 'usernameLowercase',
+          'photoURL', 'avatar',
+          'updatedAt', 'lastActivityDate', 'isAnonymous',
+          'bio', 'instagramUsername', 'pronouns', 'profileColor',
+          'propsISpinWith', 'favoriteProp', 'favoriteCatdog', 'activeProp',
+          'pinnedItems', 'favoriteConfig',
+          'publicProfileVersion'
+        ];
+      }
+
+      function publicProfileFields() {
+        return [
+          'publicProfileVersion',
+          'displayName', 'name', 'username', 'usernameLowercase',
+          'photoURL', 'avatar',
+          'createdAt', 'updatedAt', 'lastActivityDate', 'isAnonymous',
+          'bio', 'instagramUsername', 'pronouns', 'profileColor',
+          'propsISpinWith', 'favoriteProp', 'favoriteCatdog', 'activeProp',
+          'pinnedItems', 'favoriteConfig',
+          'sequenceCount', 'collectionCount', 'followerCount', 'followingCount',
+          'totalXP', 'currentLevel', 'achievementCount', 'currentStreak',
+          'longestStreak',
+          'role', 'isAdmin', 'isDisabled', 'isHidden', 'isFeatured'
+        ];
+      }
+
+      function isSafePublicProfile(data) {
+        return data.publicProfileVersion == 2
+          && data.keys().hasOnly(publicProfileFields());
+      }
+
+      function hasSafeInitialPrivileges() {
+        return isSafePublicProfile(request.resource.data)
+          && (!('role' in request.resource.data) || request.resource.data.role == 'user')
+          && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false)
+          && !('adminLabel' in request.resource.data)
+          && !('adminNotes' in request.resource.data)
+          && !('isDisabled' in request.resource.data)
+          && (!('isHidden' in request.resource.data) || request.resource.data.isHidden == false)
+          && (!('isFeatured' in request.resource.data) || request.resource.data.isFeatured == false)
+          && (!('sequenceCount' in request.resource.data) || request.resource.data.sequenceCount == 0)
+          && (!('collectionCount' in request.resource.data) || request.resource.data.collectionCount == 0)
+          && (!('followerCount' in request.resource.data) || request.resource.data.followerCount == 0)
+          && (!('followingCount' in request.resource.data) || request.resource.data.followingCount == 0)
+          && (!('totalXP' in request.resource.data) || request.resource.data.totalXP == 0)
+          && (!('currentLevel' in request.resource.data) || request.resource.data.currentLevel == 1)
+          && (!('achievementCount' in request.resource.data) || request.resource.data.achievementCount == 0)
+          && (!('currentStreak' in request.resource.data) || request.resource.data.currentStreak == 0)
+          && (!('longestStreak' in request.resource.data) || request.resource.data.longestStreak == 0);
+      }
+
+      // Legacy documents containing private admin metadata stay unavailable
+      // to public direct reads. Public list queries must prove the migration
+      // marker; signed admins retain list access for migration tooling.
+      allow get: if isAdmin() || isSafePublicProfile(resource.data);
+      allow list: if isAdmin() || resource.data.publicProfileVersion == 2;
 
       // Users can only update their own profile
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) && hasSafeInitialPrivileges();
 
       // Allow updates for:
       // 1. Owner updating their own profile
@@ -326,7 +399,11 @@ service cloud.firestore {
       // NOTE: followerCount manipulation removed from client-side rules.
       // Follow/unfollow must update counts via an Admin SDK endpoint (Cloud Function)
       // to prevent arbitrary count manipulation by any authenticated user.
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if (isAdmin() && isSafePublicProfile(request.resource.data))
+        || (isOwner(userId)
+          && isSafePublicProfile(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(ownerProfileFields()));
 
       // Users can delete their own profile, admins can delete any user (for testing)
       allow delete: if isOwner(userId) || isAdmin();
@@ -347,9 +424,23 @@ service cloud.firestore {
       match /settings/{settingId} {
         // Admins can read any user's settings for impersonation/preview mode
         allow read: if isOwner(userId) || isAdmin();
-        // Only the owner can write their own settings, admins can delete
-        allow create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
+        // Owners manage their settings. Admin feature overrides are an
+        // explicitly privileged settings document.
+        allow create, update: if (isOwner(userId) && settingId != 'featureOverrides')
+          || (isAdmin() && settingId == 'featureOverrides');
+        allow delete: if (isOwner(userId) && settingId != 'featureOverrides')
+          || isAdmin();
+      }
+
+      match /moderation/{documentId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin();
+        allow update: if isAdmin()
+          || (isOwner(userId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['hasActiveWarning'])
+            && request.resource.data.hasActiveWarning == false);
+        allow delete: if isAdmin();
       }
 
       // -------------------------------------------------------------------------
@@ -640,6 +731,18 @@ service cloud.firestore {
       match /fcmTokens/{tokenId} {
         allow read, write: if isOwner(userId);
       }
+    }
+
+    // Owner-private profile data. Admin SDK migration and cleanup bypass
+    // rules; browser access is limited to the account owner and signed admins.
+    match /userPrivateProfiles/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'email', 'lastLocation', 'ageVerifiedAt',
+          'attribution', 'googleId', 'googlePhotoURL', 'facebookId'
+        ]);
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // ============================================================================

@@ -4,7 +4,7 @@
  * Handles admin actions on reports (resolution, status changes).
  */
 
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 interface ReportQuerier {
@@ -142,14 +142,14 @@ export class ReportResolver {
 		adminNotes?: string
 	): Promise<void> {
 		const firestore = await getFirestoreInstance();
-		const userRef = doc(firestore, USERS_COLLECTION, userId);
+		const userRef = doc(firestore, `users/${userId}/moderation/status`);
 
 		// Set the active warning flag on the user document
-		await updateDoc(userRef, {
+		await setDoc(userRef, {
 			hasActiveWarning: true,
 			lastWarningAt: serverTimestamp(),
 			lastWarningReportId: reportId
-		});
+		}, { merge: true });
 
 		// Send notification to the warned user
 		const categoryLabel = REPORT_CATEGORIES[category as keyof typeof REPORT_CATEGORIES]?.label || category;

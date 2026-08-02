@@ -5,15 +5,7 @@
  * Ensures every authenticated user has a Firestore profile document.
  */
 
-import {
-  collection,
-  doc,
-  getCountFromServer,
-  getDoc,
-  getDocs,
-  setDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../firebase";
 import { getProviderIds } from "./profile-picture-manager";
@@ -22,48 +14,7 @@ import { formatUsername } from "../domain/models/username-validation";
 import { retryAuthenticatedFirestoreOperation } from "./retry-authenticated-firestore-operation";
 
 import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
-
-interface ExistingLibraryCounts {
-  sequenceCount: number;
-  collectionCount: number;
-}
-
-/**
- * Guest saves can create owner subcollections before the public profile
- * document exists. Count those documents when reconstructing the parent so a
- * later account upgrade cannot overwrite real library totals with zeroes.
- */
-async function getExistingLibraryCounts(
-  user: User
-): Promise<ExistingLibraryCounts> {
-  return retryAuthenticatedFirestoreOperation(user, async () => {
-    const firestore = await getFirestoreInstance();
-    const sequencesRef = collection(firestore, "users", user.uid, "sequences");
-    const collectionsRef = collection(
-      firestore,
-      "users",
-      user.uid,
-      "collections"
-    );
-    const [sequencesSnapshot, collectionsSnapshot] = await Promise.all([
-      getCountFromServer(sequencesRef),
-      getDocs(collectionsRef),
-    ]);
-
-    return {
-      sequenceCount: sequencesSnapshot.data().count,
-      // Favorites and any future system collections do not count toward the
-      // user-created collection total, even if their systemType is null.
-      collectionCount: collectionsSnapshot.docs.filter(
-        (collectionDoc) =>
-          !Object.prototype.hasOwnProperty.call(
-            collectionDoc.data(),
-            "systemType"
-          )
-      ).length,
-    };
-  });
-}
+import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
 
 /**
  * Capitalize each word in a name (e.g., "brendan freaney" -> "Brendan Freaney")
@@ -142,8 +93,6 @@ export class UserDocumentManager {
       const googlePhotoURL = googleProvider?.photoURL || null;
 
       if (!userDoc.exists()) {
-        const existingLibraryCounts = await getExistingLibraryCounts(user);
-
         // NEW USER: Generate unique username and claim it
         const baseUsername =
           user.email?.split("@")[0] || user.uid.substring(0, 8);
@@ -157,20 +106,19 @@ export class UserDocumentManager {
 
         await retryAuthenticatedFirestoreOperation(user, () =>
           setDoc(userDocRef, {
+            publicProfileVersion: PUBLIC_PROFILE_VERSION,
             displayName,
             username,
             usernameLowercase,
             photoURL: user.photoURL || fallbackAvatar,
             avatar: user.photoURL || fallbackAvatar,
-            // Store provider IDs and original photo URLs for reliable restoration
-            googleId: providerIds.googleId || null,
-            googlePhotoURL: googlePhotoURL,
-            facebookId: providerIds.facebookId || null,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             lastActivityDate: serverTimestamp(),
-            sequenceCount: existingLibraryCounts.sequenceCount,
-            collectionCount: existingLibraryCounts.collectionCount,
+            // Cloud Functions reconcile these from the actual subcollections,
+            // including guest saves that predate this full profile document.
+            sequenceCount: 0,
+            collectionCount: 0,
             followerCount: 0,
             // Initialize gamification fields (denormalized for leaderboards)
             totalXP: 0,
@@ -186,6 +134,17 @@ export class UserDocumentManager {
             // until they upgrade to a full account (see anonymous-upgrade.ts).
             isAnonymous: user.isAnonymous,
           })
+        );
+
+        await setDoc(
+          doc(firestore, "userPrivateProfiles", user.uid),
+          {
+            email: user.email ?? null,
+            googleId: providerIds.googleId || null,
+            googlePhotoURL,
+            facebookId: providerIds.facebookId || null,
+          },
+          { merge: true }
         );
 
         if (!user.isAnonymous) {
@@ -208,8 +167,6 @@ export class UserDocumentManager {
         // NOTE: Email deliberately NOT stored - user documents are publicly readable
         const updateData: Record<string, unknown> = {
           displayName,
-          googleId: providerIds.googleId || null,
-          facebookId: providerIds.facebookId || null,
           updatedAt: serverTimestamp(),
           lastActivityDate: serverTimestamp(),
           // Keep the guest flag current. onAuthStateChanged doesn't reliably
@@ -233,9 +190,16 @@ export class UserDocumentManager {
         // Don't null it out - the provider's photoURL becomes null after the
         // user switches to a generated avatar, but we want to keep the
         // original so "Use Google Photo" always works.
-        if (googlePhotoURL) {
-          updateData.googlePhotoURL = googlePhotoURL;
-        }
+        await setDoc(
+          doc(firestore, "userPrivateProfiles", user.uid),
+          {
+            email: user.email ?? null,
+            googleId: providerIds.googleId || null,
+            facebookId: providerIds.facebookId || null,
+            ...(googlePhotoURL ? { googlePhotoURL } : {}),
+          },
+          { merge: true }
+        );
 
         // Add usernameLowercase if missing (backfill for existing users)
         if (existingUsername && !existingData?.usernameLowercase) {
@@ -262,16 +226,6 @@ export class UserDocumentManager {
       );
       // Don't throw - this shouldn't block authentication
     }
-  }
-
-  /**
-   * Detect the signup method from user provider data
-   */
-  private detectSignupMethod(user: User): "google" | "apple" | "email" {
-    const providers = user.providerData.map((p) => p.providerId);
-    if (providers.includes("google.com")) return "google";
-    if (providers.includes("apple.com")) return "apple";
-    return "email";
   }
 
   /**

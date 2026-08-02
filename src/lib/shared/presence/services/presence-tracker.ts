@@ -141,7 +141,7 @@ export class PresenceTracker {
     }
   }
 
-  /** Write the pending location to the RTDB presence record and the user doc. */
+  /** Write the pending location to live presence and the owner's private profile. */
   private async persistLocation(): Promise<void> {
     const loc = this.pendingLocation;
     if (!loc) return;
@@ -154,11 +154,11 @@ export class PresenceTracker {
       await update(this.presenceRef, { location: loc });
     }
 
-    // 2) Persistent last-known location on the Firestore user doc.
+    // 2) Persistent last-known location stays owner-private in Firestore.
     try {
       const firestore = await getFirestoreInstance();
       await setDoc(
-        doc(firestore, "users", user.uid),
+        doc(firestore, "userPrivateProfiles", user.uid),
         { lastLocation: { ...loc, updatedAt: fsServerTimestamp() } },
         { merge: true }
       );

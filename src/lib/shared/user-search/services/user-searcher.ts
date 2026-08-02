@@ -15,6 +15,7 @@ import {
   limit as firestoreLimit,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
 import type { UserSearchResult, UserSearchOptions } from "./types";
 
 function fuzzyMatch(text: string, queryTerms: string[]): boolean {
@@ -41,6 +42,7 @@ export async function searchUsers(
 
     const prefixQuery = query(
       collection(firestore, "users"),
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
       orderBy("displayName"),
       where("displayName", ">=", q),
       where("displayName", "<=", q + ""),
@@ -68,6 +70,7 @@ export async function searchUsers(
     if (results.length < limit) {
       const allUsersQuery = query(
         collection(firestore, "users"),
+        where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
         firestoreLimit(100)
       );
       const allUsersSnapshot = await getDocs(allUsersQuery);

@@ -146,16 +146,20 @@
       try {
         const firestore = await getFirestoreInstance();
         const userDocRef = doc(firestore, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
+        const privateDocRef = doc(firestore, "userPrivateProfiles", user.uid);
+        const [userDoc, privateDoc] = await Promise.all([
+          getDoc(userDocRef),
+          getDoc(privateDocRef),
+        ]);
         if (userDoc.exists()) {
           const data = userDoc.data();
           userPronouns = data?.pronouns || "";
           if (data?.profileColor) {
             profileColor = data.profileColor;
           }
-          if (data?.googlePhotoURL) {
-            savedGooglePhotoUrl = data.googlePhotoURL;
-          }
+        }
+        if (privateDoc.exists()) {
+          savedGooglePhotoUrl = privateDoc.data()?.googlePhotoURL ?? null;
         }
       } catch (err) {
         console.error("Failed to load pronouns:", err);

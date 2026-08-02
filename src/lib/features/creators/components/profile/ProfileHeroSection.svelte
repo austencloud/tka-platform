@@ -9,13 +9,13 @@
   been on and all that kind of stuff."
 
   So it became a rail. Same data plus the fields the banner was dropping on the
-  floor (joined, last active, location, pronouns, catdog), stacked vertically
+  floor (joined, last active, pronouns, catdog), stacked vertically
   beside the work rather than above it. The parent renders it in the same column
   whether or not the person has any work — an empty profile keeps both columns and
   fills the other one with an invitation (`ProfileWorkEmpty`), so the page never
   changes shape between people.
 
-  Every optional field collapses. Location, bio, pronouns, Instagram and props
+  Every optional field collapses. Bio, pronouns, Instagram and props
   are all sparse in real data; a rail that reserved space for each would be a
   column of gaps, which is a worse empty state than the one being replaced.
 -->
@@ -26,8 +26,10 @@
   import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
-  import { formatLocationLabel } from "$lib/shared/presence/domain/models/presence-models";
-  import { joinedLabel, activeLabel } from "$lib/features/creators/domain/profile-tenure";
+  import {
+    joinedLabel,
+    activeLabel,
+  } from "$lib/features/creators/domain/profile-tenure";
 
   let {
     userProfile,
@@ -60,7 +62,9 @@
     collectionsCount?: number;
   } = $props();
 
-  const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
+  const accentColor = $derived(
+    userProfile.profileColor || "var(--theme-accent)"
+  );
 
   // Settings-derived prop shown when the user never curated a props list
   const fallbackProp = $derived(
@@ -75,7 +79,6 @@
         : []
   );
 
-  const locationText = $derived(formatLocationLabel(userProfile.location));
   const joined = $derived(joinedLabel(userProfile.joinedDate));
   const active = $derived(
     activeLabel(userProfile.lastActiveAt, userProfile.joinedDate)
@@ -126,17 +129,11 @@
       <p class="bio">{userProfile.bio}</p>
     {/if}
 
-    <!-- Tenure and place. `joined` always renders: `createdAt` is the only
+    <!-- Tenure and activity. `joined` always renders: `createdAt` is the only
          field populated on 100% of user documents, which makes it the one fact
          an otherwise-empty profile can always stand on. `active` is omitted
          when it would only restate the join date. -->
     <ul class="facts">
-      {#if locationText}
-        <li class="fact">
-          <i class="fas fa-location-dot" aria-hidden="true"></i>
-          <span>{locationText}</span>
-        </li>
-      {/if}
       <li class="fact">
         <i class="fas fa-calendar" aria-hidden="true"></i>
         <span>Joined {joined}</span>
@@ -174,7 +171,8 @@
                  single paired glyph rather than two more icons in the row. -->
             <div
               class="catdog"
-              title="Catdog: {getPropTypeDisplayInfo(catdog.bluePropType).label} + {getPropTypeDisplayInfo(catdog.redPropType).label}"
+              title="Catdog: {getPropTypeDisplayInfo(catdog.bluePropType)
+                .label} + {getPropTypeDisplayInfo(catdog.redPropType).label}"
             >
               <img
                 class="catdog-blue"
@@ -221,7 +219,11 @@
       {/if}
       <div class="stat">
         <dt>
-          <button type="button" class="stat-link" onclick={() => onFollowersClick?.()}>
+          <button
+            type="button"
+            class="stat-link"
+            onclick={() => onFollowersClick?.()}
+          >
             Followers
           </button>
         </dt>
@@ -229,7 +231,11 @@
       </div>
       <div class="stat">
         <dt>
-          <button type="button" class="stat-link" onclick={() => onFollowingClick?.()}>
+          <button
+            type="button"
+            class="stat-link"
+            onclick={() => onFollowingClick?.()}
+          >
             Following
           </button>
         </dt>
@@ -245,7 +251,9 @@
           class:loading={followInProgress}
           disabled={followInProgress}
           onclick={onFollowToggle}
-          aria-label={userProfile.isFollowing ? `Unfollow ${userProfile.displayName}` : `Follow ${userProfile.displayName}`}
+          aria-label={userProfile.isFollowing
+            ? `Unfollow ${userProfile.displayName}`
+            : `Follow ${userProfile.displayName}`}
         >
           {#if followInProgress}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -488,7 +496,8 @@
     gap: 6px;
     padding: 6px 14px;
     background: color-mix(in srgb, var(--instagram-brand) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--instagram-brand) 25%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--instagram-brand) 25%, transparent);
     border-radius: 20px;
     color: var(--instagram-brand);
     font-size: var(--font-size-sm);
@@ -591,7 +600,8 @@
   .follow-button:hover {
     filter: brightness(0.9);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .follow-button.following {
@@ -632,8 +642,16 @@
   }
 
   .report-button:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
     color: var(--semantic-error, #ef4444);
   }
 

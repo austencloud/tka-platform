@@ -20,8 +20,13 @@ import {
   documentId,
   startAfter,
 } from "firebase/firestore";
-import type { Timestamp, DocumentData, DocumentSnapshot } from "firebase/firestore";
+import type {
+  Timestamp,
+  DocumentData,
+  DocumentSnapshot,
+} from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
 import { firestoreGet, firestoreList } from "$lib/shared/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
@@ -34,7 +39,6 @@ import type {
 } from "../domain/models/enhanced-user-profile";
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
 import {
   UserFirestoreDataSchema,
   FollowDocSchema,
@@ -49,7 +53,6 @@ interface FirestoreUserData extends DocumentData {
   displayName?: string;
   name?: string;
   username?: string;
-  email?: string;
   photoURL?: string;
   avatar?: string;
   sequenceCount?: number;
@@ -70,9 +73,6 @@ interface FirestoreUserData extends DocumentData {
   isDisabled?: boolean;
   isHidden?: boolean;
   isAnonymous?: boolean;
-  adminLabel?: string;
-  adminNotes?: string;
-  lastLocation?: PresenceLocation | null;
 }
 
 /**
@@ -118,7 +118,7 @@ async function getFollowingIds(userId: string): Promise<Set<string>> {
     const docs = await firestoreList(
       `${USERS_COLLECTION}/${userId}/following`,
       FollowDocSchema,
-      { limit: 500 },
+      { limit: 500 }
     );
     return new Set(docs.map((d) => d.id));
   } catch (error) {
@@ -134,8 +134,7 @@ async function mapFirestoreToEnhancedProfile(
 ): Promise<EnhancedUserProfile | null> {
   try {
     const displayName = data.displayName ?? data.name ?? "Anonymous User";
-    const username =
-      data.username ?? data.email?.split("@")[0] ?? userId.substring(0, 8);
+    const username = data.username ?? userId.substring(0, 8);
     const avatar = data.photoURL ?? data.avatar ?? undefined;
 
     const sequenceCount = data.sequenceCount ?? 0;
@@ -147,7 +146,9 @@ async function mapFirestoreToEnhancedProfile(
     const joinedDate =
       rawCreatedAt instanceof Date
         ? rawCreatedAt
-        : rawCreatedAt && typeof rawCreatedAt === "object" && "toDate" in rawCreatedAt
+        : rawCreatedAt &&
+            typeof rawCreatedAt === "object" &&
+            "toDate" in rawCreatedAt
           ? (rawCreatedAt as Timestamp).toDate()
           : new Date();
     // Absent stays absent. This used to fall back to `joinedDate`, which made
@@ -162,7 +163,9 @@ async function mapFirestoreToEnhancedProfile(
     const lastActiveAt =
       rawLastActivity instanceof Date
         ? rawLastActivity
-        : rawLastActivity && typeof rawLastActivity === "object" && "toDate" in rawLastActivity
+        : rawLastActivity &&
+            typeof rawLastActivity === "object" &&
+            "toDate" in rawLastActivity
           ? (rawLastActivity as Timestamp).toDate()
           : undefined;
 
@@ -179,9 +182,6 @@ async function mapFirestoreToEnhancedProfile(
     const role = data.role ?? "user";
     const isDisabled = data.isDisabled ?? false;
     const isHidden = data.isHidden ?? false;
-    const adminLabel = data.adminLabel ?? undefined;
-    const adminNotes = data.adminNotes ?? undefined;
-    const location = (data.lastLocation as PresenceLocation | undefined) ?? null;
 
     return {
       id: userId,
@@ -198,7 +198,6 @@ async function mapFirestoreToEnhancedProfile(
       instagramUsername,
       pronouns,
       profileColor,
-      location,
       propsISpinWith,
       favoriteProp,
       activeProp,
@@ -207,8 +206,6 @@ async function mapFirestoreToEnhancedProfile(
       role,
       isDisabled,
       isHidden,
-      adminLabel,
-      adminNotes,
     };
   } catch (error) {
     console.error(`[UserRepository] Error mapping user ${userId}:`, error);
@@ -226,16 +223,16 @@ async function batchFetchUserProfiles(
   for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
     const chunk = userIds.slice(i, i + BATCH_SIZE);
     const usersRef = collection(firestore, USERS_COLLECTION);
-    const batchQuery = query(usersRef, where(documentId(), "in", chunk));
+    const batchQuery = query(
+      usersRef,
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
+      where(documentId(), "in", chunk)
+    );
     const batchSnapshot = await getDocs(batchQuery);
 
     for (const docSnap of batchSnapshot.docs) {
       const data = docSnap.data() as FirestoreUserData;
-      const user = await mapFirestoreToEnhancedProfile(
-        docSnap.id,
-        data,
-        false
-      );
+      const user = await mapFirestoreToEnhancedProfile(docSnap.id, data, false);
       if (user) {
         users.push(user);
       }
@@ -308,7 +305,7 @@ export async function getUserProfile(
     const userData = await firestoreGet(
       USERS_COLLECTION,
       userId,
-      UserFirestoreDataSchema,
+      UserFirestoreDataSchema
     );
 
     if (!userData) {
@@ -320,14 +317,10 @@ export async function getUserProfile(
       isFollowing = await checkIsFollowing(currentUserId, userId);
     }
 
-    return mapFirestoreToEnhancedProfile(
-      userId,
-      userData,
-      isFollowing
-    );
+    return mapFirestoreToEnhancedProfile(userId, userData, isFollowing);
   } catch (error) {
     console.error(`[UserRepository] Error fetching user ${userId}:`, error);
-    return null;
+    throw error;
   }
 }
 
@@ -350,7 +343,11 @@ export async function getUserDisplayNames(
 
   for (let i = 0; i < unique.length; i += 30) {
     const chunk = unique.slice(i, i + 30);
-    const q = query(usersRef, where(documentId(), "in", chunk));
+    const q = query(
+      usersRef,
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
+      where(documentId(), "in", chunk)
+    );
     const snapshot = await getDocs(q);
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -382,7 +379,11 @@ export async function getVisibleOwnerNames(
 
   for (let i = 0; i < unique.length; i += 30) {
     const chunk = unique.slice(i, i + 30);
-    const q = query(usersRef, where(documentId(), "in", chunk));
+    const q = query(
+      usersRef,
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
+      where(documentId(), "in", chunk)
+    );
     const snapshot = await getDocs(q);
     snapshot.forEach((docSnap) => {
       const data = docSnap.data() as FirestoreUserData;
@@ -403,7 +404,11 @@ export async function getUsers(
     const firestore = await getFirestoreInstance();
     const usersRef = collection(firestore, USERS_COLLECTION);
     const limitValue = options?.limit ?? 100;
-    const q = query(usersRef, firestoreLimit(limitValue));
+    const q = query(
+      usersRef,
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
+      firestoreLimit(limitValue)
+    );
 
     const querySnapshot = await getDocs(q);
 
@@ -454,6 +459,7 @@ export async function getUsersPaginated(
 
     let q = query(
       usersRef,
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
       orderBy(sortField, sortDirection),
       firestoreLimit(options.limit + 1)
     );
@@ -461,6 +467,7 @@ export async function getUsersPaginated(
     if (options.cursor) {
       q = query(
         usersRef,
+        where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
         orderBy(sortField, sortDirection),
         startAfter(options.cursor),
         firestoreLimit(options.limit + 1)
@@ -515,10 +522,17 @@ export async function getFeaturedCreators(
       USERS_COLLECTION,
       UserFirestoreDataSchema,
       {
-        where: [{ field: "isFeatured", op: "==", value: true }],
+        where: [
+          {
+            field: "publicProfileVersion",
+            op: "==",
+            value: PUBLIC_PROFILE_VERSION,
+          },
+          { field: "isFeatured", op: "==", value: true },
+        ],
         orderBy: [{ field: "followerCount", direction: "desc" }],
         limit: limitCount,
-      },
+      }
     );
 
     const users: EnhancedUserProfile[] = [];
@@ -526,11 +540,7 @@ export async function getFeaturedCreators(
     for (const data of results) {
       if (data.isHidden) continue;
       if (isAnonymousGuest(data)) continue; // guests aren't real creators yet
-      const user = await mapFirestoreToEnhancedProfile(
-        data.id,
-        data,
-        false
-      );
+      const user = await mapFirestoreToEnhancedProfile(data.id, data, false);
       if (user) {
         users.push(user);
       }
@@ -556,7 +566,11 @@ export function subscribeToUsers(
       const firestore = await getFirestoreInstance();
       const usersRef = collection(firestore, USERS_COLLECTION);
       const limitValue = options?.limit ?? 100;
-      const q = query(usersRef, firestoreLimit(limitValue));
+      const q = query(
+        usersRef,
+        where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
+        firestoreLimit(limitValue)
+      );
 
       unsubscribe = onSnapshot(
         q,
@@ -649,11 +663,7 @@ export async function followUser(
             USERS_COLLECTION,
             currentUserId
           );
-          const targetUserRef = doc(
-            firestore,
-            USERS_COLLECTION,
-            targetUserId
-          );
+          const targetUserRef = doc(firestore, USERS_COLLECTION, targetUserId);
 
           const followingDoc = await transaction.get(followingRef);
           if (followingDoc.exists()) {

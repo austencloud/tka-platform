@@ -81,18 +81,19 @@ beforeEach(() => {
 });
 
 describe("UserDocumentManager parent reconstruction", () => {
-  it("preserves guest-created subcollection totals when the parent is missing", async () => {
+  it("creates zeroed server-owned counters for the profile trigger to reconcile", async () => {
     const user = fullUser();
 
     await new UserDocumentManager().createOrUpdateUserDocument(user);
 
-    expect(h.getCountFromServer).toHaveBeenCalledWith("users/user-1/sequences");
-    expect(h.getDocs).toHaveBeenCalledWith("users/user-1/collections");
-    expect(h.setDoc).toHaveBeenCalledTimes(1);
+    expect(h.getCountFromServer).not.toHaveBeenCalled();
+    expect(h.getDocs).not.toHaveBeenCalled();
+    expect(h.setDoc).toHaveBeenCalledTimes(2);
     expect(h.setDoc.mock.calls[0][1]).toMatchObject({
+      publicProfileVersion: 2,
       displayName: "Matty Mover",
-      sequenceCount: 7,
-      collectionCount: 2,
+      sequenceCount: 0,
+      collectionCount: 0,
     });
     expect(h.claimUsername).toHaveBeenCalledWith("user-1", "matty");
   });

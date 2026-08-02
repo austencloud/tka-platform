@@ -8,8 +8,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import { authState } from '$lib/shared/auth/state/auth-state.svelte';
 
-const USERS_COLLECTION = 'users';
-
 /**
  * Acknowledge and clear the current user's active warning.
  */
@@ -20,7 +18,7 @@ export async function acknowledgeWarning(): Promise<void> {
 	}
 
 	const firestore = await getFirestoreInstance();
-	const userRef = doc(firestore, USERS_COLLECTION, userId);
+	const userRef = doc(firestore, `users/${userId}/moderation/status`);
 
 	await updateDoc(userRef, {
 		hasActiveWarning: false

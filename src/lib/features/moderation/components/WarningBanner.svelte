@@ -37,7 +37,7 @@
 
     try {
       const firestore = await getFirestoreInstance();
-      const userRef = doc(firestore, 'users', userId);
+      const userRef = doc(firestore, `users/${userId}/moderation/status`);
 
       unsubscribe = onSnapshot(
         userRef,

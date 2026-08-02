@@ -16,13 +16,9 @@
  *     updatedBy: string (uid of whoever last changed it)
  *   }
  *
- * Security rules (existing, at users/{userId}/settings/{settingId}):
+ * Security rules (at users/{userId}/settings/{settingId}):
  *   allow read: if isOwner(userId) || isAdmin()
- *   allow create, update: if isOwner(userId)
- *
- * Note: Admin writes to OTHER users' overrides require admin SDK or a
- * cloud function. The client-side admin path writes via the current user's
- * own document for now; cross-user admin writes are a future enhancement.
+ *   allow create, update: if isAdmin() && settingId == 'featureOverrides'
  */
 
 import {
@@ -36,7 +32,10 @@ import {
 import { auth, getFirestoreInstance } from "../firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { isValidFeatureId } from "../domain/models/feature-flag";
-import type { FeatureId, UserFeatureOverrides } from "../domain/models/feature-flag";
+import type {
+  FeatureId,
+  UserFeatureOverrides,
+} from "../domain/models/feature-flag";
 const LOG_PREFIX = "[UserFeatureFlagPersister]";
 const LOCAL_STORAGE_PREFIX = "tka_feature_overrides_";
 
@@ -90,7 +89,10 @@ export class UserFeatureFlagPersister {
 
       return hasLocalData ? localOverrides : empty;
     } catch (error) {
-      console.warn(`${LOG_PREFIX} Firestore load failed, falling back to localStorage:`, error);
+      console.warn(
+        `${LOG_PREFIX} Firestore load failed, falling back to localStorage:`,
+        error
+      );
       return this.readLocalStorage(userId);
     }
   }
@@ -139,7 +141,10 @@ export class UserFeatureFlagPersister {
         );
       })
       .catch((error) => {
-        console.error(`${LOG_PREFIX} Failed to set up snapshot listener:`, error);
+        console.error(
+          `${LOG_PREFIX} Failed to set up snapshot listener:`,
+          error
+        );
       });
   }
 
@@ -184,7 +189,9 @@ export class UserFeatureFlagPersister {
   // Private: Parse Firestore document data
   // ------------------------------------------------------------------
 
-  private parseFirestoreData(data: Record<string, unknown>): UserFeatureOverrides {
+  private parseFirestoreData(
+    data: Record<string, unknown>
+  ): UserFeatureOverrides {
     const enabledFeatures: FeatureId[] = [];
     const disabledFeatures: FeatureId[] = [];
 
@@ -230,18 +237,31 @@ export class UserFeatureFlagPersister {
       if (stored) {
         const parsed = JSON.parse(stored);
         return {
-          enabledFeatures: Array.isArray(parsed.enabledFeatures) ? parsed.enabledFeatures : [],
-          disabledFeatures: Array.isArray(parsed.disabledFeatures) ? parsed.disabledFeatures : [],
-          moduleOrder: Array.isArray(parsed.moduleOrder) ? parsed.moduleOrder : undefined,
+          enabledFeatures: Array.isArray(parsed.enabledFeatures)
+            ? parsed.enabledFeatures
+            : [],
+          disabledFeatures: Array.isArray(parsed.disabledFeatures)
+            ? parsed.disabledFeatures
+            : [],
+          moduleOrder: Array.isArray(parsed.moduleOrder)
+            ? parsed.moduleOrder
+            : undefined,
         };
       }
     } catch {
       // Ignore parse errors
     }
-    return { enabledFeatures: [], disabledFeatures: [], moduleOrder: undefined };
+    return {
+      enabledFeatures: [],
+      disabledFeatures: [],
+      moduleOrder: undefined,
+    };
   }
 
-  private writeLocalStorage(userId: string, overrides: UserFeatureOverrides): void {
+  private writeLocalStorage(
+    userId: string,
+    overrides: UserFeatureOverrides
+  ): void {
     try {
       localStorage.setItem(
         `${LOCAL_STORAGE_PREFIX}${userId}`,

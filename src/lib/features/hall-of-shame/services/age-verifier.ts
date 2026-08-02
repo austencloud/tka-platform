@@ -5,12 +5,12 @@
  * Verification persists across sessions via Firestore.
  */
 
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 
 export class AgeVerifier {
-	private readonly USERS_COLLECTION = 'users';
+	private readonly PRIVATE_PROFILES_COLLECTION = 'userPrivateProfiles';
 
 	// Local cache to avoid repeated Firestore reads
 	private verificationCache = new Map<string, boolean>();
@@ -23,7 +23,7 @@ export class AgeVerifier {
 
 		try {
 			const firestore = await getFirestoreInstance();
-			const userRef = doc(firestore, this.USERS_COLLECTION, userId);
+			const userRef = doc(firestore, this.PRIVATE_PROFILES_COLLECTION, userId);
 			const userDoc = await getDoc(userRef);
 
 			if (!userDoc.exists()) {
@@ -46,11 +46,11 @@ export class AgeVerifier {
 	async recordVerification(userId: string): Promise<void> {
 		try {
 			const firestore = await getFirestoreInstance();
-			const userRef = doc(firestore, this.USERS_COLLECTION, userId);
+			const userRef = doc(firestore, this.PRIVATE_PROFILES_COLLECTION, userId);
 
-			await updateDoc(userRef, {
+			await setDoc(userRef, {
 				ageVerifiedAt: serverTimestamp()
-			});
+			}, { merge: true });
 
 			// Update cache
 			this.verificationCache.set(userId, true);
@@ -63,7 +63,7 @@ export class AgeVerifier {
 	async getVerificationDate(userId: string): Promise<Date | null> {
 		try {
 			const firestore = await getFirestoreInstance();
-			const userRef = doc(firestore, this.USERS_COLLECTION, userId);
+			const userRef = doc(firestore, this.PRIVATE_PROFILES_COLLECTION, userId);
 			const userDoc = await getDoc(userRef);
 
 			if (!userDoc.exists()) {

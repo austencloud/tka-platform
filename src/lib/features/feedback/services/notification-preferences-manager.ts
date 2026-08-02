@@ -3,7 +3,8 @@ import type { NotificationPreferences } from "$lib/shared/feedback/domain/models
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "$lib/shared/feedback/domain/models/notification-models";
 import { NotificationPreferencesDocSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 
-const USERS_COLLECTION = "users";
+const preferencesCollection = (userId: string) => `users/${userId}/settings`;
+const PREFERENCES_DOCUMENT = "notificationPreferences";
 const PREFERENCES_FIELD = "notificationPreferences";
 
 /**
@@ -15,8 +16,8 @@ export async function getPreferences(
 ): Promise<NotificationPreferences> {
   try {
     const userDoc = await firestoreGet(
-      USERS_COLLECTION,
-      userId,
+      preferencesCollection(userId),
+      PREFERENCES_DOCUMENT,
       NotificationPreferencesDocSchema,
     );
 
@@ -50,8 +51,8 @@ export async function savePreferences(
 ): Promise<void> {
   try {
     await firestoreSet(
-      USERS_COLLECTION,
-      userId,
+      preferencesCollection(userId),
+      PREFERENCES_DOCUMENT,
       { [PREFERENCES_FIELD]: preferences } as Record<string, unknown>,
       { merge: true },
     );

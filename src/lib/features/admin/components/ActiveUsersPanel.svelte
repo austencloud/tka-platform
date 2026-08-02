@@ -193,7 +193,7 @@
     {:else}
       <div class="users-grid-container themed-scrollbar">
         <PanelGrid minCardWidth="200px" gap="16px">
-          {#each filteredUsers as user}
+          {#each filteredUsers as user (user.userId)}
             <UserPresenceCard {user} onSelect={() => selectUser(user.userId)} />
           {/each}
         </PanelGrid>

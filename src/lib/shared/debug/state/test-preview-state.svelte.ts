@@ -4,8 +4,16 @@
  * Uses direct Firestore queries; never marks notifications as read.
  */
 import { browser } from "$app/environment";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  where,
+} from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
 
 type PreviewNotification = {
   id: string;
@@ -107,7 +115,11 @@ export async function searchPreviewUsers(searchQuery: string) {
 
   try {
     const firestore = await getFirestoreInstance();
-    const q = query(collection(firestore, "users"), limit(200));
+    const q = query(
+      collection(firestore, "users"),
+      where("publicProfileVersion", "==", PUBLIC_PROFILE_VERSION),
+      limit(200)
+    );
     const snap = await getDocs(q);
 
     const queryLower = searchQuery.trim().toLowerCase();

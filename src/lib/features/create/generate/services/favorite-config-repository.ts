@@ -14,6 +14,7 @@ import {
   firestoreSet,
 } from "$lib/shared/firestore";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
+import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
 import {
   SavedGeneratorSetupSchema,
   UserWithFavoriteSchema,
@@ -36,8 +37,7 @@ const USERS_COLLECTION = "users";
 const SETUP_REPOSITORY_NAME = "favorites";
 const pendingMigrationWrites = new Map<string, Promise<void>>();
 
-const setupsPath = (userId: string) =>
-  `users/${userId}/generatorSetups`;
+const setupsPath = (userId: string) => `users/${userId}/generatorSetups`;
 
 export interface GeneratorSetupRepository {
   loadPersonal(
@@ -49,25 +49,14 @@ export interface GeneratorSetupRepository {
     userId: string,
     draft: SavedSetupDraft
   ): Promise<SavedGeneratorSetup>;
-  renameSetup(
-    userId: string,
-    setupId: string,
-    name: string
-  ): Promise<void>;
+  renameSetup(userId: string, setupId: string, name: string): Promise<void>;
   updateSetup(
     userId: string,
     setup: SavedGeneratorSetup,
     shared: boolean
   ): Promise<void>;
-  deleteSetup(
-    userId: string,
-    setupId: string,
-    shared: boolean
-  ): Promise<void>;
-  shareSetup(
-    userId: string,
-    setup: SavedGeneratorSetup
-  ): Promise<void>;
+  deleteSetup(userId: string, setupId: string, shared: boolean): Promise<void>;
+  shareSetup(userId: string, setup: SavedGeneratorSetup): Promise<void>;
   unshareSetup(userId: string): Promise<void>;
 }
 
@@ -100,24 +89,15 @@ async function commitMigrationWrite(
   );
 
   if (write.linkFavoriteToSetupId) {
-    batch.update(
-      doc(db, USERS_COLLECTION, userId),
-      {
-        "favoriteConfig.sourceSetupId": write.linkFavoriteToSetupId,
-      }
-    );
+    batch.update(doc(db, USERS_COLLECTION, userId), {
+      "favoriteConfig.sourceSetupId": write.linkFavoriteToSetupId,
+    });
   }
 
-  await trackWrite(
-    () => batch.commit(),
-    SETUP_REPOSITORY_NAME
-  );
+  await trackWrite(() => batch.commit(), SETUP_REPOSITORY_NAME);
 }
 
-function scheduleMigrationWrite(
-  userId: string,
-  write: MigrationWrite
-): void {
+function scheduleMigrationWrite(userId: string, write: MigrationWrite): void {
   if (pendingMigrationWrites.has(userId)) return;
 
   let operation: Promise<void>;
@@ -132,8 +112,7 @@ function scheduleMigrationWrite(
           module: "create",
           action: "generatorSetupMigration",
         },
-        error:
-          error instanceof Error ? error : new Error(String(error)),
+        error: error instanceof Error ? error : new Error(String(error)),
       });
     })
     .finally(() => {
@@ -165,8 +144,7 @@ export async function loadPersonal(
     name: setup.name,
     config: setup.config as unknown as UIGenerationConfig,
     startEndOptions:
-      (setup.startEndOptions as unknown as StartEndOptions | null) ??
-      null,
+      (setup.startEndOptions as unknown as StartEndOptions | null) ?? null,
     createdAt: setup.createdAt ?? new Date(),
     updatedAt: setup.updatedAt ?? new Date(),
   }));
@@ -188,21 +166,22 @@ export async function loadPersonal(
 export async function loadCommunity(
   limitCount = 20
 ): Promise<CommunityFavorite[]> {
-  const users = await firestoreList(
-    USERS_COLLECTION,
-    UserWithFavoriteSchema,
-    {
-      where: [
-        {
-          field: "favoriteConfig",
-          op: "!=",
-          value: null,
-        },
-      ],
-      orderBy: [{ field: "favoriteConfig" }],
-      limit: limitCount,
-    }
-  );
+  const users = await firestoreList(USERS_COLLECTION, UserWithFavoriteSchema, {
+    where: [
+      {
+        field: "publicProfileVersion",
+        op: "==",
+        value: PUBLIC_PROFILE_VERSION,
+      },
+      {
+        field: "favoriteConfig",
+        op: "!=",
+        value: null,
+      },
+    ],
+    orderBy: [{ field: "favoriteConfig" }],
+    limit: limitCount,
+  });
 
   const results: CommunityFavorite[] = [];
 
@@ -216,8 +195,7 @@ export async function loadCommunity(
       avatar: user.photoURL ?? undefined,
       config: favorite.config as unknown as UIGenerationConfig,
       startEndOptions:
-        (favorite.startEndOptions as unknown as StartEndOptions | null) ??
-        null,
+        (favorite.startEndOptions as unknown as StartEndOptions | null) ?? null,
       setAt: favorite.setAt ?? new Date(),
     });
   }
@@ -298,10 +276,7 @@ export async function updateSetup(
     });
   }
 
-  await trackWrite(
-    () => batch.commit(),
-    SETUP_REPOSITORY_NAME
-  );
+  await trackWrite(() => batch.commit(), SETUP_REPOSITORY_NAME);
 }
 
 export async function deleteSetup(
@@ -325,10 +300,7 @@ export async function deleteSetup(
     favoriteConfig: deleteField(),
   });
 
-  await trackWrite(
-    () => batch.commit(),
-    SETUP_REPOSITORY_NAME
-  );
+  await trackWrite(() => batch.commit(), SETUP_REPOSITORY_NAME);
 }
 
 export async function shareSetup(

@@ -1,11 +1,9 @@
 import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-import { formatLocationLabel } from "$lib/shared/presence/domain/models/presence-models";
 
 /**
- * Match the details shown on creator cards. A search for "staff Chicago" should
- * find the same person the visible prop and location labels describe.
+ * Match the public details shown on creator cards, including prop labels.
  */
 export function matchesCreatorQuery(
   user: EnhancedUserProfile,
@@ -26,7 +24,6 @@ export function matchesCreatorQuery(
     user.displayName,
     user.bio,
     user.pronouns,
-    formatLocationLabel(user.location),
     ...propNames,
   ]
     .filter(Boolean)

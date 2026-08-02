@@ -5,13 +5,13 @@
  * Fetches users and announcements once and derives all views from this snapshot.
  */
 
-import {
-  collection,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
+import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { SystemState, CachedUserMetadata, CachedAnnouncement } from "./types";
+import type {
+  SystemState,
+  CachedUserMetadata,
+  CachedAnnouncement,
+} from "./types";
 
 // Cache TTL: 2-3 minutes for ops work (stale data is acceptable)
 const SYSTEM_STATE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
@@ -46,7 +46,9 @@ export class SystemStateManager {
   private async isFirestoreAvailable(): Promise<boolean> {
     const firestore = await getFirestoreInstance();
     return (
-      firestore !== null && firestore !== undefined && getAuthSync().currentUser !== null
+      firestore !== null &&
+      firestore !== undefined &&
+      getAuthSync().currentUser !== null
     );
   }
 
@@ -95,21 +97,42 @@ export class SystemStateManager {
   private async loadUsers(): Promise<CachedUserMetadata[]> {
     try {
       const firestore = await getFirestoreInstance();
-      const usersRef = collection(firestore, "users");
-      const snapshot = await withTimeout(
-        getDocs(usersRef),
+      const result = await withTimeout<
+        | [
+            Awaited<ReturnType<typeof getDocs>>,
+            Awaited<ReturnType<typeof getDocs>>,
+          ]
+        | null
+      >(
+        Promise.all([
+          getDocs(collection(firestore, "users")),
+          getDocs(collection(firestore, "userPrivateProfiles")),
+        ]),
         QUERY_TIMEOUT_MS,
         null
       );
 
-      if (!snapshot) {
+      if (!result) {
         return [];
       }
+      const [snapshot, privateSnapshot] = result;
 
+      const privateProfiles = new Map<string, Record<string, unknown>>(
+        privateSnapshot.docs.map((profile) => [
+          profile.id,
+          profile.data() as Record<string, unknown>,
+        ])
+      );
       const users: CachedUserMetadata[] = [];
       snapshot.forEach((doc) => {
-        const data = doc.data();
-        users.push(this.parseUserDocument(doc.id, data));
+        const data = doc.data() as Record<string, unknown>;
+        users.push(
+          this.parseUserDocument(
+            doc.id,
+            data,
+            privateProfiles.get(doc.id) ?? {}
+          )
+        );
       });
 
       return users;
@@ -124,7 +147,8 @@ export class SystemStateManager {
    */
   private parseUserDocument(
     userId: string,
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
+    privateData: Record<string, unknown>
   ): CachedUserMetadata {
     const lastActivity = data["lastActivityDate"];
     let lastActivityDate: Date | null = null;
@@ -147,7 +171,7 @@ export class SystemStateManager {
     return {
       id: userId,
       displayName: (data["displayName"] as string) ?? "Unknown",
-      email: (data["email"] as string) ?? null,
+      email: (privateData["email"] as string) ?? null,
       photoURL: (data["photoURL"] as string) ?? null,
       sequenceCount: (data["sequenceCount"] as number) ?? 0,
       publicSequenceCount: (data["publicSequenceCount"] as number) ?? 0,
@@ -158,10 +182,13 @@ export class SystemStateManager {
       disabled: (data["disabled"] as boolean) ?? false,
       role: (data["role"] as string) ?? "user",
       isAnonymous: (data["isAnonymous"] as boolean) ?? false,
-      attribution: (data["attribution"] as Record<string, unknown> | undefined) ?? null,
-      lastLocation: (data["lastLocation"] as
-        | import("$lib/shared/presence/domain/models/presence-models").PresenceLocation
-        | undefined) ?? null,
+      attribution:
+        (privateData["attribution"] as Record<string, unknown> | undefined) ??
+        null,
+      lastLocation:
+        (privateData["lastLocation"] as
+          | import("$lib/shared/presence/domain/models/presence-models").PresenceLocation
+          | undefined) ?? null,
     };
   }
 

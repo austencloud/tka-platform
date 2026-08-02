@@ -68,13 +68,12 @@ export function extractUserDisplayDetails(
   userData: Record<string, unknown>
 ): UserDisplayDetails {
   const photoURL = getReliableProfilePictureURL(userData);
-  const email = (userData["email"] as string) ?? null;
+  // Email is stored in userPrivateProfiles and is not part of a public user
+  // snapshot. Callers that need it must join the protected profile explicitly.
+  const email = null;
 
   // Try to get display name, fall back to email prefix
   let displayName = userData["displayName"] as string | undefined;
-  if (!displayName && email) {
-    displayName = email.split("@")[0];
-  }
   displayName = displayName ?? "Unknown User";
 
   return {
