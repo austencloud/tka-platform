@@ -22,12 +22,15 @@
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
+  import ShopProductShell from "./components/shell/ShopProductShell.svelte";
+  import ShopPurchaseCta from "./components/shell/ShopPurchaseCta.svelte";
+  import { deriveCrossSell } from "./domain/catalog-listings";
+  import { resolvePurchaseState, SALES_LIVE } from "./domain/purchase-state";
   import DeckFanCover, {
     DEAL_MS as FAN_DEAL_MS,
     DEAL_STAGGER as FAN_DEAL_STAGGER,
     GATHER_MS as FAN_GATHER_MS,
   } from "./components/DeckFanCover.svelte";
-  import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
   import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
@@ -44,7 +47,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { untrack } from "svelte";
-  import { scale, slide, fly } from "svelte/transition";
+  import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { prewarmCovers, renderCoverFront } from "./services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP, bakedCoverUrl } from "./domain/shop-prop-options";
@@ -492,22 +495,8 @@
     else setTimeout(kick, 500);
   });
 
-  // ── mobile checkout dock (same pattern as the Deck Architect): while the
-  //    buy rail is off screen on phones, a fixed dock keeps price + Preorder
-  //    in reach. IntersectionObserver hides it once the real rail shows. ──
-  let railEl = $state<HTMLElement | null>(null);
-  let railInView = $state(false);
-  $effect(() => {
-    if (!railEl) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        railInView = entries[0]?.isIntersecting ?? false;
-      },
-      { threshold: 0.2 }
-    );
-    io.observe(railEl);
-    return () => io.disconnect();
-  });
+  // The mobile checkout dock is the shell's now (it watches its own buy rail
+  // and mounts the pinned bar); this page only says what the bar should read.
   let pageW = $state(0);
   const narrow = $derived(pageW > 0 && pageW < 720);
   // Mobile stage height = the fan's width-limited card height + chrome, so the
@@ -528,93 +517,122 @@
     customSku ? formatUsd(activePriceCents(customSku, now)) : "$30"
   );
 
+  // The SKU the buy cluster acts on. The custom SKU is the real one; the first
+  // flavor SKU stands in while it isn't seeded yet (neither has a Stripe price
+  // in that state, so the buyer gets the same honest waitlist either way).
+  const buySku = $derived(customSku ?? flavorSkus[0] ?? null);
+  const purchasable = $derived(
+    buySku !== null && resolvePurchaseState(buySku, SALES_LIVE) !== "notify"
+  );
+
+  const crossSell = $derived(
+    deriveCrossSell(store.products, { currentHref: "/shop/loop-deck" })
+  );
+
+  const ASSURANCES = [
+    { icon: "fas fa-calendar-check", text: "Preorder now. Decks ship October 1." },
+    {
+      icon: "fas fa-box-open",
+      text: "Explainer card, laminated quick-reference sheet, and deck box included",
+    },
+    {
+      icon: "fas fa-hand-holding-heart",
+      text: "Printed and cut by hand in Chicago, small batches",
+    },
+  ];
+
+  const NOTIFY_TEXT =
+    "Preorders open soon. Leave an email and you'll hear the moment they do.";
 </script>
 
 <svelte:window bind:innerWidth={pageW} />
 
-<div class="config-page store-config-page">
-  <main class="config-content">
-    <a href="/shop" class="back-button">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i> Shop
-    </a>
-
-    {#if store.error}
-      <div class="error">{store.error}</div>
-    {:else if store.isLoading && flavorSkus.length === 0}
-      <div class="loading">Loading the deck...</div>
-    {:else if flavorSkus.length > 0}
-      <div class="config-layout">
-        <!-- ============ preview column ============ -->
-        <div class="preview-column">
-          <div
-            class="preview-box"
-            class:payoff-active={payoffShown}
-            bind:this={previewBoxEl}
-            bind:clientWidth={previewW}
-            bind:clientHeight={previewH}
-            style:height={narrow && mobileStageH ? `${mobileStageH}px` : undefined}
-          >
-            <!-- fill mode keeps the fan at full stage WIDTH (content-sizing
-                 collapses it to min-content). The stage HEIGHT is driven to
-                 the fan's width-limited height on mobile (see mobileStageH),
-                 so the box hugs the fan with no dead gradient above/below. -->
-            <!-- Keyed on pack identity only: picking a pack (or leaving one)
-                 re-deals; dial tweaks swap the card faces in place. -->
-            <Crossfade key={settledFanKey} fill>
-              <div class="preview-inner">
-                <!-- Non-interactive on purpose: the fan sizes against the rest
-                     overlap instead of reserving hover-spread width, which buys
-                     ~20% bigger cards. maxCardWidth caps against the stage
-                     height so a tall card can never clip the fixed box. -->
-                <DeckFanCover
-                  cards={fanCards}
-                  deckId={selectedSku?.deckId}
-                  deckName={activePack
-                    ? `${activePack.name} pack`
-                    : (selectedSku?.name ?? "LOOP Deck")}
-                  {propType}
-                  cardWidth={narrowPreview ? 150 : previewW >= 1200 ? 280 : 210}
-                  maxCardWidth={previewMaxCardW}
-                  exactCount={!activePack && flavor === "variety"
-                    ? Math.min(narrowPreview ? 4 : 5, fanCards.length)
-                    : undefined}
-                  interactive={false}
-                  deal
-                  {dealNonce}
-                  viewTransitionName="shop-fan-loop-deck"
-                />
-                <p class="preview-desc">{previewDesc}</p>
-              </div>
-            </Crossfade>
-            <!-- Buy payoff overlays: one foil sweep + the ready chip, both
-                 absolutely stacked so nothing in the stage reflows. -->
-            <div class="payoff-shine" class:run={shineRun} aria-hidden="true"></div>
-            {#if payoffShown}
-              <div
-                class="payoff-chip"
-                transition:scale={{ duration: 300, easing: quintOut, start: 0.85 }}
-              >
-                Your deck is ready · 54 cards · {price}
-              </div>
-            {/if}
-          </div>
+<ShopProductShell
+  family="Decks"
+  eyebrow="The deck"
+  title="LOOP Deck"
+  tagline="54 cards · every sequence loops"
+  mediaFrame={false}
+  product={buySku ?? undefined}
+  {propType}
+  {loopConfig}
+  listing="loop-deck"
+  price={flavorSkus.length > 0 ? price : undefined}
+  checkoutError={store.checkoutError}
+  {crossSell}
+  assurances={ASSURANCES}
+  loading={store.isLoading && flavorSkus.length === 0}
+  loadingLabel="Loading the deck..."
+  error={store.error ??
+    (!store.isLoading && flavorSkus.length === 0
+      ? "The deck isn't available right now."
+      : null)}
+  dock={purchasable && customSku
+    ? {
+        label: activePack ? activePack.name : "Custom",
+        price,
+        ctaLabel: store.isCheckingOut ? "Opening..." : "Preorder now",
+        disabled: store.isCheckingOut,
+        onclick: () => store.startCheckout(customSku.id, propType, loopConfig),
+      }
+    : null}
+>
+  {#snippet media()}
+    <div
+      class="preview-box"
+      class:payoff-active={payoffShown}
+      bind:this={previewBoxEl}
+      bind:clientWidth={previewW}
+      bind:clientHeight={previewH}
+      style:height={narrow && mobileStageH ? `${mobileStageH}px` : undefined}
+    >
+      <!-- fill mode keeps the fan at full stage WIDTH (content-sizing
+           collapses it to min-content). The stage HEIGHT is driven to
+           the fan's width-limited height on mobile (see mobileStageH),
+           so the box hugs the fan with no dead gradient above/below. -->
+      <!-- Keyed on pack identity only: picking a pack (or leaving one)
+           re-deals; dial tweaks swap the card faces in place. -->
+      <Crossfade key={settledFanKey} fill>
+        <div class="preview-inner">
+          <!-- Non-interactive on purpose: the fan sizes against the rest
+               overlap instead of reserving hover-spread width, which buys
+               ~20% bigger cards. maxCardWidth caps against the stage
+               height so a tall card can never clip the fixed box. -->
+          <DeckFanCover
+            cards={fanCards}
+            deckId={selectedSku?.deckId}
+            deckName={activePack
+              ? `${activePack.name} pack`
+              : (selectedSku?.name ?? "LOOP Deck")}
+            {propType}
+            cardWidth={narrowPreview ? 150 : previewW >= 1200 ? 280 : 210}
+            maxCardWidth={previewMaxCardW}
+            exactCount={!activePack && flavor === "variety"
+              ? Math.min(narrowPreview ? 4 : 5, fanCards.length)
+              : undefined}
+            interactive={false}
+            deal
+            {dealNonce}
+            viewTransitionName="shop-fan-loop-deck"
+          />
+          <p class="preview-desc">{previewDesc}</p>
         </div>
+      </Crossfade>
+      <!-- Buy payoff overlays: one foil sweep + the ready chip, both
+           absolutely stacked so nothing in the stage reflows. -->
+      <div class="payoff-shine" class:run={shineRun} aria-hidden="true"></div>
+      {#if payoffShown}
+        <div
+          class="payoff-chip"
+          transition:scale={{ duration: 300, easing: quintOut, start: 0.85 }}
+        >
+          Your deck is ready · 54 cards · {price}
+        </div>
+      {/if}
+    </div>
+  {/snippet}
 
-        <!-- ============ choices band: controls left, buy rail right on wide
-             screens — the whole page fits one viewport instead of scrolling
-             past a narrow single column. ============ -->
-        <div class="info-column">
-          <div class="info-main">
-          <!-- Title lockup: eyebrow rides the h1's baseline (one line, not a
-               stacked throat-clear), meta is a single thin line. The
-               "pick a difficulty" instruction moves down onto the bubble row
-               where it's an actual label, not a third stacked sentence. -->
-          <div class="title-lockup">
-            <span class="eyebrow">The deck</span>
-            <h1>LOOP Deck</h1>
-          </div>
-          <p class="meta">54 cards · every sequence loops</p>
-
+  {#snippet configurator()}
           <!-- ── one visible 4-way choice: three difficulty tiers + Custom.
                The big numeral is the "achievable bubble" a newcomer reads
                first (1 → 2 → 3, easy to hard); the pack name + range sit under
@@ -696,177 +714,61 @@
             </div>
 
           </div>
+  {/snippet}
 
-          </div>
-
-          <aside class="buy-rail" bind:this={railEl}>
-          <p class="price">{price}</p>
-          {#if customSku && preorderWindowOpen(customSku, now)}
-            <PreorderPriceNote product={customSku} />
-          {/if}
-          <!-- Fixed specs this beta run — information, not dead buttons. -->
-          <p class="spec-line">
-            Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
-            <span class="spec-sep">•</span> Tarot size and bundles coming soon
-          </p>
-
-          {#if customSku}
-            <BuyButton
-              listing="loop-deck"
-              product={customSku}
-              {propType}
-              {loopConfig}
-              label="Preorder now"
-              waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
-            />
-            {#if customSku.stripePriceId}
-              <BuyButton
-                listing="loop-deck"
-                product={customSku}
-                {propType}
-                {loopConfig}
-                mode="add"
-                label="Add to cart"
-              />
-            {/if}
-          {:else if flavorSkus[0]}
-            <!-- Custom SKU not seeded/active yet: honest gate via the first
-                 flavor SKU's waitlist (it has no Stripe price either). -->
-            <BuyButton
-              listing="loop-deck"
-              product={flavorSkus[0]}
-              {propType}
-              {loopConfig}
-              label="Preorder now"
-              waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
-            />
-            {#if flavorSkus[0].stripePriceId}
-              <BuyButton
-                listing="loop-deck"
-                product={flavorSkus[0]}
-                {propType}
-                {loopConfig}
-                mode="add"
-                label="Add to cart"
-              />
-            {/if}
-          {/if}
-          {#if store.checkoutError}
-            <p class="checkout-error" role="alert">{store.checkoutError}</p>
-          {/if}
-
-          <ul class="assurance">
-            <li><i class="fas fa-calendar-check" aria-hidden="true"></i> Preorder now. Decks ship October 1.</li>
-            <li><i class="fas fa-box-open" aria-hidden="true"></i> Explainer card, laminated quick-reference sheet, and deck box included</li>
-            <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Printed and cut by hand in Chicago, small batches</li>
-          </ul>
-          </aside>
-        </div>
-      </div>
-    {:else}
-      <div class="error">The deck isn't available right now.</div>
+  {#snippet priceNote()}
+    {#if customSku && preorderWindowOpen(customSku, now)}
+      <PreorderPriceNote product={customSku} />
     {/if}
-  </main>
-</div>
+    <!-- Fixed specs this beta run — information, not dead buttons. -->
+    <p class="spec-line">
+      Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
+      <span class="spec-sep">•</span> Tarot size and bundles coming soon
+    </p>
+  {/snippet}
 
-{#if narrow && !railInView && customSku?.stripePriceId && flavorSkus.length > 0 && !store.error}
-  <div class="checkout-dock" transition:fly={{ y: 72, duration: 220, easing: quintOut }}>
-    <div class="dock-meter">
-      <span class="dock-pack">{activePack ? activePack.name : "Custom"}</span>
-      <span class="dock-price">{price}</span>
-    </div>
-    <button
-      type="button"
-      class="dock-buy"
-      disabled={store.isCheckingOut}
-      onclick={() => store.startCheckout(customSku.id, propType, loopConfig)}
-    >
-      {store.isCheckingOut ? "Opening..." : "Preorder now"}
-    </button>
-  </div>
-{/if}
+  {#snippet cta()}
+    {#if buySku}
+      <ShopPurchaseCta
+        listing="loop-deck"
+        product={buySku}
+        {propType}
+        {loopConfig}
+        notifyText={NOTIFY_TEXT}
+      />
+      <!-- The cart is the second path, and it only exists once there is money
+           to take. In the notify state the primary CTA is an email capture and
+           an "Add to cart" beneath it would be a button that cannot work. -->
+      {#if purchasable}
+        <BuyButton
+          listing="loop-deck"
+          product={buySku}
+          {propType}
+          {loopConfig}
+          mode="add"
+          label="Add to cart"
+        />
+      {/if}
+    {/if}
+  {/snippet}
+</ShopProductShell>
 
 <style>
-  /* .config-page root chrome (min-height/padding-top/background/color) lives in
-     the shared src/lib/features/store/styles/config-page.css, scoped under the
-     .store-config-page marker class added to this root div above. */
+  /* Page chrome — root shell, back link, title, price, checkout error,
+     assurances, load and failure states, mobile checkout dock — belongs to
+     ShopProductShell. What is left here is the stage and the dials. */
 
-  .config-content {
-    /* Wide fluid band: the preview fan auto-scales into the extra room on 4K
-       instead of the page pinning to a narrow column. Vertical padding stays
-       lean so the whole configurator fits a 4K viewport without scrolling. */
-    max-width: var(--shell-w, min(1720px, 92vw));
-    margin: 0 auto;
-    padding: 12px 24px 20px;
-  }
-
-  /* Shared .back-button properties live in config-page.css; margin-bottom and
-     transition differ enough page-to-page (and interact with the
-     prefers-reduced-motion override below) that they stay local everywhere. */
-  .back-button {
-    margin-bottom: 24px;
-    transition: background 0.2s, border-color 0.2s;
-  }
-
-  /* Vertical hero layout: the fan is the star, centered and full-band up
-     top; the controls sit in a centered column beneath it. Kills the 4K
-     side-by-side problems — clipped cards on the left, dead space under the
-     fan, and a stage narrower than the screen deserves. */
-  .config-layout {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(16px, 2.2vh, 28px);
-  }
-  .preview-column {
-    width: 100%;
-  }
-  /* Full-band controls: no max-width choke. Wide screens split into the
-     controls (left) and a buy rail (right) so hero + everything below fits
-     one viewport without scrolling. */
-  .info-column {
-    width: 100%;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-  }
-  @media (min-width: 1360px) {
-    .info-column {
-      grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr);
-      column-gap: clamp(36px, 4vw, 72px);
-    }
-  }
-  .info-main,
-  .buy-rail {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
-  }
-  /* The rail is a purchase CARD, not loose text floating in dead space:
-     one bounded surface holds price → specs → buy → assurances, so the
-     right column reads as a unit with its own header (the price). */
-  .buy-rail {
-    padding: 22px 24px;
-    border-radius: 18px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    align-self: start;
-  }
-  @media (min-width: 1360px) {
-    /* The rail's price+buy block lines up with the board, not the H1. */
-    .buy-rail {
-      margin-top: 92px;
-    }
-  }
-
-  /* ---------- preview ---------- */
-  /* border-radius/border/padding are byte-identical with StarterPackPage +
-     TnDTrilogyPage's .preview-box and live in config-page.css. */
+  /* ---------- preview stage ---------- */
+  /* The shell's framed stage is turned off for this page (mediaFrame={false}):
+     the nebula wash, the clipped payoff overlays, and a height the card maths
+     reads back are all specific to this fan, and nesting them inside the
+     default frame would draw two boxes. */
   .preview-box {
     position: relative;
     overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    padding: clamp(16px, 2.5vw, 32px);
     /* Nebula glow painted into the background layers (always behind content, so
        no z-index fight with the crossfade). Premium dark-mode cue, not a flat box. */
     background:
@@ -962,32 +864,7 @@
     }
   }
 
-  /* ---------- info ---------- */
-  /* Eyebrow + h1 read as one lockup: the small label sits just above the
-     title instead of claiming its own stacked row of vertical space. */
-  .title-lockup {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  /* Shared .eyebrow properties (font-weight/text-transform/color) live in
-     config-page.css; font-size and letter-spacing vary per page. */
-  .eyebrow {
-    font-size: var(--font-size-compact, 12px);
-    letter-spacing: 0.12em;
-  }
-
-  /* Shared h1 properties live in config-page.css; line-height is unique here. */
-  h1 {
-    line-height: 1.05;
-  }
-
-  .meta {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.82);
-    margin: 0;
-  }
-
+  /* ---------- the choice ---------- */
   /* The instruction that sits on the bubble strip — quiet label, not a third
      stacked sentence competing with the title. */
   .picker-label {
@@ -999,7 +876,6 @@
     margin-top: 2px;
   }
 
-  /* ---------- preset decks ---------- */
   .preset-row {
     display: flex;
     flex-wrap: wrap;
@@ -1021,7 +897,7 @@
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     /* Each preset wears its level color — the one-tap row is the headline act. */
-    background: var(--preset-bg, linear-gradient(135deg, rgba(139, 108, 255, 0.10), rgba(139, 108, 255, 0.02)));
+    background: var(--preset-bg, linear-gradient(135deg, rgba(139, 108, 255, 0.1), rgba(139, 108, 255, 0.02)));
     color: var(--preset-text, var(--theme-text, #fff));
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     cursor: pointer;
@@ -1151,7 +1027,6 @@
     letter-spacing: 0.8px !important;
   }
 
-
   /* ---------- prop tile (BaseCard shell + image chips) ---------- */
   .tile-row > .tile.prop-shell {
     height: 132px; /* room for the 42px prop art + label inside the shell */
@@ -1167,68 +1042,8 @@
     justify-content: center;
   }
 
-
-  /* Fixed specs: reads as information, not as disabled controls.
-     .spec-line/.spec-sep are byte-identical with DeckArchitectPage and live in
+  /* .spec-line/.spec-sep are shared with DeckArchitectPage and live in
      config-page.css. */
-
-  /* .price, .checkout-error, .assurance (container + icon), and .loading/.error
-     are byte-identical across all four configurator pages and live fully in
-     config-page.css. .assurance li's font-size/color vary per page. */
-  .assurance li {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  /* ---------- mobile checkout dock (same chrome as the Deck Architect) ---------- */
-  .checkout-dock {
-    position: fixed;
-    inset: auto 0 0 0;
-    z-index: 60;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(10, 12, 22, 0.86);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  }
-  .dock-meter {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding: 4px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(139, 108, 255, 0.45);
-    background: rgba(139, 108, 255, 0.12);
-  }
-  .dock-pack {
-    font-size: 15px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-  .dock-price {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    color: var(--theme-accent, #a78bfa);
-  }
-  .dock-buy {
-    flex: 1;
-    min-height: var(--min-touch-target, 44px);
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent-strong, #7c6cf5);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.15s ease;
-  }
-  .dock-buy:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
 
   /* ---------- mobile ---------- */
   @media (max-width: 720px) {
@@ -1245,25 +1060,9 @@
     .preview-box {
       padding: 10px;
     }
-    /* Tighter vertical rhythm so the title lockup + bubbles sit high, not
-       floating in a half-screen of text. */
-    .config-layout {
-      gap: 12px;
-    }
-    .info-main {
-      gap: 10px;
-    }
-    .back-button {
-      margin-bottom: 12px;
-    }
-    /* Center the title lockup + label over the (centered) bubble strip. */
-    .title-lockup,
-    .meta,
+    /* Center the label over the (centered) bubble strip. */
     .picker-label {
       text-align: center;
-    }
-    .title-lockup {
-      align-items: center;
     }
     /* Bubbles go side by side (4-across), not stacked tall — every tier is
        one tap away and reads as a ladder at a glance. The level-range sub is
@@ -1302,27 +1101,14 @@
       right: 6px;
       font-size: 13px;
     }
-    /* The rail's purchase block centers on phones — a left-hung $30 in a
-       full-width card reads as dead space to its right. */
-    .price {
-      text-align: center;
-    }
-    .buy-rail {
-      text-align: center;
-    }
-    .assurance li {
-      text-align: left;
-    }
     .composition-line {
       text-align: center;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-button,
     .preset,
-    .bento-board,
-    .checkout-dock {
+    .bento-board {
       transition: none;
     }
   }
