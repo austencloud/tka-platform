@@ -2,7 +2,7 @@
 status: active
 value: 3
 effort: S
-remaining: 'Entire data/service/state/component layer and both hard rendering seams built and tested — but no /my-museum route, so unreachable'
+remaining: 'Fully built AND fully wired (module-definitions, ModuleRenderer lazy map, KEEP_ALIVE). Ledger claim of unreachable is refuted. Real gap: PRODUCTION_MODULES["personal-museum"]=false pending Tasks 11/12, then flip the flag.'
 depends_on: ""
 plan_path: ""
 tags: []
@@ -10,7 +10,21 @@ last_triaged: 2026-08-02
 ---
 # Personal Museum — Design Document
 
-> **Drift check — 2026-08-02.** Entire data/service/state/component layer **and both hard rendering seams** built and tested — but **no `/my-museum` route**, so unreachable
+> **Drift check — 2026-08-02.** Entire data/service/state/component layer **and
+> both hard rendering seams** built and tested (22 files under
+> `src/lib/features/personal-museum/`, 3 test suites).
+>
+> **The ledger's "no `/my-museum` route, so unreachable" finding is REFUTED.**
+> TKA is tab-based, not route-based, so the absence of a route means nothing.
+> The module is fully wired: `module-definitions.ts:309` (`isMain: true`),
+> the `ModuleRenderer.svelte:219` lazy-import map, and
+> `ModuleRenderer.svelte:77` `KEEP_ALIVE_MODULES`. It is reachable in
+> development today.
+>
+> The real remaining gap is a deliberate production gate:
+> `environment-features.ts` → `PRODUCTION_MODULES["personal-museum"] = false`,
+> commented *"WIP, Tasks 11/12 pending"*. So this is **not** a one-line
+> closeout — Tasks 11 and 12 are the actual work, then flip the flag.
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
