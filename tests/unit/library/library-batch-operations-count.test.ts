@@ -1,18 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Deleting a batch used to be one writeBatch carrying every document plus the
- * profile counter. It is now one transaction PER sequence — owner doc, public
+ * Deleting a batch uses one transaction PER sequence — owner doc, public
  * mirror and hash claims move together, so a mid-batch failure can never
- * strand a public document whose owner is gone — followed by a single
- * aggregate decrement.
+ * strand a public document whose owner is gone.
  *
- * The counter is deliberately outside those transactions: it is a denormalized
- * display value, and folding it in would put N concurrent transactions in
- * contention on the same users/{uid} document. What this file guards is that
- * split: every stored sequence gets its own transaction, the counter moves once
- * by the number of owner docs actually deleted, and a counter failure does not
- * mask deletes that committed.
+ * Profile counts are server-owned projections maintained by Firestore triggers.
+ * This file guards that clients never mutate those counters while preserving
+ * per-sequence deletion reporting.
  */
 const firestoreMocks = vi.hoisted(() => ({
   getDocs: vi.fn(),
@@ -70,7 +65,7 @@ function makeOperations() {
   return { operations, reportError };
 }
 
-describe("LibraryBatchOperations delete counter integrity", () => {
+describe("LibraryBatchOperations server-owned delete counts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     firestoreMocks.updateDoc.mockResolvedValue(undefined);
@@ -110,24 +105,17 @@ describe("LibraryBatchOperations delete counter integrity", () => {
     ]);
   });
 
-  it("decrements the profile count once, by the owner docs actually deleted", async () => {
+  it("does not mutate the profile count from the client", async () => {
     await makeOperations().operations.deleteSequences([
       "private-1",
       "public-1",
       "already-missing",
     ]);
 
-    expect(firestoreMocks.updateDoc).toHaveBeenCalledOnce();
-    expect(firestoreMocks.updateDoc).toHaveBeenCalledWith(
-      { path: "users/user-1" },
-      {
-        sequenceCount: { incrementBy: -2 },
-        lastActivityDate: "server-timestamp",
-      }
-    );
+    expect(firestoreMocks.updateDoc).not.toHaveBeenCalled();
   });
 
-  it("counts only the transactions that reported an owner document", async () => {
+  it("leaves counts server-owned regardless of whether owner documents existed", async () => {
     firestoreMocks.deleteSequenceCompletely
       .mockResolvedValueOnce({ ownerDeleted: true })
       .mockResolvedValueOnce({ ownerDeleted: false });
@@ -137,27 +125,18 @@ describe("LibraryBatchOperations delete counter integrity", () => {
       "public-1",
     ]);
 
-    expect(firestoreMocks.updateDoc).toHaveBeenCalledWith(
-      { path: "users/user-1" },
-      expect.objectContaining({ sequenceCount: { incrementBy: -1 } })
-    );
+    expect(firestoreMocks.updateDoc).not.toHaveBeenCalled();
   });
 
-  it("keeps the deletes when the counter write fails", async () => {
+  it("has no client counter write that can mask committed deletes", async () => {
     firestoreMocks.updateDoc.mockRejectedValue(new Error("counter offline"));
     const { operations, reportError } = makeOperations();
 
     const results = await operations.deleteSequences(["private-1", "public-1"]);
 
     expect(results.every((result) => result.status === "ok")).toBe(true);
-    // Surfaced as a warning, not an error — the deletes did commit.
-    expect(reportError).toHaveBeenCalledWith(
-      expect.stringContaining("profile count"),
-      expect.anything(),
-      "delete-sequences-profile-count",
-      expect.anything(),
-      "warning"
-    );
+    expect(firestoreMocks.updateDoc).not.toHaveBeenCalled();
+    expect(reportError).not.toHaveBeenCalled();
   });
 
   it("reports a failed sequence instead of silently dropping it", async () => {
@@ -169,10 +148,6 @@ describe("LibraryBatchOperations delete counter integrity", () => {
       makeOperations().operations.deleteSequences(["private-1", "public-1"])
     ).rejects.toThrow("Failed to delete sequences");
 
-    // The one that committed still decremented the counter.
-    expect(firestoreMocks.updateDoc).toHaveBeenCalledWith(
-      { path: "users/user-1" },
-      expect.objectContaining({ sequenceCount: { incrementBy: -1 } })
-    );
+    expect(firestoreMocks.updateDoc).not.toHaveBeenCalled();
   });
 });

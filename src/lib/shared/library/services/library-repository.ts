@@ -18,7 +18,6 @@ import {
   limit as firestoreLimit,
   onSnapshot,
   serverTimestamp,
-  increment,
   getCountFromServer,
   writeBatch,
   type Unsubscribe,
@@ -31,6 +30,7 @@ import {
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
+import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
 import {
   hydrate,
   ensureComposition,
@@ -383,7 +383,10 @@ export class LibraryRepository {
 
     // Check if this is a new or existing sequence using local cache
     // getDoc reads from cache first when offline persistence is enabled
-    const existingDoc = await getDoc(sequenceDocRef);
+    const [existingDoc, userProfileDoc] = await Promise.all([
+      getDoc(sequenceDocRef),
+      getDoc(userDocRef),
+    ]);
     let isNewSequence = !existingDoc.exists();
 
     // Compute content hash for the incoming sequence
@@ -595,7 +598,9 @@ export class LibraryRepository {
     saveBatch.set(
       userDocRef,
       {
-        ...(isNewSequence ? { sequenceCount: increment(1) } : {}),
+        ...(!userProfileDoc.exists()
+          ? { publicProfileVersion: PUBLIC_PROFILE_VERSION }
+          : {}),
         lastActivityDate: serverTimestamp(),
         // Carry the guest flag. This merge CREATES users/{uid} when
         // createOrUpdateUserDocument hasn't (it deliberately skips anonymous

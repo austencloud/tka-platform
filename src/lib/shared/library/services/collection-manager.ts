@@ -20,7 +20,6 @@ import {
   serverTimestamp,
   writeBatch,
   arrayRemove,
-  increment,
   type Firestore,
   type Transaction,
   type Unsubscribe,
@@ -234,7 +233,6 @@ export async function createUserCollection(
     batch.set(
       userDocRef,
       {
-        collectionCount: increment(1),
         lastActivityDate: serverTimestamp(),
       },
       { merge: true }
@@ -299,7 +297,6 @@ export async function createSmartUserCollection(
     batch.set(
       userDocRef,
       {
-        collectionCount: increment(1),
         lastActivityDate: serverTimestamp(),
       },
       { merge: true }
@@ -554,10 +551,6 @@ export async function deleteCollection(collectionId: string): Promise<void> {
   batch.set(
     doc(firestore, `users/${userId}`),
     {
-      // Match creation's atomic transform. Computing an "exact" count before
-      // the batch lets a concurrent create land between the read and commit,
-      // then this delete overwrites the newer total with stale data.
-      collectionCount: increment(-1),
       lastActivityDate: serverTimestamp(),
     },
     { merge: true }

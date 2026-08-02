@@ -7,7 +7,6 @@ import {
   where,
   writeBatch,
   serverTimestamp,
-  increment,
   arrayUnion,
   documentId,
   type Firestore,
@@ -175,25 +174,6 @@ export class LibraryBatchOperations {
       });
     }
 
-    // The profile counter is a denormalized display value, not an invariant
-    // participant — one aggregate decrement for the deletes that actually
-    // committed, and a failure here must not mask them.
-    if (ownerDeletedCount > 0) {
-      try {
-        await updateDoc(doc(firestore, `users/${userId}`), {
-          sequenceCount: increment(-ownerDeletedCount),
-          lastActivityDate: serverTimestamp(),
-        });
-      } catch (error) {
-        this.reportError(
-          "Sequences deleted, but the profile count did not update.",
-          error,
-          "delete-sequences-profile-count",
-          { ownerDeletedCount },
-          "warning"
-        );
-      }
-    }
 
     const failures = results.filter((r) => r.status === "failed");
     if (failures.length > 0) {

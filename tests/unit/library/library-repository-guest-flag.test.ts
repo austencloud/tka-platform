@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * A guest's first save MINTS users/{uid} — createOrUpdateUserDocument
  * deliberately skips anonymous sessions outside PROD, so this repository is the
- * doc's creator. A doc carrying a sequenceCount but no identity read as a
- * brand-new full account and paged an admin "New user signed up: Someone".
- * The counter write must carry the guest flag.
+ * doc's creator. An identity-less parent reads as a brand-new full account and
+ * pages an admin "New user signed up: Someone". The activity write must carry
+ * the guest flag while server-owned counters are reconciled by Cloud Functions.
  */
 
 const firestoreMocks = vi.hoisted(() => {
@@ -14,6 +14,7 @@ const firestoreMocks = vi.hoisted(() => {
     batch,
     getDoc: vi.fn(),
     getDocs: vi.fn(),
+    updateDoc: vi.fn(),
     currentUser: { value: null as unknown },
   };
 });
@@ -24,7 +25,7 @@ vi.mock("firebase/firestore", () => ({
   getDoc: firestoreMocks.getDoc,
   getDocs: firestoreMocks.getDocs,
   setDoc: vi.fn(),
-  updateDoc: vi.fn(),
+  updateDoc: firestoreMocks.updateDoc,
   deleteDoc: vi.fn(),
   query: vi.fn((value: unknown) => value),
   orderBy: vi.fn(),
@@ -132,13 +133,14 @@ describe("LibraryRepository profile write carries the guest flag", () => {
     });
     firestoreMocks.getDocs.mockResolvedValue({ empty: true, docs: [] });
     firestoreMocks.batch.commit.mockResolvedValue(undefined);
+    firestoreMocks.updateDoc.mockResolvedValue(undefined);
   });
 
   it("tags a guest's save so the minted doc is never identity-less", async () => {
     firestoreMocks.currentUser.value = { uid: "user-1", isAnonymous: true };
 
     expect(await profileWrite()).toEqual({
-      sequenceCount: { incrementBy: 1 },
+      publicProfileVersion: 2,
       lastActivityDate: "server-timestamp",
       isAnonymous: true,
     });
@@ -148,7 +150,7 @@ describe("LibraryRepository profile write carries the guest flag", () => {
     firestoreMocks.currentUser.value = { uid: "user-1", isAnonymous: false };
 
     expect(await profileWrite()).toEqual({
-      sequenceCount: { incrementBy: 1 },
+      publicProfileVersion: 2,
       lastActivityDate: "server-timestamp",
       isAnonymous: false,
     });
@@ -158,7 +160,7 @@ describe("LibraryRepository profile write carries the guest flag", () => {
     firestoreMocks.currentUser.value = null;
 
     expect(await profileWrite()).toEqual({
-      sequenceCount: { incrementBy: 1 },
+      publicProfileVersion: 2,
       lastActivityDate: "server-timestamp",
     });
   });

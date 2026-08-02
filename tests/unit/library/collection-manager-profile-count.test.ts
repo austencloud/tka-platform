@@ -89,7 +89,7 @@ import {
   deleteCollection,
 } from "$lib/shared/library/services/collection-manager";
 
-describe("collection-manager profile count", () => {
+describe("collection-manager server-owned profile counts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.batch.commit.mockResolvedValue(undefined);
@@ -101,7 +101,7 @@ describe("collection-manager profile count", () => {
     );
   });
 
-  it("creates a manual collection and increments the profile count atomically", async () => {
+  it("creates a manual collection without a client-owned profile counter write", async () => {
     await createUserCollection("Inventions");
 
     expect(mocks.batch.set).toHaveBeenCalledTimes(2);
@@ -110,16 +110,16 @@ describe("collection-manager profile count", () => {
     );
     expect(mocks.batch.set.mock.calls[1]).toEqual([
       { path: "users/user-1" },
-      {
-        collectionCount: { incrementBy: 1 },
-        lastActivityDate: "server-timestamp",
-      },
+      { lastActivityDate: "server-timestamp" },
       { merge: true },
     ]);
+    expect(mocks.batch.set.mock.calls.flat()).not.toContainEqual(
+      expect.objectContaining({ collectionCount: expect.anything() })
+    );
     expect(mocks.batch.commit).toHaveBeenCalledOnce();
   });
 
-  it("keeps smart collection creation on the same atomic counter path", async () => {
+  it("leaves smart-collection counts to the server-owned trigger", async () => {
     await createSmartUserCollection(
       "Moves",
       {
@@ -131,18 +131,22 @@ describe("collection-manager profile count", () => {
       3
     );
 
+    expect(mocks.batch.set).toHaveBeenCalledTimes(2);
+    expect(mocks.batch.set.mock.calls[0][0].path).toMatch(
+      /^users\/user-1\/collections\//
+    );
     expect(mocks.batch.set.mock.calls[1]).toEqual([
       { path: "users/user-1" },
-      {
-        collectionCount: { incrementBy: 1 },
-        lastActivityDate: "server-timestamp",
-      },
+      { lastActivityDate: "server-timestamp" },
       { merge: true },
     ]);
+    expect(mocks.batch.set.mock.calls.flat()).not.toContainEqual(
+      expect.objectContaining({ collectionCount: expect.anything() })
+    );
     expect(mocks.batch.commit).toHaveBeenCalledOnce();
   });
 
-  it("deletes a custom collection and decrements the profile count atomically", async () => {
+  it("deletes a custom collection without a client-owned profile counter write", async () => {
     mocks.getDoc.mockResolvedValueOnce({
       exists: () => true,
       data: () => ({
@@ -158,13 +162,14 @@ describe("collection-manager profile count", () => {
     expect(mocks.batch.delete).toHaveBeenCalledWith({
       path: "users/user-1/collections/collection-1",
     });
+    expect(mocks.batch.set).toHaveBeenCalledOnce();
     expect(mocks.batch.set).toHaveBeenCalledWith(
       { path: "users/user-1" },
-      {
-        collectionCount: { incrementBy: -1 },
-        lastActivityDate: "server-timestamp",
-      },
+      { lastActivityDate: "server-timestamp" },
       { merge: true }
+    );
+    expect(mocks.batch.set.mock.calls.flat()).not.toContainEqual(
+      expect.objectContaining({ collectionCount: expect.anything() })
     );
     expect(mocks.batch.commit).toHaveBeenCalledOnce();
   });

@@ -167,7 +167,7 @@ describe("LibraryRepository.saveSequence atomic persistence", () => {
     firestoreMocks.deleteLocalSequences.mockResolvedValue(undefined);
   });
 
-  it("commits the sequence and profile counter in one batch", async () => {
+  it("commits the sequence and profile activity patch in one batch", async () => {
     const repository = new LibraryRepository(null as never);
 
     await repository.saveSequence(makeSequence(), { visibility: "private" });
@@ -185,7 +185,7 @@ describe("LibraryRepository.saveSequence atomic persistence", () => {
     expect(firestoreMocks.batch.set.mock.calls[1]).toEqual([
       { path: "users/user-1" },
       {
-        sequenceCount: { incrementBy: 1 },
+        publicProfileVersion: 2,
         lastActivityDate: "server-timestamp",
       },
       { merge: true },
