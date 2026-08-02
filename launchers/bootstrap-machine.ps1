@@ -15,8 +15,9 @@
         git clone https://github.com/austencloud/tka-platform.git C:\tka-platform
         powershell -ExecutionPolicy Bypass -File C:\tka-platform\launchers\bootstrap-machine.ps1
 
-    Every step is idempotent: re-running repairs missing pieces and never
-    clobbers existing user config (existing files are left alone and noted).
+    Every step is idempotent: re-running repairs missing pieces without
+    replacing existing user config. The Chrome DevTools MCP step adds one
+    scoped environment value to an existing server entry when present.
     Two things cannot be scripted and are printed as a checklist at the end:
     interactive logins (claude / codex) and taskbar pinning (Windows 11 has
     no supported API for it; the script opens the shortcut folder instead).
@@ -121,6 +122,13 @@ Copy-IfAbsent (Join-Path $Assets 'statusline.mjs')       (Join-Path $env:USERPRO
 
 Write-Step 'Global Codex config (~\.codex)'
 Copy-IfAbsent (Join-Path $Assets 'codex-config.toml')    (Join-Path $env:USERPROFILE '.codex\config.toml')
+
+Write-Step 'Chrome DevTools MCP terminal title guard'
+$titleGuardInstaller = Join-Path $PSScriptRoot 'install-terminal-title-guard.mjs'
+Invoke-Mutation 'protect intentional terminal names from Chrome DevTools MCP' {
+    & node $titleGuardInstaller
+    if ($LASTEXITCODE -ne 0) { throw "Terminal title guard installer failed (exit $LASTEXITCODE)" }
+}
 
 # --- 5. Explorer context menus ----------------------------------------------
 Write-Step 'Right-click context menus (HKCU, no admin)'
