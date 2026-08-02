@@ -2,9 +2,13 @@
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import { doc, setDoc } from "firebase/firestore";
-  import { getUserProfile, followUser, unfollowUser, getFollowers, getFollowing } from "$lib/shared/community/services/user-repository";
-  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import {
+    getUserProfile,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+  } from "$lib/shared/community/services/user-repository";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -16,24 +20,25 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { openCreatorProfile, backToCreatorsList } from "../state/creators-routing.svelte";
+  import {
+    openCreatorProfile,
+    backToCreatorsList,
+  } from "../state/creators-routing.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import ProfileStage from "./profile/stage/ProfileStage.svelte";
   import ProfileWorkEmpty from "./profile/ProfileWorkEmpty.svelte";
-  import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+  import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 
   interface Props {
     userId: string;
-    onUserDeleted?: () => void;
   }
 
-  let { userId, onUserDeleted }: Props = $props();
+  let { userId }: Props = $props();
 
   let userProfile = $state<EnhancedUserProfile | null>(null);
   let userSequences = $state<LibrarySequence[]>([]);
@@ -57,7 +62,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   const currentUserId = $derived(authState.user?.uid);
   const isOwnProfile = $derived(currentUserId === userId);
-  const isAdmin = $derived(authState.isAdmin);
 
   /**
    * The composition is decided HERE, before anything paints.
@@ -79,8 +83,8 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   const savedTotal = $derived(
     isOwnProfile
       ? scene3dCollectionState.collection.length +
-        tunnelCollectionState.collection.length +
-        mandalaCollectionState.collection.length
+          tunnelCollectionState.collection.length +
+          mandalaCollectionState.collection.length
       : undefined
   );
 
@@ -106,33 +110,12 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
         !mandalaCollectionState.loading)
   );
 
-  // The admin column is moderation tooling, not identity, so it stays its own
-  // column rather than moving into the rail with the connection section. The
-  // desktop build grants isAdmin with user: null (auth-state desktop fallback),
-  // so isAdmin must be its own gate — it is NOT implied by currentUserId.
-  const showAdmin = $derived(isAdmin && !isOwnProfile);
-
-  const modalUsers = $derived(followersModalType === "followers" ? followerUsers : followingUsers);
-  const modalLoading = $derived(followersModalType === "followers" ? followersLoading : followingLoading);
-
-  function handleAdminUpdate(updates: Partial<EnhancedUserProfile>) {
-    if (userProfile) {
-      userProfile = { ...userProfile, ...updates };
-    }
-  }
-
-  async function reconcileCount(uid: string, actualCount: number) {
-    try {
-      const firestore = await getFirestoreInstance();
-      await setDoc(
-        doc(firestore, `users/${uid}`),
-        { sequenceCount: actualCount },
-        { merge: true }
-      );
-    } catch (err) {
-      console.warn("[UserProfilePanel] Failed to reconcile sequenceCount:", err);
-    }
-  }
+  const modalUsers = $derived(
+    followersModalType === "followers" ? followerUsers : followingUsers
+  );
+  const modalLoading = $derived(
+    followersModalType === "followers" ? followersLoading : followingLoading
+  );
 
   onMount(async () => {
     try {
@@ -166,7 +149,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       const actualCount = userSequences.length;
       if (userProfile.sequenceCount !== actualCount) {
         userProfile = { ...userProfile, sequenceCount: actualCount };
-        void reconcileCount(userId, actualCount);
       }
 
       isLoading = false;
@@ -290,7 +272,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     <div class="profile-content">
       <!-- One composition for everyone. The work column is always here; what
            changes is whether it holds bands or an invitation to fill it. -->
-      <div class="profile-layout" class:has-aside={showAdmin}>
+      <div class="profile-layout">
         <!-- The person, not their work. Everything about them lives in this one
              column: identity, tenure, place, props, counts, and — when you are
              signed in looking at someone else — your connection to them, which
@@ -330,19 +312,13 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
           {#if hasWork}
             <ProfileStage {userId} displayName={userProfile.displayName} />
           {:else}
-            <ProfileWorkEmpty {isOwnProfile} displayName={userProfile.displayName} />
+            <ProfileWorkEmpty
+              {isOwnProfile}
+              displayName={userProfile.displayName}
+            />
           {/if}
         </div>
 
-        {#if showAdmin}
-          <aside class="profile-aside">
-            <ProfileAdminSection
-              {userProfile}
-              onUserUpdated={handleAdminUpdate}
-              {onUserDeleted}
-            />
-          </aside>
-        {/if}
       </div>
     </div>
 
@@ -472,32 +448,22 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   }
 
   /* Static while stacked; the wide tier below turns it sticky alongside the rail. */
-  .profile-aside {
-    grid-area: aside;
-    display: flex;
-    flex-direction: column;
-    z-index: 1;
-  }
-
   /* Frosted glass panels so all content reads against calm surfaces; the ocean
      breathes in the grid gaps + page margins. Reuses the app modal-surface
      token (--theme-panel-bg). */
   .rail-area > :global(*),
-  .work-area,
-  .profile-aside {
-    background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 90%, transparent);
+  .work-area {
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(18, 20, 30, 0.98)) 90%,
+      transparent
+    );
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--theme-stroke);
     border-radius: clamp(16px, 2cqi, 24px);
     padding: clamp(16px, 2cqi, 28px);
     box-shadow: var(--theme-shadow, 0 8px 32px rgba(0, 0, 0, 0.3));
-  }
-
-  .profile-aside > :global(:first-child) {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
   }
 
   /* Wide enough for the rail to stand beside the work. Below this the rail
@@ -512,14 +478,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       grid-template-areas: "rail work";
     }
 
-    .profile-layout.has-aside {
-      grid-template-columns:
-        clamp(20em, 20cqi, 25em)
-        minmax(0, 1fr)
-        clamp(20em, 18cqi, 25em);
-      grid-template-areas: "rail work aside";
-    }
-
     /* Sticky so the person stays visible while their work scrolls, with its own
        scroll for the case where identity plus a connection section outgrows the
        viewport — otherwise the Follow button at its bottom would be unreachable. */
@@ -532,13 +490,6 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       scrollbar-width: thin;
     }
 
-    .profile-aside {
-      position: sticky;
-      top: 0;
-      align-self: start;
-      max-height: 100dvh;
-      overflow-y: auto;
-    }
   }
 
   @container profile-panel (max-width: 768px) {
