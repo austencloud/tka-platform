@@ -18,8 +18,10 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   MotionType,
   MotionColor,
+  Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   GridLocation,
   GridMode,
@@ -88,6 +90,44 @@ function makeOptions(
   };
 }
 
+function makeBoxBetaStep(
+  blueStartLocation: GridLocation,
+  redStartLocation: GridLocation,
+  endLocation: GridLocation
+): PictographData {
+  return {
+    id: `beta-${blueStartLocation}-${endLocation}`,
+    letter: "K",
+    gridMode: GridMode.BOX,
+    motions: {
+      [MotionColor.BLUE]: createMotionData({
+        motionType: MotionType.ANTI,
+        startLocation: blueStartLocation,
+        endLocation,
+        startOrientation: Orientation.IN,
+        endOrientation: Orientation.COUNTER,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        turns: 0.5,
+        color: MotionColor.BLUE,
+        gridMode: GridMode.BOX,
+        propType: PropType.STAFF,
+      }),
+      [MotionColor.RED]: createMotionData({
+        motionType: MotionType.FLOAT,
+        startLocation: redStartLocation,
+        endLocation,
+        startOrientation: Orientation.IN,
+        endOrientation: Orientation.COUNTER,
+        rotationDirection: RotationDirection.NO_ROTATION,
+        turns: 0,
+        color: MotionColor.RED,
+        gridMode: GridMode.BOX,
+        propType: PropType.STAFF,
+      }),
+    },
+  };
+}
+
 describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
   it("preserves lsp11 keys for fully-visible pictographs", () => {
     const key = deriver.deriveCacheKey(
@@ -123,6 +163,49 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
     expect(hiddenKey).toContain('"isVisible":true');
     expect(hiddenKey).toContain('"isVisible":false');
     expect(visibleKey).not.toBe(hiddenKey);
+  });
+
+  describe("targeted beta-offset geometry revision", () => {
+    it.each([
+      {
+        step: 1,
+        blueStart: GridLocation.SOUTHWEST,
+        redStart: GridLocation.NORTHEAST,
+        end: GridLocation.NORTHWEST,
+      },
+      {
+        step: 3,
+        blueStart: GridLocation.NORTHWEST,
+        redStart: GridLocation.SOUTHEAST,
+        end: GridLocation.NORTHEAST,
+      },
+    ])("rekeys supplied step $step", ({ blueStart, redStart, end }) => {
+      const key = deriver.deriveCacheKey(
+        makeBoxBetaStep(blueStart, redStart, end),
+        undefined,
+        false,
+        makeOptions()
+      );
+
+      expect(key).toMatch(/^lsp11-/);
+      expect(key).toContain('"propGeometryRevision":"beta-shift-map-v2"');
+    });
+
+    it("preserves the existing identity for an unaffected box shift", () => {
+      const key = deriver.deriveCacheKey(
+        makeBoxBetaStep(
+          GridLocation.NORTHEAST,
+          GridLocation.SOUTHWEST,
+          GridLocation.SOUTHEAST
+        ),
+        undefined,
+        false,
+        makeOptions()
+      );
+
+      expect(key).toMatch(/^lsp11-/);
+      expect(key).not.toContain("propGeometryRevision");
+    });
   });
 
   describe("motion-intrinsic propType differentiation (the original bug)", () => {

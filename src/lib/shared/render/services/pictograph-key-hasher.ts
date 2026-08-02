@@ -34,6 +34,9 @@ interface PictographKeyInput {
   // betaSwapped changes prepared prop geometry (PictographPreparer keys it);
   // without it two identical-motion pictographs collide across the swap.
   betaSwapped: boolean;
+  // Present only when a narrowly-scoped render algorithm revision changes
+  // this pictograph's pixels. Unaffected cells keep their established key.
+  propGeometryRevision?: string;
   visibility: {
     showTKA: boolean;
     showTnD: boolean;
@@ -51,6 +54,79 @@ interface PictographKeyInput {
     showBlueMotion: boolean;
     showRedMotion: boolean;
   };
+}
+
+const BETA_SHIFT_MAP_REVISION = "beta-shift-map-v2";
+const NON_RADIAL_ORIENTATIONS = new Set(["clock", "counter"]);
+const SHIFT_MOTION_TYPES = new Set(["pro", "anti", "float"]);
+const REVISED_NON_RADIAL_SHIFT_TRANSITIONS = new Set([
+  "se>ne",
+  "sw>nw",
+  "sw>se",
+  "nw>ne",
+  "nw>sw",
+]);
+const LETTERS_WITH_INDEPENDENT_BETA_DIRECTION_MAPS = new Set(["G", "H", "I"]);
+
+/**
+ * Returns a render-identity revision only for cells whose prop pixels can be
+ * changed by the corrected box/non-radial shift-direction entries.
+ *
+ * Keeping this predicate narrow avoids invalidating the established lsp11
+ * cloud corpus for pictographs that never consult those entries.
+ */
+export function getPictographGeometryRevision(
+  data: StepData | PictographData
+): string | undefined {
+  const blue = data.motions?.blue;
+  const red = data.motions?.red;
+  if (!blue || !red || blue.isVisible === false || red.isVisible === false) {
+    return undefined;
+  }
+
+  if (blue.endLocation.toLowerCase() !== red.endLocation.toLowerCase()) {
+    return undefined;
+  }
+
+  if (
+    !NON_RADIAL_ORIENTATIONS.has(blue.endOrientation.toLowerCase()) ||
+    !NON_RADIAL_ORIENTATIONS.has(red.endOrientation.toLowerCase())
+  ) {
+    return undefined;
+  }
+
+  if (LETTERS_WITH_INDEPENDENT_BETA_DIRECTION_MAPS.has(data.letter ?? "")) {
+    return undefined;
+  }
+
+  const blueIsShift = SHIFT_MOTION_TYPES.has(blue.motionType.toLowerCase());
+  const redIsShift = SHIFT_MOTION_TYPES.has(red.motionType.toLowerCase());
+  const letter = data.letter ?? "";
+
+  // Direction routing intentionally has one source motion. Y/Z prefer red;
+  // ordinary dual shifts use blue; mixed shift/non-shift cells use the shift.
+  const directionSource =
+    letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-"
+      ? redIsShift
+        ? red
+        : blueIsShift
+          ? blue
+          : undefined
+      : blueIsShift && redIsShift
+        ? blue
+        : blueIsShift
+          ? blue
+          : redIsShift
+            ? red
+            : undefined;
+
+  const transition = directionSource
+    ? `${directionSource.startLocation.toLowerCase()}>${directionSource.endLocation.toLowerCase()}`
+    : "";
+  const usesRevisedTransition =
+    REVISED_NON_RADIAL_SHIFT_TRANSITIONS.has(transition);
+
+  return usesRevisedTransition ? BETA_SHIFT_MAP_REVISION : undefined;
 }
 
 export class PictographKeyHasher {
@@ -82,6 +158,7 @@ export class PictographKeyHasher {
     // step (identical images) share one cache entry.
     const reversalsVisible = visibility.showReversals ?? true;
     const step = data as Partial<StepData>;
+    const propGeometryRevision = getPictographGeometryRevision(data);
 
     return {
       letter: data.letter ?? undefined,
@@ -90,6 +167,7 @@ export class PictographKeyHasher {
       blueReversal: reversalsVisible ? (step.blueReversal ?? false) : false,
       redReversal: reversalsVisible ? (step.redReversal ?? false) : false,
       betaSwapped: data.betaSwapped ?? false,
+      ...(propGeometryRevision && { propGeometryRevision }),
       visibility: {
         showTKA: visibility.showTKA ?? true,
         showTnD: visibility.showTnD ?? false,

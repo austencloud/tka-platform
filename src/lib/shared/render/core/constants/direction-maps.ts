@@ -85,6 +85,10 @@ export const SHIFT_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocation,
 
 /**
  * Shift motion transitions - non-radial orientation
+ *
+ * At box corners, separation follows the radial axis through the occupied
+ * corner. Keeping that axis correct prevents the two staves from sliding
+ * along their shared non-radial line and appearing to overlap.
  */
 export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocation, VectorDirection>>> = {
   e: { n: "up", s: "up" },
@@ -92,9 +96,9 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
   n: { e: "right", w: "right" },
   s: { e: "left", w: "left" },
   ne: { se: "upleft", nw: "downright" },
-  se: { ne: "downleft", sw: "upright" },
-  sw: { nw: "upright", se: "downleft" },
-  nw: { ne: "downright", sw: "upleft" },
+  se: { ne: "upright", sw: "upright" },
+  sw: { nw: "upleft", se: "downright" },
+  nw: { ne: "downleft", sw: "downleft" },
   c: {},
 };
 

@@ -14,6 +14,7 @@ import type { PropAssets } from "../../prop/domain/models/prop-assets";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { PropType } from "../../prop/domain/enums/prop-type";
 import { MotionType, HandPath, RotationDirection, Orientation } from "../domain/enums/pictograph-enums";
+import { getPictographGeometryRevision } from "$lib/shared/render/services/pictograph-key-hasher";
 // Prop-type defaults used when callers don't pass explicit options.
 // Formerly imported getSettings() from app-state.svelte, but that module chain
 // pulls in Firebase auth which accesses `window` — crashing in Web Workers.
@@ -210,6 +211,7 @@ export class PictographPreparer {
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
       pictograph.betaSwapped ? "bs" : "",
+      getPictographGeometryRevision(pictograph) ?? "",
       // Visibility is render-relevant: an invisible placeholder hand must not
       // share a cache entry with a visible static twin.
       blue?.isVisible === false ? "bInvis" : "",
