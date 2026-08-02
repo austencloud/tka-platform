@@ -1,0 +1,271 @@
+import { describe, expect, it } from "vitest";
+import {
+  CAVE_MODE_ROOMS,
+  CAVE_SPACE_ORDER,
+  VULCAN_CAVE_EDGES,
+  buildVulcanCaveFloorPlan,
+} from "$lib/features/museum/data/vulcan-cave-floor-plan";
+import { MUSEUM_EXHIBIT_SEQUENCES } from "$lib/features/museum/data/museum-exhibit-sequences";
+import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
+import { isWalkable } from "$lib/features/museum/domain/tile-registry";
+
+describe("Vulcan Cave floor plan", () => {
+  const plan = buildVulcanCaveFloorPlan();
+
+  it("builds a connected, non-overlapping production grid", () => {
+    expect(plan.validation.valid, plan.validation.errors.join("\n")).toBe(true);
+    expect(plan.validation.unreachableRooms).toEqual([]);
+    expect(plan.validation.overlaps).toEqual([]);
+    expect(plan.grid.wings.map((wing) => wing.id)).toEqual(CAVE_SPACE_ORDER);
+  });
+
+  it("keeps all nine spaces on one ordered main path", () => {
+    expect(VULCAN_CAVE_EDGES).toHaveLength(CAVE_SPACE_ORDER.length - 1);
+    expect(VULCAN_CAVE_EDGES.every((edge) => edge.type === "main-path")).toBe(
+      true
+    );
+
+    const incoming = new Map<string, number>();
+    const outgoing = new Map<string, number>();
+    for (const edge of VULCAN_CAVE_EDGES) {
+      outgoing.set(edge.from, (outgoing.get(edge.from) ?? 0) + 1);
+      incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
+    }
+
+    expect(CAVE_SPACE_ORDER.filter((roomId) => !incoming.has(roomId))).toEqual([
+      "cave-threshold",
+    ]);
+    expect(CAVE_SPACE_ORDER.filter((roomId) => !outgoing.has(roomId))).toEqual([
+      "egypt-threshold",
+    ]);
+    expect(Math.max(...incoming.values())).toBe(1);
+    expect(Math.max(...outgoing.values())).toBe(1);
+
+    for (let index = 0; index < VULCAN_CAVE_EDGES.length; index++) {
+      expect(VULCAN_CAVE_EDGES[index]).toEqual(
+        expect.objectContaining({
+          from: CAVE_SPACE_ORDER[index],
+          to: CAVE_SPACE_ORDER[index + 1],
+        })
+      );
+    }
+  });
+
+  // The Drowned Gallery replaced the solo Water automaton with the A/B/C
+  // procession, so it is excluded from the one-performer-per-chamber rule.
+  const SOLO_MODE_ROOMS = CAVE_MODE_ROOMS.filter(
+    (mode) => mode.roomId !== "cave-water"
+  );
+
+  it("places exactly one dedicated performer in each solo mode chamber", () => {
+    const soloPerformers = plan.grid.performers.filter(
+      (performer) => !performer.id.startsWith("cave-water-")
+    );
+    expect(soloPerformers.map((performer) => performer.id)).toEqual(
+      SOLO_MODE_ROOMS.map((mode) => mode.performerId)
+    );
+    expect(soloPerformers.map((performer) => performer.sequenceId)).toEqual(
+      SOLO_MODE_ROOMS.map((mode) => mode.sequenceId)
+    );
+    expect(soloPerformers.every((performer) => performer.autoPlay)).toBe(true);
+    expect(
+      new Set(soloPerformers.map((performer) => performer.sequenceId)).size
+    ).toBe(SOLO_MODE_ROOMS.length);
+
+    for (const mode of SOLO_MODE_ROOMS) {
+      const wing = plan.grid.wings.find(
+        (candidate) => candidate.id === mode.roomId
+      )!;
+      const roomPerformers = plan.grid.performers.filter(
+        (performer) =>
+          performer.tileX > wing.bounds.x &&
+          performer.tileX < wing.bounds.x + wing.bounds.width - 1 &&
+          performer.tileY > wing.bounds.y &&
+          performer.tileY < wing.bounds.y + wing.bounds.height - 1
+      );
+
+      expect(
+        roomPerformers.map((performer) => performer.id),
+        mode.roomId
+      ).toEqual([mode.performerId]);
+    }
+  });
+
+  it("resolves all six mode sequences to authored movement data", () => {
+    for (const mode of CAVE_MODE_ROOMS) {
+      const sequence = MUSEUM_EXHIBIT_SEQUENCES[mode.sequenceId];
+      expect(sequence, mode.sequenceId).toBeDefined();
+      expect(sequence.steps.length, mode.sequenceId).toBeGreaterThanOrEqual(4);
+      expect(
+        sequence.steps.slice(1).every((step) => step.letter.length > 0),
+        mode.sequenceId
+      ).toBe(true);
+    }
+  });
+
+  it("keeps every corridor at least three tiles wide", () => {
+    for (const edge of plan.edges) {
+      expect(
+        edge.corridorWidth ?? 4,
+        `${edge.from}->${edge.to}`
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("uses room scale to create compression and one major release", () => {
+    const squeeze = plan.grid.wings.find((wing) => wing.id === "cave-squeeze")!;
+    const performerRooms = CAVE_MODE_ROOMS.map(
+      (mode) => plan.grid.wings.find((wing) => wing.id === mode.roomId)!
+    );
+
+    for (const room of performerRooms) {
+      expect(room.bounds.width - 2, room.id).toBeGreaterThan(
+        squeeze.bounds.width - 2
+      );
+    }
+
+    const performerAreas = performerRooms.map((room) => ({
+      id: room.id,
+      area: (room.bounds.width - 2) * (room.bounds.height - 2),
+    }));
+    // The Drowned Gallery is the bay-scale release; Earth remains the largest
+    // of the five single-chamber rooms after it.
+    expect(Math.max(...performerAreas.map(({ area }) => area))).toBe(
+      performerAreas.find(({ id }) => id === "cave-water")!.area
+    );
+    const dryAreas = performerAreas.filter(({ id }) => id !== "cave-water");
+    expect(Math.max(...dryAreas.map(({ area }) => area))).toBe(
+      dryAreas.find(({ id }) => id === "cave-earth")!.area
+    );
+  });
+
+  it("offsets adjacent chamber doors to prevent shared performance sightlines", () => {
+    const modeRoomIds = new Set(CAVE_MODE_ROOMS.map((mode) => mode.roomId));
+    const adjacentModeEdges = plan.edges.filter(
+      (edge) => modeRoomIds.has(edge.from) && modeRoomIds.has(edge.to)
+    );
+
+    for (const edge of adjacentModeEdges) {
+      const fromRoom = plan.grid.wings.find((wing) => wing.id === edge.from)!;
+      const toRoom = plan.grid.wings.find((wing) => wing.id === edge.to)!;
+      const fromDoor = doorCenter(fromRoom.bounds, edge.fromWall);
+      const toDoor = doorCenter(toRoom.bounds, edge.toWall);
+
+      if (edge.fromWall === "north" || edge.fromWall === "south") {
+        expect(fromDoor.x, `${edge.from}->${edge.to}`).not.toBe(toDoor.x);
+      } else {
+        expect(fromDoor.y, `${edge.from}->${edge.to}`).not.toBe(toDoor.y);
+      }
+    }
+  });
+
+  it("keeps every numbered zone inside its compiled room", () => {
+    for (const zone of plan.zones) {
+      const wing = plan.grid.wings.find(
+        (candidate) => candidate.id === zone.id
+      )!;
+      expect(zone.x, zone.id).toBeGreaterThanOrEqual(wing.bounds.x + 1);
+      expect(zone.y, zone.id).toBeGreaterThanOrEqual(wing.bounds.y + 1);
+      expect(zone.x + zone.width, zone.id).toBeLessThanOrEqual(
+        wing.bounds.x + wing.bounds.width - 1
+      );
+      expect(zone.y + zone.height, zone.id).toBeLessThanOrEqual(
+        wing.bounds.y + wing.bounds.height - 1
+      );
+    }
+  });
+
+  it("starts the visitor on a walkable cave-threshold tile", () => {
+    const spawnTile = plan.grid.tiles.get(
+      tileKey(plan.grid.spawn.x, plan.grid.spawn.y)
+    );
+    const threshold = plan.grid.wings.find(
+      (wing) => wing.id === "cave-threshold"
+    )!;
+
+    expect(spawnTile).toBeDefined();
+    expect(isWalkable(spawnTile!.type)).toBe(true);
+    expect(plan.grid.spawn.x).toBeGreaterThan(threshold.bounds.x);
+    expect(plan.grid.spawn.x).toBeLessThan(
+      threshold.bounds.x + threshold.bounds.width - 1
+    );
+    expect(plan.grid.spawn.y).toBeGreaterThan(threshold.bounds.y);
+    expect(plan.grid.spawn.y).toBeLessThan(
+      threshold.bounds.y + threshold.bounds.height - 1
+    );
+  });
+
+  function doorCenter(
+    bounds: { x: number; y: number; width: number; height: number },
+    wall: "north" | "south" | "east" | "west"
+  ): { x: number; y: number } {
+    const doorTiles: { x: number; y: number }[] = [];
+
+    if (wall === "north" || wall === "south") {
+      const y = wall === "north" ? bounds.y : bounds.y + bounds.height - 1;
+      for (let x = bounds.x; x < bounds.x + bounds.width; x++) {
+        if (plan.grid.tiles.get(tileKey(x, y))?.type === "door") {
+          doorTiles.push({ x, y });
+        }
+      }
+    } else {
+      const x = wall === "west" ? bounds.x : bounds.x + bounds.width - 1;
+      for (let y = bounds.y; y < bounds.y + bounds.height; y++) {
+        if (plan.grid.tiles.get(tileKey(x, y))?.type === "door") {
+          doorTiles.push({ x, y });
+        }
+      }
+    }
+
+    expect(doorTiles, `${wall} door`).not.toHaveLength(0);
+    return {
+      x: doorTiles.reduce((sum, tile) => sum + tile.x, 0) / doorTiles.length,
+      y: doorTiles.reduce((sum, tile) => sum + tile.y, 0) / doorTiles.length,
+    };
+  }
+});
+
+describe("drowned gallery rooms", () => {
+  const plan = buildVulcanCaveFloorPlan();
+  const wing = (id: string) => {
+    const w = plan.grid.wings.find((w) => w.id === id);
+    if (!w) throw new Error(`missing wing ${id}`);
+    return w;
+  };
+
+  it("builds the three water-bay rooms in route order", () => {
+    expect(wing("cave-water-approach")).toBeDefined();
+    expect(wing("cave-water-sump")).toBeDefined();
+    expect(wing("cave-water")).toBeDefined();
+  });
+
+  it("gives the grotto exhibit scale (≥ 24 x 21 m interior)", () => {
+    const g = wing("cave-water").bounds;
+    // interior tiles = bounds minus the 1-tile wall ring; 0.5 m per tile
+    expect((g.width - 2) * 0.5).toBeGreaterThanOrEqual(24);
+    expect((g.height - 2) * 0.5).toBeGreaterThanOrEqual(21);
+  });
+
+  it("keeps the sump narrow and long (~2.5 x 10.5 m)", () => {
+    const s = wing("cave-water-sump").bounds;
+    const short = Math.min(s.width, s.height) - 2;
+    const long = Math.max(s.width, s.height) - 2;
+    expect(short * 0.5).toBeLessThanOrEqual(3);
+    expect(long * 0.5).toBeGreaterThanOrEqual(10);
+  });
+
+  it("places three performers in the grotto", () => {
+    const grottoPerformers = plan.grid.performers.filter((p) =>
+      p.id.startsWith("cave-water-")
+    );
+    expect(grottoPerformers.map((p) => p.id).sort()).toEqual([
+      "cave-water-a",
+      "cave-water-b",
+      "cave-water-c",
+    ]);
+  });
+
+  it("still validates as a connected plan", () => {
+    expect(plan.validation.valid).toBe(true);
+  });
+});

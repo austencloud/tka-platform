@@ -42,6 +42,8 @@ export interface PerformerPlacement {
   scale?: number;
   /** Circular collision footprint around the placement, expressed in tiles. */
   collisionRadiusTiles?: number;
+  /** Absolute floor elevation (world Y, meters) for the performer's feet. Default 0. */
+  elevation?: number;
 }
 
 export interface FurniturePlacement {

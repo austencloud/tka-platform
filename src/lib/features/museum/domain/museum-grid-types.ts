@@ -53,7 +53,7 @@ export type WingTheme =
 
 /** Optional authored visual layer mounted over a room's tile-built structure. */
 export interface MuseumRoomPresentation {
-  modelPath: string;
+  modelPath?: string;
   ceilingModelPath?: string;
   emissiveBoost?: number;
   atmosphere?: {
@@ -63,6 +63,12 @@ export interface MuseumRoomPresentation {
     colors: string[];
     sizeRange: [number, number];
   };
+  /**
+   * Skip rendering this wing's tile floors/walls/ceiling. Collision and
+   * validation still come from the tile grid; a presentation layer (authored
+   * GLB or graybox component) supplies the visible room instead.
+   */
+  suppressTileGeometry?: boolean;
 }
 
 export interface MuseumTile {

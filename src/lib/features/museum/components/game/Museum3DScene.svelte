@@ -18,6 +18,7 @@
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
+  import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -187,13 +188,18 @@
   // Tile geometry owns walkability and collision. These room-authored GLBs add
   // trim, fixtures, and environmental detail without changing the floor plan.
   const authoredRooms = grid.wings.flatMap((wing) => {
-    if (!wing.roomPresentation) return [];
+    // A presentation without a modelPath (e.g. suppressTileGeometry-only rooms
+    // dressed by a graybox layer) has no authored GLB to mount.
+    if (!wing.roomPresentation?.modelPath) return [];
+    const presentation = wing.roomPresentation;
     const centerX = (wing.bounds.x + (wing.bounds.width - 1) / 2) * TILE_SIZE;
     const centerZ = (wing.bounds.y + (wing.bounds.height - 1) / 2) * TILE_SIZE;
     return [
       {
         id: wing.id,
-        presentation: wing.roomPresentation,
+        presentation: presentation as typeof presentation & {
+          modelPath: string;
+        },
         position: [centerX, 0, centerZ] as [number, number, number],
         atmospherePosition: [centerX, 2.1, centerZ] as [number, number, number],
         atmosphereArea: {
@@ -206,6 +212,9 @@
   });
   const lobbyPresentation = authoredRooms.find(({ id }) => id === "lobby");
   const hasLobbyPresentation = lobbyPresentation !== undefined;
+  const hasVulcanCaveSlice = grid.wings.some(
+    (wing) => wing.id === "cave-water"
+  );
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -1613,6 +1622,14 @@
     </T.Group>
   {/if}
 {/each}
+
+{#if hasVulcanCaveSlice}
+  <VulcanCaveScenicLayer
+    rooms={grid.wings}
+    currentRoomId={currentPlayerRoomId}
+    visible={props.visible !== false}
+  />
+{/if}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->
 <MuseumFurniture
