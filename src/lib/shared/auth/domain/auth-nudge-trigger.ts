@@ -59,12 +59,13 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
     "Create a free account to share your setup with the community.",
   "share-sequence":
     "Create a free account to send sequences, make links, and share or download Choreo Cards.",
-  // SignInSheet.svelte (sequence-viewer, /q scan funnel) - the three reasons
-  // that actually reach the sheet (publish/download require a full account
-  // per gated-action-policy.ts; account is the /q header chip's plain
-  // sign-in). save/favorite/remix/sendTo never prompt, so they keep their
-  // own local "Sign in to..." copy in SignInSheet.svelte - not an account
-  // ask, out of scope here.
+  // Sequence viewer / /q scan funnel - the three reasons that actually reach
+  // the shared AuthModal (publish/download require a full account per
+  // gated-action-policy.ts; account is the /q header chip's plain sign-in).
+  // save/favorite/remix/sendTo provision a guest silently and never prompt, so
+  // they need no key here. The viewer maps reason -> trigger in
+  // auth-action-queue.svelte.ts (`signInTriggerFor`); it holds no auth copy of
+  // its own, so this stays the single source of truth for the ask.
   "viewer-signin-publish": "Create a free account to publish this sequence.",
   "viewer-signin-download": "Create a free account to download this sequence.",
   "viewer-signin-account":

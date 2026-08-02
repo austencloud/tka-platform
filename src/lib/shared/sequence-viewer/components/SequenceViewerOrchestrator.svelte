@@ -257,9 +257,6 @@
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
-  import SignInSheet from "./SignInSheet.svelte";
-  import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
@@ -1543,24 +1540,21 @@
   {accessibilityHelper.announcement}
 </div>
 
-<SignInSheet
-  open={authQueue.signInSheetOpen}
-  reason={authQueue.signInSheetReason}
-  webviewMode={authQueue.isInAppWebview}
-  onPrimaryAction={() => authQueue.onSignInSheetPrimary(handleOpenInBrowser)}
-  onDismiss={() => authQueue.closeSignInSheet()}
-/>
-
-<GoogleOneTap
-  autoPrompt={false}
-  onError={(error) => {
-    console.error(
-      "[SequenceViewerOrchestrator] Google One Tap sign-in failed",
-      error
-    );
-    toast.error("Google sign-in failed. Please try again.");
-  }}
-/>
+<!-- The one shared auth surface. AuthModal owns every provider flow (Google,
+     Facebook, email/password, magic link) and renders its own contextual copy
+     from the `viewer-signin-*` trigger keys, so the viewer holds no auth copy
+     or provider code of its own. Lazy so the scan landing doesn't pay for the
+     auth bundle until a guest actually hits a gate. AuthModal mounts its own
+     GoogleOneTap, which is why the viewer no longer mounts a second one. -->
+{#if authQueue.signInSheetOpen}
+  {#await import("$lib/shared/auth/components/AuthModal.svelte") then mod}
+    <mod.default
+      open={authQueue.signInSheetOpen}
+      reason={authQueue.signInTrigger}
+      onClose={() => authQueue.closeSignInSheet()}
+    />
+  {/await}
+{/if}
 
 <style>
   .sr-only {
