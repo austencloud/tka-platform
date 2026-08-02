@@ -1,14 +1,16 @@
 ---
-status: backlog
+status: archived
 value: 3
 effort: M
 remaining: "Code framework complete (ClipBasedTurnAnimator, IK solver, RootMotionExtractor). Blocked on clip assets: no FBX/GLB files exist. Need 3 Mixamo clips (90L, 90R, 180) + 4 mocap clips (45L, 45R, 135L, 135R)."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-05-04
+last_triaged: 2026-08-01
 ---
 # Turn-In-Place Animation System Design
+
+> **Archived 2026-08-01 (GHOST_PATHS):** the deliverables this spec names no longer exist on disk (Avatar3D.svelte, IFootPlanter, IIKSolver, and FootPlanter were all deleted from the tree). The avatar 3D substrate it targeted was removed; if this capability returns it needs a fresh spec against the current scene architecture.
 
 **Date:** 2026-04-11
 **Status:** Design approved, ready for implementation plan

@@ -1,14 +1,16 @@
 ---
-status: active
+status: archived
 value: 1
 effort: M
 remaining: "Body status: Draft"
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-01
 ---
 # Anatomical IK Constraints
+
+> **Archived 2026-08-01 (GHOST_PATHS):** the deliverables this spec names no longer exist on disk (AvatarAnimator, IKSolver, avatar-debug-hooks, and plane-mode-configs were deleted; only swing-twist-constraint.ts survives). The avatar 3D substrate it targeted was removed; if this capability returns it needs a fresh spec against the current scene architecture.
 
 **Date:** 2026-05-12  
 **Status:** Draft  
