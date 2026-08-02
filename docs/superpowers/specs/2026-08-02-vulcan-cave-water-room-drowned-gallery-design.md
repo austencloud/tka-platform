@@ -164,7 +164,14 @@ geometry here where iteration is nearly free.
   dark-water reading; retune `stageRadius`/`boundRadius`/`swimHeight` to the
   pool + sump volume. **No new fish assets, no new boids work** (Austen,
   2026-08-02).
-- Pictograph cave art: glowing painted diagrams per alcove.
+- Pictograph cave art: glowing painted diagrams per alcove. **Do not invent a
+  style** — the pictograph-as-cave-painting renderer already exists:
+  `static/retro-eras/cave-painting.html` (paints any pictograph in Lascaux
+  mineral pigments on procedural stone) with its geometry/stylize helpers in
+  `static/retro-eras/_shared/`. Adapt its canvas-painting code into a texture
+  generator producing a `CanvasTexture` for the alcove rock, the same pattern
+  `plaque-texture-generator.ts` uses. The sump-wall A/B/C carvings use the
+  same generator at lower opacity.
 
 ### Phase 4 — EXHIBIT + POLISH
 
@@ -200,6 +207,7 @@ the handoff's verification method.
 | Entry trigger | `onWingChange` in `DimensionFlipProof.svelte` | fires once per room crossing; submersion uses camera-y, not room id |
 | Performer | `MuseumPerformerStation3D` + `PerformerRig` | thread `avatarModelId`; replace STAFF fallback |
 | Plaques | `plaque-texture-generator.ts` + `MuseumPlaque3D` | pictograph bitmap compositing exists |
+| Cave-art pictographs | `static/retro-eras/cave-painting.html` + `_shared/pictograph-geometry.js` / `pictograph-stylize.js` | extract canvas painting into a texture generator |
 | Streaming | `MuseumGeometryStreamer` / `RoomStreamingManager` | per-room load with 5 s hysteresis |
 
 Known risks, in order: (1) floor elevation vs. flat-floor controller — Phase 1;
