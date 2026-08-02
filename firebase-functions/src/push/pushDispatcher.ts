@@ -211,7 +211,12 @@ export async function shouldPushForType(
     return true;
   }
 
-  const userDoc = await db.collection("users").doc(userId).get();
+  const userDoc = await db
+    .collection("users")
+    .doc(userId)
+    .collection("settings")
+    .doc("notificationPreferences")
+    .get();
 
   if (!userDoc.exists) {
     return true;

@@ -76,11 +76,14 @@ export async function notifyAdmins(
   let written = 0;
 
   await Promise.all(
-    [...admins.entries()].map(async ([adminId, adminData]) => {
+    [...admins.entries()].map(async ([adminId]) => {
       // No self-noise: the admin's own actions never ping them.
       if (input.fromUserId && adminId === input.fromUserId) return;
 
-      const prefs = adminData.notificationPreferences as
+      const preferencesDoc = await db
+        .doc(`users/${adminId}/settings/notificationPreferences`)
+        .get();
+      const prefs = preferencesDoc.data()?.notificationPreferences as
         | Record<string, boolean>
         | undefined;
       if (prefs && prefKey && prefs[prefKey] === false) return;
@@ -159,9 +162,12 @@ export async function notifyAdminsScanDigest(
   };
 
   await Promise.all(
-    [...admins.entries()].map(async ([adminId, adminData]) => {
+    [...admins.entries()].map(async ([adminId]) => {
       if (input.fromUserId && adminId === input.fromUserId) return;
-      const prefs = adminData.notificationPreferences as
+      const preferencesDoc = await db
+        .doc(`users/${adminId}/settings/notificationPreferences`)
+        .get();
+      const prefs = preferencesDoc.data()?.notificationPreferences as
         | Record<string, boolean>
         | undefined;
       if (prefs && prefs.adminQrScan === false) return;
