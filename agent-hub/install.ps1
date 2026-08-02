@@ -1,8 +1,8 @@
 #Requires -Version 5
 <#
 .SYNOPSIS
-  Installs agent-hub: a taskbar popover that asks "Claude or Codex?" and opens
-  the chosen agent in the project you clicked.
+  Installs agent-hub: a taskbar popover that starts Claude, Codex, or a
+  configured development server and provides guarded Git Pull and Push actions.
 
 .DESCRIPTION
   Compiles the resident host, stub, terminal launcher, and session host with the .NET Framework
@@ -66,6 +66,7 @@ $BinDir      = Join-Path $InstallDir 'bin'
 $IconDir     = Join-Path $InstallDir 'icons'
 $ShortcutDir = Join-Path $env:USERPROFILE 'AgentHub'
 $StartMenu   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Agent Hub'
+$TaskbarPinnedDir = Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'
 $StartupDir  = [Environment]::GetFolderPath('Startup')
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 $TerminalFragmentPath = Join-Path $TerminalFragmentDir 'session-backgrounds.json'
@@ -208,11 +209,21 @@ $schemes = @(
 $terminalFragment = [ordered]@{ schemes = $schemes }
 $terminalFragmentJson = $terminalFragment | ConvertTo-Json -Depth 4
 New-Item -ItemType Directory -Force $TerminalFragmentDir | Out-Null
-[IO.File]::WriteAllText(
-    $TerminalFragmentPath,
-    $terminalFragmentJson,
-    [Text.UTF8Encoding]::new($false)
+$terminalFragmentChanged = (
+    -not (Test-Path -LiteralPath $TerminalFragmentPath -PathType Leaf) -or
+    -not [string]::Equals(
+        (Get-Content -Raw -LiteralPath $TerminalFragmentPath),
+        $terminalFragmentJson,
+        [StringComparison]::Ordinal
+    )
 )
+if ($terminalFragmentChanged) {
+    [IO.File]::WriteAllText(
+        $TerminalFragmentPath,
+        $terminalFragmentJson,
+        [Text.UTF8Encoding]::new($false)
+    )
+}
 
 $installedFragment = Get-Content -Raw -LiteralPath $TerminalFragmentPath | ConvertFrom-Json
 $installedSchemes = @($installedFragment.schemes)
@@ -255,8 +266,10 @@ if (
 ) {
     throw "Windows Terminal session backgrounds failed contrast or separation validation."
 }
+$sessionBackgroundAction = if ($terminalFragmentChanged) { "installed" } else { "verified" }
 Write-Ok (
-    "installed {0} session backgrounds (contrast {1:N2}:1; secondary {2:N2}:1; separation {3:N3})" -f
+    "{0} {1} session backgrounds (contrast {2:N2}:1; secondary {3:N2}:1; separation {4:N3})" -f
+    $sessionBackgroundAction,
     $SessionBackgrounds.Count,
     $minimumForegroundContrast,
     $minimumSecondaryContrast,
@@ -264,16 +277,22 @@ Write-Ok (
 )
 
 # Terminal watches its own settings directory, not the external fragment
-# directory. Nudge each installed distribution's settings file so a running
-# Terminal reloads the fragment before Agent Hub opens another session.
+# directory. Nudge it only when the fragment actually changed. Reloading
+# settings updates every open window and can discard per-tab command-line
+# appearance overrides, so an idempotent installer must leave healthy sessions
+# alone.
 $reloadedTerminalSettings = 0
-foreach ($settingsPath in $TerminalSettingsPaths | Select-Object -Unique) {
-    if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) { continue }
-    [IO.File]::SetLastWriteTimeUtc($settingsPath, [DateTime]::UtcNow)
-    $reloadedTerminalSettings++
+if ($terminalFragmentChanged) {
+    foreach ($settingsPath in $TerminalSettingsPaths | Select-Object -Unique) {
+        if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) { continue }
+        [IO.File]::SetLastWriteTimeUtc($settingsPath, [DateTime]::UtcNow)
+        $reloadedTerminalSettings++
+    }
 }
 if ($reloadedTerminalSettings -gt 0) {
     Write-Ok "signaled $reloadedTerminalSettings Windows Terminal settings installation(s) to reload"
+} elseif (-not $terminalFragmentChanged) {
+    Write-Ok "session backgrounds already current; left open Terminal windows untouched"
 } else {
     Write-Warn2 "Windows Terminal has not created settings.json yet; backgrounds will load on its next start"
 }
@@ -301,9 +320,9 @@ Write-Ok $csc
 Write-Step "Building Agent Hub executables"
 New-Item -ItemType Directory -Force $BinDir, $IconDir | Out-Null
 
-# Stop a running host so its exe can be replaced.
-Get-Process AgentChooserHost -ErrorAction SilentlyContinue | ForEach-Object {
-    Write-Ok "stopping running host (pid $($_.Id))"
+# Stop resident processes so their executables can be replaced.
+Get-Process AgentChooserHost, AgentTerminalColorWatchdog -ErrorAction SilentlyContinue | ForEach-Object {
+    Write-Ok "stopping running $($_.ProcessName) (pid $($_.Id))"
     $_ | Stop-Process -Force
 }
 Start-Sleep -Milliseconds 400
@@ -319,10 +338,24 @@ $hostRefs = @(
 $hostArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentChooserHost.exe")
 $hostArgs += $hostRefs | ForEach-Object { "/reference:$_" }
 $hostArgs += (Join-Path $Here 'src\AgentChooserHost.cs')
+$hostArgs += (Join-Path $Here 'src\HiddenProcessRunner.cs')
+$hostArgs += (Join-Path $Here 'src\Pm2DevServerController.cs')
+$hostArgs += (Join-Path $Here 'src\GitProjectController.cs')
+$hostArgs += (Join-Path $Here 'src\GitActionPanel.cs')
 
 & $csc @hostArgs
 if ($LASTEXITCODE -ne 0) { throw "Host build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentChooserHost.exe"
+
+$serverSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
+    -ArgumentList '-SelfTestServer' -Wait -PassThru -WindowStyle Hidden
+if ($serverSelfTest.ExitCode -ne 0) { throw "Server control self-test failed ($($serverSelfTest.ExitCode) assertion(s))" }
+Write-Ok "server control self-test passed"
+
+$gitSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
+    -ArgumentList '-SelfTestGit' -Wait -PassThru -WindowStyle Hidden
+if ($gitSelfTest.ExitCode -ne 0) { throw "Git control self-test failed ($($gitSelfTest.ExitCode) assertion(s))" }
+Write-Ok "Git control self-test passed"
 
 $stubArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentChooserStub.exe",
               '/reference:System.dll', '/reference:System.Core.dll',
@@ -346,6 +379,13 @@ $terminalSessionArgs += $terminalSource
 & $csc @terminalSessionArgs
 if ($LASTEXITCODE -ne 0) { throw "Terminal session host build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentTerminalSession.exe"
+
+$terminalWatchdogArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentTerminalColorWatchdog.exe")
+$terminalWatchdogArgs += $terminalRefs | ForEach-Object { "/reference:$_" }
+$terminalWatchdogArgs += $terminalSource
+& $csc @terminalWatchdogArgs
+if ($LASTEXITCODE -ne 0) { throw "Terminal color watchdog build failed (csc exit $LASTEXITCODE)" }
+Write-Ok "built AgentTerminalColorWatchdog.exe"
 
 & (Join-Path $BinDir 'AgentTerminalSession.exe') -SelfTest
 if ($LASTEXITCODE -ne 0) { throw "Terminal launcher self-test failed (exit $LASTEXITCODE)" }
@@ -394,7 +434,31 @@ foreach ($p in $wanted) {
     $full = Resolve-ProjectPath $p.path
     if (-not (Test-Path $full)) { continue }
     if (-not $seen.Add($full))  { continue }
-    [void]$resolved.Add([pscustomobject]@{ Name = $p.name; Path = $full; Icon = $p.icon })
+    $serverManager = $null; $serverApp = $null; $serverConfig = $null; $serverPort = $null
+    if ($null -ne $p.server) {
+        $serverManager = [string]$p.server.manager
+        $serverApp = [string]$p.server.app
+        $serverConfigRelative = [string]$p.server.config
+        $serverPort = [int]$p.server.port
+        if ($serverManager -ne 'pm2') { throw "Unsupported server manager '$serverManager' for $($p.name)." }
+        if ($serverApp -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$') { throw "Invalid PM2 app name '$serverApp' for $($p.name)." }
+        if ([IO.Path]::IsPathRooted($serverConfigRelative)) { throw "Server config for $($p.name) must be relative to its project." }
+        if ($serverPort -lt 1 -or $serverPort -gt 65535) { throw "Invalid server port '$serverPort' for $($p.name)." }
+
+        $trimChars = [char[]]@([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+        $projectRoot = [IO.Path]::GetFullPath($full).TrimEnd($trimChars)
+        $serverConfig = [IO.Path]::GetFullPath((Join-Path $projectRoot $serverConfigRelative))
+        $projectPrefix = $projectRoot + [IO.Path]::DirectorySeparatorChar
+        if (-not $serverConfig.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Server config for $($p.name) must stay inside its project."
+        }
+        if (-not (Test-Path -LiteralPath $serverConfig -PathType Leaf)) { throw "Server config not found: $serverConfig" }
+    }
+    [void]$resolved.Add([pscustomobject]@{
+        Name = $p.name; Path = $full; Icon = $p.icon
+        ServerManager = $serverManager; ServerApp = $serverApp
+        ServerConfig = $serverConfig; ServerPort = $serverPort
+    })
 }
 
 if (-not $NoAutoDiscover -and (Test-Path $ProjectsRoot)) {
@@ -406,7 +470,10 @@ if (-not $NoAutoDiscover -and (Test-Path $ProjectsRoot)) {
         $nice = ($d.Name -split '[-_]' | ForEach-Object {
             if ($_.Length -gt 0) { $_.Substring(0,1).ToUpper() + $_.Substring(1) } else { $_ }
         }) -join ' '
-        [void]$resolved.Add([pscustomobject]@{ Name = $nice; Path = $d.FullName; Icon = "$($d.Name).ico" })
+        [void]$resolved.Add([pscustomobject]@{
+            Name = $nice; Path = $d.FullName; Icon = "$($d.Name).ico"
+            ServerManager = $null; ServerApp = $null; ServerConfig = $null; ServerPort = $null
+        })
     }
 }
 
@@ -436,11 +503,16 @@ New-Item -ItemType Directory -Force $ShortcutDir, $StartMenu | Out-Null
 $shell = New-Object -ComObject WScript.Shell
 $stub  = Join-Path $BinDir 'AgentChooserStub.exe'
 $made  = 0
+$pinsRefreshed = 0
 
 foreach ($proj in $resolved) {
     $icon = if ($proj.Icon) { Join-Path $IconDir $proj.Icon } else { $null }
     $args = '-Project "{0}" -Name "{1}"' -f $proj.Path, $proj.Name
     if ($icon -and (Test-Path $icon)) { $args += ' -Icon "{0}"' -f $icon }
+    if ($proj.ServerManager) {
+        $args += ' -ServerManager "{0}" -ServerApp "{1}" -ServerConfig "{2}" -ServerPort "{3}"' -f `
+            $proj.ServerManager, $proj.ServerApp, $proj.ServerConfig, $proj.ServerPort
+    }
 
     foreach ($dir in @($ShortcutDir, $StartMenu)) {
         $lnk = $shell.CreateShortcut((Join-Path $dir "$($proj.Name).lnk"))
@@ -451,13 +523,48 @@ foreach ($proj in $resolved) {
         if ($icon -and (Test-Path $icon)) { $lnk.IconLocation = "$icon,0" }
         $lnk.Save()
     }
+
+    # Windows keeps a private copy of a shortcut when it is pinned. Refresh an
+    # existing Agent Hub pin in place so reinstalling can add new metadata such
+    # as server controls without asking the user to unpin and pin it again.
+    $pinnedPath = Join-Path $TaskbarPinnedDir "$($proj.Name).lnk"
+    if (Test-Path -LiteralPath $pinnedPath -PathType Leaf) {
+        $pinned = $shell.CreateShortcut($pinnedPath)
+        if ([IO.Path]::GetFileName($pinned.TargetPath) -ieq 'AgentChooserStub.exe') {
+            $pinned.TargetPath       = $stub
+            $pinned.Arguments        = $args
+            $pinned.WorkingDirectory = $proj.Path
+            $pinned.Description      = "Choose an agent or server for $($proj.Name)"
+            if ($icon -and (Test-Path $icon)) { $pinned.IconLocation = "$icon,0" }
+            $pinned.Save()
+            $pinsRefreshed++
+        }
+    }
     $made++
     $iconNote = if ($icon -and (Test-Path $icon)) { '' } else { '  [no icon]' }
     Write-Ok "$($proj.Name)$iconNote  ->  $($proj.Path)"
 }
 Write-Ok "$made shortcut(s) in $ShortcutDir and the Start Menu"
+if ($pinsRefreshed -gt 0) { Write-Ok "$pinsRefreshed existing taskbar pin(s) refreshed" }
 
-# ----------------------------------------------------------------- 6. startup
+# -------------------------------------------------------- 6. server resurrection
+$serverProjects = @($resolved | Where-Object { $_.ServerManager -eq 'pm2' })
+if ($serverProjects.Count -gt 0) {
+    $pm2Cmd = Join-Path $env:APPDATA 'npm\pm2.cmd'
+    if (Test-Path -LiteralPath $pm2Cmd -PathType Leaf) {
+        Write-Step "Registering PM2 to restore managed servers at logon"
+        $taskName = 'Agent Hub PM2 resurrect'
+        $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
+            -Argument "-NoProfile -WindowStyle Hidden -Command `"& '$pm2Cmd' resurrect`""
+        $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Force | Out-Null
+        Write-Ok $taskName
+    } else {
+        Write-Warn2 "PM2 is not installed; server tiles will explain how to finish setup"
+    }
+}
+
+# ----------------------------------------------------------------- 7. startup
 if (-not $NoStartup) {
     Write-Step "Registering the host to start at logon"
     $lnk = $shell.CreateShortcut((Join-Path $StartupDir 'Agent Hub Host.lnk'))
@@ -478,7 +585,7 @@ if ($running -ge 1) { Write-Ok "host running" } else { Write-Warn2 "host did not
 Write-Host ""
 Write-Host "  Done." -ForegroundColor Green
 Write-Host "  Drag shortcuts from $ShortcutDir onto your taskbar to pin them."
-Write-Host "  Click a pin -> popover appears -> 1 = Claude, 2 = Codex, Enter = last used, Esc = cancel."
+Write-Host "  Click a pin -> 1 = Claude, 2 = Codex, 3 = server, 4 = Pull, 5 = Push, Enter = last used, Esc = cancel."
 Write-Host ""
 
 if (-not $NoOpen) { Start-Process explorer.exe $ShortcutDir }

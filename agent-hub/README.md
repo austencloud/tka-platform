@@ -1,17 +1,18 @@
 # Agent Hub
 
-A taskbar popover that asks **Claude or Codex?** and opens the chosen agent in the
-project you clicked.
+A taskbar popover that opens Claude or Codex and handles common project actions
+without opening an editor.
 
 Every Agent Hub launch opens its own Windows Terminal window. Agent Hub keeps 16
 dark background tints available, so no two live Claude or Codex sessions share
 one. Each tab uses the same tint as its terminal background. Closing a session
-releases its tint automatically.
+releases its tint automatically. A session also checks its ANSI-black palette
+entry every two seconds and restores the assigned tint when Terminal resets it.
 
-Run `/color` in Claude or `$color` in Codex to restore the current window's
-assigned tint. The same skill also works in a manually opened session: it claims
-the first free tint and holds it until that agent exits. Codex also lists it in
-`/skills`.
+Color recovery is automatic in Agent Hub sessions. Run `/color` in Claude or
+`$color` in Codex to force an immediate check. The same skill also works in a
+manually opened session: it claims the first free tint and holds it until that
+agent exits. Codex also lists it in `/skills`.
 
 Run `/colorall` in Claude or the TKA Codex build to restore every live agent
 window in one pass. Standard Codex can invoke the same skill as `$colorall`.
@@ -24,16 +25,55 @@ Codex choose an accurate two- or three-word name from the conversation. Use
 in history and Alt+Tab, with no agent or project suffix, and it never changes
 again unless you run `/rename` again.
 
-Pin one shortcut per repo. Click it, a card appears at your cursor with the
-project's icon and two buttons. Pick one and the agent's terminal opens in that
-directory, already carrying the bypass flags.
+Pin one shortcut per repo. Click it, and a card appears at your cursor with the
+project's icon. Pick Claude or Codex and the agent's terminal opens in that
+directory, already carrying the bypass flags. Projects with a configured PM2
+server also get a third tile that reports its current state.
 
 ```
 1        Claude Code
 2        Codex
+3        start or restart the configured server
+4        pull the current Git branch
+5        push committed work to its upstream
 Enter    last agent used for this project
 Esc      cancel
 ```
+
+The server tile does not open a terminal. It calls PM2 in the background, waits
+for the configured port, and changes from Start to Restart when the server is
+ready. A process already using the port outside PM2 appears as Take over. PM2
+errors are shown on the tile and written to
+`%LOCALAPPDATA%\AgentHub\server-errors.log`.
+
+Every Git project gets a compact status row with its branch, ahead and behind
+counts, and changed-file count. Pull is available only for a clean worktree and
+always uses `git pull --ff-only`. Push is available only when the current branch
+has an upstream, is ahead, and is not behind. Dirty files do not block Push
+because only commits are transferred. Agent Hub never force-pushes, stashes,
+rebases, creates branches, or resolves conflicts. Git failures remain visible in
+the row and are written to `%LOCALAPPDATA%\AgentHub\git-errors.log`.
+
+Server controls are opt-in per project in `projects.json`:
+
+```json
+{
+  "name": "TKA Platform",
+  "path": "tka-platform",
+  "icon": "tka-platform.ico",
+  "server": {
+    "manager": "pm2",
+    "app": "tka-dev",
+    "config": "ecosystem.config.cjs",
+    "port": 5173
+  }
+}
+```
+
+The installer accepts only the `pm2` manager, a constrained app name, a config
+file inside the project, and a valid TCP port. PM2 itself remains responsible
+for process restart and logs. When PM2 is installed, Agent Hub registers a
+current-user logon task that restores the saved PM2 process list.
 
 ## Install
 
@@ -70,13 +110,16 @@ the taskbar is the point.
 
 Re-run it any time. It rebuilds, refreshes shortcuts, and never overwrites a
 project's existing `launchers\start-*.bat`.
+Existing Agent Hub taskbar pins are refreshed in place, including newly
+configured server metadata. Other pinned applications are left alone.
 
 ### What it does
 
 1. Verifies Claude's guarded two/three-word bare `/rename` prompt patch.
 2. Installs 16 perceptually spaced dark Windows Terminal background schemes
-   for the current user and signals any running Terminal instance to reload them.
-3. Compiles four small executables with the .NET Framework compiler that ships
+   for the current user. Running Terminal windows reload only when those schemes
+   have changed.
+3. Compiles five small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
 4. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
 5. Installs the personal `color` and `colorall` skills for Claude and Codex.
@@ -109,13 +152,14 @@ in `projects.json` (auto-discovered projects look for `<folder-name>.ico`).
 powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 ```
 
-Stops the host, removes the install folder, shortcuts, and the logon entry. Your
-repos' `launchers\start-*.bat` files are left alone. Add `-Purge` to also forget
-the remembered per-project agent. Taskbar pins have to be unpinned by hand.
+Stops the host, removes the install folder, shortcuts, host logon entry, and PM2
+resurrection task. Your repos' `launchers\start-*.bat` files are left alone. Add
+`-Purge` to also forget the remembered per-project agent. Taskbar pins have to
+be unpinned by hand.
 
 ## How it works
 
-Four executables split the popover and terminal lifecycles:
+Five executables split the popover and terminal lifecycles:
 
 - **AgentChooserStub.exe** is what the shortcut launches. It does nothing but
   write `project|name|icon` to a named pipe and exit, so it starts in tens of
@@ -124,11 +168,17 @@ Four executables split the popover and terminal lifecycles:
   off-screen, warms the fonts and layout, then waits on the pipe. On a ping it
   positions the pre-built card at your cursor and shows it. Selection hides the
   window rather than closing it, so the second click is as fast as the first.
+  Its optional server tile delegates process work to `Pm2DevServerController`.
+  Git status and remote actions delegate to `GitProjectController`.
 - **AgentTerminalLauncher.exe** claims the first free tint, then opens a new
   Windows Terminal window with that background scheme.
 - **AgentTerminalSession.exe** runs inside the new window and holds the named
-  tint lease until the agent exits. Windows releases the lease if the terminal
-  is closed forcefully.
+  tint lease until the agent exits. It watches the live console palette and
+  restores the tint after a reset. Windows releases the lease if the terminal is
+  closed forcefully.
+- **AgentTerminalColorWatchdog.exe** checks every live Agent Hub session from
+  the resident host. It covers terminals opened before a helper update and acts
+  as a second repair path for unelevated sessions.
 
 If the host isn't running when you click, the stub cold-starts it and passes the
 arguments through, so a shortcut always works.
@@ -140,6 +190,9 @@ State lives in `%LOCALAPPDATA%\AgentHub`:
 | `last.ini` | Per-project last agent, used for the Enter shortcut and the default highlight. |
 | `debug.flag` | Create this empty file to turn on verbose logging to `host.log`. |
 | `launch-errors.log` | Terminal startup failures, written only when a launch fails. |
+| `server-errors.log` | PM2 status and start failures from the server tile. |
+| `git-errors.log` | Git status, pull, and push failures from the project row. |
+| `terminal-color-recoveries.log` | Each automatic tint repair, including the observed color and Terminal settings timestamps. |
 
 The Windows Terminal schemes live in
 `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\AgentHub`. The uninstaller
@@ -175,9 +228,13 @@ the popover is already open: the click's mousedown hides it, then the same
 click's ping reopens it. See `KNOWN-ISSUES.md`.
 
 **The agent window does not open or has no distinct background.** Re-run the
-installer, then open a new Agent Hub session. Confirm that all four executables
+installer, then open a new Agent Hub session. Confirm that all five executables
 exist in `%LOCALAPPDATA%\AgentHub\bin`, then check
 `%LOCALAPPDATA%\AgentHub\launch-errors.log`.
+
+**Pull or Push is disabled.** Hover the button for the exact reason. Pull is
+blocked by local changes. Push is blocked when there is nothing ahead, the
+branch is behind or diverged, or no upstream is configured.
 
 ## Source layout
 
@@ -189,7 +246,7 @@ agent-hub/
   package.json       published as @austencloud/agent-hub
   bin/agent-hub.js   npm entry point; resolves ProjectsRoot, calls install.ps1
   projects.json      project list (path, display name, icon)
-  src/               C# sources for the four executables
+  src/               C# sources for the executables and controllers
   icons/             project icons
   skills/            personal Claude and Codex skills installed for the user
   templates/         start-claude.bat / start-codex.bat written into bare repos

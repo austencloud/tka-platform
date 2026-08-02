@@ -1,5 +1,5 @@
 ﻿// AgentChooserStub.exe — featherweight signaler the taskbar launches.
-// Connects to the resident host's named pipe and hands off (project|name|icon).
+// Connects to the resident host's named pipe and hands off project metadata.
 // If the host isn't running, cold-starts it with the same args (it shows
 // immediately and stays resident for next time). No WPF — starts in ~tens of ms.
 //
@@ -28,7 +28,7 @@ class AgentChooserStub
         try { AllowSetForegroundWindow(ASFW_ANY); } catch { }
 
         long startTicks = Process.GetCurrentProcess().StartTime.Ticks;
-        string line = g("Project") + "|" + g("Name") + "|" + g("Icon") + "|" + g("StampFile") + "|" + startTicks;
+        string line = Line(g, startTicks.ToString());
 
         try
         {
@@ -45,12 +45,21 @@ class AgentChooserStub
             {
                 string host = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "AgentChooserHost.exe");
                 var psi = new ProcessStartInfo(host);
-                psi.Arguments = A("Project", g("Project")) + A("Name", g("Name")) + A("Icon", g("Icon")) + A("StampFile", g("StampFile")) + A("StubStartTicks", startTicks.ToString());
+                psi.Arguments = A("Project", g("Project")) + A("Name", g("Name")) + A("Icon", g("Icon")) +
+                    A("StampFile", g("StampFile")) + A("StubStartTicks", startTicks.ToString()) +
+                    A("ServerManager", g("ServerManager")) + A("ServerApp", g("ServerApp")) +
+                    A("ServerConfig", g("ServerConfig")) + A("ServerPort", g("ServerPort"));
                 psi.UseShellExecute = false;
                 Process.Start(psi);
             }
             catch { }
         }
+    }
+
+    static string Line(Func<string, string> g, string startTicks)
+    {
+        return g("Project") + "|" + g("Name") + "|" + g("Icon") + "|" + g("StampFile") + "|" + startTicks + "|" +
+            g("ServerManager") + "|" + g("ServerApp") + "|" + g("ServerConfig") + "|" + g("ServerPort");
     }
 
     static string A(string k, string v) { return string.IsNullOrEmpty(v) ? "" : ("-" + k + " \"" + v + "\" "); }

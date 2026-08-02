@@ -1,7 +1,7 @@
 {
   "name": "@austencloud/agent-hub",
   "version": "1.0.0",
-  "description": "Windows taskbar popover that asks \"Claude or Codex?\" and opens the chosen agent in the project you clicked, in its own tinted Windows Terminal window.",
+  "description": "Windows taskbar popover for launching coding agents and controlling project servers and Git sync.",
   "keywords": [
     "claude",
     "claude-code",
