@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: 'Wave 1 shipped (gamma-loops, misc-permutations, type2-loops). Waves 2-4 have no pool files: prop-reversal-loops, full-reversal-loops, eight-letter-words, sixteen-count, coordinated-triple.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Guide Example Pools — full rollout (2026-07-16)
 
 **Status:** pilot APPROVED (Austen, 2026-07-16: "I really like how this turned

@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: 'Concept + floor plan approved; Phase 1 graybox code exists. Awaiting Austen eye-level gate, then Phases 2-4 (shell/water art, inhabitants, exhibit polish).'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # The Drowned Gallery — Vulcan Cave Water Room Design
 
 - **Date:** 2026-08-02

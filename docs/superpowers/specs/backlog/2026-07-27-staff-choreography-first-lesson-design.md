@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: 'Stage 1 only: route exists dev-only/noindex as designed. Media production, integration, review, and release stages not done. Gated on the video-001 program.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Staff Choreography First Lesson: Product Spec
 
 **Date:** 2026-07-27  

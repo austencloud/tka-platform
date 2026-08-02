@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: S
+remaining: 'Phases 1, 2a, 3 shipped and commit-verified. Phase 2b remains: visual tuning of half-arrow assets against the guide artboards.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Halved Pictograph Pipeline — Design
 
 - **Date:** 2026-07-14

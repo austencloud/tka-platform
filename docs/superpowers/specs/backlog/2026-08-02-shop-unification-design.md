@@ -1,3 +1,13 @@
+---
+status: active
+value: 4
+effort: S
+remaining: 'ACTIVE. Phases 1-4 shipped (a422744d68..c0df410868: shell, catalog front door, PDP re-seat, choreography-cards retirement). Phase 5 (7-viewport visual sweep) and Phase 6 (Codex review) not confirmed.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Shop Unification — Catalog Front Door + Shared Product Shell
 
 - **Date:** 2026-08-02

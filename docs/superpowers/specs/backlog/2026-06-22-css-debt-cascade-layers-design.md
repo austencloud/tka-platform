@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: 'Phase 1 shipped (@layer in app.css:11, drawer-skin !important cut in 0be1f8fa2c). Remaining: !important still ~560 vs target <80; stylelint.config.js advisory-only not CI-blocking (Phase 5); 46 files still carry hardcoded hex/rgba (Phase 4).'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # CSS Debt Elimination — Cascade Layers + Drawer Consolidation
 
 **Date:** 2026-06-22

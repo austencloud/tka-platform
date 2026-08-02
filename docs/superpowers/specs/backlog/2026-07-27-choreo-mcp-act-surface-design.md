@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: L
+remaining: 'Phase 1 shipped (requireBearerAuth in mcp-server, tests/http-auth.test.ts). Phase 0 reconciliation, Phase 2 Firestore bridge, Phase 3 act tools not started.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Choreo — MCP Act Surface: authorization, consolidation, act tools (design)
 
 **Date:** 2026-07-27

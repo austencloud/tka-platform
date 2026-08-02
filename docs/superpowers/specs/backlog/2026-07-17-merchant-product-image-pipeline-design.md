@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: M
+remaining: 'Shelved by Austen. No merchant/product-image pipeline script exists; pickup checklist fully unchecked.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Merchant Product Image Pipeline (Sharp)
 
 **Date:** 2026-07-17

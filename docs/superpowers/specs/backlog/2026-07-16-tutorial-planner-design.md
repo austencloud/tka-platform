@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: M
+remaining: 'P1 shipped (admin/tutorials routes + _data/tutorial-scripts.ts). P2/P3 unbuilt: no tutorial-plans state module, no tutorialPlans Firestore rule, no editing/persistence/picker.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Tutorial Planner — Admin Authoring Surface (Design)
 
 **Date:** 2026-07-16 · **Status:** approved direction (Austen picked: admin

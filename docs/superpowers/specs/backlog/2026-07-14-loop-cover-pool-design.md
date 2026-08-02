@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: M
+remaining: 'Zero implementation. No cover-pool-baker, loop-cover-pool, cover-pools collection, or poolKeysForProduct anywhere; only the spec commit 53adc9d378 exists.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # LOOP Cover Pool — pre-rendered draw-and-shuffle illusion
 
 **Date:** 2026-07-14

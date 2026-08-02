@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: L
+remaining: 'Dependency stub; entire program unbuilt. No LessonMediaRequest or video-inventory anywhere; consuming page still on StaffSpinningChoreographyDraft.svelte.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # VIDEO-001: TKA Video Production System
 
 **Date:** 2026-07-27  

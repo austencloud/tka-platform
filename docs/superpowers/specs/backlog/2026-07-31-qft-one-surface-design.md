@@ -1,3 +1,13 @@
+---
+status: active
+value: 2
+effort: M
+remaining: 'No implementing commit. Remains: collapse AppMode guide|instrument|matrix into One-hand/Two-hand, migrate to propRate array + QftHand, fold buildPendulum into the notation pipeline.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # QfT: One Surface, Two Hands — Design (2026-07-31)
 
 ## The problem

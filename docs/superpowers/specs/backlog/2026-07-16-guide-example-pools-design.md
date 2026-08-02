@@ -1,3 +1,13 @@
+---
+status: active
+value: 3
+effort: M
+remaining: 'Pilot (permutations) shipped; pools for the remaining guide pages still unbuilt.'
+depends_on: ""
+plan_path: ""
+tags: []
+last_triaged: 2026-08-02
+---
 # Guide Example Pools — curated refreshable examples (2026-07-16)
 
 **Decision (Austen, 2026-07-16):** the Level-1 guide's print-era examples were
