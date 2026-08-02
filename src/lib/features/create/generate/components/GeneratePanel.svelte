@@ -85,7 +85,10 @@ Card-based architecture with integrated Generate button:
       context?.CreateModuleState.pushUndoSnapshot(type, metadata)
   );
   const deviceState = createDeviceState();
-  const startEndState = createStartEndOptionsState();
+  const startEndState = createStartEndOptionsState(
+    undefined,
+    configState.config.gridMode
+  );
   const favoriteState = createFavoriteState(() =>
     captureSetupSnapshot(configState.config, startEndState.options)
   );
@@ -157,6 +160,7 @@ Card-based architecture with integrated Generate button:
       saved.startEndOptions ?? null
     );
     configState.updateConfig(snapshot.config);
+    startEndState.setGridMode(snapshot.config.gridMode);
     if (snapshot.startEndOptions) {
       startEndState.setOptions(snapshot.startEndOptions);
     } else {

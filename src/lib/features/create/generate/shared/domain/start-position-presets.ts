@@ -121,6 +121,19 @@ export function getAllPositions(gridMode: GridMode): GridPosition[] {
 }
 
 /**
+ * Read the persisted blocked-position slice that belongs to one grid mode.
+ * The full array may hold preferences for both grids so switching modes does
+ * not discard the selection the user made in the other grid.
+ */
+export function getBlockedPositionsForGrid(
+  blockedPositions: readonly GridPosition[],
+  gridMode: GridMode
+): GridPosition[] {
+  const gridPositions = new Set(getAllPositions(gridMode));
+  return blockedPositions.filter((position) => gridPositions.has(position));
+}
+
+/**
  * Get the blocked positions for a preset
  * Returns positions that should be EXCLUDED (blocklist approach)
  *
@@ -178,7 +191,9 @@ export function detectPresetFromBlocked(
   blockedPositions: GridPosition[],
   gridMode: GridMode
 ): StartPositionPreset {
-  const blocked = new Set(blockedPositions);
+  const blocked = new Set(
+    getBlockedPositionsForGrid(blockedPositions, gridMode)
+  );
 
   // Check ANY (nothing blocked)
   if (blocked.size === 0) {

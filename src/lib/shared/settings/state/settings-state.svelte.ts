@@ -70,6 +70,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   bluePropType: PropType.STAFF,
   redPropType: PropType.STAFF,
   blockedStartPositions: [],
+  blockedStartPositionsByGridMode: {},
   propPresets: DEFAULT_PROP_PRESETS,
   selectedPresetIndex: 0,
   darkMode: true,

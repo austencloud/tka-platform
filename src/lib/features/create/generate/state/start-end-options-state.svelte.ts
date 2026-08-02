@@ -15,14 +15,27 @@
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
-import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  type GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import { clampStartOrientationToLevel } from "../domain/level-orientation-policy";
+import {
+  detectPresetFromBlocked,
+  getBlockedPositionsForGrid,
+  getBlockedPositionsForPreset,
+  StartPositionPreset,
+} from "../shared/domain/start-position-presets";
 
 // ===== Session-local Persistence (localStorage) =====
 const SESSION_STORAGE_KEY = "tka-start-end-session-options";
+
+type BlockedStartPositionsByGridMode = Partial<
+  Record<GridMode, GridPosition[]>
+>;
 
 interface SerializedSessionOptions {
   startPositionLetter?: string;
@@ -119,7 +132,8 @@ const DEFAULT_OPTIONS: StartEndOptions = {
  * Other options: Loaded from and saved to localStorage (session-specific)
  */
 export function createStartEndOptionsState(
-  initialOptions?: Partial<StartEndOptions>
+  initialOptions?: Partial<StartEndOptions>,
+  initialGridMode: GridMode = GridMode.DIAMOND
 ) {
   // Get settings service for Firebase-synced blocked positions
   let settingsState: SettingsState | null = null;
@@ -129,9 +143,33 @@ export function createStartEndOptionsState(
     console.warn("⚠️ StartEndOptions: Settings service not available");
   }
 
-  // Load blocked positions from Firebase settings
-  const savedBlockedPositions =
+  // The legacy array remains the active-grid value consumed by generation.
+  // The keyed setting distinguishes an untouched grid from one explicitly set
+  // to All, which an empty array alone cannot represent.
+  const legacyBlockedPositions =
     (settingsState?.settings?.blockedStartPositions as GridPosition[]) ?? [];
+  let blockedStartPositionsByGridMode: BlockedStartPositionsByGridMode = {
+    ...(settingsState?.settings?.blockedStartPositionsByGridMode ?? {}),
+  };
+  for (const gridMode of [GridMode.DIAMOND, GridMode.BOX]) {
+    if (blockedStartPositionsByGridMode[gridMode] !== undefined) continue;
+    const legacyForGrid = getBlockedPositionsForGrid(
+      legacyBlockedPositions,
+      gridMode
+    );
+    if (legacyForGrid.length > 0) {
+      blockedStartPositionsByGridMode[gridMode] = legacyForGrid;
+    }
+  }
+  let currentGridMode = initialGridMode;
+  const savedForInitialGrid =
+    blockedStartPositionsByGridMode[initialGridMode] ?? [];
+  const initialBlockedPositions =
+    initialOptions?.blockedStartPositions ?? savedForInitialGrid;
+  blockedStartPositionsByGridMode = {
+    ...blockedStartPositionsByGridMode,
+    [initialGridMode]: [...initialBlockedPositions],
+  };
 
   // Load session-local options from localStorage
   const savedSessionOptions = loadSessionOptions();
@@ -139,7 +177,7 @@ export function createStartEndOptionsState(
   // Initialize options with priority: initialOptions > saved > defaults
   let options = $state<StartEndOptions>({
     ...DEFAULT_OPTIONS,
-    blockedStartPositions: savedBlockedPositions,
+    blockedStartPositions: initialBlockedPositions,
     ...(savedSessionOptions || {}),
     ...initialOptions,
   });
@@ -179,9 +217,55 @@ export function createStartEndOptionsState(
    * Save blockedStartPositions to Firebase settings
    */
   function saveBlockedPositions(blocked: GridPosition[]) {
+    blockedStartPositionsByGridMode = {
+      ...blockedStartPositionsByGridMode,
+      [currentGridMode]: [...blocked],
+    };
     if (settingsState) {
-      settingsState.updateSetting("blockedStartPositions", blocked);
+      void settingsState.updateSettings({
+        blockedStartPositions: blocked,
+        blockedStartPositionsByGridMode,
+      });
     }
+  }
+
+  /**
+   * Restore the target grid's selection. A grid visited for the first time
+   * inherits Classic 3 when that named preset is active; after that, even an
+   * explicit All selection is stored and restored independently.
+   */
+  function setGridMode(gridMode: GridMode): boolean {
+    if (gridMode === currentGridMode) return false;
+
+    blockedStartPositionsByGridMode = {
+      ...blockedStartPositionsByGridMode,
+      [currentGridMode]: [...options.blockedStartPositions],
+    };
+    const savedForNextGrid = blockedStartPositionsByGridMode[gridMode];
+    const currentPreset = detectPresetFromBlocked(
+      options.blockedStartPositions,
+      currentGridMode
+    );
+    const nextBlockedPositions =
+      savedForNextGrid !== undefined
+        ? [...savedForNextGrid]
+        : currentPreset === StartPositionPreset.CLASSIC
+          ? getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode)
+          : [];
+    const clearedExactPositions =
+      options.startPosition !== null || options.endPosition !== null;
+
+    currentGridMode = gridMode;
+    options = {
+      ...options,
+      blockedStartPositions: nextBlockedPositions,
+      startPosition: null,
+      endPosition: null,
+    };
+    saveBlockedPositions(nextBlockedPositions);
+    saveSessionOptions(options);
+
+    return clearedExactPositions;
   }
 
   // Update function with persistence
@@ -215,27 +299,15 @@ export function createStartEndOptionsState(
   }
 
   // Clear all constraints
-  function resetOptions() {
+  function resetOptions(gridMode: GridMode = GridMode.DIAMOND) {
+    currentGridMode = gridMode;
+    blockedStartPositionsByGridMode = {
+      [GridMode.DIAMOND]: [],
+      [GridMode.BOX]: [],
+    };
     options = { ...DEFAULT_OPTIONS };
     saveBlockedPositions([]);
     clearSessionOptions();
-  }
-
-  // Clear only position constraints (when grid mode changes)
-  // Returns true if any positions were actually cleared
-  function clearPositions(): boolean {
-    const hadPositions =
-      options.blockedStartPositions.length > 0 ||
-      options.startPosition !== null ||
-      options.endPosition !== null;
-    if (hadPositions) {
-      updateOptions({
-        blockedStartPositions: [],
-        startPosition: null,
-        endPosition: null,
-      });
-    }
-    return hadPositions;
   }
 
   /**
@@ -294,11 +366,17 @@ export function createStartEndOptionsState(
     // Actions
     updateOptions,
     setOptions,
+    setGridMode,
     resetOptions,
-    clearPositions,
     normalizeOrientationsForLevel,
     clearSavedOptions: () => {
-      saveBlockedPositions([]);
+      blockedStartPositionsByGridMode = {};
+      if (settingsState) {
+        void settingsState.updateSettings({
+          blockedStartPositions: [],
+          blockedStartPositionsByGridMode: {},
+        });
+      }
       clearSessionOptions();
     },
 

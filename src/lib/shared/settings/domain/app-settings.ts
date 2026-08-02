@@ -100,6 +100,8 @@ export interface AppSettings {
 
   // Generator Settings
   blockedStartPositions?: GridPosition[]; // Custom blocked positions for sequence generation
+  // Saved independently so Diamond and Box restore their own selection
+  blockedStartPositionsByGridMode?: Partial<Record<GridMode, GridPosition[]>>;
 
   // Global Visual Effects
   darkMode?: boolean; // Dark Mode: dark background, inverted grid, white text/outlines

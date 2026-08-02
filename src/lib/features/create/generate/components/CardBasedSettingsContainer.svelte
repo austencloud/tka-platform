@@ -16,7 +16,10 @@ Delegates ALL logic to services (SRP compliant)
   import type { CardDescriptor } from "$lib/shared/create/domain/generator-contract-types";
   import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
   import { calculateResponsiveFontSize } from "../shared/services/responsive-typographer";
-  import type { UIGenerationConfig } from "../state/generate-config.svelte";
+  import {
+    GENERATE_DEFAULT_CONFIG,
+    type UIGenerationConfig,
+  } from "../state/generate-config.svelte";
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
   import type {
     DifficultyLevel,
@@ -412,8 +415,10 @@ Delegates ALL logic to services (SRP compliant)
       // Clear positions at animation midpoint (150ms into 300ms animation)
       // This makes the text change happen while it's invisible
       setTimeout(() => {
-        startEndState?.clearPositions();
+        startEndState?.setGridMode(gridMode);
       }, 150);
+    } else {
+      startEndState?.setGridMode(gridMode);
     }
   }
 
@@ -480,7 +485,7 @@ Delegates ALL logic to services (SRP compliant)
   // restored values. The overlay confirms before calling this instead.
   function handleResetAll() {
     resetConfig();
-    startEndState?.resetOptions();
+    startEndState?.resetOptions(GENERATE_DEFAULT_CONFIG.gridMode);
     positionsResetTrigger++;
   }
 
