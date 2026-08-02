@@ -8,6 +8,7 @@
     MeshStandardMaterial,
     Vector2,
     Vector3,
+    type InstancedMesh,
     type Object3D,
     type Material,
     type WebGLProgramParametersWithUniforms,
@@ -100,7 +101,7 @@
           uniform float uGroundY;
           uniform float uTallRef;
           uniform float uSwayStrength;
-          uniform vec2 uCurrentDir;`,
+          uniform vec2 uCurrentDir;`
       );
 
       // Displace in world space after the model transform but before view/projection.
@@ -142,7 +143,7 @@
             );
             vec3 objOffset = (transpose(m3) * worldOffset) * invSq;
             transformed += objOffset;
-          }`,
+          }`
       );
     };
 
@@ -178,12 +179,25 @@
 
       const aspect = meshAspect(m);
       const isPlant = aspect >= SWAY_ASPECT_MIN;
-      (isPlant ? swayed : skipped).push(`${m.name || "(unnamed)"}=${aspect.toFixed(2)}`);
+      (isPlant ? swayed : skipped).push(
+        `${m.name || "(unnamed)"}=${aspect.toFixed(2)}`
+      );
+
+      // The baked scene expands to roughly 54M rendered vertices because its
+      // decor uses EXT_mesh_gpu_instancing. Keep those instances out of the
+      // directional shadow pass; the 18 static hero rocks/arches/towers cast,
+      // while every mesh receives their shadows. The duplicate seabed receives
+      // only, matching the dedicated floor GLB in OceanScene.
+      const isInstanced = (m as InstancedMesh).isInstancedMesh === true;
+      m.castShadow = !isInstanced && m.name !== "Seabed";
+      m.receiveShadow = true;
 
       const mats = Array.isArray(m.material) ? m.material : [m.material];
       for (const mat of mats) {
         if (mat instanceof MeshStandardMaterial) {
-          mat.envMapIntensity = 0.3;
+          // OceanScene owns the common environment intensity. Keep materials
+          // neutral so the seabed and authored reef cannot drift apart again.
+          mat.envMapIntensity = 1;
           // Sway FIRST (plants only), then caustics — patchCausticsMaterial chains
           // the prior onBeforeCompile, so a reed carries both; a structure carries
           // caustics alone. Caustics fade by height, so the tall reeds barely take
@@ -197,7 +211,7 @@
     if (import.meta.env.DEV) {
       console.debug(
         `[FloraInstances] sway aspect≥${SWAY_ASPECT_MIN} → ${swayed.length} swaying, ${skipped.length} rooted`,
-        { swaying: swayed, rooted: skipped },
+        { swaying: swayed, rooted: skipped }
       );
     }
   }
@@ -222,7 +236,10 @@
       },
       (err) => {
         if (cancelled) return;
-        console.error("[FloraInstances] Failed to load ocean flora scene:", err);
+        console.error(
+          "[FloraInstances] Failed to load ocean flora scene:",
+          err
+        );
         onReady?.();
       }
     );
@@ -251,7 +268,9 @@
   // Dev A/B toggle: zero the amplitude when sway is off (no shader recompile —
   // the patched program stays, it just displaces by 0).
   $effect(() => {
-    swayUniforms.uSwayStrength.value = oceanDebugToggles.sway ? SWAY_STRENGTH : 0;
+    swayUniforms.uSwayStrength.value = oceanDebugToggles.sway
+      ? SWAY_STRENGTH
+      : 0;
   });
 
   // Advance the shared sway clock; all patched plant materials read uTime.

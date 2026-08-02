@@ -35,7 +35,9 @@
 
   $effect(() => {
     if (!sunLight) return;
-    sunLight.shadow.mapSize.set(512, 512);
+    sunLight.shadow.mapSize.set(1024, 1024);
+    sunLight.shadow.bias = -0.0002;
+    sunLight.shadow.normalBias = 0.04;
     sunLight.shadow.camera.near = 0.5;
     sunLight.shadow.camera.far = 80;
     sunLight.shadow.camera.left = -20;
@@ -55,17 +57,17 @@
      flora get FORM instead of a flat wash — what a single AmbientLight could not
      do. Low intensity keeps the moody dark world; torches still carry warm key. -->
 <T.HemisphereLight
-  intensity={oceanDebugToggles.hemiLight ? 0.45 : 0}
+  intensity={oceanDebugToggles.hemiLight ? 0.2 : 0}
   color="#3a6b7a"
   groundColor="#0a1a14"
 />
-<!-- Sun kept dim and near-neutral solely to drive the god-ray beam direction;
-     Blender has no sun, so this must not wash the dark world. -->
+<!-- One coherent warm-white sun drives surface form, hero shadows, caustics,
+     shafts, and the Snell-window disc. Low ambient fill keeps its direction. -->
 <T.DirectionalLight
   bind:ref={sunLight}
   position={[10, 30, -20]}
-  intensity={0.5}
-  color="#fff2e0"
+  intensity={0.9}
+  color="#ffffdd"
   castShadow
 />
 <!-- Torch_Light_0 / _1 — exact Blender transforms (Z-up→Y-up: x, z, -y),

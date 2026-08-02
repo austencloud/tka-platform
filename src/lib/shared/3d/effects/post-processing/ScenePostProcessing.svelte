@@ -70,10 +70,14 @@
     adaptiveQuality?.config ?? qualityTierDetector.currentConfig
   );
   const tierBloom = $derived(tierConfig.enableBloom);
+  // Preserve the ocean's core grade when a capable device temporarily steps
+  // down for frame pressure. Bloom/distortion/chromatic still follow the live
+  // tier, while AgX + absorption + vignette remain. A device detected LOW at
+  // startup keeps the original composer-free emergency budget.
   const allowOceanComposer = $derived(
     isOcean &&
       (adaptiveQuality
-        ? adaptiveQuality.level >= 2
+        ? adaptiveQuality.contentTier !== QualityTier.LOW
         : qualityTierDetector.currentTier !== QualityTier.LOW)
   );
   const shouldCompose = $derived(
@@ -110,7 +114,7 @@
     if (isOcean) {
       renderer.shadowMap.enabled = tierConfig.enableShadows;
       renderer.toneMapping = AgXToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      renderer.toneMappingExposure = 0.9;
     }
 
     if (isOcean && oceanDebugToggles.waterTint) {

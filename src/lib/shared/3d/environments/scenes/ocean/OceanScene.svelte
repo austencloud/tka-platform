@@ -27,6 +27,11 @@
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
   import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
 
+  // RoomEnvironment is intentionally only a soft specular fill. Direct light,
+  // caustics, and shadows should define the reef's form; a full-strength white
+  // room reflection flattens the underwater grade.
+  const OCEAN_ENVIRONMENT_INTENSITY = 0.08;
+
   // ── Props ─────────────────────────────────────────────────────────────
 
   interface Props {
@@ -139,41 +144,51 @@
   });
 
   // ── Image-based lighting ───────────────────────────────────────────────
-  // The scene was flat-lit: every material sets envMapIntensity but
-  // scene.environment was null, so that intensity multiplied nothing. Assign a
-  // cheap PMREM env (low-energy RoomEnvironment) to activate it — soft fresnel /
-  // spec breakup gives the coral a wet look instead of a flat diffuse read.
+  // Keep one scene-level intensity so the seabed and authored reef receive the
+  // same low-energy wet/specular fill. Per-material values stay neutral (1.0).
   $effect(() => {
     const r = renderer;
     const s = scene;
+    const previousIntensity = s.environmentIntensity;
     // Dev `ibl` toggle — drop the env entirely to A/B how much the reflective
     // wash owns the washed-out read.
     if (!quality.enableImageBasedLighting || !oceanDebugToggles.ibl) {
       s.environment = null;
-      return;
+      s.environmentIntensity = previousIntensity;
+      return () => {
+        s.environmentIntensity = previousIntensity;
+      };
     }
     const pmrem = new PMREMGenerator(r);
     const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     s.environment = envTex;
+    s.environmentIntensity = OCEAN_ENVIRONMENT_INTENSITY;
     pmrem.dispose();
     return () => {
       if (s.environment === envTex) s.environment = null;
+      s.environmentIntensity = previousIntensity;
       envTex.dispose();
     };
   });
 
-  // ── Seabed caustics ────────────────────────────────────────────────────
-  // Patch the seabed GLB's materials so the floor catches the same animated
-  // caustic dapple as the flora/structures (FloraInstances patches those).
+  // ── Seabed material + shadow setup ─────────────────────────────────────
+  // The floor receives the hero structures' shadows but does not spend a draw
+  // casting underneath itself. Its neutral envMapIntensity lets the scene-level
+  // underwater IBL control match the authored reef exactly.
   $effect(() => {
     const g = $environmentGlb;
-    if (!g || !quality.enableCaustics) return;
+    if (!g) return;
     g.scene.traverse((o) => {
       const m = o as Mesh;
       if (!m.isMesh) return;
+      m.castShadow = false;
+      m.receiveShadow = true;
       const mats = Array.isArray(m.material) ? m.material : [m.material];
       for (const mat of mats) {
-        if (mat instanceof MeshStandardMaterial) patchCausticsMaterial(mat);
+        if (mat instanceof MeshStandardMaterial) {
+          mat.envMapIntensity = 1;
+          if (quality.enableCaustics) patchCausticsMaterial(mat);
+        }
       }
     });
   });

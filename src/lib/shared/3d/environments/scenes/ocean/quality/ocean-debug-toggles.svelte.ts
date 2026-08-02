@@ -8,7 +8,9 @@
 let _sway = $state(true);
 let _caustics = $state(true);
 let _godRayShafts = $state(true);
-let _underwaterDistortion = $state(true);
+// The screen-Y distortion is available for A/B review but stays out of the
+// shipped look: it bends the frame by viewport position, not scene depth.
+let _underwaterDistortion = $state(false);
 // Washout-suspect group: the elements that veil/flatten the scene.
 let _fog = $state(true);
 let _waterTint = $state(true);
@@ -19,10 +21,11 @@ let _bloom = $state(true);
 
 // Live-tunable strengths (dev sliders). caustic = raw uCausticStrength;
 // waterTint = a 0..N multiplier on the base absorption coeffs + scatter veil.
-// Defaults toned down (0.22→0.1, 1.0→0.5): caustics + tint together washed the
-// seabed out. Slider headroom remains (caustics→0.6, tint→2.0) to push back up.
+// Caustics stay subtle; the depth tint carries enough blue falloff to separate
+// foreground from background without becoming a full-screen veil. Slider
+// headroom remains (caustics→0.6, tint→2.0) for live review.
 let _causticStrength = $state(0.1);
-let _waterTintStrength = $state(0.5);
+let _waterTintStrength = $state(0.8);
 
 export const oceanDebugToggles = {
   get sway() {

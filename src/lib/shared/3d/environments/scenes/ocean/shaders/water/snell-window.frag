@@ -82,6 +82,6 @@ void main() {
   finalColor += vec3(edgeBright) * uSkyColor * 0.3;
   float highlight = smoothstep(0.0, 0.1, vDisplacement) * 0.15;
   finalColor += vec3(highlight);
-  float alpha = mix(0.85, 0.4, windowMask) * edgeFade;
+  float alpha = mix(0.26, 0.18, windowMask) * edgeFade;
   gl_FragColor = vec4(finalColor, alpha);
 }
