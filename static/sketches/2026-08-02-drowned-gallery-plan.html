@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Drowned Gallery — Water Room Floor Plan (Design Sketch)</title>
+<style>
+  :root {
+    --bg: #0b0e12;
+    --panel: #11151b;
+    --ink: #d8d3c8;
+    --muted: #8b93a0;
+    --accent: #e8b34b;
+    --water: #7fd8ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 2.5rem clamp(1rem, 4vw, 4rem);
+  }
+  header { max-width: 1500px; margin: 0 auto 1.5rem; }
+  h1 { font-size: 1.7rem; letter-spacing: 0.02em; }
+  h1 span { color: var(--water); }
+  header p { color: var(--muted); max-width: 70ch; margin-top: 0.4rem; }
+  .sheet {
+    max-width: 1500px; margin: 0 auto 2rem;
+    background: var(--panel);
+    border: 1px solid #1e2530;
+    border-radius: 12px;
+    padding: 1.2rem 1.2rem 0.6rem;
+    overflow-x: auto;
+  }
+  .sheet h2 {
+    font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--accent); margin: 0.2rem 0 0.8rem 0.4rem;
+  }
+  svg { display: block; min-width: 1100px; width: 100%; height: auto; }
+  .cols { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem; }
+  .card { background: var(--panel); border: 1px solid #1e2530; border-radius: 12px; padding: 1.1rem 1.3rem; }
+  .card h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.6rem; }
+  .card ol { padding-left: 1.4rem; }
+  .card li { margin-bottom: 0.45rem; }
+  .card li b { color: #fff; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; padding: 0.28rem 0.6rem 0.28rem 0; border-bottom: 1px solid #1e2530; font-size: 0.92rem; }
+  th { color: var(--muted); font-weight: 600; }
+  td:last-child { color: var(--muted); }
+  .num {
+    display: inline-flex; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+    background: var(--accent); color: #14100a; font-weight: 700; font-size: 0.8rem;
+    align-items: center; justify-content: center; margin-right: 0.5rem;
+  }
+  footer { max-width: 1500px; margin: 2rem auto 0; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The <span>Drowned Gallery</span> — Water Room, Vulcan Cave</h1>
+  <p>Design sketch v1 · 2026-08-02 · Plan + longitudinal section · 1 grid square = 2 m ·
+  Teaches A, B, C (Type 1 dual-shift: same hand path — A both props pro, B both anti, C one of each)</p>
+</header>
+
+<div class="sheet">
+  <h2>Plan — top-down</h2>
+  <svg viewBox="0 0 1500 950" role="img" aria-label="Top-down floor plan of the Drowned Gallery">
+    <defs>
+      <radialGradient id="poolGrad" cx="45%" cy="40%" r="75%">
+        <stop offset="0%" stop-color="#11506e"/>
+        <stop offset="60%" stop-color="#0c3a52"/>
+        <stop offset="100%" stop-color="#082636"/>
+      </radialGradient>
+      <radialGradient id="mistGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#bfe9ff" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#bfe9ff" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="fireGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffb35c" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#ffb35c" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="3"/>
+      </filter>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#d8c9a8"/>
+      </marker>
+      <marker id="dimTick" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M5,0 L5,10" stroke="#94a1b3" stroke-width="1.6"/>
+      </marker>
+    </defs>
+
+    <!-- ===== base rock ===== -->
+    <rect x="0" y="0" width="1500" height="950" fill="#1b1815"/>
+    <!-- faint 2m grid -->
+    <g stroke="#ffffff" stroke-opacity="0.03">
+      <path d="M40,30 H1450 M40,90 H1450 M40,150 H1450 M40,210 H1450 M40,270 H1450 M40,330 H1450 M40,390 H1450 M40,450 H1450 M40,510 H1450 M40,570 H1450 M40,630 H1450 M40,690 H1450 M40,750 H1450 M40,810 H1450 M40,870 H1450"/>
+      <path d="M40,30 V900 M100,30 V900 M160,30 V900 M220,30 V900 M280,30 V900 M340,30 V900 M400,30 V900 M460,30 V900 M520,30 V900 M580,30 V900 M640,30 V900 M700,30 V900 M760,30 V900 M820,30 V900 M880,30 V900 M940,30 V900 M1000,30 V900 M1060,30 V900 M1120,30 V900 M1180,30 V900 M1240,30 V900 M1300,30 V900 M1360,30 V900 M1420,30 V900"/>
+    </g>
+
+    <!-- ===== grotto interior (carved air volume) ===== -->
+    <path d="M 650,470
+             C 630,380 640,250 700,180
+             C 760,120 900,95 1030,100
+             C 1180,105 1330,140 1370,240
+             C 1400,320 1400,470 1385,560
+             C 1370,660 1300,730 1180,745
+             C 1050,762 900,760 800,730
+             C 720,705 665,600 650,470 Z"
+          fill="#2b2620" stroke="#3a332a" stroke-width="6" stroke-linejoin="round"/>
+
+    <!-- approach + sump carved envelope (thick underlay strokes) -->
+    <path d="M 40,600 L 190,600 C 250,595 270,565 295,540" fill="none" stroke="#2b2620" stroke-width="104" stroke-linecap="round"/>
+    <path d="M 295,540 C 380,505 480,460 625,435 L 690,455" fill="none" stroke="#2b2620" stroke-width="110" stroke-linecap="round"/>
+    <!-- exit carved envelope -->
+    <path d="M 1330,560 C 1390,545 1420,520 1450,505" fill="none" stroke="#2b2620" stroke-width="96" stroke-linecap="round"/>
+
+    <!-- ===== mirror pool ===== -->
+    <path d="M 700,265
+             C 705,215 760,175 830,168
+             C 930,158 1060,158 1150,172
+             C 1230,185 1268,240 1272,320
+             C 1276,410 1268,500 1230,560
+             C 1180,610 1080,622 970,620
+             C 860,618 770,600 730,545
+             C 695,495 695,340 700,265 Z"
+          fill="url(#poolGrad)" stroke="#1c6f8f" stroke-opacity="0.45" stroke-width="3"/>
+    <!-- pool ripple hints -->
+    <g stroke="#7fd8ff" stroke-opacity="0.10" fill="none">
+      <path d="M 780,300 q 60,-18 120,0"/>
+      <path d="M 900,420 q 70,-20 140,0"/>
+      <path d="M 800,520 q 60,-16 120,0"/>
+      <path d="M 1080,300 q 55,-16 110,0"/>
+    </g>
+
+    <!-- glowworm field annotation over pool -->
+    <g fill="#9fe8ff" filter="url(#soft)">
+      <circle cx="850" cy="250" r="2.2"/><circle cx="905" cy="300" r="1.8"/><circle cx="960" cy="240" r="2.4"/>
+      <circle cx="1030" cy="285" r="1.8"/><circle cx="1090" cy="245" r="2.2"/><circle cx="1150" cy="300" r="1.8"/>
+      <circle cx="880" cy="360" r="1.6"/><circle cx="990" cy="345" r="2.0"/><circle cx="1105" cy="365" r="1.6"/>
+      <circle cx="940" cy="430" r="1.8"/><circle cx="1040" cy="440" r="2.0"/><circle cx="1140" cy="430" r="1.6"/>
+    </g>
+
+    <!-- ===== waterfall + mist (NW of grotto) ===== -->
+    <circle cx="762" cy="225" r="85" fill="url(#mistGrad)"/>
+    <g stroke="#dff4ff" stroke-opacity="0.8">
+      <path d="M 745,180 l 0,60" stroke-width="7"/>
+      <path d="M 762,175 l 0,70" stroke-width="9"/>
+      <path d="M 780,180 l 0,62" stroke-width="6"/>
+    </g>
+    <path d="M 728,168 q 34,-14 70,0" fill="none" stroke="#efe8d8" stroke-width="4" stroke-opacity="0.8"/>
+
+    <!-- ===== habitat alcoves (north shore) ===== -->
+    <!-- shore shelf strip -->
+    <path d="M 745,168 C 830,150 1140,150 1225,180 L 1225,210 C 1140,182 830,182 745,200 Z" fill="#4a3a28" opacity="0.9"/>
+    <!-- alcove A -->
+    <g>
+      <path d="M 800,170 q 5,-58 62,-62 q 58,4 62,62 z" fill="#3a2c1e" stroke="#57422c" stroke-width="3"/>
+      <circle cx="862" cy="140" r="46" fill="url(#fireGlow)"/>
+      <circle cx="862" cy="142" r="9" fill="#2a1c10" stroke="#ffb35c" stroke-width="2.5"/>
+      <rect x="852" y="98" width="20" height="20" transform="rotate(45 862 108)" fill="none" stroke="#7fd8ff" stroke-width="2.5"/>
+      <text x="862" y="205" text-anchor="middle" fill="#ffd9a0" font-size="17" font-weight="700">A · pro / pro</text>
+    </g>
+    <!-- fin A|B -->
+    <path d="M 950,158 l 16,-52 14,52 z" fill="#241f19" stroke="#3a332a" stroke-width="2"/>
+    <!-- alcove B -->
+    <g>
+      <path d="M 1000,163 q 5,-58 62,-62 q 58,4 62,62 z" fill="#3a2c1e" stroke="#57422c" stroke-width="3"/>
+      <circle cx="1062" cy="133" r="46" fill="url(#fireGlow)"/>
+      <circle cx="1062" cy="135" r="9" fill="#2a1c10" stroke="#ffb35c" stroke-width="2.5"/>
+      <rect x="1052" y="91" width="20" height="20" transform="rotate(45 1062 101)" fill="none" stroke="#7fd8ff" stroke-width="2.5"/>
+      <text x="1062" y="198" text-anchor="middle" fill="#ffd9a0" font-size="17" font-weight="700">B · anti / anti</text>
+    </g>
+    <!-- fin B|C -->
+    <path d="M 1150,164 l 16,-52 14,52 z" fill="#241f19" stroke="#3a332a" stroke-width="2"/>
+    <!-- alcove C -->
+    <g>
+      <path d="M 1195,178 q 5,-58 62,-62 q 58,4 62,62 z" fill="#3a2c1e" stroke="#57422c" stroke-width="3"/>
+      <circle cx="1257" cy="148" r="46" fill="url(#fireGlow)"/>
+      <circle cx="1257" cy="150" r="9" fill="#2a1c10" stroke="#ffb35c" stroke-width="2.5"/>
+      <rect x="1247" y="106" width="20" height="20" transform="rotate(45 1257 116)" fill="none" stroke="#7fd8ff" stroke-width="2.5"/>
+      <text x="1257" y="213" text-anchor="middle" fill="#ffd9a0" font-size="17" font-weight="700">C · anti / pro</text>
+    </g>
+
+    <!-- ===== sump water overlay ===== -->
+    <path d="M 330,527 C 420,492 500,462 618,438" fill="none" stroke="#0f4a63" stroke-width="86" stroke-linecap="round" opacity="0.85"/>
+    <g stroke="#7fd8ff" stroke-opacity="0.5" fill="none">
+      <path d="M 350,505 q 14,-8 28,0"/>
+      <path d="M 430,480 q 14,-8 28,0"/>
+      <path d="M 510,458 q 14,-8 28,0"/>
+    </g>
+
+    <!-- ===== causeway (visitor path) ===== -->
+    <!-- underlay -->
+    <path d="M 655,462 C 690,520 715,560 735,600 C 760,650 820,668 900,670 L 1120,670 C 1190,668 1225,640 1235,585 L 1248,420"
+          fill="none" stroke="#3a2f22" stroke-width="92" stroke-linecap="round"/>
+    <!-- overlook bumps (into pool) -->
+    <circle cx="845" cy="622" r="52" fill="#3a2f22"/>
+    <circle cx="1000" cy="620" r="52" fill="#3a2f22"/>
+    <circle cx="1140" cy="612" r="52" fill="#3a2f22"/>
+    <circle cx="845" cy="626" r="44" fill="#7c6647"/>
+    <circle cx="1000" cy="624" r="44" fill="#7c6647"/>
+    <circle cx="1140" cy="616" r="44" fill="#7c6647"/>
+    <!-- surface -->
+    <path d="M 655,462 C 690,520 715,560 735,600 C 760,650 820,660 900,662 L 1120,662 C 1185,660 1216,634 1226,582 L 1240,424"
+          fill="none" stroke="#7c6647" stroke-width="74" stroke-linecap="round"/>
+    <!-- approach floor surface -->
+    <path d="M 40,600 L 190,600 C 250,595 270,565 295,540" fill="none" stroke="#5e4d38" stroke-width="66" stroke-linecap="round"/>
+    <!-- sump floor beneath water (darker) -->
+    <path d="M 295,540 C 380,505 480,460 625,435 L 660,452" fill="none" stroke="#4a3d2d" stroke-width="60" stroke-linecap="round" opacity="0.65"/>
+    <!-- exit floor -->
+    <path d="M 1240,540 C 1330,540 1395,520 1450,505" fill="none" stroke="#5e4d38" stroke-width="60" stroke-linecap="round"/>
+
+    <!-- surfacing steps -->
+    <g stroke="#d8c9a8" stroke-opacity="0.65" stroke-width="3">
+      <path d="M 622,420 l 26,44"/>
+      <path d="M 640,412 l 26,44"/>
+      <path d="M 658,405 l 26,44"/>
+    </g>
+
+    <!-- direction dashes -->
+    <path d="M 70,600 L 190,600 C 250,595 270,565 300,538 C 385,502 480,460 625,435 L 662,455 C 695,515 718,560 738,602 C 762,645 820,658 900,659 L 1120,659 C 1180,657 1210,632 1220,584 L 1233,435"
+          fill="none" stroke="#e8dcc0" stroke-opacity="0.55" stroke-width="2.5" stroke-dasharray="10 9" marker-end="url(#arrow)"/>
+    <path d="M 1258,540 C 1340,538 1400,518 1444,506" fill="none" stroke="#e8dcc0" stroke-opacity="0.55" stroke-width="2.5" stroke-dasharray="10 9" marker-end="url(#arrow)"/>
+
+    <!-- ===== gate (end of north causeway leg, close view of C) ===== -->
+    <g transform="translate(1244,404)">
+      <path d="M -30,0 L 30,0" stroke="#d9a441" stroke-width="6"/>
+      <path d="M -22,-3 L -22,-22 M -8,-3 L -8,-26 M 8,-3 L 8,-26 M 22,-3 L 22,-22" stroke="#d9a441" stroke-width="4"/>
+    </g>
+    <!-- balustrade along pool edge of causeway -->
+    <path d="M 745,585 C 775,625 830,636 900,638 L 1120,638 C 1178,636 1204,614 1213,572 L 1224,470"
+          fill="none" stroke="#d9a441" stroke-opacity="0.55" stroke-width="3" stroke-dasharray="4 7"/>
+
+    <!-- ===== fish ===== -->
+    <g fill="#9fc9d8" opacity="0.9">
+      <path d="M 470,470 q 12,-7 22,0 q -10,7 -22,0 z M 492,470 l 8,-5 0,10 z"/>
+      <path d="M 540,452 q 12,-7 22,0 q -10,7 -22,0 z M 562,452 l 8,-5 0,10 z"/>
+      <path d="M 900,320 q 14,-8 26,0 q -12,8 -26,0 z M 926,320 l 9,-6 0,12 z"/>
+      <path d="M 1060,400 q 14,-8 26,0 q -12,8 -26,0 z M 1086,400 l 9,-6 0,12 z"/>
+      <path d="M 970,510 q 14,-8 26,0 q -12,8 -26,0 z M 996,510 l 9,-6 0,12 z"/>
+    </g>
+
+    <!-- drip-rain zones -->
+    <g stroke="#7fd8ff" stroke-opacity="0.5">
+      <g transform="translate(770,690)">
+        <circle r="26" fill="none" stroke-dasharray="3 5"/>
+        <path d="M -8,-8 l 0,10 M 2,-12 l 0,10 M 10,-4 l 0,10" stroke-width="2"/>
+      </g>
+      <g transform="translate(1205,530)">
+        <circle r="26" fill="none" stroke-dasharray="3 5"/>
+        <path d="M -8,-8 l 0,10 M 2,-12 l 0,10 M 10,-4 l 0,10" stroke-width="2"/>
+      </g>
+    </g>
+
+    <!-- ===== dimensions ===== -->
+    <g stroke="#94a1b3" stroke-width="1.6" fill="none" marker-start="url(#dimTick)" marker-end="url(#dimTick)">
+      <path d="M 650,68 L 1395,68"/>
+      <path d="M 1432,100 L 1432,745"/>
+      <path d="M 330,560 L 620,478"/>
+      <path d="M 1000,600 L 1062,205"/>
+    </g>
+    <g fill="#aeb8c6" font-size="16">
+      <text x="1010" y="58" text-anchor="middle">grotto ≈ 24.8 m</text>
+      <text x="1452" y="430" transform="rotate(90 1452 430)" text-anchor="middle">≈ 21.5 m</text>
+      <text x="452" y="545" transform="rotate(-16 452 545)" text-anchor="middle">sump ≈ 10 m submerged</text>
+      <text x="1044" y="415" transform="rotate(-81 1044 415)" text-anchor="middle">viewing ≈ 13 m across water</text>
+    </g>
+
+    <!-- ===== callout numbers ===== -->
+    <g font-size="17" font-weight="700" text-anchor="middle">
+      <g><circle cx="105" cy="552" r="15" fill="#e8b34b"/><text x="105" y="558" fill="#14100a">1</text></g>
+      <g><circle cx="455" cy="420" r="15" fill="#e8b34b"/><text x="455" y="426" fill="#14100a">2</text></g>
+      <g><circle cx="672" cy="392" r="15" fill="#e8b34b"/><text x="672" y="398" fill="#14100a">3</text></g>
+      <g><circle cx="925" cy="705" r="15" fill="#e8b34b"/><text x="925" y="711" fill="#14100a">4</text></g>
+      <g><circle cx="702" cy="152" r="15" fill="#e8b34b"/><text x="702" y="158" fill="#14100a">5</text></g>
+      <g><circle cx="990" cy="285" r="15" fill="#e8b34b"/><text x="990" y="291" fill="#14100a">6</text></g>
+      <g><circle cx="1318" cy="128" r="15" fill="#e8b34b"/><text x="1318" y="134" fill="#14100a">7</text></g>
+      <g><circle cx="1300" cy="404" r="15" fill="#e8b34b"/><text x="1300" y="410" fill="#14100a">8</text></g>
+      <g><circle cx="1400" cy="470" r="15" fill="#e8b34b"/><text x="1400" y="476" fill="#14100a">9</text></g>
+    </g>
+
+    <!-- labels -->
+    <g fill="#d8d3c8" font-size="17">
+      <text x="60" y="662">from Squeeze</text>
+      <text x="1310" y="560" text-anchor="middle">to Fire</text>
+      <text x="470" y="560" fill="#9fd4e8" transform="rotate(-16 470 560)">flooded passage (sump)</text>
+      <text x="965" y="470" fill="#9fd4e8" font-size="19" letter-spacing="2">MIRROR POOL</text>
+      <text x="990" y="262" fill="#9fe8ff" font-size="14">glowworm ceiling above</text>
+      <text x="700" y="128" fill="#dff4ff">waterfall</text>
+      <text x="935" y="700" opacity="0"> </text>
+      <text x="948" y="735">causeway · three overlooks</text>
+      <text x="1282" y="384" fill="#d9a441">gate</text>
+    </g>
+
+    <!-- scale bar -->
+    <g transform="translate(60,860)">
+      <rect x="0" y="0" width="60" height="8" fill="#d8d3c8"/>
+      <rect x="60" y="0" width="60" height="8" fill="#4a4a4a"/>
+      <rect x="120" y="0" width="60" height="8" fill="#d8d3c8"/>
+      <rect x="180" y="0" width="60" height="8" fill="#4a4a4a"/>
+      <text x="0" y="30" fill="#aeb8c6" font-size="14">0</text>
+      <text x="60" y="30" fill="#aeb8c6" font-size="14">2</text>
+      <text x="120" y="30" fill="#aeb8c6" font-size="14">4</text>
+      <text x="180" y="30" fill="#aeb8c6" font-size="14">6</text>
+      <text x="240" y="30" fill="#aeb8c6" font-size="14">8 m</text>
+    </g>
+  </svg>
+</div>
+
+<div class="sheet">
+  <h2>Longitudinal section — along the visitor path (unrolled)</h2>
+  <svg viewBox="0 0 1500 600" role="img" aria-label="Longitudinal section of the Drowned Gallery">
+    <defs>
+      <linearGradient id="secWater" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#155a7c"/>
+        <stop offset="100%" stop-color="#082636"/>
+      </linearGradient>
+      <linearGradient id="ray" x1="0" y1="0" x2="0.3" y2="1">
+        <stop offset="0%" stop-color="#fff6d8" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#fff6d8" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <rect x="0" y="0" width="1500" height="600" fill="#1b1815"/>
+
+    <!-- rock above ceiling -->
+    <path d="M 30,225 L 180,254 L 240,302 L 285,335 L 315,350 L 585,350 L 615,304 L 660,244 L 720,172 L 810,100 L 900,66 L 1020,70 L 1110,112 L 1185,196 L 1230,236 L 1350,242 L 1440,246 L 1440,20 L 30,20 Z"
+          fill="#242019" stroke="#3a332a" stroke-width="4"/>
+
+    <!-- rock below floor -->
+    <path d="M 30,294 L 180,311 L 225,330 L 255,364 L 285,395 L 300,402 L 600,402 L 630,380 L 660,346 L 690,311 L 705,306 L 1185,306 L 1200,304 L 1350,272 L 1440,262 L 1440,585 L 30,585 Z"
+          fill="#242019" stroke="#3a332a" stroke-width="4"/>
+
+    <!-- background pool water (behind causeway ledge) -->
+    <rect x="705" y="340" width="480" height="90" fill="url(#secWater)" opacity="0.45"/>
+    <text x="940" y="418" fill="#7fd8ff" font-size="13" opacity="0.8" text-anchor="middle">mirror pool behind causeway · bottom −3.5 m</text>
+
+    <!-- water in the cut (approach flood + sump) -->
+    <path d="M 262,340 L 600,340 L 630,340 L 655,340 L 655,341 L 630,380 L 600,402 L 300,402 L 285,395 L 262,370 Z"
+          fill="url(#secWater)" opacity="0.9"/>
+
+    <!-- waterline dashes -->
+    <path d="M 250,340 L 700,340" stroke="#7fd8ff" stroke-width="2.5" stroke-dasharray="12 8"/>
+    <path d="M 705,340 L 1185,340" stroke="#7fd8ff" stroke-width="2" stroke-dasharray="12 8" opacity="0.55"/>
+    <text x="256" y="330" fill="#7fd8ff" font-size="14">waterline ± 0.0</text>
+
+    <!-- waterfall in background -->
+    <path d="M 870,88 L 870,340" stroke="#dff4ff" stroke-width="10" opacity="0.75"/>
+    <path d="M 856,88 L 884,88" stroke="#efe8d8" stroke-width="5"/>
+    <path d="M 850,64 L 810,100 L 900,66 Z" fill="url(#ray)"/>
+    <path d="M 862,80 L 940,340 L 1060,340 L 890,78 Z" fill="url(#ray)"/>
+    <circle cx="880" cy="330" r="26" fill="#bfe9ff" opacity="0.18"/>
+    <text x="905" y="150" fill="#dff4ff" font-size="14">waterfall · drop ≈ 10.5 m from sunlit crack</text>
+
+    <!-- glowworms on dome -->
+    <g fill="#9fe8ff" filter="url(#soft)">
+      <circle cx="760" cy="140" r="2.2"/><circle cx="800" cy="118" r="1.8"/><circle cx="925" cy="70" r="2.0"/>
+      <circle cx="980" cy="72" r="2.4"/><circle cx="1035" cy="80" r="1.8"/><circle cx="1085" cy="102" r="2.2"/>
+      <circle cx="1130" cy="128" r="1.8"/><circle cx="1165" cy="168" r="2.0"/>
+    </g>
+
+    <!-- floor profile line -->
+    <path d="M 30,294 L 180,311 L 225,330 L 255,364 L 285,395 L 300,402 L 600,402 L 630,380 L 660,346 L 690,311 L 705,306 L 1185,306 L 1200,304 L 1350,272 L 1440,262"
+          fill="none" stroke="#d8c9a8" stroke-width="4" stroke-linejoin="round"/>
+
+    <!-- alcove far-shore silhouette (background) -->
+    <g opacity="0.85">
+      <path d="M 1000,328 q 4,-44 40,-46 q 36,2 40,46 z" fill="#3a2c1e" stroke="#57422c" stroke-width="2" transform="translate(-40,0)"/>
+      <circle cx="1000" cy="322" r="26" fill="url(#fireGlow)"/>
+      <path d="M 1000,306 l 0,14 M 993,312 l 14,0 M 1000,320 l -6,10 M 1000,320 l 6,10" stroke="#ffd9a0" stroke-width="2.5"/>
+      <circle cx="1000" cy="300" r="5" fill="none" stroke="#ffd9a0" stroke-width="2.5"/>
+      <text x="1000" y="360" fill="#ffd9a0" font-size="13" text-anchor="middle">habitat shelf +0.5 (far shore, behind pool)</text>
+    </g>
+
+    <!-- figures -->
+    <g stroke="#e8dcc0" stroke-width="3" fill="none">
+      <!-- walker on approach -->
+      <g transform="translate(120,304)">
+        <circle cx="0" cy="-40" r="7"/>
+        <path d="M 0,-33 L 0,-14 M 0,-14 L -8,0 M 0,-14 L 8,0 M 0,-27 L -9,-18 M 0,-27 L 9,-18"/>
+      </g>
+      <!-- submerged walker in sump -->
+      <g transform="translate(450,402)" stroke="#bfe9ff">
+        <circle cx="0" cy="-40" r="7"/>
+        <path d="M 0,-33 L 0,-14 M 0,-14 L -8,0 M 0,-14 L 8,0 M 0,-27 L -10,-34 M 0,-27 L 10,-20"/>
+        <circle cx="8" cy="-52" r="2.5"/><circle cx="12" cy="-58" r="2"/><circle cx="15" cy="-63" r="1.6"/>
+      </g>
+      <!-- walker on causeway -->
+      <g transform="translate(780,306)">
+        <circle cx="0" cy="-40" r="7"/>
+        <path d="M 0,-33 L 0,-14 M 0,-14 L -8,0 M 0,-14 L 8,0 M 0,-27 L -9,-18 M 0,-27 L 9,-18"/>
+      </g>
+    </g>
+
+    <!-- fish in sump + pool -->
+    <g fill="#9fc9d8" opacity="0.9">
+      <path d="M 380,368 q 12,-7 22,0 q -10,7 -22,0 z M 402,368 l 8,-5 0,10 z"/>
+      <path d="M 520,380 q 12,-7 22,0 q -10,7 -22,0 z M 542,380 l 8,-5 0,10 z"/>
+      <path d="M 1080,376 q 12,-7 22,0 q -10,7 -22,0 z M 1102,376 l 8,-5 0,10 z" opacity="0.6"/>
+    </g>
+
+    <!-- elevation labels -->
+    <g fill="#aeb8c6" font-size="14">
+      <text x="60" y="282">+1.9</text>
+      <text x="430" y="425">sump floor −2.6</text>
+      <text x="740" y="298">causeway +1.2</text>
+      <text x="1360" y="252">exit +3.1 → Fire</text>
+      <text x="640" y="300">surfacing steps</text>
+    </g>
+
+    <!-- phase labels along top -->
+    <g fill="#8b93a0" font-size="15" text-anchor="middle">
+      <text x="150" y="565">1 · APPROACH — sound builds, walls glisten</text>
+      <text x="460" y="565">2 · SUMP — fully underwater</text>
+      <text x="700" y="540">3 · SURFACE</text>
+      <text x="945" y="565">4–7 · GROTTO — causeway, waterfall, pool, habitat</text>
+      <text x="1330" y="565">9 · EXIT</text>
+    </g>
+  </svg>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h3>The experience, in order</h3>
+    <ol style="list-style:none; padding-left:0.2rem;">
+      <li><span class="num">1</span><b>Approach.</b> Descending S-curve from the Squeeze. Water heard before it is seen; walls turn wet-specular; first drips.</li>
+      <li><span class="num">2</span><b>The sump.</b> The path walks down under the waterline. ~10 m fully submerged: absorption fog, caustics, bubbles, muffled audio, fish overhead. A gentle bend hides the grotto until —</li>
+      <li><span class="num">3</span><b>Surfacing.</b> Steps rise out of the water and the grotto opens all at once. This is the reveal frame.</li>
+      <li><span class="num">4</span><b>Causeway.</b> Raised stone path (+1.2 m) with three half-round overlooks, one aligned to each alcove. Carved balustrade at the pool edge.</li>
+      <li><span class="num">5</span><b>Waterfall.</b> ~10.5 m plunge from a sunlit crack, god rays and a faint rainbow in the mist. The room's light source and voice.</li>
+      <li><span class="num">6</span><b>Mirror pool + glowworm ceiling.</b> Black water doubles everything; a bioluminescent constellation hangs above it.</li>
+      <li><span class="num">7</span><b>Habitat alcoves.</b> Three cavemen in procession at the waterline — A (pro/pro), B (anti/anti), C (anti/pro) — each in a pool of firelight with a glowing painted pictograph behind, doubled in reflection. Rock fins keep each a solo encounter.</li>
+      <li><span class="num">8</span><b>Gate.</b> The causeway's north leg dead-ends at a museum gate beside alcove C — the close view, through bars.</li>
+      <li><span class="num">9</span><b>Exit.</b> Ascending bend toward Fire; the water sounds fade behind.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Dimensions (starting set — eye-level review decides)</h3>
+    <table>
+      <tr><th>Element</th><th>Size</th><th>Note</th></tr>
+      <tr><td>Grotto</td><td>≈ 24.8 × 21.5 m</td><td>vs. rejected room's 6 × 6</td></tr>
+      <tr><td>Ceiling dome</td><td>up to ≈ 11 m</td><td>glowworm field</td></tr>
+      <tr><td>Mirror pool</td><td>≈ 19 × 12 m, −3.5 m deep</td><td>the barrier IS water</td></tr>
+      <tr><td>Causeway</td><td>2.5–3 m wide, +1.2 m</td><td>3 overlooks Ø ≈ 3.5 m</td></tr>
+      <tr><td>Sump</td><td>≈ 10 m submerged, 2.4 m wide</td><td>floor −2.6, ceiling −0.4</td></tr>
+      <tr><td>Alcoves A/B/C</td><td>≈ 4 m wide × 3.5 m deep</td><td>shelf +0.5 above water</td></tr>
+      <tr><td>Viewing distance</td><td>≈ 13 m across water</td><td>close view ≈ 5 m at gate</td></tr>
+      <tr><td>Waterfall</td><td>≈ 10.5 m drop</td><td>NW corner, feeds pool</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Design commitments</h3>
+    <ol>
+      <li><b>Cave-native water only.</b> No reef, no coral, no tropical species mix. Waterfall, sump, mirror pool, drip rain, mist, glowworms — all things caves actually do.</li>
+      <li><b>The underwater walk survives</b> as the entrance: every visitor passes through the sump to get in (the exit to Fire is a separate dry passage). Absorption + distortion + caustics from the ocean scene run only while below the waterline.</li>
+      <li><b>Existing fish, existing boids.</b> The FishBoids system and current GLB catalog as-is; species chosen for dark-water reading. No new fish assets.</li>
+      <li><b>Four spatial layers</b> per the rebuild handoff: approach/occlusion → public apron (causeway + overlooks) → gate (balustrade + barred gate + the pool itself) → recessed habitat (alcoves).</li>
+      <li><b>Pedagogy by comparison.</b> A, B, C share one hand path; the procession shows prop rotation as the only variable. Pictographs painted as glowing cave art — pre-alphabetic, no Latin letters on rock.</li>
+      <li><b>One caveman per letter</b> — three distinct automatons, per the 19-base-sequence roster (founding collection "TKA 1: Learning Letters").</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  Sketch only — geometry lands in <code>vulcan-cave-floor-plan.ts</code> (nav grid + collision) and an authored GLB shell (<code>roomPresentation.modelPath</code>) at implementation.
+  Footprint including approach/sump/exit ≈ 47 × 29 m; larger than the handoff's starting envelope — flagged deliberately, streaming already handles per-room loading.
+</footer>
+
+</body>
+</html>
