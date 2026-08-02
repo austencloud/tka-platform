@@ -3,7 +3,7 @@ status: active
 value: 4
 effort: M
 remaining: "Partially verified 2026-08-02 in Chrome DevTools MCP via the existing /test/choreo-sheet harness, which renders the real ChoreoSheetView. Load Sequences pulled 8 real sequences (step counts 8, 16, 8, 4, 4, 16, 4, 8) and paginated them to 2 pages at 8x6, cell 91.9pt, with pictographs, per-cell letters, and continuity dots all rendering; the 4/6/8 column controls and Page mode are present and responsive. Screenshot reviewed at 1920. NOT yet verified: docked picking and collection filtering, loop status, and preview-to-PDF outline plus break-marker parity. Those need the authenticated Write module — the harness does not mount the docks."
-depends_on: "external: authenticated Write-module run for docked picking, loop status, and visual PDF review"
+depends_on: ""  # UNBLOCKED 2026-08-02: Austen authorized authenticated browser control. Needs a WriteTab run + visual PDF review; agent-runnable.
 plan_path: ""
 tags: []
 last_triaged: 2026-08-01

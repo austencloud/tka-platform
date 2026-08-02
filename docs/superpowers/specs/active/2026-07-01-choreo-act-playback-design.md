@@ -3,7 +3,7 @@ status: active
 value: 4
 effort: M
 remaining: "Implementation is in main. On 2026-08-01, 31 focused act, sheet-parity, and music-lifecycle tests passed and the full repository check reported 0 errors and 0 warnings. The singleton audio lifecycle was repaired so closing the dock stops playback. Remaining: authenticated browser proof for opening/closing the dock, loading a track, transport/seek/end behavior, mutual exclusion with the other docks, and responsive layout."
-depends_on: "external: authenticated Write-module (WriteTab) run plus a disposable local audio file. Browser proof attempted 2026-08-02: /test/choreo-sheet renders ChoreoSheetView but does NOT mount ActsDock or ActPlayer, so the dock cannot be exercised from the harness. Full check re-confirmed 0 errors / 0 warnings the same day."
+depends_on: ""  # UNBLOCKED 2026-08-02: Austen authorized authenticated browser control. Needs a WriteTab run + a disposable local audio file; agent-runnable.
 plan_path: ""
 tags: []
 last_triaged: 2026-08-01

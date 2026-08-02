@@ -3,7 +3,7 @@ status: active
 value: 4
 effort: M
 remaining: "Implementation is in main: warmer service and tests, toolbar controls, full-control admin route, and dead server endpoint removal. On 2026-08-01 the focused warmer suite passed (9 tests) and the full repository check reported 0 errors and 0 warnings. Remaining: authorize and run a signed-in admin warm, regenerate and sync the manifest, then prove warmed cloud/static counts and the absence of warmed-key 404s."
-depends_on: "external: authorization for signed-in admin writes to the thumbnail cache and manifest/static sync"
+depends_on: ""  # UNBLOCKED 2026-08-02: Austen authorized signed-in admin writes + disposable test data. Agent-runnable now.
 plan_path: ""
 tags: []
 last_triaged: 2026-08-01
