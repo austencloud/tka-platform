@@ -53,6 +53,17 @@ function Invoke-Native([scriptblock]$Command, [string]$Description) {
     }
 }
 
+function Get-FileSha256([string]$Path) {
+    $stream = [IO.File]::OpenRead($Path)
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha256.ComputeHash($stream))).Replace('-', '')
+    } finally {
+        $sha256.Dispose()
+        $stream.Dispose()
+    }
+}
+
 function Install-CodexExecutable([string]$SourcePath, [string]$DestinationPath) {
     $destinationRoot = Split-Path $DestinationPath
     $destinationName = Split-Path $DestinationPath -Leaf
@@ -61,8 +72,8 @@ function Install-CodexExecutable([string]$SourcePath, [string]$DestinationPath) 
     $stagedPath = Join-Path $destinationRoot "$destinationBase.next$destinationExtension"
 
     Copy-Item -LiteralPath $SourcePath -Destination $stagedPath -Force
-    $sourceHash = (Get-FileHash -LiteralPath $SourcePath -Algorithm SHA256).Hash
-    $stagedHash = (Get-FileHash -LiteralPath $stagedPath -Algorithm SHA256).Hash
+    $sourceHash = Get-FileSha256 $SourcePath
+    $stagedHash = Get-FileSha256 $stagedPath
     if ($sourceHash -ne $stagedHash) {
         throw "Staged executable checksum mismatch: expected $sourceHash, got $stagedHash"
     }
@@ -73,7 +84,7 @@ function Install-CodexExecutable([string]$SourcePath, [string]$DestinationPath) 
             Copy-Item -LiteralPath $stagedPath -Destination $DestinationPath -Force -ErrorAction Stop
             Remove-Item -LiteralPath $stagedPath -Force
         } catch [System.IO.IOException] {
-            $currentHash = (Get-FileHash -LiteralPath $DestinationPath -Algorithm SHA256).Hash
+            $currentHash = Get-FileSha256 $DestinationPath
             $backupName = "$destinationBase.previous-$($currentHash.Substring(0, 12))-$PID$destinationExtension"
             $backupPath = Join-Path $destinationRoot $backupName
             if (Test-Path -LiteralPath $backupPath) {
@@ -92,7 +103,7 @@ function Install-CodexExecutable([string]$SourcePath, [string]$DestinationPath) 
         Rename-Item -LiteralPath $stagedPath -NewName $destinationName
     }
 
-    $installedHash = (Get-FileHash -LiteralPath $DestinationPath -Algorithm SHA256).Hash
+    $installedHash = Get-FileSha256 $DestinationPath
     if ($sourceHash -ne $installedHash) {
         throw "Installed executable checksum mismatch: expected $sourceHash, got $installedHash"
     }
@@ -112,7 +123,7 @@ function Install-BuiltCodexExecutable([string]$BuiltExePath) {
         upstreamCommit = $UpstreamCommit
         patchSha256 = $patchHash
         buildProfile = $BuildProfile
-        executableSha256 = (Get-FileHash -LiteralPath $InstalledExe -Algorithm SHA256).Hash
+        executableSha256 = Get-FileSha256 $InstalledExe
         installedAt = [DateTimeOffset]::Now.ToString('o')
     }
     $metadata | ConvertTo-Json | Set-Content -LiteralPath $MetadataPath -Encoding utf8
@@ -125,11 +136,11 @@ if (-not (Test-Path -LiteralPath $PatchPath)) {
     throw "Missing Codex TKA patch: $PatchPath"
 }
 
-$patchHash = (Get-FileHash -LiteralPath $PatchPath -Algorithm SHA256).Hash
+$patchHash = Get-FileSha256 $PatchPath
 $currentDevelopmentBuild = $false
 if (-not $Force -and (Test-Path -LiteralPath $InstalledExe) -and (Test-Path -LiteralPath $MetadataPath)) {
     $metadata = Get-Content -Raw -LiteralPath $MetadataPath | ConvertFrom-Json
-    $installedHash = (Get-FileHash -LiteralPath $InstalledExe -Algorithm SHA256).Hash
+    $installedHash = Get-FileSha256 $InstalledExe
     $installedProfile = if ($metadata.PSObject.Properties.Name -contains 'buildProfile') {
         $metadata.buildProfile
     } else {
@@ -177,7 +188,7 @@ if (-not $SourceBuild -and -not $DevelopmentBuild) {
         Invoke-WebRequest -UseBasicParsing -Uri "$ReleaseBaseUrl/codex-tka-windows-x64.zip" -OutFile $archivePath
         Invoke-WebRequest -UseBasicParsing -Uri "$ReleaseBaseUrl/codex-tka-windows-x64.zip.sha256" -OutFile $checksumPath
         $expectedArchiveHash = ((Get-Content -Raw -LiteralPath $checksumPath).Trim() -split '\s+')[0]
-        $actualArchiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+        $actualArchiveHash = Get-FileSha256 $archivePath
         if ($actualArchiveHash -ne $expectedArchiveHash) {
             throw "Release checksum mismatch: expected $expectedArchiveHash, got $actualArchiveHash"
         }
@@ -190,7 +201,7 @@ if (-not $SourceBuild -and -not $DevelopmentBuild) {
         if ($releaseMetadata.upstreamCommit -ne $UpstreamCommit -or $releaseMetadata.patchSha256 -ne $patchHash) {
             throw 'Release asset was built from a different upstream commit or patch.'
         }
-        $downloadedExecutableHash = (Get-FileHash -LiteralPath $downloadedExe -Algorithm SHA256).Hash
+        $downloadedExecutableHash = Get-FileSha256 $downloadedExe
         if ($releaseMetadata.executableSha256 -ne $downloadedExecutableHash) {
             throw 'Release executable does not match its metadata checksum.'
         }
@@ -258,6 +269,11 @@ Push-Location $cargoRoot
 try {
     # Entering codex-rs makes rustup honor the release's rust-toolchain.toml.
     if (-not $SkipTests) {
+        Write-Host 'Testing lossless MCP startup status delivery...'
+        Invoke-Native { cargo test -p codex-app-server --lib guaranteed_delivery_helpers_cover_terminal_server_notifications } 'App-server MCP status delivery tests'
+        Invoke-Native { cargo test -p codex-app-server-client --lib forward_in_process_event_preserves_mcp_status_under_backpressure } 'App-server client MCP backpressure tests'
+        Invoke-Native { cargo test -p codex-tui --lib app_server_lag_does_not_interrupt_mcp_startup } 'TUI MCP startup lag tests'
+
         Write-Host 'Testing the patched status renderer...'
         Invoke-Native { cargo test -p codex-tui --lib status_line_style } 'Status renderer tests'
 
