@@ -19,6 +19,7 @@ import {
   getDoc,
   writeBatch,
   increment,
+  runTransaction,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
@@ -187,6 +188,7 @@ export class Messenger {
       // Update conversation with last message and increment unread count for ALL other participants
       const otherUserIds = participants.filter((p) => p !== effectiveUser.uid);
       const lastMessage: MessagePreview = {
+        messageId: messageRef.id,
         content: getMessagePreviewText(normalizedContent, attachments),
         senderId: effectiveUser.uid,
         senderName: effectiveUser.displayName,
@@ -499,9 +501,15 @@ export class Messenger {
     newContent: string
   ): Promise<Message> {
     try {
+      const normalizedContent = newContent.trim();
       const firestore = await getFirestoreInstance();
       const currentUserId = this.getCurrentUserId();
 
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
       const messageRef = doc(
         firestore,
         CONVERSATIONS_COLLECTION,
@@ -510,39 +518,84 @@ export class Messenger {
         messageId
       );
 
-      const snapshot = await getDoc(messageRef);
-      if (!snapshot.exists()) {
-        throw new Error("Message not found");
-      }
+      const updatedData = await runTransaction(
+        firestore,
+        async (transaction) => {
+          const [messageSnapshot, conversationSnapshot] = await Promise.all([
+            transaction.get(messageRef),
+            transaction.get(conversationRef),
+          ]);
 
-      const data = snapshot.data();
-      if (data["senderId"] !== currentUserId) {
-        throw new Error("Only the sender can edit a message");
-      }
+          if (!messageSnapshot.exists()) {
+            throw new Error("Message not found");
+          }
 
-      // Save current content to edit history before updating
-      const currentContent = data["content"] as string;
-      const existingHistory = (data["editHistory"] as MessageEdit[]) || [];
-      const newHistoryEntry: MessageEdit = {
-        content: currentContent,
-        editedAt: new Date(),
-      };
+          const data = messageSnapshot.data();
+          if (data["senderId"] !== currentUserId) {
+            throw new Error("Only the sender can edit a message");
+          }
+          if (data["isDeleted"] === true) {
+            throw new Error("Deleted messages cannot be edited");
+          }
 
-      await updateDoc(messageRef, {
-        content: newContent,
-        editedAt: serverTimestamp(),
-        editHistory: [...existingHistory, newHistoryEntry],
-      });
+          const attachments = data["attachments"] as Message["attachments"];
+          if (!normalizedContent && !attachments?.length) {
+            throw new Error("Message cannot be empty");
+          }
+          if (normalizedContent.length > MAX_MESSAGE_LENGTH) {
+            throw new Error(
+              `Message too long (max ${MAX_MESSAGE_LENGTH} characters)`
+            );
+          }
 
-      return this.mapDocToMessage(messageId, conversationId, {
-        ...data,
-        content: newContent,
-        editedAt: Timestamp.now(),
-        editHistory: [...existingHistory, newHistoryEntry],
-      });
+          const currentContent = data["content"] as string;
+          if (normalizedContent === currentContent) {
+            return data;
+          }
+
+          const editTimestamp = Timestamp.now();
+          const existingHistory = Array.isArray(data["editHistory"])
+            ? (data["editHistory"] as Array<{
+                content: string;
+                editedAt: Timestamp | Date;
+              }>)
+            : [];
+          const newHistoryEntry = {
+            content: currentContent,
+            editedAt: editTimestamp,
+          };
+          const editHistory = [...existingHistory, newHistoryEntry];
+
+          transaction.update(messageRef, {
+            content: normalizedContent,
+            editedAt: serverTimestamp(),
+            editHistory,
+          });
+
+          const lastMessage = conversationSnapshot.data()?.["lastMessage"] as
+            | Record<string, unknown>
+            | undefined;
+          if (lastMessage?.["messageId"] === messageId) {
+            transaction.update(conversationRef, {
+              "lastMessage.content": getMessagePreviewText(
+                normalizedContent,
+                attachments
+              ),
+            });
+          }
+
+          return {
+            ...data,
+            content: normalizedContent,
+            editedAt: editTimestamp,
+            editHistory,
+          };
+        }
+      );
+
+      return this.mapDocToMessage(messageId, conversationId, updatedData);
     } catch (error) {
       console.error("[Messenger] Failed to edit message:", error);
-      toast.error("Failed to edit message.");
       throw error;
     }
   }

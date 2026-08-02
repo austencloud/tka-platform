@@ -250,6 +250,7 @@ export const finalizeMessageImage = onCall(
         }
         transaction.update(conversationRef, {
           lastMessage: {
+            messageId,
             content: content.slice(0, 100) || "Sent an image",
             senderId,
             senderName,

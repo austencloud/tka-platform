@@ -918,6 +918,45 @@ service cloud.firestore {
                 && request.resource.data.attachments.size() > 0));
         }
 
+        function isValidMessageEdit() {
+          let changed = request.resource.data.diff(resource.data).affectedKeys();
+          let oldHistory = ('editHistory' in resource.data
+              && resource.data.editHistory is list)
+            ? resource.data.editHistory
+            : [];
+          let newHistory = ('editHistory' in request.resource.data)
+            ? request.resource.data.editHistory
+            : null;
+          let appendedIndex = oldHistory.size();
+
+          return resource.data.senderId == request.auth.uid
+            && (!('isDeleted' in resource.data) || resource.data.isDeleted == false)
+            && changed.hasOnly(['content', 'editedAt', 'editHistory'])
+            && changed.hasAll(['content', 'editedAt', 'editHistory'])
+            && request.resource.data.content != resource.data.content
+            && hasValidMessageBody()
+            && request.resource.data.editedAt is timestamp
+            && newHistory is list
+            && newHistory.size() == oldHistory.size() + 1
+            && (oldHistory.size() == 0
+              || newHistory[0:appendedIndex] == oldHistory)
+            && newHistory[appendedIndex] is map
+            && newHistory[appendedIndex].keys().hasOnly(['content', 'editedAt'])
+            && newHistory[appendedIndex].content == resource.data.content
+            && newHistory[appendedIndex].editedAt is timestamp;
+        }
+
+        function isValidMessageDelete() {
+          let changed = request.resource.data.diff(resource.data).affectedKeys();
+
+          return resource.data.senderId == request.auth.uid
+            && (!('isDeleted' in resource.data) || resource.data.isDeleted == false)
+            && changed.hasOnly(['content', 'isDeleted'])
+            && changed.hasAll(['content', 'isDeleted'])
+            && request.resource.data.isDeleted == true
+            && request.resource.data.content == '[Message deleted]';
+        }
+
         // Only participants of parent conversation can read messages
         allow read: if isConversationParticipant(conversationId);
 
@@ -929,13 +968,14 @@ service cloud.firestore {
           && hasValidMessageBody();
 
         // Updating messages:
-        // - Sender can edit or soft-delete message text without replacing attachments
-        // - Any participant can update reactions, read status
+        // - Sender edits append the previous text to immutable edit history
+        // - Sender soft-deletes use the fixed tombstone text
+        // - Any participant can update reactions or read status
         allow update: if isConversationParticipant(conversationId)
-          && ((resource.data.senderId == request.auth.uid
-                && request.resource.data.diff(resource.data).affectedKeys()
-                  .hasOnly(['content', 'editedAt', 'editHistory', 'isDeleted']))
-              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'readAt']));
+          && (isValidMessageEdit()
+              || isValidMessageDelete()
+              || request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['reactions', 'readBy', 'readAt']));
 
         // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;

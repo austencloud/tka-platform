@@ -20,6 +20,7 @@ export function mapDocToConversation(
     | undefined;
   const lastMessage = rawLastMessage
     ? {
+        messageId: rawLastMessage["messageId"] as string | undefined,
         content: rawLastMessage["content"] as string,
         senderId: rawLastMessage["senderId"] as string,
         senderName: rawLastMessage["senderName"] as string,
@@ -73,6 +74,7 @@ export function mapDocToPreview(
     | undefined;
   const lastMessage = rawLastMessage
     ? {
+        messageId: rawLastMessage["messageId"] as string | undefined,
         content: rawLastMessage["content"] as string,
         senderId: rawLastMessage["senderId"] as string,
         senderName: rawLastMessage["senderName"] as string,
@@ -87,9 +89,7 @@ export function mapDocToPreview(
       | Record<string, unknown>
       | undefined;
 
-    const otherParticipantIds = participants.filter(
-      (p) => p !== currentUserId
-    );
+    const otherParticipantIds = participants.filter((p) => p !== currentUserId);
     const participantPreviews = otherParticipantIds
       .slice(0, 4)
       .map((pid) => participantInfo[pid])
@@ -146,7 +146,9 @@ export async function refreshParticipantInfo(
   firestore: Firestore,
   conversationId: string,
   userId: string,
-  fetchUserInfo: (uid: string) => Promise<{ displayName: string; photoURL?: string }>
+  fetchUserInfo: (
+    uid: string
+  ) => Promise<{ displayName: string; photoURL?: string }>
 ): Promise<void> {
   try {
     const userInfo = await fetchUserInfo(userId);

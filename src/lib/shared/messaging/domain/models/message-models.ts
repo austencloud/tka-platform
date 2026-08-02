@@ -120,6 +120,7 @@ export interface CreateMessageInput {
  * Preview of a message for display in conversation list
  */
 export interface MessagePreview {
+  messageId?: string;
   content: string;
   senderId: string;
   senderName: string;
