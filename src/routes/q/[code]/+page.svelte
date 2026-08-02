@@ -1,8 +1,9 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
+  import { onMount } from "svelte";
+  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import ScanCardBootstrap from "./ScanCardBootstrap.svelte";
 
   let { data } = $props();
 
@@ -34,8 +35,9 @@
   let QScanPageComponent: typeof import("./QScanPage.svelte").default | null =
     $state(null);
   let viewerReady = $state(false);
-  let bootstrapRetired = $state(false);
+  let loadingRetired = $state(false);
   let viewerLoadPromise: Promise<void> | null = null;
+  let loadingRetireTimer: ReturnType<typeof setTimeout> | null = null;
 
   function loadViewer(): Promise<void> {
     if (viewerLoadPromise) return viewerLoadPromise;
@@ -47,21 +49,20 @@
     return viewerLoadPromise;
   }
 
-  function handleBootstrapStable(): void {
-    void loadViewer();
-  }
-
   function handleViewerReady(): void {
+    if (viewerReady) return;
     viewerReady = true;
-    setTimeout(() => {
-      bootstrapRetired = true;
+    loadingRetireTimer = setTimeout(() => {
+      loadingRetired = true;
+      loadingRetireTimer = null;
     }, 220);
   }
 
-  $effect(() => {
-    if (browser && !data.scanCard) {
-      void loadViewer();
-    }
+  onMount(() => {
+    void loadViewer();
+    return () => {
+      if (loadingRetireTimer !== null) clearTimeout(loadingRetireTimer);
+    };
   });
 </script>
 
@@ -94,39 +95,31 @@
 </svelte:head>
 
 <main class="scan-route">
-  {#if data.scanCard && !bootstrapRetired}
+  {#if !loadingRetired}
     <div
-      class="bootstrap-layer"
+      class="loading-layer"
       class:retired={viewerReady}
       aria-hidden={viewerReady}
     >
-      <ScanCardBootstrap
-        card={data.scanCard}
-        displayWord={displayWord ?? data.scanCard.word}
-        onStable={handleBootstrapStable}
-      />
+      <LoadingGate variant="bar" message="Loading sequence…" />
     </div>
   {/if}
 
   {#if browser && QScanPageComponent}
     <div
       class="viewer-layer"
-      class:ready={viewerReady || !data.scanCard}
-      aria-hidden={data.scanCard && !viewerReady}
-      inert={data.scanCard && !viewerReady ? true : undefined}
+      class:ready={viewerReady}
+      aria-hidden={!viewerReady}
+      inert={!viewerReady ? true : undefined}
     >
       <QScanPageComponent {data} onViewerReady={handleViewerReady} />
-    </div>
-  {:else if !data.scanCard}
-    <div class="fallback-loader" aria-label="Loading sequence">
-      <span></span><span></span><span></span>
     </div>
   {/if}
 </main>
 
 <style>
   .scan-route,
-  .bootstrap-layer,
+  .loading-layer,
   .viewer-layer {
     position: fixed;
     inset: 0;
@@ -139,17 +132,17 @@
     background: #0f0f1a;
   }
 
-  .bootstrap-layer,
+  .loading-layer,
   .viewer-layer {
     transition: opacity 180ms ease;
   }
 
-  .bootstrap-layer {
+  .loading-layer {
     z-index: 1;
     opacity: 1;
   }
 
-  .bootstrap-layer.retired {
+  .loading-layer.retired {
     opacity: 0;
     pointer-events: none;
   }
@@ -165,52 +158,10 @@
     pointer-events: auto;
   }
 
-  .fallback-loader {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: #0f0f1a;
-  }
-
-  .fallback-loader span {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #0891b2;
-    animation: fallback-pulse 1.2s ease-in-out infinite;
-  }
-
-  .fallback-loader span:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-
-  .fallback-loader span:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-
-  @keyframes fallback-pulse {
-    0%,
-    100% {
-      opacity: 0.3;
-      transform: scale(0.8);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .bootstrap-layer,
+    .loading-layer,
     .viewer-layer {
       transition: none;
-    }
-
-    .fallback-loader span {
-      animation: none;
     }
   }
 </style>

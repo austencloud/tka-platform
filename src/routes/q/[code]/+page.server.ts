@@ -11,9 +11,9 @@ import {
   parsePropsFromURL,
 } from "$lib/shared/navigation/services/sequence-encoder";
 import {
-  prepareScanPayload,
-  type PreparedScanPayload,
-} from "$lib/server/scan/scan-card-preparer";
+  prepareScanViewerPayload,
+  type PreparedScanViewerPayload,
+} from "$lib/server/scan/scan-viewer-payload-preparer";
 
 // Why REST instead of firebase-admin: the admin SDK never worked here. Its
 // credential/gRPC path doesn't run on Cloudflare's workerd runtime, so the
@@ -165,7 +165,7 @@ async function fetchShortCodeRecord(
 
 function stripPreparedPayload(
   record: ShortCodeData | null,
-  prepared: PreparedScanPayload | null
+  prepared: PreparedScanViewerPayload | null
 ): ShortCodeData | null {
   if (!record || !prepared) return record;
 
@@ -196,7 +196,7 @@ export const load: PageServerLoad = async ({
 
   let meta: ShortCodeMeta = EMPTY_META;
   let record: ShortCodeData | null = null;
-  let prepared: PreparedScanPayload | null = null;
+  let prepared: PreparedScanViewerPayload | null = null;
 
   if (!isInlineEncoded(params.code)) {
     try {
@@ -215,7 +215,7 @@ export const load: PageServerLoad = async ({
   }
 
   try {
-    prepared = await prepareScanPayload(
+    prepared = await prepareScanViewerPayload(
       params.code,
       record,
       parsePropsFromURL(url.searchParams)
@@ -235,7 +235,6 @@ export const load: PageServerLoad = async ({
     meta,
     record: stripPreparedPayload(record, prepared),
     preparedSequence: prepared?.sequence ?? null,
-    scanCard: prepared?.card ?? null,
     preparedPropConfig: prepared?.propConfig ?? null,
   };
 };

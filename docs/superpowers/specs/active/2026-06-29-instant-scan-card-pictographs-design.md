@@ -2,20 +2,40 @@
 status: active
 value: 4
 effort: M
-remaining: "The throttled production-preview measurement is captured. Cold scan-to-stable was 14,613.4 ms and warm was 10,595.5 ms, so both provisional budgets fail. The cloud path is healthy: 11 cold cloud assets returned HTTP 200, the warm run used 11 IndexedDB blobs with zero cloud requests, and neither run had a failed cell. Remaining work is to remove the repeat shortcode resolve from the critical path, isolate the scan route from animation and unrelated module work, add cache read/decode/commit submarks, and rerun the budget."
-depends_on: "internal: cold and warm scan-to-stable budgets are not met"
+remaining: "The canonical cloud-cell path remains active inside the complete Sequence Viewer. The separate pre-viewer Choreo Card was retired by product decision on 2026-08-01 because showing the same card twice felt abrasive and repetitive. Remaining performance work is to establish cold and warm complete-viewer readiness baselines, trim that graph, and set replacement budgets without restoring a choreography preview."
+depends_on: "internal: complete-viewer readiness budgets are not yet baselined"
 plan_path: "docs/superpowers/plans/2026-06-29-instant-scan-card-pictographs.md"
 tags: []
-last_triaged: 2026-07-30
+last_triaged: 2026-08-01
 ---
+
 # Instant Scan-Card Pictographs — Design
 
 **Date:** 2026-06-29
-**Status:** Implemented; current throttled budgets are failing
-**Goal:** When someone scans a QR code, the Choreo card and its pictographs appear
-effectively instantly — no per-cell "stabilizing" while the scanner's phone
-rasterizes each pictograph. Backed by proper instrumentation and automated tests
-so the win is measurable and regression-proof.
+**Status:** Implemented; the pre-viewer card presentation was retired
+**Goal:** When the complete Sequence Viewer appears after a QR scan, its Choreo
+card uses canonical cloud cells instead of rasterizing every pictograph on the
+scanner's phone. Until that viewer is stable, the route shows a neutral loading
+gate with no duplicate choreography.
+
+---
+
+## Reconciliation (2026-08-01)
+
+- The separate pre-viewer Choreo Card is retired. Showing a complete card during
+  loading and then showing it again inside the Sequence Viewer felt abrasive,
+  repetitive, and visually discontinuous when the two layouts differed.
+- `/q/[code]` now loads the complete viewer immediately behind a neutral loading
+  gate. The first visible choreography belongs to that viewer after it reports
+  its own card stable.
+- Server preparation is limited to the hydrated sequence and prop configuration.
+  It no longer prepares a second card layout or resolves every cloud-cell URL for
+  temporary preview markup.
+- The per-cell cloud store remains in scope and continues to serve the real card
+  inside the viewer. This product decision removes duplicate presentation, not
+  the canonical cloud-render pipeline.
+- The former cold and warm card-preview budgets are historical. Replacement
+  budgets must measure complete-viewer readiness.
 
 ---
 
@@ -79,7 +99,7 @@ Findings (file:line):
 
 4. **Heavy critical path before the card even mounts.** `+page.svelte` onMount
    runs a `Promise.all` that blocks on full glyph-cache init (all 26 letters +
-   every turn/element/TnD glyph — needed for the *animator*, not the static
+   every turn/element/TnD glyph — needed for the _animator_, not the static
    card), lazy chunk parse (ViewerSplitPane + Orchestrator), and shortcode
    resolve + hydrate, all before `ChoreoCard` renders.
 
@@ -96,15 +116,15 @@ into the scan card and not at cell granularity.
 
 ## Approach (decided)
 
-Stop rasterizing pictographs on the scanner's phone. Instead, **`ChoreoCard`
-assembles the grid by downloading per-pictograph images** that were rendered
-once, elsewhere, and stored globally. The card stays the real interactive
-component; it just stops firing the device renderer. (Whole-card static
-thumbnail was rejected by the user: a frozen card desyncs from the live
-animation canvas. Per-cell images keep the card real and the animation
-independent.)
+Stop rasterizing pictographs on the scanner's phone. Instead, **the
+`ChoreoCard` inside the complete viewer assembles its grid by downloading
+per-pictograph images** that were rendered once, elsewhere, and stored globally.
+There is no separate loading-preview card. (A whole-card static thumbnail was
+also rejected: a frozen card desyncs from the live animation canvas. Per-cell
+images keep the viewer's card real and the animation independent.)
 
 Generation strategy: **crowd-sourced + render-at-publish (combo).**
+
 - First device to ever render a given pictograph uploads it (self-warming).
 - The owner's save/publish proactively renders + uploads every cell, so the
   first scanner of a fresh sequence is already warm.
@@ -118,6 +138,7 @@ Storage backend: **Firebase Storage for v1** (decision + rationale below).
 **Chosen: Firebase Storage**, as a sibling of `cloud-thumbnail-cache.ts`.
 
 Rationale grounded in this repo:
+
 - The combo strategy **requires client-side upload** (both crowd-source and
   render-at-publish upload WebPs from the browser). `cloud-thumbnail-cache`
   already performs authenticated client upload to Firebase Storage. Reuse it.
@@ -130,7 +151,7 @@ Rationale grounded in this repo:
 
 Why not R2 now: R2's wins (zero egress, edge CDN) are **scale-cost**
 optimizations, not a speed requirement for a handful of small WebPs per scan.
-In this codebase R2 is the *server-published bulk* pattern (daily shortcode
+In this codebase R2 is the _server-published bulk_ pattern (daily shortcode
 snapshot JSON) — the wrong fit for ad-hoc client writes.
 
 **Migration trigger (documented, not built):** Part 4 instrumentation logs real
@@ -176,23 +197,23 @@ A cold scanner (empty IndexedDB) hits tier 2 and downloads — never rasterizes.
 
 In `library-save-service.ts`, immediately after the existing whole-card
 `generateAndUploadThumbnail`, add a **background** step:
+
 - For each step in the sequence, derive the canonical cell key for the
   sequence's `intendedProp` + default scan color mode, render via the worker
   pool, and upload any not already in `knownExists`.
 - Fire-and-forget — must not block or slow the save success UX.
 - Guarantees the first scanner of a freshly-published sequence is warm.
 
-### Part 3 — Critical-path trim ("load the card first")
+### Part 3 — Critical-path trim (complete viewer)
 
 On `src/routes/q/[code]/+page.svelte`:
-- **Stop blocking the card on full `getGlyphCache().initialize()`.** That loads
-  all 26 letters + every turn/element/TnD glyph for the *animator*. Defer it
-  until the animation pane actually opens (`qrViewerMode === "animation"`).
-- Cells are images now, so the card grid needs ~zero live glyph deps. Mount
-  `ChoreoCard` as soon as `resolvedSeq` + cell images are ready; lazy-load the
-  animation pane after first card paint.
-- `modulepreload` the viewer chunks (ViewerSplitPane, Orchestrator) so module
-  parse is off the blocking path.
+
+- Load the complete Sequence Viewer immediately behind the neutral gate.
+- Keep choreography hidden until the viewer reports its own card stable.
+- Defer unrelated analytics and application services so they do not compete
+  with the viewer's module and render path.
+- Do not reintroduce a separate `ChoreoCard`, static thumbnail, or server-built
+  cell grid as loading content.
 
 ### Part 4 — Instrumentation (lands first; proves before/after)
 
@@ -221,13 +242,17 @@ chunk-load → hydrate → card-mount → first-cell-painted → all-cells-stabl
   `/q/[code]`, read the `scan-to-stable` mark, assert under budget cold and
   warm. Documented manual/periodic procedure (DevTools MCP is not CI).
 
-**Budgets (initial targets, refined after Phase 0 baseline):**
+**Historical provisional card-preview targets (retired 2026-08-01):**
+
 - Warm (cloud images cached/known): `scan-to-stable` < 400ms
 - Cold (first-ever scan, images downloaded not rendered): < 1000ms
 
+Complete-viewer readiness needs a new measured baseline before replacement
+targets are set.
+
 ---
 
-## Sequencing
+## Original sequencing (historical)
 
 - **Phase 0 — Instrumentation (Part 4).** Land marks + measures first, capture a
   baseline on a throttled profile. Nothing else is provable without this.

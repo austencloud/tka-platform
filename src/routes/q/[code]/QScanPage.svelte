@@ -870,6 +870,7 @@
           "resolve"
         );
         pageState = { kind: "error", message: "Sequence not found" };
+        onViewerReady?.();
         return;
       }
 

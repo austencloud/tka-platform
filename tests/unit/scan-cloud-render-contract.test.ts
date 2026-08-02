@@ -20,28 +20,40 @@ describe("QR scan cloud-render contract", () => {
     expect(card).toContain("cloudOnly: cloudProbeEnabled");
   });
 
-  it("prepares the server record once and retains the browser fallback", () => {
+  it("prepares the viewer record once and retains the browser fallback", () => {
     const page = source("src/routes/q/[code]/QScanPage.svelte");
     const server = source("src/routes/q/[code]/+page.server.ts");
     expect(server).toContain("fromFirestoreFields");
-    expect(server).toContain("prepareScanPayload(");
+    expect(server).toContain("prepareScanViewerPayload(");
     expect(server).toContain("preparedSequence: prepared?.sequence ?? null");
-    expect(server).toContain("scanCard: prepared?.card ?? null");
+    expect(server).toContain(
+      "preparedPropConfig: prepared?.propConfig ?? null"
+    );
+    expect(server).not.toContain("scanCard:");
     expect(page).toContain("data.preparedSequence");
     expect(page).toContain(
       "shortCodeManager.resolveShortCodeWithRecord(shortCode, data.record)"
     );
   });
 
-  it("paints canonical SSR cells before importing the full viewer", () => {
+  it("keeps choreography hidden until the complete viewer reports ready", () => {
     const route = source("src/routes/q/[code]/+page.svelte");
-    const bootstrap = source("src/routes/q/[code]/ScanCardBootstrap.svelte");
 
-    expect(route).toContain("<ScanCardBootstrap");
+    expect(route).not.toContain("ScanCardBootstrap");
+    expect(route).not.toContain("ChoreoCard.svelte");
     expect(route).toContain('import("./QScanPage.svelte")');
-    expect(route).toContain("onStable={handleBootstrapStable}");
-    expect(bootstrap).toContain("data-scan-cell-image");
-    expect(bootstrap).toContain('markScanAfterPaint("all-cells-stable")');
+    expect(route).toContain('<LoadingGate variant="bar"');
+    expect(route).toContain("class:ready={viewerReady}");
+    expect(route).toContain("aria-hidden={!viewerReady}");
+    expect(route).toContain("inert={!viewerReady ? true : undefined}");
+  });
+
+  it("reveals terminal resolution errors instead of leaving the loader stuck", () => {
+    const page = source("src/routes/q/[code]/QScanPage.svelte");
+
+    expect(page).toMatch(
+      /pageState = \{ kind: "error", message: "Sequence not found" \};\s*onViewerReady\?\.\(\);\s*return;/
+    );
   });
 
   it("keeps scan step numbers out of the cached bitmap pipeline", () => {
@@ -57,7 +69,7 @@ describe("QR scan cloud-render contract", () => {
     expect(cell).toContain("scanUsesHtmlStepNumbers");
   });
 
-  it("presents the card before activating interactive viewer services", () => {
+  it("builds the complete viewer in card mode before interactive startup", () => {
     const page = source("src/routes/q/[code]/QScanPage.svelte");
     expect(page).toContain('initialViewerMode="card"');
     expect(page).toContain("deferInteractiveStartup");
