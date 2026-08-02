@@ -1566,6 +1566,7 @@
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
       worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
+      worldY={performer.elevation ?? 0}
       facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}

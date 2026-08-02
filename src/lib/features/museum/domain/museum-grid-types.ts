@@ -150,6 +150,8 @@ export interface PerformerDefinition {
   scale?: number;
   /** Circular collision footprint around the performer, expressed in tiles. */
   collisionRadiusTiles?: number;
+  /** Floor elevation (world Y) the performer stands at. 0 on the museum datum. */
+  elevation?: number;
 }
 
 export interface FurnitureDefinition {
