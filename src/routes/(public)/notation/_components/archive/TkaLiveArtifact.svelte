@@ -38,7 +38,7 @@
 			</div>
 			<span class="poster-sub">
 				<span class="tka-font poster-word">{posterWord}</span>
-				— the path both props trace
+				· the path both props trace
 			</span>
 		</div>
 	{/if}

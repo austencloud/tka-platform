@@ -214,7 +214,7 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     label: "notation",
     requiresAuth: false,
     isModule: false,
-    waitSelector: ".editorial .page-title",
+    waitSelector: ".playable-viewport .room-title",
   },
 ];
 

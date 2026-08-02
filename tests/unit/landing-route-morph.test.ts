@@ -18,8 +18,8 @@ const readSource = (path: string): string =>
   readFileSync(resolve(process.cwd(), path), "utf-8");
 
 // A destination may host its morph participant in a local component rather than
-// in +page.svelte — /notation puts its header inside NotationCatalog. Each entry
-// therefore lists every file the participant is allowed to live in.
+// in +page.svelte. Each entry therefore lists every file the participant is
+// allowed to live in.
 const routeSourceByPath: Record<string, string[]> = {
   "/composer": ["src/routes/(public)/composer/+page.svelte"],
   "/shop/choreography-cards": [
@@ -28,7 +28,7 @@ const routeSourceByPath: Record<string, string[]> = {
   "/guide": ["src/routes/(public)/guide/+page.svelte"],
   "/notation": [
     "src/routes/(public)/notation/+page.svelte",
-    "src/routes/(public)/notation/_components/NotationCatalog.svelte",
+    "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte",
   ],
   "/faq": ["src/routes/(public)/faq/+page.svelte"],
   "/glossary": ["src/routes/(public)/glossary/+page.svelte"],

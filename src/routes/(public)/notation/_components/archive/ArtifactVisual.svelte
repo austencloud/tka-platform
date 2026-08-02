@@ -8,9 +8,8 @@
 -->
 <script lang="ts">
 	import type { CatalogEntry } from "$lib/shared/notation/notation-catalog";
-	import CapsAssembly from "../../../(public)/notation/caps/_components/CapsAssembly.svelte";
+	import CapsAssembly from "../../caps/_components/CapsAssembly.svelte";
 	import QftLiveArtifact from "./QftLiveArtifact.svelte";
-	import UnitCircleArtifact from "./UnitCircleArtifact.svelte";
 	import VtgChapterStepper from "./VtgChapterStepper.svelte";
 	import NineSquareStack from "./NineSquareStack.svelte";
 	import LorqMatrixSheet from "./LorqMatrixSheet.svelte";
@@ -24,12 +23,10 @@
 {#if entry.id === "caps"}
 	<!-- Keyed on activation so the two halves draw on each arrival. -->
 	{#key active}
-		<div class="caps-frame"><CapsAssembly /></div>
+		<div class="caps-frame" inert={!active}><CapsAssembly /></div>
 	{/key}
 {:else if entry.id === "trochoid"}
 	<TrochoidSheet {active} />
-{:else if entry.id === "unit-circle"}
-	<UnitCircleArtifact {active} />
 {:else if entry.id === "vtg"}
 	<VtgChapterStepper {active} />
 {:else if entry.id === "nine-square"}
@@ -54,5 +51,9 @@
 
 	.caps-frame :global(.assembly) {
 		width: min(100%, 100cqh);
+	}
+
+	.caps-frame :global(.replay) {
+		min-height: 44px;
 	}
 </style>

@@ -17,32 +17,47 @@
   ../_lib/vtg-chronicle.ts
 -->
 <script lang="ts">
-	import { VTG1_CHAPTERS, vtgChapter } from "../_lib/vtg-chronicle.svelte";
+	import { VTG1_CHAPTERS, vtgChapter } from "./_lib/vtg-chronicle.svelte";
 
 	let { active = false }: { active?: boolean } = $props();
 
 	const chapters = VTG1_CHAPTERS;
+	let stopButtons = $state<HTMLButtonElement[]>([]);
 	// Shared across every instance on the page — see vtgChapter's own comment.
 	const step = $derived(vtgChapter.index);
 	const current = $derived(chapters[step] ?? chapters[0]!);
 
 	function go(n: number) {
+		if (!active) return;
 		vtgChapter.index = (n + chapters.length) % chapters.length;
 	}
 
+	function goAndFocus(n: number) {
+		const next = (n + chapters.length) % chapters.length;
+		go(next);
+		stopButtons[next]?.focus();
+	}
+
 	function onKeydown(event: KeyboardEvent) {
+		if (!active) return;
+		if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
+			return;
+		}
+		// This tablist sits inside the archive's own arrow-key rail. The chapter
+		// consumes these keys so one press cannot advance both navigation layers.
+		event.stopPropagation();
 		if (event.key === "ArrowRight" || event.key === "ArrowDown") {
 			event.preventDefault();
-			go(step + 1);
+			goAndFocus(step + 1);
 		} else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
 			event.preventDefault();
-			go(step - 1);
+			goAndFocus(step - 1);
 		} else if (event.key === "Home") {
 			event.preventDefault();
-			go(0);
+			goAndFocus(0);
 		} else if (event.key === "End") {
 			event.preventDefault();
-			go(chapters.length - 1);
+			goAndFocus(chapters.length - 1);
 		}
 	}
 
@@ -63,7 +78,7 @@
 	);
 </script>
 
-<div class="vtg">
+<div class="vtg" class:active>
 	<figure class="stage">
 		<!-- No crossfade: an instant swap is correct for a hand-driven stepper,
 		     and overlapping two dense line lattices produces moiré anyway. -->
@@ -72,9 +87,8 @@
 			alt={`${current.title}, from the Vulcan Tech Gospel V.1`}
 			decoding="async"
 		/>
-	</figure>
 
-	<figcaption class="label">
+		<figcaption class="label">
 		<span class="title">
 			<span class="sizer" aria-hidden="true">{widestTitle}</span>
 			<span class="live">{current.title}</span>
@@ -91,7 +105,8 @@
 			<span class="sizer" aria-hidden="true">{widestNote}</span>
 			<span class="live">{current.note}</span>
 		</span>
-	</figcaption>
+		</figcaption>
+	</figure>
 
 	<!-- The rail. Tabs semantics rather than a listbox: each stop selects which
 	     plate is on the stage, which is exactly what a tablist does. -->
@@ -104,13 +119,15 @@
 	>
 		{#each chapters as chapter, n (chapter.figure)}
 			<button
+				bind:this={stopButtons[n]}
 				type="button"
 				role="tab"
 				class="stop"
 				class:on={n === step}
 				class:done={n < step}
 				aria-selected={n === step}
-				tabindex={n === step ? 0 : -1}
+				aria-disabled={!active ? "true" : undefined}
+				tabindex={active && n === step ? 0 : -1}
 				title={`${n + 1}. ${chapter.title}`}
 				aria-label={`Chapter ${n + 1} of ${chapters.length}: ${chapter.title}, ${chapter.people}`}
 				onclick={() => go(n)}
@@ -137,7 +154,7 @@
 		   edge. Centring the group puts equal void above and below one
 		   composed unit — plate, title, rail — which is what a plate on a wall
 		   looks like. */
-		grid-template-rows: auto auto auto;
+		grid-template-rows: auto auto;
 		align-content: center;
 		gap: clamp(0.35rem, 1.6cqi, 0.8rem);
 		padding: clamp(0.5rem, 2.5cqi, 1.4rem);
@@ -148,6 +165,7 @@
 		min-height: 0;
 		display: grid;
 		place-items: center;
+		gap: clamp(0.35rem, 1.6cqi, 0.8rem);
 	}
 
 	/* The paper is the FIGURE's rectangle, not the tile's. Every VTG page is
@@ -249,6 +267,10 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.1rem;
+	}
+
+	.vtg:not(.active) .rail {
+		pointer-events: none;
 	}
 
 	.stop {

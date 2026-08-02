@@ -45,11 +45,11 @@ export const VTG1_CHAPTERS: VtgChapter[] = [
   {
     figure: "transition-theory",
     title: "Transition Theory",
-    // The V.1 contents page reads "Transition Theory / Noel Yee and David
-    // Cantor". An earlier draft of this line also credited a Jordan Campbell;
-    // the name appears zero times in the document and has been removed.
-    people: "Noel Yee and David “Tankboy” Cantor",
-    note: "“Deeply meditated on” by the three of them. Cantor drew the figure at the centre of the document, where overlaying circles show transitions without the compound circle.",
+    // The V.1 contents page prints Yee and Cantor as the chapter byline. Yee's
+    // later account also names Campbell: he says the theory was created with
+    // Campbell and “deeply meditated on” with Campbell and Cantor.
+    people: "Noel Yee, Jordan Campbell, and David “Tankboy” Cantor",
+    note: "Yee credits Campbell and Cantor with developing the theory alongside him. Cantor drew the figure printed in V.1, where overlaying circles show transitions without the compound circle.",
   },
   {
     figure: "beat-shapes-page",
@@ -107,14 +107,14 @@ export const VTG_DECADE: VtgEvent[] = [
   { when: "22–27 Oct 2011", what: "Index 2/3 fixed, then Index 3/3. VTG #2 complete." },
   {
     when: "2015",
-    what: "A Vulcan Tech Gospel Android app — the 40 patterns animated, in both 1:1 and 3:1.",
+    what: "A Vulcan Tech Gospel Android app animated the 40 patterns in both 1:1 and 3:1.",
   },
   {
     when: "2019",
     what: "Yee announces “the tenth year of the Vulcan Tech Gospel Project and the release of the final installment VTG3,” and begins re-releasing the older chapters.",
   },
   {
-    when: "—",
+    when: "Not released",
     what: "VTG 3 never appeared. No page, no download, no forum trace. The chapter that would have connected every pattern to every other is the one the project stopped before.",
     unshipped: true,
   },

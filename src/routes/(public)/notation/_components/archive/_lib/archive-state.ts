@@ -2,7 +2,7 @@
  * Pure state transitions for the playable archive rail.
  *
  * Extracted so the visited count, active index, and the one-shot completion
- * flag can be unit tested — a wrong "3 of 9 discovered" or a completion
+ * flag can be unit tested, so a wrong discovered count or a completion
  * flourish that fires twice would be a silent bug
  * (docs/superpowers/specs/2026-07-27-notation-playable-archive-design.md).
  */
@@ -14,7 +14,7 @@ export interface ArchiveState {
 	visited: ReadonlySet<number>;
 	/** Detail surface open for the active entry. */
 	detailOpen: boolean;
-	/** The all-nine flourish has already played — it plays exactly once. */
+	/** The full-set flourish has already played, and it plays exactly once. */
 	celebrated: boolean;
 }
 
@@ -22,7 +22,7 @@ export interface SelectResult {
 	state: ArchiveState;
 	/** This selection discovered the entry for the first time. */
 	firstVisit: boolean;
-	/** This selection completed the set — play the single flourish now. */
+	/** This selection completed the set, so play the single flourish now. */
 	justCompleted: boolean;
 }
 

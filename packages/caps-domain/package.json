@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./trochoid": {
+      "types": "./dist/mathematics/trochoid.d.ts",
+      "default": "./dist/mathematics/trochoid.js"
     }
   },
   "files": [

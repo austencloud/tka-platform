@@ -1,23 +1,22 @@
 <!--
-  /notation — a chronological catalog of systems for writing flow arts down.
+  /notation — a playable archive of systems for writing flow arts down.
 
   Rebuilt 2026-07-27, replacing the hub that was gated on 2026-07-26 for
-  explaining systems it did not own and getting them wrong. This page explains
-  nothing: it records who wrote flow arts down and links out to their own
-  material. Entry data and its sourcing rules live in
+  explaining systems it did not own and getting them wrong. The archive keeps
+  the record, credits, and primary links attached to each artifact. Entry data
+  and its sourcing rules live in
   $lib/shared/notation/notation-catalog.ts.
 
   Spec: docs/superpowers/specs/2026-07-26-notation-catalog-design.md
 -->
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
-  import NotationCatalog from "./_components/NotationCatalog.svelte";
+  import PlayableArchive from "./_components/archive/PlayableArchive.svelte";
   import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
-  import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "Flow Arts Notation: Who Wrote It Down | The Kinetic Alphabet";
   const DESCRIPTION =
-    "A chronological catalog of systems for writing flow arts down, from CAPs on the Home of Poi forums in 2009 to the Kinetic Alphabet. Each entry links to its creator's own material.";
+    "A playable archive of eight systems for writing flow arts down, from CAPs on the Home of Poi forums in 2009 to the Kinetic Alphabet. Each entry links to its creator's own material.";
   const URL = "https://tkaflowarts.com/notation";
 
   const jsonLd = {
@@ -59,4 +58,30 @@
   {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}<\/script>`}
 </Seo>
 
-<NotationCatalog />
+<div class="playable-viewport" style:view-transition-name="launchpad-notation">
+  <PlayableArchive />
+</div>
+
+<style>
+  .playable-viewport {
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    padding-top: 64px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: oklch(0.115 0.008 270);
+    color: oklch(0.9 0.02 270);
+  }
+
+  /* Grain keeps the archive's flat ink surfaces from reading as app glass. */
+  .playable-viewport::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+</style>

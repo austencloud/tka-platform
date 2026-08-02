@@ -8,7 +8,7 @@
 	import type { CatalogEntry } from "$lib/shared/notation/notation-catalog";
 	import SourceVideoCard from "$lib/shared/components/SourceVideoCard.svelte";
 	import ArtifactVisual from "./ArtifactVisual.svelte";
-	import { VTG_DECADE } from "../_lib/vtg-chronicle.svelte";
+	import { VTG_DECADE } from "./_lib/vtg-chronicle.svelte";
 
 	let {
 		entry,
@@ -66,6 +66,12 @@
 		{/if}
 
 		<div class="detail-sources">
+			{#if entry.explore}
+				<a class="source-btn explore-btn" href={entry.explore.href}>
+					<span>{entry.explore.label}</span>
+					<span class="source-arrow" aria-hidden="true">&rarr;</span>
+				</a>
+			{/if}
 			{#each entry.sources as source (source.href)}
 				<a
 					class="source-btn"
@@ -261,6 +267,17 @@
 
 	.source-btn:hover {
 		border-color: color-mix(in oklch, var(--artifact-accent, oklch(0.65 0.1 270)) 65%, transparent);
+	}
+
+	.explore-btn {
+		border-color: transparent;
+		background: var(--artifact-accent, oklch(0.7 0.1 270));
+		color: oklch(0.13 0.01 270);
+	}
+
+	.explore-btn:hover {
+		border-color: transparent;
+		background: color-mix(in oklch, var(--artifact-accent, oklch(0.7 0.1 270)) 86%, white);
 	}
 
 	.source-arrow {

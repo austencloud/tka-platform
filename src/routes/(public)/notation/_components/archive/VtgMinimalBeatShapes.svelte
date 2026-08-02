@@ -73,7 +73,7 @@
 		class="plate"
 		class:on={active}
 		role="img"
-		aria-label="The ten minimal beat shapes of the Vulcan Tech Gospel: four base shapes — isolation, extension, vertical antispin, horizontal antispin — and the six hybrids they stack into. Green marks spin, red marks antispin."
+		aria-label="The ten minimal beat shapes of the Vulcan Tech Gospel: four base shapes, isolation, extension, vertical antispin, and horizontal antispin, plus the six hybrids they stack into. Green marks spin; red marks antispin."
 	>
 		<div class="col base">
 			{#each BASE as s, i (s.file)}

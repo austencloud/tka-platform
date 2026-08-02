@@ -22,9 +22,20 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const ARCHIVE_PATH = "src/routes/test/notation-playable/_components/PlayableArchive.svelte";
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
+const ARCHIVE_PATH =
+  "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte";
 const source = readFileSync(path.join(repoRoot, ARCHIVE_PATH), "utf8");
+const vtgSource = readFileSync(
+  path.join(
+    repoRoot,
+    "src/routes/(public)/notation/_components/archive/VtgChapterStepper.svelte"
+  ),
+  "utf8"
+);
 
 describe("playable archive: transition-name pairing", () => {
   it("names every stage, not only the active one", () => {
@@ -33,7 +44,9 @@ describe("playable archive: transition-name pairing", () => {
     // The only reasons a stage goes unnamed: it is handing its name to the
     // open detail, or a solo detail morph is narrowing the cast.
     expect(source).toMatch(/\(archive\.detailOpen && isActive\)/);
-    expect(source).not.toMatch(/view-transition-name=\{isActive && !archive\.detailOpen\s*\?/);
+    expect(source).not.toMatch(
+      /view-transition-name=\{isActive && !archive\.detailOpen\s*\?/
+    );
   });
 
   it("keeps names per-entry so no system can morph into another", () => {
@@ -53,7 +66,9 @@ describe("playable archive: transition-name pairing", () => {
     expect(source).toContain("soloMorph");
     expect(source).toMatch(/soloMorph = true;\s*\n\s*await tick\(\);/);
     // Tiles drop names outright; stages keep only the active one.
-    expect(source).toMatch(/style:view-transition-name=\{soloMorph\s*\n?\s*\?\s*undefined/);
+    expect(source).toMatch(
+      /style:view-transition-name=\{soloMorph\s*\n?\s*\?\s*undefined/
+    );
     expect(source).toMatch(/soloMorph && !isActive/);
     // And the flag must be cleared, or every later select would be a solo morph.
     expect(source).toMatch(/finally\s*\{\s*soloMorph = false;/);
@@ -102,12 +117,31 @@ describe("playable archive: crawlable content", () => {
   it("has a citation link for every source in the catalog", () => {
     // The markup iterates entry.sources, so the guarantee is really about the
     // catalog being fully reachable: assert there is something to render.
-    const totalSources = NOTATION_CATALOG.reduce((n, e) => n + e.sources.length, 0);
-    expect(NOTATION_CATALOG).toHaveLength(9);
-    expect(totalSources).toBeGreaterThanOrEqual(9);
+    const totalSources = NOTATION_CATALOG.reduce(
+      (n, e) => n + e.sources.length,
+      0
+    );
+    expect(NOTATION_CATALOG).toHaveLength(8);
+    expect(totalSources).toBeGreaterThanOrEqual(8);
     for (const entry of NOTATION_CATALOG) {
       expect(entry.sources.length).toBeGreaterThan(0);
       expect(entry.records.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("playable archive: nested keyboard navigation", () => {
+  it("keeps VTG chapter arrows out of the outer archive rail", () => {
+    expect(vtgSource).toContain("event.stopPropagation()");
+    expect(vtgSource.indexOf("event.stopPropagation()")).toBeLessThan(
+      vtgSource.indexOf('if (event.key === "ArrowRight"')
+    );
+    expect(vtgSource).toContain("stopButtons[next]?.focus()");
+  });
+});
+
+describe("playable archive: useful destinations before historical sources", () => {
+  it("does not make an external source the stage action when an explainer exists", () => {
+    expect(source).toContain("{#if primarySource && !activeEntry.explore}");
   });
 });

@@ -54,22 +54,17 @@ export interface CatalogEntry {
   sources: CatalogSource[];
   videos?: CatalogVideo[];
   /**
-   * A page on this site where the system can actually be run, as opposed to
-   * read about. Distinct from `sources`, which is headed "Read it there" and
-   * points outward at primaries — this points inward at something interactive,
-   * and only exists for entries that have one built.
+   * A useful page on this site where the system can be explored or run.
+   * Distinct from `sources`, which points outward at the historical record.
    */
   explore?: CatalogSource;
 }
 
 const HOP_CAPS =
   "https://www.homeofpoi.com/en/community/forums/topics/891193/What-are-CAP-s";
+const DREX_MATH_CAPS = "https://drexfactor.com/reference/math_caps";
 const HOP_QFT =
   "https://www.homeofpoi.com/us/community/forums/topics/932537/A-Beginner-s-Guide-to-Prop-QFT-Notation";
-const HOP_TOE =
-  "https://www.homeofpoi.com/us/community/forums/topics/886966/Poi-Theory-of-Everything-An-ongoing-collaboration";
-const HOP_FLOWERS =
-  "https://www.homeofpoi.com/us/community/forums/topics/907828/A-mathematical-approach-to-advanced-flower-patterns";
 
 export const NOTATION_CATALOG: CatalogEntry[] = [
   {
@@ -83,7 +78,11 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     // together into more complexly layered moves."
     records:
       "Fractions of separate moves assembled into one pattern that repeats without a seam. Alien Jon, who took up the term in the same thread, is careful that it names a way of thinking about movement rather than a move.",
-    sources: [{ label: "The thread where the term was coined", href: HOP_CAPS }],
+    explore: {
+      label: "See CAPs explained",
+      href: "/notation/caps#what-is",
+    },
+    sources: [{ label: "Original 2009 forum discussion", href: HOP_CAPS }],
   },
   {
     id: "trochoid",
@@ -96,23 +95,16 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     // following way : Theta1 Theta2 ; Rho1 Rho2", plus the later division term.
     records:
       "A pattern written as two numbers of turns and two radii: Theta1 Theta2 ; Rho1 Rho2. A division term takes a fraction of the cycle instead of all of it. It carries a wrap table and a cycloid condition, plus rules for which patterns are physically possible.",
+    explore: {
+      label: "See the model explained",
+      href: "/notation/caps#math",
+    },
     sources: [
-      { label: "The model, posted in full", href: HOP_CAPS },
-      { label: "Pattern sheets generated from it", href: HOP_FLOWERS },
-    ],
-  },
-  {
-    id: "unit-circle",
-    year: "2009",
-    sortYear: 2009.2,
-    system: "Unit Circle Theory",
-    people: "Alien Jon",
-    // His own words, archived: diameter of 1, one poi length as the unit, in
-    // service of "symmetry and proportion as applied to poi."
-    records:
-      "One poi length as the unit, with the circle taken as diameter 1 rather than the mathematician's radius 1, so a pattern's proportions hold at any prop length. Alien Jon marks it as a poi-specific term, not the trigonometric one.",
-    sources: [
-      { label: "Alien Jon defining it in his own words", href: HOP_TOE },
+      {
+        label: "Zaltymbunk's model, preserved by DrexFactor",
+        href: DREX_MATH_CAPS,
+      },
+      { label: "Original 2009 forum discussion", href: HOP_CAPS },
     ],
   },
   {
@@ -120,17 +112,16 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     year: "2010",
     sortYear: 2010,
     system: "Vulcan Tech Gospel",
-    // Verbatim from the V.1 PDF's own cover and contents pages, extracted
-    // 2026-07-29: "Compiled by Noel Yee / Cover Artwork by: Forest Sterns", then
-    // Transition Theory (Yee and Cantor), Minimal Beat Shapes (Thompson),
-    // Necessity of 40 Patterns (Yee), Transitions Between Shapes (Cantor), 3D
-    // Hybrid Shapes (Nope, Drexler, Yee).
+    // The V.1 contents page supplies the printed chapter bylines. Yee's own
+    // retrospective adds Jordan Campbell to the people who developed
+    // Transition Theory, even though Campbell is absent from that byline:
+    // https://noelyee.com/vulcan-tech-gospel-1-vtg-1-2011/
     //
     // Lorq Nichols is NOT in V.1 — zero occurrences in the whole document. He
     // enters the lineage afterward, via Book of P.H.A.T. and Yee's own 2015 app
     // credits; see the `lorq` entry. Do not add him to this line.
     people:
-      "Compiled by Noel Yee, with David “Tankboy” Cantor, Brian Thompson, Maiki Nope, and a final chapter Ben Drexler had a hand in. Cover artwork by Forest Sterns.",
+      "Compiled by Noel Yee. Transition Theory with Jordan Campbell and David “Tankboy” Cantor; chapters by Brian Thompson, Cantor, Maiki Nope, Ben Drexler, and Yee.",
     // Yee's own site: "The first goal of VTG is to help the user to understand
     // the variety of flower patterns available in a given arm and prop timing
     // and direction. The second is to teach the user how to transition between
@@ -237,16 +228,12 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     sortYear: 2012,
     system: "Lorq Nichols' catalogs",
     people: "Lorq Nichols, publishing as Spin Science",
-    // The one relationship claim in this catalog, and the only one with primary
-    // sources on BOTH sides — the standard the header sets. Yee's 2015 app page
-    // lists "VTG Authors: Noel Yee, David Cantor, Brian Thompson, Lorq Nichols";
-    // Nichols' own 2012 Tech Tiles post thanks "Noel Yee (this chart
-    // intrinsically encompasses transition theory), and all the Vulcan Tech
-    // Gospel crew"; and the Book of P.H.A.T. cover and contents page put the
-    // Shape Matrix at page 32 of a volume titled Vulcan Tech Gospel. Nichols
-    // also cites VTG#2 as source material throughout his LORQ:TECH series.
+    // Publication facts only. The Book of P.H.A.T. contents page places the
+    // Shape Matrix on page 32. Yee's 2015 app page lists "VTG Authors: Noel
+    // Yee, David Cantor, Brian Thompson, Lorq Nichols." Neither fact is used to
+    // make a claim about influence or chronology between entries.
     records:
-      "Patterns enumerated rather than described. Driving styles crossed against each other, arm paths crossed against club shapes, until the grid is full. Nichols is not among the Vulcan Tech Gospel V.1 authors, and joins the lineage after it: Yee lists him as a VTG author by 2015, and the Shape Matrix is page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1. He published as Tech Tiles before renaming to Spin Science in October 2015.",
+      "Nichols mapped movement into printed grids: driving styles crossed against each other, arm paths crossed against club shapes, until the full set could be seen at once. The Shape Matrix appears on page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1. Noel Yee's 2015 app credits list Nichols with Yee, David Cantor, and Brian Thompson under “VTG Authors.”",
     subWorks: [
       {
         name: "144 Shape Matrix",

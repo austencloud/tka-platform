@@ -1,5 +1,5 @@
 <!--
-  The playable archive: nine notation systems on a one-screen, horizontal
+  The playable archive: eight notation systems on a one-screen, horizontal
   focus-and-context rail. One artifact is live in the center; neighbors stay
   visible as tangible objects; the sourced prose appears only after the
   visitor asks for it (Inspect / Enter). Chronology is spatial, never causal.
@@ -23,6 +23,7 @@
 	import { magnetic } from "$lib/actions/magnetic";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+	import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 	import ArtifactVisual from "./ArtifactVisual.svelte";
 	import ArtifactDetail from "./ArtifactDetail.svelte";
 	import {
@@ -30,7 +31,7 @@
 		initialState,
 		openDetail,
 		select,
-	} from "../_lib/archive-state";
+	} from "./_lib/archive-state";
 
 	const entries = NOTATION_CATALOG;
 	const count = entries.length;
@@ -39,7 +40,6 @@
 	const ACCENTS: Record<string, string> = {
 		caps: "oklch(0.78 0.13 230)",
 		trochoid: "oklch(0.78 0.09 250)",
-		"unit-circle": "oklch(0.8 0.13 180)",
 		vtg: "oklch(0.74 0.15 40)",
 		"nine-square": "oklch(0.68 0.17 25)",
 		qft: "oklch(0.68 0.17 295)",
@@ -55,7 +55,7 @@
 
 	const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 	const isMobile = new MediaQuery("(max-width: 760px)");
-	/* The site-wide big-screen seam: above it all nine artifacts fit at once,
+	/* The site-wide big-screen seam: above it all eight artifacts fit at once,
 	   so the rail becomes a no-scroll accordion instead of a carousel. */
 	const wideRail = new MediaQuery("(min-width: 1680px)");
 
@@ -178,13 +178,10 @@
 	}
 
 	function closeDetailView() {
-		void morphDetail(
-			async () => {
-				archive = closeDetail(archive);
-				await tick();
-			},
-			() => setTimeout(() => slideButtons[archive.activeIndex]?.focus(), 60),
-		);
+		void morphDetail(async () => {
+			archive = closeDetail(archive);
+			await tick();
+		});
 	}
 
 	function onRailKeydown(event: KeyboardEvent) {
@@ -225,6 +222,16 @@
 
 	const primarySource = $derived(activeEntry.sources[0]);
 	const desktopDetailOpen = $derived(archive.detailOpen && !isMobile.current);
+	let detailDialog = $state<HTMLElement | null>(null);
+	let detailCloseButton = $state<HTMLButtonElement | null>(null);
+	const detailFocusTrap = new FocusTrap({ inertExclusions: [] });
+	$effect(() => {
+		if (!desktopDetailOpen || !detailDialog || !detailCloseButton) return;
+		detailFocusTrap.updateOptions({ initialFocus: detailCloseButton });
+		detailFocusTrap.activate(detailDialog);
+		return () => detailFocusTrap.deactivate();
+	});
+
 	let drawerOpen = $state(false);
 	$effect(() => {
 		drawerOpen = archive.detailOpen && isMobile.current;
@@ -235,33 +242,33 @@
 	class="room"
 	class:flourish
 	style:--artifact-accent={accent}
-	aria-label="Writing flow arts down: nine notation systems, 2009 to 2022"
+	aria-label={`Writing flow arts down: ${count} notation systems, 2009 to 2022`}
 >
 	<!-- ROW 1: the masthead -->
 	<header class="room-header">
 		<div class="masthead">
-			<p class="kicker">Nine systems &middot; 2009&ndash;2022</p>
+			<p class="kicker">{count} systems &middot; 2009&ndash;2022</p>
 			<h1 class="room-title">Writing flow arts down</h1>
 		</div>
 		<div class="room-header-side">
+			{#if !wideRail.current}
 			<Popover.Root>
-				<Popover.Trigger class="loans-trigger">Two borrowed ideas</Popover.Trigger>
+				<Popover.Trigger class="loans-trigger">Two neighboring ideas</Popover.Trigger>
 				<Popover.Portal>
 					<Popover.Content class="loans-popover" sideOffset={10}>
 						<p>
-							Two ideas came in from outside. Cutting a continuous flow into
-							beats and giving each one a symbol is
+							Siteswap is a notation for juggling patterns. Read the
 							<a
 								href="https://jugglinglab.org/html/ssnotation.html"
 								target="_blank"
-								rel="noopener">siteswap</a
-							>, from juggling. Writing a performance as a compact score at all
-							is music notation. Neither was built for props, and neither is on
-							this list. It starts where flow arts notation starts.
+								rel="noopener">siteswap guide</a
+							>. Music notation records a performance as a score. Both sit
+							outside flow arts, so neither is counted among these {count} systems.
 						</p>
 					</Popover.Content>
 				</Popover.Portal>
 			</Popover.Root>
+			{/if}
 			<span class="discovered" aria-live="off">
 				<span class="discovered-count">{archive.visited.size} of {count}</span>
 				discovered
@@ -307,24 +314,22 @@
 				type="button"
 				class="artifact-label"
 				tabindex={isActive ? 0 : -1}
-				aria-label={isActive
-					? `${entry.system}, ${entry.year}. Open detail`
-					: `Select ${entry.system}, ${entry.year}`}
 				aria-current={isActive ? "true" : undefined}
 				use:pressSpring
 				onclick={() => onSlideClick(i)}
 			>
 				<span class="artifact-year">{entry.year}</span>
 				<span class="artifact-name">{entry.system}</span>
+				<span class="sr-only">{isActive ? ", open detail" : ", select"}</span>
 			</button>
 
 			<!-- THE RECORD. Every entry's sourced prose and every citation link
-			     live here unconditionally, in every state, for all nine systems —
+			     live here unconditionally, in every state, for all eight systems —
 			     the overlay is presentation, not the content's only existence.
 			     Clipped visually (the room is one screen by design), never
 			     display:none, never aria-hidden: crawlers index it and screen
 			     readers read the real catalog in chronological order instead of
-			     nine bare labels. The open overlay is aria-modal, so the
+			     eight bare labels. The open overlay is aria-modal, so the
 			     background is out of the a11y tree and nothing is read twice. -->
 			<section class="tile-record">
 				<h2>
@@ -341,6 +346,9 @@
 					</ul>
 				{/if}
 				<ul class="record-sources">
+					{#if entry.explore}
+						<li><a href={entry.explore.href} tabindex="-1">{entry.explore.label}</a></li>
+					{/if}
 					{#each entry.sources as source (source.href)}
 						<li>
 							<a
@@ -355,7 +363,11 @@
 				{#if entry.videos?.length}
 					<ul class="record-videos">
 						{#each entry.videos as video (video.id)}
-							<li>{video.title} — {video.creator}, {video.year}. {video.note}</li>
+							<li>
+								{video.title}, {video.creator}{video.year
+									? `, ${video.year}`
+									: ""}. {video.note}
+							</li>
 						{/each}
 					</ul>
 				{/if}
@@ -368,7 +380,7 @@
 	     arrow keys so navigation works from any of them.
 
 	     Above the 1680 seam every artifact fits on screen at once, so nothing
-	     scrolls: the row is a focus-and-context accordion — all nine objects
+	     scrolls: the row is a focus-and-context accordion. All eight objects
 	     visible and pickable, the selected one expands in place. Below the
 	     seam the Embla carousel takes over and scrolling earns its keep. -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -381,9 +393,9 @@
 		onkeydown={onRailKeydown}
 	>
 		{#if wideRail.current}
-			<ol class="gallery-row">
+			<div class="gallery-row">
 				{#each entries as entry, i (entry.id)}
-					<li
+					<div
 						class="g-slide"
 						class:is-active={i === activeIndex}
 						class:visited={archive.visited.has(i)}
@@ -392,9 +404,22 @@
 							: `tile-${entry.id}`}
 					>
 						{@render slideCard(entry, i)}
-					</li>
+					</div>
 				{/each}
-			</ol>
+				<aside class="context-card" aria-labelledby="context-title">
+					<p class="context-kicker">Outside the archive</p>
+					<h2 id="context-title">Two neighboring ideas</h2>
+					<p>
+						<a
+							href="https://jugglinglab.org/html/ssnotation.html"
+							target="_blank"
+							rel="noopener">Siteswap</a
+						>
+						is a notation for juggling patterns. Music notation records a performance
+						as a score. Neither is counted among these {count} flow arts systems.
+					</p>
+				</aside>
+			</div>
 		{:else}
 			<div
 				class="rail-viewport"
@@ -432,7 +457,13 @@
 			>
 				Inspect
 			</button>
-			{#if primarySource}
+			{#if activeEntry.explore}
+				<a class="action primary-link" href={activeEntry.explore.href}>
+					{activeEntry.explore.label}
+					<span class="action-arrow" aria-hidden="true">&rarr;</span>
+				</a>
+			{/if}
+			{#if primarySource && !activeEntry.explore}
 				<a
 					class="action"
 					href={primarySource.href}
@@ -499,6 +530,7 @@
 	<!-- Desktop focused detail -->
 	{#if desktopDetailOpen}
 		<div
+			bind:this={detailDialog}
 			class="detail-overlay"
 			role="dialog"
 			aria-modal="true"
@@ -515,7 +547,13 @@
 			     artifact travels tile → panel while the panel itself just
 			     arrives. -->
 			<div class="detail-panel">
-				<button type="button" class="close-btn" onclick={closeDetailView} use:pressSpring>
+				<button
+					bind:this={detailCloseButton}
+					type="button"
+					class="close-btn"
+					onclick={closeDetailView}
+					use:pressSpring
+				>
 					<span class="close-mark" aria-hidden="true">&times;</span>
 					Close
 				</button>
@@ -551,7 +589,7 @@
 	}
 
 	/* Grid children default to min-width auto, so the embla track's intrinsic
-	   width (nine slides wide) would inflate the whole column and push the
+	   width (eight slides wide) would inflate the whole column and push the
 	   room off-canvas. Every row clamps to the grid. */
 	.room > * {
 		min-width: 0;
@@ -684,9 +722,10 @@
 		min-height: 0;
 	}
 
-	/* WIDE MODE: the bento. A 6×2 grid fills the canvas — the active entry is
-	   a 2×2 hero tile, the other eight are full tiles whose visuals fill
-	   their cells. Selecting re-tiles the grid through a native View
+	/* WIDE MODE: the bento. A 6×2 grid fills the canvas. The active entry is
+	   a 2×2 hero tile, the other seven are full tiles, and one context card
+	   names the neighboring ideas without pretending they are systems. Selecting
+	   re-tiles the grid through a native View
 	   Transition; every tile morphs to its new cell under its own name. */
 	.gallery-row {
 		display: grid;
@@ -706,13 +745,61 @@
 		display: grid;
 	}
 
-	/* The hero anchors top-left (visual order only — DOM stays chronological
-	   for reading and tab order). With the 2×2 placed first, the eight
-	   singles always fill the remaining 8 cells exactly: no trailing holes. */
+	/* The hero anchors top-left (visual order only; DOM stays chronological
+	   for reading and tab order). Four hero cells, seven entry cells, and the
+	   context card fill the twelve-cell board exactly. */
 	.g-slide.is-active {
 		grid-column: span 2;
 		grid-row: span 2;
 		order: -1;
+	}
+
+	.context-card {
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		gap: clamp(0.35rem, 0.55vw, 0.7rem);
+		min-width: 0;
+		min-height: 0;
+		padding: clamp(0.8rem, 1.2vw, 1.35rem);
+		border: 1px solid oklch(1 0 0 / 0.07);
+		border-radius: 18px;
+		background:
+			radial-gradient(110% 80% at 100% 0%, oklch(0.7 0.08 230 / 0.08), transparent 58%),
+			oklch(0.13 0.01 270);
+		container-type: inline-size;
+		overflow: hidden;
+	}
+
+	.context-kicker {
+		margin: 0;
+		font-size: clamp(0.56rem, 3cqi, 0.72rem);
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: oklch(0.62 0.05 230);
+	}
+
+	.context-card h2 {
+		margin: 0;
+		font-family: "Fraunces", Georgia, serif;
+		font-style: italic;
+		font-size: clamp(1rem, 7cqi, 1.55rem);
+		line-height: 1.05;
+		color: oklch(0.9 0.02 270);
+	}
+
+	.context-card p:last-child {
+		margin: 0;
+		font-size: clamp(0.68rem, 3.8cqi, 0.9rem);
+		line-height: 1.45;
+		color: oklch(0.7 0.025 270);
+	}
+
+	.context-card a {
+		color: oklch(0.8 0.1 230);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.18em;
 	}
 
 	/* Bento tiles: flat ink specimens. A faint accent breath at the plaque
@@ -862,7 +949,9 @@
 		display: flex;
 		justify-content: flex-start;
 		gap: 0.6rem;
-		min-height: 44px;
+		/* Inactive carousel tiles render at 88%. Fifty CSS pixels preserves the
+		   44px touch target after that transform. */
+		min-height: 50px;
 		align-items: center;
 		padding: 0 0.45rem;
 		border: 0;
@@ -964,6 +1053,15 @@
 
 	.action.primary:hover {
 		background: color-mix(in oklch, var(--artifact-accent) 86%, white);
+	}
+
+	.action.primary-link {
+		border-color: color-mix(in oklch, var(--artifact-accent) 72%, transparent);
+		color: var(--artifact-accent);
+	}
+
+	.action.primary-link:hover {
+		border-color: var(--artifact-accent);
 	}
 
 	/* TIMELINE */
@@ -1095,6 +1193,9 @@
 		display: grid;
 		place-items: center;
 		padding: clamp(1rem, 4vh, 3.5rem) clamp(1rem, 5vw, 5rem);
+		box-sizing: border-box;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.overlay-backdrop {
@@ -1111,9 +1212,11 @@
 	.detail-panel {
 		position: relative;
 		width: min(100%, 92rem);
-		height: auto;
+		height: 100%;
 		max-height: 100%;
+		min-height: 0;
 		padding: clamp(1.1rem, 2.4vh, 2.2rem);
+		box-sizing: border-box;
 		border-radius: 18px;
 		border: 1px solid color-mix(in oklch, var(--artifact-accent) 28%, oklch(1 0 0 / 0.08));
 		background: oklch(0.145 0.012 270);
@@ -1121,6 +1224,7 @@
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
 		gap: 0.8rem;
+		overflow: hidden;
 	}
 
 	.close-btn {
