@@ -2,8 +2,8 @@
 status: active
 value: 4
 effort: S
-remaining: "Native book-to-detail route morph is implemented, the inert Motion-FLIP bridge is removed, and static checks pass. Remaining: browser proof in a signed-in admin shop for forward/back navigation, refresh, reduced motion, and unsupported-browser fallback. Chrome control failed before connecting because the connector rejected the WSL-form workspace path."
-depends_on: "external: Chrome connector cannot initialize with sandboxCwd file:///mnt/e/tka-platform"
+remaining: "Browser proof RAN 2026-08-02 and FAILED success criterion 1. The old Chrome-connector blocker was stale and is gone. The shop has since been restructured into bespoke per-product routes (/shop/loop-deck, /shop/tnd-trilogy, /shop/choreography-cards, /shop/starter-pack), none of which render ProductDetailPage — the only component carrying a destination view-transition-name. Result: the shop grid paints view-transition-name shop-book-cover on the book tile, but NO reachable destination declares a matching name, so no shared-element morph occurs for any product. Section 2's design (a per-product name on CardMockupPreview from both sides) was never implemented: CardMockupPreview has no viewTransitionName prop and ProductCard.svelte no longer exists. Next step is to re-scope section 2 onto the bespoke pages, not to re-verify."
+depends_on: ""
 supersedes_context: ""
 tags: [shop, transitions, view-transitions, polish, ux]
 last_triaged: 2026-07-24
@@ -145,3 +145,49 @@ driver as a plain navigation); naming any 3D canvas; cross-document VT.
 4. `prefers-reduced-motion: reduce` → instant cut, no morph.
 5. Grid entrance stagger plays once on first paint, reduced-motion safe.
 6. `npm run check` and `npm run build` green.
+
+## Browser verification, 2026-08-02 — criterion 1 FAILS
+
+The recorded blocker ("Chrome connector cannot initialize with sandboxCwd
+`file:///mnt/e/tka-platform`") was an artifact of a dead session's WSL-form
+workspace path. It does not reproduce; verification ran normally on a native
+Windows checkout via Chrome DevTools MCP against a local server on :5174,
+signed in as admin so the `/shop` gate was open.
+
+### What was measured
+
+| Observation | Value |
+|---|---|
+| `document.startViewTransition` available | yes |
+| `view-transition-name` present on `/shop` grid | `root`, **`shop-book-cover`** |
+| `view-transition-name` on `/shop/loop-deck` after navigation | `root` only |
+| `view-transition-name` on `/shop/tnd-trilogy` | `root` only |
+
+### Root cause
+
+The shop was restructured after this spec was written. Every shipped product now
+has its own route rendering a bespoke component:
+
+- `/shop/loop-deck` → `LoopDeckConfiguratorPage.svelte`
+- `/shop/tnd-trilogy` → `TnDTrilogyPage.svelte`
+- `/shop/choreography-cards`, `/shop/starter-pack` → their own pages
+
+`ProductDetailPage.svelte` — the only file that declares the destination name
+(`viewTransitionName="shop-book-cover"` at line 88, and only when
+`product.type === "guide"`) — is reachable solely through the generic
+`[productId]` fallback route, which no shipped product uses. The origin name on
+the shop grid therefore has no matching destination in any real navigation, and
+a shared-element morph requires the same name on both sides.
+
+Section 2 of this design was additionally never built as written: it specified a
+`viewTransitionName` prop on `CardMockupPreview` passed as `product-${id}` from
+both `ProductCard` and `ProductDetailPage`. `CardMockupPreview.svelte` has no
+such prop and `ProductCard.svelte` has been deleted.
+
+### Consequence
+
+Criterion 1 ("clicking a product card morphs the cover image into the detail
+page's preview") is not met for any product. Criteria 2–6 were not pursued,
+because the spec cannot close on a re-verification pass — it needs its
+architecture re-scoped onto the bespoke per-product pages first. Reopened as
+design work, not verification work.
