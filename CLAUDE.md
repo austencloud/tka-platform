@@ -26,36 +26,17 @@ Every "done" or "fixed" claim needs proof: test output, runtime query output, co
 
 "Build succeeded", "I updated the config", "I changed the component" do NOT count as verification.
 
-## Do Your Own Job
+## Do Your Own Job, Answer Your Own Questions
 
-**Never tell the user to run typecheck, lint, tests, build, or commits.** Those are your job.
+Typecheck, lint, tests, build, and commits are your job — run them, fix what
+they report, iterate until green, and report the actual result, never the
+instruction to produce one ("run `npm run check` to verify" is punting).
 
-Run them yourself. If the tool reports errors, fix them and run again. Keep iterating until green or until you hit a genuine blocker. Only then surface it.
-
-Phrases that mean you're punting and must be removed:
-- "Run `npm run check` to verify"
-- "Please typecheck and commit"
-- "Let me know if the build passes"
-- "Typecheck + commit" as a closing line
-
-Report the actual result, not the instruction to produce one.
-
-## Answer Your Own Questions
-
-When you catch yourself about to say "want me to research X" / "should I look into Y" / "can I investigate Z" — STOP. Just go do it. You have the codebase, grep, glob, read, web search, and subagents. Use them.
-
-The user can see your context window. If you're about to spend tokens that would genuinely overload it, that's their call to make — but 99% of investigations are cheap. Prodding the code to answer a question is never a permission request.
-
-Banned patterns:
-- "Want me to go research..."
-- "May I look into..."
-- "Should I check what Decks uses..."
-- "It would really help to know X — want me to find out?"
-- Listing 4 options and asking the user to pick *before* narrowing the list via investigation
-
-Correct pattern: investigate → narrow to 1-2 informed options → either decide, or present a concrete recommendation with the tradeoff you actually uncovered. If genuinely 50/50 between two informed options, ask. If you haven't investigated yet, you haven't earned the right to ask.
-
-This rule is load-bearing: model 4.7 has regressed on this specific behavior vs 4.6. Austen will call it out every time.
+Likewise, investigate before asking: you have grep, read, web search, MCP, and
+subagents, and 99% of investigations are cheap. Narrow to 1–2 informed options,
+then decide or present a concrete recommendation with the tradeoff you actually
+found. If you haven't investigated yet, you haven't earned the right to ask.
+Full policy: `.claude/rules/autonomy-and-completeness.md`.
 
 ## Writing Style (Real-World Copy)
 
