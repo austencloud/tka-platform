@@ -2,8 +2,8 @@
 status: active
 value: 5
 effort: S
-remaining: "The source implementation is in main. The 2026-07-27 working-tree remediation is verified but uncommitted and undeployed (7 suites, 44 tests; functions tsc clean), including tests for write-before-Stripe ordering and pending to paid. Production does not list createCartCheckout while every current buy surface calls it, and the remote index configuration has no TTL override for orders.expiresAt. After credential rotation and Stripe account setup: configure TTL, deploy the cart callable and updated merch functions, then run a live checkout/refund and verify pending to paid with tax."
-depends_on: "external: rotate exposed credentials, clear Stripe payout requirement, and complete Stripe Tax registration"
+remaining: "Re-verified 2026-08-02. THREE of the four gates are now closed: credentials rotated (Stripe restricted key + rolled signing secret + Brevo), the remediation is committed (afb0f2985a), and createCartCheckout is DEPLOYED and listed in production alongside createMerchCheckout/handleMerchWebhook — the every-buy-surface-calls-an-absent-function defect is fixed. Two items left: (1) configure the orders.expiresAt TTL policy (one Firebase console / gcloud action, no gcloud on this machine); (2) run a live checkout + refund and verify the pending-to-paid transition with tax, which needs the Stripe payout requirement and Tax registration cleared first."
+depends_on: "external: clear Stripe payout requirement and complete Stripe Tax registration"
 plan_path: "plans/2026-07-13-shop-cart-order-doc.md"
 tags: [revenue, shop, cart, stripe, orders]
 last_triaged: 2026-07-27

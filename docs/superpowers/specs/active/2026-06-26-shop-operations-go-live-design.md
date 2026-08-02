@@ -2,8 +2,8 @@
 status: active
 value: 5
 effort: S
-remaining: "Reconciled 2026-07-27. Local working-tree remediation is verified but uncommitted and undeployed (7 suites, 44 tests; functions tsc clean): shared shipping tax policy, free US deck and sampler shipping, preorder cutoff parity, pending-order write ordering, and the pending-to-paid webhook transition. Resume only after the exposed credentials are rotated. Then clear the Stripe payout requirement and Tax registration, configure the orders.expiresAt TTL policy, deploy createCartCheckout/createMerchCheckout/handleMerchWebhook, run a paid checkout/refund with tax and order-archive proof, add shipBy metadata, decide whether Stripe product images are still needed, and remove the /shop gate."
-depends_on: "external: rotate exposed credentials, clear Stripe payout requirement, and complete Stripe Tax registration"
+remaining: "Re-verified 2026-08-02. Closed since the 2026-07-27 reconciliation: credentials rotated, remediation committed (afb0f2985a), and createCartCheckout/createMerchCheckout/handleMerchWebhook all deployed and listed in production. Austen-hands gates remaining: clear the Stripe payout requirement (past due) and complete Stripe Tax registration. Agent-runnable after that: configure the orders.expiresAt TTL policy, add shipBy metadata to both purchasable products, decide whether Stripe product images are still needed given the cover-card path, run a paid checkout/refund with tax and order-archive proof, then remove the /shop gate."
+depends_on: "external: clear Stripe payout requirement and complete Stripe Tax registration"
 plan_path: "plans/2026-06-26-shop-operations-go-live.md"
 supersedes_context: ""
 tags: [revenue, shop, store, stripe, go-live, fulfillment, tax]

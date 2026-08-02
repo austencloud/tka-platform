@@ -2,11 +2,11 @@
 status: active
 value: 5
 effort: XS
-remaining: "Frontmatter said 'full build' but the body records Phase A (rename, nav, gate, coming-soon, waitlist, redirects, webhook product-sync) shipped 2026-06-24 and checkout wired + verified 2026-06-26. 108 commits touched shop code since. Sole residual is registering webhook events in the Stripe Dashboard (B4) — dashboard action, not code."
-depends_on: "external: Stripe Dashboard webhook-event registration"
+remaining: ""
+depends_on: ""
 supersedes_context: docs/superpowers/specs/backlog/2026-04-01-physical-merch-store-design.md
 tags: [revenue, shop, store, stripe]
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Shop Spin-Up — Design Spec
 
@@ -16,9 +16,18 @@ last_triaged: 2026-07-25
 2026-06-26:** restricted Stripe test key in `firebase-functions/.env`, real $30 test
 product (`B8dDCYkEPunFCFVKiaBr`), `createMerchCheckout` deployed → returns a live
 `cs_test` session; worldwide shipping + 3 placeholder rate tiers added (see Out of Scope
-note). Remaining: register webhook events in the Stripe Dashboard (B4); order
-fulfillment + sales tax + go-live are a **new spec** (operations arc). `npm run check`,
-functions build, and a full `npm run build` all green; routes verified (/shop 200, /store/* 308).
+note). Order fulfillment + sales tax + go-live are a **new spec** (operations arc).
+`npm run check`, functions build, and a full `npm run build` all green; routes verified
+(/shop 200, /store/* 308).
+
+**Closed 2026-08-02.** B4 (webhook-event registration) verified directly in the Stripe
+Dashboard → Workbench → Webhooks: the `handleMerchWebhook` event destination is **Active**,
+listening to **5 events** (`checkout.session.completed`, `product.created`,
+`product.updated`, `price.created`, `price.updated`), error rate 0%. Independently
+corroborated by the 2026-07-27 reconciliation table in
+`2026-06-26-shop-operations-go-live-design.md` ("Merch webhook … Done"). The signing
+secret was rolled and redeployed 2026-08-02 during credential rotation. Spin-up scope is
+complete; every remaining shop concern lives in the operations and cart specs.
 
 ---
 
