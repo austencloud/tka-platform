@@ -70,6 +70,20 @@ describe("proxyFirebaseAuthHandler", () => {
     expect(init.body).toBeDefined();
   });
 
+  it("does not forward browser compression to the Firebase helper", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("helper-script"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await proxyFirebaseAuthHandler(
+      new Request("https://dev.tkaflowarts.com/__/auth/handler.js", {
+        headers: { "accept-encoding": "gzip, deflate, br" },
+      }),
+    );
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init.headers as Headers).get("accept-encoding")).toBe("identity");
+  });
+
   it("returns the upstream response verbatim (status, headers, body)", async () => {
     const upstreamResponse = new Response("handler-html", {
       status: 200,

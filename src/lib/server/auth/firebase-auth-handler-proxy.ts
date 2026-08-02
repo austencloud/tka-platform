@@ -50,6 +50,14 @@ export async function proxyFirebaseAuthHandler(request: Request): Promise<Respon
   const headers = new Headers(request.headers);
   headers.delete("host");
 
+  // A browser's compression preference cannot pass through Node's fetch
+  // unchanged. Node exposes decoded response bytes while retaining Firebase's
+  // compressed length and encoding headers, so the auth helper arrives
+  // truncated or mislabeled and the popup stays blank. Request the helper as
+  // identity; Vite or Cloudflare can negotiate client-facing compression on
+  // the response they send to the browser.
+  headers.set("accept-encoding", "identity");
+
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
 
   // redirect: "manual" keeps any upstream redirect transparent to the browser
