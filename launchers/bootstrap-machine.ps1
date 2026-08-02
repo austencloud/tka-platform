@@ -214,12 +214,12 @@ if ($SkipDevServer) {
     Invoke-Mutation 'pm2 start ecosystem.config.cjs; pm2 save' {
         Push-Location $RepoRoot
         try {
-            pm2 start ecosystem.config.cjs
+            pm2 start ecosystem.config.cjs --only tka-dev
             pm2 save
         } finally { Pop-Location }
     }
 
-    $taskName = 'TKA pm2 resurrect'
+    $taskName = 'Agent Hub PM2 resurrect'
     if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
         Write-Host "   scheduled task present: $taskName" -ForegroundColor DarkGray
     } else {
