@@ -12,15 +12,18 @@
 import { redirect } from "@sveltejs/kit";
 import type { LayoutLoad } from "./$types";
 
+// Firebase Auth is browser-backed. Disabling SSR ensures direct URL loads run
+// this guard in the browser before any admin route can render.
+export const ssr = false;
+
 export const load: LayoutLoad = async () => {
   // Only run in browser (SSR has no Firebase auth context)
   if (typeof window === "undefined") {
     return {};
   }
 
-  const { isInitialized, isAdmin, initializeAuthListener } = await import(
-    "$lib/shared/auth/state/auth-state.svelte"
-  );
+  const { isInitialized, isAdmin, initializeAuthListener } =
+    await import("$lib/shared/auth/state/auth-state.svelte");
 
   // On a direct load / hard refresh this guard runs BEFORE the root layout
   // mounts, so nothing has started auth init yet — polling alone would time
