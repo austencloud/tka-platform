@@ -45,6 +45,10 @@
     stageModel?: string | null;
     lod?: LodBand;
     autoPlay?: boolean;
+    /** Ritual renders the platform and acolytes; sculpture isolates the kinetic core. */
+    presentation?: "ritual" | "sculpture";
+    /** Uniform scale for installation-sized presentations. */
+    scale?: number;
   }
   const props: Props = $props();
   const stationId = props.stationId;
@@ -52,6 +56,8 @@
   const worldZ = props.worldZ;
   const autoPlay = props.autoPlay ?? true;
   const lod = $derived(props.lod ?? "hero");
+  const presentation = props.presentation ?? "ritual";
+  const formationScale = props.scale ?? 1;
 
   // Ritual platform
   const PLATFORM_RADIUS = 3.5;
@@ -62,7 +68,8 @@
   // Avatar3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
   // In the museum the floor is at y=0, so we offset by -groundY + PLATFORM_HEIGHT.
   // Both center rigs AND acolyte rigs use this so grids/props align with shoulder height.
-  const museumGroundOffset = $derived(-userProportionsState.groundY + PLATFORM_HEIGHT);
+  const presentationFloorOffset = presentation === "ritual" ? PLATFORM_HEIGHT : 0;
+  const museumGroundOffset = $derived(-userProportionsState.groundY + presentationFloorOffset);
 
   // 6 acolytes evenly spaced around a circle at 60° intervals.
   // Each faces inward toward center.
@@ -124,12 +131,14 @@
       )
     );
 
-    acolyteInstances = ACOLYTE_POSITIONS.map((_, i) =>
-      createAvatarInstanceState(
-        { id: `formation-${stationId}-acolyte-${i}`, positionX: 0, positionZ: 0 },
-        makeStandaloneDeps()
-      )
-    );
+    acolyteInstances = presentation === "ritual"
+      ? ACOLYTE_POSITIONS.map((_, i) =>
+          createAvatarInstanceState(
+            { id: `formation-${stationId}-acolyte-${i}`, positionX: 0, positionZ: 0 },
+            makeStandaloneDeps()
+          )
+        )
+      : [];
   } catch (err) {
     console.warn(`[CovenStation] Failed to init ${stationId}:`, err);
     initFailed = true;
@@ -137,8 +146,12 @@
   }
 
   // hero: all 6 center + 6 acolytes. idle/frozen: only the first center rig.
-  const visibleCenter = $derived(lod === "hero" ? centerInstances : centerInstances.slice(0, 1));
-  const showAcolytes = $derived(lod === "hero");
+  const visibleCenter = $derived(
+    presentation === "sculpture" || lod === "hero"
+      ? centerInstances
+      : centerInstances.slice(0, 1)
+  );
+  const showAcolytes = $derived(presentation === "ritual" && lod === "hero");
   const stationPlaying = $derived(lod !== "frozen");
   const stageGltf = $derived(props.stageModel ? useGltf(props.stageModel) : null);
 
@@ -248,54 +261,63 @@
 </script>
 
 <!-- Formation root - positioned at world coords -->
-<T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
+<T.Group
+  name={`performer-station-${stationId}`}
+  position.x={worldX}
+  position.z={worldZ}
+  scale={formationScale}
+>
 
   <!-- Ritual platform: bespoke GLB stage when stageModel is set, otherwise the
        original stone disc (keeps the museum exhibit identical until GLBs land). -->
-  {#if stageGltf}
-    {#await stageGltf}
-      <!-- GLB stage still streaming in: show a dim placeholder disc so the slot
-           isn't visually empty while the model resolves. -->
+  {#if presentation === "ritual"}
+    {#if stageGltf}
+      {#await stageGltf}
+        <!-- GLB stage still streaming in: show a dim placeholder disc so the slot
+             isn't visually empty while the model resolves. -->
+        <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
+          <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
+          <T.MeshStandardMaterial color={platformColor} roughness={0.95} transparent opacity={0.35} />
+        </T.Mesh>
+      {:then gltf}
+        <T is={gltf.scene} position.y={PLATFORM_HEIGHT} />
+      {/await}
+    {:else}
       <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
         <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
-        <T.MeshStandardMaterial color={platformColor} roughness={0.95} transparent opacity={0.35} />
+        <T.MeshStandardMaterial color={platformColor} roughness={0.9} />
       </T.Mesh>
-    {:then gltf}
-      <T is={gltf.scene} position.y={PLATFORM_HEIGHT} />
-    {/await}
-  {:else}
-    <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
-      <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
-      <T.MeshStandardMaterial color={platformColor} roughness={0.9} />
-    </T.Mesh>
+    {/if}
   {/if}
 
   {#if initFailed}
     <!-- Degraded fallback: avatar instances failed to construct, so the rigs
          below render nothing. Show a clearly-broken marker pillar at center so
          the empty station is observable rather than silently blank. -->
-    <T.Mesh position.y={PLATFORM_HEIGHT + 0.75}>
+    <T.Mesh position.y={presentationFloorOffset + 0.75}>
       <T.BoxGeometry args={[0.25, 1.5, 0.25]} />
       <T.MeshStandardMaterial color="#a01818" emissive="#5a0000" roughness={0.6} />
     </T.Mesh>
   {/if}
   <!-- Decorative ring at acolyte circle -->
-  <T.Mesh position.y={PLATFORM_HEIGHT + 0.005} rotation.x={-Math.PI / 2}>
-    <T.RingGeometry args={[ACOLYTE_DISTANCE - 0.15, ACOLYTE_DISTANCE + 0.15, 48]} />
-    <T.MeshStandardMaterial
-      color={platformRingColor}
-      roughness={0.7}
-      transparent
-      opacity={0.6}
-    />
-  </T.Mesh>
+  {#if presentation === "ritual"}
+    <T.Mesh position.y={PLATFORM_HEIGHT + 0.005} rotation.x={-Math.PI / 2}>
+      <T.RingGeometry args={[ACOLYTE_DISTANCE - 0.15, ACOLYTE_DISTANCE + 0.15, 48]} />
+      <T.MeshStandardMaterial
+        color={platformRingColor}
+        roughness={0.7}
+        transparent
+        opacity={0.6}
+      />
+    </T.Mesh>
+  {/if}
 
   <!-- Ambient point light for the formation -->
   <T.PointLight
     position.y={3}
-    intensity={0.8}
-    distance={8}
-    color="#ffd4a0"
+    intensity={presentation === "sculpture" ? 1.2 : 0.8}
+    distance={presentation === "sculpture" ? 6 : 8}
+    color={presentation === "sculpture" ? "#dce8ff" : "#ffd4a0"}
     castShadow={false}
   />
 
