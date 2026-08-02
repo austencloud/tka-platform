@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shop front door — direction compare</title>
+<style>
+  :root {
+    --bg: #08080f;
+    --panel: #10101c;
+    --line: rgba(255, 255, 255, 0.09);
+    --text: #e8e8f2;
+    --dim: #9a9ab0;
+    --pink: #ff5da2;
+    --cyan: #4dd8ff;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, sans-serif;
+    padding: 32px clamp(16px, 3vw, 48px) 80px;
+  }
+  header { max-width: 1100px; margin: 0 auto 8px; }
+  h1 {
+    font: italic 600 clamp(28px, 3.2vw, 44px)/1.1 Georgia, serif;
+    letter-spacing: -0.01em;
+  }
+  h1 em { color: var(--pink); font-style: italic; }
+  .sub { color: var(--dim); margin-top: 10px; max-width: 70ch; }
+  .sub b { color: var(--text); }
+  section { margin-top: 44px; }
+  h2 {
+    font: 700 13px/1 system-ui, sans-serif;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 18px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(12px, 1.6vw, 24px);
+    align-items: start;
+  }
+  @media (max-width: 980px) { .row { grid-template-columns: 1fr; } }
+  .col {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .col h3 { font: 600 17px/1.2 system-ui, sans-serif; }
+  .col h3 span { color: var(--pink); margin-right: 6px; font-family: Georgia, serif; font-style: italic; }
+  .verdict { margin: 8px 0 12px; color: var(--dim); font-size: 13.5px; }
+  .verdict li { margin: 3px 0 3px 16px; }
+  .verdict .plus { color: #7fe0a8; }
+  .verdict .minus { color: #ff9db0; }
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #000;
+  }
+  .phone-shot { max-width: 340px; margin: 0 auto; }
+  .open {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: #fff;
+    color: #111;
+    font: 600 13px/1 system-ui;
+    text-decoration: none;
+  }
+  .hybrid {
+    max-width: 1100px;
+    border: 1px solid rgba(255, 93, 162, 0.35);
+    background: linear-gradient(180deg, rgba(255, 93, 162, 0.07), rgba(77, 216, 255, 0.05));
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+  .hybrid h3 { font: italic 600 22px/1.2 Georgia, serif; }
+  .hybrid p { color: var(--dim); margin-top: 8px; max-width: 75ch; }
+  .stack { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; max-width: 560px; }
+  .band {
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .band small { display: block; color: var(--dim); }
+  .band.hero { border-color: var(--pink); }
+  .band.grid { border-color: var(--cyan); min-height: 74px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Shop front door — <em>three directions, one page</em></h1>
+  <p class="sub">Full-page renders of each direction — desktop first, phone below. Squint for
+  composition; click <b>Open live</b> to feel the real scroll. Answer in chat: <b>A</b>, <b>B</b>,
+  <b>C</b>, or the <b>hybrid</b> at the bottom.</p>
+</header>
+
+<section>
+  <h2>Desktop · 1920</h2>
+  <div class="row">
+    <div class="col">
+      <h3><span>A</span>Editorial gallery</h3>
+      <ul class="verdict">
+        <li class="plus">Most premium; matches the notation-archive aesthetic</li>
+        <li class="minus">Slowest to see what's for sale; every future product owes a full editorial row</li>
+      </ul>
+      <img class="shot" src="/sketches/assets-2026-08-02/dir-a-1920.webp" alt="Direction A desktop" />
+      <a class="open" href="/sketches/2026-08-02-shop-front-door-a.html" target="_blank">Open live</a>
+    </div>
+    <div class="col">
+      <h3><span>B</span>Storefront grid</h3>
+      <ul class="verdict">
+        <li class="plus">Whole catalog + prices at a glance; scales forever (new product = new tile)</li>
+        <li class="minus">Thinnest brand story in the hero</li>
+      </ul>
+      <img class="shot" src="/sketches/assets-2026-08-02/dir-b-1920.webp" alt="Direction B desktop" />
+      <a class="open" href="/sketches/2026-08-02-shop-front-door-b.html" target="_blank">Open live</a>
+    </div>
+    <div class="col">
+      <h3><span>C</span>Guided showcase</h3>
+      <ul class="verdict">
+        <li class="plus">Teaches the line in the first viewport; "Start here" guides the undecided</li>
+        <li class="minus">Longest page; chapters multiply as the catalog grows</li>
+      </ul>
+      <img class="shot" src="/sketches/assets-2026-08-02/dir-c-1920.webp" alt="Direction C desktop" />
+      <a class="open" href="/sketches/2026-08-02-shop-front-door-c.html" target="_blank">Open live</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Phone · 375</h2>
+  <div class="row">
+    <div class="col">
+      <h3><span>A</span>Editorial gallery</h3>
+      <img class="shot phone-shot" src="/sketches/assets-2026-08-02/dir-a-375.webp" alt="Direction A phone" />
+    </div>
+    <div class="col">
+      <h3><span>B</span>Storefront grid</h3>
+      <img class="shot phone-shot" src="/sketches/assets-2026-08-02/dir-b-375.webp" alt="Direction B phone" />
+    </div>
+    <div class="col">
+      <h3><span>C</span>Guided showcase</h3>
+      <img class="shot phone-shot" src="/sketches/assets-2026-08-02/dir-c-375.webp" alt="Direction C phone" />
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="hybrid">
+    <h3>My recommendation: the hybrid — C's hero on B's body</h3>
+    <p>C's teaching hero ("Every card is a sequence. Scan it and it moves." + the live QR card),
+    compressed to about 60% of the viewport, then B's shelf grid with the chip row underneath.
+    Brand story on arrival, shoppable catalog one scroll later, and it absorbs future products
+    (merch, digital) as new tiles instead of new chapters.</p>
+    <div class="stack">
+      <div class="band hero">C's hero, compressed<small>card + live QR + one teaching sentence + "See the products"</small></div>
+      <div class="band">Chip row: All · Decks · Books · Bundles<small>from B — becomes the catalog spine as shelves grow</small></div>
+      <div class="band grid">B's uniform tile grid<small>cover art, name, one-liner, price, status — everything at a glance</small></div>
+      <div class="band">"Not ready to buy?" → free Composer<small>same quiet band all three share</small></div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

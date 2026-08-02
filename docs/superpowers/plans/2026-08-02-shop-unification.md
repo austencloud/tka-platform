@@ -49,15 +49,27 @@
 **Verify:** `npm run check:fast` clean; shell renders in isolation on a test route.
 **Commit pathspec:** the new shell files + touched domain files only.
 
-## Phase 2 — `/shop` catalog front door (DIRECTION PENDING — do not start until the
-chosen direction is recorded here)
+## Phase 2 — `/shop` catalog front door (DIRECTION CHOSEN: hybrid — C hero + B grid)
+
+Reference sketches: `static/sketches/2026-08-02-shop-front-door-c.html` (hero) and
+`...-b.html` (grid). Composition top to bottom:
+
+1. **Teaching hero, ~60% viewport** (from C): serif-italic headline "Every card is a
+   sequence." + "Scan it and it moves.", the glowing card visual with a real QR (use a real
+   short-code QR asset, not a fake pattern), 3 numbered steps, one CTA scrolling to the grid.
+2. **Chip row** (from B): All · Decks · Books · Bundles with counts — use the canonical
+   single-select primitive per `chip-primitives.md` (SegmentedControl or FilterChipBase per
+   the routing rule), sticky below the hero.
+3. **Uniform tile grid** (from B): cover art area, shelf kicker, name, one-liner, price
+   (tabular-nums), status chip, one CTA. 3 cols ≥1400, 2 cols ≥768, 1 col below. Products
+   from live catalog data (`loadActiveProducts()`).
+4. **Waitlist band** (subdued) + **free-composer onward band** (from all three sketches).
 
 Replace the gated index: `ShopComingSoon` retires for everyone; the admin/non-admin fork and
-`tka_shop_admin` cookie gate are removed from `/shop/+page*`. New front door per the chosen
-sketch direction (A/B/C), with: brand-line hero (portable `CardAnatomy` pieces + real card art +
-live QR image), shelves Decks / Books / Bundles from live catalog data, shop-wide waitlist band
-(subdued, bottom), free-composer onward band. SSR/SEO: keep the existing `+page.server.ts`
-product loading; page is indexable; schema.org ItemList of products.
+`tka_shop_admin` cookie gate are removed from `/shop/+page*`. SSR/SEO: keep the existing
+`+page.server.ts` product loading; page is indexable; schema.org ItemList of products.
+Sketch copy is placeholder: verify the "printed in Chicago" claim and the guide-book price
+against seed data / Austen before shipping copy.
 
 **Verify:** `check:fast` + Fable's visual pass.
 **Commit pathspec:** shop index route files + new front-door components.

@@ -67,8 +67,14 @@ Top to bottom:
 3. **Onward band** — one path into the free product (Composer/guide) for people who won't
    buy today.
 
-Visual direction: 2–3 HTML-sketch mockups presented to Austen as a multiple-choice
-(the one approved pre-build checkpoint). Chosen direction recorded here before build.
+Visual direction — **CHOSEN 2026-08-02: the hybrid (C's hero on B's body).** Austen picked it
+from three mockups (`static/sketches/2026-08-02-shop-front-door-{a,b,c}.html`, compare page
+`...-shop-direction-compare.html`): direction C's teaching hero ("Every card is a sequence.
+Scan it and it moves." + the live QR card) compressed to ~60% of the viewport, then direction
+B's shelf grid — chip row (All · Decks · Books · Bundles) + uniform tiles with cover art, name,
+one-liner, price, status chip. Sketch copy caveats to resolve against reality before ship:
+"printed and packed in Chicago" claim, and the guide book's price (sketch showed $30 with no
+seed-data backing).
 
 ## ShopProductShell
 
