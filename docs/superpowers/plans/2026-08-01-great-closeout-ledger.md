@@ -6,6 +6,9 @@ compaction; update boxes here, not in conversation memory.
 
 Already closed this session:
 - [x] `generate-saved-setups-favorites` (PHANTOM_OPEN, 25/25) → shipped in `bc2daf5d4a`
+- [x] `turn-in-place-animation` + `anatomical-ik-constraints` (GHOST_PATHS, verified) → archived in `4903684fc5`
+- [x] `3d-trail-parity` → shipped in `e61a4028c9` (all proof was complete; only gate was the stale check blocker)
+- [x] `performance-audit` → shipped in `e61a4028c9` (systemic remainder recorded as `2026-08-01-scene3d-treeshaking-followup` backlog spec)
 
 ---
 
@@ -47,18 +50,26 @@ Already closed this session:
 - [ ] `gallery-thumbnail-warm-pass` (12): signed-in admin warm + manifest/static sync
 - [ ] `shop-transitions` (16): stale env blocker ("Chrome connector cannot initialize")
       — retry in a fresh session with the standard launcher; likely just closes
-- [ ] `variation-picker-polish` (12): DevTools pass; code landed in `fd182587b6`
-- [ ] `create-tutorial-mobile-fullscreen` (12): DevTools pass; landed `5609c75ac1`
+- [x] `variation-picker-polish` (12) → shipped in `e97ff714b5` (live modal + pill proof this session)
+- [x] `create-tutorial-mobile-fullscreen` (12) → shipped in `e97ff714b5` (viewport proof on /test/tutorial-fullscreen)
 
-## Block C — Tree-dependent (fix once, closes several)
+## Block C — Tree reconciliation (both headline blockers turned out STALE)
 
-- [ ] Identify owner of untracked `WorkspaceShareControl.svelte` whose type errors
-      block the shared `npm run check` (named by 4+ specs). Owner lands or shelves it.
-- [ ] Land the verified-but-uncommitted shop remediation (7 suites, 44 tests,
-      per shop-operations spec) with scoped commits — after A1 credential rotation
-- [ ] Reconcile remaining working-tree clusters (map: tree-map agent, this session)
-- Unblocks the shared full check for: `3d-trail-parity` (12) · `performance-audit` (12)
-  · both DevTools-blocked specs above · every future session's commit gate
+Corrected findings (tree-map agent + direct verification, 2026-08-01):
+- [x] `WorkspaceShareControl.svelte` blocker is DEAD: file is tracked, committed
+      (`0d36fe77fa`, `ce62cb4b75`), zero diff vs HEAD. Full `npm run check` ran
+      **0 errors, 0 warnings** this session. Four specs' `depends_on` were stale.
+- [x] Shop remediation is ALREADY COMMITTED (`afb0f2985a` et al.): merch
+      functions + store code clean in the tree. Shop specs' only real gates are
+      the Stripe dashboard actions in A1 + deploy + paid-order proof.
+- [ ] Reconcile the remaining working-tree clusters — map at
+      `scratchpad/tree-map.md` (session 068589ff): 376 entries, ~35 clusters.
+      Largest: admin panel rebuild (~32 files, tests included), viewer
+      share/export unification (~30), My Collections smart collections (~30,
+      GalleryDrill +2743), notation "playable archive" consolidation (~24 with
+      11 deletions), museum core+lobby (30), auth (~16). Most large clusters
+      have matching tests and look land-ready; owners must confirm before any
+      commit (other sessions are live).
 
 ## Block D — Drift adjudication (paper moves, no code)
 
