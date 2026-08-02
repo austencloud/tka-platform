@@ -152,6 +152,19 @@ Interactive DevTools commands (`navigate_page`, `click`, `type_text`, `fill`) re
 
 Read-only (`take_snapshot`, `take_screenshot`, `list_console_messages`) is fine when the user asks you to evaluate a page.
 
+### Shared Agent Application Identity
+
+When an approved browser task needs an ordinary TKA sign-in, Codex and Claude
+use the dedicated `Codex + Claude` profile. Do not use Austen's personal account
+or the Google reviewer account. The profile has normal user access only and
+must never receive admin, tester, premium, or reviewer privileges.
+
+Credentials stay outside the repository in a Windows user-scoped encrypted
+store. Use `scripts/agent-profile-credential.ps1` to copy one field at a time,
+paste it into the task-owned tab, and clear the clipboard immediately. Never
+print, log, commit, or paste the password into chat. See
+`docs/reference/agent-browser-profile.md` for the exact workflow.
+
 ## Context Management
 
 Suggest `/compact` at 70% context.
