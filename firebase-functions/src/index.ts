@@ -23,6 +23,13 @@ export {
   pulseSoftwareSubmission,
 } from "./pulse/pulseTriggers";
 export { onFollowCreated, onFollowDeleted } from "./social/onFollowChange";
+export {
+  syncSequenceCountOnCreate,
+  syncSequenceCountOnDelete,
+  syncCollectionCountOnCreate,
+  syncCollectionCountOnDelete,
+  syncLibraryCountsOnProfileCreate,
+} from "./profiles/syncLibraryCounts";
 
 export {
   cleanupStaleAgentSessions,
