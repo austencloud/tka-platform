@@ -249,6 +249,15 @@
     }
   }
 
+  function requestPointerLockSafely(canvas: HTMLCanvasElement): void {
+    try {
+      const request = canvas.requestPointerLock();
+      if (request && "catch" in request) void request.catch(() => {});
+    } catch {
+      // Pointer lock can be unavailable while a document is being replaced.
+    }
+  }
+
   function handleCanvasClick() {
     if (!enabled) return;
     if (mode === CameraMode.ORBIT) {
@@ -259,7 +268,7 @@
     if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
       const canvas = cachedCanvas ?? renderer.current?.domElement;
       if (canvas?.isConnected) {
-        try { canvas.requestPointerLock(); } catch {}
+        requestPointerLockSafely(canvas);
       }
     }
   }
@@ -327,14 +336,6 @@
     cachedCanvas = canvas;
     isPointerLocked = document.pointerLockElement === canvas;
     inputCaps.init();
-
-    if (isGameMode(mode) && !isPointerLocked && inputCaps.canUsePointerLock() && canvas.isConnected) {
-      requestAnimationFrame(() => {
-        if (cachedCanvas?.isConnected) {
-          try { cachedCanvas.requestPointerLock(); } catch {}
-        }
-      });
-    }
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
