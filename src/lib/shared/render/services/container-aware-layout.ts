@@ -48,6 +48,10 @@ export interface BestFitInput {
    * scores the same proportional timeline rows the card renders.
    */
   stepDurations?: readonly number[];
+  /**
+   * Whether the returned grid includes the Start lane. Auto still scores the
+   * full card when this is false so hiding Start cannot repack every beat.
+   */
   includeStartPosition: boolean;
   /** Raw container width in px (NOT the aspect-fitted contained width). */
   containerWidth: number;
@@ -140,6 +144,10 @@ interface Candidate {
   rows: number;
   startPlacement: StartPlacement;
   widthUnits: number;
+  /** Beat-only geometry retained when the Start lane is hidden. */
+  stepCols: number;
+  stepRows: number;
+  stepWidthUnits: number;
   cellEdge: number;
   /** Unfilled cells in the last STEP row (start lane excluded). */
   stepTrailing: number;
@@ -190,9 +198,10 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
   if (stepCount < 1) return null;
   if (!(containerWidth > 0) || !(containerHeight > 0)) return null;
 
-  const placements: StartPlacement[] = includeStartPosition
-    ? ["row", "column"]
-    : ["none"];
+  // Start visibility is presentation, not permission to repack the beats.
+  // Score the same full-card candidates in both states, then strip the winning
+  // Start lane from the returned geometry when the user hides it.
+  const placements: StartPlacement[] = ["row", "column"];
 
   const durations = Array.from(
     { length: stepCount },
@@ -204,7 +213,7 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
   const durationSteps = hasMixedDurations
     ? durations.map((duration) => ({ duration }))
     : null;
-  const usedCells = stepCount + (includeStartPosition ? 1 : 0);
+  const usedCells = stepCount + 1;
   const candidates: Candidate[] = [];
 
   for (let sc = 1; sc <= stepCount; sc++) {
@@ -212,6 +221,8 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
       let cols: number;
       let rows: number;
       let widthUnits: number;
+      let stepRows: number;
+      let stepWidthUnits: number;
 
       if (durationSteps) {
         const timelineRows = calculateTimelineRowsByBeatCount(
@@ -222,12 +233,10 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
           1,
           ...timelineRows.map((row) => row.totalDuration),
         );
+        stepRows = timelineRows.length;
+        stepWidthUnits = maxStepUnits;
 
-        if (!includeStartPosition || placement === "none") {
-          cols = sc;
-          rows = timelineRows.length;
-          widthUnits = maxStepUnits;
-        } else if (placement === "row") {
+        if (placement === "row") {
           cols = sc;
           rows = timelineRows.length + 1;
           // Start and QR occupy opposite ends of the top lane.
@@ -242,17 +251,21 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
         const shape = gridShape(
           stepCount,
           sc,
-          includeStartPosition,
+          true,
           placement,
         );
         cols = shape.cols;
         rows = shape.rows;
         widthUnits = cols;
+        stepRows = Math.max(1, Math.ceil(stepCount / sc));
+        stepWidthUnits = sc;
       }
 
       // The QR code is functional (the scan target), so it must have a reserved
-      // empty slot. Row placement parks it at (cols, 1); column at (1, rows).
-      if (showQRCode && includeStartPosition && !durationSteps) {
+      // empty slot in the reference layout. Row placement parks it at (cols, 1);
+      // column at (1, rows). Keeping this constraint while Start is hidden is
+      // what makes showing it again restore the same beat grid.
+      if (showQRCode && !durationSteps) {
         if (placement === "row" && cols < 2) continue;
         if (placement === "column" && rows < 2) continue;
       }
@@ -273,8 +286,11 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
         rows,
         startPlacement: placement,
         widthUnits,
+        stepCols: sc,
+        stepRows,
+        stepWidthUnits,
         cellEdge,
-        stepTrailing: stepTrailingEmpties(cols, rows, stepCount, includeStartPosition, placement),
+        stepTrailing: stepTrailingEmpties(cols, rows, stepCount, true, placement),
         wasted: cols * rows - usedCells,
         balance: Math.abs(widthUnits - rows),
       });
@@ -287,6 +303,14 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
   for (const c of candidates) if (!best || isBetter(c, best)) best = c;
 
   if (!best) return null;
+  if (!includeStartPosition) {
+    return {
+      cols: best.stepCols,
+      rows: best.stepRows,
+      startPlacement: "none",
+      widthUnits: best.stepWidthUnits,
+    };
+  }
   return {
     cols: best.cols,
     rows: best.rows,

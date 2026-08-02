@@ -53,11 +53,20 @@ describe("pickBestFitLayout — maximum pictograph size", () => {
     expect(fit.cols).toBeGreaterThan(1);
   });
 
-  it("8, no start, no QR (square): prefers the near-square 3×3", () => {
-    const fit = pickBestFitLayout(
+  it("8, no start, no QR (square): keeps the four-column beat grid", () => {
+    const shown = pickBestFitLayout(
+      input({ includeStartPosition: true, showQRCode: false, containerWidth: 800, containerHeight: 800 }),
+    )!;
+    const hidden = pickBestFitLayout(
       input({ includeStartPosition: false, showQRCode: false, containerWidth: 800, containerHeight: 800 }),
     )!;
-    expect(`${fit.cols}x${fit.rows}`).toBe("3x3");
+
+    expect(hidden).toEqual({
+      cols: shown.startPlacement === "column" ? shown.cols - 1 : shown.cols,
+      rows: 2,
+      startPlacement: "none",
+      widthUnits: 4,
+    });
   });
 
   it("size still decides among full-step shapes: wide container favors more columns", () => {

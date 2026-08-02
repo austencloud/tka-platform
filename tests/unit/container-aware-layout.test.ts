@@ -161,14 +161,33 @@ describe("pickBestFitLayout", () => {
     }
   });
 
-  it("without a start position, uses the no-start shape formula", () => {
-    const r = pickBestFitLayout(
-      base({ includeStartPosition: false, containerWidth: 400, containerHeight: 800 }),
-    )!;
-    expect(r.startPlacement).toBe("none");
-    expect(stepCols(r)).toBe(2);
-    expect(r.cols).toBe(2);
-    expect(r.rows).toBe(2); // 4 steps / 2 cols, no extra start row
+  it("hiding Start removes its lane without repacking the step grid", () => {
+    for (const [containerWidth, containerHeight] of [
+      [400, 800],
+      [800, 800],
+      [1200, 500],
+    ] as const) {
+      const shown = pickBestFitLayout(
+        base({
+          stepCount: 8,
+          includeStartPosition: true,
+          containerWidth,
+          containerHeight,
+        }),
+      )!;
+      const hidden = pickBestFitLayout(
+        base({
+          stepCount: 8,
+          includeStartPosition: false,
+          containerWidth,
+          containerHeight,
+        }),
+      )!;
+
+      expect(hidden.startPlacement).toBe("none");
+      expect(hidden.cols).toBe(stepCols(shown));
+      expect(hidden.rows).toBe(Math.ceil(8 / hidden.cols));
+    }
   });
 
   it("returns cols/rows that match the render grid-shape convention", () => {
@@ -241,6 +260,22 @@ describe("container-aware Auto coverage", () => {
         expect(
           stepColumns * stepRows,
           `clipped step region for ${stepCount} steps`,
+        ).toBeGreaterThanOrEqual(stepCount);
+
+        const withoutStart = pickBestFitLayout({
+          stepCount,
+          includeStartPosition: false,
+          containerWidth,
+          containerHeight,
+          showHeader: true,
+          showFooter: true,
+          showQRCode: stepCount > 1,
+        });
+        expect(withoutStart?.startPlacement).toBe("none");
+        expect(withoutStart?.cols).toBe(stepColumns);
+        expect(
+          (withoutStart?.cols ?? 0) * (withoutStart?.rows ?? 0),
+          `clipped hidden-Start grid for ${stepCount} steps`,
         ).toBeGreaterThanOrEqual(stepCount);
       }
     }
