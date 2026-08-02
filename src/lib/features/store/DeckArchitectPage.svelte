@@ -45,6 +45,7 @@
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { prewarmCovers } from "./services/cover-front-renderer";
   import {
     recipePreviewCards,
     recipeSliceCard,
@@ -122,6 +123,17 @@
     { id: ++uid, count: DECK_SIZE, flavor: "rotated", level: 1, steps: 8 },
   ]);
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
+
+  // Seed the card render pool. Every card on this page is generated live, so
+  // none of them is baked — without a seed the print pipeline composes them
+  // with no arrow, prop, or glyph assets loaded and every sample comes back a
+  // blank white rectangle. The flavor SKUs' covers are the same seed the LOOP
+  // listing and the catalog front door already use; a prop switch re-seeds,
+  // because prop type is part of the pool's seed signature.
+  $effect(() => {
+    const all = flavorSkus.flatMap((p) => p.coverCards ?? []);
+    if (all.length) prewarmCovers(all, propType, { includeBaked: true });
+  });
 
   const total = $derived(slices.reduce((n, s) => n + s.count, 0));
   const problem = $derived(recipeProblem(slices));
@@ -363,10 +375,11 @@
     buySku !== null && resolvePurchaseState(buySku, SALES_LIVE) !== "notify"
   );
 
-  // The Architect is a wing of the LOOP deck listing, so the rail points at
-  // everything except that listing — the deck itself is one click back.
+  // Exclude the listing this page IS, not the one it came from. Naming the
+  // LOOP deck's href here sold the Architect back to the reader on its own
+  // page and hid the deck it configures — both wrong.
   const crossSell = $derived(
-    deriveCrossSell(store.products, { currentHref: "/shop/loop-deck" })
+    deriveCrossSell(store.products, { currentListing: "loop-deck-architect" })
   );
 
   const ASSURANCES = [
@@ -782,7 +795,10 @@
       radial-gradient(70% 60% at 50% 40%, rgba(139, 108, 255, 0.3), transparent 70%),
       radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
     padding: 14px;
-    height: 280px;
+    /* Tall enough that the sampled cards read as cards. The info column beside
+       it runs taller than this at every desktop width, so the stage claiming
+       its share of the hero band costs the buy cluster nothing. */
+    height: clamp(280px, 44vh, 620px);
   }
   .preview-inner {
     height: 100%;

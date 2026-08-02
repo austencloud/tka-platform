@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import type { CoverCard, Product } from "../../domain/models/product";
-  import ShopEntryArt from "./ShopEntryArt.svelte";
+  import ShopEntryArt from "../ShopEntryArt.svelte";
 
   interface Props {
     /** The single card the hero holds up. Null while the catalog is empty. */
@@ -76,6 +76,19 @@
     }
   }
 
+  /* Big-screen tier (the site-wide 1680 seam). Two things go wrong up here if
+     the base rules just scale: a 60svh floor on a 2160px-tall screen inflates
+     the grid by ~300px past what the content needs, which strands the CTA in
+     the middle of an empty band above the shelf filter; and the card, capped
+     at laptop proportions, reads as a postcard on a wall. So the band is sized
+     by its content and the card takes the room instead. */
+  @media (min-width: 105rem) {
+    .hero {
+      min-height: 0;
+      padding-block: clamp(2rem, 3.5vh, 4rem);
+    }
+  }
+
   .copy {
     display: flex;
     flex-direction: column;
@@ -91,6 +104,8 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    /* Two even lines on a phone rather than "PRINTED" then an orphaned "LINE". */
+    text-wrap: balance;
   }
 
   h1 {
@@ -183,6 +198,16 @@
       rgba(126, 224, 255, 0) 68%
     );
     filter: drop-shadow(0 1.75rem 3.5rem rgba(0, 0, 0, 0.6));
+  }
+
+  /* Big screens get a bigger card, not the laptop card floating in more rail.
+     34rem lands under the print render's own 822px source width at 4K, so it
+     grows without ever being upscaled. */
+  @media (min-width: 105rem) {
+    .card-stage {
+      width: min(100%, 34rem);
+      min-height: clamp(22rem, 24vw, 38rem);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

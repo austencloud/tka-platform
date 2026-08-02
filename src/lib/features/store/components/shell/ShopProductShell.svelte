@@ -390,8 +390,16 @@
     );
   }
 
+  /* Unframed hosts paint their own stage, and that stage must have the whole
+     column to size its card maths from. `place-items: center` above is grid
+     alignment, but Chrome also honours `justify-items` in BLOCK layout: left
+     in place it made the host's stage shrink-to-fit and centre, collapsing a
+     861px column to a 65px sliver with the caption wrapping one word per line.
+     Reset both axes with the display switch — they belong to the framed stage
+     only. */
   .hero-media:not(.framed) {
     display: block;
+    place-items: normal;
     min-height: 0;
   }
 

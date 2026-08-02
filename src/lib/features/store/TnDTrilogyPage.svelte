@@ -68,7 +68,7 @@
 
   // The rest of the line, minus every volume of this trilogy.
   const crossSell = $derived(
-    deriveCrossSell(store.products, { currentHref: "/shop/tnd-trilogy" })
+    deriveCrossSell(store.products, { currentListing: "tnd-trilogy" })
   );
 
   const ASSURANCES = [

@@ -20,12 +20,8 @@
   import ShopFrontDoorHero from "./ShopFrontDoorHero.svelte";
   import ShopShelfFilter from "./ShopShelfFilter.svelte";
   import ShopCatalogTile from "./ShopCatalogTile.svelte";
-  import {
-    allCoverCards,
-    entryArtCards,
-    frontDoorEntries,
-    heroCoverCard,
-  } from "./front-door-catalog";
+  import { deriveCatalogEntries } from "../../domain/catalog-listings";
+  import { allCoverCards, heroCoverCard } from "./front-door-catalog";
 
   interface Props {
     /** Server-rendered catalog: everything a tile needs except the cover cards,
@@ -53,7 +49,7 @@
     }
   });
 
-  const entries = $derived(frontDoorEntries(catalog));
+  const entries = $derived(deriveCatalogEntries(catalog));
 
   let shelf = $state("all");
   // A shelf can empty out between loads (a product goes draft). Fall back to
@@ -123,7 +119,7 @@
       {:else}
         <div class="grid" class:odd={visible.length % 2 === 1}>
           {#each visible as entry (entry.href)}
-            <ShopCatalogTile {entry} artCards={entryArtCards(entry, catalog)} />
+            <ShopCatalogTile {entry} />
           {/each}
         </div>
       {/if}

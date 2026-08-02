@@ -451,9 +451,13 @@
     )
   );
 
+  // includeBaked: the SKU covers are baked for staff, so the default filter
+  // left the seed set empty and nothing seeded the pool. The pack and variety
+  // hands are sampled and generated live, and an unseeded pool renders those
+  // as blank cards.
   $effect(() => {
     const all = flavorSkus.flatMap((p) => p.coverCards ?? []);
-    if (all.length) prewarmCovers(all, propType);
+    if (all.length) prewarmCovers(all, propType, { includeBaked: true });
   });
 
   // Warm the OTHER packs' fans on idle so switching difficulty is instant.
@@ -527,7 +531,7 @@
   );
 
   const crossSell = $derived(
-    deriveCrossSell(store.products, { currentHref: "/shop/loop-deck" })
+    deriveCrossSell(store.products, { currentListing: "loop-deck" })
   );
 
   // A real LOOP card for the anatomy diagram. Deliberately NOT taken from the
@@ -807,8 +811,10 @@
       radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
     /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
        so no config swap can resize the box (no-layout-shift by construction).
-       Hero-scaled but budgeted: stage + controls band must share one viewport. */
-    height: clamp(340px, 38vh, 600px);
+       Hero-scaled: the fan is the beauty shot and the cards have to read as
+       cards, not thumbnails. The info column beside it is taller than this at
+       every desktop width, so the stage growing costs the buy cluster nothing. */
+    height: clamp(340px, 44vh, 640px);
   }
 
   /* Each layer fills the stage and centers its art vertically. Children
@@ -1133,6 +1139,14 @@
     }
     .composition-line {
       text-align: center;
+    }
+    /* The prop chips take two rows down here so their labels aren't clipped;
+       the tile grows with them instead of cropping the second row. */
+    .tile-row > .tile.prop-shell {
+      /* Room for the two-row prop picker (the labels don't fit on one row at
+         phone widths). Fixed, not auto: the BaseCard inside is height:100%, so
+         an auto tile collapses it. */
+      height: 210px;
     }
   }
 

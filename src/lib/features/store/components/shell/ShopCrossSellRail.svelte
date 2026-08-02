@@ -8,8 +8,7 @@
 <script lang="ts">
   import type { CatalogEntry } from "../../domain/catalog-listings";
   import { formatUsd } from "../../domain/preorder-pricing";
-  import DeckFanCover from "../DeckFanCover.svelte";
-  import BookCoverArt from "../BookCoverArt.svelte";
+  import ShopEntryArt from "../ShopEntryArt.svelte";
 
   interface Props {
     entries: readonly CatalogEntry[];
@@ -29,25 +28,20 @@
     <div class="rail-grid" style:--cols={columns}>
       {#each entries as entry (entry.href)}
         <a class="rail-card" href={entry.href}>
+          <!-- Same art component the front-door tiles use, fed the same
+               derived cards, so a product looks like itself wherever it
+               appears. The box is a fixed size, so art landing late moves
+               nothing in the card. -->
           <div class="art">
-            {#if entry.product.coverCards?.length}
-              <DeckFanCover
-                cards={entry.product.coverCards}
-                deckId={entry.product.deckId}
-                deckName={entry.name}
-                cardWidth={72}
-                maxCardWidth={124}
-                maxCards={3}
-              />
-            {:else if entry.product.type === "guide"}
-              <BookCoverArt width="clamp(5rem, 40%, 8rem)" />
-            {:else if entry.product.coverImageUrl}
-              <img src={entry.product.coverImageUrl} alt="" loading="lazy" />
-            {:else}
-              <span class="art-mark" aria-hidden="true">
-                <i class="fas fa-layer-group"></i>
-              </span>
-            {/if}
+            <ShopEntryArt
+              cards={entry.artCards}
+              product={entry.product}
+              deckName={entry.name}
+              cardWidth={72}
+              maxCardWidth={150}
+              maxCards={3}
+              bookWidth="min(40cqi, 72cqh)"
+            />
           </div>
           <span class="shelf">{entry.shelf}</span>
           <span class="name">{entry.name}</span>
@@ -124,6 +118,9 @@
      height means neither reflows the card when it lands. */
   .art {
     height: clamp(8rem, 11vw, 13rem);
+    /* A size container so the printed guide's cover can be measured against
+       the box's HEIGHT — a wide, short art box crops it otherwise. */
+    container-type: size;
     display: grid;
     place-items: center;
     border-radius: 1rem;
@@ -133,15 +130,6 @@
       rgba(255, 255, 255, 0.05),
       rgba(255, 255, 255, 0.015)
     );
-  }
-  .art img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  .art-mark {
-    font-size: 1.75rem;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.35));
   }
 
   .shelf {

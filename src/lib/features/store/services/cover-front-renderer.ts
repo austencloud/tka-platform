@@ -101,13 +101,21 @@ const seedGateWithTimeout = Promise.race([
  */
 export function prewarmCovers(
   cards: readonly CoverCard[],
-  propType: PropType = DEFAULT_COVER_PROP
+  propType: PropType = DEFAULT_COVER_PROP,
+  { includeBaked = false }: { includeBaked?: boolean } = {}
 ): void {
-  // Baked cards for this prop load as plain images — only unbaked ones need
-  // the worker pipeline seeded. NOTE: the pool holds ONE prop bundle at a time
-  // (prop types are part of the seed signature), so a prop switch re-seeds.
-  const sequences = cards
-    .filter((c) => !bakedCoverUrl(c, propType))
+  // Baked cards for this prop load as plain images, so by default they don't
+  // need the worker pipeline seeded. A page whose OWN cards are generated live
+  // — the Deck Architect samples and generates every card it shows — has to
+  // pass `includeBaked`: its seed set (the flavor SKUs' covers) is fully baked,
+  // so the default filter emptied it, nothing seeded the pool, and every
+  // generated card came back a blank white rectangle. NOTE: the pool holds ONE
+  // prop bundle at a time (prop types are part of the seed signature), so a
+  // prop switch re-seeds.
+  const seedFrom = includeBaked
+    ? cards
+    : cards.filter((c) => !bakedCoverUrl(c, propType));
+  const sequences = seedFrom
     .map((c) => c.sequence && hydrateCached(c.sequence))
     .filter(Boolean) as SequenceData[];
   if (!sequences.length) return;

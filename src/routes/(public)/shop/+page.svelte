@@ -8,7 +8,7 @@
   //
   // Chrome (nav + cosmic background) comes from +layout.svelte.
   import ShopFrontDoor from "$lib/features/store/components/front-door/ShopFrontDoor.svelte";
-  import { frontDoorEntries } from "$lib/features/store/components/front-door/front-door-catalog";
+  import { deriveCatalogEntries } from "$lib/features/store/domain/catalog-listings";
   import { SALES_LIVE } from "$lib/features/store/domain/purchase-state";
   import type { Product } from "$lib/features/store/domain/models/product";
   import type { PageData } from "./$types";
@@ -18,7 +18,7 @@
   // The server load returns raw Firestore fields; they ARE the Product shape,
   // minus the cover cards it deliberately leaves behind (see +page.server.ts).
   const products = $derived((data.products ?? []) as unknown as Product[]);
-  const entries = $derived(frontDoorEntries(products));
+  const entries = $derived(deriveCatalogEntries(products));
 
   const SITE = "https://tkaflowarts.com";
   const DESCRIPTION =

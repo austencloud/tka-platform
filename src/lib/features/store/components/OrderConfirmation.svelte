@@ -67,7 +67,10 @@
   .confirmation-band {
     max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
-    padding: 3.5rem 1.5rem 3rem;
+    /* Little bottom padding on purpose: the site footer already carries a
+       margin above itself, and stacking both left a strip of empty page
+       between the rail and the footer. */
+    padding: 3.5rem 1.5rem 0.75rem;
     display: flex;
     flex-direction: column;
     gap: clamp(2.5rem, 4vw, 4.5rem);

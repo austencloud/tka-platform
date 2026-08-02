@@ -9,18 +9,15 @@
 -->
 <script lang="ts">
   import type { CatalogEntry } from "../../domain/catalog-listings";
-  import type { CoverCard } from "../../domain/models/product";
   import { formatUsd } from "../../domain/preorder-pricing";
   import { resolvePurchaseState, SALES_LIVE } from "../../domain/purchase-state";
-  import ShopEntryArt from "./ShopEntryArt.svelte";
+  import ShopEntryArt from "../ShopEntryArt.svelte";
 
   interface Props {
     entry: CatalogEntry;
-    /** Real card fronts for this entry's art box. */
-    artCards: readonly CoverCard[];
   }
 
-  let { entry, artCards }: Props = $props();
+  let { entry }: Props = $props();
 
   const state = $derived(resolvePurchaseState(entry.product, SALES_LIVE));
 
@@ -36,7 +33,7 @@
 <a class="tile" href={entry.href}>
   <div class="art">
     <ShopEntryArt
-      cards={artCards}
+      cards={entry.artCards}
       product={entry.product}
       deckName={entry.name}
       bookWidth="min(42cqi, 70cqh)"

@@ -275,7 +275,7 @@ describe("landing shared-element contract", () => {
     // The Choreo Cards tile lands on /shop now; the print pipeline behind the
     // front door's card art is the media that has to stay out of the morph.
     const choreoCards = readSource(
-      "src/lib/features/store/components/front-door/ShopEntryArt.svelte"
+      "src/lib/features/store/components/ShopEntryArt.svelte"
     );
     const anatomyExplainer = readSource(
       "src/lib/features/store/components/CardAnatomyExplainer.svelte"

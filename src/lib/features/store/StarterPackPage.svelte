@@ -87,7 +87,7 @@
   // Everything else on the shelf. The pack contains most of it, which is the
   // point: a buyer who isn't ready for the whole box can pick one piece.
   const crossSell = $derived(
-    deriveCrossSell(store.products, { currentHref: "/shop/starter-pack" })
+    deriveCrossSell(store.products, { currentListing: "starter-pack" })
   );
 
   const ASSURANCES = [

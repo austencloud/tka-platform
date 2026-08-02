@@ -12,7 +12,7 @@
 -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import type { CatalogEntry } from "../../domain/catalog-listings";
+  import { shelfRank, type CatalogEntry } from "../../domain/catalog-listings";
   import { shelfChipLabel } from "./front-door-catalog";
 
   interface Props {
@@ -26,7 +26,14 @@
 
   let { entries, value, onchange, controls }: Props = $props();
 
-  const shelves = $derived([...new Set(entries.map((e) => e.shelf))]);
+  // Shelf order is a merchandising decision, not whatever order the catalog
+  // happens to load in: the printed decks are the flagship shelf and lead, and
+  // the bundle (a way to buy several of them) reads last.
+  const shelves = $derived(
+    [...new Set(entries.map((e) => e.shelf))].sort(
+      (a, b) => shelfRank(a) - shelfRank(b)
+    )
+  );
 
   const options = $derived([
     {

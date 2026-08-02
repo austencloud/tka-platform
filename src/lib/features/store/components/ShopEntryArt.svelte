@@ -1,7 +1,10 @@
-<!-- src/lib/features/store/components/front-door/ShopEntryArt.svelte -->
+<!-- src/lib/features/store/components/ShopEntryArt.svelte -->
 <!--
-  The art inside a front-door art box: a fan of real printed card fronts, the
-  printed guide's real cover, or the product's cover image.
+  The art inside any storefront art box — the catalog front door's tiles, its
+  hero, and the cross-sell rail on every product page all render through this
+  one component, so an entry looks the same wherever it appears: a fan of real
+  printed card fronts, the printed guide's real cover, or the product's cover
+  image.
 
   The fan and the book cover both pull in the print pipeline, which is browser
   work (canvas, workers, Firebase). /shop renders on the server for crawlers, so
@@ -13,7 +16,7 @@
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
   import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
-  import type { CoverCard, Product } from "../../domain/models/product";
+  import type { CoverCard, Product } from "../domain/models/product";
 
   interface Props {
     /** Real printed card fronts to fan. Empty falls through to the cover image. */
@@ -53,7 +56,7 @@
 </script>
 
 {#if cards.length && ready}
-  {#await import("../DeckFanCover.svelte") then { default: DeckFanCover }}
+  {#await import("./DeckFanCover.svelte") then { default: DeckFanCover }}
     <DeckFanCover
       {cards}
       deckId={product.deckId}
@@ -65,7 +68,7 @@
     />
   {/await}
 {:else if product.type === "guide" && ready}
-  {#await import("../BookCoverArt.svelte") then { default: BookCoverArt }}
+  {#await import("./BookCoverArt.svelte") then { default: BookCoverArt }}
     <BookCoverArt width={bookWidth} />
   {/await}
 {:else if product.coverImageUrl}
