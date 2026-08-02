@@ -26,7 +26,7 @@
    * The old code sampled ONE sequence and assumed all rows were the same height.
    * Cards with different beat counts have different aspect ratios, so that
    * caused overlap. Now we estimate per-row using the tallest card in the row,
-   * then correct with measureElement after the DOM renders.
+   * then correct with measured DOM rows after they render.
    */
 
   export interface VirtualGridApi {
@@ -131,6 +131,8 @@
   onDestroy(() => {
     visibilityManager.unregisterObserver(handleVisibilityChange);
     if (measureRaf !== null) cancelAnimationFrame(measureRaf);
+    mountedRows.clear();
+    pendingMeasures.clear();
   });
 
   let scrollElement = $state<HTMLDivElement | null>(null);
@@ -209,14 +211,26 @@
   }
 
   // Single virtualizer instance - created once, recreated when deps change.
-  // Uses per-row estimateSize for accurate initial layout, plus measureElement
-  // for pixel-perfect correction after render.
+  // Uses per-row estimateSize for accurate initial layout, plus measured DOM
+  // rows for pixel-perfect correction after render.
   type VirtualizerInstance = SvelteVirtualizer<HTMLDivElement, Element>;
   type VirtualizerStore = Readable<VirtualizerInstance>;
 
   let currentVirtualizer: VirtualizerInstance | null = null;
   let virtualizerStore: VirtualizerStore | null = null;
   let storeUnsub: (() => void) | null = null;
+  let mountedRows = new Set<HTMLElement>();
+  let pendingMeasures = new Set<HTMLElement>();
+  let measureRaf: number | null = null;
+
+  function queueRowMeasure(node: HTMLElement) {
+    pendingMeasures.add(node);
+    measureRaf ??= requestAnimationFrame(flushMeasures);
+  }
+
+  function queueMountedRowMeasures() {
+    for (const row of mountedRows) queueRowMeasure(row);
+  }
 
   function createAndSubscribe(count: number) {
     // Clean up previous
@@ -237,6 +251,11 @@
       virtualRows = v.getVirtualItems();
       totalHeight = v.getTotalSize();
     });
+
+    // A width or column-count change creates a fresh virtualizer while Svelte
+    // may retain the existing row nodes. Register those nodes with the new
+    // instance so it does not fall back to stale estimates for retained rows.
+    queueMountedRowMeasures();
   }
 
   // Svelte action: measures each row's actual DOM height after render.
@@ -247,9 +266,6 @@
   // writes — a forced full-document layout per row (traced at 1,964ms while the
   // Choreo picker's gallery filled). One batched pass = one layout flush;
   // estimateSize covers the single frame before precise heights land.
-  let pendingMeasures = new Set<HTMLElement>();
-  let measureRaf: number | null = null;
-
   function flushMeasures() {
     measureRaf = null;
     if (!currentVirtualizer) return;
@@ -260,10 +276,12 @@
   }
 
   function measureRow(node: HTMLElement) {
-    pendingMeasures.add(node);
-    measureRaf ??= requestAnimationFrame(flushMeasures);
+    mountedRows.add(node);
+    queueRowMeasure(node);
+
     return {
       destroy() {
+        mountedRows.delete(node);
         pendingMeasures.delete(node);
       },
     };
@@ -314,7 +332,10 @@
           const width = entry.contentRect.width;
           if (width > 0 && Math.abs(width - containerWidth) > 1) {
             containerWidth = width;
-            if (currentVirtualizer) currentVirtualizer.measure();
+            if (currentVirtualizer) {
+              currentVirtualizer.measure();
+              queueMountedRowMeasures();
+            }
           }
         }
       });
