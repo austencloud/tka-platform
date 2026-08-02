@@ -28,7 +28,7 @@ $ReleaseTag = "codex-tka-v$CodexVersion"
 $ReleaseBaseUrl = "https://github.com/austencloud/tka-platform/releases/download/$ReleaseTag"
 $BuildProfile = if ($DevelopmentBuild) { 'dev' } else { 'release' }
 $BuiltExeRelativePath = if ($DevelopmentBuild) { 'debug\codex.exe' } else { 'release\codex.exe' }
-$CargoTestProfileArgs = if ($DevelopmentBuild) { @() } else { @('--release') }
+[string[]]$CargoTestProfileArgs = if ($DevelopmentBuild) { @() } else { @('--release') }
 
 # Agent Hub can inherit a PATH captured before rustup was installed. Rustup's
 # standard per-user bin directory remains authoritative in that case.
