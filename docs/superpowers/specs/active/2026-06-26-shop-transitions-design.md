@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: S
-remaining: "Browser proof RAN 2026-08-02 and FAILED success criterion 1. The old Chrome-connector blocker was stale and is gone. The shop has since been restructured into bespoke per-product routes (/shop/loop-deck, /shop/tnd-trilogy, /shop/choreography-cards, /shop/starter-pack), none of which render ProductDetailPage — the only component carrying a destination view-transition-name. Result: the shop grid paints view-transition-name shop-book-cover on the book tile, but NO reachable destination declares a matching name, so no shared-element morph occurs for any product. Section 2's design (a per-product name on CardMockupPreview from both sides) was never implemented: CardMockupPreview has no viewTransitionName prop and ProductCard.svelte no longer exists. Next step is to re-scope section 2 onto the bespoke pages, not to re-verify."
+remaining: "Two of the three blockers are FIXED in 21d0bcba85 (allowlist now starts a transition on bespoke product routes — measured 0 → 1; DeckFanCover gained viewTransitionName and both ends of the loop-deck and tnd-trilogy pairs are named, verified present on the grid). ONE blocker remains and it is the whole reason the morph still does not complete: each product route renders through {#if browser}{#await import(...)}, so the destination hero has not mounted when the browser snapshots — verified with a warm chunk, destination carries no named participant. That wrapper is load-bearing (SSR emits an SEO shell), so the fix is to resolve the module in +page.ts load() and render it synchronously, NOT to delete the wrapper. Then name the remaining two products (choreography-cards, starter-pack) and run the criteria 2-5 pass (refresh, reduced motion, stagger)."
 depends_on: ""
 supersedes_context: ""
 tags: [shop, transitions, view-transitions, polish, ux]
@@ -191,3 +191,94 @@ page's preview") is not met for any product. Criteria 2–6 were not pursued,
 because the spec cannot close on a re-verification pass — it needs its
 architecture re-scoped onto the bespoke per-product pages first. Reopened as
 design work, not verification work.
+
+## Re-scope, 2026-08-02 — three blockers, two fixed
+
+The earlier entry on this page said no destination declared a matching name.
+That was right about the products tested (`/shop/loop-deck`, `/shop/tnd-trilogy`)
+but overstated: it asserted no product morphs at all, without testing the book
+tile's `/shop/{book.id}` link, which may still reach `ProductDetailPage` through
+the generic `[productId]` route. Treat the book path as untested, not broken.
+
+Investigation found the failure was actually **three** stacked blockers:
+
+### 1. No transition ever started — FIXED (`21d0bcba85`)
+
+`navigationMorphs()` gated the shop pair on `route.id === "/(public)/shop/[productId]"`.
+Every shipped product has a bespoke route instead, so the predicate never
+matched a real navigation and the driver never called `startViewTransition`.
+Measured before: **0** calls. Now matched on path — any `/shop` descendant that
+is neither the index nor `/shop/success` — which covers bespoke routes and the
+fallback, and keeps covering products added later. Measured after: **1**.
+
+### 2. No shared participant — WIRED (`21d0bcba85`)
+
+`DeckFanCover` now takes an optional `viewTransitionName` applied to its root.
+Every product page already uses `DeckFanCover` as its hero, so the card fan is
+the natural shared element: the grid tile's fan literally *is* the hero fan.
+Named pairs so far — `shop-fan-loop-deck`, `shop-fan-tnd-trilogy` — set on both
+the tile and the hero, with group rules matching the book's curve. Verified: the
+grid now paints `shop-fan-loop-deck`, `shop-fan-tnd-trilogy`, and
+`shop-book-cover`.
+
+This replaces section 2's original design, which is unbuildable as written —
+`CardMockupPreview` never got the prop and `ProductCard.svelte` has been deleted.
+
+### 3. The destination mounts too late — OPEN, and the real remaining work
+
+Each product route is shaped:
+
+```svelte
+{#if browser}
+  {#await import("$lib/features/store/LoopDeckConfiguratorPage.svelte") then { default: Page }}
+    <Page />
+  {/await}
+{:else}
+  <div class="seo-shell">…</div>
+{/if}
+```
+
+That is a second layer of laziness on top of SvelteKit's own route-level code
+splitting. The browser snapshots the new state as soon as the DOM updates, and
+the awaited chunk has not rendered yet, so the destination has no named
+participant. Verified with the chunk already warm from a prior visit: shortly
+after navigation the destination still carried **no** `view-transition-name`.
+
+**Do not simply delete the wrapper.** The `{#if browser}` branch is load-bearing:
+it lets SSR emit a lightweight SEO shell instead of the heavy client component,
+and these are indexed marketing pages.
+
+The fix that preserves both: resolve the module in the route's `load` and render
+it synchronously.
+
+```ts
+// +page.ts
+export const load = async () => {
+  const mod = browser
+    ? await import("$lib/features/store/LoopDeckConfiguratorPage.svelte")
+    : null;
+  return { Page: mod?.default ?? null };
+};
+```
+
+```svelte
+{#if data.Page}
+  <data.Page />
+{:else}
+  <div class="seo-shell">…</div>
+{/if}
+```
+
+`navigation.complete` awaits `load`, so by the time the DOM updates the
+component renders synchronously and its named fan exists for the snapshot. The
+SSR shell still renders when `browser` is false.
+
+### Remaining checklist
+
+- [ ] Apply the `load`-resolved page pattern to all four product routes.
+- [ ] Name the last two pairs (`choreography-cards`, `starter-pack`).
+- [ ] Confirm the book path (`/shop/{book.id}`) — does it reach
+      `ProductDetailPage`, and does `shop-book-cover` morph there?
+- [ ] Then criteria 2–5: F5/refresh with no deadlock, browse→sequence morph
+      still correct, `prefers-reduced-motion` instant cut, grid entrance stagger.
+- [ ] Screenshot the morph mid-flight at the required viewports.
