@@ -2,13 +2,19 @@
 status: active
 value: 3
 effort: L
-remaining: "Body status: Draft"
+remaining: 'Says "Draft"; real decomposition landed unevenly. ChoreoCard 2090→287. Museum3DScene 1770→1374 (target 600). Orchestrator + library-repository untouched'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # God File Decomposition
+
+> **Drift check — 2026-08-02.** Says "Draft"; real decomposition landed unevenly. ChoreoCard 2090→287. Museum3DScene 1770→1374 (target 600). Orchestrator + library-repository untouched
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-04
 **Status:** Draft

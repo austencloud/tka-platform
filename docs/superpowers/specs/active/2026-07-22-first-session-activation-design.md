@@ -1,14 +1,20 @@
 ---
 status: active
 value: 5
-effort: L
-remaining: "Body status: Revision 3 — full-scope (Austen, 2026-07-22), decomposed into three"
+effort: M
+remaining: 'Says "awaiting re-review"; SP1/SP2/SP3 substantially built and tested. Remaining: retro-login anonymous guard; 3 SP3 ledger items unverified'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # First-Session Activation — Design
+
+> **Drift check — 2026-08-02.** Says "awaiting re-review"; SP1/SP2/SP3 substantially built and tested. Remaining: retro-login anonymous guard; 3 SP3 ledger items unverified
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-07-22
 **Status:** Revision 3 — full-scope (Austen, 2026-07-22), decomposed into three

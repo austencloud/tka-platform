@@ -1,14 +1,20 @@
 ---
 status: active
-value: 2
-effort: L
-remaining: "Body status: Approved (design)"
+value: 3
+effort: S
+remaining: 'Entire data/service/state/component layer and both hard rendering seams built and tested — but no /my-museum route, so unreachable'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Personal Museum — Design Document
+
+> **Drift check — 2026-08-02.** Entire data/service/state/component layer **and both hard rendering seams** built and tested — but **no `/my-museum` route**, so unreachable
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-06-21
 **Status:** Approved (design)

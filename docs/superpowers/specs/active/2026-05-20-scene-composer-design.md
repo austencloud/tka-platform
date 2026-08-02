@@ -1,14 +1,20 @@
 ---
 status: active
 value: 3
-effort: XL
-remaining: "Body status: Draft"
+effort: M
+remaining: 'Phases 1-3 live in Scene Lab Compose mode; museum editor migration (the dedup point) never happened'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Scene Composer — Design Spec
+
+> **Drift check — 2026-08-02.** Phases 1-3 live in Scene Lab Compose mode; museum editor migration (the dedup point) never happened
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-20
 **Status:** Draft

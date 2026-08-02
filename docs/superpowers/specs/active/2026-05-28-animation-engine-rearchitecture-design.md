@@ -1,14 +1,20 @@
 ---
 status: active
-value: 4
-effort: L
-remaining: "Body status: Approved for execution — handoff to the re-architecture agent"
+value: 3
+effort: S
+remaining: '5 managers + plugin registry + HMR fix shipped; StateSynchronizer was relocated, not dissolved as specced'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Animation Engine Re-Architecture — Fused Design & Handoff Spec
+
+> **Drift check — 2026-08-02.** 5 managers + plugin registry + HMR fix shipped; `StateSynchronizer` was **relocated, not dissolved** as specced
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-28
 **Status:** Approved for execution — handoff to the re-architecture agent

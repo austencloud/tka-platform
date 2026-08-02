@@ -2,13 +2,19 @@
 status: active
 value: 3
 effort: M
-remaining: "Body status: Framing approved; slice B spec written, A/C/D pending their own brainstorm"
+remaining: 'Slices A, B shipped; D shipped copy-only; Slice C unbuilt — the only live gap'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # User Onboarding Overhaul — Umbrella
+
+> **Drift check — 2026-08-02.** Slices A, B shipped; D shipped copy-only; **Slice C unbuilt** — the only live gap
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-06-16
 **Status:** Framing approved; slice B spec written, A/C/D pending their own brainstorm

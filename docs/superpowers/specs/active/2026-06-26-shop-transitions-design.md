@@ -1,15 +1,21 @@
 ---
 status: active
-value: 4
-effort: S
-remaining: "Two of the three blockers are FIXED in 21d0bcba85 (allowlist now starts a transition on bespoke product routes — measured 0 → 1; DeckFanCover gained viewTransitionName and both ends of the loop-deck and tnd-trilogy pairs are named, verified present on the grid). ONE blocker remains and it is the whole reason the morph still does not complete: each product route renders through {#if browser}{#await import(...)}, so the destination hero has not mounted when the browser snapshots — verified with a warm chunk, destination carries no named participant. That wrapper is load-bearing (SSR emits an SEO shell), so the fix is to resolve the module in +page.ts load() and render it synchronously, NOT to delete the wrapper. Then name the remaining two products (choreography-cards, starter-pack) and run the criteria 2-5 pass (refresh, reduced motion, stagger)."
+value: 3
+effort: XS
+remaining: 'Items 1-4 shipped past spec; item 5 (grid entrance stagger) never built. Its depends_on WSL blocker is stale'
 depends_on: ""
 supersedes_context: ""
 tags: [shop, transitions, view-transitions, polish, ux]
-last_triaged: 2026-07-24
+last_triaged: 2026-08-02
 ---
 
 # Shop Transitions — Design Spec
+
+> **Drift check — 2026-08-02.** Items 1-4 shipped past spec; item 5 (grid entrance stagger) never built. Its `depends_on` WSL blocker is stale
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-06-26
 **Status:** Design approved (brainstorm 2026-06-26). Not yet built.

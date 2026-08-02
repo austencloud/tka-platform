@@ -2,13 +2,19 @@
 status: active
 value: 5
 effort: L
-remaining: "Phase 0 done (tka-types pkg + deriveReversals). Phase 1 next: migrate 22 engine files from SequenceStep/MotionData to Step/Motion. Then Phase 2 (231 app files), Phase 3 (delete app-side executors), Phase 4 (MCP consolidation), Phase 5 (broadcast), Phase 6 (DB backfill), Phase 7 (publish)."
+remaining: 'Phases 0-2 shipped via a different subtype architecture; Phase 3 (delete 5 app-side LOOP executors) still open — the bug that motivated the spec'
 depends_on: ""
 plan_path: plans/active/2026-04-20-sequence-engine-unification-plan.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-08-02
 ---
 # Sequence Engine Unification — Design Spec
+
+> **Drift check — 2026-08-02.** Phases 0-2 shipped via a **different** subtype architecture; Phase 3 (delete 5 app-side LOOP executors) still open — the bug that motivated the spec
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-04-20
 **Status:** Ready for implementation planning

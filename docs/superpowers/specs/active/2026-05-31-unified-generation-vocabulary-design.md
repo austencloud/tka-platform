@@ -1,14 +1,20 @@
 ---
 status: active
-value: 3
-effort: L
-remaining: "Body status: Design — pending review"
+value: 2
+effort: M
+remaining: 'Phases 1-2 shipped past spec; Phase 0''s actual goal (collapse 3 reversal + 2 turn representations) and Phases 3-4 unstarted'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Unified Generation Vocabulary — Generate Panel · Deck Composer · Sequence Actions
+
+> **Drift check — 2026-08-02.** Phases 1-2 shipped past spec; Phase 0's actual goal (collapse 3 reversal + 2 turn representations) and Phases 3-4 unstarted
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-31
 **Status:** Design — pending review

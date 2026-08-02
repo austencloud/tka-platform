@@ -1,14 +1,20 @@
 ---
 status: active
-value: 3
-effort: M
-remaining: "Body status: In progress. Four legs upgraded and committed on `main`"
+value: 2
+effort: S
+remaining: '3 of 4 legs survive; Echo''s rework was deleted and replaced by Ghost'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Effect Leg Bolstering — Design / Progress
+
+> **Drift check — 2026-08-02.** 3 of 4 legs survive; Echo's rework was **deleted** and replaced by Ghost
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Status:** In progress. Four legs upgraded and committed on `main`
 (bloom, zap, echo, **pulse**). In-browser visual verification still owed for all
