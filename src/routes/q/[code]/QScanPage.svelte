@@ -507,13 +507,12 @@
     try {
       const renderOptions = buildCardRenderOptions(resolvedSeq, {
         darkMode: ic.darkMode,
-        userName: ic.userName,
         isHandPath: ic.handPathMode ?? false,
         resolvedAutoLayout: ctx.resolvedCardAutoLayout,
       });
       await sequenceModalExporter.exportImage(
         renderOptions,
-        { sequence: resolvedSeq, userName: ic.userName },
+        { sequence: resolvedSeq },
         {
           onSuccess: () => {
             finishCardExportAttempt(attemptToken, "completed", analyticsConfig);

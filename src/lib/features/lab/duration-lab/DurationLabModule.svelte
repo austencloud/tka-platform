@@ -222,9 +222,7 @@
             darkMode={true}
             showDifficultyLevel={false}
             showLoopGlyph={false}
-            showCreatorName={false}
             showNotes={false}
-            showBirthday={false}
             columnCount={rowCapacityOverride !== null ? rowCapacityOverride + 1 : null}
           />
         {/key}

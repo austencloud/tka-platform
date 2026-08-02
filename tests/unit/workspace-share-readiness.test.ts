@@ -34,7 +34,7 @@ describe("Create workspace share readiness", () => {
       createLink: vi.fn(),
     });
     const sequence = makeSequence("COLD");
-    const options = { darkMode: false, userName: "Austen" };
+    const options = { darkMode: false };
 
     const first = state.prepareCard("card-key", sequence, options);
     const concurrent = state.prepareCard("card-key", sequence, options);
@@ -69,7 +69,7 @@ describe("Create workspace share readiness", () => {
       createLink: vi.fn(),
     });
     const sequence = makeSequence("RETRY");
-    const options = { darkMode: false, userName: "" };
+    const options = { darkMode: false };
 
     await expect(
       state.prepareCard("retry-key", sequence, options)
@@ -94,7 +94,7 @@ describe("Create workspace share readiness", () => {
       renderCard,
       createLink: vi.fn(),
     });
-    const options = { darkMode: false, userName: "" };
+    const options = { darkMode: false };
 
     const first = state.prepareCard("first", makeSequence("FIRST"), options);
     const second = state.prepareCard("second", makeSequence("SECOND"), options);

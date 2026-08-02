@@ -32,10 +32,8 @@ export interface ImageCompositionSettings {
   // LOOP glyph visibility (pie chart badge in header)
   showLoopGlyph: boolean; // Top-right: LOOP constraint indicator
 
-  // Granular footer controls (replaces single addUserInfo toggle)
-  showCreatorName: boolean; // Bottom-left: creator name
+  // Centered footer note. Personal names and dates are not card content.
   showNotes: boolean; // Bottom-center: notes text
-  showBirthday: boolean; // Bottom-right: birthday date
   customNotesText: string; // Custom text for notes (default: "Created using Flow Arts Composer")
 
   // QR code in empty cell under start position
@@ -80,13 +78,8 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   // LOOP glyph - shown by default when sequence has LOOP constraints
   showLoopGlyph: true,
 
-  // Footer defaults. Creator name + birthday show by default; the center notes
-  // lane is OFF by default — the "Created using Flow Arts Composer" branding watermark
-  // doesn't earn its slot on every card. Notes are opt-in; customNotesText is the
-  // text used once a user turns the lane on.
-  showCreatorName: true,
+  // Footer notes are opt-in; customNotesText is used once enabled.
   showNotes: false,
-  showBirthday: true,
   customNotesText: "Created using Flow Arts Composer",
 
   // QR code - shown by default in the empty cell under start position
@@ -107,24 +100,38 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   // No per-step-count info-cell choice overrides by default (derive from globals)
   infoCellChoiceOverrides: {},
 
-  // Computed: true when any footer element is shown
-  addUserInfo: true,
+  // Computed compatibility alias for showNotes
+  addUserInfo: false,
+};
+
+type PersistedImageCompositionSettings = Partial<ImageCompositionSettings> & {
+  showCreatorName?: unknown;
+  showBirthday?: unknown;
 };
 
 function createSettings(
-  seed: Partial<ImageCompositionSettings> | null = null
+  seed: PersistedImageCompositionSettings | null = null
 ): ImageCompositionSettings {
+  const {
+    showCreatorName: _legacyCreatorName,
+    showBirthday: _legacyBirthday,
+    ...supportedSeed
+  } = seed ?? {};
+  const showNotes = supportedSeed.showNotes ?? DEFAULT_SETTINGS.showNotes;
+
   return {
     ...DEFAULT_SETTINGS,
-    ...(seed ?? {}),
+    ...supportedSeed,
+    showNotes,
+    addUserInfo: showNotes,
     startPositionLayoutOverrides: {
-      ...(seed?.startPositionLayoutOverrides ?? {}),
+      ...(supportedSeed.startPositionLayoutOverrides ?? {}),
     },
     columnCountOverrides: {
-      ...(seed?.columnCountOverrides ?? {}),
+      ...(supportedSeed.columnCountOverrides ?? {}),
     },
     infoCellChoiceOverrides: {
-      ...(seed?.infoCellChoiceOverrides ?? {}),
+      ...(supportedSeed.infoCellChoiceOverrides ?? {}),
     },
   };
 }
@@ -552,7 +559,7 @@ class ImageCompositionStateManager {
    * Returns true if ANY footer element is enabled.
    */
   get addUserInfo(): boolean {
-    return this.settings.showCreatorName || this.settings.showNotes || this.settings.showBirthday;
+    return this.settings.showNotes;
   }
 
   get darkMode(): boolean {
@@ -567,17 +574,8 @@ class ImageCompositionStateManager {
     return this.settings.showLoopGlyph;
   }
 
-  // Granular footer getters
-  get showCreatorName(): boolean {
-    return this.settings.showCreatorName;
-  }
-
   get showNotes(): boolean {
     return this.settings.showNotes;
-  }
-
-  get showBirthday(): boolean {
-    return this.settings.showBirthday;
   }
 
   get customNotesText(): string {
@@ -617,7 +615,7 @@ class ImageCompositionStateManager {
     return {
       ...createSettings(this.settings),
       // Include computed addUserInfo for backwards compatibility
-      addUserInfo: this.settings.showCreatorName || this.settings.showNotes || this.settings.showBirthday,
+      addUserInfo: this.settings.showNotes,
     };
   }
 
@@ -647,32 +645,17 @@ class ImageCompositionStateManager {
   }
 
   /**
-   * Convenience method to set all footer elements at once.
+   * Convenience method to set the supported footer elements at once.
    * For backwards compatibility with code that uses addUserInfo.
    */
   setAddUserInfo(value: boolean): void {
-    this.settings.showCreatorName = value;
     this.settings.showNotes = value;
-    this.settings.showBirthday = value;
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  // Granular footer setters
-  setShowCreatorName(value: boolean): void {
-    this.settings.showCreatorName = value;
     this.saveToStorage();
     this.notifyObservers();
   }
 
   setShowNotes(value: boolean): void {
     this.settings.showNotes = value;
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  setShowBirthday(value: boolean): void {
-    this.settings.showBirthday = value;
     this.saveToStorage();
     this.notifyObservers();
   }

@@ -472,11 +472,9 @@ export class LibrarySaveService {
       // user's composition settings. The old path hand-built a ShareOptions
       // subset that dropped QR + mandala and never read the selected prop.
       const imageCompositionManager = getImageCompositionManager();
-      const userName = authState.user?.displayName || "";
 
       const imageBlob = await this.shareService.getCardImageBlob(sequence, {
         darkMode: imageCompositionManager.darkMode,
-        userName,
       });
 
       const uploadResult = await this.uploadService.uploadSequenceThumbnail(

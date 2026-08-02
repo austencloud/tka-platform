@@ -164,9 +164,7 @@
             redPropType={propType}
             startPositionLayoutOverride="column"
             showMandala={true}
-            showCreatorName={false}
             showNotes={false}
-            showBirthday={false}
           />
         </div>
       </figure>

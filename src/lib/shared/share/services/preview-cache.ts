@@ -23,6 +23,9 @@ const DB_NAME = "tka-preview-cache";
 const DB_VERSION = 1;
 const STORE_NAME = "previews";
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// Bump whenever card pixels change so retired footer content cannot survive in
+// IndexedDB after the renderer has stopped producing it.
+const SHARE_PREVIEW_RENDERER_VERSION = 2;
 
 export class PreviewCache {
   private db: IDBDatabase | null = null;
@@ -88,7 +91,21 @@ export class PreviewCache {
    * IMPORTANT: All toggle options must be included to avoid stale cache
    */
   private getCacheKey(sequenceId: string, options: ShareOptions): string {
-    const optionsKey = `${options.format}-${options.addWord}-${options.addStepNumbers}-${options.includeStartPosition}-${options.addDifficultyLevel}-${options.addUserInfo}`;
+    const optionsKey = JSON.stringify({
+      renderer: SHARE_PREVIEW_RENDERER_VERSION,
+      format: options.format,
+      quality: options.quality,
+      addWord: options.addWord,
+      addStepNumbers: options.addStepNumbers,
+      includeStartPosition: options.includeStartPosition,
+      addDifficultyLevel: options.addDifficultyLevel,
+      showNotes: options.showNotes ?? options.addUserInfo,
+      customNotesText: options.customNotesText,
+      darkMode: options.darkMode,
+      backgroundColor: options.backgroundColor,
+      stepSize: options.stepSize,
+      margin: options.margin,
+    });
     return `${sequenceId}-${optionsKey}`;
   }
 

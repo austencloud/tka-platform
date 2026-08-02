@@ -134,10 +134,7 @@ export interface AppSettings {
     darkMode?: boolean;
     customName?: string; // Optional custom name for header
 
-    // Granular footer controls (replaces single addUserInfo toggle)
-    showCreatorName?: boolean; // Bottom-left: creator name
     showNotes?: boolean; // Bottom-center: notes text
-    showBirthday?: boolean; // Bottom-right: birthday date
     customNotesText?: string; // Custom text for notes (default: "Created using Flow Arts Composer")
     showLoopGlyph?: boolean; // Show LOOP glyph indicator
     columnCountOverrides?: Record<string, number | null>; // Per-length card columns; null = Auto

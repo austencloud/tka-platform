@@ -26,7 +26,6 @@
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 	import { browser } from "$app/environment";
 
 	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";
@@ -97,26 +96,20 @@
 	let localAddBeatNumbers = $state(imageSettings.addStepNumbers);
 	let localIncludeStartPosition = $state(imageSettings.includeStartPosition);
 	let localAddDifficultyLevel = $state(imageSettings.addDifficultyLevel);
-	let localAddUserInfo = $state(imageSettings.addUserInfo);
 	let localDarkMode = $state(imageSettings.darkMode);
 	let localShowLoopGlyph = $state(imageSettings.showLoopGlyph);
 	// Granular footer controls
-	let localShowCreatorName = $state(imageSettings.showCreatorName);
 	let localShowNotes = $state(imageSettings.showNotes);
-	let localShowBirthday = $state(imageSettings.showBirthday);
 
 	function handleImageSettingsChange() {
 		localAddWord = imageSettings.addWord;
 		localAddBeatNumbers = imageSettings.addStepNumbers;
 		localIncludeStartPosition = imageSettings.includeStartPosition;
 		localAddDifficultyLevel = imageSettings.addDifficultyLevel;
-		localAddUserInfo = imageSettings.addUserInfo;
 		localDarkMode = imageSettings.darkMode;
 		localShowLoopGlyph = imageSettings.showLoopGlyph;
 		// Granular footer controls
-		localShowCreatorName = imageSettings.showCreatorName;
 		localShowNotes = imageSettings.showNotes;
-		localShowBirthday = imageSettings.showBirthday;
 	}
 
 	imageSettings.registerObserver(handleImageSettingsChange);
@@ -130,13 +123,11 @@
 	const addStepNumbers = $derived(showVisibilitySettings ? localAddBeatNumbers : (globalImageExport?.addStepNumbers ?? true));
 	const includeStartPosition = $derived(showVisibilitySettings ? localIncludeStartPosition : (globalImageExport?.includeStartPosition ?? true));
 	const addDifficultyLevel = $derived(showVisibilitySettings ? localAddDifficultyLevel : (globalImageExport?.addDifficultyLevel ?? false));
-	const addUserInfo = $derived(showVisibilitySettings ? localAddUserInfo : ((globalImageExport?.showCreatorName || globalImageExport?.showNotes || globalImageExport?.showBirthday) ?? false));
+	const addUserInfo = $derived(showVisibilitySettings ? localShowNotes : (globalImageExport?.showNotes ?? false));
 	const darkMode = $derived(showVisibilitySettings ? localDarkMode : globalDarkMode);
 
 	// Granular footer controls - derived for effective values
-	const showCreatorName = $derived(showVisibilitySettings ? localShowCreatorName : (globalImageExport?.showCreatorName ?? true));
 	const showNotes = $derived(showVisibilitySettings ? localShowNotes : (globalImageExport?.showNotes ?? true));
-	const showBirthday = $derived(showVisibilitySettings ? localShowBirthday : (globalImageExport?.showBirthday ?? true));
 
 	// LOOP glyph visibility
 	const showLoopGlyph = $derived(showVisibilitySettings ? localShowLoopGlyph : (globalImageExport?.showLoopGlyph ?? true));
@@ -145,7 +136,6 @@
 	const bluePropType = $derived(settingsService.settings.bluePropType);
 	const redPropType = $derived(settingsService.settings.redPropType);
 	const catDogMode = $derived(settingsService.settings.catDogMode);
-	const userName = $derived(authState.user?.displayName ?? "");
 
 	// Image settings toggle handlers
 	function toggleWord() {
@@ -160,18 +150,9 @@
 	function toggleDifficulty() {
 		imageSettings.toggle("addDifficultyLevel");
 	}
-	function toggleUserInfo() {
-		imageSettings.toggle("addUserInfo");
-	}
 	// Granular footer toggle handlers
-	function toggleShowCreatorName() {
-		imageSettings.toggle("showCreatorName");
-	}
 	function toggleShowNotes() {
 		imageSettings.toggle("showNotes");
-	}
-	function toggleShowBirthday() {
-		imageSettings.toggle("showBirthday");
 	}
 	function toggleShowLoopGlyph() {
 		imageSettings.toggle("showLoopGlyph");
@@ -211,10 +192,7 @@
 				addWord,
 				addDifficultyLevel,
 				addUserInfo,
-				userName,
-				showCreatorName,
 				showNotes,
-				showBirthday,
 				addReversalSymbols: true,
 				visibilityOverrides: {
 					darkMode,
@@ -345,13 +323,10 @@
 							showStepNumbers={addStepNumbers}
 							showDifficultyLevel={addDifficultyLevel}
 							{includeStartPosition}
-							{showCreatorName}
 							{showNotes}
-							{showBirthday}
 							{showLoopGlyph}
 							{handPathMode}
 							{darkMode}
-							{userName}
 							{bluePropType}
 							redPropType={catDogMode ? redPropType : bluePropType}
 							catDogModeEnabled={catDogMode}
@@ -369,10 +344,7 @@
 							{includeStartPosition}
 							{addDifficultyLevel}
 							{addUserInfo}
-							{userName}
-							{showCreatorName}
 							{showNotes}
-							{showBirthday}
 						/>
 					{/if}
 				</div>
@@ -429,30 +401,11 @@
 						<button
 							type="button"
 							class="chip"
-							class:active={showCreatorName}
-							onclick={toggleShowCreatorName}
-							aria-pressed={showCreatorName}
-						>
-							Name
-						</button>
-						<button
-							type="button"
-							class="chip"
 							class:active={showNotes}
 							onclick={toggleShowNotes}
 							aria-pressed={showNotes}
 						>
 							Notes
-						</button>
-						<button
-							type="button"
-							class="chip birthday-chip"
-							class:active={showBirthday}
-							onclick={toggleShowBirthday}
-							aria-pressed={showBirthday}
-							title="Birthday date"
-						>
-							🎂
 						</button>
 					</div>
 				{/if}
@@ -697,13 +650,6 @@
 	.chip:focus-visible {
 		outline: 2px solid var(--theme-accent, #6366f1);
 		outline-offset: 2px;
-	}
-
-	/* Birthday chip with emoji */
-	.chip.birthday-chip {
-		font-size: 18px;
-		line-height: 1;
-		padding: 12px 14px;
 	}
 
 	/* Media Content - fills available space for animation/image */

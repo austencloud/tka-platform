@@ -5,7 +5,7 @@
   Layout shell that composes extracted sub-components:
   - CardHeader (difficulty badge + LOOP glyph + word title)
   - CardGridLayout (grid section with cells, QR, mandalas)
-  - CardFooter (name, notes, birthday)
+  - CardFooter (notes and path metadata)
   - CellRenderer (per-cell images, overlays - used by CardGridLayout)
 
   Owns: motion visibility, solo mode, context menu, animation/interactions,
@@ -102,9 +102,7 @@
     showStepNumbers?: boolean;
     showDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
-    showCreatorName?: boolean;
     showNotes?: boolean;
-    showBirthday?: boolean;
     showLoopGlyph?: boolean;
     showQRCode?: boolean;
     /** When true, fill empty col-0 cells with mandala visualizations */
@@ -115,7 +113,6 @@
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
-    userName?: string;
     customNotesText?: string;
     // Prop overrides
     bluePropType?: PropType;
@@ -157,16 +154,13 @@
     showStepNumbers = true,
     showDifficultyLevel = true,
     includeStartPosition = true,
-    showCreatorName = true,
     showNotes = true,
-    showBirthday = true,
     showLoopGlyph = true,
     showQRCode = false,
     showMandala = false,
     handPathMode = false,
     browseViewMode,
     darkMode = false,
-    userName = "",
     customNotesText = "Created using Flow Arts Composer",
     bluePropType,
     redPropType,
@@ -595,44 +589,12 @@
       wordVisible
   );
 
-  // Show footer when any footer element is enabled
+  // Personal names and record dates do not belong on the portable card.
   const hasPathShapeMetadata = $derived(
     sequence?.metadata?.pathShape === "linear" ||
       sequence?.metadata?.pathShape === "concave"
   );
-  const showFooter = $derived(
-    showCreatorName || showNotes || showBirthday || hasPathShapeMetadata
-  );
-
-  // Format birthday date - use the sequence's saved birthday when available.
-  // Values from Firestore may arrive as Timestamp objects instead of Date,
-  // so coerce to Date before calling Date methods.
-  const birthdayDate = $derived.by(() => {
-    const raw =
-      sequence.birthday ||
-      sequence.createdAt ||
-      sequence.dateAdded ||
-      new Date();
-    const date =
-      raw instanceof Date
-        ? raw
-        : typeof (raw as any).toDate === "function"
-          ? (raw as any).toDate()
-          : new Date(raw as any);
-    if (isNaN(date.getTime())) {
-      const now = new Date();
-      return `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
-    }
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const year = date.getFullYear();
-    return `${month}-${day}-${year}`;
-  });
-
-  // Effective username
-  const effectiveUserName = $derived(
-    userName || authState.user?.displayName || ""
-  );
+  const showFooter = $derived(showNotes || hasPathShapeMetadata);
 
   // Level badge colors - single source of truth shared with the image compositor
   const currentLevelStyle = $derived.by(() => {
@@ -2266,13 +2228,9 @@
       <!-- Footer section -->
       <CardFooter
         {showFooter}
-        {showCreatorName}
         {showNotes}
-        {showBirthday}
         {hasPathShapeMetadata}
-        {effectiveUserName}
         {customNotesText}
-        {birthdayDate}
         {scaledFooterHeight}
         {footerFontSize}
         {footerMargin}

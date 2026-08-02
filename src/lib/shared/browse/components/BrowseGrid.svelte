@@ -49,7 +49,7 @@
   const {
     engine,
     thumbnailService,
-    onAction = () => {},
+    onAction,
     disableVirtualization = false,
     eager = false,
     onGridReady,
@@ -156,7 +156,7 @@
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    onAction(action, sequence, variations);
+    onAction?.(action, sequence, variations);
   }
 </script>
 
@@ -211,8 +211,9 @@
       <ChoreoCardThumbnail
         {sequence}
         variations={seqVariations}
-        onPrimaryAction={(seq) =>
-          handleSequenceAction("view-detail", seq, seqVariations)}
+        onPrimaryAction={onAction
+          ? (seq) => handleSequenceAction("view-detail", seq, seqVariations)
+          : undefined}
         onHover={handleSequenceHover}
         bluePropType={propSettings.bluePropType}
         redPropType={propSettings.redPropType}

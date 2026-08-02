@@ -49,7 +49,13 @@ describe("ThumbnailRenderer stage reporting", () => {
 
     const result = await renderer.render(
       sequence,
-      input,
+      {
+        ...input,
+        addUserInfo: true,
+        userName: "Austen Cloud",
+        showCreatorName: true,
+        showBirthday: true,
+      },
       undefined,
       progress,
       undefined,
@@ -68,5 +74,16 @@ describe("ThumbnailRenderer stage reporting", () => {
       total: 2,
       stage: "finalizing",
     });
+    expect(compose).toHaveBeenCalledWith(
+      sequence,
+      expect.not.objectContaining({
+        userName: expect.anything(),
+        showCreatorName: expect.anything(),
+        showBirthday: expect.anything(),
+      }),
+      expect.any(Function),
+      undefined,
+      null
+    );
   });
 });

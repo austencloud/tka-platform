@@ -27,8 +27,7 @@
   const OUT_H = LOGICAL_H * SCALE; // 2244
 
   // One fixed timestamp shared by the main + worker front renders so the
-  // exportDate-derived footer text is byte-identical (pixel parity).
-  const EXPORT_DATE = "2026-05-31T00:00:00.000Z";
+  // The shared footer and QR inputs stay byte-identical for pixel parity.
 
   let mode = $state<"front" | "back">("front");
   let decks = $state<ParityDeckSummary[]>([]);
@@ -89,7 +88,7 @@
   }
 
   // MAIN-THREAD real card front (the reference): production renderFront path with
-  // a fixed exportDate + the shared QR so it matches the worker byte-for-byte.
+  // the shared QR so it matches the worker byte-for-byte.
   async function renderFrontMain(card: ParityDeck["cards"][number], composed: Composed, qr: HTMLImageElement | null): Promise<HTMLCanvasElement> {
     const opts = qr
       ? ({ ...composed.composeOptions, qrImageBitmap: qr } as typeof composed.composeOptions)
@@ -183,7 +182,7 @@
             let oldCanvas: HTMLCanvasElement;
             let newCanvas: HTMLCanvasElement;
             if (runMode === "front") {
-              const composed = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card), EXPORT_DATE);
+              const composed = buildFrontComposeOptions(card.sequence, printOptionsFor(deck, card));
               const qr = await generateQr(deck, card, composed);
               oldCanvas = await renderFrontMain(card, composed, qr);
               newCanvas = await renderFrontWorker(card, composed, qr);

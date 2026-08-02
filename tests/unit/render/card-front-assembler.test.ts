@@ -96,4 +96,38 @@ describe("computeCardFrontLayout", () => {
     );
     expect(layout.headerHeight).toBe(0);
   });
+
+  it("does not reserve a footer for a personal name from a stale caller", () => {
+    const seq = { steps: [{ letter: "A" }, { letter: "B" }] } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      {
+        deckCard: { contentWidth: 750, contentHeight: 1050 },
+        addUserInfo: false,
+        showCreatorName: true,
+        userName: "Austen Cloud",
+        showNotes: false,
+        showBirthday: true,
+      } as any,
+      {} as any
+    );
+
+    expect(layout.footerHeight).toBe(0);
+  });
+
+  it("preserves explicit printed-card left labels", () => {
+    const seq = { steps: [{ letter: "A" }, { letter: "B" }] } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      {
+        deckCard: { contentWidth: 750, contentHeight: 1050 },
+        addUserInfo: false,
+        leftLabel: "Water",
+        showNotes: false,
+      },
+      {} as any
+    );
+
+    expect(layout.footerHeight).toBeGreaterThan(0);
+  });
 });

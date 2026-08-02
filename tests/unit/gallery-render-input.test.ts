@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildGalleryRenderInput,
   buildGalleryVisibility,
   type GalleryCompositionSource,
 } from "$lib/shared/browse/services/gallery-render-input";
@@ -89,5 +90,29 @@ describe("buildGalleryVisibility — per-length QR/mandala choice", () => {
     } as any);
     expect(v?.showQRCode).toBe(false);
     expect(v?.showMandala).toBe(true);
+  });
+});
+
+describe("buildGalleryRenderInput — portable card provenance", () => {
+  it("keeps personal names out of gallery rasters", () => {
+    const input = buildGalleryRenderInput({
+      sequence: {
+        ...four,
+        id: "sequence-id",
+        name: "IIECCK",
+        word: "IIECCK",
+        ownerId: "christof-id",
+        ownerDisplayName: "Christofborkott",
+      },
+      userName: "Austen Cloud",
+      showCreatorName: true,
+      showBirthday: true,
+      compositionManager: source(),
+      isAuthenticated: true,
+    } as any);
+
+    expect(input).not.toHaveProperty("userName");
+    expect(input).not.toHaveProperty("showCreatorName");
+    expect(input).not.toHaveProperty("showBirthday");
   });
 });

@@ -178,6 +178,7 @@ export class SequenceRenderer {
       addStepNumbers: true,
       addReversalSymbols: true,
       addUserInfo: true,
+      showNotes: true,
       addWord: true,
       combinedGrids: false,
       addDifficultyLevel: true,
@@ -189,8 +190,6 @@ export class SequenceRenderer {
       redVisible: true,
       blueVisible: true,
 
-      userName: "",
-      exportDate: new Date().toISOString(),
       notes: "",
 
       format: "PNG",

@@ -47,16 +47,13 @@ describe("Sharer card blob cache", () => {
     const [first, concurrent] = await Promise.all([
       sharer.getCardImageBlob(sequence, {
         darkMode: false,
-        userName: "Austen",
       }),
       sharer.getCardImageBlob(sequence, {
         darkMode: false,
-        userName: "Austen",
       }),
     ]);
     const cached = await sharer.getCardImageBlob(sequence, {
       darkMode: false,
-      userName: "Austen",
     });
 
     expect(renderSequenceToBlob).toHaveBeenCalledTimes(1);
@@ -70,17 +67,14 @@ describe("Sharer card blob cache", () => {
 
     await sharer.getCardImageBlob(makeSequence("FIRST"), {
       darkMode: false,
-      userName: "Austen",
     });
     await sharer.getCardImageBlob(makeSequence("SECOND"), {
       darkMode: false,
-      userName: "Austen",
     });
 
     cardRenderState.options = { marker: "changed" };
     await sharer.getCardImageBlob(makeSequence("SECOND"), {
       darkMode: false,
-      userName: "Austen",
     });
 
     expect(renderSequenceToBlob).toHaveBeenCalledTimes(3);
@@ -101,13 +95,11 @@ describe("Sharer card blob cache", () => {
     await expect(
       sharer.getCardImageBlob(sequence, {
         darkMode: false,
-        userName: "Austen",
       })
     ).rejects.toThrow("render failed");
     await expect(
       sharer.getCardImageBlob(sequence, {
         darkMode: false,
-        userName: "Austen",
       })
     ).resolves.toBe(recoveredBlob);
 
@@ -117,7 +109,7 @@ describe("Sharer card blob cache", () => {
   it("evicts the least recently used card after the bounded cache fills", async () => {
     cardRenderState.options = { marker: "lru" };
     const { sharer, renderSequenceToBlob } = makeSharer();
-    const options = { darkMode: false, userName: "Austen" };
+    const options = { darkMode: false };
 
     await sharer.getCardImageBlob(makeSequence("A"), options);
     await sharer.getCardImageBlob(makeSequence("B"), options);
@@ -139,7 +131,7 @@ describe("Sharer card blob cache", () => {
     const sharer = new Sharer({
       renderSequenceToBlob,
     } as unknown as SequenceRenderer);
-    const options = { darkMode: false, userName: "Austen" };
+    const options = { darkMode: false };
 
     await sharer.getCardImageBlob(makeSequence("A"), options);
     await sharer.getCardImageBlob(makeSequence("B"), options);
@@ -159,7 +151,7 @@ describe("Sharer card blob cache", () => {
       renderSequenceToBlob,
     } as unknown as SequenceRenderer);
     const sequence = makeSequence("OVERSIZED");
-    const options = { darkMode: false, userName: "Austen" };
+    const options = { darkMode: false };
 
     await expect(sharer.getCardImageBlob(sequence, options)).resolves.toBe(
       oversized

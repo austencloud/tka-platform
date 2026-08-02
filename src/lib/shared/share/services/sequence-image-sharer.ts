@@ -14,12 +14,9 @@ import { buildCardRenderOptions } from "./card-render-options";
 export class SequenceImageSharer {
   constructor(private readonly renderer: SequenceRenderer) {}
 
-  async copyToClipboard(
-    sequence: SequenceData,
-    userName: string
-  ): Promise<ShareResult> {
+  async copyToClipboard(sequence: SequenceData): Promise<ShareResult> {
     try {
-      const blob = await this.renderImage(sequence, userName);
+      const blob = await this.renderImage(sequence);
 
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blob }),
@@ -32,12 +29,9 @@ export class SequenceImageSharer {
     }
   }
 
-  async downloadImage(
-    sequence: SequenceData,
-    userName: string
-  ): Promise<ShareResult> {
+  async downloadImage(sequence: SequenceData): Promise<ShareResult> {
     try {
-      const blob = await this.renderImage(sequence, userName);
+      const blob = await this.renderImage(sequence);
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -55,12 +49,9 @@ export class SequenceImageSharer {
     }
   }
 
-  async nativeShare(
-    sequence: SequenceData,
-    userName: string
-  ): Promise<ShareResult> {
+  async nativeShare(sequence: SequenceData): Promise<ShareResult> {
     try {
-      const blob = await this.renderImage(sequence, userName);
+      const blob = await this.renderImage(sequence);
       const file = new File(
         [blob],
         `${sequence.word || "sequence"}.png`,
@@ -75,7 +66,7 @@ export class SequenceImageSharer {
         return { success: true };
       } else {
         // Fall back to clipboard copy
-        return this.copyToClipboard(sequence, userName);
+        return this.copyToClipboard(sequence);
       }
     } catch (error) {
       // User cancelled share is not an error
@@ -94,10 +85,7 @@ export class SequenceImageSharer {
   /**
    * Render image with current composition settings
    */
-  private async renderImage(
-    sequence: SequenceData,
-    userName: string
-  ): Promise<Blob> {
+  private async renderImage(sequence: SequenceData): Promise<Blob> {
     const imageSettings = getImageCompositionManager();
 
     // One builder for every card render — copy/download/share now honor the same
@@ -110,7 +98,6 @@ export class SequenceImageSharer {
       quality: 1.0,
       ...buildCardRenderOptions(sequence, {
         darkMode: imageSettings.darkMode,
-        userName,
         isHandPath: !!sequence.metadata?.isHandPathVisualization,
       }),
     });

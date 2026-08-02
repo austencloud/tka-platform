@@ -114,9 +114,7 @@ export class CompositeVideoRenderer {
       addWord: false,
       addDifficultyLevel: false,
       addUserInfo: false,
-      showCreatorName: false,
       showNotes: false,
-      showBirthday: false,
       // Other required fields with sensible defaults
       addReversalSymbols: true,
       combinedGrids: false,
@@ -124,8 +122,6 @@ export class CompositeVideoRenderer {
       margin: 0,
       redVisible: true,
       blueVisible: true,
-      userName: "",
-      exportDate: new Date().toISOString(),
       notes: "",
       format: "PNG" as const,
       quality: 1,

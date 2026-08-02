@@ -108,10 +108,10 @@ export function computeCardFrontLayout(
     options.addDifficultyLevel ||
     earlyShowLoopGlyph;
 
-  const showCreatorName = options.showCreatorName ?? options.addUserInfo;
   const showNotes = options.showNotes ?? options.addUserInfo;
-  const showBirthday = options.showBirthday ?? options.addUserInfo;
-  const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
+  const hasAnyFooterContent = Boolean(
+    showNotes || options.leftLabel || options.rightLabel || options.iconPath
+  );
 
   let stepSize: number;
   let canvasWidth: number;
@@ -430,25 +430,18 @@ export async function paintCardFrontChrome(
     });
   }
 
-  const showCreatorName = options.showCreatorName ?? options.addUserInfo;
   const showNotes = options.showNotes ?? options.addUserInfo;
-  const showBirthday = options.showBirthday ?? options.addUserInfo;
-  const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
+  const hasAnyFooterContent = Boolean(
+    showNotes || options.leftLabel || options.rightLabel || options.iconPath
+  );
 
   if (hasAnyFooterContent && footerHeight > 0) {
-    await deps.textRenderer.renderUserInfo({
+    await deps.textRenderer.renderCardFooter({
       canvas,
-      userInfo: {
-        userName: options.userName || "",
-        exportDate: options.exportDate || new Date().toISOString(),
-        notes: options.notes || "",
-        birthday: options.birthday,
-      },
+      notes: options.notes || "",
       footerHeight,
       darkMode: isDarkMode,
-      showCreatorName,
       showNotes,
-      showBirthday,
       customNotesText: options.customNotesText,
       backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
       borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,

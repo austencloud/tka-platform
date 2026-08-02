@@ -37,7 +37,6 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Animation imports
@@ -148,14 +147,10 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
       selectedFormat === "static" &&
       !!sequence &&
       !!exportOrchestrator;
-    const userInfo = {
-      displayName: authState.user?.displayName ?? null,
-    };
-
     if (!shouldPrepare || !sequence || !exportOrchestrator) return;
 
     void exportOrchestrator
-      .prepareStaticShare(sequence, userInfo)
+      .prepareStaticShare(sequence)
       .catch((error) => {
         console.warn(
           "[SequenceDrawerHost] Static share prewarm failed:",
@@ -674,7 +669,6 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
 
       const result = await exportOrchestrator.export(currentSequence, settings, {
         animationDependencies,
-        userInfo: { displayName: authState.user?.displayName ?? null },
         isMobile,
         onProgress: (progress) => {
           exportProgress = progress;

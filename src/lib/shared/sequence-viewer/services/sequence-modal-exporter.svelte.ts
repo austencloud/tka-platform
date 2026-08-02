@@ -106,7 +106,6 @@ export interface VideoExportDependencies {
  */
 export interface ImageExportDependencies {
   sequence: SequenceData;
-  userName: string;
 }
 
 /**

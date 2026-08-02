@@ -19,7 +19,6 @@ import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shar
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
-import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
@@ -479,13 +478,12 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       // so the downloaded PNG matches the live ChoreoCard preview.
       const renderOptions = buildCardRenderOptions(effectiveSequence, {
         darkMode: exportOptions.imageDarkMode,
-        userName: authState.user?.displayName ?? "",
         isHandPath,
         resolvedAutoLayout,
       });
       await sequenceModalExporter.exportImage(
         renderOptions,
-        { sequence: effectiveSequence, userName: authState.user?.displayName ?? "" },
+        { sequence: effectiveSequence },
         callbacks
       );
     }

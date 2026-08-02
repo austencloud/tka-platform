@@ -29,10 +29,8 @@ export interface CardRenderOptionsInput {
    * Theme. The viewer passes its export-panel value (exportOptions.imageDarkMode);
    * the share/download paths pass the composition manager's darkMode. Explicit so
    * each caller keeps its own canonical source and preview/export stay in lockstep.
-   */
+  */
   darkMode: boolean;
-  /** Footer creator name (auth display name). */
-  userName: string;
   /**
    * Hand-path visualization (HAND props + float arrows). When true the difficulty
    * badge, LOOP glyph + its header band, TKA overlays and reversal arrows are
@@ -114,11 +112,8 @@ export function buildCardRenderOptions(
     addWord: ic.addWord,
     addDifficultyLevel: isHandPath ? false : ic.addDifficultyLevel,
     showLoopGlyph: isHandPath ? false : ic.showLoopGlyph,
-    addUserInfo: ic.showCreatorName || ic.showNotes || ic.showBirthday,
-    userName: input.userName,
-    showCreatorName: ic.showCreatorName,
+    addUserInfo: ic.showNotes,
     showNotes: ic.showNotes,
-    showBirthday: ic.showBirthday,
     addReversalSymbols: !isHandPath,
     visibilityOverrides: {
       darkMode: input.darkMode,

@@ -88,13 +88,11 @@
   const hasContent = $derived((sequence?.steps?.length ?? 0) > 0);
   const hasFullAccount = $derived(authState.isFullAccount);
   const controlDisabled = $derived(disabled || !hasContent);
-  const userName = $derived(authState.user?.displayName || "");
   const cardKey = $derived.by(() => {
     if (!sequence || !hasContent || !hasFullAccount) return "";
     return hashString(
       `${JSON.stringify(sequence)}\n${JSON.stringify({
         darkMode: imageComposition.darkMode,
-        userName,
         renderSettingsVersion,
       })}`
     );
@@ -201,7 +199,6 @@
     const currentKey = cardKey;
     const options = {
       darkMode: imageComposition.darkMode,
-      userName,
     };
     const shouldPrewarm =
       hasFullAccount &&
@@ -234,7 +231,6 @@
     const currentLinkKey = linkKey;
     const options = {
       darkMode: imageComposition.darkMode,
-      userName,
     };
     const fullAccount = authState.isFullAccount;
 
@@ -272,7 +268,6 @@
     }
     return readiness.prepareCard(cardKey, sequence, {
       darkMode: imageComposition.darkMode,
-      userName,
     });
   }
 
@@ -473,7 +468,6 @@
     void readiness
       .prepareCard(currentCardKey, currentSequence, {
         darkMode: imageComposition.darkMode,
-        userName,
       })
       .then((card) => {
         if (

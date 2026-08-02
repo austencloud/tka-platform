@@ -111,10 +111,6 @@
     void compositionVersion;
     return imageComposition.addDifficultyLevel;
   });
-  const showCreatorName = $derived.by(() => {
-    void compositionVersion;
-    return imageComposition.showCreatorName;
-  });
   const showNotes = $derived.by(() => {
     void compositionVersion;
     return imageComposition.showNotes;
@@ -130,10 +126,6 @@
   const showLoopGlyph = $derived.by(() => {
     void compositionVersion;
     return imageComposition.showLoopGlyph;
-  });
-  const showBirthday = $derived.by(() => {
-    void compositionVersion;
-    return imageComposition.showBirthday;
   });
   const showStartPos = $derived.by(() => {
     void compositionVersion;
@@ -249,7 +241,6 @@
   // If any child is on, master is "on" and a click turns everything off;
   // if all are off, a click turns everything on.
   const headerAnyOn = $derived(showWord || showDifficulty || showLoopGlyph);
-  const footerAnyOn = $derived(showCreatorName || showNotes || showBirthday);
   const pictographAnyOn = $derived(
     showGrid || tkaGlyph || tndGlyph || positionsGlyph || nonRadial
   );
@@ -260,14 +251,6 @@
     imageComposition.setAddDifficultyLevel(target);
     imageComposition.setShowLoopGlyph(target);
     reportSetting("header_all", headerAnyOn, target);
-  }
-
-  function toggleFooter(): void {
-    const target = !footerAnyOn;
-    imageComposition.setShowCreatorName(target);
-    imageComposition.setShowNotes(target);
-    imageComposition.setShowBirthday(target);
-    reportSetting("footer_all", footerAnyOn, target);
   }
 
   function togglePictograph(): void {
@@ -432,17 +415,6 @@
                 <button
                   type="button"
                   class="rt-chip"
-                  aria-pressed={showCreatorName}
-                  onclick={() =>
-                    toggleCompositionSetting(
-                      "creator_name",
-                      showCreatorName,
-                      imageComposition.setShowCreatorName.bind(imageComposition)
-                    )}>Name</button
-                >
-                <button
-                  type="button"
-                  class="rt-chip"
                   aria-pressed={showNotes}
                   onclick={() =>
                     toggleCompositionSetting(
@@ -450,17 +422,6 @@
                       showNotes,
                       imageComposition.setShowNotes.bind(imageComposition)
                     )}>Notes</button
-                >
-                <button
-                  type="button"
-                  class="rt-chip"
-                  aria-pressed={showBirthday}
-                  onclick={() =>
-                    toggleCompositionSetting(
-                      "birthday",
-                      showBirthday,
-                      imageComposition.setShowBirthday.bind(imageComposition)
-                    )}>Date</button
                 >
               </div>
             </div>
@@ -730,29 +691,8 @@
 
         <!-- Footer section -->
         <div class="setting-row">
-          <button
-            type="button"
-            class="setting-label section-toggle"
-            class:on={footerAnyOn}
-            onclick={toggleFooter}
-            aria-pressed={footerAnyOn}
-            aria-label={footerAnyOn
-              ? "Hide all footer elements"
-              : "Show all footer elements"}>Footer</button
-          >
+          <span class="setting-label">Footer</span>
           <div class="chip-group">
-            <button
-              type="button"
-              class="chip"
-              class:active={showCreatorName}
-              onclick={() =>
-                toggleCompositionSetting(
-                  "creator_name",
-                  showCreatorName,
-                  imageComposition.setShowCreatorName.bind(imageComposition)
-                )}
-              aria-pressed={showCreatorName}>Name</button
-            >
             <button
               type="button"
               class="chip"
@@ -764,18 +704,6 @@
                   imageComposition.setShowNotes.bind(imageComposition)
                 )}
               aria-pressed={showNotes}>Notes</button
-            >
-            <button
-              type="button"
-              class="chip"
-              class:active={showBirthday}
-              onclick={() =>
-                toggleCompositionSetting(
-                  "birthday",
-                  showBirthday,
-                  imageComposition.setShowBirthday.bind(imageComposition)
-                )}
-              aria-pressed={showBirthday}>Date</button
             >
           </div>
         </div>

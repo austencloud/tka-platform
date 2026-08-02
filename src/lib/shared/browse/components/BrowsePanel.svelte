@@ -90,6 +90,11 @@
   const showSourceToggle = $derived(sourceToggleOverride ?? false);
   const isEager = $derived(eagerOverride ?? layout !== "fullpage");
   const disableVirtualization = $derived(layout === "minimal");
+  const usesInternalGridScroller = $derived(
+    !disableVirtualization &&
+      !(engine.sectionsEnabled && engine.sections.length > 0) &&
+      engine.sequences.length > 50
+  );
 
   let thumbnailService: BrowseThumbnailProvider | null = $state(null);
   let pinchController: PinchZoomGridController | null = null;
@@ -309,7 +314,12 @@
     <BrowseFilterBar {engine} chipsOnly={!!onOpenFilters} {onSaveSmart} />
   {/if}
 
-  <div class="panel-content" bind:this={contentEl} onscroll={handleScroll}>
+  <div
+    class="panel-content"
+    class:internal-grid-scroll={usesInternalGridScroller}
+    bind:this={contentEl}
+    onscroll={handleScroll}
+  >
     {#if engine.error}
       <div class="error-state" role="alert">
         <p>{engine.error}</p>
@@ -347,7 +357,10 @@
         {/if}
       </div>
     {:else}
-      <div class="grid-with-sidebar">
+      <div
+        class="grid-with-sidebar"
+        class:internal-grid-scroll={usesInternalGridScroller}
+      >
         {#if showSidebar}
           <BrowseSidebar
             {engine}
@@ -360,7 +373,7 @@
             <BrowseGrid
               {engine}
               {thumbnailService}
-              onAction={handleAction}
+              onAction={onSelect ? handleAction : undefined}
               {disableVirtualization}
               eager={isEager}
               selectedIds={selection?.selectedIds ?? selectedIds}
@@ -418,6 +431,10 @@
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
+  .panel-content.internal-grid-scroll {
+    overflow: hidden;
+  }
+
   .panel-content::-webkit-scrollbar {
     width: 6px;
   }
@@ -433,6 +450,17 @@
     display: flex;
     align-items: flex-start;
     gap: 0;
+  }
+
+  .grid-with-sidebar.internal-grid-scroll {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .grid-with-sidebar.internal-grid-scroll .grid-area {
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
   }
 
   .grid-area {

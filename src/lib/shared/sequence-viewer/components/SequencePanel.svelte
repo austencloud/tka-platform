@@ -28,7 +28,6 @@
   import SequenceViewer from "./SequenceViewer.svelte";
   import QuickShareRow from "./QuickShareRow.svelte";
   // ExportControlsSection removed - edit mode now uses inline action buttons
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { openCreatorProfile } from "$lib/features/creators/state/creators-routing.svelte";
 
@@ -146,9 +145,6 @@
   let fullSequence = $state<SequenceData | null>(null);
   let isLoadingFullSequence = $state(false);
 
-  // User info
-  const userName = $derived(authState.user?.displayName ?? "");
-
   // Has multiple variations
   const hasVariations = $derived(variations.length > 1);
 
@@ -244,7 +240,7 @@
     shareSuccess = false;
     hapticService?.trigger("selection");
 
-    const result = await imageSharer.copyToClipboard(effectiveSequence, userName);
+    const result = await imageSharer.copyToClipboard(effectiveSequence);
     isShareCopying = false;
 
     if (result.success) {
@@ -259,7 +255,7 @@
   async function handleDownloadImage() {
     if (!imageSharer || !canShare) return;
     hapticService?.trigger("selection");
-    const result = await imageSharer.downloadImage(effectiveSequence, userName);
+    const result = await imageSharer.downloadImage(effectiveSequence);
     if (result.success) {
       hapticService?.trigger("success");
     } else {
@@ -270,7 +266,7 @@
   async function handleNativeShare() {
     if (!imageSharer || !canShare) return;
     hapticService?.trigger("selection");
-    const result = await imageSharer.nativeShare(effectiveSequence, userName);
+    const result = await imageSharer.nativeShare(effectiveSequence);
     if (result.success) {
       hapticService?.trigger("success");
     } else if (result.error) {

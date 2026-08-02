@@ -153,8 +153,6 @@
                   sequence: demoSequence,
                   showQRCode: false,
                   showNotes: false,
-                  showCreatorName: false,
-                  showBirthday: false,
                 }}
               />
             </span>

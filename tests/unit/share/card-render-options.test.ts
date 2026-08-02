@@ -7,9 +7,7 @@ const ic = {
   addWord: true,
   addDifficultyLevel: true,
   showLoopGlyph: true,
-  showCreatorName: true,
   showNotes: false,
-  showBirthday: false,
   showQRCode: true,
   showMandala: true,
   _cols: 4 as number | null,
@@ -49,7 +47,7 @@ describe("buildCardRenderOptions", () => {
   });
 
   it("threads every panel toggle into the render options (no hand-path)", () => {
-    const o = buildCardRenderOptions(seq, { darkMode: false, userName: "X" });
+    const o = buildCardRenderOptions(seq, { darkMode: false });
     expect(o.showLoopGlyph).toBe(true);
     expect(o.addDifficultyLevel).toBe(true);
     expect(o.addReversalSymbols).toBe(true);
@@ -61,15 +59,32 @@ describe("buildCardRenderOptions", () => {
     expect(o.visibilityOverrides?.showTKA).toBeUndefined();
   });
 
+  it("does not emit personal names or record dates", () => {
+    const o = buildCardRenderOptions(
+      {
+        ...seq,
+        ownerId: "christof-id",
+        ownerDisplayName: "Christofborkott",
+      },
+      { darkMode: false }
+    );
+
+    expect(o).not.toHaveProperty("userName");
+    expect(o).not.toHaveProperty("showCreatorName");
+    expect(o).not.toHaveProperty("showBirthday");
+    expect(o).not.toHaveProperty("birthday");
+    expect(o.addUserInfo).toBe(false);
+  });
+
   it("converts manual STEP columns according to the chosen start placement", () => {
     ic._cols = 4;
     ic.includeStartPosition = true;
     ic._layout = "row";
-    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBe(4);
+    expect(buildCardRenderOptions(seq, { darkMode: false }).columnCount).toBe(4);
     ic._layout = "column";
-    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBe(5);
+    expect(buildCardRenderOptions(seq, { darkMode: false }).columnCount).toBe(5);
     ic.includeStartPosition = false;
-    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBe(4);
+    expect(buildCardRenderOptions(seq, { darkMode: false }).columnCount).toBe(4);
   });
 
   it("reuses the live preview's Auto columns and start placement", () => {
@@ -80,7 +95,6 @@ describe("buildCardRenderOptions", () => {
     } as any;
     const options = buildCardRenderOptions(sequence, {
       darkMode: false,
-      userName: "",
       resolvedAutoLayout: {
         stepCount: 8,
         cols: 2,
@@ -100,7 +114,6 @@ describe("buildCardRenderOptions", () => {
     } as any;
     const options = buildCardRenderOptions(sequence, {
       darkMode: false,
-      userName: "",
       resolvedAutoLayout: {
         stepCount: 12,
         cols: 4,
@@ -123,7 +136,6 @@ describe("buildCardRenderOptions", () => {
     } as any;
     const options = buildCardRenderOptions(mixed, {
       darkMode: false,
-      userName: "",
       resolvedAutoLayout: {
         stepCount: 12,
         cols: 4,
@@ -140,10 +152,10 @@ describe("buildCardRenderOptions", () => {
     // a QR would land on the start position. One-count cards never carry a QR.
     const oneStep = { steps: [{ letter: "A" }] } as any;
     expect(ic.showQRCode).toBe(true);
-    const o = buildCardRenderOptions(oneStep, { darkMode: false, userName: "" });
+    const o = buildCardRenderOptions(oneStep, { darkMode: false });
     expect(o.visibilityOverrides?.showQRCode).toBe(false);
     // Multi-count cards are unaffected.
-    expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).visibilityOverrides?.showQRCode).toBe(true);
+    expect(buildCardRenderOptions(seq, { darkMode: false }).visibilityOverrides?.showQRCode).toBe(true);
   });
 
   it("one-spot 4-count + both on + choice 'mandala' resolves to mandala only", () => {
@@ -152,7 +164,7 @@ describe("buildCardRenderOptions", () => {
     ic._cols = null; // auto layout table, not a 4-column override
     ic._layout = "row";
     ic._choice = "mandala";
-    const o = buildCardRenderOptions(fourStep, { darkMode: false, userName: "" });
+    const o = buildCardRenderOptions(fourStep, { darkMode: false });
     expect(o.visibilityOverrides?.showQRCode).toBe(false);
     expect(o.visibilityOverrides?.showMandala).toBe(true);
   });
@@ -162,13 +174,13 @@ describe("buildCardRenderOptions", () => {
     ic._cols = null;
     ic._layout = "row";
     ic._choice = "qr";
-    const o = buildCardRenderOptions(fourStep, { darkMode: false, userName: "" });
+    const o = buildCardRenderOptions(fourStep, { darkMode: false });
     expect(o.visibilityOverrides?.showQRCode).toBe(true);
     expect(o.visibilityOverrides?.showMandala).toBe(false);
   });
 
   it("suppresses difficulty, LOOP glyph, reversals and TKA in hand-path mode", () => {
-    const o = buildCardRenderOptions(seq, { darkMode: false, userName: "", isHandPath: true });
+    const o = buildCardRenderOptions(seq, { darkMode: false, isHandPath: true });
     expect(o.addDifficultyLevel).toBe(false);
     expect(o.showLoopGlyph).toBe(false);
     expect(o.addReversalSymbols).toBe(false);

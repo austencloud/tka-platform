@@ -86,10 +86,8 @@
     imgShowWord: boolean;
     imgShowStartPos: boolean;
     imgShowDifficulty: boolean;
-    imgShowCreatorName: boolean;
     imgShowStepNumbers: boolean;
     imgShowNotes: boolean;
-    imgShowBirthday: boolean;
     imgDarkMode: boolean;
 
     isSyncToggling: boolean;
@@ -101,7 +99,6 @@
     onRenderProgress: (loaded: number, total: number) => void;
 
     isLoggedIn: boolean;
-    userName: string;
     isOwned: boolean;
     isSaved: boolean;
     isPublished: boolean;
@@ -681,7 +678,7 @@
     return calculateThumbnailAspectRatio(stepCount, {
       includeStartPosition: imgComp.imgShowStartPos,
       hasHeader: imgComp.imgShowWord,
-      hasFooter: imgComp.imgShowCreatorName || imgComp.imgShowNotes,
+      hasFooter: imgComp.imgShowNotes,
     });
   });
 
@@ -1387,9 +1384,7 @@
     imgShowStepNumbers: imgComp.imgShowStepNumbers,
     imgShowStartPos: imgComp.imgShowStartPos,
     imgShowDifficulty: imgComp.imgShowDifficulty,
-    imgShowCreatorName: imgComp.imgShowCreatorName,
     imgShowNotes: imgComp.imgShowNotes,
-    imgShowBirthday: imgComp.imgShowBirthday,
     imgDarkMode: imgComp.imgDarkMode,
 
     isSyncToggling,
@@ -1412,7 +1407,6 @@
     handleStopRecording: () => exportCoord.handleStopRecording(),
 
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,
-    userName: authState.user?.displayName || "",
     isOwned,
     isSaved: libraryActions.isSaved,
     isPublished,
@@ -1522,9 +1516,7 @@
       showStepNumbers: imgComp.imgShowStepNumbers,
       showDifficulty: isHandPath ? false : imgComp.imgShowDifficulty,
       showStartPos: imgComp.imgShowStartPos,
-      showCreatorName: imgComp.imgShowCreatorName,
       showNotes: imgComp.imgShowNotes,
-      showBirthday: imgComp.imgShowBirthday,
       showQRCode: imgComp.imgShowQRCode,
       showMandala: imgComp.imgShowMandala,
       showLoopGlyph: !isHandPath && imgComp.imgShowLoopGlyph,
@@ -1533,7 +1525,6 @@
       // Null delegates to ChoreoCard's per-length composition preference.
       columnCount: null,
       forceContain: false,
-      userName: authState.user?.displayName || "",
     },
     splitPanePropRendering: {
       bluePropType: activeBlueProp,

@@ -35,10 +35,8 @@ export interface StaticSettings {
   quality: number; // 0-100
   background: "transparent" | "white" | "black";
 
-  // Granular footer overrides (undefined = use persistent defaults)
-  showCreatorName?: boolean;
+  // Footer overrides (undefined = use persistent defaults)
   showNotes?: boolean;
-  showBirthday?: boolean;
   customNotesText?: string;
   // Track if user has customized settings for this export
   isUsingCustomFooter?: boolean;

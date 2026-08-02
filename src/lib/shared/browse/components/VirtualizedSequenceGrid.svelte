@@ -38,7 +38,7 @@
   const {
     sequences = [],
     thumbnailService,
-    onAction = () => {},
+    onAction,
     pinchColumnOverride,
     onGridReady,
     handPathMode = false,
@@ -202,7 +202,7 @@
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    onAction(action, sequence, variations);
+    onAction?.(action, sequence, variations);
   }
 
   function handleSequenceHover(seq: SequenceData) {
@@ -458,8 +458,10 @@
             <ChoreoCardThumbnail
               {sequence}
               variations={seqVariations}
-              onPrimaryAction={(seq) =>
-                handleSequenceAction("view-detail", seq, seqVariations)}
+              onPrimaryAction={onAction
+                ? (seq) =>
+                    handleSequenceAction("view-detail", seq, seqVariations)
+                : undefined}
               onHover={handleSequenceHover}
               bluePropType={propSettings.bluePropType}
               redPropType={propSettings.redPropType}

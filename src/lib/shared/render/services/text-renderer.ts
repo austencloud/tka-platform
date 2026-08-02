@@ -2,7 +2,6 @@ import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generat
 import { getTextScalingFactors } from "./dimension-calculator";
 import type {
   TextRenderOptions,
-  UserExportInfo,
 } from "../domain/models/sequence-export-options";
 import {
   renderHeader,
@@ -45,14 +44,12 @@ export interface WordHeaderOptions {
   accentTintOpacity?: number;
 }
 
-export interface UserInfoFooterOptions {
+export interface CardFooterOptions {
   canvas: RenderCanvas;
-  userInfo: UserExportInfo;
+  notes?: string;
   footerHeight?: number;
   darkMode?: boolean;
-  showCreatorName?: boolean;
   showNotes?: boolean;
-  showBirthday?: boolean;
   customNotesText?: string;
   backgroundColor?: string;
   borderColor?: string;
@@ -271,12 +268,10 @@ export class TextRenderer {
     });
   }
 
-  async renderUserInfo(opts: UserInfoFooterOptions): Promise<void> {
-    const showCreatorName = opts.showCreatorName ?? true;
+  async renderCardFooter(opts: CardFooterOptions): Promise<void> {
     const showNotes = opts.showNotes ?? true;
-    const showBirthday = opts.showBirthday ?? true;
 
-    if (!showCreatorName && !showNotes && !showBirthday && !opts.iconPath) {
+    if (!showNotes && !opts.leftLabel && !opts.rightLabel && !opts.iconPath) {
       return;
     }
 
@@ -286,15 +281,9 @@ export class TextRenderer {
     const notes =
       opts.customNotesText && opts.customNotesText.trim() !== ""
         ? opts.customNotesText
-        : opts.userInfo.notes && opts.userInfo.notes.trim() !== ""
-          ? opts.userInfo.notes
+        : opts.notes && opts.notes.trim() !== ""
+          ? opts.notes
           : undefined;
-
-    const birthday = opts.userInfo.birthday
-      ? opts.userInfo.birthday
-      : opts.userInfo.exportDate
-        ? new Date(opts.userInfo.exportDate)
-        : undefined;
 
     const iconImage = opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined;
 
@@ -302,13 +291,9 @@ export class TextRenderer {
       canvasWidth: opts.canvas.width,
       canvasHeight: opts.canvas.height,
       footerHeight: opts.footerHeight ?? 60,
-      userName: opts.userInfo.userName,
       notes,
-      birthday,
       darkMode: opts.darkMode ?? false,
-      showCreatorName,
       showNotes,
-      showBirthday,
       backgroundColor: opts.backgroundColor,
       borderColor: opts.borderColor,
       accentColor: opts.accentColor,

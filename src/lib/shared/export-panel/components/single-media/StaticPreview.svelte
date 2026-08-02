@@ -18,7 +18,6 @@
   import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { onMount } from "svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 
@@ -42,7 +41,7 @@
   let addStepNumbers = $state(imageSettings.addStepNumbers);
   let includeStartPosition = $state(imageSettings.includeStartPosition);
   let addDifficultyLevel = $state(imageSettings.addDifficultyLevel);
-  let addUserInfo = $state(imageSettings.addUserInfo);
+  let showNotes = $state(imageSettings.showNotes);
   let darkMode = $state(imageSettings.darkMode);
 
   // Load render service on mount (re-runs when rendererAttempt changes for retry)
@@ -74,7 +73,7 @@
       addStepNumbers = imageSettings.addStepNumbers;
       includeStartPosition = imageSettings.includeStartPosition;
       addDifficultyLevel = imageSettings.addDifficultyLevel;
-      addUserInfo = imageSettings.addUserInfo;
+      showNotes = imageSettings.showNotes;
       darkMode = imageSettings.darkMode;
       renderVersion++; // Trigger re-render
     };
@@ -92,16 +91,13 @@
     const _beats = addStepNumbers;
     const _start = includeStartPosition;
     const _diff = addDifficultyLevel;
-    const _user = addUserInfo;
+    const _notes = showNotes;
     const _darkMode = darkMode;
     const _version = renderVersion;
     // Track prop type settings for reactivity
     const _catDogMode = settingsService.settings.catDogMode;
     const _bluePropType = settingsService.settings.bluePropType;
     const _redPropType = settingsService.settings.redPropType;
-    // Track user display name for footer
-    const _userName = authState.user?.displayName;
-
     if (!sequence || !service) {
       previewDataUrl = null;
       return;
@@ -120,10 +116,9 @@
         includeStartPosition: _start,
         addStepNumbers: _beats,
         addWord: _word,
-        addUserInfo: _user,
+        addUserInfo: _notes,
         addDifficultyLevel: _diff,
-        // Pass current user's display name for footer
-        userName: _userName || "",
+        showNotes: _notes,
         // Include prop type settings so preview updates when prop type changes
         bluePropTypeOverride: _bluePropType,
         redPropTypeOverride: _catDogMode ? _redPropType : _bluePropType,
@@ -164,8 +159,8 @@
     imageSettings.toggle("addDifficultyLevel");
   }
 
-  function toggleUserInfo() {
-    imageSettings.toggle("addUserInfo");
+  function toggleNotes() {
+    imageSettings.toggle("showNotes");
   }
 
   function toggleDarkMode() {
@@ -242,11 +237,11 @@
       onclick={toggleDifficulty}
     />
     <FilterChipBase
-      label="User Info"
+      label="Footer"
       mode="toggle"
       size="sm"
-      active={addUserInfo}
-      onclick={toggleUserInfo}
+      active={showNotes}
+      onclick={toggleNotes}
     />
   </div>
 </div>

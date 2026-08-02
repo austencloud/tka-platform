@@ -134,9 +134,7 @@
         showWord={true}
         showStepNumbers={true}
         showDifficultyLevel={false}
-        showCreatorName={false}
         showNotes={false}
-        showBirthday={false}
         showLoopGlyph={false}
         includeStartPosition={true}
         darkMode={true}

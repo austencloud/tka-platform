@@ -18,7 +18,6 @@
     sequence: SequenceData;
     printMode?: boolean;
     showQRCodes?: boolean;
-    showBirthday?: boolean;
     // Visibility settings
     handPointsVisible?: boolean;
     showGrid?: boolean;
@@ -59,7 +58,6 @@
     sequence,
     printMode = false,
     showQRCodes = true,
-    showBirthday = false,
     handPointsVisible = true,
     showGrid = true,
     showTKA = true,
@@ -170,11 +168,8 @@
         addDifficultyLevel={false}
         {includeStartPosition}
         {startPositionLayout}
-        showBirthday={false}
-        showCreatorName={false}
         {showNotes}
         {showLoopGlyph}
-        userName={sequence.author ?? ""}
         visibility={visibilitySettings}
         {cardMode}
         {customNotesText}

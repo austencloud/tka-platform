@@ -20,8 +20,6 @@ describe("DimensionCalculationService", () => {
       margin: 50,
       redVisible: true,
       blueVisible: true,
-      userName: "Test User",
-      exportDate: "1-1-2024",
       notes: "Test Notes",
       format: "PNG",
       quality: 1.0,
@@ -38,7 +36,7 @@ describe("DimensionCalculationService", () => {
       );
 
       expect(top).toBe(0); // No word area for 0 beats
-      expect(bottom).toBe(55); // User info area
+      expect(bottom).toBe(55); // Footer area
     });
 
     it("should calculate heights for 1 beat", () => {
@@ -49,7 +47,7 @@ describe("DimensionCalculationService", () => {
       );
 
       expect(top).toBe(150); // Word area for 1 beat
-      expect(bottom).toBe(55); // User info area
+      expect(bottom).toBe(55); // Footer area
     });
 
     it("should calculate heights for 2 beats", () => {
@@ -60,7 +58,7 @@ describe("DimensionCalculationService", () => {
       );
 
       expect(top).toBe(200); // Word area for 2 beats
-      expect(bottom).toBe(75); // User info area
+      expect(bottom).toBe(75); // Footer area
     });
 
     it("should calculate heights for 3+ beats", () => {
@@ -71,7 +69,7 @@ describe("DimensionCalculationService", () => {
       );
 
       expect(top).toBe(300); // Word area for 3+ beats
-      expect(bottom).toBe(150); // User info area
+      expect(bottom).toBe(150); // Footer area
 
       // Verify same for higher beat counts
       const [top10, bottom10] = DimensionCalculationService.determineAdditionalHeights(
@@ -108,7 +106,7 @@ describe("DimensionCalculationService", () => {
       expect(top3).toBe(0);
     });
 
-    it("should respect addUserInfo option", () => {
+    it("keeps the legacy addUserInfo alias tied to footer notes", () => {
       const noUserInfoOptions = { ...baseOptions, addUserInfo: false };
 
       const [top0, bottom0] = DimensionCalculationService.determineAdditionalHeights(

@@ -659,18 +659,15 @@
           showStepNumbers={imageComposition.showStepNumbers}
           showDifficultyLevel={imageComposition.showDifficulty}
           includeStartPosition={imageComposition.showStartPos}
-          showCreatorName={imageComposition.showCreatorName}
           showNotes={imageComposition.showNotes}
           showQRCode={imageComposition.showQRCode}
           showMandala={imageComposition.showMandala ?? false}
-          showBirthday={imageComposition.showBirthday}
           showLoopGlyph={imageComposition.showLoopGlyph ?? true}
           handPathMode={imageComposition.handPathMode}
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}
           forceContain={imageComposition.forceContain}
           fitWidth={false}
-          userName={imageComposition.userName}
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
           catDogModeEnabled={propRendering.catDogModeEnabled}
@@ -840,18 +837,15 @@
             showStepNumbers={imageComposition.showStepNumbers}
             showDifficultyLevel={imageComposition.showDifficulty}
             includeStartPosition={imageComposition.showStartPos}
-            showCreatorName={imageComposition.showCreatorName}
             showNotes={imageComposition.showNotes}
             showQRCode={imageComposition.showQRCode}
             showMandala={imageComposition.showMandala ?? false}
-            showBirthday={imageComposition.showBirthday}
             showLoopGlyph={imageComposition.showLoopGlyph ?? true}
             handPathMode={imageComposition.handPathMode}
             darkMode={imageComposition.darkMode}
             columnCount={imageComposition.columnCount}
             forceContain={imageComposition.forceContain}
             fitWidth={layout.isMobile && layout.focusedPane === "image"}
-            userName={imageComposition.userName}
             bluePropType={propRendering.bluePropType}
             redPropType={propRendering.redPropType}
             catDogModeEnabled={propRendering.catDogModeEnabled}

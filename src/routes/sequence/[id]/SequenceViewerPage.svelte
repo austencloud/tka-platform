@@ -644,15 +644,12 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
                       showStepNumbers: ctx.exportOptions.imageShowStepNumbers,
                       showDifficulty: ctx.exportOptions.imageShowDifficulty,
                       showStartPos: ctx.exportOptions.imageIncludeStartPosition,
-                      showCreatorName: ctx.exportOptions.imageShowCreatorName,
                       showNotes: ctx.exportOptions.imageShowNotes,
-                      showBirthday: ctx.splitPaneImageComposition.showBirthday,
                       showQRCode: ctx.exportOptions.imageShowQRCode,
                       darkMode: ctx.exportOptions.imageDarkMode,
                       // Null delegates to ChoreoCard's per-length composition preference.
                       columnCount: null,
                       forceContain: true,
-                      userName: ctx.splitPaneImageComposition.userName,
                     }
                   : ctx.splitPaneImageComposition}
                 propRendering={ctx.splitPanePropRendering}

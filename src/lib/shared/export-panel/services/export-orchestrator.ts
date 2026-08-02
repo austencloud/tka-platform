@@ -11,7 +11,7 @@ import type { Sharer } from "$lib/shared/share/services/sharer";
 import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ExportSettings } from "../domain/models/export-settings";
-import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "./types";
+import type { ExportResult, AnimationExportDependencies } from "./types";
 import type { ShareOptions } from "$lib/shared/share/domain/models/share-options";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -53,7 +53,6 @@ export class ExportOrchestrator {
     settings: ExportSettings,
     options?: {
       animationDependencies?: AnimationExportDependencies;
-      userInfo?: ExportUserInfo;
       isMobile?: boolean;
       onProgress?: (progress: VideoExportProgress) => void;
     }
@@ -69,7 +68,6 @@ export class ExportOrchestrator {
         case "static": {
           const outcome = await this.exportStatic(
             sequence,
-            options?.userInfo,
             options?.isMobile
           );
           if (outcome === "canceled") {
@@ -124,11 +122,8 @@ export class ExportOrchestrator {
    * Rendering after the tap can consume that activation, so the export panel
    * warms this entry while its static preview is visible.
    */
-  prepareStaticShare(
-    sequence: SequenceData,
-    userInfo?: ExportUserInfo
-  ): Promise<PreparedStaticShare> {
-    const shareOptions = this.buildStaticShareOptions(userInfo);
+  prepareStaticShare(sequence: SequenceData): Promise<PreparedStaticShare> {
+    const shareOptions = this.buildStaticShareOptions();
     const key = this.getStaticShareKey(sequence, shareOptions);
 
     if (this.preparedStaticShare?.key === key) {
@@ -162,7 +157,7 @@ export class ExportOrchestrator {
     return promise;
   }
 
-  private buildStaticShareOptions(userInfo?: ExportUserInfo): ShareOptions {
+  private buildStaticShareOptions(): ShareOptions {
     const imageSettings = getImageCompositionManager();
     const compositionSettings = imageSettings.getSettings();
 
@@ -176,13 +171,9 @@ export class ExportOrchestrator {
       includeStartPosition: compositionSettings.includeStartPosition,
       addStepNumbers: compositionSettings.addStepNumbers,
       addWord: compositionSettings.addWord,
-      addUserInfo: compositionSettings.addUserInfo,
+      addUserInfo: compositionSettings.showNotes,
       addDifficultyLevel: compositionSettings.addDifficultyLevel,
-      userName: userInfo?.displayName ?? "",
-      // Granular footer controls
-      showCreatorName: compositionSettings.showCreatorName,
       showNotes: compositionSettings.showNotes,
-      showBirthday: compositionSettings.showBirthday,
       customNotesText: compositionSettings.customNotesText,
     };
   }
@@ -204,10 +195,9 @@ export class ExportOrchestrator {
    */
   private async exportStatic(
     sequence: SequenceData,
-    userInfo?: ExportUserInfo,
     isMobile?: boolean
   ): Promise<StaticExportOutcome> {
-    const shareOptions = this.buildStaticShareOptions(userInfo);
+    const shareOptions = this.buildStaticShareOptions();
 
     if (!isMobile) {
       await this.sharer.downloadImage(sequence, shareOptions);
@@ -219,7 +209,7 @@ export class ExportOrchestrator {
       this.preparedStaticShare?.key === key ? this.preparedStaticShare : null;
 
     if (!prepared) {
-      void this.prepareStaticShare(sequence, userInfo);
+      void this.prepareStaticShare(sequence);
       throw new Error("Image is still preparing. Tap Share Image again.");
     }
 

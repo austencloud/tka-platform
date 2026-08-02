@@ -15,7 +15,6 @@
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { buildCreatorPath } from "$lib/shared/navigation/services/creator-routes";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import { formatLocationLabel } from "$lib/shared/presence/domain/models/presence-models";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
 
   interface Props {
@@ -29,7 +28,6 @@
   const propInfo = $derived(
     effectiveProp ? getPropTypeDisplayInfo(effectiveProp) : null
   );
-  const locationLabel = $derived(formatLocationLabel(user.location));
   const cardAccent = $derived(user.profileColor || "var(--theme-accent)");
   const profilePath = $derived(buildCreatorPath(user.id));
 
@@ -97,12 +95,6 @@
         <span class="identity-tag" title="Spins with {propInfo.label}">
           <img src={propInfo.image} alt="" aria-hidden="true" />
           {propInfo.label}
-        </span>
-      {/if}
-      {#if locationLabel}
-        <span class="identity-tag">
-          <i class="fas fa-location-dot" aria-hidden="true"></i>
-          {locationLabel}
         </span>
       {/if}
     </div>
@@ -321,10 +313,6 @@
     object-fit: contain;
     filter: brightness(0) invert(1);
     opacity: 0.85;
-  }
-
-  .identity-tag i {
-    color: var(--creator-accent);
   }
 
   .creator-stats {

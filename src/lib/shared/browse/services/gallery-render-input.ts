@@ -57,10 +57,7 @@ export interface BuildGalleryRenderInputParams {
   startPositionLayout?: "row" | "column";
   addDifficultyLevel?: boolean;
   addUserInfo?: boolean;
-  userName?: string;
-  showCreatorName?: boolean;
   showNotes?: boolean;
-  showBirthday?: boolean;
   customNotesText?: string;
   /** Show the LOOP transform icon strip in the card header (default true) */
   showLoopGlyph?: boolean;
@@ -176,10 +173,7 @@ export function buildGalleryRenderInput(
     startPositionLayout,
     addDifficultyLevel,
     addUserInfo,
-    userName,
-    showCreatorName,
     showNotes,
-    showBirthday,
     customNotesText,
     showLoopGlyph,
     cardMode = false,
@@ -191,7 +185,6 @@ export function buildGalleryRenderInput(
     startPositionLayout ?? compositionManager.getStartPositionLayoutForStepCount(stepCount);
 
   const sequenceName = sequence.word || sequence.name || "";
-
   return {
     sequenceName,
     sequenceId: sequence.id,
@@ -208,10 +201,7 @@ export function buildGalleryRenderInput(
     startPositionLayout: effectiveStartPositionLayout,
     addDifficultyLevel,
     addUserInfo,
-    userName,
-    showCreatorName,
     showNotes,
-    showBirthday,
     customNotesText,
     visibility: buildGalleryVisibility(p),
     cardMode: cardMode || undefined,

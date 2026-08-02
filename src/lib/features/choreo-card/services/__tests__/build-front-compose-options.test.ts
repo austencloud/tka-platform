@@ -15,11 +15,9 @@ const BASE_OPTS: PrintRenderOptions = {
   startPositionLayout: "row",
 };
 
-const FIXED_DATE = "2026-05-31T00:00:00.000Z";
-
 describe("buildFrontComposeOptions", () => {
   it("computes deckCard content size = canvas - 2*round(bleed*2.0)", () => {
-    const { composeOptions } = buildFrontComposeOptions(SEQ, BASE_OPTS, FIXED_DATE);
+    const { composeOptions } = buildFrontComposeOptions(SEQ, BASE_OPTS);
     // Defaults: 822x1122, bleed 36 → border = round(72) = 72 → content 678x978.
     expect(composeOptions.deckCard).toEqual({ contentWidth: 678, contentHeight: 978 });
   });
@@ -28,7 +26,6 @@ describe("buildFrontComposeOptions", () => {
     const { composeOptions, frame } = buildFrontComposeOptions(
       SEQ,
       { ...BASE_OPTS, canvasWidth: 1644, canvasHeight: 2244, bleedPx: 72 },
-      FIXED_DATE,
     );
     // border = round(72*2) = 144 → content 1356x1956.
     expect(composeOptions.deckCard).toEqual({ contentWidth: 1356, contentHeight: 1956 });
@@ -41,14 +38,17 @@ describe("buildFrontComposeOptions", () => {
     });
   });
 
-  it("threads the injected exportDate (parity determinism)", () => {
-    const a = buildFrontComposeOptions(SEQ, BASE_OPTS, FIXED_DATE);
-    const b = buildFrontComposeOptions(SEQ, BASE_OPTS, FIXED_DATE);
-    expect(a.composeOptions.exportDate).toBe(FIXED_DATE);
-    // Same inputs (incl. exportDate) → deep-equal options. This is the property
-    // that guarantees main-vs-worker pixel parity.
-    expect(a.composeOptions).toEqual(b.composeOptions);
-    expect(a.frame).toEqual(b.frame);
+  it("does not thread personal attribution or record dates into card composition", () => {
+    const { composeOptions } = buildFrontComposeOptions(SEQ, BASE_OPTS);
+    for (const retiredKey of [
+      "userName",
+      "showCreatorName",
+      "birthday",
+      "showBirthday",
+      "exportDate",
+    ]) {
+      expect(composeOptions).not.toHaveProperty(retiredKey);
+    }
   });
 
   it("derives accent/dark from tndElement when present", () => {
@@ -64,20 +64,18 @@ describe("buildFrontComposeOptions", () => {
     const { composeOptions, frame } = buildFrontComposeOptions(
       SEQ,
       { ...BASE_OPTS, tndElement, iconPath: "/images/elements/water-v2.png", leftLabel: "Water" },
-      FIXED_DATE,
     );
     expect(frame.accent).toBe("#3568a0");
     expect(frame.dark).toBe("#13284a");
     expect(composeOptions.accentColor).toBe("#3568a0");
     expect(composeOptions.accentTintOpacity).toBe(0.12);
     expect(composeOptions.iconPath).toBe("/images/elements/water-v2.png");
-    // leftLabel set → showCreatorName true; iconPath set → showNotes true.
-    expect(composeOptions.showCreatorName).toBe(true);
+    // Printed-deck labels and iconography still earn the footer.
     expect(composeOptions.showNotes).toBe(true);
   });
 
   it("emits prop-type overrides only when provided", () => {
-    const none = buildFrontComposeOptions(SEQ, BASE_OPTS, FIXED_DATE).composeOptions;
+    const none = buildFrontComposeOptions(SEQ, BASE_OPTS).composeOptions;
     expect(none.bluePropTypeOverride).toBeUndefined();
     expect(none.redPropTypeOverride).toBeUndefined();
   });

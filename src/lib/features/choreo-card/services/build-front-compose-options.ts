@@ -35,14 +35,11 @@ export interface FrontComposeResult {
 
 /**
  * Build the front compose options + frame from a sequence and its print
- * options. `exportDate` is injected so a parity caller can pass ONE timestamp to
- * both the main and worker renders (pixel parity); production defaults it to
- * now.
+ * options.
  */
 export function buildFrontComposeOptions(
   sequence: SequenceData,
   options: PrintRenderOptions,
-  exportDate: string = new Date().toISOString(),
 ): FrontComposeResult {
   const canvasW = options.canvasWidth ?? MPC_WIDTH;
   const canvasH = options.canvasHeight ?? MPC_HEIGHT;
@@ -80,12 +77,8 @@ export function buildFrontComposeOptions(
     blueVisible: true,
     addReversalSymbols: true,
     combinedGrids: false,
-    userName: sequence.author ?? "",
-    exportDate,
     notes: options.notes ?? "",
-    showCreatorName: !!options.leftLabel,
     showNotes: !!(options.notes || options.leftLabel || options.rightLabel || options.iconPath),
-    showBirthday: false,
     leftLabel: options.leftLabel,
     rightLabel: options.rightLabel,
     iconPath: options.iconPath,

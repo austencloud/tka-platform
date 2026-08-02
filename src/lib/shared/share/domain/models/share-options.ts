@@ -24,14 +24,10 @@ export interface ShareOptions {
   backgroundColor: string;
   darkMode: boolean; // Dark mode toggle (affects grid, text colors)
 
-  // === USER INFO ===
-  userName: string;
+  // === FOOTER ===
   notes: string;
 
-  // === GRANULAR FOOTER CONTROLS ===
-  showCreatorName?: boolean;
   showNotes?: boolean;
-  showBirthday?: boolean;
   customNotesText?: string;
 }
 
@@ -58,7 +54,6 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       margin: 20,
       backgroundColor: "#ffffff",
       darkMode: false,
-      userName: "",
       notes: "",
     },
   },
@@ -78,7 +73,6 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       margin: 50,
       backgroundColor: "#ffffff",
       darkMode: false,
-      userName: "", // Will be populated from auth state
       notes: "Created with Flow Arts Composer",
     },
   },
@@ -98,7 +92,6 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       margin: 30,
       backgroundColor: "#ffffff",
       darkMode: false,
-      userName: "", // Will be populated from auth state
       notes: "",
     },
   },
@@ -120,12 +113,9 @@ export const DEFAULT_SHARE_OPTIONS: ShareOptions = {
   addUserInfo: false,
   addWord: true,
   addDifficultyLevel: false,
-  userName: "",
   notes: "",
 
-  // Footer controls - all shown by default
-  showCreatorName: true,
+  // Footer controls
   showNotes: true,
-  showBirthday: true,
   customNotesText: "Created using Flow Arts Composer",
 };

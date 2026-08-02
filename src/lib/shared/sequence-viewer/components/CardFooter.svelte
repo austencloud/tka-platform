@@ -1,8 +1,8 @@
 <!--
   CardFooter.svelte
 
-  Renders the ChoreoCard footer section: creator name, notes, birthday,
-  and path-shape metadata. Extracted from ChoreoCard.svelte.
+  Renders centered card notes and path-shape metadata. Submission provenance
+  and record dates belong on the sequence record, not the portable card.
 -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
@@ -10,13 +10,9 @@
 
   interface Props {
     showFooter: boolean;
-    showCreatorName: boolean;
     showNotes: boolean;
-    showBirthday: boolean;
     hasPathShapeMetadata: boolean;
-    effectiveUserName: string;
     customNotesText: string;
-    birthdayDate: string;
     scaledFooterHeight: number;
     footerFontSize: number;
     footerMargin: number;
@@ -25,13 +21,9 @@
 
   const {
     showFooter,
-    showCreatorName,
     showNotes,
-    showBirthday,
     hasPathShapeMetadata,
-    effectiveUserName,
     customNotesText,
-    birthdayDate,
     scaledFooterHeight,
     footerFontSize,
     footerMargin,
@@ -46,21 +38,9 @@
     style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: {footerFontSize}px;"
     transition:fly|local={{ y: 20, duration: 250, easing: cubicOut }}
   >
-    {#if showCreatorName && effectiveUserName}
-      <span class="footer-name" transition:fly|local={{ x: -20, duration: 200, easing: cubicOut }}>
-        {effectiveUserName}
-      </span>
-    {/if}
-
     {#if showNotes}
       <span class="footer-notes" transition:fade|local={{ duration: 200 }}>
         {customNotesText}
-      </span>
-    {/if}
-
-    {#if showBirthday}
-      <span class="footer-birthday" transition:fly|local={{ x: 20, duration: 200, easing: cubicOut }}>
-        🎂 {birthdayDate}
       </span>
     {/if}
 
@@ -71,16 +51,11 @@
 {/if}
 
 <style>
-  /* Footer section — three fixed lanes (name | notes | date). Explicit grid
-     columns keep each element in its own lane regardless of which siblings
-     render, so the centered branding can never overlap the name/date and the
-     box never resizes when the text changes (a flex + absolute-centered note
-     used to collide on narrow cards). min-width:0 lets each lane truncate with
-     an ellipsis instead of overflowing into its neighbor. */
+  /* The footer contains card facts only, centered as one balanced group. */
   .footer-section {
     position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+    display: flex;
+    justify-content: center;
     align-items: center;
     column-gap: 10px;
     background: rgba(245, 245, 245, 0.98);
@@ -99,28 +74,7 @@
     color: white;
   }
 
-  .footer-name {
-    grid-column: 1;
-    justify-self: start;
-    font-weight: bold;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .footer-notes {
-    grid-column: 2;
-    justify-self: center;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .footer-birthday {
-    grid-column: 3;
-    justify-self: end;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -128,8 +82,6 @@
   }
 
   .footer-path-shape {
-    grid-column: 2;
-    justify-self: center;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -24,9 +24,7 @@ export interface ImageCompositionProps {
   showStepNumbers: boolean;
   showDifficulty: boolean;
   showStartPos: boolean;
-  showCreatorName: boolean;
   showNotes: boolean;
-  showBirthday: boolean;
   showQRCode: boolean;
   showMandala?: boolean;
   showLoopGlyph?: boolean;
@@ -34,7 +32,6 @@ export interface ImageCompositionProps {
   darkMode: boolean;
   columnCount: number | null;
   forceContain: boolean;
-  userName: string;
 }
 
 export interface PropRenderingProps {

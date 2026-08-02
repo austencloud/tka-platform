@@ -19,9 +19,7 @@ export function createImageCompositionSync() {
   let imgShowStartPos = $state(imageComposition.includeStartPosition);
   let imgShowStepNumbers = $state(imageComposition.addStepNumbers);
   let imgShowDifficulty = $state(imageComposition.addDifficultyLevel);
-  let imgShowCreatorName = $state(imageComposition.showCreatorName);
   let imgShowNotes = $state(imageComposition.showNotes);
-  let imgShowBirthday = $state(imageComposition.showBirthday);
   let imgShowQRCode = $state(imageComposition.showQRCode);
   let imgShowMandala = $state(imageComposition.showMandala);
   let imgShowLoopGlyph = $state(imageComposition.showLoopGlyph);
@@ -33,9 +31,7 @@ export function createImageCompositionSync() {
     imgShowStepNumbers = imageComposition.addStepNumbers;
     imgShowStartPos = imageComposition.includeStartPosition;
     imgShowDifficulty = imageComposition.addDifficultyLevel;
-    imgShowCreatorName = imageComposition.showCreatorName;
     imgShowNotes = imageComposition.showNotes;
-    imgShowBirthday = imageComposition.showBirthday;
     imgShowQRCode = imageComposition.showQRCode;
     imgShowMandala = imageComposition.showMandala;
     imgShowLoopGlyph = imageComposition.showLoopGlyph;
@@ -53,9 +49,7 @@ export function createImageCompositionSync() {
     get imgShowStartPos() { return imgShowStartPos; },
     get imgShowStepNumbers() { return imgShowStepNumbers; },
     get imgShowDifficulty() { return imgShowDifficulty; },
-    get imgShowCreatorName() { return imgShowCreatorName; },
     get imgShowNotes() { return imgShowNotes; },
-    get imgShowBirthday() { return imgShowBirthday; },
     get imgShowQRCode() { return imgShowQRCode; },
     get imgShowMandala() { return imgShowMandala; },
     get imgShowLoopGlyph() { return imgShowLoopGlyph; },

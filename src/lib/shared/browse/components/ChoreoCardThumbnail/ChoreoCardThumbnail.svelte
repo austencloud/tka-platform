@@ -2,7 +2,8 @@
 ChoreoCardThumbnail.svelte
 
 Ultra-minimal card component for the Browse grid.
-Clicking the card opens the sequence detail viewer.
+Interactive hosts can open the sequence detail viewer. Read-only hosts render
+the card as static artwork.
 
 Uses PropAwareThumbnail for cloud-cached rendering:
 - First user to view a prop type renders it locally
@@ -49,7 +50,7 @@ Variation support:
   const {
     sequence,
     variations = [],
-    onPrimaryAction = () => {},
+    onPrimaryAction,
     onHover,
     selected = false,
     bluePropType = undefined,
@@ -170,7 +171,7 @@ Variation support:
       return;
     }
 
-    onPrimaryAction(displayedSequence);
+    onPrimaryAction?.(displayedSequence);
   }
 
   const LONG_PRESS_MS = 500;
@@ -413,6 +414,9 @@ Variation support:
   const isSelected = $derived(
     selectedIds ? selectedIds.has(displayedSequence.id) : selected
   );
+  const isInteractive = $derived(
+    !!onPrimaryAction || !!onSelectionStart || !!onSelectionToggle
+  );
 
   // ── Shared-element morph name ──────────────────────────────────────
   // The same sequence is on screen twice whenever an overlay stacks over a
@@ -445,25 +449,7 @@ Variation support:
   });
 </script>
 
-<button
-  class="choreo-card"
-  class:selected={isSelected}
-  class:selection-mode={selectionMode}
-  class:long-pressing={isLongPressing}
-  class:light-mode={lightMode}
-  onclick={handlePrimaryAction}
-  oncontextmenu={handleContextMenu}
-  onpointerdown={handleSelectionPointerDown}
-  onpointermove={handleSelectionPointerMove}
-  onpointerup={cancelSelectionLongPress}
-  onpointercancel={cancelSelectionLongPress}
-  onpointerenter={handlePointerEnter}
-  onpointerleave={handlePointerLeave}
-  aria-pressed={selectionMode ? isSelected : undefined}
-  aria-label={selectionMode
-    ? `${isSelected ? "Deselect" : "Select"} ${displayedSequence.name || displayedSequence.word || "sequence"}`
-    : undefined}
->
+{#snippet cardContents()}
   <!-- view-transition-name enables Google Photos-style morph animation to
        /sequence/[id]. Undefined on any duplicate copy of this sequence that is
        mounted at the same time (see the morph-name claim above). -->
@@ -486,7 +472,6 @@ Variation support:
       {addWord}
       {addDifficultyLevel}
       {allowQR}
-      userName={displayedSequence.ownerDisplayName}
     />
   </div>
 
@@ -510,7 +495,36 @@ Variation support:
     totalCount={variationCount}
     onCycle={handleCycleVariation}
   />
-</button>
+{/snippet}
+
+{#if isInteractive}
+  <button
+    type="button"
+    class="choreo-card interactive"
+    class:selected={isSelected}
+    class:selection-mode={selectionMode}
+    class:long-pressing={isLongPressing}
+    class:light-mode={lightMode}
+    onclick={handlePrimaryAction}
+    oncontextmenu={handleContextMenu}
+    onpointerdown={handleSelectionPointerDown}
+    onpointermove={handleSelectionPointerMove}
+    onpointerup={cancelSelectionLongPress}
+    onpointercancel={cancelSelectionLongPress}
+    onpointerenter={handlePointerEnter}
+    onpointerleave={handlePointerLeave}
+    aria-pressed={selectionMode ? isSelected : undefined}
+    aria-label={selectionMode
+      ? `${isSelected ? "Deselect" : "Select"} ${displayedSequence.name || displayedSequence.word || "sequence"}`
+      : undefined}
+  >
+    {@render cardContents()}
+  </button>
+{:else}
+  <div class="choreo-card static" class:light-mode={lightMode}>
+    {@render cardContents()}
+  </div>
+{/if}
 
 <ContextMenu
   menuState={contextMenuState}
@@ -548,25 +562,32 @@ Variation support:
     container-type: inline-size;
     container-name: choreo-card;
 
-    cursor: pointer;
     touch-action: pan-y;
     -webkit-touch-callout: none;
+  }
+
+  .choreo-card.interactive {
+    cursor: pointer;
     transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .choreo-card:hover {
+  .choreo-card.interactive:hover {
     transform: scale(1.02);
+  }
+
+  .choreo-card.static {
+    cursor: default;
   }
 
   /* Active state - brief feedback on touch/mobile only */
   @media (hover: none) and (pointer: coarse) {
-    .choreo-card:active {
+    .choreo-card.interactive:active {
       transform: scale(0.98);
       transition-duration: var(--duration-instant);
     }
   }
 
-  .choreo-card:focus-visible {
+  .choreo-card.interactive:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
@@ -661,8 +682,8 @@ Variation support:
     .choreo-card {
       transition: none;
     }
-    .choreo-card:hover,
-    .choreo-card:active {
+    .choreo-card.interactive:hover,
+    .choreo-card.interactive:active {
       transform: none;
     }
     .selection-indicator {

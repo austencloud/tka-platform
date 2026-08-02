@@ -15,7 +15,7 @@ export type ThumbnailVariant = "gallery" | "wordcard";
  * This token belongs in every cache identity, including the cloud filename.
  * Otherwise a corrected renderer can keep receiving an older image forever.
  */
-export const THUMBNAIL_RENDERER_VERSION = 3;
+export const THUMBNAIL_RENDERER_VERSION = 5;
 
 export interface ThumbnailVisibilitySettings {
   showTKA?: boolean;
@@ -62,11 +62,8 @@ export interface ThumbnailRenderInput {
   startPositionLayout?: "row" | "column";
   addDifficultyLevel?: boolean;
   addUserInfo?: boolean;
-  showCreatorName?: boolean;
   showNotes?: boolean;
-  showBirthday?: boolean;
   customNotesText?: string;
-  userName?: string;
 
   // Visibility overrides (undefined = use defaults: showTKA=true, showReversals=true, etc.)
   visibility?: ThumbnailVisibilitySettings;
@@ -101,9 +98,7 @@ export interface CompositionDefaults {
   includeStartPosition: boolean;
   addDifficultyLevel: boolean;
   addUserInfo: boolean;
-  showCreatorName: boolean;
   showNotes: boolean;
-  showBirthday: boolean;
 }
 
 const GALLERY_DEFAULTS: CompositionDefaults = {
@@ -112,9 +107,7 @@ const GALLERY_DEFAULTS: CompositionDefaults = {
   includeStartPosition: true,
   addDifficultyLevel: true,
   addUserInfo: false,
-  showCreatorName: true,
   showNotes: true,
-  showBirthday: true,
 };
 
 const WORDCARD_DEFAULTS: CompositionDefaults = {
@@ -231,24 +224,12 @@ function checkInputUsesDefaults(
     return false;
   if (input.addUserInfo !== undefined && input.addUserInfo !== defaults.addUserInfo)
     return false;
-  if (
-    input.showCreatorName !== undefined &&
-    input.showCreatorName !== defaults.showCreatorName
-  )
-    return false;
   if (input.showNotes !== undefined && input.showNotes !== defaults.showNotes)
-    return false;
-  if (input.showBirthday !== undefined && input.showBirthday !== defaults.showBirthday)
     return false;
   // Any custom text means not using defaults
   if (input.customNotesText !== undefined) return false;
   // LOOP glyph strip is on by default; hiding it is a non-default render
   if (input.showLoopGlyph !== undefined && input.showLoopGlyph !== true) return false;
-  // userName only matters if addUserInfo is enabled (otherwise it's not displayed)
-  const userInfoEnabled = input.addUserInfo ?? defaults.addUserInfo;
-  if (userInfoEnabled && input.userName !== undefined && input.userName !== "")
-    return false;
-
   // Visibility settings affect rendered appearance - check if any are non-default
   if (input.visibility) {
     // Canonical (shared-cacheable) visibility values. These MUST match the
@@ -319,11 +300,8 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     startPositionLayout: input.startPositionLayout ?? "row",
     addDifficultyLevel: input.addDifficultyLevel,
     addUserInfo: input.addUserInfo,
-    showCreatorName: input.showCreatorName,
     showNotes: input.showNotes,
-    showBirthday: input.showBirthday,
     customNotesText: input.customNotesText,
-    userName: input.userName,
     // Grid visibility settings - user wants these to update thumbnails
     showGrid: input.visibility?.showGrid,
     handPointVisibility: input.visibility?.handPointVisibility,

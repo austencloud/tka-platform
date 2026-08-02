@@ -30,7 +30,6 @@ export function shouldPrewarmWorkspaceShareCard(options: {
 
 export interface WorkspaceCardPreparationOptions {
   darkMode: boolean;
-  userName: string;
 }
 
 export interface PreparedWorkspaceCard {

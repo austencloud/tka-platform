@@ -58,10 +58,7 @@
     startPositionLayout?: "row" | "column";
     addDifficultyLevel?: boolean;
     addUserInfo?: boolean;
-    userName?: string;
-    showCreatorName?: boolean;
     showNotes?: boolean;
-    showBirthday?: boolean;
     customNotesText?: string;
     /** Show the LOOP transform icon strip in the card header (default true) */
     showLoopGlyph?: boolean;
@@ -95,10 +92,7 @@
     startPositionLayout,
     addDifficultyLevel,
     addUserInfo,
-    userName,
-    showCreatorName,
     showNotes,
-    showBirthday,
     customNotesText,
     showLoopGlyph,
     visibility,
@@ -188,10 +182,7 @@
       startPositionLayout,
       addDifficultyLevel,
       addUserInfo,
-      userName,
-      showCreatorName,
       showNotes,
-      showBirthday,
       customNotesText,
       showLoopGlyph,
       visibility,

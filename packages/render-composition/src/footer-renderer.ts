@@ -2,9 +2,6 @@ import {
   FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE, FOOTER_TEXT_Y_SCALE,
 } from "./dimensions.js";
 
-/** System-generated author identifiers — suppress creator name for these */
-const SYSTEM_AUTHORS = new Set(["TKA Enumerator", "TKA System", "TKA Gallery"]);
-
 const BLUE_HAND = "#3575E2";
 const RED_HAND = "#ED1C24";
 const PIPE_SEPARATOR = " | ";
@@ -49,13 +46,9 @@ export interface FooterOptions {
   canvasWidth: number;
   canvasHeight: number;
   footerHeight: number;
-  userName?: string;
   notes?: string;
-  birthday?: Date;
   darkMode?: boolean;
-  showCreatorName?: boolean;
   showNotes?: boolean;
-  showBirthday?: boolean;
   /** Override footer background color */
   backgroundColor?: string;
   /** Override footer border color */
@@ -106,9 +99,9 @@ export async function loadFooterIcon(path: string): Promise<CanvasImageSource | 
 export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptions): void {
   const {
     canvasWidth, canvasHeight, footerHeight,
-    userName, notes, birthday,
+    notes,
     darkMode = true,
-    showCreatorName = true, showNotes = true, showBirthday = true,
+    showNotes = true,
     backgroundColor, borderColor, accentColor, accentTintOpacity,
     leftLabel, rightLabel,
     iconImage, iconPath,
@@ -148,27 +141,16 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
   ctx.fillStyle = baseColor;
   ctx.textBaseline = "middle";
 
-  // Left: leftLabel, or username (bold), suppressed for system authors
+  // Left: optional printed-card/deck label.
   if (leftLabel?.trim()) {
     ctx.font = `bold ${fontSize}px Gelasio, Cambria, Georgia, serif`;
     drawPipeColoredText(ctx, leftLabel, margin, yPosition, "left", baseColor);
-  } else if (showCreatorName && userName?.trim() && !SYSTEM_AUTHORS.has(userName.trim())) {
-    ctx.font = `bold ${fontSize}px Gelasio, Cambria, Georgia, serif`;
-    ctx.textAlign = "left";
-    ctx.fillText(userName, margin, yPosition);
   }
 
-  // Right: rightLabel or year
+  // Right: optional printed-card/deck label.
   if (rightLabel?.trim()) {
     ctx.font = `bold ${fontSize}px Gelasio, Cambria, Georgia, serif`;
     drawPipeColoredText(ctx, rightLabel, canvasWidth - margin, yPosition, "right", baseColor);
-  } else if (showBirthday) {
-    const dateToUse = birthday || new Date();
-    const year = dateToUse.getFullYear().toString();
-
-    ctx.font = `${fontSize}px Gelasio, Cambria, Georgia, serif`;
-    ctx.textAlign = "right";
-    ctx.fillText(year, canvasWidth - margin, yPosition);
   }
 
   // Center: notes or brand name, with optional icons on both sides

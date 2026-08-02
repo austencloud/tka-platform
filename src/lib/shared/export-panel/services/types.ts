@@ -25,11 +25,6 @@ export interface AnimationExportDependencies {
   animationState: AnimationPanelState;
 }
 
-/** User info for image export metadata */
-export interface ExportUserInfo {
-  displayName: string | null;
-}
-
 // --- From ExportUrlManager ---
 /**
  * ExportUrlManager

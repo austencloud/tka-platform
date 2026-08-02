@@ -186,7 +186,6 @@
                 word: s.isSolo ? "" : s.tkaName,
               }}
               darkMode={s.darkMode}
-              userName={s.creatorName}
               forceContain={true}
               bluePropType={appSettings.bluePropType}
               redPropType={appSettings.redPropType}
@@ -194,9 +193,7 @@
               showStepNumbers={compositionManager.addStepNumbers}
               showDifficultyLevel={compositionManager.addDifficultyLevel}
               includeStartPosition={compositionManager.includeStartPosition}
-              showCreatorName={compositionManager.showCreatorName}
               showNotes={compositionManager.showNotes}
-              showBirthday={compositionManager.showBirthday}
               showLoopGlyph={compositionManager.showLoopGlyph}
               showQRCode={compositionManager.showQRCode}
               showMandala={compositionManager.showMandala}

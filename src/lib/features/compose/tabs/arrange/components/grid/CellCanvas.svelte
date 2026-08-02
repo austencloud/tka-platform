@@ -373,9 +373,7 @@
         highlightedStepIndex={primaryCurrentStep}
         showHighlight={isPlaying}
         darkMode={true}
-        showCreatorName={false}
         showNotes={false}
-        showBirthday={false}
         onContextMenu={() => {}}
       />
       <!-- onContextMenu no-op: without it ChoreoCard opens its own fallback

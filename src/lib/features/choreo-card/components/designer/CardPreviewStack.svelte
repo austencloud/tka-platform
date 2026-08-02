@@ -17,7 +17,6 @@
     showWord: boolean;
     includeStartPosition: boolean;
     startPositionLayout: "row" | "column";
-    showBirthday: boolean;
     showQRCode: boolean;
     showInfoCard: boolean;
     printMode?: boolean;
@@ -30,7 +29,6 @@
     showWord,
     includeStartPosition,
     startPositionLayout,
-    showBirthday,
     showQRCode,
     showInfoCard,
     printMode = false,
@@ -139,7 +137,6 @@
           includeStartPosition={includeStartPosition}
           {startPositionLayout}
           showQRCodes={showQRCode}
-          showBirthday={showBirthday}
           printMode={printMode}
           cardMode={!printMode}
           preRenderedImageUrl={printMode ? frontImageUrl : undefined}

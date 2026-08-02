@@ -10,9 +10,7 @@ const staticShareMocks = vi.hoisted(() => ({
     addWord: true,
     addUserInfo: true,
     addDifficultyLevel: false,
-    showCreatorName: true,
     showNotes: false,
-    showBirthday: true,
     customNotesText: "",
   },
   shareBlobNatively: vi.fn(),
@@ -95,16 +93,13 @@ describe("ExportOrchestrator static mobile share", () => {
       })
     );
 
-    await harness.orchestrator.prepareStaticShare(sequence, {
-      displayName: "Austen",
-    });
+    await harness.orchestrator.prepareStaticShare(sequence);
 
     const exportPromise = harness.orchestrator.export(
       sequence,
       { format: "static" },
       {
         isMobile: true,
-        userInfo: { displayName: "Austen" },
       }
     );
 
@@ -118,6 +113,10 @@ describe("ExportOrchestrator static mobile share", () => {
       }
     );
     expect(harness.getImageBlob).toHaveBeenCalledTimes(1);
+    expect(harness.getImageBlob).toHaveBeenCalledWith(
+      sequence,
+      expect.objectContaining({ showNotes: false })
+    );
 
     finishShare();
     await expect(exportPromise).resolves.toEqual({ success: true });
@@ -131,7 +130,6 @@ describe("ExportOrchestrator static mobile share", () => {
       { format: "static" },
       {
         isMobile: true,
-        userInfo: { displayName: "Austen" },
       }
     );
 
@@ -149,9 +147,7 @@ describe("ExportOrchestrator static mobile share", () => {
       status: "canceled",
       filename: "Static Share.png",
     });
-    await harness.orchestrator.prepareStaticShare(sequence, {
-      displayName: "Austen",
-    });
+    await harness.orchestrator.prepareStaticShare(sequence);
 
     await expect(
       harness.orchestrator.export(
@@ -159,7 +155,6 @@ describe("ExportOrchestrator static mobile share", () => {
         { format: "static" },
         {
           isMobile: true,
-          userInfo: { displayName: "Austen" },
         }
       )
     ).resolves.toEqual({ success: true, canceled: true });

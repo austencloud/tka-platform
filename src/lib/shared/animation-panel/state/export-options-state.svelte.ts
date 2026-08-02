@@ -55,7 +55,6 @@ export interface ImageExportOptions {
   showStepNumbers: boolean;
   showWord: boolean;
   showDifficulty: boolean;
-  showCreatorName: boolean;
   showNotes: boolean;
   showQRCode: boolean;
   darkMode: boolean;
@@ -98,7 +97,6 @@ const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
   showStepNumbers: true,
   showWord: true,
   showDifficulty: true,
-  showCreatorName: true,
   showNotes: true,
   showQRCode: true,
   darkMode: true,
@@ -136,9 +134,11 @@ function loadFromStorage(): ExportOptionsState {
       const split = { ...DEFAULT_SPLIT_OPTIONS, ...parsed.split };
       const {
         columnCount: _legacyColumnCount,
-        ...imageWithoutLegacyColumnCount
+        showCreatorName: _legacyCreatorName,
+        ...supportedImage
       } = (parsed.image ?? {}) as Partial<ImageExportOptions> & {
         columnCount?: unknown;
+        showCreatorName?: unknown;
       };
       // Sanitize any stale multi-effect state
       video.effectOverrides = sanitizeEffectOverrides(video.effectOverrides);
@@ -148,10 +148,13 @@ function loadFromStorage(): ExportOptionsState {
         split,
         image: {
           ...DEFAULT_IMAGE_OPTIONS,
-          ...imageWithoutLegacyColumnCount,
+          ...supportedImage,
         },
       };
-      if (Object.prototype.hasOwnProperty.call(parsed.image ?? {}, "columnCount")) {
+      if (
+        Object.prototype.hasOwnProperty.call(parsed.image ?? {}, "columnCount") ||
+        Object.prototype.hasOwnProperty.call(parsed.image ?? {}, "showCreatorName")
+      ) {
         saveToStorage(loaded);
       }
       return loaded;
@@ -204,7 +207,6 @@ export interface ExportOptionsStateManager {
   readonly imageShowStepNumbers: boolean;
   readonly imageShowWord: boolean;
   readonly imageShowDifficulty: boolean;
-  readonly imageShowCreatorName: boolean;
   readonly imageShowNotes: boolean;
   readonly imageShowQRCode: boolean;
   readonly imageDarkMode: boolean;
@@ -231,7 +233,6 @@ export interface ExportOptionsStateManager {
   setImageShowStepNumbers(show: boolean): void;
   setImageShowWord(show: boolean): void;
   setImageShowDifficulty(show: boolean): void;
-  setImageShowCreatorName(show: boolean): void;
   setImageShowNotes(show: boolean): void;
   setImageShowQRCode(show: boolean): void;
   setImageDarkMode(dark: boolean): void;
@@ -276,7 +277,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
   let imageShowStepNumbers = $state(stored.image.showStepNumbers);
   let imageShowWord = $state(stored.image.showWord);
   let imageShowDifficulty = $state(stored.image.showDifficulty);
-  let imageShowCreatorName = $state(stored.image.showCreatorName);
   let imageShowNotes = $state(stored.image.showNotes);
   let imageShowQRCode = $state(stored.image.showQRCode ?? true);
   let imageDarkMode = $state(stored.image.darkMode);
@@ -310,7 +310,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
         showStepNumbers: imageShowStepNumbers,
         showWord: imageShowWord,
         showDifficulty: imageShowDifficulty,
-        showCreatorName: imageShowCreatorName,
         showNotes: imageShowNotes,
         showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
@@ -341,7 +340,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
     get imageShowStepNumbers() { return imageShowStepNumbers; },
     get imageShowWord() { return imageShowWord; },
     get imageShowDifficulty() { return imageShowDifficulty; },
-    get imageShowCreatorName() { return imageShowCreatorName; },
     get imageShowNotes() { return imageShowNotes; },
     get imageShowQRCode() { return imageShowQRCode; },
     get imageDarkMode() { return imageDarkMode; },
@@ -419,10 +417,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
       imageShowDifficulty = show;
       persist();
     },
-    setImageShowCreatorName(show: boolean) {
-      imageShowCreatorName = show;
-      persist();
-    },
     setImageShowNotes(show: boolean) {
       imageShowNotes = show;
       persist();
@@ -470,7 +464,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
         showStepNumbers: imageShowStepNumbers,
         showWord: imageShowWord,
         showDifficulty: imageShowDifficulty,
-        showCreatorName: imageShowCreatorName,
         showNotes: imageShowNotes,
         showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
@@ -499,7 +492,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
       imageShowStepNumbers = DEFAULT_IMAGE_OPTIONS.showStepNumbers;
       imageShowWord = DEFAULT_IMAGE_OPTIONS.showWord;
       imageShowDifficulty = DEFAULT_IMAGE_OPTIONS.showDifficulty;
-      imageShowCreatorName = DEFAULT_IMAGE_OPTIONS.showCreatorName;
       imageShowNotes = DEFAULT_IMAGE_OPTIONS.showNotes;
       imageShowQRCode = DEFAULT_IMAGE_OPTIONS.showQRCode;
       imageDarkMode = DEFAULT_IMAGE_OPTIONS.darkMode;

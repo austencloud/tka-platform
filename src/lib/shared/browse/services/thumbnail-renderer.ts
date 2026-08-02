@@ -67,9 +67,7 @@ const GALLERY_DEFAULTS: CompositionDefaults = {
   includeStartPosition: true,
   addDifficultyLevel: true,
   addUserInfo: false,
-  showCreatorName: true,
   showNotes: true,
-  showBirthday: true,
 };
 
 const WORDCARD_DEFAULTS: CompositionDefaults = {
@@ -130,14 +128,6 @@ export class ThumbnailRenderer {
     // Build render options
     const renderOptions = this.buildRenderOptions(input, options);
 
-    // Add sequence's birthday for footer display
-    // Priority: sequence.birthday (original creation date) > createdAt > dateAdded
-    const birthday =
-      fullSequence.birthday ??
-      fullSequence.createdAt ??
-      fullSequence.dateAdded ??
-      undefined;
-
     // Pre-render the QR bitmap on the main thread when requested. The worker
     // pool has no QR generator, so a baked QR must be transferred in. The short
     // code is content-hash-deduped globally, so this bitmap is identical for all
@@ -179,7 +169,6 @@ export class ThumbnailRenderer {
       sequenceWithStartPos,
       {
         ...renderOptions,
-        birthday,
         loopType: resolvedLoopType ?? undefined,
         showLoopGlyph: input.showLoopGlyph,
         // Card mode: use 5:7 playing card layout for physical card export
@@ -308,12 +297,9 @@ export class ThumbnailRenderer {
       addDifficultyLevel:
         input.addDifficultyLevel ?? defaults.addDifficultyLevel,
       addUserInfo: input.addUserInfo ?? defaults.addUserInfo,
-      userName: input.userName ?? "",
 
       // Footer controls
-      showCreatorName: input.showCreatorName ?? defaults.showCreatorName,
       showNotes: input.showNotes ?? defaults.showNotes,
-      showBirthday: input.showBirthday ?? defaults.showBirthday,
       customNotesText: input.customNotesText,
 
       // Always include reversal symbols

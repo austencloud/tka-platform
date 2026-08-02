@@ -186,7 +186,6 @@
           {showWord}
           {includeStartPosition}
           startPositionLayout={getCatalogLayoutPolicy(sequence.steps?.length ?? 0)}
-          showBirthday={true}
           {showQRCode}
           showInfoCard={false}
           printMode={true}

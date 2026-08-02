@@ -22,18 +22,14 @@
   const imageCompositionManager = getImageCompositionManager();
 
   // Local state for footer settings (initialized from defaults)
-  let showCreatorName = $state(imageCompositionManager.showCreatorName);
   let showNotes = $state(imageCompositionManager.showNotes);
-  let showBirthday = $state(imageCompositionManager.showBirthday);
   let customNotesText = $state(imageCompositionManager.customNotesText);
   let isCustomized = $state(false);
 
   // Sync with persistent settings changes
   function handleSettingsChange() {
     if (!isCustomized) {
-      showCreatorName = imageCompositionManager.showCreatorName;
       showNotes = imageCompositionManager.showNotes;
-      showBirthday = imageCompositionManager.showBirthday;
       customNotesText = imageCompositionManager.customNotesText;
     }
   }
@@ -45,9 +41,7 @@
     if (isInExportPanel && exportPanelState) {
       const currentSettings = exportPanelState.staticSettings;
       if (currentSettings.isUsingCustomFooter) {
-        showCreatorName = currentSettings.showCreatorName ?? showCreatorName;
         showNotes = currentSettings.showNotes ?? showNotes;
-        showBirthday = currentSettings.showBirthday ?? showBirthday;
         customNotesText = currentSettings.customNotesText ?? customNotesText;
         isCustomized = true;
       }
@@ -58,18 +52,8 @@
     imageCompositionManager.unregisterObserver(handleSettingsChange);
   });
 
-  function toggleSetting(key: "name" | "notes" | "birthday") {
-    switch (key) {
-      case "name":
-        showCreatorName = !showCreatorName;
-        break;
-      case "notes":
-        showNotes = !showNotes;
-        break;
-      case "birthday":
-        showBirthday = !showBirthday;
-        break;
-    }
+  function toggleNotes() {
+    showNotes = !showNotes;
     applyChanges();
   }
 
@@ -84,25 +68,19 @@
       isCustomized = true;
       exportPanelState.staticSettings = {
         ...exportPanelState.staticSettings,
-        showCreatorName,
         showNotes,
-        showBirthday,
         customNotesText,
         isUsingCustomFooter: true,
       };
     } else {
       // Standalone mode - update persistent defaults directly
-      imageCompositionManager.setShowCreatorName(showCreatorName);
       imageCompositionManager.setShowNotes(showNotes);
-      imageCompositionManager.setShowBirthday(showBirthday);
       imageCompositionManager.setCustomNotesText(customNotesText);
     }
   }
 
   function resetToDefaults() {
-    showCreatorName = imageCompositionManager.showCreatorName;
     showNotes = imageCompositionManager.showNotes;
-    showBirthday = imageCompositionManager.showBirthday;
     customNotesText = imageCompositionManager.customNotesText;
     isCustomized = false;
 
@@ -110,9 +88,7 @@
     if (isInExportPanel && exportPanelState) {
       exportPanelState.staticSettings = {
         ...exportPanelState.staticSettings,
-        showCreatorName: undefined,
         showNotes: undefined,
-        showBirthday: undefined,
         customNotesText: undefined,
         isUsingCustomFooter: false,
       };
@@ -135,29 +111,11 @@
   <div class="toggle-grid">
     <button
       class="toggle-btn"
-      class:active={showCreatorName}
-      aria-pressed={showCreatorName}
-      onclick={() => toggleSetting("name")}
-    >
-      Name
-    </button>
-    <button
-      class="toggle-btn"
       class:active={showNotes}
       aria-pressed={showNotes}
-      onclick={() => toggleSetting("notes")}
+      onclick={toggleNotes}
     >
       Notes
-    </button>
-    <button
-      class="toggle-btn birthday-btn"
-      class:active={showBirthday}
-      aria-pressed={showBirthday}
-      onclick={() => toggleSetting("birthday")}
-      aria-label="Birthday date"
-      title="Birthday date"
-    >
-      <span aria-hidden="true">🎂</span>
     </button>
   </div>
 
@@ -222,8 +180,7 @@
   }
 
   .toggle-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
     gap: 8px;
   }
 
@@ -232,6 +189,7 @@
     align-items: center;
     justify-content: center;
     min-height: 44px;
+    min-width: 120px;
     padding: 10px 12px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
@@ -260,11 +218,6 @@
 
   .toggle-btn.active:hover {
     background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-  }
-
-  .birthday-btn {
-    font-size: clamp(16px, 3cqi, 20px);
-    line-height: 1;
   }
 
   .notes-input-group {

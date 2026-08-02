@@ -31,10 +31,10 @@ export function determineAdditionalHeights(
   let additionalHeightTop = 0;
   let additionalHeightBottom = 0;
 
-  const showCreatorName = options.showCreatorName ?? options.addUserInfo;
   const showNotes = options.showNotes ?? options.addUserInfo;
-  const showBirthday = options.showBirthday ?? options.addUserInfo;
-  const hasFooter = showCreatorName || showNotes || showBirthday;
+  const hasFooter = Boolean(
+    showNotes || options.leftLabel || options.rightLabel || options.iconPath
+  );
 
   if (stepCount === 0) {
     additionalHeightTop = 0;
@@ -79,10 +79,7 @@ export function validateDimensions(
   if (stepScale <= 0) return false;
   if (stepScale > 10) return false;
   if (!options) return false;
-  if (
-    typeof options.addWord !== "boolean" ||
-    typeof options.addUserInfo !== "boolean"
-  ) {
+  if (typeof options.addWord !== "boolean") {
     return false;
   }
   return true;

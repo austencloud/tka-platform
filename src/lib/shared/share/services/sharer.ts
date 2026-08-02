@@ -66,10 +66,7 @@ export class Sharer {
     options: ShareOptions,
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
-    const renderOptions = this.convertToRenderOptions(
-      options,
-      sequence.dateAdded
-    );
+    const renderOptions = this.convertToRenderOptions(options);
 
     return await this.renderService.renderSequenceToBlob(
       sequence,
@@ -89,7 +86,7 @@ export class Sharer {
    */
   async getCardImageBlob(
     sequence: SequenceData,
-    opts: { darkMode: boolean; userName: string },
+    opts: { darkMode: boolean },
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
     const renderOptions = {
@@ -98,7 +95,6 @@ export class Sharer {
       quality: 1.0,
       ...buildCardRenderOptions(sequence, {
         darkMode: opts.darkMode,
-        userName: opts.userName,
         isHandPath: !!sequence.metadata?.isHandPathVisualization,
       }),
     };
@@ -204,17 +200,14 @@ export class Sharer {
     return await this.previewCache.getCachedBlob(sequence, options);
   }
 
-  private convertToRenderOptions(
-    shareOptions: ShareOptions,
-    sequenceBirthDate?: Date
-  ) {
-    const dateToUse = sequenceBirthDate ?? new Date();
+  private convertToRenderOptions(shareOptions: ShareOptions) {
+    const showNotes = shareOptions.showNotes ?? shareOptions.addUserInfo;
 
     return {
       includeStartPosition: shareOptions.includeStartPosition,
       addStepNumbers: shareOptions.addStepNumbers,
       addReversalSymbols: true,
-      addUserInfo: shareOptions.addUserInfo,
+      addUserInfo: showNotes,
       addWord: shareOptions.addWord,
       combinedGrids: false,
       addDifficultyLevel: shareOptions.addDifficultyLevel,
@@ -229,22 +222,12 @@ export class Sharer {
         darkMode: shareOptions.darkMode,
       },
 
-      userName: shareOptions.userName || "Flow Arts Composer User",
-      exportDate: dateToUse
-        .toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        })
-        .replace(/\//g, "-"),
       notes:
         shareOptions.customNotesText ||
         shareOptions.notes ||
         "Created with Flow Arts Composer",
 
-      showCreatorName: shareOptions.showCreatorName,
-      showNotes: shareOptions.showNotes,
-      showBirthday: shareOptions.showBirthday,
+      showNotes,
 
       format: shareOptions.format,
       quality: shareOptions.quality,
@@ -254,11 +237,13 @@ export class Sharer {
   }
 
   private convertToPreviewOptions(shareOptions: ShareOptions) {
+    const showNotes = shareOptions.showNotes ?? shareOptions.addUserInfo;
+
     return {
       includeStartPosition: shareOptions.includeStartPosition,
       addStepNumbers: shareOptions.addStepNumbers,
       addReversalSymbols: true,
-      addUserInfo: shareOptions.addUserInfo,
+      addUserInfo: showNotes,
       addWord: shareOptions.addWord,
       combinedGrids: false,
       addDifficultyLevel: shareOptions.addDifficultyLevel,
@@ -273,22 +258,12 @@ export class Sharer {
         darkMode: shareOptions.darkMode,
       },
 
-      userName: shareOptions.userName || "Flow Arts Composer User",
-      exportDate: new Date()
-        .toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        })
-        .replace(/\//g, "-"),
       notes:
         shareOptions.customNotesText ||
         shareOptions.notes ||
         "Created with Flow Arts Composer",
 
-      showCreatorName: shareOptions.showCreatorName,
-      showNotes: shareOptions.showNotes,
-      showBirthday: shareOptions.showBirthday,
+      showNotes,
 
       format: "JPEG" as const,
       quality: 0.4,

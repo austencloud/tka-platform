@@ -7,7 +7,7 @@ export interface SequenceExportOptions {
   startPositionLayout?: "row" | "column";
   addStepNumbers: boolean;
   addReversalSymbols: boolean;
-  /** @deprecated Footer visibility is now derived from individual flags (showCreatorName, showNotes, showBirthday) */
+  /** @deprecated Footer visibility is now derived from individual flags. */
   addUserInfo?: boolean;
   addWord: boolean;
   combinedGrids: boolean;
@@ -17,9 +17,7 @@ export interface SequenceExportOptions {
   loopType?: LOOPType; 
   showLoopGlyph?: boolean; 
 
-  showCreatorName?: boolean; 
   showNotes?: boolean; 
-  showBirthday?: boolean; 
   customNotesText?: string; 
   /** Left-side label override (e.g. "SS 🌊" for VTG cards) */
   leftLabel?: string;
@@ -87,11 +85,7 @@ export interface SequenceExportOptions {
     showMandala?: boolean;
   };
 
-  userName: string;
-  exportDate: string;
   notes: string;
-  /** Original creation date of the sequence (for birthday display) */
-  birthday?: Date;
 
   columnCount?: number | null;  
 
@@ -147,13 +141,6 @@ export interface CompositionOptions extends SequenceExportOptions {
   layout: [number, number]; // [columns, rows]
   additionalHeightTop: number;
   additionalHeightBottom: number;
-}
-
-export interface UserExportInfo {
-  userName: string;
-  notes: string;
-  exportDate: string;
-  birthday?: Date; 
 }
 
 export interface LayoutData {

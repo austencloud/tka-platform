@@ -270,9 +270,7 @@
           showWord={false}
           showStepNumbers={true}
           showDifficultyLevel={false}
-          showCreatorName={false}
           showNotes={false}
-          showBirthday={false}
           showLoopGlyph={false}
           showHighlight={true}
           highlightedStepIndex={highlightIndex}
@@ -379,9 +377,7 @@
         showWord={false}
         showStepNumbers={true}
         showDifficultyLevel={false}
-        showCreatorName={false}
         showNotes={false}
-        showBirthday={false}
         showLoopGlyph={false}
         darkMode={true}
         bluePropType={settings.bluePropType}

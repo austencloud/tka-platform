@@ -66,10 +66,10 @@ export async function composeCardImage(
     ? calculateHeaderHeight(stepCount, stepSize, columns)
     : 0;
 
-  const showCreatorName = options.showCreatorName ?? options.addUserInfo;
   const showNotes = options.showNotes ?? options.addUserInfo;
-  const showBirthday = options.showBirthday ?? options.addUserInfo;
-  const hasFooter = showCreatorName || showNotes || showBirthday;
+  const hasFooter = Boolean(
+    showNotes || options.leftLabel || options.rightLabel || options.iconPath
+  );
   const footerHeight = hasFooter ? calculateFooterHeight(stepSize, columns) : 0;
 
   const gridHeight = rows * stepSize;

@@ -81,7 +81,7 @@
     engine,
     thumbnailService,
     scrollElement,
-    onAction = () => {},
+    onAction,
     eager = false,
     handPathMode = false,
     showBlueMotion = true,
@@ -472,7 +472,7 @@
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    onAction(action, sequence, variations);
+    onAction?.(action, sequence, variations);
   }
   function handleHover(seq: SequenceData) {
     cellPreWarmer.preWarmSequence(seq, "user-visible");
@@ -528,8 +528,9 @@
               <ChoreoCardThumbnail
                 {sequence}
                 variations={seqVariations}
-                onPrimaryAction={(seq) =>
-                  handleAction("view-detail", seq, seqVariations)}
+                onPrimaryAction={onAction
+                  ? (seq) => handleAction("view-detail", seq, seqVariations)
+                  : undefined}
                 onHover={handleHover}
                 bluePropType={propSettings.bluePropType}
                 redPropType={propSettings.redPropType}
