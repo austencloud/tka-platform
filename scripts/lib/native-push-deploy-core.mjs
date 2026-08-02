@@ -6,6 +6,32 @@ const ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
 const ZIP_UTF8_FLAG = 0x0800;
 const ZIP_MAX_COMMENT_BYTES = 0xffff;
 
+export const NATIVE_RELEASE_FORBIDDEN_MARKERS = Object.freeze([
+  "View in coven hub",
+  "/coven?seq=",
+  "coven-seed",
+]);
+
+export function inspectNativeReleaseSurface(
+  files,
+  forbiddenMarkers = NATIVE_RELEASE_FORBIDDEN_MARKERS
+) {
+  const violations = [];
+
+  for (const file of files) {
+    for (const marker of forbiddenMarkers) {
+      if (file.contents.includes(marker)) {
+        violations.push({ path: file.path, marker });
+      }
+    }
+  }
+
+  return {
+    checkedFileCount: files.length,
+    violations,
+  };
+}
+
 export function inspectZipFilenameFlags(bytes) {
   const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
   const minimumEndOffset = Math.max(

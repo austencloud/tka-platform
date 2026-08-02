@@ -41,6 +41,9 @@ jobs:
           DISABLE_PWA: "true"
         run: pnpm run build
 
+      - name: Verify native release surface
+        run: node scripts/verify-native-release-surface.mjs
+
       - name: Trim heavy assets for lean mobile bundle
         run: |
           DIR=.svelte-kit/cloudflare

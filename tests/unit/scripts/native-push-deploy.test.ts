@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { isAbsolute, join, resolve } from "node:path";
 
 import {
@@ -6,6 +7,7 @@ import {
   choosePushedCommit,
   createArchiveExtractionPlan,
   createNativeBuildEnv,
+  inspectNativeReleaseSurface,
   inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
@@ -14,6 +16,67 @@ import {
   selectSnapshotArchive,
   selectAndroidDevice,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
+
+describe("native release surface verification", () => {
+  it("reports every forbidden marker with its generated asset", () => {
+    const report = inspectNativeReleaseSurface([
+      {
+        path: "_app/immutable/chunks/viewer.js",
+        contents: 'label:"View in coven hub",url:"/coven?seq="',
+      },
+      {
+        path: "_app/immutable/nodes/coven.js",
+        contents: 'id:"coven-seed"',
+      },
+    ]);
+
+    expect(report).toEqual({
+      checkedFileCount: 2,
+      violations: [
+        {
+          path: "_app/immutable/chunks/viewer.js",
+          marker: "View in coven hub",
+        },
+        {
+          path: "_app/immutable/chunks/viewer.js",
+          marker: "/coven?seq=",
+        },
+        {
+          path: "_app/immutable/nodes/coven.js",
+          marker: "coven-seed",
+        },
+      ],
+    });
+  });
+
+  it("accepts production assets without internal navigation or hub code", () => {
+    expect(
+      inspectNativeReleaseSurface([
+        {
+          path: "_app/immutable/chunks/viewer.js",
+          contents: 'label:"Practice Mode",url:"/browse/gallery"',
+        },
+      ])
+    ).toEqual({ checkedFileCount: 1, violations: [] });
+  });
+
+  it("fails closed when the generated build directory is missing", () => {
+    const missingBuild = resolve(
+      "test-results",
+      `missing-native-surface-${process.pid}`
+    );
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/verify-native-release-surface.mjs"), missingBuild],
+      { encoding: "utf8" }
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      `[native-surface] Build directory not found: ${missingBuild}`
+    );
+  });
+});
 
 function makeZipDirectory(
   entries: Array<{ name: string; utf8: boolean }>

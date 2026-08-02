@@ -472,6 +472,12 @@ export async function main() {
     console.log("[native] 1/4 Build web bundle");
     run(pnpm, ["run", "build"], { cwd: snapshotRoot, env: buildEnv });
 
+    console.log("[native] Verify release surface");
+    run(process.execPath, ["scripts/verify-native-release-surface.mjs"], {
+      cwd: snapshotRoot,
+      env: buildEnv,
+    });
+
     console.log("[native] 2/4 Generate native environment");
     run(process.execPath, ["scripts/generate-native-env.mjs"], {
       cwd: snapshotRoot,

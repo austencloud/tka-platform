@@ -231,7 +231,11 @@
         dividerBefore: !onPropsOpen && items.length > 0,
       });
     }
-    if (sequenceId) {
+    if (
+      typeof __FEATURE_COVEN__ !== "undefined" &&
+      __FEATURE_COVEN__ &&
+      sequenceId
+    ) {
       items.push({
         label: "View in coven hub",
         icon: "fa-hat-wizard",

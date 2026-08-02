@@ -29,6 +29,8 @@ export interface FeatureDefinition {
   modulePaths: string[];
   /** Route directory patterns excluded from the build when the feature is disabled */
   routePatterns?: string[];
+  /** Empty these guarded page components in disabled production client builds. */
+  emptyClientRouteComponents?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -213,6 +215,16 @@ export const FEATURES: FeatureDefinition[] = [
     ],
   },
   {
+    id: "coven",
+    tier: "dev",
+    // CovenStation is also the museum's telekinetic formation, so the shared
+    // feature directory cannot be stubbed wholesale. Emptying the guarded
+    // /coven route severs only the unfinished hub's import graph.
+    modulePaths: [],
+    routePatterns: ["src/routes/coven/"],
+    emptyClientRouteComponents: true,
+  },
+  {
     id: "loop-labeler",
     tier: "dev",
     modulePaths: ["features/loop-labeler/"],
@@ -247,6 +259,10 @@ const DEV_ONLY_ROUTE_PATTERNS: string[] = [
   "src/routes/embed/",
   "src/routes/hall-of-shame/",
 ];
+
+// These route trees have their own production redirect guards. Emptying their
+// Svelte components removes implementation code without leaving a blank route.
+const GUARDED_DEV_ROUTE_PATTERNS: string[] = ["src/routes/test/"];
 
 // ---------------------------------------------------------------------------
 // Runtime helpers
@@ -419,6 +435,24 @@ export function getDisabledRoutePatterns(): string[] {
   ).flatMap((f) => f.routePatterns as string[]);
 
   const devRoutes = isProduction && !buildAll ? DEV_ONLY_ROUTE_PATTERNS : [];
+
+  return [...featureRoutes, ...devRoutes];
+}
+
+/**
+ * Disabled route components that are safe to empty in the client bundle.
+ * Every returned path must have a production load guard that redirects before
+ * SvelteKit attempts to render its now-empty page component.
+ */
+export function getClientEmptiedRoutePaths(): string[] {
+  const featureRoutes = FEATURES.filter(
+    (feature) =>
+      !isFeatureEnabled(feature.id) &&
+      feature.emptyClientRouteComponents &&
+      feature.routePatterns
+  ).flatMap((feature) => feature.routePatterns as string[]);
+
+  const devRoutes = isProduction && !buildAll ? GUARDED_DEV_ROUTE_PATTERNS : [];
 
   return [...featureRoutes, ...devRoutes];
 }

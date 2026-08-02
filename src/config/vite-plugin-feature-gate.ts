@@ -15,6 +15,7 @@
 
 import type { Plugin, ResolvedConfig } from "vite";
 import {
+  getClientEmptiedRoutePaths,
   getDisabledFeatureModulePaths,
   getSsrEmptiedRoutePaths,
   getSsrStubbedModulePaths,
@@ -51,11 +52,13 @@ export function featureGatePlugin(): Plugin {
         ? getSsrStubbedModulePaths()
         : getDisabledFeatureModulePaths();
       stubbedPackages = isSsrBuild ? getSsrStubbedPackages() : [];
-      emptiedRoutePaths = isSsrBuild ? getSsrEmptiedRoutePaths() : [];
+      emptiedRoutePaths = isSsrBuild
+        ? getSsrEmptiedRoutePaths()
+        : getClientEmptiedRoutePaths();
 
-      if (disabledModulePaths.length > 0) {
+      if (disabledModulePaths.length > 0 || emptiedRoutePaths.length > 0) {
         console.log(
-          `[feature-gate] Production ${isSsrBuild ? "SSR" : "client"} build: gating ${disabledModulePaths.length} module path(s).`
+          `[feature-gate] Production ${isSsrBuild ? "SSR" : "client"} build: gating ${disabledModulePaths.length} module path(s) and emptying ${emptiedRoutePaths.length} route path(s).`
         );
       }
     },
@@ -106,10 +109,11 @@ export function featureGatePlugin(): Plugin {
         return STUB_EXPORT;
       }
 
-      // SSR build: empty ssr=false route components instead of resolve-stubbing
-      // them — SvelteKit's build_server_nodes requires every route component to
-      // stay in the Vite manifest under its real filename. An empty string is a
-      // valid Svelte component with no import graph.
+      // Keep disabled route files in SvelteKit's manifest, but remove their
+      // implementation graph. Their load guards still run and redirect users;
+      // the page components and everything they import do not reach the client.
+      // SSR uses the same technique for selected ssr=false routes because
+      // build_server_nodes also requires their real filenames in its manifest.
       if (emptiedRoutePaths.length) {
         const bare = normalize(id).split("?")[0]!;
         if (
