@@ -145,7 +145,8 @@ export function buildDrownedGalleryLayout(
         maxZ: approach.minZ,
       },
     ],
-    causewayProbe: { x: grotto.minX + gw * 0.5, z: pool.maxZ + 2.0 },
+    // West of the surfacing steps (which occupy the sump's x-span mid-south)
+    causewayProbe: { x: grotto.minX + gw * 0.25, z: pool.maxZ + 2.0 },
     poolProbe: { x: grotto.minX + gw * 0.5, z: (pool.minZ + pool.maxZ) / 2 },
     shoreProbe: { x: grotto.minX + gw * 0.5, z: shore.minZ + 1.0 },
     gateProbe: { x: (gate.minX + gate.maxX) / 2, z: (gate.minZ + gate.maxZ) / 2 },
@@ -218,12 +219,14 @@ export function createDrownedGalleryTerrain(
       to: CORRIDOR_SURFACING_Y,
       axis: "z",
     },
-    // grotto surfacing steps: the south-west entry strip rises to CAUSEWAY
+    // grotto surfacing steps: rise to CAUSEWAY on the strip the sump corridor
+    // actually enters through (anchored to the sump's x-span, NOT the grotto's
+    // west edge — the door lands mid-south-wall at the sump's x position).
     {
       rect: {
-        minX: grotto.minX,
+        minX: sump.minX - 1,
         minZ: grotto.maxZ - 3,
-        maxX: grotto.minX + 6,
+        maxX: sump.maxX + 1,
         maxZ: grotto.maxZ,
       },
       from: CAUSEWAY_Y,

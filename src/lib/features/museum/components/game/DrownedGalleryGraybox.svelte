@@ -210,10 +210,12 @@
       minZ: sump.minZ + 3,
       maxZ: sump.maxZ - 2,
     };
+    // Anchored to the sump's x-span — the strip the corridor actually enters
+    // through. Must stay identical to the terrain program's surfacing zone.
     const surfacing: WorldRect = {
-      minX: grotto.minX,
+      minX: sump.minX - 1,
       minZ: grotto.maxZ - 3,
-      maxX: grotto.minX + 6,
+      maxX: sump.maxX + 1,
       maxZ: grotto.maxZ,
     };
     const exitRamp: WorldRect = {
@@ -274,6 +276,16 @@
           minX: surfacing.maxX,
           minZ: pool.maxZ,
           maxX: pool.maxX,
+          maxZ: grotto.maxZ,
+        },
+      ],
+      [
+        // South-west floor west of the (relocated) surfacing steps
+        "causeway-s-far-west",
+        {
+          minX: grotto.minX,
+          minZ: surfacing.minZ,
+          maxX: surfacing.minX,
           maxZ: grotto.maxZ,
         },
       ],
