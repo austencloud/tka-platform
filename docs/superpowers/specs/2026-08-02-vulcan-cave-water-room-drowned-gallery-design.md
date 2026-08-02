@@ -81,10 +81,19 @@ balustrade + barred gate + 13 m of open water; recessed habitat = the alcoves.
   same hand path. A = blue pro / red pro. B = blue anti / red anti. C = blue
   anti / red pro. The procession teaches by comparison: one motion, prop
   rotation as the only variable.
-- Note: `CAVE_MODE_ROOMS` labels `cave-water` with VTG category SS. The room's
-  identity is now letter-based (A/B/C) per Austen's 2026-08-02 direction; at
-  implementation, verify the letters' T&D categories via MCP and reconcile the
-  `CAVE_MODE_ROOMS` labels rather than trusting either doc.
+- **Full 19-performer roster (resolved 2026-08-02 from the canonical T&D base
+  catalog, `static/data/hero/tnd-base-words.json` / `TND_BASE_CATALOG_ID =
+  "l1-tnd-motions"`, families per `tnd-element.ts`):** Water (Split-Same):
+  AAAA, BBBB, CCCC · Fire (Split-Opp): JDJD, KEKE, LFLF · Earth (Tog-Same):
+  GGGG, HHHH, IIII · Air (Tog-Opp): DJDJ, EKEK, FLFL · Sun (Quarter-Same):
+  SSSS, TTTT, UUUU, VVVV (**four** alcoves) · Moon (Quarter-Opp): MPMP, NQNQ,
+  OROR (the catalog's PMPM/QNQN/RORO entries are phase-duplicates and do not
+  get their own performers). Total 3+3+3+3+4+3 = 19, matching the founding
+  collection count. This agrees with `CAVE_MODE_ROOMS`' category labels
+  (SS/SO/TS/TO/QS/QO) and with both of Austen's stated examples. Fire and Air
+  share letters with opposite timing — an intentional narrative echo to use
+  when those rooms are designed. Spot-verify each room's letters via MCP at
+  that room's spec time.
 - **Display, two layers:** in-fiction cave art = glowing painted pictograph
   diagrams behind each performer (pre-alphabetic — no Latin letters on rock,
   per standing cave decision). Museum voice = overlook plaques (existing
@@ -196,7 +205,7 @@ the handoff's verification method.
 
 | Need | Reuse | Coupling notes |
 |---|---|---|
-| Water plane | `scenes/ocean/runtime/water/WaterSurface.svelte` | needs `groundY` + camera; verify above-water read |
+| Water plane | `scenes/ocean/runtime/water/WaterSurface.svelte` | needs `groundY` + camera. Above-water read RESOLVED (2026-08-02, shader read): `snell-window.frag` has a `uSnellEnabled` toggle — `false` is the correct from-above surface, `true` the from-below Snell window; flip on waterline crossing. Two required adaptations: (1) the edge fade uses `length(vWorldPosition.xz)` — assumes the plane sits at world origin; add a center uniform or switch to UV-space fade before placing the pool anywhere else. (2) alpha is hardcoded `mix(0.26, 0.18, windowMask)` — expose an opacity uniform for the black-mirror pool read. |
 | Underwater grade | `water-absorption-effect.ts`, `underwater-distortion-effect.ts` | Effect classes portable; wire scene-locally, don't widen the ocean gate |
 | Caustics | `runtime/atmosphere/seabed-caustics.ts` | pure patch fn; caller advances `uTime` |
 | God rays | `runtime/atmosphere/GodRayShafts.svelte` | hardcoded sun — re-derive |
