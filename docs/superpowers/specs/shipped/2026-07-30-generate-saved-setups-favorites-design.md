@@ -2,12 +2,12 @@
 status: active
 value: 4
 effort: L
-remaining: "Run a production-backed CRUD smoke check when a disposable setup write is authorized."
+remaining: ""
 depends_on: ""
 plan_path: "docs/superpowers/plans/2026-07-30-generate-saved-setups-favorites.md"
 tags:
   ["create", "generate", "favorites", "presets", "firestore", "privacy", "ux"]
-last_triaged: 2026-07-30
+last_triaged: 2026-08-01
 ---
 
 # Generate Saved Setups and Community Favorite: Design Spec
