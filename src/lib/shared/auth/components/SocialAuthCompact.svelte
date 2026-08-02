@@ -44,8 +44,8 @@
   import { getInstagramAuthErrorMessage } from "$lib/shared/auth/services/instagram-auth";
   import InAppEscapeControls from "./InAppEscapeControls.svelte";
 
-  let { mode = "signin", onFacebookAuth } = $props<{
-    mode: "signin" | "signup";
+  let { onFacebookAuth } = $props<{
+    mode?: "signin" | "signup";
     onFacebookAuth?: () => void;
   }>();
 
@@ -254,9 +254,6 @@
 </script>
 
 <div class="social-auth-compact">
-  <p class="social-compact-label">
-    {mode === "signin" ? "Sign in with" : "Sign up with"}
-  </p>
   <div
     class="social-compact-buttons"
     class:one-provider={!showFacebook && !showInstagram}
@@ -268,7 +265,7 @@
       disabled={isLoading}
       aria-expanded={showEscapeNote}
       aria-controls="inapp-escape-note"
-      aria-label={`${mode === "signin" ? "Sign in with Google" : "Sign up with Google"}${
+      aria-label={`Continue with Google${
         lastMethod === "google" ? ", last used on this device" : ""
       }`}
     >
@@ -280,7 +277,7 @@
         Signing in...
       {:else}
         <GoogleIcon />
-        Google
+        Continue with Google
       {/if}
     </button>
     {#if showFacebook}
@@ -288,7 +285,7 @@
         class="social-compact-button social-compact-button--facebook"
         onclick={handleFacebookClick}
         disabled={isLoading}
-        aria-label={`${mode === "signin" ? "Sign in with Facebook" : "Sign up with Facebook"}${
+        aria-label={`Continue with Facebook${
           lastMethod === "facebook" ? ", last used on this device" : ""
         }`}
       >
@@ -296,7 +293,7 @@
           <LastUsedBadge />
         {/if}
         <FacebookIcon />
-        Facebook
+        Continue with Facebook
       </button>
     {/if}
     {#if showInstagram}
@@ -305,7 +302,7 @@
         onclick={handleInstagramClick}
         disabled={isLoading}
         aria-describedby="instagram-account-requirement"
-        aria-label={`${mode === "signin" ? "Sign in with Instagram" : "Sign up with Instagram"}, creator or business account required${
+        aria-label={`Continue with Instagram, creator or business account required${
           lastMethod === "instagram" ? ", last used on this device" : ""
         }`}
       >
@@ -317,7 +314,7 @@
           Opening...
         {:else}
           <i class="fab fa-instagram" aria-hidden="true"></i>
-          Instagram
+          Continue with Instagram
         {/if}
       </button>
     {/if}
@@ -352,15 +349,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(8px, 1.5vh, 12px);
-    margin-top: clamp(2px, 0.5vh, 4px);
-  }
-
-  .social-compact-label {
-    font-size: clamp(0.6875rem, 1.5vh, var(--font-size-compact));
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    margin: 0;
-    font-weight: 500;
+    gap: 0.75rem;
   }
 
   .social-compact-buttons {
@@ -368,7 +357,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(6px, 1vw, 10px);
     width: 100%;
-    max-width: 400px;
+    max-width: none;
     /* Room for the "Last used" badge, which straddles a button's top edge by
        half its height. Reserved unconditionally so the row's geometry is
        identical whether or not a badge renders — the badge can never move
@@ -391,15 +380,18 @@
     align-items: center;
     justify-content: center;
     gap: clamp(4px, 1vw, 8px);
-    min-height: clamp(36px, 5vh, var(--min-touch-target));
-    padding: clamp(8px, 1.2vh, 10px) clamp(10px, 2vw, 16px);
-    border-radius: clamp(6px, 1vh, 8px);
-    font-size: clamp(0.75rem, 1.8vh, var(--font-size-sm));
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md, 0.625rem);
+    font-size: var(--font-size-min, 0.875rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    border: none;
-    box-shadow: 0 2px 6px var(--theme-shadow);
+    transition:
+      background var(--duration-normal, 200ms) ease,
+      box-shadow var(--duration-normal, 200ms) ease,
+      transform var(--duration-normal, 200ms) ease;
+    border: 1px solid #747775;
+    box-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.24));
   }
 
   .social-compact-button:disabled {
@@ -424,6 +416,7 @@
   .social-compact-button--facebook {
     background: #1877f2;
     color: #ffffff;
+    border-color: #1877f2;
   }
 
   .social-compact-button--facebook:hover:not(:disabled) {
@@ -434,6 +427,7 @@
   .social-compact-button--instagram {
     background: #e4405f;
     color: #ffffff;
+    border-color: #e4405f;
   }
 
   .social-compact-button--instagram:hover:not(:disabled) {
@@ -455,6 +449,12 @@
     color: var(--semantic-error, var(--semantic-error));
   }
 
+  .social-compact-button:focus-visible {
+    outline: 3px solid
+      color-mix(in srgb, var(--theme-accent, #7c6af7) 72%, white);
+    outline-offset: 3px;
+  }
+
   .escape-note {
     width: 100%;
     margin-top: 0.75rem;
@@ -472,5 +472,11 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .social-compact-button {
+      transition: none;
+    }
   }
 </style>

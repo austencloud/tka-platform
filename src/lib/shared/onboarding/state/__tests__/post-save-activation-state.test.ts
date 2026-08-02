@@ -166,7 +166,7 @@ describe("postSaveActivation", () => {
 		it("login opens the signin drawer and hides", () => {
 			postSaveActivation.login();
 
-			expect(mocks.authDrawerShow).toHaveBeenCalledWith("signin");
+			expect(mocks.authDrawerShow).toHaveBeenCalledWith("signin", "guest-first-save");
 			expect(mocks.captureEvent).toHaveBeenCalledWith(
 				"onboarding_guest_first_save_prompt_login",
 				{ sequenceId: "seq-1" }

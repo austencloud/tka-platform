@@ -592,6 +592,7 @@ import type { SheetType } from "../../navigation/services/types";
         <mod.default
           open={authDrawerState.open}
           initialMode={authDrawerState.initialMode}
+          reason={authDrawerState.reason}
           onClose={() => authDrawerState.hide()}
         />
       {/await}

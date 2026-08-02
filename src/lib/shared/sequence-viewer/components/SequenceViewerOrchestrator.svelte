@@ -1080,7 +1080,7 @@
   function handleEdit() {
     if (!sequence) return;
     if (!authState.isAuthenticated) {
-      authDrawerState.show();
+      authDrawerState.show("signup", "edit-community");
       return;
     }
     hapticService?.trigger("selection");

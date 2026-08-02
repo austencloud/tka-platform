@@ -932,11 +932,11 @@
       trigger={stepCapNudgeTrigger}
       onCreateAccount={() => {
         showStepCapNudge = false;
-        authDrawerState.show("signup");
+        authDrawerState.show("signup", stepCapNudgeTrigger);
       }}
       onLogin={() => {
         showStepCapNudge = false;
-        authDrawerState.show("signin");
+        authDrawerState.show("signin", stepCapNudgeTrigger);
       }}
       onDismiss={() => {
         showStepCapNudge = false;

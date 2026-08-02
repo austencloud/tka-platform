@@ -111,7 +111,7 @@ export class BrowseEventHandler {
     this.ensureInitialized();
 
     if (!authState.isAuthenticated) {
-      authDrawerState.show();
+      authDrawerState.show("signup", "edit-community");
       return;
     }
 

@@ -28,6 +28,7 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
+  let submittedEmail = $state("");
   let deliveryDetails = $state<{
     subject: string;
     senderEmail: string;
@@ -61,8 +62,8 @@
 
   const hint = $derived(
     inAppBrowser
-      ? `We email you a link. Open it in ${escapeTarget} and you are signed in there.`
-      : "No password needed - we'll email you a sign-in link."
+      ? `A sign-in link will arrive by email. Open it in ${escapeTarget} to finish signing in there.`
+      : "No password needed. A sign-in link will arrive by email."
   );
 
   // The link is usually opened in a different browser than the one that
@@ -100,8 +101,11 @@
   });
 
   async function sendEmailLink() {
+    const recipient = email.trim();
     const requestId = crypto.randomUUID();
     const startedAt = performance.now();
+    submittedEmail = recipient;
+    email = recipient;
     loading = true;
     error = null;
     success = null;
@@ -132,7 +136,7 @@
       // Land the user inside the app after they click the magic link, not on
       // the marketing landing page at "/".
       const result = await sendMagicLink({
-        email,
+        email: recipient,
         continueUrl: window.location.origin + "/create",
         requestId,
       });
@@ -140,8 +144,8 @@
       if (result.data.success) {
         const acceptedRequestId = result.data.requestId || requestId;
         // Save the email locally so we can complete sign-in on the same device
-        window.localStorage.setItem("emailForSignIn", email);
-        success = `Email sent to ${email}.`;
+        window.localStorage.setItem("emailForSignIn", recipient);
+        success = `Email sent to ${recipient}.`;
         deliveryDetails = {
           subject: result.data.subject || DEFAULT_SUBJECT,
           senderEmail: result.data.senderEmail || DEFAULT_SENDER,
@@ -212,13 +216,14 @@
   }
 
   function handleSubmit() {
-    sendEmailLink();
+    void sendEmailLink();
   }
 
   function useDifferentEmail() {
     email = "";
     error = null;
     success = null;
+    submittedEmail = "";
     deliveryDetails = null;
     requestAnimationFrame(() => emailInput.focus());
   }
@@ -231,7 +236,64 @@
   }}
   class="email-link-form"
 >
-  <p class="magic-link-hint">{hint}</p>
+  {#if error}
+    <div
+      id="magic-link-status"
+      class="delivery-card delivery-card--error"
+      role="alert"
+    >
+      <span class="delivery-icon" aria-hidden="true">
+        <i class="fas fa-triangle-exclamation"></i>
+      </span>
+      <span class="delivery-copy">
+        <strong>The link was not sent</strong>
+        <span>{error}</span>
+      </span>
+    </div>
+  {:else}
+    <div
+      id="magic-link-status"
+      class="delivery-card"
+      class:delivery-card--sending={loading}
+      class:delivery-card--success={!!success}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <span
+        class="delivery-icon"
+        class:delivery-icon--sending={loading}
+        aria-hidden="true"
+      >
+        {#if loading}
+          <i class="fas fa-paper-plane"></i>
+        {:else if success}
+          <i class="fas fa-check"></i>
+        {:else}
+          <i class="fas fa-envelope"></i>
+        {/if}
+      </span>
+      <span class="delivery-copy">
+        {#if loading}
+          <strong>Sending your link now</strong>
+          <span>
+            Preparing an email for {submittedEmail}. This can take a few
+            seconds.
+          </span>
+        {:else if success}
+          <strong>Check your email</strong>
+          <span>
+            {success} Look for “{deliveryDetails?.subject || DEFAULT_SUBJECT}”
+            from {deliveryDetails?.senderEmail || DEFAULT_SENDER}. Check Junk or
+            Other if it does not appear.
+          </span>
+        {:else}
+          <strong>Email sign-in</strong>
+          <span>{hint}</span>
+        {/if}
+      </span>
+    </div>
+  {/if}
 
   {#if pendingGuestDrafts}
     <p class="drift-warning" role="status">
@@ -249,97 +311,156 @@
       bind:value={email}
       placeholder={t("form_placeholder_email")}
       required
-      disabled={loading}
+      disabled={loading || !!success}
+      aria-describedby="magic-link-status"
     />
   </div>
 
-  {#if error}
-    <p class="error-message" role="alert">{error}</p>
-  {/if}
-
-  {#if success}
-    <div class="success-message" role="status" aria-live="polite">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-      <span class="success-copy">
-        <strong>{success}</strong>
-        <span>
-          Look for “{deliveryDetails?.subject || DEFAULT_SUBJECT}” from
-          {deliveryDetails?.senderEmail || DEFAULT_SENDER}. If it is not in your
-          inbox, check Junk or Other.
-        </span>
-      </span>
-    </div>
-  {/if}
-
-  <button type="submit" disabled={loading} class="submit-button">
-    {#if loading}
-      <ProgressRing percent={-1} size={24} strokeWidth={2} />
-      {t("auth_sending")}
-    {:else}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path
-          d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-        ></path>
-        <polyline points="22,6 12,13 2,6"></polyline>
-      </svg>
-      {success ? "Send another link" : t("auth_send_magic_link")}
-    {/if}
-  </button>
-
-  {#if success}
+  <div class="form-actions" class:form-actions--split={!!success}>
     <button
-      type="button"
-      class="different-email-button"
-      onclick={useDifferentEmail}
+      type="submit"
+      disabled={loading}
+      class="submit-button"
+      aria-busy={loading}
+      aria-describedby="magic-link-status"
     >
-      Use a different email
+      {#if loading}
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
+        {t("auth_sending")}
+      {:else}
+        <i class="fas fa-envelope" aria-hidden="true"></i>
+        {success ? "Send again" : t("auth_send_magic_link")}
+      {/if}
     </button>
-  {/if}
+    {#if success}
+      <button
+        type="button"
+        class="different-email-button"
+        onclick={useDifferentEmail}
+      >
+        Different email
+      </button>
+    {/if}
+  </div>
 </form>
 
 <style>
   .email-link-form {
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.5vh, 12px);
+    gap: 0.75rem;
     width: 100%;
   }
 
-  .magic-link-hint {
-    margin: 0;
-    font-size: clamp(0.75rem, 1.6vh, 0.875rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    text-align: center;
-    line-height: 1.4;
+  .delivery-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    min-block-size: 7.5rem;
+    padding: 0.875rem;
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 0.75rem);
+  }
+
+  .delivery-card--sending {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 12%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 42%,
+      transparent
+    );
+  }
+
+  .delivery-card--success {
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 13%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 42%,
+      transparent
+    );
+  }
+
+  .delivery-card--error {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 12%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 40%,
+      transparent
+    );
+  }
+
+  .delivery-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    color: var(--theme-accent, #7c6af7);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 18%,
+      transparent
+    );
+  }
+
+  .delivery-card--success .delivery-icon {
+    color: var(--semantic-success, #22c55e);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 18%,
+      transparent
+    );
+  }
+
+  .delivery-card--error .delivery-icon {
+    color: var(--semantic-error, #ef4444);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 18%,
+      transparent
+    );
+  }
+
+  .delivery-icon--sending {
+    animation: delivery-pulse 1.2s ease-in-out infinite;
+  }
+
+  .delivery-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .delivery-copy strong {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
   }
 
   .drift-warning {
     margin: 0;
     padding: 0.5rem 0.75rem;
-    font-size: clamp(0.75rem, 1.6vh, 0.875rem);
+    font-size: var(--font-size-min, 0.875rem);
     line-height: 1.4;
     text-align: center;
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
@@ -355,35 +476,51 @@
   }
 
   label {
-    font-size: 0.875rem;
+    font-size: var(--font-size-min, 0.875rem);
     font-weight: 600;
     color: color-mix(in srgb, var(--theme-text, white) 85%, transparent);
   }
 
   input {
     padding: 0.75rem;
-    border: 2px solid var(--theme-stroke, var(--theme-stroke-strong));
+    min-height: var(--min-touch-target, 44px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 0.5rem;
-    font-size: 1rem;
-    transition: all var(--duration-normal) ease;
-    background: var(--theme-card-bg, var(--theme-card-bg));
+    font-size: var(--font-size-sm, 1rem);
+    transition:
+      border-color var(--duration-normal, 200ms) ease,
+      box-shadow var(--duration-normal, 200ms) ease,
+      background var(--duration-normal, 200ms) ease;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
   }
 
   input:focus {
-    outline: none;
-    border-color: var(--theme-accent-strong, var(--theme-accent-strong));
+    outline: 3px solid
+      color-mix(in srgb, var(--theme-accent, #7c6af7) 38%, transparent);
+    outline-offset: 1px;
+    border-color: var(--theme-accent-strong, var(--theme-accent, #7c6af7));
     box-shadow: 0 0 0 3px
       color-mix(
         in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 15%,
+        var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 15%,
         transparent
       );
   }
 
   input:disabled {
-    opacity: 0.6;
+    opacity: 0.72;
     cursor: not-allowed;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+
+  .form-actions--split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .submit-button {
@@ -391,13 +528,14 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
     background: linear-gradient(
       135deg,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 0%,
+      var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 0%,
       color-mix(
           in srgb,
-          var(--theme-accent-strong, var(--theme-accent-strong)) 85%,
+          var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 85%,
           #000
         )
         100%
@@ -406,14 +544,14 @@
     border: none;
     border-radius: 0.5rem;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--font-size-min, 0.875rem);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
     box-shadow: 0 4px 6px
       color-mix(
         in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 20%,
+        var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 20%,
         transparent
       );
   }
@@ -423,13 +561,13 @@
       135deg,
       color-mix(
           in srgb,
-          var(--theme-accent-strong, var(--theme-accent-strong)) 85%,
+          var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 85%,
           #000
         )
         0%,
       color-mix(
           in srgb,
-          var(--theme-accent-strong, var(--theme-accent-strong)) 70%,
+          var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 70%,
           #000
         )
         100%
@@ -437,7 +575,7 @@
     box-shadow: 0 6px 8px
       color-mix(
         in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 30%,
+        var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 30%,
         transparent
       );
     transform: translateY(-1px);
@@ -450,66 +588,6 @@
 
   .submit-button:active:not(:disabled) {
     transform: scale(0.98);
-  }
-
-  .error-message {
-    color: #fca5a5;
-    font-size: 0.875rem;
-    text-align: center;
-    padding: 0.75rem;
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, var(--semantic-error)) 15%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-error, var(--semantic-error)) 30%,
-        transparent
-      );
-    border-radius: 0.5rem;
-    margin: 0;
-  }
-
-  .success-message {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.625rem;
-    color: var(--semantic-success, var(--semantic-success));
-    font-size: 0.875rem;
-    text-align: left;
-    padding: 0.75rem;
-    background: color-mix(
-      in srgb,
-      var(--semantic-success, var(--semantic-success)) 15%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-success, var(--semantic-success)) 25%,
-        transparent
-      );
-    border-radius: 0.5rem;
-    margin: 0;
-  }
-
-  .success-message svg {
-    flex-shrink: 0;
-    margin-top: 0.125rem;
-  }
-
-  .success-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    line-height: 1.45;
-  }
-
-  .success-copy strong {
-    color: var(--theme-text, white);
-    font-weight: 600;
   }
 
   .different-email-button {
@@ -527,5 +605,36 @@
   .different-email-button:hover {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+  }
+
+  .submit-button:focus-visible,
+  .different-email-button:focus-visible {
+    outline: 3px solid
+      color-mix(in srgb, var(--theme-accent, #7c6af7) 72%, white);
+    outline-offset: 3px;
+  }
+
+  @keyframes delivery-pulse {
+    0%,
+    100% {
+      transform: translateX(0);
+      opacity: 0.72;
+    }
+    50% {
+      transform: translateX(0.2rem);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .delivery-icon--sending {
+      animation: none;
+    }
+
+    input,
+    .submit-button,
+    .different-email-button {
+      transition: none;
+    }
   }
 </style>

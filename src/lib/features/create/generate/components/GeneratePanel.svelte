@@ -107,6 +107,13 @@ Card-based architecture with integrated Generate button:
     "community-setups" | "share-setup" | "step-cap-guest" | null
   >(null);
 
+  function openSetupAuth(mode: "signin" | "signup") {
+    const trigger = setupSignupTrigger;
+    if (!trigger) return;
+    setupSignupTrigger = null;
+    authDrawerState.show(mode, trigger);
+  }
+
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
   const hasWord = $derived(!!spellModeState.inputWord?.trim());
   const isMobile = $derived(deviceState.isMobile);
@@ -344,7 +351,7 @@ Card-based architecture with integrated Generate button:
     onApply={handleApplySource}
     onRequestCommunityAccount={() => (setupSignupTrigger = "community-setups")}
     onRequestShareAccount={() => (setupSignupTrigger = "share-setup")}
-    onRequestSignIn={() => authDrawerState.show("signin")}
+    onRequestSignIn={() => authDrawerState.show("signin", "saved-setups")}
     onClose={() => panelState.closePresetDrawer()}
   />
 
@@ -361,11 +368,11 @@ Card-based architecture with integrated Generate button:
       text={loopSignupReason ?? undefined}
       onCreateAccount={() => {
         loopSignupReason = null;
-        authDrawerState.show("signup");
+        authDrawerState.show("signup", "loop-locked-guest");
       }}
       onLogin={() => {
         loopSignupReason = null;
-        authDrawerState.show("signin");
+        authDrawerState.show("signin", "loop-locked-guest");
       }}
       onDismiss={() => {
         loopSignupReason = null;
@@ -382,14 +389,8 @@ Card-based architecture with integrated Generate button:
     {#if setupSignupTrigger}
       <AuthNudge
         trigger={setupSignupTrigger}
-        onCreateAccount={() => {
-          setupSignupTrigger = null;
-          authDrawerState.show("signup");
-        }}
-        onLogin={() => {
-          setupSignupTrigger = null;
-          authDrawerState.show("signin");
-        }}
+        onCreateAccount={() => openSetupAuth("signup")}
+        onLogin={() => openSetupAuth("signin")}
         onDismiss={() => (setupSignupTrigger = null)}
       />
     {/if}

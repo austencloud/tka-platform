@@ -43,6 +43,7 @@
 <div class="email-auth-tabs">
   <div class="tab-bar" role="tablist">
     <button
+      type="button"
       role="tab"
       aria-selected={activeTab === "magic"}
       class="tab"
@@ -59,6 +60,7 @@
       <span>Magic Link</span>
     </button>
     <button
+      type="button"
       role="tab"
       aria-selected={activeTab === "password"}
       class="tab"
@@ -89,7 +91,7 @@
   .email-auth-tabs {
     display: flex;
     flex-direction: column;
-    gap: clamp(12px, 2vh, 16px);
+    gap: 0.875rem;
     width: 100%;
   }
 
@@ -99,9 +101,9 @@
     /* Extra top padding reserves the space the "Last used" badge straddles
        into, keeping it inside the bar's own border rather than poking over
        it. Unconditional, so the bar's height never depends on the badge. */
-    padding: 0.75rem 4px 4px;
+    padding: 0.75rem 0.25rem 0.25rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: clamp(8px, 1.2vh, 12px);
+    border-radius: var(--radius-md, 0.75rem);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
@@ -112,16 +114,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: clamp(8px, 1.2vh, 12px) clamp(12px, 2vw, 16px);
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
     border: none;
-    border-radius: clamp(6px, 1vh, 8px);
+    border-radius: var(--radius-sm, 0.5rem);
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: clamp(0.75rem, 1.6vh, var(--font-size-sm));
+    font-size: var(--font-size-min, 0.875rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-normal, 200ms) ease;
+    transition:
+      background var(--duration-normal, 200ms) ease,
+      color var(--duration-normal, 200ms) ease;
   }
 
   .tab:hover:not(.active) {
@@ -136,11 +141,17 @@
   }
 
   .tab i {
-    font-size: clamp(0.75rem, 1.5vh, 0.875rem);
+    font-size: 0.875em;
   }
 
   .tab-content {
     width: 100%;
+  }
+
+  .tab:focus-visible {
+    outline: 3px solid
+      color-mix(in srgb, var(--theme-accent, #7c6af7) 72%, white);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {

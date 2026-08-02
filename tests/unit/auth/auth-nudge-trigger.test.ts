@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AUTH_NUDGE_TEXTS,
+  getAuthPromptContent,
   type AuthNudgeTrigger,
 } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { GUEST_SAVE_CAP } from "$lib/shared/auth/domain/guest-access-config";
@@ -25,7 +26,7 @@ const entries = Object.entries(AUTH_NUDGE_TEXTS) as [
 ][];
 
 describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
-  it("has exactly the 16 live triggers, including community setups and sharing", () => {
+  it("has exactly the 18 live triggers, including collections and sharing", () => {
     expect(Object.keys(AUTH_NUDGE_TEXTS).sort()).toEqual(
       [
         "step-cap-guest",
@@ -37,7 +38,9 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
         "module:learn",
         "module:library",
         "module:settings",
+        "prop-collection",
         "save",
+        "saved-setups",
         "share-image-signin",
         "share-sequence",
         "share-setup",
@@ -92,5 +95,39 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
     // rotation slice (tka-domain.md). Word-boundary regex so "return"/
     // "returns" (legitimately part of the gloss) don't false-positive.
     expect(text.toLowerCase()).not.toMatch(/\bturns?\b/);
+  });
+});
+
+describe("contextual auth prompt copy", () => {
+  it("covers every live trigger with stable content", () => {
+    for (const [trigger] of entries) {
+      const content = getAuthPromptContent(trigger, "signup");
+      expect(content.key).toBe(trigger);
+      expect(content.title.trim()).not.toBe("");
+      expect(content.body.trim()).not.toBe("");
+      expect(`${content.title} ${content.body}`).not.toMatch(/—/);
+    }
+  });
+
+  it("keeps the approved share, library, and sequence-limit prompts", () => {
+    expect(getAuthPromptContent("share-sequence", "signup")).toMatchObject({
+      title: "Share this sequence",
+      body: "Sign in or create an account to send it, make a link, or download a Choreo Card.",
+    });
+    expect(getAuthPromptContent("guest-first-save", "signup")).toMatchObject({
+      title: "Save this sequence",
+      body: "A free account keeps it in your library and opens it on any device.",
+    });
+    expect(getAuthPromptContent("step-cap-guest", "signup")).toMatchObject({
+      title: "Keep adding steps",
+      body: "A free account raises the limit from 8 steps to 64.",
+    });
+  });
+
+  it("uses mode-specific copy when an account button opened the modal directly", () => {
+    expect(getAuthPromptContent(null, "signup").title).toBe(
+      "Create your account"
+    );
+    expect(getAuthPromptContent(null, "signin").title).toBe("Welcome back");
   });
 });
