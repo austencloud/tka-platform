@@ -1,8 +1,23 @@
 <!-- src/lib/features/store/components/OrderConfirmation.svelte -->
+<!--
+  The receipt page. It used to dead-end: a checkmark, two sentences, and a
+  button back to a shop that had nothing on it. The confirmation still leads,
+  but the rest of the line now sits underneath it — the moment right after a
+  purchase is the one moment a buyer is most willing to add to the order.
+-->
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/state";
   import { trackPurchaseCompleted } from "../analytics/shop-funnel";
+  import { getProductLoader } from "../get-product-loader";
+  import { deriveCrossSell } from "../domain/catalog-listings";
+  import ShopCrossSellRail from "./shell/ShopCrossSellRail.svelte";
+  import type { Product } from "../domain/models/product";
+
+  let catalog = $state<Product[]>([]);
+  // No current product to exclude: the buyer just left checkout, and what they
+  // bought isn't readable client-side here. The whole line is the right rail.
+  const crossSell = $derived(deriveCrossSell(catalog, { limit: 3 }));
 
   // Funnel step 5 — the step that did not exist at all before this. The session
   // id comes off the query string Stripe redirects back with; it is available
@@ -11,45 +26,63 @@
   // can't inflate the conversion rate.
   onMount(() => {
     trackPurchaseCompleted(page.url.searchParams.get("session_id"));
+
+    void getProductLoader()
+      .loadActiveProducts()
+      .then((products) => (catalog = products))
+      // A missing rail is a missing suggestion, not a broken receipt.
+      .catch(() => {});
   });
 </script>
 
 <div class="confirmation-page">
-  <main class="confirmation-content">
-    <div class="success-icon">
-      <i class="fas fa-check-circle" aria-hidden="true"></i>
-    </div>
-    <h1>Order Confirmed</h1>
-    <p>Your order is on its way. You'll get a receipt from Stripe at the email you provided.</p>
-    <p class="note">Orders are packed and shipped within a few business days.</p>
-    <a href="/shop" class="back-link">Back to Shop</a>
+  <main class="confirmation-band">
+    <section class="receipt">
+      <div class="success-icon">
+        <i class="fas fa-check-circle" aria-hidden="true"></i>
+      </div>
+      <h1>Order Confirmed</h1>
+      <p>Your order is on its way. You'll get a receipt from Stripe at the email you provided.</p>
+      <p class="note">Orders are packed and shipped within a few business days.</p>
+      <a href="/shop" class="back-link">Back to the shop</a>
+    </section>
+
+    <ShopCrossSellRail entries={crossSell} title="While it ships" />
   </main>
 </div>
 
 <style>
   .confirmation-page {
     min-height: 100vh;
-    padding-top: 64px; /* clear the fixed SiteHeader */
+    /* px, not rem: this clears the fixed-height SiteHeader, which does not ramp. */
+    padding-top: 64px;
     /* Transparent so the /shop cosmic background shows through (no dark panel). */
     background: transparent;
     color: var(--theme-text, #ffffff);
   }
 
-  .confirmation-content {
-    /* rem so the receipt rides the lockstep root ramp (src/app.css); 37.5rem
-       is the old 600px at a 16px root and 900px at the 24px root. A receipt
-       stays a centred card — it just shouldn't be a 600px card viewed from
-       across a room. */
+  /* The same content band every /shop route uses, so the rail lines up with the
+     header and footer around it. The receipt itself stays a centred card
+     inside it — a receipt shouldn't be 2600px wide. */
+  .confirmation-band {
+    max-width: var(--shell-w, min(1720px, 92vw));
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.5rem, 4vw, 4.5rem);
+  }
+
+  .receipt {
     max-width: 37.5rem;
     margin: 0 auto;
-    padding: 80px 24px;
     text-align: center;
   }
 
   .success-icon {
-    font-size: 64px;
+    font-size: 4rem;
     color: var(--semantic-success, #22c55e);
-    margin-bottom: 24px;
+    margin-bottom: 1.5rem;
   }
 
   h1 {
@@ -58,27 +91,31 @@
     font-weight: 700;
     font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
     font-size: 2rem;
-    margin: 0 0 16px;
+    margin: 0 0 1rem;
   }
 
   p {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
   }
 
   .note {
     font-size: var(--font-size-compact, 12px);
-    margin-top: 16px;
+    margin-top: 1rem;
   }
 
+  /* A button, not a hyperlink: this is the one action on the page. */
   .back-link {
-    display: inline-block;
-    margin-top: 32px;
-    padding: 12px 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--min-touch-target, 44px);
+    margin-top: 2rem;
+    padding: 0 1.5rem;
     background: var(--theme-accent, #60a5fa);
     color: var(--theme-text-on-accent, #fff);
     text-decoration: none;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     font-weight: 600;
   }
 </style>
