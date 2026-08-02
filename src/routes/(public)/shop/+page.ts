@@ -1,6 +1,6 @@
-// SSR renders the head + ComingSoon shell (both static-safe) so crawlers and
-// unfurl bots get real HTML. The admin gate + StorePage stay client-only:
-// the gate runs in onMount and StorePage loads via browser-gated dynamic
-// import, so no auth/Firestore code enters the SSR module graph.
+// The catalog is public and indexable: the server renders the product list
+// (+page.server.ts) so crawlers and the first paint both get real HTML. The
+// print pipeline that draws card art is browser-only and loads after mount, so
+// nothing in the SSR module graph touches Firebase on the client.
 export const prerender = false;
 export const ssr = true;
