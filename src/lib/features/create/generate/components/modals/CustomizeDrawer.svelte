@@ -91,13 +91,15 @@
      collapses and the generate panel goes full-width, so an uncapped drawer
      blows out to the whole viewport — a settings form spanning 3840px.
 
-     The ceiling is a band, not a flat cap: a flat 520px left 4K as a thin
-     strip against idle rail (4k-native-layout.md), and the drill panel's
-     two-pane seam at 840px could never fire. 1440 -> ~600 (one column) ·
-     1920 -> ~810 (one column) · 2560 -> ~1075 (two-pane) · 3840 -> 1100.
+     The ceiling is deliberately close to the sibling drawers in this same
+     slot: PresetDrawer and LOOPDrawer both cap at 400px. An earlier 1100px
+     ceiling made this drawer 2.75x wider than either, covered the whole
+     generate panel, and bought a two-pane layout whose detail side ran
+     ~1300px tall for a three-row form. A ~620px full-height column matches
+     the neighbours and leaves the workspace readable beside it.
      min() keeps it from ever exceeding the panel it sits over. */
   :global(.drawer-content.customize-drawer-sheet.side-by-side-layout[data-placement="right"]) {
-    width: min(var(--create-panel-width, 480px), clamp(520px, 42vw, 1100px));
+    width: min(var(--create-panel-width, 480px), clamp(480px, 30vw, 620px));
     max-width: 100%;
   }
 

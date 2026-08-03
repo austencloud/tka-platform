@@ -3,8 +3,8 @@ CustomizeExpandedOverlay.svelte - Customize panel, one decision at a time.
 
 A SettingsDrillPanel over four settings: Style, Start Position, End Position,
 Start Orientation. The root list shows each one's current value; choosing a row
-gives that setting the whole panel. Above 840px of panel width the drill panel
-goes two-pane on its own.
+gives that setting the whole panel. Single column at every size — see
+SettingsDrillPanel's header for why the two-pane variant was removed.
 
 Replaced an accordion that put start position and end position on the same
 screen (end position nested INSIDE start position) and, because the expanded
@@ -12,42 +12,6 @@ section flex-shrank below its content against its own `overflow: hidden`,
 clipped 415px of that content instead of scrolling.
 Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 -->
-<script module lang="ts">
-  // Persist which setting was last open across sessions. Widened from the
-  // accordion's "style" | "startEnd" to the four drill ids; anything else
-  // (including the retired "startEnd") falls back to style.
-  const SECTION_STORAGE_KEY = "tka-customize-active-section";
-  const DRILL_IDS = ["style", "startPos", "endPos", "startOri"] as const;
-  type DrillId = (typeof DRILL_IDS)[number];
-
-  function isDrillId(v: unknown): v is DrillId {
-    return DRILL_IDS.includes(v as DrillId);
-  }
-
-  function loadPersistedSection(): DrillId {
-    try {
-      const raw = localStorage.getItem(SECTION_STORAGE_KEY);
-      return isDrillId(raw) ? raw : "style";
-    } catch {
-      return "style";
-    }
-  }
-
-  function savePersistedSection(section: DrillId | null): void {
-    try {
-      if (section) {
-        localStorage.setItem(SECTION_STORAGE_KEY, section);
-      } else {
-        localStorage.removeItem(SECTION_STORAGE_KEY);
-      }
-    } catch {
-      // Silently ignore storage errors (private browsing, quota exceeded)
-    }
-  }
-
-  let persistedSection: DrillId = loadPersistedSection();
-</script>
-
 <script lang="ts">
   import "../customize-accent.css";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -126,19 +90,15 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     hapticService = getHapticFeedback();
   });
 
-  // Drill state. One-column mode opens on the root list — picking WHICH factor
-  // to change is itself the first decision. Two-pane mode restores the last
-  // setting, because the list stays on screen there either way and an empty
-  // detail pane next to a full list is just wasted space. The drill panel
-  // reports its own mode via onWide.
+  // Always opens on the root list — picking WHICH factor to change is itself
+  // the first decision, and the list shows all four current values, so nothing
+  // is buried the way it was when one accordion section was open at a time.
+  // (The accordion's "remember the last open section" localStorage existed
+  // because a collapsed section hid its value; the root list doesn't.)
   let selected = $state<string | null>(null);
 
-  function handleSelect(id: string | null) {
+  function handleSelect(_id: string | null) {
     hapticService?.trigger("selection");
-    if (isDrillId(id)) {
-      persistedSection = id;
-      savePersistedSection(id);
-    }
   }
 
   // ─── Local state for style (instant UI feedback) ───
@@ -367,16 +327,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     </button>
   </div>
 
-  <SettingsDrillPanel
-    items={drillItems}
-    bind:selected
-    onSelect={handleSelect}
-    onWide={(wide) => {
-      // Entering two-pane with nothing chosen would show an empty detail pane
-      // beside a full list. Fill it with the last setting the user touched.
-      if (wide && selected === null) selected = persistedSection;
-    }}
-  >
+  <SettingsDrillPanel items={drillItems} bind:selected onSelect={handleSelect}>
     {#snippet listHeader()}
       <!-- These settings persist across sessions, which is what made a saved
            Choppy props value look like a broken generator. Say so up front. -->
@@ -385,16 +336,18 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 
     {#snippet detail(id)}
       {#if id === "style"}
-        <StyleExpandPanel
-          constraintPreset={localConstraintPreset}
-          handPathMode={localHandPathMode}
-          motionTypeFilter={localMotionTypeFilter}
-          baseline={styleBaseline}
-          haptic={hapticService}
-          onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
-          onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
-          onDashesChange={(v) => { localMotionTypeFilter = v === "mixed" ? null : v; onMotionTypeFilterChange(v); }}
-        />
+        <div class="drill-fill spread">
+          <StyleExpandPanel
+            constraintPreset={localConstraintPreset}
+            handPathMode={localHandPathMode}
+            motionTypeFilter={localMotionTypeFilter}
+            baseline={styleBaseline}
+            haptic={hapticService}
+            onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
+            onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
+            onDashesChange={(v) => { localMotionTypeFilter = v === "mixed" ? null : v; onMotionTypeFilterChange(v); }}
+          />
+        </div>
       {:else if id === "startPos"}
         <SegmentedControl
           options={startPresetOptions}
@@ -403,39 +356,45 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
           color="accent"
           size="sm"
         />
-        <MultiSelectPositionPicker
-          blockedPositions={localBlockedPositions}
-          onBlockedChange={handleBlockedChange}
-          blueStartOrientation={localBlueOri}
-          redStartOrientation={localRedOri}
-          {gridMode}
-        />
-      {:else if id === "endPos"}
-        <p class="detail-note">Where the sequence ends. Optional.</p>
-        <PositionPickerGrid
-          currentPosition={localEndPosition}
-          onPositionChange={handleEndPositionChange}
-          {gridMode}
-        />
-      {:else if id === "startOri"}
-        <p class="detail-note">Level {level}</p>
-        <div class="ori-row">
-          <span class="ori-color-label ori-blue">Blue</span>
-          <PropOrientationControl
-            color="blue"
-            orientation={localBlueOri}
-            allowedOrientations={availableStartOrientations}
-            onOrientationChange={handleBlueOriChange}
+        <div class="drill-fill grid-fill">
+          <MultiSelectPositionPicker
+            blockedPositions={localBlockedPositions}
+            onBlockedChange={handleBlockedChange}
+            blueStartOrientation={localBlueOri}
+            redStartOrientation={localRedOri}
+            {gridMode}
           />
         </div>
-        <div class="ori-row">
-          <span class="ori-color-label ori-red">Red</span>
-          <PropOrientationControl
-            color="red"
-            orientation={localRedOri}
-            allowedOrientations={availableStartOrientations}
-            onOrientationChange={handleRedOriChange}
+      {:else if id === "endPos"}
+        <p class="detail-note">Where the sequence ends. Optional.</p>
+        <div class="drill-fill grid-fill">
+          <PositionPickerGrid
+            currentPosition={localEndPosition}
+            onPositionChange={handleEndPositionChange}
+            {gridMode}
           />
+        </div>
+      {:else if id === "startOri"}
+        <p class="detail-note">Level {level}</p>
+        <div class="drill-fill spread">
+          <div class="ori-row">
+            <span class="ori-color-label ori-blue">Blue</span>
+            <PropOrientationControl
+              color="blue"
+              orientation={localBlueOri}
+              allowedOrientations={availableStartOrientations}
+              onOrientationChange={handleBlueOriChange}
+            />
+          </div>
+          <div class="ori-row">
+            <span class="ori-color-label ori-red">Red</span>
+            <PropOrientationControl
+              color="red"
+              orientation={localRedOri}
+              allowedOrientations={availableStartOrientations}
+              onOrientationChange={handleRedOriChange}
+            />
+          </div>
         </div>
       {/if}
     {/snippet}
@@ -559,6 +518,70 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   }
 
   /* ─── Detail bodies ─── */
+
+  /* `spread` distributes a short form down the pane instead of leaving it
+     stacked at the top with 700px of nothing under it. `grid-fill` lets a
+     pictograph grid grow into the height it has. Both are the sibling
+     drawers' pattern: full-height box, content spread to fill it. */
+  /* Top-aligned, normal gaps. Spreading these across a full-height pane was
+     tried and reverted: at 1315px the three Style axes ended up 275px apart
+     and stopped reading as one group. A form's rows belong together; the
+     leftover height is the panel's problem, not theirs. */
+  .spread {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .spread :global(.style-panel) {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+
+  /* A 4x4 grid of square cells is as tall as it is wide, so the panel's WIDTH
+     caps it and it cannot consume the leftover height of a full-height column.
+     Every attempt to make it try was worse: centering it stranded the preset
+     control 396px above it, and stretching the rows would letterbox a square
+     pictograph inside a tall cell. So the grid takes all the width it can,
+     sits directly under its control, and the remainder stays empty — the same
+     leftover every sibling drawer in this slot has. `cqh` still caps it by
+     height on short panes so it never overflows into a scroll it doesn't need. */
+  .grid-fill {
+    container-type: size;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* The reserve is whatever the picker puts ABOVE its grid, so the square grid
+     plus that chrome still fits the wrapper's height. MultiSelectPositionPicker
+     has a one-line "N of 16 enabled" row; PositionPickerGrid has a full-height
+     "Any" button, which is why they differ. Under-reserving here cost a 16px
+     scroll on a 375px phone. */
+  .grid-fill {
+    --grid-reserve: 3.5rem;
+  }
+
+  .grid-fill :global(.position-picker-grid) {
+    --grid-reserve: 5.25rem;
+  }
+
+  /* Fit the height when there is height to fit, but never below a legible
+     cell. Without the 20rem floor a 412px-tall window squeezed cells to
+     exactly 44px — the touch floor, and a pictograph at that size is a smudge.
+     Below the floor the grid keeps its size and the body scrolls, which is the
+     right trade: a readable cell you scroll to beats an unreadable one you
+     don't. */
+  .grid-fill :global(.variations-grid) {
+    width: min(100%, max(20rem, calc(100cqh - var(--grid-reserve))));
+    margin-inline: auto;
+  }
+
+  .grid-fill :global(.position-picker-grid),
+  .grid-fill :global(.multi-select-grid) {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
 
   .detail-note {
     margin: 0;

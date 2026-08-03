@@ -2,14 +2,12 @@
 SettingsDrillRow.svelte — one row of a SettingsDrillPanel root list.
 
 Setting name on top, its current value below, chevron on the right. Tapping
-drills into that setting's detail screen; in two-pane mode it just selects, and
-`selected` marks which detail is showing.
+drills into that setting's detail screen.
 
 Two lines rather than label-left/value-right: values here run from "Any" to
-"Props: Choppy · Hands: Smooth · Dashes: High", and the long one cannot share a
-line with its label inside a two-pane rail — it ellipsised at every rail width
-that left the detail pane usable. On its own line it gets the row's full width
-at every size.
+"Props: Choppy · Hands: Smooth · Dashes: High", and the long one does not fit
+beside its label in a ~560px column. On its own line it gets the row's full
+width at every size.
 
 No ghost sizer needed (no-layout-shift.md): the row's height comes from two
 fixed-size text lines and the value is clipped to one line, so no value can
@@ -19,14 +17,12 @@ change the row's box or move the rows below it.
   let {
     label,
     value,
-    selected = false,
     disabled = false,
     disabledReason = "",
     onclick,
   }: {
     label: string;
     value: string;
-    selected?: boolean;
     disabled?: boolean;
     disabledReason?: string;
     onclick: () => void;
@@ -35,10 +31,8 @@ change the row's box or move the rows below it.
 
 <button
   class="drill-row"
-  class:selected
   class:is-disabled={disabled}
   type="button"
-  aria-current={selected ? "true" : undefined}
   onclick={() => onclick()}
 >
   <span class="row-text">
@@ -99,15 +93,6 @@ change the row's box or move the rows below it.
 
   .drill-row:active:not(.is-disabled) {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.14));
-  }
-
-  .drill-row.selected {
-    background: color-mix(
-      in srgb,
-      var(--customize-accent, #06b6d4) 18%,
-      transparent
-    );
-    border-color: var(--customize-accent, #06b6d4);
   }
 
   .drill-row.is-disabled {

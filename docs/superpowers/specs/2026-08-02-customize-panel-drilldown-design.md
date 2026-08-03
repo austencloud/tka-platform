@@ -116,21 +116,18 @@ The lock treatment reuses the markup already in `PositionSection.svelte`'s
 Owns the root list, the detail frame (back arrow + title), the swap between
 them, and the seam. `container-type: inline-size` on the root.
 
-- Below `840px` container width: one column. Root list, or detail filling the
-  panel with a back arrow. Selecting a `disabled` row does not navigate; it
-  surfaces the reason.
-- At or above `840px`: two-pane. A `clamp(20rem, 36%, 30rem)` list rail on the
-  left, detail on the right, no back arrow, the active row marked `selected`.
-  (Fluid, not the flat `22rem` first drafted — a hard rail ellipsised the Style
-  summary at a 1039px panel while the detail pane had room to spare.)
+**Single column at every size.** Root list, or detail filling the panel with a
+back arrow. Selecting a `disabled` row does not navigate; it surfaces the
+reason.
 
-Detail children are `flex: 0 0 auto` and capped at `min(100%, 48rem)`.
-`flex-grow: 0` because `StyleExpandPanel` still declares `flex: 1;
-justify-content: center` from its accordion days and otherwise floated its three
-rows in the middle of a 970px pane; the 48rem cap because a three-row form has
-no business spanning 1000px — it stranded the Blue/Red labels a third of a pane
-from the controls they name. The pictograph grid still gets 48rem, wider than it
-ever had.
+A two-pane variant (list rail + detail above an 840px container seam) was built,
+measured, and **removed** — see Width below.
+
+Detail children are `flex: 0 0 auto`. `flex-grow: 0` because
+`StyleExpandPanel` still declares `flex: 1; justify-content: center` from its
+accordion days and otherwise floated its three rows in the middle of the pane.
+A `.drill-fill` opt-in class takes the remaining height for the pictograph-grid
+wrappers so the grids can size against it.
 
 Scroller discipline is the panel's job and only the panel's: the detail body is
 the single `overflow-y: auto` element. The list rail scrolls independently in
@@ -166,10 +163,32 @@ the setting once with no explanation.
 
 ### Changed: `CustomizeDrawer.svelte`
 
-- Width: `min(var(--create-panel-width, 480px), clamp(520px, 42vw, 1100px))`,
-  replacing the flat `min(..., 520px)` cap. 1440 -> ~600 (one column) ·
-  1920 -> ~810 (one column) · 2560 -> ~1075 (two-pane) · 3840 -> 1100 ceiling.
-  Never wider than the generate panel it sits over.
+- Width: `min(var(--create-panel-width, 480px), clamp(480px, 30vw, 620px))`.
+  1440 -> ~520 · 1920 -> 575 · 2560 -> 619 · 3840 -> 619. Never wider than the
+  generate panel it sits over.
+
+  **Revised twice.** The flat `520px` cap was first raised to a
+  `clamp(520px, 42vw, 1100px)` band so the two-pane seam could fire. Built and
+  screenshotted, that was wrong: at 2560 the drawer was 1075px — 2.7x the 400px
+  cap both sibling drawers in this same slot use (`PresetDrawer.svelte:375`,
+  `LOOPDrawer.svelte:121`) — it covered the generate panel completely, and its
+  detail pane ran ~1300px tall for a three-row form. Three attempts to make
+  content fill that pane each produced a worse artifact: centering the grid
+  stranded the preset control 396px above it, and spreading the Style axes put
+  275px between PROPS and HANDS so they stopped reading as one group.
+
+  The leftover height is structural — four small settings do not fill a
+  full-height column in any arrangement — so the panel was sized to its content
+  instead of the reverse, and the two-pane branch deleted rather than left as an
+  unreachable code path. At ~620px the drawer matches its neighbours, the
+  generate panel stays readable beside it, and the remaining void is the same
+  one `PresetDrawer` has with two saved setups.
+
+  Not fixed by shrinking the drawer's HEIGHT: a short top-anchored right drawer
+  would be a first anywhere in the repo. Every other right-side drawer fills its
+  column, and `LOOPDrawer.svelte:117` says why in its own words — "the list rows
+  stretch to spread across that height, so there is no empty bottom and no
+  floating-box-in-corner look."
 - Mobile bottom sheet: `height: 85dvh` fixed, replacing `height: auto` +
   `max-height: 85dvh`. Drilling from a three-row Style screen to a 16-cell grid
   must not resize the sheet.
@@ -188,9 +207,28 @@ layer; verified at every viewport.
 
 It deliberately does not use `<Crossfade>`: that primitive keys on `{#key}` and
 remounts its children, and these detail bodies are heavy pictograph grids — the
-carve-out `crossfade-primitive.md` names for heavy content. In two-pane mode the
-detail pane fades on selection change rather than pushing.
-`prefers-reduced-motion` collapses both to instant.
+carve-out `crossfade-primitive.md` names for heavy content.
+`prefers-reduced-motion` collapses it to instant.
+
+## Grid sizing
+
+A 4x4 grid of square cells is as tall as it is wide, so the panel's WIDTH caps
+it and it cannot consume a full-height column's leftover height. It takes the
+width it has, sits under its control, and the remainder stays empty.
+
+`width: min(100%, max(20rem, calc(100cqh - var(--grid-reserve))))` on
+`.variations-grid`, inside a `container-type: size` wrapper:
+
+- `100cqh` caps the grid by the height actually available, so a short window
+  gets a smaller grid instead of a scroll it doesn't need.
+- `--grid-reserve` is whatever the picker puts above its grid — `3.5rem` for
+  `MultiSelectPositionPicker`'s "N of 16 enabled" line, `5.25rem` for
+  `PositionPickerGrid`'s full-height "Any" button. Under-reserving cost a 16px
+  scroll at 375px.
+- The `20rem` floor stops the height cap squeezing cells into smudges: at
+  960x412 it had driven them to exactly 44px, the bare touch floor. Below the
+  floor the grid keeps its size and the body scrolls — a readable cell you
+  scroll to beats an unreadable one you don't.
 
 ## Panel header
 
@@ -201,12 +239,14 @@ no way to close the panel.
 
 ## Entry point
 
-One-column mode always opens on the root list: choosing which factor to change
-is itself the first decision. Two-pane mode restores the last-selected row,
-since the list stays visible either way. Persistence reuses the existing
-`tka-customize-active-section` localStorage key, widened from
-`"style" | "startEnd"` to the four ids, with unknown values falling back to
-`style`.
+Always opens on the root list: choosing which factor to change is itself the
+first decision.
+
+The accordion's `tka-customize-active-section` localStorage persistence is
+**removed**. It existed because a collapsed accordion section hid its value, so
+reopening on the wrong section buried what the user last changed. The root list
+shows all four current values, so nothing is buried and there is nothing to
+restore.
 
 ## Verification (done)
 
@@ -215,15 +255,19 @@ Measured and screenshotted at every viewport in
 1.1 device pixel ratio, so each target was emulated at CSS x 1.1 and the
 resulting `innerWidth` confirmed.
 
-| CSS viewport | Drawer | Panel | Mode | Max scrollers | Min cell |
-|---|---|---|---|---|---|
-| 3840x2160 | 1099 | 1039 | two-pane | 0 | 150px |
-| 2560x1440 | 1075 | 1015 | two-pane | 0 | 146px |
-| 1920x1080 | 806 | 746 | one column | 0 | 128px |
-| 1440x900 | 604 | 544 | one column | 0 | 128px |
-| 820x1180 | 811 (sheet) | — | one column | 1 | 184px |
-| 960x412 | 519 | — | one column | 1 | 105px |
-| 375x667 | 413 (sheet) | 381 | one column | 1 | 87px |
+| CSS viewport | Drawer | Scrollers | Cell |
+|---|---|---|---|
+| 3840x2160 | 619 | 0 | 132px |
+| 2560x1440 | 619 | 0 | 132px |
+| 1920x1080 | 575 | 0 | 121px |
+| 820x1180 | 811 (sheet) | 0–1 | 184px |
+| 960x412 | 479 | 1 | 72px |
+| 375x667 | 413 (sheet) | 0 | 77px |
+
+"Scrollers" counts only elements whose computed `overflow-y` is `auto`/`scroll`
+AND which overflow — the invariant that matters. An earlier count included
+`overflow: visible` elements, which merely overflow into the designated
+scroller and are not a second scroller.
 
 Asserted at each: **exactly one `.layer` in the stage** and **at most one
 element with `scrollHeight > clientHeight`** — the class of bug this replaces.
@@ -234,3 +278,12 @@ across all four details, so drilling does not resize it. Row height constant at
 Also verified: LOOP on renders End Position locked with the lock glyph and "Set
 by LOOP" at unchanged row height; Close and Reset all remain reachable from
 every detail screen.
+
+## Open follow-up
+
+At 3840 the leftover height below a detail is large — the grid ends roughly a
+fifth of the way down a 2160px column. It is the same shape every right-side
+drawer in this slot has at that size, and it is not fixable by arranging these
+four settings differently (see Width). Closing it needs *content*: a live
+preview of what the current settings produce, or the Generate button, which the
+drawer currently covers. Deferred, not solved.
