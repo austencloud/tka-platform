@@ -8,6 +8,7 @@
  *
  * Datum: default museum floor = 0. See the design spec for the section.
  */
+import { tileKey } from "../domain/museum-grid-types";
 import type {
   MuseumGrid,
   MuseumTerrainProgram,
@@ -77,6 +78,38 @@ function interiorWorldRect(b: {
 const inRect = (r: WorldRect, x: number, z: number) =>
   x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
 
+/**
+ * World-space X extent of a room's door tiles on one wall. Rooms are placed
+ * by the graph-layout engine (horizontally centered on their PREVIOUS room,
+ * not on the door itself), and door position within a wall depends on that
+ * wall's `alignment` ("start"/"center"/"end") plus the room's own width - so
+ * two doors on the same edge can land many tiles apart in X. Corridor zones
+ * must span BOTH ends of the actual jog, not assume one end's x-span covers
+ * the whole gap. See `findDoorCenter` in vulcan-cave-floor-plan.ts for the
+ * equivalent scan (that one returns tile-grid + 0.5 coordinates for the 2D
+ * floor-plan overlay; this returns world meters for the 3D terrain).
+ */
+function doorXSpan(
+  grid: MuseumGrid,
+  roomId: string,
+  wall: "north" | "south"
+): { minX: number; maxX: number } | null {
+  const wing = grid.wings.find((w) => w.id === roomId);
+  if (!wing) return null;
+  const { x, y, width, height } = wing.bounds;
+  const wallY = wall === "north" ? y : y + height - 1;
+  let minTile = Infinity;
+  let maxTile = -Infinity;
+  for (let wx = x; wx < x + width; wx++) {
+    if (grid.tiles.get(tileKey(wx, wallY))?.type === "door") {
+      minTile = Math.min(minTile, wx);
+      maxTile = Math.max(maxTile, wx);
+    }
+  }
+  if (!Number.isFinite(minTile)) return null;
+  return { minX: minTile * TILE, maxX: maxTile * TILE };
+}
+
 export function buildDrownedGalleryLayout(
   grid: MuseumGrid
 ): DrownedGalleryLayout | null {
@@ -145,7 +178,8 @@ export function buildDrownedGalleryLayout(
         maxZ: approach.minZ,
       },
     ],
-    // West of the surfacing steps (which occupy the sump's x-span mid-south)
+    // West of the surfacing steps (which occupy the grotto's own south door
+    // x-span, not the sump's - see doorXSpan in createDrownedGalleryTerrain)
     causewayProbe: { x: grotto.minX + gw * 0.25, z: pool.maxZ + 2.0 },
     poolProbe: { x: grotto.minX + gw * 0.5, z: (pool.minZ + pool.maxZ) / 2 },
     shoreProbe: { x: grotto.minX + gw * 0.5, z: shore.minZ + 1.0 },
@@ -163,6 +197,24 @@ export function createDrownedGalleryTerrain(
   const layout = buildDrownedGalleryLayout(grid);
   if (!layout) return null;
   const { approach, sump, grotto } = layout;
+
+  // The sump<->grotto corridor jogs in X between its two doors (sump's north
+  // door sits at the sump's own x-span; the grotto's south door sits ~11m
+  // further west, at the grotto's own west-biased x-span - the two rooms are
+  // NOT x-aligned). The corridor's real carved width spans the union of both
+  // door columns, not just one end's span +/- a tile. Missing this was the
+  // "walking on top of the water" bug: elevationAt fell through to the 0
+  // datum for any x outside the too-narrow assumed rect, popping the player
+  // up ~2.2m above the sump-depth floor mid-corridor.
+  const sumpNorthDoor = doorXSpan(grid, "cave-water-sump", "north");
+  const grottoSouthDoor = doorXSpan(grid, "cave-water", "south");
+  if (!sumpNorthDoor || !grottoSouthDoor) {
+    throw new Error(
+      "Drowned gallery terrain: missing sump<->grotto door tiles on the grid"
+    );
+  }
+  const corridorMinX = Math.min(sumpNorthDoor.minX, grottoSouthDoor.minX) - TILE;
+  const corridorMaxX = Math.max(sumpNorthDoor.maxX, grottoSouthDoor.maxX) + TILE;
 
   // Zones are evaluated in order; first hit wins. Gradients run along z
   // (north = minZ = deeper into the bay).
@@ -207,12 +259,14 @@ export function createDrownedGalleryTerrain(
     },
     // sump middle: flat floor
     { rect: sump, from: SUMP_FLOOR_Y, to: SUMP_FLOOR_Y, axis: "z" },
-    // corridor between sump and grotto: flat at CORRIDOR_SURFACING_Y
+    // corridor between sump and grotto: flat at CORRIDOR_SURFACING_Y. Spans
+    // the full jog between the two doors (see corridorMinX/MaxX above) - NOT
+    // just the sump's own x-span, which misses most of the corridor's width.
     {
       rect: {
-        minX: sump.minX - 1,
+        minX: corridorMinX,
         minZ: grotto.maxZ,
-        maxX: sump.maxX + 1,
+        maxX: corridorMaxX,
         maxZ: sump.minZ,
       },
       from: CORRIDOR_SURFACING_Y,
@@ -220,13 +274,17 @@ export function createDrownedGalleryTerrain(
       axis: "z",
     },
     // grotto surfacing steps: rise to CAUSEWAY on the strip the sump corridor
-    // actually enters through (anchored to the sump's x-span, NOT the grotto's
-    // west edge — the door lands mid-south-wall at the sump's x position).
+    // actually enters through. Anchored to the GROTTO's own south door
+    // x-span (its west-biased position, ~11m west of the sump), not the
+    // sump's - the corridor hasn't widened yet this close to the grotto door,
+    // and the causeway itself sits further west, at flat CAUSEWAY_Y (see
+    // causewayProbe) - so this strip must stay narrow, not span the whole
+    // corridor jog.
     {
       rect: {
-        minX: sump.minX - 1,
+        minX: grottoSouthDoor.minX - TILE,
         minZ: grotto.maxZ - 3,
-        maxX: sump.maxX + 1,
+        maxX: grottoSouthDoor.maxX + TILE,
         maxZ: grotto.maxZ,
       },
       from: CAUSEWAY_Y,
