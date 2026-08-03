@@ -52,8 +52,8 @@ sealed class GitActionPanel : Border
         Grid.SetColumn(status, 0);
         grid.Children.Add(status);
 
-        _pull = ActionButton("4  Pull", pull);
-        _push = ActionButton("5  Push", push);
+        _pull = ActionButton("5  Pull", pull);
+        _push = ActionButton("6  Push", push);
         Grid.SetColumn(_pull, 1);
         Grid.SetColumn(_push, 3);
         grid.Children.Add(_pull);
@@ -73,9 +73,9 @@ sealed class GitActionPanel : Border
         _detail.Foreground = Brush(feedbackIsError ? "#FFFF8A94" : "#FFA2A2AA");
         ToolTip = FullTooltip(status, feedback);
 
-        SetButton(_pull, busyAction == "pull" ? "Pulling" : "4  Pull",
+        SetButton(_pull, busyAction == "pull" ? "Pulling" : "5  Pull",
             !busy && status.CanPull, "#FF2F6FED", status.PullBlockedReason);
-        SetButton(_push, busyAction == "push" ? "Pushing" : "5  Push",
+        SetButton(_push, busyAction == "push" ? "Pushing" : "6  Push",
             !busy && status.CanPush, "#FF247A52", status.PushBlockedReason);
     }
 

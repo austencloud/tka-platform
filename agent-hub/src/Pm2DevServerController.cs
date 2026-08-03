@@ -133,6 +133,17 @@ sealed class Pm2DevServerController
         return new DevServerCommandResult(false, "PM2 started the process, but port " + _port + " did not become ready within 180 seconds.");
     }
 
+    public bool WaitUntilReady(int timeoutSeconds)
+    {
+        DateTime deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (IsPortListening(_port, 350)) return true;
+            Thread.Sleep(650);
+        }
+        return false;
+    }
+
     static DevServerState ClassifyStatus(bool runtimeAvailable, bool pidCommandSucceeded, int pid, bool portListening)
     {
         if (!runtimeAvailable) return portListening ? DevServerState.External : DevServerState.SetupRequired;

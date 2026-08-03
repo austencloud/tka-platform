@@ -48,7 +48,8 @@ class AgentChooserStub
                 psi.Arguments = A("Project", g("Project")) + A("Name", g("Name")) + A("Icon", g("Icon")) +
                     A("StampFile", g("StampFile")) + A("StubStartTicks", startTicks.ToString()) +
                     A("ServerManager", g("ServerManager")) + A("ServerApp", g("ServerApp")) +
-                    A("ServerConfig", g("ServerConfig")) + A("ServerPort", g("ServerPort"));
+                    A("ServerConfig", g("ServerConfig")) + A("ServerPort", g("ServerPort")) +
+                    A("AppUrl", g("AppUrl"));
                 psi.UseShellExecute = false;
                 Process.Start(psi);
             }
@@ -59,7 +60,7 @@ class AgentChooserStub
     static string Line(Func<string, string> g, string startTicks)
     {
         return g("Project") + "|" + g("Name") + "|" + g("Icon") + "|" + g("StampFile") + "|" + startTicks + "|" +
-            g("ServerManager") + "|" + g("ServerApp") + "|" + g("ServerConfig") + "|" + g("ServerPort");
+            g("ServerManager") + "|" + g("ServerApp") + "|" + g("ServerConfig") + "|" + g("ServerPort") + "|" + g("AppUrl");
     }
 
     static string A(string k, string v) { return string.IsNullOrEmpty(v) ? "" : ("-" + k + " \"" + v + "\" "); }
