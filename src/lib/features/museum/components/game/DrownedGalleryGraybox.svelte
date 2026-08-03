@@ -190,33 +190,26 @@
     const { approach, sump, grotto, pool, shore, overlooks, gate, alcoves } =
       layout;
 
-    // Corridor stubs between the three rooms (north is decreasing z).
+    // Corridor stubs between the three rooms (north is decreasing z). The
+    // sump↔grotto corridor and the surfacing steps come straight off the
+    // layout — the same rects the terrain program's elevation zones use — so
+    // the visible floor can never disagree with where physics puts the player
+    // (the corridor jogs ~11 m west between the two doors; see
+    // buildDrownedGalleryLayout).
     const corridorAS: WorldRect = {
       minX: sump.minX - 1,
       minZ: sump.maxZ,
       maxX: sump.maxX + 1,
       maxZ: approach.minZ,
     };
-    const corridorSG: WorldRect = {
-      minX: sump.minX - 1,
-      minZ: grotto.maxZ,
-      maxX: sump.maxX + 1,
-      maxZ: sump.minZ,
-    };
-    const sumpSouthRamp: WorldRect = { ...sump, minZ: sump.maxZ - 2 };
+    const corridorSG = layout.corridorSG;
+    const surfacing = layout.surfacingSteps;
+    const sumpSouthRamp: WorldRect = { ...sump, minZ: sump.maxZ - 4 };
     const sumpNorthRamp: WorldRect = { ...sump, maxZ: sump.minZ + 3 };
     const sumpFlat: WorldRect = {
       ...sump,
       minZ: sump.minZ + 3,
-      maxZ: sump.maxZ - 2,
-    };
-    // Anchored to the sump's x-span — the strip the corridor actually enters
-    // through. Must stay identical to the terrain program's surfacing zone.
-    const surfacing: WorldRect = {
-      minX: sump.minX - 1,
-      minZ: grotto.maxZ - 3,
-      maxX: sump.maxX + 1,
-      maxZ: grotto.maxZ,
+      maxZ: sump.maxZ - 4,
     };
     const exitRamp: WorldRect = {
       minX: grotto.maxX - 2,
@@ -238,7 +231,12 @@
         SUMP_FLOOR_Y,
         FLOOR_WET
       ),
-      slab("corridor-sump-grotto", corridorSG, CORRIDOR_SURFACING_Y, FLOOR_WET),
+      // The sump↔grotto corridor floor follows the carved Z shape, segment by
+      // segment — a bbox slab here would read as an open cavern whose true
+      // edges are invisible tile walls.
+      ...layout.corridorSegments.map((seg, i) =>
+        slab(`corridor-sump-grotto-${i}`, seg, CORRIDOR_SURFACING_Y, FLOOR_WET)
+      ),
       rampZ(
         "surfacing-steps",
         surfacing,
@@ -309,7 +307,12 @@
       ],
     ];
     for (const [id, rect] of causewayPieces) {
-      floors.push(slab(id, rect, CAUSEWAY_Y, STONE_WALK));
+      // With the surfacing steps at the grotto's west-biased door, some
+      // pieces collapse to zero footprint — skip them rather than render
+      // degenerate slabs.
+      if (sx(rect) > 0.01 && sz(rect) > 0.01) {
+        floors.push(slab(id, rect, CAUSEWAY_Y, STONE_WALK));
+      }
     }
     overlooks.forEach((o, i) => {
       floors.push(slab(`overlook-${i}`, o, CAUSEWAY_Y, STONE_WALK));
@@ -330,7 +333,10 @@
     // ══ WALLS ══
     const grottoBase = POOL_BOTTOM_Y - 0.5;
     const exitGapZ = cz(exitRamp);
-    const sumpGapX = cx(corridorSG);
+    // The gap in the grotto's south wall must sit over the REAL door (the
+    // grotto's own west-biased span, where the surfacing steps are) — not the
+    // corridor rect's center, which averages in the sump-side end of the jog.
+    const sumpGapX = cx(surfacing);
     walls.push(
       wall(
         "grotto-north",
@@ -391,7 +397,7 @@
         "chain-west",
         {
           minX: corridorAS.minX - WALL_T,
-          minZ: grotto.maxZ,
+          minZ: corridorSG.maxZ,
           maxX: corridorAS.minX,
           maxZ: approach.maxZ,
         },
@@ -410,6 +416,12 @@
         chainTop
       )
     );
+    // The sump↔grotto corridor's enclosure renders its REAL carved wall
+    // tiles (row-run merged), so the visible passage matches the walkable
+    // one exactly — including the ~11 m westward jog.
+    layout.corridorWallRuns.forEach((run, i) => {
+      walls.push(wall(`corridor-sg-wall-${i}`, run, chainBase, chainTop));
+    });
 
     // ══ CEILINGS ══
     ceilings.push(
@@ -427,13 +439,18 @@
         "water-vol-sump",
         {
           minX: sump.minX,
-          minZ: grotto.maxZ,
+          minZ: sump.minZ,
           maxX: sump.maxX,
           maxZ: approach.minZ,
         },
         SUMP_FLOOR_Y,
         WATERLINE_Y,
         WATER
+      ),
+      // The corridor jog is fully submerged too; volumes follow the carved
+      // segments so the water body ends where the passage does.
+      ...layout.corridorSegments.map((seg, i) =>
+        wall(`water-vol-corridor-${i}`, seg, CORRIDOR_SURFACING_Y, WATERLINE_Y, WATER)
       )
     );
 

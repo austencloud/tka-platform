@@ -280,9 +280,10 @@ describe("drowned gallery traversal (headless playtest)", () => {
 
   it("is genuinely underwater in the sump's flat middle (not floating at datum)", () => {
     const sump = layout.sump;
-    // Exclude the ramps at each end - only the flat middle band.
+    // Exclude the ramps at each end - only the flat middle band (the south
+    // entry ramp runs 4 m, the north surfacing ramp 3 m).
     const flatSamples = samples.filter(
-      (s) => s.x >= sump.minX && s.x <= sump.maxX && s.z >= sump.minZ + 3.5 && s.z <= sump.maxZ - 2.5
+      (s) => s.x >= sump.minX && s.x <= sump.maxX && s.z >= sump.minZ + 3.5 && s.z <= sump.maxZ - 4.5
     );
     expect(flatSamples.length).toBeGreaterThan(0);
     for (const s of flatSamples) {

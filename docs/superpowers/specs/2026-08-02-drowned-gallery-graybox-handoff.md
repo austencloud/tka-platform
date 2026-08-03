@@ -1,5 +1,22 @@
 # Drowned Gallery Phase 1 Graybox — Handoff (2026-08-02)
 
+## ADDENDUM (2026-08-02 late session — pickup complete)
+
+The play-tester succeeded: traversal fixed at the data level (`cf707da460`,
+report at `2026-08-02-drowned-gallery-playtest-report.md`). The pickup session
+then fixed the SECOND half of the same bug — the graybox VISUALS still encoded
+the wrong corridor assumption (floor slab, water, surfacing steps, and the
+grotto-south wall's door gap all sat at the sump's x-span, ~11 m east of the
+real door). The corridor's carved Z-shape + wall tiles are now decomposed off
+the real grid in `buildDrownedGalleryLayout` (`corridorSegments` /
+`corridorWallRuns`) and both the terrain zones and the graybox consume the
+same layout rects — physics and visuals can no longer disagree. Also softened
+the sump entry ramp 2 m → 4 m (~52° → ~33°, loose end #4). 204/204 museum
+tests green, svelte-check 0/0, browser re-walk done (approach, corridor jog,
+steps reveal at the REAL west door, grotto reveal frames all read correctly).
+Remaining: loose ends #2 (ask Austen what "the other end" means), #3 (his
+eye-level re-walk = the gate), #5 (stale CAVE_MODE_ROOMS entry, cosmetic).
+
 ## Mission
 
 Build the Vulcan Cave Water room ("The Drowned Gallery") as a walkable graybox
