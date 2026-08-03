@@ -1,27 +1,39 @@
 <!--
-CustomizeExpandedOverlay.svelte - Accordion-based customize panel
-Two collapsible sections: Style, Start Position.
-Only one section open at a time. All content renders inline (no drawer-hopping).
-(Rhythm was removed pending a finished rhythm-preset design.)
+CustomizeExpandedOverlay.svelte - Customize panel, one decision at a time.
+
+A SettingsDrillPanel over four settings: Style, Start Position, End Position,
+Start Orientation. The root list shows each one's current value; choosing a row
+gives that setting the whole panel. Above 840px of panel width the drill panel
+goes two-pane on its own.
+
+Replaced an accordion that put start position and end position on the same
+screen (end position nested INSIDE start position) and, because the expanded
+section flex-shrank below its content against its own `overflow: hidden`,
+clipped 415px of that content instead of scrolling.
+Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 -->
 <script module lang="ts">
-  // Persist which accordion section was last open across sessions.
-  // Without this, reopening the customize panel in a new session always
-  // defaults to "style" even if the user's last change was to start positions.
+  // Persist which setting was last open across sessions. Widened from the
+  // accordion's "style" | "startEnd" to the four drill ids; anything else
+  // (including the retired "startEnd") falls back to style.
   const SECTION_STORAGE_KEY = "tka-customize-active-section";
-  type AccordionSectionPersisted = "style" | "startEnd" | null;
+  const DRILL_IDS = ["style", "startPos", "endPos", "startOri"] as const;
+  type DrillId = (typeof DRILL_IDS)[number];
 
-  function loadPersistedSection(): AccordionSectionPersisted {
+  function isDrillId(v: unknown): v is DrillId {
+    return DRILL_IDS.includes(v as DrillId);
+  }
+
+  function loadPersistedSection(): DrillId {
     try {
       const raw = localStorage.getItem(SECTION_STORAGE_KEY);
-      if (raw === "style" || raw === "startEnd") return raw;
-      return "style";
+      return isDrillId(raw) ? raw : "style";
     } catch {
       return "style";
     }
   }
 
-  function savePersistedSection(section: AccordionSectionPersisted): void {
+  function savePersistedSection(section: DrillId | null): void {
     try {
       if (section) {
         localStorage.setItem(SECTION_STORAGE_KEY, section);
@@ -33,13 +45,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     }
   }
 
-  let persistedSection: AccordionSectionPersisted = loadPersistedSection();
+  let persistedSection: DrillId = loadPersistedSection();
 </script>
 
 <script lang="ts">
   import "../customize-accent.css";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { scale, slide } from "svelte/transition";
+  import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount, untrack } from "svelte";
@@ -55,8 +67,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   } from "../../shared/domain/start-position-presets";
   import StyleExpandPanel from "../StyleExpandPanel.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import SettingsDrillPanel, {
+    type SettingsDrillItem,
+  } from "$lib/shared/ui/components/settings-drill/SettingsDrillPanel.svelte";
   import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
-  import PositionSection from "$lib/shared/components/position-picker/PositionSection.svelte";
+  import PositionPickerGrid from "$lib/shared/components/position-picker/PositionPickerGrid.svelte";
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { buildStartEndOptions } from "./customize-start-end-options";
@@ -72,8 +87,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     clampStartOrientationToLevel,
     startOrientationsForLevel,
   } from "../../domain/level-orientation-policy";
-
-  type AccordionSection = "style" | "startEnd";
 
   let {
     constraintPreset,
@@ -113,14 +126,19 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     hapticService = getHapticFeedback();
   });
 
-  // Accordion state - restore last-open section across drawer open/close cycles
-  let activeSection = $state<AccordionSection | null>(persistedSection);
+  // Drill state. One-column mode opens on the root list — picking WHICH factor
+  // to change is itself the first decision. Two-pane mode restores the last
+  // setting, because the list stays on screen there either way and an empty
+  // detail pane next to a full list is just wasted space. The drill panel
+  // reports its own mode via onWide.
+  let selected = $state<string | null>(null);
 
-  function toggleSection(section: AccordionSection) {
+  function handleSelect(id: string | null) {
     hapticService?.trigger("selection");
-    activeSection = activeSection === section ? null : section;
-    persistedSection = activeSection;
-    savePersistedSection(activeSection);
+    if (isDrillId(id)) {
+      persistedSection = id;
+      savePersistedSection(id);
+    }
   }
 
   // ─── Local state for style (instant UI feedback) ───
@@ -153,16 +171,12 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     startOrientationsForLevel(level)
   );
 
-  // Compact orientation suffix for the section header — empty when In/In so the
-  // default reads clean. flex:1 right-aligned value grows toward the fixed
-  // chevron, so a wider string never shifts siblings (no-layout-shift rule).
-  // Abbreviations come from the summary resolver so this header and the
-  // collapsed card can't drift into two vocabularies.
+  // Abbreviations come from the summary resolver so the row and the collapsed
+  // card can't drift into two vocabularies.
   const oriDisplay = $derived.by(() => {
     const b = localBlueOri ?? Orientation.IN;
     const r = localRedOri ?? Orientation.IN;
-    if (b === Orientation.IN && r === Orientation.IN) return "";
-    return ` · ${ORIENTATION_SHORT[b] ?? b}/${ORIENTATION_SHORT[r] ?? r}`;
+    return `${ORIENTATION_SHORT[b] ?? b} · ${ORIENTATION_SHORT[r] ?? r}`;
   });
 
   // Current preset (All / Classic 3 / Custom) derived from the blocked list.
@@ -170,7 +184,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     detectPresetFromBlocked(localBlockedPositions, gridMode)
   );
 
-  // How many positions are enabled (for the section summary).
+  // How many positions are enabled (for the row summary).
   const enabledCount = $derived(
     getAllowedPositions(localBlockedPositions, gridMode).length
   );
@@ -182,15 +196,18 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     StartPositionPreset.CUSTOM,
   ].map((p) => ({ value: p, label: PRESET_LABELS[p] }));
 
-  // ─── Start/End display ───
-  const startEndDisplay = $derived.by(() => {
+  // ─── Row values ───
+  const startPosDisplay = $derived.by(() => {
     if (!startEndOptions) return "Any";
     if (currentPreset === StartPositionPreset.ANY) return "Any";
     if (currentPreset === StartPositionPreset.CLASSIC) return "Classic 3";
     return enabledCount === 1 ? "1 pos" : `${enabledCount} pos`;
   });
 
-  // ─── Style summary ───
+  const endPosDisplay = $derived(
+    localEndPosition?.startPosition || localEndPosition?.letter || "Any"
+  );
+
   // Names the axes that differ instead of saying "Custom". The bare word left
   // the collapsed card ("Props: Mixed") looking like it had singled out one of
   // three axes at random, when Props was simply the only one off its default.
@@ -207,6 +224,22 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     );
     return isDefault ? "Default" : facts.join(" · ");
   });
+
+  // The four rows. End Position stays present and locked when LOOP owns it —
+  // dropping the row would change the list length and move the row below it,
+  // and leave a user who saw the setting once with no explanation.
+  const drillItems = $derived<SettingsDrillItem[]>([
+    { id: "style", label: "Style", value: styleSummary },
+    { id: "startPos", label: "Start Position", value: startPosDisplay },
+    {
+      id: "endPos",
+      label: "End Position",
+      value: endPosDisplay,
+      disabled: !isFreeformMode,
+      disabledReason: "Set by LOOP",
+    },
+    { id: "startOri", label: "Start Orientation", value: oriDisplay },
+  ]);
 
   function handleClose() {
     hapticService?.trigger("selection");
@@ -306,7 +339,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   class="customize-expanded-overlay customize-accent-scope"
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
-  <!-- Header -->
+  <!-- Pinned above the drill panel, not inside its list: drilling into a
+       setting must never take Close and Reset all off screen. -->
   <div class="overlay-header">
     <h3 class="overlay-title">Customize</h3>
     {#if onResetAll}
@@ -333,133 +367,79 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     </button>
   </div>
 
-  <!-- These settings persist across sessions, which is what made a saved
-       Choppy props value look like a broken generator. Say so up front. -->
-  <p class="overlay-note">These settings stick until you change them again.</p>
+  <SettingsDrillPanel
+    items={drillItems}
+    bind:selected
+    onSelect={handleSelect}
+    onWide={(wide) => {
+      // Entering two-pane with nothing chosen would show an empty detail pane
+      // beside a full list. Fill it with the last setting the user touched.
+      if (wide && selected === null) selected = persistedSection;
+    }}
+  >
+    {#snippet listHeader()}
+      <!-- These settings persist across sessions, which is what made a saved
+           Choppy props value look like a broken generator. Say so up front. -->
+      <p class="overlay-note">These settings stick until you change them again.</p>
+    {/snippet}
 
-  <!-- Scrollable accordion content -->
-  <div class="overlay-content themed-scrollbar">
-    <!-- ═══ Style Section ═══ -->
-    <div class="accordion-section">
-      <button
-        class="accordion-header"
-        class:active={activeSection === "style"}
-        onclick={() => toggleSection("style")}
-        aria-expanded={activeSection === "style"}
-        aria-controls="section-style"
-      >
-        <span class="accordion-label">Style</span>
-        <span class="accordion-value">{styleSummary}</span>
-        <svg
-          class="accordion-chevron"
-          class:open={activeSection === "style"}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-
-      {#if activeSection === "style"}
-        <div class="accordion-content" id="section-style" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
-          <StyleExpandPanel
-            constraintPreset={localConstraintPreset}
-            handPathMode={localHandPathMode}
-            motionTypeFilter={localMotionTypeFilter}
-            baseline={styleBaseline}
-            haptic={hapticService}
-            onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
-            onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
-            onDashesChange={(v) => { localMotionTypeFilter = v === "mixed" ? null : v; onMotionTypeFilterChange(v); }}
+    {#snippet detail(id)}
+      {#if id === "style"}
+        <StyleExpandPanel
+          constraintPreset={localConstraintPreset}
+          handPathMode={localHandPathMode}
+          motionTypeFilter={localMotionTypeFilter}
+          baseline={styleBaseline}
+          haptic={hapticService}
+          onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
+          onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
+          onDashesChange={(v) => { localMotionTypeFilter = v === "mixed" ? null : v; onMotionTypeFilterChange(v); }}
+        />
+      {:else if id === "startPos"}
+        <SegmentedControl
+          options={startPresetOptions}
+          value={currentPreset}
+          onchange={handlePresetSelect}
+          color="accent"
+          size="sm"
+        />
+        <MultiSelectPositionPicker
+          blockedPositions={localBlockedPositions}
+          onBlockedChange={handleBlockedChange}
+          blueStartOrientation={localBlueOri}
+          redStartOrientation={localRedOri}
+          {gridMode}
+        />
+      {:else if id === "endPos"}
+        <p class="detail-note">Where the sequence ends. Optional.</p>
+        <PositionPickerGrid
+          currentPosition={localEndPosition}
+          onPositionChange={handleEndPositionChange}
+          {gridMode}
+        />
+      {:else if id === "startOri"}
+        <p class="detail-note">Level {level}</p>
+        <div class="ori-row">
+          <span class="ori-color-label ori-blue">Blue</span>
+          <PropOrientationControl
+            color="blue"
+            orientation={localBlueOri}
+            allowedOrientations={availableStartOrientations}
+            onOrientationChange={handleBlueOriChange}
+          />
+        </div>
+        <div class="ori-row">
+          <span class="ori-color-label ori-red">Red</span>
+          <PropOrientationControl
+            color="red"
+            orientation={localRedOri}
+            allowedOrientations={availableStartOrientations}
+            onOrientationChange={handleRedOriChange}
           />
         </div>
       {/if}
-    </div>
-
-    <!-- ═══ Start Position Section ═══ -->
-    {#if startEndOptions && onStartEndChange}
-      <div class="accordion-section">
-        <button
-          class="accordion-header"
-          class:active={activeSection === "startEnd"}
-          onclick={() => toggleSection("startEnd")}
-          aria-expanded={activeSection === "startEnd"}
-          aria-controls="section-start-end"
-        >
-          <span class="accordion-label">Start Pos.</span>
-          <span class="accordion-value">{startEndDisplay}{oriDisplay}</span>
-          <svg
-            class="accordion-chevron"
-            class:open={activeSection === "startEnd"}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-
-        {#if activeSection === "startEnd"}
-          <div class="accordion-content" id="section-start-end" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
-            <!-- Preset: All / Classic 3 / Custom (single-select) -->
-            <SegmentedControl
-              options={startPresetOptions}
-              value={currentPreset}
-              onchange={handlePresetSelect}
-              color="accent"
-              size="sm"
-            />
-
-            <!-- Multi-select position grid (shared primitive) -->
-            <MultiSelectPositionPicker
-              blockedPositions={localBlockedPositions}
-              onBlockedChange={handleBlockedChange}
-              blueStartOrientation={localBlueOri}
-              redStartOrientation={localRedOri}
-              {gridMode}
-            />
-
-            <!-- End position (freeform only) -->
-            {#if isFreeformMode}
-              <PositionSection
-                title="End Position"
-                description="Where the sequence ends (optional)"
-                currentPosition={localEndPosition}
-                onPositionChange={handleEndPositionChange}
-                {gridMode}
-              />
-            {/if}
-
-            <!-- Start orientation (blue + red, default In/In) -->
-            <div class="ori-section">
-              <span class="ori-heading">Start Orientation · Level {level}</span>
-              <div class="ori-row">
-                <span class="ori-color-label ori-blue">Blue</span>
-                <PropOrientationControl
-                  color="blue"
-                  orientation={localBlueOri}
-                  allowedOrientations={availableStartOrientations}
-                  onOrientationChange={handleBlueOriChange}
-                />
-              </div>
-              <div class="ori-row">
-                <span class="ori-color-label ori-red">Red</span>
-                <PropOrientationControl
-                  color="red"
-                  orientation={localRedOri}
-                  allowedOrientations={availableStartOrientations}
-                  onOrientationChange={handleRedOriChange}
-                />
-              </div>
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
-  </div>
+    {/snippet}
+  </SettingsDrillPanel>
 </div>
 
 <ConfirmDialog
@@ -500,6 +480,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+    margin-bottom: 4px;
   }
 
   .overlay-title {
@@ -544,7 +525,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   .overlay-note {
-    margin: 0;
+    margin: 0 0 8px;
     flex-shrink: 0;
     font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.55);
@@ -577,123 +558,22 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     height: 20px;
   }
 
-  .overlay-content {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
+  /* ─── Detail bodies ─── */
 
-  /* ─── Accordion ─── */
-
-  .accordion-section {
-    border-radius: 10px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.15);
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  /* The active/expanded section gets column layout but doesn't stretch */
-  .accordion-section:has(.accordion-header.active) {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .accordion-header {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-family: inherit;
-    min-height: var(--min-touch-target);
-    transition: background var(--duration-normal) ease;
-  }
-
-  .accordion-header:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
-  }
-
-  .accordion-header.active {
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .accordion-label {
+  .detail-note {
+    margin: 0;
     font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: rgba(255, 255, 255, 0.5);
-    min-width: 70px;
-    text-align: left;
+    color: rgba(255, 255, 255, 0.55);
   }
 
-  /* One line, always. Naming all three style axes runs past the available
-     width and wrapped the header from 56px to 77px, shoving the Start Pos.
-     section down whenever the value changed — the no-layout-shift rule. The
-     complete list is on the collapsed card and in the rows below. */
-  .accordion-value {
-    flex: 1;
-    min-width: 0;
-    text-align: right;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .accordion-chevron {
-    width: 16px;
-    height: 16px;
-    opacity: 0.5;
-    flex-shrink: 0;
-    transition: transform var(--duration-normal) ease;
-  }
-
-  .accordion-chevron.open {
-    transform: rotate(180deg);
-  }
-
-  .accordion-content {
-    padding: 10px 12px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-
-  /* Start Position controls (SegmentedControl + MultiSelectPositionPicker +
-     PositionSection) bring their own styling from the shared primitives. */
-
-  /* ─── Start orientation (blue + red cyclers) ─── */
-  .ori-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .ori-heading {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: rgba(255, 255, 255, 0.5);
-  }
-
+  /* Capped: the cycler is a compact control, and letting the row stretch to a
+     wide detail pane parked the Blue/Red label a third of a pane away from the
+     buttons it names. */
   .ori-row {
     display: flex;
     align-items: center;
     gap: 10px;
+    max-width: 26rem;
   }
 
   .ori-color-label {
@@ -704,21 +584,22 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     letter-spacing: 0.3px;
   }
 
+  /* Lightened off the raw prop colors: #3b82f6 as text on the panel's dark
+     blue gradient was barely readable. Keeps the prop identity, wins the
+     contrast. */
   .ori-blue {
-    color: var(--prop-blue, #3b82f6);
+    color: color-mix(in srgb, var(--prop-blue, #3b82f6) 55%, white);
   }
 
   .ori-red {
-    color: var(--prop-red, #ef4444);
+    color: color-mix(in srgb, var(--prop-red, #ef4444) 75%, white);
   }
 
   /* ─── Reduced motion ─── */
 
   @media (prefers-reduced-motion: reduce) {
-    .accordion-header,
     .close-button,
-    .reset-button,
-    .accordion-chevron {
+    .reset-button {
       transition: none;
     }
   }

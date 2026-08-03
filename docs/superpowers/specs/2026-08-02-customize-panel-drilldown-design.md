@@ -65,7 +65,7 @@ Creating new, in `shared/`, for both.
 
 ### New: `src/lib/shared/ui/components/settings-drill/SettingsDrillRow.svelte`
 
-Full-width button: label left, current value right, chevron. 44px touch floor.
+Setting name on top, current value below, chevron right. 44px touch floor.
 
 ```ts
 {
@@ -74,16 +74,25 @@ Full-width button: label left, current value right, chevron. 44px touch floor.
   selected?: boolean;      // two-pane mode marks the active row
   disabled?: boolean;
   disabledReason?: string; // renders in place of the value, with a lock
-  valueSizer?: string;     // longest possible value, for the ghost sizer
   onclick: () => void;
 }
 ```
 
-`value` is width-unstable ("Any" -> "gamma8", "In / In" -> "Counter / Clock"), so
-it uses the ghost-sizer technique from `no-layout-shift.md`: an
-`aria-hidden` copy of `valueSizer` and the live value share one `inline-grid`
-cell, so the row never resizes when the value changes. The lock treatment reuses
-the markup already in `PositionSection.svelte`'s `.value-locked`.
+**Two lines, not label-left/value-right** (revised during build). The values run
+from `Any` to `Props: Choppy · Hands: Smooth · Dashes: High`, and measured at
+2560 the long one ellipsised inside every two-pane rail width that still left
+the detail pane usable. On its own line it gets the row's full width at every
+size.
+
+**No ghost sizer** (revised during build; the first draft specified one). Row
+height comes from two fixed-size text lines and the value is clipped to one
+line, so no value can change the row's box or move the rows below it — verified
+71px on every row in every state, including locked. A `valueSizer` prop would
+only have been a hand-maintained "longest string" constant drifting out of sync
+with a derived summary.
+
+The lock treatment reuses the markup already in `PositionSection.svelte`'s
+`.value-locked`.
 
 ### New: `src/lib/shared/ui/components/settings-drill/SettingsDrillPanel.svelte`
 
@@ -110,8 +119,18 @@ them, and the seam. `container-type: inline-size` on the root.
 - Below `840px` container width: one column. Root list, or detail filling the
   panel with a back arrow. Selecting a `disabled` row does not navigate; it
   surfaces the reason.
-- At or above `840px`: two-pane. A `22rem` list rail on the left, detail on the
-  right, no back arrow, the active row marked `selected`.
+- At or above `840px`: two-pane. A `clamp(20rem, 36%, 30rem)` list rail on the
+  left, detail on the right, no back arrow, the active row marked `selected`.
+  (Fluid, not the flat `22rem` first drafted — a hard rail ellipsised the Style
+  summary at a 1039px panel while the detail pane had room to spare.)
+
+Detail children are `flex: 0 0 auto` and capped at `min(100%, 48rem)`.
+`flex-grow: 0` because `StyleExpandPanel` still declares `flex: 1;
+justify-content: center` from its accordion days and otherwise floated its three
+rows in the middle of a 970px pane; the 48rem cap because a three-row form has
+no business spanning 1000px — it stranded the Blue/Red labels a third of a pane
+from the controls they name. The pictograph grid still gets 48rem, wider than it
+ever had.
 
 Scroller discipline is the panel's job and only the panel's: the detail body is
 the single `overflow-y: auto` element. The list rail scrolls independently in
@@ -158,13 +177,27 @@ the setting once with no explanation.
 
 ## Motion
 
-Root <-> detail is a horizontal push/pop, layers absolutely stacked in a filled
-container so nothing reflows during the transition. It deliberately does not use
-`<Crossfade>`: that primitive keys on `{#key}` and remounts its children, and
-these detail bodies are heavy pictograph grids — the carve-out
-`crossfade-primitive.md` names for heavy content. In two-pane mode the detail
-pane fades on selection change rather than pushing. `prefers-reduced-motion`
-collapses both to instant.
+Root <-> detail is a horizontal push, **one keyed layer with an intro only and
+no `out:` transition** (revised during build). The first implementation used two
+`{#if}` branches each carrying `in:`/`out:` fly. Measured, the outgoing layer
+persisted in the DOM long past its 200ms duration — seconds, and on light
+content too, not just the 16-pictograph grids — which meant two scrollers and a
+stale hit-testable list sitting under the detail. An intro-only keyed block
+removes the old layer synchronously, so the stage provably holds exactly one
+layer; verified at every viewport.
+
+It deliberately does not use `<Crossfade>`: that primitive keys on `{#key}` and
+remounts its children, and these detail bodies are heavy pictograph grids — the
+carve-out `crossfade-primitive.md` names for heavy content. In two-pane mode the
+detail pane fades on selection change rather than pushing.
+`prefers-reduced-motion` collapses both to instant.
+
+## Panel header
+
+Title, Reset all, and Close are rendered by the overlay ABOVE the drill panel,
+not inside its list (revised during build). As a `listHeader` they disappeared
+the moment you drilled into a setting, leaving the one-column detail view with
+no way to close the panel.
 
 ## Entry point
 
@@ -175,14 +208,29 @@ since the list stays visible either way. Persistence reuses the existing
 `"style" | "startEnd"` to the four ids, with unknown values falling back to
 `style`.
 
-## Verification
+## Verification (done)
 
-Screenshots at 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412,
-375x667 — on the root list and on all four detail screens.
+Measured and screenshotted at every viewport in
+`visual-verification-mandatory.md`. `emulate` does not override the window's
+1.1 device pixel ratio, so each target was emulated at CSS x 1.1 and the
+resulting `innerWidth` confirmed.
 
-Plus a measured assertion, run at each viewport: exactly one element inside the
-panel has `scrollHeight > clientHeight`. That is the class of bug this replaces,
-and arithmetic catches it for near-zero tokens where a screenshot might not.
+| CSS viewport | Drawer | Panel | Mode | Max scrollers | Min cell |
+|---|---|---|---|---|---|
+| 3840x2160 | 1099 | 1039 | two-pane | 0 | 150px |
+| 2560x1440 | 1075 | 1015 | two-pane | 0 | 146px |
+| 1920x1080 | 806 | 746 | one column | 0 | 128px |
+| 1440x900 | 604 | 544 | one column | 0 | 128px |
+| 820x1180 | 811 (sheet) | — | one column | 1 | 184px |
+| 960x412 | 519 | — | one column | 1 | 105px |
+| 375x667 | 413 (sheet) | 381 | one column | 1 | 87px |
 
-Also measured: no control inside the panel wider than its content warrants, per
-`visual-verification-mandatory.md`'s first check.
+Asserted at each: **exactly one `.layer` in the stage** and **at most one
+element with `scrollHeight > clientHeight`** — the class of bug this replaces.
+Every cell clears the 44px floor. Mobile sheet measured at a constant 624px
+across all four details, so drilling does not resize it. Row height constant at
+71px including the locked state, so no value moves a neighbour.
+
+Also verified: LOOP on renders End Position locked with the lock glyph and "Set
+by LOOP" at unchanged row height; Close and Reset all remain reachable from
+every detail screen.
