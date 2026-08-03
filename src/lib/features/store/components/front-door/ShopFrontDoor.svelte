@@ -21,7 +21,7 @@
   import ShopShelfFilter from "./ShopShelfFilter.svelte";
   import ShopCatalogTile from "./ShopCatalogTile.svelte";
   import { deriveCatalogEntries } from "../../domain/catalog-listings";
-  import { allCoverCards, heroCoverCard } from "./front-door-catalog";
+  import { allCoverCards, heroCoverPool } from "./front-door-catalog";
 
   interface Props {
     /** Server-rendered catalog: everything a tile needs except the cover cards,
@@ -77,10 +77,8 @@
   });
   const midColumns = $derived(Math.min(wideColumns, 2));
 
-  const heroCard = $derived(heroCoverCard(catalog));
-  const heroProduct = $derived(
-    catalog.find((p) => p.coverCards?.some((c) => c === heroCard)) ?? null
-  );
+  // The hero deals from this, so it is the whole pool rather than one pick.
+  const heroPool = $derived(heroCoverPool(catalog));
 
   // One worker seed for every fan on the page. Without it the print pipeline
   // composes cards with no arrow, prop, or glyph assets loaded and they come
@@ -97,7 +95,7 @@
 
 <div class="front-door">
   <div class="band">
-    <ShopFrontDoorHero card={heroCard} product={heroProduct} catalogId={CATALOG_ID} />
+    <ShopFrontDoorHero pool={heroPool} catalogId={CATALOG_ID} />
   </div>
 
   {#if entries.length > 0}
@@ -156,7 +154,10 @@
            retired explainer page used to point at. Both are buttons, not text
            links (clickables-look-like-buttons.md). -->
       <div class="onward-actions">
-        <a class="onward-cta" href="/composer">
+        <!-- /create, not /composer. The button says OPEN, so it opens the tool;
+             /composer is the page that describes it. Same destination the
+             header, the footer and the home hero send this label to. -->
+        <a class="onward-cta" href="/create">
           Open the Composer
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>

@@ -23,14 +23,30 @@
   which read as an advert running at you rather than a card you picked up. It
   now has one trigger, sitting directly under the pair because it acts on the
   pair — not another call to action stacked in the copy column beside "See the
-  catalog". First press scans; afterwards the card is left playing and the
-  button offers the pass again (hero-scan-timeline.svelte.ts owns that state
-  machine). Under reduced motion the button is not rendered at all: it exists
-  only to start motion.
+  catalog". Under reduced motion the button is not rendered at all: it exists
+  only to start motion. (hero-scan-timeline.svelte.ts owns the pass itself.)
+
+  THE SECOND PRESS DEALS. Scanning the same card twice shows the same thing
+  twice, so once a card has been scanned the button stops offering a replay and
+  starts offering a new card. Austen: "instead of just saying scan again on the
+  same sequence which doesn't really reveal anything the second time ... how
+  about ... the button changes to give you a different card ... and then it
+  plays the scan animation as soon as the card gets shuffled."
+
+  So a press deals: the pair flicks out, the next card takes its place, the pair
+  drops back in, and the scan runs itself once on the new card. That auto-run is
+  the ONE thing that starts without a press, and it is still the direct
+  consequence of one — nothing loops.
+
+  The deal is transform and opacity on the two absolutely-positioned card faces,
+  never a remount. Remounting the back would tear down and rebuild the whole
+  animation engine (loop, orchestrator, canvas) on every shuffle; passing the
+  new sequence down reloads it in place instead. Nothing outside the two fixed
+  slots can move, because nothing outside them is touched.
 -->
 <script lang="ts">
   import { page } from "$app/state";
-  import type { CoverCard, Product } from "../../domain/models/product";
+  import type { HeroCoverEntry } from "./front-door-catalog";
   import ShopEntryArt from "../ShopEntryArt.svelte";
   import HeroCardBackLive from "./HeroCardBackLive.svelte";
   import HeroScanCue from "./HeroScanCue.svelte";
@@ -47,11 +63,51 @@
   } from "./hero-layout-measure";
 
   interface Props {
-    /** Null until the catalog's cover cards land. The slots hold their shape. */
-    card: CoverCard | null;
-    product: Product | null;
+    /** Empty until the catalog's cover cards land. The slots hold their shape. */
+    pool: readonly HeroCoverEntry[];
   }
-  let { card, product }: Props = $props();
+  let { pool }: Props = $props();
+
+  // ── the deck this hero deals from ───────────────────────────────────────
+  // Shuffle without replacement: walk a shuffled order, and reshuffle only when
+  // it runs out, so no card repeats until every other one has been dealt. The
+  // reshuffle keeps the just-seen card off the front, or the boundary between
+  // two rounds would be the one repeat the whole scheme exists to prevent.
+  let order = $state<number[]>([]);
+  let cursor = $state(0);
+
+  function shuffled(count: number, avoidFirst?: number): number[] {
+    const next = Array.from({ length: count }, (_, i) => i);
+    for (let i = next.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [next[i], next[j]] = [next[j]!, next[i]!];
+    }
+    if (next.length > 1 && next[0] === avoidFirst) {
+      [next[0], next[1]] = [next[1]!, next[0]!];
+    }
+    return next;
+  }
+
+  // The FIRST card is not shuffled: heroCoverPool already sorts baked covers
+  // first, and a baked cover is the only render carrying a real scannable QR.
+  // The hero opens on the best card it has, then deals at random from there.
+  $effect(() => {
+    const n = pool.length;
+    if (!n) {
+      order = [];
+      cursor = 0;
+      return;
+    }
+    if (order.length !== n) {
+      order = [0, ...shuffled(n, 0).filter((i) => i !== 0)];
+      cursor = 0;
+    }
+  });
+
+  const entry = $derived(pool[order[cursor] ?? 0] ?? null);
+  const card = $derived(entry?.card ?? null);
+  const product = $derived(entry?.product ?? null);
+  const canDeal = $derived(pool.length > 1);
 
   // Dev comparison switch: `?cue=pulse` on /shop swaps the phone cue for the
   // quieter ring. The phone variant ships as the default; the query param is
@@ -66,11 +122,62 @@
     return () => timeline.stop();
   });
 
-  // "Scan the code" is the longer of the two, so it is what the ghost sizer
-  // below holds — the button never changes width when the label swaps.
+  // The three labels this button can show. A one-card catalog has nothing to
+  // deal, so it keeps offering the replay instead of promising a card that
+  // isn't there. The ghost sizer holds whichever of the reachable labels is
+  // longest, so no swap can change the width.
   const SCAN_LABEL = "Scan the code";
+  const DEAL_LABEL = "Deal another card";
   const RESCAN_LABEL = "Scan again";
-  const scanLabel = $derived(timeline.scanned ? RESCAN_LABEL : SCAN_LABEL);
+  const afterScanLabel = $derived(canDeal ? DEAL_LABEL : RESCAN_LABEL);
+  const actionLabel = $derived(timeline.scanned ? afterScanLabel : SCAN_LABEL);
+  const sizerLabel = $derived(
+    [SCAN_LABEL, afterScanLabel].reduce((a, b) => (b.length > a.length ? b : a))
+  );
+
+  // ── dealing ─────────────────────────────────────────────────────────────
+  // Out, swap, in, scan. The two halves are timed to the CSS below; the swap
+  // happens at the bottom of the out-beat, where both faces are invisible, so
+  // the change of card is never seen as a cut.
+  const DEAL_OUT_MS = 190;
+  const DEAL_IN_MS = 260;
+  let dealing = $state(false);
+  let dealTimers: ReturnType<typeof setTimeout>[] = [];
+
+  function clearDealTimers(): void {
+    for (const t of dealTimers) clearTimeout(t);
+    dealTimers = [];
+  }
+  $effect(() => () => clearDealTimers());
+
+  function advance(): void {
+    if (pool.length < 2) return;
+    if (cursor + 1 < order.length) {
+      cursor += 1;
+    } else {
+      order = shuffled(pool.length, order[cursor]);
+      cursor = 0;
+    }
+  }
+
+  /** The button's one job, whichever label it is wearing. */
+  function press(): void {
+    if (timeline.running || dealing) return;
+    if (!timeline.scanned || !canDeal) {
+      timeline.scan();
+      return;
+    }
+    dealing = true;
+    clearDealTimers();
+    dealTimers.push(
+      setTimeout(() => {
+        advance();
+        dealing = false;
+      }, DEAL_OUT_MS),
+      // The new card has to be on screen before the phone comes down over it.
+      setTimeout(() => timeline.scan(), DEAL_OUT_MS + DEAL_IN_MS)
+    );
+  }
 
   // ── the QR cell, located rather than guessed ────────────────────────────
   // A phone reads the code, not the card, so the sweep covers the code's cell
@@ -104,8 +211,13 @@
     };
   });
 
+  // Re-armed per card. `observeLayout`'s arrival watch retires after its first
+  // success, which is right for one card and wrong for a deck: a deal replaces
+  // the fan's card box, and without re-arming the rect would still describe the
+  // card that just left.
   $effect(() => {
     const slot = frontSlotEl;
+    void card;
     if (!slot) return;
     return observeLayout(slot, () => {
       const box = slot.querySelector<HTMLElement>("[data-card-box]");
@@ -125,7 +237,7 @@
 </script>
 
 <div class="pair">
-  <div class="duo">
+  <div class="duo" class:dealing>
     <div class="slot front" bind:this={frontSlotEl}>
       {#if card && product}
         <div class="art">
@@ -169,10 +281,10 @@
        (no-layout-shift.md's ghost-sizer, using the real primitive so the
        reserved width carries the button's own metrics rather than a guess). -->
   {#if card && timeline.available}
-    <div class="scan-trigger" class:busy={timeline.running}>
+    <div class="scan-trigger" class:busy={timeline.running || dealing}>
       <span class="sizer" aria-hidden="true" inert>
         <ActionButton
-          label={SCAN_LABEL}
+          label={sizerLabel}
           icon="fa-qrcode"
           color="cyan"
           fullWidth
@@ -181,12 +293,12 @@
       </span>
       <span class="live">
         <ActionButton
-          label={scanLabel}
-          icon="fa-qrcode"
+          label={actionLabel}
+          icon={timeline.scanned && canDeal ? "fa-shuffle" : "fa-qrcode"}
           color="cyan"
           fullWidth
-          ariaDisabled={timeline.running}
-          onclick={() => timeline.scan()}
+          ariaDisabled={timeline.running || dealing}
+          onclick={press}
         />
       </span>
     </div>
@@ -288,6 +400,34 @@
     inset: 0;
     display: grid;
     place-items: center;
+  }
+
+  /* The deal. Both faces are absolutely positioned inside their fixed slot, so
+     lifting and fading them moves nothing else on the page — the slots keep
+     their boxes and the button below never shifts. Out is quicker than in: a
+     card leaves the hand faster than it settles. */
+  .art,
+  .card-frame {
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 260ms ease;
+  }
+  .duo.dealing .art,
+  .duo.dealing .card-frame {
+    transform: translateY(-7%) scale(0.93);
+    opacity: 0;
+    transition:
+      transform 190ms cubic-bezier(0.5, 0, 0.75, 0),
+      opacity 190ms ease-in;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .art,
+    .card-frame,
+    .duo.dealing .art,
+    .duo.dealing .card-frame {
+      transition: none;
+    }
   }
 
   /* CardBack's own frame declares `container-type: inline-size` AND sizes its

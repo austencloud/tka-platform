@@ -10,22 +10,21 @@
 
   It is held up with its own back beside it (HeroCardDuo), and the back's mandala
   is drawn live rather than printed. That is the claim the page makes — scan it
-  and it moves — shown instead of described.
+  and it moves — shown instead of described. The hero deals from the whole
+  catalog rather than holding one card, so a second look is a different card.
 -->
 <script lang="ts">
-  import type { CoverCard, Product } from "../../domain/models/product";
+  import type { HeroCoverEntry } from "./front-door-catalog";
   import HeroCardDuo from "./HeroCardDuo.svelte";
 
   interface Props {
-    /** The single card the hero holds up. Null while the catalog is empty. */
-    card: CoverCard | null;
-    /** The product that card belongs to (QR attribution + art fallbacks). */
-    product: Product | null;
+    /** Every card the hero can deal, best first. Empty until the catalog lands. */
+    pool: readonly HeroCoverEntry[];
     /** Fragment id of the catalog the scroll button targets. */
     catalogId: string;
   }
 
-  let { card, product, catalogId }: Props = $props();
+  let { pool, catalogId }: Props = $props();
 </script>
 
 <section class="hero">
@@ -49,7 +48,7 @@
   </div>
 
   <div class="card-stage">
-    <HeroCardDuo {card} {product} />
+    <HeroCardDuo {pool} />
   </div>
 </section>
 
