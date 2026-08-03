@@ -87,12 +87,36 @@
       scale: 0.88,
     },
     {
+      id: "fold-cover-portrait",
+      label: "Z Fold cover portrait 412 × 960",
+      shortLabel: "Cover P",
+      width: 412,
+      height: 960,
+      scale: 0.65,
+    },
+    {
       id: "fold",
-      label: "Fold landscape 960 × 412",
-      shortLabel: "Fold",
+      label: "Z Fold cover landscape 960 × 412",
+      shortLabel: "Cover L",
       width: 960,
       height: 412,
       scale: 0.75,
+    },
+    {
+      id: "fold-open-portrait",
+      label: "Z Fold open portrait 750 × 832",
+      shortLabel: "Open P",
+      width: 750,
+      height: 832,
+      scale: 0.68,
+    },
+    {
+      id: "fold-open-landscape",
+      label: "Z Fold open landscape 832 × 750",
+      shortLabel: "Open L",
+      width: 832,
+      height: 750,
+      scale: 0.68,
     },
     {
       id: "tablet",
@@ -141,10 +165,9 @@
     "builder-start": [
       {
         value: "start-chooser",
-        label: "Starting choices",
-        shortLabel: "Start",
+        label: "Filter chooser",
+        shortLabel: "Filters",
       },
-      { value: "start-more", label: "More filters", shortLabel: "More" },
       { value: "start-level", label: "Pick a level", shortLabel: "Level" },
       { value: "start-length", label: "Pick a length", shortLabel: "Length" },
       {

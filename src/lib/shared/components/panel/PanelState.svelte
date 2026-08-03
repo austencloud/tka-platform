@@ -76,7 +76,7 @@
   {/if}
 
   {#if type === "error" && onretry}
-    <button class="panel-state__retry" onclick={onretry}> Try Again </button>
+    <button class="panel-state__retry" onclick={onretry}> Try again </button>
   {/if}
 
   {#if actions}
@@ -137,26 +137,30 @@
     max-width: 300px;
   }
 
+  /* Retry is the PRIMARY action on an error panel — it reads as one instead
+     of the faintest control on the screen (audit X-20). */
   .panel-state__retry {
+    min-height: 44px;
     margin-top: 8px;
-    padding: 10px 20px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent-strong)) 15%,
-      transparent
-    );
-    border: 1px solid var(--theme-stroke);
+    padding: 10px 22px;
+    background: var(--theme-accent, #6366f1);
+    border: 1px solid var(--theme-accent, #6366f1);
     border-radius: 8px;
     color: var(--theme-text, white);
     font-size: var(--font-size-sm);
-    font-weight: 500;
+    font-weight: 650;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .panel-state__retry:hover {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-color: var(--theme-stroke-strong);
+    background: color-mix(in srgb, var(--theme-accent) 82%, white);
+    border-color: color-mix(in srgb, var(--theme-accent) 82%, white);
+  }
+
+  .panel-state__retry:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .panel-state__actions {

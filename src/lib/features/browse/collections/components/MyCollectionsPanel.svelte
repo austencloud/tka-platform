@@ -45,6 +45,7 @@ instead of showing an empty shell.
 		isFoundingId,
 	} from "$lib/features/browse/collections/config/founding-collections";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+	import { getGalleryPrefetcher } from "$lib/features/browse/shared/get-gallery-prefetcher";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
@@ -70,6 +71,15 @@ instead of showing an empty shell.
 	// Wide screens get the rail + detail split; phones keep the stacked flow.
 	let isSideBySide = $state(false);
 	onMount(() => {
+		// The Smart Collection entry is visible on this surface, so warm its
+		// catalog from local storage now instead of waiting for the modal click.
+		// The live Firestore sync remains the app shell's background job.
+		void getGalleryPrefetcher()
+			.prefetch({ skipNetworkSync: true })
+			.catch((error: unknown) =>
+				console.warn("[MyCollectionsPanel] Gallery warm failed:", error),
+			);
+
 		isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
 		const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
 			isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();

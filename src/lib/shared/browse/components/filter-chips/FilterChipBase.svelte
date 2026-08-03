@@ -31,6 +31,13 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     ariaLabel?: string;
     children?: Snippet;
     onclick?: () => void;
+    /** Split-chip removal: renders a trailing × segment as its OWN control so
+     * the chip body can carry a non-destructive action (edit/open) while
+     * removal stays one deliberate tap away. Without it a rule chip's entire
+     * surface was a delete button (audit X-7/D-9/C-7). */
+    onremove?: () => void;
+    /** Accessible name for the × segment (defaults to "Remove <label>"). */
+    removeAriaLabel?: string;
   }
 
   let {
@@ -48,6 +55,8 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     ariaLabel,
     children,
     onclick,
+    onremove,
+    removeAriaLabel,
   }: Props = $props();
 
   let chipEl: HTMLButtonElement | null = $state(null);
@@ -63,23 +72,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   });
 </script>
 
-<button
-  class="filter-chip"
-  class:active
-  class:disabled
-  class:expanded
-  class:solid={emphasis === "solid"}
-  class:size-sm={size === "sm"}
-  style="--chip-color: {chipColor};"
-  type="button"
-  aria-pressed={mode === "toggle" ? active : undefined}
-  aria-haspopup={mode === "dropdown" ? "listbox" : undefined}
-  aria-expanded={mode === "dropdown" ? expanded : undefined}
-  aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
-  {disabled}
-  {onclick}
-  bind:this={chipEl}
->
+{#snippet chipBody()}
   {#if iconSnippet}
     {@render iconSnippet()}
   {:else if icon}
@@ -93,9 +86,65 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   {/if}
 
   {#if mode === "dropdown"}
-    <i class="fas fa-chevron-down chip-arrow" class:rotated={expanded} aria-hidden="true"></i>
+    <i
+      class="fas fa-chevron-down chip-arrow"
+      class:rotated={expanded}
+      aria-hidden="true"
+    ></i>
   {/if}
-</button>
+{/snippet}
+
+{#if onremove}
+  <span class="filter-chip-duo" style="--chip-color: {chipColor};">
+    <button
+      class="filter-chip duo-main"
+      class:active
+      class:disabled
+      class:solid={emphasis === "solid"}
+      class:size-sm={size === "sm"}
+      type="button"
+      aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
+      {disabled}
+      {onclick}
+      bind:this={chipEl}
+    >
+      {@render chipBody()}
+    </button>
+    <button
+      class="filter-chip duo-remove"
+      class:active
+      class:disabled
+      class:solid={emphasis === "solid"}
+      class:size-sm={size === "sm"}
+      type="button"
+      aria-label={removeAriaLabel ?? `Remove ${label}`}
+      {disabled}
+      onclick={onremove}
+    >
+      <i class="fas fa-xmark" aria-hidden="true"></i>
+    </button>
+  </span>
+{:else}
+  <button
+    class="filter-chip"
+    class:active
+    class:disabled
+    class:expanded
+    class:solid={emphasis === "solid"}
+    class:size-sm={size === "sm"}
+    style="--chip-color: {chipColor};"
+    type="button"
+    aria-pressed={mode === "toggle" ? active : undefined}
+    aria-haspopup={mode === "dropdown" ? "listbox" : undefined}
+    aria-expanded={mode === "dropdown" ? expanded : undefined}
+    aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
+    {disabled}
+    {onclick}
+    bind:this={chipEl}
+  >
+    {@render chipBody()}
+  </button>
+{/if}
 
 {#if children && expanded}
   <div
@@ -137,6 +186,41 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   .filter-chip.size-sm {
     gap: 4px;
     padding: 6px 10px;
+  }
+
+  /* Split chip: body action + separate × removal, one visual pill. */
+  .filter-chip-duo {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .filter-chip.duo-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right-width: 0;
+  }
+  .filter-chip.duo-remove {
+    min-width: var(--min-touch-target, 44px);
+    justify-content: center;
+    padding-inline: 8px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 1px solid
+      color-mix(in srgb, var(--chip-color) 30%, transparent);
+  }
+  @media (hover: hover) {
+    .filter-chip.duo-remove:not(.disabled):hover {
+      background: color-mix(
+        in srgb,
+        var(--semantic-error, #ef4444) 22%,
+        transparent
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--semantic-error, #ef4444) 45%,
+        transparent
+      );
+      color: var(--theme-text);
+    }
   }
 
   .filter-chip.active {
@@ -242,7 +326,8 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.3),
       0 1px 3px rgba(0, 0, 0, 0.2);
-    animation: popoverIn var(--duration-fast, 150ms) cubic-bezier(0.4, 0, 0.2, 1);
+    animation: popoverIn var(--duration-fast, 150ms)
+      cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes popoverIn {

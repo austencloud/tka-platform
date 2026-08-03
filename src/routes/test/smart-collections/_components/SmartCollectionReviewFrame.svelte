@@ -24,7 +24,6 @@
 
   const FILTER_SECTION_BY_VARIANT = {
     "start-chooser": "chooser",
-    "start-more": "more",
     "start-level": "level",
     "start-length": "length",
     "start-letter": "letter",

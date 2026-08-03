@@ -25,12 +25,12 @@ function firstByAlphabet(pool: SequenceData[]): SequenceData | undefined {
 /** One representative sequence per difficulty level present in the pool. */
 export function pickLevelRepresentatives(
   pool: readonly SequenceData[],
-  levels: readonly number[],
+  levels: readonly number[]
 ): Map<number, SequenceData> {
   const reps = new Map<number, SequenceData>();
   for (const level of levels) {
     const rep = firstByAlphabet(
-      pool.filter((seq) => resolveDifficultyLevel(seq) === level),
+      pool.filter((seq) => resolveDifficultyLevel(seq) === level)
     );
     if (rep) reps.set(level, rep);
   }
@@ -44,7 +44,7 @@ export function pickLevelRepresentatives(
  */
 export function pickLengthPair(
   pool: readonly SequenceData[],
-  minCount = 3,
+  minCount = 3
 ): { short?: SequenceData; long?: SequenceData; min?: number; max?: number } {
   const buckets = new Map<number, SequenceData[]>();
   for (const seq of pool) {
@@ -73,7 +73,7 @@ export function pickLengthPair(
  * exact grid "Show all" lands on. */
 export function pickCollage(
   pool: readonly SequenceData[],
-  n = 4,
+  n = 4
 ): SequenceData[] {
   return sortSequencesByKineticAlphabet([...pool]).slice(0, n);
 }
@@ -95,15 +95,20 @@ export function deriveCreators(pool: readonly SequenceData[]): string[] {
  * drill row can front a real profile photo (RobustAvatar falls back to a
  * monogram when neither is present). */
 export function pickCreatorAvatars(
-  pool: readonly SequenceData[],
+  pool: readonly SequenceData[]
 ): Map<string, { avatarUrl?: string; ownerId?: string }> {
   const byCreator = new Map<string, { avatarUrl?: string; ownerId?: string }>();
   for (const seq of pool) {
     const name = seq.ownerDisplayName?.trim();
     if (!name) continue;
     const entry = byCreator.get(name) ?? {};
-    if (!entry.avatarUrl && seq.ownerAvatarUrl?.trim()) {
-      entry.avatarUrl = seq.ownerAvatarUrl.trim();
+    // Generated data-URL avatars are initials baked for whoever UPLOADED the
+    // sequence, which can differ from the credited creator (a "Christofborkott"
+    // row wearing an "AU" disc). Skip them; RobustAvatar regenerates initials
+    // from the display name we actually show.
+    const avatarUrl = seq.ownerAvatarUrl?.trim();
+    if (!entry.avatarUrl && avatarUrl && !avatarUrl.startsWith("data:")) {
+      entry.avatarUrl = avatarUrl;
     }
     if (!entry.ownerId && seq.ownerId?.trim()) {
       entry.ownerId = seq.ownerId.trim();
@@ -118,7 +123,7 @@ export function pickCreatorAvatars(
  * the creator screen's row art, so a name is backed by the actual work. */
 export function pickCreatorSamples(
   pool: readonly SequenceData[],
-  n = 3,
+  n = 3
 ): Map<string, SequenceData[]> {
   const byCreator = new Map<string, SequenceData[]>();
   for (const seq of sortSequencesByKineticAlphabet([...pool])) {
@@ -138,7 +143,7 @@ export function pickCreatorSamples(
  */
 export function pickCreatorSamplesByOwnerId(
   pool: readonly SequenceData[],
-  n = 3,
+  n = 3
 ): Map<string, SequenceData[]> {
   const byOwnerId = new Map<string, SequenceData[]>();
   for (const seq of sortSequencesByKineticAlphabet([...pool])) {
@@ -178,7 +183,7 @@ function publishTimeMs(seq: SequenceData): number | undefined {
  * directly. Pure - never mutates `seqs`.
  */
 function sortNewestPublishedFirst(
-  seqs: readonly SequenceData[],
+  seqs: readonly SequenceData[]
 ): SequenceData[] {
   return sortSequencesByKineticAlphabet([...seqs]).sort((a, b) => {
     const timeA = publishTimeMs(a);
@@ -203,7 +208,7 @@ function sortNewestPublishedFirst(
  */
 export function dealByOwner(
   pool: readonly SequenceData[],
-  opts: DealByOwnerOptions = {},
+  opts: DealByOwnerOptions = {}
 ): SequenceData[] {
   const perOwner = opts.perOwner ?? 4;
   const limit = opts.limit ?? 25;
@@ -228,9 +233,7 @@ export function dealByOwner(
 /** Distinct base letters present in the pool (incl. dash variants like "W-"),
  * in canonical kinetic-alphabet order. These are the letter screen's values —
  * derived from real words, so no letter is ever a dead end. */
-export function deriveStartingLetters(
-  pool: readonly SequenceData[],
-): string[] {
+export function deriveStartingLetters(pool: readonly SequenceData[]): string[] {
   const letters = new Set<string>();
   for (const seq of pool) {
     const letter = extractBaseLetter(seq.word ?? "");

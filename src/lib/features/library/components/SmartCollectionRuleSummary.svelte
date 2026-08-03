@@ -14,6 +14,10 @@
     draft?: boolean;
     /** Built-in collections are maintained by TKA and cannot be edited. */
     builtIn?: boolean;
+    /** The matching pool failed to load. Without this the null matchCount
+     * renders "Counting matches" beside the host's error state — a live
+     * region promising progress while the body reports failure. */
+    countUnavailable?: boolean;
   }
 
   let {
@@ -23,6 +27,7 @@
     dense = false,
     draft = false,
     builtIn = false,
+    countUnavailable = false,
   }: Props = $props();
 
   const sourceLabel = $derived(
@@ -30,9 +35,11 @@
   );
 
   const matchLabel = $derived(
-    matchCount == null
-      ? "Counting matches"
-      : `${matchCount} ${matchCount === 1 ? "match" : "matches"} now`
+    countUnavailable
+      ? "Matches unavailable"
+      : matchCount == null
+        ? "Counting matches"
+        : `${matchCount} ${matchCount === 1 ? "match" : "matches"} now`
   );
 
   const sortLabels: Record<string, string> = {
@@ -208,18 +215,22 @@
     white-space: nowrap;
   }
 
+  /* Facts hug their content — two half-width slabs holding a word each read
+     as enormous empty controls on wide panes (audit X-9). */
   .rule-facts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .fact {
     display: flex;
     min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
     align-items: center;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 10px 14px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     background: color-mix(
@@ -359,8 +370,8 @@
       width: 100%;
     }
 
-    .rule-facts {
-      grid-template-columns: 1fr;
+    .fact {
+      flex: 1 1 100%;
     }
 
     .fact strong {
