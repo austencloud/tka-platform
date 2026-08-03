@@ -25,6 +25,12 @@ Codex choose an accurate two- or three-word name from the conversation. Use
 in history and Alt+Tab, with no agent or project suffix, and it never changes
 again unless you run `/rename` again.
 
+Run `/renameall` in Claude Code or the TKA Codex build to name every unnamed
+live Agent Hub session from its own conversation. Standard Codex uses
+`$renameall`. Existing names are preserved, titles stay distinct, and a new
+session with no conversation remains `Starting Session` until there is enough
+context to name it.
+
 Pin one shortcut per repo. Click it, and a card appears at your cursor with the
 project's icon. Pick Claude or Codex and the agent's terminal opens in that
 directory, already carrying the bypass flags. Projects with a configured PM2
@@ -122,7 +128,8 @@ configured server metadata. Other pinned applications are left alone.
 3. Compiles five small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
 4. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
-5. Installs the personal `color` and `colorall` skills for Claude and Codex.
+5. Installs the personal `color`, `colorall`, and `renameall` skills for Claude
+   and Codex.
 6. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
 7. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
    lacks them, so a bare repo still launches.
@@ -174,11 +181,12 @@ Five executables split the popover and terminal lifecycles:
   Windows Terminal window with that background scheme.
 - **AgentTerminalSession.exe** runs inside the new window and holds the named
   tint lease until the agent exits. It watches the live console palette and
-  restores the tint after a reset. Windows releases the lease if the terminal is
-  closed forcefully.
+  restores the tint after a reset. It also keeps an assigned session title in
+  place. Windows releases the lease if the terminal is closed forcefully.
 - **AgentTerminalColorWatchdog.exe** checks every live Agent Hub session from
   the resident host. It covers terminals opened before a helper update and acts
-  as a second repair path for unelevated sessions.
+  as a second repair path for unelevated sessions. It restores assigned titles
+  for sessions opened before title monitoring was installed.
 
 If the host isn't running when you click, the stub cold-starts it and passes the
 arguments through, so a shortcut always works.
@@ -193,6 +201,7 @@ State lives in `%LOCALAPPDATA%\AgentHub`:
 | `server-errors.log` | PM2 status and start failures from the server tile. |
 | `git-errors.log` | Git status, pull, and push failures from the project row. |
 | `terminal-color-recoveries.log` | Each automatic tint repair, including the observed color and Terminal settings timestamps. |
+| `session-titles\*.title` | Live terminal title assignments, removed when a title-aware session exits. |
 
 The Windows Terminal schemes live in
 `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\AgentHub`. The uninstaller
