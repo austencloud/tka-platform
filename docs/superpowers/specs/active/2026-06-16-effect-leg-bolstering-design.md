@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Effect Leg Bolstering — Design / Progress
 
-> **Drift check — 2026-08-02.** 3 of 4 legs survive; Echo's rework was **deleted** and replaced by Ghost
+> **DRIFT WARNING — 2026-08-02.** 3 of 4 legs survive; Echo's rework was **deleted** and replaced by Ghost
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

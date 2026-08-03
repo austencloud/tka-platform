@@ -10,6 +10,12 @@ last_triaged: 2026-08-02
 ---
 # Guide Example Pools — full rollout (2026-07-16)
 
+> **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. Wave 1 shipped — exactly four pool files exist (permutations pilot + gamma-loops, misc-permutations, type2-loops). Waves 2-4 are genuinely unbuilt: no pool file for prop-reversal-loops, full-reversal-loops, eight-letter-words, sixteen-count, or coordinated-triple. The spec is accurate; the detector reads neighbouring guide/landing traffic as progress.
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state.
+
+
 **Status:** pilot APPROVED (Austen, 2026-07-16: "I really like how this turned
 out" on the permutations page). This spec is the anticipated detail phase the
 design spec deferred ("Build shape (to spec in detail after pilot approval)").

@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Personal Museum — Design Document
 
-> **Drift check — 2026-08-02.** Entire data/service/state/component layer **and
+> **DRIFT WARNING — 2026-08-02.** Entire data/service/state/component layer **and
 > both hard rendering seams** built and tested (22 files under
 > `src/lib/features/personal-museum/`, 3 test suites).
 >

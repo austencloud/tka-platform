@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Security Hardening
 
-> **Drift check — 2026-08-02.** Its own "PARTIALLY SHIPPED" table is accurate 6 weeks on. F1/F5 need Austen's product decision on guest/anon access
+> **DRIFT WARNING — 2026-08-02.** Its own "PARTIALLY SHIPPED" table is accurate 6 weeks on. F1/F5 need Austen's product decision on guest/anon access
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

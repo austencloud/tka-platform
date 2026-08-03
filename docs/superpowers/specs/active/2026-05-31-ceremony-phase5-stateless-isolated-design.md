@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Ceremony Phase 5 + 3 + C — Stateless Conversion, Isolated-Clone Execution
 
-> **Drift check — 2026-08-02.** Phase C rename ~complete (173→13 files); Phase 5 + Phase 3 show no measurable progress
+> **DRIFT WARNING — 2026-08-02.** Phase C rename ~complete (173→13 files); Phase 5 + Phase 3 show no measurable progress
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

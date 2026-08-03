@@ -11,6 +11,12 @@ last_triaged: 2026-07-29
 
 # /q Account Funnel — Download Gate + Sign-in Chip — Design
 
+> **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. Correctly BLOCKED, not drifting: `depends_on` already names the external gate (one live Google sign-in to confirm post-auth export resume). The body reads "Implemented; verification blocked", which the detector cannot distinguish from a stale done-claim. Criterion 2 is known BROKEN, not merely unverified — see `remaining`.
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state.
+
+
 **Date:** 2026-07-05
 **Status:** Implemented; verification blocked
 **Author:** Claude (Fable 5) + Austen

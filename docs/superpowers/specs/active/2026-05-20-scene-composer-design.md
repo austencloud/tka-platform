@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Scene Composer — Design Spec
 
-> **Drift check — 2026-08-02.** Phases 1-3 live in Scene Lab Compose mode; museum editor migration (the dedup point) never happened
+> **DRIFT WARNING — 2026-08-02.** Phases 1-3 live in Scene Lab Compose mode; museum editor migration (the dedup point) never happened
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

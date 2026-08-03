@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Spatial Lab — Design Spec
 
-> **Drift check — 2026-08-02.** Shipped as a full **3D Threlte** scene, directly contradicting the spec's "pure 2D SVG, no Three.js" decision. No tests
+> **DRIFT WARNING — 2026-08-02.** Shipped as a full **3D Threlte** scene, directly contradicting the spec's "pure 2D SVG, no Three.js" decision. No tests
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

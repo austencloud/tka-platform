@@ -2,13 +2,19 @@
 status: backlog
 value: 2
 effort: M
-remaining: "Body status: Draft"
+remaining: 'Whole feature unbuilt. INTEGRATION TARGET IS STALE: MandalaViewerControls.svelte no longer exists anywhere in the repo (0 matches); the live surfaces are now MandalaControlDock.svelte (sequence-viewer) and MeditationControls.svelte (mandala/tabs/meditate). Re-scope against those before starting.'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Mandala Trails / Afterimage — Phase 2 Design Spec
+
+> **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. The named integration target `MandalaViewerControls.svelte` is GONE (0 repo matches) — the detector reads commit traffic on mandala paths as progress on this spec, but that traffic belongs to the control-dock consolidation that replaced the target. Feature itself remains unbuilt; re-scope onto `MandalaControlDock.svelte` / `MeditationControls.svelte` first.
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state.
+
 
 **Date:** 2026-05-25
 **Status:** Draft

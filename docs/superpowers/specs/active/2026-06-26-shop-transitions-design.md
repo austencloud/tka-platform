@@ -11,7 +11,7 @@ last_triaged: 2026-08-02
 
 # Shop Transitions — Design Spec
 
-> **Drift check — 2026-08-02.** Items 1-4 shipped past spec; item 5 (grid entrance stagger) never built. Its `depends_on` WSL blocker is stale
+> **DRIFT WARNING — 2026-08-02.** Items 1-4 shipped past spec; item 5 (grid entrance stagger) never built. Its `depends_on` WSL blocker is stale
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # 3D Scene Performance Wins
 
-> **Drift check — 2026-08-02.** Shader warm-up + most material sharing shipped; LOD, ObsidianPillars instancing, shadow-caster limiting did not
+> **DRIFT WARNING — 2026-08-02.** Shader warm-up + most material sharing shipped; LOD, ObsidianPillars instancing, shadow-caster limiting did not
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

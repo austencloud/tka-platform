@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # User Onboarding Overhaul — Umbrella
 
-> **Drift check — 2026-08-02.** Slices A, B shipped; D shipped copy-only; **Slice C unbuilt** — the only live gap
+> **DRIFT WARNING — 2026-08-02.** Slices A, B shipped; D shipped copy-only; **Slice C unbuilt** — the only live gap
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

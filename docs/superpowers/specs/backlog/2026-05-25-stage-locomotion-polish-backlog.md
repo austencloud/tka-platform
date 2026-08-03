@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Stage Locomotion — Polish Backlog
 
-> **Drift check — 2026-08-02.** Item 1 (inertialization) shipped; items 2-5 unbuilt
+> **DRIFT WARNING — 2026-08-02.** Item 1 (inertialization) shipped; items 2-5 unbuilt
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

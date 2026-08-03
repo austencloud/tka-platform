@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Effects Unification: Deferred Items Backlog
 
-> **Drift check — 2026-08-02.** Of 6 items: 1 fixed, **2 moot** (referenced code deleted), 3 genuinely open
+> **DRIFT WARNING — 2026-08-02.** Of 6 items: 1 fixed, **2 moot** (referenced code deleted), 3 genuinely open
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

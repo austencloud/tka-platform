@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Real Flow → TKA Sequence (LED Color-End Notation) — Design
 
-> **Drift check — 2026-08-02.** LED pipeline genuinely built; doc retains the **dead ArUco design inline** as a hazard. Real-clip validation tracked elsewhere
+> **DRIFT WARNING — 2026-08-02.** LED pipeline genuinely built; doc retains the **dead ArUco design inline** as a hazard. Real-clip validation tracked elsewhere
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

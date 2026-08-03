@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Inspect Panel Redesign — Live Pictograph + Tier-Aware Adjustment Editing
 
-> **Drift check — 2026-08-02.** Shipped, relocated to a footer dock; 4-tier picker narrowed to 2 and Default became editable, both undocumented
+> **DRIFT WARNING — 2026-08-02.** Shipped, relocated to a footer dock; 4-tier picker narrowed to 2 and Default became editable, both undocumented
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

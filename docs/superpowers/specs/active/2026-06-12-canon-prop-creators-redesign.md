@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Canon Prop + Browse Creators Redesign — Design
 
-> **Drift check — 2026-08-02.** 5 of 6 shipped; mobile title-row hide not done, and the panel was since redesigned
+> **DRIFT WARNING — 2026-08-02.** 5 of 6 shipped; mobile title-row hide not done, and the panel was since redesigned
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

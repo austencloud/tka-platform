@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Modular Kit Museum — Vertical Slice
 
-> **Drift check — 2026-08-02.** Kit instancing live for institutional wall-section only; corners/doorways never authored
+> **DRIFT WARNING — 2026-08-02.** Kit instancing live for institutional wall-section only; corners/doorways never authored
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

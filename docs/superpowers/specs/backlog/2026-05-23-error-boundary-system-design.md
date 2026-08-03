@@ -10,6 +10,12 @@ last_triaged: 2026-08-01
 ---
 # Error Boundary System — Design Spec
 
+> **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. Re-triaged 2026-08-01 and its own 2026-05-31 trailer is accurate; only the documented P3 residual remains. The detector's alarm comes from 969 commits touching broad shared paths, of which few concern this spec. Not a rebuild hazard.
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state.
+
+
 > **Implementation status (2026-05-31):** The original `remaining` ("all four phases
 > unstarted") was stale. Verification against the tree found the core already shipped:
 > - **Phase 1** — `src/routes/+error.svelte` exists, reuses `ErrorScreen` exactly as specced.

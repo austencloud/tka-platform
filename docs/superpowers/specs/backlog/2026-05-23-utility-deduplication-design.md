@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Utility Deduplication Design
 
-> **Drift check — 2026-08-02.** Phase 4 (word-simplifier) shipped independently; `math.ts`/`format.ts` never created, ~12 `lerp` definitions remain
+> **DRIFT WARNING — 2026-08-02.** Phase 4 (word-simplifier) shipped independently; `math.ts`/`format.ts` never created, ~12 `lerp` definitions remain
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

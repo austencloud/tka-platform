@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Unified GPU Render Pipeline — Design Spec
 
-> **Drift check — 2026-08-02.** Phases 0-1 shipped and **live in production by default** (WebGL2 trails); Phase 2 half-built unwired; Phase 3 built then **orphaned** (zero mounts); Phase 4 unused scaffolding
+> **DRIFT WARNING — 2026-08-02.** Phases 0-1 shipped and **live in production by default** (WebGL2 trails); Phase 2 half-built unwired; Phase 3 built then **orphaned** (zero mounts); Phase 4 unused scaffolding
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

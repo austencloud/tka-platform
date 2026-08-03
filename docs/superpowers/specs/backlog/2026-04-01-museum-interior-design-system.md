@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Museum Interior Design System
 
-> **Drift check — 2026-08-02.** 3 of 4 systems shipped verbatim; TV display system (Section 2) does not exist
+> **DRIFT WARNING — 2026-08-02.** 3 of 4 systems shipped verbatim; TV display system (Section 2) does not exist
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

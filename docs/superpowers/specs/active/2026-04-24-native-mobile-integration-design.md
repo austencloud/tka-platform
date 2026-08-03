@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # TKA Composer — Native Mobile Integration Design Spec
 
-> **Drift check — 2026-08-02.** Android + deep links + Capgo OTA + native Google sign-in shipped; **no `ios/` dir at all**, no store listings, no SQLite/share/BLE/NFC
+> **DRIFT WARNING — 2026-08-02.** Android + deep links + Capgo OTA + native Google sign-in shipped; **no `ios/` dir at all**, no store listings, no SQLite/share/BLE/NFC
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

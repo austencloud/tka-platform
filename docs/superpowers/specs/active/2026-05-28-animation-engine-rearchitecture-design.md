@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Animation Engine Re-Architecture — Fused Design & Handoff Spec
 
-> **Drift check — 2026-08-02.** 5 managers + plugin registry + HMR fix shipped; `StateSynchronizer` was **relocated, not dissolved** as specced
+> **DRIFT WARNING — 2026-08-02.** 5 managers + plugin registry + HMR fix shipped; `StateSynchronizer` was **relocated, not dissolved** as specced
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

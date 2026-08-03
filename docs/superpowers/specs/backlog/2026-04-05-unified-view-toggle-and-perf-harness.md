@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Unified View Toggle + Performance Test Harness
 
-> **Drift check — 2026-08-02.** Q-cycle shipped exactly; perf harness never built
+> **DRIFT WARNING — 2026-08-02.** Q-cycle shipped exactly; perf harness never built
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

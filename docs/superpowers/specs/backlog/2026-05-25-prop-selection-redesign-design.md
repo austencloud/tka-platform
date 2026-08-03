@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Prop Selection Redesign — Design Spec
 
-> **Drift check — 2026-08-02.** Visual half shipped verbatim; popover half abandoned for a flat per-variant grid. Vestigial badge code is dead
+> **DRIFT WARNING — 2026-08-02.** Visual half shipped verbatim; popover half abandoned for a flat per-variant grid. Vestigial badge code is dead
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.

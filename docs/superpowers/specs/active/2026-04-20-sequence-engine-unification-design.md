@@ -10,7 +10,7 @@ last_triaged: 2026-08-02
 ---
 # Sequence Engine Unification — Design Spec
 
-> **Drift check — 2026-08-02.** Phases 0-2 shipped via a **different** subtype architecture; Phase 3 (delete 5 app-side LOOP executors) still open — the bug that motivated the spec
+> **DRIFT WARNING — 2026-08-02.** Phases 0-2 shipped via a **different** subtype architecture; Phase 3 (delete 5 app-side LOOP executors) still open — the bug that motivated the spec
 >
 > Status lines below predate this check and are left intact deliberately.
 > This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
