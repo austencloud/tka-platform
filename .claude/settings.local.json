@@ -571,7 +571,18 @@
       "Bash(rm nul *)",
       "Bash(rm .tmp-sysload.ps1)",
       "Bash(rmdir feedback-images *)",
-      "Bash(rmdir \"~\")"
+      "Bash(rmdir \"~\")",
+      "Bash(where.exe claude)",
+      "Bash(where.exe codex)",
+      "Bash(where.exe pm2)",
+      "Bash(where.exe pnpm)",
+      "Bash(where.exe wt)",
+      "Bash(npm install *)",
+      "Bash(node_modules/.bin/vite --version)",
+      "Bash(pnpm install *)",
+      "Bash(winget install *)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:\\\\tka-platform\\\\launchers\\\\start-dev.ps1\")",
+      "Read(//c/Users/Austen/.cloudflared/**)"
     ]
   },
   "enableAllProjectMcpServers": true,
