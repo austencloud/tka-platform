@@ -38,9 +38,6 @@ class Popup : Window
     string _serverManager, _serverApp, _serverConfig, _serverConfigurationError;
     int _serverPort;
     string _appUrl = "";
-    Border _appBtn;
-    TextBlock _appTitle, _appSubtitle;
-    bool _appOpening;
     long _stubStartTicks;
     long _deactHideTicks; string _deactHideProject = "";
     int _rawX, _rawY;
@@ -288,7 +285,7 @@ class Popup : Window
         Log("prewarm begin");
         _project = ""; _name = "warmup"; _icon = ""; _lastAgent = "claude";
         _serverManager = ""; _serverApp = ""; _serverConfig = ""; _serverPort = 0; _serverControl = null;
-        _appUrl = ""; _appBtn = null; _appTitle = null; _appSubtitle = null; _appOpening = false;
+        _appUrl = "";
         _gitControl = null; _gitPanel = null; _gitStatus = GitProjectStatus.Checking();
         Content = BuildCard();
         Left = -30000; Top = -30000;
@@ -395,9 +392,7 @@ class Popup : Window
 
     void ConfigureApp(string url)
     {
-        _appOpening = false;
         _appUrl = "";
-        _appBtn = null; _appTitle = null; _appSubtitle = null;
         if (string.IsNullOrEmpty(url)) return;
         Uri parsed;
         if (Uri.TryCreate(url, UriKind.Absolute, out parsed) &&
@@ -576,7 +571,7 @@ class Popup : Window
         tiles.Add(_claudeBtn);
         tiles.Add(_codexBtn);
         if (hasServer) { _serverBtn = ServerChoice(); tiles.Add(_serverBtn); }
-        if (hasApp) { _appBtn = AppChoice(); tiles.Add(_appBtn); }
+        if (hasApp) tiles.Add(AppChoice());
 
         var grid = new Grid();
         double gap = tiles.Count == 2 ? 16 : 12;
@@ -632,62 +627,29 @@ class Popup : Window
 
     Border AppChoice()
     {
+        Uri parsed;
+        string host = Uri.TryCreate(_appUrl, UriKind.Absolute, out parsed) ? parsed.Authority : "";
         var b = new Border { CornerRadius = new CornerRadius(14), Height = 104, Cursor = System.Windows.Input.Cursors.Hand, Background = Brush("#FF5B5BD6") };
-        _appBtn = b;   // assign before UpdateAppVisual below, or the first paint is blank
         var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        _appTitle = new TextBlock { Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") };
-        _appSubtitle = new TextBlock { Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") };
-        sp.Children.Add(_appTitle);
-        sp.Children.Add(_appSubtitle);
+        sp.Children.Add(new TextBlock { Text = "Open app", Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
+        sp.Children.Add(new TextBlock { Text = host, Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") });
         sp.Children.Add(new TextBlock { Text = "4", Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
         b.Child = sp;
-        b.MouseEnter += delegate { if (!_appOpening) b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = _appOpening ? 0.78 : 1.0; };
+        b.ToolTip = "Open " + _appUrl + " in your default browser";
+        b.MouseEnter += delegate { b.Opacity = 0.86; };
+        b.MouseLeave += delegate { b.Opacity = 1.0; };
         b.MouseLeftButtonUp += delegate { OpenApp("mouse"); };
-        UpdateAppVisual();
         return b;
     }
 
-    // The app tile is server-aware: with the server already listening it opens
-    // the URL immediately; from Offline it starts the server first and opens
-    // the page once the port is ready; from Starting it just waits for the port.
+    // Opens the page, nothing else. Starting or restarting the server is the
+    // server tile's job — one action per tile, no overlap.
     void OpenApp(string source)
     {
-        if (string.IsNullOrEmpty(_appUrl) || _appOpening) return;
-        Log("open app requested by " + source + " from server state " + _serverState);
-        bool mustWait = _serverControl != null &&
-            (_serverState == DevServerState.Offline || _serverState == DevServerState.Starting);
-        if (!mustWait)
-        {
-            OpenBrowser(_appUrl);
-            HideIt();
-            return;
-        }
-        if (_serverState == DevServerState.Offline && !_serverBusy) ControlServer(source);
-        BeginWaitAndOpen();
-    }
-
-    void BeginWaitAndOpen()
-    {
-        int generation = _serverGeneration;
-        Pm2DevServerController control = _serverControl;
-        string url = _appUrl;
-        _appOpening = true;
-        UpdateAppVisual();
-        ThreadPool.QueueUserWorkItem(delegate
-        {
-            bool ready = control.WaitUntilReady(180);
-            // Open even if the card was reopened meanwhile — the user asked for it.
-            if (ready) OpenBrowser(url);
-            else Log("open app timed out waiting for port readiness");
-            Dispatcher.BeginInvoke(new Action(delegate
-            {
-                if (generation != _serverGeneration || control != _serverControl) return;
-                _appOpening = false;
-                UpdateAppVisual();
-                if (ready) HideIt();
-            }));
-        });
+        if (string.IsNullOrEmpty(_appUrl)) return;
+        Log("open app requested by " + source);
+        OpenBrowser(_appUrl);
+        HideIt();
     }
 
     void OpenBrowser(string url)
@@ -709,36 +671,6 @@ class Popup : Window
             Log("opened " + parsed.AbsoluteUri + " in the default browser");
         }
         catch (Exception ex) { Log("browser open failed: " + ex.Message); }
-    }
-
-    void UpdateAppVisual()
-    {
-        if (_appBtn == null || _appTitle == null || _appSubtitle == null) return;
-        Uri parsed;
-        string host = Uri.TryCreate(_appUrl, UriKind.Absolute, out parsed) ? parsed.Authority : "";
-        bool serverConfigured = _serverControl != null;
-        string title, help;
-        if (_appOpening)
-        {
-            title = "Opening"; help = "Waiting for the server, then opening " + _appUrl;
-        }
-        else if (serverConfigured && _serverState == DevServerState.Offline)
-        {
-            title = "Start & open"; help = "Start the development server, then open " + _appUrl;
-        }
-        else if (serverConfigured && _serverState == DevServerState.Starting)
-        {
-            title = "Open app"; help = "Open " + _appUrl + " once the server is ready";
-        }
-        else
-        {
-            title = "Open app"; help = "Open " + _appUrl + " in your default browser";
-        }
-        _appTitle.Text = title;
-        _appSubtitle.Text = host;
-        _appBtn.Opacity = _appOpening ? 0.78 : 1.0;
-        _appBtn.Cursor = _appOpening ? System.Windows.Input.Cursors.Arrow : System.Windows.Input.Cursors.Hand;
-        _appBtn.ToolTip = help;
     }
 
     void BeginServerStatusCheck()
@@ -849,7 +781,6 @@ class Popup : Window
             ? System.Windows.Input.Cursors.Arrow
             : System.Windows.Input.Cursors.Hand;
         _serverBtn.ToolTip = help;
-        UpdateAppVisual();
     }
 
     void LogServerError(string detail)

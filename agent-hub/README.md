@@ -49,10 +49,9 @@ errors are shown on the tile and written to
 `%LOCALAPPDATA%\AgentHub\server-errors.log`.
 
 The Open app tile launches the project's `appUrl` in your default browser, with
-whatever profile and sign-in state that browser already has. It is server-aware:
-with the server listening it opens the page immediately; with the server offline
-it reads Start & open, starts the server through PM2, waits for the port, then
-opens the page. Only absolute `http://` and `https://` URLs are accepted.
+whatever profile and sign-in state that browser already has. It does exactly one
+thing: open the page. Starting or restarting the server stays on the server
+tile. Only absolute `http://` and `https://` URLs are accepted.
 
 Every Git project gets a compact status row with its branch, ahead and behind
 counts, and changed-file count. Pull is available only for a clean worktree and
