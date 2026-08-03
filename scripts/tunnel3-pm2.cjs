@@ -1,19 +1,19 @@
-// pm2 entry point for the tka-dev2 Cloudflare tunnel (dev2.tkaflowarts.com ->
+// pm2 entry point for the tka-dev3 Cloudflare tunnel (dev3.tkaflowarts.com ->
 // this machine's https://localhost:5173). Machine assignment (2026-08-03):
 // dev = d1 (primary desktop), dev2 = d2 (office desktop), dev3 = laptop.
-// Runs independently of HOW vite is started (manual terminal or pm2 tka-dev)
-// — it just forwards to whatever serves :5173. Same shim pattern as
-// start-dev-pm2.cjs (pm2's direct .exe spawning is unreliable on Windows).
+// The laptop previously ran tka-dev2; that hostname now belongs to d2, so the
+// laptop moves here. Runs independently of HOW vite is started — it just
+// forwards to whatever serves :5173. Same shim pattern as start-dev-pm2.cjs.
 //
 // Token-based so the machine only needs the token file, not cert.pem or the
 // tunnel credentials json. Get it on any logged-in machine with
-// `cloudflared tunnel token tka-dev2` and save it (one line, no trailing
-// newline matters not) to %USERPROFILE%\.cloudflared\tka-dev2.token
+// `cloudflared tunnel token tka-dev3` and save it to
+// %USERPROFILE%\.cloudflared\tka-dev3.token
 const { spawn, execSync } = require("child_process");
 const { readFileSync } = require("fs");
 const { join } = require("path");
 
-const tokenFile = join(process.env.USERPROFILE, ".cloudflared", "tka-dev2.token");
+const tokenFile = join(process.env.USERPROFILE, ".cloudflared", "tka-dev3.token");
 const token = readFileSync(tokenFile, "utf8").trim();
 
 const child = spawn(
