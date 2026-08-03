@@ -6,7 +6,7 @@
  * are the same event told twice — a phone reads the code, and the card's figure
  * comes alive — so they cannot run on separate timers without drifting apart.
  *
- * TRIGGERED, NOT LOOPED. This used to run itself on an eight-second cycle, and
+ * TRIGGERED, NOT LOOPED. This used to run itself on an eight-second pass, and
  * a demo that keeps scanning a card nobody asked it to scan reads as a banner
  * ad. Austen (2026-08-02): "Maybe there should be a little button that says
  * scan the code that activates the flow ... because right now it's just
@@ -14,57 +14,56 @@
  *
  * So the cue has exactly one entry point, `scan()`, and it runs the pass once:
  *
- *   rest ──scan()──▶ rise 900 ──▶ sweep 1300 ──▶ draw 3600 ──▶ played
- *                                                                 │
- *                                     └──────── scan() ───────────┘
+ *   rest ──scan()──▶ aim 900 ──▶ lock 900 ──▶ opening 620 ──▶ open
+ *                                                               │
+ *                                 └──────── scan() ─────────────┘
  *
  * The old 2200ms idle beat is gone: the press IS the beat.
  *
- * `played` is a resting state, not an off state. `drawActive` latches at the
- * first sweep and never clears, so once the card has been scanned its sequence
- * keeps playing — that is the product's claim, and tearing the engine down and
- * rebuilding it (a full loop/orchestrator/canvas boot) on every pass would be
- * expensive as well as wrong. What does NOT repeat is the CUE: the phone and
- * the sweep only ever appear because someone pressed the button. A second press
- * replays them, and `cycle` increments so the back card flares again on the new
- * pass, keeping the cause-and-effect reading.
+ * `open` is a resting state, not an off state. `armed` latches when the phone
+ * first aims and never clears: it is what boots the iframe, and the scan page
+ * stays up afterwards because that is what a phone does — you do not scan a
+ * card and watch the page leave. What does NOT repeat is the choreography. A
+ * second press runs it again, and `pass` increments so a consumer can restart
+ * per-pass effects without remounting anything.
  *
- * Reduced motion parks the whole thing: the phase stays `rest`, `drawActive`
- * stays false, and `available` is false so the host can drop the button — it
- * exists only to start motion, and offering a control that must do nothing is
- * worse than not offering it.
+ * Reduced motion skips the CHOREOGRAPHY, not the payoff. Pressing still has a
+ * real result now — the actual scan page appears — so the button stays, and the
+ * host jumps straight to `open` instead of walking the three beats. That is why
+ * `available` no longer depends on motion at all.
  */
 
 export type ScanCueVariant = "phone" | "pulse";
 
 /**
- * `rest` is before any scan, `rise` brings the cue in, `sweep` reads the code,
- * `draw` is the back card's turn, and `played` is the card left playing.
+ * `rest` is before any scan, `aim` leans the phone in on its camera view,
+ * `lock` is the code recognised (the chip pops), `opening` swipes the screen up
+ * into the real /q, and `open` is the scan page left standing.
  */
-export type ScanPhase = "rest" | "rise" | "sweep" | "draw" | "played";
+export type ScanPhase = "rest" | "aim" | "lock" | "opening" | "open";
 
 /** The phases that advance on their own, and how long each holds. */
-type RunningPhase = "rise" | "sweep" | "draw";
+type RunningPhase = "aim" | "lock" | "opening";
 
 const PHASE_MS: Record<RunningPhase, number> = {
-  rise: 900,
-  sweep: 1300,
-  draw: 3600,
+  aim: 900,
+  lock: 900,
+  opening: 620,
 };
 
 const NEXT_PHASE: Record<RunningPhase, ScanPhase> = {
-  rise: "sweep",
-  sweep: "draw",
-  draw: "played",
+  aim: "lock",
+  lock: "opening",
+  opening: "open",
 };
 
 export interface HeroScanTimeline {
   readonly phase: ScanPhase;
-  /** True once the first sweep has armed the back card's player. Never returns
-   *  to false — see the module comment. */
-  readonly drawActive: boolean;
-  /** Increments on every sweep, so the back card can flare per pass. */
-  readonly cycle: number;
+  /** True once the phone has aimed at least once: boots the iframe. Never
+   *  returns to false — see the module comment. */
+  readonly armed: boolean;
+  /** Increments on every pass. */
+  readonly pass: number;
   readonly reducedMotion: boolean;
   /** A pass is playing; the trigger stays inert until it finishes. */
   readonly running: boolean;
@@ -80,15 +79,15 @@ export interface HeroScanTimeline {
 
 export function createHeroScanTimeline(): HeroScanTimeline {
   let phase = $state<ScanPhase>("rest");
-  let drawActive = $state(false);
-  let cycle = $state(0);
+  let armed = $state(false);
+  let pass = $state(0);
   let reducedMotion = $state(false);
   let timer: ReturnType<typeof setTimeout> | null = null;
   let mq: MediaQueryList | null = null;
   let onMediaChange: ((e: MediaQueryListEvent) => void) | null = null;
 
   const isRunning = (p: ScanPhase): p is RunningPhase =>
-    p === "rise" || p === "sweep" || p === "draw";
+    p === "aim" || p === "lock" || p === "opening";
 
   function clear(): void {
     if (timer !== null) {
@@ -106,9 +105,9 @@ export function createHeroScanTimeline(): HeroScanTimeline {
       timer = null;
       const next = NEXT_PHASE[current];
       phase = next;
-      if (next === "sweep") {
-        cycle += 1;
-        drawActive = true;
+      if (next === "lock") {
+        pass += 1;
+        armed = true;
       }
       schedule();
     }, PHASE_MS[current]);
@@ -118,11 +117,11 @@ export function createHeroScanTimeline(): HeroScanTimeline {
     get phase() {
       return phase;
     },
-    get drawActive() {
-      return drawActive;
+    get armed() {
+      return armed;
     },
-    get cycle() {
-      return cycle;
+    get pass() {
+      return pass;
     },
     get reducedMotion() {
       return reducedMotion;
@@ -131,14 +130,23 @@ export function createHeroScanTimeline(): HeroScanTimeline {
       return isRunning(phase);
     },
     get scanned() {
-      return drawActive;
+      return armed;
     },
     get available() {
-      return !reducedMotion;
+      // Always. The button's payoff is the real scan page, not the motion.
+      return true;
     },
     scan(): void {
-      if (reducedMotion || isRunning(phase)) return;
-      phase = "rise";
+      if (isRunning(phase)) return;
+      if (reducedMotion) {
+        // Skip the three beats, keep the result: the page simply appears.
+        clear();
+        pass += 1;
+        armed = true;
+        phase = "open";
+        return;
+      }
+      phase = "aim";
       schedule();
     },
     start(): void {
@@ -146,11 +154,14 @@ export function createHeroScanTimeline(): HeroScanTimeline {
       mq = window.matchMedia("(prefers-reduced-motion: reduce)");
       onMediaChange = (e) => {
         reducedMotion = e.matches;
-        // Turning reduced motion ON mid-pass parks it immediately. Turning it
-        // OFF starts nothing — nothing here ever starts by itself.
-        if (e.matches) {
+        // Turning reduced motion ON mid-pass lands it immediately rather than
+        // abandoning it: the visitor asked for the result without the motion,
+        // and they had already asked for the result. Turning it OFF starts
+        // nothing — nothing here ever starts by itself.
+        if (e.matches && isRunning(phase)) {
           clear();
-          phase = "rest";
+          armed = true;
+          phase = "open";
         }
       };
       mq.addEventListener("change", onMediaChange);
