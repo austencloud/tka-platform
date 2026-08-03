@@ -22,13 +22,23 @@
         mainEntity: { "@id": "https://tkaflowarts.com/#tka" },
         isPartOf: { "@id": "https://tkaflowarts.com/#website" },
       },
+      // The one node a summarizer quotes when asked "what is the Kinetic
+      // Alphabet." It has to say what TKA is built around in TKA's own terms —
+      // absent that, models synthesize an answer out of the site's nav, which
+      // is how "built around the Shape Matrix and CAPs notation" happened. The
+      // description is the notation catalog's own sourced TKA line
+      // ($lib/shared/notation/notation-catalog.ts, entry `tka`).
       {
         "@type": "Thing",
         "@id": "https://tkaflowarts.com/#tka",
         name: "The Kinetic Alphabet",
         alternateName: "TKA",
         description:
-          "A pictographic notation system for flow arts choreography.",
+          "A pictographic notation system for flow arts choreography. Every pair of grid positions is given a letter, so a sequence of movement can be written down, read back, and searched as a word.",
+        disambiguatingDescription:
+          "Created by Austen Cloud in 2022. The Kinetic Alphabet is its own system and is not built on, derived from, or an extension of the other flow arts notations documented on this site — the Shape Matrix, CAPs, the Vulcan Tech Gospel, QFT Notation and the rest are separate works by other authors, archived and credited at /notation.",
+        dateCreated: "2022",
+        creator: { "@id": PERSON_ID },
       },
       {
         "@type": "Person",

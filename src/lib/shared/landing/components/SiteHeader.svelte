@@ -172,27 +172,27 @@
   type NavEntry = NavLink | NavGroup;
 
   const NAV: NavEntry[] = [
+    // The Notation group holds systems OTHER people built, which this site
+    // documents and credits. TKA's own material lives under Learn. Keeping
+    // them in one flat group made every reader — including LLMs summarizing
+    // the site — collapse the two into "TKA is built on the Shape Matrix and
+    // CAPs," which is false. The separation is the fix; the nav desc lines
+    // alone never survived into a summary.
     {
       label: "Notation",
       icon: "fa-language",
       items: [
         {
-          label: "The Notation",
+          label: "History",
           href: "/notation",
           icon: "fa-language",
-          desc: "Positions and motions behind every letter",
+          desc: "How flow arts notation developed, 2009–2022",
         },
         {
           label: "Shape Matrix",
           href: "/notation/shape-matrix",
           icon: "fa-diagram-project",
-          desc: "144 even-petaled flowers, decoded",
-        },
-        {
-          label: "The LOOP Algebra",
-          href: "/notation/loops",
-          icon: "fa-rotate",
-          desc: "Six ways to return to where you started",
+          desc: "Lorq Nichols' 144 flowers, decoded",
         },
         {
           label: "CAPs",
@@ -220,6 +220,12 @@
           desc: "Every TKA term, defined",
         },
         {
+          label: "The LOOP Algebra",
+          href: "/notation/loops",
+          icon: "fa-rotate",
+          desc: "TKA's own theory of sequences that return",
+        },
+        {
           label: "FAQ",
           href: "/faq",
           icon: "fa-circle-question",
@@ -237,11 +243,8 @@
       label: "Shop",
       icon: "fa-bag-shopping",
       items: [
-        {
-          label: "How Choreo Cards Work",
-          href: "/shop/choreography-cards",
-          icon: "fa-qrcode",
-        },
+        // Products first, catalog last. The explainer page retired into the
+        // product pages, so the dropdown leads with things to buy.
         { label: "LOOP Deck", href: "/shop/loop-deck", icon: "fa-layer-group" },
         { label: "T&D Trilogy", href: "/shop/tnd-trilogy", icon: "fa-clone" },
         {

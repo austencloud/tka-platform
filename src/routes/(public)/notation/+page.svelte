@@ -14,7 +14,9 @@
   import PlayableArchive from "./_components/archive/PlayableArchive.svelte";
   import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 
-  const TITLE = "Flow Arts Notation: Who Wrote It Down | The Kinetic Alphabet";
+  // The archive documents eight systems, seven of them other people's. A
+  // "| The Kinetic Alphabet" suffix here implied it owned all of them.
+  const TITLE = "Flow Arts Notation Archive: Who Wrote It Down";
   const DESCRIPTION =
     "A playable archive of eight systems for writing flow arts down, from CAPs on the Home of Poi forums in 2009 to the Kinetic Alphabet. Each entry links to its creator's own material.";
   const URL = "https://tkaflowarts.com/notation";

@@ -78,7 +78,13 @@
     "description": "${DESCRIPTION}",
     "inLanguage": "en-US",
     "author": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
-    "publisher": { "@type": "Organization", "name": "The Kinetic Alphabet", "url": "https://tkaflowarts.com/" }
+    "publisher": { "@type": "Organization", "name": "The Kinetic Alphabet", "url": "https://tkaflowarts.com/" },
+    "about": {
+      "@type": "CreativeWork",
+      "name": "The LOOP Algebra",
+      "creator": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
+      "isPartOf": { "@id": "https://tkaflowarts.com/#tka" }
+    }
   }
   </script>`}
   {@html `<script type="application/ld+json">
@@ -95,7 +101,10 @@
 </Seo>
 
 <div class="editorial loops-page">
-  <a class="back-link" href="/notation">← Flow Arts Notation</a>
+  <!-- Back to the Guide, not the archive. The LOOP Algebra is TKA's own
+       theory; pointing it back at /notation filed it alongside the systems
+       other people built, which is the framing this page had to shed. -->
+  <a class="back-link" href="/guide">← The Kinetic Alphabet Guide</a>
 
   <!-- 1. Hero — zero-prerequisite hook, real renderer -->
   <header class="editorial-header">
