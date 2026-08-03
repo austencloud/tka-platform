@@ -185,8 +185,8 @@ Enumerated from `grep 'class="chip|class="pill|class="filter-chip|...'` (197 fil
 **Phase 6 — choreo-card subset / loop catalog bars (M, higher-traffic).**
 - `src/lib/features/choreo-card/components/card-preview/SubsetFilterBar.svelte`, `choreo-card/components/LoopCatalogFilters.svelte` (verify S/M each). These sit near already-migrated FilterChipBase consumers (`CatalogBrowseFilterBar`, `FamilyFilterChip`) so the conversion pattern is established; ship after Phase 0 has proven the shared base in this feature.
 
-**Phase 7 — level7-lab + remaining lab bars (S/M, isolated labs, last).**
-- `src/lib/features/levels/level7-lab/Level7LabModule.svelte`, plus any lab filter bar still on raw `class="chip"` after the above (re-grep at phase start to get the current residue). Labs are internal/lower-stakes → safe to do last.
+**Phase 7 — level6-lab + remaining lab bars (S/M, isolated labs, last).**
+- `src/lib/features/levels/level6-lab/Level6LabModule.svelte`, plus any lab filter bar still on raw `class="chip"` after the above (re-grep at phase start to get the current residue). Labs are internal/lower-stakes → safe to do last.
 
 > The remaining ~180 `class="chip|pill"` files from the grep are predominantly: display-only badges/pills, nav pills (`animation-panel/pill-nav/*` — explicitly KEEP per `feedback_keep_pill_nav`), effect-customize sliders, and the keep-separate primitives below. They are NOT interactive filter bars and are out of scope. Each phase re-greps its own feature to confirm no raw filter buttons were missed.
 
@@ -258,5 +258,5 @@ Defer this phase indefinitely unless the inconsistency actively causes confusion
 | 4 | Feedback manage bar | 1 (FilterButton) | align/keep (recommend keep) |
 | 5 | Compose/landing video bars | 1 migrate (+ 1 keep: MorphChip) | mixed S/M |
 | 6 | choreo-card subset/loop bars | 2 (verify) | M → FilterChipBase |
-| 7 | level7-lab + lab residue | 1+ (re-grep) | S/M |
+| 7 | level6-lab + lab residue | 1+ (re-grep) | S/M |
 | F | Naming cleanup (optional) | ~6 renames | cosmetic |

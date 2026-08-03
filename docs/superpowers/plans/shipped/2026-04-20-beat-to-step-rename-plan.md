@@ -232,7 +232,7 @@ Items 1–3 must be answered before Wave 1 starts. Item 4 can resolve mid-flight
 
 ## Wave 8 — Labs, levels, write, authoring tools
 
-**Scope:** `src/lib/features/assemble-lab/`, `disassemble-lab/`, `levels/`, `level5-lab/`, `level7-lab/`, `loop-labeler/`, `phrase-effort-lab/`, `effort-lab/`, `mandala-generator/`, `write/`, `duration-lab/`, `hand-path-builder/`, `hand-path-explorer/`, `hand-paths/`, `trigrid-lab/`, `vtg-lab/`, `skewlab/`, `constraint-layout-lab/`.
+**Scope:** `src/lib/features/assemble-lab/`, `disassemble-lab/`, `levels/`, `level5-lab/`, `level6-lab/`, `loop-labeler/`, `phrase-effort-lab/`, `effort-lab/`, `mandala-generator/`, `write/`, `duration-lab/`, `hand-path-builder/`, `hand-path-explorer/`, `hand-paths/`, `trigrid-lab/`, `vtg-lab/`, `skewlab/`, `constraint-layout-lab/`.
 
 **Blocks on:** Wave 5.
 

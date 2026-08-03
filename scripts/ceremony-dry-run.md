@@ -115,7 +115,7 @@ Generated: 2026-05-31T07:56:44.553Z
 - `src/lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte`: `import('$lib/shared/foundation/domain/models/Letter')`
 - `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/levels/level5-lab/Level5LabModule.svelte')`
 - `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/skewlab/SkewLabModule.svelte')`
-- `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/levels/level7-lab/Level7LabModule.svelte')`
+- `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/levels/level6-lab/Level6LabModule.svelte')`
 - `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/levels/conjoined-grid/ConjoinedGridTab.svelte')`
 - `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/levels/poi-lab/PoiLabModule.svelte')`
 - `src/lib/features/museum/MuseumModule.svelte`: `import('./components/game/DimensionFlipProof.svelte')`
@@ -1196,4 +1196,3 @@ Generated: 2026-05-31T07:56:44.553Z
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
 | 0 | 0 | 0 | 0 | 2 |
-

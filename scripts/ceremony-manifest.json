@@ -356,7 +356,7 @@
       },
       {
         "file": "src/lib/features/levels/LevelsModule.svelte",
-        "importPath": "$lib/features/levels/level7-lab/Level7LabModule.svelte"
+        "importPath": "$lib/features/levels/level6-lab/Level6LabModule.svelte"
       },
       {
         "file": "src/lib/features/levels/LevelsModule.svelte",
@@ -5298,12 +5298,12 @@
         "getter": "getSettings"
       },
       {
-        "file": "src/lib/features/levels/level7-lab/Level7LabModule.svelte",
+        "file": "src/lib/features/levels/level6-lab/Level6LabModule.svelte",
         "variable": "settings",
         "getter": "getSettings"
       },
       {
-        "file": "src/lib/features/levels/level7-lab/Level7LabModule.svelte",
+        "file": "src/lib/features/levels/level6-lab/Level6LabModule.svelte",
         "variable": "settings",
         "getter": "getSettings"
       },
@@ -39976,7 +39976,7 @@
             "line": 12
           },
           {
-            "file": "src/lib/features/levels/level7-lab/Level7LabModule.svelte",
+            "file": "src/lib/features/levels/level6-lab/Level6LabModule.svelte",
             "importPath": "$lib/shared/pictograph/prop/domain/enums/PropType",
             "line": 27
           },
@@ -41390,7 +41390,7 @@
             "line": 3
           },
           {
-            "file": "src/lib/features/levels/level7-lab/Level7LabModule.svelte",
+            "file": "src/lib/features/levels/level6-lab/Level6LabModule.svelte",
             "importPath": "$lib/shared/pictograph/shared/domain/models/MotionData",
             "line": 15
           },
@@ -42380,7 +42380,7 @@
             "line": 16
           },
           {
-            "file": "src/lib/features/levels/level7-lab/Level7LabModule.svelte",
+            "file": "src/lib/features/levels/level6-lab/Level6LabModule.svelte",
             "importPath": "$lib/shared/pictograph/shared/domain/models/PictographData",
             "line": 28
           },
