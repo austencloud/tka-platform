@@ -568,37 +568,47 @@
       });
     }
 
-    // ══ LIGHTS ══ eleven, all seeded off layout rects. Nothing in this room
-    // is allowed to render 100% black.
+    // ══ LIGHTS ══ twelve, all seeded off layout rects. Nothing in this room
+    // is allowed to render 100% black. Intensities are sized for decay=2
+    // (physically-correct quadratic falloff): a value that must still read at
+    // r metres needs roughly (target · r²), which is why these look large.
     lights.push(
       {
         // the waterline you wade into on the approach
         id: "approach-waterline",
         pos: [cx(approach), WATERLINE_Y + 1.2, approach.minZ + 1],
         color: "#4a8aa8",
-        intensity: 2.2,
+        intensity: 8,
+        distance: 14,
+      },
+      {
+        // the door of water — the descent mouth must read, not vanish
+        id: "descent-mouth",
+        pos: [cx(layout.descentStair), WATERLINE_Y + 0.6, layout.descentStair.minZ + 1],
+        color: "#4a8aa8",
+        intensity: 7,
         distance: 12,
       },
       {
         id: "gallery-bend-west",
         pos: [cx(northRun), GALLERY_ROOF_Y - 0.5, westRun.minZ],
         color: "#5fbfd8",
-        intensity: 2.4,
-        distance: 14,
+        intensity: 8,
+        distance: 16,
       },
       {
         id: "gallery-bend-north",
         pos: [cx(northRun), GALLERY_ROOF_Y - 0.5, eastBend.maxZ],
         color: "#5fbfd8",
-        intensity: 2.4,
-        distance: 14,
+        intensity: 8,
+        distance: 16,
       },
       {
         id: "gallery-bloom",
         pos: [bloomAnchor.x, GALLERY_FLOOR_Y + 1.2, bloomAnchor.z],
         color: CAVE_GLOW,
-        intensity: 3.0,
-        distance: 16,
+        intensity: 10,
+        distance: 18,
       },
       {
         // warm spill down the surfacing stair — visible through the water from
@@ -606,29 +616,29 @@
         id: "surfacing-spill",
         pos: [cx(surfacingUpper), CAUSEWAY_Y + 1.6, surfacingUpper.minZ + 1],
         color: FIRELIGHT,
-        intensity: 3.4,
-        distance: 18,
+        intensity: 14,
+        distance: 22,
       },
       {
         id: "apron-fill",
         pos: [cx(apron), CAUSEWAY_Y + 4.5, cz(apron)],
         color: "#6f93a6",
-        intensity: 2.6,
-        distance: 30,
+        intensity: 14,
+        distance: 34,
       },
       {
         id: "south-fill",
         pos: [cx(threshold), CAUSEWAY_Y + 3.5, cz(threshold)],
         color: "#8a7a62",
-        intensity: 2.0,
-        distance: 20,
+        intensity: 8,
+        distance: 22,
       },
       {
         id: "waterfall-accent",
         pos: [cx(waterfall), CAUSEWAY_Y + 2.2, cz(waterfall)],
         color: "#bfe9ff",
-        intensity: 2.6,
-        distance: 14,
+        intensity: 9,
+        distance: 16,
       }
     );
     alcoves.forEach((a, i) => {
@@ -636,8 +646,8 @@
         id: `alcove-firelight-${i}`,
         pos: [a.x, SHELF_Y + 1.6, shore.minZ + NICHE_DEPTH - 0.9],
         color: FIRELIGHT,
-        intensity: 4.2,
-        distance: 14,
+        intensity: 18,
+        distance: 20,
       });
     });
 
