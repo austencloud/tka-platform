@@ -86,7 +86,7 @@ export interface LOOPDetectionResult {
   /**
    * Integer LOOP period: count of passes required to return to identity in
    * both location and orientation. 1 = non-LOOP. 2 = halved. 4 = quartered.
-   * 8 = octaved (reserved for L5/L7).
+   * 8 = octaved (reserved for L5/L6).
    */
   period: number;
 

@@ -15,7 +15,7 @@ The current LOOP system conflates two independent cycle axes — positional and 
 
 3. **The "Complete Cycle" workaround exposes an incomplete abstraction.** When a generated LOOP closes positionally but not orientationally, the UI prompts the user to extend the sequence — patching a fundamental generator gap at runtime instead of producing a closed LOOP directly.
 
-4. **Terminology is rotation-centric.** "Slice" was inherited from the L1 Quartered Rotated Deck. It doesn't generalize to the non-rotation case, and it doesn't scale to L5 (grid-D8) or L7 (wheel-D8) where period 8 becomes possible.
+4. **Terminology is rotation-centric.** "Slice" was inherited from the L1 Quartered Rotated Deck. It doesn't generalize to the non-rotation case, and it doesn't scale to L5 (grid-D8) or L6 (wheel-D8) where period 8 becomes possible.
 
 5. **Deck taxonomy cannot express the real space.** The existing L1 Quartered Rotated Deck (192 sequences) is one specific intersection. Quartered Mirrored, Quartered Swapped, Quartered Rotated-in-Orientation, and their combinations are distinct deck families that the current model cannot enumerate or surface.
 
@@ -30,7 +30,7 @@ This design addresses all five by introducing **period** as a first-class intege
 Every LOOP has a **period** — a positive integer equal to the number of structural subdivisions in the closed cycle. The sequence is composed of `period` consecutive chunks, each related to the previous by the LOOP's transformation set. After `period` chunks, both positions AND orientations return to their starting state.
 
 Current system: period ∈ {2 (halved), 4 (quartered)}.
-After this design: period ∈ {1, 2, 4} at L1–L4; extends to {1, 2, 4, 8} at L5+ (grid-D8) and L7+ (wheel-D8).
+After this design: period ∈ {1, 2, 4} at L1–L4; extends to {1, 2, 4, 8} at L5+ (grid-D8) and L6+ (wheel-D8).
 
 Period replaces the `sliceSize` enum everywhere — in data, UI, generator, detector, and docs.
 
@@ -48,7 +48,7 @@ Period replaces the `sliceSize` enum everywhere — in data, UI, generator, dete
 
 Floats contribute ±0.5 turns to this arithmetic (sign is a direction convention, magnitude is fixed).
 
-**Total period = LCM(positional, orientational)** — all-powers-of-2 so LCM collapses to max in {1, 2, 4}. At L5/L7 it stays max in {1, 2, 4, 8}.
+**Total period = LCM(positional, orientational)** — all-powers-of-2 so LCM collapses to max in {1, 2, 4}. At L5/L6 it stays max in {1, 2, 4, 8}.
 
 ### Domains
 
@@ -76,7 +76,7 @@ Half turns traverse between zones (in → clock → out → counter).
 
 **Generator rule (closed form):** orientation period > 1 requires at least one non-integer-total turn pass per hand. To deliberately generate orientation period 4, constrain per-pass per-hand turn totals so the mod-2 fractional part is 0.5. To deliberately stay at orientation period 1, keep totals as even integers.
 
-At L7, the wheel expands to 8 orientations (4 radial + 4 interradial) and zone arithmetic gets finer — quarter-turn transits between adjacent orientations become valid. Period 8 unlocks here.
+At L6, the wheel expands to 8 orientations (4 radial + 4 interradial) and zone arithmetic gets finer — quarter-turn transits between adjacent orientations become valid. Period 8 unlocks here.
 
 ### Reserved orientation primitives
 
@@ -120,7 +120,7 @@ The LOOP explanation modal renders a copy string derived from `(period, activeCo
 
 ### D8. Forward compatibility
 
-Period is integer-valued. No hard cap. Period 8 becomes reachable when EITHER the grid expands (L5 skewed motions → grid-D8) OR the wheel expands (L7 interradial orientations → wheel-D8) OR both together. The generator, detector, and UI must not hard-code period ∈ {2, 4}. Period 8 generator and UI work is out of scope for this spec but must not be blocked by hard-coded assumptions.
+Period is integer-valued. No hard cap. Period 8 becomes reachable when EITHER the grid expands (L5 skewed motions → grid-D8) OR the wheel expands (L6 interradial orientations → wheel-D8) OR both together. The generator, detector, and UI must not hard-code period ∈ {2, 4}. Period 8 generator and UI work is out of scope for this spec but must not be blocked by hard-coded assumptions.
 
 ### D9. Reserved orientation primitives
 
@@ -128,7 +128,7 @@ Period is integer-valued. No hard cap. Period 8 becomes reachable when EITHER th
 
 ### D10. Icon indicator
 
-Scope-B icon work is retained: `fa-rotate` for period 2, `fa-arrows-spin` for period 4, both applied to the rotated component when that component is active. Period 8 icon is TBD — designed when L5/L7 generator lands. Other components' icons do not change based on period.
+Scope-B icon work is retained: `fa-rotate` for period 2, `fa-arrows-spin` for period 4, both applied to the rotated component when that component is active. Period 8 icon is TBD — designed when L5/L6 generator lands. Other components' icons do not change based on period.
 
 ### D11. Minimum-length calculator and reactive length picker
 
@@ -202,7 +202,7 @@ export interface DetectedComponent {
     length: number;
     loopType: LOOPType;
 -   sliceSize: SliceSize;
-+   period: number;                      // 2, 4, or 8 (8 requires L5+ or L7+)
++   period: number;                      // 2, 4, or 8 (8 requires L5+ or L6+)
     turnIntensity: number;
     level: number;
     propContinuity: "continuous" | "non-continuous";
@@ -327,7 +327,7 @@ The generator's `generate()` function is never reached with an infeasible (loopT
 
 ### Generator panel: period card replaces slice card
 
-Current "Slice Size" card (visible only for rotated LOOPs) is replaced by a **Period** card visible for ALL LOOP types. Options: 2, 4 (and 8 at L5+/L7+). Labels: "Halved", "Quartered", "Octaved" — user-facing copy — backed by integer values.
+Current "Slice Size" card (visible only for rotated LOOPs) is replaced by a **Period** card visible for ALL LOOP types. Options: 2, 4 (and 8 at L5+/L6+). Labels: "Halved", "Quartered", "Octaved" — user-facing copy — backed by integer values.
 
 ### Generator panel: Complete Cycle button removed
 
@@ -423,7 +423,7 @@ Carved out for future specs:
 
 - **Deck enumerator rewrite** — traverse the multidimensional deck space (loopType × period × domain × level × gridMode × turnIntensity × propContinuity × startingPositionClass) and produce enumerated decks. Downstream of this design; will become its own project after the substrate lands.
 - **L5 8-grid generator** — skewed motions and 8-point grid support. Period 8 positional unlocks here. Requires grid generalization beyond this spec.
-- **L7 8-wheel generator** — interradial orientations and 8-point orientation wheel. Period 8 orientational unlocks here. Requires orientation-algebra generalization.
+- **L6 8-wheel generator** — interradial orientations and 8-point orientation wheel. Period 8 orientational unlocks here. Requires orientation-algebra generalization.
 - **Orientation primitive surfacing** — promoting `ZONE_HOLD_INVERT`, `ZONE_HOLD_FLIP`, `ZONE_CROSS` to first-class (icons, generator UI, modal copy, deck membership). Wait for evidence of real sequences needing them.
 - **MCP-side generator rewrite** — the MCP package has a parallel generator in `mcp-server/src/`. It consumes the same sequence-engine package, so most changes propagate automatically, but per-MCP-tool API surfaces may need review. Scope for a follow-up plan.
 - **Complete Cycle as lab tool** — repurposing `OrientationCycleExtender` as a collision-lab / orientation-lab utility. Keep the code, remove from user UI only. Lab-facing UX is its own design.
@@ -440,7 +440,7 @@ Carved out for future specs:
 
 ## Why This Design
 
-**The substrate is mathematical, not UX-driven.** Period, domain, and zone algebra describe the actual structure of TKA sequences. The current model's slice/rotation-only framing was historically adequate because L1-L4 with integer-only turns and the 4-point orientation wheel limited what could show up. As the system grows (L5+ grid-D8, L7+ wheel-D8) and as existing decks are more fully explored (non-rotation quartered LOOPs that the generator cannot produce today), the constraints tighten and the old model breaks.
+**The substrate is mathematical, not UX-driven.** Period, domain, and zone algebra describe the actual structure of TKA sequences. The current model's slice/rotation-only framing was historically adequate because L1-L4 with integer-only turns and the 4-point orientation wheel limited what could show up. As the system grows (L5+ grid-D8, L6+ wheel-D8) and as existing decks are more fully explored (non-rotation quartered LOOPs that the generator cannot produce today), the constraints tighten and the old model breaks.
 
 **LOOPs-close-fully is a UX simplification, not a complication.** Removing the Complete Cycle button removes a foot-gun. Users who select quartered-mirrored get a closed sequence the first time. Users who hit infeasibility see an inline explanation with actionable guidance instead of a failed generation.
 
@@ -458,4 +458,4 @@ A future implementation plan is complete if:
 4. The LOOP modal shows period-aware copy for the current active sequence.
 5. The static-alpha 4-beat example (form C) is correctly classified as `{ components: [{ ROTATED, domain: orientation }], period: 4 }` and the rotated icon renders as `fa-arrows-spin`.
 6. All three reserved orientation primitives are represented in the `LOOPComponent` enum and have detection stubs, but do not appear in any user-facing UI.
-7. Period 8 is representable in the data model without schema changes; UI gracefully handles period > 4 with a placeholder icon until L5/L7 designs land.
+7. Period 8 is representable in the data model without schema changes; UI gracefully handles period > 4 with a placeholder icon until L5/L6 designs land.

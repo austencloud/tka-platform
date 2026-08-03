@@ -414,7 +414,7 @@ A test suite that runs at the end of every phase, asserting:
 
 **R7: SequenceExtender (ring-button) flow diverges.** The ring-button "apply LOOP" flow uses `SequenceExtender` not `SequenceBuilder`. Phase 7 addresses this by adding a closure pass after extension, but the full unification of the two pipelines is deferred. Risk: ring-button extensions may produce "applies partially" experiences at edge cases. Mitigation: surface the infeasibility inline; for critical LOOP types (common generator-user requests), write the ring-button flow through the generator via an adapter.
 
-**R8: Level type does not yet extend to L5/L7.** The generator's level enum is currently constrained to L1-L3 in some places, L1-L4 in others. This plan's forward-compat claims for period 8 assume level support extends. That support is out-of-scope here; period 8 chips will stay disabled until the separate L5/L7 projects land. Mitigation: the data model accepts any integer period, and the UI gracefully disables period 8 chips today.
+**R8: Level type does not yet extend to L5/L6.** The generator's level enum is currently constrained to L1-L3 in some places, L1-L4 in others. This plan's forward-compat claims for period 8 assume level support extends. That support is out-of-scope here; period 8 chips will stay disabled until the separate L5/L6 projects land. Mitigation: the data model accepts any integer period, and the UI gracefully disables period 8 chips today.
 
 ---
 
@@ -434,7 +434,7 @@ A test suite that runs at the end of every phase, asserting:
 
 - Deck enumerator rewrite (separate project)
 - L5 8-grid generator (separate project)
-- L7 8-wheel generator (separate project)
+- L6 8-wheel generator (separate project)
 - Orientation primitive promotion (separate project when evidence emerges)
 - MCP-side generator per-tool API review (follow-up after engine stabilizes)
 - Collision-lab / orientation-lab UX updates (independent of this plan)
