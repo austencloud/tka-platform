@@ -46,6 +46,28 @@ describe("Google review username repair", () => {
     });
   });
 
+  it("is a no-op when the account carries no profile and no legacy residue", () => {
+    expect(
+      buildReviewUsernameRepairPlan(null, null, { userId: REVIEW_USER_ID })
+    ).toEqual({
+      profilePatch: null,
+      createDestinationClaim: false,
+      deleteSourceClaim: false,
+      changed: false,
+    });
+    expect(buildReviewUsernameRepairPlan(null, null, null).changed).toBe(false);
+  });
+
+  it("still fails loudly when a missing profile leaves legacy residue behind", () => {
+    expect(() =>
+      buildReviewUsernameRepairPlan(null, { userId: REVIEW_USER_ID }, null)
+    ).toThrow("legacy username state remains");
+
+    expect(() =>
+      buildReviewUsernameRepairPlan(null, null, { userId: "different-user" })
+    ).toThrow("legacy username state remains");
+  });
+
   it("refuses to overwrite a username that belongs to another account", () => {
     expect(() =>
       buildReviewUsernameRepairPlan(

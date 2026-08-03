@@ -35,8 +35,31 @@ export function buildReviewUsernameRepairPlan(
   sourceClaim: Data | null,
   destinationClaim: Data | null
 ): ReviewUsernameRepairPlan {
+  const destinationOwnerForAbsentProfile = claimOwner(destinationClaim);
+
   if (!profile) {
-    throw new Error(`Review profile users/${REVIEW_USER_ID} does not exist.`);
+    // The account carries no Firestore profile. That is only safe to treat as
+    // "nothing to repair" when no legacy residue is left anywhere: the invalid
+    // claim is gone and the valid name is either unclaimed or already this
+    // account's. Any other shape means real state we must not paper over, so
+    // it still throws.
+    const legacyResidue =
+      sourceClaim !== null ||
+      (destinationOwnerForAbsentProfile !== null &&
+        destinationOwnerForAbsentProfile !== REVIEW_USER_ID);
+
+    if (legacyResidue) {
+      throw new Error(
+        `Review profile users/${REVIEW_USER_ID} does not exist, but legacy username state remains.`
+      );
+    }
+
+    return {
+      profilePatch: null,
+      createDestinationClaim: false,
+      deleteSourceClaim: false,
+      changed: false,
+    };
   }
 
   const currentUsername = profile.username;
