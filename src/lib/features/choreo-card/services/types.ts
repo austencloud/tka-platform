@@ -43,6 +43,9 @@ export interface InfoCardCanvasOptions {
   height: number;
   bleedPx: number;
   theme: string;
+  /** Release number printed in the front footer ("Deck 007"). Omitted in the
+   *  designer preview, where there is no release context yet. */
+  deckNumber?: number;
 }
 
 /**

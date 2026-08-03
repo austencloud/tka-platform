@@ -16,6 +16,10 @@ export interface DeckZipExportOptions {
     pair: ZipCardPair,
     cardIndex: number
   ) => Promise<HTMLCanvasElement>;
+  /** "How to Read" insert, written as card 001 ahead of the sequence cards.
+   *  Passed separately rather than prepended to `pairs` so it never reaches
+   *  `frontRenderer` — it has no sequence and must not consume a short code. */
+  insertPair?: { front: HTMLCanvasElement; back: HTMLCanvasElement };
 }
 
 export async function exportDeckZIP(
@@ -30,11 +34,20 @@ export async function exportDeckZIP(
   const zip = new JSZip();
   const fronts = zip.folder("fronts")!;
   const backs = zip.folder("backs")!;
-  const total = pairs.length;
+  const insert = options.insertPair;
+  // The insert occupies 001; sequence cards start at 002.
+  const indexOffset = insert ? 1 : 0;
+  const total = pairs.length + indexOffset;
+
+  if (insert) {
+    fronts.file("001_how-to-read_front.png", await canvasToBlob(insert.front));
+    backs.file("001_how-to-read_back.png", await canvasToBlob(insert.back));
+    onProgress?.(1, total);
+  }
 
   for (let i = 0; i < pairs.length; i++) {
     const pair = pairs[i]!;
-    const index = String(i + 1).padStart(3, "0");
+    const index = String(i + 1 + indexOffset).padStart(3, "0");
     // Keep Greek glyphs (Σ, Φ, Λ…) — ZIP entry names are UTF-8. sanitizeFilename
     // preserves Unicode and strips only illegal path chars; the old
     // [^a-zA-Z0-9_-] regex flattened every Greek letter to "_".
@@ -49,7 +62,7 @@ export async function exportDeckZIP(
     const backBlob = await canvasToBlob(pair.back);
     backs.file(`${index}_${safeName}_back.png`, backBlob);
 
-    onProgress?.(i + 1, total);
+    onProgress?.(i + 1 + indexOffset, total);
   }
 
   return zip.generateAsync({ type: "blob" });

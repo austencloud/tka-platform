@@ -133,6 +133,28 @@ export interface DeckRelease {
   notes: string;
   sequences: DeckReleaseCard[];
   stepCountDistribution: Record<number, number>;
+  /**
+   * The "How to Read" insert that ships as card 1 of the printed deck. It is a
+   * flag rather than a `sequences[]` entry because it carries none of a card
+   * record's data (no sequenceId, word, or step count) and is identical in every
+   * deck. Absent → a legacy deck released before the insert shipped.
+   *
+   * `version` identifies which revision of the insert a deck was printed with,
+   * so a future redesign is traceable from an old manifest without a backfill.
+   */
+  insertCard?: { version: number };
+}
+
+/** Current insert revision. Bump when the printed insert content changes. */
+export const INSERT_CARD_VERSION = 1;
+
+/**
+ * Physical cards in the printed deck — the number to give a print vendor.
+ * `cardCount` deliberately keeps its original meaning (sequence cards only) so
+ * manifests released before the insert stay accurate.
+ */
+export function getPrintedCardCount(release: DeckRelease): number {
+  return release.cardCount + (release.insertCard ? 1 : 0);
 }
 
 export interface StepCountWeight {

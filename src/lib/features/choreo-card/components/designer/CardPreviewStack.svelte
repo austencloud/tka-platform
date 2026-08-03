@@ -9,8 +9,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ChoreoCard from "../ChoreoCard.svelte";
   import CardBack from "../card-back/CardBack.svelte";
-  import InfoCardFront from "../card-back/InfoCardFront.svelte";
-  import InfoCardBack from "../card-back/InfoCardBack.svelte";
+  import InfoCardCanvasPreview from "../card-back/InfoCardCanvasPreview.svelte";
 
   interface Props {
     sequence: SequenceData | null;
@@ -129,7 +128,7 @@
       use:watchForImage
     >
       {#if showInfoCard}
-        <InfoCardFront />
+        <InfoCardCanvasPreview face="front" />
       {:else if sequence}
         <ChoreoCard
           {sequence}
@@ -152,7 +151,7 @@
       style="width: {backLayout.w}px; height: {backLayout.h}px;"
     >
       {#if showInfoCard}
-        <InfoCardBack />
+        <InfoCardCanvasPreview face="back" />
       {:else if sequence}
         <CardBack {sequence} />
       {/if}
