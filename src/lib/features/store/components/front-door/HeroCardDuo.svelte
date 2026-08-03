@@ -18,6 +18,15 @@
   The slots render before the catalog does, so the hero's height is settled at
   first paint and neither the baked front nor the player moves anything when it
   lands (no-layout-shift.md).
+
+  THE SCAN IS PRESSED, NOT PLAYED. The cue used to loop every eight seconds,
+  which read as an advert running at you rather than a card you picked up. It
+  now has one trigger, sitting directly under the pair because it acts on the
+  pair — not another call to action stacked in the copy column beside "See the
+  catalog". First press scans; afterwards the card is left playing and the
+  button offers the pass again (hero-scan-timeline.svelte.ts owns that state
+  machine). Under reduced motion the button is not rendered at all: it exists
+  only to start motion.
 -->
 <script lang="ts">
   import { page } from "$app/state";
@@ -25,6 +34,7 @@
   import ShopEntryArt from "../ShopEntryArt.svelte";
   import HeroCardBackLive from "./HeroCardBackLive.svelte";
   import HeroScanCue from "./HeroScanCue.svelte";
+  import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import {
     createHeroScanTimeline,
     type ScanCueVariant,
@@ -55,6 +65,12 @@
     timeline.start();
     return () => timeline.stop();
   });
+
+  // "Scan the code" is the longer of the two, so it is what the ghost sizer
+  // below holds — the button never changes width when the label swaps.
+  const SCAN_LABEL = "Scan the code";
+  const RESCAN_LABEL = "Scan again";
+  const scanLabel = $derived(timeline.scanned ? RESCAN_LABEL : SCAN_LABEL);
 
   // ── the QR cell, located rather than guessed ────────────────────────────
   // A phone reads the code, not the card, so the sweep covers the code's cell
@@ -108,57 +124,110 @@
   });
 </script>
 
-<div class="duo">
-  <div class="slot front" bind:this={frontSlotEl}>
-    {#if card && product}
-      <div class="art">
-        <ShopEntryArt
-          cards={[card]}
-          {product}
-          deckName={product.name}
-          cardWidth={140}
-          maxCardWidth={822}
-          exactCount={1}
-        />
-      </div>
-      {#if !timeline.reducedMotion}
-        <HeroScanCue
-          {cue}
-          phase={timeline.phase}
-          cycle={timeline.cycle}
-          {qrCell}
-        />
+<div class="pair">
+  <div class="duo">
+    <div class="slot front" bind:this={frontSlotEl}>
+      {#if card && product}
+        <div class="art">
+          <ShopEntryArt
+            cards={[card]}
+            {product}
+            deckName={product.name}
+            cardWidth={140}
+            maxCardWidth={822}
+            exactCount={1}
+          />
+        </div>
+        {#if timeline.available}
+          <HeroScanCue
+            {cue}
+            phase={timeline.phase}
+            cycle={timeline.cycle}
+            {qrCell}
+          />
+        {/if}
       {/if}
-    {/if}
+    </div>
+
+    <div class="slot back">
+      {#if card}
+        <div class="card-frame">
+          <HeroCardBackLive
+            sequence={card.sequence}
+            drawActive={timeline.drawActive}
+            cycle={timeline.cycle}
+            live={timeline.available}
+          />
+        </div>
+      {/if}
+    </div>
   </div>
 
-  <div class="slot back">
-    {#if card}
-      <div class="card-frame">
-        <HeroCardBackLive
-          sequence={card.sequence}
-          drawActive={timeline.drawActive}
-          cycle={timeline.cycle}
-          live={!timeline.reducedMotion}
+  <!-- The trigger. Two buttons share one grid cell: a hidden one permanently
+       holding the LONGER label sizes the cell, and the live one stretches to
+       it, so "Scan the code" → "Scan again" cannot resize anything
+       (no-layout-shift.md's ghost-sizer, using the real primitive so the
+       reserved width carries the button's own metrics rather than a guess). -->
+  {#if card && timeline.available}
+    <div class="scan-trigger" class:busy={timeline.running}>
+      <span class="sizer" aria-hidden="true" inert>
+        <ActionButton
+          label={SCAN_LABEL}
+          icon="fa-qrcode"
+          color="cyan"
+          fullWidth
+          onclick={() => {}}
         />
-      </div>
-    {/if}
-  </div>
+      </span>
+      <span class="live">
+        <ActionButton
+          label={scanLabel}
+          icon="fa-qrcode"
+          color="cyan"
+          fullWidth
+          ariaDisabled={timeline.running}
+          onclick={() => timeline.scan()}
+        />
+      </span>
+    </div>
+  {/if}
 </div>
 
 <style>
-  /* One height drives both cards. The `cqw` term keeps the pair inside its
+  /* Cards, then the control that acts on them. The gap rides `--card-h` so the
+     button sits the same distance from the pair at every size instead of
+     drifting away from it at 4K. */
+  /* One height drives both cards AND the gap under them, so it is declared on
+     the wrapper both of them read. The `cqw` term keeps the pair inside its
      column (the rotations widen each card's bounding box by ~12%), the `svh`
      term keeps it inside a short landscape screen, and the `rem` ceiling rides
      the root ramp so 4K gets a bigger card rather than more empty rail. */
-  .duo {
+  .pair {
     --card-h: min(56svh, 36rem, calc(100cqw / 2.25 * 1.4));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.5rem, calc(var(--card-h) * 0.05), 2rem);
+    width: 100%;
+  }
+
+  .duo {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     /* Room for the tilted corners, which sit outside the layout box. */
     padding-block: calc(var(--card-h) * 0.07);
+  }
+
+  /* Wide but short — a folded Fold in landscape, a laptop in a small window.
+     The cards alone already fill the height here, so the trigger has to be
+     paid for out of the card's budget or it lands below the fold, and a
+     control nobody can see is the same as no control. */
+  @media (min-width: 48rem) and (max-height: 40rem) {
+    .pair {
+      --card-h: min(38svh, 36rem, calc(100cqw / 2.25 * 1.4));
+    }
   }
 
   .slot {
@@ -195,8 +264,10 @@
      clear, the printed front overlapping up from below, each about four fifths
      of the width. Same object, held at a different angle. */
   @media (max-width: 34rem) {
-    .duo {
+    .pair {
       --card-h: min(46svh, calc(78cqw * 1.4));
+    }
+    .duo {
       flex-direction: column;
     }
     .slot.back {
@@ -230,5 +301,37 @@
     border-radius: 0.75rem;
     overflow: hidden;
     container-type: inline-size;
+  }
+
+  /* Ghost-sizer stack: the hidden copy holds the longest label and sets the
+     width; the live button overlays it in the same cell. */
+  .scan-trigger {
+    display: inline-grid;
+    flex: 0 0 auto;
+  }
+  .scan-trigger > .sizer,
+  .scan-trigger > .live {
+    grid-area: 1 / 1;
+    display: block;
+  }
+  .scan-trigger > .sizer {
+    visibility: hidden;
+  }
+
+  /* The pass is playing — the button stays in place and legible (it is still
+     the thing that just did something), but reads as unavailable. It keeps its
+     place in the tab order via aria-disabled rather than `disabled`, so a
+     keyboard user does not lose focus mid-pass. */
+  .scan-trigger > .live {
+    transition: opacity 240ms ease;
+  }
+  .scan-trigger.busy > .live {
+    opacity: 0.55;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scan-trigger > .live {
+      transition: none;
+    }
   }
 </style>
