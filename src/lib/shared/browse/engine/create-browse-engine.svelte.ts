@@ -44,6 +44,7 @@ import {
 import {
   applyFilters as applyMultiFilters,
   getFilteredCount as getMultiFilteredCount,
+  OR_STACKING_TYPES,
 } from "$lib/shared/browse/services/multi-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/browse-section-manager";
@@ -784,18 +785,21 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       label: string,
       chipColor: string
     ): void {
-      // Loop-component and TnD-family filters STACK (a sequence can be
-      // mirrored AND swapped; can touch several families), so each value
-      // gets its own key. Every other type stays one-per-type: re-adding
+      // Stacking filters get one key PER VALUE: loop components and TnD
+      // families stack as requirements (mirrored AND swapped), single-valued
+      // categories stack as alternatives (alpha OR beta — multi-filter owns
+      // that grouping). Everything else stays one-per-type: re-adding
       // replaces.
-      const key =
+      const stacks =
         type === BrowseFilterType.LOOP_TYPE ||
-        type === BrowseFilterType.TND_FAMILY
-          ? `${type}:${String(value)}`
-          : String(type);
-      // Don't overwrite locked constraints
+        type === BrowseFilterType.TND_FAMILY ||
+        OR_STACKING_TYPES.has(type);
+      const key = stacks ? `${type}:${String(value)}` : String(type);
+      // Don't overwrite locked constraints. Locked constraints key by bare
+      // type, so stacked adds must also respect a locked same-type entry.
       const existing = activeFilters.get(key);
       if (existing?.locked) return;
+      if (stacks && activeFilters.get(String(type))?.locked) return;
 
       const newMap = new Map(activeFilters);
       newMap.set(key, {

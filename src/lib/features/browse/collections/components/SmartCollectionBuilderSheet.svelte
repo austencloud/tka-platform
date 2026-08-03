@@ -190,7 +190,7 @@ one rail while the live matching grid gets the rest of the canvas.
       case "chooser":
         return "Choose a filter to start.";
       default:
-        return "Choose one option to continue.";
+        return "Options apply as you tap them. Pick any that fit.";
     }
   });
 
@@ -393,8 +393,17 @@ one rail while the live matching grid gets the rest of the canvas.
                   getCount={(type, value) =>
                     engine.getFilteredCount(type, value)}
                   onApply={(type, value, label, color) => {
+                    // The composer never bounces: the strip and preview
+                    // update in place; the user leaves via Return to rule /
+                    // Save.
                     engine.addFilter(type, value, label, color ?? "#6aa0ff");
-                    filterPickerOpen = false;
+                  }}
+                  onToggleValue={(type, value, label, color, nowActive) => {
+                    if (nowActive) {
+                      engine.addFilter(type, value, label, color ?? "#6aa0ff");
+                    } else {
+                      engine.removeFilter(`${type}:${String(value)}`);
+                    }
                   }}
                   {activeLoopValues}
                   onToggleLoop={(value, label, color, nowActive) => {

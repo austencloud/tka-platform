@@ -158,6 +158,19 @@
       type: BrowseFilterType,
       value: string | number
     ) => boolean;
+    /** Builder hosts: every category stacks — tapping a value toggles it in
+     * the rule and the editor stays open, exactly like the LOOP/T&D toggles.
+     * Single-valued categories stack as ALTERNATIVES (a sequence matches any
+     * selected value). When absent, value taps fall back to onApply and the
+     * host decides what happens next (page/gallery behavior). Requires
+     * isValueApplied for the current on/off state. */
+    onToggleValue?: (
+      type: BrowseFilterType,
+      value: string | number,
+      label: string,
+      color: string | undefined,
+      nowActive: boolean
+    ) => void;
   }
   let {
     pool = [],
@@ -183,6 +196,7 @@
     initialSection,
     onSectionChange,
     isValueApplied,
+    onToggleValue,
   }: Props = $props();
 
   const shouldPersistSection = persistSection ?? variant === "page";
@@ -362,12 +376,14 @@
     ];
   })();
 
+  // Toggle hosts keep every option mounted (zero-count ones disable rather
+  // than unmount) — same stability contract as the LOOP/T&D editors.
   const levelValues = $derived(
     LEVELS.map((lvl) => ({
       value: lvl,
       label: `Level ${lvl}`,
       count: getCount(BrowseFilterType.DIFFICULTY, lvl),
-    })).filter((v) => v.count > 0)
+    })).filter((v) => Boolean(onToggleValue) || v.count > 0)
   );
   const maxLevelCount = $derived(
     Math.max(1, ...levelValues.map((v) => v.count))
@@ -379,14 +395,18 @@
       const n = resolveStepCount(seq);
       if (n > 0) lengths.add(n);
     }
-    return [...lengths]
-      .sort((a, b) => a - b)
-      .map((n) => ({
-        value: n,
-        label: `${n} steps`,
-        count: getCount(BrowseFilterType.LENGTH, n),
-      }))
-      .filter((v) => v.count >= 3);
+    return (
+      [...lengths]
+        .sort((a, b) => a - b)
+        .map((n) => ({
+          value: n,
+          label: `${n} steps`,
+          count: getCount(BrowseFilterType.LENGTH, n),
+        }))
+        // The ≥3 noise floor is a page-gallery affordance; a rule builder
+        // shows the complete catalog.
+        .filter((v) => (onToggleValue ? true : v.count >= 3))
+    );
   });
   const maxLengthCount = $derived(
     Math.max(1, ...lengthValues.map((v) => v.count))
@@ -452,14 +472,14 @@
         value: letter,
         count: getCount(BrowseFilterType.STARTING_LETTER, letter),
       }))
-      .filter((v) => v.count > 0)
+      .filter((v) => Boolean(onToggleValue) || v.count > 0)
   );
 
   const positionValues = $derived(
     POSITIONS.map((p) => ({
       ...p,
       count: getCount(BrowseFilterType.STARTING_POSITION, p.value),
-    })).filter((v) => v.count > 0)
+    })).filter((v) => Boolean(onToggleValue) || v.count > 0)
   );
   const maxPositionCount = $derived(
     Math.max(1, ...positionValues.map((v) => v.count))
@@ -491,7 +511,7 @@
     GRID_MODES.map((g) => ({
       ...g,
       count: getCount(BrowseFilterType.GRID_MODE, g.value),
-    })).filter((v) => v.count > 0)
+    })).filter((v) => Boolean(onToggleValue) || v.count > 0)
   );
   const maxGridModeCount = $derived(
     Math.max(1, ...gridModeValues.map((v) => v.count))
@@ -547,7 +567,7 @@
         value: name,
         count: getCount(BrowseFilterType.OWNER, name),
       }))
-      .filter((v) => v.count > 0)
+      .filter((v) => Boolean(onToggleValue) || v.count > 0)
       .sort((a, b) => b.count - a.count)
   );
   const maxCreatorCount = $derived(
@@ -775,6 +795,36 @@
     const q = query.trim();
     if (q) onSearch?.(q);
   }
+
+  /** Single-valued categories: toggle in place when the host stacks,
+   * otherwise the classic apply-and-hand-off. */
+  function pickValue(
+    type: BrowseFilterType,
+    value: string | number,
+    label: string,
+    color?: string
+  ) {
+    if (onToggleValue) {
+      onToggleValue(
+        type,
+        value,
+        label,
+        color,
+        !(isValueApplied?.(type, value) ?? false)
+      );
+    } else {
+      onApply(type, value, label, color);
+    }
+  }
+
+  /** Toggle hosts keep zero-count unselected options mounted but inert. */
+  function valueDisabled(count: number, applied: boolean): boolean {
+    return Boolean(onToggleValue) && count === 0 && !applied;
+  }
+
+  const stackHint = onToggleValue
+    ? "Tap several. A sequence can match any of them."
+    : undefined;
 
   function pickLoop(v: { value: string; label: string; color: string }) {
     if (onToggleLoop) {
@@ -1345,7 +1395,7 @@
           </div>
         {:else if section === "level"}
           <div class="drill-screen screen-level">
-            {@render valueHead("Pick a level")}
+            {@render valueHead("Pick a level", stackHint)}
             <div class="value-list">
               {#each levelValues as v (v.value)}
                 {@const style = DIFFICULTY_LEVELS[v.value]}
@@ -1359,8 +1409,9 @@
                   style:background={style?.cssBg}
                   style:color={style?.text ?? "#000"}
                   aria-pressed={isValueApplied ? levelApplied : undefined}
+                  disabled={valueDisabled(v.count, levelApplied)}
                   onclick={() =>
-                    onApply(BrowseFilterType.DIFFICULTY, v.value, v.label)}
+                    pickValue(BrowseFilterType.DIFFICULTY, v.value, v.label)}
                 >
                   <span class="value-numeral">{v.value}</span>
                   <span class="value-main">
@@ -1388,7 +1439,7 @@
           </div>
         {:else if section === "length"}
           <div class="drill-screen screen-length">
-            {@render valueHead("Pick a length")}
+            {@render valueHead("Pick a length", stackHint)}
             <div class="value-list">
               {#each lengthValues as v (v.value)}
                 {@const lengthApplied =
@@ -1398,8 +1449,9 @@
                   class:value-applied={lengthApplied}
                   type="button"
                   aria-pressed={isValueApplied ? lengthApplied : undefined}
+                  disabled={valueDisabled(v.count, lengthApplied)}
                   onclick={() =>
-                    onApply(BrowseFilterType.LENGTH, v.value, v.label)}
+                    pickValue(BrowseFilterType.LENGTH, v.value, v.label)}
                 >
                   <span class="value-numeral small">{v.value}</span>
                   <span class="value-main">
@@ -1509,7 +1561,7 @@
           </div>
         {:else if section === "letter"}
           <div class="drill-screen screen-letter">
-            {@render valueHead("Pick a starting letter")}
+            {@render valueHead("Pick a starting letter", stackHint)}
             <div class="letter-grid">
               {#each letterValues as v (v.value)}
                 {@const letterApplied =
@@ -1521,8 +1573,13 @@
                   type="button"
                   aria-label="{v.value}, {v.count} sequences"
                   aria-pressed={isValueApplied ? letterApplied : undefined}
+                  disabled={valueDisabled(v.count, letterApplied)}
                   onclick={() =>
-                    onApply(BrowseFilterType.STARTING_LETTER, v.value, v.value)}
+                    pickValue(
+                      BrowseFilterType.STARTING_LETTER,
+                      v.value,
+                      v.value
+                    )}
                 >
                   <span
                     class="letter-glyph"
@@ -1541,7 +1598,7 @@
           </div>
         {:else if section === "position"}
           <div class="drill-screen screen-positions">
-            {@render valueHead("Pick a start position")}
+            {@render valueHead("Pick a start position", stackHint)}
             <div class="value-list">
               {#each positionValues as v (v.value)}
                 {@const positionApplied =
@@ -1554,8 +1611,9 @@
                   class:value-applied={positionApplied}
                   type="button"
                   aria-pressed={isValueApplied ? positionApplied : undefined}
+                  disabled={valueDisabled(v.count, positionApplied)}
                   onclick={() =>
-                    onApply(
+                    pickValue(
                       BrowseFilterType.STARTING_POSITION,
                       v.value,
                       v.label
@@ -1589,7 +1647,7 @@
           </div>
         {:else if section === "author"}
           <div class="drill-screen screen-creator">
-            {@render valueHead("Pick a creator")}
+            {@render valueHead("Pick a creator", stackHint)}
             <div class="value-list creator-list">
               {#each creatorValues as v (v.value)}
                 {@const creatorApplied =
@@ -1600,8 +1658,9 @@
                   type="button"
                   aria-label={`${v.value}, ${v.count} sequences`}
                   aria-pressed={isValueApplied ? creatorApplied : undefined}
+                  disabled={valueDisabled(v.count, creatorApplied)}
                   onclick={() =>
-                    onApply(BrowseFilterType.OWNER, v.value, v.value)}
+                    pickValue(BrowseFilterType.OWNER, v.value, v.value)}
                 >
                   <RobustAvatar
                     class="creator-avatar"
@@ -1641,7 +1700,7 @@
           </div>
         {:else if section === "gridmode"}
           <div class="drill-screen screen-gridmode">
-            {@render valueHead("Pick a grid mode")}
+            {@render valueHead("Pick a grid mode", stackHint)}
             <div class="value-list">
               {#each gridModeValues as v (v.value)}
                 {@const gridModeApplied =
@@ -1652,8 +1711,9 @@
                   class:value-applied={gridModeApplied}
                   type="button"
                   aria-pressed={isValueApplied ? gridModeApplied : undefined}
+                  disabled={valueDisabled(v.count, gridModeApplied)}
                   onclick={() =>
-                    onApply(BrowseFilterType.GRID_MODE, v.value, v.label)}
+                    pickValue(BrowseFilterType.GRID_MODE, v.value, v.label)}
                 >
                   <span class="value-grid-preview" aria-hidden="true">
                     <LessonGridDisplay
@@ -1869,6 +1929,12 @@
     font-weight: 800;
     text-transform: none;
     color: var(--theme-text, #e8edf6);
+  }
+  /* Headings receive PROGRAMMATIC focus after navigation (screen-reader
+     anchor, WCAG 2.4.3) — a visible ring on a non-interactive heading reads
+     as a broken control. */
+  .drill-head h2:focus {
+    outline: none;
   }
   .drill-head p {
     margin: 0;
