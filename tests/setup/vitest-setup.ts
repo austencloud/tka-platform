@@ -222,6 +222,10 @@ vi.mock("firebase/firestore", () => ({
     type: "firestore",
     toJSON: () => ({}),
   })),
+  // firebase.ts dynamically imports this in emulator mode. Without it the
+  // import rejects, and vitest fails the run on the unhandled rejection even
+  // when every assertion passes — matching connectFunctionsEmulator below.
+  connectFirestoreEmulator: vi.fn(),
   collection: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn(),
@@ -246,6 +250,7 @@ vi.mock("firebase/firestore", () => ({
 
 vi.mock("firebase/database", () => ({
 	getDatabase: vi.fn(() => ({ type: "database" })),
+	connectDatabaseEmulator: vi.fn(),
 	ref: vi.fn(),
 	get: vi.fn(),
 	set: vi.fn(),
