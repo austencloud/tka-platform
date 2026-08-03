@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Drowned Gallery — The Ring (Flow Rethink v2)</title>
+<style>
+  :root {
+    --bg: #0b0e12;
+    --panel: #11151b;
+    --ink: #d8d3c8;
+    --muted: #8b93a0;
+    --accent: #e8b34b;
+    --water: #7fd8ff;
+    --fire: #ffb35c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 2.5rem clamp(1rem, 4vw, 4rem);
+  }
+  header { max-width: 1500px; margin: 0 auto 1.5rem; }
+  h1 { font-size: 1.7rem; letter-spacing: 0.02em; }
+  h1 span { color: var(--water); }
+  header p { color: var(--muted); max-width: 78ch; margin-top: 0.4rem; }
+  .sheet {
+    max-width: 1500px; margin: 0 auto 2rem;
+    background: var(--panel);
+    border: 1px solid #1e2530;
+    border-radius: 12px;
+    padding: 1.2rem 1.2rem 0.6rem;
+    overflow-x: auto;
+  }
+  .sheet h2 {
+    font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--accent); margin: 0.2rem 0 0.8rem 0.4rem;
+  }
+  svg { display: block; min-width: 1100px; width: 100%; height: auto; }
+  .cols { max-width: 1500px; margin: 0 auto 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem; }
+  .card { background: var(--panel); border: 1px solid #1e2530; border-radius: 12px; padding: 1.1rem 1.3rem; }
+  .card h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.6rem; }
+  .card ol { padding-left: 1.4rem; }
+  .card li { margin-bottom: 0.45rem; }
+  .card li b { color: #fff; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; padding: 0.28rem 0.6rem 0.28rem 0; border-bottom: 1px solid #1e2530; font-size: 0.92rem; }
+  th { color: var(--muted); font-weight: 600; }
+  td:last-child { color: var(--muted); }
+  footer { max-width: 1500px; margin: 2rem auto 0; color: var(--muted); font-size: 0.85rem; }
+  .k { color: var(--water); }
+  .n { color: var(--fire); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The <span>Drowned Gallery</span> — The Ring · Flow Rethink v2</h1>
+  <p>2026-08-03 · Under the water, out of the water, around the water. The middle of
+  the route becomes a real flooded world: ~30 m walked on the bottom with rock
+  overhead and no sign of air, cave-native life thickening mid-passage, then a
+  stair that breaks the surface straight into the doubled firelight. The grotto
+  is a ring: arrive center-south, circle the mirror pool, pass A → B → C at
+  close range across a 4 m channel, exit east to Fire. North is to the RIGHT.</p>
+</header>
+
+<div class="sheet">
+  <h2>Plan — top-down · 1 grid square = 2 m · north →</h2>
+  <svg viewBox="0 0 1460 800" role="img" aria-label="Top-down plan of the Ring flow">
+    <defs>
+      <radialGradient id="poolGrad" cx="45%" cy="45%" r="75%">
+        <stop offset="0%" stop-color="#11506e"/>
+        <stop offset="60%" stop-color="#0c3a52"/>
+        <stop offset="100%" stop-color="#082636"/>
+      </radialGradient>
+      <linearGradient id="galleryGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#0a2e42"/>
+        <stop offset="100%" stop-color="#0e455f"/>
+      </linearGradient>
+      <radialGradient id="fireGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffb35c" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#ffb35c" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="bloomGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#7fe8c8" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#7fe8c8" stop-opacity="0"/>
+      </radialGradient>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#e8b34b"/>
+      </marker>
+    </defs>
+
+    <!-- grid: 2 m = 48 px -->
+    <g stroke="#161c25" stroke-width="1">
+      <path d="M40,60 H1400 M40,108 H1400 M40,156 H1400 M40,204 H1400 M40,252 H1400 M40,300 H1400 M40,348 H1400 M40,396 H1400 M40,444 H1400 M40,492 H1400 M40,540 H1400 M40,588 H1400 M40,636 H1400 M40,684 H1400 M40,732 H1400"/>
+      <path d="M40,60 V732 M88,60 V732 M136,60 V732 M184,60 V732 M232,60 V732 M280,60 V732 M328,60 V732 M376,60 V732 M424,60 V732 M472,60 V732 M520,60 V732 M568,60 V732 M616,60 V732 M664,60 V732 M712,60 V732 M760,60 V732 M808,60 V732 M856,60 V732 M904,60 V732 M952,60 V732 M1000,60 V732 M1048,60 V732 M1096,60 V732 M1144,60 V732 M1192,60 V732 M1240,60 V732 M1288,60 V732 M1336,60 V732 M1384,60 V732"/>
+    </g>
+
+    <!-- ═══ GROTTO shell (z 1.5–23.5 → sx 832–1360; x 1.5–26.5 → sy 96–696) ═══ -->
+    <rect x="820" y="84" width="552" height="624" fill="none" stroke="#3a3227" stroke-width="12"/>
+
+    <!-- alcove shore: rock wall with three cut niches (z 1.5–5) -->
+    <rect x="1276" y="96" width="84" height="600" fill="#241f18"/>
+    <g>
+      <rect x="1284" y="204" width="66" height="48" fill="#0b0e12" stroke="#4a3d2d"/>
+      <rect x="1284" y="372" width="66" height="48" fill="#0b0e12" stroke="#4a3d2d"/>
+      <rect x="1284" y="540" width="66" height="48" fill="#0b0e12" stroke="#4a3d2d"/>
+      <circle cx="1310" cy="228" r="34" fill="url(#fireGlow)"/>
+      <circle cx="1310" cy="396" r="34" fill="url(#fireGlow)"/>
+      <circle cx="1310" cy="564" r="34" fill="url(#fireGlow)"/>
+      <text x="1316" y="234" fill="#ffd9a8" font-size="17" font-weight="700" text-anchor="middle">A</text>
+      <text x="1316" y="402" fill="#ffd9a8" font-size="17" font-weight="700" text-anchor="middle">B</text>
+      <text x="1316" y="570" fill="#ffd9a8" font-size="17" font-weight="700" text-anchor="middle">C</text>
+    </g>
+    <text x="1348" y="660" fill="#8b93a0" font-size="13" transform="rotate(-90 1348 660)">alcove shore — unreachable, rock with three cut niches</text>
+
+    <!-- procession channel (water, z 5–9) -->
+    <rect x="1180" y="156" width="96" height="456" fill="url(#poolGrad)" opacity="0.9"/>
+    <text x="1228" y="392" fill="#7fd8ff" font-size="13" text-anchor="middle" transform="rotate(-90 1228 392)">channel · 4 m of water</text>
+
+    <!-- waterfall at the channel's west end -->
+    <rect x="1180" y="156" width="96" height="26" fill="#bfe9ff" opacity="0.5"/>
+
+    <!-- procession walkway (z 9–11.5) -->
+    <rect x="1120" y="156" width="60" height="456" fill="#5a4a35"/>
+    <text x="1150" y="392" fill="#e8d9c0" font-size="13" text-anchor="middle" transform="rotate(-90 1150 392)">PROCESSION · A → B → C at 5–6 m</text>
+
+    <!-- mirror pool (z 11.5–19) -->
+    <rect x="940" y="156" width="180" height="456" fill="url(#poolGrad)"/>
+    <text x="1030" y="384" fill="#7fd8ff" font-size="15" text-anchor="middle" transform="rotate(-90 1030 384)">MIRROR POOL · doubled firelight</text>
+    <!-- doubling streaks -->
+    <g stroke="#ffb35c" stroke-width="5" opacity="0.55" stroke-linecap="round">
+      <path d="M1006,216 L1058,240"/>
+      <path d="M1006,384 L1058,408"/>
+      <path d="M1006,552 L1058,576"/>
+    </g>
+
+    <!-- west walkway (x 1.5–4, z 9–19) -->
+    <rect x="940" y="96" width="240" height="60" fill="#5a4a35"/>
+    <!-- east walkway (x 23–26.5, z 9–23.5) -->
+    <rect x="832" y="612" width="348" height="84" fill="#5a4a35"/>
+    <!-- threshold arch across east walkway -->
+    <rect x="1000" y="612" width="14" height="84" fill="#d9a441"/>
+    <text x="1007" y="726" fill="#d9a441" font-size="13" text-anchor="middle">carved threshold (gate, reworked)</text>
+
+    <!-- arrival apron (z 19–23.5) -->
+    <rect x="832" y="96" width="108" height="600" fill="#4a3f30"/>
+    <text x="886" y="392" fill="#e8d9c0" font-size="14" text-anchor="middle" transform="rotate(-90 886 392)">ARRIVAL APRON · the composed view</text>
+
+    <!-- Fire door on east wall (z 21–23) -->
+    <rect x="844" y="690" width="48" height="14" fill="#0b0e12" stroke="#ffb35c" stroke-width="2"/>
+    <text x="868" y="742" fill="#ffb35c" font-size="13" text-anchor="middle">→ FIRE</text>
+
+    <!-- balustrade hint around pool + channel -->
+    <g stroke="#7c6647" stroke-width="2" stroke-dasharray="6 5" fill="none">
+      <rect x="940" y="156" width="180" height="456"/>
+      <rect x="1180" y="156" width="96" height="456"/>
+    </g>
+
+    <!-- ═══ SURFACING STAIR (z 23.5–30.5, x 12.5–15.5) ═══ -->
+    <rect x="664" y="360" width="168" height="72" fill="#6a5335" stroke="#8a6d45"/>
+    <g stroke="#4a3a26" stroke-width="2">
+      <path d="M688,360 V432 M712,360 V432 M736,360 V432 M760,360 V432 M784,360 V432 M808,360 V432"/>
+    </g>
+    <rect x="736" y="360" width="26" height="72" fill="#7c6647"/>
+
+    <!-- ═══ FLOODED GALLERY (x 5–17, z 26–44) ═══ -->
+    <rect x="340" y="168" width="432" height="312" fill="url(#galleryGrad)" stroke="#3a3227" stroke-width="10"/>
+    <text x="556" y="200" fill="#7fd8ff" font-size="15" text-anchor="middle">FLOODED GALLERY — fully submerged · rock roof at −1.9 · floor ~−4.5 · no sign of air</text>
+
+    <!-- bloom -->
+    <ellipse cx="628" cy="240" rx="90" ry="52" fill="url(#bloomGlow)"/>
+    <text x="628" y="244" fill="#a8f0d8" font-size="13" text-anchor="middle">the bloom — plants + cave fish</text>
+    <!-- sparse life markers -->
+    <g fill="#7fe8c8" opacity="0.7">
+      <circle cx="420" cy="330" r="3"/><circle cx="452" cy="300" r="3"/><circle cx="500" cy="262" r="3"/>
+      <circle cx="560" cy="236" r="3"/><circle cx="600" cy="222" r="4"/><circle cx="648" cy="230" r="4"/>
+      <circle cx="676" cy="252" r="3"/><circle cx="700" cy="288" r="3"/><circle cx="724" cy="330" r="3"/>
+    </g>
+
+    <!-- descent stair (z 39–44, x 13–15.5) -->
+    <rect x="340" y="372" width="120" height="60" fill="#6a5335" stroke="#8a6d45"/>
+    <g stroke="#4a3a26" stroke-width="2"><path d="M364,372 V432 M388,372 V432 M412,372 V432 M436,372 V432"/></g>
+    <text x="400" y="452" fill="#8b93a0" font-size="13" text-anchor="middle">descent stair — the door of water</text>
+
+    <!-- ═══ APPROACH (z 44–56, x 13–15.5) ═══ -->
+    <rect x="52" y="372" width="288" height="60" fill="#3e3121" stroke="#3a3227" stroke-width="8"/>
+    <text x="196" y="362" fill="#8b93a0" font-size="13" text-anchor="middle">approach — ramp 0 → −1.5, waterline glow ahead</text>
+    <text x="40" y="416" fill="#8b93a0" font-size="13" text-anchor="end" transform="rotate(-90 44 416)">from squeeze</text>
+
+    <!-- ═══ THE ROUTE ═══ -->
+    <polyline points="60,402 340,402 430,402 486,398 522,300 528,258 528,240 540,246 596,252 660,258 700,270 716,330 730,396 832,396 900,396 916,150 940,126 1150,126 1150,228 1150,396 1150,564 1150,588 1150,612 1150,640 1007,654 900,654 880,668 868,690"
+      fill="none" stroke="#e8b34b" stroke-width="4" stroke-dasharray="10 7" marker-end="url(#arrow)" opacity="0.95"/>
+
+    <!-- late labels (drawn above every rect so nothing swallows them) -->
+    <g>
+      <text x="1228" y="205" fill="#bfe9ff" font-size="13" text-anchor="middle">waterfall + plunge (channel end)</text>
+      <text x="700" y="346" fill="#7fd8ff" font-size="13" text-anchor="middle">surface break −2.3</text>
+      <text x="700" y="452" fill="#8b93a0" font-size="13" text-anchor="middle">surfacing stair — 23 risers · 3 m wide</text>
+    </g>
+
+    <!-- beat markers -->
+    <g font-size="15" font-weight="700" text-anchor="middle">
+      <circle cx="196" cy="402" r="14" fill="#e8b34b"/><text x="196" y="407" fill="#14100a">1</text>
+      <circle cx="400" cy="402" r="14" fill="#e8b34b"/><text x="400" y="407" fill="#14100a">2</text>
+      <circle cx="628" cy="252" r="14" fill="#e8b34b"/><text x="628" y="257" fill="#14100a">3</text>
+      <circle cx="714" cy="310" r="14" fill="#e8b34b"/><text x="714" y="315" fill="#14100a">4</text>
+      <circle cx="748" cy="396" r="14" fill="#e8b34b"/><text x="748" y="401" fill="#14100a">5</text>
+      <circle cx="1150" cy="396" r="14" fill="#e8b34b"/><text x="1150" y="401" fill="#14100a">6</text>
+      <circle cx="1007" cy="654" r="14" fill="#e8b34b"/><text x="1007" y="659" fill="#14100a">7</text>
+    </g>
+
+    <!-- north arrow -->
+    <g transform="translate(1400,40)">
+      <path d="M0,8 H36" stroke="#8b93a0" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="18" y="-2" fill="#8b93a0" font-size="13" text-anchor="middle">N</text>
+    </g>
+  </svg>
+</div>
+
+<div class="sheet">
+  <h2>Section — along the walked route · vertical ×3</h2>
+  <svg viewBox="0 0 1460 340" role="img" aria-label="Depth profile along the route">
+    <!-- elevation scale: y = 60 − elev*36  (0 → 60, −1.5 → 114, −1.9 → 128.4, −2.3 → 142.8, −4.5 → 222) -->
+    <g stroke="#161c25" stroke-width="1">
+      <path d="M40,60 H1420 M40,114 H1420 M40,168 H1420 M40,222 H1420 M40,276 H1420"/>
+    </g>
+    <g fill="#8b93a0" font-size="12">
+      <text x="6" y="64">0 m</text><text x="6" y="118">−1.5</text><text x="6" y="172">−3.0</text><text x="6" y="226">−4.5</text>
+    </g>
+
+    <!-- waterline -->
+    <path d="M40,114 H1420" stroke="#7fd8ff" stroke-width="2" stroke-dasharray="8 6" opacity="0.8"/>
+    <text x="1414" y="104" fill="#7fd8ff" font-size="12" text-anchor="end">waterline −1.5</text>
+
+    <!-- water body fill: from approach waterline crossing to the surfacing landing -->
+    <path d="M300,114 L1105,114 L1105,150 L300,150 Z" fill="#0c3a52" opacity="0.35"/>
+
+    <!-- floor profile: approach 12m ramp (40→280), descent stair (280→400: −1.5→−4.5), gallery ~24m (400→980 at −4.5 undulating), stair up (980→1220: −4.5→−0.3 w/ landing at −2.3), apron/ring −0.3 (1220→1420) -->
+    <path d="M40,60 L280,114 L300,120 L400,222 L520,216 L640,226 L760,218 L880,226 L980,222 L1060,164 L1105,143 L1150,143 L1220,71 L1420,71"
+      fill="none" stroke="#e8b34b" stroke-width="4"/>
+
+    <!-- rock roof over the gallery: −1.9 from descent to stair -->
+    <path d="M330,128 L1080,128" stroke="#6a5b45" stroke-width="7"/>
+    <text x="700" y="106" fill="#c8b995" font-size="13" text-anchor="middle">rock roof −1.9 — BELOW the waterline: the surface is never visible, no sign of air</text>
+
+    <!-- eye line: floor + 1.6 -->
+    <path d="M40,2 L280,56 L400,164 L980,164 L1105,85 L1150,85 L1220,13 L1420,13"
+      fill="none" stroke="#d8d3c8" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.7"/>
+    <text x="620" y="182" fill="#d8d3c8" font-size="12" opacity="0.8">eye line (floor + 1.6) — under water for ≈30 m ≈ 10 s</text>
+
+    <!-- landing marker -->
+    <circle cx="1127" cy="143" r="6" fill="#7fd8ff"/>
+    <text x="1127" y="200" fill="#7fd8ff" font-size="13" text-anchor="middle">surface break — head clears water ON the landing, doubled firelight ahead</text>
+
+    <!-- zone labels -->
+    <g fill="#8b93a0" font-size="13" text-anchor="middle">
+      <text x="160" y="300">approach (12 m)</text>
+      <text x="350" y="300">descent stair</text>
+      <text x="690" y="300">flooded gallery (~24 m walked)</text>
+      <text x="1140" y="300">surfacing stair (23 risers)</text>
+      <text x="1320" y="300">apron + ring (−0.3)</text>
+    </g>
+  </svg>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h3>The beats</h3>
+    <ol>
+      <li><b>The descent</b> — approach ramp, waterline glow ahead, water to the knees, then the descent stair: the ceiling drops with you.</li>
+      <li><b>The door of water</b> — the surface closes overhead. Rock roof from here on; the only light is ahead.</li>
+      <li><b>The bloom</b> — mid-passage, the dark gallery opens into its most alive pocket: waving plants, pale cave fish crossing the path. The "no air" low point is also the wonder peak.</li>
+      <li><b>The turn</b> — last bend; a warm glow bleeds down through water from the surfacing stair. Direction is never in doubt.</li>
+      <li><b>Surface break</b> — mid-stair landing at −2.3: the head clears water and the FIRST air is the money shot — black pool ahead doubling three firelights, symmetric, framed by the stair walls.</li>
+      <li><b>The procession</b> — around the pool and along the walkway: A, then B, then C at 5–6 m across the channel, each fully legible, still unreachable across water. Waterfall terminates the channel vista west.</li>
+      <li><b>The threshold</b> — a carved arch with gold bars frames the exit leg; Fire's warm glow pulls you out east.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>The numbers (verifiable)</h3>
+    <table>
+      <tr><th>Measure</th><th>v2</th><th>was</th></tr>
+      <tr><td>Eye genuinely under water</td><td class="k">≈30 m ≈ 10 s</td><td>6.6 m ≈ 2.2 s</td></tr>
+      <tr><td>Performer read distance (procession)</td><td class="k">5–6 m (≈17°)</td><td>15–25 m (3.7–5.3°)</td></tr>
+      <tr><td>Arrival: A/B/C distance ratio</td><td class="k">1.06</td><td>1.43</td></tr>
+      <tr><td>Arrival axis</td><td class="k">center-south, symmetric</td><td>SW corner, C clipped</td></tr>
+      <tr><td>Water share of grotto</td><td class="k">≈41%</td><td>51%</td></tr>
+      <tr><td>Ceiling over the wet route</td><td class="k">100%</td><td>~30%</td></tr>
+      <tr><td>Route dead-ends</td><td class="k">0 (full ring)</td><td>2 (overlook spurs + gate leg)</td></tr>
+      <tr><td>Surfacing stair</td><td class="k">23 risers, 3 m wide, landing</td><td>32° ramp, 2 m</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Kept · reworked · new</h3>
+    <table>
+      <tr><th></th><th>What</th></tr>
+      <tr><td class="k">Kept</td><td>Firelight doubling on the dark pool; submersion beat (×13 longer); warm-rock / cool-water palette; pool-as-barrier (performers unreachable); approach ramp + waterline glow.</td></tr>
+      <tr><td class="n">Reworked</td><td>Gate → carved threshold on the exit leg; sump + corridor → one flooded gallery; overlook spurs → the procession walkway; surfacing chute → stair with surface-break landing; waterfall moves behind the causeway axis to the channel's west end.</td></tr>
+      <tr><td class="n">New</td><td>Cave-native underwater life (existing GLB fish + flora, calm/dark end of catalog); the bloom; center-south arrival; full ring circulation — "reach the other end" by circumnavigating.</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Open questions on this sheet</h3>
+    <ol>
+      <li>Apron depth is 4.5 m (Codex suggested ≥6 for the composed view) — deep enough, or steal 1.5 m from the pool?</li>
+      <li>The bloom's glow: bioluminescent plants (self-lit, cheap) or a light shaft from a crack in the roof (breaks "no sign of air"?).</li>
+      <li>Channel width 4 m — close enough to feel the performers, far enough to stay "across water"? Could go 3 m.</li>
+      <li>Does the waterfall stay graybox-simple until Phase 2, or does the plunge get its own beat on the west walkway?</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  Drowned Gallery flow rethink v2 · sketch only — dimensions are design intent, tile-grid quantization happens in the plan ·
+  supersedes the route portions of the 2026-08-02 sheet (grotto composition concepts carry forward).
+</footer>
+
+</body>
+</html>
