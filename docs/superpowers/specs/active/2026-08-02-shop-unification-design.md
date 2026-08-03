@@ -137,6 +137,36 @@ visitors today.
       full `npm run check` green (0 errors / 0 warnings); scoped commits throughout
 - [x] Spec updated with chosen direction + shipped state
 
+## Hero iteration rounds (2026-08-02..03, post-ship feedback loop)
+
+- [x] R1 `430e0b0`: animated front+back hero — live CardBack, mandala drawn by prop-tip
+      trails (ShapeMatrixDrill recipe), phone-silhouette scan cue, 8s auto cycle
+- [x] R2a `7a16c396bc`: sweep scoped to the QR cell (runtime-derived rect); mandala overlay
+      centre measured, 0.7px delta (was 132px — grid start-alignment bug)
+- [x] R2b `2a43ee89f1`: hero pinned to the card bake (staffs/back theme/light mode — 3
+      profile leaks closed); printed-card trail preset (no glow, print inks); size drift
+      re-anchored to trailed-tip reach (drawn/printed 1.021 → 0.991)
+- [x] R3 `16a2bef0f9`: scan flow button-triggered ("Scan the code" → "Scan again",
+      ActionButton + ghost-sizer), engine lazy-mounts on first press, no auto-repeat
+- [ ] R4 (in flight): shuffle deals a different catalog card + auto-scan on land;
+      start-position cell fix (ensureSteplacement read path — the PictographPreparer
+      warning was this bug); onward-band CTA href /composer → /create
+- [ ] R5 (decided 2026-08-03, not started): **Hero v2 — the phone shows the real thing.**
+      Austen's insight: the live-drawn back card is magical but fictional; a real scan
+      loads /q. Decisions (his picks from the fork):
+      1. Phone = **iframe of the literal `/q/<code>`** for the displayed card (cover QRs
+         already come from the same shortcode manager /q resolves). `?demo=1` on the /q
+         host suppresses scan logging/analytics — funnel numbers must not see demo loads.
+         Lazy-boot on scan press. Loading state is honest (phones load).
+      2. **Live-draw mandala trick retired from the hero** (survives in git; candidate for
+         a product-page howItWorks slot later). Back card peeks out behind-left of the
+         front, printed mandala static. One payoff surface: the phone, now the hero's
+         dominant object.
+      3. Scan animation = **camera viewfinder**: phone leans in, screen shows the card
+         through a "camera view" (parallax re-render), QR chip pops (iOS-style), screen
+         swipes up into /q loading. Svelte springs + View Transitions; no new framework.
+      Shuffle (R4) survives: dealing a card swaps the stack AND the phone URL.
+
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
 All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
