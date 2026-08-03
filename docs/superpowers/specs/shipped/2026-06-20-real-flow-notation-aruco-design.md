@@ -42,7 +42,7 @@ The implementation lives in `src/lib/features/train/prop-tracking-lab/`:
 
 The original proposal used printed ArUco markers, camera-frame pose estimation, and a grid-frame solver. Capture moved to illuminated staff endpoints on 2026-06-21. Commit `e42cfcae8b` removed the ArUco tracker, solver, marker sheet, and vendored `js-aruco2` sources.
 
-The original implementation plan is preserved only as history at `docs/superpowers/plans/archived/2026-06-21-real-flow-notation-aruco.md`. Its marker-printing and ArUco implementation steps must not be executed.
+An archived tombstone lives at `docs/superpowers/plans/archived/2026-06-21-real-flow-notation-aruco.md`. The full retired plan remains in Git history and must not be executed.
 
 ## Verification boundary
 
