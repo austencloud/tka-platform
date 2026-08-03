@@ -102,7 +102,7 @@ against the real tile grid.
 
 Both fixes are in
 [`src/lib/features/museum/data/drowned-gallery-terrain.ts`](file:///E:/tka-platform/src/lib/features/museum/data/drowned-gallery-terrain.ts),
-committed at **`<SHA_PLACEHOLDER>`**:
+committed at **`cf707da46095c29d3e13d727d25dda08622c444a`**:
 
 1. Added `doorXSpan(grid, roomId, wall)` — scans the real door tiles on a
    room's wall (mirrors `findDoorCenter` in `vulcan-cave-floor-plan.ts`, but
