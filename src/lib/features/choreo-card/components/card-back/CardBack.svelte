@@ -45,20 +45,37 @@
     showTnDDesignation?: boolean;
     /**
      * Opt-in live layer over the printed mandala (the shop hero's animated
-     * back). The snippet renders in a box concentric with the mandala and
-     * inherits `--card-mandala-size`, the printed mandala's side length, so an
-     * engine-aligned overlay can size its own square from it. Supplying it also
-     * ghosts the printed mandala underneath, which is what lets a drawn trail
-     * read against it. Print and raster paths never pass this.
+     * back). The snippet renders inside a positioned box that IS the printed
+     * mandala's box — same centre, same side — so a child absolutely centred
+     * in it is concentric with the printed figure by construction.
+     * `--card-mandala-size` carries that side length for a consumer that needs
+     * to size an engine square from it.
+     * Supplying the snippet also ghosts the printed mandala underneath, which
+     * is what lets a drawn trail read against it. Print and raster paths never
+     * pass this.
      */
     mandalaOverlay?: Snippet;
+    /**
+     * Called with the printed mandala's box (and null on teardown). The one
+     * hook a live overlay needs: the printed figure is the alignment target,
+     * and its on-screen box is the only honest way to find it — the card's
+     * size comes from a container query, so it is not knowable up front.
+     */
+    onMandalaBox?: (el: HTMLDivElement | null) => void;
   }
   let {
     sequence,
     themeOverride,
     showTnDDesignation = false,
     mandalaOverlay,
+    onMandalaBox,
   }: Props = $props();
+
+  let mandalaAnchorEl = $state<HTMLDivElement | null>(null);
+  $effect(() => {
+    onMandalaBox?.(mandalaAnchorEl);
+    return () => onMandalaBox?.(null);
+  });
 
   const d = $derived(deriveCardBackData(sequence));
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
@@ -166,7 +183,7 @@
     <!-- CENTER: mandala -->
     <div class="content">
       <div class="mandala-zone" class:ghosted={!!mandalaOverlay}>
-        <div class="mandala-anchor">
+        <div class="mandala-anchor" bind:this={mandalaAnchorEl}>
           <SequenceMandala
             {sequence}
             mode="card-back"
@@ -181,7 +198,9 @@
         </div>
       </div>
       {#if mandalaOverlay}
-        <div class="mandala-overlay">{@render mandalaOverlay()}</div>
+        <div class="mandala-overlay">
+          <div class="mandala-overlay-box">{@render mandalaOverlay()}</div>
+        </div>
       {/if}
     </div>
 
@@ -536,15 +555,34 @@
     opacity: 0.55;
   }
 
-  /* Concentric with .mandala-anchor: same centre, sized by the consumer. The
-     box may run wider than .content — what it paints does not. */
+  /* Deliberately the SAME two-element shape as .mandala-zone/.mandala-anchor
+     below, with the same centring and the same box rules, so the overlay box
+     is congruent with the printed mandala by construction rather than by two
+     sets of numbers agreeing.
+
+     Two things it must not be. Not `inset: 0` with grid centring: a child
+     larger than its grid container gets an auto track its own width and is
+     placed at that track's start, which put the oversized engine square down
+     and right of the mandala instead of around it. And not centred by
+     `translate`, because transforms are invisible to offsetLeft/offsetTop —
+     a consumer measuring its own alignment would read the box's untranslated
+     position and correct for a shift that had already happened. Flex centring
+     is layout, so it reads true. */
   .mandala-overlay {
     position: absolute;
     inset: 0;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     pointer-events: none;
     z-index: 1;
+  }
+
+  .mandala-overlay-box {
+    position: relative;
+    width: var(--card-mandala-size, 72cqi);
+    max-height: 100%;
+    aspect-ratio: 1;
   }
 
   .mandala-anchor {

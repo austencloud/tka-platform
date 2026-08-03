@@ -2,17 +2,24 @@
 <!--
   The hero's scan cue: the two seconds that connect the printed front to the
   moving back. Nothing here is stock imagery — the phone is a rounded rect with
-  a screen inset and a speaker slot, drawn in CSS, so it scales with the card
-  and carries no licensing or download weight.
+  a speaker slot, drawn in CSS, so it scales with the card and carries no
+  licensing or download weight.
 
   Two variants, one timeline (hero-scan-timeline.svelte.ts):
 
   - `phone` (default): a phone outline rises over the front card, holds it in
-    frame, and a scan line crosses it once. Then it drops away and the back card
-    takes over. It reads as the actual gesture the card asks for.
+    frame, and a scan line crosses the CODE once. Then it drops away and the
+    back card takes over. It reads as the actual gesture the card asks for.
   - `pulse`: no phone. The front card's code pulses, and a ring travels from it
     across to the back card. Quieter, and it never occludes the printed front —
     the reason it exists as an alternative.
+
+  The phone frames the whole card, because that is how you hold a phone. The
+  READ does not: a scan covers the code and nothing else, so the reticle, the
+  band, and the pulse all live in `qrCell` — the printed QR cell's real
+  rectangle, measured by the host (HeroCardDuo) from the card's own print
+  layout. Nothing here is positioned by eye, and nothing draws until that
+  rectangle is known.
 
   The cue never blocks reading the card: it is pointer-transparent, it sits at
   partial opacity over the front only, and the idle beat between passes is
@@ -22,14 +29,18 @@
 -->
 <script lang="ts">
   import type { ScanCueVariant, ScanPhase } from "./hero-scan-timeline.svelte";
+  import type { LayoutRect } from "./hero-layout-measure";
 
   interface Props {
     cue: ScanCueVariant;
     phase: ScanPhase;
     /** Restarts the sweep animation per pass. */
     cycle: number;
+    /** The printed QR cell, in % of the front slot. Null until measured — the
+     *  read has nowhere to land before then, so it simply doesn't draw. */
+    qrCell: LayoutRect | null;
   }
-  let { cue, phase, cycle }: Props = $props();
+  let { cue, phase, cycle, qrCell }: Props = $props();
 
   const showing = $derived(phase === "rise" || phase === "sweep");
 </script>
@@ -38,22 +49,31 @@
   {#if cue === "phone"}
     <div class="phone" class:up={showing}>
       <span class="speaker"></span>
-      <span class="screen">
+    </div>
+  {/if}
+
+  {#if qrCell}
+    <div
+      class="qr-scope"
+      style:left="{qrCell.x}%"
+      style:top="{qrCell.y}%"
+      style:width="{qrCell.w}%"
+      style:height="{qrCell.h}%"
+    >
+      {#if cue === "phone"}
+        <span class="reticle" class:lit={showing}></span>
         {#if phase === "sweep"}
           {#key cycle}
-            <span class="scan-line"></span>
+            <span class="band-clip"><span class="scan-line"></span></span>
           {/key}
         {/if}
-      </span>
-      <span class="reticle"></span>
-    </div>
-  {:else}
-    <div class="pulse-cue">
-      <span class="qr-pulse" class:beating={showing}></span>
-      {#if phase === "sweep"}
-        {#key cycle}
-          <span class="ring"></span>
-        {/key}
+      {:else}
+        <span class="qr-pulse" class:beating={showing}></span>
+        {#if phase === "sweep"}
+          {#key cycle}
+            <span class="ring"></span>
+          {/key}
+        {/if}
       {/if}
     </div>
   {/if}
@@ -112,21 +132,25 @@
     background: rgba(255, 255, 255, 0.42);
   }
 
-  .screen {
+  /* ── the read: everything scoped to the printed code ─────────────────── */
+
+  /* The QR cell's own rectangle, sized and placed by the host from the card's
+     print layout. Every scanning mark below is positioned inside this, so the
+     read covers the code and stops there. */
+  .qr-scope {
     position: absolute;
-    inset: 7% 5% 5%;
-    border-radius: clamp(0.4rem, 5%, 1rem);
-    overflow: hidden;
   }
 
   /* The corner brackets of a camera viewfinder, drawn as two gradients so the
-     phone stays one element with no extra nodes. */
+     frame is one element with no extra nodes. Outset a little so the brackets
+     frame the code rather than sitting on its quiet zone. */
   .reticle {
     position: absolute;
-    width: 46%;
-    aspect-ratio: 1;
+    inset: -8%;
     border: 0.16rem solid rgba(126, 224, 255, 0.85);
     border-radius: 0.35rem;
+    opacity: 0;
+    transition: opacity 380ms ease;
     -webkit-mask-image:
       linear-gradient(to right, #000 0 26%, transparent 26% 74%, #000 74% 100%),
       linear-gradient(to bottom, #000 0 26%, transparent 26% 74%, #000 74% 100%);
@@ -136,12 +160,25 @@
       linear-gradient(to bottom, #000 0 26%, transparent 26% 74%, #000 74% 100%);
     mask-composite: intersect;
   }
+  .reticle.lit {
+    opacity: 1;
+  }
+
+  /* The band travels the code's height and is clipped to it — that clip is
+     what makes this a read of the code rather than a light show over the
+     card. Slightly outset to match the reticle it runs inside. */
+  .band-clip {
+    position: absolute;
+    inset: -8%;
+    border-radius: 0.35rem;
+    overflow: hidden;
+  }
 
   .scan-line {
     position: absolute;
     left: 0;
     right: 0;
-    height: 24%;
+    height: 34%;
     background: linear-gradient(
       to bottom,
       rgba(56, 189, 248, 0) 0%,
@@ -155,7 +192,7 @@
 
   @keyframes sweep {
     0% {
-      transform: translateY(-30%);
+      transform: translateY(-100%);
       opacity: 0;
     }
     18% {
@@ -165,27 +202,16 @@
       opacity: 1;
     }
     100% {
-      transform: translateY(370%);
+      transform: translateY(300%);
       opacity: 0;
     }
   }
 
   /* ── pulse ───────────────────────────────────────────────────────────── */
 
-  .pulse-cue {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-  }
-
   .qr-pulse {
     position: absolute;
-    /* Over the lower band of the front card, where the printed code sits in
-       whichever grid cell the layout leaves empty. */
-    bottom: 16%;
-    width: 26%;
-    aspect-ratio: 1;
+    inset: -8%;
     border-radius: 0.4rem;
     border: 0.14rem solid rgba(126, 224, 255, 0.75);
     opacity: 0;
@@ -210,9 +236,7 @@
 
   .ring {
     position: absolute;
-    bottom: 16%;
-    width: 26%;
-    aspect-ratio: 1;
+    inset: -8%;
     border-radius: 999px;
     border: 0.16rem solid rgba(126, 224, 255, 0.6);
     animation: ring-travel 1300ms cubic-bezier(0.3, 0, 0.2, 1) forwards;
@@ -235,6 +259,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .phone,
+    .reticle,
     .qr-pulse {
       transition: none;
     }

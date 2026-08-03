@@ -29,6 +29,12 @@
     createHeroScanTimeline,
     type ScanCueVariant,
   } from "./hero-scan-timeline.svelte";
+  import { computeFrontQrCellRect } from "../../services/card-front-regions";
+  import {
+    layoutRectWithin,
+    observeLayout,
+    type LayoutRect,
+  } from "./hero-layout-measure";
 
   interface Props {
     /** Null until the catalog's cover cards land. The slots hold their shape. */
@@ -49,10 +55,61 @@
     timeline.start();
     return () => timeline.stop();
   });
+
+  // ── the QR cell, located rather than guessed ────────────────────────────
+  // A phone reads the code, not the card, so the sweep covers the code's cell
+  // and nothing else. That cell is wherever the step grid leaves a hole — the
+  // bottom of the left column at 8 and 12 steps, the end of the top row
+  // otherwise — so it is derived from the same layout math the bake used
+  // (computeFrontQrCellRect gives it as % of a trimmed card front), then
+  // placed by measuring where that trimmed card actually sits inside the slot.
+  // The fan pads and auto-scales its card, so the card box is NOT the slot.
+  let frontSlotEl = $state<HTMLDivElement | null>(null);
+  let cardBoxInSlot = $state<LayoutRect | null>(null);
+
+  const qrOnCard = $derived(
+    card ? computeFrontQrCellRect(card.sequence?.steps?.length ?? 8) : null
+  );
+
+  /** The QR cell as % of the front SLOT — the box the scan cue overlays. */
+  const qrCell = $derived.by<LayoutRect | null>(() => {
+    const box = cardBoxInSlot;
+    const onCard = qrOnCard;
+    const slot = frontSlotEl;
+    if (!box || !onCard || !slot || !box.w || !box.h) return null;
+    const sw = slot.offsetWidth;
+    const sh = slot.offsetHeight;
+    if (!sw || !sh) return null;
+    return {
+      x: ((box.x + (onCard.x / 100) * box.w) / sw) * 100,
+      y: ((box.y + (onCard.y / 100) * box.h) / sh) * 100,
+      w: ((onCard.w / 100) * box.w / sw) * 100,
+      h: ((onCard.h / 100) * box.h / sh) * 100,
+    };
+  });
+
+  $effect(() => {
+    const slot = frontSlotEl;
+    if (!slot) return;
+    return observeLayout(slot, () => {
+      const box = slot.querySelector<HTMLElement>("[data-card-box]");
+      const next = box ? layoutRectWithin(box, slot) : null;
+      const prev = cardBoxInSlot;
+      const same =
+        next !== null &&
+        prev !== null &&
+        next.x === prev.x &&
+        next.y === prev.y &&
+        next.w === prev.w &&
+        next.h === prev.h;
+      if (!same) cardBoxInSlot = next;
+      return next !== null && next.w > 0;
+    });
+  });
 </script>
 
 <div class="duo">
-  <div class="slot front">
+  <div class="slot front" bind:this={frontSlotEl}>
     {#if card && product}
       <div class="art">
         <ShopEntryArt
@@ -65,7 +122,12 @@
         />
       </div>
       {#if !timeline.reducedMotion}
-        <HeroScanCue {cue} phase={timeline.phase} cycle={timeline.cycle} />
+        <HeroScanCue
+          {cue}
+          phase={timeline.phase}
+          cycle={timeline.cycle}
+          {qrCell}
+        />
       {/if}
     {/if}
   </div>

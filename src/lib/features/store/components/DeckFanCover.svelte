@@ -275,7 +275,12 @@
         style:transition-timing-function={deal ? (dealt ? DEAL_EASE : GATHER_EASE) : undefined}
         style:transition-delay={deal && dealt ? `${i * DEAL_STAGGER}ms` : undefined}
       >
-        <div class="card-box" style:width="{cardW}px">
+        <!-- `data-card-box` is the measurement seam: this element is exactly
+             the TRIMMED card (the guillotine cut, 5:7), so a host that needs
+             to land something on a printed region — the shop hero's scan band
+             over the QR cell — can find the card's real box without depending
+             on this component's class names. -->
+        <div class="card-box" data-card-box style:width="{cardW}px">
           {#if onCardClick}
             <button
               type="button"
