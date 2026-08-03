@@ -279,6 +279,14 @@
        true at the one width the numbers were picked at. */
     --phone-h: min(62svh, 38rem, calc(100cqw / 1.45));
     --card-h: calc(var(--phone-h) * 0.66);
+    /* The "Open this scan" pill sits below the phone rather than on its bezel
+       (HeroPhone reads both). The slot reserves its height up front, so the pill
+       appearing after a scan cannot shift the trigger under it. */
+    --pill-gap: 0.7rem;
+    --pill-h: var(--min-touch-target, 44px);
+    /* The quarter-rem tail covers the phone's perspective tilt, which carries
+       the pill a pixel or two past a reserve measured on the untransformed box. */
+    --pill-reserve: calc(var(--pill-gap) + var(--pill-h) + 0.25rem);
     display: grid;
     grid-template-columns: auto auto;
     grid-template-areas:
@@ -303,8 +311,8 @@
     grid-area: phone;
     display: grid;
     place-items: center;
-    /* Room for the lean and the "Open this scan" pill hanging below. */
-    padding-block: calc(var(--phone-h) * 0.05) 2.4rem;
+    /* Room for the lean above, and the pill's whole slot below. */
+    padding-block: calc(var(--phone-h) * 0.05) var(--pill-reserve);
   }
 
   .scan-trigger {
@@ -403,6 +411,40 @@
         "phone"
         "action";
       justify-items: center;
+    }
+  }
+
+  /* Wide but short — a folded Fold in landscape, a laptop in a small window.
+     ShopFrontDoorHero runs the copy and this stage side by side here, and the
+     whole hero has to clear a viewport around 412px tall.
+
+     16a2bef0f9 held this guarantee by paying for the trigger out of the CARD's
+     budget (56svh -> 38svh). Hero v2 made the PHONE the driver and the card a
+     fraction of it, and the override went with the old variable, so the trigger
+     landed 60px under the fold. It is restored against the new driver: the phone
+     pays, at 38svh instead of 62svh.
+
+     The arithmetic at 960x412, which is what the number is picked for:
+       header 65 + hero pad 20 + stage pad 14 + slot 217 + gap 12 + trigger 51
+       = 379 <= 412. Everything below the phone is fixed cost, so the phone is
+       the only term that can absorb a short viewport.
+
+     Two columns even under 52rem: stacking the phone beneath the cards is the
+     one arrangement a 412px-tall viewport cannot afford. */
+  @media (min-width: 48rem) and (max-height: 40rem) {
+    .stage {
+      --phone-h: min(38svh, 20rem, calc(100cqw / 1.45));
+      --card-h: calc(var(--phone-h) * 0.66);
+      grid-template-columns: auto auto;
+      grid-template-areas:
+        "cards phone"
+        "action action";
+      gap: 0.75rem clamp(1rem, 4cqw, 3.5rem);
+    }
+    .phone-slot {
+      /* The lean allowance shrinks with the phone; the pill's slot does not —
+         it holds a 44px touch target whatever the viewport. */
+      padding-block: calc(var(--phone-h) * 0.03) var(--pill-reserve);
     }
   }
 

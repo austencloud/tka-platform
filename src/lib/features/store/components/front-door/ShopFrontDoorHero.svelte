@@ -82,6 +82,9 @@
       padding-block: 1.25rem;
       gap: 2rem;
     }
+    /* The copy's own trims for this tier live at the foot of this stylesheet:
+       the base .copy / h1 / .steps rules are declared BELOW these media blocks,
+       so an override written here loses on source order. */
   }
 
   /* Big-screen tier (the site-wide 1680 seam). Two things go wrong up here if
@@ -203,6 +206,24 @@
       rgba(126, 224, 255, 0.16),
       rgba(126, 224, 255, 0) 68%
     );
+  }
+
+  /* Wide but short, continued — the copy pays too. It shares the row with the
+     card stage, so whichever column is taller sets the height and pushes the
+     other one down. At 412px tall the display h1 alone was 96px of a 328px
+     budget, and "See the catalog" landed below the fold. Three trims, no lost
+     content: a smaller display size, a tighter column rhythm, closer steps.
+     (This block sits after the base .copy / h1 / .steps rules on purpose.) */
+  @media (min-width: 48rem) and (max-height: 40rem) {
+    .copy {
+      gap: 0.7rem;
+    }
+    h1 {
+      font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+    }
+    .steps {
+      gap: 0.35rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

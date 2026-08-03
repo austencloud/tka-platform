@@ -349,15 +349,20 @@
 
   /* ── way out ──────────────────────────────────────────────────────────── */
 
+  /* Seated fully BELOW the phone, never on its bezel. It used to hang at
+     `bottom: -1.4rem`, which put its top 19px INSIDE the screen and covered the
+     embedded viewer's bottom bar. `top: 100% + gap` starts it where the phone
+     ends. The host reserves `--pill-gap + --pill-h` under the phone slot, so the
+     pill arriving after a scan still moves nothing (no-layout-shift.md). */
   .open-real {
     position: absolute;
     left: 50%;
-    bottom: -1.4rem;
+    top: calc(100% + var(--pill-gap, 0.7rem));
     translate: -50% 0;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    min-height: var(--min-touch-target, 44px);
+    min-height: var(--pill-h, var(--min-touch-target, 44px));
     padding: 0 1.1rem;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.22);
