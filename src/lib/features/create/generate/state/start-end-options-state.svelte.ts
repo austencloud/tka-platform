@@ -39,7 +39,14 @@ type BlockedStartPositionsByGridMode = Partial<
 
 interface SerializedSessionOptions {
   startPositionLetter?: string;
+  /**
+   * @deprecated Letter alone is ambiguous — "Γ" covers 8 gamma variants — so a
+   * restored session could never rebuild the position the user picked. Read
+   * for backwards compatibility, never written. Superseded by endPositions.
+   */
   endPositionLetter?: string;
+  /** Grid position names, e.g. ["gamma11", "alpha3"]. */
+  endPositions?: string[];
   mustContainLetters: string[];
   mustNotContainLetters: string[];
   blueStartOrientation?: string;
@@ -55,7 +62,7 @@ function saveSessionOptions(options: StartEndOptions): void {
   try {
     const serialized: SerializedSessionOptions = {
       startPositionLetter: options.startPosition?.letter || undefined,
-      endPositionLetter: options.endPosition?.letter || undefined,
+      endPositions: options.endPositions.map(String),
       mustContainLetters: options.mustContainLetters.map((l) => l.toString()),
       mustNotContainLetters: options.mustNotContainLetters.map((l) =>
         l.toString()
@@ -87,9 +94,11 @@ function loadSessionOptions(): Partial<StartEndOptions> | null {
       startPosition: data.startPositionLetter
         ? ({ letter: data.startPositionLetter } as PictographData)
         : null,
-      endPosition: data.endPositionLetter
-        ? ({ letter: data.endPositionLetter } as PictographData)
-        : null,
+      // The legacy endPositionLetter is deliberately NOT migrated: a letter
+      // cannot name which of its variants was chosen, and the constraint never
+      // reached the engine anyway, so there is no working selection to keep.
+      endPosition: null,
+      endPositions: (data.endPositions || []) as GridPosition[],
       mustContainLetters: (data.mustContainLetters || []) as Letter[],
       mustNotContainLetters: (data.mustNotContainLetters || []) as Letter[],
       blueStartOrientation: (data.blueStartOrientation as Orientation) ?? Orientation.IN,
@@ -117,6 +126,7 @@ const DEFAULT_OPTIONS: StartEndOptions = {
   blockedStartPositions: [],
   startPosition: null,
   endPosition: null,
+  endPositions: [],
   mustContainLetters: [],
   mustNotContainLetters: [],
   blueStartOrientation: Orientation.IN,
@@ -187,6 +197,7 @@ export function createStartEndOptionsState(
     options.blockedStartPositions.length > 0 ||
       options.startPosition !== null ||
       options.endPosition !== null ||
+      options.endPositions.length > 0 ||
       options.mustContainLetters.length > 0 ||
       options.mustNotContainLetters.length > 0
   );
@@ -198,8 +209,10 @@ export function createStartEndOptionsState(
       parts.push(`Start: ${options.startPosition.letter || "?"}`);
     }
 
-    if (options.endPosition) {
-      parts.push(`End: ${options.endPosition.letter || "?"}`);
+    if (options.endPositions.length === 1) {
+      parts.push(`End: ${options.endPositions[0]}`);
+    } else if (options.endPositions.length > 1) {
+      parts.push(`End: ${options.endPositions.length} positions`);
     }
 
     if (options.mustContainLetters.length > 0) {
@@ -252,8 +265,12 @@ export function createStartEndOptionsState(
         : currentPreset === StartPositionPreset.CLASSIC
           ? getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode)
           : [];
+    // Grid mode changes the position vocabulary (diamond vs box names), so any
+    // exact position held from the other mode is meaningless here.
     const clearedExactPositions =
-      options.startPosition !== null || options.endPosition !== null;
+      options.startPosition !== null ||
+      options.endPosition !== null ||
+      options.endPositions.length > 0;
 
     currentGridMode = gridMode;
     options = {
@@ -261,6 +278,7 @@ export function createStartEndOptionsState(
       blockedStartPositions: nextBlockedPositions,
       startPosition: null,
       endPosition: null,
+      endPositions: [],
     };
     saveBlockedPositions(nextBlockedPositions);
     saveSessionOptions(options);
@@ -343,6 +361,10 @@ export function createStartEndOptionsState(
     updateOptions({ endPosition: position });
   }
 
+  function setEndPositions(positions: GridPosition[]) {
+    updateOptions({ endPositions: [...positions] });
+  }
+
   function setMustContainLetters(letters: Letter[]) {
     updateOptions({ mustContainLetters: [...letters] });
   }
@@ -383,6 +405,7 @@ export function createStartEndOptionsState(
     // Field-level setters
     setStartPosition,
     setEndPosition,
+    setEndPositions,
     setMustContainLetters,
     setMustNotContainLetters,
   };

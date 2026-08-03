@@ -362,3 +362,112 @@ describe("length-based generation", () => {
     expect(result.sequence[2]!.letter).toBe("B");
   });
 });
+
+/**
+ * End-position constraints.
+ *
+ * The app collected an end position, persisted it, and showed it on the
+ * Customize card, but generation-orchestrator never passed it to build() — the
+ * constraint was silently dropped at that boundary, so the picker did nothing.
+ * These lock the engine half: a goal that is honoured, and a goal that can be
+ * one of several (the search has always held it as a Set; only the option was
+ * singular).
+ */
+describe("end-position constraints", () => {
+  let builder: SequenceBuilder;
+
+  beforeEach(() => {
+    setLetterTransitionGraph(new MockTransitionGraph());
+    builder = new SequenceBuilder(new MockVariationProvider(MOCK_PICTOGRAPHS));
+  });
+
+  const lastEnd = (r: { sequence: { endPosition: string }[] }) =>
+    r.sequence[r.sequence.length - 1]!.endPosition;
+
+  // Repeated, because this mock graph only has two positions: a build that
+  // ignored the goal entirely would still land on it by chance about half the
+  // time. Ten runs per goal makes an accidental pass ~1 in a million.
+  it("honours a single endPositions entry", () => {
+    for (const goal of ["alpha1", "beta3"]) {
+      for (let i = 0; i < 10; i++) {
+        const result = builder.build({
+          length: 4,
+          gridMode: "diamond",
+          level: 1,
+          endPositions: [goal],
+        });
+        expect(lastEnd(result)).toBe(goal);
+      }
+    }
+  });
+
+  it("honours the deprecated single endPosition", () => {
+    const result = builder.build({
+      length: 4,
+      gridMode: "diamond",
+      level: 1,
+      endPosition: "beta3",
+    });
+
+    expect(lastEnd(result)).toBe("beta3");
+  });
+
+  it("accepts one of several allowed end positions", () => {
+    // Both goals are reachable at this length, so the search is free to pick
+    // either — the assertion is membership, not a specific value.
+    const result = builder.build({
+      length: 4,
+      gridMode: "diamond",
+      level: 1,
+      endPositions: ["alpha1", "beta3"],
+    });
+
+    expect(["alpha1", "beta3"]).toContain(lastEnd(result));
+  });
+
+  it("is unconstrained when endPositions is empty", () => {
+    const result = builder.build({
+      length: 4,
+      gridMode: "diamond",
+      level: 1,
+      endPositions: [],
+    });
+
+    // An empty list must mean "Any", not an impossible zero-goal search.
+    expect(result.sequence.length).toBe(5);
+  });
+
+  // The bug this suite exists for. buildByLength has TWO attempt loops: the
+  // main one, and a fallback that demotes hard prop-continuity to soft when the
+  // beam dies and retries. The fallback re-derived its goal from scratch and
+  // only ever read the legacy single endPosition, so with Props on Choppy the
+  // constrained pass would fail, the fallback would regenerate with NO end
+  // constraint, and the user's picked positions were silently ignored. Both
+  // loops now call the same userEndPositions helper.
+  it("honours end positions when prop continuity forces the retry path", () => {
+    for (const goal of ["alpha1", "beta3"]) {
+      for (let i = 0; i < 5; i++) {
+        const result = builder.build({
+          length: 4,
+          gridMode: "diamond",
+          level: 1,
+          constraintPreset: "smooth",
+          endPositions: [goal],
+        });
+        expect(lastEnd(result)).toBe(goal);
+      }
+    }
+  });
+
+  it("unions the legacy field with the multi-select list", () => {
+    const result = builder.build({
+      length: 4,
+      gridMode: "diamond",
+      level: 1,
+      endPositions: ["alpha1"],
+      endPosition: "beta3",
+    });
+
+    expect(["alpha1", "beta3"]).toContain(lastEnd(result));
+  });
+});

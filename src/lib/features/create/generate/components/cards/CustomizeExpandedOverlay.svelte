@@ -21,10 +21,10 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   import { onMount, untrack } from "svelte";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import {
     detectPresetFromBlocked,
     getAllowedPositions,
+    getAllPositions,
     getBlockedPositionsForPreset,
     PRESET_LABELS,
     StartPositionPreset,
@@ -35,7 +35,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     type SettingsDrillItem,
   } from "$lib/shared/ui/components/settings-drill/SettingsDrillPanel.svelte";
   import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
-  import PositionPickerGrid from "$lib/shared/components/position-picker/PositionPickerGrid.svelte";
   import PropOrientationControl from "../../../shared/components/sequence-actions/PropOrientationControl.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { buildStartEndOptions } from "./customize-start-end-options";
@@ -110,8 +109,11 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   let localBlockedPositions = $state<GridPosition[]>(
     untrack(() => startEndOptions)?.blockedStartPositions ?? []
   );
-  let localEndPosition = $state<PictographData | null>(
-    untrack(() => startEndOptions)?.endPosition ?? null
+  // Allowed end positions. Empty = "Any", exactly like an empty
+  // blockedStartPositions means every start is allowed — the two pickers now
+  // read the same way.
+  let localEndPositions = $state<GridPosition[]>(
+    untrack(() => startEndOptions)?.endPositions ?? []
   );
 
   // ─── Local state for start orientation (blue + red, default In/In) ───
@@ -164,9 +166,35 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     return enabledCount === 1 ? "1 pos" : `${enabledCount} pos`;
   });
 
-  const endPosDisplay = $derived(
-    localEndPosition?.startPosition || localEndPosition?.letter || "Any"
+  const endPosDisplay = $derived.by(() => {
+    const n = localEndPositions.length;
+    if (n === 0) return "Any";
+    if (n === 1) return String(localEndPositions[0]);
+    return `${n} positions`;
+  });
+
+  // The shared picker speaks blocklist; end positions are an allowlist. Invert
+  // at this seam so the primitive is reused unchanged (never-hand-roll) and
+  // both position screens look and behave identically: all cells bright = no
+  // constraint, dim some = constrain to whatever stays bright.
+  const endBlockedPositions = $derived(
+    localEndPositions.length === 0
+      ? []
+      : getAllPositions(gridMode).filter(
+          (p) => !localEndPositions.includes(p)
+        )
   );
+
+  function handleEndBlockedChange(blocked: GridPosition[]) {
+    if (!startEndOptions || !onStartEndChange) return;
+    hapticService?.trigger("selection");
+    const allowed = getAllowedPositions(blocked, gridMode);
+    // Everything enabled is the "Any" state, not a 16-way constraint. Storing
+    // it as [] keeps the engine unconstrained and the row honest.
+    localEndPositions =
+      allowed.length === getAllPositions(gridMode).length ? [] : allowed;
+    emitStartEndChange();
+  }
 
   // Names the axes that differ instead of saying "Custom". The bare word left
   // the collapsed card ("Props: Mixed") looking like it had singled out one of
@@ -221,7 +249,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     localHandPathMode = GENERATE_DEFAULT_CONFIG.handPathMode;
     localMotionTypeFilter = GENERATE_DEFAULT_CONFIG.motionTypeFilter;
     localBlockedPositions = [];
-    localEndPosition = null;
+    localEndPositions = [];
     localBlueOri = Orientation.IN;
     localRedOri = Orientation.IN;
   }
@@ -236,7 +264,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     onStartEndChange(
       buildStartEndOptions(startEndOptions, {
         blockedStartPositions: localBlockedPositions,
-        endPosition: localEndPosition,
+        endPositions: localEndPositions,
         blueStartOrientation: localBlueOri,
         redStartOrientation: localRedOri,
       })
@@ -268,14 +296,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   // Manual multi-select toggles from the shared grid primitive.
   function handleBlockedChange(blocked: GridPosition[]) {
     applyBlockedPositions(blocked);
-  }
-
-  // End position (freeform only).
-  function handleEndPositionChange(position: PictographData | null) {
-    if (!startEndOptions || !onStartEndChange) return;
-    hapticService?.trigger("selection");
-    localEndPosition = position;
-    emitStartEndChange();
   }
 
   // Start orientation per prop. Feeds the engine's blue/redStartOrientation
@@ -366,11 +386,15 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
           />
         </div>
       {:else if id === "endPos"}
-        <p class="detail-note">Where the sequence ends. Optional.</p>
+        <p class="detail-note">
+          Where the sequence can end. All enabled means any position.
+        </p>
         <div class="drill-fill grid-fill">
-          <PositionPickerGrid
-            currentPosition={localEndPosition}
-            onPositionChange={handleEndPositionChange}
+          <MultiSelectPositionPicker
+            blockedPositions={endBlockedPositions}
+            onBlockedChange={handleEndBlockedChange}
+            blueStartOrientation={localBlueOri}
+            redStartOrientation={localRedOri}
             {gridMode}
           />
         </div>

@@ -114,7 +114,22 @@ export interface StartEndOptions {
    * Single start position constraint (legacy - for exact position match).
    */
   startPosition: PictographData | null;
+  /**
+   * @deprecated Use endPositions. Kept so older persisted sessions and the
+   * legacy single-select callers still resolve to a goal.
+   */
   endPosition: PictographData | null;
+  /**
+   * Allowed end positions — the sequence must end at one of them. Empty means
+   * unconstrained ("Any"), the same way an empty blockedStartPositions means
+   * every start is allowed.
+   *
+   * Multi-select because the engine's goal has always been a `Set<string>`
+   * (see SequenceBuilder.requiredEndPositions); a single target was an
+   * artifact of the option surface, and a wider set is strictly more feasible
+   * than one hard target.
+   */
+  endPositions: GridPosition[];
   mustContainLetters: Letter[];
   mustNotContainLetters: Letter[];
   /**

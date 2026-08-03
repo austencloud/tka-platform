@@ -23,6 +23,7 @@ const NO_CONSTRAINTS: StartEndOptions = {
   blockedStartPositions: [],
   startPosition: null,
   endPosition: null,
+  endPositions: [],
   mustContainLetters: [],
   mustNotContainLetters: [],
   blueStartOrientation: Orientation.IN,

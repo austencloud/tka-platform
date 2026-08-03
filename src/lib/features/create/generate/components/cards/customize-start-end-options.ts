@@ -6,7 +6,8 @@ import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pic
 /** The start/end fields the customize overlay edits, held as live local state. */
 export interface CustomizeStartEndLocalState {
   blockedStartPositions: GridPosition[];
-  endPosition: PictographData | null;
+  /** Allowed end positions. Empty = unconstrained ("Any"). */
+  endPositions: GridPosition[];
   blueStartOrientation: Orientation;
   redStartOrientation: Orientation;
 }
@@ -40,7 +41,10 @@ export function buildStartEndOptions(
     ...base,
     blockedStartPositions: local.blockedStartPositions,
     startPosition: null,
-    endPosition: local.endPosition,
+    // Legacy single end position is always cleared — endPositions supersedes
+    // it, and leaving both set would union two goals in the engine.
+    endPosition: null,
+    endPositions: local.endPositions,
     blueStartOrientation: local.blueStartOrientation,
     redStartOrientation: local.redStartOrientation,
   };

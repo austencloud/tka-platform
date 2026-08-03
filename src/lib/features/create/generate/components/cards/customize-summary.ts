@@ -154,8 +154,16 @@ export function buildCustomizeSummary(
       push(`Start: ${positionLabel(options.startPosition)}`);
     }
 
-    // ─── End position ───
-    if (options.endPosition) {
+    // ─── End positions ───
+    // Multi-select, so the card names one or counts many, the same way the
+    // start-position facts do. The legacy single endPosition is still read for
+    // any caller that has not migrated.
+    const ends = options.endPositions ?? [];
+    if (ends.length === 1) {
+      push(`End: ${ends[0]}`);
+    } else if (ends.length > 1) {
+      push(`End: ${ends.length} positions`);
+    } else if (options.endPosition) {
       push(`End: ${positionLabel(options.endPosition)}`);
     }
 
