@@ -1,14 +1,20 @@
 ---
 status: active
-value: 3
-effort: M
-remaining: "Body status: Design approved, ready for planning"
+value: 2
+effort: S
+remaining: 'Shipped, relocated to a footer dock; 4-tier picker narrowed to 2 and Default became editable, both undocumented'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Inspect Panel Redesign — Live Pictograph + Tier-Aware Adjustment Editing
+
+> **DRIFT WARNING — 2026-08-02.** Shipped, relocated to a footer dock; 4-tier picker narrowed to 2 and Default became editable, both undocumented
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-28
 **Status:** Design approved, ready for planning

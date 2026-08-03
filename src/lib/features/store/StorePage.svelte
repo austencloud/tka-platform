@@ -157,7 +157,7 @@
         <a class="hero-cta" href="/shop/loop-deck">
           Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>
-        <a class="hero-cta secondary" href="/shop/choreography-cards">
+        <a class="hero-cta secondary" href="/shop/loop-deck">
           See what's on a card
         </a>
       </div>
@@ -221,6 +221,7 @@
                     deckName="LOOP Deck"
                     cardWidth={132}
                     maxCardWidth={235}
+                    viewTransitionName="shop-fan-loop-deck"
                   />
                 </div>
                 <div class="deck-info">
@@ -259,6 +260,7 @@
                     cardWidth={110}
                     maxCardWidth={235}
                     exactCount={Math.min(6, tndTileCards.length)}
+                    viewTransitionName="shop-fan-tnd-trilogy"
                   />
                 </div>
                 <div class="deck-info">

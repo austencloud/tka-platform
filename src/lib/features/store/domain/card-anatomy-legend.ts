@@ -1,11 +1,11 @@
 /**
  * card-anatomy-legend
  *
- * The "What's on the Card" copy — front and back — shared by the
- * /shop/choreography-cards explainer page and the click-to-explain modal that
- * opens from a Choreo Card fan. Single source so the two surfaces can never
- * drift. Card-agnostic wording (it describes the sequence generically), so the
- * same rows explain any card the reader clicks on.
+ * The "What's on the Card" copy — front and back — shared by the product
+ * pages' "how it works" sections and the click-to-explain modal that opens
+ * from a Choreo Card fan. Single source so the surfaces can never drift.
+ * Card-agnostic wording (it describes the sequence generically), so the same
+ * rows explain any card the reader clicks on.
  */
 
 export interface CardAnatomyLegendItem {

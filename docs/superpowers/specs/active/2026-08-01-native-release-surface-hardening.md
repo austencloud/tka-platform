@@ -1,3 +1,14 @@
+---
+status: shipped
+value: 4
+effort: M
+remaining: 'None. Shipped in 685f9a2023, verified end-to-end 2026-08-02: 35 focused unit tests pass, `npm run check` 0 errors, production `npm run build` succeeds with the gate firing on both passes, and `scripts/verify-native-release-surface.mjs` clears 1141 built JS assets. Build-artifact proof: the /coven client node folds to `function l(t){}` + an unconditional 307 to /browse/gallery, and /test/* nodes fold to a 69-byte empty component under the same guard. Live production preview redirected both /coven?seq= and /test/* to /browse/gallery. The review account needs no migration — the invalid username exists nowhere in Firestore (dry run reports changed:false).'
+depends_on: ""
+plan_path: ""
+tags: [security, build, native, capacitor, release-gating]
+last_triaged: 2026-08-02
+shipped: 2026-08-02
+---
 # Native Release Surface Hardening
 
 **Status:** Approved for implementation on 2026-08-01

@@ -1,14 +1,20 @@
 ---
 status: active
 value: 2
-effort: M
-remaining: "Crackle 3D parity, FireTipTracker aliasing, zap dark mode check"
+effort: S
+remaining: 'Of 6 items: 1 fixed, 2 moot (referenced code deleted), 3 genuinely open'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-08-02
 ---
 # Effects Unification: Deferred Items Backlog
+
+> **DRIFT WARNING — 2026-08-02.** Of 6 items: 1 fixed, **2 moot** (referenced code deleted), 3 genuinely open
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 Living doc. Items surfaced during Phase 1a review that were correctly deferred (not blocking). Each should be addressed before Phase 3 (retiring the legacy `EffectsSettingsPanel`), but order is flexible.
 

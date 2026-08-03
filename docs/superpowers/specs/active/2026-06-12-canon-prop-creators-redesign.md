@@ -1,14 +1,20 @@
 ---
 status: active
-value: 3
-effort: M
-remaining: "Body status: Approved direction (brainstormed with Austen 2026-06-12), ready for implementation plan"
+value: 2
+effort: XS
+remaining: '5 of 6 shipped; mobile title-row hide not done, and the panel was since redesigned'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Canon Prop + Browse Creators Redesign — Design
+
+> **DRIFT WARNING — 2026-08-02.** 5 of 6 shipped; mobile title-row hide not done, and the panel was since redesigned
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-06-12
 **Status:** Approved direction (brainstormed with Austen 2026-06-12), ready for implementation plan

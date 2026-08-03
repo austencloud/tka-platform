@@ -10,6 +10,35 @@ import { buildMuseumGrid } from "../services/museum-grid-builder";
 const EMPTY_WALL: WallDefinition = { segments: [], minMargin: 1 };
 const LOBBY_TO_CAVE_EDGE_ID = "lobby->cave-threshold";
 
+export const CAVE_THRESHOLD_ROOM: RoomNode = {
+  id: "cave-threshold",
+  name: "Cave Threshold",
+  material: "stone",
+  theme: "cave",
+  minInteriorWidth: 10,
+  minInteriorHeight: 8,
+  description:
+    "A compressed stone vestibule that turns the visitor away from the bright lobby before the Vulcan Cave opens up.",
+  walls: {
+    north: EMPTY_WALL,
+    south: {
+      segments: [{ type: "door", edgeId: LOBBY_TO_CAVE_EDGE_ID, width: 6 }],
+      minMargin: 1,
+      alignment: "end",
+    },
+    east: {
+      segments: [{ type: "torch" }],
+      minMargin: 1,
+      alignment: "center",
+    },
+    west: {
+      segments: [{ type: "torch" }],
+      minMargin: 1,
+      alignment: "center",
+    },
+  },
+};
+
 const LOBBY_PLAN_ROOMS: RoomNode[] = [
   {
     id: "lobby",
@@ -134,34 +163,7 @@ const LOBBY_PLAN_ROOMS: RoomNode[] = [
       { role: "plant", offsetX: 0.38, offsetY: -0.38 },
     ],
   },
-  {
-    id: "cave-threshold",
-    name: "Cave Threshold",
-    material: "stone",
-    theme: "cave",
-    minInteriorWidth: 10,
-    minInteriorHeight: 8,
-    description:
-      "A compressed stone vestibule that turns the visitor away from the bright lobby before the Vulcan Cave opens up.",
-    walls: {
-      north: EMPTY_WALL,
-      south: {
-        segments: [{ type: "door", edgeId: LOBBY_TO_CAVE_EDGE_ID, width: 6 }],
-        minMargin: 1,
-        alignment: "end",
-      },
-      east: {
-        segments: [{ type: "torch" }],
-        minMargin: 1,
-        alignment: "center",
-      },
-      west: {
-        segments: [{ type: "torch" }],
-        minMargin: 1,
-        alignment: "center",
-      },
-    },
-  },
+  CAVE_THRESHOLD_ROOM,
 ];
 
 const LOBBY_PLAN_EDGES: RoomEdge[] = [

@@ -2,13 +2,19 @@
 status: backlog
 value: 2
 effort: M
-remaining: "Body status: Backlog"
+remaining: 'Phase 4 (word-simplifier) shipped independently; math.ts/format.ts never created, ~12 lerp definitions remain'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Utility Deduplication Design
+
+> **DRIFT WARNING — 2026-08-02.** Phase 4 (word-simplifier) shipped independently; `math.ts`/`format.ts` never created, ~12 `lerp` definitions remain
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-23
 **Status:** Backlog

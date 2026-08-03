@@ -1,14 +1,20 @@
 ---
 status: backlog
 value: 3
-effort: XL
-remaining: "Era-matched TVs, design validator, dev whiteboards"
+effort: M
+remaining: '3 of 4 systems shipped verbatim; TV display system (Section 2) does not exist'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-08-02
 ---
 # Museum Interior Design System
+
+> **DRIFT WARNING — 2026-08-02.** 3 of 4 systems shipped verbatim; TV display system (Section 2) does not exist
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 ## Problem
 

@@ -1,14 +1,20 @@
 ---
 status: active
 value: 2
-effort: S
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+effort: M
+remaining: '1 of 5 tasks shipped (art presets); other 4 deliberately parked by Austen'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Fable Spec — Mandala Signature Identity (THE FACELIFT)
+
+> **DRIFT WARNING — 2026-08-02.** 1 of 5 tasks shipped (art presets); other 4 deliberately parked by Austen
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-07-03 · **Autonomy: FULL AUTO to build; CHECKPOINT on aesthetic direction** (present curated palette/composition options — taste is Austen's call) · Index: `2026-07-03-fable-dispatch-index.md`
 

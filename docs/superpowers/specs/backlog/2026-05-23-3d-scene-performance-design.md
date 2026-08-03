@@ -2,13 +2,19 @@
 status: backlog
 value: 3
 effort: M
-remaining: "Body status: Backlog"
+remaining: 'Shader warm-up + most material sharing shipped; LOD, ObsidianPillars instancing, shadow-caster limiting did not'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # 3D Scene Performance Wins
+
+> **DRIFT WARNING — 2026-08-02.** Shader warm-up + most material sharing shipped; LOD, ObsidianPillars instancing, shadow-caster limiting did not
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-05-23
 **Status:** Backlog

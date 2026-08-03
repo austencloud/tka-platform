@@ -1,14 +1,20 @@
 ---
 status: active
 value: 4
-effort: L
-remaining: "Body status: REVISED — ArUco capture front-end retired; LED color-end capture adopted. See \"Revision 2026-06-21\" below."
+effort: S
+remaining: 'LED pipeline genuinely built; doc retains the dead ArUco design inline as a hazard. Real-clip validation tracked elsewhere'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Real Flow → TKA Sequence (LED Color-End Notation) — Design
+
+> **DRIFT WARNING — 2026-08-02.** LED pipeline genuinely built; doc retains the **dead ArUco design inline** as a hazard. Real-clip validation tracked elsewhere
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-06-20 (rev 2026-06-21)
 **Status:** REVISED — ArUco capture front-end retired; LED color-end capture adopted. See "Revision 2026-06-21" below.

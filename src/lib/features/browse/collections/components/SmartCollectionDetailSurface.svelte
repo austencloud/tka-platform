@@ -120,7 +120,12 @@
 
   {#if spec}
     <div class="rule-wrap">
-      <SmartCollectionRuleSummary {spec} {matchCount} builtIn={readOnly} />
+      <SmartCollectionRuleSummary
+        {spec}
+        {matchCount}
+        builtIn={readOnly}
+        countUnavailable={error}
+      />
     </div>
   {/if}
 
@@ -320,8 +325,10 @@
       font-size: 16px;
     }
 
+    /* The one-line description survives on phones — hiding it left built-in
+       collections explained by nothing but a padlock (audit X-18). */
     .title-block p {
-      display: none;
+      font-size: var(--font-size-compact, 12px);
     }
 
     .built-in-badge {
@@ -348,14 +355,13 @@
       display: none;
     }
 
+    /* Keep the words: a lone padlock with clipped transparent text was an
+       unlabeled glyph on phones (audit X-18). */
     .built-in-badge {
-      max-width: 29px;
-      overflow: hidden;
-      color: transparent;
-    }
-
-    .built-in-badge i {
-      color: var(--theme-text-dim, rgba(255, 255, 255, 0.78));
+      min-height: 22px;
+      gap: 4px;
+      padding: 3px 6px;
+      font-size: 11px;
     }
   }
 

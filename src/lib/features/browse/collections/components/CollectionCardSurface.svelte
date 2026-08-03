@@ -83,13 +83,19 @@
           {/if}
         </span>
         <span class="tile-count">
+          <!-- Svelte trims the leading whitespace of these continuation lines,
+               so the separators carry their own spaces explicitly — otherwise
+               the card reads "8 matches· My Library". -->
           {countLabelOverride ??
             (isSmart
               ? smartCountLabel(collection.sequenceCount)
-              : defaultCountLabel(collection.sequenceCount))}{#if isSmart}
-            · {smartSourceLabel}{#if isBuiltInSmart}
-              · Built in{/if}{/if}{#if !isReadonly && collection.isPublic}
-            · <i class="fas fa-globe public-globe" aria-hidden="true"></i> Public{/if}
+              : defaultCountLabel(
+                  collection.sequenceCount
+                ))}{#if isSmart}{" · "}{smartSourceLabel}{#if isBuiltInSmart}{" · "}Built
+              in{/if}{/if}{#if !isReadonly && collection.isPublic}{" · "}<i
+              class="fas fa-globe public-globe"
+              aria-hidden="true"
+            ></i> Public{/if}
         </span>
         {#if ownerName}
           <span class="tile-owner">by {ownerName}</span>

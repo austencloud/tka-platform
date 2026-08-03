@@ -55,8 +55,21 @@ describe("creator discovery", () => {
 
     expect(matchesCreatorQuery(profile, "austen")).toBe(true);
     expect(matchesCreatorQuery(profile, "musical patterns")).toBe(true);
-    expect(matchesCreatorQuery(profile, "staff chicago")).toBe(true);
+    // Multi-term still spans fields — prop label plus bio.
+    expect(matchesCreatorQuery(profile, "staff musical")).toBe(true);
     expect(matchesCreatorQuery(profile, "poi")).toBe(false);
+  });
+
+  // Location was IP-derived and left the public profile in the v2 migration
+  // (fe7e5ce604): dropped from EnhancedUserProfile, from the profile hero, and
+  // from creator search in one commit. This asserts the privacy behavior so a
+  // future change cannot quietly make city searchable again. The old
+  // "staff chicago" case above outlived the field it depended on.
+  it("does not search retired IP-derived location", () => {
+    const profile = creator();
+
+    expect(matchesCreatorQuery(profile, "chicago")).toBe(false);
+    expect(matchesCreatorQuery(profile, "staff chicago")).toBe(false);
   });
 
   it("joins sample work by stable owner ID and caps each creator", () => {

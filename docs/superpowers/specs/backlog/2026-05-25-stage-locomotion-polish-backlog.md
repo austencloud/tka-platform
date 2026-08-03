@@ -2,13 +2,19 @@
 status: backlog
 value: 2
 effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+remaining: 'Item 1 (inertialization) shipped; items 2-5 unbuilt'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Stage Locomotion — Polish Backlog
+
+> **DRIFT WARNING — 2026-08-02.** Item 1 (inertialization) shipped; items 2-5 unbuilt
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 > Bleeding-edge additions identified during initial design. Each deserves its own spec after the core system works.
 

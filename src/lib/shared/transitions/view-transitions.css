@@ -51,6 +51,16 @@ html.named-route-morph::view-transition {
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Deck-fan morph: the shop grid's card fan IS the product page's hero fan.
+   Each product owns one name, carried by DeckFanCover's `viewTransitionName`
+   on both the tile and the hero. Same curve as the book so every shop journey
+   reads as one motion vocabulary. */
+::view-transition-group(shop-fan-loop-deck),
+::view-transition-group(shop-fan-tnd-trilogy) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* ============================================================================
    COMMUNITY PANEL TRANSITIONS
    Smooth slide-fade for community tab switching

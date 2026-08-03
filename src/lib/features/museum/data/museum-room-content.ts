@@ -226,6 +226,60 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // The Drowned Gallery's three waterline alcoves, west → east.
+  "cave-water": {
+    performers: {
+      "cave-water-a": { autoPlay: true, sequenceId: "cave-water-seq-a" },
+      "cave-water-b": { autoPlay: true, sequenceId: "cave-water-seq-b" },
+      "cave-water-c": { autoPlay: true, sequenceId: "cave-water-seq-c" },
+    },
+  },
+
+  "cave-fire": {
+    performers: {
+      "cave-fire-automaton": {
+        autoPlay: true,
+        sequenceId: "cave-fire-seq",
+      },
+    },
+  },
+
+  "cave-earth": {
+    performers: {
+      "cave-earth-automaton": {
+        autoPlay: true,
+        sequenceId: "cave-earth-seq",
+      },
+    },
+  },
+
+  "cave-air": {
+    performers: {
+      "cave-air-automaton": {
+        autoPlay: true,
+        sequenceId: "cave-air-seq",
+      },
+    },
+  },
+
+  "cave-sun": {
+    performers: {
+      "cave-sun-automaton": {
+        autoPlay: true,
+        sequenceId: "cave-sun-seq",
+      },
+    },
+  },
+
+  "cave-moon": {
+    performers: {
+      "cave-moon-automaton": {
+        autoPlay: true,
+        sequenceId: "cave-moon-seq",
+      },
+    },
+  },
+
   // ── Phase 2: Order-era wings ──
 
   egyptian: {

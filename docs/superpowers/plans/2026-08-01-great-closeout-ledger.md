@@ -15,9 +15,44 @@ Already closed this session:
 ## Block A — Austen's hands (batch these; ~2.5 hours total)
 
 ### A1. Stripe block (~1 hr) — unblocks 65 points of shop specs
-- [ ] **Rotate the exposed credentials** (found by the shop audit; see
-      `specs/active/2026-06-26-shop-operations-go-live-design.md`). Everything
-      shop-related resumes only after this.
+- [x] **ROTATION CORE DONE 2026-08-02 ~10:30 CDT.** New restricted key created by
+      Austen (morning, challenge state cleared), signing secret rolled with 24h
+      grace via SMS verification, both values in `firebase-functions/.env`
+      (clipboard flow, never displayed). Deployed clean:
+      `createMerchCheckout`, `handleMerchWebhook`, `createDonationCheckout`
+      updated + **`createCartCheckout` created (first deploy — production
+      finally has the function every buy surface calls)**. Zero
+      warnings/errors in function logs post-deploy.
+- [x] **Old exposed `sk_live` revoked** by Austen in the Stripe dashboard
+      (2026-08-02). Exposure window closed.
+- [x] **`BREVO_API_KEY` rotated** (2026-08-02): new key "TKA Composer 2026-08"
+      generated, banked to .env via clipboard flow (89 chars, never displayed),
+      `sendMagicLink` deployed successfully, old "TKA Composer" key deleted in
+      Brevo (deletion toast confirmed). **All credential rotation done.**
+- [ ] Original attempt record (2026-08-02 ~01:00-01:40 CDT), kept for the
+      incident file — blocked by Stripe itself. Findings that survived:
+      - Exposure: `firebase-functions/.env` full `sk_live_` passed through the
+        2026-07-27 audit transcript. Never in git; gitignored. Secret key
+        last-used = Jul 27 (the audit itself) — nothing else uses it, and the
+        payments extension almost certainly has its own key (verify its config
+        before revoking anyway).
+      - Plan: create restricted key (One-time payments template, name
+        "TKA Firebase Functions") → clipboard → .env (never displayed) → one
+        deploy of createMerchCheckout/handleMerchWebhook/createCartCheckout/
+        createDonationCheckout/sendMagicLink → verify logs → revoke old sk →
+        roll whsec (24h grace) + new Brevo key, same deploy pattern.
+      - Blocker: dashboard key-management is in a stuck email-verification
+        challenge state (started ~01:06). Create key / Create secret key
+        buttons no-op CLIENT-SIDE (zero network on click, confirmed in two
+        separate browser profiles). One challenge email was consumed
+        successfully; subsequent link opens raced and failed; Stripe then
+        stopped opening any key dialog. The Workbench dock overlay was ALSO
+        eating clicks early on — close it first next time (X, top-right of dock).
+      - Resume: wait for challenge expiry (hours) or fresh sign-in, then:
+        /apikeys → close Workbench dock if open → Create restricted key wizard →
+        "Powering an integration" → One-time payments → name → Create key →
+        exactly ONE "Send verification" → open ONLY the newest Gmail link in the
+        SAME browser → Copy → clipboard flow. One driver for the whole loop.
 - [ ] Clear the Stripe payout requirement
 - [ ] Complete Stripe Tax registration
 - [ ] Register the webhook event (Stripe Dashboard) for `shop-spin-up`
@@ -43,13 +78,30 @@ Already closed this session:
 
 ## Block B — Agent-runnable once authorized (each closes a spec)
 
-- [ ] `qr-account-funnel` (16): DevTools viewport + auth-state verification, rerun check
-- [ ] `inbox-multiline-message-rendering` (15): signed-in Inbox verification, send/edit test messages
+**Austen authorized signed-in browser control + disposable test writes on
+2026-08-02.** Batch run started same day; results below.
+
+- [~] `qr-account-funnel` (16): 5 of 6 criteria PASS in DevTools MCP (isolated
+      guest context for signed-out cases, default context for signed-in). Check
+      is 0 errors / 0 warnings. **Only criterion 2 left** — the live Google
+      popup sign-in and auto-resume, which needs Austen's own credentials.
+      ~30 seconds: open `/q/003N` in incognito → Export Animation → sign in →
+      confirm the export starts with no second tap.
+- [x] `inbox-multiline-message-rendering` (15) → shipped in `c18f6d0265`. All
+      eight acceptance criteria measured against the real `MessageBubble` via a
+      new `/test/message-multiline` harness (avoids messaging a real person):
+      `pre-wrap` + `break-word` on every fixture, no overflow at either width,
+      markup escaped, previews still `nowrap`. Fix is one CSS line → no
+      data-rewrite risk.
 - [ ] `choreo-act-playback` (12): authenticated Write-module run + disposable audio file
 - [ ] `choreo-sheet-v2` (12): authenticated Write-module run + visual PDF review
 - [ ] `gallery-thumbnail-warm-pass` (12): signed-in admin warm + manifest/static sync
-- [ ] `shop-transitions` (16): stale env blocker ("Chrome connector cannot initialize")
-      — retry in a fresh session with the standard launcher; likely just closes
+- [!] `shop-transitions` (16): **verified and FAILED** (`a9e5d18506`). The
+      "Chrome connector" blocker was stale and does not reproduce. Real finding:
+      the shop was restructured into bespoke per-product routes, so
+      `ProductDetailPage` (the only destination declaring a
+      `view-transition-name`) is unreachable and NO product morphs. Section 2
+      was never implemented. Reopened as design work — do not re-verify.
 - [x] `variation-picker-polish` (12) → shipped in `e97ff714b5` (live modal + pill proof this session)
 - [x] `create-tutorial-mobile-fullscreen` (12) → shipped in `e97ff714b5` (viewport proof on /test/tutorial-fullscreen)
 

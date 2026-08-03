@@ -10,21 +10,11 @@
 
 import { browser } from "$app/environment";
 import { replaceState } from "$app/navigation";
-import {
-  GoogleAuthProvider,
-  browserLocalPersistence,
-  indexedDBLocalPersistence,
-  setPersistence,
-  signInWithPopup,
-} from "firebase/auth";
-import { auth } from "$lib/shared/auth/firebase";
-import { notePopupCoop } from "$lib/shared/auth/services/authenticator";
 import { requiresFullAccount } from "$lib/shared/auth/domain/gated-action-policy";
+import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { getPendingActionQueue } from "../get-pending-action-queue";
-import { isInAppWebview } from "../services/webview-detector";
 import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -33,6 +23,30 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
  * auth; "account" is the /q header chip's plain sign-in (no queued action).
  */
 export type SignInReason = PendingActionType | "account";
+
+/**
+ * Reason → the shared AuthModal's contextual trigger.
+ *
+ * `gated-action-policy`'s FULL_ACCOUNT_ACTIONS is the gate: only download,
+ * publish, and account ever open the sheet. Everything else provisions a guest
+ * silently and never prompts, so those three are the only mappings that can be
+ * reached — and `auth-nudge-trigger` already registers exactly those three
+ * `viewer-signin-*` keys with the copy this funnel needs. Anything unmapped
+ * falls back to `null`, which renders AuthModal's default ask rather than
+ * throwing; if a future caller gates one of the guest-provisioned actions, add
+ * its trigger key there rather than reintroducing local copy here.
+ */
+const SIGN_IN_TRIGGERS: Partial<Record<SignInReason, AuthNudgeTrigger>> = {
+  download: "viewer-signin-download",
+  publish: "viewer-signin-publish",
+  account: "viewer-signin-account",
+};
+
+export function signInTriggerFor(
+  reason: SignInReason | null
+): AuthNudgeTrigger | null {
+  return reason ? (SIGN_IN_TRIGGERS[reason] ?? null) : null;
+}
 
 export interface AuthActionQueueCallbacks {
   handleSave: () => void;
@@ -106,56 +120,23 @@ export function createAuthActionQueue() {
     openSignInSheet(type);
   }
 
-  async function onSignInSheetPrimary(handleOpenInBrowser: (pendingType?: PendingActionType | null) => void) {
-    if (isInAppWebview()) {
-      // "account" has no queued action to hand off — open the browser plain.
-      handleOpenInBrowser(signInSheetReason === "account" ? null : signInSheetReason);
-      return;
-    }
-
-    // Prefer Google One Tap (FedCM) - it's the only flow that works reliably
-    // on mobile web, where signInWithPopup is blocked by most browsers. The
-    // app has a <GoogleOneTap /> mounted at root that already registered the
-    // credential callback; we just need to invoke the prompt. The replay
-    // effect below fires once the callback drives authState.isAuthenticated
-    // to true.
-    const oneTap = (window as unknown as Record<string, Record<string, Record<string, { prompt(): void }>>>).google?.accounts?.id;
-    if (oneTap) {
-      try {
-        oneTap.prompt();
-        signInSheetOpen = false;
-        return;
-      } catch {
-        // FedCM cooldown or disabled - fall through to popup.
-      }
-    }
-
-    // Desktop fallback: popup. Mirrors SocialAuthCompact's pattern.
-    try {
-      try {
-        await setPersistence(auth, indexedDBLocalPersistence);
-      } catch {
-        await setPersistence(auth, browserLocalPersistence);
-      }
-      const provider = new GoogleAuthProvider();
-      provider.addScope("email");
-      provider.addScope("profile");
-      notePopupCoop();
-      await signInWithPopup(auth, provider);
-      const { recordLastAuthMethod } = await import(
-        "$lib/shared/auth/services/last-auth-method.svelte"
-      );
-      recordLastAuthMethod("google");
-      signInSheetOpen = false;
-    } catch (err) {
-      const code = (err as { code?: string })?.code;
-      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        return; // user dismissed - leave sheet open for retry
-      }
-      console.error("[Viewer] Google sign-in failed:", err);
-      showToast({ message: "Sign-in failed. Please try again.", type: "error", duration: 3000 });
-    }
-  }
+  // NOTE: this queue no longer runs any provider flow of its own.
+  //
+  // It used to own an `onSignInSheetPrimary` that called Google One Tap's
+  // `prompt()` fire-and-forget, closed the sheet, and returned as if it had
+  // succeeded. When One Tap is suppressed — incognito, blocked third-party
+  // cookies, FedCM cooldown, or a user who dismissed it a couple of times —
+  // nothing rendered and the user was left with no way to sign in and no
+  // error. That failure cannot be detected either: Google's FedCM migration
+  // removes `isNotDisplayed()`/`getSkippedReason()`, and moment notifications
+  // can lag by up to a minute, so "try One Tap, detect failure, fall back" is
+  // not implementable.
+  //
+  // Provider flows now belong entirely to the shared AuthModal, whose
+  // SocialAuthCompact cancels any pending One Tap, resolves the Auth instance
+  // lazily (HMR-safe), configures persistence, routes per platform, and offers
+  // Magic Link — which also works inside in-app browsers, where the old
+  // Google-only sheet could only punt to an external browser.
 
   /** Bootstrap from URL on mount. Returns the pending action type if present. */
   function bootstrapFromUrl(): PendingActionType | null {
@@ -207,11 +188,11 @@ export function createAuthActionQueue() {
     get signInSheetOpen() { return signInSheetOpen; },
     set signInSheetOpen(v: boolean) { signInSheetOpen = v; },
     get signInSheetReason() { return signInSheetReason; },
-    get isInAppWebview() { return isInAppWebview(); },
+    /** The shared AuthModal's contextual trigger for the current reason. */
+    get signInTrigger() { return signInTriggerFor(signInSheetReason); },
     openSignInSheet,
     closeSignInSheet,
     invokeGatedAction,
-    onSignInSheetPrimary,
     bootstrapFromUrl,
     replayPendingAction,
   };

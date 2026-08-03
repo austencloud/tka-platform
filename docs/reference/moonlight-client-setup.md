@@ -7,14 +7,23 @@ machine. Every command is PowerShell and copy-pasteable.
 This captures the working configuration from the laptop client, verified
 2026-08-02. The host side is already built and is not touched by this document.
 
+**Host swap 2026-08-03: the host now runs Apollo, not Sunshine.** Apollo is a
+Sunshine fork, so everything below still applies: same ports, same dashboard on
+47990, same pairing flow, and the host binary is even still named
+`Sunshine.exe` (under `C:\Program Files\Apollo`, service name `ApolloService`).
+What Apollo adds is a virtual display per client via its bundled SudoVDA
+driver: each paired device gets its own display on the host instead of
+mirroring the main one, so client machines act as extended monitors of the
+host desktop. Clients paired against the old Sunshine install must pair again.
+
 ## Roles
 
 | Role | What it runs | Set up by |
 |---|---|---|
-| **Host** | Sunshine + Tailscale. The 4090 workstation. | Already done. Do not modify. |
+| **Host** | Apollo + Tailscale. The 4090 workstation. | Already done. Do not modify. |
 | **Client** | Tailscale + Moonlight. The machine you are on now. | This document. |
 
-The client never installs Sunshine. Streaming is one-directional: client watches
+The client never installs Apollo. Streaming is one-directional: client watches
 and controls the host.
 
 ## Why there are no IP addresses in this file
@@ -318,32 +327,36 @@ Setup is done when a stream runs, input works, and dropped frames stay near zero
 
 ---
 
-## Two clients at once
+## Two clients at once (Apollo virtual displays)
 
-Sunshine allows concurrent sessions. The old single-session block was removed in
-[PR #3325](https://github.com/LizardByte/Sunshine/pull/3325), shipped in
-`v2025.118.151840`, with an internal ceiling of 128 sessions and no config key to
-change it. So the laptop and this machine can both stream the host at the same
-time.
+Apollo supports concurrent clients, and unlike plain Sunshine it does not
+mirror. Each client device gets its own **virtual display**, created on connect
+by the bundled SudoVDA driver and torn down on disconnect. The virtual display
+shows up to Windows as a real extra monitor on the host, sized to the client's
+requested resolution.
 
-What that actually gives you, and what it does not:
+What that gives you:
 
-- **Both clients see the same desktop.** Sunshine does not create a separate
-  desktop, VM, or user session per client. It is mirroring. Maintainer statement:
-  ["Sunshine doesn't create any vm or other type of sandboxed desktop for you"](https://github.com/orgs/LizardByte/discussions/770).
-- **Both clients send input to that same desktop.** Two active mice fight over
-  one cursor. When driving from one machine while the other watches, leave the
-  passive one alone, or disconnect its input.
+- **Extended desktop across machines.** Each satellite machine running
+  Moonlight fullscreen becomes one more monitor of the host desktop. Windows
+  dragged toward it land on it. This is the office-as-one-desktop setup.
+- **Per-client resolution.** The virtual display matches whatever resolution
+  the client requests in its stream profile. A 4K client gets a 4K display, a
+  1080p client gets 1080p.
+- **Still one Windows session.** One cursor, one login. Fine for one person
+  using several screens; a second person cannot independently use one of them.
 - **Each session encodes separately.** Two 4K60 streams is roughly twice the
   encode load and twice the upstream bandwidth. The 4090 handles the encoding;
   the uplink is the likelier limit when off-LAN.
-- **Independent per-client desktops are not a Sunshine feature.** The maintainers
-  point at Games on Whales / Wolf for that.
 
-There are community reports of a second client hanging at "Connecting" on some
-setups ([issue #3887](https://github.com/LizardByte/Sunshine/issues/3887), closed
-as not planned). If the second client hangs, that is the known failure, not a
-misconfiguration on this machine. Streaming one at a time still works.
+Per-device display behavior (virtual display vs mirror of the physical one) is
+configured in the Apollo dashboard under the paired device's settings. The
+default for a new pairing is a virtual display.
+
+For best results the Apollo maintainers ship a companion Moonlight fork,
+[Artemis](https://github.com/ClassicOldSong/moonlight-android) (Android) with
+desktop builds under the Apollo org. Standard Moonlight works fine; Artemis
+adds nicer resolution and display negotiation.
 
 ## Gotchas
 
@@ -405,5 +418,6 @@ Authentication, which the host requires.
 - `docs/superpowers/specs/2026-07-19-remote-4090-workstation-laptop-handoff.md`
   is the host build record and the open-items ledger.
 - Tailscale connection types: <https://tailscale.com/kb/1257/connection-types>
-- Sunshine docs: <https://docs.lizardbyte.dev/projects/sunshine/latest/>
+- Apollo (the host): <https://github.com/ClassicOldSong/Apollo>
+- Sunshine docs (Apollo is a fork; most of it applies): <https://docs.lizardbyte.dev/projects/sunshine/latest/>
 - Moonlight: <https://moonlight-stream.org/>

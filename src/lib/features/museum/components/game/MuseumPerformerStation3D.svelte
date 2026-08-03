@@ -29,6 +29,8 @@
     stationId: string;
     worldX: number;
     worldZ: number;
+    /** Floor elevation (world Y) for this station. Default 0 (museum datum). */
+    worldY?: number;
     facingAngle: number;
     sequenceId?: string;
     autoPlay?: boolean;
@@ -47,6 +49,7 @@
   const stationId = props.stationId;
   const worldX = props.worldX;
   const worldZ = props.worldZ;
+  const worldY = props.worldY ?? 0;
   const facingAngle = props.facingAngle;
   const autoPlay = props.autoPlay ?? false;
   const showGrid = props.showGrid ?? false;
@@ -157,7 +160,12 @@
 </script>
 
 <!-- Station root group - positioned at world coords, children use local coords -->
-<T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
+<T.Group
+  name={`performer-station-${stationId}`}
+  position.x={worldX}
+  position.y={worldY}
+  position.z={worldZ}
+>
   <!-- Circular platform at floor level (not inside rig - independent of groundOffset) -->
   <T.Mesh position.y={0.15} castShadow receiveShadow>
     <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />

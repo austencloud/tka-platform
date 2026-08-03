@@ -18,6 +18,8 @@
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
+  import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
+  import DrownedGalleryGraybox from "./DrownedGalleryGraybox.svelte";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -148,6 +150,8 @@
     onBuildStage?: (stage: string) => void;
     /** Called when async geometry build completes - all meshes are ready to render */
     onGeometryReady?: () => void;
+    /** Fires when the camera crosses the terrain waterline (underwater state). */
+    onSubmergedChange?: (submerged: boolean) => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause per-frame work */
     visible?: boolean;
     /**
@@ -187,13 +191,18 @@
   // Tile geometry owns walkability and collision. These room-authored GLBs add
   // trim, fixtures, and environmental detail without changing the floor plan.
   const authoredRooms = grid.wings.flatMap((wing) => {
-    if (!wing.roomPresentation) return [];
+    // A presentation without a modelPath (e.g. suppressTileGeometry-only rooms
+    // dressed by a graybox layer) has no authored GLB to mount.
+    if (!wing.roomPresentation?.modelPath) return [];
+    const presentation = wing.roomPresentation;
     const centerX = (wing.bounds.x + (wing.bounds.width - 1) / 2) * TILE_SIZE;
     const centerZ = (wing.bounds.y + (wing.bounds.height - 1) / 2) * TILE_SIZE;
     return [
       {
         id: wing.id,
-        presentation: wing.roomPresentation,
+        presentation: presentation as typeof presentation & {
+          modelPath: string;
+        },
         position: [centerX, 0, centerZ] as [number, number, number],
         atmospherePosition: [centerX, 2.1, centerZ] as [number, number, number],
         atmosphereArea: {
@@ -206,6 +215,14 @@
   });
   const lobbyPresentation = authoredRooms.find(({ id }) => id === "lobby");
   const hasLobbyPresentation = lobbyPresentation !== undefined;
+  const hasVulcanCaveSlice = grid.wings.some(
+    (wing) => wing.id === "cave-water"
+  );
+  // Graybox for the Drowned Gallery route. Remove with the component when the
+  // authored GLB shell lands (see DrownedGalleryGraybox.svelte).
+  const hasDrownedGallery = grid.wings.some(
+    (wing) => wing.id === "cave-water-gallery"
+  );
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -619,6 +636,22 @@
     cameraFlip.snapTopDownToPlayer(pos);
   }
 
+  // ── Waterline submersion ──
+  // Eye height is position.y + 0.75 (UCC first-person offset). Rooms without a
+  // terrain program never call the callback, so every other museum surface pays
+  // one boolean check per frame.
+  let wasSubmerged = false;
+  function updateSubmersion(): void {
+    const terrain = grid.terrain;
+    if (!terrain || !props.onSubmergedChange) return;
+    const eyeY = physicsProvider.getPlayerPosition().y + 0.75;
+    const submerged = eyeY < terrain.waterlineY;
+    if (submerged !== wasSubmerged) {
+      wasSubmerged = submerged;
+      props.onSubmergedChange(submerged);
+    }
+  }
+
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera - we don't touch it.
   useTask((delta) => {
@@ -665,6 +698,9 @@
     if (proximityRenderer.shouldRecompute(currentTX, currentTY)) {
       proximityRenderer.recomputeVisibility(currentTX, currentTY);
     }
+
+    // Waterline crossing (runs before the mode-specific early returns below)
+    updateSubmersion();
 
     // First frame: initialize camera
     if (!flipState.initialized) {
@@ -1557,6 +1593,7 @@
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
       worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
+      worldY={performer.elevation ?? 0}
       facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}
@@ -1613,6 +1650,22 @@
     </T.Group>
   {/if}
 {/each}
+
+{#if hasVulcanCaveSlice}
+  <VulcanCaveScenicLayer
+    rooms={grid.wings}
+    currentRoomId={currentPlayerRoomId}
+    visible={props.visible !== false}
+  />
+{/if}
+
+{#if hasDrownedGallery}
+  <DrownedGalleryGraybox
+    {grid}
+    currentRoomId={currentPlayerRoomId}
+    visible={props.visible !== false}
+  />
+{/if}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->
 <MuseumFurniture

@@ -1,10 +1,19 @@
 <!-- src/lib/features/store/ProductDetailPage.svelte -->
+<!--
+  The generic SKU page: whatever the catalog sells that has no bespoke listing
+  of its own (the printed guide, one-off decks, future merch). Chrome belongs
+  to ShopProductShell; this file resolves the product and renders its art,
+  its prop pick, and its sample carousel.
+-->
 <script lang="ts">
+  import "./styles/config-page.css";
   import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
+  import ShopProductShell from "./components/shell/ShopProductShell.svelte";
+  import ShopPurchaseCta from "./components/shell/ShopPurchaseCta.svelte";
   import BookCoverArt from "./components/BookCoverArt.svelte";
   import CardMockupPreview from "./components/CardMockupPreview.svelte";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
@@ -17,6 +26,8 @@
     preorderWindowOpen,
     formatUsd,
   } from "./domain/preorder-pricing";
+  import { deriveCrossSell, shelfLabel } from "./domain/catalog-listings";
+  import { resolvePurchaseState, SALES_LIVE } from "./domain/purchase-state";
   import type { Product } from "./domain/models/product";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
   import {
@@ -52,6 +63,14 @@
       : ""
   );
 
+  // The catalog for the cross-sell rail, fetched on its own rather than through
+  // store.loadProducts: that call drives store.isLoading, which would flash the
+  // shell's loading state over a page the route already seeded data-ready.
+  let catalog = $state<Product[]>([]);
+  const crossSell = $derived(
+    deriveCrossSell(catalog, { currentProductId: store.selectedProduct?.id })
+  );
+
   onMount(() => {
     // Already seeded by the route load(); only fetch if we arrived without it.
     const ready = initialProduct
@@ -62,303 +81,119 @@
     // loadProduct swallows its own errors, so this still fires if it fails
     // (with nulls) and step 1 never silently goes missing.
     void ready.then(() => trackProductViewed("sku", store.selectedProduct));
+
+    void getProductLoader()
+      .loadActiveProducts()
+      .then((products) => (catalog = products))
+      // A missing rail is a missing suggestion, not a broken product page.
+      .catch(() => {});
   });
 </script>
 
-<div class="detail-page">
-  <main class="detail-content">
-    {#if store.isLoading}
-      <div class="loading">Loading product details...</div>
-    {:else if store.error}
-      <div class="error">{store.error}</div>
-    {:else if store.selectedProduct}
+<ShopProductShell
+  family={store.selectedProduct ? shelfLabel(store.selectedProduct) : undefined}
+  title={store.selectedProduct?.name ?? "Product"}
+  tagline={store.selectedProduct?.description}
+  product={store.selectedProduct ?? undefined}
+  propType={store.selectedProduct?.type === "physical-deck" ? propType : undefined}
+  listing="sku"
+  price={store.selectedProduct ? formattedPrice : undefined}
+  checkoutError={store.checkoutError}
+  {crossSell}
+  loading={store.isLoading}
+  loadingLabel="Loading product details..."
+  error={store.error ??
+    (!store.isLoading && !store.selectedProduct ? "Product not found." : null)}
+>
+  {#snippet media()}
+    {#if store.selectedProduct}
       {@const product = store.selectedProduct}
-      <a href="/shop" class="back-button">
-        <i class="fas fa-arrow-left" aria-hidden="true"></i> All Products
-      </a>
-
-      <div class="detail-layout">
-        <div class="preview-column">
-          {#if product.type === "guide"}
-            <!-- The book has no card art; show its typographic cover instead of
-                 an empty card-mockup box. -->
-            <div class="book-preview">
-              <BookCoverArt
-                width="clamp(200px, 22vw, 300px)"
-                viewTransitionName="shop-book-cover"
-              />
-            </div>
-          {:else}
-            <CardMockupPreview
-              coverImageUrl={product.coverImageUrl}
-              productName={product.name}
-              coverSequence={product.coverSequence}
-              coverCards={product.coverCards}
-              deckId={product.deckId}
-              {propType}
-            />
-          {/if}
-        </div>
-
-        <div class="info-column">
-          <h1>{product.name}</h1>
-          {#if product.loopComponents?.length}
-            <LoopChips components={product.loopComponents} />
-          {/if}
-          {#if product.cardCount}
-            <p class="meta">
-              {product.cardCount} cards, poker size (2.5" x 3.5")
-            </p>
-          {/if}
-          <p class="description">{product.description}</p>
-          <p class="price">{formattedPrice}</p>
-          {#if preorderWindowOpen(product, now)}
-            <PreorderPriceNote {product} />
-          {/if}
-          {#if product.preorder}
-            <p class="preorder-note">
-              Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay
-              now and it ships once printed.
-            </p>
-          {/if}
-          {#if product.type === "physical-deck"}
-            <div class="prop-field">
-              <span class="prop-field-label">Prop</span>
-              <PropPicker
-                value={propType}
-                onchange={(p) => {
-                  propType = p;
-                  trackPropSelected("sku", product.id, p);
-                }}
-              />
-            </div>
-          {/if}
-          <BuyButton
-            {product}
-            propType={product.type === "physical-deck" ? propType : undefined}
-            listing="sku"
-          />
-          {#if product.stripePriceId}
-            <BuyButton
-              {product}
-              propType={product.type === "physical-deck" ? propType : undefined}
-              mode="add"
-              label="Add to cart"
-              listing="sku"
-            />
-          {/if}
-          {#if store.checkoutError}
-            <p class="checkout-error" role="alert">{store.checkoutError}</p>
-          {/if}
-        </div>
-      </div>
-
-      <SampleCardCarousel
-        imageUrls={product.previewImageUrls}
-        productName={product.name}
-      />
-    {:else}
-      <div class="error">Product not found.</div>
+      {#if product.type === "guide"}
+        <!-- The book has no card art; show its typographic cover instead of
+             an empty card-mockup box. -->
+        <BookCoverArt
+          width="clamp(200px, 22vw, 300px)"
+          viewTransitionName="shop-book-cover"
+        />
+      {:else}
+        <CardMockupPreview
+          coverImageUrl={product.coverImageUrl}
+          productName={product.name}
+          coverSequence={product.coverSequence}
+          coverCards={product.coverCards}
+          deckId={product.deckId}
+          {propType}
+        />
+      {/if}
     {/if}
-  </main>
-</div>
+  {/snippet}
+
+  {#snippet configurator()}
+    {#if store.selectedProduct}
+      {@const product = store.selectedProduct}
+      {#if product.loopComponents?.length}
+        <LoopChips components={product.loopComponents} />
+      {/if}
+      {#if product.cardCount}
+        <p class="meta">{product.cardCount} cards, poker size (2.5" x 3.5")</p>
+      {/if}
+      {#if product.type === "physical-deck"}
+        <div class="field">
+          <span class="field-label">Prop</span>
+          <PropPicker
+            value={propType}
+            onchange={(p) => {
+              propType = p;
+              trackPropSelected("sku", product.id, p);
+            }}
+          />
+        </div>
+      {/if}
+    {/if}
+  {/snippet}
+
+  {#snippet priceNote()}
+    {#if store.selectedProduct && preorderWindowOpen(store.selectedProduct, now)}
+      <PreorderPriceNote product={store.selectedProduct} />
+    {/if}
+  {/snippet}
+
+  {#snippet cta()}
+    {#if store.selectedProduct}
+      {@const product = store.selectedProduct}
+      {@const propArg =
+        product.type === "physical-deck" ? propType : undefined}
+      <ShopPurchaseCta {product} propType={propArg} listing="sku" />
+      <!-- The cart is the second path, and it only exists when there is money
+           to take: in the notify state the primary CTA is an email capture, and
+           a second "Add to cart" under it would be a button that cannot work. -->
+      {#if resolvePurchaseState(product, SALES_LIVE) !== "notify"}
+        <BuyButton
+          {product}
+          propType={propArg}
+          mode="add"
+          label="Add to cart"
+          listing="sku"
+        />
+      {/if}
+    {/if}
+  {/snippet}
+
+  {#snippet details()}
+    {#if store.selectedProduct?.previewImageUrls?.length}
+      <SampleCardCarousel
+        imageUrls={store.selectedProduct.previewImageUrls}
+        productName={store.selectedProduct.name}
+      />
+    {/if}
+  {/snippet}
+</ShopProductShell>
 
 <style>
-  .detail-page {
-    min-height: 100vh;
-    padding-top: 64px; /* clear the fixed SiteHeader */
-    /* Transparent so the /shop cosmic background shows through (no dark panel). */
-    background: transparent;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .detail-content {
-    /* rem so the product page rides the lockstep root ramp (src/app.css) —
-       /shop/* is a marketing route, so it ramps 1680→3840. Was a hard 1000px
-       with no big-screen tier of any kind: a 1000px column stranded in a
-       2350px window, on the page people actually buy from. 62.5rem is that
-       same 1000px at a 16px root, 1500px at the 24px root. */
-    max-width: 62.5rem;
-    margin: 0 auto;
-    padding: 40px 24px;
-  }
-
-  .detail-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 48px;
-    align-items: start;
-  }
-
-  .book-preview {
-    display: grid;
-    place-items: center;
-    min-height: 420px;
-    border-radius: 16px;
-    background: radial-gradient(
-      circle at 50% 42%,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.015)
-    );
-  }
-
-  @media (max-width: 768px) {
-    .detail-layout {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-  }
-
-  /* Choreographed reveal: the cover lands first (the view-transition morph), then
-     the info column's children cascade in one after another — a staggered show,
-     not a single block fade. Pure CSS so it needs no reactive state (the local
-     `state` store would shadow the $state rune). Transform/opacity only —
-     compositor, no layout shift. The stagger steps by DOM position; optional
-     children (meta, pre-order note, checkout error) just take their slot's delay. */
-  .info-column > * {
-    animation: item-rise 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .info-column > :nth-child(1) {
-    animation-delay: 200ms;
-  }
-  .info-column > :nth-child(2) {
-    animation-delay: 260ms;
-  }
-  .info-column > :nth-child(3) {
-    animation-delay: 320ms;
-  }
-  .info-column > :nth-child(4) {
-    animation-delay: 380ms;
-  }
-  .info-column > :nth-child(5) {
-    animation-delay: 440ms;
-  }
-  .info-column > :nth-child(6) {
-    animation-delay: 500ms;
-  }
-  .info-column > :nth-child(n + 7) {
-    animation-delay: 560ms;
-  }
-
-  @keyframes item-rise {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .info-column > * {
-      animation: none;
-    }
-  }
-
-  .back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 0 18px;
-    margin-bottom: 24px;
-    border-radius: 999px;
-    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    text-decoration: none;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    transition:
-      background 0.2s,
-      border-color 0.2s;
-    /* Leads the cascade: surfaces just before the info children (120ms). */
-    animation: item-rise 460ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .back-button:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .back-button {
-      transition: none;
-      animation: none;
-    }
-  }
-
-  h1 {
-    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
-    font-style: italic;
-    font-weight: 700;
-    font-variation-settings:
-      "opsz" 144,
-      "wght" 700,
-      "SOFT" 0,
-      "WONK" 1;
-    font-size: 1.75rem;
-    margin: 0 0 8px;
-  }
-
+  /* .field/.field-label are the shared labeled-picker pattern (config-page.css). */
   .meta {
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    margin: 0 0 16px;
-  }
-
-  .description {
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.6;
-    margin: 0 0 24px;
-  }
-
-  .price {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--theme-accent, #60a5fa);
-    margin: 0 0 16px;
-  }
-
-  .preorder-note {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-warning, #f59e0b);
-    margin: 0 0 16px;
-  }
-
-  .prop-field {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 0 0 20px;
-  }
-
-  .prop-field-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-  }
-
-  .checkout-error {
-    margin-top: 12px;
-    text-align: center;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .loading,
-  .error {
-    text-align: center;
-    padding: 48px;
-  }
-
-  .error {
-    color: var(--semantic-error, #ef4444);
+    margin: 0;
   }
 </style>

@@ -1,14 +1,20 @@
 ---
 status: active
 value: 5
-effort: L
-remaining: "Phase 2: SQLite offline, native auth, haptics. iOS + store submission"
+effort: XL
+remaining: 'Android + deep links + Capgo OTA + native Google sign-in shipped; no ios/ dir at all, no store listings, no SQLite/share/BLE/NFC'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-08-02
 ---
 # TKA Composer — Native Mobile Integration Design Spec
+
+> **DRIFT WARNING — 2026-08-02.** Android + deep links + Capgo OTA + native Google sign-in shipped; **no `ios/` dir at all**, no store listings, no SQLite/share/BLE/NFC
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-04-24
 **Status:** Approved

@@ -17,6 +17,7 @@
   pixel position across all card variations.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
@@ -42,8 +43,50 @@
     sequence: SequenceData;
     themeOverride?: { visuals: CardBackThemeVisuals; name: string };
     showTnDDesignation?: boolean;
+    /**
+     * Opt-in live layer over the printed mandala (the shop hero's animated
+     * back). The snippet renders inside a positioned box that IS the printed
+     * mandala's box — same centre, same side — so a child absolutely centred
+     * in it is concentric with the printed figure by construction.
+     * `--card-mandala-size` carries that side length for a consumer that needs
+     * to size an engine square from it.
+     * Supplying the snippet also ghosts the printed mandala underneath, which
+     * is what lets a drawn trail read against it. Print and raster paths never
+     * pass this.
+     */
+    mandalaOverlay?: Snippet;
+    /**
+     * Called with the printed mandala's box (and null on teardown). The one
+     * hook a live overlay needs: the printed figure is the alignment target,
+     * and its on-screen box is the only honest way to find it — the card's
+     * size comes from a container query, so it is not knowable up front.
+     */
+    onMandalaBox?: (el: HTMLDivElement | null) => void;
+    /**
+     * Prop the card is printed with. A card is printed with ONE prop pair and
+     * the mandala is that prop's tip locus, so a surface depicting a specific
+     * printed card passes the prop the bake used. Omitted, the card follows the
+     * viewer's own prop settings — right for an in-app preview of the viewer's
+     * sequence, wrong for a storefront showing a physical product.
+     */
+    bluePropTypeOverride?: string;
+    redPropTypeOverride?: string;
   }
-  let { sequence, themeOverride, showTnDDesignation = false }: Props = $props();
+  let {
+    sequence,
+    themeOverride,
+    showTnDDesignation = false,
+    mandalaOverlay,
+    onMandalaBox,
+    bluePropTypeOverride,
+    redPropTypeOverride,
+  }: Props = $props();
+
+  let mandalaAnchorEl = $state<HTMLDivElement | null>(null);
+  $effect(() => {
+    onMandalaBox?.(mandalaAnchorEl);
+    return () => onMandalaBox?.(null);
+  });
 
   const d = $derived(deriveCardBackData(sequence));
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
@@ -51,8 +94,12 @@
   // Single-ended prop (club) traces one tip; staff traces both. The mandala
   // must match the card's prop, else a club card shows the double-staff locus.
   // SequenceMandala derives the tip count from these prop types itself.
-  const bluePropType = $derived(settingsService.settings.bluePropType);
-  const redPropType = $derived(settingsService.settings.redPropType);
+  const bluePropType = $derived(
+    bluePropTypeOverride ?? settingsService.settings.bluePropType
+  );
+  const redPropType = $derived(
+    redPropTypeOverride ?? settingsService.settings.redPropType
+  );
 
   const theme = $derived(themeOverride?.visuals ?? getCardBackThemeVisuals(settingsService.settings.backgroundType));
   const themeName = $derived(themeOverride?.name ?? settingsService.settings.backgroundType ?? "cosmic");
@@ -150,8 +197,8 @@
 
     <!-- CENTER: mandala -->
     <div class="content">
-      <div class="mandala-zone">
-        <div class="mandala-anchor">
+      <div class="mandala-zone" class:ghosted={!!mandalaOverlay}>
+        <div class="mandala-anchor" bind:this={mandalaAnchorEl}>
           <SequenceMandala
             {sequence}
             mode="card-back"
@@ -165,6 +212,11 @@
           />
         </div>
       </div>
+      {#if mandalaOverlay}
+        <div class="mandala-overlay">
+          <div class="mandala-overlay-box">{@render mandalaOverlay()}</div>
+        </div>
+      {/if}
     </div>
 
     <!-- LOOP ROW: between mandala and bottom elements -->
@@ -487,6 +539,9 @@
     inset: 10cqi 3.2cqi 30cqi;
     z-index: 1;
     overflow: hidden;
+    /* Named so an opt-in overlay can derive its own square from the printed
+       mandala's side instead of hardcoding this number a second time. */
+    --card-mandala-size: 72cqi;
   }
 
   .level-badge-slot {
@@ -509,11 +564,47 @@
     justify-content: center;
   }
 
+  /* Ghosted under a live overlay so the drawn trail reads against the printed
+     figure instead of fighting it (the ShapeMatrixDrill value). */
+  .mandala-zone.ghosted {
+    opacity: 0.55;
+  }
+
+  /* Deliberately the SAME two-element shape as .mandala-zone/.mandala-anchor
+     below, with the same centring and the same box rules, so the overlay box
+     is congruent with the printed mandala by construction rather than by two
+     sets of numbers agreeing.
+
+     Two things it must not be. Not `inset: 0` with grid centring: a child
+     larger than its grid container gets an auto track its own width and is
+     placed at that track's start, which put the oversized engine square down
+     and right of the mandala instead of around it. And not centred by
+     `translate`, because transforms are invisible to offsetLeft/offsetTop —
+     a consumer measuring its own alignment would read the box's untranslated
+     position and correct for a shift that had already happened. Flex centring
+     is layout, so it reads true. */
+  .mandala-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .mandala-overlay-box {
+    position: relative;
+    width: var(--card-mandala-size, 72cqi);
+    max-height: 100%;
+    aspect-ratio: 1;
+  }
+
   .mandala-anchor {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 72cqi;
+    width: var(--card-mandala-size, 72cqi);
     max-height: 100%;
     aspect-ratio: 1;
     overflow: hidden;

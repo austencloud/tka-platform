@@ -17,9 +17,12 @@
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import "$lib/shared/landing/styles/public-editorial.css";
 
-  const TITLE = "Interactive Shape Matrix | The Kinetic Alphabet";
+  // Not "| The Kinetic Alphabet" — the Shape Matrix is Lorq Nichols' work,
+  // published on page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1.
+  // This page is an interactive reading of it, not a TKA component.
+  const TITLE = "Interactive Shape Matrix | Flow Arts Notation Archive";
   const DESCRIPTION =
-    "Click any cell of the 144 shape matrix to open the six timing-and-direction realizations that draw that mandala, then watch the prop draw it live.";
+    "Lorq Nichols' 144 shape matrix, made interactive: click any cell to open the six timing-and-direction realizations that draw that mandala, then watch the prop draw it live.";
   const URL = "https://tkaflowarts.com/notation/shape-matrix";
 
   // Cumulative ratio-band sizes: Small = 1:1 (16 tiles), Medium = 1:1 + 1:3
@@ -81,7 +84,26 @@
     "description": "${DESCRIPTION}",
     "inLanguage": "en-US",
     "author": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
-    "publisher": { "@type": "Organization", "name": "The Kinetic Alphabet", "url": "https://tkaflowarts.com/" }
+    "publisher": { "@type": "Organization", "name": "The Kinetic Alphabet", "url": "https://tkaflowarts.com/" },
+    "about": {
+      "@type": "CreativeWork",
+      "name": "144 Shape Matrix",
+      "creator": { "@type": "Person", "name": "Lorq Nichols", "alternateName": "Spin Science" },
+      "isPartOf": {
+        "@type": "Book",
+        "name": "Vulcan Tech Gospel Book of P.H.A.T. Volume 1",
+        "author": [
+          { "@type": "Person", "name": "Lorq Nichols" },
+          { "@type": "Person", "name": "Brian Thompson" },
+          { "@type": "Person", "name": "David Cantor" },
+          { "@type": "Person", "name": "Noel Yee" }
+        ]
+      }
+    },
+    "citation": [
+      { "@type": "CreativeWork", "name": "Book of P.H.A.T.", "url": "https://sirlorq.wordpress.com/tech-tiles/" },
+      { "@type": "CreativeWork", "name": "324 Patterns", "url": "https://sirlorq.wordpress.com/324-patterns/" }
+    ]
   }
   </script>`}
   {@html `<script type="application/ld+json">

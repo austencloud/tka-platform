@@ -28,7 +28,7 @@ import { getImageComposer } from "$lib/shared/render/get-image-composer";
 import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { bakedCoverUrl } from "../domain/shop-prop-options";
+import { bakedCoverUrl, SHOP_BACK_THEME } from "../domain/shop-prop-options";
 import {
   configureShortCodeManager,
   getShortCodeManager,
@@ -101,13 +101,21 @@ const seedGateWithTimeout = Promise.race([
  */
 export function prewarmCovers(
   cards: readonly CoverCard[],
-  propType: PropType = DEFAULT_COVER_PROP
+  propType: PropType = DEFAULT_COVER_PROP,
+  { includeBaked = false }: { includeBaked?: boolean } = {}
 ): void {
-  // Baked cards for this prop load as plain images — only unbaked ones need
-  // the worker pipeline seeded. NOTE: the pool holds ONE prop bundle at a time
-  // (prop types are part of the seed signature), so a prop switch re-seeds.
-  const sequences = cards
-    .filter((c) => !bakedCoverUrl(c, propType))
+  // Baked cards for this prop load as plain images, so by default they don't
+  // need the worker pipeline seeded. A page whose OWN cards are generated live
+  // — the Deck Architect samples and generates every card it shows — has to
+  // pass `includeBaked`: its seed set (the flavor SKUs' covers) is fully baked,
+  // so the default filter emptied it, nothing seeded the pool, and every
+  // generated card came back a blank white rectangle. NOTE: the pool holds ONE
+  // prop bundle at a time (prop types are part of the seed signature), so a
+  // prop switch re-seeds.
+  const seedFrom = includeBaked
+    ? cards
+    : cards.filter((c) => !bakedCoverUrl(c, propType));
+  const sequences = seedFrom
     .map((c) => c.sequence && hydrateCached(c.sequence))
     .filter(Boolean) as SequenceData[];
   if (!sequences.length) return;
@@ -226,7 +234,22 @@ export function renderCoverFront(
   const sizeOpts = previewSizeOpts(deck.maxWidthPx);
   // Size + QR ride the cache key so preview and full-res renders never collide.
   const sizeTag = sizeOpts ? `p${sizeOpts.canvasWidth}` : "full";
-  const key = `${seq.id ?? seq.word ?? "?"}|${card.accentColor ?? "-"}|${card.footerCenter ?? "-"}|${propType}|${sizeTag}`;
+  // Every input that changes the pixels is in the key. deckId and deckName feed
+  // the QR and its attribution, and the icon/tint/complement paint the frame:
+  // two decks sharing a sequence used to hand each other the other's artwork
+  // and the other's QR because none of that was named here.
+  const key = [
+    seq.id ?? seq.word ?? "?",
+    card.accentColor ?? "-",
+    card.darkComplement ?? "-",
+    card.iconPath ?? "-",
+    card.tintOpacity ?? "-",
+    card.footerCenter ?? "-",
+    propType,
+    deck.deckId ?? "-",
+    deck.deckName ?? "-",
+    sizeTag,
+  ].join("|");
   const cached = urlCache.get(key);
   if (cached) return cached;
 
@@ -270,10 +293,6 @@ export function renderCoverFront(
   work.catch(() => urlCache.delete(key));
   return work;
 }
-
-// LOOP decks ship with the rainbow back today (deck-releaser-state theme
-// getter). When back-theme choice lands, thread the buyer's pick through here.
-const SHOP_BACK_THEME = "rainbow";
 
 const backUrlCache = new Map<string, Promise<string>>();
 

@@ -2,14 +2,20 @@
 status: active
 value: 4
 effort: S
-remaining: "Run the required Chrome DevTools MCP viewport and auth-state verification, then rerun the full check after the current unrelated endless-spinner type errors clear."
-depends_on: "external: Chrome DevTools MCP is not registered in this Codex session; the shared full check currently fails on unrelated endless-spinner changes."
+remaining: "Criteria 1, 3, 4, 5, 6 verified 2026-08-02; check is 0 errors / 0 warnings. Criterion 2 turned out to be BROKEN, not merely unverified: Austen tried the live popup and it dead-ended. Root cause was the sheet's fire-and-forget One Tap call, fixed in a0b1835945 by replacing SignInSheet with the shared AuthModal (see 2026-08-02-viewer-auth-surface-unification-design.md). A real Google OAuth popup now opens where zero opened before. Still open: one live end-to-end sign-in with Austen's own credentials to confirm the export auto-resumes after the popup completes — the popup launch is proven, the post-auth replay is not."
+depends_on: "external: one live Google sign-in with Austen's credentials to confirm the post-auth export resume"
 plan_path: ""
 tags: []
 last_triaged: 2026-07-29
 ---
 
 # /q Account Funnel — Download Gate + Sign-in Chip — Design
+
+> **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. Correctly BLOCKED, not drifting: `depends_on` already names the external gate (one live Google sign-in to confirm post-auth export resume). The body reads "Implemented; verification blocked", which the detector cannot distinguish from a stale done-claim. Criterion 2 is known BROKEN, not merely unverified — see `remaining`.
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state.
+
 
 **Date:** 2026-07-05
 **Status:** Implemented; verification blocked
@@ -109,3 +115,34 @@ export panels, not `buildHeaderActions`' scan branch, and it never calls
    (previously empty corner).
 5. Card-mode export gates the same way and resumes the card export.
 6. `npm run check` clean; screenshots mobile + desktop.
+
+## Verification results, 2026-08-02 (Chrome DevTools MCP, localhost)
+
+Signed-out cases ran in an isolated browser context (`guest-qr`) so Austen's
+own session was never disturbed; signed-in cases ran in the default context.
+Short code `003N`.
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | Signed-out Download → sheet + `?pending=download`, no export | **PASS.** URL became `/q/003N?pending=download`; sheet read "Create a free account to download this sequence."; no ExportTakeover appeared. |
+| 2 | Sign in (popup) → export starts automatically | **OPEN — cannot be agent-verified.** Requires entering Austen's Google credentials. See note below. |
+| 3 | Signed-in Download runs immediately, no sheet | **PASS.** ExportTakeover appeared ("Capturing…"), no sheet, no `pending` param. Export cancelled to avoid writing a file. |
+| 4 | Chip: signed-out "Sign in" 44px; signed-in avatar → Open TKA | **PASS.** Mobile 375×667: chip present, 88×44 (min-height 44px). Signed-in: no chip, avatar present, `<a aria-label="Open TKA" href="/browse/gallery?from=scan&code=003N">`. |
+| 5 | Card-mode export gates identically | **PASS.** "Download Card" produced the same `?pending=download` and the same sheet copy. |
+| 6 | `npm run check` clean + screenshots | **PASS.** 0 errors, 0 warnings. Desktop 1920 and mobile 375 both captured. |
+
+### Note on criterion 2
+
+The replay wiring itself is confirmed correct by reading the code path
+(`replayPendingAction` drains the queue, clears the param, and dispatches
+`case "download"` → `onGatedDownload` → `handleExport`, with
+`pendingExportKind` defaulting to `"video"` at `QScanPage.svelte:575`). What
+remains unproven is the live transition.
+
+An attempted proxy — loading `/q/003N?pending=download` while **already**
+signed in — consumed the param but started no export, with no console error.
+That is an off-spec state (a signed-in user cannot naturally hold that URL,
+since the param is only appended when the gate trips for a guest), and the
+likely cause is that replay fires before `deferInteractiveStartup` has brought
+the export machinery up. It is recorded here as an observation, not a defect,
+because it neither confirms nor refutes the real flow.

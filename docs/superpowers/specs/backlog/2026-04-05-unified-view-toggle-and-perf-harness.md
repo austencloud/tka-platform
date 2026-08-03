@@ -1,14 +1,20 @@
 ---
 status: backlog
 value: 2
-effort: M
-remaining: Perf harness for isolated-room benchmarking
+effort: S
+remaining: 'Q-cycle shipped exactly; perf harness never built'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-08-02
 ---
 # Unified View Toggle + Performance Test Harness
+
+> **DRIFT WARNING — 2026-08-02.** Q-cycle shipped exactly; perf harness never built
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-04-05
 **Status:** Draft

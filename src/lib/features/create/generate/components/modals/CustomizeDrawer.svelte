@@ -76,22 +76,30 @@
     bottom: 0;
   }
 
-  /* Bottom sheet on mobile - auto-size to content, don't take full screen */
+  /* Bottom sheet on mobile. Fixed height, NOT auto: the drill panel swaps
+     between a three-row Style screen and a 16-cell grid, and an auto-height
+     sheet would resize under the user's thumb on every drill. */
   :global(.drawer-content.customize-drawer-sheet[data-placement="bottom"]) {
-    height: auto;
-    min-height: auto;
+    height: 85dvh;
+    min-height: 0;
     max-height: 85dvh;
   }
 
   /* Right-side panel on desktop.
      Base Drawer.css sizes right+side-by-side drawers to --create-panel-width
      (the MEASURED generate-panel width). With no sequence the workspace
-     collapses and the generate panel goes full-width, so the customize drawer
-     would blow out to the whole viewport. Cap it: a settings form never needs
-     more than a readable column. min() keeps it from exceeding the panel on
-     narrow windows. */
+     collapses and the generate panel goes full-width, so an uncapped drawer
+     blows out to the whole viewport — a settings form spanning 3840px.
+
+     The ceiling is deliberately close to the sibling drawers in this same
+     slot: PresetDrawer and LOOPDrawer both cap at 400px. An earlier 1100px
+     ceiling made this drawer 2.75x wider than either, covered the whole
+     generate panel, and bought a two-pane layout whose detail side ran
+     ~1300px tall for a three-row form. A ~620px full-height column matches
+     the neighbours and leaves the workspace readable beside it.
+     min() keeps it from ever exceeding the panel it sits over. */
   :global(.drawer-content.customize-drawer-sheet.side-by-side-layout[data-placement="right"]) {
-    width: min(var(--create-panel-width, 480px), 520px);
+    width: min(var(--create-panel-width, 480px), clamp(480px, 30vw, 620px));
     max-width: 100%;
   }
 
@@ -118,36 +126,6 @@
     background: transparent;
     padding: 0;
     gap: 10px;
-  }
-
-  /* Larger accordion headers in drawer context */
-  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-header) {
-    padding: 14px 16px;
-    min-height: 56px;
-  }
-
-  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-value) {
-    font-size: var(--font-size-base, 16px);
-  }
-
-  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-label) {
-    font-size: var(--font-size-sm, 14px);
-  }
-
-  /* More space between accordion sections */
-  .customize-drawer-content > :global(.customize-expanded-overlay .overlay-content) {
-    gap: 10px;
-  }
-
-  /* Tight accordion content padding - maximize space for pictographs */
-  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-content) {
-    padding: 10px 8px 12px;
-    gap: 10px;
-  }
-
-  /* Larger accordion sections with more visual presence */
-  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-section) {
-    border-radius: 12px;
   }
 
   /* Accessibility: Respect user's motion preferences */

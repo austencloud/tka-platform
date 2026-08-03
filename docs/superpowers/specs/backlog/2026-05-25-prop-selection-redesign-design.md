@@ -1,14 +1,20 @@
 ---
 status: backlog
-value: 3
-effort: M
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+value: 2
+effort: S
+remaining: 'Visual half shipped verbatim; popover half abandoned for a flat per-variant grid. Vestigial badge code is dead'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Prop Selection Redesign — Design Spec
+
+> **DRIFT WARNING — 2026-08-02.** Visual half shipped verbatim; popover half abandoned for a flat per-variant grid. Vestigial badge code is dead
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 ## Problem
 

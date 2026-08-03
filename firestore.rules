@@ -148,14 +148,6 @@ service cloud.firestore {
               ? request.auth.token.role == 'tester' : false));
     }
 
-    // Check if user is at least premium level
-    function isPremium() {
-      return !isAuthenticated() ? false
-        : (isTester()
-          || (request.auth.token.keys().hasAny(['role'])
-              ? request.auth.token.role == 'premium' : false));
-    }
-
     // -------------------------------------------------------------------------
     // DEVELOPER SYSTEM HELPERS (uses developers collection)
     // -------------------------------------------------------------------------
@@ -926,7 +918,7 @@ service cloud.firestore {
             : [];
           let newHistory = ('editHistory' in request.resource.data)
             ? request.resource.data.editHistory
-            : null;
+            : [];
           let appendedIndex = oldHistory.size();
 
           return resource.data.senderId == request.auth.uid

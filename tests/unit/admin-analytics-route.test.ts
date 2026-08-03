@@ -5,7 +5,18 @@ const mocks = vi.hoisted(() => ({
   withRateLimit: vi.fn(),
   logAdminAction: vi.fn(),
   getUser: vi.fn(),
+  posthogEnv: {
+    POSTHOG_PERSONAL_API_KEY: "secret",
+    POSTHOG_PROJECT_ID: "project",
+  } as Record<string, string>,
 }));
+// The route reads $env/dynamic/private, which Vite resolves from .env when the
+// config loads — long before any beforeEach can assign process.env. So the
+// process.env writes below never reached it: locally these tests passed on the
+// real key from .env, and in CI (no .env) the route 500'd with
+// "POSTHOG_PROJECT_ID not configured". Mocking the module the route actually
+// imports makes the fixture values authoritative in both places.
+vi.mock("$env/dynamic/private", () => ({ env: mocks.posthogEnv }));
 vi.mock("$lib/server/auth/requireAdmin", () => ({
   requireAdmin: mocks.requireAdmin,
 }));
@@ -51,8 +62,8 @@ function upstream(results: unknown[][], status = 200) {
 describe("admin analytics endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.POSTHOG_PERSONAL_API_KEY = "secret";
-    process.env.POSTHOG_PROJECT_ID = "project";
+    mocks.posthogEnv.POSTHOG_PERSONAL_API_KEY = "secret";
+    mocks.posthogEnv.POSTHOG_PROJECT_ID = "project";
     mocks.requireAdmin.mockResolvedValue({ uid: "admin" });
     mocks.withRateLimit.mockResolvedValue(null);
     mocks.getUser.mockResolvedValue({

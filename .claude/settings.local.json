@@ -420,8 +420,6 @@
       "Bash(reg query \"HKEY_CURRENT_USER\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Advanced\" /v NavPaneShowAllFolders)",
       "Bash(cmd.exe //c:*)",
       "Bash(wrangler:*)",
-      "Bash(CLOUDFLARE_API_TOKEN=\"19gUdjl37sxwaaVwKO709ZiFx-WKU5fyrcJMcOUV\" npx wrangler:*)",
-      "Bash(CLOUDFLARE_API_TOKEN=1ZsggHkYAAUjSCRobTwDliFPivgOw5k01u-ahj6T npx wrangler r2 bucket list:*)",
       "Bash(aws:*)",
       "Bash(rclone:*)",
       "mcp__chrome-devtools__list_pages",

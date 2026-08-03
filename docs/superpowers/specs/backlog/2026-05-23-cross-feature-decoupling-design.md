@@ -2,13 +2,19 @@
 status: backlog
 value: 3
 effort: L
-remaining: "Phase 1 promotions, Phase 2 rewires, Phase 3 ESLint rule, Phase 4 deep couples"
+remaining: 'Phases 1, 2, 4 open. Phase 3 is PARTLY shipped and the 2026-07-25 ledger was wrong to call it absent: eslint.config.js:142 enforces the shared/ -> features/ one-way boundary. What is still missing is a feature<->feature restriction. Re-scope Phase 3 to that gap.'
 depends_on: ""
 plan_path: ""
 tags: [architecture, tech-debt]
-last_triaged: 2026-05-23
+last_triaged: 2026-08-02
 ---
 # Cross-Feature Decoupling — Design Spec
+
+> **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. CORRECTION to the 2026-07-25 ledger, which recorded "no ESLint rule": `eslint.config.js:142` DOES enforce the `shared/` -> `features/` boundary. The remaining gap is feature<->feature coupling only. The detector counts 87 topical commits with ZERO on this spec's named files — that is broad-path noise, not progress here.
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state.
+
 
 **Date:** 2026-05-23
 **Status:** Draft

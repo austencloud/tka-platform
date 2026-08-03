@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shop direction C — Guided showcase</title>
+<style>
+  :root {
+    --ink: #08080f;
+    --text: #edecf4;
+    --muted: #9b98ae;
+    --line: rgba(255, 255, 255, 0.09);
+    --line-2: rgba(255, 255, 255, 0.16);
+    --pink: #ff5da2;
+    --cyan: #4dd8ff;
+    --serif: Georgia, "Times New Roman", Times, serif;
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --shell: min(92vw, max(1180px, 84vw));
+    --shell-cap: min(93vw, 2200px);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--ui);
+    font-size: clamp(15px, 0.55vw + 13px, 19px);
+    line-height: 1.58;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; display: block; }
+
+  .badge {
+    position: fixed; z-index: 60; top: 12px; right: 12px;
+    font: 600 11px/1 var(--ui); letter-spacing: 0.14em;
+    padding: 8px 10px; border-radius: 999px;
+    color: #0a0a12; background: var(--cyan);
+    box-shadow: 0 6px 24px rgba(77, 216, 255, 0.35);
+  }
+
+  .wrap { width: var(--shell); max-width: var(--shell-cap); margin-inline: auto; }
+
+  .kicker {
+    font: 600 clamp(11px, 0.32vw + 9.4px, 14px)/1.4 var(--ui);
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 clamp(14px, 1.4vw, 26px);
+  }
+  .kicker b { color: var(--pink); font-weight: 600; }
+
+  /* ---------------- FULL-VIEWPORT HERO ---------------- */
+  .stage {
+    min-height: 100svh; display: grid; align-content: center;
+    padding: clamp(70px, 8vh, 130px) 0 clamp(40px, 6vh, 80px);
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(900px 620px at 50% 42%, rgba(77, 216, 255, 0.11), transparent 66%),
+      radial-gradient(760px 520px at 76% 84%, rgba(255, 93, 162, 0.10), transparent 62%);
+  }
+  .stage-grid { display: grid; gap: clamp(28px, 3.4vw, 70px); align-items: center; }
+  .stage h1 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(38px, 6.2vw, 112px); line-height: 0.98; letter-spacing: -0.02em;
+    margin: 0 0 clamp(16px, 1.6vw, 30px);
+  }
+  .stage h1 em { color: var(--pink); font-style: italic; }
+  .stage .lede {
+    font-size: clamp(17px, 0.7vw + 15px, 26px); color: #cdcadb;
+    max-width: 34ch; margin: 0 0 clamp(24px, 2.4vw, 42px);
+  }
+  .scan-steps { display: grid; gap: 10px; margin: 0 0 clamp(24px, 2.4vw, 42px); padding: 0; list-style: none; }
+  .scan-steps li {
+    display: flex; gap: 12px; align-items: baseline;
+    color: var(--muted); font-size: clamp(14px, 0.24vw + 13px, 17px);
+  }
+  .scan-steps b {
+    font-family: var(--serif); font-style: italic; color: var(--cyan);
+    font-size: clamp(16px, 0.3vw + 14px, 21px); min-width: 1.6ch;
+  }
+  .scroll-hint {
+    font: 600 clamp(11px, 0.16vw + 10px, 13px)/1 var(--ui);
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+    margin-top: clamp(24px, 3vh, 48px);
+  }
+
+  /* ---------------- CARD OBJECT ---------------- */
+  .card-face {
+    aspect-ratio: 2.5 / 3.5;
+    border-radius: clamp(10px, 0.7vw, 20px);
+    background: linear-gradient(168deg, #1b1b29 0%, #0e0e18 58%, #14141f 100%);
+    border: 1px solid var(--line-2);
+    box-shadow: 0 44px 100px -30px rgba(0, 0, 0, 0.92);
+    padding: clamp(10px, 0.9vw, 20px);
+    display: grid; grid-template-rows: 1fr auto; gap: 8px;
+    position: relative; overflow: hidden;
+  }
+  .card-face::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(80% 60% at 50% 30%, rgba(77, 216, 255, 0.12), transparent 70%);
+    pointer-events: none;
+  }
+  .card-art {
+    width: 100%; height: 100%; object-fit: contain;
+    filter: brightness(2.1) saturate(1.25) drop-shadow(0 0 7px rgba(110, 200, 255, 0.45));
+  }
+  .card-foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+    border-top: 1px solid var(--line); padding-top: 8px;
+  }
+  .card-tag {
+    font: 600 clamp(9px, 0.26vw + 8px, 12px)/1.2 var(--ui);
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  }
+  .qr { width: 20%; min-width: 26px; max-width: 72px; }
+  .qr svg { width: 100%; height: auto; display: block; }
+
+  .hero-card { width: min(78vw, 300px); justify-self: center; }
+  .hero-card .card-face {
+    box-shadow: 0 60px 140px -34px rgba(77, 216, 255, 0.34), 0 44px 100px -30px rgba(0, 0, 0, 0.92);
+  }
+
+  /* ---------------- CHAPTERS ---------------- */
+  .chapter { padding: clamp(60px, 8vh, 150px) 0; border-top: 1px solid var(--line); }
+  .chapter-head {
+    display: grid; gap: 10px; margin-bottom: clamp(26px, 3vw, 56px);
+  }
+  .chapter-head h2 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(30px, 3.4vw, 68px); line-height: 1.02; margin: 0;
+    letter-spacing: -0.015em;
+  }
+  .chapter-head p {
+    margin: 0; color: var(--muted); max-width: 52ch;
+    font-size: clamp(15px, 0.3vw + 14px, 19px);
+  }
+
+  .chapter-body { display: grid; gap: clamp(18px, 2vw, 40px); align-items: stretch; }
+
+  .feature, .sibling {
+    display: grid; border: 1px solid var(--line); border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.014));
+    text-decoration: none; color: inherit;
+    transition: border-color 0.18s ease, transform 0.18s ease;
+  }
+  .feature:hover, .sibling:hover { border-color: var(--line-2); transform: translateY(-2px); }
+  .feature { padding: clamp(20px, 1.8vw, 42px); gap: clamp(20px, 2vw, 44px); align-items: center; }
+  .sibling { padding: clamp(18px, 1.4vw, 30px); gap: clamp(16px, 1.2vw, 26px); align-content: start; }
+
+  .art {
+    position: relative; display: grid; place-items: center;
+    border-radius: 12px; border: 1px solid var(--line);
+    background: radial-gradient(70% 70% at 50% 45%, rgba(255, 255, 255, 0.055), rgba(0, 0, 0, 0.28));
+    overflow: hidden;
+  }
+  .feature .art { min-height: clamp(240px, 24vw, 460px); padding: clamp(16px, 1.6vw, 34px); }
+  .sibling .art { min-height: clamp(170px, 13vw, 280px); padding: clamp(14px, 1vw, 24px); }
+  .art .fan-item { position: absolute; transform-origin: 50% 130%; }
+  .feature .art .fan-item { width: clamp(96px, 9.4vw, 210px); }
+  .sibling .art .fan-item { width: clamp(78px, 6.2vw, 130px); }
+  .art .fan-item:nth-of-type(1) { transform: translateX(-62%) rotate(-16deg) translateY(11px); }
+  .art .fan-item:nth-of-type(2) { transform: translateX(-21%) rotate(-5.5deg); z-index: 2; }
+  .art .fan-item:nth-of-type(3) { transform: translateX(21%) rotate(5.5deg); z-index: 3; }
+  .art .fan-item:nth-of-type(4) { transform: translateX(62%) rotate(16deg) translateY(11px); z-index: 4; }
+  .art .single { width: clamp(110px, 9vw, 190px); }
+  .art img.book {
+    width: clamp(120px, 10vw, 220px); border-radius: 3px;
+    box-shadow: 0 26px 60px -20px rgba(0, 0, 0, 0.95);
+  }
+
+  .shelf-tag {
+    font: 600 clamp(10px, 0.18vw + 9px, 13px)/1 var(--ui);
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+    display: block; margin-bottom: 10px;
+  }
+  .feature h3 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(28px, 1.7vw + 20px, 56px); line-height: 1.04; margin: 0 0 12px;
+    letter-spacing: -0.015em;
+  }
+  .sibling h3 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(22px, 0.9vw + 18px, 34px); line-height: 1.08; margin: 0 0 8px;
+  }
+  .what { margin: 0 0 clamp(12px, 1vw, 20px); color: #c9c6d8; font-size: clamp(15px, 0.35vw + 14px, 20px); max-width: 42ch; }
+  .sibling .what { color: var(--muted); font-size: clamp(14px, 0.24vw + 13px, 17px); }
+  .spec { margin: 0 0 clamp(16px, 1.4vw, 26px); color: var(--muted); font-size: clamp(14px, 0.22vw + 13px, 17px); max-width: 44ch; }
+
+  .buyline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .price { font-family: var(--serif); font-size: clamp(22px, 1vw + 17px, 38px); letter-spacing: -0.01em; }
+  .price small { font-family: var(--ui); font-size: clamp(11px, 0.18vw + 10px, 14px); color: var(--muted); letter-spacing: 0.06em; }
+  .chip {
+    font: 600 clamp(10px, 0.16vw + 9.4px, 13px)/1 var(--ui);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 7px 11px; border-radius: 999px;
+    color: var(--cyan); border: 1px solid rgba(77, 216, 255, 0.4);
+    background: rgba(77, 216, 255, 0.08);
+  }
+  .chip.warm { color: var(--pink); border-color: rgba(255, 93, 162, 0.4); background: rgba(255, 93, 162, 0.08); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 48px; padding: 0 clamp(18px, 1.1vw, 28px);
+    border-radius: 999px; border: 1px solid transparent;
+    font: 600 clamp(14px, 0.2vw + 13px, 17px)/1 var(--ui);
+    text-decoration: none; color: #0a0a12; cursor: pointer;
+    background: linear-gradient(100deg, #ffffff, #ded9ec);
+  }
+  .btn:hover { background: linear-gradient(100deg, #ffffff, #ffd8e8); }
+  .btn.lg { min-height: 56px; padding: 0 clamp(24px, 1.6vw, 38px); font-size: clamp(15px, 0.24vw + 14px, 18px); }
+  .btn.ghost {
+    color: var(--text); background: rgba(255, 255, 255, 0.04); border-color: var(--line-2);
+  }
+  .btn.ghost:hover { background: rgba(255, 255, 255, 0.09); }
+  .buyline .btn { margin-left: auto; }
+
+  /* ---------------- START HERE ---------------- */
+  .start {
+    border-top: 1px solid var(--line);
+    padding: clamp(60px, 8vh, 150px) 0;
+    background:
+      radial-gradient(900px 560px at 50% 20%, rgba(255, 93, 162, 0.11), transparent 66%);
+  }
+  .start .chapter-head h2 em { color: var(--pink); font-style: italic; }
+  .start .feature { border-color: rgba(255, 93, 162, 0.32); }
+  .box-list {
+    list-style: none; margin: 0 0 clamp(18px, 1.6vw, 30px); padding: 0;
+    display: grid; gap: 8px; color: var(--muted);
+    font-size: clamp(14px, 0.22vw + 13px, 17px);
+  }
+  .box-list li { display: flex; gap: 10px; align-items: baseline; }
+  .box-list li::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--pink); flex: 0 0 auto; }
+
+  /* ---------------- FREE BAND ---------------- */
+  .free {
+    border-top: 1px solid var(--line);
+    padding: clamp(40px, 5vh, 96px) 0;
+  }
+  .free-inner {
+    padding: clamp(24px, 2.4vw, 50px);
+    border: 1px solid var(--line-2); border-radius: 16px;
+    background: linear-gradient(120deg, rgba(255, 93, 162, 0.07), rgba(77, 216, 255, 0.05));
+    display: grid; gap: clamp(18px, 1.8vw, 30px); align-items: center;
+  }
+  .free-inner h3 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(24px, 1.6vw, 40px); margin: 0 0 8px;
+  }
+  .free-inner p { margin: 0; color: var(--muted); font-size: clamp(14px, 0.24vw + 13px, 17px); }
+  footer {
+    padding: 24px 0 60px; color: var(--muted);
+    font-size: clamp(12px, 0.18vw + 11px, 15px);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  /* ---------------- RECOMPOSITION ---------------- */
+  @media (min-width: 768px) {
+    .stage-grid { grid-template-columns: 1.25fr 0.75fr; }
+    .hero-card { justify-self: end; width: min(100%, 320px); }
+    .feature { grid-template-columns: 0.9fr 1.1fr; }
+    .chapter-body { grid-template-columns: 1.55fr 1fr; }
+    .sibling { grid-template-rows: auto 1fr; }
+    .free-inner { grid-template-columns: 1fr auto; }
+    .chapter-head { grid-template-columns: auto minmax(28ch, 46ch); align-items: end; gap: clamp(30px, 3.4vw, 76px); }
+  }
+  @media (min-width: 1400px) {
+    :root { --shell: min(90vw, max(1420px, 82vw)); }
+    .stage-grid { grid-template-columns: 1.2fr 0.8fr; gap: clamp(50px, 4.6vw, 110px); }
+    .hero-card { width: min(100%, 400px); }
+    .feature { grid-template-columns: 1fr 1fr; }
+    .chapter-body { grid-template-columns: 1.7fr 1fr; gap: clamp(28px, 2.2vw, 48px); }
+  }
+</style>
+</head>
+<body>
+<div class="badge">DIRECTION C — GUIDED SHOWCASE</div>
+
+<!-- ============ HERO: teach it in one held moment ============ -->
+<section class="stage">
+  <div class="wrap stage-grid">
+    <div>
+      <p class="kicker">The Kinetic Alphabet <b>·</b> Physical line</p>
+      <h1>Every card is a<br /><em>sequence.</em></h1>
+      <p class="lede">Scan it and it moves.</p>
+      <ul class="scan-steps">
+        <li><b>1</b><span>Draw a card. Eight counts of choreography, printed.</span></li>
+        <li><b>2</b><span>Point your phone at the corner code.</span></li>
+        <li><b>3</b><span>The sequence opens in the app and plays, animated.</span></li>
+      </ul>
+      <a class="btn lg" href="#decks">See the five products</a>
+      <p class="scroll-hint">Scroll</p>
+    </div>
+    <div class="hero-card">
+      <div class="card-face">
+        <img class="card-art" src="/caps/rosette-1-4.svg" alt="Four-petal rosette pattern" />
+        <div class="card-foot">
+          <span class="card-tag">LOOP · 8 count</span>
+          <span class="qr" data-qr="1"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAPTER: DECKS ============ -->
+<section class="chapter" id="decks">
+  <div class="wrap">
+    <div class="chapter-head">
+      <h2>Decks</h2>
+      <p>Printed to your dials, 54 cards to a deck. Poker size, 2.5&#8243; × 3.5&#8243;.</p>
+    </div>
+    <div class="chapter-body">
+      <a class="feature" href="/shop/loop-deck">
+        <div class="art">
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/cycloid-1-neg3.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">L1</span><span class="qr" data-qr="2"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/rosette-1-neg6.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">L2</span><span class="qr" data-qr="3"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/pattern-3-2.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">L2</span><span class="qr" data-qr="4"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/antispin-1-neg3.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">L3</span><span class="qr" data-qr="5"></span></div>
+          </div></div>
+        </div>
+        <div>
+          <span class="shelf-tag">The deck</span>
+          <h3>LOOP Deck</h3>
+          <p class="what">54 cards. Every one is a sequence you can scan and play.</p>
+          <p class="spec">Pick a level, a length, and a flavor. Every sequence ends exactly where it began, so you can run any card on repeat.</p>
+          <div class="buyline">
+            <span class="price">$30</span>
+            <span class="chip">Preorder</span>
+            <span class="btn">Build your deck</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="sibling" href="/shop/loop-deck/architect">
+        <div class="art">
+          <div class="single"><div class="card-face">
+            <img class="card-art" src="/caps/cap-1-3-composition.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">Slice 3 of 6</span><span class="qr" data-qr="6"></span></div>
+          </div></div>
+        </div>
+        <div>
+          <span class="shelf-tag">Power user</span>
+          <h3>Deck Architect</h3>
+          <p class="what">Compose a deck slice by slice: level, length, and flavor per section. Up to 128 cards.</p>
+          <div class="buyline">
+            <span class="price">$50 <small>and up</small></span>
+            <span class="chip">Preorder</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAPTER: BOOKS ============ -->
+<section class="chapter">
+  <div class="wrap">
+    <div class="chapter-head">
+      <h2>Books</h2>
+      <p>The teaching line. Cards give you sequences; these give you the system that writes them.</p>
+    </div>
+    <div class="chapter-body">
+      <a class="feature" href="/shop/tnd-trilogy">
+        <div class="art">
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/pattern-2-neg5.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">Earth</span><span class="qr" data-qr="7"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/yuta-cap.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">Water</span><span class="qr" data-qr="8"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/cycloid-1-4.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">Fire</span><span class="qr" data-qr="9"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/yuta-cap-three-quarter.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">Air</span><span class="qr" data-qr="10"></span></div>
+          </div></div>
+        </div>
+        <div>
+          <span class="shelf-tag">The trilogy</span>
+          <h3>Timing &amp; Direction</h3>
+          <p class="what">Three volumes, color-coded by element, from base motions to half-turns.</p>
+          <p class="spec">Volume one teaches the base motions. Volume two adds one turn. Volume three adds the halves.</p>
+          <div class="buyline">
+            <span class="price">$30 <small>per volume</small></span>
+            <span class="chip">Preorder</span>
+            <span class="btn">Pick a volume</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="sibling" href="/shop/guide-book">
+        <div class="art">
+          <img class="book" src="/branding/guide-cover.png" alt="The Kinetic Alphabet, printed guide, cover" />
+        </div>
+        <div>
+          <span class="shelf-tag">The guide</span>
+          <h3>The Kinetic Alphabet</h3>
+          <p class="what">The printed guide to the notation. Read any card, then write your own.</p>
+          <div class="buyline">
+            <span class="price">$30</span>
+            <span class="chip">Preorder</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ START HERE ============ -->
+<section class="start">
+  <div class="wrap">
+    <div class="chapter-head">
+      <h2>Start <em>here</em></h2>
+      <p>If you are picking one thing, pick this. It is the whole system in one box.</p>
+    </div>
+    <div class="chapter-body" style="grid-template-columns: 1fr;">
+      <a class="feature" href="/shop/starter-pack">
+        <div class="art">
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/rosette-1-4.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">LOOP</span><span class="qr" data-qr="11"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/pattern-3-2.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">T&amp;D</span><span class="qr" data-qr="12"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/cycloid-1-neg3.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">LOOP</span><span class="qr" data-qr="13"></span></div>
+          </div></div>
+          <div class="fan-item"><div class="card-face">
+            <img class="card-art" src="/caps/pattern-2-neg5.svg" alt="" />
+            <div class="card-foot"><span class="card-tag">T&amp;D</span><span class="qr" data-qr="14"></span></div>
+          </div></div>
+        </div>
+        <div>
+          <span class="shelf-tag">The bundle</span>
+          <h3>The Starter Pack</h3>
+          <p class="what">The trilogy, a mixed LOOP deck, the book, and a waterproof card holder.</p>
+          <ul class="box-list">
+            <li>All three Timing &amp; Direction volumes</li>
+            <li>One mixed LOOP deck, sampling every flavor</li>
+            <li>The printed Kinetic Alphabet guide</li>
+            <li>Waterproof card holder for practice</li>
+          </ul>
+          <div class="buyline">
+            <span class="price">$65</span>
+            <span class="chip warm">Preorder</span>
+            <span class="btn lg">Get the pack</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FREE BAND ============ -->
+<section class="free">
+  <div class="wrap">
+    <div class="free-inner">
+      <div>
+        <h3>Not ready to buy?</h3>
+        <p>Everything in the cards is free in the Composer. Build sequences, watch them move, share a scan link.</p>
+      </div>
+      <a class="btn ghost lg" href="/composer">Open the Composer</a>
+    </div>
+    <footer>The Kinetic Alphabet · Chicago · Small batch</footer>
+  </div>
+</section>
+
+<script>
+  // Deterministic QR-shaped mark. Placeholder art for the sketch, not a decodable code.
+  document.querySelectorAll("[data-qr]").forEach(function (el) {
+    var N = 25, s = parseInt(el.dataset.qr, 10) * 7919 + 13, m = [], y, x;
+    var rnd = function () { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    for (y = 0; y < N; y++) { m[y] = []; for (x = 0; x < N; x++) m[y][x] = rnd() > 0.53 ? 1 : 0; }
+    [[0, 0], [N - 7, 0], [0, N - 7]].forEach(function (o) {
+      for (y = -1; y < 8; y++) for (x = -1; x < 8; x++) {
+        if (o[1] + y < 0 || o[0] + x < 0 || o[1] + y >= N || o[0] + x >= N) continue;
+        var edge = x === 0 || x === 6 || y === 0 || y === 6;
+        var core = x > 1 && x < 5 && y > 1 && y < 5;
+        m[o[1] + y][o[0] + x] = (x >= 0 && x <= 6 && y >= 0 && y <= 6 && (edge || core)) ? 1 : 0;
+      }
+    });
+    var r = "";
+    for (y = 0; y < N; y++) for (x = 0; x < N; x++) if (m[y][x]) r += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>';
+    el.innerHTML = '<svg viewBox="-1 -1 ' + (N + 2) + " " + (N + 2) + '" shape-rendering="crispEdges" aria-hidden="true"><rect x="-1" y="-1" width="' + (N + 2) + '" height="' + (N + 2) + '" fill="#f2f1f7"/><g fill="#0a0a12">' + r + "</g></svg>";
+  });
+</script>
+</body>
+</html>

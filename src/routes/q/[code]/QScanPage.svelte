@@ -567,7 +567,7 @@
   // ── Download gate (account-creation funnel) ──
   // Watching stays free; taking the export home requires a free account.
   // invokeGatedAction runs the export immediately for full accounts; for
-  // guests it queues ?pending=download, opens the SignInSheet, and the
+  // guests it queues ?pending=download, opens the shared AuthModal, and the
   // orchestrator's replay resumes the export after sign-in (onGatedDownload
   // on the orchestrator below). pendingExportKind remembers WHICH export was
   // requested so the replay resumes the right one — page state only, so a

@@ -53,7 +53,7 @@ export type WingTheme =
 
 /** Optional authored visual layer mounted over a room's tile-built structure. */
 export interface MuseumRoomPresentation {
-  modelPath: string;
+  modelPath?: string;
   ceilingModelPath?: string;
   emissiveBoost?: number;
   atmosphere?: {
@@ -63,6 +63,19 @@ export interface MuseumRoomPresentation {
     colors: string[];
     sizeRange: [number, number];
   };
+  /**
+   * Skip rendering this wing's tile floors/walls/ceiling. Collision and
+   * validation still come from the tile grid; a presentation layer (authored
+   * GLB or graybox component) supplies the visible room instead.
+   */
+  suppressTileGeometry?: boolean;
+}
+
+/** Optional per-plan terrain: floor elevation + walk blocking beyond tile types. */
+export interface MuseumTerrainProgram {
+  waterlineY: number;
+  elevationAt(worldX: number, worldZ: number): number;
+  blockedAt(worldX: number, worldZ: number): boolean;
 }
 
 export interface MuseumTile {
@@ -83,6 +96,8 @@ export interface MuseumGrid {
   performers: PerformerDefinition[];
   triggers: TriggerDefinition[];
   furniture: FurnitureDefinition[];
+  /** Optional terrain program (elevation + blocking). Attached by floor-plan builders. */
+  terrain?: MuseumTerrainProgram;
 }
 
 export interface MuseumGridSerialized {
@@ -135,6 +150,8 @@ export interface PerformerDefinition {
   scale?: number;
   /** Circular collision footprint around the performer, expressed in tiles. */
   collisionRadiusTiles?: number;
+  /** Floor elevation (world Y) the performer stands at. 0 on the museum datum. */
+  elevation?: number;
 }
 
 export interface FurnitureDefinition {

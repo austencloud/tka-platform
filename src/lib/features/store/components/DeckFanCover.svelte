@@ -79,6 +79,12 @@
         `aria-hidden`/`inert` decorative shell is dropped). Used by the composer
         promo fan to open the "what's on the card" explainer. */
     onCardClick?: (card: CoverCard) => void;
+    /** Shared-element name for the shop grid → product-page morph. Set the
+        SAME value on the grid tile's fan and on that product page's hero fan;
+        the browser then morphs the fan's size and position between the two.
+        Must be unique per snapshot, so exactly one visible fan may carry a
+        given name at a time. Omit for decorative fans. */
+    viewTransitionName?: string;
   }
   let {
     cards,
@@ -95,6 +101,7 @@
     dealNonce = 0,
     face = "front",
     onCardClick,
+    viewTransitionName,
   }: Props = $props();
 
   // Accessible label for the clickable card — the simplified word (repeated
@@ -254,6 +261,7 @@
   inert={(inert && !onCardClick) || undefined}
   aria-hidden={onCardClick ? undefined : "true"}
   style:--overlap="{-Math.round(cardW * 0.52)}px"
+  style:view-transition-name={viewTransitionName}
 >
   <!-- Key carries the slot index: catalog sequence ids repeat across flavor
        catalogs, so a sampled variety hand can hold two cards with the same
@@ -267,7 +275,12 @@
         style:transition-timing-function={deal ? (dealt ? DEAL_EASE : GATHER_EASE) : undefined}
         style:transition-delay={deal && dealt ? `${i * DEAL_STAGGER}ms` : undefined}
       >
-        <div class="card-box" style:width="{cardW}px">
+        <!-- `data-card-box` is the measurement seam: this element is exactly
+             the TRIMMED card (the guillotine cut, 5:7), so a host that needs
+             to land something on a printed region — the shop hero's scan band
+             over the QR cell — can find the card's real box without depending
+             on this component's class names. -->
+        <div class="card-box" data-card-box style:width="{cardW}px">
           {#if onCardClick}
             <button
               type="button"

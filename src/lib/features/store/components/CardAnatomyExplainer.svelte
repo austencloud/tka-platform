@@ -3,9 +3,10 @@
 
   The full "What's on the Card" diagram: front + back of a real Choreo Card with
   the legend copy, hover/tap linking, and the spotlight overlay. One component,
-  two hosts — the /shop/choreography-cards page (self-loaded, shuffleable
-  example) and the click-to-explain modal (a specific card, shuffle off) — so
-  the surfaces are identical by construction.
+  three hosts — the LOOP Deck and T&D Trilogy product pages' "how it works"
+  sections (a real card from the deck in view) and the click-to-explain modal
+  (a specific card, shuffle off) — so the surfaces are identical by
+  construction. With no `card`, it self-loads a shuffleable catalog example.
 
   Layout adapts to this component's OWN measured width, not the viewport: wide
   boxes show both faces flanked by their legends; narrow boxes show one face

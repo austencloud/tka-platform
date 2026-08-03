@@ -160,7 +160,7 @@
         <li><a href="/guide/level-1/words">Your first words</a></li>
       </ol>
       <p>
-        <a href="/shop/choreography-cards">Choreo Cards</a> make practice physical.
+        <a href="/shop">Choreo Cards</a> make practice physical.
       </p>
     </div>
   </section>

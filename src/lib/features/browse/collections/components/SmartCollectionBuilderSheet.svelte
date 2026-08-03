@@ -13,6 +13,7 @@ one rail while the live matching grid gets the rest of the canvas.
   import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
+  import { getGalleryPrefetcher } from "$lib/features/browse/shared/get-gallery-prefetcher";
   import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
   import {
     applySpecToEngine,
@@ -29,7 +30,6 @@ one rail while the live matching grid gets the rest of the canvas.
 
   type FilterPickerSection =
     | "chooser"
-    | "more"
     | "level"
     | "length"
     | "letter"
@@ -69,6 +69,17 @@ one rail while the live matching grid gets the rest of the canvas.
   });
 
   let modalOpen = $state(false);
+  let drillSection = $state<FilterPickerSection | "more">("chooser");
+  // Remount seed for the picker drill: editing an applied chip reopens the
+  // picker ON that filter's editor instead of the chooser.
+  let pickerSeed = $state<{ section?: FilterPickerSection }>({
+    section: initialFilterSection,
+  });
+  // The engine reports isLoading=false after the IndexedDB warm while the
+  // network sync is still revising counts — showing that interim number
+  // produced a confident wrong total that silently corrected itself (audit
+  // X-1). Hold the "Counting matches" treatment until initialize() resolves.
+  let countSettled = $state(false);
   let name = $state("");
   let usingSuggestedName = $state(true);
   let saving = $state(false);
@@ -97,13 +108,41 @@ one rail while the live matching grid gets the rest of the canvas.
         : currentSpecSignature !== initialSpecSignature)
   );
   const canSave = $derived(engine.hasActiveFilters && !saving);
+  const countPending = $derived(!countSettled || engine.isLoading);
   const matchStatus = $derived(
     engine.error
       ? "Matches unavailable"
-      : engine.isLoading
-        ? "Checking matches"
+      : countPending
+        ? "Counting matches"
         : `${engine.resultCount} ${engine.resultCount === 1 ? "match" : "matches"}`
   );
+
+  const SECTION_FOR_FILTER_TYPE: Partial<
+    Record<BrowseFilterType, FilterPickerSection>
+  > = {
+    [BrowseFilterType.DIFFICULTY]: "level",
+    [BrowseFilterType.LENGTH]: "length",
+    [BrowseFilterType.STARTING_LETTER]: "letter",
+    [BrowseFilterType.STARTING_POSITION]: "position",
+    [BrowseFilterType.GRID_MODE]: "gridmode",
+    [BrowseFilterType.OWNER]: "author",
+    [BrowseFilterType.LOOP_TYPE]: "loop",
+    [BrowseFilterType.TND_FAMILY]: "family",
+    [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",
+  };
+
+  /** Chip body action: reopen the picker on that filter's own editor. */
+  function editFilter(filterType: BrowseFilterType) {
+    pickerSeed = { section: SECTION_FOR_FILTER_TYPE[filterType] ?? "chooser" };
+    filterPickerOpen = true;
+    mobilePreviewOpen = false;
+  }
+
+  function openFilterChooser() {
+    pickerSeed = { section: undefined };
+    filterPickerOpen = true;
+    mobilePreviewOpen = false;
+  }
   const loopKeyByValue = $derived(
     new Map(
       [...engine.activeFilters]
@@ -127,12 +166,53 @@ one rail while the live matching grid gets the rest of the canvas.
   );
   const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
 
+  // Every applied (type, value) pair, so re-entered editors can show the
+  // current selection instead of rendering all options unselected.
+  const appliedValueKeys = $derived(
+    new Set(
+      [...engine.activeFilters.values()]
+        .filter((filter) => !filter.locked)
+        .map((filter) => `${filter.type}:${String(filter.value)}`)
+    )
+  );
+
+  // The drill's footer guidance must match the ACTIVE editor's interaction
+  // model — a "choose one option" line under a multi-select editor was a
+  // recurring audit blocker.
+  const firstFilterHint = $derived.by(() => {
+    switch (drillSection) {
+      case "loop":
+        return "LOOPs apply as you tap them. Combine several.";
+      case "family":
+        return "Families apply as you tap them. Combine several.";
+      case "max_turn_intensity":
+        return "Slide to a limit, then apply it.";
+      case "chooser":
+        return "Choose a filter to start.";
+      default:
+        return "Choose one option to continue.";
+    }
+  });
+
   onMount(() => {
+    let destroyed = false;
     if (initialSpec) applySpecToEngine(engine, initialSpec);
-    engine.initialize();
     requestAnimationFrame(() => (modalOpen = true));
 
+    // Give the shared IndexedDB cache first refusal before the engine starts a
+    // Firestore read. The chooser is already interactive while this resolves.
+    void getGalleryPrefetcher()
+      .prefetch({ skipNetworkSync: true })
+      .catch((error: unknown) =>
+        console.warn("[SmartCollectionBuilder] Gallery warm failed:", error)
+      )
+      .then(() => (destroyed ? undefined : engine.initialize()))
+      .finally(() => {
+        if (!destroyed) countSettled = true;
+      });
+
     return () => {
+      destroyed = true;
       engine.destroy();
       if (closeTimer !== null) clearTimeout(closeTimer);
     };
@@ -257,58 +337,95 @@ one rail while the live matching grid gets the rest of the canvas.
       <div class="rule-work-area">
         {#if filterPickerOpen || !engine.hasActiveFilters}
           <div class="filter-picker-shell">
+            {#if engine.hasActiveFilters}
+              <!-- The rule never disappears while refining it: applied chips
+                   stay readable (and editable) beside every editor. Audit
+                   D-8/X-11/C-17. -->
+              <div class="picker-rule-strip" aria-label="Current rule">
+                <span class="strip-count" aria-live="polite">{matchStatus}</span
+                >
+                <div class="strip-chips">
+                  {#each currentSpec.filters as filter (filter.key)}
+                    <FilterChipBase
+                      label={filter.label}
+                      active
+                      mode="action"
+                      size="sm"
+                      chipColor={filter.chipColor}
+                      ariaLabel={`Edit ${filter.label} filter`}
+                      onclick={() =>
+                        editFilter(filter.type as BrowseFilterType)}
+                      onremove={() => {
+                        engine.removeFilter(filter.key);
+                        if (!engine.hasActiveFilters) {
+                          filterPickerOpen = true;
+                          mobilePreviewOpen = false;
+                        }
+                      }}
+                      removeAriaLabel={`Remove ${filter.label} filter`}
+                    />
+                  {/each}
+                </div>
+              </div>
+            {/if}
             <div class="filter-picker-content">
-              <GalleryDrill
-                variant="sheet"
-                pool={engine.allSequences}
-                persistSection={false}
-                showCollections={false}
-                showAll={false}
-                fluidWideCanvas
-                progressiveSecondaryChoices
-                unifiedFilterChooser={engine.hasActiveFilters}
-                adaptiveValueLayout
-                initialSection={initialFilterSection}
-                chooserTitle={engine.hasActiveFilters
-                  ? "Add a filter"
-                  : "What should this collection match?"}
-                chooserHint={engine.hasActiveFilters
-                  ? "The current rule stays applied."
-                  : "Pick one starting point. You can add more next."}
-                getCount={(type, value) => engine.getFilteredCount(type, value)}
-                onApply={(type, value, label, color) => {
-                  engine.addFilter(type, value, label, color ?? "#6aa0ff");
-                  filterPickerOpen = false;
-                }}
-                {activeLoopValues}
-                onToggleLoop={(value, label, color, nowActive) => {
-                  if (nowActive) {
-                    engine.addFilter(
-                      BrowseFilterType.LOOP_TYPE,
-                      value,
-                      label,
-                      color
-                    );
-                  } else {
-                    const key = loopKeyByValue.get(value);
-                    if (key) engine.removeFilter(key);
-                  }
-                }}
-                {activeFamilyValues}
-                onToggleFamily={(familyId, label, color, nowActive) => {
-                  if (nowActive) {
-                    engine.addFilter(
-                      BrowseFilterType.TND_FAMILY,
-                      familyId,
-                      label,
-                      color
-                    );
-                  } else {
-                    const key = familyKeyByValue.get(familyId);
-                    if (key) engine.removeFilter(key);
-                  }
-                }}
-              />
+              {#key pickerSeed}
+                <GalleryDrill
+                  variant="sheet"
+                  pool={engine.allSequences}
+                  persistSection={false}
+                  showCollections={false}
+                  showAll={false}
+                  fluidWideCanvas
+                  unifiedFilterChooser
+                  adaptiveValueLayout
+                  persistentDesktopCatalog
+                  initialSection={pickerSeed.section}
+                  onSectionChange={(section) => (drillSection = section)}
+                  isValueApplied={(type, value) =>
+                    appliedValueKeys.has(`${type}:${String(value)}`)}
+                  chooserTitle={engine.hasActiveFilters
+                    ? "Add a filter"
+                    : "What should this collection match?"}
+                  chooserHint={engine.hasActiveFilters
+                    ? "The current rule stays applied."
+                    : "Pick one filter to start. You can add more next."}
+                  getCount={(type, value) =>
+                    engine.getFilteredCount(type, value)}
+                  onApply={(type, value, label, color) => {
+                    engine.addFilter(type, value, label, color ?? "#6aa0ff");
+                    filterPickerOpen = false;
+                  }}
+                  {activeLoopValues}
+                  onToggleLoop={(value, label, color, nowActive) => {
+                    if (nowActive) {
+                      engine.addFilter(
+                        BrowseFilterType.LOOP_TYPE,
+                        value,
+                        label,
+                        color
+                      );
+                    } else {
+                      const key = loopKeyByValue.get(value);
+                      if (key) engine.removeFilter(key);
+                    }
+                  }}
+                  {activeFamilyValues}
+                  onToggleFamily={(familyId, label, color, nowActive) => {
+                    if (nowActive) {
+                      engine.addFilter(
+                        BrowseFilterType.TND_FAMILY,
+                        familyId,
+                        label,
+                        color
+                      );
+                    } else {
+                      const key = familyKeyByValue.get(familyId);
+                      if (key) engine.removeFilter(key);
+                    }
+                  }}
+                />
+              {/key}
             </div>
           </div>
         {:else}
@@ -328,21 +445,25 @@ one rail while the live matching grid gets the rest of the canvas.
             >
               {#each currentSpec.filters as filter (filter.key)}
                 <span role="listitem">
+                  <!-- Chip body EDITS (opens that filter's editor); the split
+                       × removes. A chip whose whole surface deletes was audit
+                       X-7/D-9/C-7. -->
                   <FilterChipBase
                     label={filter.label}
-                    icon="fas fa-xmark"
                     active
                     mode="action"
                     size="sm"
                     chipColor={filter.chipColor}
-                    ariaLabel={`Remove ${filter.label} filter`}
-                    onclick={() => {
+                    ariaLabel={`Edit ${filter.label} filter`}
+                    onclick={() => editFilter(filter.type as BrowseFilterType)}
+                    onremove={() => {
                       engine.removeFilter(filter.key);
                       if (!engine.hasActiveFilters) {
                         filterPickerOpen = true;
                         mobilePreviewOpen = false;
                       }
                     }}
+                    removeAriaLabel={`Remove ${filter.label} filter`}
                   />
                 </span>
               {/each}
@@ -352,7 +473,7 @@ one rail while the live matching grid gets the rest of the canvas.
               <PanelButton
                 variant="secondary"
                 fullWidth
-                onclick={() => (filterPickerOpen = true)}
+                onclick={openFilterChooser}
               >
                 <i class="fas fa-plus" aria-hidden="true"></i>
                 Add filter
@@ -401,32 +522,31 @@ one rail while the live matching grid gets the rest of the canvas.
       </header>
 
       <div class="preview-content">
-        {#if !engine.hasActiveFilters}
-          <PanelState
-            type="info"
-            icon="fa-filter"
-            title="Choose a filter to start"
-            message="Matching sequences will appear here."
-          />
-        {:else if engine.error}
+        {#if engine.error}
           <PanelState
             type="error"
             title="Couldn't update the matches"
             message="Check your connection, then try again."
             onretry={() => engine.refresh()}
           />
-        {:else if engine.isLoading}
+        {:else if countPending}
           <PanelState
             type="loading"
-            title="Checking the filters"
+            title="Counting matches"
             message="The preview will update when the sequences are ready."
           />
         {:else if engine.resultCount === 0}
           <PanelState
             type="info"
-            icon="fa-filter-circle-xmark"
-            title="No sequences match"
-            message="Remove a filter or choose a different value."
+            icon={engine.hasActiveFilters
+              ? "fa-filter-circle-xmark"
+              : "fa-filter"}
+            title={engine.hasActiveFilters
+              ? "No sequences match"
+              : "Choose a filter to start"}
+            message={engine.hasActiveFilters
+              ? "Remove a filter or choose a different value."
+              : "Matching sequences will appear here."}
           />
         {:else}
           <BrowsePanel
@@ -465,7 +585,7 @@ one rail while the live matching grid gets the rest of the canvas.
         </div>
         <p class="save-status">
           {#if !engine.hasActiveFilters}
-            Choose one option to continue.
+            {firstFilterHint}
           {/if}
         </p>
         {#if engine.hasActiveFilters}
@@ -644,6 +764,39 @@ one rail while the live matching grid gets the rest of the canvas.
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  /* The applied rule stays readable beside/above every editor while the
+     picker is open (audit D-8/X-11/C-17). */
+  .picker-rule-strip {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #11131a) 94%,
+      transparent
+    );
+  }
+
+  .strip-count {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .strip-chips {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: var(--settings-spacing-sm, 8px);
   }
 
   .filter-picker-content {
@@ -945,6 +1098,134 @@ one rail while the live matching grid gets the rest of the canvas.
     }
   }
 
+  /* Phones with usable height get the same rule-over-results stacking as the
+     fold tier above — a "results" state that renders zero results behind a
+     button was audit C-2. The rule keeps its vertical layout (the 3-column
+     rule bar needs ≥700px). */
+  @media (max-width: 699.98px) and (min-height: 640px) {
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open) {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-pane {
+      display: flex;
+      grid-row: 1;
+      overflow: visible;
+      border-right: 0;
+      border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-work-area {
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-summary {
+      height: auto;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      overflow: visible;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .preview-pane {
+      display: flex;
+      min-height: 0;
+      grid-row: 2;
+    }
+
+    /* Inline preview is already on screen — "back to filters" belongs to the
+       full-screen preview mode only. The "Preview N" action stays as the
+       door to that full-screen mode. */
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open):not(
+        .mobile-preview-open
+      )
+      .mobile-preview-back {
+      display: none;
+    }
+  }
+
+  /* Short landscape (Z Fold cover, 960×412): stack sideways instead — the
+     rule takes a bounded left column and the results use the rest. Vertical
+     stacking would leave the preview a letterbox. */
+  @media (min-width: 700px) and (max-width: 1100px) and (max-height: 600px) {
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open) {
+      grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-pane {
+      border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-summary {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      overflow-y: auto;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .rule-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .preview-pane {
+      display: flex;
+      min-height: 0;
+    }
+
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .mobile-preview-action,
+    .workspace-shell:not(.first-filter-focus):not(.filter-picker-open)
+      .mobile-preview-back {
+      display: none;
+    }
+  }
+
+  /* Once the canvas is genuinely desktop-sized, adding a filter becomes a
+     two-dimensional composer instead of being squeezed back into the rule
+     rail. At 1440 the decision canvas gets the full modal. From 1920 upward,
+     the catalog/editor stays capped and the live results absorb the surplus. */
+  @media (min-width: 1100px) and (max-width: 1679.98px) and (min-height: 650px) {
+    .workspace-shell.filter-picker-open:not(.first-filter-focus) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workspace-shell.filter-picker-open:not(.first-filter-focus) .rule-pane {
+      border-right: 0;
+    }
+
+    .workspace-shell.filter-picker-open:not(.first-filter-focus) .preview-pane {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1680px) and (min-height: 650px) {
+    .workspace-shell.first-filter-focus,
+    .workspace-shell.filter-picker-open:not(.first-filter-focus) {
+      grid-template-columns: clamp(72rem, 68%, 82rem) minmax(0, 1fr);
+    }
+
+    .workspace-shell.first-filter-focus .rule-pane {
+      border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
+    .workspace-shell.first-filter-focus .preview-pane {
+      display: flex;
+    }
+  }
+
   @media (min-width: 780px) and (max-width: 1100px) and (max-height: 600px) {
     .rule-summary {
       display: grid;
@@ -977,8 +1258,18 @@ one rail while the live matching grid gets the rest of the canvas.
       font-size: 1.15rem;
     }
 
-    .filter-picker-content :global(.drill-head p) {
+    /* Short-height density hides header hints EXCEPT on the multi-select
+       screens — "tap several" is the only signal those editors stack, and it
+       must survive exactly where the footer once said "choose one" (audit
+       C-1). */
+    .filter-picker-content
+      :global(.drill-screen:not(.screen-loop, .screen-family) .drill-head p) {
       display: none;
+    }
+
+    .filter-picker-content :global(.screen-loop .drill-head p),
+    .filter-picker-content :global(.screen-family .drill-head p) {
+      font-size: var(--font-size-compact, 12px);
     }
 
     .filter-picker-content :global(.choice-tile) {
@@ -1193,6 +1484,11 @@ one rail while the live matching grid gets the rest of the canvas.
       --font-size-2xl: clamp(30px, 0.86vw, 36px);
       --min-touch-target: clamp(56px, 1.7vw, 68px);
       grid-template-columns: 34rem minmax(0, 1fr);
+    }
+
+    .workspace-shell.first-filter-focus,
+    .workspace-shell.filter-picker-open:not(.first-filter-focus) {
+      grid-template-columns: clamp(84rem, 46vw, 104rem) minmax(0, 1fr);
     }
 
     :global(dialog.smart-builder-modal .modal-header) {

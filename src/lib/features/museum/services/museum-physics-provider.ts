@@ -13,7 +13,7 @@
  */
 
 import type { PhysicsProvider, Vector3 } from "$lib/shared/3d/camera/types";
-import type { MuseumGrid } from "../domain/museum-grid-types";
+import type { MuseumGrid, MuseumTerrainProgram } from "../domain/museum-grid-types";
 import { getFurnitureObjectByRole } from "../domain/placeable-object-registry";
 
 export const SOLID_TYPES = new Set([
@@ -54,6 +54,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	private velocity: Vector3 = { x: 0, y: 0, z: 0 };
 	private furnitureColliders: FurnitureCollider[];
 	private performerColliders: PerformerCollider[];
+	private terrain: MuseumTerrainProgram | null;
 
 	/** When true, movePlayer ignores XZ - animation drives XZ via applyRootMotion instead. */
 	rootMotionEnabled = false;
@@ -63,7 +64,9 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 		private tileSize: number,
 		spawnPosition: Vector3
 	) {
-		this.position = { x: spawnPosition.x, y: STANDING_Y, z: spawnPosition.z };
+		this.terrain = grid.terrain ?? null;
+		const spawnFloor = this.floorYAt(spawnPosition.x, spawnPosition.z);
+		this.position = { x: spawnPosition.x, y: spawnFloor + STANDING_Y, z: spawnPosition.z };
 		this.furnitureColliders = grid.furniture.flatMap((placement) => {
 			const footprint = getFurnitureObjectByRole(placement.role)?.collisionHalfExtents;
 			if (!footprint) return [];
@@ -83,6 +86,14 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 				radius: performer.collisionRadiusTiles * tileSize,
 			}];
 		});
+	}
+
+	/**
+	 * Local floor height at a world position. Rooms with no terrain program
+	 * (every museum surface but the Drowned Gallery) sit on the 0 datum.
+	 */
+	private floorYAt(worldX: number, worldZ: number): number {
+		return this.terrain ? this.terrain.elevationAt(worldX, worldZ) : 0;
 	}
 
 	private collidesWithAuthoredObject(worldX: number, worldZ: number): boolean {
@@ -117,6 +128,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	 */
 	private isWalkableAt(worldX: number, worldZ: number): boolean {
 		if (this.collidesWithAuthoredObject(worldX, worldZ)) return false;
+		if (this.terrain?.blockedAt(worldX, worldZ)) return false;
 
 		const offsets = [
 			{ x: COLLISION_RADIUS, z: 0 },
@@ -168,10 +180,11 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 			}
 		}
 
-		// Y movement: accept UCC's jump/gravity calculations, clamp at ground
+		// Y movement: accept UCC's jump/gravity calculations, clamp at local floor
 		this.position.y += desiredMovement.y;
-		if (this.position.y < STANDING_Y) {
-			this.position.y = STANDING_Y;
+		const minY = this.floorYAt(this.position.x, this.position.z) + STANDING_Y;
+		if (this.position.y < minY) {
+			this.position.y = minY;
 		}
 	}
 
@@ -207,8 +220,9 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	}
 
 	isGrounded(): boolean {
-		// Grounded when at (or very near) standing height
-		return this.position.y <= STANDING_Y + 0.01;
+		// Grounded when at (or very near) standing height above the local floor
+		const minY = this.floorYAt(this.position.x, this.position.z) + STANDING_Y;
+		return this.position.y <= minY + 0.01;
 	}
 
 	getVelocity(): Vector3 {
@@ -216,7 +230,8 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	}
 
 	teleport(position: Vector3): void {
-		this.position = { x: position.x, y: STANDING_Y, z: position.z };
+		const floor = this.floorYAt(position.x, position.z);
+		this.position = { x: position.x, y: floor + STANDING_Y, z: position.z };
 	}
 }
 

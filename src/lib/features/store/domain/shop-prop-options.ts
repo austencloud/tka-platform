@@ -24,6 +24,16 @@ export const SHOP_PROP_OPTIONS: readonly PropType[] = [
 /** Staves are the canonical TKA prop and the pre-selected default. */
 export const DEFAULT_SHOP_PROP = PropType.STAFF;
 
+/**
+ * The card-back theme every printed deck ships with today (deck-releaser-state's
+ * theme getter). Lives here rather than inside the renderer because it is a fact
+ * about the PRINTED product, and surfaces that depict a printed card — the shop
+ * hero's live back — have to agree with the bake instead of following the
+ * viewer's own background theme. When back-theme choice lands, this becomes the
+ * default rather than the constant.
+ */
+export const SHOP_BACK_THEME = "rainbow";
+
 export function shopPropLabel(prop: PropType): string {
   return getPropTypeDisplayInfo(prop).label;
 }

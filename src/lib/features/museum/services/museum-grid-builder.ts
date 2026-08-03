@@ -293,6 +293,7 @@ function placePerformers(
       presentation: placement.presentation,
       scale: placement.scale,
       collisionRadiusTiles: placement.collisionRadiusTiles,
+      elevation: placement.elevation ?? 0,
     });
   }
 }

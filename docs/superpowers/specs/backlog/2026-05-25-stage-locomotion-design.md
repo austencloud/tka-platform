@@ -1,14 +1,20 @@
 ---
 status: backlog
-value: 2
-effort: L
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+value: 3
+effort: M
+remaining: 'Full Stage module shipped with motion matching (beyond spec''s blend tree); own ledger 0/17 checked; prop-overlay unverified'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Stage Locomotion System — Design Spec
+
+> **DRIFT WARNING — 2026-08-02.** Full Stage module shipped with **motion matching** (beyond spec's blend tree); own ledger 0/17 checked; prop-overlay unverified
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 > Beat-synchronized multi-performer stage choreography with formation keyframing, root-motion locomotion, and overlay prop patterns.
 

@@ -38,8 +38,12 @@
 
 <style>
   .prop-row {
+    container-type: inline-size;
+    container-name: prop-row;
     display: flex;
-    flex-wrap: nowrap;
+    /* Wrapping never fires at desktop widths — every chip has a 0 flex-basis,
+       so five of them always fit one line. It exists for the narrow case below. */
+    flex-wrap: wrap;
     justify-content: center;
     gap: clamp(4px, 1vw, 8px);
     width: 100%;
@@ -95,6 +99,16 @@
     font-size: var(--font-size-compact, 13px);
     font-weight: 700;
   }
+  /* Narrow row: five chips across leaves ~47px for a label and clips "Buugeng"
+     to "Buug…". The prop name is the whole point of the chip, so the row takes
+     a second line instead. Container query, not a viewport one: the same picker
+     sits in a wide panel on the Architect and a narrow tile on the listing. */
+  @container prop-row (max-width: 22rem) {
+    .prop-chip {
+      flex: 1 1 27%;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .prop-chip {
       transition: none;

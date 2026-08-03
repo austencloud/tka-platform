@@ -1,14 +1,20 @@
 ---
 status: backlog
 value: 4
-effort: L
-remaining: "Unscored until triage 2026-07-25; spec body carries no status line. Needs a read-through to establish real state before this score is trusted."
+effort: M
+remaining: 'Its own "PARTIALLY SHIPPED" table is accurate 6 weeks on. F1/F5 need Austen''s product decision on guest/anon access'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Security Hardening
+
+> **DRIFT WARNING — 2026-08-02.** Its own "PARTIALLY SHIPPED" table is accurate 6 weeks on. F1/F5 need Austen's product decision on guest/anon access
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 ## Status: PARTIALLY SHIPPED — re-triaged 2026-06-13
 

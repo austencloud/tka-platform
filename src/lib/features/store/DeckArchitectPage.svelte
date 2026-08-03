@@ -17,6 +17,10 @@
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
+  import ShopProductShell from "./components/shell/ShopProductShell.svelte";
+  import ShopPurchaseCta from "./components/shell/ShopPurchaseCta.svelte";
+  import { deriveCrossSell } from "./domain/catalog-listings";
+  import { resolvePurchaseState, SALES_LIVE } from "./domain/purchase-state";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
@@ -38,9 +42,10 @@
     generateLOOPType,
   } from "$lib/shared/create/services/loop-type-utils";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
-  import { fly, scale, slide } from "svelte/transition";
+  import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { prewarmCovers } from "./services/cover-front-renderer";
   import {
     recipePreviewCards,
     recipeSliceCard,
@@ -118,6 +123,17 @@
     { id: ++uid, count: DECK_SIZE, flavor: "rotated", level: 1, steps: 8 },
   ]);
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
+
+  // Seed the card render pool. Every card on this page is generated live, so
+  // none of them is baked — without a seed the print pipeline composes them
+  // with no arrow, prop, or glyph assets loaded and every sample comes back a
+  // blank white rectangle. The flavor SKUs' covers are the same seed the LOOP
+  // listing and the catalog front door already use; a prop switch re-seeds,
+  // because prop type is part of the pool's seed signature.
+  $effect(() => {
+    const all = flavorSkus.flatMap((p) => p.coverCards ?? []);
+    if (all.length) prewarmCovers(all, propType, { includeBaked: true });
+  });
 
   const total = $derived(slices.reduce((n, s) => n + s.count, 0));
   const problem = $derived(recipeProblem(slices));
@@ -277,23 +293,8 @@
   let previewW = $state(0);
   let previewH = $state(0);
 
-  // ── mobile checkout dock: the rail lives at the page bottom on phones, so
-  //    while it's off screen a fixed dock keeps the running total + Preorder
-  //    in reach. IntersectionObserver hides the dock once the real rail
-  //    scrolls into view — two Preorder buttons on screen reads as a glitch. ──
-  let railEl = $state<HTMLElement | null>(null);
-  let railInView = $state(false);
-  $effect(() => {
-    if (!railEl) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        railInView = entries[0]?.isIntersecting ?? false;
-      },
-      { threshold: 0.2 }
-    );
-    io.observe(railEl);
-    return () => io.disconnect();
-  });
+  // The mobile checkout dock is the shell's now (it watches its own buy rail
+  // and mounts the pinned bar); this page only says what the bar should read.
   // Phone layout: samples shrink to sidecar size (CSS pairs at 720px).
   let pageW = $state(0);
   const narrow = $derived(pageW > 0 && pageW < 720);
@@ -368,6 +369,34 @@
   const lightboxFaceW = $derived(
     Math.min(300, Math.max(140, Math.floor((pageW - 120) / 2)))
   );
+  // The SKU the buy cluster acts on, and whether it can take money at all.
+  const buySku = $derived(customSku ?? flavorSkus[0] ?? null);
+  const purchasable = $derived(
+    buySku !== null && resolvePurchaseState(buySku, SALES_LIVE) !== "notify"
+  );
+
+  // Exclude the listing this page IS, not the one it came from. Naming the
+  // LOOP deck's href here sold the Architect back to the reader on its own
+  // page and hid the deck it configures — both wrong.
+  const crossSell = $derived(
+    deriveCrossSell(store.products, { currentListing: "loop-deck-architect" })
+  );
+
+  const ASSURANCES = [
+    { icon: "fas fa-calendar-check", text: "Preorder now. Decks ship October 1." },
+    {
+      icon: "fas fa-wand-magic-sparkles",
+      text: "Every card generated to your recipe, one of one",
+    },
+    {
+      icon: "fas fa-hand-holding-heart",
+      text: "Printed and cut by hand in Chicago, small batches",
+    },
+  ];
+
+  const NOTIFY_TEXT =
+    "Preorders open soon. Leave an email and you'll hear the moment they do.";
+
   let rerolling = $state(false);
   async function rerollSample(i: number) {
     const s = slices[i];
@@ -391,33 +420,114 @@
 
 <svelte:window onkeydown={onWindowKey} bind:innerWidth={pageW} />
 
-<div class="architect-page store-config-page">
-  <main class="architect-content">
-    <a href="/shop/loop-deck" class="back-button">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i> LOOP Deck
-    </a>
+<ShopProductShell
+  backHref="/shop/loop-deck"
+  backLabel="LOOP Deck"
+  family="Deck Architect"
+  eyebrow="The Deck Architect"
+  title="Deck Architect"
+  tagline="A deck is {DECK_SIZE} cards. Each slice below is a recipe for a stack of them. Tweak, add, or remove slices until the meter reads {DECK_SIZE}."
+  mediaFrame={false}
+  product={buySku ?? undefined}
+  {propType}
+  {loopConfig}
+  listing="loop-deck-architect"
+  price={flavorSkus.length > 0 ? price : undefined}
+  checkoutError={store.checkoutError}
+  {crossSell}
+  assurances={ASSURANCES}
+  loading={store.isLoading && flavorSkus.length === 0}
+  loadingLabel="Loading the machine..."
+  error={store.error ??
+    (!store.isLoading && flavorSkus.length === 0
+      ? "The machine isn't available right now."
+      : null)}
+  dock={purchasable && customSku
+    ? {
+        label: `${total} / ${DECK_SIZE}`,
+        price,
+        ctaLabel: store.isCheckingOut ? "Opening..." : "Preorder now",
+        disabled: problem !== null || store.isCheckingOut,
+        onclick: () => store.startCheckout(customSku.id, propType, loopConfig),
+      }
+    : null}
+>
+  {#snippet media()}
+    <!-- The live deck preview: the running receipt for the recipe below.
+         Fill-mode crossfade, so the stage never resizes mid-edit. -->
+    <div class="rail-stage" bind:clientWidth={previewW} bind:clientHeight={previewH}>
+      <Crossfade key={settledFanKey} fill>
+        <div class="preview-inner">
+          <DeckFanCover
+            cards={previewCards ?? []}
+            deckName="Your recipe"
+            {propType}
+            cardWidth={150}
+            maxCardWidth={previewMaxCardW}
+            interactive={false}
+            deal
+          />
+          <p class="preview-desc">Sampled live from your recipe.</p>
+        </div>
+      </Crossfade>
+    </div>
+  {/snippet}
 
-    {#if store.error}
-      <div class="error">{store.error}</div>
-    {:else if store.isLoading && flavorSkus.length === 0}
-      <div class="loading">Loading the machine...</div>
-    {:else if flavorSkus.length > 0}
-      <div class="layout">
-        <div class="info-column">
-          <div class="info-main">
-            <!-- Header stays minimal: the eyebrow names the page, the meter
-                 states the one rule. No pitch — buyers here already chose this. -->
-            <div class="page-head">
-              <span class="eyebrow">The Deck Architect</span>
-              <p class="page-orient">
-                A deck is {DECK_SIZE} cards. Each slice below is a recipe for a
-                stack of them. Tweak, add, or remove slices until the meter reads
-                {DECK_SIZE}.
-              </p>
-            </div>
+  {#snippet configurator()}
+    <!-- prop: one per deck (v1) -->
+    <div class="prop-panel">
+      <span class="field-label">Prop</span>
+      <ShopPropPicker
+        value={propType}
+        onchange={(p) => {
+          propType = p;
+          buzz();
+          trackPropSelected("loop-deck-architect", customSku?.id, p);
+        }}
+      />
+    </div>
+  {/snippet}
 
-            <!-- workbench bar: the one invariant + the one action, always visible -->
-            <div class="workbench-bar">
+  {#snippet priceNote()}
+    {#if customSku && preorderWindowOpen(customSku, now)}
+      <PreorderPriceNote product={customSku} />
+    {/if}
+    <p class="spec-line">
+      Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
+    </p>
+  {/snippet}
+
+  {#snippet cta()}
+    {#if problem !== null}
+      <div class="buy-blocked" role="status">{problem}</div>
+    {:else if buySku}
+      <ShopPurchaseCta
+        listing="loop-deck-architect"
+        product={buySku}
+        {propType}
+        {loopConfig}
+        notifyText={NOTIFY_TEXT}
+      />
+      <!-- The cart is the second path, and it only exists once there is money
+           to take. -->
+      {#if purchasable}
+        <BuyButton
+          listing="loop-deck-architect"
+          product={buySku}
+          {propType}
+          {loopConfig}
+          mode="add"
+          label="Add to cart"
+        />
+      {/if}
+    {/if}
+  {/snippet}
+
+  {#snippet workbench()}
+    <!-- The recipe builder gets the whole band: eight slice cards, each with
+         its own tile board, read as a cramped list beside the buy cluster. -->
+    <!-- workbench bar: the one invariant + the one action, always visible -->
+    <div class="workbench-bar">
               <div
                 class="total-meter"
                 class:ok={problem === null}
@@ -560,124 +670,8 @@
                 </div>
               {/each}
             </div>
-
-            <!-- prop: one per deck (v1) -->
-            <div class="prop-panel">
-              <span class="dial-label">Prop</span>
-              <ShopPropPicker
-                value={propType}
-                onchange={(p) => {
-                  propType = p;
-                  buzz();
-                  trackPropSelected("loop-deck-architect", customSku?.id, p);
-                }}
-              />
-            </div>
-          </div>
-
-          <aside class="buy-rail" bind:this={railEl}>
-            <!-- Live deck preview lives IN the rail: the recipe stays visible
-                 while you edit, and the purchase column never dies below the
-                 buy block. Fill-mode crossfade — the stage never resizes. -->
-            <div class="rail-stage" bind:clientWidth={previewW} bind:clientHeight={previewH}>
-              <Crossfade key={settledFanKey} fill>
-                <div class="preview-inner">
-                  <DeckFanCover
-                    cards={previewCards ?? []}
-                    deckName="Your recipe"
-                    {propType}
-                    cardWidth={150}
-                    maxCardWidth={previewMaxCardW}
-                    interactive={false}
-                    deal
-                  />
-                  <p class="preview-desc">Sampled live from your recipe.</p>
-                </div>
-              </Crossfade>
-            </div>
-            <p class="price">{price}</p>
-            {#if customSku && preorderWindowOpen(customSku, now)}
-              <PreorderPriceNote product={customSku} />
-            {/if}
-            <p class="spec-line">
-              Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
-            </p>
-            {#if problem === null}
-              {#if customSku}
-                <BuyButton
-                  listing="loop-deck-architect"
-                  product={customSku}
-                  {propType}
-                  {loopConfig}
-                  label="Preorder now"
-                  waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
-                />
-                {#if customSku.stripePriceId}
-                  <BuyButton
-                    listing="loop-deck-architect"
-                    product={customSku}
-                    {propType}
-                    {loopConfig}
-                    mode="add"
-                    label="Add to cart"
-                  />
-                {/if}
-              {:else if flavorSkus[0]}
-                <BuyButton
-                  listing="loop-deck-architect"
-                  product={flavorSkus[0]}
-                  {propType}
-                  {loopConfig}
-                  label="Preorder now"
-                  waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
-                />
-                {#if flavorSkus[0].stripePriceId}
-                  <BuyButton
-                    listing="loop-deck-architect"
-                    product={flavorSkus[0]}
-                    {propType}
-                    {loopConfig}
-                    mode="add"
-                    label="Add to cart"
-                  />
-                {/if}
-              {/if}
-            {:else}
-              <div class="buy-blocked" role="status">{problem}</div>
-            {/if}
-            {#if store.checkoutError}
-              <p class="checkout-error" role="alert">{store.checkoutError}</p>
-            {/if}
-            <ul class="assurance">
-              <li><i class="fas fa-calendar-check" aria-hidden="true"></i> Preorder now. Decks ship October 1.</li>
-              <li><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Every card generated to your recipe, one of one</li>
-              <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Printed and cut by hand in Chicago, small batches</li>
-            </ul>
-          </aside>
-        </div>
-      </div>
-    {:else}
-      <div class="error">The machine isn't available right now.</div>
-    {/if}
-  </main>
-</div>
-
-{#if narrow && !railInView && customSku?.stripePriceId && flavorSkus.length > 0 && !store.error}
-  <div class="checkout-dock" transition:fly={{ y: 72, duration: 220, easing: quintOut }}>
-    <div class="dock-meter" class:ok={problem === null}>
-      <span class="dock-count">{total} / {DECK_SIZE}</span>
-      <span class="dock-price">{price}</span>
-    </div>
-    <button
-      type="button"
-      class="dock-buy"
-      disabled={problem !== null || store.isCheckingOut}
-      onclick={() => store.startCheckout(customSku.id, propType, loopConfig)}
-    >
-      {store.isCheckingOut ? "Opening..." : "Preorder now"}
-    </button>
-  </div>
-{/if}
+  {/snippet}
+</ShopProductShell>
 
 {#if sampleView !== null && sliceCards[sampleView]}
   <div
@@ -785,32 +779,10 @@
 {/if}
 
 <style>
-  /* .architect-page root chrome (min-height/padding-top/background/color)
-     lives in the shared src/lib/features/store/styles/config-page.css, scoped
-     under the .store-config-page marker class added to this root div above. */
-  .architect-content {
-    max-width: var(--shell-w, min(1720px, 92vw));
-    margin: 0 auto;
-    padding: 12px 24px 32px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Shared .back-button properties live in config-page.css; align-self,
-     margin-bottom, and transition are unique to this page (or interact with
-     the prefers-reduced-motion override below) and stay local. */
-  .back-button {
-    /* Top block is centered — the back pill sits with it, not ragged left. */
-    align-self: center;
-    margin-bottom: 16px;
-    transition: background 0.2s, border-color 0.2s;
-  }
-
-  .layout {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(16px, 2.2vh, 28px);
-  }
+  /* Page chrome — root shell, back link, title, price, checkout error,
+     assurances, load and failure states, mobile checkout dock — belongs to
+     ShopProductShell. What is left here is the stage, the recipe builder,
+     and its two modals. */
 
   /* The live preview is a rail panel, not a page hero — the slices are the
      show; the fan is the running receipt. */
@@ -823,7 +795,10 @@
       radial-gradient(70% 60% at 50% 40%, rgba(139, 108, 255, 0.3), transparent 70%),
       radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
     padding: 14px;
-    height: 280px;
+    /* Tall enough that the sampled cards read as cards. The info column beside
+       it runs taller than this at every desktop width, so the stage claiming
+       its share of the hero band costs the buy cluster nothing. */
+    height: clamp(280px, 44vh, 620px);
   }
   .preview-inner {
     height: 100%;
@@ -840,61 +815,6 @@
     margin: 0;
     text-align: center;
     align-self: center;
-  }
-
-  .info-column {
-    width: 100%;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-  }
-  @media (min-width: 1360px) {
-    .info-column {
-      grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr);
-      column-gap: clamp(36px, 4vw, 72px);
-    }
-  }
-  .info-main,
-  .buy-rail {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
-  }
-  .buy-rail {
-    padding: 22px 24px;
-    border-radius: 18px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    align-self: start;
-  }
-  /* Rail top-aligns with the header block — no offset hack; on this page
-     there's no chip row to line up against, so an offset just reads as
-     floating in dead space. */
-
-  .page-head {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-  /* Shared .eyebrow properties (font-weight/text-transform/color) live in
-     config-page.css; font-size and letter-spacing vary per page. */
-  .eyebrow {
-    font-size: var(--font-size-min, 14px);
-    letter-spacing: 0.14em;
-  }
-  /* One-sentence orientation — kills the "wait, what do I do here" beat for a
-     newcomer who lands on the Architect without reading the listing first. */
-  .page-orient {
-    margin: 0;
-    max-width: 42ch;
-    text-align: center;
-    text-wrap: balance;
-    font-size: var(--font-size-base, 15px);
-    line-height: 1.55;
-    color: rgba(255, 255, 255, 0.72);
   }
 
   /* ---------- workbench bar (meter + add) ---------- */
@@ -1078,13 +998,6 @@
     width: 100%;
     height: 100%;
   }
-  .dial-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.75);
-  }
 
   .add-slice {
     align-self: flex-start;
@@ -1130,14 +1043,6 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
   }
-  /* .checkout-error, .assurance (container + icon), and .loading/.error are
-     byte-identical across all four configurator pages and live fully in
-     config-page.css. .assurance li's font-size/color vary per page. */
-  .assurance li {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.85);
-  }
-
   /* ---------- flavor modal ---------- */
   .modal-backdrop {
     position: fixed;
@@ -1263,68 +1168,9 @@
     color: #fff;
   }
 
-  /* ---------- mobile checkout dock ---------- */
-  .checkout-dock {
-    position: fixed;
-    inset: auto 0 0 0;
-    z-index: 60;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(10, 12, 22, 0.86);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  }
-  .dock-meter {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding: 4px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(245, 158, 11, 0.45);
-    background: rgba(245, 158, 11, 0.1);
-  }
-  .dock-meter.ok {
-    border-color: rgba(74, 222, 128, 0.45);
-    background: rgba(74, 222, 128, 0.09);
-  }
-  .dock-count {
-    font-size: 15px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .dock-price {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    color: var(--theme-accent, #a78bfa);
-  }
-  .dock-buy {
-    flex: 1;
-    min-height: var(--min-touch-target, 44px);
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent-strong, #7c6cf5);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.15s ease;
-  }
-  .dock-buy:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
 
   /* ---------- mobile ---------- */
   @media (max-width: 720px) {
-    .architect-content {
-      /* The dock hides itself once the rail scrolls into view, so the page
-         bottom doesn't need to clear it — a 96px runway read as dead space. */
-      padding: 8px 14px 24px;
-    }
     /* Phone slice card: the (bigger, tappable) sample centered up top, the
        uniform tile board below. The × keeps its pinned corner. */
     .slice-row {
@@ -1353,9 +1199,6 @@
     .rail-stage {
       height: 240px;
     }
-    .buy-rail {
-      padding: 16px;
-    }
     .workbench-bar .total-meter {
       flex-basis: 100%;
     }
@@ -1366,7 +1209,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .back-button,
     .add-slice {
       transition: none;
     }

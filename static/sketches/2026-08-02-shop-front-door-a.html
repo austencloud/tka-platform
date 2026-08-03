@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shop direction A — Editorial gallery</title>
+<style>
+  :root {
+    --ink: #08080f;
+    --ink-2: #0d0d18;
+    --text: #edecf4;
+    --muted: #9b98ae;
+    --line: rgba(255, 255, 255, 0.09);
+    --line-2: rgba(255, 255, 255, 0.16);
+    --pink: #ff5da2;
+    --cyan: #4dd8ff;
+    --serif: Georgia, "Times New Roman", Times, serif;
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --shell: min(92vw, max(1180px, 84vw));
+    --shell-cap: min(92vw, 2200px);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 700px at 78% -8%, rgba(255, 93, 162, 0.10), transparent 62%),
+      radial-gradient(900px 600px at 8% 22%, rgba(77, 216, 255, 0.07), transparent 60%),
+      var(--ink);
+    color: var(--text);
+    font-family: var(--ui);
+    font-size: clamp(15px, 0.55vw + 13px, 19px);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; display: block; }
+
+  .badge {
+    position: fixed; z-index: 60; top: 12px; right: 12px;
+    font: 600 11px/1 var(--ui); letter-spacing: 0.14em;
+    padding: 8px 10px; border-radius: 999px;
+    color: #0a0a12; background: var(--cyan);
+    box-shadow: 0 6px 24px rgba(77, 216, 255, 0.35);
+  }
+
+  .wrap { width: var(--shell); max-width: var(--shell-cap); margin-inline: auto; }
+
+  .kicker {
+    font: 600 clamp(11px, 0.32vw + 9.4px, 14px)/1.4 var(--ui);
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 clamp(18px, 2vw, 34px);
+  }
+  .kicker b { color: var(--pink); font-weight: 600; }
+
+  /* ---------------- HERO ---------------- */
+  .hero { padding: clamp(52px, 8vw, 132px) 0 clamp(44px, 6vw, 96px); }
+  .hero-grid { display: grid; gap: clamp(32px, 4vw, 72px); align-items: center; }
+  .display {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(46px, 8.4vw, 148px); line-height: 0.94;
+    letter-spacing: -0.02em; margin: 0 0 clamp(16px, 1.6vw, 30px);
+  }
+  .display em { font-style: italic; color: var(--pink); }
+  .lede {
+    font-size: clamp(16px, 0.62vw + 14px, 23px); color: #c9c6d8;
+    max-width: 46ch; margin: 0 0 clamp(22px, 2.4vw, 40px);
+  }
+  .hero-note {
+    font-size: clamp(14px, 0.2vw + 13px, 16px); color: var(--muted);
+    border-left: 2px solid var(--line-2); padding-left: 14px; max-width: 40ch;
+  }
+
+  /* ---------------- CARD OBJECT ---------------- */
+  .card-obj { perspective: 1400px; }
+  .card-face {
+    aspect-ratio: 2.5 / 3.5;
+    border-radius: clamp(10px, 0.7vw, 18px);
+    background: linear-gradient(168deg, #191926 0%, #0e0e18 58%, #14141f 100%);
+    border: 1px solid var(--line-2);
+    box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    padding: clamp(10px, 0.9vw, 20px);
+    display: grid; grid-template-rows: 1fr auto; gap: 8px;
+    position: relative; overflow: hidden;
+  }
+  .card-face::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(80% 60% at 50% 30%, rgba(77, 216, 255, 0.10), transparent 70%);
+    pointer-events: none;
+  }
+  .card-art {
+    width: 100%; height: 100%; object-fit: contain;
+    filter: brightness(2.1) saturate(1.25) drop-shadow(0 0 7px rgba(110, 200, 255, 0.45));
+  }
+  .card-foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+    border-top: 1px solid var(--line); padding-top: 8px;
+  }
+  .card-tag {
+    font: 600 clamp(9px, 0.28vw + 8px, 12px)/1.2 var(--ui);
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  }
+  .qr { width: 20%; min-width: 26px; max-width: 68px; }
+  .qr svg { width: 100%; height: auto; display: block; }
+
+  .hero-card { width: min(100%, 340px); }
+  .hero-card .card-face { box-shadow: 0 50px 120px -32px rgba(255, 93, 162, 0.28), 0 40px 90px -30px rgba(0, 0, 0, 0.9); }
+  .hero-cap {
+    margin-top: 14px; font-size: clamp(13px, 0.2vw + 12px, 16px); color: var(--muted);
+    max-width: 34ch;
+  }
+
+  /* ---------------- SHELF MARKERS ---------------- */
+  .marker {
+    display: flex; align-items: baseline; gap: clamp(14px, 1.6vw, 28px);
+    border-top: 1px solid var(--line-2);
+    padding-top: clamp(14px, 1.2vw, 24px);
+    margin: clamp(56px, 7vw, 132px) 0 clamp(28px, 3vw, 56px);
+  }
+  .marker .num {
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(30px, 3vw, 58px); color: var(--pink); line-height: 1;
+  }
+  .marker h2 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(26px, 2.6vw, 52px); margin: 0; letter-spacing: -0.01em;
+  }
+  .marker .count {
+    margin-left: auto; font-size: clamp(12px, 0.22vw + 11px, 15px);
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  }
+
+  /* ---------------- EDITORIAL ROWS ---------------- */
+  .row {
+    display: grid; gap: clamp(26px, 3.4vw, 76px); align-items: center;
+    padding: clamp(30px, 3.6vw, 74px) 0;
+  }
+  .row + .row { border-top: 1px solid var(--line); }
+  .plate {
+    display: grid; place-items: center;
+    padding: clamp(22px, 2.6vw, 56px);
+    border-radius: 6px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+      rgba(10, 10, 20, 0.5);
+    border: 1px solid var(--line);
+  }
+  .plate .card-obj { width: min(100%, 300px); }
+  .plate.book { padding: clamp(26px, 3vw, 64px); }
+  .plate.book img {
+    width: min(100%, 300px); border-radius: 4px;
+    box-shadow: 0 34px 80px -26px rgba(0, 0, 0, 0.95);
+  }
+  .plate.fan { position: relative; min-height: clamp(240px, 26vw, 460px); }
+  .plate.fan .card-obj {
+    position: absolute; width: min(42%, 230px);
+    transform-origin: 50% 130%;
+  }
+  .plate.fan .card-obj:nth-child(1) { transform: translateX(-62%) rotate(-16deg) translateY(12px); }
+  .plate.fan .card-obj:nth-child(2) { transform: translateX(-21%) rotate(-5.5deg); z-index: 2; }
+  .plate.fan .card-obj:nth-child(3) { transform: translateX(21%) rotate(5.5deg); z-index: 3; }
+  .plate.fan .card-obj:nth-child(4) { transform: translateX(62%) rotate(16deg) translateY(12px); z-index: 4; }
+
+  .prod-name {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(30px, 3vw, 60px); line-height: 1.05; margin: 0 0 12px;
+    letter-spacing: -0.015em;
+  }
+  .prod-what {
+    font-size: clamp(16px, 0.5vw + 14px, 22px); color: #c9c6d8;
+    margin: 0 0 clamp(14px, 1.4vw, 24px); max-width: 40ch;
+  }
+  .spec {
+    font-size: clamp(13px, 0.2vw + 12px, 16px); color: var(--muted);
+    margin: 0 0 clamp(18px, 1.8vw, 30px); max-width: 42ch;
+  }
+  .meta-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: clamp(18px, 1.8vw, 30px); }
+  .price {
+    font-family: var(--serif); font-size: clamp(24px, 1.5vw + 18px, 40px);
+    letter-spacing: -0.01em;
+  }
+  .price small { font-family: var(--ui); font-size: clamp(12px, 0.2vw + 11px, 15px); color: var(--muted); letter-spacing: 0.06em; }
+  .chip {
+    font: 600 clamp(11px, 0.18vw + 10px, 14px)/1 var(--ui);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 8px 12px; border-radius: 999px;
+    color: var(--cyan); border: 1px solid rgba(77, 216, 255, 0.4);
+    background: rgba(77, 216, 255, 0.08);
+  }
+  .chip.warm { color: var(--pink); border-color: rgba(255, 93, 162, 0.4); background: rgba(255, 93, 162, 0.08); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 52px; padding: 0 clamp(20px, 1.4vw, 32px);
+    border-radius: 999px; border: 1px solid var(--line-2);
+    font: 600 clamp(14px, 0.22vw + 13px, 17px)/1 var(--ui);
+    text-decoration: none; color: #0a0a12;
+    background: linear-gradient(100deg, #ffffff, #ded9ec);
+    cursor: pointer;
+  }
+  .btn:hover { background: linear-gradient(100deg, #ffffff, #ffd8e8); }
+  .btn.ghost {
+    color: var(--text); background: rgba(255, 255, 255, 0.04);
+    border-color: var(--line-2);
+  }
+  .btn.ghost:hover { background: rgba(255, 255, 255, 0.09); }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ---------------- FREE BAND ---------------- */
+  .free {
+    margin: clamp(60px, 7vw, 140px) 0 clamp(40px, 5vw, 90px);
+    padding: clamp(28px, 3vw, 60px);
+    border: 1px solid var(--line-2); border-radius: 8px;
+    background: linear-gradient(120deg, rgba(255, 93, 162, 0.07), rgba(77, 216, 255, 0.05));
+    display: grid; gap: clamp(18px, 2vw, 32px); align-items: center;
+  }
+  .free h3 {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(24px, 1.8vw, 42px); margin: 0 0 8px;
+  }
+  .free p { margin: 0; color: var(--muted); font-size: clamp(14px, 0.24vw + 13px, 17px); }
+  footer {
+    border-top: 1px solid var(--line); padding: 26px 0 60px;
+    color: var(--muted); font-size: clamp(12px, 0.18vw + 11px, 15px);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  /* ---------------- RECOMPOSITION ---------------- */
+  @media (min-width: 768px) {
+    .hero-grid { grid-template-columns: 1.35fr 0.65fr; }
+    .row { grid-template-columns: 0.92fr 1.08fr; }
+    .row.flip .plate { order: 2; }
+    .free { grid-template-columns: 1fr auto; }
+  }
+  @media (min-width: 1400px) {
+    :root { --shell: min(90vw, max(1400px, 82vw)); }
+    .hero-grid { grid-template-columns: 1.5fr 0.5fr; gap: clamp(60px, 5vw, 120px); }
+    .row { grid-template-columns: 1fr 1fr; gap: clamp(60px, 5vw, 110px); }
+    .plate .card-obj { width: min(100%, 360px); }
+    .hero-card { width: min(100%, 400px); }
+  }
+</style>
+</head>
+<body>
+<div class="badge">DIRECTION A — EDITORIAL GALLERY</div>
+
+<div class="wrap">
+
+  <section class="hero">
+    <p class="kicker">The Kinetic Alphabet <b>·</b> Physical line</p>
+    <div class="hero-grid">
+      <div>
+        <h1 class="display">The physical<br /><em>line</em></h1>
+        <p class="lede">
+          Flow sequences, printed as playing cards and books you can hold. Shuffle, draw,
+          drill. Every card ends where it began.
+        </p>
+        <p class="hero-note">
+          Printed, cut, and packed in Chicago in small batches. Five products, no filler.
+        </p>
+      </div>
+      <div class="hero-card">
+        <div class="card-obj">
+          <div class="card-face">
+            <img class="card-art" src="/caps/rosette-1-4.svg" alt="Four-petal rosette pattern" />
+            <div class="card-foot">
+              <span class="card-tag">LOOP · 8 count</span>
+              <span class="qr" data-qr="1"></span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-cap">That QR is live. Scan a card and its sequence opens, animated.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 DECKS -->
+  <div class="marker">
+    <span class="num">01</span>
+    <h2>Decks</h2>
+    <span class="count">Two ways to build</span>
+  </div>
+
+  <article class="row">
+    <div class="plate fan">
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/cycloid-1-neg3.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">L1</span><span class="qr" data-qr="2"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/rosette-1-neg6.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">L2</span><span class="qr" data-qr="3"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/pattern-3-2.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">L2</span><span class="qr" data-qr="4"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/antispin-1-neg3.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">L3</span><span class="qr" data-qr="5"></span></div>
+      </div></div>
+    </div>
+    <div>
+      <h3 class="prod-name">LOOP Deck</h3>
+      <p class="prod-what">54 cards. Every one is a sequence you can scan and play.</p>
+      <p class="spec">
+        Pick a level, a length, and a flavor. The deck is built to your dials and printed
+        to order. Poker size, 2.5&#8243; × 3.5&#8243;.
+      </p>
+      <div class="meta-row">
+        <span class="price">$30 <small>per deck</small></span>
+        <span class="chip">Preorder</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn" href="/shop/loop-deck">Build your deck</a>
+        <a class="btn ghost" href="/shop/choreography-cards">See what is on a card</a>
+      </div>
+    </div>
+  </article>
+
+  <article class="row flip">
+    <div class="plate">
+      <div class="card-obj">
+        <div class="card-face">
+          <img class="card-art" src="/caps/cap-1-3-composition.svg" alt="" />
+          <div class="card-foot"><span class="card-tag">Slice 3 of 6</span><span class="qr" data-qr="6"></span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 class="prod-name">Deck Architect</h3>
+      <p class="prod-what">Compose a deck slice by slice: level, length, and flavor per section.</p>
+      <p class="spec">
+        The power-user path into the same deck line. Stack recipes, preview the fan live,
+        and print a deck no one else owns. Up to 128 cards.
+      </p>
+      <div class="meta-row">
+        <span class="price">From $50</span>
+        <span class="chip">Preorder</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn" href="/shop/loop-deck/architect">Open the Architect</a>
+      </div>
+    </div>
+  </article>
+
+  <!-- 02 BOOKS -->
+  <div class="marker">
+    <span class="num">02</span>
+    <h2>Books</h2>
+    <span class="count">The teaching line</span>
+  </div>
+
+  <article class="row">
+    <div class="plate fan">
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/pattern-2-neg5.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">Earth</span><span class="qr" data-qr="7"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/yuta-cap.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">Water</span><span class="qr" data-qr="8"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/cycloid-1-4.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">Fire</span><span class="qr" data-qr="9"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/yuta-cap-three-quarter.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">Air</span><span class="qr" data-qr="10"></span></div>
+      </div></div>
+    </div>
+    <div>
+      <h3 class="prod-name">Timing &amp; Direction Trilogy</h3>
+      <p class="prod-what">Three volumes, color-coded by element, from base motions to half-turns.</p>
+      <p class="spec">
+        Volume one teaches the base motions. Volume two adds one turn. Volume three adds
+        the halves. Every card wears its family&#8217;s element color.
+      </p>
+      <div class="meta-row">
+        <span class="price">$30 <small>per volume</small></span>
+        <span class="chip">Preorder</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn" href="/shop/tnd-trilogy">Pick a volume</a>
+      </div>
+    </div>
+  </article>
+
+  <article class="row flip">
+    <div class="plate book">
+      <img src="/branding/guide-cover.png" alt="The Kinetic Alphabet, printed guide, cover" />
+    </div>
+    <div>
+      <h3 class="prod-name">The Kinetic Alphabet</h3>
+      <p class="prod-what">The printed guide to the system behind the cards.</p>
+      <p class="spec">
+        The decks give you sequences. The book gives you the notation, so you can read any
+        card and write your own.
+      </p>
+      <div class="meta-row">
+        <span class="price">$30</span>
+        <span class="chip">Preorder</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn" href="/shop/guide-book">Preorder the book</a>
+      </div>
+    </div>
+  </article>
+
+  <!-- 03 BUNDLES -->
+  <div class="marker">
+    <span class="num">03</span>
+    <h2>Bundles</h2>
+    <span class="count">Everything at once</span>
+  </div>
+
+  <article class="row">
+    <div class="plate fan">
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/rosette-1-4.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">LOOP</span><span class="qr" data-qr="11"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/pattern-3-2.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">T&amp;D</span><span class="qr" data-qr="12"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/cycloid-1-neg3.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">LOOP</span><span class="qr" data-qr="13"></span></div>
+      </div></div>
+      <div class="card-obj"><div class="card-face">
+        <img class="card-art" src="/caps/pattern-2-neg5.svg" alt="" />
+        <div class="card-foot"><span class="card-tag">T&amp;D</span><span class="qr" data-qr="14"></span></div>
+      </div></div>
+    </div>
+    <div>
+      <h3 class="prod-name">The Starter Pack</h3>
+      <p class="prod-what">The trilogy, a mixed LOOP deck, the book, and a waterproof card holder.</p>
+      <p class="spec">
+        One box, the whole system. The mixed deck samples every flavor so you find the one
+        you want more of.
+      </p>
+      <div class="meta-row">
+        <span class="price">$65</span>
+        <span class="chip warm">Preorder</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn" href="/shop/starter-pack">Get the pack</a>
+      </div>
+    </div>
+  </article>
+
+  <section class="free">
+    <div>
+      <h3>Not ready to buy?</h3>
+      <p>Everything in the cards is free in the Composer. Build sequences, watch them move, share a scan link.</p>
+    </div>
+    <a class="btn ghost" href="/composer">Open the Composer</a>
+  </section>
+
+  <footer>The Kinetic Alphabet · Chicago · Small batch</footer>
+</div>
+
+<script>
+  // Deterministic QR-shaped mark. Placeholder art for the sketch, not a decodable code.
+  document.querySelectorAll("[data-qr]").forEach(function (el) {
+    var N = 25, s = parseInt(el.dataset.qr, 10) * 7919 + 13, m = [], y, x;
+    var rnd = function () { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    for (y = 0; y < N; y++) { m[y] = []; for (x = 0; x < N; x++) m[y][x] = rnd() > 0.53 ? 1 : 0; }
+    [[0, 0], [N - 7, 0], [0, N - 7]].forEach(function (o) {
+      for (y = -1; y < 8; y++) for (x = -1; x < 8; x++) {
+        if (o[1] + y < 0 || o[0] + x < 0 || o[1] + y >= N || o[0] + x >= N) continue;
+        var edge = x === 0 || x === 6 || y === 0 || y === 6;
+        var core = x > 1 && x < 5 && y > 1 && y < 5;
+        m[o[1] + y][o[0] + x] = (x >= 0 && x <= 6 && y >= 0 && y <= 6 && (edge || core)) ? 1 : 0;
+      }
+    });
+    var r = "";
+    for (y = 0; y < N; y++) for (x = 0; x < N; x++) if (m[y][x]) r += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>';
+    el.innerHTML = '<svg viewBox="-1 -1 ' + (N + 2) + " " + (N + 2) + '" shape-rendering="crispEdges" aria-hidden="true"><rect x="-1" y="-1" width="' + (N + 2) + '" height="' + (N + 2) + '" fill="#f2f1f7"/><g fill="#0a0a12">' + r + "</g></svg>";
+  });
+</script>
+</body>
+</html>

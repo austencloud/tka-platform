@@ -1,14 +1,20 @@
 ---
 status: active
-value: 2
+value: 3
 effort: M
-remaining: "Body status: Design approved, pending spec review"
+remaining: 'Kit instancing live for institutional wall-section only; corners/doorways never authored'
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-07-25
+last_triaged: 2026-08-02
 ---
 # Modular Kit Museum — Vertical Slice
+
+> **DRIFT WARNING — 2026-08-02.** Kit instancing live for institutional wall-section only; corners/doorways never authored
+>
+> Status lines below predate this check and are left intact deliberately.
+> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+
 
 **Date:** 2026-06-16
 **Status:** Design approved, pending spec review

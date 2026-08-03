@@ -24,6 +24,7 @@ import { isGallerySyncStale } from "./gallery-sync-staleness";
 export class GalleryPrefetcher {
   private _isWarmed = false;
   private _isSyncing = false;
+  private _hasReadLocalCache = false;
   private _prefetchPromise: Promise<void> | null = null;
   private eventCleanups: (() => void)[] = [];
 
@@ -68,17 +69,17 @@ export class GalleryPrefetcher {
     // Phase 1: Warm from IndexedDB (fast - local disk). Always do this — it's a
     // local read with no network cost, and it's what makes Browse open instantly
     // for returning users even on a slow connection.
-    try {
-      const hasCache = await this.offlineCache.hasCachedData();
-      if (hasCache) {
+    if (!this._hasReadLocalCache) {
+      try {
         const cached = await this.offlineCache.loadCached();
+        this._hasReadLocalCache = true;
         if (cached.sequences.length > 0) {
           this.loader.warmFromCache(cached.sequences, cached.sourceRefs);
           this._isWarmed = true;
         }
+      } catch (error) {
+        console.warn("[GalleryPrefetcher] IndexedDB warm failed:", error);
       }
-    } catch (error) {
-      console.warn("[GalleryPrefetcher] IndexedDB warm failed:", error);
     }
 
     // Phase 2: Background Firestore sync (non-blocking). Skipped on a constrained
@@ -112,6 +113,7 @@ export class GalleryPrefetcher {
   }
 
   private backgroundSync(): void {
+    if (this._isSyncing) return;
     this._isSyncing = true;
 
     // If we warmed from cache, loadSequenceMetadata() would just return
@@ -126,6 +128,7 @@ export class GalleryPrefetcher {
 
     syncPromise
       .then(() => {
+        this._isWarmed = true;
         this._isSyncing = false;
       })
       .catch((error: unknown) => {
@@ -135,12 +138,19 @@ export class GalleryPrefetcher {
   }
 
   private subscribeToMutationEvents(): void {
+    if (this.eventCleanups.length > 0) return;
+
     // Delete: remove from IndexedDB cache
     this.eventCleanups.push(
       onLibraryMutated((sequenceId) => {
-        db.galleryCache.delete(sequenceId).catch((err) =>
-          console.warn("[GalleryPrefetcher] Failed to delete from cache:", err)
-        );
+        db.galleryCache
+          .delete(sequenceId)
+          .catch((err) =>
+            console.warn(
+              "[GalleryPrefetcher] Failed to delete from cache:",
+              err
+            )
+          );
       })
     );
 
@@ -157,9 +167,11 @@ export class GalleryPrefetcher {
           data: JSON.parse(JSON.stringify(sequence)),
           cachedAt: Date.now(),
         };
-        db.galleryCache.put(entry).catch((err) =>
-          console.warn("[GalleryPrefetcher] Failed to add to cache:", err)
-        );
+        db.galleryCache
+          .put(entry)
+          .catch((err) =>
+            console.warn("[GalleryPrefetcher] Failed to add to cache:", err)
+          );
       })
     );
 
@@ -179,10 +191,7 @@ export class GalleryPrefetcher {
               });
             })
             .catch((err) =>
-              console.warn(
-                "[GalleryPrefetcher] Failed to update cache:",
-                err
-              )
+              console.warn("[GalleryPrefetcher] Failed to update cache:", err)
             );
         }
       )
