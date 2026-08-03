@@ -172,7 +172,7 @@ the session (marked ✓).
 | active/2026-06-16-effect-leg-bolstering-design.md | 3 of 4 legs survive; Echo's rework was **deleted** and replaced by Ghost | 2/S |
 | active/2026-06-16-modular-kit-museum-design.md | Kit instancing live for institutional wall-section only; corners/doorways never authored | 3/M |
 | active/2026-06-16-user-onboarding-overhaul-umbrella.md | Slices A, B shipped; D shipped copy-only; **Slice C unbuilt** — the only live gap | 3/M |
-| active/2026-06-20-real-flow-notation-aruco-design.md | LED pipeline genuinely built; doc retains the **dead ArUco design inline** as a hazard. Real-clip validation tracked elsewhere | 4/S |
+| shipped/2026-06-20-real-flow-notation-aruco-design.md | Resolved 2026-08-03: LED record shipped, ArUco plan archived, and real-clip validation remains tracked elsewhere | 4/S |
 | active/2026-06-21-personal-museum-design.md | Entire data/service/state/component layer **and both hard rendering seams** built and tested — but **no `/my-museum` route**, so unreachable | 3/S |
 | active/2026-06-23-shop-spin-up-design.md ✓ | Everything functional shipped; A1's literal folder rename (`features/store` → `features/shop`) never done | 5/XS |
 | active/2026-06-26-shop-operations-go-live-design.md ✓ | Tax, shipping, preorder swap, product art, fulfillment all live; general `/shop` catalog still admin-gated (per-product pages are public) | 5/S |

@@ -166,13 +166,10 @@ export const DEFAULT_TRACKING_CONFIG: TrackingConfig = {
 	autoDetectKeyframes: false // Start with manual marking
 };
 
-// 3D ArUco-notation pipeline types (see notation-3d.ts).
+// Types shared by the endpoint tracker, notation pipeline, and review surface.
 export type {
-	DetectedMarker,
 	StaffColor,
-	MarkerAssignment,
 	StaffPose3D,
 	BeatPose3D,
 	StaffMotionNotation,
 } from './notation-3d';
-export { DEFAULT_MARKER_ASSIGNMENT, createMarkerAssignment } from './notation-3d';

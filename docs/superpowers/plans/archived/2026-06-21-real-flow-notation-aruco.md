@@ -1,5 +1,13 @@
 # Real Flow → TKA Sequence (ArUco Notation) Implementation Plan
 
+> **Archived 2026-08-03. Do not execute this plan.** The ArUco tracker,
+> camera-frame solver, marker generator, and vendored library were removed in
+> commit `e42cfcae8b` after capture moved to illuminated staff endpoints. The
+> shipped LED design is recorded in
+> `docs/superpowers/specs/shipped/2026-06-20-real-flow-notation-aruco-design.md`.
+> Real-video proof remains open in
+> `docs/superpowers/specs/active/2026-07-03-fable-real-flow-notation-validation-design.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Transcribe real double-staff flow video into a TKA pictograph sequence — grid position, orientation (radial/nonradial, in/out), motion type (pro/anti/float/dash/static), and turns — using single-camera ArUco 6-DOF pose to capture roll.

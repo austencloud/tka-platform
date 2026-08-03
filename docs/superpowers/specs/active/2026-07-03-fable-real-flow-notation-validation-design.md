@@ -2,21 +2,23 @@
 status: active
 value: 4
 effort: M
-remaining: "All pre-clip work is implemented: validation tooling, scorecard, tracker hardening, confidence propagation, and correction UI. On 2026-08-01 the full prop-tracking suite passed (11 files, 82 tests) and the repository check reported 0 errors and 0 warnings. Remaining: run the lab against a labeled real clip, compare the detected strip with ground truth, and harden only the failures reality exposes."
+remaining: "All pre-clip work is implemented: validation tooling, scorecard, tracker hardening, confidence propagation, and correction UI. On 2026-08-03 the current prop-tracking suite passed (10 files, 79 tests) after three retired ArUco-only and structural tests were removed; the repository check reported 0 errors and 0 warnings. Remaining: run the lab against a labeled real clip, compare the detected strip with ground truth, and harden only the failures reality exposes."
 depends_on: "external: Austen-provided real performance clip plus its ground-truth sequence and interactive calibration"
 plan_path: ""
 tags: []
-last_triaged: 2026-08-01
+last_triaged: 2026-08-03
 ---
 # Fable Spec — Real-Flow Notation: Validate + Robust Perception Core (THE MOONSHOT)
 
-## Reconciliation: 2026-08-01
+## Reconciliation: 2026-08-03
 
-The 2026-07-05 progress section remains accurate. All 11 prop-tracking test
-files passed on 2026-08-01 (82 tests), and the full repository check reported 0
-errors and 0 warnings. No code task remains before the physical verification
-gate. The separate Skel2TKA pipeline also keeps its early phases behind human
-visual-acceptance gates, so synthetic results cannot close this spec.
+The 2026-07-05 progress section remains an accurate record of that pass. The
+current suite passed on 2026-08-03 with 10 files and 79 tests after three tests
+for retired ArUco marker DTOs and TypeScript structure were removed. The full
+repository check reported 0 errors and 0 warnings. No code task remains before
+the physical verification gate. The separate Skel2TKA pipeline also keeps its
+early phases behind human visual-acceptance gates, so synthetic results cannot
+close this spec.
 
 **Date:** 2026-07-03 · **Autonomy: FULL AUTO on code (tracker, harness, UI); CHECKPOINT for real-clip validation** (Austen must shoot/provide a ground-truth clip — physical dependency) · Index: `2026-07-03-fable-dispatch-index.md`
 
@@ -24,7 +26,7 @@ visual-acceptance gates, so synthetic results cannot close this spec.
 
 ## Problem
 
-The pipeline (`src/lib/features/train/prop-tracking-lab/`, reachable as the **"LED Notation"** tab — `src/lib/shared/navigation/config/tab-definitions.ts:908`, `VideoModule.svelte:21`) has a complete pure "brain" with **50 passing tests — but every test is synthetic.** The chain has **never been validated on real captured video.** The high-value question — *does it correctly notate real footage, with the sign/correspondence conventions holding up?* — is 100% open.
+The pipeline lives in `src/lib/features/train/prop-tracking-lab/` and is reachable as the **"LED Notation"** tab through `src/lib/shared/navigation/config/tab-definitions.ts:908` and `VideoModule.svelte:21`. Its pure "brain" sits inside a **79-test suite, but every test is synthetic.** The chain has **never been validated on real captured video.** One high-value question remains: *does it correctly notate real footage with the sign and correspondence conventions holding up?*
 
 Spec's own framing: *"Roll is the unsolved crux, and without it the notation is not real TKA."*
 
@@ -33,8 +35,8 @@ Spec's own framing: *"Roll is the unsolved crux, and without it the notation is 
 - **Brain (pure, tested):** `tka-pose-classifier.ts` (grid-location, in/out/clock/counter orientation, static/shift/dash, pro/anti/float, turns + rotation direction), `beat-segmenter-3d.ts`, `notation-pipeline.ts`, render bridge `notation-to-pictograph.ts` → real `PictographContainer`.
 - **Capture front-end:** `color-end-tracker.ts` (PCA blob → two endpoints + thumb/pinky continuity), `screen-to-grid.ts`, `color-flow-pipeline.ts`.
 - **Lab UI:** `PropTrackingLab.svelte` — 4-phase (upload → draw-box → track → review with click-to-calibrate center/radius/sample-blue/sample-red + "Notate Flow" + pictograph strip).
-- **Tests:** 50 green (all synthetic — `color-end-tracker.test.ts` draws a colored line and asserts endpoints; classifier tests use hand-built vectors).
-- **Note:** the plan `docs/superpowers/plans/active/2026-06-21-real-flow-notation-aruco.md` is **stale ArUco** (front-end was retired for LED color-end tracking — commit `e42cfcae8b`). The spec revision header reflects the pivot; the plan does not. Trust the code + spec, not the plan's marker-printing steps.
+- **Tests:** 79 green as of 2026-08-03 (all synthetic; `color-end-tracker.test.ts` draws a colored line and asserts endpoints, while classifier tests use hand-built vectors).
+- **Historical plan:** `docs/superpowers/plans/archived/2026-06-21-real-flow-notation-aruco.md` records the retired ArUco path and is explicitly non-executable. The shipped LED design lives at `docs/superpowers/specs/shipped/2026-06-20-real-flow-notation-aruco-design.md`. Real-video proof remains governed by this spec.
 
 ## The hard parts (why a stronger model earns its keep — no ground truth to catch a mistake)
 

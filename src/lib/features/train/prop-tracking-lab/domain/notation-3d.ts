@@ -7,47 +7,13 @@ import type {
 } from './tka-enums';
 
 /**
- * 3D notation domain types for the ArUco real-flow pipeline.
+ * Domain types for turning tracked staff endpoints into notation.
  *
  * Grid frame convention: X = East (right), Y = North (top), Z = toward camera.
  * The 2D grid plane is XY; location angle = atan2(x, y) clockwise from North.
  */
 
-/** One ArUco marker detected in a single video frame, in CAMERA space. */
-export interface DetectedMarker {
-  /** Marker dictionary id. */
-  id: number;
-  /** Marker-center translation in camera frame (POSIT model-size units = mm). */
-  posCam: Vector3;
-  /** Camera-frame orientation as a 3x3 ROW-MAJOR rotation matrix (length 9). */
-  rotCam: number[];
-  /** Detection corner pixels (debug / confidence only). */
-  corners: { x: number; y: number }[];
-}
-
 export type StaffColor = 'blue' | 'red';
-
-/** Which marker id is which role + the physical marker edge length for POSIT. */
-export interface MarkerAssignment {
-  centerRefId: number;
-  blueId: number;
-  redId: number;
-  /** Physical marker edge length (mm). POSIT model size; same unit for all markers. */
-  markerSizeMm: number;
-}
-
-export const DEFAULT_MARKER_ASSIGNMENT: MarkerAssignment = {
-  centerRefId: 0,
-  blueId: 1,
-  redId: 2,
-  markerSizeMm: 80,
-};
-
-export function createMarkerAssignment(
-  over: Partial<MarkerAssignment> = {},
-): MarkerAssignment {
-  return { ...DEFAULT_MARKER_ASSIGNMENT, ...over };
-}
 
 /**
  * A staff's pose in the TKA grid frame. A staff is rotationally symmetric about
