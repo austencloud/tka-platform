@@ -135,6 +135,8 @@
   const viewfinder = $derived(
     timeline.phase === "aim" || timeline.phase === "lock"
   );
+  /** The phone has arrived; the cards have parted. Drives the whole scene. */
+  const entered = $derived(timeline.onstage);
   const opened = $derived(
     timeline.phase === "opening" || timeline.phase === "open"
   );
@@ -196,48 +198,60 @@
 </script>
 
 <div class="stage">
-  <div class="cards" class:dealing>
-    <!-- Behind-left, peeking: the same card's other face. Static print. -->
-    <div class="slot back">
-      {#if backSequence}
-        <div class="card-frame">
-          <CardBack
-            sequence={backSequence}
-            themeOverride={printedTheme}
-            bluePropTypeOverride={printedProp}
-            redPropTypeOverride={printedProp}
-          />
-        </div>
-      {/if}
-    </div>
+  <!-- One scene holds both states. The cards and the phone are absolutely
+       placed inside it and move by transform only, so the box the page reserves
+       is the SAME box at rest and after the entrance — the phone arriving can't
+       move anything (no-layout-shift.md). -->
+  <div class="scene-slot">
+    <div class="scene" class:entered class:dealing>
+      <!-- At rest these sit side by side, the pair filling the scene: one
+           printed object shown from both sides. The entrance slides them
+           together into the tighter stack the phone reads from. -->
+      <div class="slot back">
+        {#if backSequence}
+          <div class="card-frame">
+            <CardBack
+              sequence={backSequence}
+              themeOverride={printedTheme}
+              bluePropTypeOverride={printedProp}
+              redPropTypeOverride={printedProp}
+            />
+          </div>
+        {/if}
+      </div>
 
-    <div class="slot front">
-      {#if card && product}
-        <div class="art">
-          <ShopEntryArt
-            cards={[card]}
-            {product}
-            deckName={product.name}
-            cardWidth={140}
-            maxCardWidth={822}
-            exactCount={1}
-          />
-        </div>
-      {/if}
-    </div>
-  </div>
+      <div class="slot front">
+        {#if card && product}
+          <div class="art">
+            <ShopEntryArt
+              cards={[card]}
+              {product}
+              deckName={product.name}
+              cardWidth={140}
+              maxCardWidth={822}
+              exactCount={1}
+            />
+          </div>
+        {/if}
+      </div>
 
-  <div class="phone-slot">
-    <HeroPhone
-      code={scanCode}
-      armed={timeline.armed}
-      {viewfinder}
-      locked={timeline.phase === "lock"}
-      {opened}
-      {coverUrl}
-      {qrCell}
-      reducedMotion={timeline.reducedMotion}
-    />
+      <!-- Higher z than both cards: the phone enters BETWEEN the viewer and the
+           pair, which is what makes it read as an object arriving in the scene
+           rather than a panel appearing beside it. -->
+      <div class="phone-holder">
+        <HeroPhone
+          code={scanCode}
+          armed={timeline.armed}
+          onstage={entered}
+          {viewfinder}
+          locked={timeline.phase === "lock"}
+          {opened}
+          {coverUrl}
+          {qrCell}
+          reducedMotion={timeline.reducedMotion}
+        />
+      </div>
+    </div>
   </div>
 
   <!-- The trigger. Two buttons share one grid cell: a hidden one permanently
@@ -273,12 +287,20 @@
      stack; the phone is deliberately TALLER than the cards, because it is the
      object the page is about. */
   .stage {
-    /* The PHONE is sized first and the card follows it at two thirds, because
-       the phone is the hero's subject now. Deriving one from the other makes
-       "the phone dominates" true by construction at every viewport instead of
-       true at the one width the numbers were picked at. */
-    --phone-h: min(62svh, 38rem, calc(100cqw / 1.45));
-    --card-h: calc(var(--phone-h) * 0.66);
+    /* THE CARD is sized first now, and the phone follows it. Hero v2 derived the
+       card from the phone because the phone was always there; the phone is an
+       entrance now, so the state the page OPENS in — two cards, alone — is the
+       one the geometry has to serve. The card gets the stage, and the phone
+       arrives at 1.28x its height, still the taller object because it is still
+       the payoff.
+
+       1.49 is the scene's width in card-heights: two 5:7 cards side by side
+       (2 x 0.714) plus a sliver of gap. 1.34 is its height: one card plus room
+       for the tilt. Both states live inside that one box. */
+    --card-h: min(40svh, 26rem, calc(100cqw / 1.55));
+    --phone-h: calc(var(--card-h) * 1.28);
+    --scene-w: calc(var(--card-h) * 1.49);
+    --scene-h: calc(var(--card-h) * 1.34);
     /* The "Open this scan" pill sits below the phone rather than on its bezel
        (HeroPhone reads both). The slot reserves its height up front, so the pill
        appearing after a scan cannot shift the trigger under it. */
@@ -288,31 +310,26 @@
        the pill a pixel or two past a reserve measured on the untransformed box. */
     --pill-reserve: calc(var(--pill-gap) + var(--pill-h) + 0.25rem);
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: minmax(0, auto);
     grid-template-areas:
-      "cards phone"
-      "action action";
-    align-items: center;
+      "scene"
+      "action";
+    justify-items: center;
     justify-content: center;
-    gap: clamp(1rem, 3cqw, 3rem) clamp(1rem, 4cqw, 3.5rem);
+    gap: clamp(1rem, 3cqw, 3rem);
     width: 100%;
   }
 
-  .cards {
-    grid-area: cards;
-    position: relative;
-    height: var(--card-h);
-    /* The stack's own width: the front card plus the sliver of back showing
-       behind-left. Fixed, so a deal cannot resize the column. */
-    width: calc(var(--card-h) / 1.4 * 1.24);
+  .scene-slot {
+    grid-area: scene;
+    /* The pill's whole slot, reserved whether or not the phone has arrived. */
+    padding-bottom: var(--pill-reserve);
   }
 
-  .phone-slot {
-    grid-area: phone;
-    display: grid;
-    place-items: center;
-    /* Room for the lean above, and the pill's whole slot below. */
-    padding-block: calc(var(--phone-h) * 0.05) var(--pill-reserve);
+  .scene {
+    position: relative;
+    width: var(--scene-w);
+    height: var(--scene-h);
   }
 
   .scan-trigger {
@@ -321,29 +338,50 @@
     display: inline-grid;
   }
 
+  /* ── the two cards ──────────────────────────────────────────────────────
+     Rest: side by side, each holding its own half of the scene. Entered: they
+     slide together into a tighter stack on the left, clearing the right half
+     for the phone. Only `transform` changes, so neither state can reflow. */
   .slot {
     position: absolute;
-    top: 0;
+    top: 50%;
     height: var(--card-h);
     aspect-ratio: 5 / 7;
     border-radius: 0.75rem;
     filter: drop-shadow(0 1.25rem 2.5rem rgba(0, 0, 0, 0.55));
+    transition: transform 640ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* The printed front, nearly square on and on top — it is the one with the
-     code the phone is reading. */
+  /* The printed front, on top — it is the one with the code the phone reads. */
   .slot.front {
     right: 0;
     z-index: 2;
-    transform: rotate(-3deg);
+    transform: translate(0, -50%) rotate(3deg);
+  }
+  .scene.entered .slot.front {
+    transform: translate(calc(var(--card-h) * -0.42), -50%) rotate(-3deg);
   }
 
-  /* Peeking out behind-left: enough of the back to read as the same object
-     turned over, not enough to compete with the front. */
+  /* The same card's other face. */
   .slot.back {
     left: 0;
     z-index: 1;
-    transform: rotate(-10deg) translateY(2%);
+    transform: translate(0, -50%) rotate(-5deg);
+  }
+  .scene.entered .slot.back {
+    transform: translate(calc(var(--card-h) * 0.1), -50%) rotate(-11deg);
+  }
+
+  /* ── the phone ──────────────────────────────────────────────────────────
+     Parked against the scene's right edge, vertically centred, above both
+     cards. HeroPhone owns the arrival itself (it has to compose the entrance
+     into the same `transform` as its lean), so this only places it. */
+  .phone-holder {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    z-index: 3;
+    translate: 0 -50%;
   }
 
   .art {
@@ -374,8 +412,8 @@
       transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 260ms ease;
   }
-  .cards.dealing .art,
-  .cards.dealing .card-frame {
+  .scene.dealing .art,
+  .scene.dealing .card-frame {
     transform: translateY(-7%) scale(0.93);
     opacity: 0;
     transition:
@@ -398,61 +436,39 @@
     opacity: 0.55;
   }
 
-  /* Narrow: the phone goes under the cards rather than beside them. Two objects
-     side by side at 375 makes both too small to read, and the phone is the one
-     that has to be readable. */
-  @media (max-width: 52rem) {
-    .stage {
-      --phone-h: min(48svh, 27rem, calc(72cqw * 2.02));
-      --card-h: calc(var(--phone-h) * 0.52);
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "cards"
-        "phone"
-        "action";
-      justify-items: center;
-    }
-  }
+  /* Narrow: nothing recomposes. The scene is one box whose width is a multiple
+     of --card-h, and --card-h is already bounded by `100cqw / 1.55`, so the pair
+     and the phone shrink together and always fit the column. The old tier that
+     stacked the phone under the cards is gone with the two-column stage. */
 
   /* Wide but short — a folded Fold in landscape, a laptop in a small window.
      ShopFrontDoorHero runs the copy and this stage side by side here, and the
      whole hero has to clear a viewport around 412px tall.
 
-     16a2bef0f9 held this guarantee by paying for the trigger out of the CARD's
-     budget (56svh -> 38svh). Hero v2 made the PHONE the driver and the card a
-     fraction of it, and the override went with the old variable, so the trigger
-     landed 60px under the fold. It is restored against the new driver: the phone
-     pays, at 38svh instead of 62svh.
+     16a2bef0f9 held this guarantee by paying for the trigger out of the card's
+     budget (56svh -> 38svh). Hero v2 briefly lost it by renaming the driver.
+     The card is the driver again, so the tier pays out of --card-h directly.
 
      The arithmetic at 960x412, which is what the number is picked for:
-       header 65 + hero pad 20 + stage pad 14 + slot 217 + gap 12 + trigger 51
-       = 379 <= 412. Everything below the phone is fixed cost, so the phone is
-       the only term that can absorb a short viewport.
-
-     Two columns even under 52rem: stacking the phone beneath the cards is the
-     one arrangement a 412px-tall viewport cannot afford. */
+       header 65 + hero pad 20 + stage pad 14 + scene 166 + pill 55 + gap 12
+       + trigger 51 = 383 <= 412. The scene is the only term that can absorb a
+       short viewport; everything under it is a fixed cost. */
   @media (min-width: 48rem) and (max-height: 40rem) {
     .stage {
-      --phone-h: min(38svh, 20rem, calc(100cqw / 1.45));
-      --card-h: calc(var(--phone-h) * 0.66);
-      grid-template-columns: auto auto;
-      grid-template-areas:
-        "cards phone"
-        "action action";
-      gap: 0.75rem clamp(1rem, 4cqw, 3.5rem);
-    }
-    .phone-slot {
-      /* The lean allowance shrinks with the phone; the pill's slot does not —
-         it holds a 44px touch target whatever the viewport. */
-      padding-block: calc(var(--phone-h) * 0.03) var(--pill-reserve);
+      --card-h: min(30svh, 15rem, calc(100cqw / 1.55));
+      gap: 0.75rem;
     }
   }
 
+  /* No choreography. The timeline already jumps straight to `open` here, so the
+     cards are simply in their parted position with the phone standing on them
+     the instant the button is pressed. */
   @media (prefers-reduced-motion: reduce) {
     .art,
     .card-frame,
-    .cards.dealing .art,
-    .cards.dealing .card-frame,
+    .slot,
+    .scene.dealing .art,
+    .scene.dealing .card-frame,
     .scan-trigger > .live {
       transition: none;
     }

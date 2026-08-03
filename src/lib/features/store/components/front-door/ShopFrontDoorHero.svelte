@@ -201,6 +201,13 @@
     display: grid;
     place-items: center;
     padding: clamp(0.5rem, 1.5vw, 1.5rem);
+    /* The phone's entrance starts outside this box, so the stage is where it
+       comes IN from. `clip` on one axis only: the pill and the card shadows
+       hang below the scene and must stay visible, and clipping x is what stops
+       the arriving phone from widening the document at 375. (`overflow-x: clip`
+       is the one value that leaves `overflow-y: visible` alone; `hidden` would
+       force the other axis to `auto` and give the page a scrollbar.) */
+    overflow-x: clip;
     background: radial-gradient(
       circle at 50% 45%,
       rgba(126, 224, 255, 0.16),

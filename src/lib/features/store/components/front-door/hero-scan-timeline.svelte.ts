@@ -14,11 +14,22 @@
  *
  * So the cue has exactly one entry point, `scan()`, and it runs the pass once:
  *
- *   rest ──scan()──▶ aim 900 ──▶ lock 900 ──▶ opening 620 ──▶ open
- *                                                               │
- *                                 └──────── scan() ─────────────┘
+ *   rest ─scan()─▶ enter 640 ─▶ aim 900 ─▶ lock 900 ─▶ opening 620 ─▶ open
+ *                                 ▲                                  │
+ *                                 └────────── scan() ────────────────┘
  *
  * The old 2200ms idle beat is gone: the press IS the beat.
+ *
+ * `enter` is the phone ARRIVING. Austen (2026-08-03): "instead of just having
+ * the phone there from the gate, maybe we have the two cards next to each other
+ * and then when you click scan those 2 cards kind of move to the side and stack
+ * a little closer and then that phone slides in." So at rest the stage is two
+ * cards and nothing else, and the phone is an entrance rather than furniture.
+ *
+ * A SECOND press skips `enter` and starts at `aim`. The phone is already on
+ * stage, and walking it off and back on would replay a beat that only means
+ * something once — the same reason 16a2bef0f9 stopped the cue from looping.
+ * Dealing a card swaps the stack BEHIND the standing phone.
  *
  * `open` is a resting state, not an off state. `armed` latches when the phone
  * first aims and never clears: it is what boots the iframe, and the scan page
@@ -36,22 +47,25 @@
 export type ScanCueVariant = "phone" | "pulse";
 
 /**
- * `rest` is before any scan, `aim` leans the phone in on its camera view,
- * `lock` is the code recognised (the chip pops), `opening` swipes the screen up
- * into the real /q, and `open` is the scan page left standing.
+ * `rest` is two cards and an empty stage, `enter` parts the cards and slides the
+ * phone in front of them, `aim` leans the phone in on its camera view, `lock` is
+ * the code recognised (the chip pops), `opening` swipes the screen up into the
+ * real /q, and `open` is the scan page left standing.
  */
-export type ScanPhase = "rest" | "aim" | "lock" | "opening" | "open";
+export type ScanPhase = "rest" | "enter" | "aim" | "lock" | "opening" | "open";
 
 /** The phases that advance on their own, and how long each holds. */
-type RunningPhase = "aim" | "lock" | "opening";
+type RunningPhase = "enter" | "aim" | "lock" | "opening";
 
 const PHASE_MS: Record<RunningPhase, number> = {
+  enter: 640,
   aim: 900,
   lock: 900,
   opening: 620,
 };
 
 const NEXT_PHASE: Record<RunningPhase, ScanPhase> = {
+  enter: "aim",
   aim: "lock",
   lock: "opening",
   opening: "open",
@@ -62,6 +76,9 @@ export interface HeroScanTimeline {
   /** True once the phone has aimed at least once: boots the iframe. Never
    *  returns to false — see the module comment. */
   readonly armed: boolean;
+  /** The phone has entered the scene. False only before the first press, which
+   *  is the one state where the stage is two cards and nothing else. */
+  readonly onstage: boolean;
   /** Increments on every pass. */
   readonly pass: number;
   readonly reducedMotion: boolean;
@@ -87,7 +104,7 @@ export function createHeroScanTimeline(): HeroScanTimeline {
   let onMediaChange: ((e: MediaQueryListEvent) => void) | null = null;
 
   const isRunning = (p: ScanPhase): p is RunningPhase =>
-    p === "aim" || p === "lock" || p === "opening";
+    p === "enter" || p === "aim" || p === "lock" || p === "opening";
 
   function clear(): void {
     if (timer !== null) {
@@ -105,10 +122,11 @@ export function createHeroScanTimeline(): HeroScanTimeline {
       timer = null;
       const next = NEXT_PHASE[current];
       phase = next;
-      if (next === "lock") {
-        pass += 1;
-        armed = true;
-      }
+      // Boot the iframe the moment the phone has LANDED, not when the code is
+      // read: that hands /q the whole aim+lock beat (1.8s) to load before the
+      // screen swipes up, so the honest loading state is usually already past.
+      if (next === "aim") armed = true;
+      if (next === "lock") pass += 1;
       schedule();
     }, PHASE_MS[current]);
   }
@@ -119,6 +137,9 @@ export function createHeroScanTimeline(): HeroScanTimeline {
     },
     get armed() {
       return armed;
+    },
+    get onstage() {
+      return phase !== "rest";
     },
     get pass() {
       return pass;
@@ -139,14 +160,17 @@ export function createHeroScanTimeline(): HeroScanTimeline {
     scan(): void {
       if (isRunning(phase)) return;
       if (reducedMotion) {
-        // Skip the three beats, keep the result: the page simply appears.
+        // Skip every beat, keep the result: the phone is simply there, with the
+        // page on it. No entrance, no camera, no swipe.
         clear();
         pass += 1;
         armed = true;
         phase = "open";
         return;
       }
-      phase = "aim";
+      // The entrance happens once. After it, the phone is standing there and a
+      // press picks up at the camera.
+      phase = phase === "rest" ? "enter" : "aim";
       schedule();
     },
     start(): void {

@@ -40,8 +40,10 @@
   interface Props {
     /** The real short code for the card on the stack. Null = no phone content. */
     code: string | null;
-    /** Boot the iframe. False until the first scan press (lazy). */
+    /** Boot the iframe. False until the phone has landed on stage (lazy). */
     armed: boolean;
+    /** The phone has entered the scene. False = parked off-stage, invisible. */
+    onstage: boolean;
     /** The viewfinder is mid-choreography: screen shows the camera view. */
     viewfinder: boolean;
     /** The code has been RECOGNISED — the beat the chip belongs to. */
@@ -64,6 +66,7 @@
   let {
     code,
     armed,
+    onstage,
     viewfinder,
     locked,
     opened,
@@ -91,15 +94,24 @@
   const scale = $derived(screenW ? screenW / FRAME_W : 0);
 </script>
 
-<div class="phone" class:leaning={viewfinder} class:opened>
+<div class="phone" class:onstage class:leaning={viewfinder} class:opened>
   <span class="speaker" aria-hidden="true"></span>
 
   <div class="screen" bind:clientWidth={screenW}>
-    <!-- CAMERA VIEW: what the phone sees before it resolves the code. The
-         card's own printed front, drifting slightly, so the beat reads as a
-         camera pointed at an object rather than a slide transition. -->
+    <!-- CAMERA VIEW: what the phone sees before it resolves the code — a photo
+         of a card lying in the room, not a card pasted over the screen.
+
+         It used to be `width: 116%` bled to every edge, and with the phone body
+         itself rotated in Y the whole frame read as one warped surface. Austen
+         (2026-08-03): "the take a picture screen looks kinda warped in a weird
+         way, it doesn't seem clear that this is a 3D phone that's being rotated
+         to take a picture of an actual 2D card in space." The fix is scene, not
+         card: the room is visible around the card, the card sits at a modest
+         real perspective inside it, and the two drift by different amounts so
+         the gap between them reads as depth. -->
     {#if coverUrl && !opened}
       <div class="camera" class:live={viewfinder} out:fade={{ duration: DURATION.fast }}>
+        <span class="room" aria-hidden="true"></span>
         <span class="shot">
           <img src={coverUrl} alt="" draggable="false" />
           <span
@@ -111,6 +123,10 @@
             style:height="{qrCell ? qrCell.h + 8 : 20}%"
           ></span>
         </span>
+        <!-- Camera chrome, at the SCREEN's edges rather than the card's: it is
+             the frame you look through, which is what tells you the card is a
+             subject inside a viewfinder and not the viewfinder itself. -->
+        <span class="frame" aria-hidden="true"></span>
         {#if locked}
           <span class="chip" aria-hidden="true">
             <i class="fas fa-qrcode"></i>
@@ -178,17 +194,32 @@
     box-shadow:
       0 2rem 4rem rgba(0, 0, 0, 0.6),
       inset 0 0 0 1px rgba(255, 255, 255, 0.14);
-    /* The lean: the phone tips toward the card it is reading, then settles
-       upright once the page is up. Perspective on the parent would apply to
-       the card stack too, so it lives here. */
-    transform: perspective(1400px) rotateY(-13deg) rotateX(3deg) rotateZ(-2deg);
-    transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    /* THE ENTRANCE, and then the lean. Both are the same `transform`, so they
+       have to be one ladder of states rather than two properties.
+
+       Off-stage: swung out to the right, turned away, small. It reads as an
+       object still edge-on to the viewer, which is why the arrival reads as a
+       rotation into the scene rather than a slide of a flat rectangle. The
+       overshoot easing is the spring settle; --card-stage clips the travel, so
+       it genuinely comes from off the edge of the stage.
+
+       On stage: the lean, tipped toward the card it is about to read.
+       Perspective on the parent would apply to the cards too, so it lives here. */
+    transform: perspective(1400px) translateX(88%) rotateY(-52deg) scale(0.86);
+    opacity: 0;
+    transition:
+      transform 640ms cubic-bezier(0.22, 1.12, 0.36, 1),
+      opacity 320ms ease-out;
     will-change: transform;
   }
-  .phone.leaning {
+  .phone.onstage {
+    transform: perspective(1400px) rotateY(-13deg) rotateX(3deg) rotateZ(-2deg);
+    opacity: 1;
+  }
+  .phone.onstage.leaning {
     transform: perspective(1400px) rotateY(-4deg) rotateX(1deg) scale(1.03);
   }
-  .phone.opened {
+  .phone.onstage.opened {
     transform: perspective(1400px) rotateY(-6deg) rotateX(1deg);
   }
 
@@ -222,27 +253,74 @@
     display: grid;
     place-items: center;
     background: #05070b;
+    /* The camera's own depth, separate from the phone body's. Shallow, because
+       a phone camera a foot from a card is a shallow view. */
+    perspective: 900px;
+    perspective-origin: 52% 45%;
+    overflow: hidden;
   }
-  /* The card as the camera sees it. The reticle is positioned inside THIS box,
-     so its percentages are percentages of the card — which is what the QR
-     cell rect is expressed in. */
+
+  /* THE ROOM the card is lying in — the hero's own backdrop, seen through the
+     lens. Slightly oversized and blurred: it is the out-of-focus far field that
+     makes the sharp card read as the thing being focused on. */
+  .room {
+    position: absolute;
+    inset: -12%;
+    background:
+      radial-gradient(circle at 62% 28%, rgba(126, 224, 255, 0.26), transparent 56%),
+      radial-gradient(circle at 22% 84%, rgba(255, 122, 184, 0.2), transparent 60%),
+      linear-gradient(168deg, #15203a, #0a0f1c 60%, #121a30);
+    filter: blur(2px);
+    transform: scale(1.04) translate(1.2%, -0.8%);
+    transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* The card as the camera sees it: a flat object lying in that room, taking a
+     bit over half the frame, turned a few degrees off square. The reticle is
+     positioned inside THIS box, so its percentages stay percentages of the CARD
+     — which is what the QR cell rect from card-front-regions is expressed in,
+     and why the brackets still land on the printed code. */
   .shot {
     position: relative;
     display: block;
-    width: 116%;
-    /* The drift: a hand holding a phone is never still. Slow enough that it
-       reads as breathing rather than motion for its own sake. */
-    transform: scale(1.02) translate(1%, -1%);
+    width: 58%;
+    transform-style: preserve-3d;
+    transform: rotateX(7deg) rotateY(-9deg) rotateZ(-2.5deg) translateZ(-14px);
+    /* The drift: a hand holding a phone is never still. The card and the room
+       move by DIFFERENT amounts and in opposite directions — that parallax is
+       the whole depth cue. Slow enough to read as breathing. */
     transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+    filter: drop-shadow(0 0.6rem 1.1rem rgba(0, 0, 0, 0.65));
   }
   .camera.live .shot {
-    transform: scale(1.1) translate(-1%, 1%);
+    transform: rotateX(4deg) rotateY(-5deg) rotateZ(-1deg) translateZ(26px)
+      scale(1.05);
+  }
+  .camera.live .room {
+    transform: scale(1.09) translate(-1.4%, 1%);
   }
   .camera img {
     display: block;
     width: 100%;
     max-width: none;
-    filter: brightness(0.9) contrast(1.05);
+    border-radius: 0.15rem;
+    filter: brightness(0.94) contrast(1.04);
+  }
+
+  /* Corner marks at the screen's edges — the frame you look THROUGH. */
+  .frame {
+    position: absolute;
+    inset: 7%;
+    border: 0.12rem solid rgba(255, 255, 255, 0.34);
+    border-radius: 0.5rem;
+    -webkit-mask-image:
+      linear-gradient(to right, #000 0 12%, transparent 12% 88%, #000 88% 100%),
+      linear-gradient(to bottom, #000 0 9%, transparent 9% 91%, #000 91% 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, #000 0 12%, transparent 12% 88%, #000 88% 100%),
+      linear-gradient(to bottom, #000 0 9%, transparent 9% 91%, #000 91% 100%);
+    mask-composite: intersect;
   }
 
   /* Viewfinder corners, the same bracket treatment the card carried — now
@@ -384,6 +462,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .phone,
+    .shot,
+    .room,
     .camera img,
     .page {
       transition: none;
