@@ -1,4 +1,4 @@
-# D2 VS Code Launch Config + Dev Tunnel — Handoff (2026-08-03)
+# d2 VS Code Launch Config + Dev Tunnel — Handoff (2026-08-03)
 
 For the agent on **d2** (the office machine). Written from d1. Two tasks: the
 launch-config fix (below) and the dev-tunnel takeover (next section).
