@@ -4,6 +4,10 @@
 **Status:** Implemented 2026-07-18; factual and copy audit complete
 **Branch:** `feat/notation-roots-merge` (worktree `C:/worktrees/tka-platform/notation-redesign`)
 
+> **Superseded 2026-08-02:** References below that preserve or link the
+> standalone `/notation/letters` index are obsolete. That duplicate was removed;
+> the interactive letter catalog lives in the Composer Guide Codex.
+
 ## The Problem
 
 `/notation` today is seven sections of the same shape — an `<h2>` followed by one

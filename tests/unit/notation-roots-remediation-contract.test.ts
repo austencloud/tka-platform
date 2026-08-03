@@ -251,7 +251,7 @@ describe("roots-to-notation route migration", () => {
   it("keeps canonical sitemap and breadcrumb labels without a stale Roots page", () => {
     // The hub is back in the sitemap now that the catalog has shipped
     // (asserted in the catalog block above); its sub-pages stay listed.
-    expect(sitemap).toContain('{ url: "notation/letters" }');
+    expect(sitemap).not.toContain('{ url: "notation/letters" }');
     expect(sitemap).toContain('{ url: "roots/software" }');
     expect(sitemap).not.toMatch(/\{ url: "roots",/);
     expect(softwarePage).toMatch(

@@ -84,17 +84,20 @@ describe("SEO head contract", () => {
 
   it("keeps the Composer and sitewide social images separate at 1200 by 630", () => {
     const composerBuilder = read("scripts/build-og-image.mjs");
-    const notationBuilder = read("scripts/bake-notation-images.ts");
-    const image = readFileSync(
+    const composerImage = readFileSync(
       resolve(process.cwd(), "static/branding/composer-og-image.png")
+    );
+    const siteImage = readFileSync(
+      resolve(process.cwd(), "static/branding/og-image.png")
     );
 
     expect(composerBuilder).toContain("composer-og-image.html");
     expect(composerBuilder).toContain("composer-og-image.png");
-    expect(notationBuilder).toContain('"branding", "og-image.png"');
-    expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
-    expect(image.readUInt32BE(16)).toBe(1200);
-    expect(image.readUInt32BE(20)).toBe(630);
+    for (const image of [composerImage, siteImage]) {
+      expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
+      expect(image.readUInt32BE(16)).toBe(1200);
+      expect(image.readUInt32BE(20)).toBe(630);
+    }
   });
 
   it("connects the product, creator, article, organization, and website IDs", () => {

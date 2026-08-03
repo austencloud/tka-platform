@@ -1,17 +1,9 @@
 import { LANDING_DOMAIN } from "../../config/domains";
 import { GUIDE_BODY_PAGES } from "../(public)/guide/level-1/_data/guide-manifest";
-import { allLetterSeo } from "$lib/shared/seo/notation-letters";
 import type { RequestHandler } from "./$types";
-
-interface SitemapImage {
-  loc: string;
-  title: string;
-  caption: string;
-}
 
 interface SitemapEntry {
   url: string;
-  images?: SitemapImage[];
 }
 
 function xmlEscape(s: string): string {
@@ -22,23 +14,6 @@ function xmlEscape(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/**
- * One indexable page per canonical letter, each carrying the baked pictograph
- * as an <image:image> so Google Images can associate the file with the page.
- */
-function getLetterImageEntries(): SitemapEntry[] {
-  return allLetterSeo().map((l) => ({
-    url: l.href.replace(/^\//, ""),
-    images: [
-      {
-        loc: `${LANDING_DOMAIN}${l.images.webp}`,
-        title: `Kinetic Alphabet letter ${l.letter} pictograph`,
-        caption: l.caption,
-      },
-    ],
-  }));
-}
-
 const pages: SitemapEntry[] = [
   // Landing page (canonical — /landing duplicates this and is dropped)
   { url: "" },
@@ -46,7 +21,8 @@ const pages: SitemapEntry[] = [
   { url: "shop" },
   { url: "shop/loop-deck" },
   { url: "shop/tnd-trilogy" },
-  { url: "shop/choreography-cards" },
+  // /shop/choreography-cards redirects (308) to /shop after the explainer moved
+  // into the product pages. A redirected URL doesn't self-list.
   // Pillar pages (SEO content roadmap)
   { url: "composer" },
   // The notation hub, rebuilt as a chronological catalog and un-gated
@@ -61,8 +37,6 @@ const pages: SitemapEntry[] = [
   { url: "notation/shape-matrix" },
   { url: "notation/loops" },
   { url: "notation/caps" },
-  // Per-letter notation pages with baked pictographs (2026-07-14-image-seo-google-images-design.md)
-  { url: "notation/letters" },
   { url: "glossary" },
   // The staff choreography article is deliberately absent while it awaits
   // human review (2026-07-27). Its production route carries noindex.
@@ -146,29 +120,16 @@ export const GET: RequestHandler = async () => {
   const allEntries: SitemapEntry[] = [
     ...pages,
     ...guideLevel1Entries,
-    ...getLetterImageEntries(),
     ...curatedUrls.map((url) => ({ url })),
   ];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${allEntries
     .map(
       (page) => `
   <url>
-    <loc>${xmlEscape(`${LANDING_DOMAIN}/${page.url}`)}</loc>${(
-      page.images ?? []
-    )
-      .map(
-        (img) => `
-    <image:image>
-      <image:loc>${xmlEscape(img.loc)}</image:loc>
-      <image:title>${xmlEscape(img.title)}</image:title>
-      <image:caption>${xmlEscape(img.caption)}</image:caption>
-    </image:image>`
-      )
-      .join("")}
+    <loc>${xmlEscape(`${LANDING_DOMAIN}/${page.url}`)}</loc>
   </url>`
     )
     .join("")}
