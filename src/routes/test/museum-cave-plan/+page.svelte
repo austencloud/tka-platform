@@ -17,7 +17,13 @@
   );
   const minimumCorridorMetres = minimumCorridorTiles * plan.grid.tileScale;
   const performerCount = plan.grid.performers.length;
-  const performersAreSolo = plan.modeRooms.every((mode) => {
+  const declaredPerformerCount = plan.modeRooms.reduce(
+    (total, mode) => total + mode.performerIds.length,
+    0
+  );
+  // The Water grotto stages three (A, B and C across the channel); every other
+  // chamber stages one. Each mode room must hold exactly what it declares.
+  const performersMatchProgram = plan.modeRooms.every((mode) => {
     const room = plan.grid.wings.find((wing) => wing.id === mode.roomId);
     if (!room) return false;
     return (
@@ -27,7 +33,7 @@
           performer.tileX < room.bounds.x + room.bounds.width - 1 &&
           performer.tileY > room.bounds.y &&
           performer.tileY < room.bounds.y + room.bounds.height - 1
-      ).length === 1
+      ).length === mode.performerIds.length
     );
   });
 
@@ -58,17 +64,18 @@
         <span class="eyebrow">The Kinetic Archive</span>
         <span class="proposal-badge">Vulcan Cave plan 01</span>
       </div>
-      <h1>Six performers. Six chambers. Never an ensemble.</h1>
+      <h1>Six chambers. Six modes. Never an ensemble.</h1>
       <p>
         The cave is one deliberate route, not a hub. Each turn removes the last
         performer before revealing the next, then the path seals at a warm
-        sandstone threshold to Egypt.
+        sandstone threshold to Egypt. Only the Water grotto stages more than one
+        figure, and its three read across four metres of water.
       </p>
     </div>
 
     <dl class="metrics" aria-label="Cave floor plan measurements">
       <div>
-        <dt>Solo figures</dt>
+        <dt>Figures</dt>
         <dd>{performerCount}</dd>
       </div>
       <div>
@@ -252,9 +259,9 @@
           <i class="fa-solid fa-check" aria-hidden="true"></i>
           No room overlap
         </li>
-        <li class:pass={performersAreSolo && performerCount === 6}>
+        <li class:pass={performersMatchProgram && performerCount === declaredPerformerCount}>
           <i class="fa-solid fa-check" aria-hidden="true"></i>
-          Six chambers hold one performer each
+          Every chamber holds the performers it declares
         </li>
         <li class:pass={minimumCorridorTiles >= 3}>
           <i class="fa-solid fa-check" aria-hidden="true"></i>
