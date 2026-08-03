@@ -89,6 +89,18 @@ git.
 12. **Austen confirmed the stream is good.** Verbatim (2026-08-03): *"that
     worked really really well the extended display was exactly what I needed."*
 
+13. **Apollo installed on Desktop1** (2026-08-03, later session, Austen's
+    explicit "do it!"). Apollo v0.4.6 from the official GitHub release,
+    silent NSIS install. Verified: `ApolloService` Running/Automatic;
+    `SunshineService` Stopped/Disabled; listener on 47984/47989/47990/48010 is
+    `C:\Program Files\Apollo\Sunshine.exe`; SudoMaker Virtual Display Adapter
+    present with Status OK; Apollo firewall rules Enabled, old Sunshine rules
+    disabled. Dashboard on `https://localhost:47990` returns 200 with the
+    first-run credential-setup page. **Consequences:** Apollo generated a
+    fresh CA (`config\credentials\cacert.pem`), so every client paired against
+    the old Sunshine host (Desktop2, laptop) must pair again; and the
+    dashboard has no credentials until Austen sets them at the host.
+
 ## Believed done — unverified
 
 - **Step 8 formal verification was never captured.** The runbook wants
@@ -117,10 +129,11 @@ deliberately excluded from this handoff's commit. Leave it alone.
 
 ## Loose ends (ranked)
 
-1. **Install Apollo on Desktop1.** Blocked on Austen's explicit go-ahead — the
-   runbook states the host is already built and is not modified by that
-   document, so this is a deliberate departure. Desktop1 is reachable: paired,
-   and RDP (`3389`) is open.
+1. ~~**Install Apollo on Desktop1.**~~ **DONE 2026-08-03** — see Done item 13.
+   Remaining first-boot steps: Austen sets dashboard credentials at
+   `https://localhost:47990` on Desktop1, then Desktop2 and the laptop re-pair
+   (Desktop2 via its existing `47991` port proxy, which still points at
+   Desktop1:47990 and now lands on Apollo's dashboard).
 2. **Get ONE virtual display working office → bedroom.** Apollo auto-creates the
    virtual display at the *client's* native resolution/aspect/refresh, so
    Desktop2's ultrawide should get a 3440x1440 display with zero scaling.
