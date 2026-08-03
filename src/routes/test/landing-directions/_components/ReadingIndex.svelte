@@ -46,19 +46,13 @@
           copy: "Lorq Nichols charted it in 2012. TKA draws every cell live.",
         },
         {
-          href: "/notation/letters",
-          section: "Reference",
-          title: "Letter index",
-          copy: "Every letter, its positions, and its motion.",
-        },
-        {
           href: "/glossary",
           section: "Reference",
           title: "Glossary",
           copy: "The vocabulary behind the notation and the app.",
         },
         {
-          href: "/shop/choreography-cards",
+          href: "/shop",
           section: "Physical",
           title: "Choreography cards",
           copy: "Hold the notation, arrange it, and teach from it.",

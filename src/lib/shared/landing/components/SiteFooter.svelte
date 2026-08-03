@@ -40,7 +40,7 @@
     {
       title: "Explore",
       links: [
-        { label: "Notation", href: "/notation" },
+        { label: "History", href: "/notation" },
         { label: "Composer", href: "/composer" },
         { label: "About", href: "/about" },
         { label: "Endless LOOPs", href: "/endless-spinner" },
@@ -77,7 +77,7 @@
     {
       title: "Shop",
       links: [
-        { label: "How Choreo Cards Work", href: "/shop/choreography-cards" },
+        // Lockstep with the header's Shop dropdown.
         { label: "LOOP Deck", href: "/shop/loop-deck" },
         { label: "T&D Trilogy", href: "/shop/tnd-trilogy" },
         { label: "Starter Pack", href: "/shop/starter-pack" },

@@ -267,7 +267,7 @@
         <i class="fas fa-book-open" aria-hidden="true"></i><span>Guide</span>
       </a>
       <a class="hero-link hero-chip" href="/notation">
-        <i class="fas fa-language" aria-hidden="true"></i><span>Notation</span>
+        <i class="fas fa-language" aria-hidden="true"></i><span>History</span>
       </a>
       <a class="hero-link hero-chip" href="/shop">
         <i class="fas fa-bag-shopping" aria-hidden="true"></i><span>Shop</span>

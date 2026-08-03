@@ -40,7 +40,7 @@ describe("landing direction mockups", () => {
       "/roots/software",
       "/glossary",
       "/about",
-      "/shop/choreography-cards",
+      "/shop",
       "/notation/shape-matrix",
     ]) {
       expect(hasHref(href)).toBe(true);
