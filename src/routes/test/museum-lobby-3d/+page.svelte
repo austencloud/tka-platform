@@ -14,7 +14,7 @@
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
 
   const plan = buildLobbyFloorPlan();
-  const installation = MUSEUM_EXHIBIT_SEQUENCES["gallery-spiral-seq"];
+  const installation = MUSEUM_EXHIBIT_SEQUENCES["gallery-spiral-seq"]!;
   const installationSequence = {
     id: "museum-lobby-installation",
     word: installation.word,

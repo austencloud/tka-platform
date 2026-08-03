@@ -24,6 +24,10 @@
     visiblePlanes?: Set<Plane>;
     /** Size of each plane (default: derived from user proportions) */
     size?: number;
+    /** Distance from center to the performer's hand positions. */
+    handPointRadius?: number;
+    /** Furthest prop extent shown by the outer ring. */
+    outerPointRadius?: number;
     /** Whether to show grid point labels */
     showLabels?: boolean;
     /** Opacity for plane surfaces */
@@ -37,6 +41,8 @@
   let {
     visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
     size,
+    handPointRadius,
+    outerPointRadius,
     showLabels = true,
     planeOpacity = 0.15,
     gridMode = "diamond",
@@ -57,7 +63,10 @@
   let labelPlane = $state<Plane | null>(null);
 
   useTask(() => {
-    if (!showLabels) { labelPlane = null; return; }
+    if (!showLabels) {
+      labelPlane = null;
+      return;
+    }
 
     const cam = camera.current;
     cam.getWorldDirection(_viewDir);
@@ -88,6 +97,8 @@
     opacity={planeOpacity}
     showLabels={labelPlane === Plane.WALL}
     size={effectiveSize}
+    handRadius={handPointRadius}
+    outerRadius={outerPointRadius}
     {gridMode}
   />
 {/if}
@@ -100,6 +111,8 @@
     opacity={planeOpacity}
     showLabels={labelPlane === Plane.WHEEL}
     size={effectiveSize}
+    handRadius={handPointRadius}
+    outerRadius={outerPointRadius}
     {gridMode}
   />
 {/if}
@@ -112,6 +125,8 @@
     opacity={planeOpacity}
     showLabels={labelPlane === Plane.FLOOR}
     size={effectiveSize}
+    handRadius={handPointRadius}
+    outerRadius={outerPointRadius}
     {gridMode}
   />
 {/if}
