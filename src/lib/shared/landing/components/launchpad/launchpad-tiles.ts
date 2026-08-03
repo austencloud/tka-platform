@@ -69,7 +69,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 	},
 	{
 		id: "choreo-cards",
-		href: "/shop/choreography-cards",
+		href: "/shop",
 		heading: "Choreo Cards",
 		descriptor: "Printed decks of real sequences. Scan a card and it plays.",
 		span: "2x1",
@@ -79,7 +79,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		morphName: "launchpad-choreo-cards",
 		chips: [
 			{ label: "LOOP Deck", href: "/shop/loop-deck" },
-			{ label: "Shop", href: "/shop" },
+			{ label: "Starter Pack", href: "/shop/starter-pack" },
 		],
 	},
 	{
@@ -103,8 +103,8 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 	{
 		id: "notation",
 		href: "/notation",
-		heading: "The Notation",
-		descriptor: "The positions and motions behind every letter.",
+		heading: "History",
+		descriptor: "How flow arts notation developed, 2009–2022.",
 		span: "2x1",
 		color: "#22d3ee",
 		icon: "fa-bezier-curve",
