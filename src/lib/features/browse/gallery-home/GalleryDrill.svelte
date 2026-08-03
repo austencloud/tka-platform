@@ -1440,7 +1440,7 @@
         {:else if section === "length"}
           <div class="drill-screen screen-length">
             {@render valueHead("Pick a length", stackHint)}
-            <div class="value-list">
+            <div class="value-list" class:dense={lengthValues.length > 8}>
               {#each lengthValues as v (v.value)}
                 {@const lengthApplied =
                   isValueApplied?.(BrowseFilterType.LENGTH, v.value) ?? false}
@@ -5546,21 +5546,27 @@
       white-space: nowrap;
     }
 
-    .drill.adaptive-value-layout .screen-length > .value-list {
+    /* The single-column stretch composition below is tuned to the SHORT
+       page-gallery list (≤8 values). A dense builder catalog keeps its
+       compact wrapped chips (see the dense section at the end of this file). */
+    .drill.adaptive-value-layout .screen-length > .value-list:not(.dense) {
       grid-template-columns: minmax(0, 1fr) !important;
       grid-auto-rows: minmax(4.65rem, 5rem);
       align-content: center;
       gap: 0.45rem;
     }
 
-    .drill.adaptive-value-layout .screen-length > .value-list > * {
+    .drill.adaptive-value-layout .screen-length > .value-list:not(.dense) > * {
       width: 100% !important;
       grid-column: auto !important;
       grid-row: auto !important;
       justify-self: stretch !important;
     }
 
-    .drill.adaptive-value-layout .screen-length .length-row.monument {
+    .drill.adaptive-value-layout
+      .screen-length
+      .value-list:not(.dense)
+      .length-row.monument {
       height: 100%;
       min-height: 0;
       flex-direction: row;
@@ -5570,24 +5576,36 @@
       text-align: left;
     }
 
-    .drill.adaptive-value-layout .screen-length .value-numeral.small {
+    .drill.adaptive-value-layout
+      .screen-length
+      .value-list:not(.dense)
+      .value-numeral.small {
       min-width: 3rem;
       font-size: 2.25rem;
       text-align: left;
     }
 
-    .drill.adaptive-value-layout .screen-length .value-main {
+    .drill.adaptive-value-layout
+      .screen-length
+      .value-list:not(.dense)
+      .value-main {
       flex: 1 1 auto;
       align-items: stretch;
       gap: 0.3rem;
     }
 
-    .drill.adaptive-value-layout .screen-length .density-bar {
+    .drill.adaptive-value-layout
+      .screen-length
+      .value-list:not(.dense)
+      .density-bar {
       width: 100%;
       max-width: none;
     }
 
-    .drill.adaptive-value-layout .screen-length .value-count {
+    .drill.adaptive-value-layout
+      .screen-length
+      .value-list:not(.dense)
+      .value-count {
       margin-left: auto;
       font-size: 0.8rem;
     }
@@ -6595,6 +6613,213 @@
         width: 3.25rem;
         min-width: 3.25rem;
         height: 3.25rem;
+      }
+    }
+  }
+
+  /* ── Dense length catalog ──────────────────────────────────────────
+     The builder shows every live length (no ≥3 noise floor), so the list can
+     run ~19 values. The monument compositions above are all keyed to small
+     counts (5 or 7) and collapse into two giant scrolling columns past that.
+     Past 8 values the list switches to compact chips: flex-wrap centers any
+     partial final row for free at every cardinality, and the pinned per-row
+     widths keep the whole catalog on screen at every tier. This section sits
+     last on purpose — it must outrank every tiered monument rule. */
+  .drill .screen-length:has(> .value-list.dense) {
+    overflow-y: auto;
+  }
+
+  .drill .screen-length > .value-list.dense {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    align-content: center;
+    gap: 0.5rem;
+  }
+
+  .drill .screen-length > .value-list.dense > .length-row.monument {
+    flex: 0 0 auto;
+    width: calc(25% - 0.375rem);
+    height: auto;
+    min-height: 3.75rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 0.45rem 0.3rem;
+    border-radius: 0.85rem;
+    text-align: center;
+  }
+
+  .drill .screen-length > .value-list.dense .value-numeral.small {
+    min-width: 0;
+    font-size: 1.5rem;
+  }
+
+  .drill .screen-length > .value-list.dense .value-main {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.1rem;
+  }
+
+  .drill .screen-length > .value-list.dense .value-label.muted {
+    font-size: 0.62rem;
+  }
+
+  .drill .screen-length > .value-list.dense .density-bar {
+    display: none;
+  }
+
+  .drill .screen-length > .value-list.dense .value-count {
+    font-size: 0.78rem;
+  }
+
+  @container drill (min-width: 640px) {
+    .drill .screen-length > .value-list.dense {
+      width: min(100%, 44rem);
+      align-self: center;
+      gap: 0.6rem;
+    }
+
+    .drill .screen-length > .value-list.dense > .length-row.monument {
+      width: calc(20% - 0.48rem);
+      min-height: 4.5rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-numeral.small {
+      font-size: 1.8rem;
+    }
+  }
+
+  @container drill (min-width: 900px) {
+    .drill .screen-length > .value-list.dense {
+      width: min(100%, 60rem);
+      gap: 0.75rem;
+    }
+
+    .drill .screen-length > .value-list.dense > .length-row.monument {
+      width: calc(16.666% - 0.625rem);
+      min-height: 5.5rem;
+      border-radius: 1rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-numeral.small {
+      font-size: 2.1rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-label.muted {
+      font-size: 0.7rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-count {
+      font-size: 0.85rem;
+    }
+  }
+
+  @container drill (min-width: 1600px) {
+    .drill .screen-length > .value-list.dense {
+      width: min(100%, 84rem);
+      gap: 1rem;
+    }
+
+    .drill .screen-length > .value-list.dense > .length-row.monument {
+      width: calc(16.666% - 0.84rem);
+      min-height: 7rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-numeral.small {
+      font-size: 2.6rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-label.muted {
+      font-size: 0.78rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-count {
+      font-size: 0.95rem;
+    }
+  }
+
+  /* Folded-landscape heights: three chip rows must fit a ~220px body, so the
+     chips flatten into slim rows at the 44px touch floor. */
+  @media (max-height: 520px) {
+    .drill .screen-length > .value-list.dense {
+      gap: 0.4rem;
+    }
+
+    .drill .screen-length > .value-list.dense > .length-row.monument {
+      width: calc(16.666% - 0.34rem);
+      min-height: 44px;
+      flex-direction: row;
+      gap: 0.3rem;
+      padding: 0.25rem 0.4rem;
+      border-radius: 0.6rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-numeral.small {
+      font-size: 1.2rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-label.muted {
+      font-size: 0.55rem;
+    }
+
+    .drill .screen-length > .value-list.dense .value-count {
+      font-size: 0.7rem;
+    }
+  }
+
+  /* Tall desktop canvases (same height-keyed seam as the monument C1 tiers):
+     the capped editor pane gains height, not width, so the dense chips grow
+     vertically with it instead of floating small in a tall column. */
+  @media (min-height: 1150px) {
+    @container drill (min-width: 1200px) {
+      .drill .screen-length > .value-list.dense {
+        gap: 1.1rem;
+      }
+
+      .drill .screen-length > .value-list.dense > .length-row.monument {
+        width: calc(16.666% - 0.92rem);
+        min-height: 8.5rem;
+        border-radius: 1.25rem;
+      }
+
+      .drill .screen-length > .value-list.dense .value-numeral.small {
+        font-size: 3.1rem;
+      }
+
+      .drill .screen-length > .value-list.dense .value-label.muted {
+        font-size: 0.85rem;
+      }
+
+      .drill .screen-length > .value-list.dense .value-count {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  @media (min-height: 1900px) {
+    @container drill (min-width: 1200px) {
+      .drill .screen-length > .value-list.dense {
+        gap: 1.4rem;
+      }
+
+      .drill .screen-length > .value-list.dense > .length-row.monument {
+        width: calc(16.666% - 1.17rem);
+        min-height: 11rem;
+        border-radius: 1.5rem;
+      }
+
+      .drill .screen-length > .value-list.dense .value-numeral.small {
+        font-size: 4rem;
+      }
+
+      .drill .screen-length > .value-list.dense .value-label.muted {
+        font-size: 1rem;
+      }
+
+      .drill .screen-length > .value-list.dense .value-count {
+        font-size: 1.15rem;
       }
     }
   }
