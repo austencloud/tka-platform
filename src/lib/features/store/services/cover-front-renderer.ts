@@ -28,7 +28,7 @@ import { getImageComposer } from "$lib/shared/render/get-image-composer";
 import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { bakedCoverUrl } from "../domain/shop-prop-options";
+import { bakedCoverUrl, SHOP_BACK_THEME } from "../domain/shop-prop-options";
 import {
   configureShortCodeManager,
   getShortCodeManager,
@@ -293,10 +293,6 @@ export function renderCoverFront(
   work.catch(() => urlCache.delete(key));
   return work;
 }
-
-// LOOP decks ship with the rainbow back today (deck-releaser-state theme
-// getter). When back-theme choice lands, thread the buyer's pick through here.
-const SHOP_BACK_THEME = "rainbow";
 
 const backUrlCache = new Map<string, Promise<string>>();
 

@@ -62,6 +62,15 @@
      * size comes from a container query, so it is not knowable up front.
      */
     onMandalaBox?: (el: HTMLDivElement | null) => void;
+    /**
+     * Prop the card is printed with. A card is printed with ONE prop pair and
+     * the mandala is that prop's tip locus, so a surface depicting a specific
+     * printed card passes the prop the bake used. Omitted, the card follows the
+     * viewer's own prop settings — right for an in-app preview of the viewer's
+     * sequence, wrong for a storefront showing a physical product.
+     */
+    bluePropTypeOverride?: string;
+    redPropTypeOverride?: string;
   }
   let {
     sequence,
@@ -69,6 +78,8 @@
     showTnDDesignation = false,
     mandalaOverlay,
     onMandalaBox,
+    bluePropTypeOverride,
+    redPropTypeOverride,
   }: Props = $props();
 
   let mandalaAnchorEl = $state<HTMLDivElement | null>(null);
@@ -83,8 +94,12 @@
   // Single-ended prop (club) traces one tip; staff traces both. The mandala
   // must match the card's prop, else a club card shows the double-staff locus.
   // SequenceMandala derives the tip count from these prop types itself.
-  const bluePropType = $derived(settingsService.settings.bluePropType);
-  const redPropType = $derived(settingsService.settings.redPropType);
+  const bluePropType = $derived(
+    bluePropTypeOverride ?? settingsService.settings.bluePropType
+  );
+  const redPropType = $derived(
+    redPropTypeOverride ?? settingsService.settings.redPropType
+  );
 
   const theme = $derived(themeOverride?.visuals ?? getCardBackThemeVisuals(settingsService.settings.backgroundType));
   const themeName = $derived(themeOverride?.name ?? settingsService.settings.backgroundType ?? "cosmic");

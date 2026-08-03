@@ -20,6 +20,22 @@
   reach the mandala's own radius and stop — so the card's overflow clip never
   cuts anything visible.
 
+  WHICH RADIUS THE SCALE IS ANCHORED ON. `alignScale` takes a tip distance, and
+  which one you feed it decides what lines up exactly. ShapeMatrixDrill feeds
+  MANDALA_STANDARD_TIP_DX (120), the distance the mandala renderer DRAWS at, so
+  the two hand orbits coincide. But a real staff's tip is at 126.4 engine units,
+  not 120 — the mandala's 120 is a nominal drawing distance, not the prop's
+  geometry — so hand-anchoring left the traced figure 2.1% wider than the
+  printed one (measured; predicted (150+126.4)/(150+120) = 1.0237).
+
+  The hand orbit is never drawn on a card back. The LOCUS is the whole picture,
+  and it is the thing being compared. So this overlay is anchored on the tip
+  instead: feed alignScale the reach of the tip the trail actually follows, and
+  the drawn locus lands on the printed locus. The hand orbits then disagree by
+  the same 2.4% — invisibly, since neither is drawn, and it is the smaller
+  absolute error of the two (a 2.4% miss at 55% of the radius rather than at
+  100% of it).
+
   ALIGNMENT — CENTRE. Size is arithmetic; position is not. The scaled square is
   larger than every box it sits in, and CSS centring of an overflowing item is
   not something to take on faith (grid gave it its own auto track and
@@ -31,23 +47,47 @@
   because the card is rotated 5° and a viewport-space delta would arrive at the
   wrong angle. Re-measured whenever either box changes size or mounts.
 
+  PRINT TRUTH. Everything the visitor sees here belongs to a physical card, so
+  nothing here may come from the visitor's own profile. The card fronts in the
+  fan beside this one are baked with staves (DEFAULT_SHOP_PROP) and the deck
+  ships with the rainbow back (SHOP_BACK_THEME); a viewer whose settings say
+  fans was getting a fan mandala drawn over a staff card, with a different tip
+  reach and a different locus count. So the prop, the back theme, and the
+  canvas's own visibility state are all pinned per-instance:
+
+  - propType → DEFAULT_SHOP_PROP, passed to BOTH the printed mandala and the
+    player, so the traced locus and the printed one are the same prop's.
+  - themeOverride → SHOP_BACK_THEME, the theme the deck is printed with.
+  - visibilityManagerOverride → an EPHEMERAL manager. The global one is loaded
+    from the visitor's localStorage and carries their dark mode, path lines and
+    step numbers into this canvas. An ephemeral instance starts from defaults
+    and never writes back (no localStorage, no `.dark` class on <html>), which
+    is the only reason it is safe to set anything on it at all.
+
   Three props make the layering work, all load-bearing (see ShapeMatrixDrill):
   backgroundAlpha 0 keeps the canvas transparent so the printed mandala shows
-  through; trailSettingsOverride carries the hero-scale trail without touching
-  the global settings singleton; tipEffectMap is what the render loop's trail
-  gate actually reads — omit it and zero trails draw whatever the settings say.
+  through; trailSettingsOverride carries the trail without touching the global
+  settings singleton; tipEffectMap is what the render loop's trail gate
+  actually reads — omit it and zero trails draw whatever the settings say.
 -->
 <script lang="ts">
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { alignScale } from "$lib/shared/shape-matrix/services/mandala-hero";
-  import { MANDALA_STANDARD_TIP_DX } from "$lib/shared/mandala/domain/mandala-constants";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import {
-    HERO_TRAIL_PRESET,
-    HERO_TIP_EFFECT_MAP,
-  } from "$lib/shared/landing/data/hero-trail-preset";
+    getTipPointsBaseline,
+    type TipPoint,
+  } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+  import { getDefaultTrailPointConfig } from "$lib/shared/animation-engine/domain/types/trail-point-types";
+  import { HERO_TIP_EFFECT_MAP } from "$lib/shared/landing/data/hero-trail-preset";
+  import { PRINTED_CARD_TRAIL_PRESET } from "./printed-card-trail-preset";
+  import {
+    DEFAULT_SHOP_PROP,
+    SHOP_BACK_THEME,
+  } from "../../domain/shop-prop-options";
+  import { getCardBackThemeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { layoutCentreWithin, observeLayout } from "./hero-layout-measure";
 
   interface Props {
@@ -63,9 +103,28 @@
   }
   let { sequence, drawActive, cycle, live }: Props = $props();
 
-  // CardBack never overrides tipDx, so its mandala is drawn at the standard tip
-  // distance; that is the figure the engine box has to agree with.
-  const ENGINE_BOX_RATIO = 1 / alignScale(MANDALA_STANDARD_TIP_DX);
+  /**
+   * How far the tip the trail follows reaches from the hand, in engine units —
+   * the anchor radius for the size match (see WHICH RADIUS above). Read from
+   * the same two sources the trail capturer reads (the baseline tip registry
+   * and the canonical trail assignment), so a prop change can never leave this
+   * behind as a stale constant.
+   */
+  function trailedTipReach(propType: string): number {
+    const points = getTipPointsBaseline(propType).points;
+    const cfg = getDefaultTrailPointConfig(propType);
+    const tracked = [cfg.left, cfg.right]
+      .map((end) => (end.type === "tip" ? points[end.index] : undefined))
+      .filter((p): p is TipPoint => !!p);
+    if (!tracked.length) return 0;
+    return Math.max(...tracked.map((p) => Math.hypot(p.dx, p.dy)));
+  }
+
+  // The prop the card is PRINTED with — see PRINT TRUTH above. One value feeds
+  // the printed mandala and the player, so the traced locus and the drawn locus
+  // are the same prop's curve and the same number of loci.
+  const printedProp = DEFAULT_SHOP_PROP;
+  const ENGINE_BOX_RATIO = 1 / alignScale(trailedTipReach(printedProp));
 
   // The square grows about the overlay box's centre, so it hangs out by half
   // the excess on every side. Expressing that as a negative inset (rather than
@@ -74,10 +133,18 @@
   // reads exactly those.
   const ENGINE_INSET = ((1 - ENGINE_BOX_RATIO) / 2) * 100;
 
-  // Same prop types the card's own mandala derives its tip count from, so the
-  // traced locus and the drawn locus are the same curve.
-  const bluePropType = $derived(settingsService.settings.bluePropType);
-  const redPropType = $derived(settingsService.settings.redPropType);
+  const printedTheme = {
+    visuals: getCardBackThemeVisuals(SHOP_BACK_THEME),
+    name: SHOP_BACK_THEME,
+  };
+
+  // A canvas-scoped visibility state: defaults, never persisted, never touching
+  // the document's dark class. Light mode because a proof-mode card back is a
+  // light surface — that is what puts the drawn props and the printed mandala
+  // on the same palette. Path lines, step numbers and the mandala guide are all
+  // off by default here; the global manager would have carried the visitor's.
+  const cardVisibility = new AnimationVisibilityStateManager({ ephemeral: true });
+  cardVisibility.setDarkMode(false);
 
   // ── measured centring (see ALIGNMENT — CENTRE above) ─────────────────────
   let heroBackEl = $state<HTMLDivElement | null>(null);
@@ -135,9 +202,10 @@
         hideStepNumbers: true,
         hideTkaGlyph: true,
         gridVisible: false,
-        bluePropType,
-        redPropType,
-        trailSettingsOverride: HERO_TRAIL_PRESET,
+        bluePropType: printedProp,
+        redPropType: printedProp,
+        visibilityManagerOverride: cardVisibility,
+        trailSettingsOverride: PRINTED_CARD_TRAIL_PRESET,
         tipEffectMap: HERO_TIP_EFFECT_MAP,
         backgroundAlpha: 0,
       }}
@@ -148,6 +216,9 @@
 <div class="hero-back" bind:this={heroBackEl}>
   <CardBack
     {sequence}
+    themeOverride={printedTheme}
+    bluePropTypeOverride={printedProp}
+    redPropTypeOverride={printedProp}
     mandalaOverlay={live ? drawnMandala : undefined}
     onMandalaBox={(el) => (printedMandalaEl = el)}
   />
