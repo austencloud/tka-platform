@@ -23,12 +23,49 @@ grep for hardcoded world coordinates in the graybox must come back empty.
 
 ## Ledger
 
-- [ ] P1 room graph: gallery wing replaces sump
-- [ ] P2 layout + terrain program v2
-- [ ] P3 graybox geometry v2
-- [ ] P4 lights + life stand-ins
-- [ ] P5 tests (traversal ring + coupling invariants)
-- [ ] P6 full check + fixups
+- [x] P1 room graph: gallery wing replaces sump
+- [x] P2 layout + terrain program v2
+- [x] P3 graybox geometry v2
+- [x] P4 lights + life stand-ins
+- [x] P5 tests (traversal ring + coupling invariants)
+- [x] P6 full check + fixups
+
+Landed 2026-08-03 as `df52cef9bf` (P1–P5, one green commit — the phases are not
+separable without committing a broken graybox) and `1e7ea136d3` (P6 fixups).
+`npm run check`: 0 errors, 0 warnings. `tests/unit/museum/` 218 pass (from 204).
+Longest contiguous submerged walk: 28.85 m.
+
+Deviations, with reasons:
+
+1. **`LANDING_Y` is −3.1, not −2.3.** The plan's own acceptance test asks for a
+   landing whose eye height sits on the waterline, and the eye is always
+   `floor + 1.6` (physics STANDING_Y 0.85 + UCC 0.75). At −2.3 the eye is 0.8 m
+   ABOVE the surface, so the break would happen on the ramp below the landing.
+   `LANDING_Y` is now derived as `WATERLINE_Y − EYE_ABOVE_FLOOR`, which makes
+   the spec's sentence literally true: you stand on the landing with your eyes
+   exactly at the surface.
+2. **Gallery interior is 13.5 × 24 m, not ≈12 × 20.5.** At the spec's size the
+   contiguous submerged span comes out ≈21 m, short of the ≥24 m engineering
+   invariant. `minInteriorWidth 18` / `minInteriorHeight 32` yields 28.85 m with
+   margin. The grotto is unchanged at 25 × 22.
+3. **Surfacing stair run is 8.0 m, not ≈7.** With a 1.4 m landing, 7 m leaves
+   both flights at ~36°; 8 m brings them to ~32.5°, a normal steep stair.
+4. **The rock roof stops where it would hit the walker's head.** "Roof over
+   EVERY gallery path tile" is impossible at the two stair mouths: at −1.9 the
+   roof needs the floor at −3.9 or deeper. Both stairs therefore pass through an
+   open shaft above that depth — which is also where the two water planes the
+   plan asks for (descent mouth, landing cut) become visible.
+5. **Rect geometry moved onto tile-centred cells.** The inherited convention
+   (`[tileRef, tileRef + 0.5]`) is offset half a tile from the physics
+   provider's `Math.round` lookup, which put walkable tile centres exactly on
+   blocked rects' edges. The ring walk wedged there. Every rect now covers the
+   cells centred on tile positions.
+6. **No balustrade on the channel's north edge.** That edge is the alcove
+   shore's rock face, not a walkway; a rail there would stand against rock.
+7. **The orphaned `cave-water-seq` sequence data is kept.** The stale
+   CAVE_MODE_ROOMS fields are gone (the entry now carries `performerIds` /
+   `sequenceIds` arrays), but the authored ABAB movement data itself was left in
+   place rather than deleted as part of a graybox change.
 
 ## Phase 1 — Room graph
 
