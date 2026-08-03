@@ -98,12 +98,10 @@ interface IndexedCardPair {
 
 type IndexedPrintSlot = PlannedSlot<IndexedCardPair>;
 
-/** Title-case a sheet label key: "fire" → "Fire", "how to read" → "How To Read". */
+/** Capitalize an element key for sheet labels: "fire" → "Fire". Multi-word
+ *  labels (the insert's "How to Read") arrive already cased and pass through. */
 function capitalize(s: string): string {
-	return s
-		.split(" ")
-		.map((w) => (w.length ? w[0]!.toUpperCase() + w.slice(1) : w))
-		.join(" ");
+	return s.length ? s[0]!.toUpperCase() + s.slice(1) : s;
 }
 
 /** Grid layout on Letter pages for double-sided home printing.
@@ -156,10 +154,10 @@ export async function exportHomePrintPDF(
 			isInsert: true,
 		};
 		for (let c = 0; c < copies; c++) {
-			insertSlots.push({ item: insertItem, elementName: 'how to read', copyIndex: c });
+			insertSlots.push({ item: insertItem, elementName: 'How to Read', copyIndex: c });
 		}
 		while (insertSlots.length % cardsPerPage !== 0) {
-			insertSlots.push({ item: null, elementName: 'how to read', copyIndex: null });
+			insertSlots.push({ item: null, elementName: 'How to Read', copyIndex: null });
 		}
 	}
 

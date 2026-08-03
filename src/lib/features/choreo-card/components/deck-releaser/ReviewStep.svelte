@@ -297,6 +297,7 @@
       isLoading={false}
       includeStartPosition={true}
       deckMode={true}
+      deckNumber={refNumber}
       displayMode="sheets"
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}

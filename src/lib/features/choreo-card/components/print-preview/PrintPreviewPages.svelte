@@ -9,7 +9,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { TnDElement } from "../../domain/tnd-element";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
-  import { planPrintSlots } from "../../services/print-slot-planner";
+  import { planPrintSlots, type PlannedSlot } from "../../services/print-slot-planner";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
@@ -63,6 +63,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckId?: string;
     /** Deck name for QR attribution tracking */
     deckName?: string;
+    /** Release number. When set, the preview leads with the "How to Read"
+     *  insert exactly as the exporters do, and the insert prints this number. */
+    deckNumber?: number;
     /** Concise recipe line (deck label · loop · period · length · level · turns ·
      *  grid · prop). Printed centered in each sheet's top margin by the PDF
      *  exporter; the preview mirrors it in the same spot so screen == print. */
@@ -103,6 +106,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showBacks = false,
     deckId,
     deckName,
+    deckNumber,
     deckSummary,
     bluePropType,
     redPropType,
@@ -115,6 +119,34 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   const resolvedBlueProp = $derived(bluePropType ?? settingsService.settings.bluePropType);
   const resolvedRedProp = $derived(redPropType ?? settingsService.settings.redPropType);
   const resolvedBackground = $derived(theme ?? settingsService.settings.backgroundType ?? "");
+
+  // The "How to Read" insert, rendered as a preview card so the on-screen
+  // sheets match the exported document. Cheap: the renderer caches per
+  // theme + deck number, and this is one card, not one per sequence.
+  let insertCard: RenderedCard | null = $state(null);
+  $effect(() => {
+    const size = cardSize;
+    const activeTheme = resolvedBackground;
+    const n = deckNumber;
+    let cancelled = false;
+
+    void (async () => {
+      const { renderInsertCardPair } = await import("../../services/PrintCardRenderer");
+      const { front, back } = await renderInsertCardPair({
+        theme: activeTheme,
+        cardSize: size,
+        deckNumber: n,
+      });
+      if (cancelled) return;
+      insertCard = {
+        frontUrl: front.toDataURL("image/png"),
+        backUrl: back.toDataURL("image/png"),
+        label: "How to Read",
+      };
+    })();
+
+    return () => { cancelled = true; };
+  });
 
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
@@ -203,10 +235,29 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // We plan over an index-carrying wrapper so click / inspect / rerender still
   // target the correct source card despite grouping, copies, and blank padding.
   let sheets = $derived.by(() => {
-    const indexed = renderedCards.map((card, seqIndex) => ({ card, seqIndex }));
+    const indexed: { card: RenderedCard; seqIndex: number | null }[] =
+      renderedCards.map((card, seqIndex) => ({ card, seqIndex }));
     // firstOnTop=true mirrors the PDF exporter: deck's FIRST card is drawn last
     // (lands on top of the printed stack). Keeps the preview pixel-for-pixel with print.
-    const slots = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage, groupByElement, true);
+    const planned = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage, groupByElement, true);
+
+    // Mirror the exporter's leading insert sheet: one insert per copy, padded to
+    // a whole sheet. Built here rather than through the planner for the same
+    // reason as the exporter — an untagged bucket would merge with the cards or
+    // land at the bottom of the cut stack. seqIndex stays null so the insert is
+    // not clickable and cannot be mistaken for a source card.
+    const insertSlots: PlannedSlot<{ card: RenderedCard; seqIndex: number | null }>[] = [];
+    if (insertCard) {
+      const item = { card: insertCard, seqIndex: null };
+      for (let c = 0; c < copies; c++) {
+        insertSlots.push({ item, elementName: "How to Read", copyIndex: c });
+      }
+      while (insertSlots.length % layout.cardsPerPage !== 0) {
+        insertSlots.push({ item: null, elementName: "How to Read", copyIndex: null });
+      }
+    }
+
+    const slots = [...insertSlots, ...planned];
     const pages: SheetSlot[][] = [];
     for (let i = 0; i < slots.length; i += layout.cardsPerPage) {
       pages.push(
