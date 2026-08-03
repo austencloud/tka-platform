@@ -39,6 +39,7 @@ export const UNLOCKABLE_POOL: readonly PropType[] = [
   PropType.DOUBLECONTACTBALL,
   PropType.BIGSTAFF,
   PropType.BIGCLUB,
+  PropType.BIGFAN,
   PropType.BIGTRIAD,
   PropType.BIGHOOP,
   PropType.BIGBUUGENG,

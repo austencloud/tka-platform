@@ -34,6 +34,7 @@ const LOCATION_NAME: Record<string, string> = {
   se: "southeast",
   sw: "southwest",
   nw: "northwest",
+  c: "center",
 };
 const locName = (l: string | null | undefined): string =>
   l ? LOCATION_NAME[l.toLowerCase()] ?? l : "";

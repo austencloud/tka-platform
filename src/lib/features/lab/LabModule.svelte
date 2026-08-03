@@ -38,6 +38,7 @@
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
     dodge: () => import("./tabs/dodge/DodgeTab.svelte"),
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
+    "fan-relations": () => import("./tabs/fan-relations/FanRelationsLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
     "viewer-3d": () => import("./tabs/Viewer3DLab.svelte"),

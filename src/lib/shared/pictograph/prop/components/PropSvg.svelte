@@ -139,11 +139,30 @@ even when Svelte recreates the component instance.
 
   type RotationAnimationDirection = "cw" | "ccw" | "auto";
 
-  const ORIENTATION_CYCLE: Orientation[] = [
+  // These cycles follow the prop's rendered SVG angle, where increasing
+  // degrees rotate clockwise. Radial labels run in the opposite order from
+  // the center-compass vocabulary, so one shared semantic cycle cannot choose
+  // the visible transition direction for both families.
+  const RADIAL_ROTATION_CYCLE: Orientation[] = [
     Orientation.IN,
+    Orientation.COUNTER_IN,
     Orientation.COUNTER,
+    Orientation.COUNTER_OUT,
     Orientation.OUT,
+    Orientation.CLOCK_OUT,
     Orientation.CLOCK,
+    Orientation.CLOCK_IN,
+  ];
+
+  const CENTER_ROTATION_CYCLE: Orientation[] = [
+    Orientation.CENTER_N,
+    Orientation.CENTER_NE,
+    Orientation.CENTER_E,
+    Orientation.CENTER_SE,
+    Orientation.CENTER_S,
+    Orientation.CENTER_SW,
+    Orientation.CENTER_W,
+    Orientation.CENTER_NW,
   ];
 
   // Initialize with 0, $effect below handles initial and subsequent prop changes
@@ -358,14 +377,20 @@ even when Svelte recreates the component instance.
     nextOrientation: Orientation,
     rotationDirection?: RotationDirection
   ): RotationAnimationDirection {
-    const previousIndex = ORIENTATION_CYCLE.indexOf(previousOrientation);
-    const nextIndex = ORIENTATION_CYCLE.indexOf(nextOrientation);
+    const cycle = getSharedRotationCycle(previousOrientation, nextOrientation);
+
+    if (!cycle) {
+      return mapRotationDirection(rotationDirection) ?? "cw";
+    }
+
+    const previousIndex = cycle.indexOf(previousOrientation);
+    const nextIndex = cycle.indexOf(nextOrientation);
 
     if (previousIndex === -1 || nextIndex === -1) {
       return mapRotationDirection(rotationDirection) ?? "cw";
     }
 
-    const cycleLength = ORIENTATION_CYCLE.length;
+    const cycleLength = cycle.length;
     const forwardSteps =
       (nextIndex - previousIndex + cycleLength) % cycleLength;
     const backwardSteps =
@@ -380,6 +405,27 @@ even when Svelte recreates the component instance.
     }
 
     return forwardSteps < backwardSteps ? "cw" : "ccw";
+  }
+
+  function getSharedRotationCycle(
+    previousOrientation: Orientation,
+    nextOrientation: Orientation
+  ): Orientation[] | null {
+    if (
+      RADIAL_ROTATION_CYCLE.includes(previousOrientation) &&
+      RADIAL_ROTATION_CYCLE.includes(nextOrientation)
+    ) {
+      return RADIAL_ROTATION_CYCLE;
+    }
+
+    if (
+      CENTER_ROTATION_CYCLE.includes(previousOrientation) &&
+      CENTER_ROTATION_CYCLE.includes(nextOrientation)
+    ) {
+      return CENTER_ROTATION_CYCLE;
+    }
+
+    return null;
   }
 
   function resolveRotation(

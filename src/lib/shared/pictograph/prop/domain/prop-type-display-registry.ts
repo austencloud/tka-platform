@@ -242,7 +242,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
  * Remove from this set to reactivate.
  */
 export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
-  PropType.BIGFAN,
   PropType.GUITAR,
   PropType.UKULELE,
   PropType.CONTACTBALL,
@@ -548,6 +547,7 @@ export function getBasePropsByCategory(): Map<PropCategory, PropType[]> {
 const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
   [PropType.STAFF]: PropType.BIGSTAFF,
   [PropType.CLUB]: PropType.BIGCLUB,
+  [PropType.FAN]: PropType.BIGFAN,
   [PropType.TRIAD]: PropType.BIGTRIAD,
   [PropType.MINIHOOP]: PropType.BIGHOOP,
   [PropType.BUUGENG]: PropType.BIGBUUGENG,
@@ -621,6 +621,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     props: [
       PropType.BIGSTAFF,
       PropType.BIGCLUB,
+      PropType.BIGFAN,
       PropType.BIGTRIAD,
       PropType.BIGHOOP,
       PropType.BIGBUUGENG,
