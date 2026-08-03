@@ -28,6 +28,7 @@ $ReleaseTag = "codex-tka-v$CodexVersion"
 $ReleaseBaseUrl = "https://github.com/austencloud/tka-platform/releases/download/$ReleaseTag"
 $BuildProfile = if ($DevelopmentBuild) { 'dev' } else { 'release' }
 $BuiltExeRelativePath = if ($DevelopmentBuild) { 'debug\codex.exe' } else { 'release\codex.exe' }
+[string[]]$CargoTestProfileArgs = if ($DevelopmentBuild) { @() } else { @('--release') }
 
 # Agent Hub can inherit a PATH captured before rustup was installed. Rustup's
 # standard per-user bin directory remains authoritative in that case.
@@ -270,22 +271,22 @@ try {
     # Entering codex-rs makes rustup honor the release's rust-toolchain.toml.
     if (-not $SkipTests) {
         Write-Host 'Testing lossless MCP startup status delivery...'
-        Invoke-Native { cargo test -p codex-app-server --lib guaranteed_delivery_helpers_cover_terminal_server_notifications } 'App-server MCP status delivery tests'
-        Invoke-Native { cargo test -p codex-app-server-client --lib forward_in_process_event_preserves_mcp_status_under_backpressure } 'App-server client MCP backpressure tests'
-        Invoke-Native { cargo test -p codex-tui --lib app_server_lag_does_not_interrupt_mcp_startup } 'TUI MCP startup lag tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-app-server --lib guaranteed_delivery_helpers_cover_terminal_server_notifications } 'App-server MCP status delivery tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-app-server-client --lib forward_in_process_event_preserves_mcp_status_under_backpressure } 'App-server client MCP backpressure tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-tui --lib app_server_lag_does_not_interrupt_mcp_startup } 'TUI MCP startup lag tests'
 
         Write-Host 'Testing the patched status renderer...'
-        Invoke-Native { cargo test -p codex-tui --lib status_line_style } 'Status renderer tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-tui --lib status_line_style } 'Status renderer tests'
 
         Write-Host 'Testing manual terminal titles...'
-        Invoke-Native { cargo test -p codex-tui --lib terminal_title } 'Terminal title tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-tui --lib terminal_title } 'Terminal title tests'
 
         Write-Host 'Testing generated and explicit renames...'
-        Invoke-Native { cargo test -p codex-tui --lib thread_name_generation } 'Generated rename tests'
-        Invoke-Native { cargo test -p codex-tui --lib rename } 'Rename interaction tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-tui --lib thread_name_generation } 'Generated rename tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-tui --lib rename } 'Rename interaction tests'
 
         Write-Host 'Testing direct skill slash commands...'
-        Invoke-Native { cargo test -p codex-tui --lib skill_slash } 'Skill slash command tests'
+        Invoke-Native { cargo test @CargoTestProfileArgs -p codex-tui --lib skill_slash } 'Skill slash command tests'
     }
 
     if ($DevelopmentBuild) {

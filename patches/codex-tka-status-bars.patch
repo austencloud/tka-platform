@@ -48,6 +48,15 @@ diff --git a/codex-rs/tui/src/app/app_server_events.rs b/codex-rs/tui/src/app/ap
 index 188fbd8dc8..3f2f84005d 100644
 --- a/codex-rs/tui/src/app/app_server_events.rs
 +++ b/codex-rs/tui/src/app/app_server_events.rs
+@@ -40,8 +40,6 @@ impl App {
+                     skipped,
+                     "app-server event consumer lagged; dropping ignored events"
+                 );
+-                self.refresh_mcp_startup_expected_servers_from_config();
+-                self.chat_widget.finish_mcp_startup_after_lag();
+             }
+             AppServerEvent::ServerNotification(notification) => {
+                 self.handle_server_notification_event(app_server_client, notification)
 @@ -156,6 +156,9 @@ impl App {
  
          match server_notification_thread_target(&notification) {
@@ -98,7 +107,65 @@ diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
 index 970300b891..778a0bf978 100644
 --- a/codex-rs/tui/src/app/tests.rs
 +++ b/codex-rs/tui/src/app/tests.rs
-@@ -4694,6 +4694,8 @@ async fn make_test_app() -> App {
+@@ -4174,6 +4174,57 @@ async fn app_scoped_mcp_startup_notifications_do_not_render_in_active_thread() {
+     );
+ }
+ 
++#[tokio::test]
++async fn app_server_lag_does_not_interrupt_mcp_startup() {
++    let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
++    let app_server = crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref())
++        .await
++        .expect("embedded app server");
++    app.chat_widget
++        .set_mcp_startup_expected_servers(["flow-arts".to_string()]);
++    app.chat_widget.handle_server_notification(
++        ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
++            thread_id: None,
++            name: "flow-arts".to_string(),
++            status: McpServerStartupState::Starting,
++            error: None,
++            failure_reason: None,
++        }),
++        /*replay_kind*/ None,
++    );
++    while app_event_rx.try_recv().is_ok() {}
++
++    app.handle_app_server_event(
++        &app_server,
++        codex_app_server_client::AppServerEvent::Lagged { skipped: 1 },
++    )
++    .await;
++
++    assert!(app.chat_widget.is_task_running_for_test());
++    let rendered = std::iter::from_fn(|| app_event_rx.try_recv().ok())
++        .filter_map(|event| match event {
++            AppEvent::InsertHistoryCell(cell) => {
++                Some(lines_to_single_string(&cell.display_lines(/*width*/ 120)))
++            }
++            _ => None,
++        })
++        .collect::<Vec<_>>()
++        .join("\n");
++    assert!(!rendered.contains("MCP startup interrupted"));
++
++    app.chat_widget.handle_server_notification(
++        ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
++            thread_id: None,
++            name: "flow-arts".to_string(),
++            status: McpServerStartupState::Ready,
++            error: None,
++            failure_reason: None,
++        }),
++        /*replay_kind*/ None,
++    );
++    assert!(!app.chat_widget.is_task_running_for_test());
++}
++
+ #[tokio::test]
+ async fn active_side_thread_renders_live_mcp_startup_notifications() {
+     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
+@@ -4694,6 +4745,8 @@ async fn make_test_app() -> App {
          thread_event_listener_tasks: HashMap::new(),
          agent_navigation: AgentNavigationState::default(),
          side_threads: HashMap::new(),
@@ -107,7 +174,7 @@ index 970300b891..778a0bf978 100644
          active_thread_id: None,
          active_thread_rx: None,
          primary_thread_id: None,
-@@ -4761,6 +4763,8 @@ async fn make_test_app_with_channels() -> (
+@@ -4761,6 +4814,8 @@ async fn make_test_app_with_channels() -> (
              thread_event_listener_tasks: HashMap::new(),
              agent_navigation: AgentNavigationState::default(),
              side_threads: HashMap::new(),
@@ -2424,3 +2491,165 @@ index eb3a0d1ea5..aa4aa7f764 100644
      #[test]
      fn encode_history_mentions_links_dollar_mentions_after_punctuation() {
          let encoded = encode_history_mentions(
+diff --git a/codex-rs/app-server-client/src/lib.rs b/codex-rs/app-server-client/src/lib.rs
+index abc844167b..9fbc3be6d5 100644
+--- a/codex-rs/app-server-client/src/lib.rs
++++ b/codex-rs/app-server-client/src/lib.rs
+@@ -129,12 +129,13 @@ fn event_requires_delivery(event: &InProcessServerEvent) -> bool {
+ 
+ /// Returns `true` for notifications that must survive backpressure.
+ ///
+-/// Transcript events (`AgentMessageDelta`, `PlanDelta`, reasoning deltas) and
+-/// the authoritative `ItemCompleted` / `TurnCompleted` form the lossless tier
+-/// of the event stream. Dropping any of these corrupts the visible assistant
+-/// output or leaves surfaces waiting for a completion signal that already
+-/// fired. Everything else (`CommandExecutionOutputDelta`, progress, etc.) is
+-/// best-effort and may be dropped with only cosmetic impact.
++/// Transcript events (`AgentMessageDelta`, `PlanDelta`, reasoning deltas), the
++/// authoritative `ItemCompleted` / `TurnCompleted`, and MCP startup lifecycle
++/// updates form the lossless tier of the event stream. Dropping any of these
++/// corrupts visible assistant output, leaves surfaces waiting for a completion
++/// signal that already fired, or makes a connected MCP server appear to have
++/// been interrupted. Everything else (`CommandExecutionOutputDelta`, progress,
++/// etc.) is best-effort and may be dropped with only cosmetic impact.
+ ///
+ /// Both the in-process and remote transports delegate to this function so the
+ /// classification stays in sync.
+@@ -149,6 +150,7 @@ pub(crate) fn server_notification_requires_delivery(notification: &ServerNotific
+             | ServerNotification::PlanDelta(_)
+             | ServerNotification::ReasoningSummaryTextDelta(_)
+             | ServerNotification::ReasoningTextDelta(_)
++            | ServerNotification::McpServerStatusUpdated(_)
+     )
+ }
+ 
+@@ -1200,6 +1202,18 @@ mod tests {
+         })
+     }
+ 
++    fn mcp_server_status_updated_notification() -> ServerNotification {
++        ServerNotification::McpServerStatusUpdated(
++            codex_app_server_protocol::McpServerStatusUpdatedNotification {
++                thread_id: None,
++                name: "flow-arts".to_string(),
++                status: codex_app_server_protocol::McpServerStartupState::Ready,
++                error: None,
++                failure_reason: None,
++            },
++        )
++    }
++
+     fn test_remote_connect_args(websocket_url: String) -> RemoteAppServerConnectArgs {
+         RemoteAppServerConnectArgs {
+             endpoint: RemoteAppServerEndpoint::WebSocket {
+@@ -1416,6 +1430,54 @@ mod tests {
+         ));
+     }
+ 
++    #[tokio::test]
++    async fn forward_in_process_event_preserves_mcp_status_under_backpressure() {
++        let (event_tx, mut event_rx) = mpsc::channel(1);
++        event_tx
++            .send(InProcessServerEvent::ServerNotification(
++                command_execution_output_delta_notification("stdout-1"),
++            ))
++            .await
++            .expect("initial event should enqueue");
++
++        let forward_task = tokio::spawn(async move {
++            let mut skipped_events = 0usize;
++            let result = forward_in_process_event(
++                &event_tx,
++                &mut skipped_events,
++                InProcessServerEvent::ServerNotification(mcp_server_status_updated_notification()),
++                |_| {},
++            )
++            .await;
++            (result, skipped_events)
++        });
++
++        tokio::task::yield_now().await;
++        assert!(
++            !forward_task.is_finished(),
++            "MCP status delivery should wait for channel capacity"
++        );
++
++        assert!(matches!(
++            event_rx.recv().await,
++            Some(InProcessServerEvent::ServerNotification(
++                ServerNotification::CommandExecutionOutputDelta(_)
++            ))
++        ));
++        let (result, skipped_events) = timeout(Duration::from_secs(2), forward_task)
++            .await
++            .expect("MCP status forwarding should complete before timeout")
++            .expect("forward task should join successfully");
++        assert_eq!(result, ForwardEventResult::Continue);
++        assert_eq!(skipped_events, 0);
++        assert!(matches!(
++            event_rx.recv().await,
++            Some(InProcessServerEvent::ServerNotification(
++                ServerNotification::McpServerStatusUpdated(_)
++            ))
++        ));
++    }
++
+     #[tokio::test]
+     async fn remote_typed_request_roundtrip_works() {
+         let websocket_url = start_test_remote_server(|mut websocket| async move {
+diff --git a/codex-rs/app-server/src/in_process.rs b/codex-rs/app-server/src/in_process.rs
+index 4a81f652e6..34fe428a5b 100644
+--- a/codex-rs/app-server/src/in_process.rs
++++ b/codex-rs/app-server/src/in_process.rs
+@@ -110,6 +110,7 @@ fn server_notification_requires_delivery(notification: &ServerNotification) -> b
+         ServerNotification::TurnCompleted(_)
+             | ServerNotification::ThreadSettingsUpdated(_)
+             | ServerNotification::ExternalAgentConfigImportCompleted(_)
++            | ServerNotification::McpServerStatusUpdated(_)
+     )
+ }
+ 
+@@ -770,6 +771,8 @@ mod tests {
+     use codex_app_server_protocol::ClientInfo;
+     use codex_app_server_protocol::ConfigRequirementsReadResponse;
+     use codex_app_server_protocol::ExternalAgentConfigImportCompletedNotification;
++    use codex_app_server_protocol::McpServerStartupState;
++    use codex_app_server_protocol::McpServerStatusUpdatedNotification;
+     use codex_app_server_protocol::SessionSource as ApiSessionSource;
+     use codex_app_server_protocol::ThreadStartParams;
+     use codex_app_server_protocol::ThreadStartResponse;
+@@ -995,5 +998,14 @@ mod tests {
+                 },
+             )
+         ));
++        assert!(server_notification_requires_delivery(
++            &ServerNotification::McpServerStatusUpdated(McpServerStatusUpdatedNotification {
++                thread_id: None,
++                name: "flow-arts".to_string(),
++                status: McpServerStartupState::Ready,
++                error: None,
++                failure_reason: None,
++            })
++        ));
+     }
+ }
+diff --git a/codex-rs/tui/src/chatwidget/mcp_startup.rs b/codex-rs/tui/src/chatwidget/mcp_startup.rs
+index 4407e1b3e7..9a50b0e317 100644
+--- a/codex-rs/tui/src/chatwidget/mcp_startup.rs
++++ b/codex-rs/tui/src/chatwidget/mcp_startup.rs
+@@ -4,6 +4,7 @@
+ //! module keeps the TUI's buffered startup round state coherent and translates
+ //! those updates into status headers, warnings, and queued-input release points.
+ 
++#[cfg(test)]
+ use std::collections::BTreeSet;
+ 
+ use codex_app_server_protocol::McpServerStartupState;
+@@ -211,6 +212,7 @@ impl ChatWidget {
+         self.request_redraw();
+     }
+ 
++    #[cfg(test)]
+     pub(crate) fn finish_mcp_startup_after_lag(&mut self) {
+         if self.mcp_startup_ignore_updates_until_next_start {
+             if self.mcp_startup_pending_next_round.is_empty() {
