@@ -143,8 +143,24 @@ deliberately excluded from this handoff's commit. Leave it alone.
    virtual display at the *client's* native resolution/aspect/refresh, so
    d2's ultrawide should get a 3440x1440 display with zero scaling.
    Prove one before adding a second.
-3. **Second Apollo instance on d1 for the laptop.** Required, not
-   optional — see Gotchas on the one-display-per-instance limit.
+3. ~~**Second Apollo instance on d1 for the laptop.**~~ **DONE 2026-08-03.**
+   Built as a full directory clone: `C:\Program Files\Apollo2`, service
+   `Apollo2Service` (auto-start), `sunshine_name = d1-laptop`,
+   `port = 48989` (so TCP 48984/48989/48990/49010, UDP 48998-49010), own
+   firewall rule, fresh identity (state + credentials deleted from the clone
+   per Apollo discussion #325 — never copy them). Verified: both instances
+   listening simultaneously, instance 2 dashboard 200 on
+   `https://localhost:48990`.
+   **The gotcha that broke the first start:** Apollo's service wrapper
+   (`tools\sunshinesvc.exe`) hardcodes its log to `%TEMP%\sunshine.log`
+   (`C:\Windows\Temp` for services) with write-exclusive sharing, so a second
+   wrapper dies with a sharing violation. Fix: per-service environment —
+   `HKLM\SYSTEM\CurrentControlSet\Services\Apollo2Service\Environment`
+   (REG_MULTI_SZ) sets `TMP`/`TEMP` to `C:\Program Files\Apollo2\svctemp`.
+   Remaining: Austen sets instance 2's dashboard credentials at
+   `https://localhost:48990` on d1, laptop pairs against
+   `<d1-ip>:48989`. Note Apollo updates must now be applied to BOTH
+   directories.
 4. **Ethernet.** Austen's gateway has two LAN ports, both occupied. Plan agreed:
    an 8-port unmanaged gigabit switch, with **d1 and d2 on the same
    switch** so their traffic switches locally and never reaches the gateway.
