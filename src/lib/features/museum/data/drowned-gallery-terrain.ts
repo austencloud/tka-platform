@@ -1,12 +1,23 @@
 /**
- * Drowned Gallery terrain program.
+ * Drowned Gallery terrain program — "The Ring" (v2).
  *
  * Pure geometry: given the compiled cave grid, derives world-space elevation
- * zones, water-blocked regions, and graybox layout anchors for the Water bay.
- * The physics provider consumes elevationAt/blockedAt; the graybox visual
- * layer consumes the layout rects. Single source of truth for both.
+ * zones, blocked regions, and EVERY rect the graybox renders for the Water
+ * bay. The physics provider consumes elevationAt/blockedAt; the graybox visual
+ * layer consumes the same rect lists. One geometry source — a rect the graybox
+ * draws that the terrain does not know about is a bug by construction.
  *
- * Datum: default museum floor = 0. See the design spec for the section.
+ * Route: flooded approach → the flooded gallery (a rock-roofed S-path walked on
+ * the bottom, ceiling BELOW the waterline so no air is visible) → a surfacing
+ * stair that breaks the water at a mid-stair landing → the grotto ring
+ * (apron → west walkway → procession → east walkway → apron).
+ *
+ * Everything below derives from compiled room bounds and real door tiles.
+ * There are no absolute world coordinates in this file and none in the
+ * graybox: offsets are metres measured from a bound or a door span.
+ *
+ * Datum: default museum floor = 0. See
+ * docs/superpowers/specs/2026-08-03-drowned-gallery-ring-flow-design.md.
  */
 import { tileKey } from "../domain/museum-grid-types";
 import type {
@@ -14,18 +25,121 @@ import type {
   MuseumTerrainProgram,
 } from "../domain/museum-grid-types";
 
+/** One museum tile = 0.5 m. */
+export const TILE_METRES = 0.5;
+const TILE = TILE_METRES;
+/**
+ * Half a tile. The engine addresses a tile by its CENTRE (`world = tile * TILE`)
+ * and the physics provider looks a position up with `Math.round(world / TILE)`,
+ * so a tile physically occupies `[centre - HALF, centre + HALF]`. Every rect in
+ * this module is built on that convention: rect edges land on cell boundaries,
+ * never on a tile centre. Getting this wrong puts a walkable tile's centre
+ * exactly on a blocked rect's edge, and a hair of floating-point drift then
+ * wedges the player against an invisible wall.
+ */
+const HALF = TILE / 2;
+
+/**
+ * Snaps "n metres in from a room's interior edge" onto a tile centre. The
+ * interior edge sits half a tile outside the first tile's centre, so a centred
+ * offset is that half tile plus a whole number of tiles.
+ */
+export function tileCentredOffset(metresFromInteriorMin: number): number {
+  return HALF + Math.round((metresFromInteriorMin - HALF) / TILE) * TILE;
+}
+
+/**
+ * Player eye height above the local floor: the physics provider's STANDING_Y
+ * (0.85) plus UCC's first-person offset (0.75). The submersion trigger in
+ * Museum3DScene compares `position.y + 0.75` against the waterline, and
+ * `position.y` is `floor + 0.85` — so the eye is always `floor + 1.6`.
+ */
+export const EYE_ABOVE_FLOOR = 1.6;
+
+// ── Datums ──────────────────────────────────────────────────────────────────
+
 export const WATERLINE_Y = -1.5;
-export const SUMP_FLOOR_Y = -4.1;
-export const SUMP_CEILING_Y = -1.9;
+/**
+ * Wading depth at the approach's north end and along the approach↔gallery
+ * corridor. A hair below the waterline so the water plane is not coplanar with
+ * the floor it covers (that reads as z-fighting, not as shallow water).
+ */
+export const SHALLOWS_Y = WATERLINE_Y - 0.12;
+export const GALLERY_FLOOR_Y = -4.5;
+/** Rock roof over the gallery path — deliberately BELOW the waterline. */
+export const GALLERY_ROOF_Y = -1.9;
+/**
+ * The flat mid-stair landing on the surfacing stair. DERIVED, not authored:
+ * standing here puts the eye exactly on the waterline, so the surface break —
+ * the first breath and the doubled-firelight money shot — happens ON the
+ * landing rather than somewhere on the ramp below it.
+ */
+export const LANDING_Y = WATERLINE_Y - EYE_ABOVE_FLOOR;
 export const CAUSEWAY_Y = -0.3;
 export const SHELF_Y = -1.0;
+export const CHANNEL_BED_Y = -2.7;
 export const POOL_BOTTOM_Y = -5.0;
 export const DOME_APEX_Y = 9.5;
+/** Ceiling over the two open shafts and the connecting corridors. */
+export const SHAFT_CEILING_Y = 2.6;
+/**
+ * Clearance the rock roof needs over the floor. The walker's eye sits at
+ * floor + 1.6, so a roof any tighter than this is a roof the player's head
+ * passes through — which is where each stair's rock has to give way to an
+ * open shaft.
+ */
+export const ROOF_HEADROOM = 2.0;
+/** Deepest floor the rock roof can still cover. */
+export const ROOF_SPLIT_Y = GALLERY_ROOF_Y - ROOF_HEADROOM;
 
-/** Elevation of the corridor stubs that bridge approach → sump → grotto. */
-export const CORRIDOR_SURFACING_Y = -2.2;
+// ── Shared anchors (the floor plan's performer stations read these) ──────────
 
-const TILE = 0.5;
+/** Alcove centres as fractions of the grotto's interior width, west → east. */
+export const ALCOVE_X_FRACTIONS = [0.22, 0.5, 0.78] as const;
+/** Alcove shelf centre, metres south of the grotto's north interior edge. */
+export const ALCOVE_Z_OFFSET_M = 2.0;
+
+// ── Room ids ────────────────────────────────────────────────────────────────
+
+export const APPROACH_ROOM_ID = "cave-water-approach";
+export const GALLERY_ROOM_ID = "cave-water-gallery";
+export const GROTTO_ROOM_ID = "cave-water";
+
+// ── Grotto band proportions ─────────────────────────────────────────────────
+// Fractions of the compiled interior, authored against the design spec's
+// 25 × 22 m grotto so the bands keep their proportions if the room resizes.
+
+const BAND_Z = {
+  shoreEnd: 3.5 / 22,
+  channelEnd: 7.5 / 22,
+  processionEnd: 10 / 22,
+  poolEnd: 17.5 / 22,
+  thresholdStart: 14 / 22,
+  thresholdEnd: 15 / 22,
+} as const;
+
+const BAND_X = {
+  waterStart: 2.5 / 25,
+  waterfallEnd: 4 / 25,
+  waterEnd: 21.5 / 25,
+} as const;
+
+// ── Gallery path metrics (metres; a corridor width does not scale with a room)
+
+const PATH_WIDTH = 2.5;
+/** Gap between the west wall and the long north-running leg. */
+const PATH_INSET = 1.5;
+const DESCENT_RUN = 5.5;
+const SURFACING_RUN = 8.0;
+const LANDING_DEPTH = 1.4;
+/** Thickness of every rendered wall slab. */
+export const WALL_THICKNESS = 0.6;
+/** See elevationAt: how far tile rounding lets the player drift past a rect edge. */
+const TILE_ROUNDING_SLOP = TILE / 2;
+/** Depth of the grotto's exit ramp up to the museum datum at the Fire door. */
+const EXIT_RAMP_RUN = 2.0;
+
+// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface WorldRect {
   minX: number;
@@ -34,52 +148,136 @@ export interface WorldRect {
   maxZ: number;
 }
 
-interface ElevationZone {
+export type FloorKind = "flat" | "ramp-z" | "ramp-x";
+
+export interface FloorRect {
+  id: string;
   rect: WorldRect;
-  /** Elevation at the minimum edge of `axis` */
-  from: number;
-  /** Elevation at the maximum edge of `axis` */
-  to: number;
-  axis: "x" | "z";
+  kind: FloorKind;
+  /** Elevation at the rect's minimum edge along its axis (equal to `toY` when flat). */
+  fromY: number;
+  /** Elevation at the rect's maximum edge along its axis. */
+  toY: number;
+}
+
+export interface WallRect {
+  id: string;
+  rect: WorldRect;
+  baseY: number;
+  topY: number;
+}
+
+export interface CeilingRect {
+  id: string;
+  rect: WorldRect;
+  y: number;
+}
+
+export interface WaterVolume {
+  id: string;
+  rect: WorldRect;
+  floorY: number;
+}
+
+export interface Span {
+  min: number;
+  max: number;
+}
+
+export interface Point2 {
+  x: number;
+  z: number;
 }
 
 export interface DrownedGalleryLayout {
-  approach: WorldRect; // interior, world units
-  sump: WorldRect;
+  /** Interior world rects of the three rooms on the water route. */
+  approach: WorldRect;
+  gallery: WorldRect;
   grotto: WorldRect;
-  pool: WorldRect;
+
+  // ── gallery ──
+  /** Descent stair at the gallery's south door: SHALLOWS_Y → GALLERY_FLOOR_Y. */
+  descentStair: WorldRect;
+  /** The part of the descent stair above the landing datum — an open shaft. */
+  descentOpen: WorldRect;
+  /** The part of the descent stair the rock roof covers. */
+  descentRoofed: WorldRect;
+  /** The leg that runs west off the bottom of the descent stair. */
+  westRun: WorldRect;
+  /** The long leg that runs north up the gallery's west side. The bloom sits at its midpoint. */
+  northRun: WorldRect;
+  /** The leg that bends east toward the surfacing stair. */
+  eastBend: WorldRect;
+  surfacingUpper: WorldRect;
+  surfacingLanding: WorldRect;
+  surfacingLower: WorldRect;
+  /** Whole surfacing stair footprint (upper + landing + lower). */
+  surfacingStair: WorldRect;
+  /** The part of the surfacing stair the rock roof covers. */
+  surfacingRoofed: WorldRect;
+  /** The part of the surfacing stair that rises through an open shaft. */
+  surfacingOpen: WorldRect;
+  /** Every gallery interior tile that is not path or stair, merged into rects. */
+  rockFill: WorldRect[];
+  /** The two places the rock roof opens and a water surface is visible. */
+  openShafts: WorldRect[];
+  bloomAnchor: Point2;
+
+  // ── grotto ──
   shore: WorldRect;
-  overlooks: WorldRect[]; // walkable carve-outs inside the pool rect
-  gate: WorldRect; // blocked strip on the east leg
-  alcoves: { x: number; z: number }[]; // shelf centers for A, B, C (west→east)
-  /**
-   * Sump↔grotto corridor bounding box, spanning the FULL x-jog between the
-   * sump's north door and the grotto's south door (the rooms are not
-   * x-aligned; the carved corridor jogs ~11 m west). The terrain elevation
-   * zone uses this bbox — only walkable tiles ever query it, so covering the
-   * surrounding rock is harmless.
-   */
-  corridorSG: WorldRect;
-  /**
-   * The corridor's ACTUAL carved walkable shape (a narrow Z), decomposed into
-   * row-run rects. Graybox floors/water render THESE, not the bbox — a bbox
-   * floor would read as an open cavern whose true edges are invisible tile
-   * walls, the exact "game won't let me through" feel this room is fighting.
-   */
-  corridorSegments: WorldRect[];
-  /** The corridor band's carved WALL tiles, merged into row-run rects, for the graybox to render as enclosure. */
-  corridorWallRuns: WorldRect[];
-  /** Surfacing steps just inside the grotto's south door, at the DOOR's x-span. */
-  surfacingSteps: WorldRect;
-  waterPlanes: WorldRect[]; // where to render water surface at WATERLINE_Y
-  // probe points for tests
-  causewayProbe: { x: number; z: number };
-  poolProbe: { x: number; z: number };
-  shoreProbe: { x: number; z: number };
-  gateProbe: { x: number; z: number };
-  overlookProbes: { x: number; z: number }[];
+  channel: WorldRect;
+  procession: WorldRect;
+  pool: WorldRect;
+  apron: WorldRect;
+  westWalkway: WorldRect;
+  eastWalkway: WorldRect;
+  exitRamp: WorldRect;
+  waterfall: WorldRect;
+  /** Carved threshold on the east walkway: the frame's footprint. */
+  threshold: WorldRect;
+  /** The two blocked jambs the threshold stands on. */
+  thresholdJambs: WorldRect[];
+  /** The walk-through gap between the jambs. */
+  thresholdOpening: WorldRect;
+  /** Shelf centres for A, B, C, west → east. Performer stations read the same expression. */
+  alcoves: Point2[];
+  /** Rails along every walkway edge that faces water. */
+  balustrades: WorldRect[];
+
+  // ── corridors ──
+  approachCorridor: WorldRect[];
+  galleryCorridor: WorldRect[];
+
+  // ── everything the graybox renders ──
+  floorRects: FloorRect[];
+  wallRects: WallRect[];
+  ceilingRects: CeilingRect[];
+  roofRects: WorldRect[];
+  waterPlanes: WorldRect[];
+  waterVolumes: WaterVolume[];
+
+  /** Union bbox of the water bay. elevationAt throws inside it when nothing matches. */
+  bayBounds: WorldRect;
+
+  // ── probes for tests ──
+  probes: {
+    apron: Point2;
+    procession: Point2;
+    westWalkway: Point2;
+    eastWalkway: Point2;
+    pool: Point2;
+    channel: Point2;
+    shore: Point2;
+    thresholdOpening: Point2;
+    bloom: Point2;
+    /** A point inside the gallery's rock fill — no floor covers it. */
+    rock: Point2;
+  };
 }
 
+// ── Small helpers ───────────────────────────────────────────────────────────
+
+/** The room's interior as the union of its interior tiles' cells. */
 function interiorWorldRect(b: {
   x: number;
   y: number;
@@ -87,52 +285,90 @@ function interiorWorldRect(b: {
   height: number;
 }): WorldRect {
   return {
-    minX: (b.x + 1) * TILE,
-    minZ: (b.y + 1) * TILE,
-    maxX: (b.x + b.width - 1) * TILE,
-    maxZ: (b.y + b.height - 1) * TILE,
+    minX: (b.x + 1) * TILE - HALF,
+    minZ: (b.y + 1) * TILE - HALF,
+    maxX: (b.x + b.width - 2) * TILE + HALF,
+    maxZ: (b.y + b.height - 2) * TILE + HALF,
   };
 }
 
-const inRect = (r: WorldRect, x: number, z: number) =>
-  x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
-
-/**
- * World-space X extent of a room's door tiles on one wall. Rooms are placed
- * by the graph-layout engine (horizontally centered on their PREVIOUS room,
- * not on the door itself), and door position within a wall depends on that
- * wall's `alignment` ("start"/"center"/"end") plus the room's own width - so
- * two doors on the same edge can land many tiles apart in X. Corridor zones
- * must span BOTH ends of the actual jog, not assume one end's x-span covers
- * the whole gap. See `findDoorCenter` in vulcan-cave-floor-plan.ts for the
- * equivalent scan (that one returns tile-grid + 0.5 coordinates for the 2D
- * floor-plan overlay; this returns world meters for the 3D terrain).
- */
-function doorXSpan(
-  grid: MuseumGrid,
-  roomId: string,
-  wall: "north" | "south"
-): { minX: number; maxX: number } | null {
-  const wing = grid.wings.find((w) => w.id === roomId);
-  if (!wing) return null;
-  const { x, y, width, height } = wing.bounds;
-  const wallY = wall === "north" ? y : y + height - 1;
-  let minTile = Infinity;
-  let maxTile = -Infinity;
-  for (let wx = x; wx < x + width; wx++) {
-    if (grid.tiles.get(tileKey(wx, wallY))?.type === "door") {
-      minTile = Math.min(minTile, wx);
-      maxTile = Math.max(maxTile, wx);
-    }
-  }
-  if (!Number.isFinite(minTile)) return null;
-  return { minX: minTile * TILE, maxX: maxTile * TILE };
+/** Closed containment — used for elevation lookups so no boundary is orphaned. */
+export function inRectClosed(r: WorldRect, x: number, z: number): boolean {
+  return x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
 }
 
 /**
- * Scan a horizontal tile band for a tile-type family and decompose the hits
- * into world rects: contiguous x-runs per row, with consecutive rows merged
- * when their run lists match exactly. Full-tile extents (tile → tile+1).
+ * Half-open containment — used for blocking. A tile's world position is its
+ * minimum corner, so `[min, max)` puts every tile on exactly one side of a
+ * shared edge: the tile at a rect's `max` belongs to the NEXT rect.
+ */
+function inRectHalfOpen(r: WorldRect, x: number, z: number): boolean {
+  return x >= r.minX && x < r.maxX && z >= r.minZ && z < r.maxZ;
+}
+
+const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
+const cz = (r: WorldRect) => (r.minZ + r.maxZ) / 2;
+const centre = (r: WorldRect): Point2 => ({ x: cx(r), z: cz(r) });
+
+/**
+ * World-space extent of a room's door tiles on one wall, as the FULL tile
+ * extent (`[firstTile, lastTile + 1] * TILE`) rather than the tile origins —
+ * a rendered wall must clear the whole doorway, not stop half a tile short.
+ * Rooms are placed by the layout engine and doors by the wall stamper, so this
+ * scan is the only honest source for where a doorway actually is.
+ */
+function doorSpan(
+  grid: MuseumGrid,
+  roomId: string,
+  wall: "north" | "south" | "east" | "west"
+): Span | null {
+  const wing = grid.wings.find((w) => w.id === roomId);
+  if (!wing) return null;
+  const { x, y, width, height } = wing.bounds;
+  let minTile = Infinity;
+  let maxTile = -Infinity;
+  if (wall === "north" || wall === "south") {
+    const wallY = wall === "north" ? y : y + height - 1;
+    for (let tx = x; tx < x + width; tx++) {
+      if (grid.tiles.get(tileKey(tx, wallY))?.type === "door") {
+        minTile = Math.min(minTile, tx);
+        maxTile = Math.max(maxTile, tx);
+      }
+    }
+  } else {
+    const wallX = wall === "west" ? x : x + width - 1;
+    for (let ty = y; ty < y + height; ty++) {
+      if (grid.tiles.get(tileKey(wallX, ty))?.type === "door") {
+        minTile = Math.min(minTile, ty);
+        maxTile = Math.max(maxTile, ty);
+      }
+    }
+  }
+  if (!Number.isFinite(minTile)) return null;
+  return { min: minTile * TILE - HALF, max: maxTile * TILE + HALF };
+}
+
+/** Widen `span` to `width`, keeping it centred and inside `[lo, hi]`. */
+function widenSpan(span: Span, width: number, lo: number, hi: number): Span {
+  const half = width / 2;
+  const c = (span.min + span.max) / 2;
+  let min = c - half;
+  let max = c + half;
+  if (min < lo) {
+    max += lo - min;
+    min = lo;
+  }
+  if (max > hi) {
+    min -= max - hi;
+    max = hi;
+  }
+  return { min: Math.min(min, span.min), max: Math.max(max, span.max) };
+}
+
+/**
+ * Scan a tile band for a tile-type family and decompose the hits into world
+ * rects: contiguous x-runs per row, with consecutive rows merged when their
+ * run lists match exactly. Rects cover the hit tiles' cells.
  */
 function bandRects(
   grid: MuseumGrid,
@@ -165,15 +401,15 @@ function bandRects(
   for (const { ty, runs } of rows) {
     const key = runs.map((r) => `${r.x0}-${r.x1}`).join(",");
     if (key === openKey && openTyEnd === ty - 1) {
-      for (const rect of open) rect.maxZ = (ty + 1) * TILE;
+      for (const rect of open) rect.maxZ = ty * TILE + HALF;
       openTyEnd = ty;
       continue;
     }
     open = runs.map((r) => ({
-      minX: r.x0 * TILE,
-      minZ: ty * TILE,
-      maxX: (r.x1 + 1) * TILE,
-      maxZ: (ty + 1) * TILE,
+      minX: r.x0 * TILE - HALF,
+      minZ: ty * TILE - HALF,
+      maxX: r.x1 * TILE + HALF,
+      maxZ: ty * TILE + HALF,
     }));
     rects.push(...open);
     openKey = key;
@@ -182,272 +418,940 @@ function bandRects(
   return rects;
 }
 
+/**
+ * Tile-rasterised set difference: every interior tile of `bounds` whose cell is
+ * NOT inside one of `holes`, merged into rects with the same row-run algorithm
+ * as `bandRects`. Used to shape the gallery's rock fill around the S-path, so
+ * rock and path abut exactly and neither can leave a seam.
+ */
+function subtractTiles(bounds: WorldRect, holes: WorldRect[]): WorldRect[] {
+  const EPS = 1e-6;
+  const txMin = Math.round((bounds.minX + HALF) / TILE);
+  const txMax = Math.round((bounds.maxX - HALF) / TILE);
+  const tyMin = Math.round((bounds.minZ + HALF) / TILE);
+  const tyMax = Math.round((bounds.maxZ - HALF) / TILE);
+  const covered = (tx: number, ty: number) =>
+    holes.some(
+      (h) =>
+        tx * TILE - HALF >= h.minX - EPS &&
+        tx * TILE + HALF <= h.maxX + EPS &&
+        ty * TILE - HALF >= h.minZ - EPS &&
+        ty * TILE + HALF <= h.maxZ + EPS
+    );
+
+  type Run = { x0: number; x1: number };
+  const rows: { ty: number; runs: Run[] }[] = [];
+  for (let ty = tyMin; ty <= tyMax; ty++) {
+    const runs: Run[] = [];
+    let cur: Run | null = null;
+    for (let tx = txMin; tx <= txMax; tx++) {
+      if (!covered(tx, ty)) {
+        if (cur && cur.x1 === tx - 1) cur.x1 = tx;
+        else runs.push((cur = { x0: tx, x1: tx }));
+      } else {
+        cur = null;
+      }
+    }
+    if (runs.length > 0) rows.push({ ty, runs });
+  }
+  const rects: WorldRect[] = [];
+  let openKey = "";
+  let openTyEnd = -Infinity;
+  let open: WorldRect[] = [];
+  for (const { ty, runs } of rows) {
+    const key = runs.map((r) => `${r.x0}-${r.x1}`).join(",");
+    if (key === openKey && openTyEnd === ty - 1) {
+      for (const rect of open) rect.maxZ = ty * TILE + HALF;
+      openTyEnd = ty;
+      continue;
+    }
+    open = runs.map((r) => ({
+      minX: r.x0 * TILE - HALF,
+      minZ: ty * TILE - HALF,
+      maxX: r.x1 * TILE + HALF,
+      maxZ: ty * TILE + HALF,
+    }));
+    rects.push(...open);
+    openKey = key;
+    openTyEnd = ty;
+  }
+  return rects;
+}
+
+/** Split `[from, to]` around excluded spans, returning the remainder. */
+function spansExcluding(
+  from: number,
+  to: number,
+  holes: Span[]
+): [number, number][] {
+  const sorted = [...holes].sort((a, b) => a.min - b.min);
+  const out: [number, number][] = [];
+  let cursor = from;
+  for (const hole of sorted) {
+    if (hole.min > cursor) out.push([cursor, Math.min(hole.min, to)]);
+    cursor = Math.max(cursor, hole.max);
+  }
+  if (cursor < to) out.push([cursor, to]);
+  return out.filter(([a, b]) => b - a > 0.01);
+}
+
+function unionRect(rects: WorldRect[]): WorldRect {
+  return {
+    minX: Math.min(...rects.map((r) => r.minX)),
+    minZ: Math.min(...rects.map((r) => r.minZ)),
+    maxX: Math.max(...rects.map((r) => r.maxX)),
+    maxZ: Math.max(...rects.map((r) => r.maxZ)),
+  };
+}
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+
 export function buildDrownedGalleryLayout(
   grid: MuseumGrid
 ): DrownedGalleryLayout | null {
-  const approachWing = grid.wings.find((w) => w.id === "cave-water-approach");
-  const sumpWing = grid.wings.find((w) => w.id === "cave-water-sump");
-  const grottoWing = grid.wings.find((w) => w.id === "cave-water");
-  if (!approachWing || !sumpWing || !grottoWing) return null;
+  const approachWing = grid.wings.find((w) => w.id === APPROACH_ROOM_ID);
+  const galleryWing = grid.wings.find((w) => w.id === GALLERY_ROOM_ID);
+  const grottoWing = grid.wings.find((w) => w.id === GROTTO_ROOM_ID);
+  if (!approachWing || !galleryWing || !grottoWing) return null;
 
   const approach = interiorWorldRect(approachWing.bounds);
-  const sump = interiorWorldRect(sumpWing.bounds);
+  const gallery = interiorWorldRect(galleryWing.bounds);
   const grotto = interiorWorldRect(grottoWing.bounds);
-  const gw = grotto.maxX - grotto.minX; // ≈ 25
 
-  // North shore strip (alcoves + habitat): top 3.5 m
-  const shore: WorldRect = {
-    minX: grotto.minX,
-    minZ: grotto.minZ,
-    maxX: grotto.maxX,
-    maxZ: grotto.minZ + 3.5,
-  };
-  // Pool: from shore edge down to 4.5 m short of the south wall, inset 2 m
-  // on the west (waterfall margin) and 3 m on the east (gate leg walkway).
-  const pool: WorldRect = {
-    minX: grotto.minX + 2,
-    minZ: shore.maxZ,
-    maxX: grotto.maxX - 3,
-    maxZ: grotto.maxZ - 4.5,
-  };
-  // Three overlooks: 3 m wide, biting 1.5 m into the pool's south edge,
-  // centered under each alcove.
-  const alcoveXs = [0.22, 0.5, 0.78].map((f) => grotto.minX + gw * f);
-  const overlooks: WorldRect[] = alcoveXs.map((cx) => ({
-    minX: cx - 1.5,
-    minZ: pool.maxZ - 1.5,
-    maxX: cx + 1.5,
-    maxZ: pool.maxZ,
-  }));
-  // Gate: blocked strip across the east walkway, level with the shore edge
-  const gate: WorldRect = {
-    minX: pool.maxX,
-    minZ: shore.maxZ + 1.0,
-    maxX: grotto.maxX,
-    maxZ: shore.maxZ + 1.6,
-  };
-
-  const alcoves = alcoveXs.map((x) => ({ x, z: shore.minZ + 1.6 }));
-
-  // The sump<->grotto corridor jogs in X between its two doors (sump's north
-  // door sits at the sump's own x-span; the grotto's south door sits ~11m
-  // further west, at the grotto's own west-biased x-span - the two rooms are
-  // NOT x-aligned). The corridor's real carved width spans the union of both
-  // door columns, not just one end's span +/- a tile. Missing this was the
-  // "walking on top of the water" bug: elevationAt fell through to the 0
-  // datum for any x outside the too-narrow assumed rect, popping the player
-  // up ~2.2m above the sump-depth floor mid-corridor.
-  const sumpNorthDoor = doorXSpan(grid, "cave-water-sump", "north");
-  const grottoSouthDoor = doorXSpan(grid, "cave-water", "south");
-  if (!sumpNorthDoor || !grottoSouthDoor) {
+  const gallerySouthDoor = doorSpan(grid, GALLERY_ROOM_ID, "south");
+  const galleryNorthDoor = doorSpan(grid, GALLERY_ROOM_ID, "north");
+  const grottoSouthDoor = doorSpan(grid, GROTTO_ROOM_ID, "south");
+  const grottoEastDoor = doorSpan(grid, GROTTO_ROOM_ID, "east");
+  const approachNorthDoor = doorSpan(grid, APPROACH_ROOM_ID, "north");
+  if (
+    !gallerySouthDoor ||
+    !galleryNorthDoor ||
+    !grottoSouthDoor ||
+    !grottoEastDoor ||
+    !approachNorthDoor
+  ) {
     throw new Error(
-      "Drowned gallery layout: missing sump<->grotto door tiles on the grid"
+      "Drowned gallery layout: a door on the water route is missing from the compiled grid"
     );
   }
-  const corridorSG: WorldRect = {
-    minX: Math.min(sumpNorthDoor.minX, grottoSouthDoor.minX) - TILE,
-    minZ: grotto.maxZ,
-    maxX: Math.max(sumpNorthDoor.maxX, grottoSouthDoor.maxX) + TILE,
-    maxZ: sump.minZ,
+
+  // ── Gallery S-path ────────────────────────────────────────────────────────
+  const descentX = widenSpan(
+    gallerySouthDoor,
+    PATH_WIDTH,
+    gallery.minX,
+    gallery.maxX
+  );
+  const stairX = galleryNorthDoor;
+
+  const descentStair: WorldRect = {
+    minX: descentX.min,
+    maxX: descentX.max,
+    minZ: gallery.maxZ - DESCENT_RUN,
+    maxZ: gallery.maxZ,
   };
-  // Surfacing steps rise to the causeway on the strip the corridor actually
-  // enters through: the grotto's OWN south-door x-span (west-biased), not the
-  // sump's. The causeway proper sits flat just north of this strip.
-  const surfacingSteps: WorldRect = {
-    minX: grottoSouthDoor.minX - TILE,
-    minZ: grotto.maxZ - 3,
-    maxX: grottoSouthDoor.maxX + TILE,
-    maxZ: grotto.maxZ,
+  // The descent is a straight ramp, so the roof can only close over it once the
+  // floor has dropped far enough to leave headroom. Above that the shaft is
+  // open — which is exactly the beat: you walk down into open water and the
+  // rock closes over your head.
+  const descentSplitZ =
+    descentStair.minZ +
+    DESCENT_RUN *
+      ((ROOF_SPLIT_Y - GALLERY_FLOOR_Y) / (SHALLOWS_Y - GALLERY_FLOOR_Y));
+  const descentRoofed: WorldRect = { ...descentStair, maxZ: descentSplitZ };
+  const descentOpen: WorldRect = { ...descentStair, minZ: descentSplitZ };
+
+  const surfacingRise = CAUSEWAY_Y - GALLERY_FLOOR_Y;
+  const rampTotal = SURFACING_RUN - LANDING_DEPTH;
+  const upperRun = (rampTotal * (CAUSEWAY_Y - LANDING_Y)) / surfacingRise;
+  const lowerRun = rampTotal - upperRun;
+
+  const surfacingUpper: WorldRect = {
+    minX: stairX.min,
+    maxX: stairX.max,
+    minZ: gallery.minZ,
+    maxZ: gallery.minZ + upperRun,
+  };
+  const surfacingLanding: WorldRect = {
+    minX: stairX.min,
+    maxX: stairX.max,
+    minZ: surfacingUpper.maxZ,
+    maxZ: surfacingUpper.maxZ + LANDING_DEPTH,
+  };
+  const surfacingLower: WorldRect = {
+    minX: stairX.min,
+    maxX: stairX.max,
+    minZ: surfacingLanding.maxZ,
+    maxZ: surfacingLanding.maxZ + lowerRun,
+  };
+  const surfacingStair: WorldRect = {
+    minX: stairX.min,
+    maxX: stairX.max,
+    minZ: gallery.minZ,
+    maxZ: surfacingLower.maxZ,
   };
 
-  // The carved corridor's real shape (walkable Z) and its enclosing wall
-  // tiles, for the graybox. Band: grotto's south wall row (its door tiles)
-  // through the sump's north wall row (its door tiles), across the two
-  // rooms' combined x-extent. Walls skip the grotto's own wall row - the
-  // graybox's grotto-south wall already renders that face.
-  const gb = grottoWing.bounds;
-  const sb = sumpWing.bounds;
-  const txMin = Math.min(gb.x, sb.x) - 2;
-  const txMax = Math.max(gb.x + gb.width, sb.x + sb.width) + 2;
-  const grottoSouthWallTy = gb.y + gb.height - 1;
-  const sumpNorthWallTy = sb.y;
-  const corridorSegments = bandRects(
+  const westRun: WorldRect = {
+    minX: gallery.minX + PATH_INSET,
+    maxX: descentStair.maxX,
+    minZ: descentStair.minZ - PATH_WIDTH,
+    maxZ: descentStair.minZ,
+  };
+  const eastBend: WorldRect = {
+    minX: gallery.minX + PATH_INSET,
+    maxX: surfacingStair.maxX,
+    minZ: surfacingStair.maxZ,
+    maxZ: surfacingStair.maxZ + PATH_WIDTH,
+  };
+  const northRun: WorldRect = {
+    minX: gallery.minX + PATH_INSET,
+    maxX: gallery.minX + PATH_INSET + PATH_WIDTH,
+    minZ: eastBend.maxZ,
+    maxZ: westRun.minZ,
+  };
+  if (northRun.maxZ - northRun.minZ < PATH_WIDTH) {
+    throw new Error(
+      "Drowned gallery layout: the flooded gallery is too shallow for its S-path — " +
+        "the descent stair and the surfacing stair have eaten the north run"
+    );
+  }
+
+  // Mirror of the descent: the rock roof runs out partway up the lower flight,
+  // so the last stretch under the surface is an open shaft and the player sees
+  // the underside of the water before breaking it on the landing.
+  const surfacingSplitZ =
+    surfacingLower.minZ +
+    lowerRun * ((ROOF_SPLIT_Y - LANDING_Y) / (GALLERY_FLOOR_Y - LANDING_Y));
+  const surfacingRoofed: WorldRect = {
+    ...surfacingLower,
+    minZ: surfacingSplitZ,
+  };
+  const surfacingOpen: WorldRect = { ...surfacingStair, maxZ: surfacingSplitZ };
+
+  const galleryPath = [
+    descentStair,
+    westRun,
+    northRun,
+    eastBend,
+    surfacingStair,
+  ];
+  const rockFill = subtractTiles(gallery, galleryPath);
+  const openShafts = [descentOpen, surfacingOpen];
+  const bloomAnchor = centre(northRun);
+
+  // ── Grotto ring ───────────────────────────────────────────────────────────
+  const gw = grotto.maxX - grotto.minX;
+  const gd = grotto.maxZ - grotto.minZ;
+  const zAt = (f: number) => grotto.minZ + gd * f;
+  const xAt = (f: number) => grotto.minX + gw * f;
+
+  const shore: WorldRect = {
+    minX: grotto.minX,
+    maxX: grotto.maxX,
+    minZ: grotto.minZ,
+    maxZ: zAt(BAND_Z.shoreEnd),
+  };
+  const channel: WorldRect = {
+    minX: xAt(BAND_X.waterStart),
+    maxX: xAt(BAND_X.waterEnd),
+    minZ: shore.maxZ,
+    maxZ: zAt(BAND_Z.channelEnd),
+  };
+  const procession: WorldRect = {
+    minX: channel.minX,
+    maxX: channel.maxX,
+    minZ: channel.maxZ,
+    maxZ: zAt(BAND_Z.processionEnd),
+  };
+  const pool: WorldRect = {
+    minX: channel.minX,
+    maxX: channel.maxX,
+    minZ: procession.maxZ,
+    maxZ: zAt(BAND_Z.poolEnd),
+  };
+  const westWalkway: WorldRect = {
+    minX: grotto.minX,
+    maxX: channel.minX,
+    minZ: shore.maxZ,
+    maxZ: pool.maxZ,
+  };
+  const eastWalkway: WorldRect = {
+    minX: channel.maxX,
+    maxX: grotto.maxX,
+    minZ: shore.maxZ,
+    maxZ: grotto.maxZ,
+  };
+  const apron: WorldRect = {
+    minX: grotto.minX,
+    maxX: channel.maxX,
+    minZ: pool.maxZ,
+    maxZ: grotto.maxZ,
+  };
+  const exitRamp: WorldRect = {
+    minX: grotto.maxX - EXIT_RAMP_RUN,
+    maxX: grotto.maxX,
+    minZ: grottoEastDoor.min - 1,
+    maxZ: Math.min(grotto.maxZ, grottoEastDoor.max + 1),
+  };
+  const eastWalkwayPieces: WorldRect[] = [
+    { ...eastWalkway, maxX: exitRamp.minX },
+    { ...eastWalkway, minX: exitRamp.minX, maxZ: exitRamp.minZ },
+    { ...eastWalkway, minX: exitRamp.minX, minZ: exitRamp.maxZ },
+  ].filter((r) => r.maxX - r.minX > 0.01 && r.maxZ - r.minZ > 0.01);
+  const waterfall: WorldRect = {
+    minX: channel.minX,
+    maxX: xAt(BAND_X.waterfallEnd),
+    minZ: channel.minZ + (channel.maxZ - channel.minZ) * 0.25,
+    maxZ: channel.maxZ - (channel.maxZ - channel.minZ) * 0.25,
+  };
+
+  const threshold: WorldRect = {
+    minX: eastWalkway.minX,
+    maxX: eastWalkway.maxX,
+    minZ: zAt(BAND_Z.thresholdStart),
+    maxZ: zAt(BAND_Z.thresholdEnd),
+  };
+  // The frame must not narrow the walkway below the walk-through minimum, and
+  // its jambs stand a whole number of tiles wide so their faces land on cell
+  // boundaries rather than on a walkable tile's centre.
+  const walkwayWidth = threshold.maxX - threshold.minX;
+  const jambWidth = Math.max(
+    TILE,
+    Math.floor((walkwayWidth - 2.2) / 2 / TILE) * TILE
+  );
+  const thresholdJambs: WorldRect[] = [
+    { ...threshold, maxX: threshold.minX + jambWidth },
+    { ...threshold, minX: threshold.maxX - jambWidth },
+  ];
+  const thresholdOpening: WorldRect = {
+    ...threshold,
+    minX: threshold.minX + jambWidth,
+    maxX: threshold.maxX - jambWidth,
+  };
+
+  // Anchors sit on tile centres so the compiled performer stations can land on
+  // exactly the same point — see interiorOffsetFraction in the floor plan.
+  const alcoves: Point2[] = ALCOVE_X_FRACTIONS.map((f) => ({
+    x: grotto.minX + tileCentredOffset(gw * f),
+    z: grotto.minZ + tileCentredOffset(ALCOVE_Z_OFFSET_M),
+  }));
+
+  // Rails on every walkway edge that faces water. The procession has water on
+  // BOTH sides, so it gets two.
+  const RAIL_T = 0.25;
+  const balustrades: WorldRect[] = [
+    // pool perimeter
+    { ...pool, maxZ: pool.minZ, minZ: pool.minZ - RAIL_T },
+    { ...pool, minZ: pool.maxZ, maxZ: pool.maxZ + RAIL_T },
+    { ...pool, maxX: pool.minX, minX: pool.minX - RAIL_T },
+    { ...pool, minX: pool.maxX, maxX: pool.maxX + RAIL_T },
+    // channel perimeter, walkway-facing edges only (its north edge is the
+    // alcove shore's rock face, which needs no rail)
+    { ...channel, minZ: channel.maxZ, maxZ: channel.maxZ + RAIL_T },
+    { ...channel, maxX: channel.minX, minX: channel.minX - RAIL_T },
+    { ...channel, minX: channel.maxX, maxX: channel.maxX + RAIL_T },
+  ];
+
+  // ── Corridors ─────────────────────────────────────────────────────────────
+  const ab = approachWing.bounds;
+  const lb = galleryWing.bounds;
+  const rb = grottoWing.bounds;
+
+  const agTxMin = Math.min(ab.x, lb.x) - 2;
+  const agTxMax = Math.max(ab.x + ab.width, lb.x + lb.width) + 2;
+  const approachCorridor = bandRects(
     grid,
-    txMin,
-    txMax,
-    grottoSouthWallTy,
-    sumpNorthWallTy,
+    agTxMin,
+    agTxMax,
+    lb.y + lb.height - 1,
+    ab.y,
     (t) => t === "corridor" || t === "door"
   );
-  const corridorWallRuns = bandRects(
+  const approachCorridorWalls = bandRects(
     grid,
-    txMin,
-    txMax,
-    grottoSouthWallTy + 1,
-    sumpNorthWallTy,
+    agTxMin,
+    agTxMax,
+    lb.y + lb.height,
+    ab.y - 1,
     (t) => t === "wall"
+  );
+
+  const lgTxMin = Math.min(lb.x, rb.x) - 2;
+  const lgTxMax = Math.max(lb.x + lb.width, rb.x + rb.width) + 2;
+  const galleryCorridor = bandRects(
+    grid,
+    lgTxMin,
+    lgTxMax,
+    rb.y + rb.height - 1,
+    lb.y,
+    (t) => t === "corridor" || t === "door"
+  );
+  const galleryCorridorWalls = bandRects(
+    grid,
+    lgTxMin,
+    lgTxMax,
+    rb.y + rb.height,
+    lb.y - 1,
+    (t) => t === "wall"
+  );
+
+  // ── Floor rects: the single list physics and the graybox both read ────────
+  const floorRects: FloorRect[] = [
+    // approach + shallows
+    {
+      id: "approach-ramp",
+      rect: approach,
+      kind: "ramp-z",
+      fromY: SHALLOWS_Y,
+      toY: 0,
+    },
+    ...approachCorridor.map((rect, i) => ({
+      id: `approach-corridor-${i}`,
+      rect,
+      kind: "flat" as const,
+      fromY: SHALLOWS_Y,
+      toY: SHALLOWS_Y,
+    })),
+    // gallery
+    {
+      id: "descent-stair",
+      rect: descentStair,
+      kind: "ramp-z",
+      fromY: GALLERY_FLOOR_Y,
+      toY: SHALLOWS_Y,
+    },
+    {
+      id: "west-run",
+      rect: westRun,
+      kind: "flat",
+      fromY: GALLERY_FLOOR_Y,
+      toY: GALLERY_FLOOR_Y,
+    },
+    {
+      id: "north-run",
+      rect: northRun,
+      kind: "flat",
+      fromY: GALLERY_FLOOR_Y,
+      toY: GALLERY_FLOOR_Y,
+    },
+    {
+      id: "east-bend",
+      rect: eastBend,
+      kind: "flat",
+      fromY: GALLERY_FLOOR_Y,
+      toY: GALLERY_FLOOR_Y,
+    },
+    {
+      id: "surfacing-lower",
+      rect: surfacingLower,
+      kind: "ramp-z",
+      fromY: LANDING_Y,
+      toY: GALLERY_FLOOR_Y,
+    },
+    {
+      id: "surfacing-landing",
+      rect: surfacingLanding,
+      kind: "flat",
+      fromY: LANDING_Y,
+      toY: LANDING_Y,
+    },
+    {
+      id: "surfacing-upper",
+      rect: surfacingUpper,
+      kind: "ramp-z",
+      fromY: CAUSEWAY_Y,
+      toY: LANDING_Y,
+    },
+    ...galleryCorridor.map((rect, i) => ({
+      id: `gallery-corridor-${i}`,
+      rect,
+      kind: "flat" as const,
+      fromY: CAUSEWAY_Y,
+      toY: CAUSEWAY_Y,
+    })),
+    // grotto ring
+    {
+      id: "exit-ramp",
+      rect: exitRamp,
+      kind: "ramp-x",
+      fromY: CAUSEWAY_Y,
+      toY: 0,
+    },
+    { id: "apron", rect: apron, kind: "flat", fromY: CAUSEWAY_Y, toY: CAUSEWAY_Y },
+    {
+      id: "west-walkway",
+      rect: westWalkway,
+      kind: "flat",
+      fromY: CAUSEWAY_Y,
+      toY: CAUSEWAY_Y,
+    },
+    // The east walkway is split around the exit ramp so no two rendered floor
+    // slabs ever share a footprint (coplanar slabs read as z-fighting).
+    ...eastWalkwayPieces.map((rect, i) => ({
+      id: `east-walkway-${i}`,
+      rect,
+      kind: "flat" as const,
+      fromY: CAUSEWAY_Y,
+      toY: CAUSEWAY_Y,
+    })),
+    {
+      id: "procession",
+      rect: procession,
+      kind: "flat",
+      fromY: CAUSEWAY_Y,
+      toY: CAUSEWAY_Y,
+    },
+    // basins + shelf: rendered, never walked (all three are blocked)
+    {
+      id: "pool-bottom",
+      rect: pool,
+      kind: "flat",
+      fromY: POOL_BOTTOM_Y,
+      toY: POOL_BOTTOM_Y,
+    },
+    {
+      id: "channel-bed",
+      rect: channel,
+      kind: "flat",
+      fromY: CHANNEL_BED_Y,
+      toY: CHANNEL_BED_Y,
+    },
+    { id: "shore-shelf", rect: shore, kind: "flat", fromY: SHELF_Y, toY: SHELF_Y },
+  ];
+
+  // ── Wall rects: envelopes with gaps derived from real door tiles ──────────
+  const galleryBase = GALLERY_FLOOR_Y - 0.5;
+  const grottoBase = POOL_BOTTOM_Y - 0.5;
+  const wallRects: WallRect[] = [];
+
+  const pushWall = (
+    id: string,
+    rect: WorldRect,
+    baseY: number,
+    topY: number
+  ) => {
+    if (rect.maxX - rect.minX > 0.01 && rect.maxZ - rect.minZ > 0.01) {
+      wallRects.push({ id, rect, baseY, topY });
+    }
+  };
+
+  // approach envelope — the room is tile-suppressed, so nothing else draws it
+  const approachSouthDoor = doorSpan(grid, APPROACH_ROOM_ID, "south");
+  pushWall(
+    "approach-west",
+    {
+      minX: approach.minX - WALL_THICKNESS,
+      maxX: approach.minX,
+      minZ: approach.minZ - WALL_THICKNESS,
+      maxZ: approach.maxZ + WALL_THICKNESS,
+    },
+    galleryBase,
+    SHAFT_CEILING_Y
+  );
+  pushWall(
+    "approach-east",
+    {
+      minX: approach.maxX,
+      maxX: approach.maxX + WALL_THICKNESS,
+      minZ: approach.minZ - WALL_THICKNESS,
+      maxZ: approach.maxZ + WALL_THICKNESS,
+    },
+    galleryBase,
+    SHAFT_CEILING_Y
+  );
+  for (const [x0, x1] of spansExcluding(approach.minX, approach.maxX, [
+    approachNorthDoor,
+  ])) {
+    pushWall(
+      `approach-north-${x0.toFixed(2)}`,
+      {
+        minX: x0,
+        maxX: x1,
+        minZ: approach.minZ - WALL_THICKNESS,
+        maxZ: approach.minZ,
+      },
+      galleryBase,
+      SHAFT_CEILING_Y
+    );
+  }
+  if (approachSouthDoor) {
+    for (const [x0, x1] of spansExcluding(approach.minX, approach.maxX, [
+      approachSouthDoor,
+    ])) {
+      pushWall(
+        `approach-south-${x0.toFixed(2)}`,
+        {
+          minX: x0,
+          maxX: x1,
+          minZ: approach.maxZ,
+          maxZ: approach.maxZ + WALL_THICKNESS,
+        },
+        galleryBase,
+        SHAFT_CEILING_Y
+      );
+    }
+  }
+
+  // gallery envelope
+  pushWall(
+    "gallery-west",
+    {
+      minX: gallery.minX - WALL_THICKNESS,
+      maxX: gallery.minX,
+      minZ: gallery.minZ - WALL_THICKNESS,
+      maxZ: gallery.maxZ + WALL_THICKNESS,
+    },
+    galleryBase,
+    SHAFT_CEILING_Y
+  );
+  pushWall(
+    "gallery-east",
+    {
+      minX: gallery.maxX,
+      maxX: gallery.maxX + WALL_THICKNESS,
+      minZ: gallery.minZ - WALL_THICKNESS,
+      maxZ: gallery.maxZ + WALL_THICKNESS,
+    },
+    galleryBase,
+    SHAFT_CEILING_Y
+  );
+  for (const [x0, x1] of spansExcluding(gallery.minX, gallery.maxX, [
+    galleryNorthDoor,
+  ])) {
+    pushWall(
+      `gallery-north-${x0.toFixed(2)}`,
+      {
+        minX: x0,
+        maxX: x1,
+        minZ: gallery.minZ - WALL_THICKNESS,
+        maxZ: gallery.minZ,
+      },
+      galleryBase,
+      SHAFT_CEILING_Y
+    );
+  }
+  for (const [x0, x1] of spansExcluding(gallery.minX, gallery.maxX, [
+    gallerySouthDoor,
+  ])) {
+    pushWall(
+      `gallery-south-${x0.toFixed(2)}`,
+      {
+        minX: x0,
+        maxX: x1,
+        minZ: gallery.maxZ,
+        maxZ: gallery.maxZ + WALL_THICKNESS,
+      },
+      galleryBase,
+      SHAFT_CEILING_Y
+    );
+  }
+
+  // grotto envelope
+  pushWall(
+    "grotto-north",
+    {
+      minX: grotto.minX - WALL_THICKNESS,
+      maxX: grotto.maxX + WALL_THICKNESS,
+      minZ: grotto.minZ - WALL_THICKNESS,
+      maxZ: grotto.minZ,
+    },
+    grottoBase,
+    DOME_APEX_Y
+  );
+  pushWall(
+    "grotto-west",
+    {
+      minX: grotto.minX - WALL_THICKNESS,
+      maxX: grotto.minX,
+      minZ: grotto.minZ,
+      maxZ: grotto.maxZ + WALL_THICKNESS,
+    },
+    grottoBase,
+    DOME_APEX_Y
+  );
+  for (const [z0, z1] of spansExcluding(grotto.minZ, grotto.maxZ, [
+    grottoEastDoor,
+  ])) {
+    pushWall(
+      `grotto-east-${z0.toFixed(2)}`,
+      {
+        minX: grotto.maxX,
+        maxX: grotto.maxX + WALL_THICKNESS,
+        minZ: z0,
+        maxZ: z1,
+      },
+      grottoBase,
+      DOME_APEX_Y
+    );
+  }
+  for (const [x0, x1] of spansExcluding(grotto.minX, grotto.maxX, [
+    grottoSouthDoor,
+  ])) {
+    pushWall(
+      `grotto-south-${x0.toFixed(2)}`,
+      {
+        minX: x0,
+        maxX: x1,
+        minZ: grotto.maxZ,
+        maxZ: grotto.maxZ + WALL_THICKNESS,
+      },
+      grottoBase,
+      DOME_APEX_Y
+    );
+  }
+
+  // corridor enclosures (the rooms' own wall rows are skipped by the scan)
+  approachCorridorWalls.forEach((rect, i) =>
+    pushWall(`approach-corridor-wall-${i}`, rect, galleryBase, SHAFT_CEILING_Y)
+  );
+  galleryCorridorWalls.forEach((rect, i) =>
+    pushWall(`gallery-corridor-wall-${i}`, rect, galleryBase, SHAFT_CEILING_Y)
+  );
+
+  // Shaft collars: the rock fill stops at the roof, so each open shaft needs
+  // its own walls from the roof up to the shaft ceiling. The side a shaft's
+  // doorway is on is left open, and a side flush with the room envelope is
+  // skipped — the envelope already stands there.
+  const collar = (id: string, shaft: WorldRect, openSide: "north" | "south") => {
+    const T = WALL_THICKNESS;
+    const north = openSide !== "north";
+    const south = openSide !== "south";
+    const minZ = north ? shaft.minZ - T : shaft.minZ;
+    const maxZ = south ? shaft.maxZ + T : shaft.maxZ;
+    if (shaft.minX > gallery.minX + 0.01) {
+      pushWall(
+        `${id}-west`,
+        { minX: shaft.minX - T, maxX: shaft.minX, minZ, maxZ },
+        GALLERY_ROOF_Y,
+        SHAFT_CEILING_Y
+      );
+    }
+    if (shaft.maxX < gallery.maxX - 0.01) {
+      pushWall(
+        `${id}-east`,
+        { minX: shaft.maxX, maxX: shaft.maxX + T, minZ, maxZ },
+        GALLERY_ROOF_Y,
+        SHAFT_CEILING_Y
+      );
+    }
+    if (north) {
+      pushWall(
+        `${id}-north`,
+        { minX: shaft.minX - T, maxX: shaft.maxX + T, minZ, maxZ: shaft.minZ },
+        GALLERY_ROOF_Y,
+        SHAFT_CEILING_Y
+      );
+    }
+    if (south) {
+      pushWall(
+        `${id}-south`,
+        { minX: shaft.minX - T, maxX: shaft.maxX + T, minZ: shaft.maxZ, maxZ },
+        GALLERY_ROOF_Y,
+        SHAFT_CEILING_Y
+      );
+    }
+  };
+  collar("descent-collar", descentOpen, "south");
+  collar("surfacing-collar", surfacingOpen, "north");
+
+  // ── Ceilings ──────────────────────────────────────────────────────────────
+  const ceilingRects: CeilingRect[] = [
+    { id: "grotto-dome", rect: grotto, y: DOME_APEX_Y },
+    ...openShafts.map((rect, i) => ({
+      id: `shaft-ceiling-${i}`,
+      rect,
+      y: SHAFT_CEILING_Y,
+    })),
+    ...approachCorridor.map((rect, i) => ({
+      id: `approach-corridor-ceiling-${i}`,
+      rect,
+      y: SHAFT_CEILING_Y,
+    })),
+    ...galleryCorridor.map((rect, i) => ({
+      id: `gallery-corridor-ceiling-${i}`,
+      rect,
+      y: SHAFT_CEILING_Y,
+    })),
+    { id: "approach-ceiling", rect: approach, y: SHAFT_CEILING_Y },
+  ];
+
+  // The rock roof: over every gallery path tile deep enough to carry it.
+  const roofRects: WorldRect[] = [
+    descentRoofed,
+    westRun,
+    northRun,
+    eastBend,
+    surfacingRoofed,
+  ];
+
+  // ── Water ─────────────────────────────────────────────────────────────────
+  // A visible surface exists only where a shaft opens: the descent mouth and
+  // the landing cut. Everywhere else the gallery's water reads as body, not
+  // surface — that is the whole point of a roof below the waterline.
+  const surfaceBreakZ =
+    surfacingUpper.minZ +
+    upperRun * ((CAUSEWAY_Y - WATERLINE_Y) / (CAUSEWAY_Y - LANDING_Y));
+  // The approach ramp meets the water partway down; the plane stops exactly
+  // where the ramp crosses the waterline rather than riding up onto dry rock.
+  const approachRun = approach.maxZ - approach.minZ;
+  const approachWadeZ =
+    approach.minZ + approachRun * ((WATERLINE_Y - SHALLOWS_Y) / (0 - SHALLOWS_Y));
+  const waterPlanes: WorldRect[] = [
+    ...approachCorridor,
+    { ...approach, maxZ: approachWadeZ },
+    descentOpen,
+    { ...surfacingOpen, minZ: surfaceBreakZ },
+    channel,
+    pool,
+  ];
+
+  const waterVolumes: WaterVolume[] = [
+    { id: "vol-descent", rect: descentStair, floorY: GALLERY_FLOOR_Y },
+    { id: "vol-west-run", rect: westRun, floorY: GALLERY_FLOOR_Y },
+    { id: "vol-north-run", rect: northRun, floorY: GALLERY_FLOOR_Y },
+    { id: "vol-east-bend", rect: eastBend, floorY: GALLERY_FLOOR_Y },
+    {
+      id: "vol-surfacing",
+      rect: { ...surfacingLower, minZ: surfaceBreakZ },
+      floorY: GALLERY_FLOOR_Y,
+    },
+    { id: "vol-channel", rect: channel, floorY: CHANNEL_BED_Y },
+    { id: "vol-pool", rect: pool, floorY: POOL_BOTTOM_Y },
+  ];
+
+  const bayBounds = unionRect([
+    approach,
+    gallery,
+    grotto,
+    ...approachCorridor,
+    ...galleryCorridor,
+  ]);
+
+  const rockProbe = rockFill.reduce((widest, r) =>
+    (r.maxX - r.minX) * (r.maxZ - r.minZ) >
+    (widest.maxX - widest.minX) * (widest.maxZ - widest.minZ)
+      ? r
+      : widest
   );
 
   return {
     approach,
-    sump,
+    gallery,
     grotto,
-    pool,
+    descentStair,
+    descentOpen,
+    descentRoofed,
+    westRun,
+    northRun,
+    eastBend,
+    surfacingUpper,
+    surfacingLanding,
+    surfacingLower,
+    surfacingStair,
+    surfacingRoofed,
+    surfacingOpen,
+    rockFill,
+    openShafts,
+    bloomAnchor,
     shore,
-    overlooks,
-    gate,
+    channel,
+    procession,
+    pool,
+    apron,
+    westWalkway,
+    eastWalkway,
+    exitRamp,
+    waterfall,
+    threshold,
+    thresholdJambs,
+    thresholdOpening,
     alcoves,
-    corridorSG,
-    corridorSegments,
-    corridorWallRuns,
-    surfacingSteps,
-    waterPlanes: [
-      pool,
-      // Sump water: the sump itself, the approach↔sump gap, and up to the
-      // point on the approach ramp that meets the waterline. North is
-      // decreasing z, so the corridor segments (below) take over at sump.minZ.
-      {
-        minX: sump.minX - 1,
-        minZ: sump.minZ,
-        maxX: sump.maxX + 1,
-        maxZ: approach.minZ,
-      },
-      // The sump↔grotto corridor is below the waterline for its whole length
-      // (floor at CORRIDOR_SURFACING_Y = -2.2); water follows the carved Z
-      // shape. Segments abut (never overlap) so translucent surfaces don't
-      // double-blend.
-      ...corridorSegments,
-      // Water laps a short way up the surfacing steps, to where the ramp
-      // crosses the waterline.
-      {
-        minX: surfacingSteps.minX,
-        minZ:
-          surfacingSteps.minZ +
-          (surfacingSteps.maxZ - surfacingSteps.minZ) *
-            ((WATERLINE_Y - CAUSEWAY_Y) / (CORRIDOR_SURFACING_Y - CAUSEWAY_Y)),
-        maxX: surfacingSteps.maxX,
-        maxZ: surfacingSteps.maxZ,
-      },
-    ],
-    // West of the surfacing steps (which occupy the grotto's own south door
-    // x-span, not the sump's - see doorXSpan in createDrownedGalleryTerrain)
-    causewayProbe: { x: grotto.minX + gw * 0.25, z: pool.maxZ + 2.0 },
-    poolProbe: { x: grotto.minX + gw * 0.5, z: (pool.minZ + pool.maxZ) / 2 },
-    shoreProbe: { x: grotto.minX + gw * 0.5, z: shore.minZ + 1.0 },
-    gateProbe: { x: (gate.minX + gate.maxX) / 2, z: (gate.minZ + gate.maxZ) / 2 },
-    overlookProbes: overlooks.map((o) => ({
-      x: (o.minX + o.maxX) / 2,
-      z: (o.minZ + o.maxZ) / 2,
-    })),
+    balustrades,
+    approachCorridor,
+    galleryCorridor,
+    floorRects,
+    wallRects,
+    ceilingRects,
+    roofRects,
+    waterPlanes,
+    waterVolumes,
+    bayBounds,
+    probes: {
+      apron: { x: cx(apron), z: cz(apron) },
+      procession: centre(procession),
+      westWalkway: centre(westWalkway),
+      eastWalkway: { x: cx(eastWalkway), z: cz(procession) },
+      pool: centre(pool),
+      channel: centre(channel),
+      shore: centre(shore),
+      thresholdOpening: centre(thresholdOpening),
+      bloom: bloomAnchor,
+      rock: centre(rockProbe),
+    },
   };
 }
+
+// ── Terrain program ─────────────────────────────────────────────────────────
 
 export function createDrownedGalleryTerrain(
   grid: MuseumGrid
 ): MuseumTerrainProgram | null {
   const layout = buildDrownedGalleryLayout(grid);
   if (!layout) return null;
-  const { approach, sump, grotto } = layout;
 
-  // Zones are evaluated in order; first hit wins. Gradients run along z
-  // (north = minZ = deeper into the bay).
-  const zones: ElevationZone[] = [
-    // approach: 0 at south door → WATERLINE at north end
-    { rect: approach, from: WATERLINE_Y, to: 0, axis: "z" },
-    // corridor between approach and sump: flat at waterline depth
-    {
-      rect: {
-        minX: sump.minX - 1,
-        minZ: sump.maxZ,
-        maxX: sump.maxX + 1,
-        maxZ: approach.minZ,
-      },
-      from: WATERLINE_Y,
-      to: WATERLINE_Y,
-      axis: "z",
-    },
-    // sump south ramp: first 4 m descend WATERLINE → SUMP_FLOOR. A 2 m run
-    // was ~52° - it read as a chute, not a descent (executor + Fable both
-    // flagged it); 4 m brings it to ~33°.
-    {
-      rect: {
-        minX: sump.minX,
-        minZ: sump.maxZ - 4,
-        maxX: sump.maxX,
-        maxZ: sump.maxZ,
-      },
-      from: SUMP_FLOOR_Y,
-      to: WATERLINE_Y,
-      axis: "z",
-    },
-    // sump north ramp: last 3 m rise SUMP_FLOOR → CORRIDOR_SURFACING_Y
-    {
-      rect: {
-        minX: sump.minX,
-        minZ: sump.minZ,
-        maxX: sump.maxX,
-        maxZ: sump.minZ + 3,
-      },
-      from: CORRIDOR_SURFACING_Y,
-      to: SUMP_FLOOR_Y,
-      axis: "z",
-    },
-    // sump middle: flat floor
-    { rect: sump, from: SUMP_FLOOR_Y, to: SUMP_FLOOR_Y, axis: "z" },
-    // corridor between sump and grotto: flat at CORRIDOR_SURFACING_Y. The
-    // layout's corridorSG rect spans the full x-jog between the two doors -
-    // NOT just the sump's own x-span, which misses most of the corridor.
-    {
-      rect: layout.corridorSG,
-      from: CORRIDOR_SURFACING_Y,
-      to: CORRIDOR_SURFACING_Y,
-      axis: "z",
-    },
-    // grotto surfacing steps: rise to CAUSEWAY on the strip the corridor
-    // actually enters through (the grotto's own south-door x-span - see
-    // buildDrownedGalleryLayout).
-    {
-      rect: layout.surfacingSteps,
-      from: CAUSEWAY_Y,
-      to: CORRIDOR_SURFACING_Y,
-      axis: "z",
-    },
-    // grotto east exit ramp: last 2 m before the fire door rise CAUSEWAY → 0
-    {
-      rect: {
-        minX: grotto.maxX - 2,
-        minZ: grotto.maxZ - 6,
-        maxX: grotto.maxX,
-        maxZ: grotto.maxZ,
-      },
-      from: CAUSEWAY_Y,
-      to: 0,
-      axis: "x",
-    },
-    // grotto everywhere else: causeway level
-    { rect: grotto, from: CAUSEWAY_Y, to: CAUSEWAY_Y, axis: "z" },
+  const { floorRects, bayBounds } = layout;
+  const blocked: WorldRect[] = [
+    layout.shore,
+    layout.channel,
+    layout.pool,
+    ...layout.rockFill,
+    ...layout.thresholdJambs,
   ];
 
-  const blocked: WorldRect[] = [layout.shore, layout.pool, layout.gate];
-  const allowed: WorldRect[] = layout.overlooks;
+  /** Elevation on a floor rect, with the ramp parameter clamped to the rect. */
+  const heightOn = (floor: FloorRect, x: number, z: number): number => {
+    if (floor.kind === "flat") return floor.fromY;
+    const alongZ = floor.kind === "ramp-z";
+    const min = alongZ ? floor.rect.minZ : floor.rect.minX;
+    const max = alongZ ? floor.rect.maxZ : floor.rect.maxX;
+    const v = alongZ ? z : x;
+    const t = max === min ? 0 : Math.min(1, Math.max(0, (v - min) / (max - min)));
+    return floor.fromY + (floor.toY - floor.fromY) * t;
+  };
 
   return {
     waterlineY: WATERLINE_Y,
     elevationAt(x, z) {
-      for (const zone of zones) {
-        if (!inRect(zone.rect, x, z)) continue;
-        if (zone.from === zone.to) return zone.from;
-        const min = zone.axis === "z" ? zone.rect.minZ : zone.rect.minX;
-        const max = zone.axis === "z" ? zone.rect.maxZ : zone.rect.maxX;
-        const v = zone.axis === "z" ? z : x;
-        const t = max === min ? 0 : (v - min) / (max - min);
-        return zone.from + (zone.to - zone.from) * t;
+      for (const floor of floorRects) {
+        if (inRectClosed(floor.rect, x, z)) return heightOn(floor, x, z);
+      }
+      // The physics provider rounds a world position to the nearest tile, so a
+      // tile whose origin is `t` is walkable across `[t - TILE/2, t + TILE/2)`,
+      // while rect geometry uses `[t, t + TILE]`. In a corridor — the one place
+      // nothing else blocks the player — that lets them legally stand up to a
+      // quarter tile past a floor rect's edge. Absorb exactly that slop, and no
+      // more: a real hole is still wider than this and still throws.
+      for (const floor of floorRects) {
+        const grown: WorldRect = {
+          minX: floor.rect.minX - TILE_ROUNDING_SLOP,
+          maxX: floor.rect.maxX + TILE_ROUNDING_SLOP,
+          minZ: floor.rect.minZ - TILE_ROUNDING_SLOP,
+          maxZ: floor.rect.maxZ + TILE_ROUNDING_SLOP,
+        };
+        if (inRectClosed(grown, x, z)) return heightOn(floor, x, z);
+      }
+      // No silent datum-0 inside the bay: a walkable point with no floor under
+      // it is the "walking on top of the water" bug, and it must be loud.
+      if (import.meta.env.DEV && inRectClosed(bayBounds, x, z)) {
+        throw new Error(
+          `Drowned gallery: no elevation zone covers (${x.toFixed(2)}, ${z.toFixed(2)}) ` +
+            "inside the water bay — the layout and the walkable grid disagree"
+        );
       }
       return 0;
     },
     blockedAt(x, z) {
-      for (const a of allowed) if (inRect(a, x, z)) return false;
-      for (const b of blocked) if (inRect(b, x, z)) return true;
+      for (const rect of blocked) if (inRectHalfOpen(rect, x, z)) return true;
       return false;
     },
   };

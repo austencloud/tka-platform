@@ -6,9 +6,17 @@ import type {
 } from "../domain/museum-floor-plan-types";
 import { tileKey } from "../domain/museum-grid-types";
 import type { WallDefinition } from "../domain/wall-segment-types";
+import { computeRoomDimensions } from "../domain/wall-segment-types";
 import { buildMuseumGrid } from "../services/museum-grid-builder";
 import type { MuseumGridBuildResult } from "../services/types";
-import { createDrownedGalleryTerrain } from "./drowned-gallery-terrain";
+import {
+  ALCOVE_X_FRACTIONS,
+  ALCOVE_Z_OFFSET_M,
+  SHELF_Y,
+  TILE_METRES,
+  createDrownedGalleryTerrain,
+  tileCentredOffset,
+} from "./drowned-gallery-terrain";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -18,8 +26,10 @@ export interface CaveModeRoom {
   label: string;
   category: "SS" | "SO" | "TS" | "TO" | "QS" | "QO";
   technicalMode: string;
-  performerId: string;
-  sequenceId: string;
+  /** Every performer the chamber stages. The Water grotto stages three. */
+  performerIds: readonly string[];
+  /** One authored sequence per performer, in the same order. */
+  sequenceIds: readonly string[];
   tone: MuseumFloorPlanZoneTone;
 }
 
@@ -29,8 +39,8 @@ export const CAVE_MODE_ROOMS = [
     label: "Water",
     category: "SS",
     technicalMode: "Split-time / same-direction",
-    performerId: "cave-water-automaton",
-    sequenceId: "cave-water-seq",
+    performerIds: ["cave-water-a", "cave-water-b", "cave-water-c"],
+    sequenceIds: ["cave-water-seq-a", "cave-water-seq-b", "cave-water-seq-c"],
     tone: "arrival",
   },
   {
@@ -38,8 +48,8 @@ export const CAVE_MODE_ROOMS = [
     label: "Fire",
     category: "SO",
     technicalMode: "Split-time / opposite-direction",
-    performerId: "cave-fire-automaton",
-    sequenceId: "cave-fire-seq",
+    performerIds: ["cave-fire-automaton"],
+    sequenceIds: ["cave-fire-seq"],
     tone: "retail",
   },
   {
@@ -47,8 +57,8 @@ export const CAVE_MODE_ROOMS = [
     label: "Earth",
     category: "TS",
     technicalMode: "Together-time / same-direction",
-    performerId: "cave-earth-automaton",
-    sequenceId: "cave-earth-seq",
+    performerIds: ["cave-earth-automaton"],
+    sequenceIds: ["cave-earth-seq"],
     tone: "social",
   },
   {
@@ -56,8 +66,8 @@ export const CAVE_MODE_ROOMS = [
     label: "Air",
     category: "TO",
     technicalMode: "Together-time / opposite-direction",
-    performerId: "cave-air-automaton",
-    sequenceId: "cave-air-seq",
+    performerIds: ["cave-air-automaton"],
+    sequenceIds: ["cave-air-seq"],
     tone: "service",
   },
   {
@@ -65,8 +75,8 @@ export const CAVE_MODE_ROOMS = [
     label: "Sun",
     category: "QS",
     technicalMode: "Quarter-time / same-direction",
-    performerId: "cave-sun-automaton",
-    sequenceId: "cave-sun-seq",
+    performerIds: ["cave-sun-automaton"],
+    sequenceIds: ["cave-sun-seq"],
     tone: "anchor",
   },
   {
@@ -74,8 +84,8 @@ export const CAVE_MODE_ROOMS = [
     label: "Moon",
     category: "QO",
     technicalMode: "Quarter-time / opposite-direction",
-    performerId: "cave-moon-automaton",
-    sequenceId: "cave-moon-seq",
+    performerIds: ["cave-moon-automaton"],
+    sequenceIds: ["cave-moon-seq"],
     tone: "exhibit",
   },
 ] as const satisfies readonly CaveModeRoom[];
@@ -84,7 +94,7 @@ export const CAVE_SPACE_ORDER = [
   "cave-threshold",
   "cave-squeeze",
   "cave-water-approach",
-  "cave-water-sump",
+  "cave-water-gallery",
   "cave-water",
   "cave-fire",
   "cave-earth",
@@ -99,8 +109,8 @@ const LOBBY_TO_CAVE_EDGE_ID = "lobby->cave-threshold";
 const EDGE_IDS = {
   thresholdToSqueeze: "cave-threshold->cave-squeeze",
   squeezeToApproach: "cave-squeeze->cave-water-approach",
-  approachToSump: "cave-water-approach->cave-water-sump",
-  sumpToGrotto: "cave-water-sump->cave-water",
+  approachToGallery: "cave-water-approach->cave-water-gallery",
+  galleryToGrotto: "cave-water-gallery->cave-water",
   waterToFire: "cave-water->cave-fire",
   fireToEarth: "cave-fire->cave-earth",
   earthToAir: "cave-earth->cave-air",
@@ -126,8 +136,9 @@ function doorWall(
 /**
  * Door wall with no extra margin beyond the two corner tiles. The stamper
  * already reserves both corners, so minMargin 0 is safe — it just lets a
- * passage be as narrow as its door (used by the sump, which must read as a
- * ~2.5 m flooded squeeze rather than a room).
+ * passage be as narrow as its door, and lets a door sit flush against a
+ * corner (the flooded gallery's south door hugs its east wall, which is what
+ * turns its path into an S rather than a U).
  */
 function narrowDoorWall(
   edgeId: string,
@@ -150,6 +161,69 @@ function torchWall(
     alignment,
   };
 }
+
+/**
+ * The Water grotto's authored shell. Declared before VULCAN_CAVE_ROOMS so the
+ * performer stations can be derived from the SAME compiled dimensions the
+ * layout engine will use — see grottoPerformers below.
+ */
+const GROTTO_MIN_INTERIOR_WIDTH = 33;
+const GROTTO_MIN_INTERIOR_HEIGHT = 29;
+
+const grottoWalls = {
+  north: torchWall("center"),
+  south: doorWall(EDGE_IDS.galleryToGrotto, "center", 6),
+  east: doorWall(EDGE_IDS.waterToFire, "end"),
+  west: EMPTY_WALL,
+} satisfies Record<WallName, WallDefinition>;
+
+const grottoDimensions = computeRoomDimensions({
+  walls: grottoWalls,
+  minInteriorWidth: GROTTO_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: GROTTO_MIN_INTERIOR_HEIGHT,
+});
+
+/**
+ * Converts "n metres from the interior's minimum edge" into the centre-relative
+ * fraction `placePerformers` expects, landing on the very tile the layout
+ * module's alcove anchor names — `tileCentredOffset` is the shared expression
+ * that decides which tile that is. The +0.5 keeps
+ * `Math.floor(offset * interior)` exact for negative offsets instead of riding
+ * a floating-point boundary.
+ */
+function interiorOffsetFraction(
+  metresFromInteriorMin: number,
+  roomSpanTiles: number,
+  interiorSpanTiles: number
+): number {
+  const centred = tileCentredOffset(metresFromInteriorMin);
+  const targetTile = 1 + Math.round((centred - TILE_METRES / 2) / TILE_METRES);
+  const centreTile = Math.floor(roomSpanTiles / 2);
+  return (targetTile - centreTile + 0.5) / interiorSpanTiles;
+}
+
+/**
+ * A, B and C stand on the alcove shelves. Their anchors come off ONE
+ * expression shared with the terrain module (ALCOVE_X_FRACTIONS /
+ * ALCOVE_Z_OFFSET_M / SHELF_Y), so a performer can never drift off the shelf
+ * the graybox renders under it.
+ */
+const grottoPerformers = ALCOVE_X_FRACTIONS.map((fraction, index) => ({
+  offsetX: interiorOffsetFraction(
+    fraction * (grottoDimensions.w - 2) * TILE_METRES,
+    grottoDimensions.w,
+    grottoDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    ALCOVE_Z_OFFSET_M,
+    grottoDimensions.h,
+    grottoDimensions.h - 2
+  ),
+  facing: "south" as const,
+  refId: `cave-water-${["a", "b", "c"][index]}`,
+  collisionRadiusTiles: 2,
+  elevation: SHELF_Y,
+}));
 
 const thresholdRoom: RoomNode = {
   ...CAVE_THRESHOLD_ROOM,
@@ -190,25 +264,33 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
       "A descending passage where water is heard before it is seen; the floor drops toward the waterline.",
     roomPresentation: { suppressTileGeometry: true },
     walls: {
-      north: narrowDoorWall(EDGE_IDS.approachToSump, "start", 3),
+      north: narrowDoorWall(EDGE_IDS.approachToGallery, "start", 3),
       south: narrowDoorWall(EDGE_IDS.squeezeToApproach, "end", 3),
       east: EMPTY_WALL,
       west: EMPTY_WALL,
     },
   },
   {
-    id: "cave-water-sump",
-    name: "The Sump",
+    id: "cave-water-gallery",
+    name: "The Flooded Gallery",
     material: "stone",
     theme: "cave",
-    minInteriorWidth: 3,
-    minInteriorHeight: 14,
+    // Interior ≈ 13.5 × 24 m once ROOM_SCALE (1.5) is applied. Sized by the
+    // walk it has to carry: the submerged span must stay contiguous for 24 m
+    // or more, and the S-path plus its two stairs need the room to hold them.
+    minInteriorWidth: 18,
+    minInteriorHeight: 32,
     description:
-      "A fully flooded passage. The visitor walks the sump floor below the waterline and surfaces at the far end.",
+      "A rock-roofed flooded gallery walked on the bottom. The ceiling sits below the waterline, so there is no sign of air until the surfacing stair.",
     roomPresentation: { suppressTileGeometry: true },
     walls: {
-      north: narrowDoorWall(EDGE_IDS.sumpToGrotto, "start", 3),
-      south: narrowDoorWall(EDGE_IDS.approachToSump, "end", 3),
+      // Centred 6-tile (3 m) door onto the grotto: the surfacing stair, the
+      // corridor and the grotto's own south door share one axis, which is what
+      // makes the arrival a symmetric centre-south composition.
+      north: doorWall(EDGE_IDS.galleryToGrotto, "center", 6),
+      // Flush against the east wall, so the descent lands off-centre and the
+      // path reads as an S rather than doubling back on itself.
+      south: narrowDoorWall(EDGE_IDS.approachToGallery, "end", 3),
       east: EMPTY_WALL,
       west: EMPTY_WALL,
     },
@@ -218,43 +300,13 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     name: "The Drowned Gallery",
     material: "stone",
     theme: "cave",
-    minInteriorWidth: 33,
-    minInteriorHeight: 29,
+    minInteriorWidth: GROTTO_MIN_INTERIOR_WIDTH,
+    minInteriorHeight: GROTTO_MIN_INTERIOR_HEIGHT,
     description:
-      "The Water grotto: waterfall, mirror pool, glowworm dome, and three waterline alcoves performing A, B, C.",
+      "The Water grotto: a ring of walkways around a channel and a mirror pool, with three alcoves performing A, B, C across the water.",
     roomPresentation: { suppressTileGeometry: true },
-    walls: {
-      north: torchWall("center"),
-      south: doorWall(EDGE_IDS.sumpToGrotto, "start", 3),
-      east: doorWall(EDGE_IDS.waterToFire, "end"),
-      west: EMPTY_WALL,
-    },
-    performers: [
-      {
-        offsetX: -0.28,
-        offsetY: -0.42,
-        facing: "south",
-        refId: "cave-water-a",
-        collisionRadiusTiles: 2,
-        elevation: -1.0,
-      },
-      {
-        offsetX: 0,
-        offsetY: -0.42,
-        facing: "south",
-        refId: "cave-water-b",
-        collisionRadiusTiles: 2,
-        elevation: -1.0,
-      },
-      {
-        offsetX: 0.28,
-        offsetY: -0.42,
-        facing: "south",
-        refId: "cave-water-c",
-        collisionRadiusTiles: 2,
-        elevation: -1.0,
-      },
-    ],
+    walls: grottoWalls,
+    performers: grottoPerformers,
   },
   {
     id: "cave-fire",
@@ -418,19 +470,21 @@ export const VULCAN_CAVE_EDGES: RoomEdge[] = [
   },
   {
     from: "cave-water-approach",
-    to: "cave-water-sump",
+    to: "cave-water-gallery",
     type: "main-path",
     fromWall: "north",
     toWall: "south",
     corridorWidth: 3,
   },
   {
-    from: "cave-water-sump",
+    from: "cave-water-gallery",
     to: "cave-water",
     type: "main-path",
     fromWall: "north",
     toWall: "south",
-    corridorWidth: 3,
+    // Matches the 6-tile doors at both ends so the surfacing stair runs
+    // straight through into the grotto with no pinch.
+    corridorWidth: 6,
   },
   {
     from: "cave-water",
@@ -518,17 +572,17 @@ const CAVE_SPACE_PROGRAM: readonly CaveSpaceProgram[] = [
     tone: "threshold",
   },
   {
-    id: "cave-water-sump",
-    title: "The sump",
+    id: "cave-water-gallery",
+    title: "The flooded gallery",
     description:
-      "The route passes fully underwater before surfacing into the Water grotto.",
+      "Thirty metres walked on the bottom of a rock-roofed gallery, with a bloom of cave life at the midpoint.",
     tone: "threshold",
   },
   {
     id: "cave-water",
     title: "The drowned gallery",
     description:
-      "A waterfall feeds a mirror pool under a glowworm dome; three waterline alcoves perform A, B, and C.",
+      "A surfacing stair breaks the water at the mirror pool; a ring of walkways passes three alcoves performing A, B, and C.",
     tone: "arrival",
   },
   {

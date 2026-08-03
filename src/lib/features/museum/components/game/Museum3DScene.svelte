@@ -218,10 +218,10 @@
   const hasVulcanCaveSlice = grid.wings.some(
     (wing) => wing.id === "cave-water"
   );
-  // Phase-1 graybox for the Drowned Gallery. Remove with the component when the
+  // Graybox for the Drowned Gallery route. Remove with the component when the
   // authored GLB shell lands (see DrownedGalleryGraybox.svelte).
   const hasDrownedGallery = grid.wings.some(
-    (wing) => wing.id === "cave-water-sump"
+    (wing) => wing.id === "cave-water-gallery"
   );
 
   // ── Progressive mount: break heavy sub-components into stages so the
@@ -1660,7 +1660,11 @@
 {/if}
 
 {#if hasDrownedGallery}
-  <DrownedGalleryGraybox {grid} />
+  <DrownedGalleryGraybox
+    {grid}
+    currentRoomId={currentPlayerRoomId}
+    visible={props.visible !== false}
+  />
 {/if}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->

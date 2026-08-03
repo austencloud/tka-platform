@@ -57,22 +57,8 @@ describe("Vulcan Cave floor plan", () => {
     (mode) => mode.roomId !== "cave-water"
   );
 
-  it("places exactly one dedicated performer in each solo mode chamber", () => {
-    const soloPerformers = plan.grid.performers.filter(
-      (performer) => !performer.id.startsWith("cave-water-")
-    );
-    expect(soloPerformers.map((performer) => performer.id)).toEqual(
-      SOLO_MODE_ROOMS.map((mode) => mode.performerId)
-    );
-    expect(soloPerformers.map((performer) => performer.sequenceId)).toEqual(
-      SOLO_MODE_ROOMS.map((mode) => mode.sequenceId)
-    );
-    expect(soloPerformers.every((performer) => performer.autoPlay)).toBe(true);
-    expect(
-      new Set(soloPerformers.map((performer) => performer.sequenceId)).size
-    ).toBe(SOLO_MODE_ROOMS.length);
-
-    for (const mode of SOLO_MODE_ROOMS) {
+  it("places exactly the declared performers in every mode chamber", () => {
+    for (const mode of CAVE_MODE_ROOMS) {
       const wing = plan.grid.wings.find(
         (candidate) => candidate.id === mode.roomId
       )!;
@@ -85,21 +71,39 @@ describe("Vulcan Cave floor plan", () => {
       );
 
       expect(
-        roomPerformers.map((performer) => performer.id),
+        [...roomPerformers.map((performer) => performer.id)].sort(),
         mode.roomId
-      ).toEqual([mode.performerId]);
+      ).toEqual([...mode.performerIds].sort());
+      expect(
+        roomPerformers.map((performer) => performer.sequenceId),
+        mode.roomId
+      ).toEqual([...mode.sequenceIds]);
+      expect(
+        roomPerformers.every((performer) => performer.autoPlay),
+        mode.roomId
+      ).toBe(true);
     }
   });
 
-  it("resolves all six mode sequences to authored movement data", () => {
+  it("keeps every solo chamber a solo chamber", () => {
+    for (const mode of SOLO_MODE_ROOMS) {
+      expect(mode.performerIds, mode.roomId).toHaveLength(1);
+    }
+    const allSequences = CAVE_MODE_ROOMS.flatMap((mode) => mode.sequenceIds);
+    expect(new Set(allSequences).size).toBe(allSequences.length);
+  });
+
+  it("resolves every mode sequence to authored movement data", () => {
     for (const mode of CAVE_MODE_ROOMS) {
-      const sequence = MUSEUM_EXHIBIT_SEQUENCES[mode.sequenceId];
-      expect(sequence, mode.sequenceId).toBeDefined();
-      expect(sequence.steps.length, mode.sequenceId).toBeGreaterThanOrEqual(4);
-      expect(
-        sequence.steps.slice(1).every((step) => step.letter.length > 0),
-        mode.sequenceId
-      ).toBe(true);
+      for (const sequenceId of mode.sequenceIds) {
+        const sequence = MUSEUM_EXHIBIT_SEQUENCES[sequenceId];
+        expect(sequence, sequenceId).toBeDefined();
+        expect(sequence.steps.length, sequenceId).toBeGreaterThanOrEqual(4);
+        expect(
+          sequence.steps.slice(1).every((step) => step.letter.length > 0),
+          sequenceId
+        ).toBe(true);
+      }
     }
   });
 
@@ -235,8 +239,12 @@ describe("drowned gallery rooms", () => {
 
   it("builds the three water-bay rooms in route order", () => {
     expect(wing("cave-water-approach")).toBeDefined();
-    expect(wing("cave-water-sump")).toBeDefined();
+    expect(wing("cave-water-gallery")).toBeDefined();
     expect(wing("cave-water")).toBeDefined();
+  });
+
+  it("retired the sump wing", () => {
+    expect(plan.grid.wings.some((w) => w.id === "cave-water-sump")).toBe(false);
   });
 
   it("gives the grotto exhibit scale (≥ 24 x 21 m interior)", () => {
@@ -246,12 +254,27 @@ describe("drowned gallery rooms", () => {
     expect((g.height - 2) * 0.5).toBeGreaterThanOrEqual(21);
   });
 
-  it("keeps the sump narrow and long (~2.5 x 10.5 m)", () => {
-    const s = wing("cave-water-sump").bounds;
-    const short = Math.min(s.width, s.height) - 2;
-    const long = Math.max(s.width, s.height) - 2;
-    expect(short * 0.5).toBeLessThanOrEqual(3);
-    expect(long * 0.5).toBeGreaterThanOrEqual(10);
+  it("gives the flooded gallery room enough length to carry a 24 m submerged walk", () => {
+    const g = wing("cave-water-gallery").bounds;
+    expect((g.width - 2) * 0.5).toBeGreaterThanOrEqual(12);
+    expect((g.height - 2) * 0.5).toBeGreaterThanOrEqual(20);
+  });
+
+  it("centres the gallery's grotto door on the grotto's own door", () => {
+    const doorSpan = (id: string, wall: "north" | "south") => {
+      const b = wing(id).bounds;
+      const wallY = wall === "north" ? b.y : b.y + b.height - 1;
+      const tiles: number[] = [];
+      for (let tx = b.x; tx < b.x + b.width; tx++) {
+        if (plan.grid.tiles.get(tileKey(tx, wallY))?.type === "door")
+          tiles.push(tx);
+      }
+      return tiles;
+    };
+    const galleryDoor = doorSpan("cave-water-gallery", "north");
+    const grottoDoor = doorSpan("cave-water", "south");
+    expect(galleryDoor).toHaveLength(6);
+    expect(grottoDoor).toEqual(galleryDoor);
   });
 
   it("places three performers in the grotto", () => {
