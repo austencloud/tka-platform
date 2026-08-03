@@ -78,6 +78,19 @@ pattern for every category. Landed and verified:
   468; Alpha AND (Level 1 OR Level 2) → 249 = 86+163. Composition
   screenshot taken; `svelte-check` 0/0 before commit.
 
+### Third commit — dense length catalog (`0d5cf46069`, pushed)
+
+Austen's live review found the Length editor scrolling at every mobile
+viewport and an awkward two-column wall on desktop. Root cause: dropping the
+≥3 noise floor (second commit) grew the list to ~15–19 values, past every
+count-keyed `:has(nth-child(5/7))` composition. Fixed with a `dense` class
+(>8 values) — compact flex-wrapped chips, pinned per-row counts per tier,
+height-keyed growth at the C1 seams, a 44px-row tier under 520px height, and
+the tall-phone single-column `!important` block scoped to `:not(.dense)`.
+Probes + screenshots at 3840/2560/1920/1440/820×1180/750×832/960×412/
+412×960/375×667: zero drill-screen overflow everywhere; all ten builder
+screens probe 0 overflow at 412×960. svelte-check 0/0.
+
 ## Believed done — unverified
 
 - **B1 counting gate** (`countSettled` in SmartCollectionBuilderSheet):
