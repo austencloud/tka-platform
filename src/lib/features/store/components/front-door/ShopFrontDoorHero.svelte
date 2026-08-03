@@ -7,10 +7,14 @@
   The card is a real printed front pulled from the catalog, not an illustration.
   When the baked cover exists it carries the card's real, scannable QR; when it
   doesn't, the card shows without one. There is no drawn-on QR.
+
+  It is held up with its own back beside it (HeroCardDuo), and the back's mandala
+  is drawn live rather than printed. That is the claim the page makes — scan it
+  and it moves — shown instead of described.
 -->
 <script lang="ts">
   import type { CoverCard, Product } from "../../domain/models/product";
-  import ShopEntryArt from "../ShopEntryArt.svelte";
+  import HeroCardDuo from "./HeroCardDuo.svelte";
 
   interface Props {
     /** The single card the hero holds up. Null while the catalog is empty. */
@@ -45,16 +49,7 @@
   </div>
 
   <div class="card-stage">
-    {#if card && product}
-      <ShopEntryArt
-        cards={[card]}
-        {product}
-        deckName={product.name}
-        cardWidth={180}
-        maxCardWidth={822}
-        exactCount={1}
-      />
-    {/if}
+    <HeroCardDuo {card} {product} />
   </div>
 </section>
 
@@ -70,9 +65,23 @@
     padding: clamp(2.5rem, 5vh, 5rem) 0 clamp(2rem, 4vh, 3.5rem);
   }
 
-  @media (min-width: 48rem) {
+  /* Two columns only once the pair of cards has room to be cards. Below this
+     the duo takes the full band, which is wider than half of a tablet. */
+  @media (min-width: 64rem) {
     .hero {
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    }
+  }
+
+  /* Wide but short (a folded Fold in landscape, a laptop in a small window).
+     Stacked, the copy alone fills the screen and the cards never appear, which
+     is the one thing this hero exists to show. Side by side they both fit. */
+  @media (min-width: 48rem) and (max-height: 40rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      min-height: 0;
+      padding-block: 1.25rem;
+      gap: 2rem;
     }
   }
 
@@ -179,35 +188,22 @@
     outline-offset: 2px;
   }
 
-  /* Reserved stage: the printed card resolves from Storage after first paint,
-     and a fixed stage means the hero doesn't jump when it arrives. */
+  /* Reserved stage: the printed front resolves from Storage after first paint
+     and the back's player mounts a beat later, so the stage owns the height and
+     neither arrival moves anything. `container-type` publishes its width to the
+     duo, which sizes both cards from it. */
   .card-stage {
-    /* The card sizes to this box, and the box is in rem so it grows with the
-       root ramp on a big screen instead of sitting there at laptop size. The
-       822px cap on the fan is the print render's own width — past that the
-       image would be upscaled. */
-    width: min(100%, 26rem);
+    width: 100%;
     justify-self: center;
-    min-height: clamp(18rem, 30vw, 34rem);
+    container-type: inline-size;
     display: grid;
     place-items: center;
-    padding: clamp(1rem, 2vw, 2.5rem);
+    padding: clamp(0.5rem, 1.5vw, 1.5rem);
     background: radial-gradient(
       circle at 50% 45%,
       rgba(126, 224, 255, 0.16),
       rgba(126, 224, 255, 0) 68%
     );
-    filter: drop-shadow(0 1.75rem 3.5rem rgba(0, 0, 0, 0.6));
-  }
-
-  /* Big screens get a bigger card, not the laptop card floating in more rail.
-     34rem lands under the print render's own 822px source width at 4K, so it
-     grows without ever being upscaled. */
-  @media (min-width: 105rem) {
-    .card-stage {
-      width: min(100%, 34rem);
-      min-height: clamp(22rem, 24vw, 38rem);
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

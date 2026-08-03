@@ -17,6 +17,7 @@
   pixel position across all card variations.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
@@ -42,8 +43,22 @@
     sequence: SequenceData;
     themeOverride?: { visuals: CardBackThemeVisuals; name: string };
     showTnDDesignation?: boolean;
+    /**
+     * Opt-in live layer over the printed mandala (the shop hero's animated
+     * back). The snippet renders in a box concentric with the mandala and
+     * inherits `--card-mandala-size`, the printed mandala's side length, so an
+     * engine-aligned overlay can size its own square from it. Supplying it also
+     * ghosts the printed mandala underneath, which is what lets a drawn trail
+     * read against it. Print and raster paths never pass this.
+     */
+    mandalaOverlay?: Snippet;
   }
-  let { sequence, themeOverride, showTnDDesignation = false }: Props = $props();
+  let {
+    sequence,
+    themeOverride,
+    showTnDDesignation = false,
+    mandalaOverlay,
+  }: Props = $props();
 
   const d = $derived(deriveCardBackData(sequence));
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
@@ -150,7 +165,7 @@
 
     <!-- CENTER: mandala -->
     <div class="content">
-      <div class="mandala-zone">
+      <div class="mandala-zone" class:ghosted={!!mandalaOverlay}>
         <div class="mandala-anchor">
           <SequenceMandala
             {sequence}
@@ -165,6 +180,9 @@
           />
         </div>
       </div>
+      {#if mandalaOverlay}
+        <div class="mandala-overlay">{@render mandalaOverlay()}</div>
+      {/if}
     </div>
 
     <!-- LOOP ROW: between mandala and bottom elements -->
@@ -487,6 +505,9 @@
     inset: 10cqi 3.2cqi 30cqi;
     z-index: 1;
     overflow: hidden;
+    /* Named so an opt-in overlay can derive its own square from the printed
+       mandala's side instead of hardcoding this number a second time. */
+    --card-mandala-size: 72cqi;
   }
 
   .level-badge-slot {
@@ -509,11 +530,28 @@
     justify-content: center;
   }
 
+  /* Ghosted under a live overlay so the drawn trail reads against the printed
+     figure instead of fighting it (the ShapeMatrixDrill value). */
+  .mandala-zone.ghosted {
+    opacity: 0.55;
+  }
+
+  /* Concentric with .mandala-anchor: same centre, sized by the consumer. The
+     box may run wider than .content — what it paints does not. */
+  .mandala-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+
   .mandala-anchor {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 72cqi;
+    width: var(--card-mandala-size, 72cqi);
     max-height: 100%;
     aspect-ratio: 1;
     overflow: hidden;
