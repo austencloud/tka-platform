@@ -2173,6 +2173,22 @@
     border-radius: 8px;
     padding: 3px 4px;
   }
+  /* The grid preview SVG sizes to its own 180px max when the flex item is
+     auto-sized — pin the box so it stays a mini-tile icon on the landing. */
+  .mini-art.grid-composite-preview {
+    width: 2rem;
+    min-width: 2rem;
+    height: 2rem;
+    overflow: hidden;
+    border-radius: 8px;
+    align-self: center;
+  }
+  .mini-art.grid-composite-preview :global(.lesson-grid-display),
+  .mini-art.grid-composite-preview :global(.grid-svg) {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+  }
   .mini-main {
     flex: 1;
     min-width: 0;
