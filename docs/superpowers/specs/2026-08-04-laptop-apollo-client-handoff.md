@@ -102,9 +102,57 @@ is not recoverable from git.
 Nothing. No branch, no worktree, no uncommitted work. All three commits are on
 `main` and pushed: `f3a096205f`, `9ddcf8c4bf`, `6e592a490d`.
 
+## Laptop-side status (2026-08-04, evening)
+
+All six loose ends are closed. The laptop session had independently done 2 to 6
+before this handoff was read, so the entries below record evidence rather than
+plans. One finding contradicts this doc and is called out in #1.
+
+| # | State | Evidence |
+|---|---|---|
+| 1 | **Done, with a correction** | `quitAppAfter` alone was NOT sufficient. See #1. |
+| 2 | Done | Paired to instance 2 (`48989`), the instance named `laptop`. |
+| 3 | Done | `apps` subkey populated with `Desktop`, `Steam Big Picture`, `Virtual Display`; host `/api/clients/list` shows a named cert `laptop`. |
+| 4 | Done | `Video stream is 1920x1200x60`; screenshot showed an empty extended desktop at native size; teardown proven under #1. |
+| 5 | Done, and rewritten | Installed, then the card was rebuilt in WPF to match Agent Hub and made machine-agnostic. |
+| 6 | Done | Exactly three tiles: `d1`, `d2`, `laptop`. |
+
+**Completed beyond this handoff's scope:** instance 2 pinned to d1's LEFT panel
+and instance 1 pinned to the RIGHT panel, so Mirror mode is correct on both
+machines; and d2's client record had `always_use_virtual_display` turned off,
+without which it could not mirror a physical panel at all.
+
 ## Loose ends (ranked)
 
-### 1. Set `quitAppAfter = true` in the laptop's Moonlight — START HERE
+### 1. Set `quitAppAfter = true` in the laptop's Moonlight — DONE, with a correction
+
+**The registry setting alone does not fix this.** It was set to `true` with
+Moonlight closed exactly as instructed below, then a stream was closed
+gracefully via `CloseMainWindow()`, and the host still logged only
+`Session pausing`. The phantom display survived.
+
+CLI-launched streams need **`--quit-after` on the command line**. With it the
+sequence completes:
+
+```
+17:36:37.275  CLIENT DISCONNECTED
+17:36:37.353  Session pausing for app [Virtual Display].
+17:36:37.439  Virtual Display removed successfully
+```
+
+86ms. `launchers/moonlight-hub.ps1` now passes `--quit-after` on every mode, so
+the gap this doc flags under #5 is closed at the source. Keep the registry
+setting as well, for streams started from Moonlight's own UI.
+
+**Second trap found here:** a paused session is *resumed*, not replaced. A
+request for `Virtual Display` came back as `Session resuming for app [Desktop]`
+because a stale paused Desktop session existed, which is why the first teardown
+test looked like the fix had failed rather than like the wrong app running.
+Clear it with `moonlight quit <host>:<port>`, which answers `<cancel>1</cancel>`
+and returns the host to `SUNSHINE_SERVER_FREE`.
+
+The original instructions follow, retained because the registry half is still
+required.
 
 This is the highest-value item and the direct cause of a real problem: the
 laptop stranded a phantom virtual display on d2 **twice** on 2026-08-04,
@@ -135,7 +183,7 @@ show `CLIENT DISCONNECTED` → `Session pausing` → `Virtual Display removed
 successfully` within a second. If instead it stops at `Session pausing`, the
 setting did not take — check that Moonlight was closed when you wrote it.
 
-### 2. Pair with d1's `laptop` instance — NOT with d2
+### 2. Pair with d1's `laptop` instance — DONE (not with d2)
 
 Already decided, do not re-litigate: Austen ruled on 2026-08-03 that clients
 **must not chain** laptop → d2 → d1. Each client pairs straight to its own d1
@@ -154,7 +202,7 @@ Once both you and d2 are streaming, the two virtual displays coexist on d1's
 desktop and get arranged side by side in d1's Windows display settings. Input
 unifies on d1 — d2's mouse drives both halves, your pane is passive.
 
-### 3. Re-pair
+### 3. Re-pair — DONE
 
 Apollo's fresh CA invalidated the laptop's old pairing exactly as it did d2's.
 Assume you are unpaired regardless of what the UI suggests — see Gotchas on
@@ -187,13 +235,13 @@ subkey under
 plus the host's `/api/clients/list` showing a named cert for you. `paired=True`
 in the registry means nothing (see Gotchas).
 
-### 4. Prove the virtual display works, then prove teardown
+### 4. Prove the virtual display works, then prove teardown — DONE
 
 Stream, screenshot, confirm you get a new extended display at the laptop's
 native resolution rather than a downscale of d1's monitors. Then close it and
 confirm removal in the host log. Both halves, or it is not done.
 
-### 5. Install Moonlight Hub — it was written for you
+### 5. Install Moonlight Hub — DONE, and since rebuilt
 
 `launchers/moonlight-hub.ps1` landed on `main` on 2026-08-04 from the d1
 session and is **already parameterized for the laptop**: `$HostPort = 48989`,
@@ -219,7 +267,7 @@ d1's monitors are identical 4K, so `friendly_name` cannot distinguish them).
 That only matters for **Mirror** mode. Extended mode creates a new display and
 does not care. It runs elevated **on d1**, not on the laptop.
 
-### 6. Clean up the laptop's Moonlight host list
+### 6. Clean up the laptop's Moonlight host list — DONE
 
 Austen's standing requirement (2026-08-04): Moonlight shows exactly three
 entries — `d1`, `d2`, `laptop` — and nothing else. *"quit screwing around and

@@ -215,13 +215,36 @@ deliberately excluded from this handoff's commit. Leave it alone.
    seeded with instance 1's `username`/`salt`/`password` hashes only — identity
    was NOT copied, Apollo2 generated its own `uniqueid`/certs. One login works
    for both dashboards, confirmed from d2.
-   **d2 paired 2026-08-04** (Done item 15). **The laptop has not** — Apollo's
-   fresh CA invalidated its old pairing too. Its handoff is
+   **d2 paired 2026-08-04** (Done item 15). **The laptop paired 2026-08-04
+   evening**, from the laptop itself — `/api/clients/list` on instance 2 returns
+   a named cert `laptop`, and its Moonlight `apps` subkey carries `Desktop`,
+   `Steam Big Picture`, `Virtual Display`. Every client in the mesh is now on
+   Apollo. Laptop-side detail:
    `docs/superpowers/specs/2026-08-04-laptop-apollo-client-handoff.md`.
 
    > A d1-authored version of this entry said "instance 1 has ZERO paired
    > devices" as of 2026-08-04. That was true when written and is now stale —
    > `/api/clients/list` on instance 1 returns a named cert `d2`.
+
+1b. **Mirror mode pinned per instance — DONE 2026-08-04 evening, from the
+   laptop over the dashboard API.** Streaming the `Desktop` app captures a
+   physical panel, and which one is the instance-wide `output_name`. Both are
+   now set so each client mirrors the panel nearest it:
+
+   | Instance | Port | Client | Pinned to | device_id |
+   |---|---|---|---|---|
+   | 2 | 48989 | laptop | d1 LEFT | `{b0fed915-1f17-51e0-9d9d-ae92b8a22a46}` (`\\.\DISPLAY2`, origin x -3840) |
+   | 1 | 47989 | d2 | d1 RIGHT | `{cef0d528-f01d-5611-878f-8e487d13aa58}` (`\\.\DISPLAY1`, origin x 0, primary) |
+
+   d2's client record also had `always_use_virtual_display` turned **off**,
+   without which it always gets a virtual screen and can never mirror. Note the
+   consequence: d2's existing `Desktop` launchers now mirror instead of
+   extending, and d2 reaches extended mode through the `Virtual Display` app,
+   the same way the laptop does.
+
+   **Not yet verified from d2's side** — the config is confirmed set and the
+   service restarted, but no stream has run from d2 since. Confirm by the
+   capture geometry in its log: the right panel reports `Offset: 3840x0`.
 
 2. ~~**Get ONE virtual display working office → bedroom.**~~ **DONE and proven
    2026-08-04** — Done item 16. Teardown is clean once the client sets

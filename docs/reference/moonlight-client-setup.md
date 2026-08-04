@@ -228,7 +228,7 @@ Set-ItemProperty $k reversescroll "false" -Type String
 Set-ItemProperty $k backgroundgamepad "false" -Type String
 Set-ItemProperty $k capturesyskeys 0 -Type DWord
 Set-ItemProperty $k keepawake "true" -Type String
-Set-ItemProperty $k quitAppAfter "false" -Type String
+Set-ItemProperty $k quitAppAfter "true" -Type String   # see the note below
 Set-ItemProperty $k muteonfocusloss "false" -Type String
 
 # Host and diagnostics
@@ -248,7 +248,7 @@ The settings that matter and why:
 |---|---|---|
 | `hostaudio` | `false` | Audio plays on the client only. `true` also plays it out of the host's speakers. |
 | `keepawake` | `true` | Client does not sleep mid-stream. |
-| `quitAppAfter` | `false` | Disconnecting leaves the host session running. Critical: `true` would kill the host desktop session on every disconnect. |
+| `quitAppAfter` | `true` | **Reversed for Apollo on 2026-08-04.** Apollo pauses a session on disconnect and deliberately holds its virtual display open for resume, so a client that only disconnects strands a phantom monitor on the host. The laptop did that to d2 twice, once mid-work. This does not tear down the host's Windows session; it terminates the streamed *app*, which is what releases the display. |
 | `mouseacceleration` | `false` | Raw input, 1:1 pointer. |
 | `capturesyskeys` | `0` | Alt+Tab and Win stay local unless fullscreen. Set `1` to send them to the host in fullscreen. |
 | `videocfg` / `videodec` | `0` | Auto-negotiate codec and hardware decoder. Only pin these when diagnosing. |
@@ -430,8 +430,24 @@ config first and post it back with your addition, or you will silently drop
   sitting at the host.
 - **Do not copy the client certificate or private key** from another machine.
   Pair fresh.
-- **`quitAppAfter` must stay `false`.** Set to `true`, every disconnect tears down
-  the host's session and anything running in it.
+- **`quitAppAfter` must be `true` against Apollo.** This reverses the original
+  Sunshine-era advice, which read `true` as tearing down the host's Windows
+  session. It does not. It terminates the streamed *app*, and on Apollo that is
+  the only thing that releases a virtual display: Apollo pauses on disconnect
+  and holds the display open for resume, so a client that merely disconnects
+  strands a phantom monitor on the host until something terminates the app.
+- **The registry setting does not cover CLI-launched streams.** Verified
+  2026-08-04: with `quitAppAfter` true and no flag, a graceful window close
+  still logged only `Session pausing`. Pass **`--quit-after`** on the
+  `moonlight stream` command line and the sequence completes -
+  `CLIENT DISCONNECTED` then `Session pausing` then
+  `Virtual Display removed successfully`, in 86ms. `launchers/moonlight-hub.ps1`
+  passes it on every mode.
+- **A paused session is resumed, not replaced.** Asking for a different app
+  while one is paused silently resumes the paused one instead - a request for
+  `Virtual Display` came back as `Session resuming for app [Desktop]`. Clear it
+  with `moonlight quit <host>:<port>`, which answers `<cancel>1</cancel>` and
+  returns the host to `SUNSHINE_SERVER_FREE`.
 - **RDP can leave the host console locked.** If Sunshine shows a lock screen or
   black screen after an RDP session, that is the cause. Unlock the host console
   before treating Sunshine as broken.

@@ -142,7 +142,17 @@ function Resolve-StreamHost {
 
 function Start-Stream($Mode, [string]$Address) {
   Set-Content -Path $LastFile -Value $Mode.Key -Encoding ascii
-  $line = 'stream {0}:{1} "{2}" {3} --frame-pacing --display-mode fullscreen' -f `
+  # --quit-after is load-bearing, not tidiness. Apollo deliberately PAUSES a
+  # session on disconnect and holds its virtual display open for resume, so a
+  # client that only disconnects strands a phantom monitor on d1 until something
+  # terminates the app. The laptop did that to d2 twice on 2026-08-04, once
+  # while Austen was working, and it read as "my display settings are stuck".
+  #
+  # Moonlight's quitAppAfter registry setting does NOT cover CLI-launched
+  # streams - verified: with it true and this flag absent, the host still logged
+  # only "Session pausing". With the flag, the sequence completes:
+  # CLIENT DISCONNECTED -> Session pausing -> Virtual Display removed, in 86ms.
+  $line = 'stream {0}:{1} "{2}" {3} --frame-pacing --quit-after --display-mode fullscreen' -f `
     $Address, $HostPort, $Mode.App, $Mode.Args
   Start-Process -FilePath $Moonlight -ArgumentList $line
 }
