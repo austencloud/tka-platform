@@ -23,11 +23,15 @@
      pure Firestore read; a public marketing page must never write short codes
      (one-code-per-hash). No code, no phone — the composition just holds the
      cards.
-  3. The iframe is inert to the pointer. It is a depiction of a phone screen,
-     and a visitor who scrolled it, or pressed the viewer's own "Open TKA"
-     inside a 375px box, would be looking at a broken-seeming app rather than
-     the promise. The screen is a real link out instead: tap it and the actual
-     /q opens in a new tab, no demo flag, the real thing.
+  3. The screen is LIVE WHEN IT IS BIG ENOUGH TO BE USED, and inert below that
+     (see `bigEnough`). It used to be pointer-inert at every size, on the
+     argument that it was a depiction rather than a control surface. Austen
+     (2026-08-04): "on my 4K device I actually could click each one of these
+     buttons very easily." Right — at 4K the embedded viewer's controls render
+     LARGER than they do on a real phone, so refusing the click was the only
+     dishonest thing left on an otherwise honest picture. Below the gate the
+     old argument still holds and the old behavior is unchanged.
+     Either way "Open this scan" stays: the real /q, no demo flag, new tab.
 
   The iframe renders at a true 375 CSS viewport WIDTH — a phone's width, so /q
   lays itself out exactly as it does on a phone — and is scaled into the frame
@@ -36,6 +40,7 @@
   Nothing loads until the first scan press.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import { fade } from "svelte/transition";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
@@ -128,10 +133,68 @@
   const frameH = $derived(
     scale && screenH ? Math.ceil(screenH / scale) : FALLBACK_H
   );
+
+  /**
+   * THE TARGET-SIZE GATE — the one number that decides whether the screen is a
+   * control surface or a picture of one.
+   *
+   * The embedded page lays itself out at 375 CSS px and is then scaled by
+   * `scale`, so every touch target inside it is scaled too. The app's floor is
+   * 44px (`--min-touch-target`), so a 44px control lands on screen at
+   * `44 * scale` physical pixels. Below about 40px that stops being a control
+   * anyone can hit on purpose, and an interactive screen that misses is worse
+   * than an honest picture — hence 0.9 (44 x 0.9 = 39.6px).
+   *
+   * Measured, not assumed (2026-08-04, Chrome, one CSS px per device px):
+   *
+   *   viewport      screen px   scale   44px lands at   verdict
+   *   3840 x 2160      399      1.064       46.8        live
+   *   2560 x 1440      347      0.925       40.7        live
+   *   1920 x 1080      255      0.680       29.9        inert
+   *   1440 x  900      217      0.579       25.5        inert
+   *    960 x  412       75      0.200        8.8        inert
+   *    375 x  667      110      0.293       12.9        inert
+   *
+   * The boundary lands in the empty GAP between 0.680 and 0.925 — no tier is
+   * anywhere near it, which is what makes 0.9 a stable threshold rather than a
+   * lucky one. (0.925 is 2560 sitting on `40svh`; a 2560-wide window under
+   * ~1400 tall drops below the gate, which is a real size change, not a
+   * flicker.) The one thing that could chatter is a live RESIZE dragged across
+   * the line, so the gate has hysteresis: it opens at 0.9 and does not close
+   * until 0.86. A gate that chattered would flash the cue on and off.
+   *
+   * Reactive off the measured screen width — the same ResizeObserver-backed
+   * binding `frameH` derives from — never a media query. The screen's size is
+   * a function of the stage's container tiers and `svh`, not of the viewport
+   * width alone, so only the measurement knows the answer.
+   */
+  const LIVE_IN = 0.9;
+  const LIVE_OUT = 0.86;
+  let bigEnough = $state(false);
+  $effect(() => {
+    const s = scale;
+    if (!s) return;
+    bigEnough = s >= (untrack(() => bigEnough) ? LIVE_OUT : LIVE_IN);
+  });
+
+  /** The screen accepts the pointer: big enough, page up, page loaded. */
+  const live = $derived(bigEnough && opened && loaded);
 </script>
 
-<div class="phone" class:onstage class:leaning={viewfinder} class:opened>
-  <span class="speaker" aria-hidden="true"></span>
+<div
+  class="phone"
+  class:onstage
+  class:leaning={viewfinder}
+  class:opened
+  class:live
+>
+  <!-- The body's hardware, all of it decorative and all of it pointer-inert:
+       the screen underneath is a control surface now, and nothing drawn on top
+       of a phone may eat a press meant for it. -->
+  <span class="earpiece" aria-hidden="true"></span>
+  <span class="nub vol-up" aria-hidden="true"></span>
+  <span class="nub vol-down" aria-hidden="true"></span>
+  <span class="nub power" aria-hidden="true"></span>
 
   <div class="screen" bind:clientWidth={screenW} bind:clientHeight={screenH}>
     <!-- CAMERA VIEW: what the phone sees before it resolves the code — a photo
@@ -183,6 +246,7 @@
         {/if}
         <div
           class="viewport"
+          class:live
           style:width="{FRAME_W}px"
           style:height="{frameH}px"
           style:transform="scale({scale})"
@@ -199,10 +263,34 @@
         </div>
       </div>
     {/if}
+
+    <!-- The sheen of glass held at an angle. Last child of the screen so the
+         screen's own `overflow: hidden` clips it to the rounded rect, and
+         pointer-inert so it cannot come between a visitor and a live page. -->
+    <span class="glare" aria-hidden="true"></span>
   </div>
 
-  <!-- The screen is inert, so the way out is explicit. Same code, no demo
-       flag: the real page, counted like any other visit. -->
+  <!-- Cut into the display, not painted on the bezel: it sits a hair below the
+       screen's top edge, which is where a punch-hole is. Kept small on purpose
+       — the embedded viewer's top bar runs under it. -->
+  <span class="punch" aria-hidden="true"></span>
+
+  <!-- Quiet, and only where the screen actually takes a press. Absolutely
+       placed above the phone, so it can appear and disappear with the gate
+       without moving anything (no-layout-shift.md). -->
+  {#if live}
+    <span
+      class="live-cue"
+      transition:fade={{ duration: reducedMotion ? 0 : DURATION.fast }}
+    >
+      <span class="dot" aria-hidden="true"></span>
+      This screen is live
+    </span>
+  {/if}
+
+  <!-- The way out, at every size: the same code without the demo flag, so a
+       visitor who wants the real page gets the real page, counted like any
+       other visit. -->
   {#if code && opened}
     <a
       class="open-real"
@@ -226,10 +314,11 @@
     aspect-ratio: 1 / 2.02;
     border-radius: clamp(1.1rem, 7%, 2.4rem);
     padding: 2.4%;
-    background: linear-gradient(158deg, #2b3140, #12151d 55%, #232833);
+    background: linear-gradient(158deg, #333a4b, #12151d 52%, #262c3a 86%, #171b25);
     box-shadow:
       0 2rem 4rem rgba(0, 0, 0, 0.6),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+      0 0.35rem 0.9rem rgba(0, 0, 0, 0.45),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.55);
     /* THE ENTRANCE, and then the lean. Both are the same `transform`, so they
        have to be one ladder of states rather than two properties.
 
@@ -259,15 +348,126 @@
     transform: perspective(1400px) rotateY(-6deg) rotateX(1deg);
   }
 
-  .speaker {
+  /* ── the body's hardware ────────────────────────────────────────────────
+     A phone is a machined object, and the flat gradient it used to be read as
+     a rounded rectangle with a picture in it. Everything below is CSS — no
+     device frame asset, and nothing that cosplays a particular manufacturer.
+     Austen (2026-08-04): "is this the most realistic we can make the phone
+     look." Four cues do it: a rim that catches light, buttons that break the
+     silhouette, a camera cut into the display, and glass that has a sheen.
+
+     THE RIM. The old edge was one flat inset hairline, the same brightness the
+     whole way round, which is exactly what an edge of real metal never is. A
+     conic gradient masked to the border box gives the frame a light source: it
+     flares along the upper-left and lower-right chamfers and goes near-dark on
+     the runs between them, so turning the phone (the lean, the entrance) reads
+     as an object catching a highlight. `mask-composite: exclude` over a
+     content-box mask is the standard gradient-border trick — the padding value
+     IS the rim's thickness. */
+  .phone::before {
+    content: "";
     position: absolute;
-    top: 1.1%;
+    inset: 0;
+    z-index: 4;
+    border-radius: inherit;
+    padding: clamp(1px, 0.6%, 3px);
+    background: conic-gradient(
+      from 205deg at 50% 50%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.58) 34deg,
+      rgba(158, 178, 208, 0.16) 88deg,
+      rgba(255, 255, 255, 0.08) 148deg,
+      rgba(255, 255, 255, 0.46) 202deg,
+      rgba(150, 168, 196, 0.14) 258deg,
+      rgba(255, 255, 255, 0.3) 316deg,
+      rgba(255, 255, 255, 0.05) 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* The earpiece slit, on the bezel where it belongs. It used to be a 26%-wide
+     bar sitting on the seam, half of it over the screen. */
+  .earpiece {
+    position: absolute;
+    z-index: 5;
+    top: 0.34%;
     left: 50%;
     translate: -50% 0;
-    width: 26%;
-    height: 0.32rem;
+    width: 15%;
+    height: 0.5%;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.28);
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.9),
+      rgba(255, 255, 255, 0.16)
+    );
+    pointer-events: none;
+  }
+
+  /* Power and volume, hanging off the frame — the silhouette break that stops
+     the body reading as a rounded rectangle. Widths are % of the phone's WIDTH
+     and heights % of its HEIGHT, so they hold their proportions at every size
+     the stage hands this component. */
+  .nub {
+    position: absolute;
+    z-index: 5;
+    width: 1.15%;
+    background: linear-gradient(180deg, #4d556a, #262c39 55%, #414a5d);
+    box-shadow: 0 0 0.12rem rgba(0, 0, 0, 0.75);
+    pointer-events: none;
+  }
+  .nub.vol-up,
+  .nub.vol-down {
+    left: -0.9%;
+    border-radius: 0.14rem 0 0 0.14rem;
+  }
+  .nub.vol-up {
+    top: 19.5%;
+    height: 5.6%;
+  }
+  .nub.vol-down {
+    top: 26.5%;
+    height: 5.6%;
+  }
+  .nub.power {
+    right: -0.9%;
+    top: 24%;
+    height: 8.2%;
+    border-radius: 0 0.14rem 0.14rem 0;
+  }
+
+  /* The camera. Sits ON the display a hair below its top edge, which is what a
+     punch-hole is — and small enough that the embedded viewer's top bar runs
+     under it rather than around it. Sibling of .screen rather than a child, so
+     the screen's `overflow: hidden` and its scaled iframe never touch it. */
+  .punch {
+    position: absolute;
+    z-index: 5;
+    top: 1.75%;
+    left: 50%;
+    translate: -50% 0;
+    width: 3.7%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      radial-gradient(
+        circle at 36% 30%,
+        rgba(104, 138, 182, 0.5),
+        rgba(5, 7, 11, 0.98) 60%
+      ),
+      #05070a;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.85),
+      0 0 0.3rem rgba(0, 0, 0, 0.55);
+    pointer-events: none;
   }
 
   .screen {
@@ -421,8 +621,12 @@
 
   .viewport {
     transform-origin: top left;
-    /* A depiction, not a control surface — see the header. */
+    /* Below the target-size gate this is a depiction, not a control surface —
+       see the header and `bigEnough`. Above it, the press goes through. */
     pointer-events: none;
+  }
+  .viewport.live {
+    pointer-events: auto;
   }
   .viewport iframe {
     width: 100%;
@@ -459,6 +663,71 @@
   }
   .loading-text {
     opacity: 0.8;
+  }
+
+  /* ── glass ──────────────────────────────────────────────────────────────
+     A diagonal sweep and its thin trailing band: the reflection a flat sheet
+     of glass carries when it is held at an angle to a light. It blends in
+     `screen`, so it can only ever ADD light, and the strongest band is 11%
+     white — the embedded page reads through it at every size. Above every
+     layer in the screen, and the last word in the screen's stacking context;
+     `isolation: isolate` on .screen keeps the blend off everything else. */
+  .glare {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: linear-gradient(
+      118deg,
+      rgba(255, 255, 255, 0) 24%,
+      rgba(255, 255, 255, 0.05) 34%,
+      rgba(255, 255, 255, 0.11) 41%,
+      rgba(255, 255, 255, 0.03) 47%,
+      rgba(255, 255, 255, 0) 55%,
+      rgba(255, 255, 255, 0.045) 64%,
+      rgba(255, 255, 255, 0) 72%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  /* ── the live cue ───────────────────────────────────────────────────────
+     Two signals, both quiet. The chip says it in words, and the body picks up
+     a cyan edge so the object itself looks powered. The pointer affordance is
+     the embedded page's own: with the iframe live, /q's buttons hover and
+     cursor exactly as they do on the real route — a cursor rule out here
+     could not reach inside the frame anyway. */
+  .phone.live {
+    box-shadow:
+      0 2rem 4rem rgba(0, 0, 0, 0.6),
+      0 0.35rem 0.9rem rgba(0, 0, 0, 0.45),
+      0 0 2.4rem rgba(126, 224, 255, 0.16),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+  }
+
+  .live-cue {
+    position: absolute;
+    bottom: calc(100% + 0.55rem);
+    left: 50%;
+    translate: -50% 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(126, 224, 255, 0.3);
+    background: rgba(9, 14, 22, 0.85);
+    color: rgba(255, 255, 255, 0.86);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .live-cue .dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: #7ee0ff;
+    box-shadow: 0 0 0.4rem rgba(126, 224, 255, 0.8);
   }
 
   /* ── way out ──────────────────────────────────────────────────────────── */
