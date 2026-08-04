@@ -54,6 +54,9 @@ describe("combination fixtures", () => {
 
   it("GHGH (Austen's fused example) is closed and alternates letters", () => {
     expect(GHGH.steps.map((s) => s.letter)).toEqual(["G", "H", "G", "H"]);
+    for (let i = 1; i < GHGH.steps.length; i++) {
+      expect(GHGH.steps[i]!.startPosition).toBe(GHGH.steps[i - 1]!.endPosition);
+    }
     expect(GHGH.steps.at(-1)!.endPosition).toBe(GHGH.steps[0]!.startPosition);
   });
 
