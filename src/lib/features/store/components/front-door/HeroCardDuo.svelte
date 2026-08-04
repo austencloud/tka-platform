@@ -396,12 +396,33 @@
        arrives at 1.28x its height, still the taller object because it is still
        the payoff.
 
-       1.49 is the scene's width in card-heights: two 5:7 cards side by side
-       (2 x 0.714) plus a sliver of gap. 1.34 is its height: one card plus room
-       for the tilt. Both states live inside that one box. */
-    --card-h: min(40svh, 26rem, calc(100cqw / 1.55));
+       EVERY HORIZONTAL NUMBER ON THIS STAGE IS IN CARD-HEIGHTS, measured from
+       the scene's centre. A 5:7 card is 0.714 wide and the phone is 0.634
+       (1.28 / 2.02), so the three objects need 2.06 of clear width to stand
+       side by side, and 1.43 to be a stack. That difference is the whole tier
+       list below: --scene-ratio is how wide the scene box is, and --part-*
+       is where the two faces sit inside it once the phone has landed.
+
+       --scene-fit is --scene-ratio plus the margin the tilted cards need past
+       their upright boxes (a card rotated 11deg is ~0.09 wider each side). It
+       is what --card-h divides the container by, so the composition can never
+       ask for more room than the stage has. */
+    --scene-ratio: 1.49;
+    --scene-fit: 1.55;
+    --card-cap: 26rem;
+    /* Rest: the pair, centred, touching — one printed object seen from both
+       sides. Unchanged by tier; only the PARTED composition spreads. */
+    --rest-back: -0.388;
+    --rest-front: 0.388;
+    /* Parted: the tight stack the phone reads over the top of. Wider stages
+       replace these below with a composition that stands the cards clear. */
+    --part-back: -0.29;
+    --part-front: -0.03;
+    --part-rot-back: -11deg;
+    --card-h: min(40svh, var(--card-cap), calc(100cqw / var(--scene-fit)));
     --phone-h: calc(var(--card-h) * 1.28);
-    --scene-w: calc(var(--card-h) * 1.49);
+    --scene-w: calc(var(--card-h) * var(--scene-ratio));
+    /* One card plus room for the tilt. */
     --scene-h: calc(var(--card-h) * 1.34);
     /* The "Open this scan" pill sits below the phone rather than on its bezel
        (HeroPhone reads both). The slot reserves its height up front, so the pill
@@ -420,6 +441,47 @@
     justify-content: center;
     gap: clamp(1rem, 3cqw, 3rem);
     width: 100%;
+  }
+
+  /* ── how far the cards get to spread ────────────────────────────────────
+     The parted composition used to be one stack for every viewport: the front
+     card slid onto the back and the phone stood on the front, which left the
+     back 37% visible and took a bite out of the front's code corner. Austen
+     (2026-08-04): "maybe the cards should be more visible while animation is
+     playing because they are mostly occluded especially the back and we have
+     lots of space on 4K."
+
+     So the spread is a function of the room the stage actually has. The
+     container is .card-stage, and the query is in px on purpose: whether three
+     objects fit side by side is a question about pixels, not about type scale,
+     so it must not move with the 4K root-font ramp.
+
+     Each tier buys the same thing twice — a wider scene box AND a wider parted
+     composition inside it — because the phone is pinned to the scene's right
+     edge, so the cards can only walk left as far as the box grows. The card
+     itself pays for the room (--card-h divides by --scene-fit), which is why
+     the spread arrives in steps instead of all at once: at 375 the trade is a
+     third of the card for a sliver of the back, and it is not worth it. */
+  @container (min-width: 640px) {
+    .stage {
+      --scene-ratio: 2;
+      --scene-fit: 2.12;
+      --part-back: -0.6;
+      --part-front: -0.06;
+      --part-rot-back: -8deg;
+    }
+  }
+  /* Three clear objects: back, front, phone, none of them touching. Reached at
+     1920 (and every wider desktop) once the copy column stops holding width it
+     does not use — see ShopFrontDoorHero's fit-content band. */
+  @container (min-width: 900px) {
+    .stage {
+      --scene-ratio: 2.36;
+      --scene-fit: 2.48;
+      --card-cap: 30rem;
+      --part-back: -0.72;
+      --part-front: 0.11;
+    }
   }
 
   .scene-slot {
@@ -449,48 +511,66 @@
 
   /* ── the two cards ──────────────────────────────────────────────────────
      Rest: side by side, each holding its own half of the scene. Entered: they
-     slide together into a tighter stack on the left, clearing the right half
-     for the phone. Only `transform` changes, so neither state can reflow. */
+     part LEFT, clearing the right of the scene for the phone. Only `transform`
+     changes, so neither state can reflow.
+
+     Both faces hang off the scene's CENTRE rather than its edges, and every
+     pose is one number — a signed offset in card-heights — handed in through
+     --x. Pinning them to left:0/right:0 tied the rest composition to the
+     scene's width, so widening the box for the spread would have pulled the
+     resting pair apart with it; centred, the pair is the same pair at every
+     tier and only the parted numbers change. --y and --rot ride along so the
+     deal's fan can borrow the same transform without restating the travel. */
   .slot {
     position: absolute;
     top: 50%;
+    left: 50%;
     height: var(--card-h);
     aspect-ratio: 5 / 7;
     border-radius: 0.75rem;
     filter: drop-shadow(0 1.25rem 2.5rem rgba(0, 0, 0, 0.55));
+    transform: translate(calc(-50% + var(--card-h) * var(--x)), var(--y, -50%))
+      rotate(var(--rot));
     transition: transform 640ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* The printed front, on top — it is the one with the code the phone reads. */
   .slot.front {
-    right: 0;
     z-index: 2;
-    transform: translate(0, -50%) rotate(3deg);
+    --x: var(--rest-front);
+    --rot: 3deg;
   }
   .scene.entered .slot.front {
-    transform: translate(calc(var(--card-h) * -0.42), -50%) rotate(-3deg);
+    --x: var(--part-front);
+    --rot: -3deg;
   }
 
   /* The same card's other face. */
   .slot.back {
-    left: 0;
     z-index: 1;
-    transform: translate(0, -50%) rotate(-5deg);
+    --x: var(--rest-back);
+    --rot: -5deg;
   }
   .scene.entered .slot.back {
-    transform: translate(calc(var(--card-h) * 0.1), -50%) rotate(-11deg);
+    --x: var(--part-back);
+    --rot: var(--part-rot-back);
   }
 
   /* THE FAN. The first beat of a deal: the stack rises and opens, the two
      faces swinging apart around the pile. It is the SLOT that moves here, not
      the face inside it — the face has its own gesture (the out/in keyframes
      below), and keeping the two on separate elements is what lets the stack
-     still be fanning while the top card is already leaving it. */
+     still be fanning while the top card is already leaving it. Expressed as a
+     nudge off the parted pose, so it lands the same way at every tier. */
   .scene.entered.parting .slot.front {
-    transform: translate(calc(var(--card-h) * -0.45), -56%) rotate(1deg);
+    --x: calc(var(--part-front) - 0.03);
+    --y: -56%;
+    --rot: 1deg;
   }
   .scene.entered.parting .slot.back {
-    transform: translate(calc(var(--card-h) * 0.13), -44%) rotate(-18deg);
+    --x: calc(var(--part-back) + 0.03);
+    --y: -44%;
+    --rot: calc(var(--part-rot-back) - 7deg);
   }
   /* The entrance is a 640ms arrival; a deal is a flourish. Same property, two
      tempos, so the deal borrows the slot for its own. */
@@ -660,7 +740,7 @@
        short viewport; everything under it is a fixed cost. */
   @media (min-width: 48rem) and (max-height: 40rem) {
     .stage {
-      --card-h: min(30svh, 15rem, calc(100cqw / 1.55));
+      --card-h: min(30svh, 15rem, calc(100cqw / var(--scene-fit)));
       gap: 0.75rem;
     }
   }

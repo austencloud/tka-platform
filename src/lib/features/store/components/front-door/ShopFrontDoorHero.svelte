@@ -65,10 +65,25 @@
   }
 
   /* Two columns only once the pair of cards has room to be cards. Below this
-     the duo takes the full band, which is wider than half of a tablet. */
+     the duo takes the full band, which is wider than half of a tablet.
+
+     THE COPY HUGS ITS OWN MEASURE, AND THE STAGE TAKES THE REST. An even
+     1fr/1.05fr split gave the copy a column its longest line never reached:
+     260px of slack at 1920 and around 700px at 3840, all of it pooled against
+     the scene as one dead field. Austen (2026-08-04): "the words Choreo Cards
+     are so far to the left with a big space in between the animation."
+
+     `fit-content` sizes the column to the copy and caps it, so a long line
+     can't run away with the band, and everything it doesn't use goes to the
+     stage — which now has three objects to stand side by side and spends it
+     (HeroCardDuo's container tiers). Same band, same grid, no second width
+     system: 4k-native-layout.md's "one width per page", read the other way
+     round — the gap between the two halves is capped so they stay one
+     composition instead of two pages. */
   @media (min-width: 64rem) {
     .hero {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      grid-template-columns: fit-content(38rem) minmax(0, 1fr);
+      gap: clamp(2rem, 3vw, 3.5rem);
     }
   }
 
