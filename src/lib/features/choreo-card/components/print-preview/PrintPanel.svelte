@@ -76,6 +76,12 @@
     return sheets;
   });
 
+  // Every deck also ships the "How to Read" insert on its own leading sheet(s):
+  // one insert per copy, padded to whole sheets. Mirrors the insert block in
+  // exportHomePrintPDF — these labels must agree with the file it produces.
+  const insertSheets = $derived(Math.ceil(copies / layout.cardsPerPage));
+  const totalSheets = $derived(sheetCount + insertSheets);
+
   const elementCounts = $derived.by(() => {
     const counts = new Map<string, { element: TnDElement; count: number }>();
     for (const el of tndElements) {
@@ -98,16 +104,18 @@
     getHint: () => string;
   }[] = [
     { id: "fronts", icon: "fa-layer-group", label: "Fronts",
-      getDetail: () => `${sheetCount} sheets`,
+      getDetail: () => `${totalSheets} sheets`,
       getHint: () => "Print these first, then flip the stack for the backs." },
     { id: "backs", icon: "fa-rotate", label: "Backs",
-      getDetail: () => `${sheetCount} sheets`,
+      getDetail: () => `${totalSheets} sheets`,
       getHint: () => "Print after the fronts. Columns mirrored for the long-edge flip." },
+    // fronts + ONE flip separator + backs. The exporter adds a single
+    // instruction page, not two (see home-print-insert-card.test.ts).
     { id: "combined", icon: "fa-book-open", label: "Combined",
-      getDetail: () => `${sheetCount * 2 + 2} pages`,
-      getHint: () => "Fronts + flip instructions + backs + finishing tips, in one file." },
+      getDetail: () => `${totalSheets * 2 + 1} pages`,
+      getHint: () => "Fronts + flip instructions + backs, in one file." },
     { id: "zip", icon: "fa-images", label: "Images",
-      getDetail: () => `${cardCount * 2} PNGs`,
+      getDetail: () => `${(cardCount + 1) * 2} PNGs`,
       getHint: () => "Individual files for MPC or custom layouts. Download only." },
   ];
 

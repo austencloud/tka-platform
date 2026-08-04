@@ -324,10 +324,14 @@
       prop,
     ].filter(Boolean).join("  ·  ");
     return {
-      title: `Deck ${deckRefPadded}: ${count} cards`,
+      // Title carries the PRINTED count — the number an order is placed for.
+      // The subject keeps the sequence count, since the word list describes
+      // those cards and the insert has no word.
+      title: `Deck ${deckRefPadded}: ${count + 1} cards`,
       subject:
         `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
-        `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} cards.` +
+        `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} sequence cards` +
+        ` + How to Read insert.` +
         ` Words: ${words.join(", ")}`,
       keywords: words,
       deckSummary,
