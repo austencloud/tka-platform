@@ -358,6 +358,67 @@ For best results the Apollo maintainers ship a companion Moonlight fork,
 desktop builds under the Apollo org. Standard Moonlight works fine; Artemis
 adds nicer resolution and display negotiation.
 
+## Mirroring ONE specific physical monitor
+
+Streaming Apollo's `Desktop` app captures a physical panel rather than making a
+new one. Which panel is the instance-wide `output_name` setting, exposed in the
+dashboard as **Configuration > Audio/Video > Display Device Id**. Unset, Apollo
+captures the primary display.
+
+There is no per-client and no per-app version of this. A paired client carries
+only `always_use_virtual_display` and `display_mode` (see `/api/clients/list`),
+and per-app `output` in `apps.json` is
+[documented as ignored, falling back to primary](https://github.com/LizardByte/Sunshine/issues/4585).
+So one Apollo instance mirrors exactly one monitor, which is a second reason
+the two-instance layout on the host is useful: instance 1 can own one panel and
+instance 2 the other.
+
+**`output_name` is read only when the service starts.** Changing it and
+reconnecting keeps the old display, which is indistinguishable from the setting
+being ignored. Restart the instance's service after every change. This cost an
+hour on 2026-08-04: the correct device id was set on the first try and appeared
+to do nothing.
+
+Identifying left from right is the other trap, because identical panels share a
+`friendly_name`. Use position, not names. The service log's display enumeration
+carries `info.origin_point.x`, and the panel with the smallest x is the
+leftmost. Windows puts the primary at x 0, so a left-hand secondary is
+*negative*.
+
+Verify from the capture geometry the log prints at stream start, not by
+eyeballing which windows are on screen:
+
+```
+Capture size       : 3840x2160
+Offset             : 0x0        <- leftmost panel
+Virtual Desktop    : 7680x2160
+```
+
+`Offset` is measured from the virtual desktop's origin, not from Windows'
+coordinates. With panels at x -3840 and x 0, the LEFT one reports `0x0` and the
+RIGHT one `3840x0`.
+
+`launchers/pin-apollo-display.ps1` does the whole thing from the host:
+`-Instance 2 -Side left` picks by position, writes `output_name`, backs up the
+config, and restarts the service.
+
+### Driving the dashboard API from a client
+
+The dashboard rejects non-localhost origins, so API calls need the same
+localhost port proxy that Step 4 sets up for pairing. Through it:
+
+```
+POST /api/login    {"username": "...", "password": "..."}   -> session cookie
+GET  /api/config                                            -> only non-default keys
+POST /api/config   {full set of non-default keys}           -> replaces them all
+POST /api/restart  (needs Content-Type: application/json)
+```
+
+Two sharp edges. `POST /api/config` replaces the whole set, so read the current
+config first and post it back with your addition, or you will silently drop
+`port` and `sunshine_name`. And `/api/restart` returns 400 without the
+`Content-Type` header, then the config you just saved never loads.
+
 ## Gotchas
 
 - **Moonlight settings live in the registry**, not an INI. Moonlight overwrites

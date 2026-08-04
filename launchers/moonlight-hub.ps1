@@ -28,7 +28,14 @@ $HostPort = 48989
 # which screen you are about to see. Per-app "output" in apps.json is not an
 # alternative: it is documented as ignored, falling back to primary
 # (LizardByte/Sunshine#4585).
-$MirrorMonitor = "right"
+#
+# Pinned 2026-08-04 to d1's LEFT panel, {b0fed915-1f17-51e0-9d9d-ae92b8a22a46}
+# (\\.\DISPLAY2, origin x -3840). output_name is read ONLY at service start, so
+# changing it without restarting the instance silently keeps the old display -
+# which looks exactly like the setting being ignored. Verified by the capture
+# geometry in the log: the left panel reports "Offset: 0x0", the right one
+# "Offset: 3840x0", because the virtual desktop origin is -3840.
+$MirrorMonitor = "left"
 
 # "Virtual Display" is Apollo's app that CREATES a screen. "Desktop" captures a
 # physical monitor d1 already has. The quotes matter - the space in the app name
