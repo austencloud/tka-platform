@@ -724,6 +724,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                 engine.setSearch("");
                 galleryView = "start-here";
               }}
+              onOpenWorkspace={() => {
+                engine.setSearch("");
+                galleryView = "start-here";
+              }}
               onSaveSmart={() => (smartSaveOpen = true)}
             />
           {/if}

@@ -32,6 +32,10 @@
     warming?: boolean;
     /** Passthrough to the filter bar's "Save as Smart Collection" action. */
     onSaveSmart?: () => void;
+    /** Desktop Filters pill target: the in-page filter workspace (the drill
+     * with the rule strip). Phone keeps the bottom sheet for now — its fate
+     * is settled by feel on a real phone (spec decision 3). */
+    onOpenWorkspace?: () => void;
   }
 
   let {
@@ -43,6 +47,7 @@
     onBackToStart,
     warming = false,
     onSaveSmart,
+    onOpenWorkspace,
   }: Props = $props();
 
   // State for sub-sheets
@@ -87,16 +92,22 @@
     onBack={onBackToStart}
     backLabel="Start here"
     hideToolbarSearch
-    onOpenFilters={() => (isFilterSheetOpen = true)}
+    onOpenFilters={() => {
+      if (!isMobile && onOpenWorkspace) onOpenWorkspace();
+      else isFilterSheetOpen = true;
+    }}
     {warming}
     {onSaveSmart}
   />
 </div>
 
-<!-- Filter Sheet — the drill's categories as a bottom sheet. The composition
-     (Drawer + drill sheet variant + LOOP/family stacking) lives in
-     GalleryFilterSheet, shared with every other Filters-pill host. -->
-<GalleryFilterSheet {engine} bind:isOpen={isFilterSheetOpen} {isMobile} />
+<!-- Filter Sheet — the drill's categories as a bottom sheet. Phone-only now:
+     desktop's Filters pill routes to the in-page workspace instead.
+     TODO(phone-sheet-feel): the phone sheet's fate is settled by feel on a
+     real phone during unified-workspace verification (spec decision 3). -->
+{#if isMobile || !onOpenWorkspace}
+  <GalleryFilterSheet {engine} bind:isOpen={isFilterSheetOpen} {isMobile} />
+{/if}
 
 <!-- Sort & Jump Sheet (Mobile) -->
 {#if isMobile}
