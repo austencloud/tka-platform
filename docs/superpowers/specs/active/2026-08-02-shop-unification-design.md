@@ -183,6 +183,14 @@ visitors today.
       unaffected (print pipeline resolves codes per card, never touches these caches).
       Shortcode infra proven innocent: turns ARE encoded; 852 shortcode docs join on
       those seed ids — which is why the id migration was STOPPED (see Decisions).
+- [x] R9 `29d5c912a8`: deal RESETS the stage — cards + phone (if out) exit in one gesture,
+      two fresh cards deal in side by side, scan re-earned (auto-scan deleted; iframe
+      unmounts at the swap frame, next press boots fresh). Supersedes R6's phone-stays
+      and R4/R7 auto-scan. Commit message's "NOT YET VISUALLY VERIFIED" caveat is stale:
+      verified 2026-08-04 after the DevTools MCP reconnect — 5 frames, 190-rAF rect
+      stability (1 distinct rect set outside the scene), phase trace matches design
+      within a frame, 960×412 fold identical across all states, zero console noise,
+      R8 guard fired zero times. Unit tests: hero-scan-timeline-stage 6/6.
 
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
