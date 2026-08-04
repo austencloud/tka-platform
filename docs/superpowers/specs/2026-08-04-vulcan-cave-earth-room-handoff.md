@@ -1,0 +1,157 @@
+---
+status: active
+value: 4
+effort: L
+remaining: 'Fire room (The First Fire) graybox built, walked, sequence-fixed; Austen: "as a Gray box I think we''re on the right track... as far as just being a traversable environment this is gonna work." Next: Earth room, from the all-rooms concept doc.'
+depends_on: 'docs/superpowers/specs/2026-08-04-first-fire-design.md'
+plan_path: ''
+tags: [museum, handoff, earth-room, first-fire]
+last_triaged: 2026-08-04
+---
+# Vulcan Cave — Fire room SHIPPED, Earth room next — Handoff (2026-08-04)
+
+## Mission
+
+The Vulcan Cave wing is built room by room as walkable grayboxes with a hard
+gate: Austen approves layout/flow/scale at eye level before any art spend.
+Water ("The Drowned Gallery") passed 2026-08-03. Fire ("The First Fire")
+graybox is built and provisionally accepted 2026-08-04 — Austen: *"as a Gray
+box I think we're on the right track ... as far as just being a traversable
+environment this is gonna work"* (lots of iteration expected later; that is
+Phase 2+ art, not graybox rework). The next deliverable is the **Earth room**
+(`cave-earth`), taken through the same process, working from the wing-wide
+concept doc (see Loose end #1). Fire's design:
+`docs/superpowers/specs/2026-08-04-first-fire-design.md`; executor plan with
+closed ledger: `docs/superpowers/plans/2026-08-04-first-fire-graybox.md`;
+wing grammar + roster canon:
+`docs/superpowers/specs/backlog/2026-08-02-vulcan-cave-water-room-drowned-gallery-design.md`.
+
+## Done — verified
+
+- **Fire concept sheet + painted mood frame** (commits `bb4ad1d772`,
+  `24839a473f`, `61ffbc9e76`): three floor plans + recommendation at
+  `static/sketches/2026-08-04-fire-room-floor-plans.html`, first-person
+  concept frame at `static/sketches/2026-08-04-first-fire-concept-frame.html`.
+  Austen picked the recommendation ("C's soul on A's approach"). Evidence:
+  both pages screenshot-verified at 1920 in-session.
+- **First Fire graybox built by an Opus executor** (`8a3bf8e118` P1,
+  `d97bec31e0` P2, `987b7d68b2` ledger): `first-fire-layout.ts` (single
+  geometry source: ember bridge over lava → bent darkening crack −0.3→−0.8 →
+  three bench terraces −0.8/−1.3/−1.8 → blocked ash circle → 4 m lava fissure
+  → performer shore −1.3 with three stations → exit stair to Earth door),
+  `FirstFireGraybox.svelte` (mounted in `Museum3DScene.svelte`), `cave-fire`
+  wing resized (interior ≈ 46.5 × 20.5 m), CAVE_MODE_ROOMS migrated to
+  `performerIds`/`sequenceIds` arrays, orphaned `cave-water-seq` deleted.
+  Evidence: my own re-run `npx vitest run tests/unit/museum/` → **23 files,
+  242/242 passed**; executor's `npm run check` → 0 errors/0 warnings.
+- **Verification walk done at 1920** (frames read in-session): bridge, crack,
+  reveal, front bench, look-back. The reveal (crack exit → three fire-lit
+  automatons across the fissure) and look-back (never black) both pass.
+- **Lighting fix from the walk** (`ae73b8e6d2`): pit lights 90→48 and raised
+  (front bench was washed white inside 3 m), bridge under-glow lifted above
+  the deck that occluded it + two flanking lava glows, crack cues brightened.
+  Evidence: before/after frames read in-session; bridge now reads warm over
+  lava, front-bench automaton reads fire-rimmed with blue/red staves visible.
+- **Sequence timing fix** (`3a3279f4a4`, doc update `0bca0b71e0`): the
+  graybox first shipped the generator's variation-0 runs, which are
+  TOG-timing — Air's versions. Austen caught it. All three sequences now
+  transcribe the canonical catalog's `tnd-split-opp-*` entries verbatim
+  (alpha1-anchored, blue at downbeat while red crests). Evidence: 242/242
+  after the swap; `check:fast` errors (19) all in other sessions' files, none
+  in museum code. NOTE: split-vs-tog only reads in MOTION — data is verified
+  against the catalog, but nobody has yet watched the new runs play.
+
+## Believed done — unverified
+
+- The performers' new alpha1-anchored runs playing correctly in the room
+  (data-verified only; watch one full cycle in the browser or on Austen's
+  next walk).
+
+## In flight
+
+- **A background Opus agent is writing
+  `docs/superpowers/specs/2026-08-04-vulcan-cave-all-rooms-concepts.md`** —
+  broad-brush concepts + floor-plan programs for Earth/Air/Sun/Moon, plus
+  Water/Fire summaries, wing pacing, and a recommended build order. It was
+  dispatched ~16:15 2026-08-04 and instructed to commit with explicit
+  pathspec. If the doc exists and is committed, review it before starting
+  Earth; if it never landed, re-dispatch (the brief is recoverable from this
+  session's transcript, or re-derive: per room — concept sentence,
+  element-first-person beat, unique mechanism + non-confusion vs other rooms,
+  station table with datums, performers + barrier, money shot, reuse map with
+  verified paths, risks).
+- The checkout carries MANY other sessions' dirty files (shop, codex, agents,
+  scripts...). Do not touch, stage, or revert them. `main` has unpushed local
+  commits from several sessions; do not push without confirming ownership of
+  every one.
+
+## Loose ends (ranked)
+
+1. **Earth room graybox** — the next deliverable. Process that worked twice
+   (follow it): review the all-rooms concept doc → brainstorm/refine with
+   Austen → HTML plan sheet in `static/sketches/` (he loves these; Fire's
+   sheet is the format reference) → design doc + executor plan → ONE Opus
+   executor → my own audit + browser walk with lighting iteration → Austen's
+   eye-level gate. Earth's letters: **GGGG, HHHH, IIII** (Tog-Same,
+   beta-to-beta) — transcribe step data from the catalog's `tnd-tog-same-*`
+   entries in `static/data/hero/tnd-base-words.json`, NOT from the MCP
+   generator default (see Gotchas). Earth is entered from Fire's east door
+   (`fireToEarth`), exits via `earthToAir`.
+2. **Fire iteration backlog (post-gate, Austen expects it)**: he flagged
+   "lots of stuff to iterate on" without specifics. Known candidates: real
+   trails + beat-synced flare (Phase 3), watch the split runs play, ceiling
+   height feel, ash-circle read. Collect his specifics at the next walk.
+3. **Fire Phase 2+ (art)** not started, gated on Austen scheduling: ember-kit
+   dressing (LavaPool/Cracks/Rivers, HeatDistortion, VolumetricFire,
+   EmberFountains at `src/lib/shared/3d/environments/scenes/ember/`),
+   Blender-first shell per `blender-first-3d-scenes.md`.
+4. **Water: procession niche read** (carried from the 2026-08-03 handoff,
+   polish-tier).
+
+## Decisions already made (Austen)
+
+- **2026-08-04: Fire graybox provisionally accepted as a traversable
+  environment** (quote in Mission). Iteration later; layout works.
+- **2026-08-04: Fire = "The First Fire"** — Plan C (darkness amphitheater,
+  performance-as-light, fire jam fiction) entered via a compressed lava-bridge
+  beat from Plan A. Full rationale in the design doc.
+- **2026-08-04: pedagogy is compound pairs** DJ/EK/FL, not single letters,
+  and timing (split vs tog) is the compound's phase set by variation choice —
+  Fire = split runs, Air = tog runs of the same pairs (deliberate phase-twin
+  rooms).
+- **Budget discipline (2026-08-02, still standing)**: one Opus executor per
+  phase, no fan-outs/panels for execution; Fable does synthesis + visual
+  verification itself.
+- **Graybox-first with hard gates** — standing process for every room.
+
+## Gotchas
+
+- **Sequence variation authority**: the MCP generator's variation-0 default
+  returns TOG-timing runs. For any roster sequence, transcribe the canonical
+  catalog `static/data/hero/tnd-base-words.json` entry verbatim (memory:
+  `reference_tnd_catalog_variation_authority`). This shipped wrong once.
+- **Teleporting the player** (for verification walks): `navigate_page` with
+  `initScript` setting
+  `sessionStorage.setItem("museum-cave-3d-state-v1", JSON.stringify({playerWorldX, playerWorldZ, viewMode:"first-person", topDownHeight:12, playerYaw}))`,
+  then wait for the text "Click to look around" (loading % sits at 93% a
+  while). Yaw: north(−z) = π, east(+x) = π/2, south(+z) = 0; `atan2(dx, dz)`.
+  Route: `/test/museum-cave-3d`. Fire coordinates: bridge (34, 11.75),
+  crack bend (45, 13), reveal (49.5, 19.5, yaw 2.46), front bench (62,
+  11.25), stations x 54/62/69.5 at z 4.
+- **Lights use `decay={2}`**: intensity ≈ target·r², AND the inverse bite —
+  what reads at 17 m blinds at 3 m (pit lights at 90 washed the front bench
+  white; 48 raised to +1.6 is the tuned value). Also: a light BELOW a walkway
+  is occluded by it (the bridge under-glow bug).
+- **Layout coordinate dump**: to get world coords for walk stations, build
+  the layout in a throwaway vitest file (`buildVulcanCaveFloorPlan().grid` →
+  `buildFirstFireLayout(grid)`) and JSON.log it — the museum-room-graph
+  module does NOT export a grid builder directly. Delete the temp test after.
+- **Rect cell math / door-derived gaps / one geometry source /
+  suppressedSpans**: all encoded in
+  `docs/superpowers/plans/2026-08-04-first-fire-graybox.md` → "Non-negotiable
+  gotchas". Reuse that section verbatim in Earth's executor plan.
+- **chrome-devtools MCP can disconnect mid-session**; Austen reconnects it
+  with `/mcp`. `take_screenshot` can also hang (2 min timeout) on
+  first-capture of a heavy page — TaskStop and retry after a reload.
+- **Commits**: explicit pathspec ONLY; new files need `git add <paths>`
+  first. The index is shared with parallel sessions.
