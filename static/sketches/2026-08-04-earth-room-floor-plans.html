@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Earth Room — Three Floor Plans</title>
+<style>
+  :root {
+    --bg: #080b07;
+    --panel: #0f150d;
+    --ink: #d6dfcc;
+    --muted: #8b9683;
+    --accent: #9ed06a;
+    --moss: #4f7a35;
+    --stone: #6b6357;
+    --sun: #f2e2a8;
+    --deep: #2b3a2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 2.5rem clamp(1rem, 4vw, 4rem);
+  }
+  header { max-width: min(1500px, 100%); margin: 0 auto 1.5rem; }
+  h1 { font-size: 1.7rem; letter-spacing: 0.02em; }
+  h1 span { color: var(--accent); }
+  header p { color: var(--muted); max-width: 88ch; margin-top: 0.4rem; }
+  .sheet {
+    max-width: min(1500px, 100%); margin: 0 auto 1.2rem;
+    background: var(--panel);
+    border: 1px solid #22301d;
+    border-radius: 12px;
+    padding: 1.2rem 1.2rem 0.6rem;
+    overflow-x: auto;
+  }
+  .sheet h2 {
+    font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--accent); margin: 0.2rem 0 0.8rem 0.4rem;
+  }
+  .sheet h2 em { color: var(--muted); font-style: normal; text-transform: none; letter-spacing: 0; font-size: 0.85rem; }
+  svg { display: block; min-width: 700px; width: 100%; height: auto; }
+  .cols { max-width: min(1500px, 100%); margin: 0 auto 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.2rem; }
+  .card { background: var(--panel); border: 1px solid #22301d; border-radius: 12px; padding: 1.1rem 1.3rem; }
+  .card h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.6rem; }
+  .card ul, .card ol { padding-left: 1.4rem; }
+  .card li { margin-bottom: 0.45rem; }
+  .card li b, .card p b { color: #fff; }
+  .card p { margin-bottom: 0.6rem; }
+  .rec {
+    max-width: min(1500px, 100%); margin: 0 auto 1.2rem;
+    background: linear-gradient(160deg, #16200f, #0f150d);
+    border: 1px solid #3d5a2a; border-radius: 12px; padding: 1.4rem 1.6rem;
+  }
+  .rec h2 { color: var(--accent); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.7rem; }
+  .rec p { max-width: 98ch; margin-bottom: 0.7rem; }
+  .rec b { color: #fff; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; padding: 0.28rem 0.6rem 0.28rem 0; border-bottom: 1px solid #22301d; font-size: 0.9rem; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  code { color: var(--sun); font-size: 0.88em; }
+  footer { max-width: min(1500px, 100%); margin: 2rem auto 0; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The <span>Earth Room</span> — Three Floor Plans · 2026-08-04</h1>
+  <p>The visitor leaves the First Fire through the amphitheatre's east door and wades
+  east down a grass-and-wildflower gully, waist-high stems brushing past, into the only
+  room in the wing that is viewed from above. The barrier is a vertical drop: three
+  performers stand on a floor six metres below a continuous rim, and there is no way
+  down. Beyond and below them the ground keeps going, terrace after terrace, into haze.
+  Performers are GGGG, HHHH and IIII in their together-timing same-direction variations
+  (Tog-Same, beta-to-beta): three figures hitting the same downbeat with hands
+  converging on one point each, which is a reading that only comes free in plan view.
+  All three plans share the same doors: enter west from Fire (<code>fireToEarth</code>),
+  exit south to Air (<code>earthToAir</code>). North is UP on every plan.
+  1 grid square = 2 m. Bay ≈ 34 m east–west × 24 m north–south.</p>
+</header>
+
+<!-- ═══════════════ PLAN A — THE RING ═══════════════ -->
+<div class="sheet">
+  <h2>Plan A — The Gully and the Ring <em>· continuous rim circuit · ⌀14 m void · canyon read through an east breach</em></h2>
+  <svg viewBox="40 20 830 580" role="img" aria-label="Plan A top-down">
+    <defs>
+      <radialGradient id="voidA" cx="50%" cy="42%" r="62%">
+        <stop offset="0%" stop-color="#3f4d2f"/>
+        <stop offset="60%" stop-color="#1b2416"/>
+        <stop offset="100%" stop-color="#0a0f08"/>
+      </radialGradient>
+      <radialGradient id="shaftA" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f2e2a8" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="#f2e2a8" stop-opacity="0"/>
+      </radialGradient>
+      <marker id="arrA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#9ed06a"/>
+      </marker>
+    </defs>
+
+    <!-- grid -->
+    <g stroke="#141d10" stroke-width="1">
+      <path d="M60,54 H1240 M60,86 H1240 M60,118 H1240 M60,150 H1240 M60,182 H1240 M60,214 H1240 M60,246 H1240 M60,278 H1240 M60,310 H1240 M60,342 H1240 M60,374 H1240 M60,406 H1240 M60,438 H1240 M60,470 H1240 M60,502 H1240 M60,534 H1240 M60,566 H1240"/>
+      <path d="M60,54 V566 M92,54 V566 M124,54 V566 M156,54 V566 M188,54 V566 M220,54 V566 M252,54 V566 M284,54 V566 M316,54 V566 M348,54 V566 M380,54 V566 M412,54 V566 M444,54 V566 M476,54 V566 M508,54 V566 M540,54 V566 M572,54 V566 M604,54 V566 M636,54 V566"/>
+    </g>
+
+    <!-- gully strip + chamber shell -->
+    <rect x="60" y="150" width="544" height="384" fill="#0d130b" stroke="#33452a" stroke-width="10"/>
+
+    <!-- the gully (west 10 m), drawn as a wading corridor with a single bend -->
+    <path d="M60,326 H196 V246 H300" fill="none" stroke="#1d2a17" stroke-width="66" stroke-linejoin="round"/>
+    <path d="M60,326 H196 V246 H300" fill="none" stroke="#2c4020" stroke-width="54" stroke-linejoin="round"/>
+    <g fill="#4f7a35" opacity="0.85">
+      <circle cx="86" cy="306" r="5"/><circle cx="112" cy="346" r="6"/><circle cx="140" cy="308" r="5"/>
+      <circle cx="168" cy="344" r="6"/><circle cx="196" cy="300" r="5"/><circle cx="212" cy="272" r="6"/>
+      <circle cx="248" cy="266" r="5"/><circle cx="276" cy="230" r="6"/>
+    </g>
+    <g fill="#e2b7d8"><circle cx="126" cy="330" r="3.5"/><circle cx="182" cy="316" r="3.5"/><circle cx="236" cy="240" r="3.5"/></g>
+    <g fill="#f2e2a8"><circle cx="100" cy="340" r="3"/><circle cx="204" cy="286" r="3"/><circle cx="266" cy="256" r="3"/></g>
+    <text x="72" y="464" fill="#9ed06a" font-size="13">grass-and-wildflower gully · 10 m · you wade it</text>
+    <text x="72" y="482" fill="#8b9683" font-size="12">0 → −1.4 · stems at hip height</text>
+    <text x="72" y="500" fill="#8b9683" font-size="12">fireflies low in the seed heads</text>
+
+    <!-- rim ring -->
+    <circle cx="412" cy="342" r="163" fill="#1d2a17" stroke="#33452a" stroke-width="3"/>
+    <circle cx="412" cy="342" r="112" fill="url(#voidA)" stroke="#4a5c3a" stroke-width="4"/>
+    <circle cx="412" cy="342" r="128" fill="url(#shaftA)"/>
+    <text x="380" y="196" fill="#8b9683" font-size="12" text-anchor="middle">rim ring · 3.2 m walk · −1.4 · continuous, ~46 m circuit</text>
+
+    <!-- performer floor + stations -->
+    <g>
+      <circle cx="348" cy="374" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <circle cx="348" cy="374" r="13" fill="none" stroke="#6b7d55"/>
+      <text x="348" y="379" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">G</text>
+      <circle cx="412" cy="374" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <circle cx="412" cy="374" r="13" fill="none" stroke="#6b7d55"/>
+      <text x="412" y="379" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">H</text>
+      <circle cx="476" cy="374" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <circle cx="476" cy="374" r="13" fill="none" stroke="#6b7d55"/>
+      <text x="476" y="379" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">I</text>
+    </g>
+    <text x="412" y="424" fill="#8b9683" font-size="12" text-anchor="middle">floor disc −7.4 · three bosses, 4 m apart · carved concentric rings</text>
+
+    <!-- east breach onto the side canyon -->
+    <path d="M604,270 H700 M604,414 H700" stroke="#33452a" stroke-width="8"/>
+    <rect x="604" y="270" width="200" height="144" fill="#111a0e"/>
+    <g fill="none" stroke="#3d4c33" stroke-width="9">
+      <path d="M624,278 V406"/><path d="M666,286 V398"/><path d="M712,294 V390"/><path d="M762,302 V382"/>
+    </g>
+    <text x="704" y="252" fill="#8b9683" font-size="12" text-anchor="middle">east breach · four shelves, haze</text>
+    <text x="704" y="438" fill="#8b9683" font-size="12" text-anchor="middle">blocked · read from the WEST rim</text>
+
+    <!-- overlook slab, south rim -->
+    <path d="M368,470 h88 v34 h-88 z" fill="#2c3a22" stroke="#6b7d55" stroke-width="2"/>
+    <text x="412" y="524" fill="#dff0c6" font-size="12" text-anchor="middle">fallen-slab overlook · −1.1 · 0.45 m lip</text>
+
+    <!-- exit -->
+    <rect x="524" y="524" width="64" height="20" fill="#1d2a17" stroke="#6b7d55"/>
+    <text x="556" y="562" fill="#dff0c6" font-size="12" text-anchor="middle">to Air (south)</text>
+
+    <!-- flow -->
+    <g stroke="#9ed06a" stroke-width="2.5" fill="none" marker-end="url(#arrA)">
+      <path d="M80,326 H170"/>
+      <path d="M196,310 V266"/>
+      <path d="M262,232 Q320,196 380,182"/>
+      <path d="M520,206 Q574,266 580,330"/>
+      <path d="M566,420 Q520,470 456,486"/>
+      <path d="M368,492 Q330,500 300,486"/>
+      <path d="M300,486 Q400,540 512,532"/>
+    </g>
+    <text x="70" y="308" fill="#dff0c6" font-size="13">from Fire ➜</text>
+    <text x="412" y="128" fill="#9ed06a" font-size="14" text-anchor="middle" letter-spacing="1">DAYLIGHT AVEN OVERHEAD · dust column lands on the three bosses</text>
+  </svg>
+</div>
+
+<!-- ═══════════════ PLAN B — THE BALCONY ═══════════════ -->
+<div class="sheet">
+  <h2>Plan B — The Balcony and the Open North <em>· closed rim · visually open north · canyon recedes BEHIND the performers</em></h2>
+  <svg viewBox="40 20 660 580" role="img" aria-label="Plan B top-down">
+    <defs>
+      <radialGradient id="voidB" cx="50%" cy="42%" r="62%">
+        <stop offset="0%" stop-color="#3f4d2f"/>
+        <stop offset="60%" stop-color="#1b2416"/>
+        <stop offset="100%" stop-color="#0a0f08"/>
+      </radialGradient>
+      <linearGradient id="hazeB" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stop-color="#0a0f08" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#b9c9a4" stop-opacity="0.5"/>
+      </linearGradient>
+      <marker id="arrB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#9ed06a"/>
+      </marker>
+    </defs>
+
+    <g stroke="#141d10" stroke-width="1">
+      <path d="M60,54 H1240 M60,86 H1240 M60,118 H1240 M60,150 H1240 M60,182 H1240 M60,214 H1240 M60,246 H1240 M60,278 H1240 M60,310 H1240 M60,342 H1240 M60,374 H1240 M60,406 H1240 M60,438 H1240 M60,470 H1240 M60,502 H1240 M60,534 H1240 M60,566 H1240"/>
+      <path d="M60,54 V566 M92,54 V566 M124,54 V566 M156,54 V566 M188,54 V566 M220,54 V566 M252,54 V566 M284,54 V566 M316,54 V566 M348,54 V566 M380,54 V566 M412,54 V566 M444,54 V566 M476,54 V566 M508,54 V566 M540,54 V566 M572,54 V566 M604,54 V566"/>
+    </g>
+
+    <!-- receding canyon shelves NORTH of the bay (visual only) -->
+    <rect x="60" y="40" width="544" height="110" fill="#0a0f08"/>
+    <g fill="none" stroke="#3d4c33">
+      <path d="M84,138 H580" stroke-width="10"/>
+      <path d="M120,112 H548" stroke-width="8"/>
+      <path d="M158,90 H512" stroke-width="6"/>
+      <path d="M198,72 H470" stroke-width="4"/>
+    </g>
+    <rect x="60" y="40" width="544" height="110" fill="url(#hazeB)"/>
+    <text x="332" y="60" fill="#8b9683" font-size="12" text-anchor="middle">shelves −10.5 · −14.5 · −19.0 · −25.0 → haze · blocked, visual only</text>
+
+    <!-- authored shell is visually open; compiled north-wall collision remains -->
+    <path d="M60,150 H604 V534 H60" fill="#0d130b" stroke="#33452a" stroke-width="10" fill-rule="evenodd"/>
+    <path d="M60,150 H604" stroke="#0d130b" stroke-width="10"/>
+    <path d="M220,150 H604" stroke="#4a5c3a" stroke-width="6" stroke-dasharray="14 9"/>
+    <text x="440" y="168" fill="#8b9683" font-size="12" text-anchor="middle">boulder parapet, 0.90 m · compiled boundary behind it</text>
+
+    <!-- gully -->
+    <path d="M60,326 H190 V254 H286" fill="none" stroke="#1d2a17" stroke-width="66" stroke-linejoin="round"/>
+    <path d="M60,326 H190 V254 H286" fill="none" stroke="#2c4020" stroke-width="54" stroke-linejoin="round"/>
+    <g fill="#4f7a35" opacity="0.85">
+      <circle cx="88" cy="306" r="5"/><circle cx="118" cy="348" r="6"/><circle cx="146" cy="306" r="5"/>
+      <circle cx="176" cy="346" r="6"/><circle cx="206" cy="296" r="5"/><circle cx="234" cy="272" r="6"/><circle cx="268" cy="236" r="5"/>
+    </g>
+    <g fill="#e2b7d8"><circle cx="132" cy="330" r="3.5"/><circle cx="190" cy="318" r="3.5"/><circle cx="252" cy="248" r="3.5"/></g>
+    <text x="72" y="464" fill="#9ed06a" font-size="13">gully · 10 m · one bend, so Fire's</text>
+    <text x="72" y="482" fill="#9ed06a" font-size="13">light is gone before the rim</text>
+
+    <!-- C rim: west, south, east arcs + narrow north ledge -->
+    <circle cx="412" cy="342" r="163" fill="#1d2a17" stroke="#33452a" stroke-width="3"/>
+    <path d="M412,179 A163,163 0 0 0 412,179" fill="none"/>
+    <rect x="249" y="150" width="326" height="34" fill="#141d10"/>
+    <circle cx="412" cy="342" r="112" fill="url(#voidB)" stroke="#4a5c3a" stroke-width="4"/>
+    <text x="412" y="212" fill="#8b9683" font-size="12" text-anchor="middle">north ledge narrows to 2.6 m against the parapet</text>
+
+    <!-- stations -->
+    <g>
+      <circle cx="348" cy="374" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <circle cx="348" cy="374" r="13" fill="none" stroke="#6b7d55"/>
+      <text x="348" y="379" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">G</text>
+      <circle cx="412" cy="374" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <circle cx="412" cy="374" r="13" fill="none" stroke="#6b7d55"/>
+      <text x="412" y="379" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">H</text>
+      <circle cx="476" cy="374" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <circle cx="476" cy="374" r="13" fill="none" stroke="#6b7d55"/>
+      <text x="476" y="379" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">I</text>
+    </g>
+    <text x="412" y="424" fill="#8b9683" font-size="12" text-anchor="middle">station line sits 2 m SOUTH of the void centre — pulled toward the balcony</text>
+
+    <!-- cantilever slab: first metre is the viewing apron; outer two are blocked scenic nose -->
+    <path d="M380,454 h64 v58 h-64 z" fill="#2c3a22" stroke="#8ba36c" stroke-width="2.5"/>
+    <path d="M380,474 h64" stroke="#dff0c6" stroke-width="2"/>
+    <path d="M380,454 h64 v20 h-64 z" fill="#20291a" stroke="#6b7d55" stroke-dasharray="5 4"/>
+    <text x="356" y="530" fill="#dff0c6" font-size="12.5" text-anchor="middle">cantilevered slab · 3 m into the void</text>
+    <text x="356" y="548" fill="#8b9683" font-size="12" text-anchor="middle">1 m apron + 2 m blocked nose · lip 0.45 m</text>
+
+    <!-- exit -->
+    <rect x="524" y="524" width="64" height="20" fill="#1d2a17" stroke="#6b7d55"/>
+    <text x="556" y="562" fill="#dff0c6" font-size="12" text-anchor="middle">to Air (south)</text>
+
+    <!-- flow -->
+    <g stroke="#9ed06a" stroke-width="2.5" fill="none" marker-end="url(#arrB)">
+      <path d="M80,326 H168"/>
+      <path d="M190,312 V272"/>
+      <path d="M262,240 Q300,206 340,192"/>
+      <path d="M470,192 Q560,220 578,306"/>
+      <path d="M578,398 Q560,466 470,492"/>
+      <path d="M436,498 H414"/>
+      <path d="M394,500 Q330,510 300,494"/>
+      <path d="M300,494 Q400,548 512,534"/>
+    </g>
+    <text x="70" y="308" fill="#dff0c6" font-size="13">from Fire ➜</text>
+    <text x="632" y="356" fill="#8b9683" font-size="12" text-anchor="middle" transform="rotate(-90 632 356)">first read is their BACKS; the canyon opens as you come round</text>
+  </svg>
+</div>
+
+<!-- ═══════════════ PLAN C — THE LONG CANYON ═══════════════ -->
+<div class="sheet">
+  <h2>Plan C — The Stepped Gully and the Long Canyon <em>· 20 × 11 m trough · two facing balconies · canyon runs out past the exit</em></h2>
+  <svg viewBox="40 20 870 590" role="img" aria-label="Plan C top-down">
+    <defs>
+      <radialGradient id="voidC" cx="50%" cy="40%" r="62%">
+        <stop offset="0%" stop-color="#3f4d2f"/>
+        <stop offset="60%" stop-color="#1b2416"/>
+        <stop offset="100%" stop-color="#0a0f08"/>
+      </radialGradient>
+      <linearGradient id="hazeC" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0a0f08" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#b9c9a4" stop-opacity="0.5"/>
+      </linearGradient>
+      <marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#9ed06a"/>
+      </marker>
+    </defs>
+
+    <g stroke="#141d10" stroke-width="1">
+      <path d="M60,54 H1240 M60,86 H1240 M60,118 H1240 M60,150 H1240 M60,182 H1240 M60,214 H1240 M60,246 H1240 M60,278 H1240 M60,310 H1240 M60,342 H1240 M60,374 H1240 M60,406 H1240 M60,438 H1240 M60,470 H1240 M60,502 H1240 M60,534 H1240 M60,566 H1240"/>
+      <path d="M60,54 V566 M92,54 V566 M124,54 V566 M156,54 V566 M188,54 V566 M220,54 V566 M252,54 V566 M284,54 V566 M316,54 V566 M348,54 V566 M380,54 V566 M412,54 V566 M444,54 V566 M476,54 V566 M508,54 V566 M540,54 V566 M572,54 V566 M604,54 V566"/>
+    </g>
+
+    <rect x="60" y="118" width="544" height="384" fill="#0d130b" stroke="#33452a" stroke-width="10"/>
+
+    <!-- stepped gully: three shelves -->
+    <g>
+      <rect x="60" y="278" width="66" height="72" fill="#2c4020" stroke="#33452a"/>
+      <rect x="126" y="278" width="66" height="72" fill="#33482a" stroke="#33452a"/>
+      <rect x="192" y="278" width="70" height="72" fill="#3a5230" stroke="#33452a"/>
+      <text x="93" y="372" fill="#8b9683" font-size="11" text-anchor="middle">0</text>
+      <text x="159" y="372" fill="#8b9683" font-size="11" text-anchor="middle">−0.6</text>
+      <text x="227" y="372" fill="#8b9683" font-size="11" text-anchor="middle">−1.0</text>
+    </g>
+    <g fill="#4f7a35" opacity="0.85">
+      <circle cx="84" cy="296" r="6"/><circle cx="110" cy="336" r="6"/><circle cx="150" cy="298" r="5"/>
+      <circle cx="180" cy="338" r="5"/><circle cx="214" cy="300" r="5"/><circle cx="246" cy="334" r="4"/>
+    </g>
+    <text x="72" y="418" fill="#9ed06a" font-size="13">the gully steps down three grass shelves;</text>
+    <text x="72" y="436" fill="#9ed06a" font-size="13">each one is a little more open sky</text>
+
+    <!-- elongated trough -->
+    <ellipse cx="412" cy="310" rx="88" ry="160" fill="url(#voidC)" stroke="#4a5c3a" stroke-width="4"/>
+
+    <!-- balconies -->
+    <path d="M262,180 h62 v260 h-62 z" fill="#1d2a17" stroke="#33452a" stroke-width="3"/>
+    <path d="M500,180 h62 v260 h-62 z" fill="#1d2a17" stroke="#33452a" stroke-width="3"/>
+    <path d="M262,150 H562 v30 H262 z" fill="#1d2a17" stroke="#33452a" stroke-width="3"/>
+    <text x="293" y="466" fill="#8b9683" font-size="12" text-anchor="middle">west balcony</text>
+    <text x="531" y="466" fill="#8b9683" font-size="12" text-anchor="middle">east balcony</text>
+    <text x="412" y="142" fill="#8b9683" font-size="12" text-anchor="middle">north cross-ledge joins the two · −1.4 throughout</text>
+
+    <!-- stations strung along the trough axis -->
+    <g>
+      <circle cx="412" cy="216" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <text x="412" y="221" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">G</text>
+      <circle cx="412" cy="310" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <text x="412" y="315" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">H</text>
+      <circle cx="412" cy="404" r="22" fill="#26301c" stroke="#6b7d55" stroke-width="2"/>
+      <text x="412" y="409" fill="#dff0c6" font-size="14" font-weight="700" text-anchor="middle">I</text>
+    </g>
+    <text x="412" y="352" fill="#8b9683" font-size="11" text-anchor="middle">−7.4</text>
+
+    <!-- canyon continues south past the exit -->
+    <rect x="262" y="502" width="300" height="98" fill="#0a0f08"/>
+    <g fill="none" stroke="#3d4c33">
+      <path d="M276,518 H548" stroke-width="9"/><path d="M300,540 H524" stroke-width="7"/><path d="M326,560 H498" stroke-width="5"/>
+    </g>
+    <rect x="262" y="502" width="300" height="98" fill="url(#hazeC)"/>
+    <text x="412" y="592" fill="#8b9683" font-size="12" text-anchor="middle">the canyon keeps going south, past the exit, into haze</text>
+
+    <rect x="524" y="492" width="64" height="20" fill="#1d2a17" stroke="#6b7d55"/>
+    <text x="620" y="506" fill="#dff0c6" font-size="12">to Air (south notch, on the canyon axis)</text>
+
+    <g stroke="#9ed06a" stroke-width="2.5" fill="none" marker-end="url(#arrC)">
+      <path d="M78,314 H240"/>
+      <path d="M264,300 Q282,244 290,204"/>
+      <path d="M296,192 Q380,166 470,168"/>
+      <path d="M500,192 Q532,270 530,360"/>
+      <path d="M530,400 Q532,460 540,486"/>
+    </g>
+    <text x="70" y="296" fill="#dff0c6" font-size="13">from Fire ➜</text>
+  </svg>
+</div>
+
+<!-- ═══════════════ COMPARISON ═══════════════ -->
+<div class="cols">
+  <div class="card">
+    <h3>A · The Gully and the Ring</h3>
+    <p><b>A closed ring around a round hole.</b> Continuous 3.2 m rim, ⌀14 m void,
+    four walls. The canyon is a side view through a breach in the east wall, read
+    from the opposite rim.</p>
+    <ul>
+      <li><b>Element beat:</b> wade the gully, arrive at a rim, look straight down.</li>
+      <li><b>Money shot:</b> the fallen slab on the south rim — trio lit by the aven, dark rock foreground.</li>
+      <li><b>For:</b> simplest geometry, one circular blocking predicate, walkable in every direction, matches the approved concept program almost exactly.</li>
+      <li><b>Against:</b> the vista and the performers are in different directions. The visitor has to turn away from the trio to get the canyon, so the room reads as two separate ideas rather than one frame.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>B · The Balcony and the Open North</h3>
+  <p><b>Same drop, one wall visually removed.</b> The authored shell opens north. The rim
+    terminates in a 0.9 m boulder parapet and the ground beyond steps away in four
+    visual shelves to −25 and into haze. A 3 m slab cantilevers into the void from
+    the south balcony.</p>
+    <ul>
+      <li><b>Element beat:</b> gully → arrive on the north ledge behind the trio → come round the west arc → the canyon opens as you reach the slab.</li>
+      <li><b>Money shot:</b> from the slab, the three figures 6 m down and the canyon receding past them for what looks like a kilometre. One frame, both ideas.</li>
+      <li><b>For:</b> the vista sits <em>behind</em> the performers, which is what "endless" was asked to mean. Arriving behind them holds the reveal back one beat.</li>
+      <li><b>Against:</b> the backdrop shelves are pure set dressing and a C-rim loses the "walk all the way round" relationship. The recommended closed-ring version keeps normal north-wall collision behind an authored parapet, so the bay stamper does not need a new shape.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>C · The Stepped Gully and the Long Canyon</h3>
+    <p><b>You look down the canyon, not across it.</b> The void is a 20 × 11 m trough
+    running north–south, performers strung along its axis, two facing balconies joined
+    at the north end, and the canyon continues south past the exit.</p>
+    <ul>
+      <li><b>Element beat:</b> the gully itself descends in three grass shelves, so the visitor is already going down before the drop appears.</li>
+      <li><b>Money shot:</b> the north cross-ledge, looking down the trough with all three in a line and the canyon running out beyond them.</li>
+      <li><b>For:</b> two balconies means the trio can be read from both sides; the exit on the canyon axis is a genuinely good closing image.</li>
+      <li><b>Against:</b> a line-of-three along the view axis defeats the whole reason to look down. Tog-Same reads because three identical figures sit side by side hitting one beat; in a receding line, the far one is 15 m away and half-occluded by the near one. It also spends the bay's whole 24 m on rim.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════ RECOMMENDATION ═══════════════ -->
+<div class="rec">
+  <h2>Recommendation — B, with A's ring closed across the parapet</h2>
+  <p><b>Build the Balcony, and make the north ledge walkable so the circuit closes.</b>
+  B is right about the one thing that matters: the canyon has to be <em>behind</em> the
+  performers, or the visitor has to choose between the exhibit and the view. A is right
+  about the rim: a continuous circuit is what makes "there is no way down" felt rather
+  than stated, because you can walk the entire edge and never find a stair. Those two
+  are compatible. Keep B's open north flank, and run a 2.6 m ledge along the inside of
+  the boulder parapet so the rim is unbroken all the way round. Keep the compiled
+  north-wall collision, suppress its tile mesh, and place the authored parapet just
+  inside it. The visual shelves remain outside the walkable terrain bay.</p>
+  <p><b>Why C is out:</b> it is the most picturesque plan and the worst exhibit. The
+  concept doc's argument for viewing Earth from above is that plan view turns Tog-Same
+  into a free reading — three identical figures, one downbeat, hands converging to a
+  literal dot each. That reading needs the three side by side and equidistant. C puts
+  them in a line running away from you.</p>
+  <p><b>Order of beats.</b> Gully (wade, 10 m, one bend so Fire's light is gone) →
+  the ground opens on the left and you are on a ledge with the trio below and slightly
+  behind you, seen from the back → west arc, the figures rotate into three-quarter view
+  and the aven's dust column comes into the frame → the south slab, and the canyon opens
+  past them → out the south-east notch to Air.</p>
+  <p><b>The two numbers graybox has to prove.</b> Eye height is floor + 1.60. From the
+  slab (−1.1) that is +0.50. The protected viewing line is 1 m into the void; the
+  fractured outer 2 m of slab are blocked scenic nose. From an eye 0.35 m behind that
+  line, the performers' feet at −7.4 are 7.9 m down and the nearest station is 4.35 m
+  out horizontally, so the required depression angle is 61.2°. A barrier of
+  height <em>h</em> at 0.35 m in front of the eye blocks anything steeper than
+  atan((1.60 − h) / 0.35), so the slab's lip must be at most 0.96 m and is drawn at
+  <b>0.45 m</b>, which clears with about 12° of margin. On the standard south rim
+  (−1.4, eye +0.20), the nearest station is 5.35 m from the eye and sits at 54.9°.
+  The unrounded maximum parapet is 1.10 m, but the build cap is <b>1.07 m</b> to retain
+  collision tolerance; it is drawn at <b>0.90 m</b> for 8.5° of angular margin. A
+  1.1 m guard rail consumes all tolerance. Second number: pulling the station line 2 m
+  south of the void centre puts the chest slant range to the three at
+  7.7 / 8.7 / 8.7 m, which is Fire's fissure reading
+  distance rather than the 14 m a centred ⌀16 m void would have given.</p>
+</div>
+
+<div class="sheet">
+  <h2>Recommended section <em>· looking west across the bay · north on the left</em></h2>
+  <svg viewBox="60 20 1220 460" role="img" aria-label="Section through the recommended plan">
+    <defs>
+      <linearGradient id="hazeS" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#b9c9a4" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#b9c9a4" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="beamS" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f2e2a8" stop-opacity="0.42"/>
+        <stop offset="100%" stop-color="#f2e2a8" stop-opacity="0.05"/>
+      </linearGradient>
+    </defs>
+
+    <!-- datum lines -->
+    <g stroke="#1a2415" stroke-width="1">
+      <path d="M80,110 H1240 M80,158 H1240 M80,206 H1240 M80,254 H1240 M80,302 H1240 M80,350 H1240 M80,398 H1240"/>
+    </g>
+    <g fill="#8b9683" font-size="11">
+      <text x="1250" y="114">0</text><text x="1250" y="162">−4</text><text x="1250" y="210">−8</text>
+      <text x="1250" y="258">−12</text><text x="1250" y="306">−16</text><text x="1250" y="354">−20</text><text x="1250" y="402">−24</text>
+    </g>
+
+    <!-- ceiling + aven -->
+    <path d="M300,54 H1180" stroke="#33452a" stroke-width="10"/>
+    <path d="M700,54 h96 v-20 h-96 z" fill="#f2e2a8" opacity="0.5"/>
+    <path d="M700,54 L640,205 h216 L796,54 z" fill="url(#beamS)"/>
+    <text x="748" y="30" fill="#f2e2a8" font-size="12" text-anchor="middle">aven · daylight shaft, dust-loaded</text>
+
+    <!-- receding canyon shelves (north / left) -->
+    <g fill="#1b2416" stroke="#3d4c33" stroke-width="2">
+      <path d="M96,236 H300 V440 H96 z"/>
+      <path d="M96,284 H236 V440 H96 z"/>
+      <path d="M96,338 H180 V440 H96 z"/>
+      <path d="M96,392 H136 V440 H96 z"/>
+    </g>
+    <rect x="80" y="180" width="240" height="264" fill="url(#hazeS)"/>
+    <text x="200" y="462" fill="#8b9683" font-size="12" text-anchor="middle">shelves −10.5 / −14.5 / −19.0 / −25.0, then haze · blocked</text>
+
+    <!-- north parapet + ledge -->
+    <path d="M300,127 H372 V236 H300 z" fill="#2c3a22" stroke="#4a5c3a" stroke-width="2"/>
+    <path d="M300,116 H316 V127 H300 z" fill="#6b7d55"/>
+    <text x="336" y="106" fill="#dff0c6" font-size="11.5" text-anchor="middle">parapet 0.90</text>
+    <text x="404" y="122" fill="#dff0c6" font-size="12">north ledge −1.4 · 2.6 m</text>
+
+    <!-- the void + performer floor -->
+    <path d="M372,127 V199 H1024 V127" fill="none" stroke="#4a5c3a" stroke-width="3"/>
+    <path d="M372,199 H1024 V420 H372 z" fill="#141d10"/>
+    <path d="M372,199 H1024" stroke="#6b7d55" stroke-width="5"/>
+    <text x="698" y="222" fill="#8b9683" font-size="12" text-anchor="middle">performer floor disc −7.4 · drop 6.0 m from the rim · no stair, anywhere</text>
+
+    <!-- performers -->
+    <g stroke="#dff0c6" stroke-width="3" fill="none">
+      <path d="M560,199 v-30"/><path d="M698,199 v-30"/><path d="M836,199 v-30"/>
+    </g>
+    <g fill="#dff0c6"><circle cx="560" cy="163" r="6"/><circle cx="698" cy="163" r="6"/><circle cx="836" cy="163" r="6"/></g>
+    <text x="560" y="246" fill="#dff0c6" font-size="12" text-anchor="middle">G</text>
+    <text x="698" y="246" fill="#dff0c6" font-size="12" text-anchor="middle">H</text>
+    <text x="836" y="246" fill="#dff0c6" font-size="12" text-anchor="middle">I</text>
+
+    <!-- south rim + slab overlook -->
+    <path d="M1024,127 H1180 V236 H1024 z" fill="#2c3a22" stroke="#4a5c3a" stroke-width="2"/>
+    <path d="M988,123 H1024 V133 H988 z" fill="#3a4a2c" stroke="#8ba36c" stroke-width="2"/>
+    <path d="M988,112 H1000 V123 H988 z" fill="#8ba36c"/>
+    <text x="1108" y="106" fill="#dff0c6" font-size="12" text-anchor="middle">slab −1.1 · 1 m apron · 2 m blocked nose · lip 0.45</text>
+
+    <!-- sightlines from the slab -->
+    <g stroke="#9ed06a" stroke-width="2" stroke-dasharray="7 5" fill="none">
+      <path d="M994,105 L836,196"/>
+      <path d="M994,105 L560,196"/>
+    </g>
+    <text x="900" y="152" fill="#9ed06a" font-size="11.5" transform="rotate(-29 900 152)">61.2° to the near station</text>
+    <text x="700" y="140" fill="#9ed06a" font-size="11.5" transform="rotate(-12 700 140)">53.2° to the far station · both clear the lip</text>
+    <text x="994" y="94" fill="#dff0c6" font-size="11.5" text-anchor="middle">eye +0.50</text>
+  </svg>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h3>Recommended station table</h3>
+    <table>
+      <tr><th>#</th><th>Station</th><th>Dims</th><th>Floor Y</th><th>Walk</th></tr>
+      <tr><td>1</td><td>Gully mouth (Fire door)</td><td>4 m wide, 6 m run</td><td>0 → −0.7</td><td>yes</td></tr>
+      <tr><td>2</td><td>Gully bend + lower run</td><td>4 m wide, 5 m run</td><td>−0.7 → −1.4</td><td>yes</td></tr>
+      <tr><td>3</td><td>North ledge (arrival)</td><td>2.6 m wide, ~20 m long</td><td>−1.4</td><td>yes</td></tr>
+      <tr><td>4</td><td>Boulder parapet</td><td>0.9 m high, ~24 m long</td><td>—</td><td>blocked</td></tr>
+      <tr><td>5</td><td>West / south / east rim</td><td>3.2 m wide</td><td>−1.4</td><td>yes</td></tr>
+      <tr><td>6</td><td>Slab overlook (south)</td><td>4 × 3 m; 1 m apron + 2 m blocked nose; 0.45 m lip</td><td>−1.1</td><td>apron only</td></tr>
+      <tr><td>7</td><td>Void</td><td>⌀ 14 m</td><td>—</td><td>blocked</td></tr>
+      <tr><td>8</td><td>Performer floor disc</td><td>⌀ 14 m</td><td>−7.4</td><td>blocked</td></tr>
+      <tr><td>9</td><td>Bosses G / H / I</td><td>⌀ 2.5 m, 4 m apart, 2 m south of centre</td><td>−7.25</td><td>blocked</td></tr>
+      <tr><td>10</td><td>Canyon shelves (north)</td><td>4 bands, receding</td><td>−10.5 / −14.5 / −19.0 / −25.0</td><td>blocked</td></tr>
+      <tr><td>11</td><td>Exit ramp to Air</td><td>4 m wide, 6 m east–west run</td><td>−1.4 → 0</td><td>yes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Reuse map (inventory verified 2026-08-04)</h3>
+    <table>
+      <tr><th>Canyon walls, boulders</th><td><code>static/models/vegetation/rock/</code> — 131 GLBs, <code>cliff_blockCave_*</code>, <code>cliff_blockSlopeWalls_*</code></td></tr>
+      <tr><th>Gully grass</th><td><code>vegetation/grass/</code> — 8, incl. <code>grass_leafsLarge</code>, <code>plant_flatTall</code></td></tr>
+      <tr><th>Wildflowers</th><td><code>vegetation/flower/</code> — 9 (purple / red / yellow, A–C)</td></tr>
+      <tr><th>Damp gully floor</th><td><code>vegetation/mushroom/</code> — 6, plus <code>log/</code> and <code>bush/</code></td></tr>
+      <tr><th>Scatter pattern</th><td><code>3d/environments/scenes/autumn/authored/AutumnFlora.svelte</code></td></tr>
+      <tr><th>Daylight shaft</th><td>ocean or autumn <code>runtime/atmosphere/GodRayShafts.svelte</code> (hardcoded suns — re-derive)</td></tr>
+      <tr><th>Dust in the shaft</th><td><code>3d/environments/primitives/FallingParticles.svelte</code></td></tr>
+      <tr><th>Fireflies</th><td><code>autumn/runtime/atmosphere/AutumnParticles.svelte</code>; ocean GPGPU fauna for drift</td></tr>
+      <tr><th>Layout + terrain</th><td>new <code>earth-canyon-layout.ts</code> in the pattern of <code>data/first-fire-layout.ts</code></td></tr>
+      <tr><th>Graybox</th><td>primitive geometry only, per <code>FirstFireGraybox.svelte</code>. GLB dressing is Phase 2.</td></tr>
+      <tr><th>Stations</th><td><code>MuseumPerformerStation3D.svelte</code>; anchors via <code>interiorOffsetFraction</code> in <code>vulcan-cave-floor-plan.ts</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Open questions for the walk</h3>
+    <ol>
+      <li>Does the felt downbeat survive the re-skin? A thud through a grass rim is a
+      different animal from a thud through bare rock. Ship it as a toggle and judge it.</li>
+      <li>Parapet at 0.90 m clears the south-rim sightline by 8.5°. Is that enough, or does the
+      whole rim want the slab's 0.45 m lip and a wider standoff instead?</li>
+      <li>Four backdrop shelves, or three plus more haze? Fewer, hazier shelves probably
+      read as deeper.</li>
+      <li>Grass on the rim as well as the gully, or does the rim stay bare rock so the
+      gully keeps its contrast?</li>
+      <li>Fireflies in a daylit room, or only in the gully's shaded stretch?</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  Earth room concept sheet · follows the Water and Fire process (brainstorm → sheet → design doc → one executor → graybox gate).
+  Grid on every plan: 1 square = 2 m. Draft spec: <code>docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md</code>.
+</footer>
+
+</body>
+</html>

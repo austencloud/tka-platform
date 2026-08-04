@@ -1,0 +1,19 @@
+# Earth Room Floor Plan: Codex Review
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:103 | SEVERITY(HIGH) | The original slab sightline used a 5.0 m horizontal range from the rim while calling the full 3 m cantilever walkable. At the cantilever tip, the 0.45 m lip would block the nearest performer's feet. | FIXED inline: retained the 3 m slab silhouette, limited walking to a 1 m viewing apron, blocked the fractured outer 2 m, and recalculated the feet angles as 61.2° and 53.2°.
+
+static/sketches/2026-08-04-earth-room-floor-plans.html:427 | SEVERITY(HIGH) | The sheet repeated the inconsistent slab ranges, lip maximum, angular margin, and chest slant ranges. | FIXED inline: synchronized the sheet to a 4.35 m nearest horizontal range, 0.96 m maximum lip, about 12° of margin, and 7.7 / 8.7 / 8.7 m chest slant ranges.
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:68 | SEVERITY(HIGH) | The exit ended at Y −1.2 even though Air has no authored terrain and therefore begins at museum datum 0. That would create a 1.2 m floor discontinuity at `earthToAir`. | FIXED inline: changed the exit to a 6 m east–west `ramp-x` along the south rim, rising continuously from −1.4 to 0 at the Air door.
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:51 | SEVERITY(MED) | The 34 × 24 m bay fits the stated program: the sheet's 2 m grid measures 34 m east–west by 24 m north–south, leaving a 10 m entry strip and 24 × 24 m chamber. The implementation size was not concrete. | FIXED inline: specified `minInteriorWidth: 45` and `minInteriorHeight: 32`, compiling to about 33.75 × 24 m under the current 0.75 m conversion.
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:52 | SEVERITY(LOW) | Door sides and alignments match the wing grid: Fire exits through its east-wall `end` door into Earth's west-wall `start` door, while Earth exits through the east end of its south wall into Air's north-wall `start` door. | FIXED inline: retained the door program and clarified the datum-continuous exit ramp.
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:174 | SEVERITY(MED) | A truly absent north wall is not required and would expand the existing bay-stamper contract. | FIXED inline: kept normal compiled north-wall collision, suppressed its tile mesh through authored room presentation, placed the blocked parapet just inside it, and left the shelves outside the terrain bay as unreachable visual geometry.
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:180 | SEVERITY(MED) | The existing layout module's geometry lists are rect-based, so they cannot represent the circular void, performer disc, and bosses exactly while keeping collision and rendering on one source. | FLAGGED only: the Earth module must add shared `Disc` records and an `inDisc` helper consumed by both `blockedAt` and the graybox. A separate rectangular collision approximation would violate the one-source layout pattern.
+
+docs/superpowers/specs/2026-08-04-earth-room-floor-plan-draft.md:42 | SEVERITY(LOW) | The approved concept constraints remain intact: GGGG, HHHH, and IIII are presented side by side for one simultaneous overhead Tog-Same, beta-to-beta reading; the continuous closed rim offers no stair down; entry is west and exit is south. | FIXED inline: no program change was needed.
+
+Overall verdict: The recommended B-with-A-ring plan now fits the wing grid and has continuous entry, rim, and exit elevations. Its sightline and slant-range numbers agree across the spec and sheet, and the unique overhead drop mechanism remains intact. The graybox can proceed under the existing authored-room pattern once the Earth layout introduces one shared circular geometry primitive; that is the only material implementation seam still flagged.
