@@ -111,14 +111,18 @@
     card ? (bakedCoverUrl(card, printedProp) ?? null) : null
   );
 
-  // ── the real short code, looked up and never minted ──────────────────────
+  // ── the real short code, looked up, never minted, verified against the art ─
+  // The cover goes in with the sequence: the lookup answers what code this
+  // catalog entry has, the printed QR answers what the card on screen actually
+  // opens, and a card whose two answers disagree gets no phone (hero-scan-code).
   let scanCode = $state<string | null>(null);
   $effect(() => {
     const seq = backSequence;
+    const cover = coverUrl;
     scanCode = null;
     if (!seq) return;
     let cancelled = false;
-    void resolveHeroScanCode(seq).then((code) => {
+    void resolveHeroScanCode(seq, cover).then((code) => {
       if (!cancelled) scanCode = code;
     });
     return () => {
