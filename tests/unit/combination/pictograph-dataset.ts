@@ -76,6 +76,15 @@ export async function loadPictographDatasetForTests(): Promise<CsvDataSetShape> 
     ...(trigridData !== undefined && { trigridData }),
   };
 
+  // CsvLoader reads window.csvData as its window-pre-injection tier. Under a
+  // node-environment vitest invocation there is no `window` at all (jsdom
+  // supplies it as the global object; node does not) — this bootstrap must
+  // not depend on which environment the runner resolved, so synthesize a
+  // `window` onto `globalThis` when one isn't already present.
+  if (typeof window === "undefined") {
+    (globalThis as Record<string, unknown>).window = globalThis;
+  }
+
   (globalThis as { window?: { csvData?: CsvDataSetShape } }).window!.csvData =
     dataset;
 

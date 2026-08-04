@@ -151,9 +151,10 @@ export const BASE_SEQUENCES: readonly BaseSequenceEntry[] = [
     note: "awaiting roster review",
   },
   {
-    // Θ is U+0398 (uppercase, Type-6 static family member per the Letter
-    // model) — never lowercase θ (U+03B8), which denotes nothing in TKA
-    // canon (see admin/migrate-theta for the last such leak).
+    // Θ is U+0398 (uppercase, a Type-2 Shift letter per the Letter model's
+    // TYPE2_LETTERS — Type-6 statics are the lowercase α β γ ζ η τ set) —
+    // never lowercase θ (U+03B8), which denotes nothing in TKA canon (see
+    // admin/migrate-theta for the last such leak).
     word: "WΣYΘ",
     letters: [Letter.W, Letter.SIGMA, Letter.Y, Letter.THETA],
     edges: [
@@ -179,13 +180,13 @@ export const BASE_SEQUENCES: readonly BaseSequenceEntry[] = [
   },
 ];
 
-export function confirmedBases(): BaseSequenceEntry[] {
+export function rosterConfirmedBases(): BaseSequenceEntry[] {
   return BASE_SEQUENCES.filter((b) => b.rosterConfirmed);
 }
 
 /** Bases the combinator may draw ambient material from. */
 export function ambientEligibleBases(): BaseSequenceEntry[] {
-  return confirmedBases();
+  return rosterConfirmedBases();
 }
 
 /** Letters available as ambient material (for option filtering). */

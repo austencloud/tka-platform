@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BASE_SEQUENCES,
-  confirmedBases,
+  rosterConfirmedBases,
   ambientEligibleBases,
   ambientLetterSet,
   ambientBaseForLetter,
@@ -49,7 +49,7 @@ describe("base-sequence registry", () => {
 
   it("ambient-eligible = rosterConfirmed bases only", () => {
     expect(ambientEligibleBases().every((b) => b.rosterConfirmed)).toBe(true);
-    expect(confirmedBases().length).toBeGreaterThanOrEqual(9);
+    expect(rosterConfirmedBases().length).toBeGreaterThanOrEqual(9);
   });
 
   it("ambientLetterSet covers the bridge letters and excludes unconfirmed-roster placeholders", () => {
