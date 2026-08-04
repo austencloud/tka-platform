@@ -26,10 +26,18 @@
  * a little closer and then that phone slides in." So at rest the stage is two
  * cards and nothing else, and the phone is an entrance rather than furniture.
  *
- * A SECOND press skips `enter` and starts at `aim`. The phone is already on
- * stage, and walking it off and back on would replay a beat that only means
- * something once — the same reason 16a2bef0f9 stopped the cue from looping.
- * Dealing a card swaps the stack BEHIND the standing phone.
+ * A SECOND press on the SAME card skips `enter` and starts at `aim`: the phone
+ * is already standing there, and walking it off and back on would replay a beat
+ * that only means something once.
+ *
+ * DEALING IS DIFFERENT, and this is the 2026-08-04 correction. A deal used to
+ * swap the stack behind the standing phone and then scan the new card by
+ * itself. Austen: "when I deal another card the phone should not be there yet.
+ * It should just make the cards and the phone go away with an animation, then
+ * it should deal in 2 fresh cards side by side, and then I should have to click
+ * scan this card again to scan it with the phone." So a deal calls `reset()` —
+ * the stage empties, the iframe unmounts, and the entrance is earned again by
+ * the next press. Nothing here scans on its own anymore.
  *
  * `open` is a resting state, not an off state. `armed` latches when the phone
  * first aims and never clears: it is what boots the iframe, and the scan page
@@ -90,6 +98,11 @@ export interface HeroScanTimeline {
   readonly available: boolean;
   /** Run one pass. Ignored while a pass is already running. */
   scan(): void;
+  /**
+   * Back to an empty stage: the phone is off, the iframe unmounts, and the
+   * entrance has to be earned again. Dealing a card calls this — see below.
+   */
+  reset(): void;
   start(): void;
   stop(): void;
 }
@@ -168,10 +181,23 @@ export function createHeroScanTimeline(): HeroScanTimeline {
         phase = "open";
         return;
       }
-      // The entrance happens once. After it, the phone is standing there and a
-      // press picks up at the camera.
+      // The entrance happens once per stage. After it, the phone is standing
+      // there and a press picks up at the camera. A deal returns the stage to
+      // rest (see `reset`), so the next card earns the entrance again.
       phase = phase === "rest" ? "enter" : "aim";
       schedule();
+    },
+    reset(): void {
+      // Dealing a card clears the stage. `armed` drops with it — that is what
+      // unmounts the iframe, so the next press boots the NEW code fresh and
+      // keeps its honest loading beat instead of revealing a page that was
+      // already sitting there for a card the visitor is no longer holding.
+      // `scanned` reads `armed`, so the trigger reverts to "Scan the code" by
+      // the same stroke. `pass` deliberately survives: it counts passes for
+      // per-pass effects, and a deal is not a pass.
+      clear();
+      phase = "rest";
+      armed = false;
     },
     start(): void {
       if (typeof window === "undefined") return;

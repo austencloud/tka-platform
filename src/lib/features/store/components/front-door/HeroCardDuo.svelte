@@ -18,8 +18,14 @@
 
   Three beats drive one press (hero-scan-timeline.svelte.ts): the phone leans in
   on its camera view, the code is recognised, the screen swipes up into the real
-  scan page. Deal another card and the whole thing re-runs against that card's
-  own code.
+  scan page.
+
+  DEALING CLEARS THE STAGE. It does not swap the card behind a standing phone,
+  and it does not scan the new card for you. Everything on stage leaves in one
+  gesture, two fresh cards deal in side by side, and the phone's entrance is
+  earned again by the next press. Austen (2026-08-04): "when I deal another card
+  the phone should not be there yet ... then I should have to click scan this
+  card again to scan it with the phone."
 -->
 <script lang="ts">
   import type { HeroCoverEntry } from "./front-door-catalog";
@@ -168,21 +174,28 @@
   // So the deal is a flourish in three beats, and every object on stage is in
   // it:
   //
-  //   lift  150  the stack fans open and rises; the phone eases back, tips
-  //              away and shrinks a little to make room. This is the beat that
-  //              says something is about to happen — all three objects move.
+  //   lift  150  the stack fans open and rises. In the same frame the phone
+  //              starts LEAVING — `onstage` drops, so it swings back out to
+  //              the right, turns edge-on and fades, exactly reversing its
+  //              entrance (HeroPhone's .phone transition owns that travel).
+  //              One gesture: everything on stage is going.
   //   out   180  the top card sweeps off up-left with its own gesture; the
   //              back face follows 60ms behind it, so the pair leaves as a
   //              stack rather than as one flat plane.
-  //   (swap)     40ms of held-invisible while the new card's faces render, so
-  //              CardBack's re-render never lands on a visible frame.
-  //   in    300  the new card is DEALT: it arrives from low and right — out
-  //              from behind the phone, where a dealer's hand would be —
-  //              arcing up into the stack. Back lands first, front 80ms later,
-  //              on top. The fan closes and the phone returns underneath it.
+  //   (swap)     90ms of held-invisible. The new card's faces render here, so
+  //              CardBack's re-render never lands on a visible frame, and the
+  //              timeline resets: the scene drops `entered` and returns to the
+  //              REST composition (the two faces side by side) while nothing
+  //              is on screen to be seen jumping.
+  //   in    300  two FRESH cards are DEALT side by side, arriving from low and
+  //              right where a dealer's hand would be. Back lands first, front
+  //              80ms later, on top.
   //
-  // The scan fires 80ms before the last face lands, so the beat reads as one
-  // continuous flourish instead of two things that took turns.
+  // AND THEN IT STOPS. The deal used to fire a scan 80ms before the last face
+  // landed, which meant a card was scanned that nobody asked to scan. Austen
+  // (2026-08-04): "then I should have to click scan this card again to scan it
+  // with the phone." So the flourish ends at rest, the trigger says "Scan the
+  // code" again, and the phone's entrance is earned rather than assumed.
   //
   // Everything moves by transform/opacity inside the absolutely-placed scene:
   // no beat of this can move anything outside the stage box.
@@ -190,19 +203,18 @@
   const OUT_MS = 180;
   /** The back face leaves after the front — a stack, not a plane. */
   const OUT_STAGGER_MS = 60;
-  /** Held invisible while the new faces render. */
-  const SWAP_HOLD_MS = 40;
+  /** Held invisible while the new faces render AND the stage resets to rest.
+   *  Long enough to also cover the phone's 320ms opacity fade, so the reset
+   *  can never unmount a phone that is still visible. */
+  const SWAP_HOLD_MS = 90;
   const IN_MS = 300;
   /** The front lands last, on top, the way a dealt card does. */
   const IN_STAGGER_MS = 80;
-  /** The scan starts just before the last face settles. */
-  const SCAN_LEAD_MS = 80;
 
   const OUT_AT = LIFT_MS;
   const SWAP_AT = OUT_AT + OUT_STAGGER_MS + OUT_MS;
   const IN_AT = SWAP_AT + SWAP_HOLD_MS;
   const IN_END = IN_AT + IN_STAGGER_MS + IN_MS;
-  const SCAN_AT = IN_END - SCAN_LEAD_MS;
   /** Tail past the last keyframe: dropping the class ON its final frame races
    *  the animation, and the snap would be visible. */
   const SETTLE_AT = IN_END + 50;
@@ -211,8 +223,19 @@
   let dealStage = $state<DealStage | null>(null);
   /** A deal is in flight. The one guard against overlapping deals. */
   const dealing = $derived(dealStage !== null);
-  /** The stack is fanned and the phone is standing back. */
+  /** The stack is fanned and the phone is on its way out. */
   const parting = $derived(dealStage === "lift" || dealStage === "out");
+  /**
+   * The phone is LEAVING, ahead of the timeline reset that follows at the swap.
+   *
+   * The reset is what actually clears the stage, but it also flips the scene
+   * back to its rest composition — and that has to happen behind an invisible
+   * frame. The phone's exit does not: it is half the gesture Austen asked for
+   * and has to start on the same frame the cards lift. So the phone's `onstage`
+   * is held false from the first beat while `entered` stays true until the
+   * swap, and the phone plays its entrance in reverse over the whole exit.
+   */
+  let phoneExiting = $state(false);
   let dealTimers: ReturnType<typeof setTimeout>[] = [];
 
   function clearDealTimers(): void {
@@ -233,9 +256,9 @@
 
   /** The button's one job, whichever label it is wearing. */
   function press(): void {
-    // The busy guard. `dealing` covers the whole flourish and `timeline.running`
-    // covers the scan that follows it, so a double-press can never start a
-    // second deal over the top of the first.
+    // The busy guard. `dealing` covers the whole flourish — exit AND deal-in —
+    // and `timeline.running` covers a scan pass, so a double-press can never
+    // start a second deal over the top of the first.
     if (timeline.running || dealing) return;
     if (!timeline.scanned || !canDeal) {
       timeline.scan();
@@ -243,22 +266,27 @@
     }
     clearDealTimers();
     if (timeline.reducedMotion) {
-      // No flourish to run: the new card is simply the card, with its page on
-      // the phone. `timeline.scan()` is already instant under reduced motion.
+      // No beats to run: the stage is simply at rest holding a different card,
+      // unscanned. Nothing here scans — under reduced motion or otherwise, the
+      // entrance is the visitor's to ask for.
+      timeline.reset();
       advance();
-      timeline.scan();
       return;
     }
+    phoneExiting = true;
     dealStage = "lift";
     dealTimers.push(
       setTimeout(() => (dealStage = "out"), OUT_AT),
-      // Swapped while both faces are held invisible by the out-beat's fill, so
-      // the change of card is never seen as a cut and CardBack's re-render
-      // happens off-screen.
-      setTimeout(advance, SWAP_AT),
+      // The one invisible frame, and everything that must not be watched
+      // happens inside it: the card swaps (CardBack re-renders off-screen) and
+      // the stage resets to rest, which drops `entered` and returns the faces
+      // to their side-by-side composition before they are dealt back in.
+      setTimeout(() => {
+        timeline.reset();
+        phoneExiting = false;
+        advance();
+      }, SWAP_AT),
       setTimeout(() => (dealStage = "in"), IN_AT),
-      // The new card is on the stack; the phone can aim at it.
-      setTimeout(() => timeline.scan(), SCAN_AT),
       setTimeout(() => (dealStage = null), SETTLE_AT)
     );
   }
@@ -316,7 +344,7 @@
         <HeroPhone
           code={scanCode}
           armed={timeline.armed}
-          onstage={entered}
+          onstage={entered && !phoneExiting}
           {viewfinder}
           locked={timeline.phase === "lock"}
           {opened}
@@ -567,10 +595,10 @@
     }
   }
 
-  /* DEALT: in from low and right, which on this stage is out from behind the
-     phone — the phone is standing exactly where a dealer's hand would be, and
-     it has just stepped back to let the card past. The card is opaque well
-     before it clears the phone, so it emerges rather than materialises. */
+  /* DEALT: in from low and right, where a dealer's hand would be — and on this
+     stage that is also where the phone stands, so the cards arrive out of the
+     space it has just vacated. The card is opaque well before it reaches its
+     slot, so it travels rather than materialises. */
   @keyframes deal-in-back {
     from {
       transform: translate(44%, 26%) rotate(12deg) scale(0.9);
