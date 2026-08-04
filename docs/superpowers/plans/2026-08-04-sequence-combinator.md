@@ -10,6 +10,16 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-04-sequence-combinator-design.md`
 
+> **DELTAS after Task-1 code review (2026-08-04) — these override the inline code of Tasks 5–12 where they conflict:**
+> 1. The continuity-fork flag is named **`rotationFaithful`** (not `inverted`): motionType PRO↔ANTI flips, rotation direction and locations preserved (Austen's FLGGFLHH G→H mutation). The existing `invertMotion` (flips both) is NOT used for twins. `CombinationResult.invertedBlocks` → `rotationFaithfulBlocks`.
+> 2. `WalkSource` is a discriminated union on `kind` — card sources have non-null `sequence`; ambient sources have `ambientWord` and no sequence. No `!` assertions downstream.
+> 3. Seam reads go through `seamOf(step)` / `seamEndOf(step)` from `position-groups.ts` (return `SeamState | null`) — never `step.startPosition as SeamState`. Null seams never match.
+> 4. `CombinatorVerdictReport` → **`CombinationSearchReport`**; `exhausted` → **`searchComplete`**.
+> 5. Defaults live in **`COMBINATOR_DEFAULTS`** exported from `domain/types.ts`; `CombinatorOptions` extends `Partial<typeof COMBINATOR_DEFAULTS>` plus optional `ambientProvider` (declared in types.ts, not the service). Task 6's local `DEFAULTS` is replaced by this const.
+> 6. `cardAMaterial`/`cardBMaterial` → `cardAShare`/`cardBShare`.
+> 7. `SeamEntry` deleted (search uses an inline shape).
+> 8. Task 3 must record its never-hand-roll statement: sequence-engine's `LetterPositionInfo` + spell's `LetterTransitionGraph` are prior art but are alpha/beta/gamma-only and generation-bound; Layer 0 needs all 7 families + ingredient attribution.
+
 **Verified reuse surface** (all confirmed in-repo 2026-08-04 — do not re-derive):
 
 | Need | Use | Path |
