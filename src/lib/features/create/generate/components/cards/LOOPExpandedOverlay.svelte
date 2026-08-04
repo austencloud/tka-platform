@@ -127,7 +127,7 @@ Animates forward in z-axis and expands to fill the container space
 
   let hapticService: HapticFeedback | null = null;
   let overlayElement: HTMLDivElement;
-  let gridContainerElement: HTMLDivElement;
+  let gridContainerElement = $state<HTMLDivElement>();
   let drawerHeightAnimation: Animation | null = null;
   let componentRevealFrame: number | null = null;
   // A reopened multi-component combo lands on the Combo screen it was applied

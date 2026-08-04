@@ -67,6 +67,10 @@ describe("LOOPExpandedOverlay live single selection", () => {
     expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.ROTATED);
     expect(handlers.onClose).not.toHaveBeenCalled();
     expect(document.querySelector(".apply-button")).toBeNull();
+    expect(document.body.textContent).not.toContain("Swapped");
+    expect(
+      document.querySelector('[aria-label="Back to all LOOP types"]')
+    ).not.toBeNull();
 
     await page
       .getByRole("radiogroup", { name: "Rotation period" })
@@ -78,6 +82,14 @@ describe("LOOPExpandedOverlay live single selection", () => {
     });
     expect(handlers.onChange).toHaveBeenCalledTimes(2);
     expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.ROTATED);
+
+    await page.getByRole("button", { name: "Back to all LOOP types" }).click();
+
+    const rotatedButton = document.querySelector<HTMLButtonElement>(
+      `[data-component="${LOOPComponent.ROTATED}"] .loop-component-button`
+    );
+    expect(document.body.textContent).toContain("Swapped");
+    expect(document.activeElement).toBe(rotatedButton);
   });
 
   it("keeps an invalid single choice visible until a live setting makes it valid", async () => {
@@ -109,6 +121,22 @@ describe("LOOPExpandedOverlay live single selection", () => {
       rotationInterval: 2,
     });
     expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.ROTATED);
+  });
+
+  it("applies and closes a Single LOOP that has no settings", async () => {
+    const handlers = renderOverlay();
+
+    await page
+      .getByRole("button", {
+        name: /Swapped - Blue and red hands swap roles - not selected/,
+      })
+      .click();
+
+    expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.SWAPPED);
+    expect(handlers.onClose).toHaveBeenCalledTimes(1);
+    expect(
+      document.querySelector('[aria-label="Back to all LOOP types"]')
+    ).toBeNull();
   });
 
   it("keeps Combo transactional", async () => {

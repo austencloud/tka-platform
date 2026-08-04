@@ -18,11 +18,26 @@ export interface VariantDescriptor {
   readonly rotation: 0 | 2 | 4 | 6;
   readonly mirrored: boolean;
   readonly colorSwapped: boolean;
-  /** Rotation-faithful twin: motionType PRO↔ANTI flipped, rotation direction
-   * and locations preserved — G-run becomes H-run (Austen's FLGGFLHH example).
+  /**
+   * Rotation-faithful twin: the card traversed BACKWARDS while every prop keeps
+   * rotating the way it already was. Step order reverses, each step's
+   * start/end position and each motion's start/end location+orientation swap,
+   * `rotationDirection` is PRESERVED, and `motionType` + letters are re-derived
+   * from the result. See `services/variant-generator.ts`.
+   *
+   * That models Austen's FLGGFLHH card: the prop rotation flows continuously
+   * while the hand path reverses, and the G-run reads as an H-run as a
+   * consequence. "Rotation direction AND locations preserved" is impossible —
+   * motionType is a FUNCTION of (hand path, rotation direction, turns), which
+   * is what `deriveMotionType` computes, so flipping PRO↔ANTI while holding
+   * both produces rows that do not exist in the dataframe. Proven by the
+   * fixtures: twin(GGGG_CW) = HHHH_CW (beta1→7→5→3, anti + cw).
+   *
    * NOT the LOOP "inverted" component: invertMotion in
    * create/services/motion-transforms.ts flips BOTH type and rotation
-   * direction, which is a different transform, deliberately not used here. */
+   * direction, keeping the hand path — a different transform, deliberately not
+   * used here.
+   */
   readonly rotationFaithful: boolean;
 }
 
