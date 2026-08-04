@@ -157,9 +157,9 @@ Animates forward in z-axis and expands to fill the container space
     }
   });
 
-  // Transformation settings stay LOCAL until Apply, synced from the prop the
-  // same way localSelectedComponents is. Defaults only matter for legacy
-  // callers without settings plumbing; those callers never see configurators.
+  // Combo edits stay local until Apply. Single LOOP settings write through as
+  // soon as they form a valid configuration, while this local copy keeps an
+  // invalid choice visible long enough to explain what needs changing.
   let localRhythm = $state<RhythmValue>({
     rotationInterval: 2,
     inversionInterval: 2,
@@ -313,6 +313,15 @@ Animates forward in z-axis and expands to fill the container space
     );
   });
 
+  const showSelectionDetails = $derived(
+    isMultiSelectMode ||
+      hasInlineConfigurator ||
+      (selectionCount > 0 &&
+        (!isImplemented ||
+          guestLock.locked ||
+          (rhythmGate !== null && !rhythmGate.ok)))
+  );
+
   // Per-component lock for single-select mode: each component evaluated as if it
   // were the sole selection, so the grid can badge the gated ones up front.
   const lockedComponents = $derived.by(() => {
@@ -390,7 +399,9 @@ Animates forward in z-axis and expands to fill the container space
     hapticService?.trigger("selection");
     const isMobileDrawer = usesMobileDrawerPresentation();
 
-    // Configurable transformations expand in place before Apply.
+    // A LOOP tile is the choice itself in Single mode. Configurable choices
+    // stay open so their settings are reachable, but the valid type is already
+    // active and closing the drawer does not undo it.
     if (!isMultiSelectMode) {
       // Guest-gated single pick routes to sign-up instead of applying.
       if (guestMaxLength !== undefined) {
@@ -404,7 +415,18 @@ Animates forward in z-axis and expands to fill the container space
           return;
         }
       }
-      localSelectedComponents = new Set([component]);
+      const nextComponents = new Set([component]);
+      localSelectedComponents = nextComponents;
+      const newLoopType = generateLOOPType(nextComponents);
+      if (newLoopType === null) return;
+
+      const nextRhythmGate =
+        sequenceLength === undefined
+          ? null
+          : gateRhythm(nextComponents, localRhythm, sequenceLength);
+      if (nextRhythmGate && !nextRhythmGate.ok) return;
+
+      onChange(newLoopType);
       if (
         (component === LOOPComponent.ROTATED ||
           component === LOOPComponent.MIRRORED ||
@@ -417,7 +439,7 @@ Animates forward in z-axis and expands to fill the container space
         }
         return;
       }
-      applyAndClose();
+      onClose();
       return;
     }
 
@@ -544,6 +566,12 @@ Animates forward in z-axis and expands to fill the container space
     drawerHeightAnimation?.cancel();
     drawerHeightAnimation = null;
     mobileDetailComponent = null;
+    if (!isMulti && localSelectedComponents.size > 1) {
+      // A committed combo has no honest preselection in Single mode. Leave the
+      // active combo untouched until the user chooses the single LOOP that
+      // should replace it.
+      localSelectedComponents = new Set();
+    }
     isMultiSelectMode = isMulti;
 
     if (!shouldAnimateDrawer) return;
@@ -574,7 +602,36 @@ Animates forward in z-axis and expands to fill the container space
 
   function updateRhythm(updates: Partial<RhythmValue>) {
     hapticService?.trigger("selection");
-    localRhythm = { ...localRhythm, ...updates };
+    const nextRhythm = { ...localRhythm, ...updates };
+
+    if (!isMultiSelectMode && selectionCount > 0) {
+      const newLoopType = generateLOOPType(localSelectedComponents);
+      if (newLoopType !== null && guestMaxLength !== undefined) {
+        const nextGuestLock = guestLoopGate(
+          newLoopType,
+          buildLoopSpec(localSelectedComponents, nextRhythm),
+          guestMaxLength
+        );
+        if (nextGuestLock.locked) {
+          onRequestSignup?.(nextGuestLock.reason);
+          return;
+        }
+      }
+    }
+
+    localRhythm = nextRhythm;
+    if (isMultiSelectMode || selectionCount === 0) return;
+
+    const newLoopType = generateLOOPType(localSelectedComponents);
+    if (newLoopType === null) return;
+    const nextRhythmGate =
+      sequenceLength === undefined
+        ? null
+        : gateRhythm(localSelectedComponents, nextRhythm, sequenceLength);
+    if (nextRhythmGate && !nextRhythmGate.ok) return;
+
+    onRhythmChange?.(updates);
+    onChange(newLoopType);
   }
 
   function applyAndClose() {
@@ -636,7 +693,7 @@ Animates forward in z-axis and expands to fill the container space
 <div
   bind:this={overlayElement}
   class="loop-expanded-overlay"
-  class:combo-mode={isMultiSelectMode || hasInlineConfigurator}
+  class:combo-mode={showSelectionDetails}
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
   <!-- Header with title, disable toggle, and close button -->
@@ -952,8 +1009,9 @@ Animates forward in z-axis and expands to fill the container space
     </Crossfade>
   </div>
 
-  <!-- Combos and configurable single LOOPs show generation details. -->
-  {#if isMultiSelectMode || hasInlineConfigurator}
+  <!-- Configurable LOOPs keep their explanation visible. Invalid single
+       choices use the same area to say why they have not committed yet. -->
+  {#if showSelectionDetails}
     <div
       class="combo-details desktop-combo-details themed-scrollbar"
       in:flyFade={{
@@ -1005,31 +1063,32 @@ Animates forward in z-axis and expands to fill the container space
       </div>
     {/if}
 
-    <!-- Apply remains sticky in the in-card and desktop presentations. The
-         phone drawer turns this into a fixed flex footer while its optional
-         explanation stack owns any overflow. -->
-    <div
-      class="apply-dock"
-      in:flyFade={{
-        y: 8,
-        delay: motionDuration(DURATION.fast),
-        duration: DURATION.normal,
-      }}
-    >
-      <button
-        class="apply-button"
-        class:locked={guestLock.locked}
-        class:disabled={selectionCount === 0 ||
-          !isImplemented ||
-          (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
-        onclick={handleConfirm}
-        disabled={selectionCount === 0 ||
-          !isImplemented ||
-          (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
+    {#if isMultiSelectMode}
+      <!-- Combo mode is intentionally transactional because several component
+           and rhythm edits belong to one LOOP configuration. -->
+      <div
+        class="apply-dock"
+        in:flyFade={{
+          y: 8,
+          delay: motionDuration(DURATION.fast),
+          duration: DURATION.normal,
+        }}
       >
-        {buttonText}
-      </button>
-    </div>
+        <button
+          class="apply-button"
+          class:locked={guestLock.locked}
+          class:disabled={selectionCount === 0 ||
+            !isImplemented ||
+            (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
+          onclick={handleConfirm}
+          disabled={selectionCount === 0 ||
+            !isImplemented ||
+            (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
+        >
+          {buttonText}
+        </button>
+      </div>
+    {/if}
   {/if}
 </div>
 
