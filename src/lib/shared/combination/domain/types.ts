@@ -1,3 +1,10 @@
+/**
+ * Domain model for the sequence-combination engine: a seam-graph closed-walk
+ * search over two source cards (A, B) plus an optional ambient base
+ * vocabulary. Consumed by `combination/services/*` and the
+ * `/test/sequence-combinator` lab.
+ */
+
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -11,20 +18,26 @@ export interface VariantDescriptor {
   readonly rotation: 0 | 2 | 4 | 6;
   readonly mirrored: boolean;
   readonly colorSwapped: boolean;
-  /** Rotation-faithful twin: every motion's rotation direction flipped,
-   * letters re-derived (G-run becomes H-run). */
-  readonly inverted: boolean;
+  /** Rotation-faithful twin: motionType PRO↔ANTI flipped, rotation direction
+   * and locations preserved — G-run becomes H-run (Austen's FLGGFLHH example).
+   * NOT the LOOP "inverted" component: invertMotion in
+   * create/services/motion-transforms.ts flips BOTH type and rotation
+   * direction, which is a different transform, deliberately not used here. */
+  readonly rotationFaithful: boolean;
 }
 
-export interface WalkSource {
-  readonly id: string; // "A", "A~inv", "B r2 mirror swap", "ambient:ΦΨ"
-  readonly kind: "cardA" | "cardB" | "ambient";
-  readonly variant: VariantDescriptor;
-  /** Concrete cyclic material. Ambient sources have no fixed sequence —
-   * their steps come from the option provider at search time. */
-  readonly sequence: SequenceData | null;
-  readonly ambientWord?: string;
-}
+export type WalkSource =
+  | {
+      readonly kind: "cardA" | "cardB";
+      readonly id: string; // "A", "A~inv", "B r2 mirror swap"
+      readonly variant: VariantDescriptor;
+      readonly sequence: SequenceData;
+    }
+  | {
+      readonly kind: "ambient";
+      readonly id: string; // "ambient:ΦΨ"
+      readonly ambientWord: string;
+    };
 
 export interface WalkBlock {
   readonly sourceId: string;
@@ -32,7 +45,7 @@ export interface WalkBlock {
   /** Step index in the source where this block entered (cyclic). -1 for ambient. */
   readonly startStepIndex: number;
   readonly steps: readonly StepData[];
-  readonly inverted: boolean;
+  readonly rotationFaithful: boolean;
   readonly ambientWord?: string;
 }
 
@@ -45,43 +58,47 @@ export interface CombinationResult {
   readonly usedAmbient: boolean;
   readonly ambientWords: readonly string[];
   /** Fractions of result steps drawn from each card (ambient excluded). */
-  readonly cardAMaterial: number;
-  readonly cardBMaterial: number;
+  readonly cardAShare: number;
+  readonly cardBShare: number;
   readonly variantB: VariantDescriptor | null;
-  /** Count of blocks taken from an inverted twin (rotation-faithful seams). */
-  readonly invertedBlocks: number;
+  /** Count of blocks taken from a rotation-faithful twin (see VariantDescriptor.rotationFaithful). */
+  readonly rotationFaithfulBlocks: number;
   readonly canonicalHash: string;
   /** "= FL + AA + GG" style ingredient sentence. */
   readonly derivation: string;
 }
 
-export interface CombinatorVerdictReport {
+export interface CombinationSearchReport {
   readonly results: readonly CombinationResult[];
-  /** True when the exhaustive bounded search found nothing — with ambient
+  /** Derived at construction: results empty AND searchComplete. With ambient
    * enabled this is the strong impossibility claim. */
   readonly impossible: boolean;
-  /** Search hit a safety cap before exhausting the space; impossibility is
-   * then NOT proven, only "none found". */
-  readonly exhausted: boolean;
+  /** True when the bounded search exhausted the space. False = budget hit;
+   * impossibility NOT proven, only "none found". */
+  readonly searchComplete: boolean;
   readonly gridModeMismatch: boolean;
 }
 
-export interface CombinatorOptions {
-  readonly minBlockSize?: number; // default 1
-  readonly maxResultLength?: number; // default 32, hard cap 64
-  readonly maxResults?: number; // default 24
-  readonly wholeUnitsOnly?: boolean; // default false
-  readonly allowAmbient?: boolean; // default true
-  readonly maxAmbientRun?: number; // default 2 consecutive ambient steps
-  readonly allowMirror?: boolean; // default true
-  readonly allowRotation?: boolean; // default true
-  readonly allowColorSwap?: boolean; // default true
-  readonly exploreRotationFaithful?: boolean; // default true
-  /** DFS node budget before exhausted=false is reported. Default 200_000. */
-  readonly searchBudget?: number;
+export interface AmbientOptionProvider {
+  /** Candidate ambient steps STARTING at the given seam (letter-filtered). */
+  optionsAt(seam: SeamState): Promise<readonly StepData[]>;
 }
 
-export interface SeamEntry {
-  readonly sourceIndex: number;
-  readonly stepIndex: number;
+export const COMBINATOR_DEFAULTS = {
+  minBlockSize: 1,
+  maxResultLength: 32,
+  maxResults: 24,
+  wholeUnitsOnly: false,
+  allowAmbient: true,
+  maxAmbientRun: 2,
+  allowMirror: true,
+  allowRotation: true,
+  allowColorSwap: true,
+  exploreRotationFaithful: true,
+  searchBudget: 200_000,
+} as const;
+
+export interface CombinatorOptions extends Partial<typeof COMBINATOR_DEFAULTS> {
+  /** Injected collaborator (no default; ambient disabled without it). */
+  readonly ambientProvider?: AmbientOptionProvider;
 }
