@@ -19,6 +19,17 @@ $ErrorActionPreference = "Stop"
 # instance: instance 1 (d2) is 47989, instance 2 (this laptop) is 48989.
 $HostPort = 48989
 
+# Which of d1's two 4K panels the Mirror tile shows. This is NOT something the
+# hub controls - it is whatever Apollo instance 2 has pinned in
+# Configuration > Audio/Video > Display Device Id. Unpinned, Apollo captures
+# d1's PRIMARY display, which is the right panel.
+#
+# Change this string only when you change the pin, so the tile never lies about
+# which screen you are about to see. Per-app "output" in apps.json is not an
+# alternative: it is documented as ignored, falling back to primary
+# (LizardByte/Sunshine#4585).
+$MirrorMonitor = "right"
+
 # "Virtual Display" is Apollo's app that CREATES a screen. "Desktop" captures a
 # physical monitor d1 already has. The quotes matter - the space in the app name
 # truncates to "Virtual" without them and Apollo answers "Failed to find
@@ -33,8 +44,8 @@ $Modes = @(
   },
   [pscustomobject]@{
     Key   = "2"
-    Title = "Mirror"
-    Blurb = "Show d1's own monitor"
+    Title = "Mirror bedroom $MirrorMonitor"
+    Blurb = "Copy of d1's $MirrorMonitor 4K panel, downscaled"
     App   = "Desktop"
     Args  = "--resolution 1920x1200 --fps 60 --bitrate 40000 --video-codec HEVC"
   },
@@ -183,7 +194,7 @@ foreach ($mode in $Modes) {
   $sub.ForeColor = $dim
   $sub.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
   $sub.BackColor = $tile
-  $sub.SetBounds(44, $top + 30, 270, 16)
+  $sub.SetBounds(44, $top + 30, 282, 16)
   $sub.Tag = $mode
   $sub.Add_Click({ Invoke-Mode $this.Tag }.GetNewClosure())
   $form.Controls.Add($sub)
