@@ -296,11 +296,27 @@ export function getAllPropTypes(): PropType[] {
 
 /**
  * Gets display information for a specific prop type.
+ *
+ * The signature promises a PropTypeDisplayInfo, and callers rely on that — they
+ * read `.image` and `.label` straight off the result. But the argument arrives
+ * from persisted settings as often as from the enum, and persisted values
+ * outlive the enum: a profile saved while Fractalgeng existed still carries
+ * `"fractalgeng"` after its 2026-06-30 removal. A bare record lookup then
+ * returns undefined and the caller throws on `.image` (PropNavButton crashed
+ * the whole mobile nav this way). A `?? PropType.STAFF` at the call site does
+ * not help — that guards null, not an unknown string.
+ *
+ * So resolve unknown keys to Staff here, once, instead of asking every consumer
+ * to remember. Staff is the right landing spot: it is the canonical TKA prop
+ * and the default everywhere else.
  */
 export function getPropTypeDisplayInfo(
   propType: PropType
 ): PropTypeDisplayInfo {
-  return PROP_TYPE_DISPLAY_REGISTRY[propType];
+  return (
+    PROP_TYPE_DISPLAY_REGISTRY[propType] ??
+    PROP_TYPE_DISPLAY_REGISTRY[PropType.STAFF]
+  );
 }
 
 /**
