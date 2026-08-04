@@ -1,7 +1,8 @@
 # Deck Insert Card: Ship "How to Read" With Every Released Deck
 
 **Date:** 2026-08-03
-**Status:** Implemented in `bad11655ce`. Two deviations from the plan below,
+**Status:** Implemented in `6862f90db6` (+ `49a5a2d1b1`, the print-preview
+follow-up). Two deviations from the plan below,
 both additive: the canvas parity pass found the Svelte version drew inline
 blue/red prop dots in step 2 and italicized *Start* in step 4, and those were
 ported before deletion; and the first print-resolution screenshot showed both
