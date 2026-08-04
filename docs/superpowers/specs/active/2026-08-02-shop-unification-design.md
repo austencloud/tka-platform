@@ -296,6 +296,117 @@ visitors today.
       of the screen. Sizing the window so the scale is exactly 1.0 (3840×1553)
       makes it land true — that is how the nav-tab clicks above were driven.
 
+- [x] R12 `f71cc1d693`: **the page-wide layout pass.** Every round so far had
+      been the hero. Austen, on the page around it: "no matter how I resize my
+      webpage or no matter what device I have it feels like it is designed for
+      that device ... right now there's stuff peeking out from the bottom that
+      doesn't feel right ... the content is not just the size of the container
+      that it's in ... the shop is[n't] open yet and not buying today, things
+      have so much vertical space between them as well as so much horizontal
+      space that they take up in the first place." Three problems, one pass.
+
+      1. **THE FOLD — the first screen is the hero plus the shelf filter.**
+         Measured before: the grid's top edge landed 61px above the fold at
+         1920×1080, 155px at 2560×1440 and 27px at 820×1180 — dark tile shells
+         cut mid-shape with nothing readable in them. A designed peek was the
+         other option and was rejected on arithmetic: it needs the hero ~140px
+         SHORTER, and the hero's height is the card stage, which R10 had just
+         widened on purpose. So the gap is closed: `min-height: calc(100svh -
+         var(--shop-header-h) - var(--shop-fold-reserve))`. `min-height` only
+         ever grows the band, so it is a no-op wherever the hero already
+         overflows (375: natural 850 vs a 503 budget) and cannot pull anything
+         back above the fold. `ShopFrontDoor` declares both variables — the
+         reserve is the filter band plus the catalog's top padding — so the
+         hero is not guessing at what sits between it and the first tile.
+         Result: −1px at 1920, −1px at 2560, −1px at 820, +15px at 1440.
+
+         **Above 3000px the rule stops.** At 4K@100% the leftover below the
+         filter is ~655px against a ~690px tile row, so the right answer up
+         there is the whole first row, not a filled screen — filling it would
+         have added 655px of dead hero, the exact failure the old 60svh floor
+         had. The 4K padding-block drops to `clamp(1.5rem, 2vh, 2.75rem)` to
+         buy that row its last 30px: first-row bottom 2129 of 2160. Tight by
+         design, and it degrades to today's behaviour (a cut row) rather than
+         breaking if a future product title wraps to two lines at 4K.
+
+         The `min-height: 41rem` guard keeps the rule off the wide-and-short
+         tier. 960×412 is byte-identical to R11: hero 356, "See the catalog"
+         324–368, scan trigger 335–386, grid 108px below the fold.
+
+      2. **TILES — the art box is derived from the fan, not from a clamp.**
+         `height: clamp(11rem, 15vw, 18rem)` grew with the viewport while
+         `DeckFanCover` stayed capped at `maxCardWidth` 150, so at 3840 a
+         438×238 fan sat in a 733×432 panel — 40% of it — and at 820 the same
+         clamp went the other way and CLIPPED the fan's outer corners (fan 186
+         in a 176 box). Both ends are now arithmetic. A fan of n cards spans
+         `cardW · (1 + 0.82(n-1)) · 1.05` — 3.633 for four, 2.772 for three —
+         so the card is `boxW / pitch` and the box is `boxW · 1.65 / pitch`,
+         written as `calc(100cqi × ratio + 12px)`. `100cqi` is the tile
+         container's CONTENT width, which IS the art box's width (verified
+         with a probe: a `@container (min-width: 500px)` query does not match a
+         534px-border-box / 479px-content-box tile), so the height resolves at
+         first layout — no measurement, no shift.
+
+         The card size is passed as both `cardWidth` and `maxCardWidth`, which
+         is what makes every tile draw the SAME card. Left alone the fan
+         spreads whatever it is given across the box, and the trilogy ships
+         three cover cards where the decks ship five: its three came out a
+         third bigger than everyone else's and 40px taller than the box. The
+         count switches 3→4 at 448px of art width, and the `@container` tier
+         is the same 448 because both read the content box.
+
+         Measured card width / art box, before → after: 1920 107/288 →
+         131/230; 2560 143/347 → 176/304; 3840 150/432 → 201/345; 1440
+         ~110/230 → 132/230; 820 113/176-clipped → 112/198; 375 91/176 →
+         95/169. Art grows with its tile everywhere and fills it in both
+         directions. Type and padding already ramped (`--font-size-min` and
+         `--font-size-compact` are rem), so nothing was frozen in px.
+
+      3. **GRID — pinned counts, centred remainders.** Counts stay 1 / 2 / 3,
+         but each tier runs double tracks with `grid-column: span 2`, so the
+         final row can sit on half-tile boundaries: a remainder of two steps in
+         one track (`:nth-last-child(2) { grid-column: 2 / span 2 }`), a
+         remainder of one centres (`:last-child { grid-column: 3 / span 2 }`).
+         Five products now read 3 + a centred 2 instead of 3 + 2 stranded
+         against an empty track. It also fixes a worse case the old rule owned:
+         `wideColumns` returned 1 for a single item, so the Books and Bundles
+         shelves rendered ONE tile stretched across the whole 1669px band.
+         That tile is now one column wide, centred (x 688, w 534, in a band
+         centred on 955).
+
+      4. **BANDS — one row of two cards.** The notify and onward bands were
+         consecutive full-width rows, each a mostly-empty panel with a
+         paragraph at one end and a control at the other, 76px between them and
+         a 101px margin under the pair. They are a pair, so they share a row:
+         a two-column `.exits` grid above 60rem, stacked below, each card a
+         column with its control on `margin-top: auto` so both actions land on
+         the same foot. The `52ch` cap came off the paragraphs (4k rule 3) —
+         they are one-sentence lines in a half-band card and the cap only made
+         the card taller. Page height at 1920: 3190 → 2913, with the two bands'
+         combined 422px of stacked height becoming a single 259px row.
+         `SALES_LIVE` gating, both copy strings and the waitlist wiring are
+         untouched.
+
+      Also folded in, at Austen's word: the hero's kicker element was empty
+      (`<p class="kicker"><span aria-hidden></span></p>`) and nothing is going
+      back in it — removed with its dead CSS, so the copy block tightens by a
+      blank line plus a column gap. And the tile's purchase-state variable was
+      renamed off `state`: adding `$state` for the art measurement made Svelte
+      5 read the token as a store auto-subscription of that variable
+      (`store_rune_conflict`, `reference_svelte5_store_rune_conflict`). Caught
+      by check, not by eye — the page rendered.
+
+      Verified: fold, catalog and bands/footer frames at 3840×2160, 2560×1440,
+      1920×1080, 1440×900, 820×1180, 960×412, 375×667. No slivers, no orphan or
+      stretched tiles, no art floating in padding, no horizontal overflow
+      (scrollWidth < innerWidth at every tier). The scan flow runs end to end at
+      1920 — iframe `/q/5DL9?demo=1` mounts, "Deal another card" appears — with
+      hero height 896, stage width 1099 and grid top 1079 IDENTICAL before and
+      after, so the fold rule changed none of the hero's sizing inputs. Zero
+      page console errors. `check:fast`: 19 errors repo-wide, byte-identical to
+      the HEAD baseline (measured by restoring HEAD's tile and re-running),
+      none in these files.
+
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
 All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
