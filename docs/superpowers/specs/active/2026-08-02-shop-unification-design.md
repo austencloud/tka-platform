@@ -148,24 +148,41 @@ visitors today.
       re-anchored to trailed-tip reach (drawn/printed 1.021 → 0.991)
 - [x] R3 `16a2bef0f9`: scan flow button-triggered ("Scan the code" → "Scan again",
       ActionButton + ghost-sizer), engine lazy-mounts on first press, no auto-repeat
-- [ ] R4 (in flight): shuffle deals a different catalog card + auto-scan on land;
-      start-position cell fix (ensureSteplacement read path — the PictographPreparer
-      warning was this bug); onward-band CTA href /composer → /create
-- [ ] R5 (decided 2026-08-03, not started): **Hero v2 — the phone shows the real thing.**
-      Austen's insight: the live-drawn back card is magical but fictional; a real scan
-      loads /q. Decisions (his picks from the fork):
-      1. Phone = **iframe of the literal `/q/<code>`** for the displayed card (cover QRs
-         already come from the same shortcode manager /q resolves). `?demo=1` on the /q
-         host suppresses scan logging/analytics — funnel numbers must not see demo loads.
-         Lazy-boot on scan press. Loading state is honest (phones load).
-      2. **Live-draw mandala trick retired from the hero** (survives in git; candidate for
-         a product-page howItWorks slot later). Back card peeks out behind-left of the
-         front, printed mandala static. One payoff surface: the phone, now the hero's
-         dominant object.
-      3. Scan animation = **camera viewfinder**: phone leans in, screen shows the card
-         through a "camera view" (parallax re-render), QR chip pops (iOS-style), screen
-         swipes up into /q loading. Svelte springs + View Transitions; no new framework.
-      Shuffle (R4) survives: dealing a card swaps the stack AND the phone URL.
+- [x] R4 `0cfcc0e026`: shuffle ("Deal another card", pool without replacement) + auto-scan
+      on land; start-position cell fixed (ensureStepPlacement read path — the
+      PictographPreparer warning WAS this bug; console fully clean since); onward-band CTA
+      href /composer → /create (siblings fixed in `5126812d89`)
+- [x] R5 `2df5c40748`: **Hero v2 — the phone shows the real thing.** Iframe of the literal
+      `/q/<code>?demo=1` (demo flag suppresses PostHog + scan logging + Firestore scan
+      ledger — 4 guards in the /q host/layout); read-only `findExistingCodeForSequence`
+      (never mints codes client-side); iframe pointer-inert + "Open this scan" pill
+      (real visit, no demo flag); live-draw mandala machinery deleted. Fix batch
+      `1f27c3cc26`: pill seated below phone, 960×412 fold restored; the 366×0
+      animation-pane scare = emulation-mode-toggle artifact, NOT a product bug (real
+      phone scans animate — proven three ways).
+- [x] R6 `9d28611e89`: scan is an ENTRANCE — rest = two cards only; press → cards tighten,
+      phone swings in from off-stage in front (z 3); camera view de-warped (card 64% of
+      screen, room visible, opposite-drift parallax); hydration mismatch NOT reproducible
+      (likely mid-HMR SSR/client skew; hero SSR markup proven branch-free); the failing
+      Firestore username write on /shop belongs to shared auth (`claimUsername` via the
+      global auth listener's repair path) — NOT shop code, unfixed, flagged to Austen.
+- [x] R7 `27a8d5468f`: deal flourish — all three stage objects in one 730ms gesture
+      (lift/fan + phone step-back → stacked exit → dealt-in entrance w/ overshoot);
+      iframe internal height DERIVED from the measured screen box (was hardcoded 812 →
+      69% of /q's bottom bar hidden; now scrollHeight == clientHeight, nav flush).
+- [x] R8 forensics + repair (2026-08-04): Austen scanned an A card (0 turns) and got the
+      0.5-turn variant. Verdict: THREE id-keyed caches, one root cause — **the catalog
+      reuses one sequence id across turn variants** (`tnd-split-same-aaaa` = 3 different
+      sequences across the trilogy; LOOP decks duplicate too). (1) hero scan-code memo →
+      fixed `d44f2287c1`/`e0321598cc` (memo keys on encoder string + hero decodes the
+      QR on the displayed cover and hides scan on mismatch); (2) cover render cache
+      (key fixed `4b1bd29c89`; the 11 stale wrong-card bakes in Storage — TKA-3 wearing
+      TKA-2's art+QR, 5 LOOP covers wrong word — repaired 2026-08-04: cleared + re-baked
+      55/55, ZXing sweep 60/60 correct, zero byte-dup renders); (3) DeckFanCover art
+      cache → fixed `752964102d` (per-card discriminators). Physical PRINTED cards
+      unaffected (print pipeline resolves codes per card, never touches these caches).
+      Shortcode infra proven innocent: turns ARE encoded; 852 shortcode docs join on
+      those seed ids — which is why the id migration was STOPPED (see Decisions).
 
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
@@ -204,3 +221,19 @@ the ungated shop live; Austen sequences that. Blocking the push, deliberately:
 - T&D Trilogy shelves under **Decks** (its SKUs are `type: physical-deck`), so chips read
   All 5 · Decks 3 · Books 1 · Bundles 1. If the trilogy belongs under "Books" as the
   teaching line, that's a product-data change, not a layout change.
+- **Catalog sequence-id migration (approved in principle 2026-08-04, STOPPED at
+  investigation — a catalog-identity decision, not a scoped repair).** The seed ids
+  (`tnd-split-same-aaaa` etc.) are shared across turn variants and joined by 852 live
+  `shortcodes` docs (resolution strategies parse them), 60 `decks` + 60 `catalogs` docs
+  incl. `l1-tnd-motions` (TND_BASE_CATALOG_ID), and id-PARSING code
+  (`deck-composer.ts` seedWordOf, `canonical-tnd-pool.ts`). Three caches have now
+  failed on this landmine (R8). Recommended scheme when done: the existing
+  `${seedId}__t_${pattern}` convention from `canonical-tnd-pool.ts:70`. Open question
+  the migration must answer: do product covers fork from the base catalog, or does the
+  base catalog move with them? Renaming also forks provenance for codes that may be on
+  printed cards. Until migrated: NEVER key a cache on sequence id alone — add
+  deckId/deckName discriminators (three precedents in R8's fixes).
+- The failing Firestore write on every signed-in page load (`claimUsername` →
+  `users/<uid>` update, failed-precondition; owner: shared auth,
+  `username-validator.ts:108-137` via the global auth listener's repair path) — found
+  during R6, not shop code, still firing.
