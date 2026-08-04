@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   BASE_SEQUENCES,
   confirmedBases,
   ambientEligibleBases,
   ambientLetterSet,
+  ambientBaseForLetter,
 } from "$lib/shared/combination/domain/base-sequence-registry";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { getAllLetterVariants } from "../../helpers/real-pictograph-loader";
 import { positionGroup } from "$lib/shared/combination/services/position-groups";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -17,49 +19,89 @@ describe("base-sequence registry", () => {
     }
   });
 
-  it("contains Austen's promoted bases", () => {
+  it("contains Austen's promoted bases with Θ (U+0398), never lowercase θ", () => {
     const words = BASE_SEQUENCES.map((b) => b.word);
-    expect(words).toContain("WΣYθ");
+    expect(words).toContain("WΣYΘ");
     expect(words).toContain("XΔZΩ");
+    expect(words).not.toContain("WΣYθ");
   });
 
-  it("every confirmed base has edges; unconfirmed bases have null edges", () => {
+  it("every entry's edges chain and close into a cycle", () => {
     for (const base of BASE_SEQUENCES) {
-      if (base.confirmed) expect(base.edges).not.toBeNull();
-      else expect(base.edges).toBeNull();
+      expect(base.edges.length).toBeGreaterThan(0);
+      for (let i = 0; i < base.edges.length; i++) {
+        const next = base.edges[(i + 1) % base.edges.length]!;
+        expect(
+          base.edges[i]!.to,
+          `${base.word} edge ${i} (${base.edges[i]!.letter}) doesn't chain into edge ${
+            (i + 1) % base.edges.length
+          } (${next.letter})`
+        ).toBe(next.from);
+      }
     }
   });
 
-  it("ambient-eligible = confirmed bases only", () => {
-    expect(ambientEligibleBases().every((b) => b.confirmed)).toBe(true);
+  it("edges' letters correspond exactly to `letters`, in cycle order", () => {
+    for (const base of BASE_SEQUENCES) {
+      expect(base.edges.map((e) => e.letter)).toEqual(base.letters);
+    }
+  });
+
+  it("ambient-eligible = rosterConfirmed bases only", () => {
+    expect(ambientEligibleBases().every((b) => b.rosterConfirmed)).toBe(true);
     expect(confirmedBases().length).toBeGreaterThanOrEqual(9);
   });
 
-  it("ambientLetterSet covers the bridge letters", () => {
+  it("ambientLetterSet covers the bridge letters and excludes unconfirmed-roster placeholders", () => {
     const letters = ambientLetterSet();
-    expect(letters.has("Φ")).toBe(true);
-    expect(letters.has("Ψ")).toBe(true);
-    expect(letters.has("G")).toBe(true);
+    expect(letters.has(Letter.PHI)).toBe(true);
+    expect(letters.has(Letter.PSI)).toBe(true);
+    expect(letters.has(Letter.G)).toBe(true);
+    // Placeholders (rosterConfirmed: false) must never leak into ambient use,
+    // even though their edges are now canon-grounded.
+    expect(letters.has(Letter.THETA)).toBe(false);
+    expect(letters.has(Letter.C)).toBe(false);
   });
 
-  it("confirmed edges agree with the canonical dataframe", async () => {
-    // For every confirmed base's edges: look up the letter's variants in the
-    // canonical diamond dataframe and assert the (from, to) position-family
-    // pair of the edge matches the families of at least one real dataframe
-    // row for that letter — pins registry data to canon
-    // (verify-at-canonical-source).
-    const confirmed = confirmedBases();
-    expect(confirmed.length).toBeGreaterThan(0);
+  it("ambientBaseForLetter resolves the owning rosterConfirmed base, and is null off-roster", () => {
+    expect(ambientBaseForLetter(Letter.G)?.word).toBe("GG");
+    expect(ambientBaseForLetter(Letter.PHI)?.word).toBe("ΦΨ");
+    expect(ambientBaseForLetter(Letter.D)?.word).toBe("DJ");
+    // Unconfirmed placeholders never resolve, even though their letters have
+    // canon-grounded edges in the registry.
+    expect(ambientBaseForLetter(Letter.THETA)).toBeNull();
+    expect(ambientBaseForLetter(Letter.C)).toBeNull();
+  });
 
-    for (const base of confirmed) {
-      for (const edge of base.edges ?? []) {
+  it("each ambient-eligible letter belongs to EXACTLY ONE rosterConfirmed base (uniqueness is load-bearing for ambientWord tagging)", () => {
+    const owners = new Map<Letter, string[]>();
+    for (const base of ambientEligibleBases()) {
+      for (const letter of base.letters) {
+        const list = owners.get(letter) ?? [];
+        list.push(base.word);
+        owners.set(letter, list);
+      }
+    }
+    for (const [letter, words] of owners) {
+      expect(
+        words,
+        `letter ${letter} is claimed by multiple ambient bases: ${words.join(", ")}`
+      ).toHaveLength(1);
+    }
+  });
+
+  it("every entry's edges agree with the canonical dataframe (all 15 entries, roster-confirmed or not)", async () => {
+    expect(BASE_SEQUENCES.length).toBe(15);
+
+    for (const base of BASE_SEQUENCES) {
+      for (const letterEdge of base.edges) {
         const variants = await getAllLetterVariants(
-          edge.letter,
+          letterEdge.letter,
           GridMode.DIAMOND
         );
         expect(
           variants.length,
-          `no diamond dataframe rows found for letter ${edge.letter} (base ${base.word})`
+          `no diamond dataframe rows found for letter ${letterEdge.letter} (base ${base.word})`
         ).toBeGreaterThan(0);
 
         const families = variants.map((v) => ({
@@ -68,12 +110,12 @@ describe("base-sequence registry", () => {
         }));
 
         const hasMatch = families.some(
-          (f) => f.from === edge.from && f.to === edge.to
+          (f) => f.from === letterEdge.from && f.to === letterEdge.to
         );
         expect(
           hasMatch,
-          `base ${base.word}'s edge ${edge.letter}: ${edge.from}->${edge.to} ` +
-            `does not match any real dataframe row for ${edge.letter} ` +
+          `base ${base.word}'s edge ${letterEdge.letter}: ${letterEdge.from}->${letterEdge.to} ` +
+            `does not match any real dataframe row for ${letterEdge.letter} ` +
             `(found families: ${JSON.stringify(families)})`
         ).toBe(true);
       }
