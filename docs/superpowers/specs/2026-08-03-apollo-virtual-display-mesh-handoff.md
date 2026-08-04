@@ -135,10 +135,40 @@ deliberately excluded from this handoff's commit. Leave it alone.
 ## Loose ends (ranked)
 
 1. ~~**Install Apollo on d1.**~~ **DONE 2026-08-03** — see Done item 13.
-   Remaining first-boot steps: Austen sets dashboard credentials at
-   `https://localhost:47990` on d1, then d2 and the laptop re-pair
-   (d2 via its existing `47991` port proxy, which still points at
-   d1:47990 and now lands on Apollo's dashboard).
+   Credentials are set on BOTH instances (2026-08-04): instance 2 was seeded
+   with instance 1's `username`/`salt`/`password` hashes only (identity NOT
+   copied — Apollo2 generated its own `uniqueid`/certs), verified by 401 on
+   `/api/apps` on both ports. One login for both dashboards.
+
+   **PAIRING — the only remaining setup, one step per client machine.**
+   Verified state 2026-08-04: instance 1 has ZERO paired devices; instance 2
+   has none either. Whoever picks this up on each machine:
+
+   - **On d2** (pairs to instance 1, gets a 3440x1440 virtual display):
+     1. `& "C:\Program Files\Moonlight Game Streaming\Moonlight.exe" pair <d1-tailnet-ip>`
+        (discover the IP per the runbook's Step 2; port default). A Moonlight
+        window shows a 4-digit PIN.
+     2. Enter that PIN at `https://localhost:47991` (d2's existing port
+        proxy into d1:47990), PIN tab, after logging in. Name the device
+        clearly (e.g. `d2 ultrawide`). The PIN expires in minutes — arm
+        just-in-time.
+     3. If Moonlight shows the host stale/offline first, delete the old host
+        tile (it holds the dead Sunshine-era cert) and pair fresh.
+   - **On the laptop** (pairs to instance 2, gets a native-res virtual
+     display): same flow but everything is port-shifted +1000:
+     1. `& "C:\Program Files\Moonlight Game Streaming\Moonlight.exe" pair <d1-tailnet-ip>:48989`
+     2. PIN goes to `https://<d1-tailnet-ip>:48990` (same login as the other
+        dashboard). If the browser rejects the PIN with a CSRF error, use the
+        localhost portproxy trick from the runbook's Step 4 against port
+        48990.
+   - **After both stream:** the two virtual displays exist on d1's desktop.
+     Arrange them side by side in d1's Windows display settings to match the
+     office desk layout (agent on d1 can do this). Drive both halves from
+     d2's mouse — input unifies on d1; the laptop is a passive pane.
+   - **Architecture note (Austen asked, 2026-08-03):** do NOT chain
+     laptop→d2→d1. Each client pairs straight to its own d1 instance; the
+     split-screen unification happens on d1's desktop, not between clients.
+     Chaining double-encodes the laptop pane and nests input capture.
 2. **Get ONE virtual display working office → bedroom.** Apollo auto-creates the
    virtual display at the *client's* native resolution/aspect/refresh, so
    d2's ultrawide should get a 3440x1440 display with zero scaling.
