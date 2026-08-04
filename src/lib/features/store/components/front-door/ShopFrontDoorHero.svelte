@@ -33,13 +33,13 @@
        at the catalog; without a participant on this end the tile morph would
        degrade to a cut (tests/unit/landing-route-morph.test.ts holds the pair). -->
   <div class="copy" style:view-transition-name="launchpad-choreo-cards">
-    <p class="kicker">The Kinetic Alphabet <span aria-hidden="true">·</span> Printed line</p>
-    <h1>Every card is a <em>sequence.</em></h1>
-    <p class="lede">Scan it and it moves.</p>
+    <p class="kicker"> <span aria-hidden="true"></span></p>
+    <h1><em>Choreo Cards</em></h1>
+    <p class="lede">The latest evolution of flow arts technology</p>
     <ol class="steps">
-      <li><b>1</b><span>Draw a card. Eight counts of choreography, printed.</span></li>
-      <li><b>2</b><span>Point your phone at the code in the corner.</span></li>
-      <li><b>3</b><span>The sequence opens in the app and plays.</span></li>
+      <li><b>1</b><span>Draw a card, learn the sequence, and teach it to a friend.</span></li>
+      <li><b>2</b><span>Scan the QR code to animate it and practice at your own pace.</span></li>
+      <li><b>3</b><span>Expand your repertoire and share it with others</span></li>
     </ol>
     <a class="scroll-cta" href="#{catalogId}">
       See the catalog
