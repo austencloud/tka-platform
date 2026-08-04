@@ -25,7 +25,7 @@ one rail while the live matching grid gets the rest of the canvas.
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
-  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
   import SmartCollectionNameField from "$lib/features/library/components/SmartCollectionNameField.svelte";
 
   type FilterPickerSection =
@@ -345,26 +345,19 @@ one rail while the live matching grid gets the rest of the canvas.
                 <span class="strip-count" aria-live="polite">{matchStatus}</span
                 >
                 <div class="strip-chips">
-                  {#each currentSpec.filters as filter (filter.key)}
-                    <FilterChipBase
-                      label={filter.label}
-                      active
-                      mode="action"
-                      size="sm"
-                      chipColor={filter.chipColor}
-                      ariaLabel={`Edit ${filter.label} filter`}
-                      onclick={() =>
-                        editFilter(filter.type as BrowseFilterType)}
-                      onremove={() => {
-                        engine.removeFilter(filter.key);
-                        if (!engine.hasActiveFilters) {
-                          filterPickerOpen = true;
-                          mobilePreviewOpen = false;
-                        }
-                      }}
-                      removeAriaLabel={`Remove ${filter.label} filter`}
-                    />
-                  {/each}
+                  <FilterRuleStrip
+                    filters={currentSpec.filters}
+                    connectives={engine.connectives}
+                    onEditFilter={(type) =>
+                      editFilter(type as BrowseFilterType)}
+                    onRemoveFilter={(key) => {
+                      engine.removeFilter(key);
+                      if (!engine.hasActiveFilters) {
+                        filterPickerOpen = true;
+                        mobilePreviewOpen = false;
+                      }
+                    }}
+                  />
                 </div>
               </div>
             {/if}
@@ -406,6 +399,11 @@ one rail while the live matching grid gets the rest of the canvas.
                     }
                   }}
                   {activeLoopValues}
+                  loopConnective={engine.connectives[
+                    String(BrowseFilterType.LOOP_TYPE)
+                  ] ?? "any"}
+                  onLoopConnectiveChange={(connective) =>
+                    engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
                   onToggleLoop={(value, label, color, nowActive) => {
                     if (nowActive) {
                       engine.addFilter(
@@ -420,6 +418,11 @@ one rail while the live matching grid gets the rest of the canvas.
                     }
                   }}
                   {activeFamilyValues}
+                  familyConnective={engine.connectives[
+                    String(BrowseFilterType.TND_FAMILY)
+                  ] ?? "any"}
+                  onFamilyConnectiveChange={(connective) =>
+                    engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
                   onToggleFamily={(familyId, label, color, nowActive) => {
                     if (nowActive) {
                       engine.addFilter(
@@ -444,38 +447,26 @@ one rail while the live matching grid gets the rest of the canvas.
           >
             <div class="rule-copy">
               <h3 id="smart-filter-step-title">Filters</h3>
-              <p>All filters must match.</p>
+              <p>Sequences must match every category.</p>
             </div>
 
-            <div
-              class="applied-filters"
-              role="list"
-              aria-label="Applied filters"
-            >
-              {#each currentSpec.filters as filter (filter.key)}
-                <span role="listitem">
-                  <!-- Chip body EDITS (opens that filter's editor); the split
-                       × removes. A chip whose whole surface deletes was audit
-                       X-7/D-9/C-7. -->
-                  <FilterChipBase
-                    label={filter.label}
-                    active
-                    mode="action"
-                    size="sm"
-                    chipColor={filter.chipColor}
-                    ariaLabel={`Edit ${filter.label} filter`}
-                    onclick={() => editFilter(filter.type as BrowseFilterType)}
-                    onremove={() => {
-                      engine.removeFilter(filter.key);
-                      if (!engine.hasActiveFilters) {
-                        filterPickerOpen = true;
-                        mobilePreviewOpen = false;
-                      }
-                    }}
-                    removeAriaLabel={`Remove ${filter.label} filter`}
-                  />
-                </span>
-              {/each}
+            <div class="applied-filters" aria-label="Applied filters">
+              <!-- Chip body EDITS (opens that filter's editor); the split ×
+                   removes. A chip whose whole surface deletes was audit
+                   X-7/D-9/C-7. The strip groups values per category with
+                   their connective word (or / and). -->
+              <FilterRuleStrip
+                filters={currentSpec.filters}
+                connectives={engine.connectives}
+                onEditFilter={(type) => editFilter(type as BrowseFilterType)}
+                onRemoveFilter={(key) => {
+                  engine.removeFilter(key);
+                  if (!engine.hasActiveFilters) {
+                    filterPickerOpen = true;
+                    mobilePreviewOpen = false;
+                  }
+                }}
+              />
             </div>
 
             <div class="rule-actions">

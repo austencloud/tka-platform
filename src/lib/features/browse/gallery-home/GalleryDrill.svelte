@@ -58,6 +58,8 @@
     setDrillSection,
   } from "$lib/features/browse/shared/services/gallery-view-persister";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
   import { Slider } from "bits-ui";
 
   type Section =
@@ -105,6 +107,11 @@
       color: string,
       nowActive: boolean
     ) => void;
+    /** How stacked LOOP values combine. Rendering the Match any / Match all
+     * control requires onLoopConnectiveChange; hosts without it keep the
+     * bare toggle rows. */
+    loopConnective?: FilterConnective;
+    onLoopConnectiveChange?: (connective: FilterConnective) => void;
     /** TnD family ids currently applied (e.g. "split-same"). Family rows
      * render active and toggle off on re-tap. */
     activeFamilyValues?: ReadonlySet<string>;
@@ -116,6 +123,9 @@
       color: string,
       nowActive: boolean
     ) => void;
+    /** How stacked family values combine — same contract as loopConnective. */
+    familyConnective?: FilterConnective;
+    onFamilyConnectiveChange?: (connective: FilterConnective) => void;
     /** "page" = the gallery front door (with search). "sheet" = the grid's
      * filter bottom sheet — same filter categories, no search. */
     variant?: "page" | "sheet";
@@ -183,8 +193,12 @@
     chooserHint,
     activeLoopValues,
     onToggleLoop,
+    loopConnective = "any",
+    onLoopConnectiveChange,
     activeFamilyValues,
     onToggleFamily,
+    familyConnective = "any",
+    onFamilyConnectiveChange,
     variant = "page",
     persistSection,
     showCollections,
@@ -1741,9 +1755,27 @@
             {@render valueHead(
               "Pick a LOOP type",
               onToggleLoop
-                ? "LOOPs stack. Tap several to combine them."
+                ? loopConnective === "all"
+                  ? "Tap several — sequences need every one of them."
+                  : "Tap several — sequences match any of them."
                 : undefined
             )}
+            {#if onLoopConnectiveChange}
+              <div class="connective-row">
+                <SegmentedControl
+                  size="sm"
+                  density="compact"
+                  color="accent"
+                  ariaLabel="How selected LOOPs combine"
+                  options={[
+                    { value: "any", label: "Match any" },
+                    { value: "all", label: "Match all" },
+                  ]}
+                  value={loopConnective}
+                  onchange={(v) => onLoopConnectiveChange?.(v)}
+                />
+              </div>
+            {/if}
             <div class="value-list">
               {#each loopValues as v (v.value)}
                 {@const isOn = activeLoopValues?.has(v.value) ?? false}
@@ -1789,8 +1821,28 @@
           <div class="drill-screen screen-family">
             {@render valueHead(
               "Pick a Timing & Direction family",
-              onToggleFamily ? "Tap several to combine families." : undefined
+              onToggleFamily
+                ? familyConnective === "all"
+                  ? "Tap several — sequences need every family."
+                  : "Tap several — sequences match any family."
+                : undefined
             )}
+            {#if onFamilyConnectiveChange}
+              <div class="connective-row">
+                <SegmentedControl
+                  size="sm"
+                  density="compact"
+                  color="accent"
+                  ariaLabel="How selected families combine"
+                  options={[
+                    { value: "any", label: "Match any" },
+                    { value: "all", label: "Match all" },
+                  ]}
+                  value={familyConnective}
+                  onchange={(v) => onFamilyConnectiveChange?.(v)}
+                />
+              </div>
+            {/if}
             <div class="value-list">
               {#each familyValues as v (v.value)}
                 {@const isOn = activeFamilyValues?.has(v.value) ?? false}
@@ -2217,6 +2269,25 @@
     flex-direction: column;
     gap: 0.6rem;
     width: 100%;
+  }
+
+  /* Match any / all control on connective-bearing editors (LOOPs, T&D).
+     Sized to its labels, never stretched across the screen — the shared
+     SegmentedControl is width:100% by design, so the consumer caps it. */
+  .connective-row {
+    display: flex;
+    justify-content: center;
+    flex: 0 0 auto;
+    margin-bottom: 0.6rem;
+  }
+
+  .connective-row :global(.segmented-control) {
+    width: max-content;
+  }
+
+  /* Two short fixed labels — never let "Match any" break across lines. */
+  .connective-row :global(.segmented-control button) {
+    white-space: nowrap;
   }
 
   /* Level tiles wear the canonical difficulty gradients (light backgrounds,

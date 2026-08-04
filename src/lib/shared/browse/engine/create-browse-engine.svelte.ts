@@ -45,6 +45,8 @@ import {
   applyFilters as applyMultiFilters,
   getFilteredCount as getMultiFilteredCount,
   OR_STACKING_TYPES,
+  CONNECTIVE_STACKING_TYPES,
+  type FilterConnective,
 } from "$lib/shared/browse/services/multi-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/browse-section-manager";
@@ -177,6 +179,32 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   let activeFilters = $state<Map<string, ActiveFilter>>(buildInitialFilters());
 
+  // Match any / all per connective-bearing category. Stored choices win; a
+  // restored session with ≥2 stacked entries of a type and no stored choice
+  // predates connectives, where stacking meant "all" — keep its meaning.
+  // Otherwise default "any": stacking widens unless the user opts into "all".
+  function buildInitialConnectives(): Record<string, FilterConnective> {
+    const initial: Record<string, FilterConnective> = {};
+    for (const type of CONNECTIVE_STACKING_TYPES) {
+      const key = String(type);
+      const stored = persisted?.connectives?.[key];
+      if (stored === "any" || stored === "all") {
+        initial[key] = stored;
+        continue;
+      }
+      let entries = 0;
+      for (const [, f] of persisted?.activeFilters ?? []) {
+        if (String(f.type) === key) entries++;
+      }
+      initial[key] = entries >= 2 ? "all" : "any";
+    }
+    return initial;
+  }
+
+  let connectives = $state<Record<string, FilterConnective>>(
+    buildInitialConnectives()
+  );
+
   // View mode (compositional browsing)
   let _viewMode = $state<BrowseViewMode>(
     persisted?.viewMode ?? { ...DEFAULT_BROWSE_VIEW_MODE }
@@ -225,7 +253,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     if (activeFilters.size > 0) {
       // applyFilters is generic over `T extends ActiveFilter`, so the engine's
       // richer ActiveFilter (with `locked`) passes structurally — no cast needed.
-      result = applyMultiFilters(result, activeFilters);
+      result = applyMultiFilters(result, activeFilters, connectives);
     }
 
     // Apply search
@@ -393,6 +421,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     const _sortMethod = sortMethod;
     const _sortDirection = sortDirection;
     const _filters = activeFilters;
+    const _connectives = connectives;
     const _columns = columns;
     const viewMode = _viewMode;
 
@@ -411,6 +440,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       sortMethod: _sortMethod,
       sortDirection: _sortDirection,
       activeFilters: userFilters,
+      connectives: _connectives,
       columns: _columns,
       viewMode,
     });
@@ -669,6 +699,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     get hasActiveFilters() {
       return hasActiveFilters;
     },
+    get connectives() {
+      return connectives;
+    },
 
     // Layout (flat getters). `columns` is the DESIRED density; the render count
     // is it clamped to the current width — desired is never mutated by width.
@@ -829,6 +862,13 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       activeFilters = newMap;
     },
 
+    setConnective(type: BrowseFilterType, connective: FilterConnective): void {
+      if (!CONNECTIVE_STACKING_TYPES.has(type)) return;
+      const key = String(type);
+      if (connectives[key] === connective) return;
+      connectives = { ...connectives, [key]: connective };
+    },
+
     clearUserFilters(): void {
       // Keep only locked filters
       const newMap = new Map<string, ActiveFilter>();
@@ -858,7 +898,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         base,
         candidateType,
         candidateValue,
-        activeFilters
+        activeFilters,
+        connectives
       );
     },
 

@@ -32,19 +32,49 @@ export const OR_STACKING_TYPES: ReadonlySet<BrowseFilterType> = new Set([
   BrowseFilterType.OWNER,
 ]);
 
+/** How a connective-bearing category combines its stacked values. */
+export type FilterConnective = "any" | "all";
+
+/**
+ * Property-contains categories where BOTH readings are sensible (a sequence
+ * can be mirrored AND swapped, or the user may want mirrored OR swapped), so
+ * the user picks the connective per category. Absent an explicit choice these
+ * keep their historical "all" (requirement) semantics.
+ */
+export const CONNECTIVE_STACKING_TYPES: ReadonlySet<BrowseFilterType> = new Set(
+  [BrowseFilterType.LOOP_TYPE, BrowseFilterType.TND_FAMILY]
+);
+
+/** Per-category connective choices, keyed by BrowseFilterType string value. */
+export type FilterConnectives = Readonly<
+  Partial<Record<string, FilterConnective>>
+>;
+
+function stacksAsAlternatives(
+  type: BrowseFilterType,
+  connectives: FilterConnectives | undefined
+): boolean {
+  if (OR_STACKING_TYPES.has(type)) return true;
+  return (
+    CONNECTIVE_STACKING_TYPES.has(type) &&
+    (connectives?.[String(type)] ?? "all") === "any"
+  );
+}
+
 // Accept any structural subtype of ActiveFilter (e.g. the engine's variant that
 // adds a `locked` flag). All functions only read `.type` and `.value`, so a
 // generic over `T extends ActiveFilter` lets callers pass their richer map
 // without an invariance-defeating cast at the call site.
 export function applyFilters<T extends ActiveFilter>(
   sequences: SequenceData[],
-  filters: Map<string, T>
+  filters: Map<string, T>,
+  connectives?: FilterConnectives
 ): SequenceData[] {
   let result = sequences;
   const orGroups = new Map<BrowseFilterType, BrowseFilterValue[]>();
 
   for (const filter of filters.values()) {
-    if (OR_STACKING_TYPES.has(filter.type)) {
+    if (stacksAsAlternatives(filter.type, connectives)) {
       const group = orGroups.get(filter.type) ?? [];
       group.push(filter.value);
       orGroups.set(filter.type, group);
@@ -72,25 +102,31 @@ export function getFilteredCount<T extends ActiveFilter>(
   sequences: SequenceData[],
   candidateType: BrowseFilterType,
   candidateValue: BrowseFilterValue,
-  otherFilters: Map<string, T>
+  otherFilters: Map<string, T>,
+  connectives?: FilterConnectives
 ): number {
   // Facet-count convention: a candidate value's count reflects the pool under
-  // every OTHER category. For OR-stacking categories the candidate's own
+  // every OTHER category. For alternative-stacking categories (the OR set,
+  // plus LOOPs/TnD under a "Match any" connective) the candidate's own
   // category is excluded entirely — selecting a sibling value must not zero
-  // its alternatives (they are alternatives, not requirements). For
-  // requirement-stacking categories (LOOPs/TnD) same-type selections stay in,
-  // so counts stay contextual ("mirrored AND swapped").
+  // its alternatives (they are alternatives, not requirements). Under
+  // "Match all" same-type selections stay in, so counts stay contextual
+  // ("mirrored AND swapped").
+  const candidateIsAlternative = stacksAsAlternatives(
+    candidateType,
+    connectives
+  );
   const rest = new Map<string, T>();
   for (const [key, filter] of otherFilters) {
     if (key === candidateType) continue;
-    if (OR_STACKING_TYPES.has(candidateType) && filter.type === candidateType) {
+    if (candidateIsAlternative && filter.type === candidateType) {
       continue;
     }
     rest.set(key, filter);
   }
 
   return applyFilter(
-    applyFilters(sequences, rest),
+    applyFilters(sequences, rest, connectives),
     candidateType,
     candidateValue
   ).length;
