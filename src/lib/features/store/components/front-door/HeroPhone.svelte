@@ -29,9 +29,11 @@
      the promise. The screen is a real link out instead: tap it and the actual
      /q opens in a new tab, no demo flag, the real thing.
 
-  The iframe renders at a true 375 CSS viewport — a phone's width, so /q lays
-  itself out exactly as it does on a phone — and is scaled into the frame with
-  a transform. Nothing loads until the first scan press.
+  The iframe renders at a true 375 CSS viewport WIDTH — a phone's width, so /q
+  lays itself out exactly as it does on a phone — and is scaled into the frame
+  with a transform. Its HEIGHT is derived from the measured screen so the
+  embedded page's own viewport is exactly the visible screen (see `frameH`).
+  Nothing loads until the first scan press.
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
@@ -75,12 +77,16 @@
     reducedMotion,
   }: Props = $props();
 
-  /** A phone's CSS viewport. /q renders its real mobile layout at this width. */
+  /** A phone's CSS viewport WIDTH. /q lays out its real mobile design here, so
+   *  this one is a constant: 375 is a phone, and a derived width would just be
+   *  a smaller phone. */
   const FRAME_W = 375;
-  const FRAME_H = 812;
+  /** Only until the screen has been measured — see `frameH`. */
+  const FALLBACK_H = 812;
 
   let loaded = $state(false);
   let screenW = $state(0);
+  let screenH = $state(0);
 
   // Re-boot the loading state whenever the target changes: a new card is a new
   // page load, and phones load. Pretending otherwise would be the one dishonest
@@ -92,12 +98,42 @@
   });
 
   const scale = $derived(screenW ? screenW / FRAME_W : 0);
+
+  /**
+   * THE FRAME'S HEIGHT IS DERIVED, NEVER DECLARED.
+   *
+   * It used to be a hardcoded 375x812 — an iPhone X's viewport — scaled by
+   * width alone into a screen whose aspect ratio is set by the phone body
+   * (1:2.02 with a 2.4% bezel, so the screen is about 1:2.07). 812/375 is
+   * 2.165, which is TALLER than the box it lands in, so /q laid itself out to
+   * a page ~4% longer than the visible screen and the bottom 4% fell outside
+   * it. What fell outside was the viewer's bottom navigation. Austen
+   * (2026-08-04): "it appears to have its bottom navigation that's cut off as
+   * though the component isn't properly telling its contents how big it is."
+   *
+   * Exactly right, so the component tells it. Width stays 375 because that is
+   * what makes /q lay out as a phone; the height is whatever, at this scale,
+   * fills the screen we actually have — measured, not assumed. /q's own
+   * `svh`/`dvh` rules then resolve against the iframe, and its bottom bar sits
+   * on the visible bottom edge by construction, at every viewport.
+   *
+   * `clientWidth`/`clientHeight` are the right measures rather than a bounding
+   * rect: the phone is rotated in 3D and scaled by the deal flourish, and
+   * those are LAYOUT boxes, unmoved by any of it. Svelte's bindings are
+   * ResizeObserver-backed, so this re-derives itself whenever the stage
+   * resizes. Rounding up spends a sub-pixel of overfill (clipped by the
+   * screen's `overflow: hidden`) to guarantee no sliver of backdrop can show
+   * along the bottom edge.
+   */
+  const frameH = $derived(
+    scale && screenH ? Math.ceil(screenH / scale) : FALLBACK_H
+  );
 </script>
 
 <div class="phone" class:onstage class:leaning={viewfinder} class:opened>
   <span class="speaker" aria-hidden="true"></span>
 
-  <div class="screen" bind:clientWidth={screenW}>
+  <div class="screen" bind:clientWidth={screenW} bind:clientHeight={screenH}>
     <!-- CAMERA VIEW: what the phone sees before it resolves the code — a photo
          of a card lying in the room, not a card pasted over the screen.
 
@@ -148,14 +184,14 @@
         <div
           class="viewport"
           style:width="{FRAME_W}px"
-          style:height="{FRAME_H}px"
+          style:height="{frameH}px"
           style:transform="scale({scale})"
         >
           <iframe
             title="The scan page this card opens"
             {src}
             width={FRAME_W}
-            height={FRAME_H}
+            height={frameH}
             loading="lazy"
             referrerpolicy="same-origin"
             onload={() => (loaded = true)}

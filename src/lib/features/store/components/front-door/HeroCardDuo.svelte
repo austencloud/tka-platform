@@ -154,11 +154,61 @@
   );
 
   // ── dealing ─────────────────────────────────────────────────────────────
-  // Out, swap, in, scan. The swap happens at the bottom of the out-beat, where
-  // the faces are invisible, so the change of card is never seen as a cut.
-  const DEAL_OUT_MS = 190;
-  const DEAL_IN_MS = 260;
-  let dealing = $state(false);
+  // A deal used to be a fade: both faces dipped inside their fixed slots and
+  // came back holding a different card. Honest, and inert — the phone stood
+  // there through it as if nothing had happened. Austen (2026-08-04): "when I
+  // click deal another card I'd love there to be a fancy animation where the
+  // current contents all slightly move, all three of them, and then another
+  // card is dealt with its own animation."
+  //
+  // So the deal is a flourish in three beats, and every object on stage is in
+  // it:
+  //
+  //   lift  150  the stack fans open and rises; the phone eases back, tips
+  //              away and shrinks a little to make room. This is the beat that
+  //              says something is about to happen — all three objects move.
+  //   out   180  the top card sweeps off up-left with its own gesture; the
+  //              back face follows 60ms behind it, so the pair leaves as a
+  //              stack rather than as one flat plane.
+  //   (swap)     40ms of held-invisible while the new card's faces render, so
+  //              CardBack's re-render never lands on a visible frame.
+  //   in    300  the new card is DEALT: it arrives from low and right — out
+  //              from behind the phone, where a dealer's hand would be —
+  //              arcing up into the stack. Back lands first, front 80ms later,
+  //              on top. The fan closes and the phone returns underneath it.
+  //
+  // The scan fires 80ms before the last face lands, so the beat reads as one
+  // continuous flourish instead of two things that took turns.
+  //
+  // Everything moves by transform/opacity inside the absolutely-placed scene:
+  // no beat of this can move anything outside the stage box.
+  const LIFT_MS = 150;
+  const OUT_MS = 180;
+  /** The back face leaves after the front — a stack, not a plane. */
+  const OUT_STAGGER_MS = 60;
+  /** Held invisible while the new faces render. */
+  const SWAP_HOLD_MS = 40;
+  const IN_MS = 300;
+  /** The front lands last, on top, the way a dealt card does. */
+  const IN_STAGGER_MS = 80;
+  /** The scan starts just before the last face settles. */
+  const SCAN_LEAD_MS = 80;
+
+  const OUT_AT = LIFT_MS;
+  const SWAP_AT = OUT_AT + OUT_STAGGER_MS + OUT_MS;
+  const IN_AT = SWAP_AT + SWAP_HOLD_MS;
+  const IN_END = IN_AT + IN_STAGGER_MS + IN_MS;
+  const SCAN_AT = IN_END - SCAN_LEAD_MS;
+  /** Tail past the last keyframe: dropping the class ON its final frame races
+   *  the animation, and the snap would be visible. */
+  const SETTLE_AT = IN_END + 50;
+
+  type DealStage = "lift" | "out" | "in";
+  let dealStage = $state<DealStage | null>(null);
+  /** A deal is in flight. The one guard against overlapping deals. */
+  const dealing = $derived(dealStage !== null);
+  /** The stack is fanned and the phone is standing back. */
+  const parting = $derived(dealStage === "lift" || dealStage === "out");
   let dealTimers: ReturnType<typeof setTimeout>[] = [];
 
   function clearDealTimers(): void {
@@ -179,20 +229,33 @@
 
   /** The button's one job, whichever label it is wearing. */
   function press(): void {
+    // The busy guard. `dealing` covers the whole flourish and `timeline.running`
+    // covers the scan that follows it, so a double-press can never start a
+    // second deal over the top of the first.
     if (timeline.running || dealing) return;
     if (!timeline.scanned || !canDeal) {
       timeline.scan();
       return;
     }
-    dealing = true;
     clearDealTimers();
+    if (timeline.reducedMotion) {
+      // No flourish to run: the new card is simply the card, with its page on
+      // the phone. `timeline.scan()` is already instant under reduced motion.
+      advance();
+      timeline.scan();
+      return;
+    }
+    dealStage = "lift";
     dealTimers.push(
-      setTimeout(() => {
-        advance();
-        dealing = false;
-      }, DEAL_OUT_MS),
-      // The new card has to be on the stack before the phone aims at it.
-      setTimeout(() => timeline.scan(), DEAL_OUT_MS + DEAL_IN_MS)
+      setTimeout(() => (dealStage = "out"), OUT_AT),
+      // Swapped while both faces are held invisible by the out-beat's fill, so
+      // the change of card is never seen as a cut and CardBack's re-render
+      // happens off-screen.
+      setTimeout(advance, SWAP_AT),
+      setTimeout(() => (dealStage = "in"), IN_AT),
+      // The new card is on the stack; the phone can aim at it.
+      setTimeout(() => timeline.scan(), SCAN_AT),
+      setTimeout(() => (dealStage = null), SETTLE_AT)
     );
   }
 </script>
@@ -203,7 +266,14 @@
        is the SAME box at rest and after the entrance — the phone arriving can't
        move anything (no-layout-shift.md). -->
   <div class="scene-slot">
-    <div class="scene" class:entered class:dealing>
+    <div
+      class="scene"
+      class:entered
+      class:dealing
+      class:parting
+      class:deal-out={dealStage === "out"}
+      class:deal-in={dealStage === "in"}
+    >
       <!-- At rest these sit side by side, the pair filling the scene: one
            printed object shown from both sides. The entrance slides them
            together into the tighter stack the phone reads from. -->
@@ -330,6 +400,13 @@
     position: relative;
     width: var(--scene-w);
     height: var(--scene-h);
+    /* The deal's tempo, declared once here and read by the keyframe rules
+       below. The same four numbers run the JS timeline in the script block —
+       they are a pair, and a change to one is a change to both. */
+    --deal-out-ms: 180ms;
+    --deal-out-stagger: 60ms;
+    --deal-in-ms: 300ms;
+    --deal-in-stagger: 80ms;
   }
 
   .scan-trigger {
@@ -372,16 +449,48 @@
     transform: translate(calc(var(--card-h) * 0.1), -50%) rotate(-11deg);
   }
 
+  /* THE FAN. The first beat of a deal: the stack rises and opens, the two
+     faces swinging apart around the pile. It is the SLOT that moves here, not
+     the face inside it — the face has its own gesture (the out/in keyframes
+     below), and keeping the two on separate elements is what lets the stack
+     still be fanning while the top card is already leaving it. */
+  .scene.entered.parting .slot.front {
+    transform: translate(calc(var(--card-h) * -0.45), -56%) rotate(1deg);
+  }
+  .scene.entered.parting .slot.back {
+    transform: translate(calc(var(--card-h) * 0.13), -44%) rotate(-18deg);
+  }
+  /* The entrance is a 640ms arrival; a deal is a flourish. Same property, two
+     tempos, so the deal borrows the slot for its own. */
+  .scene.dealing .slot {
+    transition-duration: 240ms;
+  }
+
   /* ── the phone ──────────────────────────────────────────────────────────
      Parked against the scene's right edge, vertically centred, above both
-     cards. HeroPhone owns the arrival itself (it has to compose the entrance
-     into the same `transform` as its lean), so this only places it. */
+     cards. HeroPhone owns the arrival and the lean — it has to compose them
+     into one `transform` — so this holder owns everything the SCENE does to
+     the phone, using the individual transform properties, which compose on top
+     of the component's own `transform` without either having to know about the
+     other. */
   .phone-holder {
     position: absolute;
     right: 0;
     top: 50%;
     z-index: 3;
     translate: 0 -50%;
+    transition:
+      translate 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      rotate 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      scale 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Making room. It eases back and out, tips away from the stack, and shrinks
+     — the three cues that read as "stepped back" rather than "slid sideways".
+     Then it comes back in under the landing card. */
+  .scene.parting .phone-holder {
+    translate: 4% -52%;
+    rotate: 3deg;
+    scale: 0.93;
   }
 
   .art {
@@ -403,22 +512,86 @@
     container-type: inline-size;
   }
 
-  /* The deal: both faces lift and fade inside their fixed slots, so nothing
-     outside the stack moves. Out is quicker than in — a card leaves the hand
-     faster than it settles. */
-  .art,
-  .card-frame {
-    transition:
-      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 260ms ease;
+  /* ── the faces' own gestures ────────────────────────────────────────────
+     Keyframes rather than transitions, because a deal is not a round trip: the
+     card that leaves and the card that arrives start in different places, and
+     an animation carries its own start pose. `both` fill is load-bearing —
+     it is what holds the outgoing faces invisible across the swap, so the new
+     card's render never lands on a visible frame.
+
+     Out is faster than in and eased out-hard: a card leaves the hand quicker
+     than it settles. */
+  .scene.deal-out .art {
+    animation: deal-out-front var(--deal-out-ms) cubic-bezier(0.5, 0, 0.75, 0) both;
   }
-  .scene.dealing .art,
-  .scene.dealing .card-frame {
-    transform: translateY(-7%) scale(0.93);
-    opacity: 0;
-    transition:
-      transform 190ms cubic-bezier(0.5, 0, 0.75, 0),
-      opacity 190ms ease-in;
+  .scene.deal-out .card-frame {
+    animation: deal-out-back var(--deal-out-ms) cubic-bezier(0.5, 0, 0.75, 0)
+      var(--deal-out-stagger) both;
+  }
+  /* Back first, front on top of it — the order a card is actually dealt in. The
+     easing overshoots by a hair: a dealt card arrives with a little more speed
+     than it needs and settles back, and without that it glides into place like
+     a panel rather than landing like a card. */
+  .scene.deal-in .card-frame {
+    animation: deal-in-back var(--deal-in-ms) cubic-bezier(0.32, 1.34, 0.52, 1) both;
+  }
+  .scene.deal-in .art {
+    animation: deal-in-front var(--deal-in-ms) cubic-bezier(0.32, 1.34, 0.52, 1)
+      var(--deal-in-stagger) both;
+  }
+
+  /* Swept off the top, up and to the left, away from where the next one comes
+     from. */
+  @keyframes deal-out-front {
+    from {
+      transform: none;
+      opacity: 1;
+    }
+    to {
+      transform: translate(-16%, -22%) rotate(-13deg) scale(0.94);
+      opacity: 0;
+    }
+  }
+  @keyframes deal-out-back {
+    from {
+      transform: none;
+      opacity: 1;
+    }
+    to {
+      transform: translate(-11%, -16%) rotate(-9deg) scale(0.95);
+      opacity: 0;
+    }
+  }
+
+  /* DEALT: in from low and right, which on this stage is out from behind the
+     phone — the phone is standing exactly where a dealer's hand would be, and
+     it has just stepped back to let the card past. The card is opaque well
+     before it clears the phone, so it emerges rather than materialises. */
+  @keyframes deal-in-back {
+    from {
+      transform: translate(44%, 26%) rotate(12deg) scale(0.9);
+      opacity: 0;
+    }
+    55% {
+      opacity: 1;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes deal-in-front {
+    from {
+      transform: translate(40%, 22%) rotate(10deg) scale(0.91);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
   }
 
   .scan-trigger > .sizer,
@@ -460,17 +633,23 @@
     }
   }
 
-  /* No choreography. The timeline already jumps straight to `open` here, so the
+  /* No choreography. The timeline already jumps straight to `open` here, and
+     `press()` swaps the card outright rather than running the flourish — so the
      cards are simply in their parted position with the phone standing on them
-     the instant the button is pressed. */
+     the instant the button is pressed, and the next press simply shows a
+     different card. The rules below are the backstop for a motion preference
+     that changes mid-flourish. */
   @media (prefers-reduced-motion: reduce) {
-    .art,
-    .card-frame,
     .slot,
-    .scene.dealing .art,
-    .scene.dealing .card-frame,
+    .phone-holder,
     .scan-trigger > .live {
       transition: none;
+    }
+    .scene.deal-out .art,
+    .scene.deal-out .card-frame,
+    .scene.deal-in .art,
+    .scene.deal-in .card-frame {
+      animation: none;
     }
   }
 </style>
