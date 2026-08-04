@@ -167,12 +167,13 @@ git.
     capturing an existing panel. No regression hiding behind the subjective
     "worked really well" from Phase 1.
 
-17. **d1 tears its virtual display down cleanly** — the opposite of d2's
-    behavior. Two full create/remove cycles logged
-    (`Virtual Display created at \\.\DISPLAY11` →
-    `Virtual Display removed successfully`), `current_app` empty afterward, and
-    d2 back to a single display. Do not assume d2's phantom-display bug applies
-    to d1; it does not.
+17. **Virtual-display teardown solved, and the earlier diagnosis corrected.**
+    d1 and d2 behave identically; the difference was the *client*. Apollo
+    pauses a session on disconnect and holds the display for resume — only
+    terminating the app reclaims it. Setting `quitAppAfter = true` in d2's
+    Moonlight makes a normal window close terminate it, verified in d1's log
+    (`CLIENT DISCONNECTED` → `Session pausing` → `Virtual Display removed
+    successfully`, 79 ms). Full explanation in Gotchas.
 
 18. **d2's stream launchers rewritten and tested.** Two fixes:
     - Target the host by name (`stream d1`) instead of by IP. An IP is
@@ -227,14 +228,19 @@ deliberately excluded from this handoff's commit. Leave it alone.
 5. ~~**Run the Step 8 overlay pass**~~ **DONE 2026-08-04** — table in Done
    item 16. Worth re-running once d1 and d2 are both on the switch, to see
    whether host processing latency drops and 100fps becomes viable.
-5a. **Rename d2's own Apollo instance from `D2` to `d2`.** One line in
-   `C:\Program Files\Apollo\config\sunshine.conf` plus a service restart.
-   Needs elevation; three UAC prompts were canceled on 2026-08-04. d2's own
-   Moonlight is aliased to `d2` (`customname`), so this only affects how OTHER
-   clients list it.
-5b. **The laptop still has to re-pair** — with the `laptop` instance on d1
+5a. ~~**Rename d2's own Apollo instance from `D2` to `d2`.**~~ **DONE
+   2026-08-04** — `sunshine_name = d2` in d2's `sunshine.conf`, service
+   restarted.
+5b. **Set `quitAppAfter = true` in the LAPTOP's Moonlight.** Highest-value
+   remaining item and the direct cause of the stranded display on d2. Done on
+   d2 already; the laptop is the one still stranding displays. See Gotchas.
+5c. **The laptop still has to re-pair** — with the `laptop` instance on d1
    (port base `48989`) and/or with d2, depending on which host it should use
    now that d1 serves a dedicated instance. Untested this session.
+5d. **d2's Apollo dashboard password is NOT the same as d1's.** Its
+   `sunshine_state.json` shows username `austen`; neither that nor
+   `austencloud` with d1's password authenticates. Unknown, and it blocks
+   API-driven fixes on d2 (e.g. closing a paused session without elevation).
 6. **Amend `docs/reference/moonlight-client-setup.md`.** Its Step 4 assumes port
    `47990` is free on the client. That is false whenever the client runs
    Sunshine or Apollo, which is now normal in this house. The doc should carry
@@ -313,15 +319,30 @@ Things the next agent cannot derive from the code or the runbook.
 - **spacedesk and Deskreen extend to multiple clients from a single instance**,
   which Apollo cannot. That is the fallback if two Apollo instances prove
   unmanageable; the cost is a less tuned video pipeline and more input lag.
-- **Apollo leaves its virtual display attached after the client disconnects.**
-  Observed on d2 2026-08-04: the laptop's stream had long ended, no TCP
-  session remained on 47984/47989/47990/48010, and Windows still enumerated a
-  second monitor (`Generic Monitor (lap)`, 1920x1200, placed below the
-  ultrawide). Windows then parks windows on the phantom, which reads to Austen
-  as "my display settings are stuck." `Restart-Service ApolloService` tears it
-  down; verify with `[System.Windows.Forms.Screen]::AllScreens` and
-  `Get-PnpDevice -Class Monitor`. Expect d1 to do the same once it serves
-  virtual displays.
+- **The phantom virtual display is a CLIENT setting, not an Apollo bug.**
+  This was misdiagnosed twice on 2026-08-04 before the logs settled it. On
+  client disconnect Apollo logs `Session pausing for app [...]` and
+  deliberately holds the virtual display open so the client can resume. It is
+  never reclaimed until the app is *terminated*. Windows then parks windows on
+  the orphaned monitor, which reads as "my display settings are stuck."
+
+  What terminates it: `moonlight quit <host>`, or Moonlight's **"quit app
+  after ending stream"** (`quitAppAfter`), which makes a normal window close
+  do it. Proven on d2 2026-08-04 — with `quitAppAfter = true`, closing the
+  stream window produced
+  `CLIENT DISCONNECTED` → `Session pausing` → `Virtual Display removed
+  successfully` 79 ms later. **Every Moonlight client in the house should have
+  `quitAppAfter = true`** (registry
+  `HKCU:\Software\Moonlight Game Streaming Project\Moonlight`; close Moonlight
+  first, it rewrites on exit). Set on d2; **the laptop still has it off**,
+  which is what stranded the `Generic Monitor (lap)` display on d2 twice.
+
+  To clear one that is already stuck without the client: `Restart-Service
+  ApolloService` (needs elevation). Verify with
+  `[System.Windows.Forms.Screen]::AllScreens` and
+  `Get-PnpDevice -Class Monitor`. The stale entries accumulate one UID per
+  cycle (`...&UID256/257/258/259`), all `Unknown` except the live one — a
+  quick tell for how many times it has happened.
 - **Two Apollo instances on one machine make an IP a useless target.** d1 hosts
   both `47989` and `48989`. `moonlight pair <ip>` was observed picking `48989`
   and pairing with the wrong instance. **Target hosts by name**
