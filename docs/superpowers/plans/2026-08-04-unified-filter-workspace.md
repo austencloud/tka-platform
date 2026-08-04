@@ -378,10 +378,20 @@ Mark this plan's checkboxes, update `docs/superpowers/specs/2026-08-04-unified-f
 ## Ledger
 
 - [x] Stage 1 — connective work (`a0c9b8376a`)
-- [ ] Task 1 — migration test
-- [ ] Task 2 — BrowseModule workspace conversion
-- [ ] Task 3 — noise floors removed
-- [ ] Task 4 — page-mode CSS fork deletion
-- [ ] Task 5 — GalleryFilterSheet desktop retirement
-- [ ] Task 6 — AddSequencesSheet conversion
-- [ ] Task 7 — flag collapse + whole-project verification
+- [x] Task 1 — migration test (`48f95de304`)
+- [x] Task 2 — BrowseModule workspace conversion (`ca5f763618`)
+- [x] Task 3 — noise floors removed (`b842e34efc`)
+- [x] Task 4 — progressive-secondary-choices fork + More hub deleted, ~600
+      lines of CSS (`c2165ac19e`). The adaptive/unified/persistent-catalog
+      CSS stays scoped: the phone GalleryFilterSheet still mounts flagless.
+- [x] Task 5 — desktop Filters pill → workspace; sheet phone-only
+      (`4c36bccc5b`). AllLibraryView keeps its sheet (no workspace surface).
+- [x] Task 6 — AddSequencesSheet conversion (`bcb10e9430`). Selection tap
+      itself not exercised (writes real data); code path unchanged.
+- [x] Task 7 — verification: browse suite = pre-existing baseline failures
+      only (68 pass); full `npm run check` 0 errors 0 warnings; workspace
+      verified at 2112/2816/4224/1584/902/1056/412 (×1.1); production save
+      walk landed — Smart Collection "Level 2" created from the gallery
+      strip (toast captured).
+- [~] Flag collapse deferred: flags stay while the phone sheet mounts the
+      drill flagless (phone-sheet fate = feel test, spec decision 3).
