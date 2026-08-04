@@ -193,7 +193,33 @@ Stream, screenshot, confirm you get a new extended display at the laptop's
 native resolution rather than a downscale of d1's monitors. Then close it and
 confirm removal in the host log. Both halves, or it is not done.
 
-### 5. Clean up the laptop's Moonlight host list
+### 5. Install Moonlight Hub — it was written for you
+
+`launchers/moonlight-hub.ps1` landed on `main` on 2026-08-04 from the d1
+session and is **already parameterized for the laptop**: `$HostPort = 48989`,
+1920x1200, with a comment reading "instance 2 (this laptop)". Do not hand-roll
+launchers — install this instead:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\launchers\install-moonlight-hub.ps1
+```
+
+It gives a pinned taskbar card with numbered modes: **1 = Extended** (the
+`Virtual Display` app, a new 1:1 screen on d1) and **2 = Mirror** (the
+`Desktop` app, a downscaled copy of one of d1's 4K panels). It discovers d1's
+address by probing the tailnet and caches it, so nothing is hardcoded.
+
+**Gap you must close:** the hub does not set `quitAppAfter` and does not pass
+`--quit-after`. Loose end #1 is therefore still required — installing the hub
+does not fix the phantom-display problem on its own.
+
+Companion script on the host side: `launchers/pin-apollo-display.ps1` pins an
+Apollo instance to a specific physical panel by desktop X coordinate (both of
+d1's monitors are identical 4K, so `friendly_name` cannot distinguish them).
+That only matters for **Mirror** mode. Extended mode creates a new display and
+does not care. It runs elevated **on d1**, not on the laptop.
+
+### 6. Clean up the laptop's Moonlight host list
 
 Austen's standing requirement (2026-08-04): Moonlight shows exactly three
 entries — `d1`, `d2`, `laptop` — and nothing else. *"quit screwing around and
@@ -244,10 +270,12 @@ Things you cannot derive from the code or from the parent runbook.
   from PowerShell answers instantly. The pinned pre-Apollo certificate is the
   cause. Deleting the host keys and letting mDNS rediscover fixes it. This cost
   real time on d2 — recognise it immediately.
-- **Never target d1 by IP.** Both Apollo instances share one address, and
-  `moonlight pair <ip>` was observed silently pairing with port `48989`
-  instead of `47989`. Target by **name** — the CLI accepts "computer name,
-  UUID, or IP address" and only the name is unambiguous.
+- **Never target d1 by bare IP.** Both Apollo instances share one address, and
+  `moonlight pair <ip>` was observed on d2 silently pairing with port `48989`
+  instead of `47989` — the wrong instance, with no error. Use the **host name**
+  (`pair laptop`) or an explicit **`<ip>:48989`**. A bare IP picks whichever
+  instance Moonlight matched first. `moonlight-hub.ps1` is safe here: it always
+  passes an explicit port.
 - **Quote app names containing spaces when using `Start-Process
   -ArgumentList`.** `'Virtual Display'` as a bare array element arrives split
   and Moonlight fails with `Failed to find application Virtual`. Pass
