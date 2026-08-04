@@ -1,13 +1,18 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
+import { deriveSequenceLetters } from "$lib/shared/create/services/sequence-transforms";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  updateSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { deriveMotionType } from "$lib/shared/render/core/calculations/orientation";
 
 import { getAllLetterVariants } from "../../helpers/real-pictograph-loader";
@@ -282,11 +287,47 @@ describe("combination fixtures vs the diamond dataframe", () => {
     }
   });
 
-  it("the dataset bootstrap really hydrates the production pipeline", () => {
+  it("the dataset bootstrap really hydrates the production pipeline", async () => {
+    // Exercises the bootstrap for real: motionQueryHandler answers ONLY if
+    // loadPictographDatasetForTests injected the CSVs (getAllLetterVariants
+    // does its own disk read and would stay green without it).
+    await loadPictographDatasetForTests();
+    const first = GGGG_CW.steps[0]!;
+    expect(
+      await motionQueryHandler.findLetterByMotionConfiguration(
+        first.motions.blue,
+        first.motions.red,
+        GridMode.DIAMOND
+      )
+    ).toBe("G");
+
     expect(rowsByLetter.size).toBe(7); // G H A F L Φ Ψ
     for (const [letter, rows] of rowsByLetter) {
       expect(rows.size, `${letter} variants`).toBeGreaterThan(0);
     }
+  });
+
+  it("FALG round-trips through deriveSequenceLetters", async () => {
+    // Every FALG step re-derives its own letter from its motions alone, through
+    // the same handler the create module uses. Letters are BLANKED first —
+    // deriveSequenceLetters keeps the existing letter when a lookup fails, so
+    // deriving from the authored copy would pass even with a dead handler.
+    await loadPictographDatasetForTests();
+    const blanked = updateSequenceData(FALG, {
+      steps: FALG.steps.map((step) => ({ ...step, letter: null })),
+    });
+    expect(blanked.steps.every((s) => s.letter === null)).toBe(true);
+    const derived = await deriveSequenceLetters(blanked, motionQueryHandler);
+    expect(derived.steps.map((s) => s.letter)).toEqual([
+      "F",
+      "A",
+      "L",
+      "G",
+      "F",
+      "A",
+      "L",
+      "G",
+    ]);
   });
 
   it("every fixture step is a real row of DiamondPictographDataframe.csv", () => {

@@ -66,15 +66,14 @@ function readCsv(file: string): string | undefined {
 export async function loadPictographDatasetForTests(): Promise<CsvDataSetShape> {
   if (injected) return injected;
 
+  const skewedData = readCsv(CSV_FILES.skewedData);
+  const trigridData = readCsv(CSV_FILES.trigridData);
+
   const dataset: CsvDataSetShape = {
     diamondData: readFileSync(resolve(CSV_DIR, CSV_FILES.diamondData), "utf-8"),
     boxData: readFileSync(resolve(CSV_DIR, CSV_FILES.boxData), "utf-8"),
-    ...(readCsv(CSV_FILES.skewedData) !== undefined && {
-      skewedData: readCsv(CSV_FILES.skewedData),
-    }),
-    ...(readCsv(CSV_FILES.trigridData) !== undefined && {
-      trigridData: readCsv(CSV_FILES.trigridData),
-    }),
+    ...(skewedData !== undefined && { skewedData }),
+    ...(trigridData !== undefined && { trigridData }),
   };
 
   (globalThis as { window?: { csvData?: CsvDataSetShape } }).window!.csvData =
