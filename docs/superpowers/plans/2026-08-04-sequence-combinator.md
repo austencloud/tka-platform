@@ -19,6 +19,11 @@
 > 6. `cardAMaterial`/`cardBMaterial` → `cardAShare`/`cardBShare`.
 > 7. `SeamEntry` deleted (search uses an inline shape).
 > 8. Task 3 must record its never-hand-roll statement: sequence-engine's `LetterPositionInfo` + spell's `LetterTransitionGraph` are prior art but are alpha/beta/gamma-only and generation-bound; Layer 0 needs all 7 families + ingredient attribution.
+>
+> **DELTAS after Task-2 fixture hardening (2026-08-04):**
+> 9. **The rotation-faithful twin operation is REDEFINED** (dataframe proof: motionType is derived from hand-path direction × prop-rotation direction, so Task 5's `flipProAnti` — flip type, keep rotation AND locations — produces rows that don't exist). Correct twin: **reverse the cyclic traversal** (reverse step order; per step swap startLocation↔endLocation per hand, startPosition↔endPosition, startOrientation↔endOrientation), **keep each motion's `rotationDirection`**, then recompute motionType via `deriveMotionType` and letters via `deriveSequenceLetters`. Proof from fixtures: twin(GGGG_CW: beta1→3→5→7, pro+cw) = `HHHH_CW` (beta1→7→5→3, anti+cw) — matches Austen's FLGGFLHH (prop rotation continuous, path reversed, G→H fallout). Task 5 must also fix `VariantDescriptor.rotationFaithful`'s doc comment in types.ts ("rotation direction and locations preserved" is wrong — rotation direction preserved, traversal reversed).
+> 10. **The pictograph dataset loads under vitest** via `tests/unit/combination/pictograph-dataset.ts` → `loadPictographDatasetForTests()` (window.csvData pre-injection tier; real CsvLoader→csvParser→MotionQueryHandler pipeline, zero mocks). Task 5+ letter-derivation assertions run for real in node — no DI stubs needed.
+> 11. New fixtures available: `HHHH_CW` (twin partner), `FALG` (asymmetric 8-step, Austen's card verbatim), `PHI_PSI_LOOP` (ΦΨΦΨ; PSI_STEP/PHI_STEP are its literal steps). `makeStep` routes through `withCalculatedArrowLocations` (dash arrows depend on the other hand — never compute per-motion).
 
 **Verified reuse surface** (all confirmed in-repo 2026-08-04 — do not re-derive):
 
