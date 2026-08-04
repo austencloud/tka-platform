@@ -483,9 +483,12 @@
     stations.forEach((station, i) => {
       lights.push({
         id: `pit-light-${i}`,
-        pos: [station.x, SHORE_Y + 1.1, station.z],
+        // 48 @ +1.6: still throws warm spill to the far terrace (~0.2 at 15 m)
+        // without blinding the front bench — 90 @ +1.1 washed the shore wall
+        // to full white inside 3 m (seen in the verification frames).
+        pos: [station.x, SHORE_Y + 1.6, station.z],
         color: FIRELIGHT,
-        intensity: 90,
+        intensity: 48,
         distance: 34,
         pulse: true,
       });
@@ -494,10 +497,28 @@
       {
         // under-glow off the lava the bridge crosses — the heat beat
         id: "bridge-underglow",
-        pos: [cx(bridge), LAVA_BED_Y + 0.8, cz(bridge)],
+        // Above deck level — at LAVA_BED_Y + 0.8 the bridge deck occluded its
+        // own light and the whole crossing rendered black.
+        pos: [cx(bridge), BRIDGE_Y + 1.2, cz(bridge)],
         color: LAVA,
-        intensity: 26,
+        intensity: 20,
         distance: 18,
+        pulse: false,
+      },
+      {
+        id: "lava-north-glow",
+        pos: [cx(bridge), BRIDGE_Y + 0.9, lavaStream[0]!.minZ + 2.0],
+        color: LAVA,
+        intensity: 14,
+        distance: 14,
+        pulse: false,
+      },
+      {
+        id: "lava-south-glow",
+        pos: [cx(bridge), BRIDGE_Y + 0.9, lavaStream[1]!.minZ + 2.0],
+        color: LAVA,
+        intensity: 14,
+        distance: 14,
         pulse: false,
       },
       {
@@ -513,7 +534,7 @@
         id: "crack-cue",
         pos: [cx(crackBend), BRIDGE_Y + 2.0, cz(crackEast)],
         color: CRACK_COOL,
-        intensity: 7,
+        intensity: 12,
         distance: 12,
         pulse: false,
       },
@@ -521,7 +542,7 @@
         id: "crack-mouth",
         pos: [cx(crackWest), BRIDGE_Y + 1.8, cz(crackWest)],
         color: CRACK_COOL,
-        intensity: 5,
+        intensity: 9,
         distance: 10,
         pulse: false,
       },
