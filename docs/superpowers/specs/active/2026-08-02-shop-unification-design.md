@@ -192,6 +192,34 @@ visitors today.
       within a frame, 960×412 fold identical across all states, zero console noise,
       R8 guard fired zero times. Unit tests: hero-scan-timeline-stage 6/6.
 
+- [x] R10 `dc4f037186` (Austen's copy: headline = the product name, three new steps,
+      two typo fixes) + `5a60ff7058`: **the scanned state spreads.** The parted
+      composition was one stack at every width — back 37% unoccluded, front 70%
+      (the phone ate its code corner). Austen: "the cards should be more visible
+      while animation is playing ... we have lots of space on 4K" and "the words
+      Choreo Cards are so far to the left with a big space in between the
+      animation." Two changes, one geometry: (1) both faces hang off the scene's
+      CENTRE through an `--x` offset in card-heights instead of being pinned to
+      left:0/right:0, and container tiers on .card-stage (640px / 900px, px on
+      purpose — fitting three objects is a pixel question, not a type-scale one)
+      widen the scene box AND walk the parted cards further left inside it, the
+      card paying for the room via `--scene-fit`; (2) the hero's copy column is
+      `fit-content(38rem)` with a capped gap, so the slack it never used goes to
+      the stage. Measured unoccluded, scanned: 100/100 at 3840, 2560, 1920;
+      76/100 at 1440 and 820 (mid tier); 38/70 unchanged at 960x412 and 375,
+      where the trade is a third of the card for a sliver of the back. Copy→scene
+      dead field 426→108 (1920) and ~716→184 (3840). Card size is held or grown
+      everywhere except tablet portrait (416→321) and 1920 (432→423). The REST
+      pair stays centred in the wider scene on purpose — it sits in the stage's
+      glow and under the trigger — so the rest-state gap (274 at 1920, 420 at
+      3840) is 0.33 card-heights wider than the scanned one BY CONSTRUCTION:
+      that translation is the parting gesture. Shifting rest left buys ~25% of it
+      back and costs the same amount of gesture; flagged for Austen, not taken.
+      Verified: rest+scanned frames at 3840/2560/1920/1440/820/960x412/375, zero
+      layout shift across scan→deal→scan (hero box and scene width identical in
+      all four states), 960x412 fold and pill guarantees intact, zero page
+      console errors.
+
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
 All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
