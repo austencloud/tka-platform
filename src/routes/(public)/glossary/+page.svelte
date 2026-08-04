@@ -592,7 +592,7 @@
         These terms come alive in the composer. Build a sequence and watch it
         animate.
       </p>
-      <a class="cta-button" href="/composer"
+      <a class="cta-button" href="/create"
         >Open the Composer <i class="fa-solid fa-arrow-right"></i></a
       >
     </div>

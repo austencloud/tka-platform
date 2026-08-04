@@ -310,6 +310,7 @@ class AgentTerminalLauncher
             if (args.ContainsKey("ApplyAllColorsElevated")) return ApplyAllColorsElevated(args);
             if (args.ContainsKey("ApplyAllColors")) return ApplyAllColors();
             if (args.ContainsKey("ApplyCurrentColor")) return ApplyCurrentColor();
+            if (args.ContainsKey("ApplySessionTitle")) return ApplySessionTitle(args);
             if (args.ContainsKey("HoldManualColor")) return HoldManualColor(args);
             if (args.ContainsKey("HoldColor")) return RunInsideTerminal(args);
             return LaunchTerminal(args);
@@ -398,8 +399,10 @@ class AgentTerminalLauncher
                 Process.GetCurrentProcess().Id.ToString()
             );
             using (var monitor = new TerminalColorMonitor(ReadSessionBackground(colorIndex)))
+            using (var titleManager = SessionTitleManager.ForCurrentSession(WriteAttachedTerminalTitle))
             {
                 monitor.Start();
+                titleManager.Start();
                 using (EventWaitHandle ready = EventWaitHandle.OpenExisting(GetRequired(args, "ReadyEvent"))) ready.Set();
 
                 ClearInheritedAgentSessionMarkers();
@@ -407,6 +410,24 @@ class AgentTerminalLauncher
                 return RunAgent(agent, project, args);
             }
         }
+    }
+
+    static int ApplySessionTitle(Dictionary<string, string> args)
+    {
+        int processId;
+        if (!int.TryParse(GetRequired(args, "OwnerPid"), out processId) || processId <= 0)
+            throw new ArgumentException("OwnerPid must identify a live Agent Hub session.");
+
+        string title = SessionTitleManager.Assign(processId, GetRequired(args, "Title"));
+        ProcessContext origin = FindProcessContext();
+        try { WriteTerminalTitle(processId, title); }
+        finally
+        {
+            FreeConsole();
+            AttachConsole((uint)origin.ConsoleProcessId);
+        }
+        Console.WriteLine("Named Agent Hub session {0}: {1}", processId, title);
+        return 0;
     }
 
     static int ApplyCurrentColor()
@@ -782,6 +803,7 @@ class AgentTerminalLauncher
                         try
                         {
                             RepairDiscoveredColorIfNeeded(target, backgrounds[target.ColorIndex]);
+                            RepairDiscoveredTitleIfAssigned(target);
                             targetFailuresLogged.Remove(target.SourceProcessId);
                         }
                         catch (Exception ex)
@@ -1151,6 +1173,33 @@ class AgentTerminalLauncher
         finally { CloseHandle(output); }
     }
 
+    static void RepairDiscoveredTitleIfAssigned(ColorTarget target)
+    {
+        string title;
+        if (!SessionTitleManager.TryReadAssignment(target.SourceProcessId, out title)) return;
+        WriteTerminalTitle(target.ConsoleProcessId, title);
+    }
+
+    static void WriteTerminalTitle(int consoleProcessId, string title)
+    {
+        FreeConsole();
+        if (!AttachConsole((uint)consoleProcessId))
+            throw new InvalidOperationException(
+                "Could not attach to this terminal (Windows error " + Marshal.GetLastWin32Error() + ")."
+            );
+
+        IntPtr output = OpenTerminalOutput(GenericWrite);
+        try { WriteTerminalTitle(output, title); }
+        finally { CloseHandle(output); }
+    }
+
+    static void WriteAttachedTerminalTitle(string title)
+    {
+        IntPtr output = OpenTerminalOutput(GenericWrite);
+        try { WriteTerminalTitle(output, title); }
+        finally { CloseHandle(output); }
+    }
+
     static IntPtr OpenTerminalOutput(uint access)
     {
         IntPtr output = CreateFile(
@@ -1189,6 +1238,41 @@ class AgentTerminalLauncher
                 written != bytes.Length)
                 throw new IOException(
                     "Could not write this terminal's background (Windows error " + Marshal.GetLastWin32Error() + ")."
+                );
+        }
+        finally
+        {
+            if (changedMode) SetConsoleMode(output, originalMode);
+        }
+    }
+
+    static void WriteTerminalTitle(IntPtr output, string title)
+    {
+        WriteTerminalSequence(
+            output,
+            BuildTerminalTitleSequence(SessionTitleManager.NormalizeTitle(title)),
+            "title"
+        );
+    }
+
+    static void WriteTerminalSequence(IntPtr output, string sequence, string operation)
+    {
+        uint originalMode;
+        bool haveMode = GetConsoleMode(output, out originalMode);
+        bool changedMode = haveMode && (originalMode & EnableVirtualTerminalProcessing) == 0;
+        try
+        {
+            if (changedMode && !SetConsoleMode(output, originalMode | EnableVirtualTerminalProcessing))
+                throw new InvalidOperationException(
+                    "Could not enable terminal " + operation + " output (Windows error " + Marshal.GetLastWin32Error() + ")."
+                );
+
+            byte[] bytes = Encoding.UTF8.GetBytes(sequence);
+            uint written;
+            if (!WriteFile(output, bytes, (uint)bytes.Length, out written, IntPtr.Zero) ||
+                written != bytes.Length)
+                throw new IOException(
+                    "Could not write this terminal's " + operation + " (Windows error " + Marshal.GetLastWin32Error() + ")."
                 );
         }
         finally
@@ -1289,6 +1373,11 @@ class AgentTerminalLauncher
         return
             "\x1b]11;" + background + "\x07" +
             "\x1b]4;0;" + background + "\x07";
+    }
+
+    static string BuildTerminalTitleSequence(string title)
+    {
+        return "\x1b]0;" + SessionTitleManager.NormalizeTitle(title) + "\x07";
     }
 
     static int RunAgent(string agent, string project, Dictionary<string, string> args)
@@ -1605,6 +1694,11 @@ class AgentTerminalLauncher
         catch { }
     }
 
+    internal static void LogSessionTitleError(Exception error)
+    {
+        LogError("Session title monitor failed. " + error);
+    }
+
     static void LogColorRecovery(string reason, string observed, string expected)
     {
         LogColorRecovery(
@@ -1909,6 +2003,21 @@ class AgentTerminalLauncher
             if (colorSequence.IndexOf("\x1b]11;#123456\x07", StringComparison.Ordinal) < 0 ||
                 colorSequence.IndexOf("\x1b]4;0;#123456\x07", StringComparison.Ordinal) < 0)
                 throw new Exception("Terminal background output is missing its default-background or ANSI black update.");
+            string normalizedTitle = SessionTitleManager.NormalizeTitle("  Agent Hub Naming  ");
+            string titleSequence = BuildTerminalTitleSequence(normalizedTitle);
+            if (!string.Equals(normalizedTitle, "Agent Hub Naming", StringComparison.Ordinal) ||
+                titleSequence.IndexOf("\x1b]0;Agent Hub Naming\x07", StringComparison.Ordinal) < 0)
+                throw new Exception("Session title normalization or terminal output is invalid.");
+            bool unsafeTitleRejected = false;
+            try { SessionTitleManager.NormalizeTitle("Unsafe\x1b Title"); }
+            catch (ArgumentException) { unsafeTitleRejected = true; }
+            if (!unsafeTitleRejected)
+                throw new Exception("Session title validation accepted a terminal control character.");
+            bool nonSessionExecutableRejected = false;
+            try { SessionTitleManager.AssignmentPathForExecutable("C:\\AgentTerminalSession.exe"); }
+            catch (InvalidOperationException) { nonSessionExecutableRejected = true; }
+            if (!nonSessionExecutableRejected)
+                throw new Exception("Session title storage accepted a non-session executable.");
             uint colorRef = BackgroundToColorRef("#123456");
             if (colorRef != 0x00563412 ||
                 !string.Equals(ColorRefToHex(colorRef), "#123456", StringComparison.Ordinal) ||
@@ -1919,6 +2028,7 @@ class AgentTerminalLauncher
             Console.WriteLine("PASS: all " + SessionColorCount + " session colors were unique, exhaustion-safe, and reusable after release.");
             Console.WriteLine("PASS: Windows Terminal window, background-matched tab, color scheme, live-title, and quoting arguments validated.");
             Console.WriteLine("PASS: current and bulk color parsing, palette drift detection, and live terminal background output validated.");
+            Console.WriteLine("PASS: session title validation, storage targeting, and terminal output validated.");
         }
         finally
         {

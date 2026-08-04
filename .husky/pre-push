@@ -36,6 +36,21 @@ if [ "$BRANCH" = "main" ]; then
   fi
 fi
 
+# Regenerating the Codex mirror is mechanical, not a judgment call, and it has
+# twice gone red on main purely because someone edited .claude/skills|agents and
+# didn't rerun it. A red main skips Deploy Pages (gated), so this trivial drift
+# freezes production. 0.12s here beats a stranded deploy.
+echo "🔍 Checking Codex skill mirror..."
+if ! node scripts/sync-codex-skills.mjs --check; then
+  echo ""
+  echo "  ❌ Codex mirror is out of date — this would go red on main and"
+  echo "     silently block the production deploy."
+  echo "  Run: pnpm skills:sync   (then stage the regenerated .codex/ files)"
+  echo ""
+  exit 1
+fi
+echo "✅ Codex mirror in sync"
+
 # Run unit tests before push
 echo "🧪 Running unit tests..."
 npx vitest run --config tests/config/vitest.config.ts 2>/dev/null

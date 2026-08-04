@@ -62,7 +62,7 @@ const DIAMOND_ANGLE_MAP: Record<Orientation, Record<GridLocation, number>> = {
     [GridLocation.SOUTHWEST]: 0,
     [GridLocation.NORTHWEST]: 0,
   },
-  // Interradial orientations (Level 7)
+  // Interradial orientations (Level 6)
   [Orientation.CLOCK_IN]: {
     [GridLocation.NORTH]: 45,
     [GridLocation.SOUTH]: 225,
@@ -149,7 +149,7 @@ const BOX_ANGLE_MAP: Record<Orientation, Record<GridLocation, number>> = {
     [GridLocation.EAST]: 0,
     [GridLocation.WEST]: 0,
   },
-  // Interradial orientations (Level 7)
+  // Interradial orientations (Level 6)
   [Orientation.CLOCK_IN]: {
     [GridLocation.NORTHEAST]: 90,
     [GridLocation.NORTHWEST]: 0,

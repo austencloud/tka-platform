@@ -1,0 +1,270 @@
+diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c3c16e4a6 100644
+--- a/dist/lib/components/props/Prop3D.svelte
++++ b/dist/lib/components/props/Prop3D.svelte
+@@ -50,8 +50,11 @@
+     length,
+   }: Props = $props();
+ 
+-  // "Big" variants use a 1.4x scale on the base prop.
++  // Most "Big" variants use a 1.4x scale on the base prop. Big Fan has a
++  // larger authored size: its 600-unit pictograph span versus Fan's 260-unit
++  // span makes the grip-to-rim reach 30/13 of the standard fan.
+   const BIG_SCALE = 1.4;
++  const BIG_FAN_SCALE = 30 / 13;
+ 
+   // Check if a GLTF model is available for this prop type.
+   // resolvePropModel handles big variant → base type resolution.
+@@ -84,7 +87,7 @@
+   {:else if propType === PropType.FAN}
+     <Fan3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGFAN}
+-    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
++    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_FAN_SCALE} />
+ 
+   {:else if propType === PropType.TRIAD}
+     <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
+index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..c88c7695b8f5cf0ad199c957d6dc59416438f776 100644
+--- a/dist/lib/components/props/prop-model-registry.js
++++ b/dist/lib/components/props/prop-model-registry.js
+@@ -49,7 +49,7 @@ export function getPropModel(propType) {
+ export const BIG_VARIANT_MAP = {
+     [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
+     [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
+-    [PropType.BIGFAN]: { base: PropType.FAN, scale: 1.4 },
++    [PropType.BIGFAN]: { base: PropType.FAN, scale: 30 / 13 },
+     [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
+     [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
+     [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
+diff --git a/dist/lib/services/implementations/SpineTwister.js b/dist/lib/services/implementations/SpineTwister.js
+index 29809adb0b6cd2e639a532bc3c7794224d7bc79c..8ea2643e9726eacfd9d46e37875b55f7a5612848 100644
+--- a/dist/lib/services/implementations/SpineTwister.js
++++ b/dist/lib/services/implementations/SpineTwister.js
+@@ -7,10 +7,12 @@
+  * from the spine's perspective. Without this, the avatar looks like
+  * a mannequin bolted to a pole.
+  *
+- * Two degrees of freedom:
++ * Three degrees of freedom:
+  * 1. YAW (Y-axis): torso turns left/right toward the crossing direction
+  * 2. LATERAL TILT (Z-axis): torso leans sideways when hands are high
+  *    and crossing - prevents arms from clipping through the head
++ * 3. FORWARD PITCH (X-axis): shoulders follow a cross-body reach so the
++ *    arms can clear the chest instead of solving from a rigid torso
+  *
+  * The twist distributes anatomically up the spine chain. If the model
+  * is missing bones (common: Spine2/upper_chest), the missing bone's
+@@ -35,6 +37,8 @@ const MAX_YAW = (60 * Math.PI) / 180;
+ const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
+ /** Maximum lateral tilt (leaning sideways) in radians (~25 degrees). */
+ const MAX_TILT = (25 * Math.PI) / 180;
++/** Maximum forward shoulder carry for a fully crossed two-hand pose. */
++const MAX_FORWARD_PITCH = (10 * Math.PI) / 180;
+ /** Half shoulder width for normalizing lateral offset */
+ const SHOULDER_HALF_WIDTH = 0.2;
+ /** Hand reach used to normalize single-hand yaw. A hand extended to this
+@@ -91,11 +95,13 @@ export class SpineTwister {
+         // Cross-body tension: how much each hand crosses its natural side
+         // Left hand's natural side is -X, so crossing = positive X.
+         // Right hand's natural side is +X, so crossing = negative X.
+-        const leftCross = Math.max(0, -leftX);
+-        const rightCross = Math.max(0, rightX);
+-        const crossTension = (leftCross + rightCross) * CROSS_TENSION_WEIGHT;
+-        // Combined yaw signal
+-        const yawSignal = lateralBias + Math.sign(lateralBias || 1) * crossTension;
++        const leftCross = Math.max(0, leftX);
++        const rightCross = Math.max(0, -rightX);
++        const directionalCross = (leftCross - rightCross) * CROSS_TENSION_WEIGHT;
++        // Crossing with one hand turns the torso toward that hand. A symmetric
++        // two-hand cross has no arbitrary left/right winner, so it stays centered
++        // and uses forward pitch below to carry both shoulders toward the props.
++        const yawSignal = lateralBias + directionalCross;
+         // Normalize to [-1, 1] range
+         const normalizedYaw = Math.max(-1, Math.min(1, yawSignal / SHOULDER_HALF_WIDTH));
+         const totalYaw = normalizedYaw * MAX_YAW;
+@@ -109,17 +115,21 @@ export class SpineTwister {
+         const heightFactor = Math.max(0, Math.min(1, (avgHeight - TILT_HEIGHT_THRESHOLD) / 0.3));
+         // Cross-body factor: 0 = hands on their natural sides, 1 = fully crossed
+         const crossFactor = Math.max(0, Math.min(1, (leftCross + rightCross) / SHOULDER_HALF_WIDTH));
++        // Pull the upper body toward crossed targets before arm IK runs. This is
++        // the local equivalent of a full-body IK chain pre-pull: the shoulders
++        // contribute to the reach rather than leaving the two arm bones alone.
++        const totalForwardPitch = crossFactor * MAX_FORWARD_PITCH;
+         // Tilt direction matches the yaw direction (lean toward where you're reaching)
+         const tiltSignal = Math.sign(normalizedYaw) * heightFactor * crossFactor;
+         const totalTilt = tiltSignal * MAX_TILT;
+         // Redistribute weights based on available bones
+         const weights = this.redistributeWeights(availableBones);
+         return {
+-            spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0)),
+-            spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0)),
+-            neck: this.makeSpineRotation(totalYaw * (weights.neck ?? 0), totalTilt * (weights.neck ?? 0)),
+-            head: this.makeSpineRotation(totalYaw * (weights.head ?? 0), totalTilt * (weights.head ?? 0)),
+-            hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5),
++            spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0), totalForwardPitch * (weights.spine1 ?? 0)),
++            spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0), totalForwardPitch * (weights.spine2 ?? 0)),
++            neck: this.makeSpineRotation(totalYaw * (weights.neck ?? 0), totalTilt * (weights.neck ?? 0), totalForwardPitch * (weights.neck ?? 0)),
++            head: this.makeSpineRotation(totalYaw * (weights.head ?? 0), totalTilt * (weights.head ?? 0), totalForwardPitch * (weights.head ?? 0)),
++            hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5, 0),
+         };
+     }
+     /**
+@@ -195,12 +205,12 @@ export class SpineTwister {
+      * Create a quaternion combining Y-axis yaw and Z-axis lateral tilt.
+      * Order matters: tilt first (local Z), then yaw (local Y).
+      */
+-    makeSpineRotation(yaw, tilt) {
++    makeSpineRotation(yaw, tilt, forwardPitch = 0) {
+         const q = new Quaternion();
+-        if (Math.abs(yaw) < 0.0001 && Math.abs(tilt) < 0.0001)
++        if (Math.abs(yaw) < 0.0001 && Math.abs(tilt) < 0.0001 && Math.abs(forwardPitch) < 0.0001)
+             return q;
+-        // Euler order YZX: yaw around Y, tilt around Z, composed correctly
+-        const euler = new Euler(0, yaw, tilt, "YZX");
++        // Euler order YZX: yaw, lateral tilt, then forward pitch.
++        const euler = new Euler(forwardPitch, yaw, tilt, "YZX");
+         q.setFromEuler(euler);
+         return q;
+     }
+diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c3c16e4a6 100644
+--- a/src/lib/components/props/Prop3D.svelte
++++ b/src/lib/components/props/Prop3D.svelte
+@@ -50,8 +50,11 @@
+     length,
+   }: Props = $props();
+ 
+-  // "Big" variants use a 1.4x scale on the base prop.
++  // Most "Big" variants use a 1.4x scale on the base prop. Big Fan has a
++  // larger authored size: its 600-unit pictograph span versus Fan's 260-unit
++  // span makes the grip-to-rim reach 30/13 of the standard fan.
+   const BIG_SCALE = 1.4;
++  const BIG_FAN_SCALE = 30 / 13;
+ 
+   // Check if a GLTF model is available for this prop type.
+   // resolvePropModel handles big variant → base type resolution.
+@@ -84,7 +87,7 @@
+   {:else if propType === PropType.FAN}
+     <Fan3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGFAN}
+-    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
++    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_FAN_SCALE} />
+ 
+   {:else if propType === PropType.TRIAD}
+     <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
+index 899e076e7e08becffb11b36d6651a9099ab43d6c..40127c182b5cb020e9890d51948cdb2368c091db 100644
+--- a/src/lib/components/props/prop-model-registry.ts
++++ b/src/lib/components/props/prop-model-registry.ts
+@@ -67,7 +67,7 @@ export const BIG_VARIANT_MAP: Partial<
+ > = {
+   [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
+   [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
+-  [PropType.BIGFAN]: { base: PropType.FAN, scale: 1.4 },
++  [PropType.BIGFAN]: { base: PropType.FAN, scale: 30 / 13 },
+   [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
+   [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
+   [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
+diff --git a/src/lib/services/implementations/SpineTwister.ts b/src/lib/services/implementations/SpineTwister.ts
+index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f174ed0c1d 100644
+--- a/src/lib/services/implementations/SpineTwister.ts
++++ b/src/lib/services/implementations/SpineTwister.ts
+@@ -7,10 +7,12 @@
+  * from the spine's perspective. Without this, the avatar looks like
+  * a mannequin bolted to a pole.
+  *
+- * Two degrees of freedom:
++ * Three degrees of freedom:
+  * 1. YAW (Y-axis): torso turns left/right toward the crossing direction
+  * 2. LATERAL TILT (Z-axis): torso leans sideways when hands are high
+  *    and crossing - prevents arms from clipping through the head
++ * 3. FORWARD PITCH (X-axis): shoulders follow a cross-body reach so the
++ *    arms can clear the chest instead of solving from a rigid torso
+  *
+  * The twist distributes anatomically up the spine chain. If the model
+  * is missing bones (common: Spine2/upper_chest), the missing bone's
+@@ -41,6 +43,9 @@ const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
+ /** Maximum lateral tilt (leaning sideways) in radians (~25 degrees). */
+ const MAX_TILT = (25 * Math.PI) / 180;
+ 
++/** Maximum forward shoulder carry for a fully crossed two-hand pose. */
++const MAX_FORWARD_PITCH = (10 * Math.PI) / 180;
++
+ /** Half shoulder width for normalizing lateral offset */
+ const SHOULDER_HALF_WIDTH = 0.2;
+ 
+@@ -123,12 +128,15 @@ export class SpineTwister implements ISpineTwister {
+     // Cross-body tension: how much each hand crosses its natural side
+     // Left hand's natural side is -X, so crossing = positive X.
+     // Right hand's natural side is +X, so crossing = negative X.
+-    const leftCross = Math.max(0, -leftX);
+-    const rightCross = Math.max(0, rightX);
+-    const crossTension = (leftCross + rightCross) * CROSS_TENSION_WEIGHT;
++    const leftCross = Math.max(0, leftX);
++    const rightCross = Math.max(0, -rightX);
++    const directionalCross =
++      (leftCross - rightCross) * CROSS_TENSION_WEIGHT;
+ 
+-    // Combined yaw signal
+-    const yawSignal = lateralBias + Math.sign(lateralBias || 1) * crossTension;
++    // Crossing with one hand turns the torso toward that hand. A symmetric
++    // two-hand cross has no arbitrary left/right winner, so it stays centered
++    // and uses forward pitch below to carry both shoulders toward the props.
++    const yawSignal = lateralBias + directionalCross;
+ 
+     // Normalize to [-1, 1] range
+     const normalizedYaw = Math.max(-1, Math.min(1,
+@@ -155,6 +163,11 @@ export class SpineTwister implements ISpineTwister {
+       (leftCross + rightCross) / SHOULDER_HALF_WIDTH
+     ));
+ 
++    // Pull the upper body toward crossed targets before arm IK runs. This is
++    // the local equivalent of a full-body IK chain pre-pull: the shoulders
++    // contribute to the reach rather than leaving the two arm bones alone.
++    const totalForwardPitch = crossFactor * MAX_FORWARD_PITCH;
++
+     // Tilt direction matches the yaw direction (lean toward where you're reaching)
+     const tiltSignal = Math.sign(normalizedYaw) * heightFactor * crossFactor;
+     const totalTilt = tiltSignal * MAX_TILT;
+@@ -163,11 +176,11 @@ export class SpineTwister implements ISpineTwister {
+     const weights = this.redistributeWeights(availableBones);
+ 
+     return {
+-      spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0)),
+-      spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0)),
+-      neck: this.makeSpineRotation(totalYaw * (weights.neck ?? 0), totalTilt * (weights.neck ?? 0)),
+-      head: this.makeSpineRotation(totalYaw * (weights.head ?? 0), totalTilt * (weights.head ?? 0)),
+-      hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5),
++      spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0), totalForwardPitch * (weights.spine1 ?? 0)),
++      spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0), totalForwardPitch * (weights.spine2 ?? 0)),
++      neck: this.makeSpineRotation(totalYaw * (weights.neck ?? 0), totalTilt * (weights.neck ?? 0), totalForwardPitch * (weights.neck ?? 0)),
++      head: this.makeSpineRotation(totalYaw * (weights.head ?? 0), totalTilt * (weights.head ?? 0), totalForwardPitch * (weights.head ?? 0)),
++      hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5, 0),
+     };
+   }
+ 
+@@ -258,11 +271,19 @@ export class SpineTwister implements ISpineTwister {
+    * Create a quaternion combining Y-axis yaw and Z-axis lateral tilt.
+    * Order matters: tilt first (local Z), then yaw (local Y).
+    */
+-  private makeSpineRotation(yaw: number, tilt: number): Quaternion {
++  private makeSpineRotation(
++    yaw: number,
++    tilt: number,
++    forwardPitch: number = 0
++  ): Quaternion {
+     const q = new Quaternion();
+-    if (Math.abs(yaw) < 0.0001 && Math.abs(tilt) < 0.0001) return q;
+-    // Euler order YZX: yaw around Y, tilt around Z, composed correctly
+-    const euler = new Euler(0, yaw, tilt, "YZX");
++    if (
++      Math.abs(yaw) < 0.0001 &&
++      Math.abs(tilt) < 0.0001 &&
++      Math.abs(forwardPitch) < 0.0001
++    ) return q;
++    // Euler order YZX: yaw, lateral tilt, then forward pitch.
++    const euler = new Euler(forwardPitch, yaw, tilt, "YZX");
+     q.setFromEuler(euler);
+     return q;
+   }

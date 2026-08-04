@@ -1222,6 +1222,17 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #8888ff 0%, #6a6aff 100%)",
   },
   {
+    id: "fan-relations",
+    groupId: "physical",
+    labelKey: "tab_lab_fan_relations",
+    descKey: "tab_desc_lab_fan_relations",
+    label: "Fan Relations",
+    icon: '<i class="fas fa-fan" style="color: #22d3ee;" aria-hidden="true"></i>',
+    description: "Compare fan placement, orientation, face plane, and viewpoint",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #0891b2 100%)",
+  },
+  {
     id: "stickers",
     groupId: "output",
     labelKey: "tab_lab_stickers",

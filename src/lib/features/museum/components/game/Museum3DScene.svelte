@@ -20,6 +20,7 @@
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
   import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
   import DrownedGalleryGraybox from "./DrownedGalleryGraybox.svelte";
+  import FirstFireGraybox from "./FirstFireGraybox.svelte";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -223,6 +224,9 @@
   const hasDrownedGallery = grid.wings.some(
     (wing) => wing.id === "cave-water-gallery"
   );
+  // Graybox for The First Fire. Same lifetime as the Drowned Gallery box:
+  // remove with the component when the authored GLB shell lands.
+  const hasFirstFire = grid.wings.some((wing) => wing.id === "cave-fire");
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -1661,6 +1665,14 @@
 
 {#if hasDrownedGallery}
   <DrownedGalleryGraybox
+    {grid}
+    currentRoomId={currentPlayerRoomId}
+    visible={props.visible !== false}
+  />
+{/if}
+
+{#if hasFirstFire}
+  <FirstFireGraybox
     {grid}
     currentRoomId={currentPlayerRoomId}
     visible={props.visible !== false}

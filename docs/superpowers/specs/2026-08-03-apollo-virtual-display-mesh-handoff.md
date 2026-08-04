@@ -211,15 +211,42 @@ deliberately excluded from this handoff's commit. Leave it alone.
 ## Loose ends (ranked)
 
 1. ~~**Install Apollo on d1.**~~ **DONE 2026-08-03** — see Done item 13.
-   Credentials are set; d2 re-paired 2026-08-04 (Done item 15). **The laptop
-   still has to re-pair** against whichever instance it uses — Apollo's fresh
-   CA invalidated its old pairing too.
+   Credentials are set on BOTH instances (2026-08-04, from d1): instance 2 was
+   seeded with instance 1's `username`/`salt`/`password` hashes only — identity
+   was NOT copied, Apollo2 generated its own `uniqueid`/certs. One login works
+   for both dashboards, confirmed from d2.
+   **d2 paired 2026-08-04** (Done item 15). **The laptop has not** — Apollo's
+   fresh CA invalidated its old pairing too. Its handoff is
+   `docs/superpowers/specs/2026-08-04-laptop-apollo-client-handoff.md`.
+
+   > A d1-authored version of this entry said "instance 1 has ZERO paired
+   > devices" as of 2026-08-04. That was true when written and is now stale —
+   > `/api/clients/list` on instance 1 returns a named cert `d2`.
+
 2. ~~**Get ONE virtual display working office → bedroom.**~~ **DONE and proven
-   2026-08-04** — Done item 16. Teardown is clean on d1 (Done item 17).
-3. ~~**Second Apollo instance on d1 for the laptop.**~~ **ALREADY EXISTS** —
-   discovered 2026-08-04 running on d1 at port base `48989`, now named
-   `laptop`. Its dashboard is `48990` and it accepts the same credentials as
-   the primary. Untested end to end; the laptop still needs to pair with it.
+   2026-08-04** — Done item 16. Teardown is clean once the client sets
+   `quitAppAfter` (Done item 17).
+3. ~~**Second Apollo instance on d1 for the laptop.**~~ **DONE 2026-08-03**,
+   and renamed `d1-laptop` → `laptop` on 2026-08-04 (Done item 14).
+   Built on d1 as a full directory clone: `C:\Program Files\Apollo2`, service
+   `Apollo2Service` (auto-start), `port = 48989` (so TCP
+   48984/48989/48990/49010, UDP 48998-49010), own firewall rule, fresh identity
+   (state + credentials deleted from the clone per Apollo discussion #325 —
+   never copy them). Verified: both instances listening simultaneously,
+   instance 2 dashboard 200 on `https://localhost:48990`, and reachable
+   directly from d2 over the tailnet on 48990 with no port proxy needed.
+   **The gotcha that broke its first start:** Apollo's service wrapper
+   (`tools\sunshinesvc.exe`) hardcodes its log to `%TEMP%\sunshine.log`
+   (`C:\Windows\Temp` for services) with write-exclusive sharing, so a second
+   wrapper dies with a sharing violation. Fix: per-service environment —
+   `HKLM\SYSTEM\CurrentControlSet\Services\Apollo2Service\Environment`
+   (REG_MULTI_SZ) sets `TMP`/`TEMP` to `C:\Program Files\Apollo2\svctemp`.
+   **Apollo updates must now be applied to BOTH directories.**
+   Still untested end to end; the laptop has to pair with it.
+3a. **Arrange the two virtual displays on d1** once both clients stream. They
+   land on d1's desktop; put them side by side in d1's Windows display settings
+   to match the office desk layout. Input unifies on d1 — drive both halves
+   from d2's mouse, with the laptop as a passive pane.
 4. **Ethernet.** Austen's gateway has two LAN ports, both occupied. Plan agreed:
    an 8-port unmanaged gigabit switch, with **d1 and d2 on the same
    switch** so their traffic switches locally and never reaches the gateway.
@@ -268,6 +295,11 @@ Do not re-litigate these.
   100 Mbps and needs a matching unit at both ends. Unmanaged gigabit switch,
   plug-and-play, DHCP still from the gateway. Never uplink the switch to the
   gateway twice — that is a loop.
+- **Do NOT chain laptop → d2 → d1** (Austen asked, 2026-08-03). Each client
+  pairs straight to its own d1 instance; the split-screen unification happens
+  on d1's desktop, not between clients. Chaining double-encodes the laptop pane
+  and nests input capture. This settles which host the laptop uses: **d1's
+  `laptop` instance, not d2.**
 - **d2's Apollo install stays untouched.** It was mistaken early in the
   session for a stray Sunshine install and nearly shut off. It is deliberate and
   serves the laptop.

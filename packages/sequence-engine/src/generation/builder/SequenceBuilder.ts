@@ -212,8 +212,23 @@ export interface BuildOptions {
   /** LOOP extension options. When present, the seed sequence is extended. */
   loop?: LoopOptions;
 
-  /** Force a specific end position (e.g. "beta5"). The last step must end here. */
+  /**
+   * Force a specific end position (e.g. "beta5"). The last step must end here.
+   * @deprecated Pass `endPositions` — the search has always modelled the goal
+   * as a set, and one-of-many costs nothing extra.
+   */
   endPosition?: string;
+
+  /**
+   * Allowed end positions (e.g. ["beta5", "alpha3"]). The last step must end
+   * at one of them. Empty or undefined = unconstrained.
+   *
+   * This is the same `Set<string>` the LOOP targeting path has always built
+   * via getAllValidEndPositions, and PositionReachabilityAnalyzer already
+   * takes the whole set — so N goals search exactly like one, and a wider set
+   * is strictly MORE feasible than a single hard target.
+   */
+  endPositions?: string[];
 
   /** Start positions to exclude from the random start pool. */
   blockedStartPositions?: string[];
@@ -693,6 +708,33 @@ export class SequenceBuilder {
   /**
    * constraint scoring. No bridges needed since every transition is direct.
    */
+  /**
+   * The caller's own end-position goal, or undefined when they set none.
+   *
+   * Shared by both attempt loops in buildByLength. It used to be inlined in
+   * each, and the second one — the "hard continuity killed the beam, demote to
+   * soft and retry" fallback — only ever read the legacy single `endPosition`.
+   * With Props on Choppy, continuity is promoted to hard, the constrained pass
+   * fails, and that fallback then regenerated with NO end constraint at all:
+   * the user picked two allowed ends and got a sequence ending somewhere else
+   * entirely, with no error. Keep this in one place so the two loops cannot
+   * drift apart again.
+   *
+   * LOOP targeting owns the goal set when active, which is why the UI locks the
+   * End Position row while LOOP is on.
+   */
+  private userEndPositions(
+    options: BuildOptions,
+    needsLoopTargeting: boolean | undefined
+  ): Set<string> | undefined {
+    if (needsLoopTargeting) return undefined;
+    const ends = [
+      ...(options.endPositions ?? []),
+      ...(options.endPosition ? [options.endPosition] : []),
+    ];
+    return ends.length > 0 ? new Set(ends) : undefined;
+  }
+
   private buildByLength(
     options: BuildOptions & { length: number }
   ): BuildResult {
@@ -841,10 +883,9 @@ export class SequenceBuilder {
         );
       }
 
-      // User-specified end position (non-LOOP) merges into requiredEndPositions
-      if (options.endPosition && !needsLoopTargeting) {
-        requiredEndPositions = new Set([options.endPosition]);
-      }
+      requiredEndPositions =
+        this.userEndPositions(options, needsLoopTargeting) ??
+        requiredEndPositions;
 
       // Backward reachability analysis: whenever we have a concrete goal,
       // pre-compute which positions can participate in a path to it. This is
@@ -965,9 +1006,9 @@ export class SequenceBuilder {
           );
         }
 
-        if (options.endPosition && !needsLoopTargeting) {
-          requiredEndPositions = new Set([options.endPosition]);
-        }
+        requiredEndPositions =
+          this.userEndPositions(options, needsLoopTargeting) ??
+          requiredEndPositions;
 
         // Recompute reachability with the demoted constraint set
         let reachabilityRetry: ReachabilityResult | undefined;

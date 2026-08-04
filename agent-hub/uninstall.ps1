@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
   Removes agent-hub: stops the host, deletes the install folder, shortcuts, and
-  the Windows Terminal color fragment, managed color skills, and the logon
+  the Windows Terminal color fragment, managed Agent Hub skills, and the logon
   entry.
 
 .DESCRIPTION
@@ -24,7 +24,7 @@ $StartupLnk  = Join-Path ([Environment]::GetFolderPath('Startup')) 'Agent Hub Ho
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 $ManagedSkillMarker = '.agent-hub-managed'
 $ManagedSkillPaths = @(
-    foreach ($skillName in @('color', 'colorall')) {
+    foreach ($skillName in @('color', 'colorall', 'renameall')) {
         Join-Path $env:USERPROFILE ".claude\skills\$skillName"
         Join-Path $env:USERPROFILE ".agents\skills\$skillName"
     }

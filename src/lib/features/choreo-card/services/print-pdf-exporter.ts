@@ -21,7 +21,9 @@ export async function exportDeckPDF(
 	pairs: CardPair[],
 	_deckName: string,
 	cardSize: CardSizeId = 'poker',
-	onProgress?: (current: number, total: number) => void
+	onProgress?: (current: number, total: number) => void,
+	/** "How to Read" insert, emitted as the first card of the deck. */
+	insertPair?: CardPair
 ): Promise<Blob> {
 	const size = CARD_SIZES[cardSize];
 	// MPC page dimensions: canvas pixel dimensions converted to points at 300 DPI
@@ -29,10 +31,11 @@ export async function exportDeckPDF(
 	const pageHeightPt = (size.canvasHeight / 300) * 72;
 
 	const pdfDoc = await PDFDocument.create();
-	const total = pairs.length;
+	const allPairs = insertPair ? [insertPair, ...pairs] : pairs;
+	const total = allPairs.length;
 
-	for (let i = 0; i < pairs.length; i++) {
-		const pair = pairs[i]!;
+	for (let i = 0; i < allPairs.length; i++) {
+		const pair = allPairs[i]!;
 
 		const frontImage = await pdfDoc.embedPng(canvasToPngBytes(pair.front));
 		const frontPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
@@ -79,16 +82,24 @@ export interface HomePrintOptions {
 		copyIndex: number;
 		slotIndex: number;
 	}) => Promise<HTMLCanvasElement>;
+	/** "How to Read" insert. Emitted on its own leading sheet holding one insert
+	 *  per copy — printing 3 copies produces 3 decks, so 3 inserts. Kept out of
+	 *  the element planner so a sheet still holds exactly one color, and out of
+	 *  `frontRenderer` so it never consumes a physical-card identity. */
+	insertPair?: CardPair;
 }
 
 interface IndexedCardPair {
 	pair: CardPair;
 	cardIndex: number;
+	/** Insert slots skip serialization; they have no sequence and no short code. */
+	isInsert?: boolean;
 }
 
 type IndexedPrintSlot = PlannedSlot<IndexedCardPair>;
 
-/** Capitalize an element key for sheet labels: "fire" → "Fire". */
+/** Capitalize an element key for sheet labels: "fire" → "Fire". Multi-word
+ *  labels (the insert's "How to Read") arrive already cased and pass through. */
 function capitalize(s: string): string {
 	return s.length ? s[0]!.toUpperCase() + s.slice(1) : s;
 }
@@ -122,7 +133,7 @@ export async function exportHomePrintPDF(
 	// firstOnTop: reverse card order so the deck's FIRST card is drawn last and
 	// lands on top of the printed/cut stack (was: last card on top).
 	const indexedPairs = pairs.map((pair, cardIndex) => ({ pair, cardIndex }));
-	const slots = planPrintSlots(
+	const plannedSlots = planPrintSlots(
 		indexedPairs,
 		elements,
 		copies,
@@ -130,6 +141,27 @@ export async function exportHomePrintPDF(
 		groupByElement,
 		true
 	);
+
+	// The insert gets its own leading sheet(s): one insert per copy, padded to a
+	// whole sheet. Routing it through planPrintSlots instead would either merge it
+	// into an element bucket or land it at the bottom of the cut stack, since
+	// firstOnTop reverses block order.
+	const insertSlots: IndexedPrintSlot[] = [];
+	if (options.insertPair) {
+		const insertItem: IndexedCardPair = {
+			pair: options.insertPair,
+			cardIndex: -1,
+			isInsert: true,
+		};
+		for (let c = 0; c < copies; c++) {
+			insertSlots.push({ item: insertItem, elementName: 'How to Read', copyIndex: c });
+		}
+		while (insertSlots.length % cardsPerPage !== 0) {
+			insertSlots.push({ item: null, elementName: 'How to Read', copyIndex: null });
+		}
+	}
+
+	const slots = [...insertSlots, ...plannedSlots];
 	const totalSheets = slots.length / cardsPerPage; // integer by construction
 
 	const pdfDoc = await PDFDocument.create();
@@ -172,8 +204,11 @@ export async function exportHomePrintPDF(
 				const row = Math.floor(i / cols);
 				const x = marginXPt + col * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const front = options.frontRenderer
-					? await options.frontRenderer({
+				// The insert has no sequence, so it never goes through the serialized
+				// renderer — its identical pixels are embedded once and reused.
+				const serialize = Boolean(options.frontRenderer) && !slot.item.isInsert;
+				const front = serialize
+					? await options.frontRenderer!({
 						pair: slot.item.pair,
 						cardIndex: slot.item.cardIndex,
 						copyIndex: slot.copyIndex!,
@@ -182,7 +217,7 @@ export async function exportHomePrintPDF(
 					: slot.item.pair.front;
 				// Serialized fronts are unique by definition; caching their canvas
 				// handles would retain every full-size copy for the life of the PDF.
-				const img = options.frontRenderer
+				const img = serialize
 					? await pdfDoc.embedPng(canvasToPngBytes(front))
 					: await embedFront(front);
 				frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });

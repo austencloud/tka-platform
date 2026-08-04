@@ -14,7 +14,7 @@ Deep domain knowledge lives in the MCP package — use `get_domain_topic` or `ge
 - NOT poi. Never list poi alongside static props as equals. Poi is a restricted subset.
 - Poi Lab is planned, not built. Don't present it as working.
 - TKA is for dual-wielded props. Contact staff (balancing/rolling on body) is NOT part of TKA.
-- Don't say "any amount of rotation" — smallest increment is 45 degrees (quarter turns at L7).
+- Don't say "any amount of rotation" — smallest increment is 45 degrees (quarter turns at L6).
 - Don't say "fixed grip" — say "gripped directly."
 
 ---

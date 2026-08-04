@@ -6,16 +6,16 @@
       "LEAN_SCRIPT": 350,
       "BIG_TOTAL": 800
     },
-    "totalComponents": 2304,
+    "totalComponents": 2302,
     "bySpecies": {
       "logic": 758,
       "style": 1314,
-      "template": 232
+      "template": 230
     },
     "byAction": {
       "extract-script": 33,
       "review": 5,
-      "ok": 957,
+      "ok": 955,
       "keeper": 1309
     },
     "extractCandidates": 33,
@@ -4292,7 +4292,7 @@
       "hiddenMonster": false
     },
     {
-      "file": "lib/features/levels/level7-lab/Level7LabModule.svelte",
+      "file": "lib/features/levels/level6-lab/Level6LabModule.svelte",
       "total": 665,
       "scriptLines": 236,
       "templateLines": 124,
@@ -18572,23 +18572,6 @@
       "hiddenMonster": false
     },
     {
-      "file": "routes/(public)/notation/letters/+page.svelte",
-      "total": 170,
-      "scriptLines": 60,
-      "templateLines": 64,
-      "styleLines": 46,
-      "stateCount": 0,
-      "derivedCount": 3,
-      "effectCount": 0,
-      "functionCount": 0,
-      "childComponents": 0,
-      "diseaseScore": 72,
-      "species": "template",
-      "action": "ok",
-      "reason": "below the disease-score gate",
-      "hiddenMonster": false
-    },
-    {
       "file": "lib/features/browse/gallery-home/GalleryFilterSheet.svelte",
       "total": 146,
       "scriptLines": 47,
@@ -22190,23 +22173,6 @@
       "species": "style",
       "action": "keeper",
       "reason": "presentational: CSS-dominant with a lean script",
-      "hiddenMonster": false
-    },
-    {
-      "file": "routes/(public)/notation/letters/[slug]/+page.svelte",
-      "total": 207,
-      "scriptLines": 40,
-      "templateLines": 90,
-      "styleLines": 77,
-      "stateCount": 0,
-      "derivedCount": 3,
-      "effectCount": 0,
-      "functionCount": 0,
-      "childComponents": 0,
-      "diseaseScore": 52,
-      "species": "template",
-      "action": "ok",
-      "reason": "below the disease-score gate",
       "hiddenMonster": false
     },
     {

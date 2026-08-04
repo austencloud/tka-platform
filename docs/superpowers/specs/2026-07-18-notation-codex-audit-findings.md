@@ -4,6 +4,10 @@
 **Scope:** Uncommitted redesign on `feat/notation-roots-merge`  
 **Verdict:** **Not ready to ship.** Both centerpiece historical diagrams are misleading or wrong, several lineage claims exceed the evidence, the page still has the exact AI-template structure the redesign was meant to remove, and the Roots merge leaves public content and active tooling orphaned.
 
+> **Superseded 2026-08-02:** The recommendation below to link the standalone
+> `/notation/letters` index is obsolete. That duplicate was removed; the
+> interactive letter catalog lives in the Composer Guide Codex.
+
 No application source files were modified by this audit.
 
 ## Critical

@@ -10,22 +10,21 @@
 
   It is held up with its own back beside it (HeroCardDuo), and the back's mandala
   is drawn live rather than printed. That is the claim the page makes — scan it
-  and it moves — shown instead of described.
+  and it moves — shown instead of described. The hero deals from the whole
+  catalog rather than holding one card, so a second look is a different card.
 -->
 <script lang="ts">
-  import type { CoverCard, Product } from "../../domain/models/product";
+  import type { HeroCoverEntry } from "./front-door-catalog";
   import HeroCardDuo from "./HeroCardDuo.svelte";
 
   interface Props {
-    /** The single card the hero holds up. Null while the catalog is empty. */
-    card: CoverCard | null;
-    /** The product that card belongs to (QR attribution + art fallbacks). */
-    product: Product | null;
+    /** Every card the hero can deal, best first. Empty until the catalog lands. */
+    pool: readonly HeroCoverEntry[];
     /** Fragment id of the catalog the scroll button targets. */
     catalogId: string;
   }
 
-  let { card, product, catalogId }: Props = $props();
+  let { pool, catalogId }: Props = $props();
 </script>
 
 <section class="hero">
@@ -34,13 +33,13 @@
        at the catalog; without a participant on this end the tile morph would
        degrade to a cut (tests/unit/landing-route-morph.test.ts holds the pair). -->
   <div class="copy" style:view-transition-name="launchpad-choreo-cards">
-    <p class="kicker">The Kinetic Alphabet <span aria-hidden="true">·</span> Printed line</p>
-    <h1>Every card is a <em>sequence.</em></h1>
-    <p class="lede">Scan it and it moves.</p>
+    <p class="kicker"> <span aria-hidden="true"></span></p>
+    <h1><em>Choreo Cards</em></h1>
+    <p class="lede">The latest evolution of flow arts technology</p>
     <ol class="steps">
-      <li><b>1</b><span>Draw a card. Eight counts of choreography, printed.</span></li>
-      <li><b>2</b><span>Point your phone at the code in the corner.</span></li>
-      <li><b>3</b><span>The sequence opens in the app and plays.</span></li>
+      <li><b>1</b><span>Draw a card, learn the sequence, and teach it to a friend.</span></li>
+      <li><b>2</b><span>Scan the QR code to animate it and practice at your own pace.</span></li>
+      <li><b>3</b><span>Expand your repertoire and share it with others</span></li>
     </ol>
     <a class="scroll-cta" href="#{catalogId}">
       See the catalog
@@ -49,7 +48,7 @@
   </div>
 
   <div class="card-stage">
-    <HeroCardDuo {card} {product} />
+    <HeroCardDuo {pool} />
   </div>
 </section>
 
@@ -66,10 +65,25 @@
   }
 
   /* Two columns only once the pair of cards has room to be cards. Below this
-     the duo takes the full band, which is wider than half of a tablet. */
+     the duo takes the full band, which is wider than half of a tablet.
+
+     THE COPY HUGS ITS OWN MEASURE, AND THE STAGE TAKES THE REST. An even
+     1fr/1.05fr split gave the copy a column its longest line never reached:
+     260px of slack at 1920 and around 700px at 3840, all of it pooled against
+     the scene as one dead field. Austen (2026-08-04): "the words Choreo Cards
+     are so far to the left with a big space in between the animation."
+
+     `fit-content` sizes the column to the copy and caps it, so a long line
+     can't run away with the band, and everything it doesn't use goes to the
+     stage — which now has three objects to stand side by side and spends it
+     (HeroCardDuo's container tiers). Same band, same grid, no second width
+     system: 4k-native-layout.md's "one width per page", read the other way
+     round — the gap between the two halves is capped so they stay one
+     composition instead of two pages. */
   @media (min-width: 64rem) {
     .hero {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      grid-template-columns: fit-content(38rem) minmax(0, 1fr);
+      gap: clamp(2rem, 3vw, 3.5rem);
     }
   }
 
@@ -83,6 +97,9 @@
       padding-block: 1.25rem;
       gap: 2rem;
     }
+    /* The copy's own trims for this tier live at the foot of this stylesheet:
+       the base .copy / h1 / .steps rules are declared BELOW these media blocks,
+       so an override written here loses on source order. */
   }
 
   /* Big-screen tier (the site-wide 1680 seam). Two things go wrong up here if
@@ -199,11 +216,36 @@
     display: grid;
     place-items: center;
     padding: clamp(0.5rem, 1.5vw, 1.5rem);
+    /* The phone's entrance starts outside this box, so the stage is where it
+       comes IN from. `clip` on one axis only: the pill and the card shadows
+       hang below the scene and must stay visible, and clipping x is what stops
+       the arriving phone from widening the document at 375. (`overflow-x: clip`
+       is the one value that leaves `overflow-y: visible` alone; `hidden` would
+       force the other axis to `auto` and give the page a scrollbar.) */
+    overflow-x: clip;
     background: radial-gradient(
       circle at 50% 45%,
       rgba(126, 224, 255, 0.16),
       rgba(126, 224, 255, 0) 68%
     );
+  }
+
+  /* Wide but short, continued — the copy pays too. It shares the row with the
+     card stage, so whichever column is taller sets the height and pushes the
+     other one down. At 412px tall the display h1 alone was 96px of a 328px
+     budget, and "See the catalog" landed below the fold. Three trims, no lost
+     content: a smaller display size, a tighter column rhythm, closer steps.
+     (This block sits after the base .copy / h1 / .steps rules on purpose.) */
+  @media (min-width: 48rem) and (max-height: 40rem) {
+    .copy {
+      gap: 0.7rem;
+    }
+    h1 {
+      font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+    }
+    .steps {
+      gap: 0.35rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

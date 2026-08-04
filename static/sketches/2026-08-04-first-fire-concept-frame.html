@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The First Fire — Concept Frame</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #030202; color: #ddd3c4; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  .frame { width: 100vw; height: 100vh; display: block; }
+  .caption {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 0.7rem clamp(1rem, 3vw, 3rem);
+    background: linear-gradient(transparent, rgba(3,2,2,0.9) 40%);
+    color: #9a8f80; font-size: 0.85rem; text-align: center;
+  }
+  .caption b { color: #ffd9a8; }
+</style>
+</head>
+<body>
+
+<svg class="frame" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" role="img"
+     aria-label="First-person concept frame: the First Fire amphitheater, three automatons spinning burning staves in the dark across a lava fissure">
+<defs>
+  <!-- cave dome: near-black with the faintest warm bounce -->
+  <radialGradient id="dome" cx="50%" cy="66%" r="85%">
+    <stop offset="0%" stop-color="#1c0e05"/>
+    <stop offset="38%" stop-color="#120904"/>
+    <stop offset="70%" stop-color="#080403"/>
+    <stop offset="100%" stop-color="#020101"/>
+  </radialGradient>
+
+  <!-- lava fissure -->
+  <linearGradient id="fissure" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#ffb35c"/>
+    <stop offset="22%" stop-color="#ff6a2a"/>
+    <stop offset="60%" stop-color="#a32c08"/>
+    <stop offset="100%" stop-color="#3a1003"/>
+  </linearGradient>
+  <linearGradient id="fissureGlow" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#ff6a2a" stop-opacity="0.55"/>
+    <stop offset="100%" stop-color="#ff6a2a" stop-opacity="0"/>
+  </linearGradient>
+
+  <!-- fire pit glow pools -->
+  <radialGradient id="pitPool" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#ffd9a8" stop-opacity="0.85"/>
+    <stop offset="30%" stop-color="#ff9b3d" stop-opacity="0.5"/>
+    <stop offset="100%" stop-color="#ff6a2a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="floorSpill" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#ff9b3d" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#ff9b3d" stop-opacity="0"/>
+  </radialGradient>
+
+  <!-- trail strokes -->
+  <linearGradient id="trailHot" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#fff3d6"/>
+    <stop offset="45%" stop-color="#ffb35c"/>
+    <stop offset="100%" stop-color="#ff6a2a" stop-opacity="0"/>
+  </linearGradient>
+
+  <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="3"/>
+  </filter>
+  <filter id="softer" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur stdDeviation="5"/>
+  </filter>
+  <filter id="crisp" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="1.6"/>
+  </filter>
+</defs>
+
+<!-- ═══ the dark chamber ═══ -->
+<rect width="1920" height="1080" fill="url(#dome)"/>
+
+<!-- vague rock ceiling ribs, barely lit from below -->
+<g stroke="#2a1408" stroke-width="26" fill="none" opacity="0.35">
+  <path d="M-40,240 Q480,140 960,190 T1960,230"/>
+  <path d="M-40,120 Q560,40 1100,90 T1960,110"/>
+</g>
+<g stroke="#361a09" stroke-width="14" fill="none" opacity="0.25">
+  <path d="M-40,330 Q520,240 1000,285 T1960,320"/>
+</g>
+
+<!-- far wall behind the performers, faintly touched by fire -->
+<rect x="0" y="380" width="1920" height="240" fill="#160a04" opacity="0.8"/>
+<g fill="#241106" opacity="0.55">
+  <path d="M120,620 L200,420 L330,620 Z"/>
+  <path d="M1560,620 L1680,400 L1810,620 Z"/>
+  <path d="M840,620 L905,470 L980,620 Z" opacity="0.5"/>
+</g>
+
+<!-- ═══ lava fissure (the barrier) ═══ -->
+<rect x="0" y="640" width="1920" height="14" fill="url(#fissure)" filter="url(#crisp)"/>
+<rect x="0" y="600" width="1920" height="110" fill="url(#fissureGlow)"/>
+<!-- cracks feeding it -->
+<g stroke="#ff6a2a" stroke-width="3" opacity="0.7" filter="url(#crisp)">
+  <path d="M240,646 l-70,26 M690,648 l60,30 M1180,646 l-40,34 M1620,648 l70,26" fill="none"/>
+</g>
+
+<!-- ═══ three performers on the far shore ═══ -->
+<!-- each: pit glow, silhouette, two interleaved trail loops -->
+
+<!-- helper comment: DJ (left) pro/pro opposite senses — mirrored circles.
+     EK (center) anti/anti — same shapes, reversed highlight sweep.
+     FL (right) hybrid — one round loop, one petaled loop. -->
+
+<!-- DJ · left -->
+<g transform="translate(430,560)">
+  <ellipse cx="0" cy="66" rx="150" ry="34" fill="url(#floorSpill)"/>
+  <ellipse cx="0" cy="46" rx="52" ry="16" fill="url(#pitPool)" filter="url(#soft)"/>
+  <path d="M-8,48 q-6,-26 6,-40 q12,14 4,40 Z" fill="#ffb35c" filter="url(#crisp)" opacity="0.9"/>
+  <!-- trails: two mirrored circles crossing behind the figure -->
+  <g fill="none" filter="url(#crisp)">
+    <circle cx="-52" cy="-56" r="84" stroke="#ff6a2a" stroke-width="5" opacity="0.5"/>
+    <circle cx="52" cy="-56" r="84" stroke="#ff6a2a" stroke-width="5" opacity="0.5"/>
+    <path d="M-52,-140 a84,84 0 0 1 84,84" stroke="#fff3d6" stroke-width="7" opacity="0.95"/>
+    <path d="M52,28 a84,84 0 0 1 -84,-84" stroke="#ffd9a8" stroke-width="7" opacity="0.9"/>
+  </g>
+  <g filter="url(#softer)" opacity="0.5">
+    <circle cx="-52" cy="-56" r="84" stroke="#ff6a2a" stroke-width="12" fill="none"/>
+    <circle cx="52" cy="-56" r="84" stroke="#ff6a2a" stroke-width="12" fill="none"/>
+  </g>
+  <!-- prop-head flames at trail tips -->
+  <circle cx="32" cy="-140" r="9" fill="#fff3d6" filter="url(#soft)"/>
+  <circle cx="-32" cy="28" r="8" fill="#ffd9a8" filter="url(#soft)"/>
+  <!-- silhouette holding a staff diagonal -->
+  <g fill="#050302">
+    <ellipse cx="0" cy="-96" rx="13" ry="15"/>
+    <path d="M-14,-82 q14,-10 28,0 l6,52 q-20,10 -40,0 Z"/>
+    <path d="M-9,-32 l-7,66 h11 l5,-52 5,52 h11 l-7,-66 Z"/>
+    <path d="M-14,-76 l-30,26 5,7 29,-22 Z"/>
+    <path d="M14,-76 l32,20 -4,8 -31,-18 Z"/>
+  </g>
+  
+</g>
+
+<!-- EK · center, slightly larger (nearest) -->
+<g transform="translate(960,548) scale(1.12)">
+  <ellipse cx="0" cy="66" rx="170" ry="38" fill="url(#floorSpill)"/>
+  <ellipse cx="0" cy="46" rx="56" ry="17" fill="url(#pitPool)" filter="url(#soft)"/>
+  <path d="M-9,48 q-7,-28 7,-44 q13,16 4,44 Z" fill="#ffb35c" filter="url(#crisp)" opacity="0.9"/>
+  <g fill="none" filter="url(#crisp)">
+    <circle cx="-54" cy="-58" r="88" stroke="#ff6a2a" stroke-width="5" opacity="0.5"/>
+    <circle cx="54" cy="-58" r="88" stroke="#ff6a2a" stroke-width="5" opacity="0.5"/>
+    <!-- anti/anti: highlight sweeps mirrored the other way -->
+    <path d="M-54,30 a88,88 0 0 0 88,-88" stroke="#fff3d6" stroke-width="7" opacity="0.95"/>
+    <path d="M54,-146 a88,88 0 0 0 -88,88" stroke="#ffd9a8" stroke-width="7" opacity="0.9"/>
+  </g>
+  <g filter="url(#softer)" opacity="0.55">
+    <circle cx="-54" cy="-58" r="88" stroke="#ff6a2a" stroke-width="13" fill="none"/>
+    <circle cx="54" cy="-58" r="88" stroke="#ff6a2a" stroke-width="13" fill="none"/>
+  </g>
+  <circle cx="34" cy="-146" r="9" fill="#fff3d6" filter="url(#soft)"/>
+  <circle cx="-34" cy="30" r="8" fill="#ffd9a8" filter="url(#soft)"/>
+  <g fill="#050302">
+    <ellipse cx="0" cy="-100" rx="13" ry="15"/>
+    <path d="M-14,-86 q14,-10 28,0 l6,54 q-20,10 -40,0 Z"/>
+    <path d="M-9,-34 l-7,68 h11 l5,-54 5,54 h11 l-7,-68 Z"/>
+    <path d="M-14,-80 l-32,18 4,8 30,-16 Z"/>
+    <path d="M14,-80 l30,24 -5,7 -28,-21 Z"/>
+  </g>
+  
+</g>
+
+<!-- FL · right -->
+<g transform="translate(1490,560)">
+  <ellipse cx="0" cy="66" rx="150" ry="34" fill="url(#floorSpill)"/>
+  <ellipse cx="0" cy="46" rx="52" ry="16" fill="url(#pitPool)" filter="url(#soft)"/>
+  <path d="M-8,48 q-6,-26 6,-40 q12,14 4,40 Z" fill="#ffb35c" filter="url(#crisp)" opacity="0.9"/>
+  <g fill="none" filter="url(#crisp)">
+    <!-- hybrid: one circle, one petaled antispin flower -->
+    <circle cx="-52" cy="-56" r="80" stroke="#ff6a2a" stroke-width="5" opacity="0.5"/>
+    <path d="M52,-56 m0,-78 q26,40 0,78 q-26,-38 0,-78 M52,-56 m-78,0 q40,-26 78,0 q-38,26 -78,0"
+          stroke="#ff6a2a" stroke-width="5" opacity="0.55"/>
+    <path d="M-52,-136 a80,80 0 0 1 80,80" stroke="#fff3d6" stroke-width="7" opacity="0.95"/>
+    <path d="M52,-134 q26,40 0,78" stroke="#ffd9a8" stroke-width="7" opacity="0.9"/>
+  </g>
+  <g filter="url(#softer)" opacity="0.5">
+    <circle cx="-52" cy="-56" r="80" stroke="#ff6a2a" stroke-width="12" fill="none"/>
+    <circle cx="52" cy="-56" r="64" stroke="#ff6a2a" stroke-width="10" fill="none" opacity="0.7"/>
+  </g>
+  <circle cx="28" cy="-136" r="9" fill="#fff3d6" filter="url(#soft)"/>
+  <circle cx="52" cy="-134" r="8" fill="#ffd9a8" filter="url(#soft)"/>
+  <g fill="#050302">
+    <ellipse cx="0" cy="-96" rx="13" ry="15"/>
+    <path d="M-14,-82 q14,-10 28,0 l6,52 q-20,10 -40,0 Z"/>
+    <path d="M-9,-32 l-7,66 h11 l5,-52 5,52 h11 l-7,-66 Z"/>
+    <path d="M-14,-76 l-31,22 5,8 29,-19 Z"/>
+    <path d="M14,-76 l31,22 -5,8 -29,-19 Z"/>
+  </g>
+  
+</g>
+
+<!-- ═══ near shore: stepped basalt benches (foreground silhouettes) ═══ -->
+<g>
+  <path d="M0,700 Q960,652 1920,700 L1920,760 Q960,706 0,760 Z" fill="#0c0603"/>
+  <path d="M0,770 Q960,714 1920,770 L1920,850 Q960,784 0,850 Z" fill="#080402"/>
+  <path d="M0,860 Q960,792 1920,860 L1920,1080 L0,1080 Z" fill="#040201"/>
+  <!-- warm rim light kissing the bench edges -->
+  <path d="M0,700 Q960,652 1920,700" stroke="#ff9b3d" stroke-width="2.5" fill="none" opacity="0.35" filter="url(#crisp)"/>
+  <path d="M0,770 Q960,714 1920,770" stroke="#ff9b3d" stroke-width="2" fill="none" opacity="0.22" filter="url(#crisp)"/>
+  <path d="M0,860 Q960,792 1920,860" stroke="#ff9b3d" stroke-width="2" fill="none" opacity="0.12" filter="url(#crisp)"/>
+</g>
+
+<!-- the cold ash circle, just visible on the lowest terrace -->
+<g transform="translate(960,960)" opacity="0.75">
+  <ellipse cx="0" cy="0" rx="240" ry="52" fill="none" stroke="#2a1c10" stroke-width="10" stroke-dasharray="26 18"/>
+  <ellipse cx="0" cy="0" rx="150" ry="30" fill="#0d0805"/>
+  <!-- abandoned charred staves -->
+  <rect x="-120" y="-8" width="150" height="6" rx="3" fill="#1c1009" transform="rotate(-9)"/>
+  <rect x="-20" y="6" width="140" height="6" rx="3" fill="#170d07" transform="rotate(5)"/>
+  <path d="M22,-12 q6,-14 -2,-22" stroke="#3a2412" stroke-width="4" fill="none" opacity="0.8"/>
+</g>
+
+<!-- embers drifting -->
+<g fill="#ffb35c" filter="url(#crisp)">
+  <circle cx="330" cy="430" r="2.2" opacity="0.8"/>
+  <circle cx="512" cy="330" r="1.6" opacity="0.55"/>
+  <circle cx="700" cy="500" r="2" opacity="0.7"/>
+  <circle cx="880" cy="300" r="1.5" opacity="0.5"/>
+  <circle cx="1060" cy="420" r="2.4" opacity="0.8"/>
+  <circle cx="1235" cy="352" r="1.6" opacity="0.5"/>
+  <circle cx="1420" cy="470" r="2" opacity="0.7"/>
+  <circle cx="1620" cy="380" r="1.8" opacity="0.6"/>
+  <circle cx="1740" cy="520" r="2.2" opacity="0.75"/>
+  <circle cx="180" cy="560" r="2" opacity="0.7"/>
+  <circle cx="960" cy="200" r="1.3" opacity="0.35"/>
+</g>
+
+<!-- gentle vignette -->
+<rect width="1920" height="1080" fill="url(#dome)" opacity="0" />
+</svg>
+
+<div class="caption">
+  <b>The First Fire</b> — from the second bench row, just after the darkening crack. The room's only light is the
+  performance: three automatons spin burning staves across the lava fissure — <b>DJ</b> mirrored spirals ·
+  <b>EK</b> the same circles swept the other way · <b>FL</b> one round loop, one petaled — while the cold ash
+  circle waits behind you. Painted concept frame, not a render; graybox will prove the real thing.
+</div>
+
+</body>
+</html>

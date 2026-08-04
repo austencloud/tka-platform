@@ -167,6 +167,9 @@ async function main() {
       notes: NOTES,
       sequences: cards,
       stepCountDistribution: distribution,
+      // Every deck ships the "How to Read" insert as card 1. Keep in step with
+      // INSERT_CARD_VERSION in domain/models/DeckRelease.ts.
+      insertCard: { version: 1 },
       // Deterministic recipe so script-released decks are reusable in the UI.
       recipe: {
         deckMode: "tnd",
@@ -186,7 +189,7 @@ async function main() {
   });
 
   console.log(`\nDeck #${String(release.deckNumber).padStart(3, "0")} released!`);
-  console.log(`  ${release.cardCount} cards`);
+  console.log(`  ${release.cardCount + 1} cards (${release.cardCount} sequences + How to Read insert)`);
   console.log(`  Notes: "${release.notes}"`);
   console.log(`  Created: ${release.createdAt}`);
 }

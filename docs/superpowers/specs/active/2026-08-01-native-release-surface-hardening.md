@@ -131,6 +131,43 @@ the account is already repaired and perform no writes.
 7. Run the account migration in dry-run, apply it, run it again, and read the
    resulting Firestore documents to prove the repair is idempotent.
 
+## Follow-up: the rest of the internal surface (2026-08-03)
+
+Verifying this spec raised the obvious question — whether everything the public
+should not see was actually gated. It was not. Only `/coven` and `/test/*` ever
+were; a full audit of the built client bundle found eleven more reachable
+internal routes, plus a leak class no route mechanism can reach.
+
+Now guarded (emptied component + `guardInternalRoute()` redirect):
+`/video-collab-demo` (15.9 KB, and 500ing on the public web), `/grant-feature`,
+`/composer/auth-lab`, `/render-pictographs`, `/demo/*`, `/hall-of-shame`, and
+the four retro routes `/1989` `/1995` `/1998` `/2003`.
+
+`/1989` and `/1995` had rendered blank in production, but only because the
+`retro` feature module was stubbed — `/1998` and `/2003` shipped their real UI.
+Relying on which page happens to import a gated module is not a gate, so all
+four now go through `emptyClientRouteComponents`.
+
+**`src/routes/embed/` was removed from `DEV_ONLY_ROUTE_PATTERNS`.** It reads
+like a dev path, but `/embed/spinner` is outward-facing — third parties iframe
+it, and the page says so. It survived only because nothing consumed
+`getDisabledRoutePatterns()`; listing it was a latent bug waiting for someone to
+wire that function up. A test now asserts it stays out of every internal list.
+
+**Static files are a separate leak class.** `static/` copies verbatim into the
+deploy output, so 32 internal design mockups were live at
+`tkaflowarts.com/sketches/`, along with `element-icons-preview.html`. No feature
+flag or load guard can reach them. They are dropped in
+`scripts/trim-deploy-assets.js`, which preserves the documented
+`localhost:5173/sketches/` review workflow (Vite serves `static/` in dev) while
+keeping them out of production.
+
+Verified 2026-08-03: 47 unit tests; `npm run check` clean; production build
+empties 12 route paths; the shared guard chunk folds to `function t(){r(307,e)}`
+— unconditional; a real browser confirms all 13 guarded routes land on
+`/browse/gallery` while `/embed/spinner` still serves; and a static server over
+the build output 404s the sketches while `/about.html` still resolves.
+
 ## Risks
 
 - Emptying route components too broadly could blank a shipped route. Only

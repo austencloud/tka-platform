@@ -24,6 +24,9 @@ compensation), so the detail view behind this sheet updates on its own.
 	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
 	import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
 	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
+	import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
+	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+	import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 	import CollectionChipsRow from "$lib/features/library/components/collection-picker/CollectionChipsRow.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
@@ -108,11 +111,61 @@ compensation), so the detail view behind this sheet updates on its own.
 	let filterSheetOpen = $state(false);
 
 	function backToDrill() {
-		// Fresh drill each time, mirroring BrowseModule's "← Start here".
-		engine.clearUserFilters();
+		// Back to the WORKSPACE, rule intact — the strip shows and edits it
+		// there (mirrors BrowseModule). Only transient search resets.
 		engine.setSearch("");
 		view = "drill";
 	}
+
+	// Workspace wiring — the same toggle-in-place contract the gallery and
+	// the Smart Collection builder use (unified filter workspace spec).
+	const loopKeyByValue = $derived(
+		new Map(
+			[...engine.activeFilters]
+				.filter(([, f]) => f.type === BrowseFilterType.LOOP_TYPE && !f.locked)
+				.map(([key, f]) => [String(f.value), key]),
+		),
+	);
+	const activeLoopValues = $derived(new Set(loopKeyByValue.keys()));
+	const familyKeyByValue = $derived(
+		new Map(
+			[...engine.activeFilters]
+				.filter(([, f]) => f.type === BrowseFilterType.TND_FAMILY && !f.locked)
+				.map(([key, f]) => [String(f.value), key]),
+		),
+	);
+	const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
+	const appliedValueKeys = $derived(
+		new Set(
+			[...engine.activeFilters.values()]
+				.filter((f) => !f.locked)
+				.map((f) => `${f.type}:${String(f.value)}`),
+		),
+	);
+
+	// Strip chip body = edit: remount the drill on that filter's own editor.
+	type WorkspaceSection =
+		| "level"
+		| "length"
+		| "letter"
+		| "position"
+		| "gridmode"
+		| "author"
+		| "loop"
+		| "family"
+		| "max_turn_intensity";
+	const SECTION_FOR_FILTER_TYPE: Partial<Record<string, WorkspaceSection>> = {
+		[BrowseFilterType.DIFFICULTY]: "level",
+		[BrowseFilterType.LENGTH]: "length",
+		[BrowseFilterType.STARTING_LETTER]: "letter",
+		[BrowseFilterType.STARTING_POSITION]: "position",
+		[BrowseFilterType.GRID_MODE]: "gridmode",
+		[BrowseFilterType.OWNER]: "author",
+		[BrowseFilterType.LOOP_TYPE]: "loop",
+		[BrowseFilterType.TND_FAMILY]: "family",
+		[BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",
+	};
+	let drillSeed = $state<{ section?: WorkspaceSection }>({});
 
 	function handleSelect(seq: SequenceData) {
 		getHapticFeedback()?.trigger("selection");
@@ -153,13 +206,71 @@ compensation), so the detail view behind this sheet updates on its own.
 
 		<div class="panel-body">
 			{#if view === "drill"}
+				{#if engine.hasActiveFilters}
+					<div class="sheet-rule-strip" aria-label="Current filters">
+						<span class="strip-count" aria-live="polite">
+							{engine.resultCount}
+							{engine.resultCount === 1 ? "match" : "matches"}
+						</span>
+						<FilterRuleStrip
+							filters={engine.allFilterChips.filter((c) => !c.locked)}
+							connectives={engine.connectives}
+							onEditFilter={(type) =>
+								(drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+							onRemoveFilter={(key) => engine.removeFilter(key)}
+						/>
+						<div class="strip-actions">
+							<PanelButton variant="primary" onclick={() => (view = "grid")}>
+								View {engine.resultCount} results
+							</PanelButton>
+						</div>
+					</div>
+				{/if}
 				<div class="drill-host">
+					{#key drillSeed}
 					<GalleryDrill
 						pool={engine.allSequences}
+						adaptiveValueLayout
+						initialSection={drillSeed.section}
 						getCount={(type, value) => engine.getFilteredCount(type, value)}
-						onApply={(type, value, label, color) => {
-							engine.addFilter(type, value, label, color ?? "#6aa0ff");
-							view = "grid";
+						isValueApplied={(type, value) =>
+							appliedValueKeys.has(`${type}:${String(value)}`)}
+						onApply={(type, value, label, color) =>
+							engine.addFilter(type, value, label, color ?? "#6aa0ff")}
+						onToggleValue={(type, value, label, color, nowActive) => {
+							if (nowActive) {
+								engine.addFilter(type, value, label, color ?? "#6aa0ff");
+							} else {
+								engine.removeFilter(`${type}:${String(value)}`);
+							}
+						}}
+						{activeLoopValues}
+						loopConnective={engine.connectives[
+							String(BrowseFilterType.LOOP_TYPE)
+						] ?? "any"}
+						onLoopConnectiveChange={(connective) =>
+							engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
+						onToggleLoop={(value, label, color, nowActive) => {
+							if (nowActive) {
+								engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, color);
+							} else {
+								const key = loopKeyByValue.get(value);
+								if (key) engine.removeFilter(key);
+							}
+						}}
+						{activeFamilyValues}
+						familyConnective={engine.connectives[
+							String(BrowseFilterType.TND_FAMILY)
+						] ?? "any"}
+						onFamilyConnectiveChange={(connective) =>
+							engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
+						onToggleFamily={(familyId, label, color, nowActive) => {
+							if (nowActive) {
+								engine.addFilter(BrowseFilterType.TND_FAMILY, familyId, label, color);
+							} else {
+								const key = familyKeyByValue.get(familyId);
+								if (key) engine.removeFilter(key);
+							}
 						}}
 						onShowAll={() => (view = "grid")}
 						onSearch={(q) => {
@@ -167,6 +278,7 @@ compensation), so the detail view behind this sheet updates on its own.
 							view = "grid";
 						}}
 					/>
+					{/key}
 				</div>
 			{:else}
 				<!-- Collections lead the grid as chips (yours on My Library,
@@ -213,6 +325,31 @@ compensation), so the detail view behind this sheet updates on its own.
 		height: 100%;
 		min-height: 0;
 		overflow: hidden;
+	}
+
+	/* The workspace rule strip: count, grouped sentence, View results. */
+	.sheet-rule-strip {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem 0.9rem;
+		padding: 0.55rem 16px;
+		flex: 0 0 auto;
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+	}
+
+	.sheet-rule-strip .strip-count {
+		font-size: 0.85rem;
+		font-weight: 700;
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.strip-actions {
+		display: flex;
+		gap: 0.5rem;
+		margin-left: auto;
+		flex: 0 0 auto;
 	}
 
 	.panel-header {
@@ -290,6 +427,11 @@ compensation), so the detail view behind this sheet updates on its own.
 	/* Chips hug their content — the grid below takes the rest (overrides the
 	   flex-fill default above). */
 	.panel-body > :global(.collection-chips-row) {
+		flex: 0 0 auto;
+	}
+
+	/* The rule strip hugs too; the drill below takes the rest. */
+	.panel-body > .sheet-rule-strip {
 		flex: 0 0 auto;
 	}
 

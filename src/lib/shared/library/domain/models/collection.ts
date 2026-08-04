@@ -65,6 +65,14 @@ export interface SmartFilterSpec {
   /** String value of BrowseSortMethod. */
   sortMethod: string;
   sortDirection: "asc" | "desc";
+  /**
+   * Per-category Match any / Match all choices for the connective-bearing
+   * categories (LOOPs, T&D families), keyed by BrowseFilterType string value.
+   * Absent on specs saved before connectives existed — those specs' stacked
+   * LOOP/TnD entries meant "all" when saved, and loading defaults them so
+   * (see resolveSpecConnectives).
+   */
+  connectives?: Record<string, "any" | "all">;
 }
 
 /**

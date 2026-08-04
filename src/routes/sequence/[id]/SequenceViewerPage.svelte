@@ -564,7 +564,7 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
                 <p>{seo.description}</p>
 
                 <nav aria-label="More flow arts tools">
-                  <a href="/composer">Open Flow Arts Composer</a>
+                  <a href="/create">Open Flow Arts Composer</a>
                   <a href="/browse/gallery">Browse public sequences</a>
                 </nav>
               </div>

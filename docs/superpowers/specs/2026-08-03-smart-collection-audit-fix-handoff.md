@@ -1,5 +1,10 @@
 # Smart Collection Audit Fix Pass — Handoff (2026-08-03)
 
+> UPDATED later on 2026-08-03 after Austen's live review: see
+> "Done — verified" (commit `5182907937`, universal stacking) and the NEW
+> loose end #1 (grouped rule sentence + Any/All connective), which now leads
+> the queue.
+
 ## Mission
 
 Finish the Smart Collection composer so no user thinks "huh, weird" at any
@@ -51,6 +56,41 @@ recorded inline in the ledger's `[x]` entries. Highlights with their proof:
 - **A7/A8/A9/A10/D6/D7/D11 etc.** — each verified by probe or screenshot,
   recorded in the ledger entry.
 
+### Second commit — universal stacking (`5182907937`, pushed)
+
+Austen reviewed live at 1440 and directed: the T&D interaction (tap to stack,
+strip updates, catalog stays put, no bounce back to the rule view) is THE
+pattern for every category. Landed and verified:
+
+- New `onToggleValue` seam in GalleryDrill: Level, Length, Starting letter,
+  Start position, Grid mode, Creator all toggle in place.
+- Single-valued categories stack as ALTERNATIVES — OR within the category,
+  AND across categories. `OR_STACKING_TYPES` in
+  `src/lib/shared/browse/services/multi-filter.ts` owns the grouping;
+  the engine gives those types per-value keys (`starting_position:alpha`);
+  facet counts exclude the candidate's own category so sibling values never
+  zero each other. LOOPs/T&D keep requirement (AND) stacking.
+- Nothing closes the picker on apply anymore; exits are Return to rule /
+  Save / Cancel / X. Zero-count options disable instead of unmounting; the
+  builder drops the page gallery's ≥3 length noise floor.
+- Evidence (probes at zoom-corrected 1584×990 = real 1440): Alpha 468 +
+  Beta 456 → strip "924 matches | Alpha | Beta" (exact union); untoggle →
+  468; Alpha AND (Level 1 OR Level 2) → 249 = 86+163. Composition
+  screenshot taken; `svelte-check` 0/0 before commit.
+
+### Third commit — dense length catalog (`0d5cf46069`, pushed)
+
+Austen's live review found the Length editor scrolling at every mobile
+viewport and an awkward two-column wall on desktop. Root cause: dropping the
+≥3 noise floor (second commit) grew the list to ~15–19 values, past every
+count-keyed `:has(nth-child(5/7))` composition. Fixed with a `dense` class
+(>8 values) — compact flex-wrapped chips, pinned per-row counts per tier,
+height-keyed growth at the C1 seams, a 44px-row tier under 520px height, and
+the tall-phone single-column `!important` block scoped to `:not(.dense)`.
+Probes + screenshots at 3840/2560/1920/1440/820×1180/750×832/960×412/
+412×960/375×667: zero drill-screen overflow everywhere; all ten builder
+screens probe 0 overflow at 412×960. svelte-check 0/0.
+
 ## Believed done — unverified
 
 - **B1 counting gate** (`countSettled` in SmartCollectionBuilderSheet):
@@ -70,15 +110,39 @@ recorded inline in the ledger's `[x]` entries. Highlights with their proof:
 
 ## In flight
 
-- Branch `main`, commit `648c96b245` pushed. Working tree still carries many
-  UNRELATED other-session edits (museum, agent-hub, mcp-server, etc.) —
-  preserve them; commit only with explicit pathspecs.
+- Branch `main`; commits `648c96b245` (audit fix pass) and `5182907937`
+  (universal stacking) pushed. Other sessions are actively committing to
+  main between them (museum work) — always fetch and check HEAD. Working
+  tree still carries many UNRELATED other-session edits (museum, agent-hub,
+  mcp-server, etc.) — preserve them; commit only with explicit pathspecs.
 - The workbench route and review localStorage state are unchanged
   (`tka-smart-collection-review-v1`; formal gate still 1/7 approved).
 
 ## Loose ends (ranked)
 
-1. **C4 — grid intentionality at fold/tablet/phone** (ledger C4, all still
+1. **One-gesture-two-meanings fix (PROPOSED to Austen, not yet approved —
+   confirm before building).** Same tap now widens results in six categories
+   (OR) but narrows in LOOPs/T&D (AND). Agreed problem; proposed design:
+   (a) The rule strip and receipt read as a grouped sentence with visible
+       connectives — "Start: Alpha or Beta · Level: 1 or 2 · LOOPs:
+       Mirrored and Swapped" — replacing the flat chip row (also fixes strip
+       crowding now that everything stacks).
+   (b) LOOPs and T&D editors get a two-option SegmentedControl
+       "Match any | Match all", defaulting to **Match any**, so stacking
+       widens by default in all eight categories and AND becomes an explicit
+       labeled opt-in.
+   (c) The connective is stored in SmartFilterSpec; EXISTING saved specs with
+       multiple LOOP/T&D entries must default to "all" on load (that was
+       their meaning when saved) — a small spec-model migration.
+   Austen asked "how do we solve it", received this proposal, and said
+   "handoff" — treat (a) as safe to build, but get his yes on (b)'s default
+   flip and (c)'s migration before changing LOOP semantics.
+2. **Main-gallery OR side effect — smoke test.** The engine key change is
+   app-wide: the MAIN gallery drill now also ORs same-category picks (Alpha
+   then Beta keeps both chips instead of replacing). Probably an improvement;
+   verify the gallery's chip bar, persisted-filter reload, and counts, and
+   tell Austen it changed.
+3. **C4 — grid intentionality at fold/tablet/phone** (ledger C4, all still
    open): Length wraps 2/3/2 at 820; Start position portrait uses half-empty
    list rows while 832×750's 3-up grid is right (F-5); Level/Grid-mode inset
    their band and drag Back inward (F-10); T&D 2-col at 820 breaks Same/Opp
@@ -86,25 +150,25 @@ recorded inline in the ledger's `[x]` entries. Highlights with their proof:
    (F-16); letter final-row centering hardcoded to 46 letters (C-11); 375 vs
    412 flip interaction patterns entirely (C-3). All are CSS-tier work in
    `GalleryDrill.svelte`; verify at 750×832 / 832×750 / 820×1180 / 375 / 412.
-2. **BrowsePanel virtual-grid pass** (ledger C3-remaining): ragged
+4. **BrowsePanel virtual-grid pass** (ledger C3-remaining): ragged
    unequal-height preview rows, desktop few-results dead-end, 5-in-4-col
    orphans, 832×750 card slicing. Shared browse-engine surgery — own pass,
    own verification, watch the main gallery for regressions.
-3. **Phase D remainder**: D1 (white position plate), D2 (Box/Diamond dot
+5. **Phase D remainder**: D1 (white position plate), D2 (Box/Diamond dot
    style+contrast — in GridSvg), D3 (unlabeled density bar), D4 (applied
    state in "Add a filter" chooser subtitles), D8 (Tog/Opp expansion —
    app-wide chip ripple, needs a scoped decision), D12 (preview a11y
    pollution: word-glyph images not aria-hidden, "Saving to cloud" live
    regions), D13 (Step 7 skeleton), D14–D19.
-4. **R rulings for Austen**: R1 variation pill inside "Preview only" (kept),
+6. **R rulings for Austen**: R1 variation pill inside "Preview only" (kept),
    R2 "Looks in Community" fact line (kept), R3 composition swap on first
    selection (kept), R4 Level 1/2/3 only (verify against MCP).
-5. **Handoff loose ends #3/#4 from 2026-08-02** still open: full production
+7. **Handoff loose ends #3/#4 from 2026-08-02** still open: full production
    interaction walk INCLUDING a real save (stopped at the button — no
    Firestore writes were made), and loading/prewarm profiling.
-6. **W items**: workbench settle signal (W1), fixture stages hug content
+8. **W items**: workbench settle signal (W1), fixture stages hug content
    (W2), `start-recent` variant (W3).
-7. **A5** grid-SVG `<style>` leak — routed to the pictograph pipeline owner
+9. **A5** grid-SVG `<style>` leak — routed to the pictograph pipeline owner
    (see ledger note).
 
 ## Decisions already made
@@ -152,3 +216,15 @@ recorded direction):
   category's own filter — don't re-file audit finding C-6's count half.
 - Port 5173 is Austen's HTTPS/2 dev server: never restart it; `https://`
   only.
+- **Stacked filter keys**: OR-stacking categories now key per value
+  (`starting_position:alpha`). `removeFilter("starting_position")` still
+  clears the whole group (prefix matching); exact keys remove one value.
+  Locked constraints key by BARE type and block stacked adds of that type.
+- **`tests/unit/browse/founding-collections.test.ts` fails at import time**
+  (`util.Long.fromNumber is not a function`, protobufjs via the firebase
+  import chain; 0 tests run). Pre-existing environment issue, NOT caused by
+  the filter changes — `smart-filter-spec.test.ts` passes and exercises the
+  spec round-trip.
+- The A2/A3 probes are cheap to re-run: `?frame=1&surface=builder-refine&
+  variant=filter-level` for selected-state, rail-click + activeElement for
+  focus.

@@ -157,6 +157,7 @@ export function uiConfigToGenerationOptions(
     blockedStartPositions: startEndOptions?.blockedStartPositions ?? undefined,
     startPosition: startEndOptions?.startPosition ?? undefined,
     endPosition: startEndOptions?.endPosition ?? undefined,
+    endPositions: startEndOptions?.endPositions ?? undefined,
     mustContainLetters: startEndOptions?.mustContainLetters ?? undefined,
     mustNotContainLetters: startEndOptions?.mustNotContainLetters ?? undefined,
 

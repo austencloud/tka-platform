@@ -18,6 +18,7 @@ import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/fil
 import type { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
 import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
+import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
 
 // ---------------------------------------------------------------------------
 // Sequence Source
@@ -74,6 +75,13 @@ export interface PersistedEngineState {
   sortDirection: "asc" | "desc";
   /** Serialized Map<string, ActiveFilter> entries (non-locked only). */
   activeFilters: Array<[string, ActiveFilter]>;
+  /**
+   * Match any / all choices for connective-bearing categories, keyed by
+   * BrowseFilterType string value. Absent in state persisted before
+   * connectives existed — restored sessions with ≥2 stacked entries of a
+   * type keep their old "all" meaning (see buildInitialConnectives).
+   */
+  connectives?: Record<string, FilterConnective>;
   columns: number;
   viewMode?: BrowseViewMode;
 }
@@ -200,6 +208,10 @@ export interface BrowseEngine {
   readonly userFilterCount: number;
   /** True if any user-set (non-locked) filters are active. */
   readonly hasActiveFilters: boolean;
+  /** Match any / all choices for connective-bearing categories (LOOPs, T&D),
+   * keyed by BrowseFilterType string value. Default "any" — stacking widens
+   * unless the user opts into "all". */
+  readonly connectives: Readonly<Record<string, FilterConnective>>;
 
   // --- Layout (flat getters) ---
 
@@ -272,6 +284,10 @@ export interface BrowseEngine {
 
   /** Clear all user-set filters. Locked filters remain. */
   clearUserFilters(): void;
+
+  /** Set the Match any / all connective for a connective-bearing category
+   * (LOOP_TYPE, TND_FAMILY). No-op for other types. */
+  setConnective(type: BrowseFilterType, connective: FilterConnective): void;
 
   /**
    * Contextual count: how many sequences would match if a candidate

@@ -235,12 +235,12 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // The First Fire's three fire-pit stations across the fissure, west → east.
   "cave-fire": {
     performers: {
-      "cave-fire-automaton": {
-        autoPlay: true,
-        sequenceId: "cave-fire-seq",
-      },
+      "cave-fire-automaton-dj": { autoPlay: true, sequenceId: "cave-fire-seq-dj" },
+      "cave-fire-automaton-ek": { autoPlay: true, sequenceId: "cave-fire-seq-ek" },
+      "cave-fire-automaton-fl": { autoPlay: true, sequenceId: "cave-fire-seq-fl" },
     },
   },
 

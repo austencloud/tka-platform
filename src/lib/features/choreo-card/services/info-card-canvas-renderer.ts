@@ -14,13 +14,22 @@ import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
 // Scale factor: info cards were designed at 500x700. Content area is 750x1050.
 const REF_SCALE = 1.5;
 
-// Cache rendered canvases (static content, no reason to re-render)
+// Cache rendered canvases. The back is fully static. The FRONT carries the deck
+// number, so its cache key must include it — keying on theme alone hands deck 8
+// the card that says "Deck 007".
 let cachedFront: HTMLCanvasElement | null = null;
+let cachedFrontKey: string | null = null;
 let cachedBack: HTMLCanvasElement | null = null;
-let cachedTheme: string | null = null;
+let cachedBackTheme: string | null = null;
+
+/** "Deck 007" — zero-padded to three digits, matching the manifest id. */
+function formatDeckLabel(deckNumber: number): string {
+  return `Deck ${String(deckNumber).padStart(3, "0")}`;
+}
 
 export async function renderInfoCardFront(options: InfoCardCanvasOptions): Promise<HTMLCanvasElement> {
-  if (cachedFront && cachedTheme === options.theme) return cachedFront;
+  const frontKey = `${options.theme}|${options.deckNumber ?? ""}|${options.width}x${options.height}`;
+  if (cachedFront && cachedFrontKey === frontKey) return cachedFront;
 
   const canvas = document.createElement("canvas");
   canvas.width = options.width;
@@ -51,7 +60,14 @@ export async function renderInfoCardFront(options: InfoCardCanvasOptions): Promi
   const padX = 30 * REF_SCALE;
   const padY = 28 * REF_SCALE;
   const cX = innerX + padX;
-  let curY = innerY + padY;
+  const qrY = innerY + innerH - padY - 30 * REF_SCALE;
+
+  // The body is laid out twice: once against a throwaway context to measure its
+  // natural height, then for real, vertically centred in the space above the QR
+  // hint. Step text wraps, so the height is not known until it is laid out —
+  // and drawing it top-aligned leaves the bottom third of the card empty.
+  const drawBody = (ctx: CanvasRenderingContext2D, startY: number): number => {
+  let curY = startY;
 
   // Title: "How to Read"
   ctx.fillStyle = "#ffffff";
@@ -68,14 +84,19 @@ export async function renderInfoCardFront(options: InfoCardCanvasOptions): Promi
   ctx.fillText("a Choreo Card", innerX + innerW / 2, curY);
   curY += 17 * REF_SCALE + 16 * REF_SCALE; // text + spacer-md
 
-  // Steps
+  // Steps. Rich runs rather than plain strings so step 2 can draw the actual
+  // blue/red prop dots inline and step 4 can italicize "Start" — both of which
+  // the card is teaching the reader to recognize by sight.
   ctx.textAlign = "left";
-  const steps = [
-    "Each cell is one step. Read left to right, top to bottom. The grid is your choreography.",
-    "Blue and red are your two props. Arrows show the path each one travels through the step.",
-    "The letter below each step is its name in The Kinetic Alphabet. If two steps share a letter, they share a movement.",
-    "The first cell marked Start shows where to hold your props before step 1.",
-    "The sequence loops. After the last step, you're back at step 1. Keep going.",
+  const steps: InlineRun[][] = [
+    [t("Each cell is one step. Read left to right, top to bottom. The grid is your choreography.")],
+    [
+      swatch("blue"), t("and"), swatch("red"),
+      t("are your two props. Arrows show the path each one travels through the step."),
+    ],
+    [t("The letter below each step is its name in The Kinetic Alphabet. If two steps share a letter, they share a movement.")],
+    [t("The first cell marked"), t("Start", { italic: true }), t("shows where to hold your props before step 1.")],
+    [t("The sequence loops. After the last step, you're back at step 1. Keep going.")],
   ];
 
   const stepNumSize = 24 * REF_SCALE;
@@ -101,17 +122,11 @@ export async function renderInfoCardFront(options: InfoCardCanvasOptions): Promi
     ctx.textBaseline = "middle";
     ctx.fillText(String(i + 1), circleX, circleY);
 
-    // Step text (word-wrapped)
-    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-    ctx.font = `400 ${stepFontSize}px "Segoe UI", system-ui, sans-serif`;
+    // Step text (rich, word-wrapped)
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     const lineHeight = stepFontSize * 1.45;
-    const lines = wrapText(ctx, steps[i]!, textMaxW);
-    for (const line of lines) {
-      ctx.fillText(line, textX, curY);
-      curY += lineHeight;
-    }
+    curY = drawWrappedRuns(ctx, steps[i]!, textX, curY, textMaxW, stepFontSize, lineHeight);
     curY += stepGap;
   }
 
@@ -161,26 +176,41 @@ export async function renderInfoCardFront(options: InfoCardCanvasOptions): Promi
 
   curY += Math.ceil(pronItems.length / colCount) * pronRowH;
 
+  return curY;
+  };
+
+  const bodyTop = innerY + padY;
+  const bodyLimit = qrY - 16 * REF_SCALE;
+  const probeCanvas = document.createElement("canvas");
+  probeCanvas.width = 1;
+  probeCanvas.height = 1;
+  const naturalH = drawBody(probeCanvas.getContext("2d")!, bodyTop) - bodyTop;
+  const slack = Math.max(0, bodyLimit - bodyTop - naturalH);
+  drawBody(ctx, bodyTop + slack / 2);
+
   // QR hint (near bottom)
-  const qrY = innerY + innerH - padY - 30 * REF_SCALE;
   ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
   ctx.font = `400 ${12 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.fillText("Scan a card's QR code to see it animated in the app", innerX + innerW / 2, qrY);
 
-  // Footer
+  // Footer. The deck number is the card's only deck-specific mark — it makes a
+  // loose card traceable to its release without committing to a printed URL.
   const barterY = innerY + innerH - padY - 8 * REF_SCALE;
   ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
   ctx.font = `400 ${11 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
-  ctx.fillText("tkaflowarts.com", innerX + innerW / 2, barterY);
+  const footerText = options.deckNumber
+    ? `${formatDeckLabel(options.deckNumber)}  ·  tkaflowarts.com`
+    : "tkaflowarts.com";
+  ctx.fillText(footerText, innerX + innerW / 2, barterY);
 
   cachedFront = canvas;
-  cachedTheme = options.theme;
+  cachedFrontKey = frontKey;
   return canvas;
 }
 
 export async function renderInfoCardBack(options: InfoCardCanvasOptions): Promise<HTMLCanvasElement> {
-  if (cachedBack && cachedTheme === options.theme) return cachedBack;
+  if (cachedBack && cachedBackTheme === options.theme) return cachedBack;
 
   const canvas = document.createElement("canvas");
   canvas.width = options.width;
@@ -211,7 +241,11 @@ export async function renderInfoCardBack(options: InfoCardCanvasOptions): Promis
   const padX = 28 * REF_SCALE;
   const padY = 28 * REF_SCALE;
   const cX = innerX + padX;
-  let curY = innerY + padY;
+
+  // Measured then centred, same as the front — the LOOPs and Chaining copy
+  // wraps, so the body's height is only known once laid out.
+  const drawBody = (ctx: CanvasRenderingContext2D, startY: number): number => {
+  let curY = startY;
 
   // Title: "Your Catalog"
   curY += 8 * REF_SCALE;
@@ -465,6 +499,18 @@ export async function renderInfoCardBack(options: InfoCardCanvasOptions): Promis
   ctx.textBaseline = "middle";
   ctx.fillText("...", chainX + chainGap, curY + chainBadgeR);
 
+  return curY + chainBadgeR * 2;
+  };
+
+  const bodyTop = innerY + padY;
+  const bodyLimit = innerY + innerH - padY - 20 * REF_SCALE;
+  const probeCanvas = document.createElement("canvas");
+  probeCanvas.width = 1;
+  probeCanvas.height = 1;
+  const naturalH = drawBody(probeCanvas.getContext("2d")!, bodyTop) - bodyTop;
+  const slack = Math.max(0, bodyLimit - bodyTop - naturalH);
+  drawBody(ctx, bodyTop + slack / 2);
+
   // Footer
   const barterY = innerY + innerH - padY;
   ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
@@ -474,8 +520,107 @@ export async function renderInfoCardBack(options: InfoCardCanvasOptions): Promis
   ctx.fillText("Choreo Card · The Kinetic Alphabet", innerX + innerW / 2, barterY);
 
   cachedBack = canvas;
-  cachedTheme = options.theme;
+  cachedBackTheme = options.theme;
   return canvas;
+}
+
+// ── Inline rich text ──
+//
+// Step text mixes plain words, italic emphasis, and prop-color dots on one
+// wrapped line. Canvas has no inline layout, so runs are split into atoms
+// (one word or one dot), measured, and greedily wrapped.
+
+type InlineRun =
+  | { kind: "text"; value: string; italic?: boolean }
+  | { kind: "swatch"; color: "blue" | "red" };
+
+const SWATCH_COLORS = { blue: "#3b82f6", red: "#ef4444" } as const;
+
+function t(value: string, opts: { italic?: boolean } = {}): InlineRun {
+  return { kind: "text", value, italic: opts.italic };
+}
+
+function swatch(color: "blue" | "red"): InlineRun {
+  return { kind: "swatch", color };
+}
+
+type Atom =
+  | { kind: "word"; value: string; italic: boolean; width: number }
+  | { kind: "swatch"; color: "blue" | "red"; width: number };
+
+function stepFont(size: number, italic: boolean): string {
+  return `${italic ? "italic " : ""}400 ${size}px "Segoe UI", system-ui, sans-serif`;
+}
+
+/** Draw wrapped inline runs from (x, y). Returns the y below the last line. */
+function drawWrappedRuns(
+  ctx: CanvasRenderingContext2D,
+  runs: InlineRun[],
+  x: number,
+  y: number,
+  maxWidth: number,
+  fontSize: number,
+  lineHeight: number,
+): number {
+  const spaceW = (() => {
+    ctx.font = stepFont(fontSize, false);
+    return ctx.measureText(" ").width;
+  })();
+  const swatchD = fontSize * 0.72;
+
+  const atoms: Atom[] = [];
+  for (const run of runs) {
+    if (run.kind === "swatch") {
+      atoms.push({ kind: "swatch", color: run.color, width: swatchD });
+      continue;
+    }
+    const italic = run.italic ?? false;
+    ctx.font = stepFont(fontSize, italic);
+    for (const word of run.value.split(" ")) {
+      if (!word) continue;
+      atoms.push({ kind: "word", value: word, italic, width: ctx.measureText(word).width });
+    }
+  }
+
+  // Greedy wrap into lines, then paint each line atom by atom.
+  const lines: Atom[][] = [[]];
+  let lineWidth = 0;
+  for (const atom of atoms) {
+    const current = lines[lines.length - 1]!;
+    const advance = current.length === 0 ? atom.width : spaceW + atom.width;
+    if (current.length > 0 && lineWidth + advance > maxWidth) {
+      lines.push([atom]);
+      lineWidth = atom.width;
+    } else {
+      current.push(atom);
+      lineWidth += advance;
+    }
+  }
+
+  let curY = y;
+  for (const line of lines) {
+    let curX = x;
+    for (let i = 0; i < line.length; i++) {
+      const atom = line[i]!;
+      if (i > 0) curX += spaceW;
+      if (atom.kind === "swatch") {
+        ctx.fillStyle = SWATCH_COLORS[atom.color];
+        ctx.beginPath();
+        ctx.arc(curX + atom.width / 2, curY + fontSize * 0.55, atom.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = atom.italic
+          ? "rgba(255, 255, 255, 0.8)"
+          : "rgba(255, 255, 255, 0.6)";
+        ctx.font = stepFont(fontSize, atom.italic);
+        ctx.fillText(atom.value, curX, curY);
+      }
+      curX += atom.width;
+    }
+    curY += lineHeight;
+  }
+
+  return curY;
 }
 
 // ── Shared helpers ──

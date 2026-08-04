@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rename All Sessions"
+  short_description: "Name every unnamed Agent Hub session"
+  default_prompt: "Use $renameall to name every unnamed live Agent Hub session from its conversation."

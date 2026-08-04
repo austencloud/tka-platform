@@ -44,6 +44,9 @@ import {
 import {
   applyFilters as applyMultiFilters,
   getFilteredCount as getMultiFilteredCount,
+  OR_STACKING_TYPES,
+  CONNECTIVE_STACKING_TYPES,
+  type FilterConnective,
 } from "$lib/shared/browse/services/multi-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/browse-section-manager";
@@ -176,6 +179,32 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   let activeFilters = $state<Map<string, ActiveFilter>>(buildInitialFilters());
 
+  // Match any / all per connective-bearing category. Stored choices win; a
+  // restored session with ≥2 stacked entries of a type and no stored choice
+  // predates connectives, where stacking meant "all" — keep its meaning.
+  // Otherwise default "any": stacking widens unless the user opts into "all".
+  function buildInitialConnectives(): Record<string, FilterConnective> {
+    const initial: Record<string, FilterConnective> = {};
+    for (const type of CONNECTIVE_STACKING_TYPES) {
+      const key = String(type);
+      const stored = persisted?.connectives?.[key];
+      if (stored === "any" || stored === "all") {
+        initial[key] = stored;
+        continue;
+      }
+      let entries = 0;
+      for (const [, f] of persisted?.activeFilters ?? []) {
+        if (String(f.type) === key) entries++;
+      }
+      initial[key] = entries >= 2 ? "all" : "any";
+    }
+    return initial;
+  }
+
+  let connectives = $state<Record<string, FilterConnective>>(
+    buildInitialConnectives()
+  );
+
   // View mode (compositional browsing)
   let _viewMode = $state<BrowseViewMode>(
     persisted?.viewMode ?? { ...DEFAULT_BROWSE_VIEW_MODE }
@@ -224,7 +253,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     if (activeFilters.size > 0) {
       // applyFilters is generic over `T extends ActiveFilter`, so the engine's
       // richer ActiveFilter (with `locked`) passes structurally — no cast needed.
-      result = applyMultiFilters(result, activeFilters);
+      result = applyMultiFilters(result, activeFilters, connectives);
     }
 
     // Apply search
@@ -392,6 +421,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     const _sortMethod = sortMethod;
     const _sortDirection = sortDirection;
     const _filters = activeFilters;
+    const _connectives = connectives;
     const _columns = columns;
     const viewMode = _viewMode;
 
@@ -410,6 +440,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       sortMethod: _sortMethod,
       sortDirection: _sortDirection,
       activeFilters: userFilters,
+      connectives: _connectives,
       columns: _columns,
       viewMode,
     });
@@ -668,6 +699,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     get hasActiveFilters() {
       return hasActiveFilters;
     },
+    get connectives() {
+      return connectives;
+    },
 
     // Layout (flat getters). `columns` is the DESIRED density; the render count
     // is it clamped to the current width — desired is never mutated by width.
@@ -784,18 +818,21 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       label: string,
       chipColor: string
     ): void {
-      // Loop-component and TnD-family filters STACK (a sequence can be
-      // mirrored AND swapped; can touch several families), so each value
-      // gets its own key. Every other type stays one-per-type: re-adding
+      // Stacking filters get one key PER VALUE: loop components and TnD
+      // families stack as requirements (mirrored AND swapped), single-valued
+      // categories stack as alternatives (alpha OR beta — multi-filter owns
+      // that grouping). Everything else stays one-per-type: re-adding
       // replaces.
-      const key =
+      const stacks =
         type === BrowseFilterType.LOOP_TYPE ||
-        type === BrowseFilterType.TND_FAMILY
-          ? `${type}:${String(value)}`
-          : String(type);
-      // Don't overwrite locked constraints
+        type === BrowseFilterType.TND_FAMILY ||
+        OR_STACKING_TYPES.has(type);
+      const key = stacks ? `${type}:${String(value)}` : String(type);
+      // Don't overwrite locked constraints. Locked constraints key by bare
+      // type, so stacked adds must also respect a locked same-type entry.
       const existing = activeFilters.get(key);
       if (existing?.locked) return;
+      if (stacks && activeFilters.get(String(type))?.locked) return;
 
       const newMap = new Map(activeFilters);
       newMap.set(key, {
@@ -823,6 +860,13 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       const newMap = new Map(activeFilters);
       for (const k of targets) newMap.delete(k);
       activeFilters = newMap;
+    },
+
+    setConnective(type: BrowseFilterType, connective: FilterConnective): void {
+      if (!CONNECTIVE_STACKING_TYPES.has(type)) return;
+      const key = String(type);
+      if (connectives[key] === connective) return;
+      connectives = { ...connectives, [key]: connective };
     },
 
     clearUserFilters(): void {
@@ -854,7 +898,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         base,
         candidateType,
         candidateValue,
-        activeFilters
+        activeFilters,
+        connectives
       );
     },
 

@@ -3,8 +3,20 @@
 All 155 specs in `docs/superpowers/specs/{active,backlog}` audited by reading each
 spec and verifying its named deliverables against the working tree.
 
-**Nothing in this ledger has been applied.** No spec was moved, archived, or
-re-scored as a result of it. It is a decision input.
+**APPLIED 2026-08-02.** All 55 SHIP and 18 ARCHIVE verdicts are now on disk (20
+had been applied in a later 07-25 pass; the remaining 53 were moved 08-02).
+`active` + `backlog` went 123 → 63. Seven spent audit logs from the REFERENCE
+section were filed to `specs/audits/`, resolving judgment call 11; the five
+REFERENCE docs holding real open work stayed in the queue (hardening
+reconciliation, q-scan instrumentation, reversal-derivation Option B, mandala
+roadmap, presence register).
+
+A few of the 20 earlier moves landed in the opposite bucket from their verdict
+(SHIP→`archived/`, ARCHIVE→`shipped/`). Both are out of the queue, so this was
+left alone rather than relitigated.
+
+**Still unapplied: the 37 BANNER verdicts.** Those are the rebuild hazards — do
+them next. The original text below is unchanged.
 
 ## Method + confidence
 
@@ -160,7 +172,7 @@ the session (marked ✓).
 | active/2026-06-16-effect-leg-bolstering-design.md | 3 of 4 legs survive; Echo's rework was **deleted** and replaced by Ghost | 2/S |
 | active/2026-06-16-modular-kit-museum-design.md | Kit instancing live for institutional wall-section only; corners/doorways never authored | 3/M |
 | active/2026-06-16-user-onboarding-overhaul-umbrella.md | Slices A, B shipped; D shipped copy-only; **Slice C unbuilt** — the only live gap | 3/M |
-| active/2026-06-20-real-flow-notation-aruco-design.md | LED pipeline genuinely built; doc retains the **dead ArUco design inline** as a hazard. Real-clip validation tracked elsewhere | 4/S |
+| shipped/2026-06-20-real-flow-notation-aruco-design.md | Resolved 2026-08-03: LED record shipped, ArUco plan archived, and real-clip validation remains tracked elsewhere | 4/S |
 | active/2026-06-21-personal-museum-design.md | Entire data/service/state/component layer **and both hard rendering seams** built and tested — but **no `/my-museum` route**, so unreachable | 3/S |
 | active/2026-06-23-shop-spin-up-design.md ✓ | Everything functional shipped; A1's literal folder rename (`features/store` → `features/shop`) never done | 5/XS |
 | active/2026-06-26-shop-operations-go-live-design.md ✓ | Tax, shipping, preorder swap, product art, fulfillment all live; general `/shop` catalog still admin-gated (per-product pages are public) | 5/S |
@@ -169,7 +181,7 @@ the session (marked ✓).
 | active/2026-07-01-gallery-front-door-phase1-design.md ✓ | **Zero named files exist.** Netflix-shelf architecture superseded outright by drill v7. Candidate for ARCHIVE, not banner | — |
 | active/2026-07-03-fable-mandala-signature-identity-design.md | 1 of 5 tasks shipped (art presets); other 4 deliberately parked by Austen | 2/M |
 | active/2026-07-05-qr-account-funnel-design.md | Download gating shipped; the always-present sign-in chip never built — `ctx.openSignInPrompt` is dead code with zero consumers | 4/S |
-| active/2026-07-14-image-seo-google-images-design.md | **See handoff — live production defect.** Route + sitemap + OG shipped; only 5 of 47 letter images baked, script not in `build` | 4/S |
+| active/2026-07-14-image-seo-google-images-design.md | **Retired 2026-08-02.** The duplicate public letter index, image bake, sitemap entries, and active spec were removed; the in-app Guide Codex remains. | removed |
 | active/2026-07-22-first-session-activation-design.md | Says "awaiting re-review"; SP1/SP2/SP3 substantially built and tested. Remaining: retro-login anonymous guard; 3 SP3 ledger items unverified | 5/M |
 | backlog/2026-04-01-museum-interior-design-system.md | 3 of 4 systems shipped verbatim; TV display system (Section 2) does not exist | 3/M |
 | backlog/2026-04-05-unified-view-toggle-and-perf-harness.md | Q-cycle shipped exactly; perf harness never built | 2/S |

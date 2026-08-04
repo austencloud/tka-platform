@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  calculateTimelinePadding,
   calculateTimelineUnitSize,
   clampTimelineUnitSizeToHeight,
 } from "../../src/lib/shared/create/utils/grid-calculations";
@@ -37,5 +38,31 @@ describe("clampTimelineUnitSizeToHeight", () => {
     expect(widthBased).toBeGreaterThan(293);
     const clamped = clampTimelineUnitSizeToHeight(widthBased, 293, 1);
     expect(clamped).toBeLessThanOrEqual(293 - 32 - 8);
+  });
+});
+
+describe("calculateTimelineUnitSize width fit", () => {
+  const rowWidth = (unit: number, units: number, containerWidth: number) =>
+    unit * units + (units - 1) * 1 + calculateTimelinePadding(containerWidth);
+
+  it("keeps the 48px touch floor while the row still fits", () => {
+    // 600px container, 11 units: 48 fits with room to spare.
+    const unit = calculateTimelineUnitSize(600, 11);
+    expect(unit).toBeGreaterThanOrEqual(48);
+    expect(rowWidth(unit, 11, 600)).toBeLessThanOrEqual(600);
+  });
+
+  it("shrinks below the touch floor rather than overflowing the wrapper", () => {
+    // The reported bug: a 40-step LOOP aligned 10-per-row (11 units with the
+    // start column) in a 440px workspace. The old 48px floor produced a 573px
+    // row that .scroll-wrapper's overflow-x: hidden cut off on the right —
+    // five columns simply gone, with no horizontal scroll to reach them.
+    const unit = calculateTimelineUnitSize(440, 11);
+    expect(unit).toBeLessThan(48);
+    expect(rowWidth(unit, 11, 440)).toBeLessThanOrEqual(440);
+  });
+
+  it("never returns a zero or negative unit on a tiny container", () => {
+    expect(calculateTimelineUnitSize(60, 21)).toBeGreaterThan(0);
   });
 });

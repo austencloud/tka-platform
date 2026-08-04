@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Session Triage — sample report</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --panel-2: #fbfbfd;
+    --ink: #14161a;
+    --ink-2: #565d68;
+    --ink-3: #8a93a0;
+    --line: #e3e6ea;
+    --accent: #3b6ef5;
+    --hot: #d8443c;
+    --warm: #d98a1f;
+    --cool: #2f9e6e;
+    --chip: #eef1f6;
+    --shadow: 0 1px 2px rgba(20,22,26,.05), 0 8px 24px rgba(20,22,26,.06);
+    --r: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0f13;
+      --panel: #15181e;
+      --panel-2: #1a1e25;
+      --ink: #eef1f5;
+      --ink-2: #a3acba;
+      --ink-3: #6d7787;
+      --line: #262b34;
+      --accent: #6b93ff;
+      --hot: #ff6b60;
+      --warm: #f0a93c;
+      --cool: #4fc794;
+      --chip: #222731;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  /* Lockstep root ramp: 16px → 24px continuously from 1680 → 3840.
+     Every rem measure grows by the same multiplier, so nothing outgrows
+     its neighbours. Below 1680 this clamps to the 16px base design. */
+  html {
+    font-size: clamp(16px, calc(16px + 8 * (100vw - 1680px) / 2160), 24px);
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 1rem/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One content band: floor 1720, fluid 88vw, ceiling 2600 — never a hard cap
+     with dead rail above it. 92vw keeps it sane below the floor. */
+  .shell {
+    width: min(92vw, 2600px, max(1720px, 88vw));
+    margin: 0 auto;
+    padding: 2.5rem 0 5rem;
+  }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; justify-content: space-between; margin-bottom: .5rem; }
+  h1 { font-size: 1.9rem; letter-spacing: -.02em; margin: 0 0 .35rem; font-weight: 650; }
+  .sub { color: var(--ink-2); font-size: .95rem; margin: 0; }
+  .sub b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .sample-flag {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: color-mix(in srgb, var(--warm) 14%, transparent);
+    color: var(--warm);
+    border: 1px solid color-mix(in srgb, var(--warm) 35%, transparent);
+    padding: .4rem .75rem; border-radius: 999px;
+    font-size: .8rem; font-weight: 600; letter-spacing: .01em;
+  }
+
+  /* ---------- stat strip ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.75rem 0 2.5rem; }
+  /* Stays 2-up all the way down — four stacked cards would eat a whole phone
+     screen before the first issue. */
+  @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); gap: .75rem; } }
+  @media (max-width: 900px) { .stat { padding: .9rem 1rem; } .stat .n { font-size: 1.75rem; } }
+  .stat {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 1.1rem 1.25rem; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 2.1rem; font-weight: 650; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .l { color: var(--ink-3); font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; margin-top: .3rem; font-weight: 600; }
+  .stat.hot .n { color: var(--hot); }
+  .stat.cool .n { color: var(--cool); }
+
+  /* ---------- section heads ---------- */
+  .sec { display: flex; align-items: baseline; gap: .75rem; margin: 2.5rem 0 1rem; }
+  .sec h2 { font-size: 1.05rem; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .sec .hint { color: var(--ink-3); font-size: .85rem; }
+  .rule { flex: 1; height: 1px; background: var(--line); }
+
+  /* ---------- issue card ---------- */
+  .issue {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    box-shadow: var(--shadow); margin-bottom: 1.1rem; overflow: hidden;
+  }
+  .issue.is-top { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); }
+
+  .ihead { display: grid; grid-template-columns: 4.5rem 1fr auto; gap: 1.25rem; align-items: center; padding: 1.25rem 1.4rem; }
+  @media (max-width: 760px) { .ihead { grid-template-columns: 1fr; gap: .9rem; } }
+
+  .impact { text-align: center; }
+  .impact .n { font-size: 2.4rem; font-weight: 680; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--hot); }
+  .impact.mid .n { color: var(--warm); }
+  .impact.low .n { color: var(--ink-3); }
+  .impact .l { font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); font-weight: 700; margin-top: .15rem; }
+
+  .ititle { min-width: 0; }
+  .ititle h3 { margin: 0 0 .4rem; font-size: 1.12rem; font-weight: 620; letter-spacing: -.01em; }
+  .meta { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .78rem; font-weight: 600; padding: .22rem .6rem; border-radius: 999px;
+    background: var(--chip); color: var(--ink-2); border: 1px solid transparent; white-space: nowrap;
+  }
+  .pill.code { font-family: ui-monospace, "Cascadia Code", monospace; font-size: .74rem; }
+  .pill.fb { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+  .pill.new { background: color-mix(in srgb, var(--hot) 15%, transparent); color: var(--hot); border-color: color-mix(in srgb, var(--hot) 32%, transparent); }
+  .pill.up { background: color-mix(in srgb, var(--warm) 15%, transparent); color: var(--warm); border-color: color-mix(in srgb, var(--warm) 32%, transparent); }
+  .pill.done { background: color-mix(in srgb, var(--cool) 15%, transparent); color: var(--cool); border-color: color-mix(in srgb, var(--cool) 32%, transparent); }
+
+  /* sighting timeline */
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 2.6rem; }
+  .spark i {
+    display: block; width: .5rem; border-radius: 2px 2px 0 0;
+    background: color-mix(in srgb, var(--hot) 70%, transparent);
+  }
+  .spark i.z { background: var(--line); }
+  .spark-wrap { text-align: right; }
+  .spark-l { font-size: .68rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; font-weight: 700; margin-top: .35rem; }
+
+  /* who */
+  .who { display: flex; flex-wrap: wrap; gap: .4rem; padding: 0 1.4rem 1.15rem; }
+  .face {
+    display: inline-flex; align-items: center; gap: .45rem;
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: .3rem .65rem .3rem .35rem; border-radius: 999px; font-size: .84rem; font-weight: 550;
+  }
+  .face .av {
+    width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center;
+    font-size: .68rem; font-weight: 700; color: #fff; letter-spacing: .01em;
+  }
+  .face.guest .av { background: var(--ink-3); }
+  .face.known .av { background: var(--accent); }
+  .face .tag { font-size: .68rem; color: var(--ink-3); font-weight: 600; }
+
+  /* evidence */
+  /* The evidence table is the one thing too wide for a phone. It scrolls
+     inside itself so the page body never scrolls horizontally. */
+  details.ev { border-top: 1px solid var(--line); background: var(--panel-2); overflow-x: auto; }
+  details.ev summary { position: sticky; left: 0; }
+  details.ev table { min-width: 32rem; }
+  details.ev summary {
+    cursor: pointer; list-style: none; padding: .8rem 1.4rem;
+    font-size: .85rem; font-weight: 600; color: var(--ink-2);
+    display: flex; align-items: center; gap: .5rem;
+  }
+  details.ev summary::-webkit-details-marker { display: none; }
+  details.ev summary::before { content: "▸"; color: var(--ink-3); transition: transform .15s; }
+  details.ev[open] summary::before { transform: rotate(90deg); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  thead th {
+    text-align: left; font-size: .68rem; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--ink-3); font-weight: 700; padding: .5rem 1.4rem; border-top: 1px solid var(--line);
+  }
+  tbody td { padding: .62rem 1.4rem; border-top: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  td.when { color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.sid { font-family: ui-monospace, monospace; font-size: .78rem; color: var(--ink-3); }
+  td.sig { color: var(--ink); }
+  .sigdot { display: inline-block; width: .45rem; height: .45rem; border-radius: 50%; margin-right: .5rem; background: var(--hot); }
+
+  .replay {
+    display: inline-flex; align-items: center; gap: .35rem;
+    background: var(--panel); border: 1px solid var(--line); color: var(--ink);
+    padding: .32rem .7rem; border-radius: 8px; font-size: .78rem; font-weight: 600;
+    text-decoration: none; min-height: 2rem; white-space: nowrap;
+  }
+  .replay:hover { border-color: var(--accent); color: var(--accent); }
+
+  .resolved .ihead { opacity: .72; }
+  .foot { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line); color: var(--ink-3); font-size: .85rem; }
+  code { font-family: ui-monospace, monospace; font-size: .85em; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1>User Session Triage</h1>
+      <p class="sub">
+        <b>287</b> sessions · <b>31</b> users · window <b>Aug 4 → Aug 15</b> ·
+        <b>20</b> already reviewed, skipped
+      </p>
+    </div>
+    <span class="sample-flag">● Sample data — nothing here was queried</span>
+  </header>
+
+  <section class="stats">
+    <div class="stat hot"><div class="n">1</div><div class="l">Escalating</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">Open issues</div></div>
+    <div class="stat cool"><div class="n">1</div><div class="l">Resolved on silence</div></div>
+    <div class="stat"><div class="n">6</div><div class="l">Users affected</div></div>
+  </section>
+
+  <div class="sec">
+    <h2>Needs a decision</h2>
+    <span class="hint">ranked by distinct users affected</span>
+    <div class="rule"></div>
+  </div>
+
+  <!-- ISS-002 -->
+  <article class="issue is-top">
+    <div class="ihead">
+      <div class="impact">
+        <div class="n">6</div>
+        <div class="l">users</div>
+      </div>
+      <div class="ititle">
+        <h3>Sign-in click does nothing, silently</h3>
+        <div class="meta">
+          <span class="pill up">↑ was 1 user, now 6</span>
+          <span class="pill fb">FB-248 · new</span>
+          <span class="pill code">AccountPopover.svelte:114</span>
+          <span class="pill">7 sessions</span>
+          <span class="pill">first Jul 29</span>
+        </div>
+      </div>
+      <div class="spark-wrap">
+        <div class="spark">
+          <i style="height:18%"></i><i class="z" style="height:6%"></i><i style="height:32%"></i>
+          <i style="height:45%"></i><i class="z" style="height:6%"></i><i style="height:70%"></i>
+          <i style="height:88%"></i><i style="height:100%"></i>
+        </div>
+        <div class="spark-l">sightings / day</div>
+      </div>
+    </div>
+
+    <div class="who">
+      <span class="face guest"><span class="av">NI</span>nina<span class="tag">guest</span></span>
+      <span class="face guest"><span class="av">02</span>guest-02bd<span class="tag">guest</span></span>
+      <span class="face guest"><span class="av">1D</span>guest-1d70<span class="tag">guest</span></span>
+      <span class="face guest"><span class="av">BB</span>guest-bb41<span class="tag">guest</span></span>
+      <span class="face guest"><span class="av">E5</span>guest-e5aa<span class="tag">guest</span></span>
+      <span class="face known"><span class="av">JT</span>j.tran</span>
+    </div>
+
+    <details class="ev" open>
+      <summary>7 sessions of evidence</summary>
+      <table>
+        <thead><tr><th>When</th><th>Who</th><th>Session</th><th>What happened</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="when">Aug 14</td><td>j.tran</td><td class="sid">s_9902</td>
+              <td class="sig"><span class="sigdot"></span>4 rage clicks · left in 1m02s</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Aug 11</td><td>guest-1d70</td><td class="sid">s_1d70</td>
+              <td class="sig"><span class="sigdot"></span>5 rage clicks · bounced in 8s</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Aug 09</td><td>guest-bb41</td><td class="sid">s_bb41</td>
+              <td class="sig"><span class="sigdot"></span>3 rage clicks · bounced in 14s</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Aug 07</td><td>guest-e5aa</td><td class="sid">s_e5aa</td>
+              <td class="sig"><span class="sigdot"></span>3 rage clicks · bounced in 19s</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Aug 02</td><td>guest-02bd</td><td class="sid">s_02bd</td>
+              <td class="sig"><span class="sigdot"></span>4 rage clicks · bounced in 11s</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Jul 29</td><td>nina</td><td class="sid">s_9a1c</td>
+              <td class="sig"><span class="sigdot"></span>caught exception, nothing rendered</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+        </tbody>
+      </table>
+    </details>
+  </article>
+
+  <!-- ISS-003 -->
+  <article class="issue">
+    <div class="ihead">
+      <div class="impact mid"><div class="n">2</div><div class="l">users</div></div>
+      <div class="ititle">
+        <h3>Collections come back empty after sign-in</h3>
+        <div class="meta">
+          <span class="pill up">↑ was 1 user, now 2</span>
+          <span class="pill fb">FB-249 · in progress</span>
+          <span class="pill code">collection-manager.ts:644</span>
+          <span class="pill">3 sessions</span>
+          <span class="pill">first Jul 24</span>
+        </div>
+      </div>
+      <div class="spark-wrap">
+        <div class="spark">
+          <i style="height:40%"></i><i class="z" style="height:6%"></i><i class="z" style="height:6%"></i>
+          <i style="height:40%"></i><i class="z" style="height:6%"></i><i class="z" style="height:6%"></i>
+          <i style="height:55%"></i><i class="z" style="height:6%"></i>
+        </div>
+        <div class="spark-l">sightings / day</div>
+      </div>
+    </div>
+    <div class="who">
+      <span class="face known"><span class="av">PA</span>paul</span>
+      <span class="face known"><span class="av">MR</span>m.reyes</span>
+    </div>
+    <details class="ev">
+      <summary>3 sessions of evidence</summary>
+      <table>
+        <thead><tr><th>When</th><th>Who</th><th>Session</th><th>What happened</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="when">Aug 12</td><td>paul</td><td class="sid">s_31c8</td>
+              <td class="sig"><span class="sigdot"></span>2 exceptions post sign-in</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Jul 30</td><td>m.reyes</td><td class="sid">s_44de</td>
+              <td class="sig"><span class="sigdot"></span>1 exception · collections blank</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+          <tr><td class="when">Jul 24</td><td>paul</td><td class="sid">s_7f11</td>
+              <td class="sig"><span class="sigdot"></span>2 exceptions · 9 dead clicks</td>
+              <td><a class="replay" href="#">▶ Replay</a></td></tr>
+        </tbody>
+      </table>
+    </details>
+  </article>
+
+  <div class="sec">
+    <h2>Closed this run</h2>
+    <span class="hint">fix landed, signal stopped</span>
+    <div class="rule"></div>
+  </div>
+
+  <article class="issue resolved">
+    <div class="ihead">
+      <div class="impact low"><div class="n">0</div><div class="l">in 11d</div></div>
+      <div class="ititle">
+        <h3>Tunnel view freezes on canvas tap</h3>
+        <div class="meta">
+          <span class="pill done">✓ resolved on silence</span>
+          <span class="pill fb">FB-247 · completed</span>
+          <span class="pill code">TunnelArtView.svelte:39</span>
+          <span class="pill">last seen Jul 29</span>
+        </div>
+      </div>
+      <div class="spark-wrap">
+        <div class="spark">
+          <i style="height:80%"></i><i style="height:30%"></i><i class="z" style="height:6%"></i>
+          <i class="z" style="height:6%"></i><i class="z" style="height:6%"></i><i class="z" style="height:6%"></i>
+          <i class="z" style="height:6%"></i><i class="z" style="height:6%"></i>
+        </div>
+        <div class="spark-l">sightings / day</div>
+      </div>
+    </div>
+  </article>
+
+  <div class="sec">
+    <h2>Watching</h2>
+    <span class="hint">not enough signal to act on yet</span>
+    <div class="rule"></div>
+  </div>
+
+  <article class="issue">
+    <div class="ihead">
+      <div class="impact low"><div class="n">3</div><div class="l">users</div></div>
+      <div class="ititle">
+        <h3>Browse abandoned after scrolling ~200 items</h3>
+        <div class="meta">
+          <span class="pill">no code site yet</span>
+          <span class="pill">could be perf, could be boredom</span>
+          <span class="pill">3 sessions</span>
+        </div>
+      </div>
+      <div class="spark-wrap">
+        <div class="spark">
+          <i class="z" style="height:6%"></i><i style="height:25%"></i><i class="z" style="height:6%"></i>
+          <i style="height:25%"></i><i class="z" style="height:6%"></i><i class="z" style="height:6%"></i>
+          <i style="height:25%"></i><i class="z" style="height:6%"></i>
+        </div>
+        <div class="spark-l">sightings / day</div>
+      </div>
+    </div>
+  </article>
+
+  <p class="foot">
+    Generated by <code>scripts/fetch-user-sessions.cjs analyze</code> ·
+    ledger <code>docs/user-sessions/ledger.md</code> ·
+    reviewed-through <code>2026-08-15T09:12Z</code>
+  </p>
+
+</div>
+</body>
+</html>

@@ -42,7 +42,7 @@
           copy: "Positions, motions, letter types, and the rest of the vocabulary.",
         },
         {
-          href: "/shop/choreography-cards",
+          href: "/shop",
           title: "Choreography cards",
           copy: "Put the notation on the table for practice or teaching.",
         },
@@ -88,9 +88,6 @@
       <div class="feature-links">
         <a class="door-button primary" href="/notation"
           >Explore Flow Arts Notation</a
-        >
-        <a class="inline-link" href="/notation/letters"
-          >Browse the letter index</a
         >
         <a class="inline-link" href="/notation/shape-matrix"
           >See the 144 shape matrix</a

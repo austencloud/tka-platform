@@ -147,6 +147,25 @@
   const { data, onViewerReady }: Props = $props();
   const shortCode = $derived(page.params["code"]);
 
+  /**
+   * `?demo=1` — this page is being SHOWN, not scanned.
+   *
+   * The shop hero puts a phone on screen and iframes this exact route so a
+   * visitor sees the literal thing a real scan opens. It is the real component
+   * on purpose; what it must not be is a real scan. Every funnel number this
+   * route feeds — scan sessions, the physical-card scan ledger, PostHog — would
+   * otherwise count a marketing page's own demo as a customer scanning a card,
+   * and the /q funnel is the one number that tells us whether printed cards
+   * work.
+   *
+   * Suppression is three call sites and no forked chrome, because the whole
+   * point is that the chrome is not forked. It works because
+   * `captureScanEvent` reads `scanBaseProperties()` and returns early when no
+   * visit is open: skip `beginScanVisit` and EVERY scan event downstream
+   * no-ops by construction, including ones added later.
+   */
+  const isDemo = $derived(page.url.searchParams.get("demo") === "1");
+
   type PageState =
     | { kind: "loading" }
     | { kind: "error"; message: string }
@@ -721,12 +740,14 @@
       // racing the settings/theme/auth work below. initPostHog is idempotent,
       // so calling it here just means whichever bootstrap wins arms session
       // replay at the earliest possible moment instead of the latest.
-      void initPostHog().catch(() => {});
+      // A demo load arms nothing: no PostHog on this route (so no $pageview
+      // either) and no scan visit, which silences every captureScan* call.
+      if (!isDemo) void initPostHog().catch(() => {});
 
       // The universal route load already opened this visit before SvelteKit's
       // automatic SPA $pageview. Enrich that same visit with the live auth
       // getter; beginScanVisit preserves its id and session progress.
-      if (shortCode) {
+      if (shortCode && !isDemo) {
         beginScanVisit(shortCode, {
           sequenceWord: data.meta?.word ?? null,
           deckId: data.meta?.deckId ?? null,
@@ -851,6 +872,7 @@
       // route visit; browser APIs cannot prove whether a camera opened it.
       const scanPrintId = page.url.searchParams.get("pid") || null;
       const shouldRecordScan =
+        !isDemo &&
         !isInlineEncoded(shortCode) &&
         isFirstScanRouteVisit(shortCode, scanPrintId);
 

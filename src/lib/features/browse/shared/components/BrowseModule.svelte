@@ -51,6 +51,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     setGalleryViewState,
   } from "../services/gallery-view-persister";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+  import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
   // Tab ids match tab labels (renamed 2026-07-10): "library" is your saved
   // work (label Library, was id "collections"); "collections" is community
@@ -94,16 +96,14 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   });
 
   // Restore where this SESSION was (sessionStorage — survives reload/HMR,
-  // dies with the tab). Mid-browse: keep the engine's restored filters and
-  // re-apply the search. Otherwise the module lands on the drill, where
-  // persisted user filters are invisible but still compose into every live
-  // count (a stale restored filter zeroed out most of the letter catalog) —
-  // so filters + search start fresh; sort / view / source persistence stays.
+  // dies with the tab). Mid-browse: re-apply the search. The drill is now a
+  // filter WORKSPACE with a rule strip, so persisted filters are visible and
+  // editable there — restoring them no longer strands invisible state (the
+  // old failure that forced a clear). Search stays transient.
   const restoredGalleryView = getGalleryViewState();
   if (restoredGalleryView?.view === "browse-all") {
     engine.setSearch(restoredGalleryView.search);
   } else {
-    engine.clearUserFilters();
     engine.setSearch("");
   }
 
@@ -140,6 +140,62 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // layout changes the instant you tap; cards fill in a beat afterward.
   let gridWarming = $state(false);
   let smartSaveOpen = $state(false);
+
+  // --- Filter workspace (the drill in builder mode) ---
+  // Same wiring the Smart Collection builder uses: toggle-in-place, stable
+  // option sets, Match any/all connectives, and the shared rule strip.
+  type WorkspaceSection =
+    | "level"
+    | "length"
+    | "letter"
+    | "position"
+    | "gridmode"
+    | "author"
+    | "loop"
+    | "family"
+    | "max_turn_intensity";
+  const SECTION_FOR_FILTER_TYPE: Partial<Record<string, WorkspaceSection>> = {
+    [BrowseFilterType.DIFFICULTY]: "level",
+    [BrowseFilterType.LENGTH]: "length",
+    [BrowseFilterType.STARTING_LETTER]: "letter",
+    [BrowseFilterType.STARTING_POSITION]: "position",
+    [BrowseFilterType.GRID_MODE]: "gridmode",
+    [BrowseFilterType.OWNER]: "author",
+    [BrowseFilterType.LOOP_TYPE]: "loop",
+    [BrowseFilterType.TND_FAMILY]: "family",
+    [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",
+  };
+  // Remount seed: editing a strip chip reopens the drill ON that filter's
+  // editor instead of the chooser.
+  let drillSeed = $state<{ section?: WorkspaceSection }>({});
+
+  const loopKeyByValue = $derived(
+    new Map(
+      [...engine.activeFilters]
+        .filter(
+          ([, f]) => f.type === BrowseFilterType.LOOP_TYPE && !f.locked
+        )
+        .map(([key, f]) => [String(f.value), key])
+    )
+  );
+  const activeLoopValues = $derived(new Set(loopKeyByValue.keys()));
+  const familyKeyByValue = $derived(
+    new Map(
+      [...engine.activeFilters]
+        .filter(
+          ([, f]) => f.type === BrowseFilterType.TND_FAMILY && !f.locked
+        )
+        .map(([key, f]) => [String(f.value), key])
+    )
+  );
+  const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
+  const appliedValueKeys = $derived(
+    new Set(
+      [...engine.activeFilters.values()]
+        .filter((f) => !f.locked)
+        .map((f) => `${f.type}:${String(f.value)}`)
+    )
+  );
   function applyToGrid(mutate: () => void) {
     galleryView = "browse-all";
     gridWarming = true;
@@ -546,26 +602,111 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       >
         {#if activeTab === "gallery"}
           {#if galleryView === "start-here"}
-            <GalleryDrill
-              pool={engine.allSequences}
-              getCount={(type, value) => engine.getFilteredCount(type, value)}
-              onApply={(type, value, label, color) => {
-                // A drill pick means "exactly this slice" — engine filters can
-                // survive view remounts, so clear leftovers or the pick
-                // silently compounds with a stale filter. Deferred so the grid
-                // layout paints instantly and the compute runs behind the skeleton.
-                applyToGrid(() => {
-                  engine.clearUserFilters();
-                  engine.addFilter(type, value, label, color ?? "#6aa0ff");
-                });
-              }}
-              onShowAll={() => applyToGrid(() => engine.clearUserFilters())}
-              onSearch={(q) =>
-                applyToGrid(() => {
-                  engine.clearUserFilters();
-                  engine.setSearch(q);
-                })}
-            />
+            <div class="gallery-workspace">
+              {#if engine.hasActiveFilters}
+                <div class="gallery-rule-strip" aria-label="Current filters">
+                  <span class="strip-count" aria-live="polite">
+                    {engine.resultCount}
+                    {engine.resultCount === 1 ? "match" : "matches"}
+                  </span>
+                  <FilterRuleStrip
+                    filters={engine.allFilterChips.filter((c) => !c.locked)}
+                    connectives={engine.connectives}
+                    onEditFilter={(type) =>
+                      (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+                    onRemoveFilter={(key) => engine.removeFilter(key)}
+                  />
+                  <div class="strip-actions">
+                    <PanelButton
+                      variant="primary"
+                      onclick={() => applyToGrid(() => {})}
+                    >
+                      View {engine.resultCount} results
+                    </PanelButton>
+                    <PanelButton
+                      variant="secondary"
+                      ariaLabel="Save these filters as a Smart Collection"
+                      onclick={() => (smartSaveOpen = true)}
+                    >
+                      <i
+                        class="fas fa-wand-magic-sparkles"
+                        aria-hidden="true"
+                      ></i>
+                      Save
+                    </PanelButton>
+                  </div>
+                </div>
+              {/if}
+              {#key drillSeed}
+                <GalleryDrill
+                  pool={engine.allSequences}
+                  adaptiveValueLayout
+                  persistentDesktopCatalog
+                  fluidWideCanvas
+                  initialSection={drillSeed.section}
+                  getCount={(type, value) =>
+                    engine.getFilteredCount(type, value)}
+                  isValueApplied={(type, value) =>
+                    appliedValueKeys.has(`${type}:${String(value)}`)}
+                  onApply={(type, value, label, color) =>
+                    engine.addFilter(type, value, label, color ?? "#6aa0ff")}
+                  onToggleValue={(type, value, label, color, nowActive) => {
+                    // The workspace never bounces: values toggle in place and
+                    // the strip + counts recompose live. The grid is reached
+                    // via "View results" / search / show-all.
+                    if (nowActive) {
+                      engine.addFilter(type, value, label, color ?? "#6aa0ff");
+                    } else {
+                      engine.removeFilter(`${type}:${String(value)}`);
+                    }
+                  }}
+                  {activeLoopValues}
+                  loopConnective={engine.connectives[
+                    String(BrowseFilterType.LOOP_TYPE)
+                  ] ?? "any"}
+                  onLoopConnectiveChange={(connective) =>
+                    engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
+                  onToggleLoop={(value, label, color, nowActive) => {
+                    if (nowActive) {
+                      engine.addFilter(
+                        BrowseFilterType.LOOP_TYPE,
+                        value,
+                        label,
+                        color
+                      );
+                    } else {
+                      const key = loopKeyByValue.get(value);
+                      if (key) engine.removeFilter(key);
+                    }
+                  }}
+                  {activeFamilyValues}
+                  familyConnective={engine.connectives[
+                    String(BrowseFilterType.TND_FAMILY)
+                  ] ?? "any"}
+                  onFamilyConnectiveChange={(connective) =>
+                    engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
+                  onToggleFamily={(familyId, label, color, nowActive) => {
+                    if (nowActive) {
+                      engine.addFilter(
+                        BrowseFilterType.TND_FAMILY,
+                        familyId,
+                        label,
+                        color
+                      );
+                    } else {
+                      const key = familyKeyByValue.get(familyId);
+                      if (key) engine.removeFilter(key);
+                    }
+                  }}
+                  onShowAll={() => applyToGrid(() => engine.clearUserFilters())}
+                  onSearch={(q) =>
+                    applyToGrid(() => {
+                      engine.clearUserFilters();
+                      engine.setSearch(q);
+                    })}
+                />
+              {/key}
+            </div>
           {:else}
             <GalleryTab
               {isMobile}
@@ -578,9 +719,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                   Promise.resolve();
               }}
               onBackToStart={() => {
-                // Fresh drill each time: clear the applied filter + search so the
-                // chooser's live counts reflect the whole catalog, not a leftover slice.
-                engine.clearUserFilters();
+                // Back to the WORKSPACE, rule intact — the strip shows and
+                // edits it there. Only transient search resets.
+                engine.setSearch("");
+                galleryView = "start-here";
+              }}
+              onOpenWorkspace={() => {
                 engine.setSearch("");
                 galleryView = "start-here";
               }}
@@ -622,4 +766,37 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     overflow: hidden;
   }
 
+  .gallery-workspace {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* The pinned rule strip: count, grouped sentence, actions on one wrapping
+     row. The drill below keeps the remaining height. */
+  .gallery-rule-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+    padding: 0.55rem 1rem;
+    flex: 0 0 auto;
+    border-bottom: 1px solid
+      var(--theme-border, rgba(255, 255, 255, 0.12));
+  }
+
+  .gallery-rule-strip .strip-count {
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .strip-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
 </style>

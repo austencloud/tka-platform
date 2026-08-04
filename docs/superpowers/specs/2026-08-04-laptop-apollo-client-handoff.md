@@ -82,13 +82,15 @@ is not recoverable from git.
 
 ## Believed done — unverified
 
-- **The `laptop` Apollo instance on d1 has never been used by anyone.** It was
-  found already running on 2026-08-04 at port base `48989`, answering on
-  `48984/48989/48990/49010` over the tailnet, and its dashboard accepts the
-  same credentials as d1's primary. Nobody has streamed from it. Its
-  virtual-display behaviour, resolution handling, and whether it collides with
-  the primary instance when both are live are all **unknown**. You are the
-  first to find out.
+- **The `laptop` Apollo instance on d1 has never been streamed from.** Built on
+  d1 2026-08-03, confirmed listening on `48984/48989/48990/49010` from d2 on
+  2026-08-04, dashboard answering on `48990`. But nobody has ever run a session
+  through it. Its virtual-display behaviour, resolution handling, and whether
+  it collides with the primary instance when both are live are all **unknown**.
+  You are the first to find out.
+- **Both d1 instances now need updating together.** Instance 2 is a directory
+  clone at `C:\Program Files\Apollo2`, so an Apollo upgrade applied to only one
+  directory silently leaves the other behind.
 - **Nothing on the laptop itself has been inspected this session.** Its
   Moonlight version, settings, pairing state, and host list are all assumed,
   not observed. Verify before changing anything.
@@ -133,19 +135,24 @@ show `CLIENT DISCONNECTED` → `Session pausing` → `Virtual Display removed
 successfully` within a second. If instead it stops at `Session pausing`, the
 setting did not take — check that Moonlight was closed when you wrote it.
 
-### 2. Decide and confirm which host the laptop uses
+### 2. Pair with d1's `laptop` instance — NOT with d2
 
-d1 now has an instance named `laptop` dedicated to you. d2 also still serves
-you. Both cannot own your display sensibly. **Ask Austen which he wants**
-before pairing — this is a genuine either/or, not something to infer:
+Already decided, do not re-litigate: Austen ruled on 2026-08-03 that clients
+**must not chain** laptop → d2 → d1. Each client pairs straight to its own d1
+instance. Chaining double-encodes your pane and nests input capture. So you
+pair with d1's `laptop` instance (port base `48989`), and you stop using d2 as
+a host.
 
-- **d1's `laptop` instance** — puts your screen on the 4090, consistent with
-  the mesh's whole point, and it is why the instance exists. Untested.
-- **Keep d2** — known-working today, but d2 is itself a client of d1, so you
-  would be a client of a client.
+That instance is a full directory clone of Apollo on d1 — `C:\Program
+Files\Apollo2`, service `Apollo2Service`, its own firewall rule and its own
+identity (certs were regenerated, not copied). Its dashboard is on `48990` and
+takes the **same login as d1's primary dashboard** — instance 2 was seeded with
+instance 1's credential hashes. Reachable directly over the tailnet from
+another machine with no port proxy; d2 confirmed that on 2026-08-04.
 
-Whichever he picks, the other should stop being used, not left as a silent
-second option.
+Once both you and d2 are streaming, the two virtual displays coexist on d1's
+desktop and get arranged side by side in d1's Windows display settings. Input
+unifies on d1 — d2's mouse drives both halves, your pane is passive.
 
 ### 3. Re-pair
 

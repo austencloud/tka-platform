@@ -242,7 +242,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
  * Remove from this set to reactivate.
  */
 export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
-  PropType.BIGFAN,
   PropType.GUITAR,
   PropType.UKULELE,
   PropType.CONTACTBALL,
@@ -297,11 +296,27 @@ export function getAllPropTypes(): PropType[] {
 
 /**
  * Gets display information for a specific prop type.
+ *
+ * The signature promises a PropTypeDisplayInfo, and callers rely on that — they
+ * read `.image` and `.label` straight off the result. But the argument arrives
+ * from persisted settings as often as from the enum, and persisted values
+ * outlive the enum: a profile saved while Fractalgeng existed still carries
+ * `"fractalgeng"` after its 2026-06-30 removal. A bare record lookup then
+ * returns undefined and the caller throws on `.image` (PropNavButton crashed
+ * the whole mobile nav this way). A `?? PropType.STAFF` at the call site does
+ * not help — that guards null, not an unknown string.
+ *
+ * So resolve unknown keys to Staff here, once, instead of asking every consumer
+ * to remember. Staff is the right landing spot: it is the canonical TKA prop
+ * and the default everywhere else.
  */
 export function getPropTypeDisplayInfo(
   propType: PropType
 ): PropTypeDisplayInfo {
-  return PROP_TYPE_DISPLAY_REGISTRY[propType];
+  return (
+    PROP_TYPE_DISPLAY_REGISTRY[propType] ??
+    PROP_TYPE_DISPLAY_REGISTRY[PropType.STAFF]
+  );
 }
 
 /**
@@ -548,6 +563,7 @@ export function getBasePropsByCategory(): Map<PropCategory, PropType[]> {
 const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
   [PropType.STAFF]: PropType.BIGSTAFF,
   [PropType.CLUB]: PropType.BIGCLUB,
+  [PropType.FAN]: PropType.BIGFAN,
   [PropType.TRIAD]: PropType.BIGTRIAD,
   [PropType.MINIHOOP]: PropType.BIGHOOP,
   [PropType.BUUGENG]: PropType.BIGBUUGENG,
@@ -621,6 +637,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     props: [
       PropType.BIGSTAFF,
       PropType.BIGCLUB,
+      PropType.BIGFAN,
       PropType.BIGTRIAD,
       PropType.BIGHOOP,
       PropType.BIGBUUGENG,

@@ -10,7 +10,11 @@
 
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
-import { applyFilters } from "$lib/shared/browse/services/multi-filter";
+import {
+  applyFilters,
+  CONNECTIVE_STACKING_TYPES,
+  type FilterConnective,
+} from "$lib/shared/browse/services/multi-filter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { BrowseEngine, ActiveFilter } from "$lib/shared/browse/engine/types";
 import type {
@@ -34,12 +38,41 @@ export function buildFilterSpecFromEngine(engine: BrowseEngine): SmartFilterSpec
       chipColor: f.chipColor,
     });
   }
-  return {
+  const spec: SmartFilterSpec = {
     source: engine.source,
     filters,
     sortMethod: String(engine.sortMethod),
     sortDirection: engine.sortDirection,
   };
+  const connectives = { ...engine.connectives };
+  if (Object.keys(connectives).length > 0) {
+    spec.connectives = connectives as Record<string, FilterConnective>;
+  }
+  return spec;
+}
+
+/**
+ * Resolve a spec's connective per connective-bearing category. Stored choices
+ * win. Specs saved before connectives existed get the meaning they had when
+ * saved: two or more stacked LOOP/TnD entries were requirements ("all");
+ * otherwise the current default ("any" — with ≤1 entries the two readings are
+ * identical, so new-default is safe).
+ */
+export function resolveSpecConnectives(
+  spec: SmartFilterSpec
+): Record<string, FilterConnective> {
+  const resolved: Record<string, FilterConnective> = {};
+  for (const type of CONNECTIVE_STACKING_TYPES) {
+    const key = String(type);
+    const stored = spec.connectives?.[key];
+    if (stored === "any" || stored === "all") {
+      resolved[key] = stored;
+      continue;
+    }
+    const entries = spec.filters.filter((f) => f.type === key).length;
+    resolved[key] = entries >= 2 ? "all" : "any";
+  }
+  return resolved;
 }
 
 /**
@@ -51,6 +84,10 @@ export function buildFilterSpecFromEngine(engine: BrowseEngine): SmartFilterSpec
 export function applySpecToEngine(engine: BrowseEngine, spec: SmartFilterSpec): void {
   for (const f of spec.filters) {
     engine.addFilter(f.type as BrowseFilterType, f.value, f.label, f.chipColor);
+  }
+  const connectives = resolveSpecConnectives(spec);
+  for (const [type, connective] of Object.entries(connectives)) {
+    engine.setConnective(type as BrowseFilterType, connective);
   }
   engine.setSort(spec.sortMethod as BrowseSortMethod, spec.sortDirection);
 }
@@ -73,5 +110,5 @@ export function deriveSpecMembers(
       locked: false,
     });
   }
-  return applyFilters(pool, map);
+  return applyFilters(pool, map, resolveSpecConnectives(spec));
 }

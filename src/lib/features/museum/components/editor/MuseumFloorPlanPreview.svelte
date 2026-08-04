@@ -17,9 +17,18 @@
     zones: MuseumFloorPlanZone[];
     circulation: MuseumFloorPlanPoint[];
     layer?: MuseumFloorPlanLayer;
+    ariaLabel?: string;
+    caption?: string;
   }
 
-  let { grid, zones, circulation, layer = "program" }: Props = $props();
+  let {
+    grid,
+    zones,
+    circulation,
+    layer = "program",
+    ariaLabel = "Entrance lobby floor plan",
+    caption = "One square is half a metre. Gold numbers identify the seven program zones. The pale line shows the intended visitor route from the south doors to the cave threshold.",
+  }: Props = $props();
 
   const furnitureIcons: Record<FurnitureDefinition["role"], string> = {
     bench: "fa-chair",
@@ -72,7 +81,8 @@
 
 <figure
   class="floor-plan museum-gold-scope"
-  aria-label="Entrance lobby floor plan"
+  class:program-layer={layer === "program"}
+  aria-label={ariaLabel}
 >
   <div class="plan-grid" style={planStyle}>
     <div class="tile-grid" style={tileGridStyle} aria-hidden="true">
@@ -149,11 +159,7 @@
       <i class="fa-solid fa-arrow-up"></i>
     </div>
   </div>
-  <figcaption>
-    One square is half a metre. Gold numbers identify the seven program zones.
-    The pale line shows the intended visitor route from the south doors to the
-    cave threshold.
-  </figcaption>
+  <figcaption>{caption}</figcaption>
 </figure>
 
 <style>
@@ -204,6 +210,7 @@
     position: absolute;
     inset: 0;
     display: grid;
+    contain: strict;
   }
 
   .tile-cell {
@@ -248,6 +255,7 @@
     background: var(--zone-fill);
     box-shadow: inset 0 0 1.5rem rgba(0, 0, 0, 0.2);
     pointer-events: none;
+    container: plan-zone / inline-size;
   }
 
   .zone-arrival {
@@ -365,6 +373,10 @@
   }
 
   @container museum-plan (width < 34rem) {
+    .program-layer .tile-grid {
+      display: none;
+    }
+
     .zone-title {
       display: none;
     }
@@ -375,6 +387,12 @@
 
     figcaption {
       font-size: 0.68rem;
+    }
+  }
+
+  @container plan-zone (width < 5.5rem) {
+    .zone-title {
+      display: none;
     }
   }
 

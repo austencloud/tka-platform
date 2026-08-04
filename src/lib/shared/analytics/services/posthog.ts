@@ -185,11 +185,35 @@ export const dropKnownNoise: BeforeSendFn = (event: CaptureResult | null) => {
 };
 
 /**
+ * A document rendered as a DEMONSTRATION of a page rather than a visit to it.
+ * Read from the live URL, so it covers the iframe's own document regardless of
+ * which bootstrap gets there first.
+ */
+function isDemoDocument(): boolean {
+  try {
+    return new URL(window.location.href).searchParams.get("demo") === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Initialize PostHog analytics.
  * Call once on app startup in +layout.svelte.
  */
 export function initPostHog(): Promise<void> {
   if (!browser) return Promise.resolve();
+
+  // `?demo=1` — this document is being SHOWN, not visited.
+  //
+  // The shop hero iframes the real `/q/<code>` so a visitor sees the literal
+  // scan page. That iframe runs the whole app, root layout included, so the
+  // layout's own init would arm PostHog inside it and emit a $pageview for a
+  // /q URL nobody scanned — quietly inflating the one funnel that tells us
+  // whether printed cards work. The /q host suppresses the scan-specific
+  // events; this suppresses the automatic ones, and it lives here rather than
+  // in the layout because init is the single choke point every caller shares.
+  if (isDemoDocument()) return Promise.resolve();
 
   // The in-flight check MUST come before the `initialized` check.
   // `initializePostHog` is async but never awaits internally, so its body —

@@ -9,6 +9,7 @@ const SNAPSHOT: StartEndOptions = {
   blockedStartPositions: [],
   startPosition: null,
   endPosition: null,
+  endPositions: [],
   mustContainLetters: [],
   mustNotContainLetters: [],
   blueStartOrientation: Orientation.IN,
@@ -18,7 +19,7 @@ const SNAPSHOT: StartEndOptions = {
 // Mirror of the overlay's live local state.
 interface Local {
   blockedStartPositions: GridPosition[];
-  endPosition: PictographData | null;
+  endPositions: GridPosition[];
   blueStartOrientation: Orientation;
   redStartOrientation: Orientation;
 }
@@ -26,7 +27,7 @@ interface Local {
 function localFrom(base: StartEndOptions): Local {
   return {
     blockedStartPositions: base.blockedStartPositions,
-    endPosition: base.endPosition,
+    endPositions: base.endPositions,
     blueStartOrientation: base.blueStartOrientation ?? Orientation.IN,
     redStartOrientation: base.redStartOrientation ?? Orientation.IN,
   };

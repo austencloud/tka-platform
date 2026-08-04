@@ -215,7 +215,12 @@
         <h2 class="deck-number" class:placeholder={!deckName}>{deckName || `Deck #${String(refNumber).padStart(3, "0")}`}</h2>
       {/if}
       <div class="deck-meta">
-        <span class="meta-cards">{cards.length} cards</span>
+        <!-- Printed count, not sequence count: every deck also ships the
+             "How to Read" insert, and this is the number a print vendor needs. -->
+        <span
+          class="meta-cards"
+          title="{cards.length} sequence cards + 1 How to Read insert"
+        >{cards.length + 1} cards</span>
         {#if stepSummary}
           <span class="meta-sep" aria-hidden="true">·</span>
           <span class="meta-steps">{stepSummary}</span>
@@ -292,6 +297,7 @@
       isLoading={false}
       includeStartPosition={true}
       deckMode={true}
+      deckNumber={refNumber}
       displayMode="sheets"
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}

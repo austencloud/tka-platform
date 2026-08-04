@@ -143,7 +143,7 @@ DIVERGENT (spec claims not-built; heavy traffic since — reconcile spec text ag
 - [ ] `2026-05-23-error-boundary-system-design.md` (frontmatter says code complete; body stale)
 - [ ] `2026-05-23-social-sharing-ssr-design.md`
 - [ ] `2026-05-25-mandala-phase2-trails-design.md`
-- [ ] `2026-06-20-real-flow-notation-aruco-design.md` (superseded by markerless track?)
+- [x] `2026-06-20-real-flow-notation-aruco-design.md` (LED pipeline shipped; retired ArUco plan archived; orphaned marker types removed)
 - [ ] `2026-06-26-shop-transitions-design.md` (also in B)
 - [ ] `2026-07-02-scan-card-to-collection-design.md` (dep: card production ledger)
 

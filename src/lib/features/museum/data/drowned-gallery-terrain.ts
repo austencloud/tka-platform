@@ -278,7 +278,7 @@ export interface DrownedGalleryLayout {
 // ── Small helpers ───────────────────────────────────────────────────────────
 
 /** The room's interior as the union of its interior tiles' cells. */
-function interiorWorldRect(b: {
+export function interiorWorldRect(b: {
   x: number;
   y: number;
   width: number;
@@ -317,7 +317,7 @@ const centre = (r: WorldRect): Point2 => ({ x: cx(r), z: cz(r) });
  * Rooms are placed by the layout engine and doors by the wall stamper, so this
  * scan is the only honest source for where a doorway actually is.
  */
-function doorSpan(
+export function doorSpan(
   grid: MuseumGrid,
   roomId: string,
   wall: "north" | "south" | "east" | "west"
@@ -349,7 +349,7 @@ function doorSpan(
 }
 
 /** Widen `span` to `width`, keeping it centred and inside `[lo, hi]`. */
-function widenSpan(span: Span, width: number, lo: number, hi: number): Span {
+export function widenSpan(span: Span, width: number, lo: number, hi: number): Span {
   const half = width / 2;
   const c = (span.min + span.max) / 2;
   let min = c - half;
@@ -370,7 +370,7 @@ function widenSpan(span: Span, width: number, lo: number, hi: number): Span {
  * rects: contiguous x-runs per row, with consecutive rows merged when their
  * run lists match exactly. Rects cover the hit tiles' cells.
  */
-function bandRects(
+export function bandRects(
   grid: MuseumGrid,
   txMin: number,
   txMax: number,
@@ -424,7 +424,7 @@ function bandRects(
  * as `bandRects`. Used to shape the gallery's rock fill around the S-path, so
  * rock and path abut exactly and neither can leave a seam.
  */
-function subtractTiles(bounds: WorldRect, holes: WorldRect[]): WorldRect[] {
+export function subtractTiles(bounds: WorldRect, holes: WorldRect[]): WorldRect[] {
   const EPS = 1e-6;
   const txMin = Math.round((bounds.minX + HALF) / TILE);
   const txMax = Math.round((bounds.maxX - HALF) / TILE);
@@ -479,7 +479,7 @@ function subtractTiles(bounds: WorldRect, holes: WorldRect[]): WorldRect[] {
 }
 
 /** Split `[from, to]` around excluded spans, returning the remainder. */
-function spansExcluding(
+export function spansExcluding(
   from: number,
   to: number,
   holes: Span[]
@@ -495,7 +495,7 @@ function spansExcluding(
   return out.filter(([a, b]) => b - a > 0.01);
 }
 
-function unionRect(rects: WorldRect[]): WorldRect {
+export function unionRect(rects: WorldRect[]): WorldRect {
   return {
     minX: Math.min(...rects.map((r) => r.minX)),
     minZ: Math.min(...rects.map((r) => r.minZ)),

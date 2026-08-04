@@ -70,7 +70,7 @@ $TaskbarPinnedDir = Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick La
 $StartupDir  = [Environment]::GetFolderPath('Startup')
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 $TerminalFragmentPath = Join-Path $TerminalFragmentDir 'session-backgrounds.json'
-$ManagedSkillNames = @('color', 'colorall')
+$ManagedSkillNames = @('color', 'colorall', 'renameall')
 $ManagedSkillMarker = '.agent-hub-managed'
 $PersonalSkillRoots = @(
     (Join-Path $env:USERPROFILE '.claude\skills'),
@@ -365,10 +365,12 @@ if ($LASTEXITCODE -ne 0) { throw "Stub build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentChooserStub.exe"
 
 $terminalSource = Join-Path $Here 'src\AgentTerminalLauncher.cs'
+$sessionTitleSource = Join-Path $Here 'src\SessionTitleManager.cs'
 $terminalRefs = @('System.dll', 'System.Core.dll', 'System.Management.dll')
 $terminalLauncherArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentTerminalLauncher.exe")
 $terminalLauncherArgs += $terminalRefs | ForEach-Object { "/reference:$_" }
 $terminalLauncherArgs += $terminalSource
+$terminalLauncherArgs += $sessionTitleSource
 & $csc @terminalLauncherArgs
 if ($LASTEXITCODE -ne 0) { throw "Terminal launcher build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentTerminalLauncher.exe"
@@ -376,6 +378,7 @@ Write-Ok "built AgentTerminalLauncher.exe"
 $terminalSessionArgs = @('/nologo', '/target:exe', "/out:$BinDir\AgentTerminalSession.exe")
 $terminalSessionArgs += $terminalRefs | ForEach-Object { "/reference:$_" }
 $terminalSessionArgs += $terminalSource
+$terminalSessionArgs += $sessionTitleSource
 & $csc @terminalSessionArgs
 if ($LASTEXITCODE -ne 0) { throw "Terminal session host build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentTerminalSession.exe"
@@ -383,6 +386,7 @@ Write-Ok "built AgentTerminalSession.exe"
 $terminalWatchdogArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentTerminalColorWatchdog.exe")
 $terminalWatchdogArgs += $terminalRefs | ForEach-Object { "/reference:$_" }
 $terminalWatchdogArgs += $terminalSource
+$terminalWatchdogArgs += $sessionTitleSource
 & $csc @terminalWatchdogArgs
 if ($LASTEXITCODE -ne 0) { throw "Terminal color watchdog build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentTerminalColorWatchdog.exe"
@@ -394,23 +398,23 @@ Write-Ok "terminal color leasing self-test passed"
 Copy-Item (Join-Path $Here 'icons\*') $IconDir -Force
 Write-Ok "copied $((Get-ChildItem $IconDir).Count) icons"
 
-Write-Step "Installing the personal color skills for Claude and Codex"
-$installedColorSkills = 0
+Write-Step "Installing the personal Agent Hub skills for Claude and Codex"
+$installedSkills = 0
 foreach ($skillName in $ManagedSkillNames) {
     $skillSource = Join-Path $Here "skills\$skillName"
     if (-not (Test-Path -LiteralPath (Join-Path $skillSource 'SKILL.md') -PathType Leaf)) {
-        throw "Color skill source is missing: $skillSource"
+        throw "Agent Hub skill source is missing: $skillSource"
     }
     foreach ($skillRoot in $PersonalSkillRoots) {
         $destination = Join-Path $skillRoot $skillName
         if (Install-AgentHubSkill $skillSource $destination $skillName) {
-            $installedColorSkills++
+            $installedSkills++
             Write-Ok $destination
         }
     }
 }
-if ($installedColorSkills -eq 0) {
-    Write-Warn2 "no personal color skills were installed because every destination is user-owned"
+if ($installedSkills -eq 0) {
+    Write-Warn2 "no personal Agent Hub skills were installed because every destination is user-owned"
 }
 
 # ---------------------------------------------------------------- 3. projects

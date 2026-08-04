@@ -202,6 +202,34 @@ Cross-partition confirmations marked (2×)/(3×)/(4×).
 - [ ] D19 (D-19) Step 1 entry tiles near-invisible border contrast on dark
       background (partially fixture-related, see W2).
 
+## Addendum 2026-08-03 (Austen, live review): every category stacks
+
+Austen's direction while reviewing at 1440: the T&D interaction — tap to
+stack, strip updates live, catalog stays beside you — should be THE pattern;
+no editor may bounce back to the rule view.
+
+- [x] Implemented: `onToggleValue` seam in GalleryDrill; all six single-valued
+      categories (Level, Length, Letters, Start position, Grid mode, Creator)
+      now toggle in place. Their values stack as ALTERNATIVES: OR within the
+      category, AND across categories (`OR_STACKING_TYPES` in
+      `multi-filter.ts`; per-value engine keys; facet counts exclude the
+      candidate's own category so siblings never zero each other). LOOPs/T&D
+      keep their requirement (AND) stacking. Nothing closes the picker on
+      apply anymore — exits are Return to rule / Save / Cancel / X.
+      Evidence at 1440 (zoom-corrected 1584×990): Alpha 468 + Beta 456 →
+      strip "924 matches | Alpha | Beta" (exact union); untoggle → 468;
+      rail-switch to Level, stack 1+2 → "249 matches" = 86+163 under Alpha
+      (exact AND-of-OR). Composition screenshot taken; editor hint reads
+      "Tap several. A sequence can match any of them."
+- [ ] SIDE EFFECT to confirm with Austen: the engine key change applies
+      app-wide, so the MAIN gallery's drill now also ORs same-category picks
+      (choosing Alpha then Beta keeps both chips instead of replacing).
+      Arguably more consistent; needs a quick main-browse smoke test.
+- [ ] Follow-up: turn slider / Recently added / Favorites still use onApply
+      (single-value semantics); they now also stay in the picker. The turn
+      slider's committed chip appears in the strip — verify the CTA still
+      reads clearly as "apply".
+
 ## Needs Austen's ruling (defaults chosen, flag before ship)
 
 - [ ] R1 (2×: X-22, F-21) The variation pill is the ONE live control inside

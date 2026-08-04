@@ -92,6 +92,14 @@
     audienceCount?: number;
     /** Grid mode: diamond or box */
     gridMode?: GridMode;
+    /** Optional half-size for prop-aware inspection grids. */
+    gridSize?: number;
+    /** Optional hand ring radius for prop-aware inspection grids. */
+    gridHandPointRadius?: number;
+    /** Optional outer ring radius for prop-aware inspection grids. */
+    gridOuterPointRadius?: number;
+    /** Optional body-local distance from performer to the grid plane. */
+    gridForwardOffset?: number;
     /** Camera position preset */
     cameraPreset?: "front" | "top" | "side" | "perspective";
     /** Custom camera position (overrides preset) */
@@ -151,6 +159,10 @@
     showAudience = false,
     audienceCount = 6,
     gridMode = "diamond",
+    gridSize,
+    gridHandPointRadius,
+    gridOuterPointRadius,
+    gridForwardOffset,
     cameraPreset = "perspective",
     customCameraPosition = null,
     customCameraTarget = null,
@@ -190,7 +202,7 @@
 
   // Grid offset pushes the grid forward from avatar in body-local space
   // WALL_OFFSET is negative (avatar behind grid), so negate to get positive forward offset
-  const gridOffset = -WALL_OFFSET;
+  const gridOffset = $derived(gridForwardOffset ?? -WALL_OFFSET);
 
   // Determine if this is a night/dark environment that needs reduced lighting
   const isNightEnvironment = $derived(
@@ -233,8 +245,34 @@
 
   // Reference to orbit controls for getting camera state.
   let controlsRef = $state<CameraControls | null>(null);
+  let lastAppliedCameraSignature: string | null = null;
   const _camStatePos = new Vector3();
   const _camStateTgt = new Vector3();
+
+  // CameraControls owns the live camera transform once it mounts. Updating the
+  // Three.js camera alone would be overwritten on the next controls tick, so
+  // viewpoint buttons must move the controller and its target together.
+  $effect(() => {
+    const controls = controlsRef;
+    const [positionX, positionY, positionZ] = cameraPosition;
+    const [targetX, targetY, targetZ] = cameraTarget;
+    if (!controls) return;
+
+    const signature = `${positionX},${positionY},${positionZ}|${targetX},${targetY},${targetZ}`;
+    if (signature === lastAppliedCameraSignature) return;
+
+    const animate = lastAppliedCameraSignature !== null;
+    lastAppliedCameraSignature = signature;
+    void controls.setLookAt(
+      positionX,
+      positionY,
+      positionZ,
+      targetX,
+      targetY,
+      targetZ,
+      animate
+    );
+  });
 
   // Reference to camera for first-person mode
   let cameraRef = $state<PerspectiveCamera | undefined>(undefined);
@@ -267,7 +305,10 @@
    * underground anyway). At far distances it tightens to prevent clipping
    * through the ground plane.
    */
-  function getGroundMaxPolarAngle(orbitRadius: number, targetY: number): number {
+  function getGroundMaxPolarAngle(
+    orbitRadius: number,
+    targetY: number
+  ): number {
     const floorY = userProportionsState.groundY + STAGE.ORBIT_GROUND_BUFFER;
     const cosTheta = (floorY - targetY) / orbitRadius;
     // Clamp to valid acos range; when the floor is unreachable at this
@@ -296,10 +337,7 @@
 {#snippet sceneContent()}
   <!-- Procedural terrain (when enabled, replaces Environment3D) -->
   {#if enableTerrain}
-    <StageTerrain
-      {physicsState}
-      cameraPosition={terrainCameraPosition}
-    />
+    <StageTerrain {physicsState} cameraPosition={terrainCameraPosition} />
   {:else}
     <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
     <Environment3D {backgroundType} />
@@ -338,6 +376,9 @@
             {visiblePlanes}
             {showLabels}
             {gridMode}
+            size={gridSize}
+            handPointRadius={gridHandPointRadius}
+            outerPointRadius={gridOuterPointRadius}
           />
         </T.Group>
       </T.Group>
@@ -368,9 +409,13 @@
         <!-- First-person camera following primary avatar (in meters) -->
         {@const eyeHeight = SCALE.EYE_HEIGHT}
         {@const forwardOffset = STAGE.FIRST_PERSON_FORWARD_OFFSET}
-        {@const eyeX = primaryAvatar.position.x + Math.sin(primaryAvatar.facingAngle) * forwardOffset}
+        {@const eyeX =
+          primaryAvatar.position.x +
+          Math.sin(primaryAvatar.facingAngle) * forwardOffset}
         {@const eyeY = primaryAvatar.position.y + eyeHeight}
-        {@const eyeZ = primaryAvatar.position.z + Math.cos(primaryAvatar.facingAngle) * forwardOffset}
+        {@const eyeZ =
+          primaryAvatar.position.z +
+          Math.cos(primaryAvatar.facingAngle) * forwardOffset}
 
         <T.PerspectiveCamera
           bind:ref={cameraRef}
@@ -460,7 +505,11 @@
     min-height: 400px;
     /* Background now handled by SkyGradient in 3D when environment is active */
     /* Fallback gradient for NONE environment type */
-    background: linear-gradient(180deg, var(--theme-surface-dark, #0a0a12) 0%, var(--theme-panel-bg, #050510) 100%);
+    background: linear-gradient(
+      180deg,
+      var(--theme-surface-dark, #0a0a12) 0%,
+      var(--theme-panel-bg, #050510) 100%
+    );
     border-radius: 8px;
     overflow: hidden;
   }

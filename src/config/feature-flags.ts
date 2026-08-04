@@ -213,6 +213,11 @@ export const FEATURES: FeatureDefinition[] = [
       "src/routes/1998/",
       "src/routes/2003/",
     ],
+    // 1989 and 1995 rendered blank in production only because the retro feature
+    // module was stubbed; 1998 and 2003 shipped their real UI, since their pages
+    // don't route through that module. Emptying the route components covers all
+    // four the same way instead of relying on which page happens to import what.
+    emptyClientRouteComponents: true,
   },
   {
     id: "coven",
@@ -256,13 +261,35 @@ const DEV_ONLY_ROUTE_PATTERNS: string[] = [
   "src/routes/demo/",
   "src/routes/render-pictographs/",
   "src/routes/grant-feature/",
-  "src/routes/embed/",
   "src/routes/hall-of-shame/",
 ];
 
-// These route trees have their own production redirect guards. Emptying their
-// Svelte components removes implementation code without leaving a blank route.
-const GUARDED_DEV_ROUTE_PATTERNS: string[] = ["src/routes/test/"];
+// `src/routes/embed/` deliberately does NOT appear above. It reads like a dev
+// path, but /embed/spinner is outward-facing — third parties iframe it, and the
+// page says so in its own header. It survived only because nothing consumed
+// getDisabledRoutePatterns(); listing it was a latent bug waiting for someone to
+// wire that function up. Verify a route is actually internal before adding it.
+
+/**
+ * Route trees whose page components are EMPTIED in the production client build.
+ *
+ * Every entry must have a load guard calling `guardInternalRoute()` (or an
+ * equivalent redirect), because emptying alone would leave a blank page at a
+ * reachable URL rather than sending the visitor somewhere real.
+ *
+ * `(public)/composer/auth-lab/` is listed explicitly: it is an auth design
+ * harness parked under the public /composer namespace for layout reasons, so no
+ * dev-path prefix covers it.
+ */
+const GUARDED_DEV_ROUTE_PATTERNS: string[] = [
+  "src/routes/test/",
+  "src/routes/(dev)/",
+  "src/routes/demo/",
+  "src/routes/render-pictographs/",
+  "src/routes/grant-feature/",
+  "src/routes/hall-of-shame/",
+  "src/routes/(public)/composer/auth-lab/",
+];
 
 // ---------------------------------------------------------------------------
 // Runtime helpers

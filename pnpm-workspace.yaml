@@ -2,4 +2,5 @@ packages:
   - packages/*
 
 patchedDependencies:
+  "@austencloud/scene-3d@0.1.6": patches/@austencloud__scene-3d@0.1.6.patch
   svelte-fast-check@0.4.5: patches/svelte-fast-check@0.4.5.patch

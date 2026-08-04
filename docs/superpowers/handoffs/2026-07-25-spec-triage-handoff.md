@@ -16,6 +16,11 @@ Plus **one unfixed live production defect** found mid-audit. Read that first.
 
 ## 0. Unfixed and live: 42 of 47 notation letter images are broken in production
 
+> **Retired 2026-08-02:** The standalone notation letter index, its baked
+> images, sitemap entries, generator, and active design spec were removed. The
+> Composer Guide Codex remains the supported interactive letter catalog. The
+> material below is retained only as the original incident record.
+
 Highest-priority item in this handoff. Not fixed — I found it while auditing and
 did not want to bundle an unrelated change into the orientation commit.
 

@@ -191,8 +191,26 @@
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
   const renderWidth = $derived(Math.ceil(maxW * dpr));
 
+  // A SEQUENCE ID DOES NOT IDENTIFY A CARD. The catalog reuses one cover
+  // sequence id across decks — the three TnD trilogy decks all carry
+  // `tnd-split-same-aaaa` for A sequences that differ only in turns (0, 1,
+  // 0.5), and the LOOP decks share seeds like `alpha1_AΣXB` for different
+  // words. `resolvedCovers` is module-level and survives every remount, so an
+  // id-only key made the FIRST card to resolve paint itself onto every later
+  // card sharing that id: the hero dealt TKA 3's half-turn A and drew TKA 1's
+  // zero-turn art beside a phone opening the correct (and now contradicting)
+  // code. Same defect the render cache had before 4b1bd29c89, so it takes the
+  // same discriminators: whatever changes the pixels is in the key.
   const cardKey = (c: CoverCard) =>
-    `${c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40)}|${propType}|${face}`;
+    [
+      c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40),
+      deckId ?? "-",
+      deckName ?? "-",
+      c.accentColor ?? "-",
+      c.footerCenter ?? "-",
+      propType,
+      face,
+    ].join("|");
 
   // key -> object URL, filled as the print renders land. Keyed per (card,
   // prop) so a prop swap keeps earlier props warm for an instant swap back.

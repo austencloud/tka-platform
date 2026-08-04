@@ -25,6 +25,7 @@
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import StartPositionPictograph from "./StartPositionPictograph.svelte";
+  import { ensureStepPlacement } from "$lib/shared/pictograph/shared/services/motion-placement";
   import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
@@ -89,6 +90,28 @@
   });
 
   const d = $derived(deriveCardBackData(sequence));
+
+  /**
+   * The bottom-left start position, with its render-required placement data
+   * guaranteed present.
+   *
+   * `MotionData.propPlacementData` is non-optional in the type and absent in
+   * practice: a sequence read straight out of the catalog (or any stored blob)
+   * carries a `startPosition` serialized before those fields existed, and
+   * PictographPreparer.calculateProps early-returns on a missing one. The cell
+   * then draws its grid with no props on it, and the only trace is a console
+   * warning naming this exact backfill. The print path never showed the bug
+   * because renderBack goes through `hydrateSequence`, which re-runs the
+   * motions through `createMotionData` first — this makes the LIVE card agree
+   * with the print instead of depending on who hydrated the caller's data.
+   *
+   * Fixed here rather than at one call site because CardBack is the boundary
+   * where the data reaches a renderer, and motion-placement.ts exists because
+   * this backfill drifted once already by living in two hydrators.
+   */
+  const startPosition = $derived(
+    sequence.startPosition ? ensureStepPlacement(sequence.startPosition) : undefined
+  );
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
 
   // Single-ended prop (club) traces one tip; staff traces both. The mandala
@@ -258,8 +281,8 @@
 
     <!-- BOTTOM-LEFT: start position pictograph -->
     <div class="corner bottom-left">
-      {#if sequence.startPosition}
-        <StartPositionPictograph pictographData={sequence.startPosition} darkMode={isDarkTheme} />
+      {#if startPosition}
+        <StartPositionPictograph pictographData={startPosition} darkMode={isDarkTheme} />
       {/if}
     </div>
 

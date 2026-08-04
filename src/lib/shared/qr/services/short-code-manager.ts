@@ -1031,39 +1031,75 @@ export class ShortCodeManager {
    * on the same code — `docs[0]` order is arbitrary and made two browsers
    * show different codes for the same sequence.
    */
-  private async findExistingCodeByHash(hash: string): Promise<string | null> {
+  /**
+   * The canonical code for a hash, read-only. Oldest wins; tie-break on the
+   * smaller doc id when `createdAt` matches (0ms-apart duplicates exist in
+   * real data) so every client — single lookup, deck-prewarmed batch, or the
+   * read-only lookup below — provably converges on the SAME code.
+   */
+  private async queryCanonicalCodeByHash(
+    hash: string
+  ): Promise<{ code: string; createdAt: string } | null> {
     const firestore = await this.ensureFirestore();
-    const q = query(
-      collection(firestore, SHORTCODES_COLLECTION),
-      where("encoderHash", "==", hash)
+    const snapshot = await getDocs(
+      query(
+        collection(firestore, SHORTCODES_COLLECTION),
+        where("encoderHash", "==", hash)
+      )
     );
-
-    const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
 
     let best = snapshot.docs[0]!;
     let bestCreated = (best.data() as ShortCodeData).createdAt ?? "";
     for (const d of snapshot.docs.slice(1)) {
       const created = (d.data() as ShortCodeData).createdAt ?? "";
-      // Oldest wins; tie-break on smaller doc id when createdAt is equal
-      // (0ms-apart dups exist in real data) so every client — single-lookup
-      // or deck-prewarmed batch — provably converges on the SAME code.
-      if (
-        created < bestCreated ||
-        (created === bestCreated && d.id < best.id)
-      ) {
+      if (created < bestCreated || (created === bestCreated && d.id < best.id)) {
         best = d;
         bestCreated = created;
       }
     }
+    return { code: best.id, createdAt: bestCreated };
+  }
+
+  private async findExistingCodeByHash(hash: string): Promise<string | null> {
+    const winner = await this.queryCanonicalCodeByHash(hash);
+    if (!winner) return null;
 
     // Lazy heal: point the hash index at the canonical code so future
     // allocations hit the transaction path directly. Fire-and-forget —
     // resolution must never block on it. Thread the canonical doc's own
     // createdAt so the healed index matches the transaction path + backfill.
-    void this.healHashIndex(hash, best.id, bestCreated);
+    void this.healHashIndex(hash, winner.code, winner.createdAt);
 
-    return best.id;
+    return winner.code;
+  }
+
+  /**
+   * The code a sequence ALREADY has, or null. Pure read — no allocation, no
+   * hash-index heal, no write of any kind.
+   *
+   * This exists for surfaces that must DEPICT a code without owning it. The
+   * shop hero shows a phone loading the real `/q/<code>` for the card on
+   * screen; a marketing page minting codes would put writes on an anonymous
+   * public route and could fork the one-code-per-hash invariant the whole
+   * shortcode scheme rests on. `createShortCode` is the write path and stays
+   * the write path — a depicting surface calls this instead and simply shows
+   * nothing when the answer is null.
+   *
+   * Deliberately NOT `findExistingCodeByHash`: that one heals the hash index,
+   * which is a Firestore create.
+   */
+  async findExistingCodeForSequence(
+    sequence: SequenceData
+  ): Promise<string | null> {
+    const hash = await this.tryComputeHash(sequence);
+    if (!hash) return null;
+    try {
+      return (await this.queryCanonicalCodeByHash(hash))?.code ?? null;
+    } catch {
+      // A depiction is never worth an error surface; the caller shows nothing.
+      return null;
+    }
   }
 
   /** Best-effort create of the hash-index doc. The index is immutable after

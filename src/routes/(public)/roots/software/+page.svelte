@@ -479,7 +479,7 @@
   <div class="cta-card">
     <h3>Try the current chapter</h3>
     <p>Flow Arts Composer runs in your browser and costs nothing.</p>
-    <a href="/composer" class="cta-button">
+    <a href="/create" class="cta-button">
       <span>Open Flow Arts Composer</span>
       <i class="fas fa-arrow-right" aria-hidden="true"></i>
     </a>

@@ -13,7 +13,12 @@ import {
   getDeckReleaseManifestPath,
   getDeckReleaseManifestsPath,
 } from "$lib/shared/library/data/firestore-paths";
-import type { DeckRelease, DeckReleaseCard, DeckRecipe } from "../domain/models/DeckRelease";
+import {
+  INSERT_CARD_VERSION,
+  type DeckRelease,
+  type DeckReleaseCard,
+  type DeckRecipe,
+} from "../domain/models/DeckRelease";
 
 export async function getNextDeckNumber(): Promise<number> {
   const db = await getFirestoreInstance();
@@ -62,6 +67,7 @@ export async function releaseDeck(
       notes,
       sequences: cards,
       stepCountDistribution: distribution,
+      insertCard: { version: INSERT_CARD_VERSION },
       // Firestore rejects `undefined` fields — only attach recipe when present.
       ...(recipe ? { recipe } : {}),
     };

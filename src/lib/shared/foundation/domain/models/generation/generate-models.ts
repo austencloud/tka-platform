@@ -64,7 +64,13 @@ export interface GenerationOptions {
   // Customize options - advanced constraints for generation
   /** @deprecated Use blockedStartPositions for multi-select */
   startPosition?: PictographData | null; // Specific start position constraint
+  /** @deprecated Use endPositions for multi-select */
   endPosition?: PictographData | null; // Specific end position constraint
+  /**
+   * Allowed end positions. The sequence must end at one of them.
+   * Empty/undefined = unconstrained ("Any").
+   */
+  endPositions?: GridPosition[];
   mustContainLetters?: Letter[]; // Letters that must appear in the sequence
   mustNotContainLetters?: Letter[]; // Letters that must NOT appear in the sequence
 

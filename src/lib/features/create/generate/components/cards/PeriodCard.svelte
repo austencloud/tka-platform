@@ -3,7 +3,7 @@ PeriodCard.svelte - reusable LOOP period selector for deck tooling.
 
 Replaces SliceSizeCard. Period is the integer count of passes required for
 a LOOP to return to identity (position AND orientation):
-  2 = halved, 4 = quartered, 8 = reserved for L5/L7 grid/wheel LOOPs.
+  2 = halved, 4 = quartered, 8 = reserved for L5/L6 grid/wheel LOOPs.
 
 The generator owns this choice inside its Rotated transformation card so the
 same setting is not exposed in two places.

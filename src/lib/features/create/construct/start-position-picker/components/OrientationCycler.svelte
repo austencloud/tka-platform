@@ -14,6 +14,9 @@ center label opens an anchored popover with all four orientations.
     onOrientationChange: (orientation: Orientation) => void;
     color?: "blue" | "red";
     centered?: boolean;
+    /** Opt in to the four compound orientations between the radial and
+     * tangential axes. Construct keeps its existing four-option default. */
+    allowInterradial?: boolean;
   }
 
   const {
@@ -21,6 +24,7 @@ center label opens an anchored popover with all four orientations.
     onOrientationChange,
     color,
     centered = false,
+    allowInterradial = false,
   }: Props = $props();
 
   interface OrientationOption {
@@ -38,15 +42,26 @@ center label opens an anchored popover with all four orientations.
     Orientation.COUNTER,
   ];
 
+  const INTERRADIAL_CYCLE_ORDER: Orientation[] = [
+    Orientation.IN,
+    Orientation.CLOCK_IN,
+    Orientation.CLOCK,
+    Orientation.CLOCK_OUT,
+    Orientation.OUT,
+    Orientation.COUNTER_OUT,
+    Orientation.COUNTER,
+    Orientation.COUNTER_IN,
+  ];
+
   const CENTER_CYCLE_ORDER: Orientation[] = [
     Orientation.CENTER_N,
-    Orientation.CENTER_NE,
-    Orientation.CENTER_E,
-    Orientation.CENTER_SE,
-    Orientation.CENTER_S,
-    Orientation.CENTER_SW,
-    Orientation.CENTER_W,
     Orientation.CENTER_NW,
+    Orientation.CENTER_W,
+    Orientation.CENTER_SW,
+    Orientation.CENTER_S,
+    Orientation.CENTER_SE,
+    Orientation.CENTER_E,
+    Orientation.CENTER_NE,
   ];
 
   const RADIAL_ORIENTATIONS: OrientationOption[] = [
@@ -73,6 +88,37 @@ center label opens an anchored popover with all four orientations.
       label: "Counter",
       icon: "fa-undo",
       hint: "Counterclockwise",
+    },
+  ];
+
+  const INTERRADIAL_ORIENTATIONS: OrientationOption[] = [
+    RADIAL_ORIENTATIONS[0]!,
+    {
+      value: Orientation.CLOCK_IN,
+      label: "Clock-in",
+      icon: "fa-location-arrow",
+      hint: "Between in and clock",
+    },
+    RADIAL_ORIENTATIONS[1]!,
+    {
+      value: Orientation.CLOCK_OUT,
+      label: "Clock-out",
+      icon: "fa-location-arrow",
+      hint: "Between clock and out",
+    },
+    RADIAL_ORIENTATIONS[2]!,
+    {
+      value: Orientation.COUNTER_OUT,
+      label: "Counter-out",
+      icon: "fa-location-arrow",
+      hint: "Between out and counter",
+    },
+    RADIAL_ORIENTATIONS[3]!,
+    {
+      value: Orientation.COUNTER_IN,
+      label: "Counter-in",
+      icon: "fa-location-arrow",
+      hint: "Between counter and in",
     },
   ];
 
@@ -135,10 +181,18 @@ center label opens an anchored popover with all four orientations.
   ];
 
   const cycleOrder = $derived(
-    centered ? CENTER_CYCLE_ORDER : RADIAL_CYCLE_ORDER
+    centered
+      ? CENTER_CYCLE_ORDER
+      : allowInterradial
+        ? INTERRADIAL_CYCLE_ORDER
+        : RADIAL_CYCLE_ORDER
   );
   const orientationOptions = $derived(
-    centered ? CENTER_ORIENTATIONS : RADIAL_ORIENTATIONS
+    centered
+      ? CENTER_ORIENTATIONS
+      : allowInterradial
+        ? INTERRADIAL_ORIENTATIONS
+        : RADIAL_ORIENTATIONS
   );
   const currentDisplay = $derived(
     orientationOptions.find((option) => option.value === orientation) ??

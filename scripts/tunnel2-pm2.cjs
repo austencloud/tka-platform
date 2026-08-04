@@ -18,7 +18,13 @@ const token = readFileSync(tokenFile, "utf8").trim();
 
 const child = spawn(
   "cloudflared",
-  ["tunnel", "run", "--token", token, "--url", "https://localhost:5173", "--no-tls-verify"],
+  // Flag order matters: --url and --no-tls-verify belong to the `tunnel`
+  // command, not the `run` subcommand. Placed AFTER `run` they parse without
+  // error but never reach the ingress builder, and cloudflared logs
+  // "No ingress rules were defined ... will return 503 for all incoming HTTP
+  // requests". tka-dev survives the same mistake only because that older tunnel
+  // carries remote ingress config in Cloudflare; tka-dev2/tka-dev3 have none.
+  ["tunnel", "--url", "https://localhost:5173", "--no-tls-verify", "run", "--token", token],
   // windowsHide here, not just in ecosystem config — pm2's own flag doesn't
   // reach grandchildren, so without it the cloudflared console pops up as a
   // visible window that "can't be closed" (pm2 respawns it on every X-click).

@@ -22,6 +22,7 @@ import { CompositionDispatcher } from "$lib/shared/render/services/composition-d
 import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { CompositionProgressCallback } from "$lib/shared/render/services/types";
+import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
 
 // MPC poker card defaults
@@ -153,12 +154,13 @@ export class PrintCardRenderer {
     }
   }
 
-  async renderInfoCardFront(theme?: string): Promise<HTMLCanvasElement> {
+  async renderInfoCardFront(theme?: string, deckNumber?: number): Promise<HTMLCanvasElement> {
     return renderInfoCardFront({
       width: MPC_WIDTH,
       height: MPC_HEIGHT,
       bleedPx: MPC_BLEED,
       theme: theme ?? this.theme,
+      deckNumber,
     });
   }
 
@@ -170,4 +172,30 @@ export class PrintCardRenderer {
       theme: theme ?? this.theme,
     });
   }
+}
+
+/**
+ * The "How to Read" insert that ships as card 1 of a printed deck.
+ *
+ * Standalone rather than a method because the insert draws no pictographs and
+ * so needs no ImageComposer — export paths can build it without constructing a
+ * renderer. Sized to the deck's card size so the insert matches its stack.
+ */
+export async function renderInsertCardPair(options: {
+  theme: string;
+  cardSize?: CardSizeId;
+  deckNumber?: number;
+}): Promise<{ front: HTMLCanvasElement; back: HTMLCanvasElement }> {
+  const size = CARD_SIZES[options.cardSize ?? "poker"];
+  const geometry = {
+    width: size.canvasWidth,
+    height: size.canvasHeight,
+    bleedPx: size.bleedPx,
+    theme: options.theme,
+  };
+  const [front, back] = await Promise.all([
+    renderInfoCardFront({ ...geometry, deckNumber: options.deckNumber }),
+    renderInfoCardBack(geometry),
+  ]);
+  return { front, back };
 }

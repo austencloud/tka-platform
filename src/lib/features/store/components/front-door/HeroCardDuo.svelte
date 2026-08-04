@@ -1,64 +1,140 @@
 <!-- src/lib/features/store/components/front-door/HeroCardDuo.svelte -->
 <!--
-  The hero's card: front and back of the SAME card, held up together.
+  The hero's stage: a real printed card, and a phone showing what happens when
+  you point one at it.
 
-  Front is the baked print render — the only render that carries the card's real,
-  scannable QR. Back is a live CardBack fed `card.sequence`, the very sequence
-  that front was printed from, so the two faces can never disagree. Nothing here
-  is generated at runtime: the sequence arrives with the catalog the page already
-  loads, which is also why the hero never hits the generator's reachability
-  failure the homepage's per-visit demo has to guard against.
+  WHAT THIS REPLACED, AND WHY. Until 2026-08-03 the payoff here was a live
+  animation engine drawing the card's mandala over its printed back — the
+  sequence "coming alive" in front of you. It was the prettiest thing on the
+  page and it was fiction: a real scan does not draw a mandala, it opens
+  `/q/<code>`. Austen: "on that phone it literally loads the exact component
+  that they will literally see when they go to the literal QR code scan."
 
-  The pair tilts away from each other so it reads as an object someone is
-  holding rather than two thumbnails, and the back's drawn mandala is the thing
-  that catches the eye — a printed figure on the left, the same figure being
-  traced on the right.
+  So the drawn mandala is gone (it survives in git, and is a candidate for a
+  product-page "how it works" slot where a diagram is honest). The cards are
+  static print now — front prominent, back peeking out behind-left so the pair
+  still reads as one physical object with two faces — and the PHONE is the
+  hero's dominant object, because the phone is the claim.
 
-  Both slots are the card's real 5:7 proportion and sized from one `--card-h`.
-  The slots render before the catalog does, so the hero's height is settled at
-  first paint and neither the baked front nor the player moves anything when it
-  lands (no-layout-shift.md).
+  Three beats drive one press (hero-scan-timeline.svelte.ts): the phone leans in
+  on its camera view, the code is recognised, the screen swipes up into the real
+  scan page.
 
-  THE SCAN IS PRESSED, NOT PLAYED. The cue used to loop every eight seconds,
-  which read as an advert running at you rather than a card you picked up. It
-  now has one trigger, sitting directly under the pair because it acts on the
-  pair — not another call to action stacked in the copy column beside "See the
-  catalog". First press scans; afterwards the card is left playing and the
-  button offers the pass again (hero-scan-timeline.svelte.ts owns that state
-  machine). Under reduced motion the button is not rendered at all: it exists
-  only to start motion.
+  DEALING CLEARS THE STAGE. It does not swap the card behind a standing phone,
+  and it does not scan the new card for you. Everything on stage leaves in one
+  gesture, two fresh cards deal in side by side, and the phone's entrance is
+  earned again by the next press. Austen (2026-08-04): "when I deal another card
+  the phone should not be there yet ... then I should have to click scan this
+  card again to scan it with the phone."
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import type { CoverCard, Product } from "../../domain/models/product";
+  import type { HeroCoverEntry } from "./front-door-catalog";
   import ShopEntryArt from "../ShopEntryArt.svelte";
-  import HeroCardBackLive from "./HeroCardBackLive.svelte";
-  import HeroScanCue from "./HeroScanCue.svelte";
+  import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
+  import HeroPhone from "./HeroPhone.svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
-  import {
-    createHeroScanTimeline,
-    type ScanCueVariant,
-  } from "./hero-scan-timeline.svelte";
+  import { createHeroScanTimeline } from "./hero-scan-timeline.svelte";
   import { computeFrontQrCellRect } from "../../services/card-front-regions";
   import {
-    layoutRectWithin,
-    observeLayout,
-    type LayoutRect,
-  } from "./hero-layout-measure";
+    DEFAULT_SHOP_PROP,
+    SHOP_BACK_THEME,
+    bakedCoverUrl,
+  } from "../../domain/shop-prop-options";
+  import { getCardBackThemeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
+  import { hydrateSequence } from "$lib/features/choreo-card/services/catalog-loader";
+  import { resolveHeroScanCode } from "./hero-scan-code";
 
   interface Props {
-    /** Null until the catalog's cover cards land. The slots hold their shape. */
-    card: CoverCard | null;
-    product: Product | null;
+    /** Empty until the catalog's cover cards land. The stage holds its shape. */
+    pool: readonly HeroCoverEntry[];
   }
-  let { card, product }: Props = $props();
+  let { pool }: Props = $props();
 
-  // Dev comparison switch: `?cue=pulse` on /shop swaps the phone cue for the
-  // quieter ring. The phone variant ships as the default; the query param is
-  // for judging them side by side without a rebuild.
-  const cue = $derived<ScanCueVariant>(
-    page.url.searchParams.get("cue") === "pulse" ? "pulse" : "phone"
+  // ── the deck this hero deals from ───────────────────────────────────────
+  // Shuffle without replacement: walk a shuffled order, and reshuffle only when
+  // it runs out, so no card repeats until every other one has been dealt. The
+  // reshuffle keeps the just-seen card off the front, or the boundary between
+  // two rounds would be the one repeat the scheme exists to prevent.
+  let order = $state<number[]>([]);
+  let cursor = $state(0);
+
+  function shuffled(count: number, avoidFirst?: number): number[] {
+    const next = Array.from({ length: count }, (_, i) => i);
+    for (let i = next.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [next[i], next[j]] = [next[j]!, next[i]!];
+    }
+    if (next.length > 1 && next[0] === avoidFirst) {
+      [next[0], next[1]] = [next[1]!, next[0]!];
+    }
+    return next;
+  }
+
+  // The FIRST card is not shuffled: heroCoverPool sorts baked covers first, and
+  // only a baked cover carries a real scannable QR. The hero opens on the best
+  // card it has, then deals at random from there.
+  $effect(() => {
+    const n = pool.length;
+    if (!n) {
+      order = [];
+      cursor = 0;
+      return;
+    }
+    if (order.length !== n) {
+      order = [0, ...shuffled(n, 0).filter((i) => i !== 0)];
+      cursor = 0;
+    }
+  });
+
+  const entry = $derived(pool[order[cursor] ?? 0] ?? null);
+  const card = $derived(entry?.card ?? null);
+  const product = $derived(entry?.product ?? null);
+  const canDeal = $derived(pool.length > 1);
+
+  // Print truth: the card is printed with staves and the deck ships with the
+  // rainbow back, so neither follows the viewer's own settings.
+  const printedProp = DEFAULT_SHOP_PROP;
+  const printedTheme = {
+    visuals: getCardBackThemeVisuals(SHOP_BACK_THEME),
+    name: SHOP_BACK_THEME,
+  };
+
+  // The card's own sequence, render-ready. Catalog blobs omit motion placement
+  // data, and the start-position cell draws propless without it.
+  const backSequence = $derived(
+    card?.sequence
+      ? hydrateSequence(card.sequence as unknown as Record<string, unknown>)
+      : null
   );
+
+  /** The camera view IS the card, so the QR cell is in the card's own space. */
+  const qrCell = $derived(
+    card ? computeFrontQrCellRect(card.sequence?.steps?.length ?? 8) : null
+  );
+
+  /** The baked front — the render that carries the real code. */
+  const coverUrl = $derived(
+    card ? (bakedCoverUrl(card, printedProp) ?? null) : null
+  );
+
+  // ── the real short code, looked up, never minted, verified against the art ─
+  // The cover goes in with the sequence: the lookup answers what code this
+  // catalog entry has, the printed QR answers what the card on screen actually
+  // opens, and a card whose two answers disagree gets no phone (hero-scan-code).
+  let scanCode = $state<string | null>(null);
+  $effect(() => {
+    const seq = backSequence;
+    const cover = coverUrl;
+    scanCode = null;
+    if (!seq) return;
+    let cancelled = false;
+    void resolveHeroScanCode(seq, cover).then((code) => {
+      if (!cancelled) scanCode = code;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
 
   const timeline = createHeroScanTimeline();
   $effect(() => {
@@ -66,113 +142,228 @@
     return () => timeline.stop();
   });
 
-  // "Scan the code" is the longer of the two, so it is what the ghost sizer
-  // below holds — the button never changes width when the label swaps.
-  const SCAN_LABEL = "Scan the code";
-  const RESCAN_LABEL = "Scan again";
-  const scanLabel = $derived(timeline.scanned ? RESCAN_LABEL : SCAN_LABEL);
-
-  // ── the QR cell, located rather than guessed ────────────────────────────
-  // A phone reads the code, not the card, so the sweep covers the code's cell
-  // and nothing else. That cell is wherever the step grid leaves a hole — the
-  // bottom of the left column at 8 and 12 steps, the end of the top row
-  // otherwise — so it is derived from the same layout math the bake used
-  // (computeFrontQrCellRect gives it as % of a trimmed card front), then
-  // placed by measuring where that trimmed card actually sits inside the slot.
-  // The fan pads and auto-scales its card, so the card box is NOT the slot.
-  let frontSlotEl = $state<HTMLDivElement | null>(null);
-  let cardBoxInSlot = $state<LayoutRect | null>(null);
-
-  const qrOnCard = $derived(
-    card ? computeFrontQrCellRect(card.sequence?.steps?.length ?? 8) : null
+  const viewfinder = $derived(
+    timeline.phase === "aim" || timeline.phase === "lock"
+  );
+  /** The phone has arrived; the cards have parted. Drives the whole scene. */
+  const entered = $derived(timeline.onstage);
+  const opened = $derived(
+    timeline.phase === "opening" || timeline.phase === "open"
   );
 
-  /** The QR cell as % of the front SLOT — the box the scan cue overlays. */
-  const qrCell = $derived.by<LayoutRect | null>(() => {
-    const box = cardBoxInSlot;
-    const onCard = qrOnCard;
-    const slot = frontSlotEl;
-    if (!box || !onCard || !slot || !box.w || !box.h) return null;
-    const sw = slot.offsetWidth;
-    const sh = slot.offsetHeight;
-    if (!sw || !sh) return null;
-    return {
-      x: ((box.x + (onCard.x / 100) * box.w) / sw) * 100,
-      y: ((box.y + (onCard.y / 100) * box.h) / sh) * 100,
-      w: ((onCard.w / 100) * box.w / sw) * 100,
-      h: ((onCard.h / 100) * box.h / sh) * 100,
-    };
-  });
+  // Three labels. A one-card catalog has nothing to deal, so it keeps offering
+  // the replay rather than promising a card that isn't there. The ghost sizer
+  // holds whichever reachable label is longest, so no swap changes the width.
+  const SCAN_LABEL = "Scan the code";
+  const DEAL_LABEL = "Deal another card";
+  const RESCAN_LABEL = "Scan again";
+  const afterScanLabel = $derived(canDeal ? DEAL_LABEL : RESCAN_LABEL);
+  const actionLabel = $derived(timeline.scanned ? afterScanLabel : SCAN_LABEL);
+  const sizerLabel = $derived(
+    [SCAN_LABEL, afterScanLabel].reduce((a, b) => (b.length > a.length ? b : a))
+  );
 
-  $effect(() => {
-    const slot = frontSlotEl;
-    if (!slot) return;
-    return observeLayout(slot, () => {
-      const box = slot.querySelector<HTMLElement>("[data-card-box]");
-      const next = box ? layoutRectWithin(box, slot) : null;
-      const prev = cardBoxInSlot;
-      const same =
-        next !== null &&
-        prev !== null &&
-        next.x === prev.x &&
-        next.y === prev.y &&
-        next.w === prev.w &&
-        next.h === prev.h;
-      if (!same) cardBoxInSlot = next;
-      return next !== null && next.w > 0;
-    });
-  });
+  // ── dealing ─────────────────────────────────────────────────────────────
+  // A deal used to be a fade: both faces dipped inside their fixed slots and
+  // came back holding a different card. Honest, and inert — the phone stood
+  // there through it as if nothing had happened. Austen (2026-08-04): "when I
+  // click deal another card I'd love there to be a fancy animation where the
+  // current contents all slightly move, all three of them, and then another
+  // card is dealt with its own animation."
+  //
+  // So the deal is a flourish in three beats, and every object on stage is in
+  // it:
+  //
+  //   lift  150  the stack fans open and rises. In the same frame the phone
+  //              starts LEAVING — `onstage` drops, so it swings back out to
+  //              the right, turns edge-on and fades, exactly reversing its
+  //              entrance (HeroPhone's .phone transition owns that travel).
+  //              One gesture: everything on stage is going.
+  //   out   180  the top card sweeps off up-left with its own gesture; the
+  //              back face follows 60ms behind it, so the pair leaves as a
+  //              stack rather than as one flat plane.
+  //   (swap)     90ms of held-invisible. The new card's faces render here, so
+  //              CardBack's re-render never lands on a visible frame, and the
+  //              timeline resets: the scene drops `entered` and returns to the
+  //              REST composition (the two faces side by side) while nothing
+  //              is on screen to be seen jumping.
+  //   in    300  two FRESH cards are DEALT side by side, arriving from low and
+  //              right where a dealer's hand would be. Back lands first, front
+  //              80ms later, on top.
+  //
+  // AND THEN IT STOPS. The deal used to fire a scan 80ms before the last face
+  // landed, which meant a card was scanned that nobody asked to scan. Austen
+  // (2026-08-04): "then I should have to click scan this card again to scan it
+  // with the phone." So the flourish ends at rest, the trigger says "Scan the
+  // code" again, and the phone's entrance is earned rather than assumed.
+  //
+  // Everything moves by transform/opacity inside the absolutely-placed scene:
+  // no beat of this can move anything outside the stage box.
+  const LIFT_MS = 150;
+  const OUT_MS = 180;
+  /** The back face leaves after the front — a stack, not a plane. */
+  const OUT_STAGGER_MS = 60;
+  /** Held invisible while the new faces render AND the stage resets to rest.
+   *  Long enough to also cover the phone's 320ms opacity fade, so the reset
+   *  can never unmount a phone that is still visible. */
+  const SWAP_HOLD_MS = 90;
+  const IN_MS = 300;
+  /** The front lands last, on top, the way a dealt card does. */
+  const IN_STAGGER_MS = 80;
+
+  const OUT_AT = LIFT_MS;
+  const SWAP_AT = OUT_AT + OUT_STAGGER_MS + OUT_MS;
+  const IN_AT = SWAP_AT + SWAP_HOLD_MS;
+  const IN_END = IN_AT + IN_STAGGER_MS + IN_MS;
+  /** Tail past the last keyframe: dropping the class ON its final frame races
+   *  the animation, and the snap would be visible. */
+  const SETTLE_AT = IN_END + 50;
+
+  type DealStage = "lift" | "out" | "in";
+  let dealStage = $state<DealStage | null>(null);
+  /** A deal is in flight. The one guard against overlapping deals. */
+  const dealing = $derived(dealStage !== null);
+  /** The stack is fanned and the phone is on its way out. */
+  const parting = $derived(dealStage === "lift" || dealStage === "out");
+  /**
+   * The phone is LEAVING, ahead of the timeline reset that follows at the swap.
+   *
+   * The reset is what actually clears the stage, but it also flips the scene
+   * back to its rest composition — and that has to happen behind an invisible
+   * frame. The phone's exit does not: it is half the gesture Austen asked for
+   * and has to start on the same frame the cards lift. So the phone's `onstage`
+   * is held false from the first beat while `entered` stays true until the
+   * swap, and the phone plays its entrance in reverse over the whole exit.
+   */
+  let phoneExiting = $state(false);
+  let dealTimers: ReturnType<typeof setTimeout>[] = [];
+
+  function clearDealTimers(): void {
+    for (const t of dealTimers) clearTimeout(t);
+    dealTimers = [];
+  }
+  $effect(() => () => clearDealTimers());
+
+  function advance(): void {
+    if (pool.length < 2) return;
+    if (cursor + 1 < order.length) {
+      cursor += 1;
+    } else {
+      order = shuffled(pool.length, order[cursor]);
+      cursor = 0;
+    }
+  }
+
+  /** The button's one job, whichever label it is wearing. */
+  function press(): void {
+    // The busy guard. `dealing` covers the whole flourish — exit AND deal-in —
+    // and `timeline.running` covers a scan pass, so a double-press can never
+    // start a second deal over the top of the first.
+    if (timeline.running || dealing) return;
+    if (!timeline.scanned || !canDeal) {
+      timeline.scan();
+      return;
+    }
+    clearDealTimers();
+    if (timeline.reducedMotion) {
+      // No beats to run: the stage is simply at rest holding a different card,
+      // unscanned. Nothing here scans — under reduced motion or otherwise, the
+      // entrance is the visitor's to ask for.
+      timeline.reset();
+      advance();
+      return;
+    }
+    phoneExiting = true;
+    dealStage = "lift";
+    dealTimers.push(
+      setTimeout(() => (dealStage = "out"), OUT_AT),
+      // The one invisible frame, and everything that must not be watched
+      // happens inside it: the card swaps (CardBack re-renders off-screen) and
+      // the stage resets to rest, which drops `entered` and returns the faces
+      // to their side-by-side composition before they are dealt back in.
+      setTimeout(() => {
+        timeline.reset();
+        phoneExiting = false;
+        advance();
+      }, SWAP_AT),
+      setTimeout(() => (dealStage = "in"), IN_AT),
+      setTimeout(() => (dealStage = null), SETTLE_AT)
+    );
+  }
 </script>
 
-<div class="pair">
-  <div class="duo">
-    <div class="slot front" bind:this={frontSlotEl}>
-      {#if card && product}
-        <div class="art">
-          <ShopEntryArt
-            cards={[card]}
-            {product}
-            deckName={product.name}
-            cardWidth={140}
-            maxCardWidth={822}
-            exactCount={1}
-          />
-        </div>
-        {#if timeline.available}
-          <HeroScanCue
-            {cue}
-            phase={timeline.phase}
-            cycle={timeline.cycle}
-            {qrCell}
-          />
+<div class="stage">
+  <!-- One scene holds both states. The cards and the phone are absolutely
+       placed inside it and move by transform only, so the box the page reserves
+       is the SAME box at rest and after the entrance — the phone arriving can't
+       move anything (no-layout-shift.md). -->
+  <div class="scene-slot">
+    <div
+      class="scene"
+      class:entered
+      class:dealing
+      class:parting
+      class:deal-out={dealStage === "out"}
+      class:deal-in={dealStage === "in"}
+    >
+      <!-- At rest these sit side by side, the pair filling the scene: one
+           printed object shown from both sides. The entrance slides them
+           together into the tighter stack the phone reads from. -->
+      <div class="slot back">
+        {#if backSequence}
+          <div class="card-frame">
+            <CardBack
+              sequence={backSequence}
+              themeOverride={printedTheme}
+              bluePropTypeOverride={printedProp}
+              redPropTypeOverride={printedProp}
+            />
+          </div>
         {/if}
-      {/if}
-    </div>
+      </div>
 
-    <div class="slot back">
-      {#if card}
-        <div class="card-frame">
-          <HeroCardBackLive
-            sequence={card.sequence}
-            drawActive={timeline.drawActive}
-            cycle={timeline.cycle}
-            live={timeline.available}
-          />
-        </div>
-      {/if}
+      <div class="slot front">
+        {#if card && product}
+          <div class="art">
+            <ShopEntryArt
+              cards={[card]}
+              {product}
+              deckName={product.name}
+              cardWidth={140}
+              maxCardWidth={822}
+              exactCount={1}
+            />
+          </div>
+        {/if}
+      </div>
+
+      <!-- Higher z than both cards: the phone enters BETWEEN the viewer and the
+           pair, which is what makes it read as an object arriving in the scene
+           rather than a panel appearing beside it. -->
+      <div class="phone-holder">
+        <HeroPhone
+          code={scanCode}
+          armed={timeline.armed}
+          onstage={entered && !phoneExiting}
+          {viewfinder}
+          locked={timeline.phase === "lock"}
+          {opened}
+          {coverUrl}
+          {qrCell}
+          reducedMotion={timeline.reducedMotion}
+        />
+      </div>
     </div>
   </div>
 
   <!-- The trigger. Two buttons share one grid cell: a hidden one permanently
-       holding the LONGER label sizes the cell, and the live one stretches to
-       it, so "Scan the code" → "Scan again" cannot resize anything
-       (no-layout-shift.md's ghost-sizer, using the real primitive so the
-       reserved width carries the button's own metrics rather than a guess). -->
+       holding the LONGEST label sizes the cell, and the live one stretches to
+       it, so the label swap cannot resize anything (no-layout-shift.md). -->
   {#if card && timeline.available}
-    <div class="scan-trigger" class:busy={timeline.running}>
+    <div class="scan-trigger" class:busy={timeline.running || dealing}>
       <span class="sizer" aria-hidden="true" inert>
         <ActionButton
-          label={SCAN_LABEL}
+          label={sizerLabel}
           icon="fa-qrcode"
           color="cyan"
           fullWidth
@@ -181,12 +372,12 @@
       </span>
       <span class="live">
         <ActionButton
-          label={scanLabel}
-          icon="fa-qrcode"
+          label={actionLabel}
+          icon={timeline.scanned && canDeal ? "fa-shuffle" : "fa-qrcode"}
           color="cyan"
           fullWidth
-          ariaDisabled={timeline.running}
-          onclick={() => timeline.scan()}
+          ariaDisabled={timeline.running || dealing || !scanCode}
+          onclick={press}
         />
       </span>
     </div>
@@ -194,93 +385,224 @@
 </div>
 
 <style>
-  /* Cards, then the control that acts on them. The gap rides `--card-h` so the
-     button sits the same distance from the pair at every size instead of
-     drifting away from it at 4K. */
-  /* One height drives both cards AND the gap under them, so it is declared on
-     the wrapper both of them read. The `cqw` term keeps the pair inside its
-     column (the rotations widen each card's bounding box by ~12%), the `svh`
-     term keeps it inside a short landscape screen, and the `rem` ceiling rides
-     the root ramp so 4K gets a bigger card rather than more empty rail. */
-  .pair {
-    --card-h: min(56svh, 36rem, calc(100cqw / 2.25 * 1.4));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(0.5rem, calc(var(--card-h) * 0.05), 2rem);
-    width: 100%;
-  }
+  /* Cards beside the phone, the trigger under both. One --card-h drives the
+     stack; the phone is deliberately TALLER than the cards, because it is the
+     object the page is about. */
+  .stage {
+    /* THE CARD is sized first now, and the phone follows it. Hero v2 derived the
+       card from the phone because the phone was always there; the phone is an
+       entrance now, so the state the page OPENS in — two cards, alone — is the
+       one the geometry has to serve. The card gets the stage, and the phone
+       arrives at 1.28x its height, still the taller object because it is still
+       the payoff.
 
-  .duo {
-    display: flex;
-    align-items: center;
+       EVERY HORIZONTAL NUMBER ON THIS STAGE IS IN CARD-HEIGHTS, measured from
+       the scene's centre. A 5:7 card is 0.714 wide and the phone is 0.634
+       (1.28 / 2.02), so the three objects need 2.06 of clear width to stand
+       side by side, and 1.43 to be a stack. That difference is the whole tier
+       list below: --scene-ratio is how wide the scene box is, and --part-*
+       is where the two faces sit inside it once the phone has landed.
+
+       --scene-fit is --scene-ratio plus the margin the tilted cards need past
+       their upright boxes (a card rotated 11deg is ~0.09 wider each side). It
+       is what --card-h divides the container by, so the composition can never
+       ask for more room than the stage has. */
+    --scene-ratio: 1.49;
+    --scene-fit: 1.55;
+    --card-cap: 26rem;
+    /* Rest: the pair, centred, touching — one printed object seen from both
+       sides. Unchanged by tier; only the PARTED composition spreads. */
+    --rest-back: -0.388;
+    --rest-front: 0.388;
+    /* Parted: the tight stack the phone reads over the top of. Wider stages
+       replace these below with a composition that stands the cards clear. */
+    --part-back: -0.29;
+    --part-front: -0.03;
+    --part-rot-back: -11deg;
+    --card-h: min(40svh, var(--card-cap), calc(100cqw / var(--scene-fit)));
+    --phone-h: calc(var(--card-h) * 1.28);
+    --scene-w: calc(var(--card-h) * var(--scene-ratio));
+    /* One card plus room for the tilt. */
+    --scene-h: calc(var(--card-h) * 1.34);
+    /* The "Open this scan" pill sits below the phone rather than on its bezel
+       (HeroPhone reads both). The slot reserves its height up front, so the pill
+       appearing after a scan cannot shift the trigger under it. */
+    --pill-gap: 0.7rem;
+    --pill-h: var(--min-touch-target, 44px);
+    /* The quarter-rem tail covers the phone's perspective tilt, which carries
+       the pill a pixel or two past a reserve measured on the untransformed box. */
+    --pill-reserve: calc(var(--pill-gap) + var(--pill-h) + 0.25rem);
+    display: grid;
+    grid-template-columns: minmax(0, auto);
+    grid-template-areas:
+      "scene"
+      "action";
+    justify-items: center;
     justify-content: center;
+    gap: clamp(1rem, 3cqw, 3rem);
     width: 100%;
-    /* Room for the tilted corners, which sit outside the layout box. */
-    padding-block: calc(var(--card-h) * 0.07);
   }
 
-  /* Wide but short — a folded Fold in landscape, a laptop in a small window.
-     The cards alone already fill the height here, so the trigger has to be
-     paid for out of the card's budget or it lands below the fold, and a
-     control nobody can see is the same as no control. */
-  @media (min-width: 48rem) and (max-height: 40rem) {
-    .pair {
-      --card-h: min(38svh, 36rem, calc(100cqw / 2.25 * 1.4));
+  /* ── how far the cards get to spread ────────────────────────────────────
+     The parted composition used to be one stack for every viewport: the front
+     card slid onto the back and the phone stood on the front, which left the
+     back 37% visible and took a bite out of the front's code corner. Austen
+     (2026-08-04): "maybe the cards should be more visible while animation is
+     playing because they are mostly occluded especially the back and we have
+     lots of space on 4K."
+
+     So the spread is a function of the room the stage actually has. The
+     container is .card-stage, and the query is in px on purpose: whether three
+     objects fit side by side is a question about pixels, not about type scale,
+     so it must not move with the 4K root-font ramp.
+
+     Each tier buys the same thing twice — a wider scene box AND a wider parted
+     composition inside it — because the phone is pinned to the scene's right
+     edge, so the cards can only walk left as far as the box grows. The card
+     itself pays for the room (--card-h divides by --scene-fit), which is why
+     the spread arrives in steps instead of all at once: at 375 the trade is a
+     third of the card for a sliver of the back, and it is not worth it. */
+  @container (min-width: 640px) {
+    .stage {
+      --scene-ratio: 2;
+      --scene-fit: 2.12;
+      --part-back: -0.6;
+      --part-front: -0.06;
+      --part-rot-back: -8deg;
+    }
+  }
+  /* Three clear objects: back, front, phone, none of them touching. Reached at
+     1920 (and every wider desktop) once the copy column stops holding width it
+     does not use — see ShopFrontDoorHero's fit-content band. */
+  @container (min-width: 900px) {
+    .stage {
+      --scene-ratio: 2.36;
+      --scene-fit: 2.48;
+      --card-cap: 30rem;
+      --part-back: -0.72;
+      --part-front: 0.11;
     }
   }
 
-  .slot {
+  .scene-slot {
+    grid-area: scene;
+    /* The pill's whole slot, reserved whether or not the phone has arrived. */
+    padding-bottom: var(--pill-reserve);
+  }
+
+  .scene {
     position: relative;
-    flex: 0 0 auto;
+    width: var(--scene-w);
+    height: var(--scene-h);
+    /* The deal's tempo, declared once here and read by the keyframe rules
+       below. The same four numbers run the JS timeline in the script block —
+       they are a pair, and a change to one is a change to both. */
+    --deal-out-ms: 180ms;
+    --deal-out-stagger: 60ms;
+    --deal-in-ms: 300ms;
+    --deal-in-stagger: 80ms;
+  }
+
+  .scan-trigger {
+    grid-area: action;
+    justify-self: center;
+    display: inline-grid;
+  }
+
+  /* ── the two cards ──────────────────────────────────────────────────────
+     Rest: side by side, each holding its own half of the scene. Entered: they
+     part LEFT, clearing the right of the scene for the phone. Only `transform`
+     changes, so neither state can reflow.
+
+     Both faces hang off the scene's CENTRE rather than its edges, and every
+     pose is one number — a signed offset in card-heights — handed in through
+     --x. Pinning them to left:0/right:0 tied the rest composition to the
+     scene's width, so widening the box for the spread would have pulled the
+     resting pair apart with it; centred, the pair is the same pair at every
+     tier and only the parted numbers change. --y and --rot ride along so the
+     deal's fan can borrow the same transform without restating the travel. */
+  .slot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
     height: var(--card-h);
     aspect-ratio: 5 / 7;
     border-radius: 0.75rem;
     filter: drop-shadow(0 1.25rem 2.5rem rgba(0, 0, 0, 0.55));
+    transform: translate(calc(-50% + var(--card-h) * var(--x)), var(--y, -50%))
+      rotate(var(--rot));
+    transition: transform 640ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Before the catalog lands the slots are the shape of the cards, faintly, so
-     the hero reads as "a card goes here" rather than as a gap. */
-  .slot:empty {
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    filter: none;
-  }
-
-  /* Opposing tilts, leaning into each other. The printed front sits on top —
-     it is the one with the code on it. */
+  /* The printed front, on top — it is the one with the code the phone reads. */
   .slot.front {
     z-index: 2;
-    transform: rotate(-5deg) translateX(4%);
+    --x: var(--rest-front);
+    --rot: 3deg;
   }
-  .slot.back {
-    z-index: 1;
-    transform: rotate(5deg) translateX(-4%);
+  .scene.entered .slot.front {
+    --x: var(--part-front);
+    --rot: -3deg;
   }
 
-  /* Phones do not have room for two cards side by side — at 375 that is a pair
-     of 140px thumbnails, and a card you cannot read is not a card. So the pair
-     stacks instead: the back card on top of the stack with its drawn mandala
-     clear, the printed front overlapping up from below, each about four fifths
-     of the width. Same object, held at a different angle. */
-  @media (max-width: 34rem) {
-    .pair {
-      --card-h: min(46svh, calc(78cqw * 1.4));
-    }
-    .duo {
-      flex-direction: column;
-    }
-    .slot.back {
-      order: 1;
-      z-index: 1;
-      transform: rotate(-4deg) translateX(-6%);
-    }
-    .slot.front {
-      order: 2;
-      z-index: 2;
-      transform: rotate(4deg) translateX(6%);
-      margin-top: calc(var(--card-h) * -0.34);
-    }
+  /* The same card's other face. */
+  .slot.back {
+    z-index: 1;
+    --x: var(--rest-back);
+    --rot: -5deg;
+  }
+  .scene.entered .slot.back {
+    --x: var(--part-back);
+    --rot: var(--part-rot-back);
+  }
+
+  /* THE FAN. The first beat of a deal: the stack rises and opens, the two
+     faces swinging apart around the pile. It is the SLOT that moves here, not
+     the face inside it — the face has its own gesture (the out/in keyframes
+     below), and keeping the two on separate elements is what lets the stack
+     still be fanning while the top card is already leaving it. Expressed as a
+     nudge off the parted pose, so it lands the same way at every tier. */
+  .scene.entered.parting .slot.front {
+    --x: calc(var(--part-front) - 0.03);
+    --y: -56%;
+    --rot: 1deg;
+  }
+  .scene.entered.parting .slot.back {
+    --x: calc(var(--part-back) + 0.03);
+    --y: -44%;
+    --rot: calc(var(--part-rot-back) - 7deg);
+  }
+  /* The entrance is a 640ms arrival; a deal is a flourish. Same property, two
+     tempos, so the deal borrows the slot for its own. */
+  .scene.dealing .slot {
+    transition-duration: 240ms;
+  }
+
+  /* ── the phone ──────────────────────────────────────────────────────────
+     Parked against the scene's right edge, vertically centred, above both
+     cards. HeroPhone owns the arrival and the lean — it has to compose them
+     into one `transform` — so this holder owns everything the SCENE does to
+     the phone, using the individual transform properties, which compose on top
+     of the component's own `transform` without either having to know about the
+     other. */
+  .phone-holder {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    z-index: 3;
+    translate: 0 -50%;
+    transition:
+      translate 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      rotate 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      scale 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Making room. It eases back and out, tips away from the stack, and shrinks
+     — the three cues that read as "stepped back" rather than "slid sideways".
+     Then it comes back in under the landing card. */
+  .scene.parting .phone-holder {
+    translate: 4% -52%;
+    rotate: 3deg;
+    scale: 0.93;
   }
 
   .art {
@@ -290,11 +612,10 @@
     place-items: center;
   }
 
-  /* CardBack's own frame declares `container-type: inline-size` AND sizes its
+  /* CardBack's frame declares `container-type: inline-size` AND sizes its
      border padding in `cqi`. A container's own properties resolve against the
-     NEXT container up, so without a query container right here the card's
-     border is measured against the page and eats a third of the card. This
-     wrapper is that container: one card wide, so the border is a border. */
+     NEXT container up, so without a query container right here the border is
+     measured against the page and eats a third of the card. */
   .card-frame {
     position: absolute;
     inset: 0;
@@ -303,12 +624,88 @@
     container-type: inline-size;
   }
 
-  /* Ghost-sizer stack: the hidden copy holds the longest label and sets the
-     width; the live button overlays it in the same cell. */
-  .scan-trigger {
-    display: inline-grid;
-    flex: 0 0 auto;
+  /* ── the faces' own gestures ────────────────────────────────────────────
+     Keyframes rather than transitions, because a deal is not a round trip: the
+     card that leaves and the card that arrives start in different places, and
+     an animation carries its own start pose. `both` fill is load-bearing —
+     it is what holds the outgoing faces invisible across the swap, so the new
+     card's render never lands on a visible frame.
+
+     Out is faster than in and eased out-hard: a card leaves the hand quicker
+     than it settles. */
+  .scene.deal-out .art {
+    animation: deal-out-front var(--deal-out-ms) cubic-bezier(0.5, 0, 0.75, 0) both;
   }
+  .scene.deal-out .card-frame {
+    animation: deal-out-back var(--deal-out-ms) cubic-bezier(0.5, 0, 0.75, 0)
+      var(--deal-out-stagger) both;
+  }
+  /* Back first, front on top of it — the order a card is actually dealt in. The
+     easing overshoots by a hair: a dealt card arrives with a little more speed
+     than it needs and settles back, and without that it glides into place like
+     a panel rather than landing like a card. */
+  .scene.deal-in .card-frame {
+    animation: deal-in-back var(--deal-in-ms) cubic-bezier(0.32, 1.34, 0.52, 1) both;
+  }
+  .scene.deal-in .art {
+    animation: deal-in-front var(--deal-in-ms) cubic-bezier(0.32, 1.34, 0.52, 1)
+      var(--deal-in-stagger) both;
+  }
+
+  /* Swept off the top, up and to the left, away from where the next one comes
+     from. */
+  @keyframes deal-out-front {
+    from {
+      transform: none;
+      opacity: 1;
+    }
+    to {
+      transform: translate(-16%, -22%) rotate(-13deg) scale(0.94);
+      opacity: 0;
+    }
+  }
+  @keyframes deal-out-back {
+    from {
+      transform: none;
+      opacity: 1;
+    }
+    to {
+      transform: translate(-11%, -16%) rotate(-9deg) scale(0.95);
+      opacity: 0;
+    }
+  }
+
+  /* DEALT: in from low and right, where a dealer's hand would be — and on this
+     stage that is also where the phone stands, so the cards arrive out of the
+     space it has just vacated. The card is opaque well before it reaches its
+     slot, so it travels rather than materialises. */
+  @keyframes deal-in-back {
+    from {
+      transform: translate(44%, 26%) rotate(12deg) scale(0.9);
+      opacity: 0;
+    }
+    55% {
+      opacity: 1;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes deal-in-front {
+    from {
+      transform: translate(40%, 22%) rotate(10deg) scale(0.91);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
   .scan-trigger > .sizer,
   .scan-trigger > .live {
     grid-area: 1 / 1;
@@ -317,11 +714,6 @@
   .scan-trigger > .sizer {
     visibility: hidden;
   }
-
-  /* The pass is playing — the button stays in place and legible (it is still
-     the thing that just did something), but reads as unavailable. It keeps its
-     place in the tab order via aria-disabled rather than `disabled`, so a
-     keyboard user does not lose focus mid-pass. */
   .scan-trigger > .live {
     transition: opacity 240ms ease;
   }
@@ -329,9 +721,47 @@
     opacity: 0.55;
   }
 
+  /* Narrow: nothing recomposes. The scene is one box whose width is a multiple
+     of --card-h, and --card-h is already bounded by `100cqw / 1.55`, so the pair
+     and the phone shrink together and always fit the column. The old tier that
+     stacked the phone under the cards is gone with the two-column stage. */
+
+  /* Wide but short — a folded Fold in landscape, a laptop in a small window.
+     ShopFrontDoorHero runs the copy and this stage side by side here, and the
+     whole hero has to clear a viewport around 412px tall.
+
+     16a2bef0f9 held this guarantee by paying for the trigger out of the card's
+     budget (56svh -> 38svh). Hero v2 briefly lost it by renaming the driver.
+     The card is the driver again, so the tier pays out of --card-h directly.
+
+     The arithmetic at 960x412, which is what the number is picked for:
+       header 65 + hero pad 20 + stage pad 14 + scene 166 + pill 55 + gap 12
+       + trigger 51 = 383 <= 412. The scene is the only term that can absorb a
+       short viewport; everything under it is a fixed cost. */
+  @media (min-width: 48rem) and (max-height: 40rem) {
+    .stage {
+      --card-h: min(30svh, 15rem, calc(100cqw / var(--scene-fit)));
+      gap: 0.75rem;
+    }
+  }
+
+  /* No choreography. The timeline already jumps straight to `open` here, and
+     `press()` swaps the card outright rather than running the flourish — so the
+     cards are simply in their parted position with the phone standing on them
+     the instant the button is pressed, and the next press simply shows a
+     different card. The rules below are the backstop for a motion preference
+     that changes mid-flourish. */
   @media (prefers-reduced-motion: reduce) {
+    .slot,
+    .phone-holder,
     .scan-trigger > .live {
       transition: none;
+    }
+    .scene.deal-out .art,
+    .scene.deal-out .card-frame,
+    .scene.deal-in .art,
+    .scene.deal-in .card-frame {
+      animation: none;
     }
   }
 </style>

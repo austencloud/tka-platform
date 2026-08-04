@@ -137,6 +137,89 @@ visitors today.
       full `npm run check` green (0 errors / 0 warnings); scoped commits throughout
 - [x] Spec updated with chosen direction + shipped state
 
+## Hero iteration rounds (2026-08-02..03, post-ship feedback loop)
+
+- [x] R1 `430e0b0`: animated front+back hero — live CardBack, mandala drawn by prop-tip
+      trails (ShapeMatrixDrill recipe), phone-silhouette scan cue, 8s auto cycle
+- [x] R2a `7a16c396bc`: sweep scoped to the QR cell (runtime-derived rect); mandala overlay
+      centre measured, 0.7px delta (was 132px — grid start-alignment bug)
+- [x] R2b `2a43ee89f1`: hero pinned to the card bake (staffs/back theme/light mode — 3
+      profile leaks closed); printed-card trail preset (no glow, print inks); size drift
+      re-anchored to trailed-tip reach (drawn/printed 1.021 → 0.991)
+- [x] R3 `16a2bef0f9`: scan flow button-triggered ("Scan the code" → "Scan again",
+      ActionButton + ghost-sizer), engine lazy-mounts on first press, no auto-repeat
+- [x] R4 `0cfcc0e026`: shuffle ("Deal another card", pool without replacement) + auto-scan
+      on land; start-position cell fixed (ensureStepPlacement read path — the
+      PictographPreparer warning WAS this bug; console fully clean since); onward-band CTA
+      href /composer → /create (siblings fixed in `5126812d89`)
+- [x] R5 `2df5c40748`: **Hero v2 — the phone shows the real thing.** Iframe of the literal
+      `/q/<code>?demo=1` (demo flag suppresses PostHog + scan logging + Firestore scan
+      ledger — 4 guards in the /q host/layout); read-only `findExistingCodeForSequence`
+      (never mints codes client-side); iframe pointer-inert + "Open this scan" pill
+      (real visit, no demo flag); live-draw mandala machinery deleted. Fix batch
+      `1f27c3cc26`: pill seated below phone, 960×412 fold restored; the 366×0
+      animation-pane scare = emulation-mode-toggle artifact, NOT a product bug (real
+      phone scans animate — proven three ways).
+- [x] R6 `9d28611e89`: scan is an ENTRANCE — rest = two cards only; press → cards tighten,
+      phone swings in from off-stage in front (z 3); camera view de-warped (card 64% of
+      screen, room visible, opposite-drift parallax); hydration mismatch NOT reproducible
+      (likely mid-HMR SSR/client skew; hero SSR markup proven branch-free); the failing
+      Firestore username write on /shop belongs to shared auth (`claimUsername` via the
+      global auth listener's repair path) — NOT shop code, unfixed, flagged to Austen.
+- [x] R7 `27a8d5468f`: deal flourish — all three stage objects in one 730ms gesture
+      (lift/fan + phone step-back → stacked exit → dealt-in entrance w/ overshoot);
+      iframe internal height DERIVED from the measured screen box (was hardcoded 812 →
+      69% of /q's bottom bar hidden; now scrollHeight == clientHeight, nav flush).
+- [x] R8 forensics + repair (2026-08-04): Austen scanned an A card (0 turns) and got the
+      0.5-turn variant. Verdict: THREE id-keyed caches, one root cause — **the catalog
+      reuses one sequence id across turn variants** (`tnd-split-same-aaaa` = 3 different
+      sequences across the trilogy; LOOP decks duplicate too). (1) hero scan-code memo →
+      fixed `d44f2287c1`/`e0321598cc` (memo keys on encoder string + hero decodes the
+      QR on the displayed cover and hides scan on mismatch); (2) cover render cache
+      (key fixed `4b1bd29c89`; the 11 stale wrong-card bakes in Storage — TKA-3 wearing
+      TKA-2's art+QR, 5 LOOP covers wrong word — repaired 2026-08-04: cleared + re-baked
+      55/55, ZXing sweep 60/60 correct, zero byte-dup renders); (3) DeckFanCover art
+      cache → fixed `752964102d` (per-card discriminators). Physical PRINTED cards
+      unaffected (print pipeline resolves codes per card, never touches these caches).
+      Shortcode infra proven innocent: turns ARE encoded; 852 shortcode docs join on
+      those seed ids — which is why the id migration was STOPPED (see Decisions).
+- [x] R9 `29d5c912a8`: deal RESETS the stage — cards + phone (if out) exit in one gesture,
+      two fresh cards deal in side by side, scan re-earned (auto-scan deleted; iframe
+      unmounts at the swap frame, next press boots fresh). Supersedes R6's phone-stays
+      and R4/R7 auto-scan. Commit message's "NOT YET VISUALLY VERIFIED" caveat is stale:
+      verified 2026-08-04 after the DevTools MCP reconnect — 5 frames, 190-rAF rect
+      stability (1 distinct rect set outside the scene), phase trace matches design
+      within a frame, 960×412 fold identical across all states, zero console noise,
+      R8 guard fired zero times. Unit tests: hero-scan-timeline-stage 6/6.
+
+- [x] R10 `dc4f037186` (Austen's copy: headline = the product name, three new steps,
+      two typo fixes) + `5a60ff7058`: **the scanned state spreads.** The parted
+      composition was one stack at every width — back 37% unoccluded, front 70%
+      (the phone ate its code corner). Austen: "the cards should be more visible
+      while animation is playing ... we have lots of space on 4K" and "the words
+      Choreo Cards are so far to the left with a big space in between the
+      animation." Two changes, one geometry: (1) both faces hang off the scene's
+      CENTRE through an `--x` offset in card-heights instead of being pinned to
+      left:0/right:0, and container tiers on .card-stage (640px / 900px, px on
+      purpose — fitting three objects is a pixel question, not a type-scale one)
+      widen the scene box AND walk the parted cards further left inside it, the
+      card paying for the room via `--scene-fit`; (2) the hero's copy column is
+      `fit-content(38rem)` with a capped gap, so the slack it never used goes to
+      the stage. Measured unoccluded, scanned: 100/100 at 3840, 2560, 1920;
+      76/100 at 1440 and 820 (mid tier); 38/70 unchanged at 960x412 and 375,
+      where the trade is a third of the card for a sliver of the back. Copy→scene
+      dead field 426→108 (1920) and ~716→184 (3840). Card size is held or grown
+      everywhere except tablet portrait (416→321) and 1920 (432→423). The REST
+      pair stays centred in the wider scene on purpose — it sits in the stage's
+      glow and under the trigger — so the rest-state gap (274 at 1920, 420 at
+      3840) is 0.33 card-heights wider than the scanned one BY CONSTRUCTION:
+      that translation is the parting gesture. Shifting rest left buys ~25% of it
+      back and costs the same amount of gesture; flagged for Austen, not taken.
+      Verified: rest+scanned frames at 3840/2560/1920/1440/820/960x412/375, zero
+      layout shift across scan→deal→scan (hero box and scene width identical in
+      all four states), 960x412 fold and pill guarantees intact, zero page
+      console errors.
+
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
 All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
@@ -174,3 +257,19 @@ the ungated shop live; Austen sequences that. Blocking the push, deliberately:
 - T&D Trilogy shelves under **Decks** (its SKUs are `type: physical-deck`), so chips read
   All 5 · Decks 3 · Books 1 · Bundles 1. If the trilogy belongs under "Books" as the
   teaching line, that's a product-data change, not a layout change.
+- **Catalog sequence-id migration (approved in principle 2026-08-04, STOPPED at
+  investigation — a catalog-identity decision, not a scoped repair).** The seed ids
+  (`tnd-split-same-aaaa` etc.) are shared across turn variants and joined by 852 live
+  `shortcodes` docs (resolution strategies parse them), 60 `decks` + 60 `catalogs` docs
+  incl. `l1-tnd-motions` (TND_BASE_CATALOG_ID), and id-PARSING code
+  (`deck-composer.ts` seedWordOf, `canonical-tnd-pool.ts`). Three caches have now
+  failed on this landmine (R8). Recommended scheme when done: the existing
+  `${seedId}__t_${pattern}` convention from `canonical-tnd-pool.ts:70`. Open question
+  the migration must answer: do product covers fork from the base catalog, or does the
+  base catalog move with them? Renaming also forks provenance for codes that may be on
+  printed cards. Until migrated: NEVER key a cache on sequence id alone — add
+  deckId/deckName discriminators (three precedents in R8's fixes).
+- The failing Firestore write on every signed-in page load (`claimUsername` →
+  `users/<uid>` update, failed-precondition; owner: shared auth,
+  `username-validator.ts:108-137` via the global auth listener's repair path) — found
+  during R6, not shop code, still firing.

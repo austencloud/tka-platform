@@ -55,6 +55,33 @@ function ensureEngineTransitionGraph(): Promise<void> {
   return engineTransitionGraphPromise;
 }
 
+/**
+ * The engine's end-position goal, as position strings.
+ *
+ * Until 2026-08-03 neither `endPosition` nor `endPositions` was passed to
+ * `builder.build()` at all — the End Position picker wrote to state, persisted,
+ * and showed on the Customize card, and the constraint was silently dropped at
+ * this boundary. Anything added to GenerationOptions has to be threaded through
+ * here or it does nothing.
+ *
+ * `endPositions` is the multi-select form. `endPosition` is the legacy single
+ * PictographData; its `.endPosition` field carries the grid position (a
+ * start-position pictograph is static, so start and end are the same value —
+ * see start-position-manager's createStartPosition). Empty = unconstrained.
+ */
+function resolveEndPositions(
+  options: GenerationOptions
+): string[] | undefined {
+  const ends = new Set<string>();
+  for (const p of options.endPositions ?? []) {
+    if (p) ends.add(String(p));
+  }
+  const legacy =
+    options.endPosition?.endPosition ?? options.endPosition?.startPosition;
+  if (legacy) ends.add(String(legacy));
+  return ends.size > 0 ? [...ends] : undefined;
+}
+
 export class GenerationOrchestrator {
   constructor(
     private readonly variationProvider: BrowserVariationProvider,
@@ -97,6 +124,8 @@ export class GenerationOrchestrator {
         ? String(options.startPosition.startPosition)
         : undefined,
       blockedStartPositions: options.blockedStartPositions?.map(String),
+      endPositions: resolveEndPositions(options),
+      mustContainLetters: options.mustContainLetters?.map(String),
       mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
       blueStartOrientation: options.blueStartOrientation,
@@ -166,6 +195,8 @@ export class GenerationOrchestrator {
         ? String(options.startPosition.startPosition)
         : undefined,
       blockedStartPositions: options.blockedStartPositions?.map(String),
+      endPositions: resolveEndPositions(options),
+      mustContainLetters: options.mustContainLetters?.map(String),
       mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
       blueStartOrientation: options.blueStartOrientation,

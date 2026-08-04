@@ -67,6 +67,7 @@ const TORCH_ARTWORK = `
 `;
 
 const propGroup = () => document.querySelector(".prop-svg");
+const propTransform = () => propGroup()?.getAttribute("style") ?? "";
 const partStyle = (part: string) =>
   document.querySelector(`[data-part="${part}"]`)?.getAttribute("style");
 
@@ -229,5 +230,63 @@ describe("PropSvg editor contrast", () => {
 
     expect(partStyle("shaft")).toContain("fill:#231F20");
     expect(partStyle("metal")).toContain("fill:url(#metal)");
+  });
+});
+
+describe("PropSvg orientation transitions", () => {
+  async function rerenderOrientation(
+    fromOrientation: Orientation,
+    fromRotation: number,
+    toOrientation: Orientation,
+    toRotation: number
+  ) {
+    const screen = render(PropSvg, {
+      motionData: {
+        ...motionData,
+        startOrientation: fromOrientation,
+      } as never,
+      propAssets: assets(SVG_A),
+      propPosition: { ...propPosition, rotation: fromRotation } as never,
+    });
+
+    await screen.rerender({
+      motionData: {
+        ...motionData,
+        startOrientation: toOrientation,
+      } as never,
+      propAssets: assets(SVG_A),
+      propPosition: { ...propPosition, rotation: toRotation } as never,
+    });
+    flushSync();
+  }
+
+  it("animates a left-arrow center change counterclockwise", async () => {
+    await rerenderOrientation(
+      Orientation.CENTER_N,
+      270,
+      Orientation.CENTER_NW,
+      225
+    );
+
+    expect(propTransform()).toContain("rotate(225deg)");
+    expect(propTransform()).not.toContain("rotate(585deg)");
+  });
+
+  it("animates a right-arrow center change clockwise", async () => {
+    await rerenderOrientation(
+      Orientation.CENTER_N,
+      270,
+      Orientation.CENTER_NE,
+      315
+    );
+
+    expect(propTransform()).toContain("rotate(315deg)");
+  });
+
+  it("uses the selected direction for interradial changes", async () => {
+    await rerenderOrientation(Orientation.IN, 90, Orientation.CLOCK_IN, 45);
+
+    expect(propTransform()).toContain("rotate(45deg)");
+    expect(propTransform()).not.toContain("rotate(405deg)");
   });
 });

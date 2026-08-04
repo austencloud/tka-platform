@@ -50,6 +50,7 @@
   import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
   import { hashDeckContent, hashSequenceContent, hashSequenceSkeleton } from "$lib/shared/foundation/services/content-hasher";
   import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
+  import type { CardPair } from "../../services/types";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
   import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
   import { buildDeckAiSummary } from "../../services/deck-ai-summary";
@@ -323,10 +324,14 @@
       prop,
     ].filter(Boolean).join("  ·  ");
     return {
-      title: `Deck ${deckRefPadded}: ${count} cards`,
+      // Title carries the PRINTED count — the number an order is placed for.
+      // The subject keeps the sequence count, since the word list describes
+      // those cards and the insert has no word.
+      title: `Deck ${deckRefPadded}: ${count + 1} cards`,
       subject:
         `LOOP ${loop} · ${rs.selectedLength}-step · L${level}` +
-        `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} cards.` +
+        `${period ? ` · ${period}` : ""} · ${cap(gridMode)} · ${prop} · ${count} sequence cards` +
+        ` + How to Read insert.` +
         ` Words: ${words.join(", ")}`,
       keywords: words,
       deckSummary,
@@ -450,6 +455,20 @@
     }
   }
 
+  /** The "How to Read" insert that ships as card 1 of every printed deck.
+   *  Carries this deck's number, so it is rendered against the live deck ref. */
+  async function buildInsertPair(): Promise<CardPair> {
+    const { renderInsertCardPair } = await import(
+      "$lib/features/choreo-card/services/PrintCardRenderer"
+    );
+    const { front, back } = await renderInsertCardPair({
+      theme: rs.theme,
+      cardSize,
+      deckNumber: deckRefNumber,
+    });
+    return { front, back, label: "How to Read" };
+  }
+
   async function buildPrintPDF(mode: PrintPDFMode): Promise<{
     blob: Blob;
     printRunId: string | null;
@@ -475,6 +494,7 @@
           elements: tndElements,
           groupByElement,
           meta: buildDeckMeta(),
+          insertPair: await buildInsertPair(),
         },
         onProgress,
       );
@@ -510,6 +530,7 @@
           elements: tndElements,
           groupByElement,
           meta: metaForPrintRun(run.printRunId),
+          insertPair: await buildInsertPair(),
           frontRenderer: ({ pair, cardIndex, copyIndex }) =>
             run.renderFront(pair, cardIndex, copyIndex),
         },
@@ -583,6 +604,7 @@
         blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
           exportProgress = current; exportTotal = total;
         }, {
+          insertPair: await buildInsertPair(),
           frontRenderer: (pair, cardIndex) =>
             run.renderFront(pair, cardIndex, 0),
         });

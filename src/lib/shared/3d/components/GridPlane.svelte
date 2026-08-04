@@ -22,6 +22,8 @@
     opacity?: number;
     showLabels?: boolean;
     size?: number;
+    handRadius?: number;
+    outerRadius?: number;
     gridMode?: GridMode;
   }
 
@@ -31,11 +33,17 @@
     opacity = 0.15,
     showLabels = true,
     size,
+    handRadius,
+    outerRadius,
     gridMode = "diamond",
   }: Props = $props();
 
-  const handPointRadius = $derived(userProportionsState.handPointRadius);
-  const outerPointRadius = $derived(userProportionsState.outerPointRadius);
+  const handPointRadius = $derived(
+    handRadius ?? userProportionsState.handPointRadius
+  );
+  const outerPointRadius = $derived(
+    outerRadius ?? userProportionsState.outerPointRadius
+  );
   const effectiveSize = $derived(size ?? userProportionsState.gridSize);
 
   const handPoints = $derived(getHandPoints(gridMode));
@@ -74,8 +82,6 @@
     [GridLocation.NORTHWEST]: "NW",
     [GridLocation.CENTER]: "C",
   };
-
-
 </script>
 
 <!-- Plane group with rotation -->
@@ -94,7 +100,9 @@
 
   <!-- Hand point circle (inner ring) - 1.5cm thickness -->
   <T.Mesh position={[0, 0, 0.005]}>
-    <T.RingGeometry args={[handPointRadius - 0.015, handPointRadius + 0.015, 64]} />
+    <T.RingGeometry
+      args={[handPointRadius - 0.015, handPointRadius + 0.015, 64]}
+    />
     <T.MeshBasicMaterial
       {color}
       opacity={0.5}
@@ -105,7 +113,9 @@
 
   <!-- Outer point circle - 1cm thickness -->
   <T.Mesh position={[0, 0, 0.003]}>
-    <T.RingGeometry args={[outerPointRadius - 0.01, outerPointRadius + 0.01, 64]} />
+    <T.RingGeometry
+      args={[outerPointRadius - 0.01, outerPointRadius + 0.01, 64]}
+    />
     <T.MeshBasicMaterial
       {color}
       opacity={0.25}
@@ -128,7 +138,6 @@
     <T.SphereGeometry args={[HAND_POINT_SIZE, 16, 16]} />
     <T.MeshBasicMaterial {color} />
   </T.Mesh>
-
 {/each}
 
 <!-- Outer point markers (smaller, at outer radius) -->
@@ -142,12 +151,13 @@
   {#if showLabels}
     <T.Group position={[pos[0] * 1.08, pos[1] * 1.08, pos[2] * 1.08]}>
       <HTML center sprite>
-        <span class="grid-label" style="color: {color};">{locationLabels[location]}</span>
+        <span class="grid-label" style="color: {color};"
+          >{locationLabels[location]}</span
+        >
       </HTML>
     </T.Group>
   {/if}
 {/each}
-
 
 <style>
   .grid-label {

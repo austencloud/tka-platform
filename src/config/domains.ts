@@ -44,6 +44,10 @@ const PUBLIC_PATH_PREFIXES = [
   // Focused production-component review. It owns a bare layout and must not
   // boot module persistence, which would treat `/test` as an invalid app tab.
   "/test/smart-collections",
+  // Museum floor-plan and 3D review surfaces also own their page chrome. Keep
+  // them out of module persistence so direct review links are not rewritten to
+  // the Create module after authentication initializes.
+  "/test/museum-",
   "/store",
   "/shop",
   "/about",

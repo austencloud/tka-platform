@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Fire Room — Three Floor Plans</title>
+<style>
+  :root {
+    --bg: #0d0a08;
+    --panel: #151009;
+    --ink: #ddd3c4;
+    --muted: #9a8f80;
+    --accent: #ff9b3d;
+    --lava: #ff6a2a;
+    --ember: #ffd9a8;
+    --cool: #7fd8ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 2.5rem clamp(1rem, 4vw, 4rem);
+  }
+  header { max-width: 1500px; margin: 0 auto 1.5rem; }
+  h1 { font-size: 1.7rem; letter-spacing: 0.02em; }
+  h1 span { color: var(--lava); }
+  header p { color: var(--muted); max-width: 82ch; margin-top: 0.4rem; }
+  .sheet {
+    max-width: 1500px; margin: 0 auto 1.2rem;
+    background: var(--panel);
+    border: 1px solid #2a1f14;
+    border-radius: 12px;
+    padding: 1.2rem 1.2rem 0.6rem;
+    overflow-x: auto;
+  }
+  .sheet h2 {
+    font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--accent); margin: 0.2rem 0 0.8rem 0.4rem;
+  }
+  .sheet h2 em { color: var(--muted); font-style: normal; text-transform: none; letter-spacing: 0; font-size: 0.85rem; }
+  svg { display: block; min-width: 1100px; width: 100%; height: auto; }
+  .cols { max-width: 1500px; margin: 0 auto 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.2rem; }
+  .card { background: var(--panel); border: 1px solid #2a1f14; border-radius: 12px; padding: 1.1rem 1.3rem; }
+  .card h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.6rem; }
+  .card ul, .card ol { padding-left: 1.4rem; }
+  .card li { margin-bottom: 0.45rem; }
+  .card li b { color: #fff; }
+  .card p { margin-bottom: 0.6rem; }
+  .rec {
+    max-width: 1500px; margin: 0 auto 2rem;
+    background: linear-gradient(160deg, #1d1207, #151009);
+    border: 1px solid #4a3218; border-radius: 12px; padding: 1.4rem 1.6rem;
+  }
+  .rec h2 { color: var(--lava); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.7rem; }
+  .rec p { max-width: 95ch; margin-bottom: 0.7rem; }
+  .rec b { color: #fff; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; padding: 0.28rem 0.6rem 0.28rem 0; border-bottom: 1px solid #2a1f14; font-size: 0.92rem; }
+  th { color: var(--muted); font-weight: 600; }
+  footer { max-width: 1500px; margin: 2rem auto 0; color: var(--muted); font-size: 0.85rem; }
+  .tag { display: inline-block; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid #4a3218; border-radius: 999px; padding: 0.1rem 0.6rem; color: var(--ember); margin-left: 0.5rem; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The <span>Fire Room</span> — Three Floor Plans · 2026-08-04</h1>
+  <p>The visitor arrives from the Drowned Gallery still dripping, through the carved
+  threshold on the grotto's east wall. Fire's performers are the three compound pairs
+  DJ, EK, FL (JD/KE/LF depending on start), in their split-timing variations: the two
+  props stay 180° out of phase for the whole cycle — one hits the downbeat as the
+  other crests — while rotating in opposite senses (DJ = pro/pro, EK = anti/anti,
+  FL = hybrid). Which timing a pair gets depends on which specific alpha/beta
+  variations it moves between; the together-timing variations of these same pairs
+  belong to Air. Water taught one variable across three single letters; Fire teaches
+  the round trip. Water's grammar was "feel the element first-person,
+  then read it performed." Fire's version of feeling the element is heat, rhythm, and light that
+  arrives only when the fire allows it. All three plans share the same doors: enter
+  west from the grotto, exit east to Earth. North is UP on every plan. 1 square = 2 m.</p>
+</header>
+
+<!-- ═══════════════ PLAN A — THE ASHWALK ═══════════════ -->
+<div class="sheet">
+  <h2>Plan A — The Ashwalk <em>· lava-lake crossing · ~26 × 18 m · serpentine</em></h2>
+  <svg viewBox="0 0 1300 640" role="img" aria-label="Plan A top-down">
+    <defs>
+      <radialGradient id="lavaGrad" cx="50%" cy="50%" r="75%">
+        <stop offset="0%" stop-color="#8a2c08"/>
+        <stop offset="55%" stop-color="#5e1c05"/>
+        <stop offset="100%" stop-color="#3a1003"/>
+      </radialGradient>
+      <radialGradient id="glowA" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ff9b3d" stop-opacity="0.65"/>
+        <stop offset="100%" stop-color="#ff9b3d" stop-opacity="0"/>
+      </radialGradient>
+      <marker id="arrowA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#ff9b3d"/>
+      </marker>
+    </defs>
+    <g stroke="#1c140c" stroke-width="1">
+      <path d="M60,40 H1240 M60,88 H1240 M60,136 H1240 M60,184 H1240 M60,232 H1240 M60,280 H1240 M60,328 H1240 M60,376 H1240 M60,424 H1240 M60,472 H1240 M60,520 H1240 M60,568 H1240"/>
+      <path d="M60,40 V568 M108,40 V568 M156,40 V568 M204,40 V568 M252,40 V568 M300,40 V568 M348,40 V568 M396,40 V568 M444,40 V568 M492,40 V568 M540,40 V568 M588,40 V568 M636,40 V568 M684,40 V568 M732,40 V568 M780,40 V568 M828,40 V568 M876,40 V568 M924,40 V568 M972,40 V568 M1020,40 V568 M1068,40 V568 M1116,40 V568 M1164,40 V568 M1212,40 V568"/>
+    </g>
+
+    <!-- shell -->
+    <rect x="72" y="52" width="1152" height="504" fill="none" stroke="#3a2b1a" stroke-width="12"/>
+
+    <!-- lava lake fills most of the floor -->
+    <rect x="84" y="64" width="1128" height="480" fill="url(#lavaGrad)" opacity="0.85"/>
+
+    <!-- entry defile (west, from grotto) -->
+    <rect x="72" y="424" width="150" height="72" fill="#241a10" stroke="#4a3218"/>
+    <text x="147" y="466" fill="#9a8f80" font-size="13" text-anchor="middle">hot defile · dark, shimmer,</text>
+    <text x="147" y="483" fill="#9a8f80" font-size="13" text-anchor="middle">glow rising ahead</text>
+
+    <!-- serpentine basalt causeway -->
+    <path d="M222,460 H540 V330 H360 V210 H900 V330 H720 V460 H1060 V240"
+          fill="none" stroke="#241a10" stroke-width="56" stroke-linejoin="round" stroke-linecap="butt"/>
+    <path d="M222,460 H540 V330 H360 V210 H900 V330 H720 V460 H1060 V240"
+          fill="none" stroke="#3a2b1a" stroke-width="46" stroke-linejoin="round"/>
+
+    <!-- flow arrows -->
+    <g stroke="#ff9b3d" stroke-width="2.5" fill="none" marker-end="url(#arrowA)">
+      <path d="M240,460 H430"/>
+      <path d="M540,440 V350"/>
+      <path d="M480,330 H400"/>
+      <path d="M360,300 V230"/>
+      <path d="M430,210 H820"/>
+      <path d="M900,240 V310"/>
+      <path d="M840,330 H770"/>
+      <path d="M720,360 V430"/>
+      <path d="M790,460 H1000"/>
+      <path d="M1060,430 V270"/>
+    </g>
+
+    <!-- performer islands out in the lava -->
+    <g>
+      <circle cx="300" cy="120" r="42" fill="#241a10" stroke="#4a3218"/>
+      <circle cx="300" cy="120" r="60" fill="url(#glowA)"/>
+      <text x="300" y="127" fill="#ffd9a8" font-size="15" font-weight="700" text-anchor="middle">DJ</text>
+      <circle cx="660" cy="470" r="42" fill="#241a10" stroke="#4a3218"/>
+      <circle cx="660" cy="470" r="60" fill="url(#glowA)"/>
+      <text x="660" y="477" fill="#ffd9a8" font-size="15" font-weight="700" text-anchor="middle">EK</text>
+      <circle cx="1000" cy="120" r="42" fill="#241a10" stroke="#4a3218"/>
+      <circle cx="1000" cy="120" r="60" fill="url(#glowA)"/>
+      <text x="1000" y="127" fill="#ffd9a8" font-size="15" font-weight="700" text-anchor="middle">FL</text>
+    </g>
+    <text x="300" y="182" fill="#9a8f80" font-size="12" text-anchor="middle">obsidian island · 5 m off the path</text>
+    <text x="660" y="536" fill="#9a8f80" font-size="12" text-anchor="middle">island EK · seen across lava</text>
+    <text x="940" y="182" fill="#9a8f80" font-size="12" text-anchor="middle">island FL · last read</text>
+
+    <!-- exit stair east to Earth -->
+    <rect x="1032" y="120" width="56" height="120" fill="#241a10" stroke="#4a3218"/>
+    <g stroke="#4a3218" stroke-width="2"><path d="M1036,150 h48 M1036,170 h48 M1036,190 h48 M1036,210 h48"/></g>
+    <text x="1112" y="150" fill="#9a8f80" font-size="13">basalt stair up</text>
+    <text x="1112" y="168" fill="#9a8f80" font-size="13">to Earth exit (east)</text>
+
+    <!-- labels -->
+    <text x="640" y="90" fill="#ff6a2a" font-size="15" text-anchor="middle" opacity="0.9">LAVA LAKE · heat shimmer above every wet tile · ember rain</text>
+    <text x="90" y="446" fill="#ffd9a8" font-size="13">from grotto ➜</text>
+  </svg>
+</div>
+
+<!-- ═══════════════ PLAN B — THE KILN ═══════════════ -->
+<div class="sheet">
+  <h2>Plan B — The Kiln <em>· vertical pulse chamber · ~21 m round, 14 m tall · descending spiral</em></h2>
+  <svg viewBox="0 0 1300 640" role="img" aria-label="Plan B top-down plus section">
+    <defs>
+      <radialGradient id="wellGrad" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#a33608"/>
+        <stop offset="60%" stop-color="#5e1c05"/>
+        <stop offset="100%" stop-color="#2c0c02"/>
+      </radialGradient>
+      <marker id="arrowB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#ff9b3d"/>
+      </marker>
+    </defs>
+    <g stroke="#1c140c" stroke-width="1">
+      <path d="M60,40 H1240 M60,88 H1240 M60,136 H1240 M60,184 H1240 M60,232 H1240 M60,280 H1240 M60,328 H1240 M60,376 H1240 M60,424 H1240 M60,472 H1240 M60,520 H1240 M60,568 H1240"/>
+      <path d="M60,40 V568 M108,40 V568 M156,40 V568 M204,40 V568 M252,40 V568 M300,40 V568 M348,40 V568 M396,40 V568 M444,40 V568 M492,40 V568 M540,40 V568 M588,40 V568 M636,40 V568 M684,40 V568"/>
+    </g>
+
+    <!-- round shell (plan view, left) -->
+    <circle cx="370" cy="304" r="252" fill="#12100a" stroke="#3a2b1a" stroke-width="12"/>
+    <!-- spiral ledge (annulus) -->
+    <circle cx="370" cy="304" r="240" fill="#1c150c"/>
+    <circle cx="370" cy="304" r="150" fill="#12100a"/>
+    <!-- lava well -->
+    <circle cx="370" cy="304" r="96" fill="url(#wellGrad)"/>
+    <text x="370" y="300" fill="#ff9b3d" font-size="14" text-anchor="middle">the well</text>
+    <text x="370" y="318" fill="#9a8f80" font-size="12" text-anchor="middle">breathes every ~20 s</text>
+
+    <!-- spiral path arrows (clockwise descent) -->
+    <g stroke="#ff9b3d" stroke-width="2.5" fill="none" marker-end="url(#arrowB)">
+      <path d="M370,110 A194,194 0 0 1 564,304"/>
+      <path d="M564,304 A194,194 0 0 1 370,498"/>
+      <path d="M370,498 A194,194 0 0 1 176,304"/>
+      <path d="M176,304 A194,194 0 0 1 300,122"/>
+    </g>
+
+    <!-- entry high ledge (west) and exit low (east) -->
+    <rect x="88" y="270" width="64" height="68" fill="#241a10" stroke="#4a3218"/>
+    <text x="120" y="252" fill="#ffd9a8" font-size="13" text-anchor="middle">entry ledge</text>
+    <text x="120" y="360" fill="#9a8f80" font-size="12" text-anchor="middle">+6.0 m</text>
+    <rect x="588" y="270" width="64" height="68" fill="#241a10" stroke="#4a3218"/>
+    <text x="620" y="252" fill="#ffd9a8" font-size="13" text-anchor="middle">Earth exit</text>
+    <text x="620" y="360" fill="#9a8f80" font-size="12" text-anchor="middle">floor 0</text>
+
+    <!-- performers on wall ledges at thirds -->
+    <g>
+      <circle cx="370" cy="92" r="26" fill="#241a10" stroke="#4a3218"/>
+      <text x="370" y="99" fill="#ffd9a8" font-size="13" font-weight="700" text-anchor="middle">DJ</text>
+      <circle cx="556" cy="440" r="26" fill="#241a10" stroke="#4a3218"/>
+      <text x="556" y="447" fill="#ffd9a8" font-size="13" font-weight="700" text-anchor="middle">EK</text>
+      <circle cx="184" cy="440" r="26" fill="#241a10" stroke="#4a3218"/>
+      <text x="184" y="447" fill="#ffd9a8" font-size="13" font-weight="700" text-anchor="middle">FL</text>
+    </g>
+    <text x="370" y="52" fill="#9a8f80" font-size="12" text-anchor="middle">DJ at +4 m, read across the well</text>
+
+    <!-- section view (right) -->
+    <g>
+      <text x="960" y="70" fill="#ff9b3d" font-size="14" text-anchor="middle" letter-spacing="2">SECTION · looking north</text>
+      <rect x="760" y="90" width="400" height="440" fill="none" stroke="#3a2b1a" stroke-width="8"/>
+      <!-- spiral shown as descending ledges -->
+      <path d="M770,150 h80 M810,230 h90 M860,310 h90 M910,390 h90 M960,470 h130" stroke="#4a3218" stroke-width="10"/>
+      <!-- well -->
+      <rect x="900" y="470" width="120" height="56" fill="url(#wellGrad)"/>
+      <path d="M960,470 v-40 M940,470 v-24 M980,470 v-30" stroke="#ff6a2a" stroke-width="4" opacity="0.8"/>
+      <text x="960" y="556" fill="#9a8f80" font-size="12" text-anchor="middle">lava well flares on the breath · ember fountains</text>
+      <text x="800" y="132" fill="#ffd9a8" font-size="12">entry +6.0</text>
+      <text x="1085" y="452" fill="#ffd9a8" font-size="12">exit at 0</text>
+      <text x="1180 " y="300" fill="#9a8f80" font-size="12" transform="rotate(-90 1180 300)">14 m tall — the cave's only vertical room</text>
+    </g>
+  </svg>
+</div>
+
+<!-- ═══════════════ PLAN C — THE FIRST FIRE ═══════════════ -->
+<div class="sheet">
+  <h2>Plan C — The First Fire <em>· darkness amphitheater · ~24 × 20 m · the ancestral fire jam</em></h2>
+  <svg viewBox="0 0 1300 640" role="img" aria-label="Plan C top-down">
+    <defs>
+      <radialGradient id="pitGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ff9b3d" stop-opacity="0.75"/>
+        <stop offset="100%" stop-color="#ff9b3d" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="fissureGrad" cx="50%" cy="50%" r="75%">
+        <stop offset="0%" stop-color="#8a2c08"/>
+        <stop offset="100%" stop-color="#3a1003"/>
+      </radialGradient>
+      <marker id="arrowC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#ff9b3d"/>
+      </marker>
+    </defs>
+    <g stroke="#1c140c" stroke-width="1">
+      <path d="M60,40 H1240 M60,88 H1240 M60,136 H1240 M60,184 H1240 M60,232 H1240 M60,280 H1240 M60,328 H1240 M60,376 H1240 M60,424 H1240 M60,472 H1240 M60,520 H1240 M60,568 H1240"/>
+      <path d="M60,40 V568 M108,40 V568 M156,40 V568 M204,40 V568 M252,40 V568 M300,40 V568 M348,40 V568 M396,40 V568 M444,40 V568 M492,40 V568 M540,40 V568 M588,40 V568 M636,40 V568 M684,40 V568 M732,40 V568 M780,40 V568 M828,40 V568 M876,40 V568 M924,40 V568 M972,40 V568 M1020,40 V568 M1068,40 V568 M1116,40 V568 M1164,40 V568 M1212,40 V568"/>
+    </g>
+
+    <!-- shell -->
+    <rect x="72" y="52" width="1152" height="504" fill="none" stroke="#3a2b1a" stroke-width="12"/>
+    <rect x="84" y="64" width="1128" height="480" fill="#0a0806"/>
+
+    <!-- entry: the darkening crack (west) -->
+    <path d="M72,470 h120 l40,-30 h60" fill="none" stroke="#241a10" stroke-width="44" stroke-linecap="butt"/>
+    <text x="150" y="516" fill="#9a8f80" font-size="13">the darkening crack · heat</text>
+    <text x="150" y="533" fill="#9a8f80" font-size="13">shimmer, light DIMS as you go</text>
+
+    <!-- lava fissure moat separating the performer arc -->
+    <path d="M340,110 Q640,30 940,110 L940,180 Q640,105 340,180 Z" fill="url(#fissureGrad)" opacity="0.9"/>
+    <text x="500" y="80" fill="#ff6a2a" font-size="13" text-anchor="middle">lava fissure · 4 m · the barrier</text>
+
+    <!-- performer arc with fire pits -->
+    <g>
+      <circle cx="400" cy="140" r="60" fill="url(#pitGlow)"/>
+      <circle cx="400" cy="140" r="30" fill="#241a10" stroke="#4a3218"/>
+      <text x="400" y="147" fill="#ffd9a8" font-size="14" font-weight="700" text-anchor="middle">DJ</text>
+      <circle cx="640" cy="112" r="60" fill="url(#pitGlow)"/>
+      <circle cx="640" cy="112" r="30" fill="#241a10" stroke="#4a3218"/>
+      <text x="640" y="119" fill="#ffd9a8" font-size="14" font-weight="700" text-anchor="middle">EK</text>
+      <circle cx="880" cy="140" r="60" fill="url(#pitGlow)"/>
+      <circle cx="880" cy="140" r="30" fill="#241a10" stroke="#4a3218"/>
+      <text x="880" y="147" fill="#ffd9a8" font-size="14" font-weight="700" text-anchor="middle">FL</text>
+    </g>
+    <text x="640" y="205" fill="#9a8f80" font-size="12" text-anchor="middle">three performers on the far shore, each with a low fire pit · burning prop heads · light trails</text>
+
+    <!-- amphitheater arcs -->
+    <g fill="none" stroke="#241a10" stroke-width="26">
+      <path d="M300,260 Q640,190 980,260"/>
+      <path d="M260,330 Q640,255 1020,330"/>
+      <path d="M230,400 Q640,320 1050,400"/>
+    </g>
+    <text x="640" y="298" fill="#9a8f80" font-size="12" text-anchor="middle">stepped basalt benches · each row 0.5 m down · watch from any of them</text>
+
+    <!-- ash circle -->
+    <circle cx="640" cy="470" r="52" fill="#1c150c" stroke="#4a3218" stroke-dasharray="6 5"/>
+    <text x="640" y="466" fill="#9a8f80" font-size="12" text-anchor="middle">cold ash circle</text>
+    <text x="640" y="482" fill="#9a8f80" font-size="12" text-anchor="middle">charred staves left behind</text>
+
+    <!-- flow arrows -->
+    <g stroke="#ff9b3d" stroke-width="2.5" fill="none" marker-end="url(#arrowC)">
+      <path d="M120,470 h90"/>
+      <path d="M300,442 Q420,400 520,392"/>
+      <path d="M760,392 Q900,400 1010,440"/>
+      <path d="M1080,460 h80"/>
+    </g>
+
+    <!-- exit (east) -->
+    <rect x="1160" y="436" width="64" height="64" fill="#241a10" stroke="#4a3218"/>
+    <text x="1192" y="524" fill="#ffd9a8" font-size="13" text-anchor="middle">to Earth</text>
+    <text x="95" y="446" fill="#ffd9a8" font-size="13">from grotto ➜</text>
+  </svg>
+</div>
+
+<!-- ═══════════════ COMPARISON ═══════════════ -->
+<div class="cols">
+  <div class="card">
+    <h3>A · The Ashwalk</h3>
+    <p><b>You cross the fire.</b> The floor is a lava lake; the path is a winding
+    basalt causeway; the performers stand on obsidian islands 5 m off the path,
+    read in procession as you pass.</p>
+    <ul>
+      <li><b>Element beat:</b> heat below and around you the whole way; ember rain.</li>
+      <li><b>Money shot:</b> the defile's last corner, when the lake opens with three fire silhouettes doubled in the glow.</li>
+      <li><b>For:</b> maximum drama per meter; straight reuse of LavaPool / LavaRivers / HeatDistortion; flat-floor tech, lowest risk.</li>
+      <li><b>Against:</b> grammatically closest to Water (walkway between liquid, performers across the barrier). Same trick, hotter liquid.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>B · The Kiln</h3>
+    <p><b>You descend through the fire's breath.</b> A tall round chamber, one
+    spiral ledge dropping 6 m around a central lava well that flares on a slow
+    rhythm. Performers on wall ledges at thirds, met face-on across the well.</p>
+    <ul>
+      <li><b>Element beat:</b> rhythm. The room breathes; between breaths it is nearly dark and the performance carries the light.</li>
+      <li><b>Money shot:</b> the entry ledge, the whole kiln below, one full breath.</li>
+      <li><b>For:</b> the cave's only vertical room; time as a medium; nothing in Water resembles it.</li>
+      <li><b>Against:</b> hardest engineering (continuous helix elevation, not just stairs); framing performers across the well is fussy; biggest unknown at graybox.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>C · The First Fire</h3>
+    <p><b>You sit at the ancestral fire jam.</b> The approach gets darker, not
+    brighter. It opens into a stepped basalt amphitheater facing three performers
+    across a lava fissure, each at a low fire pit, spinning <b>burning props</b> in
+    the dark. The performance is the room's light source.</p>
+    <ul>
+      <li><b>Element beat:</b> fire as light. You feel its absence first; then the only light you get is the art.</li>
+      <li><b>Money shot:</b> stepping from blackness into the row of benches as three sets of fire trails spiral against the dark.</li>
+      <li><b>For:</b> this is what fire means to flow artists — the fire jam is the origin of the discipline. The pairs' opposite rotation senses are uniquely legible as trails: they draw two interleaved spirals. No other room can make the performance BE the lighting.</li>
+      <li><b>Against:</b> darkness is risky at graybox (must obey "nothing 100% black"); prop-head fire + trails on museum performers is new work (effects exist, threading is new).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════ RECOMMENDATION ═══════════════ -->
+<div class="rec">
+  <h2>Recommendation — C's soul on A's approach</h2>
+  <p><b>Build The First Fire, entered by a short lava crossing.</b> Take Plan C and
+  replace its plain dark crack with a compressed version of A's element beat: one
+  tight basalt bridge over a lava stream, maybe 8 m, heat shimmer and ember rain,
+  then the light behind you dies and you walk the last stretch toward a faint
+  pulse of orange. The amphitheater reveal lands the way the surfacing stair did
+  in Water: compression, then release.</p>
+  <p><b>Why C wins the room:</b> Water's exhibit was performers behind the element.
+  Copying that with lava (Plan A alone) would be a palette swap. C inverts the
+  relationship: in the Fire room the element and the performance are the same
+  thing. The automatons spin burning staves; the trails ARE the exhibit lighting;
+  when a sequence rests between cycles the room dims with it. That is unique in
+  the cave by construction, it is the most honest room in the museum (fire
+  spinning in a circle of watchers is where this art form actually lives), and it
+  makes the pedagogy visible: DJ's pro/pro opposite-spin draws mirrored spirals,
+  EK's anti/anti reverses them, FL splits the difference one hand at a time. Each
+  pair's trail goes out and comes home with the props locked 180° out of phase:
+  one at the downbeat while the other crests, every step of the cycle.</p>
+  <p><b>The audience half:</b> the stepped benches plus the cold ash circle with
+  abandoned charred staves put the visitor inside the jam circle, not at a
+  railing. The Order's fiction writes itself: the initiates surfaced from the
+  water and dried themselves at this fire, and the first thing they did was
+  spin.</p>
+  <p><b>Risk honesty:</b> two new pieces of tech vs Water — (1) performance-synced
+  lighting (room intensity follows the sequence player's beat clock), and
+  (2) prop-head flames + trails on museum performer rigs. Both have existing
+  ingredients (VolumetricFire, the trails effect family, the beat clock), neither
+  is threaded into the museum yet. Graybox proves them with placeholder cones and
+  emissive streaks before any art spend, same discipline as Water.</p>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h3>Shared facts (all plans)</h3>
+    <table>
+      <tr><th>Entry</th><td>grotto east wall door, world z 21–23</td></tr>
+      <tr><th>Exit</th><td>east to Earth (fireToEarth edge)</td></tr>
+      <tr><th>Performers</th><td>compound pairs DJ, EK, FL — split-timing variations (MCP-verified)</td></tr>
+      <tr><th>Sequences</th><td>JDJD · KEKE · LFLF per the T&D base catalog (JD/DJ = same pair, different start)</td></tr>
+      <tr><th>Echo</th><td>Air performs the SAME pairs in together-timing variations — downbeats together instead of opposed</td></tr>
+      <tr><th>Barrier</th><td>lava / fissure — performers unreachable, same rule as the pool</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Reuse map (the fire kit already exists)</h3>
+    <table>
+      <tr><th>Lava surfaces</th><td>ember scene: LavaPool, LavaCracks, LavaRivers</td></tr>
+      <tr><th>Flames</th><td>VolumetricFireComponent (campfire precedent)</td></tr>
+      <tr><th>Heat shimmer</th><td>ember scene: HeatDistortion</td></tr>
+      <tr><th>Ember rain / bursts</th><td>FallingParticles, EmberFountains</td></tr>
+      <tr><th>Haze</th><td>VolcanicHaze</td></tr>
+      <tr><th>Rock dressing</th><td>ObsidianPillars, CraterGround</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Open questions for the walk</h3>
+    <ol>
+      <li>Bench rows: 3 stepped rows (drawn) or 2 deeper ones?</li>
+      <li>Does the room ever go fully bright (a "flare" beat), or stay performance-lit?</li>
+      <li>Ash circle: set dressing only, or the room's plaque/interpretation spot?</li>
+      <li>Fissure moat width — 4 m drawn, same as Water's channel. Closer?</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  Fire room concept sheet · follows the Water process (brainstorm → sheet → design doc → one Opus executor → graybox gate).
+  Grid on every plan: 1 square = 2 m. CAVE_MODE_ROOMS fire entry migrates to performerIds/sequenceIds arrays at build time.
+</footer>
+
+</body>
+</html>

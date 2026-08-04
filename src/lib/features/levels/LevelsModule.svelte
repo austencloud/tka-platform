@@ -9,7 +9,7 @@
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     level4: () => import("$lib/features/levels/level5-lab/Level5LabModule.svelte"),
     level5: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
-    level6: () => import("$lib/features/levels/level7-lab/Level7LabModule.svelte"),
+    level6: () => import("$lib/features/levels/level6-lab/Level6LabModule.svelte"),
     "conjoined-grid": () => import("$lib/features/levels/conjoined-grid/ConjoinedGridTab.svelte"),
     poi: () => import("$lib/features/levels/poi-lab/PoiLabModule.svelte"),
   };

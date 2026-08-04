@@ -95,7 +95,6 @@ const SCORES = {
   "2026-07-08-reversal-pattern-smart-collections-design": [3, "M"],
   "2026-07-11-fable-parallel-dispatch-tonight": [4, "M"],
   "2026-07-13-shop-cart-order-doc-design": [4, "M"],
-  "2026-07-14-image-seo-google-images-design": [4, "M"],
   "2026-07-14-multi-select-turn-editing-design": [3, "M"],
   "2026-07-17-poi-legal-composer-filtering-design": [3, "M"],
   "2026-07-20-q-scan-instrumentation-ledger": [3, "M"],

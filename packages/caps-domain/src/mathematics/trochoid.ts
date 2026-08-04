@@ -47,10 +47,8 @@ function assertFiniteParameter(
 export function validateTrochoidParameters(
   parameters: TrochoidParameters
 ): void {
-  for (const [name, value] of Object.entries(parameters) as [
-    keyof TrochoidParameters,
-    number,
-  ][]) {
+  for (const name of ["theta1", "theta2", "rho1", "rho2", "d"] as const) {
+    const value = parameters[name];
     assertFiniteParameter(name, value);
   }
 
@@ -150,4 +148,25 @@ export function classifyTrochoid(
   if (isCycloidTrochoid(parameters, epsilon)) return "cycloid";
   if (Math.abs(parameters.rho1 - parameters.rho2) <= epsilon) return "rosette";
   return "trochoid";
+}
+
+/**
+ * Return the petal or cusp count for an integer-frequency full-cycle curve.
+ * The two harmonic terms differ by theta2 turns, so the visible count is
+ * |theta2|. Partial cycles and non-integer frequencies do not have this count.
+ */
+export function countTrochoidFeatures(
+  parameters: Pick<TrochoidParameters, "theta1" | "theta2" | "d">
+): number {
+  if (
+    !Number.isInteger(parameters.theta1) ||
+    !Number.isInteger(parameters.theta2) ||
+    Math.abs(parameters.d - 1) > CLASSIFICATION_EPSILON
+  ) {
+    throw new RangeError(
+      "Feature count requires integer frequencies over one full cycle"
+    );
+  }
+
+  return Math.abs(parameters.theta2);
 }
