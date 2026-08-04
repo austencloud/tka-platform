@@ -34,3 +34,30 @@ Good: catches a bug that would otherwise reach production unnoticed. Tests speci
 Bad: confirms a component renders without crashing. Mocks so heavily it tests the mocks. Asserts implementation details. Would still pass if core logic was wrong.
 
 Tests live in `tests/unit/`. Run with `npm test`.
+
+## Always pass the config when running one file
+
+`npm test` resolves to `vitest --config tests/config/vitest.config.ts`, which
+sets `environment: "jsdom"` — the same environment CI uses. Invoking vitest
+directly on a single file does **not** inherit that:
+
+```sh
+npx vitest run path/to/thing.test.ts                               # ❌ node env — CI does not run this
+npx vitest run --config tests/config/vitest.config.ts path/to/…    # ✅ matches CI
+```
+
+The bare form silently picks up the default config and a node environment, so a
+test can pass locally and fail in CI on anything the two environments disagree
+about. jsdom is the more limited of the two: its `Blob` predates
+`Blob.prototype.arrayBuffer`, its canvas and `ImageData` are shimmed in
+`tests/setup/vitest-setup.ts`, and node globals present under `node` may be
+absent under jsdom.
+
+This is not hypothetical. On 2026-08-04 a `blob.arrayBuffer is not a function`
+failure landed on `main` because the test passed under the bare command. CI went
+red, `Deploy Pages (gated)` skipped, and `tkaflowarts.com` served a five-day-old
+build until someone noticed by eye. See
+`docs/reference/gated-pages-deploy.md`.
+
+If a test passes for you and fails in CI, check which config you ran before
+you debug the test.
