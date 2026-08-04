@@ -84,7 +84,21 @@ export interface AmbientOptionProvider {
   optionsAt(seam: SeamState): Promise<readonly StepData[]>;
 }
 
-export const COMBINATOR_DEFAULTS = {
+export interface CombinatorTunables {
+  readonly minBlockSize: number;
+  readonly maxResultLength: number;
+  readonly maxResults: number;
+  readonly wholeUnitsOnly: boolean;
+  readonly allowAmbient: boolean;
+  readonly maxAmbientRun: number;
+  readonly allowMirror: boolean;
+  readonly allowRotation: boolean;
+  readonly allowColorSwap: boolean;
+  readonly exploreRotationFaithful: boolean;
+  readonly searchBudget: number;
+}
+
+export const COMBINATOR_DEFAULTS: CombinatorTunables = {
   minBlockSize: 1,
   maxResultLength: 32,
   maxResults: 24,
@@ -96,9 +110,9 @@ export const COMBINATOR_DEFAULTS = {
   allowColorSwap: true,
   exploreRotationFaithful: true,
   searchBudget: 200_000,
-} as const;
+};
 
-export interface CombinatorOptions extends Partial<typeof COMBINATOR_DEFAULTS> {
+export interface CombinatorOptions extends Partial<CombinatorTunables> {
   /** Injected collaborator (no default; ambient disabled without it). */
   readonly ambientProvider?: AmbientOptionProvider;
 }

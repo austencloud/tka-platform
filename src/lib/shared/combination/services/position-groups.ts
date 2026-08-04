@@ -19,17 +19,17 @@ const GROUPS = new Set<string>(Object.values(GridPositionGroup));
 export function positionGroup(position: string): GridPositionGroup | null {
   const match = /^([a-z]+)\d+$/.exec(position);
   if (!match) return null;
-  const group = match[1];
+  const group = match[1] ?? "";
   return GROUPS.has(group) ? (group as GridPositionGroup) : null;
 }
 
 /** The seam a step starts at, or null when the step carries no position.
  * Always use this instead of casting step.startPosition. */
 export function seamOf(step: StepData): SeamState | null {
-  return (step.startPosition as SeamState) ?? null;
+  return step.startPosition ?? null;
 }
 
 /** The seam a step ends at, or null. */
 export function seamEndOf(step: StepData): SeamState | null {
-  return (step.endPosition as SeamState) ?? null;
+  return step.endPosition ?? null;
 }
